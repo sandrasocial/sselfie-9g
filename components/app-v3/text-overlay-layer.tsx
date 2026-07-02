@@ -3,12 +3,15 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react"
 import {
   computeOverlayLayout,
+  getOverlayMarkableWords,
+  isVerticalOverlayFormat,
   overlayCanvasFont,
   overlayNominalCanvas,
   OVERLAY_HEADLINE_MAX,
   OVERLAY_STYLE_PRESETS,
   OVERLAY_SUBLINE_MAX,
   resolveOverlayStyle,
+  toggleMarkedWord,
   type OverlayLayout,
   type OverlayMeasure,
   type OverlayScrim,
@@ -184,54 +187,101 @@ const OVERLAY_SIZES: { id: OverlaySize; label: string }[] = [
   { id: "l", label: "L" },
 ]
 
-export function TextOverlayEditor({
-  spec,
-  onChange,
+/** Tappable word chips: tap a word to move the style's highlight, no asterisk typing. */
+function MarkedWordChips({
+  text,
+  hint,
+  onToggle,
 }: {
-  spec: TextOverlaySpec
-  onChange: (spec: TextOverlaySpec) => void
+  text: string
+  hint: string
+  onToggle: (wordIndex: number) => void
 }) {
-  const preset = resolveOverlayStyle(spec.style)
+  const words = getOverlayMarkableWords(text)
+  if (words.length === 0) return null
   return (
-    <div className="mt-3 rounded-[6px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
-      <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-[#818283]">
-        Text layer
-      </p>
-      <div className="mb-1 text-[11px] text-[#818283]">Style</div>
-      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
-        {OVERLAY_STYLE_PRESETS.map(style => (
+    <div className="mt-1.5">
+      <p className="text-[11px] text-[#818283]">{hint}</p>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {words.map((word, index) => (
           <button
-            key={style.id}
+            key={`word-${index}-${word.text}`}
             type="button"
-            onClick={() =>
-              onChange({
-                ...spec,
-                style: style.id,
-                position: style.lockedPosition ?? style.defaultPosition ?? spec.position,
-              })
-            }
-            title={style.hint}
-            className={`min-w-[76px] shrink-0 rounded-[4px] border px-2 py-1.5 text-left ${
-              preset.id === style.id
+            onClick={() => onToggle(index)}
+            className={`min-h-9 rounded-full border px-3 py-1 text-[12px] leading-none ${
+              word.marked
                 ? "border-[#0D0E10] bg-[#0D0E10] text-white"
                 : "border-[#C5C6C8] bg-white text-[#4F5052]"
             }`}
           >
-            <span
-              className="block font-serif text-[16px] leading-none"
-              style={{
-                fontWeight: style.headlineWeight,
-                fontStyle: style.headlineMark === "underline-italic" ? "italic" : undefined,
-                letterSpacing: style.headlineTrackingEm ? `${style.headlineTrackingEm}em` : undefined,
-              }}
-            >
-              Aa
-            </span>
-            <span className="mt-1 block text-[9px] uppercase tracking-[0.12em]">
-              {style.name}
-            </span>
+            {word.text}
           </button>
         ))}
+      </div>
+    </div>
+  )
+}
+
+export function TextOverlayEditor({
+  spec,
+  imageUrl,
+  onChange,
+}: {
+  spec: TextOverlaySpec
+  /** The generated image the layer sits on; every style card previews on it live. */
+  imageUrl: string
+  onChange: (spec: TextOverlaySpec) => void
+}) {
+  const preset = resolveOverlayStyle(spec.style)
+  const thumbAspect = isVerticalOverlayFormat(spec.format) ? "aspect-[9/16]" : "aspect-[4/5]"
+  return (
+    <div className="mt-3 w-full min-w-0 rounded-[6px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
+      <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-[#818283]">
+        Text layer
+      </p>
+      <div className="mb-1.5 text-[11px] text-[#818283]">
+        Tap a style to see your words on your photo.
+      </div>
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {OVERLAY_STYLE_PRESETS.map(style => {
+          const selected = preset.id === style.id
+          // The card IS the explanation: her real image + her real words in that style.
+          const previewSpec: TextOverlaySpec = {
+            ...spec,
+            style: style.id,
+            position: style.lockedPosition ?? style.defaultPosition ?? spec.position,
+          }
+          return (
+            <button
+              key={style.id}
+              type="button"
+              onClick={() => onChange(previewSpec)}
+              className="w-[108px] shrink-0 text-left"
+            >
+              <span
+                className={`relative block overflow-hidden rounded-[6px] bg-[#F1F2F2] ${thumbAspect} ${
+                  selected ? "ring-2 ring-[#0D0E10]" : "ring-1 ring-[#C5C6C8]/70"
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imageUrl}
+                  alt=""
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <TextOverlayLayer spec={previewSpec} />
+              </span>
+              <span
+                className={`mt-1.5 block text-[10px] uppercase tracking-[0.12em] ${
+                  selected ? "text-[#0D0E10]" : "text-[#818283]"
+                }`}
+              >
+                {style.name}
+              </span>
+            </button>
+          )
+        })}
       </div>
       <label className="mt-2 block">
         <span className="mb-1 block text-[11px] text-[#818283]">
@@ -244,6 +294,19 @@ export function TextOverlayEditor({
           className="h-10 w-full rounded-[4px] border border-[#C5C6C8] bg-white px-3 text-[14px] text-[#0D0E10] outline-none focus:border-[#0D0E10]"
         />
       </label>
+      {preset.headlineMark !== "none" && (
+        <MarkedWordChips
+          text={spec.headline}
+          hint={
+            preset.headlineMark === "strip"
+              ? "Tap the words that get the strip."
+              : "Tap the words that get the underline."
+          }
+          onToggle={wordIndex =>
+            onChange({ ...spec, headline: toggleMarkedWord(spec.headline, wordIndex) })
+          }
+        />
+      )}
       <label className="mt-2 block">
         <span className="mb-1 block text-[11px] text-[#818283]">Supporting line</span>
         <input
@@ -255,10 +318,14 @@ export function TextOverlayEditor({
           className="h-10 w-full rounded-[4px] border border-[#C5C6C8] bg-white px-3 text-[14px] text-[#0D0E10] outline-none focus:border-[#0D0E10]"
         />
       </label>
-      {(preset.headlineMark !== "none" || preset.sublineMark !== "none") && (
-        <p className="mt-1.5 text-[11px] text-[#818283]">
-          Star one phrase like *this* to highlight it.
-        </p>
+      {preset.sublineMark !== "none" && (spec.subline ?? "").trim().length > 0 && (
+        <MarkedWordChips
+          text={spec.subline ?? ""}
+          hint="Tap the words that get the circle."
+          onToggle={wordIndex =>
+            onChange({ ...spec, subline: toggleMarkedWord(spec.subline ?? "", wordIndex) })
+          }
+        />
       )}
       <div className="mt-2 grid grid-cols-2 gap-1.5">
         <div>

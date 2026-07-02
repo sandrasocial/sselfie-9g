@@ -432,6 +432,61 @@ export function stripOverlayEmphasis(text: string): string {
     .trim()
 }
 
+// ─── Tap-to-highlight (the editor's word chips; members never type an asterisk) ──
+
+export interface OverlayMarkableWord {
+  text: string
+  marked: boolean
+}
+
+/** The headline/subline as tappable words, marker characters stripped. */
+export function getOverlayMarkableWords(text: string): OverlayMarkableWord[] {
+  const words: OverlayMarkableWord[] = []
+  for (const segment of parseOverlayEmphasis(text)) {
+    for (const word of segment.text.split(/\s+/).filter(Boolean)) {
+      words.push({ text: word, marked: segment.emphasized })
+    }
+  }
+  return words
+}
+
+/**
+ * Toggle one word in/out of the marked phrase and return the text in the stored *asterisk*
+ * format (specs and the export pipeline stay unchanged). The mark always stays ONE contiguous
+ * phrase: tapping a word next to the phrase extends it, tapping a word away from it moves the
+ * mark there, and untapping an inner word keeps the longer remaining side.
+ */
+export function toggleMarkedWord(text: string, wordIndex: number): string {
+  const words = getOverlayMarkableWords(text)
+  if (wordIndex < 0 || wordIndex >= words.length) return text
+  words[wordIndex] = { ...words[wordIndex], marked: !words[wordIndex].marked }
+
+  // Collect contiguous marked runs, then keep exactly one.
+  const runs: { start: number; end: number }[] = []
+  for (let i = 0; i < words.length; i++) {
+    if (!words[i].marked) continue
+    const last = runs[runs.length - 1]
+    if (last && last.end === i - 1) last.end = i
+    else runs.push({ start: i, end: i })
+  }
+  let keep: { start: number; end: number } | null = null
+  if (runs.length === 1) keep = runs[0]
+  else if (runs.length > 1) {
+    keep =
+      runs.find(run => wordIndex >= run.start && wordIndex <= run.end) ??
+      runs.reduce((a, b) => (b.end - b.start > a.end - a.start ? b : a))
+  }
+
+  return words
+    .map((word, index) => {
+      if (!keep || index < keep.start || index > keep.end) return word.text
+      const open = index === keep.start ? "*" : ""
+      const close = index === keep.end ? "*" : ""
+      return `${open}${word.text}${close}`
+    })
+    .join(" ")
+}
+
 // ─── Spec builders ──────────────────────────────────────────────────────────────
 
 export function overlayFormatFromOutput(format: OutputFormat): OverlayFormat | null {

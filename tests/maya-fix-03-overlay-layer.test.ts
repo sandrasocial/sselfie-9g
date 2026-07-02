@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest"
 
 import {
   computeOverlayLayout,
+  getOverlayMarkableWords,
   getOverlayStyleGuide,
   makeTextOverlaySpec,
   OVERLAY_SIZE_MULTIPLIERS,
@@ -14,6 +15,7 @@ import {
   resolveOverlayStyle,
   safeZoneFor,
   sanitizeTextOverlaySpec,
+  toggleMarkedWord,
   wrapOverlayText,
   type OverlayStyleId,
   type TextOverlaySpec,
@@ -447,5 +449,71 @@ describe("MAYA-FIX-03 composited overlay layer", () => {
     expect(route).toContain("isTextOverlayLayerEnabled")
     expect(route).toContain('textMode: textOverlayEnabled ? "clean-background" : "baked"')
     expect(route).toContain("textOverlaySpecs")
+  })
+})
+
+describe("overlay visual picker (Sandra's 2026-07-02 feedback)", () => {
+  it("exposes headline words as tappable chips with markers stripped", () => {
+    expect(getOverlayMarkableWords("Look *expensive* without trying")).toEqual([
+      { text: "Look", marked: false },
+      { text: "expensive", marked: true },
+      { text: "without", marked: false },
+      { text: "trying", marked: false },
+    ])
+    expect(getOverlayMarkableWords("")).toEqual([])
+  })
+
+  it("toggleMarkedWord marks and unmarks a word in *asterisk* format", () => {
+    expect(toggleMarkedWord("look expensive without trying", 1)).toBe(
+      "look *expensive* without trying"
+    )
+    expect(toggleMarkedWord("look *expensive* without trying", 1)).toBe(
+      "look expensive without trying"
+    )
+  })
+
+  it("toggleMarkedWord merges adjacent taps into one contiguous phrase", () => {
+    expect(toggleMarkedWord("look *expensive* without trying", 2)).toBe(
+      "look *expensive without* trying"
+    )
+    expect(toggleMarkedWord("look *expensive* without trying", 0)).toBe(
+      "*look expensive* without trying"
+    )
+  })
+
+  it("toggleMarkedWord enforces a single contiguous phrase", () => {
+    // Tapping a word away from the phrase MOVES the mark there (never two phrases).
+    expect(toggleMarkedWord("*look* expensive without trying", 3)).toBe(
+      "look expensive without *trying*"
+    )
+    // Untapping an inner word keeps one side, never a split mark.
+    const split = toggleMarkedWord("*look expensive without* trying", 1)
+    expect(split).toBe("*look* expensive without trying")
+    expect((split.match(/\*/g) ?? []).length).toBe(2)
+    // Out-of-range taps are a no-op.
+    expect(toggleMarkedWord("look expensive", 9)).toBe("look expensive")
+    expect(toggleMarkedWord("look expensive", -1)).toBe("look expensive")
+  })
+
+  it("renders the style picker as live mini previews on the member's own image", () => {
+    const editor = readFileSync("components/app-v3/text-overlay-layer.tsx", "utf8")
+    // The editor receives the generated image and previews every preset on it.
+    expect(editor).toContain("imageUrl: string")
+    expect(editor).toContain("OVERLAY_STYLE_PRESETS.map")
+    expect(editor).toContain("<TextOverlayLayer spec={previewSpec} />")
+    expect(editor).toContain("src={imageUrl}")
+    // No invisible title-attribute hints; no asterisk-typing instructions.
+    expect(editor).not.toContain("title={style.hint}")
+    expect(editor).not.toContain("Star one phrase")
+    // Tap-to-highlight chips are wired for marked-phrase styles.
+    expect(editor).toContain("toggleMarkedWord")
+    expect(editor).toContain("getOverlayMarkableWords")
+  })
+
+  it("passes the real image URL through from both editor call sites", () => {
+    const card = readFileSync("components/app-v3/concept-card.tsx", "utf8")
+    expect(card).toContain("imageUrl={images[0]}")
+    const lightbox = readFileSync("components/app-v3/image-lightbox.tsx", "utf8")
+    expect(lightbox).toContain("imageUrl={url}")
   })
 })
