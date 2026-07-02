@@ -115,6 +115,9 @@ describe("Shoot Studio publish pipeline", () => {
     expect(route).not.toContain("renderShootDraft")
     expect(client).toContain("renderDraftShots(data.shoot)")
     expect(client).toContain("async function readJson(response: Response)")
+    // A reload kills the in-tab render queue, so mount must resume recent unrendered shoots.
+    expect(client).toContain("renderingShootsRef")
+    expect(client).toContain("void renderDraftShots(shoot)")
     expect(generator).toContain("One or more selected selfies could not be used")
     expect(generator).toContain("FIRST attached inspiration image as the primary guide")
     expect(generator).toContain("SHOT 1 NON-NEGOTIABLE")

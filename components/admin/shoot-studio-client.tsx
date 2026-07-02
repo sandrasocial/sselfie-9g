@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { Shoot, ShootShot } from "@/lib/content-kit/types"
 import { getShootPublishReadiness } from "@/lib/content-kit/shoot-readiness"
 
@@ -509,6 +509,23 @@ export function ShootStudioClient({
   const [error, setError] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const selfieInput = useRef<HTMLInputElement>(null)
+  const renderingShootsRef = useRef<Set<number>>(new Set())
+
+  // The render queue lives in this tab, so a reload (or a tab closed mid-render) strands a
+  // fresh shoot with empty cards. On mount, resume rendering for recent shoots that still
+  // have unrendered shots (recent only - old abandoned drafts shouldn't silently burn cost).
+  useEffect(() => {
+    const cutoff = Date.now() - 60 * 60 * 1000
+    for (const shoot of initialShoots) {
+      const pending = shoot.shots.some((shot) => !shot.imageUrl)
+      const fresh = new Date(shoot.createdAt).getTime() > cutoff
+      if (pending && fresh && !renderingShootsRef.current.has(shoot.id)) {
+        renderingShootsRef.current.add(shoot.id)
+        void renderDraftShots(shoot)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function uploadInspiration(files: FileList | null) {
     if (!files || files.length === 0) return
@@ -625,8 +642,13 @@ export function ShootStudioClient({
   }
 
   async function renderDraftShots(shoot: Shoot) {
+    renderingShootsRef.current.add(shoot.id)
+    let failed = 0
     const applyShot = (rendered: ShootShot | null, shotId: string) => {
-      if (!rendered) return
+      if (!rendered) {
+        failed += 1
+        return
+      }
       setShoots((current) =>
         current.map((item) =>
           item.id === shoot.id
@@ -652,6 +674,12 @@ export function ShootStudioClient({
         }
       })
     )
+    renderingShootsRef.current.delete(shoot.id)
+    if (failed > 0) {
+      setError(
+        `${failed} photo${failed > 1 ? "s" : ""} didn't render. Hit re-roll on the empty card${failed > 1 ? "s" : ""}.`
+      )
+    }
   }
 
   function updateShoot(next: Shoot) {
