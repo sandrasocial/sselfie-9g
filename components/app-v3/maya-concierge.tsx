@@ -22,6 +22,7 @@ import { Markdown } from "./markdown"
 import { TypingDots } from "./loading"
 import { ImageLightbox } from "./image-lightbox"
 import { CreditModal } from "./credit-modal"
+import { TrialCapOffer } from "./trial-cap-offer"
 import { ReferenceLibraryModal } from "./reference-library-modal"
 import { ChatHistoryModal } from "./chat-history-modal"
 import { MemoryModal, type Memory } from "./memory-modal"
@@ -351,6 +352,16 @@ export function MayaConcierge({
     open: false,
     balance: null,
   })
+  // TRIAL-CAP-01: a blocked trial user sees the membership offer (her photos are the proof),
+  // never the top-up modal. Members keep the credits path.
+  const [trialCapOpen, setTrialCapOpen] = useState(false)
+  const showCreditBlock = (balance: number | null) => {
+    if (cohort === "trial") setTrialCapOpen(true)
+    else setCreditModal({ open: true, balance })
+  }
+  const showTrialCapIfDepleted = (balance: unknown) => {
+    if (cohort === "trial" && typeof balance === "number" && balance <= 0) setTrialCapOpen(true)
+  }
   // Past-selfie picker.
   const [libraryOpen, setLibraryOpen] = useState(false)
   // Header overflow menu (New chat / History / Memory live here, not as stacked buttons).
@@ -847,14 +858,17 @@ export function MayaConcierge({
           error?: string
           code?: string
           current?: number
+          newBalance?: number
         } | null
 
         if (startRes.status === 402 || startData?.code === "insufficient_credits") {
           setGenState(s => ({ ...s, [key]: { status: "idle" } }))
-          setCreditModal({
-            open: true,
-            balance: typeof startData?.current === "number" ? startData.current : null,
-          })
+          showCreditBlock(typeof startData?.current === "number" ? startData.current : null)
+          return
+        }
+        if (startData?.code === "generation_locked" && cohort === "trial") {
+          setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+          setTrialCapOpen(true)
           return
         }
 
@@ -865,6 +879,7 @@ export function MayaConcierge({
         const videoUrl = await pollVideoGeneration(startData.predictionId, startData.videoId)
         setGenState(s => ({ ...s, [key]: { status: "done", videoUrl } }))
         setGeneratedOnce(true)
+        showTrialCapIfDepleted(startData.newBalance)
         return
       }
 
@@ -889,10 +904,12 @@ export function MayaConcierge({
 
         if (startRes.status === 402 || startData?.code === "insufficient_credits") {
           setGenState(s => ({ ...s, [key]: { status: "idle" } }))
-          setCreditModal({
-            open: true,
-            balance: typeof startData?.current === "number" ? startData.current : null,
-          })
+          showCreditBlock(typeof startData?.current === "number" ? startData.current : null)
+          return
+        }
+        if (startData?.code === "generation_locked" && cohort === "trial") {
+          setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+          setTrialCapOpen(true)
           return
         }
 
@@ -946,6 +963,7 @@ export function MayaConcierge({
               aiImageId?: number | null
               aiImageIds?: Array<number | null>
               error?: string
+              newBalance?: number
             } | null = null
             try {
               evt = JSON.parse(line.slice(6))
@@ -970,6 +988,7 @@ export function MayaConcierge({
                 },
               }))
               setGeneratedOnce(true)
+              showTrialCapIfDepleted(evt.newBalance)
               settled = true
             } else if (evt?.type === "error") {
               setGenState(s => ({
@@ -994,14 +1013,17 @@ export function MayaConcierge({
         error?: string
         code?: string
         current?: number
+        newBalance?: number
       } | null
       if (res.status === 402 || data?.code === "insufficient_credits") {
-        // Graceful path: reset the card and open the top-up modal instead of a raw error.
+        // Graceful path: reset the card and open the right offer instead of a raw error.
         setGenState(s => ({ ...s, [key]: { status: "idle" } }))
-        setCreditModal({
-          open: true,
-          balance: typeof data?.current === "number" ? data.current : null,
-        })
+        showCreditBlock(typeof data?.current === "number" ? data.current : null)
+        return
+      }
+      if (data?.code === "generation_locked" && cohort === "trial") {
+        setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+        setTrialCapOpen(true)
         return
       }
       const urls =
@@ -1021,6 +1043,7 @@ export function MayaConcierge({
         },
       }))
       setGeneratedOnce(true) // unlocks the gentle "tell Maya about your brand" moment (value first)
+      showTrialCapIfDepleted(data?.newBalance)
     } catch (e) {
       setGenState(s => ({
         ...s,
@@ -1070,13 +1093,16 @@ export function MayaConcierge({
         error?: string
         code?: string
         current?: number
+        newBalance?: number
       } | null
       if (res.status === 402 || data?.code === "insufficient_credits") {
         setGenState(s => ({ ...s, [key]: { status: "idle" } }))
-        setCreditModal({
-          open: true,
-          balance: typeof data?.current === "number" ? data.current : null,
-        })
+        showCreditBlock(typeof data?.current === "number" ? data.current : null)
+        return
+      }
+      if (data?.code === "generation_locked" && cohort === "trial") {
+        setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+        setTrialCapOpen(true)
         return
       }
       const urls =
@@ -1096,6 +1122,7 @@ export function MayaConcierge({
         },
       }))
       setGeneratedOnce(true)
+      showTrialCapIfDepleted(data?.newBalance)
     } catch (e) {
       setGenState(s => ({
         ...s,
@@ -2162,6 +2189,8 @@ export function MayaConcierge({
         onClose={() => setCreditModal({ open: false, balance: null })}
       />
 
+      <TrialCapOffer open={trialCapOpen} onClose={() => setTrialCapOpen(false)} />
+
       <ReferenceLibraryModal
         open={libraryOpen}
         onClose={() => setLibraryOpen(false)}
@@ -2189,6 +2218,10 @@ export function MayaConcierge({
           imageUrl={editTarget.url}
           format={editTarget.format}
           onClose={() => setEditTarget(null)}
+          onCreditBlock={balance => {
+            setEditTarget(null)
+            showCreditBlock(balance)
+          }}
           onResult={newUrl =>
             setGenState(s => {
               const prev = s[editTarget.key]?.imageUrls ?? []
