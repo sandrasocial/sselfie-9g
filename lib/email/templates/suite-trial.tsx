@@ -206,6 +206,62 @@ Sandra`
   return { html, text, subject }
 }
 
+// TRIAL-CAP-01: one-time "trial credits used up" email. She burned all 20 credits, which is
+// the moment of maximum demonstrated value, and until now nothing asked for the upgrade.
+// Sent from the suite-trial-expiry cron, gated by TRIAL_CAP_UPGRADE_EMAIL_ENABLED, idempotent
+// via email_logs (email_type below, status IN sent/delivered/suppressed).
+export const TRIAL_CAP_UPGRADE_EMAIL_TYPE = "trial-cap-upgrade"
+
+export function generateTrialCapUpgradeEmail(params: {
+  customerName?: string | null
+  customerEmail: string
+}): { html: string; text: string; subject: string } {
+  const { customerName, customerEmail } = params
+  const name = getFirstNameForEmail({ fullName: customerName, email: customerEmail })
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+  const joinUrl = `${siteUrl}/checkout/membership?interval=month&source=trial_cap_email&utm_source=email&utm_medium=email&utm_campaign=trial_cap_upgrade`
+  const galleryUrl = `${siteUrl}/app`
+  const subject = "You used all 20. I love that"
+
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">I noticed something today. You used every single trial credit. All 20 photos.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Go look at them again. Every one started from your selfie, and it's still you. Not a filter. Not some AI stranger. You, in photos you'd actually post.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That's exactly what I built this for.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you want to keep going, the SUITE is the next step: 200 credits a month, every look I make, and Maya remembers what feels like you. It's &euro;97 a month, cancel anytime.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Keep creating with Maya", joinUrl)}</div>
+    <p style="margin:0;font-size:16px;line-height:1.75;">And if now's not the moment, that's okay. Your photos are yours to keep either way.</p>
+  `
+
+  const html = renderStoneShell({
+    title: "Look what you made",
+    eyebrow: "SSELFIE SUITE",
+    bodyHtml,
+  })
+
+  const text = `SSELFIE SUITE
+
+Hey ${name},
+
+I noticed something today. You used every single trial credit. All 20 photos.
+
+Go look at them again: ${galleryUrl}
+
+Every one started from your selfie, and it's still you. Not a filter. Not some AI stranger. You, in photos you'd actually post.
+
+That's exactly what I built this for.
+
+If you want to keep going, the SUITE is the next step: 200 credits a month, every look I make, and Maya remembers what feels like you. It's €97 a month, cancel anytime.
+
+Keep creating with Maya: ${joinUrl}
+
+And if now's not the moment, that's okay. Your photos are yours to keep either way.
+
+Sandra`
+
+  return { html, text, subject }
+}
+
 export function generateTrialEndedEmail(params: {
   customerName?: string | null
   customerEmail: string

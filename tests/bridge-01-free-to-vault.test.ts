@@ -54,9 +54,9 @@ describe("BRIDGE-01 free prompts to Vault bridge", () => {
   it("renders the approved day 1 Vault bridge email with checkout attribution", () => {
     const email = generateAiPromptsDay1VaultBridgeEmail({ firstName: "Sandra" })
 
-    expect(email.subject).toBe("babe did your first shot actually look like you?")
+    expect(email.subject).toBe("you're not unphotogenic, babe")
     expect(email.text).toContain("Hi Sandra,")
-    expect(email.text).toContain("the free prompt was one look. The Vault is the full shoot")
+    expect(email.text).toContain("The Vault is the rest of the directions")
     expect(email.text).toContain("/checkout/prompt-vault")
     expect(email.text).toContain("email_type=ai-prompts-day1-vault-bridge")
     expect(email.text).not.toContain("www.sselfie.ai/prompt-vault?")
@@ -76,8 +76,8 @@ describe("BRIDGE-01 free prompts to Vault bridge", () => {
       recipientEmail: "sandra@example.com",
     })
 
-    expect(day7.subject).toBe("that was 1 of 92, babe 👀")
-    expect(day7.text).toContain("The Vault has ten of those worlds. 92 shots, start to finish.")
+    expect(day7.subject).toBe("that was just shot 1, babe 👀")
+    expect(day7.text).toContain("The Vault holds every one of those worlds")
     expect(day7.text).toContain("Get the Vault · $27 · one time:")
     expect(day7.text).toContain("email_type=ai-prompts-day7-prompt-vault-offer")
 
@@ -91,7 +91,7 @@ describe("BRIDGE-01 free prompts to Vault bridge", () => {
     expect(day9.text).toContain("email_type=ai-prompts-day9-prompt-vault-proof")
 
     expect(day11.subject).toBe("your camera roll's still waiting on the full shoot")
-    expect(day11.text).toContain("The Vault is $27. One time. Ten full worlds, 92 shots")
+    expect(day11.text).toContain("The Vault is $27. One time. Every editorial world I've shot")
     expect(day11.text).toContain("email_type=ai-prompts-day11-prompt-vault-why-now")
 
     expect(`${day7.text}\n${day9.text}\n${day11.text}`).not.toContain("—")

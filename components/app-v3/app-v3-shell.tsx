@@ -33,6 +33,8 @@ export interface AppV3ShellProps {
   initialSection?: AppV3Section
   /** True when the member has a completed, non-test trained model (legacy /studio entry point). */
   hasTrainedModel?: boolean
+  /** VIDEO reliability kill switch: false hides the Video tile + gallery motion entry. */
+  videoEnabled?: boolean
 }
 
 const NAV: { id: AppV3Section; label: string }[] = [
@@ -74,6 +76,7 @@ function ShellInner({
   trialHasSavedSelfie = false,
   initialSection = "create",
   hasTrainedModel = false,
+  videoEnabled = true,
 }: AppV3ShellProps) {
   const [section, setSection] = useState<AppV3Section>(initialSection)
   const { openWithAesthetic } = useConcierge()
@@ -162,7 +165,11 @@ function ShellInner({
         (limited ? (
           <div className="relative">
             <div className="pointer-events-none select-none opacity-60" aria-hidden>
-              <VisualFrontDoor cohort={cohort} hasSelfie={trialHasSavedSelfie} />
+              <VisualFrontDoor
+                cohort={cohort}
+                hasSelfie={trialHasSavedSelfie}
+                videoEnabled={videoEnabled}
+              />
             </div>
             <div className="absolute inset-x-0 top-0 z-10 mx-auto max-w-3xl px-5 pt-10">
               <div className="rounded-[8px] border border-[#0D0E10] bg-white p-5 shadow-sm">
@@ -193,11 +200,12 @@ function ShellInner({
             onUseTrainedModel={createWithTrainedModel}
             cohort={cohort}
             hasSelfie={trialHasSavedSelfie}
+            videoEnabled={videoEnabled}
           />
         ))}
       {section === "photos" && (
         <GalleryView
-          onMakeMotion={createMotionFromImage}
+          onMakeMotion={videoEnabled ? createMotionFromImage : undefined}
           onStartCreate={limited ? undefined : () => createFormat("photo")}
         />
       )}
@@ -256,6 +264,7 @@ export function AppV3Shell({
   trialHasSavedSelfie,
   initialSection,
   hasTrainedModel,
+  videoEnabled,
 }: AppV3ShellProps) {
   return (
     <ConciergeProvider>
@@ -268,6 +277,7 @@ export function AppV3Shell({
         trialHasSavedSelfie={trialHasSavedSelfie}
         initialSection={initialSection}
         hasTrainedModel={hasTrainedModel}
+        videoEnabled={videoEnabled}
       />
     </ConciergeProvider>
   )

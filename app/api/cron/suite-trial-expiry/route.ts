@@ -2,7 +2,9 @@
 //
 // 1. No-first-image nudge for active trials 36h+ in with no trial_first_generation.
 // 2. Day-5 reminder ("2 days left") to active trials ending within 2 days.
-// 3. Expiry: flips overdue suite_trial rows to status='expired', zeroes the unspent part
+// 3. TRIAL-CAP-01 (env-gated TRIAL_CAP_UPGRADE_EMAIL_ENABLED): one-time upgrade email the
+//    moment a trial has burned the full 20-credit grant. Non-members only.
+// 4. Expiry: flips overdue suite_trial rows to status='expired', zeroes the unspent part
 //    of the 20-credit trial grant (credit_transactions type 'trial_expiry'), and sends the
 //    trial-ended email.
 //
@@ -15,9 +17,11 @@ import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
 import {
+  generateTrialCapUpgradeEmail,
   generateTrialDay5Email,
   generateTrialEndedEmail,
   generateTrialNoFirstImageEmail,
+  TRIAL_CAP_UPGRADE_EMAIL_TYPE,
 } from "@/lib/email/templates/suite-trial"
 import { TRIAL_CREDITS } from "@/lib/trial/suite-trial"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
@@ -60,6 +64,7 @@ export async function GET(request: Request) {
     const results = {
       noFirstImage: { sent: 0, failed: 0, skipped: 0 },
       day5: { sent: 0, failed: 0, skipped: 0 },
+      trialCap: { enabled: false, sent: 0, failed: 0, skipped: 0 },
       expired: { flipped: 0, creditsZeroed: 0, emailed: 0, failed: 0 },
     }
 
@@ -156,6 +161,85 @@ export async function GET(request: Request) {
       } catch (e) {
         console.error(`[suite-trial-expiry] day-5 send failed for ${trial.email}:`, e)
         results.day5.failed++
+      }
+    }
+
+    // ── TRIAL-CAP-01: credits exhausted = maximum demonstrated value. One-time upgrade
+    //    email at that moment. Gated by TRIAL_CAP_UPGRADE_EMAIL_ENABLED (default OFF).
+    //    Candidates: trial users (active, or recently expired for the backlog of engaged
+    //    trials that burned all 20 and lapsed) who used the full trial grant and hold no
+    //    active membership. The 'trial_expiry' zeroing transaction is excluded from the
+    //    usage sum so expired trials don't all look exhausted. Idempotent forever per user
+    //    via email_logs (status IN sent/delivered/suppressed). Rows flipping to expired in
+    //    THIS run are deferred to the next run so nobody gets two emails at once. ──
+    results.trialCap.enabled = process.env.TRIAL_CAP_UPGRADE_EMAIL_ENABLED === "true"
+    if (results.trialCap.enabled) {
+      const cappedTrials = await sql`
+        SELECT s.user_id, u.email, u.display_name
+        FROM subscriptions s
+        JOIN users u ON u.id = s.user_id
+        WHERE s.product_type = 'suite_trial'
+          AND s.status IN ('active', 'expired')
+          AND s.created_at > NOW() - INTERVAL '60 days'
+          AND (s.status = 'expired' OR s.trial_ends_at > NOW())
+          AND u.email IS NOT NULL
+          AND u.email NOT ILIKE '%@sselfie.ai'
+          AND COALESCE(u.display_name, '') <> 'Smoke User'
+          AND NOT EXISTS (
+            SELECT 1 FROM subscriptions m
+            WHERE m.user_id = s.user_id
+              AND m.product_type = 'sselfie_studio_membership'
+              AND m.status = 'active'
+            LIMIT 1
+          )
+          AND (
+            SELECT COALESCE(ABS(SUM(ct.amount)), 0)
+            FROM credit_transactions ct
+            WHERE ct.user_id::text = s.user_id::text
+              AND ct.amount < 0
+              AND ct.transaction_type <> 'trial_expiry'
+              AND ct.created_at >= (
+                SELECT MIN(g.created_at) FROM credit_transactions g
+                WHERE g.user_id::text = s.user_id::text AND g.transaction_type = 'trial_grant'
+              )
+          ) >= ${TRIAL_CREDITS}
+      `
+
+      for (const trial of cappedTrials) {
+        try {
+          const prior = await sql`
+            SELECT 1 FROM email_logs
+            WHERE LOWER(user_email) = LOWER(${trial.email})
+              AND email_type = ${TRIAL_CAP_UPGRADE_EMAIL_TYPE}
+              AND status IN ('sent', 'delivered', 'suppressed')
+            LIMIT 1
+          `
+          if (prior.length > 0) {
+            results.trialCap.skipped++
+            continue
+          }
+          const email = generateTrialCapUpgradeEmail({
+            customerName: trial.display_name,
+            customerEmail: trial.email,
+          })
+          const result = await sendEmail({
+            to: trial.email,
+            subject: email.subject,
+            html: email.html,
+            text: email.text,
+            emailType: TRIAL_CAP_UPGRADE_EMAIL_TYPE,
+            from: EMAIL_CONFIG.marketing.from,
+            replyTo: EMAIL_CONFIG.marketing.replyTo,
+            tags: ["suite-trial", "trial-cap-upgrade"],
+            marketing: true,
+          })
+          if (result.success) results.trialCap.sent++
+          else results.trialCap.failed++
+          await new Promise((r) => setTimeout(r, 150))
+        } catch (e) {
+          console.error(`[suite-trial-expiry] trial-cap send failed for ${trial.email}:`, e)
+          results.trialCap.failed++
+        }
       }
     }
 

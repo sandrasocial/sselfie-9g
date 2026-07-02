@@ -4,6 +4,7 @@ import {
   estimateToolDispatchCredits,
   orchestrateMayaTurn,
 } from "@/lib/maya/tool-orchestrator"
+import { CREDIT_COSTS } from "@/lib/credits"
 
 describe("orchestrateMayaTurn", () => {
   it("prioritizes remember commands over other actions", () => {
@@ -103,7 +104,7 @@ describe("orchestrateMayaTurn", () => {
     if (result.kind === "tool_dispatch") {
       expect(result.intent.tool).toBe("generate_video")
       expect(result.intent.responseText).toContain("[GENERATE_VIDEO]")
-      expect(result.estimatedCredits).toBe(3)
+      expect(result.estimatedCredits).toBe(CREDIT_COSTS.ANIMATION)
     }
   })
 
@@ -243,6 +244,6 @@ describe("estimateToolDispatchCredits", () => {
         tool: "generate_video",
         responseText: "x",
       }),
-    ).toBe(3)
+    ).toBe(CREDIT_COSTS.ANIMATION)
   })
 })

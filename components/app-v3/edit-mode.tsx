@@ -18,6 +18,10 @@ interface EditModeProps {
   format: OutputFormat
   onClose: () => void
   onResult: (newUrl: string) => void
+  /** TRIAL-CAP-01: called when the edit is blocked for credits, so the parent can show the
+   * right offer (trial-cap membership offer for trials, top-up for members) instead of a
+   * dead error string. */
+  onCreditBlock?: (balance: number | null) => void
 }
 
 // Branded look presets (re-grade the whole image to a SSELFIE aesthetic).
@@ -64,7 +68,7 @@ const QUICK_EDITS: { label: string; instruction: string }[] = [
   { label: "Black & white", instruction: "convert to a rich editorial black and white" },
 ]
 
-export function EditMode({ imageUrl, format, onClose, onResult }: EditModeProps) {
+export function EditMode({ imageUrl, format, onClose, onResult, onCreditBlock }: EditModeProps) {
   const [current, setCurrent] = useState(imageUrl)
   const [instruction, setInstruction] = useState("")
   const [busy, setBusy] = useState(false)
@@ -84,7 +88,18 @@ export function EditMode({ imageUrl, format, onClose, onResult }: EditModeProps)
       const data = (await res.json().catch(() => null)) as {
         imageUrl?: string
         error?: string
+        code?: string
+        current?: number
       } | null
+      if (
+        onCreditBlock &&
+        (res.status === 402 ||
+          data?.code === "insufficient_credits" ||
+          data?.code === "generation_locked")
+      ) {
+        onCreditBlock(typeof data?.current === "number" ? data.current : null)
+        return
+      }
       if (!res.ok || !data?.imageUrl) throw new Error(data?.error || "Couldn't make that change.")
       setCurrent(data.imageUrl)
       setInstruction("")
