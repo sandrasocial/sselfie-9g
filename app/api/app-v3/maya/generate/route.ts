@@ -45,8 +45,10 @@ import {
 import {
   isTextOverlayLayerEnabled,
   makeTextOverlaySpec,
+  OVERLAY_STYLE_PRESETS,
   type TextOverlaySpec,
 } from "@/lib/app-v3/text-overlay"
+import { buildBakePrompt } from "@/lib/app-v3/text-bake"
 import {
   buildLikenessPromptBlock,
   isLikenessMemoryEnabled,
@@ -88,6 +90,7 @@ const SHOOT_SHOT_ROLES = new Set<ShootShotRole>([
 // for cost control (trials grant 20 images; high would ~4x the cost). High quality is reserved for
 // admin content only. APP_V3_IMAGE_QUALITY can still override per environment.
 type ImgQuality = "low" | "medium" | "high"
+type OpenAIImageEditResponse = { data?: Array<{ b64_json?: string | null }> }
 const QUALITY_OVERRIDE = process.env.APP_V3_IMAGE_QUALITY as ImgQuality | undefined
 function qualityForFormat(_format: OutputFormat): ImgQuality {
   if (QUALITY_OVERRIDE === "low" || QUALITY_OVERRIDE === "medium" || QUALITY_OVERRIDE === "high")
@@ -159,6 +162,7 @@ function buildAppGraphicRedesignJobs({
   referenceUrls,
   inspirationReferenceUrl,
   textOverlayEnabled,
+  overlayStyleOverride,
 }: {
   brief: CreativeBrief
   format: OutputFormat
@@ -166,6 +170,8 @@ function buildAppGraphicRedesignJobs({
   referenceUrls: string[]
   inspirationReferenceUrl?: string
   textOverlayEnabled?: boolean
+  /** MAYA-GUIDED-TEXT-01: the member's tapped template. Wins over Maya's per-concept pick. */
+  overlayStyleOverride?: string | null
 }): AppGraphicRedesignJob[] {
   const category = categoryForGraphicFormat(format)
   const topic = topicForGraphicBrief(brief, format, conceptTitle)
@@ -188,7 +194,7 @@ function buildAppGraphicRedesignJobs({
                 ? format
                 : "carousel",
             designSystem: brief.graphic?.designSystem,
-            overlayStyle: brief.graphic?.overlayStyle,
+            overlayStyle: overlayStyleOverride ?? brief.graphic?.overlayStyle,
             emotion: brief.mood,
           })
         : undefined,
@@ -530,6 +536,15 @@ export async function POST(request: NextRequest) {
         })
         jobs = photoshootJobs.map(item => item.job)
       } else if (isRedesignGraphicFormat(format)) {
+        // MAYA-GUIDED-TEXT-01: the member's tapped template rides the request; only known
+        // preset ids are honored (anything else falls back to Maya's per-concept pick).
+        const requestedOverlayStyle =
+          typeof (body as { overlayStyle?: unknown }).overlayStyle === "string" &&
+          OVERLAY_STYLE_PRESETS.some(
+            preset => preset.id === (body as { overlayStyle?: string }).overlayStyle
+          )
+            ? ((body as { overlayStyle?: string }).overlayStyle as string)
+            : null
         graphicJobs = buildAppGraphicRedesignJobs({
           brief,
           format,
@@ -537,6 +552,7 @@ export async function POST(request: NextRequest) {
           referenceUrls,
           inspirationReferenceUrl: inspirationReferenceUrl ?? undefined,
           textOverlayEnabled,
+          overlayStyleOverride: requestedOverlayStyle,
         })
         graphicStyle = await pickContentStyleReference(
           categoryForGraphicFormat(format),
@@ -1145,16 +1161,110 @@ export async function POST(request: NextRequest) {
     const textOverlaySpecs = graphicJobs
       .map(job => job.textOverlaySpec)
       .filter((spec): spec is TextOverlaySpec => Boolean(spec))
+
+    // ── MAYA-GUIDED-TEXT-01: one-step baked generation. When the client asks for autoBake,
+    // the same request bakes each slide's text treatment onto its CLEAN render (ONE
+    // openai.images.edit pass per image, buildBakePrompt, same rules as the bake route).
+    // BOTH URLs come back: baked is what she sees, clean stays stored forever so "remove
+    // text" is a free swap and every re-style starts from the clean source.
+    //
+    // Credits: the bake leg is a SECOND deduction (1 IMAGE per baked image), mirroring the
+    // standalone bake route. It never blocks the generation result: insufficient credits
+    // skips the bake (clean + CSS layer still work), and any failed bake leg is refunded.
+    let bakedImageUrls: Array<string | null> | null = null
+    let bakeCreditsDeducted = 0
+    let responseBalance = deduction.newBalance
+    const wantsAutoBake =
+      (body as { autoBake?: unknown }).autoBake === true &&
+      textOverlayEnabled &&
+      graphicJobs.length > 0 &&
+      textOverlaySpecs.length === buffers.length
+    if (wantsAutoBake) {
+      const bakeCost = CREDIT_COSTS.IMAGE * buffers.length
+      const canBake = await checkCredits(neonUser.id, bakeCost).catch(() => false)
+      if (canBake) {
+        const bakeDeduction = await deductCredits(
+          neonUser.id,
+          bakeCost,
+          "image",
+          `app-v3 ${format} auto bake: ${label}`
+        )
+        if (bakeDeduction.success) {
+          responseBalance = bakeDeduction.newBalance
+          const bakeRefundRef = `app-v3-auto-bake-fail-${neonUser.id}-${Date.now()}`
+          const bakeStamp = Date.now()
+          bakedImageUrls = await Promise.all(
+            buffers.map(async (cleanBuffer, index): Promise<string | null> => {
+              const spec = textOverlaySpecs[index]
+              try {
+                // ONE pass on the clean render (never a previous baked result, no retries).
+                const bakeSource = await toFile(cleanBuffer, `maya-bake-source-${index}.png`, {
+                  type: "image/png",
+                })
+                const bakeResponse = (await openai.images.edit({
+                  model: OPENAI_IMAGE_MODEL,
+                  image: bakeSource,
+                  prompt: buildBakePrompt(spec),
+                  n: 1,
+                  size,
+                  quality: IMAGE_QUALITY,
+                  output_format: "png",
+                } as Parameters<typeof openai.images.edit>[0])) as unknown as OpenAIImageEditResponse
+                const b64 = bakeResponse.data?.[0]?.b64_json
+                if (!b64) throw new Error("No image data returned from OpenAI")
+                const blob = await put(
+                  `maya-app-v3/${neonUser.id}/bake-${bakeStamp}-${index}.png`,
+                  Buffer.from(b64, "base64"),
+                  { access: "public", contentType: "image/png" }
+                )
+                return blob.url
+              } catch (bakeError) {
+                console.error(`[app-v3 generate] auto bake failed (image ${index}):`, bakeError)
+                return null
+              }
+            })
+          )
+          const failedBakes = bakedImageUrls.filter(url => url === null).length
+          if (failedBakes > 0) {
+            // Refund only the failed legs: those images fall back to clean + CSS layer.
+            await refundCredits(
+              neonUser.id,
+              CREDIT_COSTS.IMAGE * failedBakes,
+              "Auto text bake failed",
+              bakeRefundRef
+            ).catch(() => {})
+            import("@/lib/analytics/events")
+              .then(({ logAnalyticsEvent }) =>
+                logAnalyticsEvent({
+                  eventName: "suite_text_bake_failed",
+                  userId: String(neonUser.id),
+                  properties: {
+                    source: "app-v3-generate-auto-bake",
+                    format,
+                    failed: failedBakes,
+                    total: buffers.length,
+                  },
+                })
+              )
+              .catch(() => {})
+          }
+          bakeCreditsDeducted = CREDIT_COSTS.IMAGE * (buffers.length - failedBakes)
+          if (bakedImageUrls.every(url => url === null)) bakedImageUrls = null
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       imageUrl: imageUrls[0],
       imageUrls,
       ...(textOverlaySpecs.length ? { textOverlaySpecs } : {}),
+      ...(bakedImageUrls ? { bakedImageUrls } : {}),
       imageCount: imageUrls.length,
       aiImageId: persisted[0]?.id ?? null,
       aiImageIds: persisted.map(p => p.id),
-      creditsDeducted: totalCost,
-      newBalance: deduction.newBalance,
+      creditsDeducted: totalCost + bakeCreditsDeducted,
+      newBalance: responseBalance,
     })
   } catch (error) {
     console.error("[app-v3 generate] Unexpected error:", error)

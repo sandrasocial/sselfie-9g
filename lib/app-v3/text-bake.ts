@@ -121,11 +121,31 @@ function positionGuidance(spec: TextOverlaySpec): string {
   return "Place the text block in the lower third of the frame."
 }
 
+export interface BakePromptOptions {
+  /**
+   * MAYA-GUIDED-TEXT-01: an optional freeform member adjustment ("set all the text in red",
+   * "lighter, more minimal typography"), pre-sanitized by lib/app-v3/text-refinements.ts.
+   * It only ever steers the TYPE treatment; the identity rule still locks the photo.
+   */
+  styleAdjustments?: string
+}
+
+/** Flatten + cap an untrusted adjustments string before it rides inside the prompt. */
+export function sanitizeBakeStyleAdjustments(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const clean = value
+    .replace(/["\n\r]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 300)
+  return clean.length > 0 ? clean : null
+}
+
 /**
  * Build the ONE-pass gpt-image-2 bake prompt for a member's overlay spec. The input image is
  * always the CLEAN text-free base; the prompt adds the typography design and nothing else.
  */
-export function buildBakePrompt(spec: TextOverlaySpec): string {
+export function buildBakePrompt(spec: TextOverlaySpec, options?: BakePromptOptions): string {
   const preset = resolveOverlayStyle(spec.style)
   const directive = BAKE_STYLE_DIRECTIVES[preset.id]
   const headline = stripOverlayEmphasis(spec.headline)
@@ -162,6 +182,13 @@ export function buildBakePrompt(spec: TextOverlaySpec): string {
       `Circle ONLY the words "${sublinePhrase}" in the supporting line with one loose, imperfect ` +
         "hand-drawn ellipse in thin ink."
     )
+  }
+
+  // Member chat refinements ("make the text red", "thinner fonts") ride here. They may name
+  // colors beyond our UI tokens: her covers are her content, tokens govern our chrome only.
+  const adjustments = sanitizeBakeStyleAdjustments(options?.styleAdjustments)
+  if (adjustments) {
+    lines.push(`Member style adjustment for the TEXT TREATMENT ONLY (never the photo): ${adjustments}`)
   }
 
   lines.push(positionGuidance(spec))

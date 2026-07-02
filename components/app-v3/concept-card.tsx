@@ -7,6 +7,7 @@
 // success state: Use/Download primary, Regenerate secondary, "Ask Maya to tweak" tiny.
 
 import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
+import type { ReactNode } from "react"
 import type { OutputFormat } from "./types"
 import { Spinner } from "./loading"
 import { downloadImageWithOverlay, TextOverlayLayer } from "./text-overlay-layer"
@@ -43,6 +44,8 @@ interface ConceptCardProps {
   onEdit?: () => void
   /** Open the full-screen Text Studio on the finished image (TEXT-STUDIO-01). */
   onOpenTextStudio?: () => void
+  /** Replaces the single idle button when a guided picker should own the next step. */
+  idleAction?: ReactNode
   /** Admin-only prompt inspector asset id, e.g. ai_123. */
   promptAssetId?: string | null
   disabled?: boolean
@@ -66,6 +69,7 @@ export function ConceptCard({
   onOpen,
   onEdit,
   onOpenTextStudio,
+  idleAction,
   promptAssetId,
   disabled,
 }: ConceptCardProps) {
@@ -237,6 +241,8 @@ export function ConceptCard({
               Make another version
             </button>
           </div>
+        ) : idleAction ? (
+          idleAction
         ) : (
           <button
             type="button"

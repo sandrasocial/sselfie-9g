@@ -22,6 +22,7 @@ import { Markdown } from "./markdown"
 import { TypingDots } from "./loading"
 import { ImageLightbox } from "./image-lightbox"
 import { TextStudio } from "./text-studio"
+import { TextOverlayLayer } from "./text-overlay-layer"
 import { CreditModal } from "./credit-modal"
 import { TrialCapOffer } from "./trial-cap-offer"
 import { ReferenceLibraryModal } from "./reference-library-modal"
@@ -36,7 +37,20 @@ import {
 } from "@/lib/app-v3/custom-model-brief"
 import type { ServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
 import type { AppV3AnalyticsCohort, OutputFormat } from "./types"
-import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
+import {
+  OVERLAY_STYLE_PRESETS,
+  resolveOverlayStyle,
+  type OverlayFormat,
+  type OverlayStyleId,
+  type TextOverlaySpec,
+} from "@/lib/app-v3/text-overlay"
+import { getTextStyleExampleImage, textStyleSampleSpec } from "@/lib/app-v3/text-style-examples"
+import {
+  colorAdjustmentLine,
+  parseTextRefinement,
+  typographyAdjustmentLine,
+  type TextRefinement,
+} from "@/lib/app-v3/text-refinements"
 import {
   clearMayaDraft,
   readMayaDraftForSession,
@@ -58,6 +72,90 @@ function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
           {fallback}
         </span>
       )}
+    </div>
+  )
+}
+
+const STYLE_PREVIEW_BACKGROUNDS: Record<OverlayStyleId, string> = {
+  "editorial-serif-center": "/images/selfie-to-brand-shoot/module-5-content-use/detail-coffee.jpg",
+  "lower-third-accent": "/images/selfie-to-brand-shoot/module-5-content-use/creator-phone-detail.jpg",
+  "top-band-minimal": "/images/selfie-to-brand-shoot/module-5-content-use/quiet-product-detail.jpg",
+  "quote-statement": "/images/selfie-to-brand-shoot/module-5-content-use/detail-wine.jpg",
+  "series-cover": "/images/selfie-to-brand-shoot/module-5-content-use/lifestyle-work-laptop.jpg",
+  "cutout-editorial": "/images/selfie-to-brand-shoot/module-5-content-use/detail-coffee.jpg",
+}
+
+function isGraphicOutputFormat(format: OutputFormat): boolean {
+  return (
+    format === "reel-cover" ||
+    format === "story-slide" ||
+    format === "story-sequence" ||
+    format === "carousel"
+  )
+}
+
+function overlayFormatForOutput(format: OutputFormat): OverlayFormat {
+  if (format === "carousel") return "carousel"
+  if (format === "story-slide") return "story-slide"
+  if (format === "story-sequence") return "story-sequence"
+  return "reel-cover"
+}
+
+function TextStyleTemplatePicker({
+  format,
+  disabled,
+  onPick,
+}: {
+  format: OutputFormat
+  disabled?: boolean
+  onPick: (style: OverlayStyleId) => void
+}) {
+  const previewFormat = overlayFormatForOutput(format)
+  const frameClass = previewFormat === "carousel" ? "aspect-[4/5]" : "aspect-[9/16]"
+
+  return (
+    <div className="space-y-3 rounded-[8px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
+      <div>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-[#818283]">Maya pulled six looks</p>
+        <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
+          Tap the cover style that feels closest. Maya will bake the text into your image from the start.
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {OVERLAY_STYLE_PRESETS.map(preset => {
+          const exampleUrl = getTextStyleExampleImage(preset.id)
+          const fallbackUrl = STYLE_PREVIEW_BACKGROUNDS[preset.id]
+          const spec = textStyleSampleSpec(preset.id, previewFormat)
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => onPick(preset.id)}
+              disabled={disabled}
+              className="group min-w-0 rounded-[7px] border border-[#C5C6C8]/70 bg-white p-1.5 text-left transition hover:border-[#0D0E10] hover:bg-[#F1F2F2] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <div className={`relative overflow-hidden rounded-[5px] bg-[#0D0E10] ${frameClass}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={exampleUrl ?? fallbackUrl}
+                  alt=""
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-cover opacity-90 transition-transform duration-300 group-hover:scale-[1.02]"
+                />
+                {!exampleUrl && <TextOverlayLayer spec={spec} />}
+              </div>
+              <div className="min-w-0 px-1 pb-1 pt-2">
+                <p className="truncate font-serif text-[15px] leading-tight text-[#0D0E10]">
+                  {preset.name}
+                </p>
+                <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-[#818283]">
+                  {preset.hint}
+                </p>
+              </div>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -341,6 +439,9 @@ export function MayaConcierge({
   const [genState, setGenState] = useState<Record<string, ConceptGenState>>(
     () => restoredDraft?.genState ?? {}
   )
+  // MAYA-GUIDED-TEXT-01: "remove text" is an instant clean-image swap. Keep the previous
+  // baked render in memory so "put the text back" can restore it without another API call.
+  const hiddenBakedTextRef = useRef<Record<string, Array<string | null>>>({})
   // Fullscreen viewer: the set of image urls currently open (null = closed).
   const [lightbox, setLightbox] = useState<{
     key?: string
@@ -355,6 +456,7 @@ export function MayaConcierge({
   } | null>(null)
   // TEXT-STUDIO-01: which generated graphic the full-screen Text Studio is open on.
   const [textStudio, setTextStudio] = useState<{ key: string; index: number } | null>(null)
+  const [textRefining, setTextRefining] = useState(false)
   // Out-of-credits modal (opened when /generate returns 402).
   const [creditModal, setCreditModal] = useState<{ open: boolean; balance: number | null }>({
     open: false,
@@ -764,9 +866,14 @@ export function MayaConcierge({
     void fetch(`/api/app-v3/upload-selfie?slot=${slot}`, { method: "DELETE" }).catch(() => {})
   }
 
-  function handleSend() {
+  async function handleSend() {
     const text = input.trim()
-    if (!text || isThinking) return
+    if (!text || isThinking || textRefining) return
+    const refinement = parseTextRefinement(text)
+    if (refinement && (await applyTextRefinement(refinement))) {
+      setInput("")
+      return
+    }
     sendMessage({ text })
     setInput("")
   }
@@ -825,7 +932,8 @@ export function MayaConcierge({
   async function generateConcept(
     key: string,
     concept: ConceptCardData,
-    targetFormat: OutputFormat = format
+    targetFormat: OutputFormat = format,
+    overlayStyle?: OverlayStyleId | null
   ) {
     const canUseCustomModel = activeGenerationSource === "trained-model" && targetFormat === "photo"
 
@@ -931,6 +1039,7 @@ export function MayaConcierge({
         return
       }
 
+      const wantsBakedText = Boolean(overlayStyle && isGraphicOutputFormat(targetFormat))
       const res = await fetch("/api/app-v3/maya/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -943,8 +1052,11 @@ export function MayaConcierge({
           aestheticId: aesthetic.id,
           conceptTitle: concept.title,
           rerun,
+          ...(overlayStyle ? { overlayStyle } : {}),
+          ...(wantsBakedText ? { autoBake: true } : {}),
           // Single-image formats stream progressive previews; carousels keep the JSON path.
-          stream: targetFormat !== "carousel",
+          // Auto-baked text needs the JSON path so the baked URL returns with the clean base.
+          stream: wantsBakedText ? false : targetFormat !== "carousel",
         }),
       })
 
@@ -969,6 +1081,7 @@ export function MayaConcierge({
               b64?: string
               imageUrls?: string[]
               textOverlaySpecs?: TextOverlaySpec[]
+              bakedImageUrls?: Array<string | null>
               aiImageId?: number | null
               aiImageIds?: Array<number | null>
               error?: string
@@ -993,6 +1106,7 @@ export function MayaConcierge({
                   status: "done",
                   imageUrls: evt!.imageUrls,
                   textOverlaySpecs: evt!.textOverlaySpecs,
+                  bakedImageUrls: evt!.bakedImageUrls,
                   aiImageId: evt!.aiImageId ?? null,
                   aiImageIds: evt!.aiImageIds,
                 },
@@ -1019,6 +1133,7 @@ export function MayaConcierge({
         imageUrl?: string
         imageUrls?: string[]
         textOverlaySpecs?: TextOverlaySpec[]
+        bakedImageUrls?: Array<string | null>
         aiImageId?: number | null
         aiImageIds?: Array<number | null>
         error?: string
@@ -1050,6 +1165,7 @@ export function MayaConcierge({
           status: "done",
           imageUrls: urls,
           textOverlaySpecs: data?.textOverlaySpecs,
+          bakedImageUrls: data?.bakedImageUrls,
           aiImageId: data?.aiImageId ?? null,
           aiImageIds: data?.aiImageIds,
         },
@@ -1219,6 +1335,140 @@ export function MayaConcierge({
     setNameDraft("")
   }
 
+  type TextRefinementTarget = {
+    key: string
+    index: number
+    cleanImageUrl: string
+    spec: TextOverlaySpec
+    bakedUrl: string | null
+  }
+
+  function textTargetForKey(key: string, index = 0): TextRefinementTarget | null {
+    const gen = genState[key]
+    if (!gen || gen.status !== "done") return null
+    const cleanImageUrl = gen.imageUrls?.[index]
+    const spec = gen.textOverlaySpecs?.[index]
+    if (!cleanImageUrl || !spec) return null
+    return {
+      key,
+      index,
+      cleanImageUrl,
+      spec,
+      bakedUrl: gen.bakedImageUrls?.[index] ?? null,
+    }
+  }
+
+  function findTextRefinementTarget(): TextRefinementTarget | null {
+    if (textStudio) {
+      const target = textTargetForKey(textStudio.key, textStudio.index)
+      if (target) return target
+    }
+    if (lightbox?.key) {
+      const target = textTargetForKey(lightbox.key, 0)
+      if (target) return target
+    }
+    const entries = Object.keys(genState).reverse()
+    for (const key of entries) {
+      const gen = genState[key]
+      if (!gen?.imageUrls?.length) continue
+      for (let index = 0; index < gen.imageUrls.length; index += 1) {
+        const target = textTargetForKey(key, index)
+        if (target) return target
+      }
+    }
+    return null
+  }
+
+  async function applyTextRefinement(refinement: TextRefinement): Promise<boolean> {
+    const target = findTextRefinementTarget()
+    if (!target) return false
+
+    if (refinement.kind === "remove-text") {
+      const current = genState[target.key]
+      hiddenBakedTextRef.current[target.key] = [...(current?.bakedImageUrls ?? [])]
+      updateBakedImage(target.key, target.index, target.cleanImageUrl)
+      return true
+    }
+
+    if (refinement.kind === "restore-text") {
+      const cached = hiddenBakedTextRef.current[target.key]?.[target.index]
+      updateBakedImage(target.key, target.index, cached ?? null)
+      return true
+    }
+
+    let nextSpec = target.spec
+    let styleAdjustments: string | undefined
+    if (refinement.kind === "reword") {
+      nextSpec = { ...target.spec, headline: refinement.headline }
+    } else if (refinement.kind === "switch-style") {
+      const preset = resolveOverlayStyle(refinement.style)
+      nextSpec = {
+        ...target.spec,
+        style: preset.id,
+        position: preset.lockedPosition ?? preset.defaultPosition ?? target.spec.position,
+      }
+    } else if (refinement.kind === "color") {
+      styleAdjustments = colorAdjustmentLine(refinement.color)
+    } else if (refinement.kind === "adjust") {
+      styleAdjustments = typographyAdjustmentLine(refinement.instruction)
+    }
+
+    setTextRefining(true)
+    updateTextOverlaySpec(target.key, target.index, nextSpec)
+
+    try {
+      const res = await fetch("/api/app-v3/maya/bake-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cleanImageUrl: target.cleanImageUrl,
+          spec: nextSpec,
+          ...(styleAdjustments ? { styleAdjustments } : {}),
+        }),
+      })
+      const data = (await res.json().catch(() => null)) as
+        | {
+            bakedUrl?: string
+            error?: string
+            code?: string
+            current?: number
+            newBalance?: number
+          }
+        | null
+
+      if (res.status === 402 || data?.code === "insufficient_credits") {
+        showCreditBlock(typeof data?.current === "number" ? data.current : null)
+        return true
+      }
+      if (data?.code === "generation_locked" && cohort === "trial") {
+        setTrialCapOpen(true)
+        return true
+      }
+      if (!res.ok || !data?.bakedUrl) {
+        throw new Error(data?.error || "Text update failed")
+      }
+      updateBakedImage(target.key, target.index, data.bakedUrl)
+      hiddenBakedTextRef.current[target.key] = []
+      showTrialCapIfDepleted(data.newBalance)
+      return true
+    } catch (error) {
+      setGenState(state => {
+        const current = state[target.key]
+        if (!current || current.status !== "done") return state
+        return {
+          ...state,
+          [target.key]: {
+            ...current,
+            error: error instanceof Error ? error.message : "Text update failed",
+          },
+        }
+      })
+      return true
+    } finally {
+      setTextRefining(false)
+    }
+  }
+
   function updateTextOverlaySpec(key: string, index: number, spec: TextOverlaySpec) {
     setGenState(state => {
       const current = state[key]
@@ -1238,10 +1488,16 @@ export function MayaConcierge({
         },
       }
     })
+    setLightbox(current => {
+      if (!current || current.key !== key) return current
+      const nextSpecs = [...(current.textOverlaySpecs ?? [])]
+      nextSpecs[index] = spec
+      return { ...current, textOverlaySpecs: nextSpecs }
+    })
   }
 
   // TEXT-STUDIO-01: a bake landed; store it next to the clean base (index-aligned).
-  function updateBakedImage(key: string, index: number, bakedUrl: string) {
+  function updateBakedImage(key: string, index: number, bakedUrl: string | null) {
     setGenState(state => {
       const current = state[key]
       if (!current || current.status !== "done" || !current.imageUrls?.length) return state
@@ -2082,6 +2338,17 @@ export function MayaConcierge({
                           gen={gen}
                           format={conceptFormat}
                           onGenerate={() => void generateConcept(key, concept, conceptFormat)}
+                          idleAction={
+                            isGraphicOutputFormat(conceptFormat) ? (
+                              <TextStyleTemplatePicker
+                                format={conceptFormat}
+                                disabled={!referenceSelfieUrl}
+                                onPick={style =>
+                                  void generateConcept(key, concept, conceptFormat, style)
+                                }
+                              />
+                            ) : undefined
+                          }
                           onOpen={urls =>
                             setLightbox({
                               key,
@@ -2228,19 +2495,19 @@ export function MayaConcierge({
               onKeyDown={e => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault()
-                  handleSend()
+                  void handleSend()
                 }
               }}
-              placeholder="Want something different? Ask Maya…"
+              placeholder={textRefining ? "Maya is updating the text…" : "Want something different? Ask Maya…"}
               className="h-12 min-w-0 flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10] min-[380px]:px-4"
             />
             <button
               type="button"
-              onClick={handleSend}
-              disabled={isThinking || input.trim().length === 0}
+              onClick={() => void handleSend()}
+              disabled={isThinking || textRefining || input.trim().length === 0}
               className="h-12 rounded-[4px] bg-[#0D0E10] px-3 text-[11px] uppercase tracking-[0.1em] text-white disabled:opacity-40 min-[380px]:px-5 min-[380px]:text-[12px] min-[380px]:tracking-[0.16em]"
             >
-              Send
+              {textRefining ? "Updating" : "Send"}
             </button>
           </div>
         </div>

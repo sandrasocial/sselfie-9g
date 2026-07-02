@@ -20,7 +20,7 @@ import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
 import { conceptRequestSize } from "@/lib/app-v3/prompt-compiler"
 import { isTextOverlayLayerEnabled, sanitizeTextOverlaySpec } from "@/lib/app-v3/text-overlay"
-import { buildBakePrompt } from "@/lib/app-v3/text-bake"
+import { buildBakePrompt, sanitizeBakeStyleAdjustments } from "@/lib/app-v3/text-bake"
 
 export const maxDuration = 300
 
@@ -30,6 +30,7 @@ const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 // Matches the edit route (which matches qualityForFormat in generate): baking text never
 // silently changes the image's quality tier.
 type ImgQuality = "low" | "medium" | "high"
+type OpenAIImageEditResponse = { data?: Array<{ b64_json?: string | null }> }
 const QUALITY_OVERRIDE = process.env.APP_V3_IMAGE_QUALITY as ImgQuality | undefined
 const BAKE_IMAGE_QUALITY: ImgQuality =
   QUALITY_OVERRIDE === "low" || QUALITY_OVERRIDE === "medium" || QUALITY_OVERRIDE === "high"
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const body = (await request.json().catch(() => null)) as
-      | { cleanImageUrl?: string; spec?: unknown }
+      | { cleanImageUrl?: string; spec?: unknown; styleAdjustments?: unknown }
       | null
     // ALWAYS bake from the clean text-free base. The client never sends a baked result here.
     if (!body || !isAllowedImageUrl(body.cleanImageUrl)) {
@@ -95,6 +96,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "A valid text design is required" }, { status: 400 })
     }
     const cleanImageUrl = body.cleanImageUrl
+    // MAYA-GUIDED-TEXT-01: optional freeform chat refinement ("all the text in red"). It is
+    // sanitized (flattened, capped) and only ever steers the typography, never the photo.
+    const styleAdjustments = sanitizeBakeStyleAdjustments(body.styleAdjustments)
 
     const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
     const neonUser = await getEffectiveNeonUser(user.id)
@@ -171,14 +175,14 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: openaiApiKey })
     const size = toOpenAIEditSize(conceptRequestSize(spec.format))
-    const prompt = buildBakePrompt(spec)
+    const prompt = buildBakePrompt(spec, styleAdjustments ? { styleAdjustments } : undefined)
 
     // ONE pass on the clean base. No retries, no chained edits: research shows iterative
     // passes degrade the photo, and the CSS layer already covers the failure path.
     let imageBuffer: Buffer
     try {
       const sourceFile = await toFile(await normalize(await loadImage(cleanImageUrl)), "maya-bake-source.png", { type: "image/png" })
-      const response = await openai.images.edit({
+      const response = (await openai.images.edit({
         model: OPENAI_IMAGE_MODEL,
         image: sourceFile,
         prompt,
@@ -186,7 +190,7 @@ export async function POST(request: NextRequest) {
         size,
         quality: BAKE_IMAGE_QUALITY,
         output_format: "png",
-      } as Parameters<typeof openai.images.edit>[0])
+      } as Parameters<typeof openai.images.edit>[0])) as unknown as OpenAIImageEditResponse
       const b64 = response.data?.[0]?.b64_json
       if (!b64) throw new Error("No image data returned from OpenAI")
       imageBuffer = Buffer.from(b64, "base64")
