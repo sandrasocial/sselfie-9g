@@ -12,6 +12,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { AppV3Shell } from "@/components/app-v3/app-v3-shell"
 import { buildAppV3ReturnTo, resolveAppV3InitialSection } from "@/lib/app-v3/navigation"
+import { isVideoGenerationEnabled } from "@/lib/app-v3/video-flag"
 import type { AppV3AnalyticsCohort } from "@/components/app-v3/types"
 
 export const metadata = {
@@ -149,6 +150,7 @@ export default async function StudioV3Page({
       hasTrainedModel={hasTrainedModel}
       trialHasGeneratedImages={trialHasGeneratedImages}
       trialHasSavedSelfie={trialHasSavedSelfie}
+      videoEnabled={isVideoGenerationEnabled()}
     />
   )
 }

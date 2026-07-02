@@ -12,6 +12,11 @@ const mockReplicateCreate = vi.fn()
 const mockReplicateGet = vi.fn()
 const mockPut = vi.fn()
 const mockGenerateMotionPromptWithVisionFallbacks = vi.fn()
+const mockLogAnalyticsEvent = vi.fn()
+
+vi.mock("@/lib/analytics/events", () => ({
+  logAnalyticsEvent: mockLogAnalyticsEvent,
+}))
 
 vi.mock("@/lib/credits", () => ({
   checkCredits: mockCheckCredits,
@@ -67,6 +72,8 @@ describe("app-v3 video generation service", () => {
     delete process.env.APP_V3_VIDEO_MODEL
     delete process.env.APP_V3_VIDEO_RESOLUTION
     delete process.env.APP_V3_VIDEO_PROMPT_EXPANSION
+    delete process.env.APP_V3_VIDEO_ENABLED
+    mockLogAnalyticsEvent.mockResolvedValue({ ok: true })
     mockGeneratePrompt.mockResolvedValue({
       prompt:
         "natural blink, subtle breathing, gentle camera push-in, preserve identity, no subtitles",
@@ -351,6 +358,52 @@ describe("app-v3 video generation service", () => {
       status: "failed",
       error: "An error occurred while processing your request (E002)",
     })
+    // Owner select, then the atomic failed-claim UPDATE returning the claimed row.
+    mockSql.mockResolvedValueOnce([{ id: 77, status: "processing" }]).mockResolvedValueOnce([{ id: 77 }])
+
+    const { checkVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    const result = await checkVideoGeneration({
+      userId: "user-1",
+      predictionId: "pred_video_123",
+      videoId: 77,
+    })
+
+    expect(result).toEqual({
+      status: "failed",
+      error: "An error occurred while processing your request (E002)",
+    })
+    expect(mockAddCredits).toHaveBeenCalledTimes(1)
+    expect(mockAddCredits).toHaveBeenCalledWith(
+      "user-1",
+      10,
+      "refund",
+      "Refund for failed app-v3 video prediction: 77"
+    )
+    const updateSql = (mockSql.mock.calls[1][0] as TemplateStringsArray).join(" ")
+    expect(updateSql).toContain("SET status = 'failed'")
+    expect(updateSql).toContain("status IS DISTINCT FROM 'failed'")
+    expect(mockLogAnalyticsEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "suite_video_generation_failed",
+        userId: "user-1",
+        properties: expect.objectContaining({
+          stage: "prediction_failed",
+          error: expect.stringContaining("E002"),
+          videoId: 77,
+          predictionId: "pred_video_123",
+          refunded: true,
+        }),
+      })
+    )
+  })
+
+  it("does not refund when a concurrent poll already claimed the failed transition", async () => {
+    mockReplicateGet.mockResolvedValue({
+      status: "failed",
+      error: "An error occurred while processing your request (E002)",
+    })
+    // Owner select sees 'processing', but the claim UPDATE returns no rows (another poll won).
     mockSql.mockResolvedValueOnce([{ id: 77, status: "processing" }]).mockResolvedValueOnce([])
 
     const { checkVideoGeneration } = await import("@/lib/maya/video-generation-service")
@@ -365,14 +418,91 @@ describe("app-v3 video generation service", () => {
       status: "failed",
       error: "An error occurred while processing your request (E002)",
     })
+    expect(mockAddCredits).not.toHaveBeenCalled()
+    expect(mockLogAnalyticsEvent).not.toHaveBeenCalled()
+  })
+
+  it("refunds and logs a persistent failure event when creating the prediction fails", async () => {
+    mockReplicateCreate.mockRejectedValue(new Error("model gone"))
+
+    const { startVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    await expect(
+      startVideoGeneration({
+        userId: "user-1",
+        imageUrl: "https://cdn.example.com/source.png",
+        motionPrompt: "slow camera push-in, natural blink",
+      })
+    ).rejects.toMatchObject({
+      status: 500,
+      payload: expect.objectContaining({ error: "Failed to generate video" }),
+    })
+
     expect(mockAddCredits).toHaveBeenCalledWith(
       "user-1",
       10,
       "refund",
-      "Refund for failed app-v3 video prediction: 77"
+      expect.stringContaining("Refund for failed app-v3 video generation")
     )
-    const updateSql = (mockSql.mock.calls[1][0] as TemplateStringsArray).join(" ")
-    expect(updateSql).toContain("SET status = 'failed'")
+    expect(mockLogAnalyticsEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "suite_video_generation_failed",
+        userId: "user-1",
+        properties: expect.objectContaining({
+          stage: "create_prediction",
+          error: expect.stringContaining("model gone"),
+          model: "kwaivgi/kling-v3-omni-video",
+          refunded: true,
+        }),
+      })
+    )
+  })
+
+  it("records refunded=false in the failure event when the refund itself fails", async () => {
+    mockReplicateGet.mockResolvedValue({
+      status: "failed",
+      error: "An error occurred while processing your request (E002)",
+    })
+    mockSql.mockResolvedValueOnce([{ id: 77, status: "processing" }]).mockResolvedValueOnce([{ id: 77 }])
+    mockAddCredits.mockResolvedValue({ success: false, newBalance: 0, error: "db down" })
+
+    const { checkVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    const result = await checkVideoGeneration({
+      userId: "user-1",
+      predictionId: "pred_video_123",
+      videoId: 77,
+    })
+
+    expect(result.status).toBe("failed")
+    expect(mockLogAnalyticsEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "suite_video_generation_failed",
+        properties: expect.objectContaining({
+          refunded: false,
+          refundError: "db down",
+        }),
+      })
+    )
+  })
+
+  it("refuses new video generations when APP_V3_VIDEO_ENABLED is false", async () => {
+    process.env.APP_V3_VIDEO_ENABLED = "false"
+
+    const { startVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    await expect(
+      startVideoGeneration({
+        userId: "user-1",
+        imageUrl: "https://cdn.example.com/source.png",
+      })
+    ).rejects.toMatchObject({
+      status: 503,
+      payload: expect.objectContaining({ code: "video_disabled" }),
+    })
+    expect(mockCheckCredits).not.toHaveBeenCalled()
+    expect(mockDeductCredits).not.toHaveBeenCalled()
+    expect(mockReplicateCreate).not.toHaveBeenCalled()
   })
 
   it("does not refund a video row already marked failed", async () => {

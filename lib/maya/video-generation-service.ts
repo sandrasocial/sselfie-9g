@@ -1,4 +1,6 @@
 import { put } from "@vercel/blob"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { isVideoGenerationEnabled } from "@/lib/app-v3/video-flag"
 import {
   addCredits,
   checkCredits,
@@ -55,6 +57,62 @@ export class VideoGenerationError extends Error {
 }
 
 const DEFAULT_VIDEO_MODEL = "kwaivgi/kling-v3-omni-video"
+
+/**
+ * Persistent, behavior-only failure log so video failure rates are visible
+ * (analytics_events is the behavior table per the Admin Data Contract).
+ * Never throws: losing a log line must not break the member-facing flow.
+ */
+async function logVideoGenerationFailure(input: {
+  userId: string
+  stage: "create_prediction" | "prediction_failed"
+  errorMessage: string
+  model?: string
+  videoId?: number
+  predictionId?: string
+  refunded: boolean
+  refundError?: string
+}): Promise<void> {
+  try {
+    await logAnalyticsEvent({
+      eventName: "suite_video_generation_failed",
+      userId: input.userId,
+      properties: {
+        stage: input.stage,
+        error: input.errorMessage.slice(0, 400),
+        model: input.model ?? null,
+        videoId: input.videoId ?? null,
+        predictionId: input.predictionId ?? null,
+        refunded: input.refunded,
+        refundError: input.refundError ?? null,
+      },
+    })
+  } catch (error) {
+    console.error("[app-v3-video] Failed to log video failure event:", error)
+  }
+}
+
+/**
+ * Refund the animation credits for one failed video. Refund problems are logged
+ * loudly (they used to be silently swallowed, which burned member credits).
+ */
+async function refundVideoCredits(
+  userId: string,
+  description: string
+): Promise<{ refunded: boolean; refundError?: string }> {
+  try {
+    const refund = await addCredits(userId, CREDIT_COSTS.ANIMATION, "refund", description)
+    if (!refund.success) {
+      console.error("[app-v3-video] Credit refund FAILED:", { userId, description, error: refund.error })
+      return { refunded: false, refundError: refund.error ?? "addCredits returned success=false" }
+    }
+    return { refunded: true }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error("[app-v3-video] Credit refund THREW:", { userId, description, error: message })
+    return { refunded: false, refundError: message }
+  }
+}
 const VIDEO_DURATION_SECONDS = 5
 const VIDEO_NEGATIVE_PROMPT =
   "blurry, low quality, distorted face, warping, morphing, identity drift, unnatural motion, flickering, artifacts, extra limbs, duplicate person, extra characters, subtitles, text overlay, random letters, jittery edges, aggressive camera shake"
@@ -260,6 +318,13 @@ async function buildMotionPrompt(input: VideoGenerationInput): Promise<string> {
 export async function startVideoGeneration(
   input: VideoGenerationInput
 ): Promise<VideoGenerationResult> {
+  if (!isVideoGenerationEnabled()) {
+    throw new VideoGenerationError("Video generation is disabled", 503, {
+      error: "Video creation is paused right now. Photos still work.",
+      code: "video_disabled",
+    })
+  }
+
   const userId = String(input.userId)
   const imageUrl = validateImageUrl(input.imageUrl)
 
@@ -306,13 +371,19 @@ export async function startVideoGeneration(
       input: predictionInput,
     })
   } catch (error) {
-    await addCredits(
-      userId,
-      CREDIT_COSTS.ANIMATION,
-      "refund",
-      `Refund for failed app-v3 video generation: ${input.imageId || "image"}`
-    ).catch(() => {})
     const message = error instanceof Error ? error.message : String(error)
+    const refund = await refundVideoCredits(
+      userId,
+      `Refund for failed app-v3 video generation: ${input.imageId || "image"}`
+    )
+    await logVideoGenerationFailure({
+      userId,
+      stage: "create_prediction",
+      errorMessage: message,
+      model,
+      refunded: refund.refunded,
+      refundError: refund.refundError,
+    })
     throw new VideoGenerationError("Failed to create video prediction", 500, {
       error: "Failed to generate video",
       details: message,
@@ -345,13 +416,20 @@ export async function startVideoGeneration(
       RETURNING id
     `
   } catch (error) {
-    await addCredits(
-      userId,
-      CREDIT_COSTS.ANIMATION,
-      "refund",
-      `Refund for unsaved app-v3 video generation: ${input.imageId || "image"}`
-    ).catch(() => {})
     const message = error instanceof Error ? error.message : String(error)
+    const refund = await refundVideoCredits(
+      userId,
+      `Refund for unsaved app-v3 video generation: ${input.imageId || "image"}`
+    )
+    await logVideoGenerationFailure({
+      userId,
+      stage: "create_prediction",
+      errorMessage: `DB save failed: ${message}`,
+      model,
+      predictionId: prediction.id,
+      refunded: refund.refunded,
+      refundError: refund.refundError,
+    })
     throw new VideoGenerationError("Could not save video generation", 500, {
       error: "Could not save video generation",
       details: message,
@@ -411,18 +489,31 @@ export async function checkVideoGeneration(input: {
   if (prediction.status === "failed") {
     const errorMessage =
       typeof prediction.error === "string" ? prediction.error : "Video generation failed"
-    await addCredits(
-      String(input.userId),
-      CREDIT_COSTS.ANIMATION,
-      "refund",
-      `Refund for failed app-v3 video prediction: ${videoId}`
-    ).catch(() => {})
-    await sql`
+    // Atomically claim the failed transition so concurrent polls refund exactly once:
+    // only the poll that flips the row away from 'failed' issues the refund.
+    const claimed = await sql`
       UPDATE generated_videos
       SET status = 'failed', error_message = ${errorMessage}, updated_at = NOW()
       WHERE id = ${videoId}
         AND user_id = ${input.userId}
+        AND status IS DISTINCT FROM 'failed'
+      RETURNING id
     `
+    if (claimed.length > 0) {
+      const refund = await refundVideoCredits(
+        String(input.userId),
+        `Refund for failed app-v3 video prediction: ${videoId}`
+      )
+      await logVideoGenerationFailure({
+        userId: String(input.userId),
+        stage: "prediction_failed",
+        errorMessage,
+        videoId,
+        predictionId: input.predictionId,
+        refunded: refund.refunded,
+        refundError: refund.refundError,
+      })
+    }
     return { status: "failed", error: errorMessage }
   }
 

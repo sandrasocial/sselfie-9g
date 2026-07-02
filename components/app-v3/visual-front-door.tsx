@@ -149,6 +149,7 @@ export function VisualFrontDoor({
   hasSelfie = false,
   hasTrainedModel = false,
   onUseTrainedModel,
+  videoEnabled = true,
 }: {
   eyebrow?: string
   title?: string
@@ -160,6 +161,8 @@ export function VisualFrontDoor({
   hasSelfie?: boolean
   hasTrainedModel?: boolean
   onUseTrainedModel?: () => void
+  /** VIDEO reliability kill switch: false removes the Video starter tile. */
+  videoEnabled?: boolean
 } = {}) {
   // Subscribe to the context ONCE here, not in every tile. openWithAesthetic is a stable
   // useCallback, so the memoized tiles below never re-render when the concierge opens.
@@ -372,7 +375,7 @@ export function VisualFrontDoor({
             What are we making?
           </p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
-            {FORMAT_STARTERS.map(item => (
+            {FORMAT_STARTERS.filter(item => videoEnabled || item.format !== "video").map(item => (
               <button
                 key={item.format}
                 type="button"

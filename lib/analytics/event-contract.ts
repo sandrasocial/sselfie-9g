@@ -156,6 +156,9 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "suite_image_generated",
   "suite_image_downloaded",
   "suite_edit_applied",
+  // VIDEO reliability 2026-07 — persistent failure log for member video generation
+  // (stage, error, model, refunded live in properties; behavior only, never money).
+  "suite_video_generation_failed",
   "suite_memory_note_saved",
 ] as const
 
