@@ -1,5 +1,23 @@
-import { describe, expect, it } from "vitest"
+import fs from "node:fs"
+import path from "node:path"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { buildDailySandraBriefing, generateDailySandraBriefingEmail } from "@/lib/admin/daily-sandra-briefing"
+import {
+  buildDailyBriefingSnapshot,
+  generateDailyBriefingIntelligence,
+  sanitizeIntelligenceText,
+} from "@/lib/admin/daily-briefing-intelligence"
+import type { ContentBrief } from "@/lib/content-engine/brief-generator"
+
+const { anthropicCreateMock } = vi.hoisted(() => ({ anthropicCreateMock: vi.fn() }))
+
+vi.mock("@anthropic-ai/sdk", () => ({
+  default: class MockAnthropic {
+    messages = {
+      create: (...args: unknown[]) => anthropicCreateMock(...args),
+    }
+  },
+}))
 
 const baseReport = {
   generatedAt: "2026-05-29T08:00:00.000Z",
@@ -239,5 +257,221 @@ describe("daily Sandra briefing", () => {
     expect(email.html).toContain("Payments are charge rows")
     expect(email.text).toContain("Members: 8 active · €97 + $393 net MRR")
     expect(email.text).toContain("Best free prompt: Noir Femme")
+  })
+})
+
+const intelligenceSections = {
+  todaysMove: "Post the Tuesday reel from this week's brief. First frame shows the finished photo on your phone. It's engineered for shares. CTA: comment PROMPT.",
+  whatChanged: "One new payment came in yesterday and one new trial claimed. Nothing else moved.",
+  watchThis: "Trial first-generation rate got worse since yesterday. Watch the selfie upload step today.",
+}
+
+describe("daily briefing intelligence path", () => {
+  it("builds the briefing with no intelligence attached by default", () => {
+    const briefing = buildDailySandraBriefing(baseReport)
+    expect(briefing.intelligence).toBeNull()
+    expect(briefing.intelligenceNote).toBeNull()
+  })
+
+  it("replaces the canned template sections when intelligence is attached", () => {
+    const briefing = {
+      ...buildDailySandraBriefing(baseReport),
+      intelligence: intelligenceSections,
+      intelligenceNote: null,
+    }
+    const email = generateDailySandraBriefingEmail(briefing)
+
+    expect(email.html).toContain("Today's move")
+    expect(email.html).toContain("What changed since yesterday")
+    expect(email.html).toContain("Watch this")
+    expect(email.text).toContain("Today's move (from this week's brief)")
+
+    // The static template sections are GONE from the intelligence path.
+    expect(email.html).not.toContain("What to post today")
+    expect(email.html).not.toContain("What Codex should fix next")
+    expect(email.html).not.toContain("What Sandra does")
+    expect(email.html).not.toContain("Post one Prompt My Selfie reel")
+    expect(email.html).not.toContain("Choose today's reel angle from the strongest visual signal above")
+    expect(email.html).not.toContain("Keep posting transformation proof before teaching the prompt mechanics")
+    expect(email.text).not.toContain("What to post today")
+  })
+
+  it("keeps the template sections in the fallback and marks the fallback honestly", () => {
+    const briefing = {
+      ...buildDailySandraBriefing(baseReport),
+      intelligence: null,
+      intelligenceNote: "Intelligence layer unavailable today. These are the standard template suggestions, not fresh analysis.",
+    }
+    const email = generateDailySandraBriefingEmail(briefing)
+
+    expect(email.html).toContain("Intelligence layer unavailable today")
+    expect(email.html).toContain("What to post today")
+    expect(email.html).toContain("What Sandra does")
+    expect(email.text).toContain("Intelligence layer unavailable today")
+  })
+
+  it("keeps the truth-number sections identical in both paths", () => {
+    const base = buildDailySandraBriefing({ ...baseReport, truthSnapshot, revenueScorecard })
+    const withIntel = generateDailySandraBriefingEmail({
+      ...base,
+      intelligence: intelligenceSections,
+      intelligenceNote: null,
+    })
+    const fallback = generateDailySandraBriefingEmail(base)
+
+    for (const email of [withIntel, fallback]) {
+      expect(email.html).toContain("Growth truth")
+      expect(email.html).toContain("Revenue truth")
+      expect(email.text).toContain("Members: 8 active")
+      expect(email.text).toContain("Sum of latest per-post reach snapshots")
+    }
+  })
+
+  it("strips m-dashes and banned words from intelligence text", () => {
+    const cleaned = sanitizeIntelligenceText("Leverage this — it will unlock an elevated result")
+    expect(cleaned).not.toContain("—")
+    expect(cleaned.toLowerCase()).not.toContain("leverage")
+    expect(cleaned.toLowerCase()).not.toContain("unlock")
+    expect(cleaned.toLowerCase()).not.toContain("elevated")
+  })
+})
+
+describe("daily briefing intelligence generation (mocked API)", () => {
+  const weeklyBrief = {
+    contentPlan: [
+      {
+        day: "Tuesday",
+        format: "reel",
+        funnelStage: "cold",
+        engineeredFor: "share",
+        engagementMechanic: "Forwardable before/after truth.",
+        title: "One selfie, full shoot",
+        hook: "You don't need a photographer for this",
+        visualHook: "Finished photo fills the frame, phone lowers to reveal her real face.",
+        onScreenText: ["Still you", "One selfie"],
+        whyThisWorks: "Top copied prompt signal.",
+      },
+    ],
+  } as unknown as ContentBrief
+
+  const toolResponse = (input: Record<string, string>, stopReason = "tool_use") => ({
+    stop_reason: stopReason,
+    content: [{ type: "tool_use", id: "t1", name: "deliver_daily_intelligence", input }],
+  })
+
+  beforeEach(() => {
+    process.env.ANTHROPIC_API_KEY = "test-key"
+    anthropicCreateMock.mockReset()
+  })
+
+  afterEach(() => {
+    delete process.env.ANTHROPIC_API_KEY
+  })
+
+  it("returns the three sections from the model", async () => {
+    anthropicCreateMock.mockResolvedValueOnce(toolResponse(intelligenceSections))
+    const briefing = buildDailySandraBriefing(baseReport)
+
+    const result = await generateDailyBriefingIntelligence({ briefing, weeklyBrief, yesterday: null })
+
+    expect(anthropicCreateMock).toHaveBeenCalledTimes(1)
+    expect(result.todaysMove).toContain("Tuesday reel")
+    expect(result.whatChanged).toContain("new payment")
+    expect(result.watchThis).toContain("first-generation")
+  })
+
+  it("says plainly when the weekly brief has no content plan instead of emitting filler", async () => {
+    anthropicCreateMock.mockResolvedValueOnce(toolResponse(intelligenceSections))
+    const briefing = buildDailySandraBriefing(baseReport)
+
+    const result = await generateDailyBriefingIntelligence({ briefing, weeklyBrief: null, yesterday: null })
+
+    expect(result.todaysMove).toContain("no content plan")
+    expect(result.todaysMove).toContain("Regenerate")
+  })
+
+  it("retries once on max_tokens, then succeeds", async () => {
+    anthropicCreateMock
+      .mockResolvedValueOnce(toolResponse(intelligenceSections, "max_tokens"))
+      .mockResolvedValueOnce(toolResponse(intelligenceSections))
+    const briefing = buildDailySandraBriefing(baseReport)
+
+    const result = await generateDailyBriefingIntelligence({ briefing, weeklyBrief, yesterday: null })
+
+    expect(anthropicCreateMock).toHaveBeenCalledTimes(2)
+    expect(result.watchThis).toBeTruthy()
+  })
+
+  it("throws when truncated twice so the cron falls back to the template", async () => {
+    anthropicCreateMock
+      .mockResolvedValueOnce(toolResponse(intelligenceSections, "max_tokens"))
+      .mockResolvedValueOnce(toolResponse(intelligenceSections, "max_tokens"))
+    const briefing = buildDailySandraBriefing(baseReport)
+
+    await expect(
+      generateDailyBriefingIntelligence({ briefing, weeklyBrief, yesterday: null }),
+    ).rejects.toThrow(/truncated/)
+  })
+
+  it("throws when a section comes back empty", async () => {
+    anthropicCreateMock.mockResolvedValueOnce(toolResponse({ ...intelligenceSections, watchThis: "" }))
+    const briefing = buildDailySandraBriefing(baseReport)
+
+    await expect(
+      generateDailyBriefingIntelligence({ briefing, weeklyBrief, yesterday: null }),
+    ).rejects.toThrow(/empty section/)
+  })
+
+  it("throws without an API key so the cron falls back to the template", async () => {
+    delete process.env.ANTHROPIC_API_KEY
+    const briefing = buildDailySandraBriefing(baseReport)
+
+    await expect(
+      generateDailyBriefingIntelligence({ briefing, weeklyBrief, yesterday: null }),
+    ).rejects.toThrow(/ANTHROPIC_API_KEY/)
+  })
+})
+
+describe("daily briefing snapshot storage", () => {
+  it("builds a compact snapshot with real metrics and today's sections", () => {
+    const briefing = {
+      ...buildDailySandraBriefing({ ...baseReport, truthSnapshot, revenueScorecard }),
+      intelligence: intelligenceSections,
+      intelligenceNote: null,
+    }
+    const snapshot = buildDailyBriefingSnapshot(briefing, {
+      yesterdayPayments: 2,
+      yesterdayRevenue: 74,
+      monthPayments: 19,
+      monthRevenue: 812,
+    })
+
+    expect(snapshot.metrics.yesterdayPayments).toBe(2)
+    expect(snapshot.metrics.followers).toBe(110830)
+    expect(snapshot.metrics.activePaidMembers).toBe(8)
+    expect(snapshot.metrics.trialsFirstGeneration30d).toBe(4)
+    expect(snapshot.metrics.flaggedDmCount).toBe(0)
+    expect(snapshot.sections.todaysMove).toContain("Tuesday reel")
+    expect(snapshot.sections.leaking.length).toBeGreaterThan(0)
+  })
+
+  it("wires the cron to the intelligence layer with snapshot store/read and marked fallback", () => {
+    const cron = fs.readFileSync(
+      path.join(process.cwd(), "app/api/cron/daily-sandra-briefing/route.ts"),
+      "utf8",
+    )
+
+    expect(cron).toContain("generateDailyBriefingIntelligence")
+    expect(cron).toContain("getYesterdayBriefingSnapshot")
+    expect(cron).toContain("getLatestWeeklyContentBrief")
+    expect(cron).toContain("storeDailyBriefingSnapshot(buildDailyBriefingSnapshot(briefing, moneyInput))")
+    expect(cron).toContain("Intelligence layer unavailable today")
+    // The fallback catch keeps the send alive on any intelligence failure.
+    expect(cron).toContain("intelligence layer failed, using template fallback")
+  })
+
+  it("registers the daily_sandra_briefing report type", () => {
+    const reports = fs.readFileSync(path.join(process.cwd(), "lib/analytics/reports.ts"), "utf8")
+    expect(reports).toContain('"daily_sandra_briefing"')
   })
 })

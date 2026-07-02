@@ -56,6 +56,18 @@ export async function GET(request: NextRequest) {
         ].join("<br/>")}</p>`
       : ""
 
+    const trendRadar = Array.isArray(brief.trendRadar) ? brief.trendRadar : []
+    const trendText = trendRadar.length
+      ? `\n\nTrend radar (this week's waves):\n${trendRadar
+          .map((entry) => `• ${entry.trend}: ${entry.howSandraRidesIt}`)
+          .join("\n")}`
+      : ""
+    const trendHtml = trendRadar.length
+      ? `<p><strong>Trend radar</strong> (this week's waves):<br/>${trendRadar
+          .map((entry) => `• ${escapeHtml(entry.trend)}: ${escapeHtml(entry.howSandraRidesIt)}`)
+          .join("<br/>")}</p>`
+      : ""
+
     // SUITE-UX-02: Member pulse - what members did with Maya this week (source:
     // analytics_events behavior + app_v3_memory). Best-effort; never blocks the brief.
     let pulseText = ""
@@ -94,8 +106,8 @@ export async function GET(request: NextRequest) {
       to: ADMIN_EMAIL,
       from: "SSELFIE Intelligence <hello@sselfie.ai>",
       subject: "Your weekly content brief is ready",
-      text: `Hey Sandra,\n\nThis week's content brief is ready: ${brief.contentPlan.length} content directions and 1 story angle. It now starts from demand, analytics, competitor mechanics, and fresh visual hooks. No full posts unless you choose to develop one.${demandText}\n\nTop hooks this week:\n${topHooks}${pulseText}\n\nOpen it here: https://www.sselfie.ai/admin/content-brief\n\nEverything is a draft. Nothing posts without you.`,
-      html: `<p>Hey Sandra,</p><p>This week's content brief is ready: ${brief.contentPlan.length} content directions and 1 story angle. It now starts from demand, analytics, competitor mechanics, and fresh visual hooks. No full posts unless you choose to develop one.</p>${demandHtml}<p><strong>Top hooks this week:</strong><br/>${brief.hookIntelligence
+      text: `Hey Sandra,\n\nThis week's content brief is ready: ${brief.contentPlan.length} content directions and 1 story angle. It now starts from demand, analytics, competitor mechanics, and fresh visual hooks. No full posts unless you choose to develop one.${demandText}${trendText}\n\nTop hooks this week:\n${topHooks}${pulseText}\n\nOpen it here: https://www.sselfie.ai/admin/content-brief\n\nEverything is a draft. Nothing posts without you.`,
+      html: `<p>Hey Sandra,</p><p>This week's content brief is ready: ${brief.contentPlan.length} content directions and 1 story angle. It now starts from demand, analytics, competitor mechanics, and fresh visual hooks. No full posts unless you choose to develop one.</p>${demandHtml}${trendHtml}<p><strong>Top hooks this week:</strong><br/>${brief.hookIntelligence
         .slice(0, 3)
         .map((h) => `• ${escapeHtml(h.hook)}`)
         .join("<br/>")}</p>${pulseHtml}<p><a href="https://www.sselfie.ai/admin/content-brief">Open the brief</a></p><p>Everything is a draft. Nothing posts without you.</p>`,
