@@ -33,7 +33,10 @@ describe("App v3 edit mode likeness (MAYA-FIX-02)", () => {
 
   it("guards vanity-drift edits with the No-Fake doctrine", () => {
     expect(route).toContain("VANITY_DRIFT_PATTERN")
-    expect(route).toMatch(/flawless\|perfect\|younger\|slimmer/)
+    // LIKENESS-MEMORY-01 moved the pattern to the shared lib so the note classifier and the
+    // doctrine guard can never drift apart. The route imports it; the lib holds the regex.
+    const lib = read("lib/app-v3/likeness-memory.ts")
+    expect(lib).toMatch(/flawless\|perfect\|younger\|slimmer/)
     expect(route).toContain("natural best")
   })
 

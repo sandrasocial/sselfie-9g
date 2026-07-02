@@ -47,6 +47,11 @@ import {
   makeTextOverlaySpec,
   type TextOverlaySpec,
 } from "@/lib/app-v3/text-overlay"
+import {
+  buildLikenessPromptBlock,
+  isLikenessMemoryEnabled,
+} from "@/lib/app-v3/likeness-memory"
+import { getMemory } from "@/lib/app-v3/maya/memory-store"
 import type { CarouselSlide, ShootShotRole } from "@/lib/content-kit/types"
 import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "@/components/app-v3/types"
@@ -611,6 +616,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ── LIKENESS-MEMORY-01 (flag-gated, fail-open): her stored accuracy corrections
+    // ("hair: dark brown, not black", "marks: add my mole") ride EVERY render pass so she
+    // never has to repeat the same correction. Captured in the edit route; deletable in Memory. ──
+    let likenessBlock = ""
+    if (isLikenessMemoryEnabled()) {
+      try {
+        const memory = await getMemory(String(neonUser.id))
+        if (memory.likenessNotes.length > 0) {
+          likenessBlock = buildLikenessPromptBlock(memory.likenessNotes)
+        }
+      } catch (likenessError) {
+        console.error("[app-v3 generate] likeness notes skipped:", likenessError)
+      }
+    }
+    const withLikeness = (promptText: string): string =>
+      likenessBlock ? `${promptText}\n\n${likenessBlock}` : promptText
+
     // ── Credits: deduct the FULL set up front (1 per image). All-or-nothing: any failure
     //    refunds the whole set, so a broken carousel never charges the user. ──
     const hasEnough = await checkCredits(neonUser.id, totalCost)
@@ -675,6 +697,7 @@ export async function POST(request: NextRequest) {
         `Format: ${format}`,
         `Generation job: ${jobs[index]?.label ?? graphicJobs[index]?.label ?? `image ${index + 1}`}`,
         `Reference URLs used: ${generationReferenceUrls.join(", ") || "none"}`,
+        likenessBlock ? "Likeness memory notes applied: yes" : "",
         photoshootJobs.length > 0
           ? "Photoshoot reference flow: hero shot uses uploaded identity references; non-hero shots use uploaded identity references plus generated hero anchor."
           : "",
@@ -710,7 +733,7 @@ export async function POST(request: NextRequest) {
       const editInput: Record<string, unknown> = {
         model: OPENAI_IMAGE_MODEL,
         image: images.length === 1 ? images[0] : images,
-        prompt: promptText,
+        prompt: withLikeness(promptText),
         n: 1,
         size,
         quality: IMAGE_QUALITY,
@@ -851,7 +874,7 @@ export async function POST(request: NextRequest) {
     ): Promise<Buffer> => {
       const base: Record<string, unknown> = {
         model: OPENAI_IMAGE_MODEL,
-        prompt: promptText,
+        prompt: withLikeness(promptText),
         n: 1,
         size,
         quality: IMAGE_QUALITY,
@@ -1011,6 +1034,8 @@ export async function POST(request: NextRequest) {
             // Suite renders everything at medium (cost control); admin keeps high.
             quality: IMAGE_QUALITY,
             textMode: textOverlayEnabled ? "clean-background" : "baked",
+            // LIKENESS-MEMORY-01: her stored accuracy corrections ride slide renders too.
+            extraIdentityInstruction: likenessBlock || undefined,
           })
           actualPromptRecords[index] = [
             `Prompt version: ${SSELFIE_PROMPT_VERSION}`,

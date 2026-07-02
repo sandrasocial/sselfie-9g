@@ -164,6 +164,8 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   // (stage, error, model, refunded live in properties; behavior only, never money).
   "suite_video_generation_failed",
   "suite_memory_note_saved",
+  // LIKENESS-MEMORY-01 — a likeness correction became a durable memory note (behavior only).
+  "suite_likeness_note_captured",
 ] as const
 
 export type AnalyticsEventName = (typeof ALLOWED_ANALYTICS_EVENTS)[number]

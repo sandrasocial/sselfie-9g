@@ -17,6 +17,7 @@ import { getAppV3MayaSystemPrompt } from "@/lib/app-v3/maya/persona"
 import { getVaultStyleGuide, getVaultOverviewGuide } from "@/lib/app-v3/maya/vault-styles-server"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getMemory, saveMemory } from "@/lib/app-v3/maya/memory-store"
+import { isLikenessMemoryEnabled } from "@/lib/app-v3/likeness-memory"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
@@ -686,6 +687,8 @@ export async function POST(req: Request) {
       if (neonUserId) {
         memoryUserId = String(neonUserId)
         memory = await getMemory(String(neonUserId))
+        // LIKENESS-MEMORY-01: notes only reach the persona when the loop is enabled.
+        if (!isLikenessMemoryEnabled()) memory = { ...memory, likenessNotes: [] }
         const chats = await listChats(String(neonUserId))
         recentActivity = chats
           .map(c => c.title)
