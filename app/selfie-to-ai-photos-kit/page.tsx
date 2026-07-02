@@ -17,6 +17,39 @@ export const metadata: Metadata = {
 const checkoutHref =
   "/checkout/selfie-to-ai-photos-kit?source=selfie_ai_photos_kit_page&utm_source=site&utm_medium=sales_page&utm_campaign=selfie_ai_photos_kit&buyer_stage=micro&cta_keyword=PROMPT"
 
+const kitProof = [
+  {
+    quote: "Best one so far. I love that it looks real, and me.",
+    name: "A SSELFIE member",
+    context: "50 & fabulous",
+  },
+  {
+    quote: "I just took the best photo of myself in years.",
+    name: "A SSELFIE member",
+    context: "One selfie",
+  },
+  {
+    quote: "I'm so picky it's not even funny. But this... my God. I'm blown away.",
+    name: "A SSELFIE member",
+    context: "AI photoshoot",
+  },
+  {
+    quote: "I don't often have a good photo of myself. This solves that.",
+    name: "A SSELFIE member",
+    context: "AI photoshoot",
+  },
+  {
+    quote: "I made the most beautiful selfie since I got my iPhone. Even in my pajamas.",
+    name: "Medina C.",
+    context: "One selfie",
+  },
+  {
+    quote: "I used to hate taking photos. Now I feel like a queen.",
+    name: "A SSELFIE member",
+    context: "AI photoshoot",
+  },
+]
+
 export default async function SelfieToAiPhotosKitPage() {
   await logAnalyticsEvent({
     eventName: "selfie_ai_photos_kit_landing_view",
@@ -120,6 +153,26 @@ export default async function SelfieToAiPhotosKitPage() {
               <span>{num}</span>
               <p>{text}</p>
             </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="section proof">
+        <p className="eyebrow">REAL CUSTOMER WORDS</p>
+        <h2 className={cormorant.className}>The part that matters: it still looks like you.</h2>
+        <p className="proof-note">
+          These are real messages from women who started with one selfie and my prompts. Not models.
+          Not avatars. Realistic photos that still feel like them.
+        </p>
+        <div className="proof-grid">
+          {kitProof.map(item => (
+            <article key={item.quote} className="proof-card">
+              <p className="proof-quote">&ldquo;{item.quote}&rdquo;</p>
+              <div className="proof-meta">
+                <strong>{item.name}</strong>
+                <span>{item.context}</span>
+              </div>
+            </article>
           ))}
         </div>
       </section>
@@ -319,6 +372,56 @@ export default async function SelfieToAiPhotosKitPage() {
           font-size: 17px;
           color: var(--stone-dark);
         }
+        .proof {
+          background: var(--color-pearl);
+        }
+        .proof-note {
+          max-width: 620px;
+          margin: 26px 0 0;
+          font-size: 17px;
+          line-height: 1.75;
+          color: var(--stone-quarry);
+        }
+        .proof-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 1px;
+          margin-top: 34px;
+          border: 1px solid rgba(10, 10, 10, 0.1);
+          background: rgba(10, 10, 10, 0.1);
+        }
+        .proof-card {
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          min-height: 190px;
+          padding: 28px;
+          background: var(--color-porcelain);
+        }
+        .proof-quote {
+          margin: 0 0 24px;
+          font-size: clamp(17px, 2vw, 21px);
+          font-weight: 300;
+          line-height: 1.62;
+          color: var(--color-obsidian);
+        }
+        .proof-meta strong,
+        .proof-meta span {
+          display: block;
+        }
+        .proof-meta strong {
+          margin-bottom: 6px;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--color-obsidian);
+        }
+        .proof-meta span {
+          font-size: 12px;
+          line-height: 1.6;
+          color: var(--stone-accent);
+        }
         .final {
           background: var(--color-obsidian);
           color: var(--color-porcelain);
@@ -337,7 +440,8 @@ export default async function SelfieToAiPhotosKitPage() {
         @media (max-width: 880px) {
           .hero,
           .split-copy,
-          .grid {
+          .grid,
+          .proof-grid {
             grid-template-columns: 1fr;
           }
           .hero {
@@ -350,7 +454,8 @@ export default async function SelfieToAiPhotosKitPage() {
           .nav-links {
             justify-content: flex-start;
           }
-          .item {
+          .item,
+          .proof-card {
             min-height: auto;
           }
         }
