@@ -188,6 +188,8 @@ function buildAppGraphicRedesignJobs({
                 ? format
                 : "carousel",
             designSystem: brief.graphic?.designSystem,
+            overlayStyle: brief.graphic?.overlayStyle,
+            emotion: brief.mood,
           })
         : undefined,
       category,
