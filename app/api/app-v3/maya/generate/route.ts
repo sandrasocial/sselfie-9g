@@ -42,6 +42,11 @@ import {
   redesignContentSlideToBuffer,
   type StyleReferenceCategory,
 } from "@/lib/content-kit/slide-redesign-generator"
+import {
+  isTextOverlayLayerEnabled,
+  makeTextOverlaySpec,
+  type TextOverlaySpec,
+} from "@/lib/app-v3/text-overlay"
 import type { CarouselSlide, ShootShotRole } from "@/lib/content-kit/types"
 import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "@/components/app-v3/types"
@@ -88,6 +93,7 @@ function qualityForFormat(_format: OutputFormat): ImgQuality {
 type AppGraphicRedesignJob = {
   label: string
   slide: CarouselSlide
+  textOverlaySpec?: TextOverlaySpec
   category: StyleReferenceCategory
   topic: string
   referenceUrl: string
@@ -147,37 +153,58 @@ function buildAppGraphicRedesignJobs({
   conceptTitle,
   referenceUrls,
   inspirationReferenceUrl,
+  textOverlayEnabled,
 }: {
   brief: CreativeBrief
   format: OutputFormat
   conceptTitle?: string
   referenceUrls: string[]
   inspirationReferenceUrl?: string
+  textOverlayEnabled?: boolean
 }): AppGraphicRedesignJob[] {
   const category = categoryForGraphicFormat(format)
   const topic = topicForGraphicBrief(brief, format, conceptTitle)
   const slides = buildGraphicRedesignSlides(brief, format, conceptTitle)
-  return slides.map((slide, index) => ({
-    label: `${format} ${index + 1}/${slides.length}`,
-    slide,
-    category,
-    topic,
-    // Identity consistency: every slide anchors to the SAME front-face selfie. Cycling through
-    // different selfie angles (front/side/full-body) made each slide read as a different person.
-    referenceUrl: referenceUrls[0],
-    inspirationReferenceUrl: inspirationReferenceUrl ?? undefined,
-    recordPrompt: [
-      `SSELFIE redesign engine (${category})`,
-      `Topic: ${topic}`,
-      `Slide: ${slide.title}`,
-      slide.body ? `Body: ${slide.body}` : "",
-      slide.purpose ? `Purpose: ${slide.purpose}` : "",
-      slide.visualConcept ? `Visual concept: ${slide.visualConcept}` : "",
-      slide.imagePromptDirection ? `Image direction: ${slide.imagePromptDirection}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n"),
-  }))
+  return slides.map((slide, index) => {
+    const role = slide.kind === "hook" ? "hook" : slide.kind === "cta" ? "cta" : "value"
+    return {
+      label: `${format} ${index + 1}/${slides.length}`,
+      slide,
+      textOverlaySpec: textOverlayEnabled
+        ? makeTextOverlaySpec({
+            heading: slide.title,
+            body: slide.body,
+            role,
+            format:
+              format === "reel-cover" ||
+              format === "story-slide" ||
+              format === "story-sequence" ||
+              format === "carousel"
+                ? format
+                : "carousel",
+            designSystem: brief.graphic?.designSystem,
+          })
+        : undefined,
+      category,
+      topic,
+      // Identity consistency: every slide anchors to the SAME front-face selfie. Cycling through
+      // different selfie angles (front/side/full-body) made each slide read as a different person.
+      referenceUrl: referenceUrls[0],
+      inspirationReferenceUrl: inspirationReferenceUrl ?? undefined,
+      recordPrompt: [
+        `SSELFIE redesign engine (${category})`,
+        textOverlayEnabled ? "Text mode: clean background + composited app overlay" : "",
+        `Topic: ${topic}`,
+        `Slide: ${slide.title}`,
+        slide.body ? `Body: ${slide.body}` : "",
+        slide.purpose ? `Purpose: ${slide.purpose}` : "",
+        slide.visualConcept ? `Visual concept: ${slide.visualConcept}` : "",
+        slide.imagePromptDirection ? `Image direction: ${slide.imagePromptDirection}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    }
+  })
 }
 
 function normalizeShootBriefs(raw: unknown, fallback: CreativeBrief): CreativeBrief[] {
@@ -392,6 +419,7 @@ export async function POST(request: NextRequest) {
     let photoshootJobs: PhotoshootJob[] = []
     let graphicJobs: AppGraphicRedesignJob[] = []
     let graphicStyle: Awaited<ReturnType<typeof pickContentStyleReference>> | null = null
+    const textOverlayEnabled = isTextOverlayLayerEnabled()
     let referenceUrls: string[] = []
     let inspirationReferenceUrl: string | null = null
     const baseImageSource: string | null = null
@@ -501,6 +529,7 @@ export async function POST(request: NextRequest) {
           conceptTitle: body.conceptTitle,
           referenceUrls,
           inspirationReferenceUrl: inspirationReferenceUrl ?? undefined,
+          textOverlayEnabled,
         })
         graphicStyle = await pickContentStyleReference(
           categoryForGraphicFormat(format),
@@ -981,6 +1010,7 @@ export async function POST(request: NextRequest) {
                 : undefined,
             // Suite renders everything at medium (cost control); admin keeps high.
             quality: IMAGE_QUALITY,
+            textMode: textOverlayEnabled ? "clean-background" : "baked",
           })
           actualPromptRecords[index] = [
             `Prompt version: ${SSELFIE_PROMPT_VERSION}`,
@@ -994,6 +1024,7 @@ export async function POST(request: NextRequest) {
             `Style anchor: ${style.label ?? "approved SSELFIE reference"}`,
             `Reference URL used: ${job.referenceUrl}`,
             `Style reference URL used: ${style.imageUrl}`,
+            job.textOverlaySpec ? `Text overlay spec: ${JSON.stringify(job.textOverlaySpec)}` : "",
             inspirationReferenceUrl
               ? `Inspiration reference URL used: ${inspirationReferenceUrl}`
               : "",
@@ -1084,10 +1115,14 @@ export async function POST(request: NextRequest) {
     }
 
     logGenerated(imageUrls.length)
+    const textOverlaySpecs = graphicJobs
+      .map(job => job.textOverlaySpec)
+      .filter((spec): spec is TextOverlaySpec => Boolean(spec))
     return NextResponse.json({
       success: true,
       imageUrl: imageUrls[0],
       imageUrls,
+      ...(textOverlaySpecs.length ? { textOverlaySpecs } : {}),
       imageCount: imageUrls.length,
       aiImageId: persisted[0]?.id ?? null,
       aiImageIds: persisted.map(p => p.id),

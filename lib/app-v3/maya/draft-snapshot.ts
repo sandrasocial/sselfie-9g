@@ -1,4 +1,5 @@
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
+import { sanitizeTextOverlaySpec, type TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 
 export type ServerOutputFormat =
   | "photo"
@@ -32,6 +33,7 @@ export type ServerConciergeSessionSnapshot = {
 export type ServerConceptGenState = {
   status: string
   imageUrls?: string[]
+  textOverlaySpecs?: TextOverlaySpec[]
   videoUrl?: string
   error?: string
   previewUrl?: string
@@ -54,6 +56,7 @@ const VALID_FORMATS: ServerOutputFormat[] = [
   "reel-cover",
   "carousel",
   "story-slide",
+  "story-sequence",
   "video",
 ]
 const MAX_SNAPSHOT_AGE_MS = 1000 * 60 * 60 * 24 * 14
@@ -119,9 +122,15 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
         videoUrl: state.videoUrl,
       }
     } else if (state.status === "done" && Array.isArray(state.imageUrls) && state.imageUrls.length > 0) {
+      const textOverlaySpecs = Array.isArray(state.textOverlaySpecs)
+        ? state.textOverlaySpecs
+            .map(sanitizeTextOverlaySpec)
+            .filter((spec): spec is TextOverlaySpec => Boolean(spec))
+        : undefined
       out[key] = {
         status: "done",
         imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),
+        ...(textOverlaySpecs?.length ? { textOverlaySpecs } : {}),
       }
     } else if (
       state.status === "idle" ||

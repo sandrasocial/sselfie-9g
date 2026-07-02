@@ -43,6 +43,11 @@ import {
   SSELFIE_NEUTRAL_PALETTE,
   SSELFIE_PHOTO_STYLE_PROMPT,
 } from "@/lib/app-v3/maya/visual-rules"
+import {
+  isTextOverlayLayerEnabled,
+  makeTextOverlaySpec,
+  type TextOverlaySpec,
+} from "@/lib/app-v3/text-overlay"
 
 // Replaces the old posed "ELEVATION" line. The Vault look is candid and on-location, not a stiff
 // studio pose, which was the #1 reason /app output read as fake. Keep the elevation (skin, light,
@@ -326,6 +331,7 @@ export interface PromptPass {
 export interface ImageJob {
   label: string
   passes: PromptPass[]
+  textOverlaySpec?: TextOverlaySpec
 }
 
 /** The brand palette line shared by every graphic slide (brand kit if present, else Quiet Luxury). */
@@ -473,6 +479,7 @@ function compileSingleGraphicPrompt(
   text: { heading: string; body?: string },
   layout: RoleLayout,
   role: "hook" | "value" | "cta",
+  textOverlayLayer: boolean,
   opts?: CompileConceptOptions
 ): string {
   const heading = clean(text.heading)
@@ -491,14 +498,18 @@ function compileSingleGraphicPrompt(
     clean(brief.outfit) ? `Outfit: ${clean(brief.outfit)}.` : "",
     "Keep her natural hair color, skin texture, age, and body proportions from the reference photo.",
     clean(brief.pose) ? `Pose: ${clean(brief.pose)}.` : "",
-    `Render this exact ${role === "cta" ? "call-to-action" : "editorial headline"} inside the image: "${heading}".`,
-    body ? `Render this exact supporting line too: "${body}".` : "",
-    `Text placement: ${layout.space} Keep it readable and calm around the ${layout.place}. Do not cover her face, eyes, phone, hands, or strongest outfit details.`,
+    textOverlayLayer
+      ? `Leave clean, low-contrast negative space around the ${layout.place} for an app-composited typography layer. Do not render any text, words, letters, captions, labels, logos, or placeholder glyphs.`
+      : `Render this exact ${role === "cta" ? "call-to-action" : "editorial headline"} inside the image: "${heading}".`,
+    !textOverlayLayer && body ? `Render this exact supporting line too: "${body}".` : "",
+    `Composition: ${layout.space} Keep her face, eyes, phone, hands, and strongest outfit details clear.`,
     BRAND_GRAPHIC_STYLE,
     paletteLine(opts?.brandKit),
     SSELFIE_NEUTRAL_PALETTE,
     gradeLine(opts),
-    "Render all text spelled exactly as written. No extra words, no placeholder text, no random letters, no logos.",
+    textOverlayLayer
+      ? "No readable text anywhere in the image. The app will add typography later."
+      : "Render all text spelled exactly as written. No extra words, no placeholder text, no random letters, no logos.",
     REALISM_TOKENS + ".",
     AVOID_LIST,
   ]
@@ -518,6 +529,7 @@ function compileCarouselIdentityPrompt(
   layout: RoleLayout,
   role: "hook" | "value" | "cta",
   slidePlan: string,
+  textOverlayLayer: boolean,
   opts?: CompileConceptOptions
 ): string {
   const positioning = `${brief.outfit} ${brief.setting} ${brief.mood}`
@@ -537,11 +549,13 @@ function compileCarouselIdentityPrompt(
     // SUITE-UX-02: her moment should match the slide's copy, not just the set's scenery.
     `This slide's message: "${heading}". Her expression, gesture and the captured moment should match that message.`,
     slidePlan,
-    `Render this exact headline inside the image: "${heading}".`,
-    body ? `Render this exact supporting line too: "${body}".` : "",
-    `Typography placement: ${layout.space}`,
+    textOverlayLayer
+      ? "Leave clean, low-contrast negative space for the slide headline. Do not render any text, words, letters, captions, labels, logos, or placeholder glyphs."
+      : `Render this exact headline inside the image: "${heading}".`,
+    !textOverlayLayer && body ? `Render this exact supporting line too: "${body}".` : "",
+    textOverlayLayer ? `Text-safe composition: ${layout.space}` : `Typography placement: ${layout.space}`,
     system.identityTreatment,
-    system.setDna,
+    textOverlayLayer ? system.textFreeSetDna : system.setDna,
     BRAND_GRAPHIC_STYLE,
     clean(brief.mood) ? `Mood: ${clean(brief.mood)}.` : "",
     gradeLine(opts),
@@ -549,7 +563,9 @@ function compileCarouselIdentityPrompt(
     CANDID_EDITORIAL,
     REALISM_TOKENS + ".",
     paletteLine(opts?.brandKit),
-    `Internal slide role (do not render): ${role}. Render only the headline and supporting line text spelled exactly as written. No extra words, no placeholder text, no random letters, no labels, no logos. Keep her face and eyes clear of busy background detail.`,
+    textOverlayLayer
+      ? `Internal slide role (do not render): ${role}. Keep her face and eyes clear of busy background detail. No readable text anywhere in the image; the app will add typography later.`
+      : `Internal slide role (do not render): ${role}. Render only the headline and supporting line text spelled exactly as written. No extra words, no placeholder text, no random letters, no labels, no logos. Keep her face and eyes clear of busy background detail.`,
     CAROUSEL_QUALITY,
     AVOID_LIST,
   ]
@@ -675,6 +691,7 @@ export function compileConceptJobs(
 
   // Graphic formats: build the slide list (carousel = many; cover/story = one).
   const g = brief.graphic
+  const textOverlayLayer = isTextOverlayLayerEnabled()
   const rawSlides =
     format === "carousel"
       ? effectiveCarouselSlides(brief).slice(0, MAX_CAROUSEL_SLIDES)
@@ -711,9 +728,27 @@ export function compileConceptJobs(
 
       return {
         label,
+        textOverlaySpec: textOverlayLayer
+          ? makeTextOverlaySpec({
+              heading: text.heading,
+              body: text.body,
+              role,
+              format: "carousel",
+              designSystem: g?.designSystem,
+            })
+          : undefined,
         passes: [
           {
-            prompt: compileCarouselIdentityPrompt(brief, system, text, layout, role, plan, opts),
+            prompt: compileCarouselIdentityPrompt(
+              brief,
+              system,
+              text,
+              layout,
+              role,
+              plan,
+              textOverlayLayer,
+              opts
+            ),
             input: "selfie" as const,
           },
         ],
@@ -732,17 +767,31 @@ export function compileConceptJobs(
           ? CTA_LAYOUT
           : VALUE_LAYOUTS[valueIdx++ % VALUE_LAYOUTS.length]
     const label = format
+    const text = { heading: clean(slide.heading), body: clean(slide.body) }
 
     return {
       label,
+      textOverlaySpec: textOverlayLayer
+        ? makeTextOverlaySpec({
+            heading: text.heading,
+            body: text.body,
+            role,
+            format:
+              format === "reel-cover" || format === "story-slide" || format === "story-sequence"
+                ? format
+                : "carousel",
+            designSystem: g?.designSystem,
+          })
+        : undefined,
       passes: [
         {
           prompt: compileSingleGraphicPrompt(
             brief,
             format,
-            { heading: clean(slide.heading), body: clean(slide.body) },
+            text,
             layout,
             role,
+            textOverlayLayer,
             opts
           ),
           input: "selfie" as const,

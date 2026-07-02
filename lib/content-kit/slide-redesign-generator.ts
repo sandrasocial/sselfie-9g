@@ -27,6 +27,7 @@ export type StyleReferenceCategory =
   | "story-sequence"
   | "reel-cover"
 export type RedesignReferenceMode = "preserve-frame" | "identity-scene"
+export type SlideTextMode = "baked" | "clean-background"
 
 type StyleReference = {
   imageUrl: string
@@ -98,6 +99,7 @@ export function buildContentSlideRedesignPrompt({
   styleLabel,
   referenceMode,
   hasInspirationReference,
+  textMode = "baked",
 }: {
   slide: CarouselSlide
   category: StyleReferenceCategory
@@ -105,7 +107,9 @@ export function buildContentSlideRedesignPrompt({
   styleLabel?: string | null
   referenceMode?: RedesignReferenceMode
   hasInspirationReference?: boolean
+  textMode?: SlideTextMode
 }) {
+  const cleanBackground = textMode === "clean-background"
   const tutorialGrounding =
     category === "story-sequence"
       ? "The FIRST reference image is the exact story background photo. Preserve the original photo exactly. Do not change the person's identity, face, body, outfit, pose, lighting, background, colors, composition, skin texture, or natural details. Do not retouch, beautify, smooth skin, reshape the body, alter the face, change the outfit, change the room, or make the image look AI-generated. This is an overlay-only design: only add text, small labels, simple arrows, subtle borders, minimal editorial layout details, or light hand-drawn accents."
@@ -129,24 +133,23 @@ Style anchor: ${styleLabel || "approved SSELFIE reference"}
 
 ${tutorialGrounding}
 
-${category === "story-sequence" ? "Use the SECOND reference image for typography, spacing, hierarchy, and neutral editorial overlay taste only. Do not use it to alter the first photo." : "Match the SECOND reference image's style as closely as possible: premium editorial quiet-luxury magazine design, elegant high-contrast serif headlines with tasteful italics for emphasis, clean sans-serif supporting text, a restrained cool monochrome palette (charcoal, smoke gray, cream white, near-black), generous negative space, calm Scandinavian spacing, and the same kind of subtle hand-drawn accents, highlight boxes behind key phrases, and small handwritten notes shown in that reference. Integrate the text into the scene, never pasted on a card. Never a white lesson card, never a flat Canva template, no emojis, no gradients, no neon, no bright red or green callouts."}
+${cleanBackground ? "Use the SECOND reference image for the premium editorial visual world only: restrained cool monochrome palette, generous negative space, calm Scandinavian spacing, subtle film grain, soft shadows, and tasteful minimal accents. Do NOT copy or render any typography from the reference image." : category === "story-sequence" ? "Use the SECOND reference image for typography, spacing, hierarchy, and neutral editorial overlay taste only. Do not use it to alter the first photo." : "Match the SECOND reference image's style as closely as possible: premium editorial quiet-luxury magazine design, elegant high-contrast serif headlines with tasteful italics for emphasis, clean sans-serif supporting text, a restrained cool monochrome palette (charcoal, smoke gray, cream white, near-black), generous negative space, calm Scandinavian spacing, and the same kind of subtle hand-drawn accents, highlight boxes behind key phrases, and small handwritten notes shown in that reference. Integrate the text into the scene, never pasted on a card. Never a white lesson card, never a flat Canva template, no emojis, no gradients, no neon, no bright red or green callouts."}
 
 ${inspirationGrounding}
 
-Render the slide text inside the image, integrated into the scene:
-${slideText(slide)}
+${cleanBackground ? "Create a clean text-free background image. Leave the planned text-safe area calm and low-contrast for an app-composited typography layer, but render NO readable words, letters, captions, labels, numbers, UI text, logos, or placeholder type." : `Render the slide text inside the image, integrated into the scene:\n${slideText(slide)}`}
 
 Slide-specific creative plan:
 ${slidePlan(slide) || (referenceMode === "preserve-frame" ? "Keep the provided photo as the background exactly. The headline and supporting text carry the message; do not generate or substitute a new scene to illustrate the copy." : "Use the slide title/body as the creative direction, and make the image meaning match the copy.")}
 
 Rules:
-- Render only the text listed under "Render the slide text inside the image" and spell it exactly as written.
+- ${cleanBackground ? "Do not render any text at all. No words, letters, numbers, captions, labels, fake UI text, logos, watermarks, or placeholder glyphs." : 'Render only the text listed under "Render the slide text inside the image" and spell it exactly as written.'}
 - Do not render internal labels such as hook, value, cta, reel cover, story, slide kind, or content type.
 - No extra words, placeholder letters, random UI labels, logos, emoji, green checks, neon, bright red, chunky social captions, or black-outlined text.
-- ${category === "story-sequence" || referenceMode === "preserve-frame" ? "Preserve the FIRST reference photo exactly as the background. Do not regenerate, replace, restage, recolor, crop, or change its scene, person, outfit, lighting, or composition. Only add the text and accents on top." : "Keep the original reference frame recognizable and useful."}
+- ${category === "story-sequence" || referenceMode === "preserve-frame" ? cleanBackground ? "Preserve the FIRST reference photo exactly as the background. Do not regenerate, replace, restage, recolor, crop, or change its scene, person, outfit, lighting, or composition." : "Preserve the FIRST reference photo exactly as the background. Do not regenerate, replace, restage, recolor, crop, or change its scene, person, outfit, lighting, or composition. Only add the text and accents on top." : "Keep the original reference frame recognizable and useful."}
 - ${category === "story-sequence" ? "Place the text in clean negative space. Do not cover the face, eyes, phone, hands, or strongest visual details. If text needs more contrast, add only a very subtle transparent dark or cream overlay behind the text area, not over the face or main subject." : "If a tutorial needs emphasis, use scale, spacing, thin rules, underlines, or neutral contrast instead of colored warning callouts."}
 - Keep the slide full-bleed and finished. No separate card, no border, no post mockup.
-- Create the final slide in high resolution 2K quality, vertical 9:16 Instagram Story format, crisp and clean, with readable text.`
+- Create the final slide in high resolution 2K quality, vertical 9:16 Instagram Story format, crisp and clean${cleanBackground ? ", with a calm empty text zone." : ", with readable text."}`
 }
 
 export async function redesignContentSlide({
@@ -159,6 +162,7 @@ export async function redesignContentSlide({
   referenceMode,
   inspirationReferenceUrl,
   quality,
+  textMode,
 }: {
   referenceUrl: string
   styleReferenceUrl: string
@@ -169,12 +173,14 @@ export async function redesignContentSlide({
   slide: CarouselSlide
   referenceMode?: RedesignReferenceMode
   quality?: "low" | "medium" | "high"
+  textMode?: SlideTextMode
 }): Promise<string> {
   const { buffer } = await redesignContentSlideToBuffer({
     referenceUrl,
     styleReferenceUrl,
     inspirationReferenceUrl,
     quality,
+    textMode,
     styleLabel,
     category,
     topic,
@@ -204,6 +210,7 @@ export async function redesignContentSlideToBuffer({
   inspirationReferenceUrl,
   quality = "high",
   size,
+  textMode = "baked",
 }: {
   referenceUrl: string
   styleReferenceUrl: string
@@ -217,6 +224,7 @@ export async function redesignContentSlideToBuffer({
   quality?: "low" | "medium" | "high"
   // Override the output size (e.g. a 9:16 story sequence reusing the carousel pipeline).
   size?: string
+  textMode?: SlideTextMode
 }): Promise<{ buffer: Buffer; prompt: string }> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured")
@@ -243,6 +251,7 @@ export async function redesignContentSlideToBuffer({
       styleLabel,
       referenceMode,
       hasInspirationReference: Boolean(inspirationReferenceUrl),
+      textMode,
     }),
     n: 1,
     size: size ?? (category === "story-sequence" ? STORY_SIZE : CAROUSEL_SIZE),

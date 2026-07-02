@@ -6,6 +6,7 @@ import {
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 import type { ConciergeSession, OutputFormat } from "./types"
 import type { ConceptGenState } from "./concept-card"
+import { sanitizeTextOverlaySpec } from "@/lib/app-v3/text-overlay"
 
 export const APP_SECTION_STORAGE_KEY = "sselfie.appV3.section.v1"
 export const CONCIERGE_STORAGE_KEY = "sselfie.appV3.concierge.v1"
@@ -18,6 +19,7 @@ const VALID_FORMATS: OutputFormat[] = [
   "reel-cover",
   "carousel",
   "story-slide",
+  "story-sequence",
   "video",
 ]
 const MAX_SNAPSHOT_AGE_MS = 1000 * 60 * 60 * 24 * 14
@@ -153,9 +155,17 @@ function sanitizeGenState(value: unknown): Record<string, ConceptGenState> {
         videoUrl: state.videoUrl,
       }
     } else if (state.status === "done" && Array.isArray(state.imageUrls) && state.imageUrls.length > 0) {
+      const textOverlaySpecs = Array.isArray(state.textOverlaySpecs)
+        ? state.textOverlaySpecs
+            .map(sanitizeTextOverlaySpec)
+            .filter((spec): spec is NonNullable<ReturnType<typeof sanitizeTextOverlaySpec>> =>
+              Boolean(spec)
+            )
+        : undefined
       out[key] = {
         status: "done",
         imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),
+        ...(textOverlaySpecs?.length ? { textOverlaySpecs } : {}),
       }
     } else if (
       state.status === "idle" ||

@@ -6,14 +6,28 @@
 // Supports keyboard (Esc, arrows), prev/next for multi-image sets, and download.
 
 import { useEffect, useState } from "react"
+import {
+  downloadImageWithOverlay,
+  TextOverlayEditor,
+  TextOverlayLayer,
+} from "./text-overlay-layer"
+import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 
 interface ImageLightboxProps {
   images: string[]
+  textOverlaySpecs?: TextOverlaySpec[]
   startIndex?: number
   onClose: () => void
+  onOverlayChange?: (index: number, spec: TextOverlaySpec) => void
 }
 
-export function ImageLightbox({ images, startIndex = 0, onClose }: ImageLightboxProps) {
+export function ImageLightbox({
+  images,
+  textOverlaySpecs,
+  startIndex = 0,
+  onClose,
+  onOverlayChange,
+}: ImageLightboxProps) {
   const count = images.length
   const [index, setIndex] = useState(Math.min(Math.max(startIndex, 0), Math.max(count - 1, 0)))
   // SUITE-UX-02 mobile: swipe left/right navigates multi-image sets (carousel slides).
@@ -30,6 +44,7 @@ export function ImageLightbox({ images, startIndex = 0, onClose }: ImageLightbox
   }, [count, onClose])
 
   const url = images[index]
+  const overlay = textOverlaySpecs?.[index] ?? null
   if (!url) return null
 
   return (
@@ -85,15 +100,18 @@ export function ImageLightbox({ images, startIndex = 0, onClose }: ImageLightbox
           decoding="async"
           className="max-h-full max-w-full rounded-[6px] object-contain"
         />
+        {overlay && <TextOverlayLayer spec={overlay} />}
       </div>
 
       <div className="flex shrink-0 flex-col items-center justify-center gap-2 pt-3">
+        {overlay && onOverlayChange && (
+          <div className="w-full max-w-sm">
+            <TextOverlayEditor spec={overlay} onChange={spec => onOverlayChange(index, spec)} />
+          </div>
+        )}
         <div className="flex items-center justify-center gap-4">
-          <a
-            href={url}
-            download
-            target="_blank"
-            rel="noreferrer"
+          <button
+            type="button"
             onClick={() => {
               // Member pulse: downloads = "she loved it" (SUITE-UX-02).
               import("@/lib/analytics/client")
@@ -104,11 +122,13 @@ export function ImageLightbox({ images, startIndex = 0, onClose }: ImageLightbox
                   })
                 )
                 .catch(() => {})
+              if (overlay) void downloadImageWithOverlay(url, overlay, `sselfie-${index + 1}.png`)
+              else window.open(url, "_blank", "noreferrer")
             }}
             className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
           >
             Download
-          </a>
+          </button>
           {count > 1 && (
             <span className="text-[11px] text-white/50">
               {index + 1} / {count}

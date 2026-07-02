@@ -20,6 +20,12 @@ export interface CarouselDesignSystem {
   setDna: string
   /** How an identity slide is composed in this system (input: selfie). */
   identityTreatment: string
+  /**
+   * MAYA-FIX-03 (flag-gated): the same visual world with every typography instruction removed.
+   * Used when the words are composited as a real text layer after generation, so the image model
+   * only builds the scene and leaves calm negative space for the layer.
+   */
+  textFreeSetDna: string
 }
 
 export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
@@ -41,6 +47,12 @@ export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
       "(sticker style) and place her over a softly blurred or flat editorial background from the scene. She is " +
       "medium-small in the frame (about one third), leaving generous space for the headline and one handwritten accent. " +
       "A soft drop shadow under the cutout makes it feel pasted on.",
+    textFreeSetDna:
+      "Design system: editorial collage, like a curated moodboard page. One muted palette across the whole set " +
+      "(soft greys, warm neutrals, deep charcoal accents; or the look's own palette if given). Hand-drawn accents in " +
+      "thin white or charcoal ink at most: a small arrow, a loose circle, a short underline. Subtle film grain, soft " +
+      "shadows under cutout elements so the collage feels physical. Calm, premium, never cluttered: at most two " +
+      "decorations per slide. No emojis, no clip-art, no gradients, no neon, no Canva-template look.",
   },
   {
     id: "full-bleed-editorial",
@@ -56,6 +68,10 @@ export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
     identityTreatment:
       "A candid full-bleed editorial photograph of her, caught mid-moment, composed with generous negative space for " +
       "the headline. She is never centered and posing; the frame breathes.",
+    textFreeSetDna:
+      "Design system: full-bleed editorial photography. One cinematic grade across the whole set " +
+      "(deep shadows, refined contrast, muted color). No stickers, no doodles, no clutter, no emojis, " +
+      "no gradients. Quiet luxury.",
   },
   {
     id: "soft-minimal",
@@ -71,6 +87,10 @@ export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
     identityTreatment:
       "A bright, soft editorial photograph of her in natural window light, plenty of clean negative space (white wall, " +
       "linen, sky) where the headline sits. Calm and unposed.",
+    textFreeSetDna:
+      "Design system: light luxury minimalism. Off-white, pearl, and oat backgrounds with one soft accent tone from " +
+      "the look. Generous white space and soft natural shadows only. No decorations, no emojis, no gradients, " +
+      "no clutter.",
   },
 ]
 

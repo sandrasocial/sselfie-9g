@@ -35,6 +35,7 @@ import {
 } from "@/lib/app-v3/custom-model-brief"
 import type { ServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
 import type { AppV3AnalyticsCohort, OutputFormat } from "./types"
+import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 import {
   clearMayaDraft,
   readMayaDraftForSession,
@@ -340,7 +341,11 @@ export function MayaConcierge({
     () => restoredDraft?.genState ?? {}
   )
   // Fullscreen viewer: the set of image urls currently open (null = closed).
-  const [lightbox, setLightbox] = useState<{ images: string[] } | null>(null)
+  const [lightbox, setLightbox] = useState<{
+    key?: string
+    images: string[]
+    textOverlaySpecs?: TextOverlaySpec[]
+  } | null>(null)
   // True Edit Mode target: which generated image we're refining.
   const [editTarget, setEditTarget] = useState<{
     key: string
@@ -960,6 +965,7 @@ export function MayaConcierge({
               type?: string
               b64?: string
               imageUrls?: string[]
+              textOverlaySpecs?: TextOverlaySpec[]
               aiImageId?: number | null
               aiImageIds?: Array<number | null>
               error?: string
@@ -983,6 +989,7 @@ export function MayaConcierge({
                 [key]: {
                   status: "done",
                   imageUrls: evt!.imageUrls,
+                  textOverlaySpecs: evt!.textOverlaySpecs,
                   aiImageId: evt!.aiImageId ?? null,
                   aiImageIds: evt!.aiImageIds,
                 },
@@ -1008,6 +1015,7 @@ export function MayaConcierge({
       const data = (await res.json().catch(() => null)) as {
         imageUrl?: string
         imageUrls?: string[]
+        textOverlaySpecs?: TextOverlaySpec[]
         aiImageId?: number | null
         aiImageIds?: Array<number | null>
         error?: string
@@ -1038,6 +1046,7 @@ export function MayaConcierge({
         [key]: {
           status: "done",
           imageUrls: urls,
+          textOverlaySpecs: data?.textOverlaySpecs,
           aiImageId: data?.aiImageId ?? null,
           aiImageIds: data?.aiImageIds,
         },
@@ -1088,6 +1097,7 @@ export function MayaConcierge({
       const data = (await res.json().catch(() => null)) as {
         imageUrl?: string
         imageUrls?: string[]
+        textOverlaySpecs?: TextOverlaySpec[]
         aiImageId?: number | null
         aiImageIds?: Array<number | null>
         error?: string
@@ -1117,6 +1127,7 @@ export function MayaConcierge({
         [key]: {
           status: "done",
           imageUrls: urls,
+          textOverlaySpecs: data?.textOverlaySpecs,
           aiImageId: data?.aiImageId ?? null,
           aiImageIds: data?.aiImageIds,
         },
@@ -1203,6 +1214,22 @@ export function MayaConcierge({
     }
     setJustNamed(n)
     setNameDraft("")
+  }
+
+  function updateTextOverlaySpec(key: string, index: number, spec: TextOverlaySpec) {
+    setGenState(state => {
+      const current = state[key]
+      if (!current || current.status !== "done" || !current.imageUrls?.length) return state
+      const nextSpecs = [...(current.textOverlaySpecs ?? [])]
+      nextSpecs[index] = spec
+      return {
+        ...state,
+        [key]: {
+          ...current,
+          textOverlaySpecs: nextSpecs,
+        },
+      }
+    })
   }
 
   return (
@@ -1965,7 +1992,13 @@ export function MayaConcierge({
                           {urls.length > 0 && (
                             <button
                               type="button"
-                              onClick={() => setLightbox({ images: urls })}
+                              onClick={() =>
+                                setLightbox({
+                                  key,
+                                  images: urls,
+                                  textOverlaySpecs: gen.textOverlaySpecs,
+                                })
+                              }
                               className="grid w-full grid-cols-3 gap-2 text-left"
                             >
                               {urls.slice(0, 6).map((url, index) => (
@@ -2024,7 +2057,14 @@ export function MayaConcierge({
                           gen={gen}
                           format={conceptFormat}
                           onGenerate={() => void generateConcept(key, concept, conceptFormat)}
-                          onOpen={urls => setLightbox({ images: urls })}
+                          onOpen={urls =>
+                            setLightbox({
+                              key,
+                              images: urls,
+                              textOverlaySpecs: genState[key]?.textOverlaySpecs,
+                            })
+                          }
+                          onOverlayChange={(index, spec) => updateTextOverlaySpec(key, index, spec)}
                           onEdit={() => {
                             const url = (genState[key]?.imageUrls ?? [])[0]
                             if (url) setEditTarget({ key, url, format: conceptFormat })
@@ -2181,7 +2221,26 @@ export function MayaConcierge({
         </div>
       </aside>
 
-      {lightbox && <ImageLightbox images={lightbox.images} onClose={() => setLightbox(null)} />}
+      {lightbox && (
+        <ImageLightbox
+          images={lightbox.images}
+          textOverlaySpecs={lightbox.textOverlaySpecs}
+          onOverlayChange={
+            lightbox.key
+              ? (index, spec) => {
+                  updateTextOverlaySpec(lightbox.key as string, index, spec)
+                  setLightbox(current => {
+                    if (!current) return current
+                    const nextSpecs = [...(current.textOverlaySpecs ?? [])]
+                    nextSpecs[index] = spec
+                    return { ...current, textOverlaySpecs: nextSpecs }
+                  })
+                }
+              : undefined
+          }
+          onClose={() => setLightbox(null)}
+        />
+      )}
 
       <CreditModal
         open={creditModal.open}
