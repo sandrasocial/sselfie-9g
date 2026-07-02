@@ -911,7 +911,7 @@ CONTENT PLAN RULES:
     schema: BRIEF_STRATEGY_SCHEMA,
     system: strategySystem,
     userContent: briefUserContent,
-    maxTokens: 6000,
+    maxTokens: 10000,
   })
 
   const planOutput = await runBriefToolCall({
@@ -921,7 +921,10 @@ CONTENT PLAN RULES:
     schema: BRIEF_PLAN_SCHEMA,
     system: planSystem,
     userContent: `${briefUserContent}\n\nHere is the strategy layer from pass 1. Every content piece must reference these hooks, the demand map, and the audience questions:\n\n${JSON.stringify(strategyOutput, null, 2)}`,
-    maxTokens: 8000,
+    // 5 pieces x ~15 required fields + story frames + trend radar is a big JSON document:
+    // 8000 truncated twice in the first live run (2026-07-03). The model only spends what
+    // it needs, so the ceiling is generous on purpose.
+    maxTokens: 20000,
   })
 
   const brief = sanitizeContentBriefOutput({ ...strategyOutput, ...planOutput } as Omit<
