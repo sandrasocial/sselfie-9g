@@ -15,6 +15,13 @@ import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
 import { conceptRequestSize } from "@/lib/app-v3/prompt-compiler"
 import { AVOID_LIST, ELEVATION } from "@/lib/app-v3/maya/ingredients"
+import {
+  buildLikenessPromptBlock,
+  classifyLikenessCorrection,
+  isLikenessMemoryEnabled,
+  VANITY_DRIFT_PATTERN,
+} from "@/lib/app-v3/likeness-memory"
+import { addLikenessNote, getMemory } from "@/lib/app-v3/maya/memory-store"
 import type { OutputFormat } from "@/components/app-v3/types"
 
 export const maxDuration = 300
@@ -54,9 +61,9 @@ async function resolveIdentitySelfieUrl(
   }
 }
 
-// Vanity-drift asks ("flawless", "make me slimmer/younger") get a doctrine guard appended:
+// Vanity-drift doctrine guard ("flawless", "make me slimmer/younger") now lives in
+// lib/app-v3/likeness-memory.ts (VANITY_DRIFT_PATTERN), shared with the note classifier:
 // her at her natural best, never a different face or body. AI should not erase you.
-const VANITY_DRIFT_PATTERN = /\b(flawless|perfect|younger|slimmer|thinner|airbrush|photoshop)\w*/i
 
 function toOpenAIEditSize(size: "1024x1024" | "1024x1792"): "1024x1024" | "1024x1536" {
   return size === "1024x1024" ? "1024x1024" : "1024x1536"
@@ -103,7 +110,8 @@ async function normalize(buffer: Buffer): Promise<Buffer> {
 function buildEditPrompt(
   instruction: string,
   safer = false,
-  hasIdentityReference = false
+  hasIdentityReference = false,
+  likenessBlock = ""
 ): string {
   const base =
     "Refine the first attached image. Keep the same person, likeness, framing, composition, background, " +
@@ -121,7 +129,9 @@ function buildEditPrompt(
   const tail = safer
     ? " Keep it tasteful, fully clothed, and modest."
     : ` Keep it natural and editorial. ${ELEVATION} ${AVOID_LIST}`
-  return `${base}${instruction.trim()}.${identity}${doctrine}${tail}`
+  // LIKENESS-MEMORY-01: stored accuracy notes complement the real-selfie anchor above.
+  const likeness = likenessBlock ? `\n\n${likenessBlock}` : ""
+  return `${base}${instruction.trim()}.${identity}${doctrine}${tail}${likeness}`
 }
 
 export async function POST(request: NextRequest) {
@@ -169,6 +179,43 @@ export async function POST(request: NextRequest) {
             { status: 403 },
           )
         }
+      }
+    }
+
+    // ── LIKENESS-MEMORY-01 (flag-gated, fail-open): read her stored accuracy notes for this
+    // edit's prompt, then LEARN from this instruction. A likeness correction ("my hair is dark
+    // brown not black") becomes a durable note she never has to repeat; a vanity ask is never
+    // stored (the doctrine guard in buildEditPrompt handles it in-flight). Notes are read
+    // BEFORE capture so the new note doesn't duplicate the instruction already in the prompt.
+    let likenessBlock = ""
+    if (isLikenessMemoryEnabled()) {
+      try {
+        const memory = await getMemory(String(neonUser.id))
+        if (memory.likenessNotes.length > 0) {
+          likenessBlock = buildLikenessPromptBlock(memory.likenessNotes)
+        }
+        const classification = classifyLikenessCorrection(instruction)
+        if (classification.isLikeness && classification.note) {
+          const saved = await addLikenessNote(String(neonUser.id), classification.note)
+          if (saved.added || saved.updated) {
+            import("@/lib/analytics/events")
+              .then(({ logAnalyticsEvent }) =>
+                logAnalyticsEvent({
+                  eventName: "suite_likeness_note_captured",
+                  userId: String(neonUser.id),
+                  properties: {
+                    source: "app-v3-edit",
+                    category: classification.category,
+                    updated: saved.updated,
+                    total_notes: saved.total,
+                  },
+                }),
+              )
+              .catch(() => {})
+          }
+        }
+      } catch (likenessError) {
+        console.error("[app-v3 edit] likeness memory skipped:", likenessError)
       }
     }
 
@@ -249,11 +296,11 @@ export async function POST(request: NextRequest) {
 
     let imageBuffer: Buffer
     try {
-      imageBuffer = await runEdit(buildEditPrompt(instruction, false, hasIdentityReference))
+      imageBuffer = await runEdit(buildEditPrompt(instruction, false, hasIdentityReference, likenessBlock))
     } catch (firstError) {
       if (isContentPolicyError(firstError)) {
         try {
-          imageBuffer = await runEdit(buildEditPrompt(instruction, true, hasIdentityReference))
+          imageBuffer = await runEdit(buildEditPrompt(instruction, true, hasIdentityReference, likenessBlock))
         } catch (retryError) {
           await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "OpenAI content policy", refundRef).catch(() => {})
           if (isContentPolicyError(retryError)) {

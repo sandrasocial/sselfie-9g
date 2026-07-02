@@ -12,6 +12,8 @@ export interface Memory {
   brandNotes: string | null
   preferences: string | null
   userAvatarUrl: string | null
+  /** LIKENESS-MEMORY-01: accuracy notes Maya learned from her photo corrections. */
+  likenessNotes?: string[]
 }
 
 interface MemoryModalProps {
@@ -25,6 +27,8 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
   const [brand, setBrand] = useState("")
   const [prefs, setPrefs] = useState("")
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [likenessNotes, setLikenessNotes] = useState<string[]>([])
+  const [removingNote, setRemovingNote] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -40,10 +44,27 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
         setBrand(d?.brandNotes ?? "")
         setPrefs(d?.preferences ?? "")
         setAvatarUrl(d?.userAvatarUrl ?? null)
+        setLikenessNotes(Array.isArray(d?.likenessNotes) ? d.likenessNotes : [])
       })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [open])
+
+  // LIKENESS-MEMORY-01: a wrong note has to be removable, one tap, right here.
+  async function removeNote(note: string) {
+    setRemovingNote(note)
+    try {
+      const res = await fetch("/api/app-v3/maya/memory", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ removeLikenessNote: note }),
+      })
+      const d = (await res.json().catch(() => null)) as Memory | null
+      if (res.ok && d) setLikenessNotes(Array.isArray(d.likenessNotes) ? d.likenessNotes : [])
+    } finally {
+      setRemovingNote(null)
+    }
+  }
 
   async function uploadAvatar(file: File) {
     setUploading(true)
@@ -78,6 +99,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
           brandNotes: d.brandNotes ?? null,
           preferences: d.preferences ?? null,
           userAvatarUrl: d.userAvatarUrl ?? null,
+          likenessNotes: Array.isArray(d.likenessNotes) ? d.likenessNotes : [],
         })
       }
       onClose()
@@ -185,6 +207,38 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
               className="mt-1.5 w-full resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[14px] text-[#282728] outline-none focus:border-[#0D0E10]"
             />
           </label>
+
+          {/* LIKENESS-MEMORY-01: the notes Maya learned from her photo corrections. Visible so
+              she can SEE Maya learning, and deletable so a wrong note never sticks. */}
+          {likenessNotes.length > 0 && (
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">
+                What Maya keeps true about you
+              </p>
+              <p className="mt-1 text-[12px] leading-relaxed text-[#4F5052]">
+                Learned from your photo corrections, so every new photo stays you. Remove
+                anything that's off.
+              </p>
+              <ul className="mt-2 space-y-1.5">
+                {likenessNotes.map(note => (
+                  <li
+                    key={note}
+                    className="flex items-center justify-between gap-3 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2"
+                  >
+                    <span className="text-[13px] leading-snug text-[#282728]">{note}</span>
+                    <button
+                      type="button"
+                      onClick={() => void removeNote(note)}
+                      disabled={removingNote === note}
+                      className="inline-flex min-h-11 shrink-0 items-center text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10] disabled:opacity-40"
+                    >
+                      {removingNote === note ? "Removing…" : "Remove"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 flex flex-wrap items-center gap-3">

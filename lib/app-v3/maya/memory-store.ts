@@ -5,15 +5,24 @@
 // record is migrations/20260609_app_v3_memory.sql. Isolated and additive.
 
 import { sql } from "@/lib/db/client"
+import { upsertLikenessNote } from "@/lib/app-v3/likeness-memory"
 
 export interface AppV3Memory {
   agentName: string | null
   brandNotes: string | null
   preferences: string | null
   userAvatarUrl: string | null
+  /** LIKENESS-MEMORY-01: durable accuracy corrections ("hair: dark brown, not black"). */
+  likenessNotes: string[]
 }
 
-const EMPTY: AppV3Memory = { agentName: null, brandNotes: null, preferences: null, userAvatarUrl: null }
+const EMPTY: AppV3Memory = {
+  agentName: null,
+  brandNotes: null,
+  preferences: null,
+  userAvatarUrl: null,
+  likenessNotes: [],
+}
 
 let ensured: Promise<void> | null = null
 
@@ -31,6 +40,8 @@ export function ensureMemoryTable(): Promise<void> {
       `
       // Added after the initial Phase E table; ADD COLUMN IF NOT EXISTS is idempotent.
       await sql`ALTER TABLE app_v3_memory ADD COLUMN IF NOT EXISTS user_avatar_url text`
+      // LIKENESS-MEMORY-01 (formal record: migrations/20260702_app_v3_likeness_memory.sql).
+      await sql`ALTER TABLE app_v3_memory ADD COLUMN IF NOT EXISTS likeness_notes jsonb NOT NULL DEFAULT '[]'::jsonb`
     })().catch((e) => {
       ensured = null
       throw e
@@ -43,7 +54,7 @@ export function ensureMemoryTable(): Promise<void> {
 export async function getMemory(userId: string): Promise<AppV3Memory> {
   await ensureMemoryTable()
   const rows = await sql`
-    SELECT agent_name, brand_notes, preferences, user_avatar_url
+    SELECT agent_name, brand_notes, preferences, user_avatar_url, likeness_notes
     FROM app_v3_memory
     WHERE user_id = ${userId}
     LIMIT 1
@@ -54,6 +65,7 @@ export async function getMemory(userId: string): Promise<AppV3Memory> {
         brand_notes: string | null
         preferences: string | null
         user_avatar_url: string | null
+        likeness_notes: unknown
       }
     | undefined
   if (!row) return { ...EMPTY }
@@ -62,6 +74,22 @@ export async function getMemory(userId: string): Promise<AppV3Memory> {
     brandNotes: row.brand_notes ?? null,
     preferences: row.preferences ?? null,
     userAvatarUrl: row.user_avatar_url ?? null,
+    likenessNotes: parseLikenessNotes(row.likeness_notes),
+  }
+}
+
+/** Tolerant jsonb parse: only an array of non-empty strings survives. */
+function parseLikenessNotes(value: unknown): string[] {
+  const raw = typeof value === "string" ? safeJsonParse(value) : value
+  if (!Array.isArray(raw)) return []
+  return raw.filter((n): n is string => typeof n === "string" && n.trim().length > 0)
+}
+
+function safeJsonParse(value: string): unknown {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
   }
 }
 
@@ -108,4 +136,45 @@ export async function saveMemory(
       user_avatar_url = EXCLUDED.user_avatar_url,
       updated_at      = now()
   `
+}
+
+/** Persist the full likeness-note list (read-merge-write, same pattern as saveMemory). */
+async function writeLikenessNotes(userId: string, notes: string[]): Promise<void> {
+  await sql`
+    INSERT INTO app_v3_memory (user_id, likeness_notes, updated_at)
+    VALUES (${userId}, ${JSON.stringify(notes)}::jsonb, now())
+    ON CONFLICT (user_id) DO UPDATE SET
+      likeness_notes = EXCLUDED.likeness_notes,
+      updated_at     = now()
+  `
+}
+
+/**
+ * LIKENESS-MEMORY-01: store one normalized likeness note ("hair: dark brown, not black").
+ * Deduped: the same note is refreshed (moved to most-recent), never stored twice.
+ */
+export async function addLikenessNote(
+  userId: string,
+  note: string,
+): Promise<{ added: boolean; updated: boolean; total: number }> {
+  await ensureMemoryTable()
+  const current = await getMemory(userId)
+  const result = upsertLikenessNote(current.likenessNotes, note)
+  if (!result.added && !result.updated) {
+    return { added: false, updated: false, total: current.likenessNotes.length }
+  }
+  await writeLikenessNotes(userId, result.notes)
+  return { added: result.added, updated: result.updated, total: result.notes.length }
+}
+
+/** Remove one likeness note (a wrong note must be removable by the member). */
+export async function removeLikenessNote(userId: string, note: string): Promise<string[]> {
+  await ensureMemoryTable()
+  const current = await getMemory(userId)
+  const key = note.trim().toLowerCase()
+  const notes = current.likenessNotes.filter(n => n.trim().toLowerCase() !== key)
+  if (notes.length !== current.likenessNotes.length) {
+    await writeLikenessNotes(userId, notes)
+  }
+  return notes
 }

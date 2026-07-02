@@ -211,6 +211,7 @@ export async function redesignContentSlideToBuffer({
   quality = "high",
   size,
   textMode = "baked",
+  extraIdentityInstruction,
 }: {
   referenceUrl: string
   styleReferenceUrl: string
@@ -225,6 +226,9 @@ export async function redesignContentSlideToBuffer({
   // Override the output size (e.g. a 9:16 story sequence reusing the carousel pipeline).
   size?: string
   textMode?: SlideTextMode
+  // LIKENESS-MEMORY-01: the member's stored accuracy corrections, appended after the
+  // built prompt so /app slides honor them too. Admin content-kit callers leave this unset.
+  extraIdentityInstruction?: string
 }): Promise<{ buffer: Buffer; prompt: string }> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured")
@@ -244,15 +248,20 @@ export async function redesignContentSlideToBuffer({
   const editInput: Record<string, unknown> = {
     model: OPENAI_IMAGE_MODEL,
     image: files,
-    prompt: buildContentSlideRedesignPrompt({
-      slide,
-      category,
-      topic,
-      styleLabel,
-      referenceMode,
-      hasInspirationReference: Boolean(inspirationReferenceUrl),
-      textMode,
-    }),
+    prompt: [
+      buildContentSlideRedesignPrompt({
+        slide,
+        category,
+        topic,
+        styleLabel,
+        referenceMode,
+        hasInspirationReference: Boolean(inspirationReferenceUrl),
+        textMode,
+      }),
+      extraIdentityInstruction?.trim() || "",
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
     n: 1,
     size: size ?? (category === "story-sequence" ? STORY_SIZE : CAROUSEL_SIZE),
     quality,

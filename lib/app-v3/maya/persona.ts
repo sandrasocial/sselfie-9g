@@ -30,6 +30,8 @@ export interface AppV3SystemPromptContext {
     agentName?: string | null
     brandNotes?: string | null
     preferences?: string | null
+    /** LIKENESS-MEMORY-01: durable accuracy corrections from her past edits (flag-gated upstream). */
+    likenessNotes?: string[] | null
   } | null
   /** Recent meaningful things she created (signal for "what is she likely making now"). */
   recentActivity?: string[] | null
@@ -59,6 +61,12 @@ function memoryBlock(memory?: AppV3SystemPromptContext["memory"]): string {
   if (memory.preferences?.trim()) {
     lines.push(
       `Her style preferences and the things she avoids (respect these in every concept): ${memory.preferences.trim()}`
+    )
+  }
+  const likenessNotes = (memory.likenessNotes ?? []).map(n => n.trim()).filter(Boolean)
+  if (likenessNotes.length > 0) {
+    lines.push(
+      `Likeness corrections she already made (these keep her photos accurate and recognizable, never contradict them and never ask her to repeat them): ${likenessNotes.join("; ")}`
     )
   }
   if (lines.length === 0) return ""

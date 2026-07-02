@@ -6,12 +6,19 @@
 import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
-import { getMemory, saveMemory } from "@/lib/app-v3/maya/memory-store"
+import { getMemory, removeLikenessNote, saveMemory } from "@/lib/app-v3/maya/memory-store"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 
 export const dynamic = "force-dynamic"
 
-const EMPTY = { agentName: null, brandNotes: null, preferences: null, userAvatarUrl: null, hasBrandProfile: true }
+const EMPTY = {
+  agentName: null,
+  brandNotes: null,
+  preferences: null,
+  userAvatarUrl: null,
+  likenessNotes: [] as string[],
+  hasBrandProfile: true,
+}
 
 export async function GET() {
   const { user, error: authError } = await getAuthenticatedUser()
@@ -48,6 +55,8 @@ export async function PUT(request: Request) {
         brandNotes?: string | null
         preferences?: string | null
         userAvatarUrl?: string | null
+        /** LIKENESS-MEMORY-01: delete one stored likeness note (a wrong note must be removable). */
+        removeLikenessNote?: string
       }
     | null
   if (!body || typeof body !== "object") {
@@ -58,12 +67,22 @@ export async function PUT(request: Request) {
   if (!neonUserId) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
   try {
-    await saveMemory(String(neonUserId), {
-      agentName: body.agentName,
-      brandNotes: body.brandNotes,
-      preferences: body.preferences,
-      userAvatarUrl: body.userAvatarUrl,
-    })
+    if (typeof body.removeLikenessNote === "string" && body.removeLikenessNote.trim()) {
+      await removeLikenessNote(String(neonUserId), body.removeLikenessNote)
+    }
+    if (
+      body.agentName !== undefined ||
+      body.brandNotes !== undefined ||
+      body.preferences !== undefined ||
+      body.userAvatarUrl !== undefined
+    ) {
+      await saveMemory(String(neonUserId), {
+        agentName: body.agentName,
+        brandNotes: body.brandNotes,
+        preferences: body.preferences,
+        userAvatarUrl: body.userAvatarUrl,
+      })
+    }
     return NextResponse.json(await getMemory(String(neonUserId)))
   } catch (e) {
     console.error("[app-v3 memory] save failed:", e)
