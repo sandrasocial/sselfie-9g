@@ -755,7 +755,24 @@ async function runBriefToolCall(options: BriefToolCallOptions): Promise<Record<s
   return toolBlock.input as Record<string, unknown>
 }
 
-export async function generateContentBrief(): Promise<ContentBrief> {
+/**
+ * Phase 1 of the weekly brief: the web-search research memo on its own. The full pipeline
+ * (research + two generation passes) outruns Vercel's 300s function cap, so the cron runs
+ * this phase first and stores the memo (analytics_reports type content_brief_research_memo);
+ * the build phase picks it up minutes later.
+ */
+export async function generateContentBriefResearchMemo(): Promise<string> {
+  const [performance, signals] = await Promise.all([
+    collectInstagramPerformance(),
+    collectAudienceSignals(30),
+  ])
+  return researchCurrentHooks(performance, signals)
+}
+
+export async function generateContentBrief(options?: {
+  /** A research memo generated earlier by the research phase. When set, skips the web-search pass. */
+  prebuiltResearchMemo?: string | null
+}): Promise<ContentBrief> {
   const periodEnd = new Date()
   const periodStart = new Date(periodEnd)
   periodStart.setDate(periodStart.getDate() - 7)
@@ -771,7 +788,8 @@ export async function generateContentBrief(): Promise<ContentBrief> {
     }),
   ])
 
-  const researchNotes = await researchCurrentHooks(performance, signals)
+  const researchNotes =
+    options?.prebuiltResearchMemo?.trim() || (await researchCurrentHooks(performance, signals))
 
   const client = getAnthropicClient()
 

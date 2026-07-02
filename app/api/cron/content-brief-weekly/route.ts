@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { generateContentBrief } from "@/lib/content-engine/brief-generator"
-import { storeAnalyticsReport } from "@/lib/analytics/reports"
+import {
+  generateContentBrief,
+  generateContentBriefResearchMemo,
+} from "@/lib/content-engine/brief-generator"
+import { getLatestAnalyticsReports, storeAnalyticsReport } from "@/lib/analytics/reports"
 import { createCronLogger } from "@/lib/cron-logger"
 import { sendEmail } from "@/lib/email/send-email"
 
@@ -9,8 +12,25 @@ export const maxDuration = 300
 
 const ADMIN_EMAIL = process.env.IG_AGENT_ADMIN_EMAIL || "ssa@ssasocial.com"
 
+// The full pipeline (web research + two generation passes) outruns the 300s function cap,
+// so vercel.json fires this route twice on Mondays: ?phase=research at 06:00 stores the
+// memo, the default build phase at 06:30 consumes it. A memo older than this is stale and
+// the build phase regenerates research inline (accepting the timeout risk on manual runs).
+const RESEARCH_MEMO_MAX_AGE_MS = 6 * 60 * 60 * 1000
+
+async function getFreshResearchMemo(): Promise<string | null> {
+  const rows = await getLatestAnalyticsReports({ reportType: "content_brief_research_memo", limit: 1 })
+  const row = rows[0] as { created_at?: string; payload?: { memo?: string } } | undefined
+  if (!row?.payload?.memo) return null
+  const age = Date.now() - new Date(row.created_at ?? 0).getTime()
+  return age <= RESEARCH_MEMO_MAX_AGE_MS ? row.payload.memo : null
+}
+
 export async function GET(request: NextRequest) {
-  const logger = createCronLogger("content-brief-weekly")
+  const phase = request.nextUrl.searchParams.get("phase") === "research" ? "research" : "build"
+  const logger = createCronLogger(
+    phase === "research" ? "content-brief-weekly-research" : "content-brief-weekly",
+  )
   await logger.start()
 
   try {
@@ -25,7 +45,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, generated: false, skipped: "disabled" })
     }
 
-    const brief = await generateContentBrief()
+    if (phase === "research") {
+      const memo = await generateContentBriefResearchMemo()
+      const now = new Date()
+      await storeAnalyticsReport({
+        reportType: "content_brief_research_memo",
+        periodStart: now,
+        periodEnd: now,
+        payload: { memo },
+      })
+      await logger.success({ generated: true, phase: "research", memoChars: memo.length })
+      return NextResponse.json({ success: true, phase: "research", memoChars: memo.length })
+    }
+
+    const prebuiltResearchMemo = await getFreshResearchMemo()
+    const brief = await generateContentBrief({ prebuiltResearchMemo })
 
     await storeAnalyticsReport({
       reportType: "content_brief_weekly",

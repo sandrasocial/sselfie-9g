@@ -587,6 +587,7 @@ export async function storeAnalyticsReport(input: {
     | "maya_instagram_trends_weekly"
     | "revenue_engine_weekly"
     | "content_brief_weekly"
+    | "content_brief_research_memo"
     | "daily_sandra_briefing"
   periodStart: Date
   periodEnd: Date
