@@ -64,11 +64,11 @@ describe("PRESETS-PRODUCT-01", () => {
   it("wires the presets landing CTAs to attributed checkout URLs", () => {
     const page = read("app/presets/page.tsx")
 
-    expect(page).toContain("/checkout/presets?tier=single")
-    expect(page).toContain("/checkout/presets?tier=bundle")
-    expect(page).toContain("utm_campaign=presets_launch")
-    expect(page).toContain("checkout_source=single_pricing_card")
-    expect(page).toContain("checkout_source=bundle_primary_cta")
+    expect(page).toContain('return `/checkout/presets?${params.toString()}`')
+    expect(page).toContain('params.set("tier", base.tier)')
+    expect(page).toContain('params.set("utm_campaign", fwd.utmCampaign || "presets_launch")')
+    expect(page).toContain('checkoutSource: "collection_card"')
+    expect(page).toContain('checkoutSource: "bundle_primary_cta"')
   })
 
   it("dispatches paid presets checkouts to the presets fulfillment handler", () => {

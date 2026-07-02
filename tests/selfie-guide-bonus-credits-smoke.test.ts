@@ -119,6 +119,10 @@ vi.mock("@/lib/freebie/selfie-guide-access", () => ({
   ensurePaidSelfieGuideSubscriber: vi.fn(),
 }))
 
+vi.mock("@/lib/payments/handlers/presets", () => ({
+  handlePresetsCheckout: vi.fn(),
+}))
+
 vi.mock("@/lib/academy-entitlements", () => ({
   upsertPurchaseEntitlement: vi.fn(),
 }))
