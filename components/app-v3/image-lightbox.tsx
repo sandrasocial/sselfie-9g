@@ -6,27 +6,27 @@
 // Supports keyboard (Esc, arrows), prev/next for multi-image sets, and download.
 
 import { useEffect, useState } from "react"
-import {
-  downloadImageWithOverlay,
-  TextOverlayEditor,
-  TextOverlayLayer,
-} from "./text-overlay-layer"
+import { downloadImageWithOverlay, TextOverlayLayer } from "./text-overlay-layer"
 import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 
 interface ImageLightboxProps {
   images: string[]
   textOverlaySpecs?: TextOverlaySpec[]
+  /** TEXT-STUDIO-01: per-image baked text renders, index-aligned with images. */
+  bakedImageUrls?: Array<string | null>
   startIndex?: number
   onClose: () => void
-  onOverlayChange?: (index: number, spec: TextOverlaySpec) => void
+  /** Open the full-screen Text Studio for this slide (replaces the old inline editor). */
+  onOpenTextStudio?: (index: number) => void
 }
 
 export function ImageLightbox({
   images,
   textOverlaySpecs,
+  bakedImageUrls,
   startIndex = 0,
   onClose,
-  onOverlayChange,
+  onOpenTextStudio,
 }: ImageLightboxProps) {
   const count = images.length
   const [index, setIndex] = useState(Math.min(Math.max(startIndex, 0), Math.max(count - 1, 0)))
@@ -45,6 +45,8 @@ export function ImageLightbox({
 
   const url = images[index]
   const overlay = textOverlaySpecs?.[index] ?? null
+  // A baked render wins the view; the clean base in images[] stays kept underneath.
+  const baked = bakedImageUrls?.[index] ?? null
   if (!url) return null
 
   return (
@@ -95,25 +97,25 @@ export function ImageLightbox({
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={url}
+          src={baked ?? url}
           alt={`Result ${index + 1}`}
           decoding="async"
           className="max-h-full max-w-full rounded-[6px] object-contain"
         />
-        {overlay && <TextOverlayLayer spec={overlay} />}
+        {overlay && !baked && <TextOverlayLayer spec={overlay} />}
       </div>
 
       <div className="flex shrink-0 flex-col items-center justify-center gap-2 pt-3">
-        {overlay && onOverlayChange && (
-          <div className="w-full max-w-sm">
-            <TextOverlayEditor
-              spec={overlay}
-              imageUrl={url}
-              onChange={spec => onOverlayChange(index, spec)}
-            />
-          </div>
-        )}
         <div className="flex items-center justify-center gap-4">
+          {overlay && onOpenTextStudio && (
+            <button
+              type="button"
+              onClick={() => onOpenTextStudio(index)}
+              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
+            >
+              Edit text
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -126,7 +128,8 @@ export function ImageLightbox({
                   })
                 )
                 .catch(() => {})
-              if (overlay) void downloadImageWithOverlay(url, overlay, `sselfie-${index + 1}.png`)
+              if (baked) window.open(baked, "_blank", "noreferrer")
+              else if (overlay) void downloadImageWithOverlay(url, overlay, `sselfie-${index + 1}.png`)
               else window.open(url, "_blank", "noreferrer")
             }}
             className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"

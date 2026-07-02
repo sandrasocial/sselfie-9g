@@ -166,6 +166,10 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "suite_memory_note_saved",
   // LIKENESS-MEMORY-01 — a likeness correction became a durable memory note (behavior only).
   "suite_likeness_note_captured",
+  // TEXT-STUDIO-01 — hybrid text studio: she asked for a baked text render / the bake failed
+  // (behavior only, never money; credits truth lives in credit_transactions).
+  "suite_text_bake_requested",
+  "suite_text_bake_failed",
 ] as const
 
 export type AnalyticsEventName = (typeof ALLOWED_ANALYTICS_EVENTS)[number]

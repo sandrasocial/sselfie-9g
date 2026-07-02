@@ -162,10 +162,17 @@ function sanitizeGenState(value: unknown): Record<string, ConceptGenState> {
               Boolean(spec)
             )
         : undefined
+      // TEXT-STUDIO-01: baked renders survive with their specs (index-aligned, https only).
+      const bakedImageUrls = Array.isArray(state.bakedImageUrls)
+        ? state.bakedImageUrls.map(url =>
+            typeof url === "string" && url.startsWith("https://") ? url : null
+          )
+        : undefined
       out[key] = {
         status: "done",
         imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),
         ...(textOverlaySpecs?.length ? { textOverlaySpecs } : {}),
+        ...(bakedImageUrls?.some(Boolean) ? { bakedImageUrls } : {}),
       }
     } else if (
       state.status === "idle" ||

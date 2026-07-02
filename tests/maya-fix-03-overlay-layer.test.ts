@@ -510,10 +510,60 @@ describe("overlay visual picker (Sandra's 2026-07-02 feedback)", () => {
     expect(editor).toContain("getOverlayMarkableWords")
   })
 
-  it("passes the real image URL through from both editor call sites", () => {
+  it("shows all six styles at once in a grid, never a horizontal hunt", () => {
+    // Sandra's 2026-07-02 feedback: Cutout Editorial scrolled off the horizontal row.
+    const editor = readFileSync("components/app-v3/text-overlay-layer.tsx", "utf8")
+    expect(editor).toContain("grid grid-cols-3")
+    expect(editor).not.toContain("overflow-x-auto")
+    expect(OVERLAY_STYLE_PRESETS).toHaveLength(6)
+  })
+})
+
+describe("text studio entry points (TEXT-STUDIO-01, Sandra's 2026-07-02 feedback)", () => {
+  it("opens the studio from the concept card instead of rendering the editor inline", () => {
     const card = readFileSync("components/app-v3/concept-card.tsx", "utf8")
-    expect(card).toContain("imageUrl={images[0]}")
+    expect(card).not.toContain("TextOverlayEditor")
+    expect(card).toContain("onOpenTextStudio")
+    expect(card).toContain("Edit text")
+    // A baked render wins the card view and the download; the clean base stays kept.
+    expect(card).toContain("firstBaked ?? images[0]")
+    expect(card).toContain("{firstOverlay && !firstBaked && <TextOverlayLayer spec={firstOverlay} />}")
+    expect(card).toContain('if (firstBaked) window.open(firstBaked, "_blank", "noreferrer")')
+  })
+
+  it("opens the studio from the lightbox instead of rendering the editor inline", () => {
     const lightbox = readFileSync("components/app-v3/image-lightbox.tsx", "utf8")
-    expect(lightbox).toContain("imageUrl={url}")
+    expect(lightbox).not.toContain("TextOverlayEditor")
+    expect(lightbox).toContain("onOpenTextStudio")
+    expect(lightbox).toContain("Edit text")
+    expect(lightbox).toContain("baked ?? url")
+    expect(lightbox).toContain("{overlay && !baked && <TextOverlayLayer spec={overlay} />}")
+  })
+
+  it("wires the studio in the concierge: spec edits retire stale bakes, bakes persist per index", () => {
+    const concierge = readFileSync("components/app-v3/maya-concierge.tsx", "utf8")
+    expect(concierge).toContain("<TextStudio")
+    expect(concierge).toContain("setTextStudio({ key, index: 0 })")
+    expect(concierge).toContain("updateBakedImage")
+    // Editing the design retires the baked render (its pixels carry the OLD words).
+    expect(concierge).toMatch(/nextBaked\[index\] = null/)
+  })
+
+  it("persists baked renders in both draft snapshot sanitizers alongside the specs", () => {
+    for (const file of ["lib/app-v3/maya/draft-snapshot.ts", "components/app-v3/continuity.ts"]) {
+      const source = readFileSync(file, "utf8")
+      expect(source).toContain("bakedImageUrls")
+      expect(source).toContain('url.startsWith("https://")')
+    }
+  })
+
+  it("pins the preview at the top of the studio and scrolls the controls beneath it", () => {
+    const studio = readFileSync("components/app-v3/text-studio.tsx", "utf8")
+    // Pinned preview region (fixed height, shrink-0) + scrollable controls (flex-1).
+    expect(studio).toMatch(/h-\[46vh\][^"]*shrink-0/)
+    expect(studio).toMatch(/flex-1 overflow-y-auto/)
+    // The studio reuses the full editor (6-card grid, chips, size, position) below the preview.
+    expect(studio).toContain("<TextOverlayEditor spec={spec} imageUrl={cleanImageUrl} onChange={changeSpec} />")
+    expect(studio).toContain("Apply to photo")
   })
 })

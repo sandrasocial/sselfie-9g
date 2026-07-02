@@ -9,11 +9,7 @@
 import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "./types"
 import { Spinner } from "./loading"
-import {
-  downloadImageWithOverlay,
-  TextOverlayEditor,
-  TextOverlayLayer,
-} from "./text-overlay-layer"
+import { downloadImageWithOverlay, TextOverlayLayer } from "./text-overlay-layer"
 import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 
 export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
@@ -22,6 +18,12 @@ export interface ConceptGenState {
   status: ConceptGenStatus
   imageUrls?: string[]
   textOverlaySpecs?: TextOverlaySpec[]
+  /**
+   * TEXT-STUDIO-01: per-image baked text renders, index-aligned with imageUrls. The clean
+   * base in imageUrls is the source of truth and is never overwritten; a baked entry means
+   * "show this instead", and "without text" is an instant swap back.
+   */
+  bakedImageUrls?: Array<string | null>
   aiImageId?: number | null
   aiImageIds?: Array<number | null>
   videoUrl?: string
@@ -39,8 +41,8 @@ interface ConceptCardProps {
   onOpen?: (imageUrls: string[]) => void
   /** Open true Edit Mode on the finished image. */
   onEdit?: () => void
-  /** Update one editable text layer without regenerating the background image. */
-  onOverlayChange?: (index: number, spec: TextOverlaySpec) => void
+  /** Open the full-screen Text Studio on the finished image (TEXT-STUDIO-01). */
+  onOpenTextStudio?: () => void
   /** Admin-only prompt inspector asset id, e.g. ai_123. */
   promptAssetId?: string | null
   disabled?: boolean
@@ -63,7 +65,7 @@ export function ConceptCard({
   onGenerate,
   onOpen,
   onEdit,
-  onOverlayChange,
+  onOpenTextStudio,
   promptAssetId,
   disabled,
 }: ConceptCardProps) {
@@ -74,6 +76,8 @@ export function ConceptCard({
   const isVideoDone = gen.status === "done" && !!videoUrl
   const isCarousel = images.length > 1
   const firstOverlay = gen.textOverlaySpecs?.[0] ?? null
+  // A baked render (text in the pixels) wins the card; the clean base stays kept underneath.
+  const firstBaked = gen.bakedImageUrls?.[0] ?? null
 
   return (
     <div className="min-w-0 max-w-full overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white [overflow-x:clip]">
@@ -96,12 +100,12 @@ export function ConceptCard({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={images[0]}
+                src={firstBaked ?? images[0]}
                 alt={concept.title}
                 decoding="async"
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               />
-              {firstOverlay && <TextOverlayLayer spec={firstOverlay} />}
+              {firstOverlay && !firstBaked && <TextOverlayLayer spec={firstOverlay} />}
               {isCarousel && (
                 <span className="absolute left-2 top-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
                   {images.length} slides
@@ -186,7 +190,8 @@ export function ConceptCard({
                         })
                       )
                       .catch(() => {})
-                    if (firstOverlay) void downloadImageWithOverlay(images[0], firstOverlay)
+                    if (firstBaked) window.open(firstBaked, "_blank", "noreferrer")
+                    else if (firstOverlay) void downloadImageWithOverlay(images[0], firstOverlay)
                     else window.open(images[0], "_blank", "noreferrer")
                   }}
                   className="inline-flex min-h-11 items-center justify-center rounded-[4px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
@@ -194,12 +199,14 @@ export function ConceptCard({
                   Download
                 </button>
               )}
-              {firstOverlay && onOverlayChange && !isCarousel && !isVideoDone && (
-                <TextOverlayEditor
-                  spec={firstOverlay}
-                  imageUrl={images[0]}
-                  onChange={spec => onOverlayChange(0, spec)}
-                />
+              {firstOverlay && onOpenTextStudio && !isCarousel && !isVideoDone && (
+                <button
+                  type="button"
+                  onClick={onOpenTextStudio}
+                  className="inline-flex min-h-11 items-center justify-center rounded-[4px] border border-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] hover:bg-[#0D0E10]/[0.04] min-[380px]:px-5 min-[380px]:tracking-[0.18em]"
+                >
+                  Edit text
+                </button>
               )}
               {onEdit && !isCarousel && !isVideoDone && (
                 <button
