@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   enforceCaptionPublishingRules,
   extractHashtagsFromCaption,
+  hasBannedCaptionLanguage,
   shouldRegenerateCaption,
 } from "@/lib/feed-planner/caption-writer"
 
@@ -37,5 +38,31 @@ describe("feed caption quality guards", () => {
           "#personalbrand #contentstrategy #storytelling #instagramtips #creatorbusiness",
       ),
     ).toBe(false)
+  })
+
+  it("flags Sandra's banned words and em-dashes for a rewrite pass", () => {
+    const longBody =
+      "For months I kept posting polished content that looked perfect but sounded nothing like me, and people scrolled past without replying. The shift happened when I shared one messy lesson from a bad launch and explained exactly what I changed the next day. That post brought better conversations than the previous ten combined. If you're stuck, pick one real moment from this week and turn it into tomorrow's post, then tell me how your audience responds. Nothing fancy, just honest words that sound like you actually talk."
+
+    expect(hasBannedCaptionLanguage("This will transform your brand overnight.")).toBe(true)
+    expect(hasBannedCaptionLanguage("Time to unlock your potential, babe.")).toBe(true)
+    expect(hasBannedCaptionLanguage("It's a total game-changer for your feed.")).toBe(true)
+    expect(hasBannedCaptionLanguage("Leverage this one trick.")).toBe(true)
+    expect(hasBannedCaptionLanguage("One photo — one story.")).toBe(true)
+    expect(hasBannedCaptionLanguage("Your transformation story matters.")).toBe(false)
+    expect(hasBannedCaptionLanguage("Still you, just seen clearly.")).toBe(false)
+
+    expect(shouldRegenerateCaption(`Ready to skyrocket your reach?\n\n${longBody}`)).toBe(true)
+    expect(shouldRegenerateCaption(`I almost quit three times.\n\n${longBody}`)).toBe(false)
+  })
+
+  it("normalizes em-dashes out of published captions", () => {
+    const cleaned = enforceCaptionPublishingRules({
+      caption:
+        "One photo — one story.\n\nFor months I kept posting polished content that looked perfect but sounded nothing like me, and people scrolled past without replying. The shift happened when I shared one messy lesson from a bad launch and explained exactly what I changed the next day. That post brought better conversations than the previous ten combined.\n\nPick one real moment from this week and turn it into tomorrow's post.",
+    })
+
+    expect(cleaned).not.toContain("—")
+    expect(cleaned).toContain("One photo: one story.")
   })
 })
