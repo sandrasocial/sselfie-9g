@@ -38,7 +38,7 @@ export async function GET() {
     if (state.membershipActive) {
       ;[drops, vaultDrops] = await Promise.all([
         sql`
-          SELECT id, title, description, thumbnail_url, month, category
+          SELECT id, title, description, thumbnail_url, month, category, created_at
           FROM academy_monthly_drops
           WHERE status = 'published'
           ORDER BY created_at DESC, order_index ASC
@@ -91,6 +91,7 @@ export async function GET() {
           thumbnailUrl: d.heroImage,
           month: d.publishedAt.slice(0, 7),
           category: "Prompt Vault",
+          publishedAt: d.publishedAt,
         })),
         ...drops.map((d) => ({
           id: d.id,
@@ -99,6 +100,7 @@ export async function GET() {
           thumbnailUrl: d.thumbnail_url ?? null,
           month: d.month ?? null,
           category: d.category ?? null,
+          publishedAt: d.created_at ? new Date(d.created_at as string | Date).toISOString() : null,
         })),
       ],
     })

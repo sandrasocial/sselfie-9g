@@ -167,6 +167,9 @@ export function VisualFrontDoor({
   const firstRunSelfieInputRef = useRef<HTMLInputElement>(null)
   const homeTrackedRef = useRef(false)
   const [aesthetics, setAesthetics] = useState<Aesthetic[]>(AESTHETICS)
+  const [weeklyLook, setWeeklyLook] = useState<{ aestheticId: string; oneLiner: string } | null>(
+    null
+  )
   const [frontDoorUploading, setFrontDoorUploading] = useState(false)
   const [frontDoorUploadError, setFrontDoorUploadError] = useState<string | null>(null)
   const [frontDoorHasSelfie, setFrontDoorHasSelfie] = useState(hasSelfie)
@@ -181,6 +184,12 @@ export function VisualFrontDoor({
       .then(data => {
         if (!alive || !Array.isArray(data?.aesthetics) || data.aesthetics.length === 0) return
         setAesthetics(data.aesthetics)
+        if (data.weeklyLook?.aestheticId) {
+          setWeeklyLook({
+            aestheticId: String(data.weeklyLook.aestheticId),
+            oneLiner: typeof data.weeklyLook.oneLiner === "string" ? data.weeklyLook.oneLiner : "",
+          })
+        }
       })
       .catch(() => {})
     return () => {
@@ -200,6 +209,11 @@ export function VisualFrontDoor({
       properties: { cohort, hasSelfie: effectiveHasSelfie, section: "create" },
     })
   }, [cohort, effectiveHasSelfie])
+
+  // The same rotating look the Monday email announces, matched server-side to a tile.
+  const weeklyAesthetic = weeklyLook
+    ? (aesthetics.find(a => a.id === weeklyLook.aestheticId) ?? null)
+    : null
 
   const heroImage = aesthetics[0]?.coverImage || AESTHETICS[0]?.coverImage || ""
   const selfieImage = aesthetics[1]?.coverImage || heroImage
@@ -399,6 +413,40 @@ export function VisualFrontDoor({
           <p className="mt-2 max-w-md text-[13px] leading-relaxed text-[#6D6E70]">
             Use these when you want the look chosen before Maya starts.
           </p>
+        </div>
+      )}
+
+      {/* This week's look: the same drop the Monday email announces, one tap into Maya. */}
+      {!shouldShowTrialFirstRun && !compact && weeklyAesthetic && (
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => openAesthetic(weeklyAesthetic)}
+            className="group relative block w-full overflow-hidden rounded-[8px] bg-[#0D0E10] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10]"
+            aria-label={`Start a shoot in this week's look, ${weeklyAesthetic.name}`}
+          >
+            <div className="relative min-h-[220px] w-full sm:min-h-[260px]">
+              <Image
+                src={weeklyAesthetic.coverImage}
+                alt=""
+                fill
+                sizes="(max-width: 1024px) 100vw, 896px"
+                className="object-cover opacity-90 transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0D0E10]/85 via-[#0D0E10]/25 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
+                <p className="text-[10px] uppercase tracking-[0.28em] text-white/80">
+                  New this week
+                </p>
+                <p className="mt-2 font-serif text-[26px] font-light leading-[1.05] text-white sm:text-[32px]">
+                  {weeklyAesthetic.name}
+                </p>
+                <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-white/80">
+                  {weeklyLook?.oneLiner || weeklyAesthetic.blurb}
+                </p>
+              </div>
+            </div>
+          </button>
         </div>
       )}
 

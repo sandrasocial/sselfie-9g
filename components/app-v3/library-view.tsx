@@ -49,6 +49,19 @@ interface LibraryDrop {
   thumbnailUrl: string | null
   month: string | null
   category: string | null
+  publishedAt?: string | null
+}
+
+// A drop counts as new for two weeks after it lands, so the Library always shows
+// what changed since the last Monday email without any extra state.
+const NEW_DROP_WINDOW_MS = 14 * 24 * 60 * 60 * 1000
+
+function isNewDrop(publishedAt: string | null | undefined): boolean {
+  if (!publishedAt) return false
+  const time = Date.parse(publishedAt)
+  if (Number.isNaN(time)) return false
+  const age = Date.now() - time
+  return age >= 0 && age < NEW_DROP_WINDOW_MS
 }
 
 interface LibraryData {
@@ -249,6 +262,11 @@ export function LibraryView() {
                       </div>
                     )}
                     <div className="min-w-0">
+                      {isNewDrop(d.publishedAt) && (
+                        <p className="mb-0.5 text-[9px] uppercase tracking-[0.18em] text-[#0D0E10]">
+                          New
+                        </p>
+                      )}
                       <h3 className="font-serif text-[17px] font-light leading-tight text-[#0D0E10]">
                         {d.title}
                       </h3>

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { AESTHETICS } from "@/components/app-v3/aesthetics"
 import { getPublishedVaultCollections, toAestheticId, toDisplayName } from "@/lib/vault/published-collections"
+import { weeklyDropLookForDate } from "@/lib/email/templates/suite-habit-emails"
+import { matchWeeklyLookAesthetic } from "@/lib/app-v3/weekly-look"
 import type { Aesthetic } from "@/components/app-v3/types"
 
 export const dynamic = "force-dynamic"
@@ -32,5 +34,15 @@ export async function GET() {
     return true
   })
 
-  return NextResponse.json({ aesthetics })
+  // In-app mirror of the Monday habit email: the same rotating weekly look, matched to
+  // its aesthetic tile so the Create view can highlight it as "New this week".
+  const look = weeklyDropLookForDate(new Date())
+  const matched = matchWeeklyLookAesthetic(look, aesthetics)
+
+  return NextResponse.json({
+    aesthetics,
+    weeklyLook: matched
+      ? { aestheticId: matched.id, name: look.name, oneLiner: look.oneLiner }
+      : null,
+  })
 }
