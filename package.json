@@ -39,7 +39,6 @@
     "diagnostics:core": "node scripts/run-core-diagnostics.mjs",
     "revenue-engine:weekly": "tsx scripts/revenue-engine-weekly-digest.ts",
     "cleanup-legacy-generation-trackers": "node scripts/cleanup-legacy-generation-trackers.mjs",
-    "retry-blueprint-followups": "tsx scripts/retry-blueprint-followup-failures.ts",
     "backfill-payment-ids": "tsx scripts/backfill-payment-ids.ts",
     "migrate-015": "tsx scripts/run-migration-015.ts",
     "test:feed-planner": "tsx scripts/test-feed-planner-issues.ts",

@@ -49,13 +49,13 @@ export function generatePromptVaultDay2FirstResultEmail({
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Quick check. Did you copy one prompt from the vault yet?</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you have not started, use the first Coastal White prompt. It is simple, clean, and easy to judge.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you haven't started, use the first Coastal White prompt. It's simple, clean, and easy to judge.</p>
     ${renderStonePanel(
       `<p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">Open ChatGPT, upload one clear selfie, paste the prompt, then run it once before you edit anything. The first result tells you what the AI is doing with your face, light, and pose.</p>`,
       "First result rule"
     )}
     <div style="margin:26px 0 22px;">${renderStoneButton("Open the Vault", vaultUrl)}</div>
-    <p style="margin:0;font-size:16px;line-height:1.75;">If the result looked strange, do not panic. Reply with what happened. Weird outputs are usually fixable.</p>
+    <p style="margin:0;font-size:16px;line-height:1.75;">If the result looked strange, don't panic. Reply with what happened. Weird outputs are usually fixable.</p>
   `
 
   const html = renderStoneShell({
@@ -71,7 +71,7 @@ export function generatePromptVaultDay2FirstResultEmail({
 
 Quick check. Did you copy one prompt from the vault yet?
 
-If you have not started, use the first Coastal White prompt. It is simple, clean, and easy to judge.
+If you haven't started, use the first Coastal White prompt. It's simple, clean, and easy to judge.
 
 First result rule:
 Open ChatGPT, upload one clear selfie, paste the prompt, then run it once before you edit anything. The first result tells you what the AI is doing with your face, light, and pose.
@@ -79,7 +79,7 @@ Open ChatGPT, upload one clear selfie, paste the prompt, then run it once before
 Open the Vault:
 ${vaultUrl}
 
-If the result looked strange, do not panic. Reply with what happened. Weird outputs are usually fixable.
+If the result looked strange, don't panic. Reply with what happened. Weird outputs are usually fixable.
 
 Sandra x`
 
@@ -99,8 +99,8 @@ export function generatePromptVaultDay5FixBadResultEmail({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The most common problem with AI photos is not the prompt.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It is the source photo.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The most common problem with AI photos isn't the prompt.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It's the source photo.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If ChatGPT made your face too smooth, too sharp, or not quite you, try this before you change the whole prompt:</p>
     ${renderStonePanel(
       `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Use a clearer selfie with soft window light.</p>
@@ -109,7 +109,7 @@ export function generatePromptVaultDay5FixBadResultEmail({
       "The fix"
     )}
     <div style="margin:26px 0 22px;">${renderStoneButton("Open the Vault", vaultUrl)}</div>
-    <p style="margin:0;font-size:16px;line-height:1.75;">The goal is not a perfect fake photo. The goal is a photo that still feels like you.</p>
+    <p style="margin:0;font-size:16px;line-height:1.75;">The goal isn't a perfect fake photo. The goal is a photo that still feels like you.</p>
   `
 
   const html = renderStoneShell({
@@ -123,9 +123,9 @@ export function generatePromptVaultDay5FixBadResultEmail({
 
   const text = `Hi ${firstName},
 
-The most common problem with AI photos is not the prompt.
+The most common problem with AI photos isn't the prompt.
 
-It is the source photo.
+It's the source photo.
 
 If ChatGPT made your face too smooth, too sharp, or not quite you, try this before you change the whole prompt:
 
@@ -137,7 +137,7 @@ The fix:
 Open the Vault:
 ${vaultUrl}
 
-The goal is not a perfect fake photo. The goal is a photo that still feels like you.
+The goal isn't a perfect fake photo. The goal is a photo that still feels like you.
 
 Sandra x`
 
@@ -166,8 +166,8 @@ export function generatePromptVaultDay3SystemUpgradeEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You already have the prompts.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Now the real question is: how do you use them so your images start feeling like one recognizable personal brand, not a folder of pretty experiments?</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That is what the Selfie to Brand Shoot System is for.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Because you already paid $27 for the Vault, you can complete the System for $170.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That's what the Selfie to Brand Shoot System is for.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The System is $197, and your $37 counts toward it. So you complete it for $160.</p>
     ${renderStonePanel(
       `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Inside the System, you choose the right source selfie, lock one signature visual world, create your first AI brand shoot, filter the images that still look like you, and turn the shoot into content.</p>
        <p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">The Vault gives you the directions. The System shows you how to build the whole shoot around them.</p>`,
@@ -193,9 +193,9 @@ You already have the prompts.
 
 Now the real question is: how do you use them so your images start feeling like one recognizable personal brand, not a folder of pretty experiments?
 
-That is what the Selfie to Brand Shoot System is for.
+That's what the Selfie to Brand Shoot System is for.
 
-Because you already paid $27 for the Vault, you can complete the System for $170.
+The System is $197, and your $37 counts toward it. So you complete it for $160.
 
 Inside the System, you choose the right source selfie, lock one signature visual world, create your first AI brand shoot, filter the images that still look like you, and turn the shoot into content.
 
@@ -227,8 +227,8 @@ export function generatePromptVaultDay10NextShootEmail({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">By now you have probably seen what the vault can do.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The next question is not "which prompt is prettiest?"</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">By now you've probably seen what the vault can do.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The next question isn't "which prompt is prettiest?"</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The better question is: what do you need these photos to help you say?</p>
     ${renderStonePanel(
       `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Choose one collection for authority.</p>
@@ -237,7 +237,7 @@ export function generatePromptVaultDay10NextShootEmail({
       "A simple content set"
     )}
     <div style="margin:26px 0 22px;">${renderStoneButton("Open the Vault", vaultUrl)}</div>
-    <p style="margin:0;font-size:16px;line-height:1.75;">Reply with the collection you used most. That is the signal I want before I build the next paid thing.</p>
+    <p style="margin:0;font-size:16px;line-height:1.75;">Reply with the collection you used most. That's the signal I want before I build the next paid thing.</p>
   `
 
   const html = renderStoneShell({
@@ -251,9 +251,9 @@ export function generatePromptVaultDay10NextShootEmail({
 
   const text = `Hi ${firstName},
 
-By now you have probably seen what the vault can do.
+By now you've probably seen what the vault can do.
 
-The next question is not "which prompt is prettiest?"
+The next question isn't "which prompt is prettiest?"
 
 The better question is: what do you need these photos to help you say?
 
@@ -265,7 +265,7 @@ A simple content set:
 Open the Vault:
 ${vaultUrl}
 
-Reply with the collection you used most. That is the signal I want before I build the next paid thing.
+Reply with the collection you used most. That's the signal I want before I build the next paid thing.
 
 Sandra x`
 

@@ -29,11 +29,6 @@ export type SelfieGuideEmailType =
   | "selfie-guide-day14-maya-bridge"
   | "selfie-guide-day21-final"
   | "selfie-guide-complete"
-  | "nurture-strategy-n1"
-  | "nurture-strategy-n2"
-  | "nurture-strategy-n3"
-  | "nurture-strategy-n4"
-  | "nurture-strategy-n5"
 
 export const SELFIE_GUIDE_EMAIL_TOUCHES: EmailTouchDefinition[] = [
   { days: 0, emailType: "selfie-guide-activation-day0" },
@@ -43,12 +38,7 @@ export const SELFIE_GUIDE_EMAIL_TOUCHES: EmailTouchDefinition[] = [
   { days: 21, emailType: "selfie-guide-day21-final" },
 ]
 
-// LEGACY_ACCESS_ONLY: preserved for old Brand Strategy-style templates, but not wired to
-// Free Selfie Guide subscribers in /api/cron/nurture-sequence.
-export const FREEBIE_STRATEGY_EMAIL_TOUCHES: EmailTouchDefinition[] = [
-  { days: 2, emailType: "nurture-strategy-n1" },
-  { days: 5, emailType: "nurture-strategy-n2" },
-  { days: 9, emailType: "nurture-strategy-n3" },
-  { days: 14, emailType: "nurture-strategy-n4" },
-  { days: 20, emailType: "nurture-strategy-n5" },
-]
+// RETIRED 2026-07-03 (Sandra-approved email audit): the nurture-strategy-n1..n5 touches were
+// never wired to a sender and their templates had zero sends. Templates now live in
+// lib/email/templates/archived/. The FREEBIE_STRATEGY_EMAIL_TOUCHES registry was removed
+// with them; email_logs history for those types is unaffected.

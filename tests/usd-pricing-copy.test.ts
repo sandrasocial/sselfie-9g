@@ -25,8 +25,8 @@ describe("usd pricing copy", () => {
       path.join(ROOT, "lib/email/templates/freebie-strategy-email.ts"),
       "utf8",
     )
-    const nurtureN3 = fs.readFileSync(path.join(ROOT, "lib/email/templates/nurture-strategy-n3.ts"), "utf8")
-    const nurtureN4 = fs.readFileSync(path.join(ROOT, "lib/email/templates/nurture-strategy-n4.ts"), "utf8")
+    const nurtureN3 = fs.readFileSync(path.join(ROOT, "lib/email/templates/archived/nurture-strategy-n3.ts"), "utf8")
+    const nurtureN4 = fs.readFileSync(path.join(ROOT, "lib/email/templates/archived/nurture-strategy-n4.ts"), "utf8")
 
     expect(freebieStrategyEmail).toContain("Join Studio — $97/month")
     expect(freebieStrategyEmail).not.toContain("Join Studio — €97/month")

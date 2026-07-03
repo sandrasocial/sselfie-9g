@@ -104,13 +104,6 @@ export const CRON_ROUTE_OWNERSHIP: readonly CronRouteOwnership[] = [
     purpose: "Repair customer subscription and membership state.",
   },
   {
-    path: "/api/cron/blueprint-followup-sequence",
-    bundle: "lifecycle_email",
-    lifecycle: "scheduled",
-    classification: "internal/admin",
-    purpose: "Send Free Selfie Guide and Starter Kit follow-up lifecycle email.",
-  },
-  {
     path: "/api/cron/nurture-sequence",
     bundle: "lifecycle_email",
     lifecycle: "scheduled",
@@ -231,8 +224,14 @@ export const REMOVED_CRON_ROUTES: readonly RemovedCronRoute[] = [
   },
   {
     path: "/api/cron/blueprint-email-sequence",
-    replacement: "/api/cron/blueprint-followup-sequence",
+    replacement: "/api/cron/nurture-sequence",
     proof: "Disabled no-op route, absent from vercel.json, and no live app/admin caller references it.",
+  },
+  {
+    path: "/api/cron/blueprint-followup-sequence",
+    replacement: "/api/cron/nurture-sequence",
+    proof:
+      "Retired 2026-07-03 (Sandra-approved email audit). Route was never scheduled in vercel.json and email_logs show nothing sent since 2026-02-20. Templates archived in lib/email/templates/archived/. Blueprint buyers get delivery-only email until a replacement sequence is specced.",
   },
   {
     path: "/api/cron/welcome-back-sequence",

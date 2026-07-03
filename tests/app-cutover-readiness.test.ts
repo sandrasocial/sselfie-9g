@@ -2,8 +2,6 @@ import { describe, expect, it, beforeEach } from "vitest"
 import { buildAppV3ReturnTo, resolveAppV3InitialSection } from "@/lib/app-v3/navigation"
 import { generateCreditRenewalEmail } from "@/lib/email/templates/credit-renewal"
 import { generateDormantMemberReengagementEmail } from "@/lib/email/templates/dormant-member-reengagement"
-import { generateMonthlyUsageRecapEmail } from "@/lib/email/templates/monthly-usage-recap"
-import { generatePaymentUpdateEmail, generateWeMissYouEmail } from "@/lib/email/templates/payment-recovery"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 
 describe("APP-CUTOVER-01 readiness", () => {
@@ -30,15 +28,15 @@ describe("APP-CUTOVER-01 readiness", () => {
       }),
       generateCreditRenewalEmail({ firstName: "Sandra", creditsGranted: 200 }),
       generateDormantMemberReengagementEmail({ firstName: "Sandra", creditBalance: 42 }),
-      generateMonthlyUsageRecapEmail({ firstName: "Sandra", creditsUsed: 10, creditsRemaining: 190, photosGenerated: 8 }),
-      generatePaymentUpdateEmail({ firstName: "Sandra", email: "sandra@example.com" }),
-      generateWeMissYouEmail({ firstName: "Sandra", email: "sandra@example.com" }),
+      // monthly-usage-recap and payment-recovery templates were retired to
+      // lib/email/templates/archived/ on 2026-07-03 (zero live senders).
     ]
 
     const combined = emails.map((email) => `${email.html}\n${email.text}`).join("\n\n")
 
     expect(combined).toContain("https://sselfie.ai/app")
-    expect(combined).toContain("https://sselfie.ai/app?view=account")
+    // The /app?view=account deep link lived in the retired payment-recovery template
+    // (archived 2026-07-03); the deep-link resolver test below still covers the route.
     expect(combined).not.toContain("https://sselfie.ai/studio?tab=maya")
     expect(combined).not.toContain("https://sselfie.ai/studio?tab=account")
     expect(combined).not.toContain("https://sselfie.ai/studio\n")

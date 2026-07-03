@@ -25,11 +25,11 @@ export function generateFreebieGuideDay8StarterKitDirectEmail({
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">By now, you probably see the point.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">A better selfie is not about looking perfect.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">It is about giving yourself one photo you can actually use.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">A better selfie isn't about looking perfect.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">It's about giving yourself one photo you can actually use.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">The Starter Kit is the next step if you want the shortcut: the posing cheatsheet, the exact presets I use, and a simple content starter so your photos have somewhere to go.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Start with one camera-ready selfie. Then it can become your profile photo, your first brand image, or the source photo for an AI brand shoot.</p>
-    <div style="margin:28px 0 14px;">${renderStoneButton("Get the Starter Kit - $37", starterKitUrl.toString())}</div>
+    <div style="margin:28px 0 14px;">${renderStoneButton("Get the Starter Kit · $37", starterKitUrl.toString())}</div>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">If the free guide is enough for now, keep using it. No pressure.</p>
     <p style="margin:0;font-size:16px;line-height:1.8;">Sandra x</p>
   `
@@ -48,15 +48,15 @@ export function generateFreebieGuideDay8StarterKitDirectEmail({
 
 By now, you probably see the point.
 
-A better selfie is not about looking perfect.
+A better selfie isn't about looking perfect.
 
-It is about giving yourself one photo you can actually use.
+It's about giving yourself one photo you can actually use.
 
 The Starter Kit is the next step if you want the shortcut: the posing cheatsheet, the exact presets I use, and a simple content starter so your photos have somewhere to go.
 
 Start with one camera-ready selfie. Then it can become your profile photo, your first brand image, or the source photo for an AI brand shoot.
 
-Get the Starter Kit - $37:
+Get the Starter Kit · $37:
 ${starterKitUrl.toString()}
 
 If the free guide is enough for now, keep using it. No pressure.

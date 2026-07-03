@@ -21,9 +21,9 @@ export function generateFreebieGuideDay5StoryEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">I started with a mirror in my living room and an iPhone I already had.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">No studio. No photographer. No budget. Just a decent window, a clean background, and me figuring out which angle I could actually post.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">What made me consistent was not motivation. It was having presets I liked so editing was not a whole project. And a simple system for turning one photo into enough content to show up that week.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">That is what I put in the Starter Kit. The presets I use, editing walkthroughs, and a 7-day content plan so you know what to do with the photos once you have them.</p>
-    <div style="margin:28px 0 14px;">${renderStoneButton("Get the Starter Kit - $37", starterKitUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">What made me consistent wasn't motivation. It was having presets I liked so editing wasn't a whole project. And a simple system for turning one photo into enough content to show up that week.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">That's what I put in the Starter Kit. The presets I use, editing walkthroughs, and a 7-day content plan so you know what to do with the photos once you have them.</p>
+    <div style="margin:28px 0 14px;">${renderStoneButton("Get the Starter Kit · $37", starterKitUrl)}</div>
     <p style="margin:0;font-size:16px;line-height:1.8;">Sandra x</p>
   `
 
@@ -43,11 +43,11 @@ I started with a mirror in my living room and an iPhone I already had.
 
 No studio. No photographer. No budget. Just a decent window, a clean background, and me figuring out which angle I could actually post.
 
-What made me consistent was not motivation. It was having presets I liked so editing was not a whole project. And a simple system for turning one photo into enough content to show up that week.
+What made me consistent wasn't motivation. It was having presets I liked so editing wasn't a whole project. And a simple system for turning one photo into enough content to show up that week.
 
-That is what I put in the Starter Kit. The presets I use, editing walkthroughs, and a 7-day content plan so you know what to do with the photos once you have them.
+That's what I put in the Starter Kit. The presets I use, editing walkthroughs, and a 7-day content plan so you know what to do with the photos once you have them.
 
-Get the Starter Kit - $37:
+Get the Starter Kit · $37:
 ${starterKitUrl}
 
 Sandra x`,

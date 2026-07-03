@@ -3,10 +3,7 @@ import { generateOnboardingDay0Email } from "@/lib/email/templates/onboarding-da
 import { generateSelfieGuidePaidDeliveryEmail } from "@/lib/email/templates/selfie-guide-paid-delivery"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
-import {
-  FREEBIE_STRATEGY_EMAIL_TOUCHES,
-  SELFIE_GUIDE_EMAIL_TOUCHES,
-} from "@/lib/email/selfie-guide-email-sequence"
+import { SELFIE_GUIDE_EMAIL_TOUCHES } from "@/lib/email/selfie-guide-email-sequence"
 import { sendWelcomeEmail } from "@/lib/welcome-email"
 
 const { sendMock } = vi.hoisted(() => ({
@@ -86,7 +83,6 @@ describe("email audit remediation", () => {
       { days: 14, emailType: "selfie-guide-day14-maya-bridge" },
       { days: 21, emailType: "selfie-guide-day21-final" },
     ])
-    expect(FREEBIE_STRATEGY_EMAIL_TOUCHES.map((touch) => touch.days)).toEqual([2, 5, 9, 14, 20])
   })
 
   it("uses the canonical Studio URL in the legacy welcome sender too", async () => {
