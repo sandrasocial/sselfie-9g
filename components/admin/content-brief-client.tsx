@@ -275,6 +275,63 @@ function DemandMapSection({ brief }: { brief: ContentBrief }) {
   )
 }
 
+function CopyHookChip({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard.writeText(text).then(() => {
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1800)
+        })
+      }}
+      className="rounded-full border border-stone-300 bg-white px-3 py-1 text-sm font-medium text-stone-900 transition hover:border-stone-950 hover:text-stone-950"
+    >
+      {copied ? "Copied" : text}
+    </button>
+  )
+}
+
+function OnScreenHookBankSection({ brief }: { brief: ContentBrief }) {
+  const entries = safeArray(brief.onScreenHookBank)
+  if (entries.length === 0) return null
+
+  return (
+    <section className="rounded-2xl border border-stone-200 bg-white p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.24em] text-stone-500">On-screen hook bank</p>
+          <h2 className="mt-2 font-serif text-xl text-stone-950">On-screen hooks that stop the scroll</h2>
+          <p className="mt-1 text-sm text-stone-600">
+            Proven first-frame text overlays for reels, carousels, and stories. Tap a line to copy it.
+            This is the text ON the video, not the caption.
+          </p>
+        </div>
+        <CopyChip label="Copy all hooks" text={entries.map((entry) => entry.text).join("\n")} />
+      </div>
+      <div className="mt-4 space-y-2">
+        {entries.map((entry, index) => (
+          <div key={index} className="flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3">
+            <CopyHookChip text={entry.text} />
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs uppercase tracking-wide ${
+                entry.source === "your-data" ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-600"
+              }`}
+            >
+              {entry.source === "your-data" ? "Your data" : "Research"}
+            </span>
+            <span className="text-xs text-stone-500">{entry.pattern}</span>
+            {entry.watchThroughMechanic && (
+              <span className="text-xs text-stone-400">Keeps them watching: {entry.watchThroughMechanic}</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function TrendRadarSection({ brief }: { brief: ContentBrief }) {
   const entries = safeArray(brief.trendRadar)
   if (entries.length === 0) return null
@@ -633,6 +690,8 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
           <GrowthTruthSection brief={brief} />
 
           <DemandMapSection brief={brief} />
+
+          <OnScreenHookBankSection brief={brief} />
 
           <TrendRadarSection brief={brief} />
 

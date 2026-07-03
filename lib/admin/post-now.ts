@@ -210,7 +210,7 @@ Return exactly three options, one of each type:
 Every option must include:
 - title: short and specific, in her voice.
 - executeIn: an honest estimate under 30 minutes, like "15 min".
-- steps: 3 to 5 short imperative lines she can follow tonight.
+- steps: 3 to 5 short imperative lines she can follow tonight. The FIRST step must name the exact on-screen text to put on the first frame, verbatim in quotes: max 9 words, readable on a phone, and it is the text overlay ON the video/slide, not the caption. Pick it from weeklyBrief.onScreenHookBank when it has entries (and keep its watch-through mechanic visible on screen, e.g. a countdown or a "wait for #3" beat). If the bank is empty, adapt one of her own top post hookLine overlays or a hookIntelligence pattern and say so in source.
 - source: the exact signal it came from, with real numbers only, e.g. "this week's trend radar" or "a DM question from this week".
 
 If missingInputs is not empty, still deliver three strong options from what remains and say plainly inside the affected option's source which input was missing (e.g. "no weekly brief this week, built from your top posts").
@@ -252,6 +252,9 @@ function compactWeeklyBrief(brief: ContentBrief | null) {
     })),
     trendRadar: Array.isArray(brief.trendRadar) ? brief.trendRadar : [],
     hookIntelligence: Array.isArray(brief.hookIntelligence) ? brief.hookIntelligence : [],
+    // Proven first-frame text overlays from the weekly brief. Old briefs predate
+    // this section, so it degrades to an empty array.
+    onScreenHookBank: Array.isArray(brief.onScreenHookBank) ? brief.onScreenHookBank : [],
     audienceQuestions: Array.isArray(brief.demandMap?.audienceQuestions)
       ? brief.demandMap?.audienceQuestions
       : [],
