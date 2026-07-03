@@ -72,13 +72,51 @@ describe("weekly content brief: two-pass generation", () => {
     expect(generator).toContain("engagementMechanic")
   })
 
-  it("deepens the research memo to four grounded angles", () => {
+  it("deepens the research memo to five grounded angles", () => {
     expect(generator).toContain("HOOK AND FORMAT MECHANICS")
     expect(generator).toContain("TREND RADAR")
     expect(generator).toContain("WHAT SIMILAR CREATORS SHIPPED THIS WEEK")
     expect(generator).toContain("STORY SEQUENCE MECHANICS")
     expect(generator).toContain("micro-commitment ladders")
     expect(generator).toContain("synthetic-avatar")
+  })
+
+  it("asks the research memo for verbatim ON-SCREEN hooks, explicitly not caption first-lines", () => {
+    expect(generator).toContain("ON-SCREEN HOOK BANK")
+    expect(generator).toContain("VERBATIM on-screen text hooks")
+    expect(generator).toContain("NOT caption first-lines")
+    // The scroll-stop pattern taxonomy and the watch-through question are both requested.
+    expect(generator).toContain("why it stops the scroll")
+    expect(generator).toContain("full watch-through")
+    // The concision retry never drops the new section.
+    expect(generator).toContain("Never drop the ON-SCREEN HOOK BANK section")
+  })
+
+  it("adds onScreenHookBank to the strategy schema (pass 1), type, and sanitizer", () => {
+    expect(generator).toContain("export type OnScreenHookBankEntry")
+    // Pass 1 owns the bank so pass 2 can build the plan from it.
+    const strategySchema = generator.slice(
+      generator.indexOf("const BRIEF_STRATEGY_SCHEMA"),
+      generator.indexOf("const BRIEF_PLAN_SCHEMA"),
+    )
+    expect(strategySchema).toContain("onScreenHookBank")
+    expect(strategySchema).toContain("watchThroughMechanic")
+    expect(strategySchema).toContain(
+      'required: ["performanceRecap", "audienceDemand", "hookIntelligence", "onScreenHookBank", "demandMap"]',
+    )
+    // The sanitizer passes the section through, empty-safe for old briefs.
+    expect(generator).toContain("onScreenHookBank: asArray<OnScreenHookBankEntry>")
+    // The literal-overlay constraint and the adaptation rule.
+    expect(generator).toContain("max 9 words")
+    expect(generator).toContain("NEVER copy a creator's exact distinctive line verbatim")
+    expect(generator).toContain('is a pattern, not property')
+  })
+
+  it("forces plan pieces to draw their on-screen text from the bank", () => {
+    expect(generator).toContain("onScreenHookBank or follow one of its named patterns")
+    expect(generator).toContain("name the bank hook or pattern in executionNotes")
+    // Reels must carry the watch-through mechanic on screen.
+    expect(generator).toContain("watch-through mechanic must be visible ON SCREEN")
   })
 })
 
@@ -103,5 +141,27 @@ describe("weekly content brief: surfaces", () => {
     expect(client).toContain("audienceQuestions")
     expect(client).toContain("Questions your audience actually asked")
     expect(client).toContain("engineeredFor")
+  })
+
+  it("renders the on-screen hook bank as copyable chips on the admin page, empty-safe", () => {
+    const client = read("components/admin/content-brief-client.tsx")
+    expect(client).toContain("OnScreenHookBankSection")
+    expect(client).toContain("On-screen hooks that stop the scroll")
+    // Each hook is a copyable chip with its pattern label alongside.
+    expect(client).toContain("CopyHookChip")
+    expect(client).toContain("entry.pattern")
+    expect(client).toContain("entry.watchThroughMechanic")
+    // Old stored briefs without the bank render fine: the section disappears.
+    expect(client).toContain("safeArray(brief.onScreenHookBank)")
+    expect(client).toContain("if (entries.length === 0) return null")
+  })
+
+  it("adds a short on-screen hooks block to the weekly brief email, empty-safe", () => {
+    const cron = read("app/api/cron/content-brief-weekly/route.ts")
+    expect(cron).toContain("On-screen hooks this week")
+    expect(cron).toContain("onScreenHookBank")
+    // Top 5 only, text only, and old briefs degrade to no block.
+    expect(cron).toContain(".slice(0, 5)")
+    expect(cron).toContain("Array.isArray(brief.onScreenHookBank) ? brief.onScreenHookBank : []")
   })
 })

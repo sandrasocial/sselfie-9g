@@ -109,6 +109,17 @@ export type TrendRadarEntry = {
   noFakeGuardrail: string
 }
 
+export type OnScreenHookBankEntry = {
+  /** The literal text-overlay line, max 9 words, first-frame readable on a phone. */
+  text: string
+  /** Why it stops the scroll: negativity bias, specificity, identity call-out, curiosity gap with payoff promised, number plus outcome, mistake framing. */
+  pattern: string
+  /** What makes viewers stay to the end: list countdown, before/after reveal, "wait for #3", loop. */
+  watchThroughMechanic: string
+  source: "research" | "your-data"
+  evidence: string
+}
+
 export type ContentBriefPiece = {
   day: string
   format: "reel" | "carousel" | "feed"
@@ -169,6 +180,8 @@ export type ContentBrief = {
     source: "your-data" | "research"
     evidence: string
   }>
+  /** Proven on-screen text overlays (not caption hooks). Optional: old stored briefs predate it. */
+  onScreenHookBank?: OnScreenHookBankEntry[]
   demandMap?: DemandMap
   trendRadar?: TrendRadarEntry[]
   contentPlan: ContentBriefPiece[]
@@ -419,6 +432,16 @@ function sanitizeContentBriefOutput<T extends Omit<ContentBrief, "periodStart" |
       pattern: safeBriefText(hook.pattern, vault),
       evidence: safeBriefText(hook.evidence, vault),
     })),
+    onScreenHookBank: asArray<OnScreenHookBankEntry>(normalizedBrief.onScreenHookBank).map(entry => {
+      const normalized = asObject<OnScreenHookBankEntry>(entry)
+      return {
+        text: safeBriefText(normalized.text, vault),
+        pattern: safeBriefText(normalized.pattern, vault),
+        watchThroughMechanic: safeBriefText(normalized.watchThroughMechanic, vault),
+        source: normalized.source === "your-data" ? ("your-data" as const) : ("research" as const),
+        evidence: safeBriefText(normalized.evidence, vault),
+      }
+    }),
     contentPlan: asArray<ContentBriefPiece>(normalizedBrief.contentPlan).map(sanitizePiece),
     storySequence: {
       theme: safeBriefText(storySequence.theme, vault),
@@ -466,7 +489,7 @@ ${MARKET_PATTERN_CONTEXT}
 Use this demand context as the filter. Do not research only "what content gets attention." Research what content mechanics make the viewer care enough to want the outcome:
 ${DEMAND_CREATION_CONTEXT}
 
-Return a research memo with exactly these four sections:
+Return a research memo with exactly these five sections:
 
 1. HOOK AND FORMAT MECHANICS: 5-8 hook/content mechanics currently working in her niche, each with why it works and a one-line example adapted to her. Weight mechanics that earn saves and shares (sends-per-reach is the strongest Reels distribution signal right now), not just views. Include format notes: reel length, carousel structure, cover text patterns, keyword CTA mechanics, and any current trending audio directions, with the caveat that specific sound names go stale fast.
 
@@ -476,14 +499,17 @@ Return a research memo with exactly these four sections:
 
 4. STORY SEQUENCE MECHANICS: what is working in Instagram Stories for conversion right now: micro-commitment ladders (poll, then slider, then question box, then DM reply), story replies as DM conversion starters, and interaction patterns that turn viewers into conversations.
 
+5. ON-SCREEN HOOK BANK: collect 12-18 VERBATIM on-screen text hooks currently working in this niche (AI photos, ChatGPT photo prompts, personal branding for women, selfie content): the literal first-frame text overlay viewers see on screen, NOT caption first-lines. For each: the exact on-screen text (max 9 words), where it appeared (creator and format), why it stops the scroll (pattern: negativity bias, specificity, identity call-out, curiosity gap with payoff promised, number plus outcome, mistake framing), and whether it drives full watch-through (loop, list, or countdown structures).
+
 Plain text. No fluff.`
 
   // Web-search tool results count against max_tokens, so the memo needs far more headroom
-  // than its own text: 3000 truncated twice in the first live run (2026-07-03).
+  // than its own text: 3000 truncated twice in the first live run (2026-07-03). Raised to
+  // 10000 when the fifth section (the 12-18 entry on-screen hook bank) joined the memo.
   const runResearch = (extraInstruction?: string) =>
     client.messages.create({
       model: RESEARCH_MODEL,
-      max_tokens: 8000,
+      max_tokens: 10000,
       tools: [WEB_SEARCH_TOOL],
       messages: [
         {
@@ -496,7 +522,7 @@ Plain text. No fluff.`
   let response = await runResearch()
   if (response.stop_reason === "max_tokens") {
     response = await runResearch(
-      "Your previous memo ran out of room. Keep all four sections but cap the whole memo at 700 words: run fewer searches, use shorter sentences, and cut anything that is not directly usable."
+      "Your previous memo ran out of room. Keep all five sections but cap the whole memo at 900 words: run fewer searches, use shorter sentences, and cut anything that is not directly usable. Never drop the ON-SCREEN HOOK BANK section; shorten its evidence lines instead."
     )
     if (response.stop_reason === "max_tokens") {
       throw new Error("Research memo truncated at max_tokens twice. Refusing to build a brief on a cut-off memo.")
@@ -566,6 +592,20 @@ const BRIEF_STRATEGY_SCHEMA: Tool.InputSchema = {
         required: ["hook", "pattern", "source", "evidence"],
       },
     },
+    onScreenHookBank: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          text: { type: "string" },
+          pattern: { type: "string" },
+          watchThroughMechanic: { type: "string" },
+          source: { type: "string", enum: ["research", "your-data"] },
+          evidence: { type: "string" },
+        },
+        required: ["text", "pattern", "watchThroughMechanic", "source", "evidence"],
+      },
+    },
     demandMap: {
       type: "object",
       properties: {
@@ -598,7 +638,7 @@ const BRIEF_STRATEGY_SCHEMA: Tool.InputSchema = {
       ],
     },
   },
-  required: ["performanceRecap", "audienceDemand", "hookIntelligence", "demandMap"],
+  required: ["performanceRecap", "audienceDemand", "hookIntelligence", "onScreenHookBank", "demandMap"],
 } as const
 
 // Pass 2: the pieces Sandra actually posts. Gets its own token budget.
@@ -868,20 +908,27 @@ SHARED DATA RULES:
   const strategySystem = `${systemBase}
 
 STRATEGY PASS RULES:
-- This pass builds the strategy layer only: performanceRecap, audienceDemand, hookIntelligence, and demandMap. A second pass turns it into the content plan, so make every entry specific enough to build on.
+- This pass builds the strategy layer only: performanceRecap, audienceDemand, hookIntelligence, onScreenHookBank, and demandMap. A second pass turns it into the content plan, so make every entry specific enough to build on.
 - Do not start from "what should Sandra post?" Start from "what is her buyer trying to stop experiencing?"
 - demandMap must summarize the strongest audience behavior, the painful before, the desired after, the belief shift, the primary offer bridge, and what Sandra should not repeat this week.
 - Read audience.dmSamples and audience.dmIntents. Every dmThemes entry MUST quote or paraphrase a real DM.
 - demandMap.audienceQuestions: real questions her audience actually asked, pulled from audience.dmSamples and audience.dmIntents, verbatim or a close paraphrase. For each, name the content piece or reply format that answers it (a reel angle, a carousel, a story frame, a saved DM reply). Every question must trace to a real DM sample. If there are no real audience questions in this window, return exactly one entry saying plainly that no real audience questions came in this window; never invent questions.
 - If dataPacket.growthTruth.leaks is present, demandMap must address the top leak before generic reach advice.
-- hookIntelligence entries from her own data win over research entries. Mark the source honestly.`
+- hookIntelligence entries from her own data win over research entries. Mark the source honestly.
+- onScreenHookBank: 10 to 15 proven on-screen text hooks Sandra can put as the LITERAL text overlay on the first frame of a reel, carousel cover, or story slide. This is what stops the scroll on screen, NOT the caption hook. Rules:
+  - text: max 9 words, short and punchy, first-frame readable on a phone. Every entry must be usable verbatim as the overlay line, adapted to Sandra's niche (AI photos from one selfie, personal branding for women) and voice.
+  - Adapt from the ON-SCREEN HOOK BANK section of the research memo: keep the researched pattern, rewrite the words for Sandra. NEVER copy a creator's exact distinctive line verbatim. A generic pattern ("5 mistakes...") is a pattern, not property; a creator's signature phrasing is property.
+  - Mix research entries with hooks proven in Sandra's OWN top posts: her topPosts hookLine data IS on-screen text from her reels. Mark those source "your-data" and cite the post's real numbers in evidence. Mark adapted research entries source "research" and name where the pattern was seen.
+  - pattern: why it stops the scroll (negativity bias, specificity, identity call-out, curiosity gap with payoff promised, number plus outcome, mistake framing).
+  - watchThroughMechanic: what makes viewers stay for the whole video (list countdown, before/after reveal, "wait for #3", loop structure).
+  - No banned words, no m-dashes, and No-Fake compliant: never promise fooling viewers, a perfect face, or looking like someone else.`
 
   const planSystem = `${systemBase}
 
 CONTENT PLAN RULES:
 - Build the brief as a short strategy memo first, not a finished content pack.
 - Do NOT write full posts, full captions, final carousel slides, hashtags, or copy-paste photoshoot prompts. Sandra will take the brief into ChatGPT if she wants finished content. Your job is to give her the strongest direction, context, hooks, visual mechanics, and what to avoid.
-- The strategy layer (performanceRecap, audienceDemand, hookIntelligence, demandMap) was already built in a first pass and is included in the user message. Build the content plan FROM it: every piece must trace back to a hook from hookIntelligence or a signal from the demandMap, and must respect demandMap.contentWarning.
+- The strategy layer (performanceRecap, audienceDemand, hookIntelligence, onScreenHookBank, demandMap) was already built in a first pass and is included in the user message. Build the content plan FROM it: every piece must trace back to a hook from hookIntelligence or a signal from the demandMap, and must respect demandMap.contentWarning.
 - Every contentPlan piece must include demandSignal, painfulBefore, desiredAfter, beliefShift, visualProof, offerBridge, and whyThisCreatesDemand.
 - engineeredFor: the ONE engagement action this piece is engineered for (save, share, comment, or follow), per the 2026 ALGORITHM TRUTH above.
 - engagementMechanic: the concrete mechanic that earns that action and why it fits this piece. One or two short sentences.
@@ -905,7 +952,7 @@ CONTENT PLAN RULES:
 - trendMechanic: name the trend, competitor mechanic, or market pattern this borrows from. Be specific: numbered keyword, side-by-side proof, meta-reveal, comment-to-DM, proof-stacked cover, one concept shown three ways, etc.
 - competitorPattern: name the closest observed creator/account pattern from marketPatternContext or researchMemo and explain the mechanic to adapt. Do not copy their exact content, visuals, or promise.
 - visualHook: describe what is literally on screen in the first 2 seconds that stops the scroll. Concrete and filmable: camera position, what the viewer sees, what moves or changes. Sandra's real face/body in an everyday place, plus a visible change, reveal, or intriguing object. This is what she SEES, not why it works and not the caption. One or two short sentences. Do not repeat her overused scenes (mirror selfie, dark cafe arrival, window half-light, car selfie) unless the data gives a new reason.
-- onScreenText: 2 to 5 possible on-screen text lines only. These are hooks and beat labels, not a full script.
+- onScreenText: 2 to 5 possible on-screen text lines only. These are hooks and beat labels, not a full script. Every line must either come straight from the pass-1 onScreenHookBank or follow one of its named patterns, and the piece must say which (name the bank hook or pattern in executionNotes). The FIRST line is the first-frame overlay: max 9 words, readable on a phone, scroll-stopping on mute. For every reel, the watch-through mechanic must be visible ON SCREEN in these lines (e.g. "5 mistakes" then counts down 5..1, a before/after reveal beat, or a "wait for #3" marker), so the viewer has a reason to watch the entire video.
 - executionNotes: practical filming/build notes. Include what analytics, trend, or audience signal this direction came from.
 - whatToAvoid: what would make this feel stale, repetitive, off-brand, or too similar to Sandra's old top post.
 - chatgptContextPrompt: a compact prompt Sandra can paste into ChatGPT. It should summarize the analytics signal, trend/competitor mechanic, visual hook, target emotion, CTA, and what not to repeat. It must ask ChatGPT to help develop the idea, not to generate an AI photoshoot image.
@@ -923,7 +970,9 @@ CONTENT PLAN RULES:
     schema: BRIEF_STRATEGY_SCHEMA,
     system: strategySystem,
     userContent: briefUserContent,
-    maxTokens: 10000,
+    // 10000 fit the original strategy layer; the 10-15 entry onScreenHookBank
+    // (5 fields each) needs extra room. The model only spends what it needs.
+    maxTokens: 12000,
   })
 
   const planOutput = await runBriefToolCall({

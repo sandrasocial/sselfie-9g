@@ -98,6 +98,15 @@ const miniBrief = {
   hookIntelligence: [
     { hook: "I stopped hiring photographers", pattern: "confession", source: "your-data", evidence: "top reel" },
   ],
+  onScreenHookBank: [
+    {
+      text: "5 selfie mistakes making you invisible",
+      pattern: "mistake framing plus number",
+      watchThroughMechanic: "counts down 5 to 1",
+      source: "research",
+      evidence: "adapted from a working overlay pattern in the niche",
+    },
+  ],
   demandMap: {
     strongestDemandSignal: "Prompt copies",
     painfulBefore: "Feels invisible",
@@ -195,6 +204,13 @@ describe("post-now generation", () => {
     expect(userContent).toContain("Film-grain portraits")
     expect(userContent).toContain("winner123")
     expect(userContent).toContain("localHour")
+    // The on-screen hook bank reaches the model with its literal overlay lines.
+    expect(userContent).toContain("onScreenHookBank")
+    expect(userContent).toContain("5 selfie mistakes making you invisible")
+    // Every option's first step must name the exact on-screen text to use.
+    expect(call.system).toContain("exact on-screen text")
+    expect(call.system).toContain("weeklyBrief.onScreenHookBank")
+    expect(call.system).toContain("not the caption")
     // No web research in the post-now path: no web search tool attached.
     expect(JSON.stringify(call)).not.toContain("web_search")
     // The system prompt forbids repeats and invented numbers.
