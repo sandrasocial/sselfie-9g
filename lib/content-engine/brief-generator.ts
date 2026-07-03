@@ -815,6 +815,18 @@ export async function generateContentBrief(options?: {
     audience: signals,
     vault,
     suite,
+    // Canonical LIST prices. Revenue truth contains average charge amounts (discounts,
+    // fx, beta coupons), which the model must never quote as the price of a product.
+    canonicalPricing: {
+      aiPrompts: "free",
+      selfieToAiPhotosKit: "$37 one time",
+      promptVault: "$27 one time",
+      starterKit: "$37 one time",
+      masterclass: "$147 one time",
+      suiteMembership: "EUR 97 per month, cancel anytime",
+      suiteFoundingAnnual: "EUR 697 per year (founding offer)",
+      workWithMeSprint: "EUR 2000 private 4-week sprint",
+    },
     marketPatternContext: MARKET_PATTERN_CONTEXT,
     demandCreationContext: DEMAND_CREATION_CONTEXT,
     researchMemo: researchNotes,
@@ -850,7 +862,7 @@ SHARED DATA RULES:
 - Instagram reach in dataPacket.growthTruth.recentInstagram is summed latest per-post reach, not unique account reach. Say that distinction if you mention it.
 - Vault count is LIVE in dataPacket.vault. Never hardcode "92", "150", "10 collections", or any fixed count. If you need a number, use dataPacket.vault.totalPromptCount and dataPacket.vault.totalCollectionCount only.
 - SUITE claims may only use dataPacket.suite.includedProducts. Do not invent features not listed in the product catalog.
-- Never invent specific earnings, revenue amounts, client counts, follower gains, or conversion numbers. You may only use money numbers that appear in dataPacket with a clear source. Product prices are allowed.
+- Never invent specific earnings, revenue amounts, client counts, follower gains, or conversion numbers. You may only use money numbers that appear in dataPacket with a clear source. Product prices are allowed, but ONLY from dataPacket.canonicalPricing, verbatim. Never derive a price from revenue truth or payment averages (those carry discounts and currency conversion and are NOT prices).
 - No banned words and no m-dashes anywhere in the structured output.`
 
   const strategySystem = `${systemBase}
