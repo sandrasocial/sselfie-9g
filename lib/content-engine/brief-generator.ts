@@ -841,25 +841,27 @@ type BriefToolCallOptions = {
 // concision instruction, then refuse instead of storing a partial brief.
 async function runBriefToolCall(options: BriefToolCallOptions): Promise<Record<string, unknown>> {
   const attempt = (extraInstruction?: string) =>
-    options.client.messages.create({
-      model: BRIEF_MODEL,
-      max_tokens: options.maxTokens,
-      system: options.system,
-      messages: [
-        {
-          role: "user",
-          content: extraInstruction ? `${options.userContent}\n\n${extraInstruction}` : options.userContent,
-        },
-      ],
-      tools: [
-        {
-          name: options.toolName,
-          description: options.toolDescription,
-          input_schema: options.schema,
-        },
-      ],
-      tool_choice: { type: "tool", name: options.toolName },
-    })
+    options.client.messages
+      .stream({
+        model: BRIEF_MODEL,
+        max_tokens: options.maxTokens,
+        system: options.system,
+        messages: [
+          {
+            role: "user",
+            content: extraInstruction ? `${options.userContent}\n\n${extraInstruction}` : options.userContent,
+          },
+        ],
+        tools: [
+          {
+            name: options.toolName,
+            description: options.toolDescription,
+            input_schema: options.schema,
+          },
+        ],
+        tool_choice: { type: "tool", name: options.toolName },
+      })
+      .finalMessage()
 
   let response = await attempt()
   if (response.stop_reason === "max_tokens") {

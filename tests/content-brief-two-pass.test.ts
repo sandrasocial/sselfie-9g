@@ -197,4 +197,17 @@ describe("weekly content brief: surfaces", () => {
     expect(client).not.toContain("await res.json()")
     expect(client).not.toContain(".then((r) => r.json())")
   })
+
+  it("uses streaming for long structured Anthropic brief calls", () => {
+    const generator = read("lib/content-engine/brief-generator.ts")
+    const toolCallHelper = generator.slice(
+      generator.indexOf("async function runBriefToolCall"),
+      generator.indexOf("// Canonical LIST prices")
+    )
+
+    expect(toolCallHelper).toContain(".messages")
+    expect(toolCallHelper).toContain(".stream({")
+    expect(toolCallHelper).toContain(".finalMessage()")
+    expect(toolCallHelper).not.toContain(".messages.create({")
+  })
 })
