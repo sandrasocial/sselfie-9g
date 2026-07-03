@@ -44,10 +44,7 @@ function storyOutputs(count: number, withImageDirection = true) {
   }))
 }
 
-function storySequenceBrief(
-  count = 5,
-  planOverrides: Record<string, unknown> = {}
-): CreativeBrief {
+function storySequenceBrief(count = 5, planOverrides: Record<string, unknown> = {}): CreativeBrief {
   return {
     outfit: "Toteme tailored camel coat",
     setting: "a quiet Oslo street at golden hour",
@@ -244,7 +241,10 @@ describe("story-sequence plan validation", () => {
   it("builds 5 renderable slides from creativePlan outputs alone", () => {
     const slides = buildGraphicRedesignSlides(storySequenceBrief(5), "story-sequence", "My story")
     expect(slides).toHaveLength(5)
-    expect(slides[0].title).toBe("Beat 1")
+    expect(slides[0].title.toLowerCase()).toBe("the day i stopped hiding online")
+    expect(slides.map(slide => slide.title).join(" ")).not.toMatch(
+      /\b(slide|beat|hook|doubt|invitation)\b/i
+    )
     expect(slides.every(slide => slide.visualConcept)).toBe(true)
     // Every slide can carry a text overlay spec (autoBake requires specs.length === slides.length).
     const specs = slides.map(slide =>
@@ -273,9 +273,7 @@ describe("generate route story wiring (app/api/app-v3/maya/generate)", () => {
   const route = read("app/api/app-v3/maya/generate/route.ts")
 
   it("validates story sequences as story sequences, not carousels", () => {
-    expect(route).toContain(
-      'mode: format === "story-sequence" ? "story_sequence" : "carousel"'
-    )
+    expect(route).toContain('mode: format === "story-sequence" ? "story_sequence" : "carousel"')
   })
 
   it("logs a suite_generation_failed event on the (formerly silent) plan-validation 400s", () => {
@@ -290,14 +288,20 @@ describe("generate route story wiring (app/api/app-v3/maya/generate)", () => {
     // The overlay-only "story-sequence" grounding preserves the input photo exactly - on a
     // selfie that returns the raw selfie. Story slides now share the reel-cover grounding.
     expect(route).toContain('return "reel-cover"')
-    expect(route).not.toMatch(/if \(format === "reel-cover"\) return "reel-cover"\s*\n\s*return "story-sequence"/)
+    expect(route).not.toMatch(
+      /if \(format === "reel-cover"\) return "reel-cover"\s*\n\s*return "story-sequence"/
+    )
     // Style refs still come from the story-sequence anchors via fallback (no reel-cover rows).
-    expect(route).toContain('format === "reel-cover" || format === "story-slide" ? "story-sequence" : undefined')
+    expect(route).toContain(
+      'format === "reel-cover" || format === "story-slide" ? "story-sequence" : undefined'
+    )
   })
 
   it("renders every graphic format at its concept size so clean render and bake match", () => {
     // The redesign call passes the shared route-level `size` (9:16 for story formats).
-    expect(route).not.toContain('format === "story-sequence"\n                ? process.env.APP_V3_PORTRAIT_SIZE')
+    expect(route).not.toContain(
+      'format === "story-sequence"\n                ? process.env.APP_V3_PORTRAIT_SIZE'
+    )
     expect(route).toMatch(/inspirationReferenceUrl,\s*\/\/ STORY-GENERATION fix[\s\S]{0,400}?size,/)
   })
 
@@ -375,15 +379,23 @@ describe("persona story-sequence contract (lib/app-v3/maya/persona)", () => {
     // actual headline with generic placeholder copy. Titles ARE the baked text.
     expect(persona).toContain("the title of every output IS the literal text baked onto that slide")
     expect(persona).toContain("must NEVER appear in a title or on an image")
-    expect(persona).toContain("her transformation story, her niche, her brand voice, her memory notes")
+    expect(persona).toContain(
+      "her transformation story, her niche, her brand voice, her memory notes"
+    )
     expect(persona).toContain("do not invent a generic story for a paying member")
   })
 })
 
 describe("baked-slide structural label backstop (lib/app-v3/prompt-compiler)", () => {
   it("strips Maya's internal beat labels from headings at bake time", () => {
-    expect(stripStructuralHeading("Slide 5: The Invitation")).toBe("The Invitation")
+    expect(stripStructuralHeading("Slide 5: The Invitation")).toBe("")
     expect(stripStructuralHeading("Slide 1 - The Hook")).toBe("")
+    expect(stripStructuralHeading("The Hook")).toBe("")
+    expect(stripStructuralHeading("The Doubt")).toBe("")
+    expect(stripStructuralHeading("The Shift")).toBe("")
+    expect(stripStructuralHeading("The Truth")).toBe("")
+    expect(stripStructuralHeading("The Invitation")).toBe("")
+    expect(stripStructuralHeading("Soft CTA")).toBe("")
     expect(stripStructuralHeading("slide 2. I almost quit this year")).toBe(
       "I almost quit this year"
     )
@@ -395,6 +407,94 @@ describe("baked-slide structural label backstop (lib/app-v3/prompt-compiler)", (
     expect(stripStructuralHeading("The shift that changed my business")).toBe(
       "The shift that changed my business"
     )
+  })
+
+  it("replaces pure story beat labels with usable story copy before building overlay specs", () => {
+    const brief = storySequenceBrief(5)
+    brief.graphic!.creativePlan!.userIntent = "The messy middle of becoming the woman I am"
+    brief.graphic!.creativePlan!.outputs = [
+      {
+        title: "Slide 1: The Hook",
+        purpose: "Open the emotional story",
+        visualConcept: "quiet coffee shop profile moment",
+        imagePromptDirection: "same woman in a quiet coffee shop",
+      },
+      {
+        title: "The Doubt",
+        purpose: "show the doubt",
+        visualConcept: "looking down at her phone",
+        imagePromptDirection: "same woman looking down at her phone",
+      },
+      {
+        title: "The Shift",
+        purpose: "show the shift",
+        visualConcept: "soft window light, calmer posture",
+        imagePromptDirection: "same woman in soft window light",
+      },
+      {
+        title: "The Truth",
+        purpose: "show the realization",
+        visualConcept: "walking with coffee in hand",
+        imagePromptDirection: "same woman walking with coffee in hand",
+      },
+      {
+        title: "Slide 5: The Invitation",
+        purpose: "invite the viewer",
+        visualConcept: "quiet final frame with negative space",
+        imagePromptDirection: "same woman in a quiet final frame",
+      },
+    ] as any
+
+    const slides = buildGraphicRedesignSlides(brief, "story-sequence", "My story")
+    expect(slides).toHaveLength(5)
+    for (const slide of slides) {
+      expect(slide.title).not.toMatch(
+        /^(slide|beat|the hook|hook|the doubt|doubt|the shift|shift|the truth|truth|the invitation|invitation|cta)/i
+      )
+    }
+    const specs = slides.map(slide =>
+      makeTextOverlaySpec({
+        heading: slide.title,
+        body: slide.body,
+        role: slide.kind === "hook" ? "hook" : slide.kind === "cta" ? "cta" : "value",
+        format: "story-sequence",
+      })
+    )
+    expect(specs.map(spec => spec.headline).join(" ")).not.toMatch(
+      /\b(The Hook|The Doubt|The Shift|The Truth|The Invitation|Slide \d+)\b/i
+    )
+  })
+
+  it("keeps single story slides from baking pure planning labels", () => {
+    const brief = storySequenceBrief(1)
+    brief.graphic = {
+      headline: "The Doubt",
+      subline: "The part before it made sense",
+      creativePlan: {
+        mode: "story_sequence",
+        userIntent: "The day I stopped hiding online",
+        useCase: "trust",
+        audienceEmotion: "she sees herself in this",
+        contentGoal: "make the first story slide feel personal",
+        visualDirection: "quiet editorial morning",
+        outputCount: 1,
+        outputs: [
+          {
+            title: "Slide 1: The Hook",
+            purpose: "open the story",
+            visualConcept: "quiet morning with phone in hand",
+            imagePromptDirection: "same woman in a quiet morning story frame",
+          },
+        ],
+        validationRules: [],
+      } as any,
+    }
+
+    const slide = buildGraphicRedesignSlides(brief, "story-slide", "My story")[0]
+    expect(slide.title).not.toMatch(/^(slide|the hook|hook|the doubt|doubt)$/i)
+    expect(
+      makeTextOverlaySpec({ heading: slide.title, role: "hook", format: "story-slide" }).headline
+    ).not.toMatch(/The Hook|The Doubt|Slide 1/i)
   })
 
   it("is applied at every heading composition point", () => {

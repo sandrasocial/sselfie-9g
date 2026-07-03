@@ -131,18 +131,131 @@ function carouselTopicFromBrief(brief: CreativeBrief, fallbackTitle?: string): s
   )
 }
 
+const STRUCTURAL_HEADING_LABELS = new Set([
+  "hook",
+  "the hook",
+  "opening",
+  "the opening",
+  "opener",
+  "setup",
+  "the setup",
+  "context",
+  "the context",
+  "tension",
+  "the tension",
+  "doubt",
+  "the doubt",
+  "problem",
+  "the problem",
+  "truth",
+  "the truth",
+  "shift",
+  "the shift",
+  "turning point",
+  "the turning point",
+  "realization",
+  "the realization",
+  "reveal",
+  "the reveal",
+  "desire",
+  "the desire",
+  "invitation",
+  "the invitation",
+  "cta",
+  "the cta",
+  "soft cta",
+  "the soft cta",
+  "call to action",
+  "the call to action",
+  "question",
+  "the question",
+  "poll",
+  "the poll",
+  "close",
+  "the close",
+  "closing",
+  "the closing",
+  "ending",
+  "the ending",
+  "outro",
+  "the outro",
+])
+
+function normalizedStructuralLabel(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[\s:.\-–—_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function isPureStructuralHeading(value: string): boolean {
+  const normalized = normalizedStructuralLabel(value)
+  if (!normalized) return true
+  if (/^(slide|beat|frame)\s*\d+$/.test(normalized)) return true
+  return STRUCTURAL_HEADING_LABELS.has(normalized)
+}
+
 /** Maya's internal beat labels must never reach a baked slide (live 2026-07-03: a paying
  *  member's story sequence rendered "Slide 1: The Hook" as the actual on-image headline).
  *  The persona now forbids planning language in titles; this is the mechanical backstop. */
 export function stripStructuralHeading(value: string): string {
-  return value
-    .replace(/^slide\s*\d+\s*[:.\-–—]?\s*/i, "")
-    .replace(/^(the\s+)?(hook|cta)\s*([:.\-–—]\s*|$)/i, "")
-    .trim()
+  let text = clean(value)
+  if (!text) return ""
+  text = text.replace(/^(?:slide|beat|frame)\s*\d+\s*[:.\-–—]?\s*/i, "").trim()
+  const prefixed = text.match(
+    /^(?:the\s+)?(hook|opening|opener|setup|context|tension|doubt|problem|truth|shift|turning point|realization|reveal|desire|invitation|cta|soft cta|call to action|question|poll|close|closing|ending|outro)\s*[:.\-–—]\s*(.+)$/i
+  )
+  if (prefixed?.[2]) text = prefixed[2].trim()
+  return isPureStructuralHeading(text) ? "" : text
+}
+
+function fallbackStoryHeading(
+  brief: CreativeBrief,
+  conceptTitle: string | undefined,
+  index: number,
+  total: number
+): string {
+  const topic =
+    stripStructuralHeading(clean(brief.graphic?.creativePlan?.userIntent)) ||
+    stripStructuralHeading(clean(brief.graphic?.headline)) ||
+    stripStructuralHeading(clean(conceptTitle))
+  if (index === 0 && topic) return topic.slice(0, 120)
+  if (total > 1 && index === total - 1) return "If this is you, start here"
+  const fallbackLines = [
+    "I did not know where this would lead",
+    "I was still figuring it out",
+    "Something started to shift",
+    "I kept going anyway",
+    "This is where I started again",
+  ]
+  return fallbackLines[index % fallbackLines.length]
+}
+
+function safeGraphicHeading(
+  brief: CreativeBrief,
+  format: OutputFormat,
+  conceptTitle: string | undefined,
+  index: number,
+  total: number,
+  ...candidates: Array<string | undefined>
+): string {
+  for (const candidate of candidates) {
+    const safe = stripStructuralHeading(clean(candidate))
+    if (safe) return safe
+  }
+  if (format === "story-sequence" || format === "story-slide") {
+    return fallbackStoryHeading(brief, conceptTitle, index, total)
+  }
+  return `Slide ${index + 1}`
 }
 
 function outputFromSlide(slide: CarouselSlidePlanLike, index: number): CreativePlanOutput {
-  const title = stripStructuralHeading(clean(slide.heading)) || `Slide ${index + 1}`
+  const title =
+    stripStructuralHeading(clean(slide.heading)) ||
+    stripStructuralHeading(clean(slide.body)) ||
+    stripStructuralHeading(clean(slide.purpose)) ||
+    `Slide ${index + 1}`
   const visualConcept = clean(slide.visualConcept) || title
   const imagePromptDirection =
     clean(slide.imagePromptDirection) ||
@@ -152,7 +265,8 @@ function outputFromSlide(slide: CarouselSlidePlanLike, index: number): CreativeP
 
   return {
     title,
-    purpose: clean(slide.purpose) || (index === 0 ? "open the carousel" : "continue the carousel story"),
+    purpose:
+      clean(slide.purpose) || (index === 0 ? "open the carousel" : "continue the carousel story"),
     visualConcept,
     imagePromptDirection,
     textSafeArea: slide.textSafeArea,
@@ -223,15 +337,19 @@ export function buildCustomerCarouselCreativePlan(
   // Graceful backfill: Maya's quick emotional story beats sometimes skip imagePromptDirection
   // (optional in the tool schema). The renderer falls back to visualConcept anyway, so a
   // missing direction must never hard-fail the plan - fill it the same way.
-  const outputs = suppliedOutputs.map((output, index) => ({
-    ...output,
-    title: stripStructuralHeading(clean(output.title)) || clean(output.title) || `Slide ${index + 1}`,
-    imagePromptDirection:
-      clean(output.imagePromptDirection) ||
-      clean(output.visualConcept) ||
-      clean(output.title) ||
-      `Slide ${index + 1}`,
-  }))
+  const outputs = suppliedOutputs.map((output, index) => {
+    const title =
+      stripStructuralHeading(clean(output.title)) ||
+      (opts?.mode === "story_sequence"
+        ? fallbackStoryHeading(brief, conceptTitle, index, suppliedOutputs.length)
+        : clean(output.title) || `Slide ${index + 1}`)
+    return {
+      ...output,
+      title,
+      imagePromptDirection:
+        clean(output.imagePromptDirection) || clean(output.visualConcept) || title,
+    }
+  })
   const vaultStyleReferences = supplied?.vaultStyleReferences?.length
     ? supplied.vaultStyleReferences
     : vaultStyleReferencesFromBrief(brief)
@@ -241,11 +359,16 @@ export function buildCustomerCarouselCreativePlan(
     mode: opts?.mode ?? "carousel",
     userIntent: supplied?.userIntent ? clean(supplied.userIntent) : topic,
     useCase,
-    audienceEmotion: clean(supplied?.audienceEmotion) || "This feels clear, useful, and possible for me.",
+    audienceEmotion:
+      clean(supplied?.audienceEmotion) || "This feels clear, useful, and possible for me.",
     contentGoal:
-      clean(supplied?.contentGoal) || clean(g?.desiredOutcome) || "teach one clear idea and drive a next action",
+      clean(supplied?.contentGoal) ||
+      clean(g?.desiredOutcome) ||
+      "teach one clear idea and drive a next action",
     visualDirection:
-      clean(supplied?.visualDirection) || clean(g?.designDirection) || "luxury editorial SSELFIE carousel",
+      clean(supplied?.visualDirection) ||
+      clean(g?.designDirection) ||
+      "luxury editorial SSELFIE carousel",
     vaultStyleReferences,
     inspirationInterpretation: supplied?.inspirationInterpretation,
     referenceHandling: supplied?.referenceHandling ?? {
@@ -256,14 +379,13 @@ export function buildCustomerCarouselCreativePlan(
     },
     outputCount,
     outputs,
-    validationRules:
-      supplied?.validationRules?.length
-        ? supplied.validationRules
-        : buildDefaultCreativePlanValidationRules({
-            mode: opts?.mode ?? "carousel",
-            useCase,
-            userIntent: supplied?.userIntent ? clean(supplied.userIntent) : topic,
-          }),
+    validationRules: supplied?.validationRules?.length
+      ? supplied.validationRules
+      : buildDefaultCreativePlanValidationRules({
+          mode: opts?.mode ?? "carousel",
+          useCase,
+          userIntent: supplied?.userIntent ? clean(supplied.userIntent) : topic,
+        }),
   }
 }
 
@@ -278,12 +400,16 @@ export function validateCustomerCarouselBrief(
   const slides = effectiveCarouselSlides(brief, conceptTitle)
 
   if (plan.outputCount !== slides.length) {
-    errors.push(`carousel has ${slides.length} slides, but creativePlan.outputCount is ${plan.outputCount}`)
+    errors.push(
+      `carousel has ${slides.length} slides, but creativePlan.outputCount is ${plan.outputCount}`
+    )
   }
 
   if (
     plan.mode === "carousel" &&
-    (plan.useCase === "educational" || plan.useCase === "tutorial" || plan.useCase === "vault_product") &&
+    (plan.useCase === "educational" ||
+      plan.useCase === "tutorial" ||
+      plan.useCase === "vault_product") &&
     !isShortCreativeRequest(plan.userIntent) &&
     slides.length < 6
   ) {
@@ -296,10 +422,14 @@ export function validateCustomerCarouselBrief(
         [output.title, output.purpose, output.visualConcept, output.imagePromptDirection].join(" ")
       )
     ).length
-    if (styleOutputCount < 5) errors.push("five-style carousel must include five distinct style outputs")
+    if (styleOutputCount < 5)
+      errors.push("five-style carousel must include five distinct style outputs")
   }
 
-  if (isVaultRelatedRequest(plan.userIntent, plan.vaultStyleReferences) && plan.vaultStyleReferences.length === 0) {
+  if (
+    isVaultRelatedRequest(plan.userIntent, plan.vaultStyleReferences) &&
+    plan.vaultStyleReferences.length === 0
+  ) {
     errors.push("Vault-related carousel is missing Vault style context")
   }
 
@@ -587,7 +717,9 @@ function compileCarouselIdentityPrompt(
       ? "Leave clean, low-contrast negative space for the slide headline. Do not render any text, words, letters, captions, labels, logos, or placeholder glyphs."
       : `Render this exact headline inside the image: "${heading}".`,
     !textOverlayLayer && body ? `Render this exact supporting line too: "${body}".` : "",
-    textOverlayLayer ? `Text-safe composition: ${layout.space}` : `Typography placement: ${layout.space}`,
+    textOverlayLayer
+      ? `Text-safe composition: ${layout.space}`
+      : `Typography placement: ${layout.space}`,
     system.identityTreatment,
     textOverlayLayer ? system.textFreeSetDna : system.setDna,
     BRAND_GRAPHIC_STYLE,
@@ -638,9 +770,30 @@ export function buildGraphicRedesignSlides(
       return {
         kind: slideKindForRole(role, index, slides.length),
         title:
-          stripStructuralHeading(clean(slide.heading)) ||
-          stripStructuralHeading(clean(planOutput?.title)) ||
-          `Slide ${index + 1}`,
+          format === "story-sequence"
+            ? safeGraphicHeading(
+                brief,
+                format,
+                conceptTitle,
+                index,
+                slides.length,
+                slide.heading,
+                planOutput?.title,
+                slide.body
+              )
+            : safeGraphicHeading(
+                brief,
+                format,
+                conceptTitle,
+                index,
+                slides.length,
+                slide.heading,
+                planOutput?.title,
+                slide.body,
+                planOutput?.purpose,
+                slide.purpose,
+                planOutput?.visualConcept
+              ),
         body: clean(slide.body),
         purpose: clean(slide.purpose) || clean(planOutput?.purpose),
         visualConcept: clean(slide.visualConcept) || clean(planOutput?.visualConcept),
@@ -661,10 +814,17 @@ export function buildGraphicRedesignSlides(
 
   const planOutput = g?.creativePlan?.outputs?.[0]
   const title =
-    stripStructuralHeading(clean(g?.headline)) ||
-    stripStructuralHeading(clean(planOutput?.title)) ||
-    clean(conceptTitle) ||
-    (format === "reel-cover" ? "Reel cover" : "Story slide")
+    safeGraphicHeading(
+      brief,
+      format,
+      conceptTitle,
+      0,
+      1,
+      g?.headline,
+      planOutput?.title,
+      g?.subline,
+      conceptTitle
+    ) || (format === "reel-cover" ? "Reel cover" : "Story slide")
   const role = resolveRole(g?.role, 0, 1)
   return [
     {
