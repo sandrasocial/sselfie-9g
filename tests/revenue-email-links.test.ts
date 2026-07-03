@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { buildRevenueEmailLink } from "@/lib/email/templates/revenue-links"
 import { generateSelfieGuideDay14MayaBridgeEmail } from "@/lib/email/templates/selfie-guide-day14-maya-bridge"
-import { generateNurtureStrategyN3Email } from "@/lib/email/templates/nurture-strategy-n3"
+import { generateNurtureStrategyN3Email } from "@/lib/email/templates/archived/nurture-strategy-n3"
 import { generateMasterclassDay0DeliveryEmail } from "@/lib/email/templates/masterclass-day0-delivery"
 
 describe("revenue email links", () => {

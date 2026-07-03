@@ -54,7 +54,6 @@ active and were run separately before quarantine.
 | `tests/user-journey-smoke-flows.test.ts` | References removed automation smoke-flow module. |
 | `tests/visibility-suite-entitlements.test.ts` | References removed Visibility Suite checkout/public page; academy access remains a separate current surface. |
 | `tests/welcome-first-generation-followup-email.test.ts` | Old subject-copy expectation. |
-| `tests/welcome-sequence-lifecycle.test.ts` | References retired Stella email bridge. |
 
 ## Active Safety Coverage Kept
 

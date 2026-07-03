@@ -3,7 +3,11 @@ import { buildRevenueEmailLink } from "./revenue-links"
 
 // FUNNEL-2026-06-11: repointed from the Masterclass ($147, zero sales across 744 sends)
 // to the 7-day SUITE trial. File name kept so the sequence registry and email_logs
-// idempotency stay stable. Copy adapted from the Sandra-approved trial-unlock email.
+// idempotency stay stable.
+// REWRITE-2026-07-03 (Sandra-approved email audit): 4,534 sends and 0 conversions on the
+// old feature-list copy. Rewritten story-first per the locked voice standard: world ->
+// problem -> desire -> real story -> after -> No-Fake -> soft CTA -> heart-line.
+// Link/token mechanics unchanged: personal claim link when present, /join/studio fallback.
 
 interface FreebieGuideTouchParams {
   firstName: string
@@ -28,39 +32,51 @@ export function generateFreebieGuideDay14MasterclassBridgeEmail({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Two weeks in.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">If the guide helped and your photos are better than they were, the next question is usually: what do I do with them now?</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">That's what my Studio is for. Maya is the creative director inside it. She turns one selfie into full photoshoots, carousels, reel covers, and captions that sound like you. No prompts to write. You tap, she does the heavy lifting.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Want to try her? Here's 7 days inside the SUITE, with 20 photos on me. No card needed. Nothing cancels into a charge. It just ends.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Two weeks ago you grabbed my selfie guide. So I already know something about you: you want to show up. The photos were just the thing standing in the way.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Can I ask the honest question? Did you post any of them?</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Because that's where it usually stops. Not the taking. The posting. You get one photo you almost like, and then the spiral starts: is this good enough, what would I even say, who am I to take up space here.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">I know that spiral. I sat in it for years. Phone full of selfies, profile still hiding.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">What finally changed it for me wasn't a better photo. It was having enough of them. When you've got a whole shoot of images that look like you on a good day, one photo stops carrying all that pressure. Posting becomes normal.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">That's what my Studio is for. You bring one selfie. Maya, the creative director inside, turns it into full photoshoots, reel covers, and captions that sound like you. And everything still looks like you. Not a shinier stranger. You, on your best day, recognizable to everyone who already knows your face.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Want to try it? Here's 7 days inside the SUITE with 20 photos on me. No card. Nothing quietly turns into a charge. It just ends.</p>
     <div style="margin:28px 0 14px;">${renderStoneButton(ctaLabel, ctaUrl)}</div>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Whatever you make is yours to keep, trial or not.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Whatever you make in those 7 days is yours to keep, trial or not.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">You didn't download that guide because of photos, love. You downloaded it because you're ready to be seen. This is the next step.</p>
     <p style="margin:0;font-size:16px;line-height:1.8;">Sandra x</p>
   `
 
   return {
-    subject: "Your photos are better. Now meet Maya",
+    subject: "did you post any of them?",
     html: renderStoneShell({
       eyebrow: "SSELFIE SUITE",
-      title: "If the photos are starting to work.",
-      subtitle: "The next question is what to do with them.",
+      title: "Two weeks ago you wanted better photos.",
+      subtitle: "Here's the part nobody talks about.",
       bodyHtml,
-      footerLead: "No rush. Keep using the guide.",
+      footerLead: "No rush. The guide is yours forever.",
       footerSignoff: "",
     }),
     text: `Hi ${firstName},
 
-Two weeks in.
+Two weeks ago you grabbed my selfie guide. So I already know something about you: you want to show up. The photos were just the thing standing in the way.
 
-If the guide helped and your photos are better than they were, the next question is usually: what do I do with them now?
+Can I ask the honest question? Did you post any of them?
 
-That's what my Studio is for. Maya is the creative director inside it. She turns one selfie into full photoshoots, carousels, reel covers, and captions that sound like you. No prompts to write. You tap, she does the heavy lifting.
+Because that's where it usually stops. Not the taking. The posting. You get one photo you almost like, and then the spiral starts: is this good enough, what would I even say, who am I to take up space here.
 
-Want to try her? Here's 7 days inside the SUITE, with 20 photos on me. No card needed. Nothing cancels into a charge. It just ends.
+I know that spiral. I sat in it for years. Phone full of selfies, profile still hiding.
+
+What finally changed it for me wasn't a better photo. It was having enough of them. When you've got a whole shoot of images that look like you on a good day, one photo stops carrying all that pressure. Posting becomes normal.
+
+That's what my Studio is for. You bring one selfie. Maya, the creative director inside, turns it into full photoshoots, reel covers, and captions that sound like you. And everything still looks like you. Not a shinier stranger. You, on your best day, recognizable to everyone who already knows your face.
+
+Want to try it? Here's 7 days inside the SUITE with 20 photos on me. No card. Nothing quietly turns into a charge. It just ends.
 
 ${ctaLabel}:
 ${ctaUrl}
 
-Whatever you make is yours to keep, trial or not.
+Whatever you make in those 7 days is yours to keep, trial or not.
+
+You didn't download that guide because of photos, love. You downloaded it because you're ready to be seen. This is the next step.
 
 Sandra x`,
   }

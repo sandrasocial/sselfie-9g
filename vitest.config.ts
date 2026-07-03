@@ -45,7 +45,6 @@ const quarantinedSuites = [
   "tests/user-journey-smoke-flows.test.ts",
   "tests/visibility-suite-entitlements.test.ts",
   "tests/welcome-first-generation-followup-email.test.ts",
-  "tests/welcome-sequence-lifecycle.test.ts",
 ]
 
 export default defineConfig({

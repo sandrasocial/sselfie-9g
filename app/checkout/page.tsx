@@ -441,10 +441,10 @@ function CheckoutContent() {
               </div>
               <div className="text-left sm:text-right">
                 <p className="font-['Cormorant_Garamond'] text-4xl font-light leading-none text-[#0D0E10]">
-                  {isSelfieToBrandShoot ? (hasVaultCredit ? "$170" : "$197") : isSelfieAiPhotosKit ? "$37" : "$27"}
+                  {isSelfieToBrandShoot ? (hasVaultCredit ? "$160" : "$197") : "$37"}
                 </p>
                 <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[#818283]">
-                  {hasVaultCredit ? "$27 Vault credit applied" : "one-time access"}
+                  {hasVaultCredit ? "$37 Vault credit applied" : "one-time access"}
                 </p>
               </div>
             </div>

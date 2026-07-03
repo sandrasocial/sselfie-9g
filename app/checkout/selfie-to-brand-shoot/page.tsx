@@ -134,8 +134,11 @@ function checkoutStartProperties(
     checkout_source: attribution.checkoutSource || null,
     freebie_source: attribution.freebieSource || null,
     has_freebie_token: Boolean(params.freebie_token),
-    requested_vault_credit: params.vault_credit === "1" || params.upgrade_credit === "2700",
-    requested_starter_kit_credit: params.starter_kit_credit === "1" || params.upgrade_credit === "3700",
+    // Vault credit moved $27 -> $37 on 2026-07-03 (Vault price flip); accept the legacy
+    // 2700 marker so old email links still classify correctly.
+    requested_vault_credit:
+      params.vault_credit === "1" || params.upgrade_credit === "2700" || (params.upgrade_credit === "3700" && params.starter_kit_credit !== "1"),
+    requested_starter_kit_credit: params.starter_kit_credit === "1",
     ...extra,
   }
 }
@@ -231,8 +234,10 @@ export default async function SelfieToBrandShootCheckoutPage({
         token: params.freebie_token,
         email: checkoutEmail,
       })
+  // Vault buyers paid $37 (price flip 2026-06-26), so their credit is $37 (Stripe coupon
+  // VAULT37, created 2026-07-03). VAULT27 remains in Stripe for pre-flip history only.
   const upgradePromoCode = vaultCreditEligible
-    ? "VAULT27"
+    ? "VAULT37"
     : starterKitCreditEligible
       ? "STARTER37"
       : undefined
@@ -241,7 +246,7 @@ export default async function SelfieToBrandShootCheckoutPage({
     ...(vaultCreditEligible
       ? {
           vault_credit: "1",
-          upgrade_credit: "2700",
+          upgrade_credit: "3700",
           buyer_stage: params.buyer_stage || "micro",
         }
       : {}),
