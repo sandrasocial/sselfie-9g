@@ -103,7 +103,7 @@ Operating rule:
 
 ### Prompt Vault Funnel (active front door — locked May 26-27, 2026)
 
-- Front-door demand is AI photo prompts: free `/ai-prompts` -> **Prompt Vault $27** (`/prompt-vault` -> `/checkout/prompt-vault`). Positioning: "turn one selfie into unlimited photoshoots", never "learn prompts".
+- Front-door demand is AI photo prompts: free `/ai-prompts` -> **Prompt Vault $37** (`/prompt-vault` -> `/checkout/prompt-vault`; $27 until the 2026-06-26 flash flip — live price module: `lib/launch/cash-launch-pricing.ts`). Positioning: "turn one selfie into unlimited photoshoots", never "learn prompts".
 - **ManyChat PROMPT lock (updated 2026-06-30):** do not use numbered prompt keywords as the operating model. The live/default flow is `PROMPT` -> `/ai-prompts`, where the free page shows the latest five SSELFIE shoot previews. The old numbered prompt task is superseded history. Do not tell Sandra to wire `n={{last_text_input}}`, create per-number ManyChat keywords, or use `/p/latest` as the default PROMPT destination.
 - **Do not drift back to the Starter Kit-first funnel.** Starter Kit is secondary support only.
 - **Buyer psychology doctrine (LOCKED): `docs/funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` governs ALL copy, captions, UI text, emails, and Maya language.** Her fear: "people will think I'm fake" -> promise: "look elevated without feeling fake". Never imply viewers are fooled ("no one will know", "look rich", "fake photoshoot", "perfect face", "flawless skin"). Always: AI-assisted, realistic, recognizable, true-to-you, "still you". Signature: "AI should not erase you. It should frame you."
@@ -306,7 +306,7 @@ DB↔Resend sync state (2026-06-11): DB union of email tables = 6,795 distinct; 
 | Product | Price | Status | Notes |
 |---------|-------|--------|-------|
 | AI Prompts | Free | ✅ Active front-door lead magnet | Prompt reels -> email capture -> `/ai-prompts/access/[token]` |
-| AI Photo Prompt Vault | $27 | ✅ Active low-ticket bridge | Proven buyer activation product. Do not expect it to carry the whole business alone. |
+| AI Photo Prompt Vault | $37 (was $27 until the 2026-06-26 flash flip) | ✅ Active low-ticket bridge | Proven buyer activation product. Do not expect it to carry the whole business alone. |
 | Selfie To AI Photos Kit | $37 | 🔒 Built, env configured, pending voice QA + deploy smoke | Dedicated product for viral selfie/AI traffic: one clear selfie -> AI photos that still look like her. Uses its own product key, checkout, access page, delivery email, and webhook handler. |
 | Selfie Guide | Free | ✅ Free lead magnet ONLY (paid tier killed 2026-06-11) | `/selfie-guide` opt-in → token access. Paid checkout redirects to free page; fulfillment for past €17/€27 buyers intact. ⚠️ Follower reported guide content outdated — content refresh pending. |
 | Starter Kit | $37 | ⚠️ Secondary/support only | Not the primary prompt-funnel upgrade. Keep fulfillment for buyers. |

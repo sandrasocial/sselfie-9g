@@ -820,7 +820,7 @@ export async function generateContentBrief(options?: {
     canonicalPricing: {
       aiPrompts: "free",
       selfieToAiPhotosKit: "$37 one time",
-      promptVault: "$27 one time",
+      promptVault: "$37 one time",
       starterKit: "$37 one time",
       masterclass: "$147 one time",
       suiteMembership: "EUR 97 per month, cancel anytime",

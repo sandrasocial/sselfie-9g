@@ -265,6 +265,18 @@ async function getFreebieGuideTouchCandidates(
       AND fs.email IS NOT NULL
       AND fs.email <> ''
       AND BTRIM(fs.email) ~* ${SQL_VALID_EMAIL_PATTERN}
+      -- Guide sequence goes to GUIDE leads only (email audit 2026-07-03): without this
+      -- filter every ai-prompts lead and product buyer also received guide day 1/3/5/8/14
+      -- on top of their own track: 1,705 people got both sequences in 30 days.
+      AND COALESCE(fs.source, '') NOT IN (
+        'ai-prompts',
+        'prompt-vault-paid',
+        'selfie-to-brand-shoot-paid',
+        'selfie-ai-photos-kit-paid',
+        'starter-kit-paid',
+        'winback-ex-member',
+        'manychat-vault-dm'
+      )
       AND NOT EXISTS (
         SELECT 1
         FROM email_logs el

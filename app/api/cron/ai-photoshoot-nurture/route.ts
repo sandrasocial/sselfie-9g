@@ -37,7 +37,10 @@ const REPLY_TO_EMAIL = "hello@sselfie.ai"
 const DEFAULT_AI_PROMPTS_START_DATE = "2026-05-18"
 const DEFAULT_SEND_DELAY_MS = 650
 const MAX_PER_TOUCH_DEFAULT = 75
-const MAX_TOTAL_PER_RUN_DEFAULT = 225
+// 300 sends x 650ms delay = ~195s of send time inside the 300s function budget.
+// (Was 225; raised 2026-07-03 with the buyer-first reorder below after the email audit
+// found lead volume starving every later touch.)
+const MAX_TOTAL_PER_RUN_DEFAULT = 300
 const MIN_TOUCH_GAP_HOURS_DEFAULT = 18
 
 interface AiPromptsCandidate {
@@ -408,54 +411,12 @@ export async function GET(request: Request) {
     }
     const errors: Array<{ email: string; touch: string; error: string }> = []
 
-    if (aiPromptsEnabled || dryRun) {
-      for (const touch of AI_PROMPTS_EMAIL_TOUCHES) {
-        const key = resultKey(touch.emailType)
-        const result = emptyTouchResult()
-        results[key] = result
-
-        if (remainingSends <= 0) {
-          result.skipped = dryRun ? 0 : maxPerTouch
-          continue
-        }
-
-        const candidates = await getAiPromptsCandidates({
-          emailType: touch.emailType,
-          days: touch.days,
-          startDate,
-          previousEmailType: previousAiPromptTouch(touch.emailType),
-          minTouchGapHours,
-          limit: Math.min(maxPerTouch, remainingSends),
-        })
-        result.found = candidates.length
-
-        if (dryRun) {
-          result.wouldSend = candidates.length
-          result.skipped = candidates.length
-          remainingSends -= candidates.length
-          continue
-        }
-
-        for (const candidate of candidates) {
-          const sent = await sendAiPromptsTouch(touch.emailType, candidate)
-          if (sent.success) {
-            result.sent += 1
-            remainingSends -= 1
-          } else {
-            result.failed += 1
-            errors.push({
-              email: candidate.email,
-              touch: touch.emailType,
-              error: sent.error || "unknown",
-            })
-          }
-
-          await sleep(sendDelayMs)
-          if (remainingSends <= 0) break
-        }
-      }
-    }
-
+    // ── Ordering matters (email audit 2026-07-03): the send budget used to be consumed by
+    // lead day-1 volume before anyone else got a turn, so PAYING Vault buyers received zero
+    // onboarding since Jun 11 and the day-14 SUITE trial offer never went out. Now:
+    // 1. Vault BUYERS first (few people, highest trust, they just paid).
+    // 2. Lead touches deepest-first (day 14 -> day 1): conversion-critical sends beat
+    //    top-of-funnel mass. Later touches gate on PAST sends, so reverse order is safe. ──
     if (promptVaultEnabled || dryRun) {
       for (const touch of PROMPT_VAULT_EMAIL_TOUCHES) {
         const key = resultKey(touch.emailType)
@@ -485,6 +446,54 @@ export async function GET(request: Request) {
 
         for (const candidate of candidates) {
           const sent = await sendPromptVaultTouch(touch.emailType, candidate)
+          if (sent.success) {
+            result.sent += 1
+            remainingSends -= 1
+          } else {
+            result.failed += 1
+            errors.push({
+              email: candidate.email,
+              touch: touch.emailType,
+              error: sent.error || "unknown",
+            })
+          }
+
+          await sleep(sendDelayMs)
+          if (remainingSends <= 0) break
+        }
+      }
+    }
+
+    if (aiPromptsEnabled || dryRun) {
+      for (const touch of [...AI_PROMPTS_EMAIL_TOUCHES].reverse()) {
+        const key = resultKey(touch.emailType)
+        const result = emptyTouchResult()
+        results[key] = result
+
+        if (remainingSends <= 0) {
+          result.skipped = dryRun ? 0 : maxPerTouch
+          continue
+        }
+
+        const candidates = await getAiPromptsCandidates({
+          emailType: touch.emailType,
+          days: touch.days,
+          startDate,
+          previousEmailType: previousAiPromptTouch(touch.emailType),
+          minTouchGapHours,
+          limit: Math.min(maxPerTouch, remainingSends),
+        })
+        result.found = candidates.length
+
+        if (dryRun) {
+          result.wouldSend = candidates.length
+          result.skipped = candidates.length
+          remainingSends -= candidates.length
+          continue
+        }
+
+        for (const candidate of candidates) {
+          const sent = await sendAiPromptsTouch(touch.emailType, candidate)
           if (sent.success) {
             result.sent += 1
             remainingSends -= 1
