@@ -61,7 +61,7 @@ export function generateFeedbackReplyEmail({
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 32px;">
                 <tr>
                   <td align="center">
-                    <a href="https://sselfie.ai/studio" style="display: inline-block; padding: 14px 32px; background-color: #0c0a09; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">
+                    <a href="https://sselfie.ai/app" style="display: inline-block; padding: 14px 32px; background-color: #0c0a09; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">
                       Back to the SUITE
                     </a>
                   </td>
@@ -110,7 +110,7 @@ xo,
 Sandra
 
 SSELFIE Studio · Your AI Beauty & Content Studio
-https://sselfie.ai/studio
+https://sselfie.ai/app
   `
 
   return { html, text }

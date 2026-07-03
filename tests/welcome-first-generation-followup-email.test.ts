@@ -9,7 +9,7 @@ describe("welcome first generation followup email", () => {
     expect(email.subject).toBe("your 2 free photos are inside — try one now")
     expect(email.html).toContain("you've got <strong>2 free photos waiting for you right now</strong>")
     expect(email.html).toContain("Generate my first photo")
-    expect(email.html).toContain("/studio?utm_source=email&utm_medium=lifecycle&utm_campaign=free_welcome_day0")
+    expect(email.html).toContain("/app?utm_source=email&utm_medium=lifecycle&utm_campaign=free_welcome_day0")
     expect(email.text).not.toContain("Your first brand image is waiting for you inside SSELFIE.")
   })
 })

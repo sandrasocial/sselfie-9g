@@ -162,7 +162,7 @@ export function generateVaultDropNonbuyerEmail({
       "Open it once. Pick a shoot. Upload a selfie. That is the whole process.",
     ]),
 
-    editorialFinalCTARow("Get the Vault for $27", secondaryCtaUrl, "$27 · Instant access · Every full shoot included"),
+    editorialFinalCTARow("Get the Vault for $37", secondaryCtaUrl, "$37 · Instant access · Every full shoot included"),
   ].join("\n")
 
   const html = renderEditorialShell({
@@ -204,10 +204,10 @@ The preview gives you the first image from each new shoot.
 
 The full Vault gives you the full shoot direction, every scene, the styling, the mood, and every copy-paste prompt.
 
-GET THE VAULT FOR $27:
+GET THE VAULT FOR $37:
 ${secondaryCtaUrl}
 
-$27 · Instant access · Every shoot included
+$37 · Instant access · Every shoot included
 
 Sandra x`
 

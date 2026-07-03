@@ -10,7 +10,7 @@ export function generatePostActivationUpgradeEmail(input: {
   const generatedImageUrl = input.generatedImageUrl || null
 
   const ctaUrl = `${SITE_URL}/checkout/membership?utm_source=email&utm_medium=lifecycle&utm_campaign=post_activation_upgrade`
-  const studioUrl = `${SITE_URL}/studio?tab=maya&utm_source=email&utm_medium=lifecycle&utm_campaign=post_activation_upgrade`
+  const studioUrl = `${SITE_URL}/app?utm_source=email&utm_medium=lifecycle&utm_campaign=post_activation_upgrade`
 
   const imageHtml = generatedImageUrl
     ? `<img src="${generatedImageUrl}" alt="Your brand photo" style="width:100%;max-width:420px;border-radius:12px;display:block;margin:0 auto 24px auto;" />`
@@ -24,7 +24,7 @@ export function generatePostActivationUpgradeEmail(input: {
       <p style="margin:0 0 16px 0;">You made your first brand photo with Maya. That\u2019s the hard part done.</p>
       ${imageHtml}
       <p style="margin:0 0 16px 0;">Most creators who make one photo end up making 10 more in the same week.</p>
-      <p style="margin:0 0 16px 0;">The SUITE gives you 200 credits every month. That\u2019s roughly 100 brand photos, consistently, without worrying about running out.</p>
+      <p style="margin:0 0 16px 0;">The SUITE gives you 200 credits every month. That\u2019s 200 photos, consistently, without worrying about running out.</p>
       <p style="margin:0 0 24px 0;">If you liked what Maya made today, the SUITE just keeps it going.</p>
       <p style="margin:0 0 20px 0;">
         <a href="${ctaUrl}" style="display:inline-block;background:#1c1917;color:#fafaf9;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;letter-spacing:0.05em;">
@@ -42,7 +42,7 @@ export function generatePostActivationUpgradeEmail(input: {
     "You made your first brand photo with Maya. That\u2019s the hard part done.",
     "",
     "Most creators who make one photo end up making 10 more in the same week.",
-    "The SUITE gives you 200 credits every month. Roughly 100 brand photos, consistently.",
+    "The SUITE gives you 200 credits every month. That’s 200 photos, consistently.",
     "",
     `Join SSELFIE SUITE: ${ctaUrl}`,
     `Go back to Maya: ${studioUrl}`,

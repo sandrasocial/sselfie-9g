@@ -65,7 +65,7 @@ export function generateTrackedCheckoutLink(
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sselfie.ai')
     .replace(/^https:\/\/sselfie\.ai$/, 'https://www.sselfie.ai')
     .replace(/\/+$/, '')
-  const baseUrl = `${siteUrl}/studio`
+  const baseUrl = `${siteUrl}/app`
   
   return generateTrackedLink({
     baseUrl,

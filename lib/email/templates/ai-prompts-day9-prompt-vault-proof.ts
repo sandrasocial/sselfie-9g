@@ -37,7 +37,7 @@ export function generateAiPromptsDay9PromptVaultProofEmail({
        <p style="margin:0;font-size:17px;line-height:1.7;font-style:italic;">${TESTIMONIAL}</p>`,
       "Proof"
     )}
-    <div style="margin:26px 0 20px;">${renderStoneButton("See the worlds · $27", promptVaultUrl)}</div>
+    <div style="margin:26px 0 20px;">${renderStoneButton("See the worlds · $37", promptVaultUrl)}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">Sandra x</p>
   `
 
@@ -66,7 +66,7 @@ No app to learn. No photographer. No "tech girlie" required. If you can text, yo
 From a SSELFIE customer:
 ${TESTIMONIAL}
 
-See the worlds · $27:
+See the worlds · $37:
 ${promptVaultUrl}
 
 Sandra x`

@@ -102,7 +102,7 @@ export function generatePromptVaultRecovery2Email({
     <p style="margin:0 0 18px;">Yesterday you were a click away from the Prompt Vault, so I'm sending the link back in case life got in the way.</p>
     <p style="margin:0 0 18px;">Here's what usually happens next: you pick one photoshoot world, paste the prompt into ChatGPT, add one selfie. Ten minutes later you have a set of photos that look like a quiet luxury morning in London or a dark balcony over the city. Still your face. Still you. Just clearer.</p>
     <p style="margin:0 0 18px;">AI should not erase you. It should frame you. That's the whole point of the Vault.</p>
-    <p style="margin:0 0 18px;">${renderPersonalLink("Get the Prompt Vault here", checkoutUrl)} ($27, once).</p>
+    <p style="margin:0 0 18px;">${renderPersonalLink("Get the Prompt Vault here", checkoutUrl)} ($37, once).</p>
     <p style="margin:0;">Every new collection I add lands in your vault automatically.</p>
   `
 
@@ -117,7 +117,7 @@ Here's what usually happens next: you pick one photoshoot world, paste the promp
 
 AI should not erase you. It should frame you. That's the whole point of the Vault.
 
-Get the Prompt Vault ($27, once):
+Get the Prompt Vault ($37, once):
 ${checkoutUrl}
 
 Every new collection I add lands in your vault automatically.
@@ -146,7 +146,7 @@ export function generatePromptVaultRecovery3Email({
     <p style="margin:0 0 18px;">Hi ${firstName},</p>
     <p style="margin:0 0 18px;">Last note from me about the Prompt Vault, I promise.</p>
     <p style="margin:0 0 18px;">If checkout gave you trouble or the timing was off, just reply. A real person answers, usually me.</p>
-    <p style="margin:0 0 18px;">And if you were waiting for a simple next step: one selfie, every editorial collection, $27 once. New drops included forever.</p>
+    <p style="margin:0 0 18px;">And if you were waiting for a simple next step: one selfie, every editorial collection, $37 once. New drops included forever.</p>
     <p style="margin:0 0 18px;">${renderPersonalLink("Here's the link", checkoutUrl)}.</p>
     <p style="margin:0;">Either way, I'm glad you're here.</p>
   `
@@ -160,7 +160,7 @@ Last note from me about the Prompt Vault, I promise.
 
 If checkout gave you trouble or the timing was off, just reply. A real person answers, usually me.
 
-And if you were waiting for a simple next step: one selfie, every editorial collection, $27 once. New drops included forever.
+And if you were waiting for a simple next step: one selfie, every editorial collection, $37 once. New drops included forever.
 
 Here's the link:
 ${checkoutUrl}

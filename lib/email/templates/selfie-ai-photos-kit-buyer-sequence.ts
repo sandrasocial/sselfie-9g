@@ -94,7 +94,7 @@ export function generateSelfieAiPhotosKitDay4VaultBridgeEmail({
       `<p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">Same selfie, same steps you already know from the Kit. You just get whole worlds to shoot in instead of single prompts. New collections keep getting added as I release them.</p>`,
       "How it works with your Kit"
     )}
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It's $27.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It's $37.</p>
     <div style="margin:26px 0 16px;">${renderStoneButton("Get the Prompt Vault", vaultUrl)}</div>
     <p style="margin:0 0 16px;font-size:14px;line-height:1.7;color:#5f5a52;">Or keep practicing with your Kit first: <a href="${kitUrl}" style="color:#2c2924;text-decoration:underline;">open it here</a>.</p>
     <p style="margin:0;font-size:16px;line-height:1.75;">No rush. The Kit is enough for your first three photos. The Vault is for when you want a real library.</p>
@@ -120,7 +120,7 @@ It's not a bigger folder of prompts. It's full collections. Each one is a comple
 How it works with your Kit:
 Same selfie, same steps you already know from the Kit. You just get whole worlds to shoot in instead of single prompts. New collections keep getting added as I release them.
 
-It's $27.
+It's $37.
 
 Get the Prompt Vault:
 ${vaultUrl}

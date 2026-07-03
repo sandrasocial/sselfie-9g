@@ -47,10 +47,10 @@ export const EMAIL_LINKS: Record<string, LinkConfig> = {
 
   studio: {
     id: 'studio',
-    url: `${BASE_URL}/studio`,
+    url: `${BASE_URL}/app`,
     utmSource: 'email',
     utmMedium: 'newsletter',
-    description: 'Studio landing/features page or dashboard (for logged-in users)'
+    description: 'Studio app (for logged-in members and trials)'
   },
 
   whyStudio: {
@@ -72,10 +72,10 @@ export const EMAIL_LINKS: Record<string, LinkConfig> = {
   // Content pages
   instagramGuide: {
     id: 'instagram-guide',
-    url: `${BASE_URL}/guides/instagram`,
+    url: `${BASE_URL}/ai-prompts`,
     utmSource: 'email',
     utmMedium: 'newsletter',
-    description: 'Instagram strategy guide'
+    description: 'Free AI prompts opt-in (nearest live guide page; /guides/instagram is retired)'
   },
 
   contentStrategy: {
@@ -88,16 +88,16 @@ export const EMAIL_LINKS: Record<string, LinkConfig> = {
 
   blogPost: {
     id: 'blog',
-    url: `${BASE_URL}/blog`,
+    url: `${BASE_URL}`,
     utmSource: 'email',
     utmMedium: 'newsletter',
-    description: 'Blog post (append slug as needed)'
+    description: 'Homepage (no blog exists; /blog is not a route)'
   },
 
   // Account/Settings
   dashboard: {
     id: 'dashboard',
-    url: `${BASE_URL}/studio`,
+    url: `${BASE_URL}/app`,
     utmSource: 'email',
     utmMedium: 'transactional',
     description: 'User dashboard/app (logged-in users)'
@@ -105,10 +105,10 @@ export const EMAIL_LINKS: Record<string, LinkConfig> = {
 
   preferences: {
     id: 'preferences',
-    url: `${BASE_URL}/email-preferences`,
+    url: `${BASE_URL}/unsubscribe`,
     utmSource: 'email',
     utmMedium: 'transactional',
-    description: 'Email preferences/settings'
+    description: 'Email preferences (handled on the unsubscribe page; /email-preferences is not a route)'
   },
 
   unsubscribe: {
@@ -131,10 +131,8 @@ export const EMAIL_LINKS: Record<string, LinkConfig> = {
   // Support
   support: {
     id: 'support',
-    url: `${BASE_URL}/support`,
-    utmSource: 'email',
-    utmMedium: 'transactional',
-    description: 'Support/help center'
+    url: 'mailto:support@sselfie.ai',
+    description: 'Support contact (no /support page exists; email is the support channel)'
   }
 }
 
@@ -160,6 +158,11 @@ export function buildTrackedUrl(
   }
 
   const url = new URL(linkConfig.url)
+
+  // mailto: links get no UTM/query params
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return linkConfig.url
+  }
 
   // Add UTM parameters
   if (linkConfig.utmSource) {

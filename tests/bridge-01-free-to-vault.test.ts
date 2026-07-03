@@ -78,7 +78,7 @@ describe("BRIDGE-01 free prompts to Vault bridge", () => {
 
     expect(day7.subject).toBe("that was just shot 1, babe 👀")
     expect(day7.text).toContain("The Vault holds every one of those worlds")
-    expect(day7.text).toContain("Get the Vault · $27 · one time:")
+    expect(day7.text).toContain("Get the Vault · $37 · one time:")
     expect(day7.text).toContain("email_type=ai-prompts-day7-prompt-vault-offer")
 
     expect(day9.subject).toBe("proof it still looks like you (not someone else)")
@@ -91,7 +91,7 @@ describe("BRIDGE-01 free prompts to Vault bridge", () => {
     expect(day9.text).toContain("email_type=ai-prompts-day9-prompt-vault-proof")
 
     expect(day11.subject).toBe("your camera roll's still waiting on the full shoot")
-    expect(day11.text).toContain("The Vault is $27. One time. Every editorial world I've shot")
+    expect(day11.text).toContain("The Vault is $37. One time. Every editorial world I've shot")
     expect(day11.text).toContain("email_type=ai-prompts-day11-prompt-vault-why-now")
 
     expect(`${day7.text}\n${day9.text}\n${day11.text}`).not.toContain("—")
