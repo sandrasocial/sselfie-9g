@@ -232,7 +232,9 @@ export const STILL_YOU_METHOD = {
     "Visibility To Paid / Work With Me = steps 3 to 5 done with her.",
   ],
   contentRule:
-    "Content teaches the METHOD, never a tool. A selfie tutorial is Step 1 of the STILL YOU Method, not a random tip. A prompt reel is Step 2. Name the method or its step naturally when it fits; never say 'buy my prompts', say which step this door opens.",
+    "Content teaches the METHOD, never a tool. A selfie tutorial is Step 1, a prompt reel is Step 2. Never say 'buy my prompts'; say which step this door opens.",
+  coldClarityRule:
+    "THE 3-SECOND RULE (Sandra, 2026-07-03, binding): a cold stranger must understand what she gets in under 3 seconds, in her own words. Hooks, first frames, headlines, and ad-style copy may NEVER use brand language: no 'STILL YOU Method', no 'visual world', no invented collection poetry. Plain outcome words only ('brand photos from one selfie', 'what to post every day'). The method name appears AFTER attention is earned: caption body, sales page section two, emails, inside the app. Style/collection names must be self-describing aesthetics a stranger can picture before tapping ('old money summer', '90s supermodel'), never invented poetry ('Mystic Vogue' fails).",
 } as const
 
 export const EXPERTISE = {
@@ -328,6 +330,7 @@ export function stillYouMethodBlock(): string {
     listBlock("The five steps:", STILL_YOU_METHOD.steps),
     listBlock("Product doors into the method:", STILL_YOU_METHOD.doors),
     `Content rule: ${STILL_YOU_METHOD.contentRule}`,
+    STILL_YOU_METHOD.coldClarityRule,
   ].join("\n")
 }
 
