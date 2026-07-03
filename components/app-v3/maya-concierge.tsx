@@ -45,6 +45,7 @@ import {
   type TextOverlaySpec,
 } from "@/lib/app-v3/text-overlay"
 import { getTextStyleExampleImage, textStyleSampleSpec } from "@/lib/app-v3/text-style-examples"
+import { salvageConceptsPayload } from "@/lib/app-v3/concept-salvage"
 import {
   colorAdjustmentLine,
   parseTextRefinement,
@@ -247,11 +248,17 @@ type GenerationSource = "selfie" | "trained-model"
 /** Pull the 3 concepts out of an emit_concepts tool part (output first, input while streaming).
  *  `rawInput` is the salvage path: if the tool call finished but failed schema validation (a
  *  truncated stream, a missing field), the SDK clears `input` and keeps the raw payload there -
- *  without this fallback the cards a user watched stream in would vanish when Maya finishes. */
+ *  without this fallback the cards a user watched stream in would vanish when Maya finishes.
+ *  When the tool JSON was CUT mid-stream (token ceiling - the story-sequence/story-slide killer,
+ *  2026-07-03), rawInput is a raw STRING: salvageConceptsPayload rescues every complete concept. */
 function extractConcepts(part: any): ConceptCardData[] | null {
   if (!part || typeof part !== "object") return null
   if (part.type !== "tool-emit_concepts" && part.type !== "dynamic-tool") return null
-  const payload = part.output?.concepts ?? part.input?.concepts ?? part.rawInput?.concepts
+  const payload =
+    part.output?.concepts ??
+    part.input?.concepts ??
+    part.rawInput?.concepts ??
+    salvageConceptsPayload(part.rawInput ?? part.input)?.concepts
   if (!Array.isArray(payload)) return null
   return payload.filter(
     (c: any) => c && typeof c.title === "string" && c.brief && typeof c.brief.outfit === "string"
@@ -263,7 +270,11 @@ function extractConcepts(part: any): ConceptCardData[] | null {
 function extractConceptFormat(part: any): OutputFormat | null {
   if (!part || typeof part !== "object") return null
   if (part.type !== "tool-emit_concepts" && part.type !== "dynamic-tool") return null
-  const fmt = part.output?.format ?? part.input?.format ?? part.rawInput?.format
+  const fmt =
+    part.output?.format ??
+    part.input?.format ??
+    part.rawInput?.format ??
+    salvageConceptsPayload(part.rawInput ?? part.input)?.format
   return FORMAT_OPTIONS.some(o => o.id === fmt) ? (fmt as OutputFormat) : null
 }
 

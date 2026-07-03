@@ -209,7 +209,10 @@ describe("Maya June 11 restoration guardrails", () => {
 
     expect(references).toContain('"reel-cover"')
     expect(route).toContain('return "reel-cover"')
-    expect(route).toContain('return format === "reel-cover" ? "story-sequence" : undefined')
+    // STORY-GENERATION fix 2026-07-03: story-slide shares the reel-cover grounding + fallback.
+    expect(route).toContain(
+      'return format === "reel-cover" || format === "story-slide" ? "story-sequence" : undefined'
+    )
   })
 
   it("stores prompt metadata with model and reference urls for admin inspection", () => {

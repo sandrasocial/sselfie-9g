@@ -49,7 +49,13 @@ const SHOOT_SHOT_ROLES = [
 // for graphic formats, headline/slides copy). The shared chat_pro cap (4096) could truncate the
 // tool call mid-stream - the user watched cards stream in, then they vanished at finish (P0).
 // app-v3 sets its own budget; the shared map stays untouched for legacy /studio.
-const APP_V3_MAX_OUTPUT_TOKENS = 8192
+//
+// 2026-07-03 (STORY-GENERATION fix): 8192 was still not enough for the heaviest concept turns.
+// A story-sequence batch is 3 concepts x (full brief + creativePlan with 5-7 outputs), and live
+// story-slide/carousel emit_concepts calls were getting CUT mid-JSON (suite_concepts_emitted
+// logged count: null; every card vanished; generation was never reached). Claude Sonnet 4.5
+// supports far larger outputs, so give concept turns real headroom.
+const APP_V3_MAX_OUTPUT_TOKENS = 16384
 
 const creativeUseCaseSchema = z.enum([
   "single_editorial",
@@ -1244,7 +1250,21 @@ export async function POST(req: Request) {
                 const count = Array.isArray((call.input as any)?.concepts)
                   ? (call.input as any).concepts.length
                   : null
-                logBehavior("suite_concepts_emitted", { format, count })
+                // STORY-GENERATION fix: an invalid call means the cards likely never rendered.
+                // `input` as a raw string = the tool JSON was truncated mid-stream (token
+                // ceiling); an object with no concepts = schema-invalid. Both were silent.
+                const invalid = (call as { invalid?: boolean }).invalid === true
+                const truncated = typeof (call.input as unknown) === "string"
+                if (invalid || count === null) {
+                  console.error(
+                    `[app-v3 maya chat] emit_concepts input did not parse (truncated=${truncated}) format=${format} - concept cards may be lost`
+                  )
+                }
+                logBehavior("suite_concepts_emitted", {
+                  format,
+                  count,
+                  ...(invalid || count === null ? { invalid: true, truncated } : {}),
+                })
               } else if (call.toolName === "ask_clarify") {
                 logBehavior("suite_clarify_asked", { format })
               }

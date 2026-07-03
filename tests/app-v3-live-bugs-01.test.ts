@@ -59,9 +59,10 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
     expect(chatRoute).toContain("Always include the output format for this concept batch")
     expect(chatRoute).toContain("execute: async ({ concepts, format }) => ({ concepts, format })")
     expect(concierge).toContain("function extractConceptFormat")
-    expect(concierge).toContain(
-      "part.output?.format ?? part.input?.format ?? part.rawInput?.format"
-    )
+    // STORY-GENERATION fix 2026-07-03: the chain gained a truncation-salvage fallback.
+    expect(concierge).toContain("part.output?.format ??")
+    expect(concierge).toContain("part.rawInput?.format ??")
+    expect(concierge).toContain("salvageConceptsPayload(part.rawInput ?? part.input)?.format")
     expect(concierge).toContain("targetFormat: OutputFormat = format")
     expect(concierge).toContain("format: targetFormat")
     expect(concierge).toContain('stream: wantsBakedText ? false : targetFormat !== "carousel"')
