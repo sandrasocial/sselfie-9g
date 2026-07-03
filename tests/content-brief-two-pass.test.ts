@@ -19,9 +19,12 @@ describe("weekly content brief: two-pass generation", () => {
     expect(generator).toContain('toolName: "deliver_brief_plan"')
     // The old single monolithic tool call is gone.
     expect(generator).not.toContain("deliver_content_brief")
-    // Two guarded tool calls in generateContentBrief.
+    // Three guarded tool calls: strategy + plan in generateContentBrief, plus the
+    // daily-stories pass (its own cron phase, 2026-07-03 daily cadence).
     const passCalls = generator.match(/await runBriefToolCall\(\{/g) || []
-    expect(passCalls.length).toBe(2)
+    expect(passCalls.length).toBe(3)
+    expect(generator).toContain('toolName: "deliver_daily_stories"')
+    expect(generator).toContain("export async function generateDailyStoriesForBrief")
   })
 
   it("feeds the pass-1 strategy output into the pass-2 prompt", () => {
@@ -38,9 +41,11 @@ describe("weekly content brief: two-pass generation", () => {
     expect(generator).toContain("truncated at max_tokens twice")
   })
 
-  it("refuses to return a brief with fewer than 3 content pieces", () => {
-    expect(generator).toContain("brief.contentPlan.length < 3")
+  it("refuses to return a brief with fewer than 5 content pieces (7 expected daily)", () => {
+    expect(generator).toContain("brief.contentPlan.length < 5")
     expect(generator).toContain("Refusing to store a brief")
+    // Same guard on the stories pass: a week of stories Sandra cannot post from is refused.
+    expect(generator).toContain("stories.length < 5")
   })
 
   it("adds trendRadar to the plan schema, type, and sanitizer", () => {

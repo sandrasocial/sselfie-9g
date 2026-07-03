@@ -515,9 +515,20 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
       )}
 
       {piece.caption && (
-        <pre className="mt-3 whitespace-pre-wrap rounded-xl bg-stone-50 p-4 font-sans text-sm leading-relaxed text-stone-800">
-          {piece.caption}
-        </pre>
+        <div className="mt-3 rounded-xl bg-stone-50 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-wide text-stone-500">
+              Caption
+              {piece.ctaKeyword && piece.ctaKeyword.toLowerCase() !== "none"
+                ? ` · Keyword: ${piece.ctaKeyword.toUpperCase()}`
+                : ""}
+            </p>
+            <CopyChip label="Copy caption" text={piece.caption} />
+          </div>
+          <pre className="mt-2 whitespace-pre-wrap font-sans text-sm leading-relaxed text-stone-800">
+            {piece.caption}
+          </pre>
+        </div>
       )}
 
       {carouselOutline.length > 0 && (
@@ -615,6 +626,7 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
   const hookIntelligence = safeArray(brief?.hookIntelligence)
   const contentPlan = safeArray(brief?.contentPlan)
   const storyFrames = safeArray(brief?.storySequence?.frames)
+  const dailyStories = safeArray(brief?.dailyStories)
   const audienceQuestions = safeArray(brief?.demandMap?.audienceQuestions)
 
   async function generateNow() {
@@ -821,18 +833,59 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
             </div>
           </section>
 
-          <section className="rounded-2xl border border-stone-200 bg-white p-5">
-            <h2 className="font-serif text-xl text-stone-950">Story sequence: {brief.storySequence?.theme || "Untitled"}</h2>
-            <ol className="mt-3 space-y-3">
-              {storyFrames.map((frame) => (
-                <li key={frame.frame} className="rounded-xl bg-stone-50 p-4">
-                  <p className="text-xs uppercase tracking-wide text-stone-500">Frame {frame.frame}</p>
-                  <p className="mt-1 text-sm text-stone-800">{frame.content}</p>
-                  <p className="mt-1 text-xs text-stone-500">Interaction: {frame.interaction}</p>
-                </li>
-              ))}
-            </ol>
-          </section>
+          {dailyStories.length > 0 ? (
+            <section className="rounded-2xl border border-stone-200 bg-white p-5">
+              <h2 className="font-serif text-xl text-stone-950">Daily stories: one sequence every day</h2>
+              <p className="mt-1 text-xs text-stone-500">
+                The feed post earns attention. The story sells the door. Film these with the same batch.
+              </p>
+              <div className="mt-4 space-y-4">
+                {dailyStories.map((story, index) => (
+                  <div key={index} className="rounded-xl border border-stone-100 bg-stone-50 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-stone-950 px-3 py-1 text-xs uppercase tracking-wide text-white">
+                        {story.day}
+                      </span>
+                      <span className="text-sm font-medium text-stone-900">{story.theme}</span>
+                      {story.ctaKeyword && story.ctaKeyword.toLowerCase() !== "none" && (
+                        <span className="rounded-full border border-stone-300 px-2 py-0.5 text-xs uppercase tracking-wide text-stone-600">
+                          {story.ctaKeyword}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-xs text-stone-500">
+                      {story.objective}
+                      {story.offerMention && story.offerMention.toLowerCase() !== "none"
+                        ? ` · Offer: ${story.offerMention}`
+                        : ""}
+                    </p>
+                    <ol className="mt-3 space-y-2">
+                      {safeArray(story.frames).map((frame) => (
+                        <li key={frame.frame} className="rounded-lg bg-white p-3">
+                          <p className="text-xs uppercase tracking-wide text-stone-400">Frame {frame.frame}</p>
+                          <p className="mt-1 text-sm text-stone-800">{frame.content}</p>
+                          <p className="mt-1 text-xs text-stone-500">Interaction: {frame.interaction}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : (
+            <section className="rounded-2xl border border-stone-200 bg-white p-5">
+              <h2 className="font-serif text-xl text-stone-950">Story sequence: {brief.storySequence?.theme || "Untitled"}</h2>
+              <ol className="mt-3 space-y-3">
+                {storyFrames.map((frame) => (
+                  <li key={frame.frame} className="rounded-xl bg-stone-50 p-4">
+                    <p className="text-xs uppercase tracking-wide text-stone-500">Frame {frame.frame}</p>
+                    <p className="mt-1 text-sm text-stone-800">{frame.content}</p>
+                    <p className="mt-1 text-xs text-stone-500">Interaction: {frame.interaction}</p>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
 
           {brief.researchNotes && (
             <details className="rounded-2xl border border-stone-200 bg-white p-5">

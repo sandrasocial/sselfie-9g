@@ -27,7 +27,13 @@ describe("CONTENT-BRIEF-UPGRADE-01 guardrails", () => {
     expect(briefGenerator).toContain("newestPublishedDrops")
     expect(briefGenerator).toContain("dataPacket.suite.includedProducts")
     expect(briefGenerator).toContain("Instagram reach in dataPacket.growthTruth.recentInstagram")
-    expect(briefGenerator).toContain("Do NOT write full posts, full captions, final carousel slides, hashtags, or copy-paste photoshoot prompts")
+    // Daily-cadence contract (2026-07-03): the plan pass delivers complete filmable
+    // no-talk scripts with final captions, not a strategy memo Sandra finishes in ChatGPT.
+    expect(briefGenerator).toContain("SEVEN complete, filmable pieces")
+    expect(briefGenerator).toContain("Sandra NEVER talks in her content")
+    expect(briefGenerator).toContain("caption is REQUIRED and final-draft quality")
+    expect(briefGenerator).toContain("ctaKeyword is REQUIRED")
+    expect(briefGenerator).toContain("stillYouMethodBlock()")
     expect(briefGenerator).toContain("sanitizeContentBriefOutput")
   })
 

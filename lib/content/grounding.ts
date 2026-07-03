@@ -210,6 +210,31 @@ export const NO_FAKE = {
   ],
 } as const
 
+// The one named system everything Sandra sells and teaches lives under. Locked 2026-07-03:
+// she was describing her business by TOOL (prompts, presets, Maya, the Suite) and it stopped
+// making sense even to her. The method is the message; products are doors into it.
+export const STILL_YOU_METHOD = {
+  name: "The STILL YOU Method",
+  promise:
+    "Build a personal brand people recognize and trust, with your phone, your story, and AI, without becoming someone you are not.",
+  steps: [
+    "Step 1 - The Selfie. One clear selfie with window light and the back camera. The raw material of the whole brand.",
+    "Step 2 - The Visual World. That selfie becomes brand photos that still look like her: her face, her age, her energy, styled and consistent.",
+    "Step 3 - The Story. What she wants to be known for, her real story, her message, said in her own words.",
+    "Step 4 - The Rhythm. A posting rhythm a real busy life can keep, planned ahead so she never stares at a blank screen.",
+    "Step 5 - The Offer. Visibility turned into income: a clear first offer and the confidence to talk about it.",
+  ],
+  doors: [
+    "Free selfie guide + free AI prompts = taste of steps 1 and 2.",
+    "Selfie To AI Photos Kit and Prompt Vault ($37) = step 2 done properly.",
+    "SSELFIE SUITE (EUR 97/month) = steps 1 to 4 running every month with Maya.",
+    "The Studio coaching app = the method coached daily by Sandra.",
+    "Visibility To Paid / Work With Me = steps 3 to 5 done with her.",
+  ],
+  contentRule:
+    "Content teaches the METHOD, never a tool. A selfie tutorial is Step 1 of the STILL YOU Method, not a random tip. A prompt reel is Step 2. Name the method or its step naturally when it fits; never say 'buy my prompts', say which step this door opens.",
+} as const
+
 export const EXPERTISE = {
   whoSheIs:
     "Sandra Sigurjonsdottir Aamodt, founder of SSELFIE. A former model and hairdresser of 15 years, a digital marketer, a single mum of three who rebuilt her life and business from scratch with her phone, her story, and AI. She grew @sandra.social to 110K in about a year.",
@@ -292,6 +317,17 @@ export function funnelBlock(): string {
     `Keyword map: ${FUNNEL.keywords}`,
     FUNNEL.conversionInstruction,
     `Retired: ${FUNNEL.retired}`,
+  ].join("\n")
+}
+
+export function stillYouMethodBlock(): string {
+  return [
+    "THE STILL YOU METHOD (the one message everything hangs on):",
+    `Name: ${STILL_YOU_METHOD.name}`,
+    `Promise: ${STILL_YOU_METHOD.promise}`,
+    listBlock("The five steps:", STILL_YOU_METHOD.steps),
+    listBlock("Product doors into the method:", STILL_YOU_METHOD.doors),
+    `Content rule: ${STILL_YOU_METHOD.contentRule}`,
   ].join("\n")
 }
 
