@@ -18,6 +18,7 @@ import { getVaultStyleGuide, getVaultOverviewGuide } from "@/lib/app-v3/maya/vau
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getMemory, saveMemory } from "@/lib/app-v3/maya/memory-store"
 import { isLikenessMemoryEnabled } from "@/lib/app-v3/likeness-memory"
+import { salvageConceptsPayload } from "@/lib/app-v3/concept-salvage"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
@@ -1278,12 +1279,24 @@ export async function POST(req: Request) {
                     `[app-v3 maya chat] emit_concepts input did not parse (truncated=${truncated}) format=${format} - concept cards may be lost\n` +
                       `error: ${cause.slice(0, 1500)}\npayload head: ${payloadHead}`
                   )
+                  // Persist the failure shape where we can actually read it (analytics_events)
+                  // - Vercel runtime logs are gone within the hour and the 2026-07-03 failures
+                  // were undiagnosable because only console.error had the payload.
+                  const salvaged = salvageConceptsPayload(
+                    (call as { input?: unknown }).input
+                  )?.concepts.length
+                  logBehavior("suite_concepts_emitted", {
+                    format,
+                    count,
+                    invalid: true,
+                    truncated,
+                    salvaged: salvaged ?? 0,
+                    errorHead: cause.slice(0, 400),
+                    payloadHead: payloadHead.slice(0, 1200),
+                  })
+                  continue
                 }
-                logBehavior("suite_concepts_emitted", {
-                  format,
-                  count,
-                  ...(invalid || count === null ? { invalid: true, truncated } : {}),
-                })
+                logBehavior("suite_concepts_emitted", { format, count })
               } else if (call.toolName === "ask_clarify") {
                 logBehavior("suite_clarify_asked", { format })
               }

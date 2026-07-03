@@ -145,6 +145,43 @@ describe("salvageConceptsPayload (truncated emit_concepts tool JSON)", () => {
     expect(salvaged2?.format).toBe("story-sequence")
   })
 
+  it("recovers concepts the model JSON-stringified instead of nesting", () => {
+    // Plausible cause of the 2026-07-03 invalid story-sequence calls: complete JSON,
+    // schema-invalid, and NO top-level concepts array - because concepts arrived as a string.
+    const stringified = {
+      format: "story-sequence",
+      concepts: JSON.stringify([concept(1), concept(2), concept(3)]),
+    }
+    const salvaged = salvageConceptsPayload(stringified)
+    expect(salvaged?.concepts).toHaveLength(3)
+    expect(salvaged?.format).toBe("story-sequence")
+
+    // Same, but the stringified array itself was cut mid-stream.
+    const full = JSON.stringify([concept(1), concept(2)])
+    const cutStringified = {
+      format: "story-slide",
+      concepts: full.slice(0, full.length - 10),
+    }
+    expect(salvageConceptsPayload(cutStringified)?.concepts).toHaveLength(1)
+  })
+
+  it("recovers concepts sent as an index-keyed object map instead of an array", () => {
+    const mapShape = {
+      format: "story-sequence",
+      concepts: { "1": concept(1), "2": concept(2) },
+    }
+    const salvaged = salvageConceptsPayload(mapShape)
+    expect(salvaged?.concepts).toHaveLength(2)
+    expect((salvaged?.concepts[0] as any).title).toBe("Story 1")
+  })
+
+  it("recovers a payload hidden inside a JSON-string wrapper value", () => {
+    const wrapper = {
+      data: JSON.stringify({ format: "story-slide", concepts: [concept(1)] }),
+    }
+    expect(salvageConceptsPayload(wrapper)?.concepts).toHaveLength(1)
+  })
+
   it("returns null for garbage, empty, and concept-free inputs", () => {
     expect(salvageConceptsPayload(null)).toBeNull()
     expect(salvageConceptsPayload(undefined)).toBeNull()
@@ -291,7 +328,16 @@ describe("chat route concept-turn headroom (app/api/app-v3/maya/chat)", () => {
 
   it("logs invalid/truncated emit_concepts calls instead of losing them silently", () => {
     expect(route).toContain("emit_concepts input did not parse")
-    expect(route).toContain("invalid: true, truncated")
+    expect(route).toContain("invalid: true,")
+  })
+
+  it("persists the failure shape into analytics_events, not just Vercel console logs", () => {
+    // 2026-07-03: two live story-sequence failures were undiagnosable because the payload
+    // head only went to console.error and Vercel runtime logs expire within the hour.
+    expect(route).toContain('from "@/lib/app-v3/concept-salvage"')
+    expect(route).toContain("errorHead: cause.slice(0, 400)")
+    expect(route).toContain("payloadHead: payloadHead.slice(0, 1200)")
+    expect(route).toContain("salvaged: salvaged ?? 0")
   })
 })
 

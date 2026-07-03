@@ -59,6 +59,32 @@ function extractCompleteObjects(raw: string, from: number): unknown[] {
   return objects
 }
 
+/** Normalize whatever sits under a `concepts` key into an array of concept objects.
+ *  Models produce three broken encodings of the same intent: a JSON-STRINGIFIED array
+ *  ("concepts": "[{...}]"), an object MAP keyed by index ("concepts": {"1": {...}}), and
+ *  the correct array. Accept all three. */
+function coerceConceptsList(value: unknown): unknown[] | null {
+  if (Array.isArray(value)) return value
+  if (typeof value === "string" && value.includes("{")) {
+    try {
+      const parsed = JSON.parse(value)
+      if (Array.isArray(parsed)) return parsed
+      if (parsed && typeof parsed === "object") return Object.values(parsed)
+    } catch {
+      // A truncated stringified array: rescue the complete objects inside it.
+      const start = value.indexOf("[")
+      const objects = extractCompleteObjects(value, start >= 0 ? start + 1 : 0)
+      if (objects.length > 0) return objects
+    }
+    return null
+  }
+  if (value && typeof value === "object") {
+    const values = Object.values(value)
+    if (values.length > 0 && values.every(v => v && typeof v === "object")) return values
+  }
+  return null
+}
+
 /** Bounded deep search for a `concepts` array the model buried under a wrapper key
  *  (live 2026-07-03: an invalid story-sequence call parsed as an object with NO top-level
  *  concepts array - the payload shape itself was wrong, not just a missing field). */
@@ -68,15 +94,26 @@ function findNestedConcepts(
 ): { format?: string; concepts: unknown[] } | null {
   if (!value || typeof value !== "object" || depth > 4) return null
   const obj = value as Record<string, unknown>
-  if (Array.isArray(obj.concepts)) {
-    return {
-      format: typeof obj.format === "string" ? obj.format : undefined,
-      concepts: obj.concepts,
+  if ("concepts" in obj) {
+    const list = coerceConceptsList(obj.concepts)
+    if (list) {
+      return {
+        format: typeof obj.format === "string" ? obj.format : undefined,
+        concepts: list,
+      }
     }
   }
   for (const key of Object.keys(obj)) {
-    const child = obj[key]
+    let child = obj[key]
     if (Array.isArray(child)) continue
+    // A wrapper value that is itself a JSON string holding the real payload.
+    if (typeof child === "string" && child.includes('"concepts"')) {
+      try {
+        child = JSON.parse(child)
+      } catch {
+        continue
+      }
+    }
     const found = findNestedConcepts(child, depth + 1)
     if (found) {
       return {
