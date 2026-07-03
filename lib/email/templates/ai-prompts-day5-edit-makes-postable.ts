@@ -35,7 +35,7 @@ export function generateAiPromptsDay5EditMakesPostableEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Run it once. If the face still drifts, reply and tell me what changed.</p>
     <div style="margin:26px 0 20px;">${renderStoneButton("Open my prompts", promptPackUrl)}</div>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Want to stop guessing entirely? The Vault shows you the example image for every shot, so you always know what you&apos;re aiming for before you run it. Still you in every frame.</p>
-    <div style="margin:0 0 8px;">${renderStoneButton("See the full Vault · $27", promptVaultUrl)}</div>
+    <div style="margin:0 0 8px;">${renderStoneButton("See the full Vault · $37", promptVaultUrl)}</div>
   `
 
   const html = renderStoneShell({
@@ -62,7 +62,7 @@ ${promptPackUrl}
 
 Want to stop guessing entirely? The Vault shows you the example image for every shot, so you always know what you're aiming for before you run it. Still you in every frame.
 
-See the full Vault · $27:
+See the full Vault · $37:
 ${promptVaultUrl}
 
 Sandra x`

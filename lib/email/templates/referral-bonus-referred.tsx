@@ -11,7 +11,7 @@ export function generateReferralBonusReferredEmail(params: ReferralBonusReferred
   const { recipientName, credits = 25 } = params
   const displayName = recipientName || "there"
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-  const studioUrl = `${siteUrl}/studio`
+  const studioUrl = `${siteUrl}/app`
 
   const html = `
 <!DOCTYPE html>

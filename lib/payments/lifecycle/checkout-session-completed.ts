@@ -813,19 +813,19 @@ export async function handleCheckoutSessionCompleted(
             "Payment received. You're confirmed for Private AI Brand OS.",
             "You'll receive onboarding steps shortly.",
             "",
-            "— Sandra",
+            "Sandra",
           ].join("\n")
           const receiptHtml = `
                   <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1c1917; line-height: 1.5;">
                     <p>Hi ${firstName},</p>
                     <p>Payment received. You're confirmed for Private AI Brand OS.</p>
                     <p>You'll receive onboarding steps shortly.</p>
-                    <p>— Sandra</p>
+                    <p>Sandra</p>
                   </div>
                 `
           await sendEmail({
             to: customerEmail,
-            subject: "Payment received — Private AI Brand OS",
+            subject: "Payment received: Private AI Brand OS",
             html: receiptHtml,
             text: receiptText,
             emailType: "brand_engine_payment_confirmation",

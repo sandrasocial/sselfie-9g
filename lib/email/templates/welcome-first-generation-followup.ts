@@ -8,7 +8,7 @@ export function generateWelcomeFirstGenerationFollowupEmail(input: {
 }) {
   const firstName = input.firstName?.trim() || "friend"
 
-  const studioUrl = `${SITE_URL}/studio?utm_source=email&utm_medium=lifecycle&utm_campaign=free_welcome_day0`
+  const studioUrl = `${SITE_URL}/app?utm_source=email&utm_medium=lifecycle&utm_campaign=free_welcome_day0`
   const upgradeUrl = `${SITE_URL}/checkout/membership?utm_source=email&utm_medium=lifecycle&utm_campaign=free_welcome_day0`
 
   const subject = "your 2 free photos are inside. Try one now"

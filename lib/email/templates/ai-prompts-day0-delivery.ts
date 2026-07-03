@@ -37,8 +37,8 @@ export function generateAiPromptsDay0DeliveryEmail(params: AiPromptsDay0Delivery
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One quick thing first, because it trips almost everyone up:</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If your photo comes back looking a little plastic or fake, it&apos;s almost never the AI. It&apos;s the lighting in your original selfie. When the light is dark or harsh, the AI gets bad information and starts guessing, and that&apos;s when skin goes waxy.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The fix is simple. Start with a clearer, better-lit photo. That one change does more than any prompt ever will.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">When you&apos;re ready for more than one look, the full Vault is where it lives. Every editorial world I&apos;ve shot, each a full sequence, every prompt with the example image so you&apos;re never guessing. One selfie, as many shoots as you want. It&apos;s a one-time $27.</p>
-    <div style="margin:26px 0 26px;">${renderStoneButton("See the full Vault · $27", promptVaultUrl.toString(), "outline")}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">When you&apos;re ready for more than one look, the full Vault is where it lives. Every editorial world I&apos;ve shot, each a full sequence, every prompt with the example image so you&apos;re never guessing. One selfie, as many shoots as you want. It&apos;s a one-time $37.</p>
+    <div style="margin:26px 0 26px;">${renderStoneButton("See the full Vault · $37", promptVaultUrl.toString(), "outline")}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">Have fun with these. Reply and show me what you make. I read every message.</p>
   `
 
@@ -69,9 +69,9 @@ If your photo comes back looking a little plastic or fake, it's almost never the
 
 The fix is simple. Start with a clearer, better-lit photo. That one change does more than any prompt ever will.
 
-When you're ready for more than one look, the full Vault is where it lives. Every editorial world I've shot, each a full sequence, every prompt with the example image so you're never guessing. One selfie, as many shoots as you want. It's a one-time $27.
+When you're ready for more than one look, the full Vault is where it lives. Every editorial world I've shot, each a full sequence, every prompt with the example image so you're never guessing. One selfie, as many shoots as you want. It's a one-time $37.
 
-See the full Vault · $27:
+See the full Vault · $37:
 ${promptVaultUrl.toString()}
 
 Have fun with these. Reply and show me what you make. I read every message.

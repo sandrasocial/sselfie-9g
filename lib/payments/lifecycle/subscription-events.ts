@@ -311,7 +311,7 @@ export async function handleInvoicePaymentFailed(rawEvent: Stripe.Event): Promis
       process.env.NEXT_PUBLIC_SITE_URL ||
       process.env.NEXT_PUBLIC_APP_URL ||
       "https://sselfie.ai"
-    const manageBillingUrl = `${siteUrl}/studio?tab=account`
+    const manageBillingUrl = `${siteUrl}/app`
     const retryDate = invoice.next_payment_attempt
       ? new Date(invoice.next_payment_attempt * 1000).toLocaleDateString("en-US", {
           month: "short",

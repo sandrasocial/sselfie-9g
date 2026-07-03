@@ -108,7 +108,7 @@ export function generateWinback3Email({
 
   const bodyHtml = `
     <p style="margin:0 0 18px;">Hi ${firstName},</p>
-    <p style="margin:0 0 18px;">If the free prompt worked for you, the Prompt Vault is the full version: every editorial collection, full shot sequences, $27 once. New drops included forever.</p>
+    <p style="margin:0 0 18px;">If the free prompt worked for you, the Prompt Vault is the full version: every editorial collection, full shot sequences, $37 once. New drops included forever.</p>
     <p style="margin:0 0 18px;">${renderPersonalLink("Here's the Vault", vaultUrl)}.</p>
     <p style="margin:0;">And if AI photos aren't your thing anymore, that's okay too. One last note from me next week, then I'll quietly stop.</p>
   `
@@ -118,7 +118,7 @@ export function generateWinback3Email({
     html: renderPersonalNote({ title: "One selfie, every photoshoot", bodyHtml }),
     text: `Hi ${firstName},
 
-If the free prompt worked for you, the Prompt Vault is the full version: every editorial collection, full shot sequences, $27 once. New drops included forever.
+If the free prompt worked for you, the Prompt Vault is the full version: every editorial collection, full shot sequences, $37 once. New drops included forever.
 
 Here's the Vault:
 ${vaultUrl}

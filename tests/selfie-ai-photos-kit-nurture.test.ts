@@ -201,7 +201,7 @@ describe("Selfie To AI Photos Kit buyer sequence templates", () => {
     expect(email.html).toContain("utm_campaign=selfie_ai_photos_kit_day4_vault_bridge")
     expect(email.html).toContain("checkout_email=buyer%40example.com")
     expect(email.html).toContain("checkout_source=selfie_ai_photos_kit_nurture")
-    expect(email.text).toContain("$27")
+    expect(email.text).toContain("$37")
   })
 
   it("day 8 offers the SUITE trial via the personal claim link", async () => {

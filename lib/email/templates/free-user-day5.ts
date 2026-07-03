@@ -21,7 +21,7 @@ export function generateFreeUserDay5Email(input: { firstName?: string }): {
 } {
   const firstName = input.firstName?.trim() || "friend"
 
-  const studioUrl = `${SITE_URL}/studio?utm_source=email&utm_medium=lifecycle&utm_campaign=free_user_day5`
+  const studioUrl = `${SITE_URL}/app?utm_source=email&utm_medium=lifecycle&utm_campaign=free_user_day5`
   const upgradeUrl = `${SITE_URL}/checkout/membership?utm_source=email&utm_medium=lifecycle&utm_campaign=free_user_day5`
 
   const subject = "did you get a chance to try it?"
