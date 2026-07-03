@@ -73,7 +73,9 @@ describe("weekly content brief: two-pass generation", () => {
     expect(generator).toContain("works on mute")
     expect(generator).toContain("Teach-while-entertaining")
     // Every piece must name its ONE engagement action.
-    expect(generator).toContain('engineeredFor: { type: "string", enum: ["save", "share", "comment", "follow"] }')
+    expect(generator).toContain(
+      'engineeredFor: { type: "string", enum: ["save", "share", "comment", "follow"] }'
+    )
     expect(generator).toContain("engagementMechanic")
   })
 
@@ -102,19 +104,19 @@ describe("weekly content brief: two-pass generation", () => {
     // Pass 1 owns the bank so pass 2 can build the plan from it.
     const strategySchema = generator.slice(
       generator.indexOf("const BRIEF_STRATEGY_SCHEMA"),
-      generator.indexOf("const BRIEF_PLAN_SCHEMA"),
+      generator.indexOf("const BRIEF_PLAN_SCHEMA")
     )
     expect(strategySchema).toContain("onScreenHookBank")
     expect(strategySchema).toContain("watchThroughMechanic")
     expect(strategySchema).toContain(
-      'required: ["performanceRecap", "audienceDemand", "hookIntelligence", "onScreenHookBank", "demandMap"]',
+      'required: ["performanceRecap", "audienceDemand", "hookIntelligence", "onScreenHookBank", "demandMap"]'
     )
     // The sanitizer passes the section through, empty-safe for old briefs.
     expect(generator).toContain("onScreenHookBank: asArray<OnScreenHookBankEntry>")
     // The literal-overlay constraint and the adaptation rule.
     expect(generator).toContain("max 9 words")
     expect(generator).toContain("NEVER copy a creator's exact distinctive line verbatim")
-    expect(generator).toContain('is a pattern, not property')
+    expect(generator).toContain("is a pattern, not property")
   })
 
   it("forces plan pieces to draw their on-screen text from the bank", () => {
@@ -168,5 +170,31 @@ describe("weekly content brief: surfaces", () => {
     // Top 5 only, text only, and old briefs degrade to no block.
     expect(cron).toContain(".slice(0, 5)")
     expect(cron).toContain("Array.isArray(brief.onScreenHookBank) ? brief.onScreenHookBank : []")
+  })
+
+  it("runs manual admin generation in phases instead of one timeout-prone request", () => {
+    const route = read("app/api/admin/content-brief/route.ts")
+    const client = read("components/admin/content-brief-client.tsx")
+
+    expect(route).toContain('phase === "research"')
+    expect(route).toContain('phase === "stories"')
+    expect(route).toContain("generateContentBriefResearchMemo")
+    expect(route).toContain("generateContentBrief({ prebuiltResearchMemo })")
+    expect(route).toContain("missing_research_memo")
+
+    expect(client).toContain("GENERATION_STEPS")
+    expect(client).toContain('phase: "research"')
+    expect(client).toContain('phase: "build"')
+    expect(client).toContain('phase: "stories"')
+  })
+
+  it("guards admin brief fetches against plain-text timeout responses", () => {
+    const client = read("components/admin/content-brief-client.tsx")
+
+    expect(client).toContain("async function readJsonResponse")
+    expect(client).toContain("response.text()")
+    expect(client).toContain("The server returned a non-JSON error")
+    expect(client).not.toContain("await res.json()")
+    expect(client).not.toContain(".then((r) => r.json())")
   })
 })

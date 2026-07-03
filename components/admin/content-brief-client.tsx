@@ -11,6 +11,43 @@ export type ContentBriefReportRow = {
   created_at: string
 }
 
+type AdminContentBriefResponse = {
+  success?: boolean
+  error?: string
+  code?: string
+  phase?: "research" | "build" | "stories"
+  storiesError?: string
+  reports?: ContentBriefReportRow[]
+}
+
+const GENERATION_STEPS = [
+  {
+    phase: "research",
+    label: "Researching hooks, trends, and audience signals",
+  },
+  {
+    phase: "build",
+    label: "Building the weekly content directions",
+  },
+  {
+    phase: "stories",
+    label: "Adding daily story sequences",
+  },
+] as const
+
+async function readJsonResponse<T>(response: Response): Promise<T> {
+  const text = await response.text()
+  if (!text.trim()) return {} as T
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    const excerpt = text.replace(/\s+/g, " ").trim().slice(0, 180)
+    throw new Error(
+      `The server returned a non-JSON error (${response.status}). ${excerpt || "No details were returned."}`
+    )
+  }
+}
+
 function formatDate(value: string) {
   try {
     return new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
@@ -63,12 +100,14 @@ const FUNNEL_STAGE_META: Record<
   },
   warm: {
     label: "Warm · Story/DM trust → Visibility To Paid",
-    description: "For the audience already asking how you built this. Belongs in Stories, DMs, and email. Next step: apply / reply WORK for the Visibility To Paid Sprint.",
+    description:
+      "For the audience already asking how you built this. Belongs in Stories, DMs, and email. Next step: apply / reply WORK for the Visibility To Paid Sprint.",
     badgeClass: "bg-stone-200 text-stone-800",
   },
   activation: {
     label: "Activation · buyers → SUITE",
-    description: "For people already in the funnel (Vault buyers, trial members). Bridges them into SUITE or deeper Suite use.",
+    description:
+      "For people already in the funnel (Vault buyers, trial members). Bridges them into SUITE or deeper Suite use.",
     badgeClass: "bg-stone-950 text-white",
   },
 }
@@ -102,7 +141,7 @@ function HandoffButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       })
-      const json = await res.json()
+      const json = await readJsonResponse<AdminContentBriefResponse>(res)
       if (!res.ok || !json?.success) {
         throw new Error(json?.error || "Could not create draft")
       }
@@ -165,9 +204,10 @@ function GrowthTruthSection({ brief }: { brief: ContentBrief }) {
     },
     {
       label: "Email",
-      value: truth.email.subscribedContacts == null
-        ? "not fetched in fast snapshot"
-        : `${compactNumber(truth.email.subscribedContacts)} subscribed`,
+      value:
+        truth.email.subscribedContacts == null
+          ? "not fetched in fast snapshot"
+          : `${compactNumber(truth.email.subscribedContacts)} subscribed`,
       source: truth.sources.email,
     },
   ]
@@ -209,7 +249,9 @@ function GrowthTruthSection({ brief }: { brief: ContentBrief }) {
       </div>
 
       <div className="mt-4 rounded-xl border border-amber-200/25 bg-amber-200/10 p-4">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-amber-100">Leaks to address first</p>
+        <p className="text-[11px] uppercase tracking-[0.18em] text-amber-100">
+          Leaks to address first
+        </p>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-stone-100">
           {truth.leaks.map((leak, index) => (
             <li key={index}>{leak}</li>
@@ -302,28 +344,37 @@ function OnScreenHookBankSection({ brief }: { brief: ContentBrief }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.24em] text-stone-500">On-screen hook bank</p>
-          <h2 className="mt-2 font-serif text-xl text-stone-950">On-screen hooks that stop the scroll</h2>
+          <h2 className="mt-2 font-serif text-xl text-stone-950">
+            On-screen hooks that stop the scroll
+          </h2>
           <p className="mt-1 text-sm text-stone-600">
-            Proven first-frame text overlays for reels, carousels, and stories. Tap a line to copy it.
-            This is the text ON the video, not the caption.
+            Proven first-frame text overlays for reels, carousels, and stories. Tap a line to copy
+            it. This is the text ON the video, not the caption.
           </p>
         </div>
-        <CopyChip label="Copy all hooks" text={entries.map((entry) => entry.text).join("\n")} />
+        <CopyChip label="Copy all hooks" text={entries.map(entry => entry.text).join("\n")} />
       </div>
       <div className="mt-4 space-y-2">
         {entries.map((entry, index) => (
-          <div key={index} className="flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3">
+          <div
+            key={index}
+            className="flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3"
+          >
             <CopyHookChip text={entry.text} />
             <span
               className={`rounded-full px-2 py-0.5 text-xs uppercase tracking-wide ${
-                entry.source === "your-data" ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-600"
+                entry.source === "your-data"
+                  ? "bg-stone-950 text-white"
+                  : "bg-stone-100 text-stone-600"
               }`}
             >
               {entry.source === "your-data" ? "Your data" : "Research"}
             </span>
             <span className="text-xs text-stone-500">{entry.pattern}</span>
             {entry.watchThroughMechanic && (
-              <span className="text-xs text-stone-400">Keeps them watching: {entry.watchThroughMechanic}</span>
+              <span className="text-xs text-stone-400">
+                Keeps them watching: {entry.watchThroughMechanic}
+              </span>
             )}
           </div>
         ))}
@@ -374,8 +425,10 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
   const fullCopy = [
     piece.caption || "",
     "",
-    hashtags.map((tag) => (tag.startsWith("#") ? tag : `#${tag}`)).join(" "),
-  ].filter(Boolean).join("\n")
+    hashtags.map(tag => (tag.startsWith("#") ? tag : `#${tag}`)).join(" "),
+  ]
+    .filter(Boolean)
+    .join("\n")
   const stageMeta = FUNNEL_STAGE_META[piece.funnelStage] || FUNNEL_STAGE_META.cold
   const handoffTopic = pieceToHandoffTopic(piece)
 
@@ -392,7 +445,9 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <span className={`rounded-full px-3 py-1 text-xs uppercase tracking-wide ${stageMeta.badgeClass}`}>
+        <span
+          className={`rounded-full px-3 py-1 text-xs uppercase tracking-wide ${stageMeta.badgeClass}`}
+        >
           {stageMeta.label}
         </span>
         {piece.engineeredFor && (
@@ -413,9 +468,7 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
 
       {piece.shortSuggestion && (
         <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-            Short suggestion
-          </p>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Short suggestion</p>
           <p className="mt-1 text-sm leading-relaxed text-stone-800">{piece.shortSuggestion}</p>
         </div>
       )}
@@ -440,7 +493,8 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
         <div className="mt-3 rounded-xl border border-stone-950 bg-stone-950 p-4 text-white">
           <div className="flex items-center justify-between gap-3">
             <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
-              Text on screen {piece.format === "carousel" ? "· one line per slide" : "· beat by beat"}
+              Text on screen{" "}
+              {piece.format === "carousel" ? "· one line per slide" : "· beat by beat"}
             </p>
             <CopyChip label="Copy on-screen text" text={onScreenText.join("\n")} />
           </div>
@@ -457,11 +511,13 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
         </div>
       )}
 
-      {(piece.demandSignal || piece.painfulBefore || piece.desiredAfter || piece.beliefShift || piece.whatToAvoid) && (
+      {(piece.demandSignal ||
+        piece.painfulBefore ||
+        piece.desiredAfter ||
+        piece.beliefShift ||
+        piece.whatToAvoid) && (
         <div className="mt-4 rounded-xl border border-stone-950 bg-stone-950 p-4">
-          <p className="text-xs uppercase tracking-[0.22em] text-stone-400">
-            Demand logic
-          </p>
+          <p className="text-xs uppercase tracking-[0.22em] text-stone-400">Demand logic</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <div>
               <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
@@ -482,15 +538,11 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
               <p className="mt-1 text-sm leading-relaxed text-stone-100">{piece.desiredAfter}</p>
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
-                Belief shift
-              </p>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">Belief shift</p>
               <p className="mt-1 text-sm leading-relaxed text-stone-100">{piece.beliefShift}</p>
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
-                Avoid
-              </p>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">Avoid</p>
               <p className="mt-1 text-sm leading-relaxed text-stone-100">{piece.whatToAvoid}</p>
             </div>
           </div>
@@ -510,7 +562,9 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
             <p className="text-xs uppercase tracking-wide text-stone-500">Context for ChatGPT</p>
             <CopyChip label="Copy context" text={piece.chatgptContextPrompt} />
           </div>
-          <p className="mt-2 text-sm leading-relaxed text-stone-800">{piece.chatgptContextPrompt}</p>
+          <p className="mt-2 text-sm leading-relaxed text-stone-800">
+            {piece.chatgptContextPrompt}
+          </p>
         </div>
       )}
 
@@ -577,10 +631,14 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {piece.chatgptContextPrompt && <CopyChip label="Copy ChatGPT context" text={piece.chatgptContextPrompt} />}
+        {piece.chatgptContextPrompt && (
+          <CopyChip label="Copy ChatGPT context" text={piece.chatgptContextPrompt} />
+        )}
         {fullCopy && <CopyChip label="Copy caption + tags" text={fullCopy} />}
         <CopyChip label="Copy hook" text={piece.hook} />
-        {piece.photoshootPrompt && <CopyChip label="Copy photoshoot prompt" text={piece.photoshootPrompt} />}
+        {piece.photoshootPrompt && (
+          <CopyChip label="Copy photoshoot prompt" text={piece.photoshootPrompt} />
+        )}
         {carouselOutline.length > 0 && (
           <CopyChip label="Copy slides" text={carouselOutline.join("\n")} />
         )}
@@ -612,11 +670,17 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
   )
 }
 
-export function ContentBriefClient({ initialReports }: { initialReports: ContentBriefReportRow[] }) {
+export function ContentBriefClient({
+  initialReports,
+}: {
+  initialReports: ContentBriefReportRow[]
+}) {
   const [reports, setReports] = useState<ContentBriefReportRow[]>(initialReports)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [generating, setGenerating] = useState(false)
+  const [generationStep, setGenerationStep] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   const selected = reports[selectedIndex]
   const brief = selected?.payload
@@ -631,20 +695,38 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
 
   async function generateNow() {
     setGenerating(true)
+    setGenerationStep(GENERATION_STEPS[0].label)
     setError(null)
+    setNotice(null)
     try {
-      const res = await fetch("/api/admin/content-brief", { method: "POST" })
-      const json = await res.json()
-      if (!res.ok || !json?.success) {
-        throw new Error(json?.error || "Generation failed")
+      for (const step of GENERATION_STEPS) {
+        setGenerationStep(step.label)
+        const res = await fetch(`/api/admin/content-brief?phase=${step.phase}`, { method: "POST" })
+        const json = await readJsonResponse<AdminContentBriefResponse>(res)
+        if (!res.ok || !json?.success) {
+          throw new Error(json?.error || `Generation failed during ${step.phase}`)
+        }
+        if (json.storiesError) {
+          setNotice(
+            `Brief saved, but the daily story pass needs a manual look: ${json.storiesError}`
+          )
+        }
       }
-      const refreshed = await fetch("/api/admin/content-brief").then((r) => r.json())
+      setGenerationStep("Refreshing the saved brief")
+      const refreshedRes = await fetch("/api/admin/content-brief")
+      const refreshed = await readJsonResponse<AdminContentBriefResponse>(refreshedRes)
+      if (!refreshedRes.ok) {
+        throw new Error(
+          refreshed.error || "Brief was generated, but refreshing the saved report failed"
+        )
+      }
       setReports(refreshed.reports || [])
       setSelectedIndex(0)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Generation failed")
     } finally {
       setGenerating(false)
+      setGenerationStep(null)
     }
   }
 
@@ -657,12 +739,13 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
           disabled={generating}
           className="rounded-full bg-stone-950 px-5 py-2 text-sm text-white transition hover:bg-stone-800 disabled:opacity-50"
         >
-          {generating ? "Building your brief (takes a minute)..." : "Generate this week's brief"}
+          {generating ? "Building your brief..." : "Generate this week's brief"}
         </button>
+        {generationStep && <span className="text-sm text-stone-600">{generationStep}...</span>}
         {reports.length > 0 && (
           <select
             value={selectedIndex}
-            onChange={(event) => setSelectedIndex(Number(event.target.value))}
+            onChange={event => setSelectedIndex(Number(event.target.value))}
             className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-800"
           >
             {reports.map((report, index) => (
@@ -675,13 +758,22 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
       </div>
 
       {error && (
-        <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">{error}</p>
+        <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+          {error}
+        </p>
+      )}
+
+      {notice && !error && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          {notice}
+        </p>
       )}
 
       {!brief && !generating && (
         <p className="rounded-2xl border border-stone-200 bg-white p-8 text-center text-sm text-stone-600">
-          No brief yet. Hit the button above and the engine will pull your post data, audience signals,
-          competitor patterns, and live hook research, then give you short directions to develop.
+          No brief yet. Hit the button above and the engine will pull your post data, audience
+          signals, competitor patterns, and live hook research, then give you short directions to
+          develop.
         </p>
       )}
 
@@ -691,7 +783,9 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
             <h2 className="text-xs uppercase tracking-wide text-stone-500">Account snapshot</h2>
             <p className="mt-2 text-sm text-stone-800">
               @{brief.accountSnapshot.username}
-              {brief.accountSnapshot.followers ? ` · ${brief.accountSnapshot.followers.toLocaleString()} followers` : ""}
+              {brief.accountSnapshot.followers
+                ? ` · ${brief.accountSnapshot.followers.toLocaleString()} followers`
+                : ""}
               {` · ${brief.accountSnapshot.postsAnalyzed} posts analyzed`}
               {brief.accountSnapshot.insightsLevel === "basic"
                 ? " · basic metrics (reconnect Instagram to unlock reach, saves and shares)"
@@ -717,7 +811,8 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
                       {post.format}
                     </span>
                     <span className="text-xs text-stone-500">
-                      {post.likes.toLocaleString()} likes · {post.comments.toLocaleString()} comments
+                      {post.likes.toLocaleString()} likes · {post.comments.toLocaleString()}{" "}
+                      comments
                     </span>
                     {post.permalink && (
                       <a
@@ -730,7 +825,9 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
                       </a>
                     )}
                   </div>
-                  <p className="mt-2 text-sm font-medium text-stone-900">&quot;{post.hookLine}&quot;</p>
+                  <p className="mt-2 text-sm font-medium text-stone-900">
+                    &quot;{post.hookLine}&quot;
+                  </p>
                   <p className="mt-1 text-sm text-stone-600">{post.whyItWorked}</p>
                 </div>
               ))}
@@ -741,7 +838,9 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
             <h2 className="mb-3 font-serif text-xl text-stone-950">What your audience wants</h2>
             <div className="grid gap-3 md:grid-cols-2">
               <div className="rounded-xl border border-stone-200 bg-white p-4">
-                <p className="text-xs uppercase tracking-wide text-stone-500">Most copied prompts (30d)</p>
+                <p className="text-xs uppercase tracking-wide text-stone-500">
+                  Most copied prompts (30d)
+                </p>
                 <ul className="mt-2 space-y-1 text-sm text-stone-800">
                   {topPrompts.map((prompt, index) => (
                     <li key={index} className="flex justify-between gap-3">
@@ -772,7 +871,9 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
                   {audienceQuestions.map((entry, index) => (
                     <li key={index}>
                       <span className="font-medium">&quot;{entry.question}&quot;</span>
-                      <span className="block text-stone-600">Answer it with: {entry.suggestedAnswerContent}</span>
+                      <span className="block text-stone-600">
+                        Answer it with: {entry.suggestedAnswerContent}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -805,19 +906,24 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
           </section>
 
           <section>
-            <h2 className="mb-1 font-serif text-xl text-stone-950">Suggested directions to develop</h2>
+            <h2 className="mb-1 font-serif text-xl text-stone-950">
+              Suggested directions to develop
+            </h2>
             <p className="mb-4 text-sm text-stone-600">
-              Cold attention gets the Kit. Warm trust gets Visibility To Paid. Paid activation gets SUITE.
+              Cold attention gets the Kit. Warm trust gets Visibility To Paid. Paid activation gets
+              SUITE.
             </p>
             <div className="space-y-8">
-              {(["cold", "warm", "activation"] as const).map((stage) => {
-                const pieces = contentPlan.filter((piece) => (piece.funnelStage || "cold") === stage)
+              {(["cold", "warm", "activation"] as const).map(stage => {
+                const pieces = contentPlan.filter(piece => (piece.funnelStage || "cold") === stage)
                 if (pieces.length === 0) return null
                 const meta = FUNNEL_STAGE_META[stage]
                 return (
                   <div key={stage}>
                     <div className="mb-3 flex items-baseline gap-2">
-                      <span className={`rounded-full px-3 py-1 text-xs uppercase tracking-wide ${meta.badgeClass}`}>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs uppercase tracking-wide ${meta.badgeClass}`}
+                      >
                         {meta.label}
                       </span>
                       <p className="text-xs text-stone-500">{meta.description}</p>
@@ -835,9 +941,12 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
 
           {dailyStories.length > 0 ? (
             <section className="rounded-2xl border border-stone-200 bg-white p-5">
-              <h2 className="font-serif text-xl text-stone-950">Daily stories: one sequence every day</h2>
+              <h2 className="font-serif text-xl text-stone-950">
+                Daily stories: one sequence every day
+              </h2>
               <p className="mt-1 text-xs text-stone-500">
-                The feed post earns attention. The story sells the door. Film these with the same batch.
+                The feed post earns attention. The story sells the door. Film these with the same
+                batch.
               </p>
               <div className="mt-4 space-y-4">
                 {dailyStories.map((story, index) => (
@@ -860,11 +969,15 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
                         : ""}
                     </p>
                     <ol className="mt-3 space-y-2">
-                      {safeArray(story.frames).map((frame) => (
+                      {safeArray(story.frames).map(frame => (
                         <li key={frame.frame} className="rounded-lg bg-white p-3">
-                          <p className="text-xs uppercase tracking-wide text-stone-400">Frame {frame.frame}</p>
+                          <p className="text-xs uppercase tracking-wide text-stone-400">
+                            Frame {frame.frame}
+                          </p>
                           <p className="mt-1 text-sm text-stone-800">{frame.content}</p>
-                          <p className="mt-1 text-xs text-stone-500">Interaction: {frame.interaction}</p>
+                          <p className="mt-1 text-xs text-stone-500">
+                            Interaction: {frame.interaction}
+                          </p>
                         </li>
                       ))}
                     </ol>
@@ -874,11 +987,15 @@ export function ContentBriefClient({ initialReports }: { initialReports: Content
             </section>
           ) : (
             <section className="rounded-2xl border border-stone-200 bg-white p-5">
-              <h2 className="font-serif text-xl text-stone-950">Story sequence: {brief.storySequence?.theme || "Untitled"}</h2>
+              <h2 className="font-serif text-xl text-stone-950">
+                Story sequence: {brief.storySequence?.theme || "Untitled"}
+              </h2>
               <ol className="mt-3 space-y-3">
-                {storyFrames.map((frame) => (
+                {storyFrames.map(frame => (
                   <li key={frame.frame} className="rounded-xl bg-stone-50 p-4">
-                    <p className="text-xs uppercase tracking-wide text-stone-500">Frame {frame.frame}</p>
+                    <p className="text-xs uppercase tracking-wide text-stone-500">
+                      Frame {frame.frame}
+                    </p>
                     <p className="mt-1 text-sm text-stone-800">{frame.content}</p>
                     <p className="mt-1 text-xs text-stone-500">Interaction: {frame.interaction}</p>
                   </li>
