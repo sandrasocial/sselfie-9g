@@ -44,7 +44,9 @@ function renderTaggedTemplate(strings: TemplateStringsArray, values: unknown[]):
   return output
 }
 
-const KIT_QUERY_MARKER = "selfie-ai-photos-kit-paid"
+// The kit CANDIDATE query selects on this source; the guide candidates query merely
+// EXCLUDES the same source string in a NOT IN list, so match the selection pattern.
+const KIT_QUERY_MARKER = "fs.source = 'selfie-ai-photos-kit-paid'"
 
 describe("Selfie To AI Photos Kit nurture (cron: nurture-sequence)", () => {
   beforeEach(() => {
