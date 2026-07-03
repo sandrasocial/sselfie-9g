@@ -36,6 +36,7 @@
     "cohort-delivery-digest": "node scripts/cohort-delivery-load-digest.mjs",
     "product-qa-digest": "tsx scripts/product-qa-digest.ts",
     "product-qa-digest:node": "node scripts/product-qa-digest.mjs",
+    "content-brief:worker": "NODE_OPTIONS='--conditions=react-server' tsx scripts/run-content-brief-jobs.ts",
     "diagnostics:core": "node scripts/run-core-diagnostics.mjs",
     "revenue-engine:weekly": "tsx scripts/revenue-engine-weekly-digest.ts",
     "cleanup-legacy-generation-trackers": "node scripts/cleanup-legacy-generation-trackers.mjs",

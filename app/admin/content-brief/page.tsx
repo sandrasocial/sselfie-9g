@@ -2,6 +2,7 @@ import { AdminNav } from "@/components/admin/admin-nav"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { buildMemberPulse, type MemberPulse } from "@/lib/admin/member-pulse"
 import { ContentBriefClient, type ContentBriefReportRow } from "@/components/admin/content-brief-client"
+import { getLatestContentBriefJob } from "@/lib/content-engine/brief-jobs"
 import { PostNowClient } from "@/components/admin/post-now-client"
 import { ContentKitClient } from "@/components/admin/content-kit-client"
 import { ContentStoryClient } from "@/components/admin/content-story-client"
@@ -133,6 +134,7 @@ export default async function ContentBriefPage({
     reportType: "content_brief_weekly",
     limit: 8,
   })
+  const latestJob = await getLatestContentBriefJob().catch(() => null)
   const pulse = await buildMemberPulse(7).catch(() => null)
   const carousels = await listCarousels().catch(() => [])
   const selfies = await listAdminSelfies().catch(() => [])
@@ -197,7 +199,10 @@ export default async function ContentBriefPage({
             <MemberPulseSection pulse={pulse} />
           </Collapsed>
           <Collapsed title="Weekly brief" hint="Post performance, copies, DMs, hooks">
-            <ContentBriefClient initialReports={reports as ContentBriefReportRow[]} />
+            <ContentBriefClient
+              initialReports={reports as ContentBriefReportRow[]}
+              initialJob={latestJob}
+            />
           </Collapsed>
           <Collapsed title="Vault drop email" hint="Preview + test send before live drop">
             <VaultDropEmailPreview />

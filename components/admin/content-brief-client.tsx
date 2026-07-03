@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import type { ContentBrief, ContentBriefPiece } from "@/lib/content-engine/brief-generator"
 
 export type ContentBriefReportRow = {
@@ -15,25 +15,27 @@ type AdminContentBriefResponse = {
   success?: boolean
   error?: string
   code?: string
-  phase?: "research" | "build" | "stories"
-  storiesError?: string
+  queued?: boolean
+  created?: boolean
+  message?: string
+  job?: ContentBriefJob | null
+  latestJob?: ContentBriefJob | null
   reports?: ContentBriefReportRow[]
 }
 
-const GENERATION_STEPS = [
-  {
-    phase: "research",
-    label: "Researching hooks, trends, and audience signals",
-  },
-  {
-    phase: "build",
-    label: "Building the weekly content directions",
-  },
-  {
-    phase: "stories",
-    label: "Adding daily story sequences",
-  },
-] as const
+type ContentBriefJob = {
+  id: number
+  status: "queued" | "running" | "completed" | "failed"
+  phase: "queued" | "research" | "build" | "stories" | "completed" | "failed"
+  requested_by: string | null
+  error: string | null
+  result_report_id: number | null
+  payload: Record<string, unknown>
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
 
 async function readJsonResponse<T>(response: Response): Promise<T> {
   const text = await response.text()
@@ -672,13 +674,16 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
 
 export function ContentBriefClient({
   initialReports,
+  initialJob = null,
 }: {
   initialReports: ContentBriefReportRow[]
+  initialJob?: ContentBriefJob | null
 }) {
   const [reports, setReports] = useState<ContentBriefReportRow[]>(initialReports)
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const [generating, setGenerating] = useState(false)
-  const [generationStep, setGenerationStep] = useState<string | null>(null)
+  const [queueing, setQueueing] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [latestJob, setLatestJob] = useState<ContentBriefJob | null>(initialJob)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -692,56 +697,96 @@ export function ContentBriefClient({
   const storyFrames = safeArray(brief?.storySequence?.frames)
   const dailyStories = safeArray(brief?.dailyStories)
   const audienceQuestions = safeArray(brief?.demandMap?.audienceQuestions)
+  const jobIsActive = latestJob?.status === "queued" || latestJob?.status === "running"
 
-  async function generateNow() {
-    setGenerating(true)
-    setGenerationStep(GENERATION_STEPS[0].label)
-    setError(null)
-    setNotice(null)
+  const refreshReports = useCallback(async (options: { silent?: boolean } = {}) => {
+    if (!options.silent) {
+      setRefreshing(true)
+      setError(null)
+    }
     try {
-      for (const step of GENERATION_STEPS) {
-        setGenerationStep(step.label)
-        const res = await fetch(`/api/admin/content-brief?phase=${step.phase}`, { method: "POST" })
-        const json = await readJsonResponse<AdminContentBriefResponse>(res)
-        if (!res.ok || !json?.success) {
-          throw new Error(json?.error || `Generation failed during ${step.phase}`)
-        }
-        if (json.storiesError) {
-          setNotice(
-            `Brief saved, but the daily story pass needs a manual look: ${json.storiesError}`
-          )
-        }
-      }
-      setGenerationStep("Refreshing the saved brief")
       const refreshedRes = await fetch("/api/admin/content-brief")
       const refreshed = await readJsonResponse<AdminContentBriefResponse>(refreshedRes)
       if (!refreshedRes.ok) {
-        throw new Error(
-          refreshed.error || "Brief was generated, but refreshing the saved report failed"
-        )
+        throw new Error(refreshed.error || "Refreshing the saved brief failed")
       }
       setReports(refreshed.reports || [])
+      setLatestJob(refreshed.latestJob ?? null)
       setSelectedIndex(0)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Generation failed")
+      if (!options.silent) {
+        setError(e instanceof Error ? e.message : "Refresh failed")
+      }
     } finally {
-      setGenerating(false)
-      setGenerationStep(null)
+      if (!options.silent) setRefreshing(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!jobIsActive) return
+    const timer = window.setInterval(() => {
+      void refreshReports({ silent: true })
+    }, 8000)
+    return () => window.clearInterval(timer)
+  }, [jobIsActive, refreshReports])
+
+  async function queueBrief() {
+    setQueueing(true)
+    setError(null)
+    setNotice(null)
+    try {
+      const res = await fetch("/api/admin/content-brief", { method: "POST" })
+      const json = await readJsonResponse<AdminContentBriefResponse>(res)
+      if (!res.ok || !json?.success) {
+        throw new Error(json?.error || "Could not queue the weekly brief")
+      }
+      setLatestJob(json.job ?? null)
+      setNotice(
+        json.message ||
+          "Weekly brief queued. Run the local worker and this page will refresh when it is done."
+      )
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Queue failed")
+    } finally {
+      setQueueing(false)
     }
   }
+
+  const phaseLabel =
+    latestJob?.phase === "research"
+      ? "Researching hooks, trends, and audience signals"
+      : latestJob?.phase === "build"
+        ? "Building the weekly content directions"
+        : latestJob?.phase === "stories"
+          ? "Adding daily story sequences"
+          : latestJob?.status === "queued"
+            ? "Queued for the background worker"
+            : latestJob?.status === "completed"
+              ? "Completed"
+              : latestJob?.status === "failed"
+                ? "Failed"
+                : null
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={generateNow}
-          disabled={generating}
+          onClick={queueBrief}
+          disabled={queueing || jobIsActive}
           className="rounded-full bg-stone-950 px-5 py-2 text-sm text-white transition hover:bg-stone-800 disabled:opacity-50"
         >
-          {generating ? "Building your brief..." : "Generate this week's brief"}
+          {jobIsActive ? "Brief queued..." : queueing ? "Queueing..." : "Queue this week's brief"}
         </button>
-        {generationStep && <span className="text-sm text-stone-600">{generationStep}...</span>}
+        <button
+          type="button"
+          onClick={() => void refreshReports()}
+          disabled={refreshing}
+          className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-700 transition hover:border-stone-950 hover:text-stone-950 disabled:opacity-50"
+        >
+          {refreshing ? "Refreshing..." : "Refresh"}
+        </button>
+        {phaseLabel && <span className="text-sm text-stone-600">{phaseLabel}</span>}
         {reports.length > 0 && (
           <select
             value={selectedIndex}
@@ -757,6 +802,45 @@ export function ContentBriefClient({
         )}
       </div>
 
+      {latestJob && (
+        <div
+          className={`rounded-xl border p-4 text-sm ${
+            latestJob.status === "failed"
+              ? "border-red-200 bg-red-50 text-red-900"
+              : latestJob.status === "completed"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+                : "border-stone-200 bg-white text-stone-700"
+          }`}
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="font-medium">
+              Weekly brief job #{latestJob.id} · {latestJob.status}
+              {phaseLabel ? ` · ${phaseLabel}` : ""}
+            </p>
+            <p className="text-xs text-stone-500">
+              Queued {formatDate(latestJob.created_at)}
+              {latestJob.completed_at ? ` · finished ${formatDate(latestJob.completed_at)}` : ""}
+            </p>
+          </div>
+          {latestJob.status === "queued" && (
+            <p className="mt-1">
+              This is safe now. The browser is not waiting for Anthropic. Run{" "}
+              <code className="rounded bg-stone-100 px-1 py-0.5">pnpm content-brief:worker</code>{" "}
+              locally or from an automation to build it.
+            </p>
+          )}
+          {latestJob.status === "running" && (
+            <p className="mt-1">
+              The worker is running outside the admin request. This page checks for updates every 8
+              seconds.
+            </p>
+          )}
+          {latestJob.status === "failed" && latestJob.error && (
+            <p className="mt-1">{latestJob.error}</p>
+          )}
+        </div>
+      )}
+
       {error && (
         <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
           {error}
@@ -769,7 +853,7 @@ export function ContentBriefClient({
         </p>
       )}
 
-      {!brief && !generating && (
+      {!brief && !jobIsActive && (
         <p className="rounded-2xl border border-stone-200 bg-white p-8 text-center text-sm text-stone-600">
           No brief yet. Hit the button above and the engine will pull your post data, audience
           signals, competitor patterns, and live hook research, then give you short directions to

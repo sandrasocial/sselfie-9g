@@ -172,20 +172,28 @@ describe("weekly content brief: surfaces", () => {
     expect(cron).toContain("Array.isArray(brief.onScreenHookBank) ? brief.onScreenHookBank : []")
   })
 
-  it("runs manual admin generation in phases instead of one timeout-prone request", () => {
+  it("queues manual admin generation instead of holding the browser request open", () => {
     const route = read("app/api/admin/content-brief/route.ts")
     const client = read("components/admin/content-brief-client.tsx")
+    const worker = read("scripts/run-content-brief-jobs.ts")
 
-    expect(route).toContain('phase === "research"')
-    expect(route).toContain('phase === "stories"')
-    expect(route).toContain("generateContentBriefResearchMemo")
-    expect(route).toContain("generateContentBrief({ prebuiltResearchMemo })")
-    expect(route).toContain("missing_research_memo")
+    expect(route).toContain("queueContentBriefJob")
+    expect(route).toContain("getLatestContentBriefJob")
+    expect(route).not.toContain("generateContentBriefResearchMemo")
+    expect(route).not.toContain("generateContentBrief({ prebuiltResearchMemo")
+    expect(route).not.toContain("generateDailyStoriesForBrief")
 
-    expect(client).toContain("GENERATION_STEPS")
-    expect(client).toContain('phase: "research"')
-    expect(client).toContain('phase: "build"')
-    expect(client).toContain('phase: "stories"')
+    expect(client).toContain("Queue this week's brief")
+    expect(client).toContain("latestJob")
+    expect(client).toContain("content-brief:worker")
+    expect(client).not.toContain("GENERATION_STEPS")
+
+    expect(worker).toContain("claimNextContentBriefJob")
+    expect(worker).toContain("generateContentBriefResearchMemo")
+    expect(worker).toContain("generateContentBrief({ prebuiltResearchMemo: memo })")
+    expect(worker).toContain("generateDailyStoriesForBrief")
+    expect(worker).toContain("completeContentBriefJob")
+    expect(worker).toContain("failContentBriefJob")
   })
 
   it("guards admin brief fetches against plain-text timeout responses", () => {

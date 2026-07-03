@@ -27,6 +27,15 @@ function asPct(numerator: number, denominator: number) {
   return Number(((numerator / denominator) * 100).toFixed(1))
 }
 
+export type AnalyticsReportRow = {
+  id: number
+  report_type: string
+  period_start: string | number | Date
+  period_end: string | number | Date
+  payload: unknown
+  created_at: string | number | Date
+}
+
 export async function generateProductQaDailyReport(input?: {
   hours?: number
 }): Promise<{
@@ -591,20 +600,25 @@ export async function storeAnalyticsReport(input: {
     | "daily_sandra_briefing"
   periodStart: Date
   periodEnd: Date
-  payload: any
-}) {
+  payload: unknown
+}): Promise<number | null> {
   await ensureAnalyticsSchema()
   const sql = getDb()
-  await sql`
+  const rows = await sql`
     INSERT INTO analytics_reports (report_type, period_start, period_end, payload)
     VALUES (${input.reportType}, ${input.periodStart.toISOString()}, ${input.periodEnd.toISOString()}, ${input.payload})
     ON CONFLICT (report_type, period_start, period_end) DO UPDATE
     SET payload = EXCLUDED.payload,
         created_at = NOW()
+    RETURNING id
   `
+  return rows[0]?.id == null ? null : Number(rows[0].id)
 }
 
-export async function getLatestAnalyticsReports(input: { reportType: string; limit?: number }) {
+export async function getLatestAnalyticsReports(input: {
+  reportType: string
+  limit?: number
+}): Promise<AnalyticsReportRow[]> {
   await ensureAnalyticsSchema()
   const sql = getDb()
   const limit = input.limit ?? 14
@@ -615,5 +629,5 @@ export async function getLatestAnalyticsReports(input: { reportType: string; lim
     ORDER BY period_start DESC
     LIMIT ${limit}
   `
-  return rows as any[]
+  return rows as AnalyticsReportRow[]
 }

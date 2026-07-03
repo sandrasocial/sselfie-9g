@@ -1,11 +1,17 @@
 import "server-only"
 
 import { sql } from "@/lib/db/client"
+import type { ContentBrief } from "@/lib/content-engine/brief-generator"
 import { callContentKitLlm, extractJsonArray } from "@/lib/content-kit/llm"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { getShoot } from "@/lib/content-kit/shoot-generator"
 import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
-import type { CarouselDeck, CarouselSlide, CarouselSlideKind } from "@/lib/content-kit/types"
+import type {
+  CarouselDeck,
+  CarouselSlide,
+  CarouselSlideKind,
+  ContentOverlayAsset,
+} from "@/lib/content-kit/types"
 import { getPublishedVaultCollectionBySourceShootId } from "@/lib/vault/published-collections"
 import {
   pickContentStyleReference,
@@ -67,6 +73,19 @@ type GeneratorInput = {
    *               (the ChatGPT magazine look). Default.
    *  "editable" = local renderer composites editorial text over the real photos (fully editable). */
   renderStyle?: "baked" | "editable"
+}
+
+type ContentCarouselRow = {
+  id: number | string
+  title: string
+  slug: string
+  caption: string
+  slides: CarouselSlide[]
+  status: CarouselDeck["status"]
+  source_period_start: string | number | Date | null
+  source_shoot_id: number | string | null
+  source_shoot_title: string | null
+  created_at: string | number | Date
 }
 
 function isAllowedImageUrl(value: string): boolean {
@@ -485,7 +504,7 @@ export async function generateCarousels(input: GeneratorInput = {}): Promise<Car
   }
 
   const briefs = await getLatestAnalyticsReports({ reportType: "content_brief_weekly", limit: 1 })
-  const brief = briefs[0]?.payload ?? null
+  const brief = (briefs[0]?.payload as ContentBrief | undefined) ?? null
   const briefPeriodStart: string | null = briefs[0]?.period_start
     ? new Date(briefs[0].period_start).toISOString().slice(0, 10)
     : null
@@ -514,9 +533,9 @@ export async function generateCarousels(input: GeneratorInput = {}): Promise<Car
 
   const carouselPieces = Array.isArray(brief?.contentPlan)
     ? brief.contentPlan
-        .filter((piece: any) => piece.format === "carousel")
+        .filter((piece): piece is ContentBrief["contentPlan"][number] => piece.format === "carousel")
         .map(
-          (piece: any) =>
+          piece =>
             `- "${piece.title}" · hook: "${piece.hook}" · demand: "${piece.demandSignal || "not provided"}" · before: "${piece.painfulBefore || "not provided"}" · after: "${piece.desiredAfter || "not provided"}" · outline: ${(piece.carouselOutline || []).join(" / ")}`
         )
         .join("\n")
@@ -788,15 +807,15 @@ export async function listCarousels(limit = 20): Promise<CarouselDeck[]> {
     FROM content_carousels
     ORDER BY created_at DESC
     LIMIT ${limit}
-  `) as Array<any>
+  `) as ContentCarouselRow[]
   return rows.map(row => ({
-    id: row.id,
+    id: Number(row.id),
     title: row.title,
     slug: row.slug,
     caption: row.caption,
-    slides: row.slides,
+    slides: Array.isArray(row.slides) ? row.slides : [],
     status: row.status,
-    sourceShootId: row.source_shoot_id ?? null,
+    sourceShootId: row.source_shoot_id == null ? null : Number(row.source_shoot_id),
     sourceShootTitle: row.source_shoot_title ?? null,
     sourcePeriodStart: row.source_period_start
       ? new Date(row.source_period_start).toISOString().slice(0, 10)
@@ -816,17 +835,17 @@ export async function getCarousel(id: number): Promise<CarouselDeck | null> {
     FROM content_carousels
     WHERE id = ${id}
     LIMIT 1
-  `) as Array<any>
+  `) as ContentCarouselRow[]
   if (!rows[0]) return null
   const row = rows[0]
   return {
-    id: row.id,
+    id: Number(row.id),
     title: row.title,
     slug: row.slug,
     caption: row.caption,
-    slides: row.slides,
+    slides: Array.isArray(row.slides) ? row.slides : [],
     status: row.status,
-    sourceShootId: row.source_shoot_id ?? null,
+    sourceShootId: row.source_shoot_id == null ? null : Number(row.source_shoot_id),
     sourceShootTitle: row.source_shoot_title ?? null,
     sourcePeriodStart: row.source_period_start
       ? new Date(row.source_period_start).toISOString().slice(0, 10)
@@ -854,35 +873,56 @@ const CAROUSEL_KINDS = new Set<CarouselSlide["kind"]>([
 
 function sanitizeEditedCarouselSlides(slides: unknown): CarouselSlide[] {
   if (!Array.isArray(slides)) throw new Error("slides must be an array")
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    Boolean(value && typeof value === "object" && !Array.isArray(value))
+  const cleanOverlay = (value: unknown): ContentOverlayAsset | null => {
+    if (!isRecord(value) || typeof value.url !== "string" || !isAllowedImageUrl(value.url)) {
+      return null
+    }
+    return {
+      url: value.url,
+      placement:
+        typeof value.placement === "string"
+          ? (value.placement as ContentOverlayAsset["placement"])
+          : undefined,
+      label: typeof value.label === "string" ? value.label : undefined,
+      fit: typeof value.fit === "string" ? (value.fit as ContentOverlayAsset["fit"]) : undefined,
+    }
+  }
   const clean = (value: unknown) =>
     typeof value === "string" && value.trim() ? sanitizeGroundedText(value).trim() : undefined
-  return slides.slice(0, 12).map((raw: any) => {
-    const kind: CarouselSlide["kind"] = CAROUSEL_KINDS.has(raw?.kind) ? raw.kind : "photo"
+  return slides.slice(0, 12).map(rawValue => {
+    const raw = isRecord(rawValue) ? rawValue : {}
+    const kindValue = raw.kind
+    const kind: CarouselSlide["kind"] =
+      typeof kindValue === "string" && CAROUSEL_KINDS.has(kindValue as CarouselSlide["kind"])
+        ? (kindValue as CarouselSlide["kind"])
+        : "photo"
     const imageUrl =
-      typeof raw?.imageUrl === "string" && isAllowedImageUrl(raw.imageUrl) ? raw.imageUrl : undefined
-    const overlayAssets = Array.isArray(raw?.overlayAssets)
+      typeof raw.imageUrl === "string" && isAllowedImageUrl(raw.imageUrl) ? raw.imageUrl : undefined
+    const overlayAssets = Array.isArray(raw.overlayAssets)
       ? raw.overlayAssets
-          .filter((a: any) => typeof a?.url === "string" && isAllowedImageUrl(a.url))
-          .map((a: any) => ({ url: a.url, placement: a.placement, label: a.label, fit: a.fit }))
+          .map(cleanOverlay)
+          .filter((asset): asset is ContentOverlayAsset => Boolean(asset))
       : undefined
     return {
       kind,
-      eyebrow: clean(raw?.eyebrow),
-      title: clean(raw?.title) || "",
-      body: clean(raw?.body),
-      footer: clean(raw?.footer),
-      items: Array.isArray(raw?.items)
+      eyebrow: clean(raw.eyebrow),
+      title: clean(raw.title) || "",
+      body: clean(raw.body),
+      footer: clean(raw.footer),
+      items: Array.isArray(raw.items)
         ? raw.items.map((item: unknown) => clean(item) || "").filter(Boolean)
         : undefined,
-      stepNumber: typeof raw?.stepNumber === "number" ? raw.stepNumber : undefined,
+      stepNumber: typeof raw.stepNumber === "number" ? raw.stepNumber : undefined,
       imageUrl,
       // A swapped photo composites locally; without one the slide is a clean editorial text frame.
       headlineRender: imageUrl ? ("composited" as const) : undefined,
       overlayAssets,
-      gridUrls: Array.isArray(raw?.gridUrls)
-        ? raw.gridUrls.filter((u: unknown) => typeof u === "string" && isAllowedImageUrl(u as string))
+      gridUrls: Array.isArray(raw.gridUrls)
+        ? raw.gridUrls.filter((u): u is string => typeof u === "string" && isAllowedImageUrl(u))
         : undefined,
-      accents: Array.isArray(raw?.accents) ? raw.accents : undefined,
+      accents: Array.isArray(raw.accents) ? (raw.accents as CarouselSlide["accents"]) : undefined,
     }
   })
 }
