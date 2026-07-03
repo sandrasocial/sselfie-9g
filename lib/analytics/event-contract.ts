@@ -158,6 +158,10 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "suite_edit_applied",
   // App v3 generation reliability + trial-cap conversion moments (behavior only).
   "suite_generation_failed",
+  // STORY-GENERATION round 3 (2026-07-03): a malformed emit_concepts call was repaired
+  // server-side / a chat stream died before finishing (behavior only).
+  "suite_concepts_repaired",
+  "suite_chat_aborted",
   "trial_cap_offer_shown",
   "trial_cap_offer_cta_click",
   // VIDEO reliability 2026-07 — persistent failure log for member video generation

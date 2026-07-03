@@ -301,6 +301,29 @@ const conceptSchema = z.object({
   }),
 })
 
+const OUTPUT_FORMAT_VALUES = [
+  "photo",
+  "photoshoot",
+  "reel-cover",
+  "carousel",
+  "story-slide",
+  "story-sequence",
+  "video",
+] as const
+
+// Named so the emit_concepts repair path (experimental_repairToolCall) can re-validate its
+// repaired payload against the exact same schema before handing it back to the SDK.
+const emitConceptsInputSchema = z.object({
+  format: z.enum(OUTPUT_FORMAT_VALUES).describe("The output format these concepts are for."),
+  concepts: z
+    .array(conceptSchema)
+    .min(1)
+    .max(9)
+    .describe(
+      "Size the set to her ask: 3 distinct directions by default; 1-2 when she described one specific photo; 6-9 cohesive shots when she asked for a full photoshoot/series."
+    ),
+})
+
 const emitConcepts = tool({
   description:
     "Present photo/graphic concept directions sized to her ask: 3 distinct directions by default, " +
@@ -308,26 +331,7 @@ const emitConcepts = tool({
     "Call this once you understand what they want. Each concept's brief must be production-grade with " +
     "exact brand names, a named camera body, named lighting, and shotRole when it is a full shoot. " +
     "Always include the output format for this concept batch so the app creates the clicked card with the correct pipeline.",
-  inputSchema: z.object({
-    format: z
-      .enum([
-        "photo",
-        "photoshoot",
-        "reel-cover",
-        "carousel",
-        "story-slide",
-        "story-sequence",
-        "video",
-      ])
-      .describe("The output format these concepts are for."),
-    concepts: z
-      .array(conceptSchema)
-      .min(1)
-      .max(9)
-      .describe(
-        "Size the set to her ask: 3 distinct directions by default; 1-2 when she described one specific photo; 6-9 cohesive shots when she asked for a full photoshoot/series."
-      ),
-  }),
+  inputSchema: emitConceptsInputSchema,
   // Echo the concepts as the tool output so the client renders them from part.output.concepts,
   // matching the app's existing tool-part convention. Default stop-after-step keeps this terminal.
   execute: async ({ concepts, format }) => ({ concepts, format }),
@@ -1234,6 +1238,88 @@ export async function POST(req: Request) {
       tools,
       temperature: 0.8,
       maxOutputTokens: APP_V3_MAX_OUTPUT_TOKENS,
+      // STORY-GENERATION fix round 3 (2026-07-03, live failures 06:42Z + 15:56Z): story
+      // formats keep producing emit_concepts payloads that are complete JSON but the wrong
+      // shape, which fails schema validation, drops the tool call, and dead-ends the member
+      // ("Your directions didn't come through cleanly"). Repair the call SERVER-side:
+      // salvage the concepts out of whatever shape arrived (wrapper keys, stringified
+      // arrays, truncated JSON), coerce to the schema, and re-validate against the exact
+      // tool schema before handing it back. Client salvage stays as the last-resort net.
+      experimental_repairToolCall: async ({ toolCall, error }) => {
+        try {
+          if (toolCall.toolName !== "emit_concepts") return null
+          const rawInput =
+            typeof toolCall.input === "string" ? toolCall.input : JSON.stringify(toolCall.input)
+          const salvaged = salvageConceptsPayload(rawInput)
+          if (!salvaged || salvaged.concepts.length === 0) return null
+          const fmt = (OUTPUT_FORMAT_VALUES as readonly string[]).includes(salvaged.format ?? "")
+            ? (salvaged.format as (typeof OUTPUT_FORMAT_VALUES)[number])
+            : format
+          const str = (v: unknown) => (typeof v === "string" ? v : "")
+          const coerced = salvaged.concepts
+            .filter((c): c is Record<string, any> => Boolean(c) && typeof c === "object")
+            .map((c, i) => {
+              const brief = c.brief && typeof c.brief === "object" ? c.brief : {}
+              return {
+                ...c,
+                id: str(c.id) || `concept-${i + 1}`,
+                title: str(c.title) || `Direction ${i + 1}`,
+                description: str(c.description),
+                brief: {
+                  ...brief,
+                  outfit: str(brief.outfit),
+                  setting: str(brief.setting),
+                  mood: str(brief.mood),
+                  pose: str(brief.pose),
+                  cameraSpec: str(brief.cameraSpec),
+                  lighting: str(brief.lighting),
+                },
+              }
+            })
+          // Progressively simpler candidates: as-arrived, coerced base fields, and coerced
+          // with the deep graphic/shotRole payload stripped (a malformed creativePlan must
+          // not cost her the whole card set - the compiler treats those as optional).
+          const candidates: unknown[] = [
+            { format: fmt, concepts: salvaged.concepts },
+            { format: fmt, concepts: coerced },
+            {
+              format: fmt,
+              concepts: coerced.map(c => ({
+                ...c,
+                brief: { ...c.brief, graphic: undefined, shotRole: undefined },
+              })),
+            },
+          ]
+          for (const candidate of candidates) {
+            const parsed = emitConceptsInputSchema.safeParse(candidate)
+            if (parsed.success) {
+              console.log(
+                `[app-v3 maya chat] emit_concepts repaired server-side: format=${fmt} concepts=${parsed.data.concepts.length} cause=${error instanceof Error ? error.message.slice(0, 200) : "unknown"}`
+              )
+              logBehavior("suite_concepts_repaired", {
+                format: fmt,
+                count: parsed.data.concepts.length,
+              })
+              return { ...toolCall, input: JSON.stringify(parsed.data) }
+            }
+          }
+          return null
+        } catch (repairError) {
+          console.error("[app-v3 maya chat] emit_concepts repair failed:", repairError)
+          return null
+        }
+      },
+      // A silently dying stream (member closes the app, proxy drops, provider stalls) never
+      // reached onFinish, so story failures looked like "no event at all" (live 2026-07-03
+      // 15:57Z: clarify answered, then nothing). Log the abort so silence is visible.
+      onAbort: () => {
+        console.error(`[app-v3 maya chat] stream aborted: format=${format}`)
+        try {
+          logBehavior("suite_chat_aborted", { format })
+        } catch {
+          /* analytics never breaks chat */
+        }
+      },
       // Diagnosis for the disappearing-cards class of bug: a "length" finish means the concept
       // tool call was cut mid-stream and its cards may not survive validation.
       onFinish: ({ finishReason, steps }) => {

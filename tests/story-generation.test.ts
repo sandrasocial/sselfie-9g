@@ -331,6 +331,21 @@ describe("chat route concept-turn headroom (app/api/app-v3/maya/chat)", () => {
     expect(route).toContain("invalid: true,")
   })
 
+  it("repairs malformed emit_concepts calls server-side before validation fails", () => {
+    // Round 3 (2026-07-03): client salvage still left the member a dead end because the
+    // SDK dropped the invalid call. experimental_repairToolCall salvages + coerces +
+    // re-validates against the real tool schema, so the cards render normally.
+    expect(route).toContain("experimental_repairToolCall")
+    expect(route).toContain("emitConceptsInputSchema.safeParse(candidate)")
+    expect(route).toContain('logBehavior("suite_concepts_repaired"')
+    // Silent stream deaths (the "no event at all" failure mode) are now visible too.
+    expect(route).toContain("onAbort")
+    expect(route).toContain('logBehavior("suite_chat_aborted"')
+    const contract = read("lib/analytics/event-contract.ts")
+    expect(contract).toContain('"suite_concepts_repaired"')
+    expect(contract).toContain('"suite_chat_aborted"')
+  })
+
   it("persists the failure shape into analytics_events, not just Vercel console logs", () => {
     // 2026-07-03: two live story-sequence failures were undiagnosable because the payload
     // head only went to console.error and Vercel runtime logs expire within the hour.
