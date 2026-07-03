@@ -62,6 +62,16 @@ import type { OutputFormat } from "@/components/app-v3/types"
 // run 60-120s. 60s was killing them with a 504. Match the Pro image route's 300s ceiling.
 export const maxDuration = 300
 
+// STORY-GENERATION fix (2026-07-03): a multi-slide story sequence with auto-bake runs THREE
+// serial OpenAI legs (hero render -> parallel rest -> parallel bake) at ~60-120s each, which
+// can blow past the 300s function ceiling - the function dies with no response, no refund of
+// the bake deduction, and no analytics. If the clean renders already ate the budget, SKIP the
+// bake instead: the response returns on time with clean slides + the app-composited text layer,
+// and every slide can still be baked one-by-one in the Text Studio.
+// 170s keeps the typical 5-slide sequence baking (hero ~82s + rest ~82s = ~164s elapsed) while
+// the worst accepted case (169s + ~120s bake + persist) still lands inside the 300s ceiling.
+const AUTO_BAKE_TIME_BUDGET_MS = 170_000
+
 const sql = getDbClient()
 // Keep the default matching what the live env already runs ("gpt-image-2"). Switching the
 // default also flips the input_fidelity branch below, which was an unintended behavior change;
@@ -132,12 +142,38 @@ function isMultiSlideGraphicFormat(format: OutputFormat): boolean {
 function categoryForGraphicFormat(format: OutputFormat): StyleReferenceCategory {
   // story-sequence reuses the carousel style anchors (NOT the overlay-only "story-sequence" grounding).
   if (format === "carousel" || format === "story-sequence") return "photoshoot-carousel"
-  if (format === "reel-cover") return "reel-cover"
-  return "story-sequence"
+  // STORY-GENERATION fix (2026-07-03): a member story SLIDE is generated FROM A SELFIE, so it
+  // needs the reel-cover "identity-scene" grounding (build a new editorial scene around her).
+  // The old "story-sequence" category grounding is overlay-only ("preserve the original photo
+  // exactly") and returned her raw selfie untouched instead of a styled story frame.
+  return "reel-cover"
 }
 
 function fallbackCategoryForGraphicFormat(format: OutputFormat): StyleReferenceCategory | undefined {
-  return format === "reel-cover" ? "story-sequence" : undefined
+  // The DB has no "reel-cover" style references yet; both single verticals fall back to the
+  // story-sequence style anchors (typography/spacing taste only - the grounding stays per format).
+  return format === "reel-cover" || format === "story-slide" ? "story-sequence" : undefined
+}
+
+/**
+ * A plan-validation 400 is a member-facing generation failure too. These returns were
+ * console-silent, which is why 3 days of live story failures produced ZERO analytics rows.
+ * No user id yet at this point in the route - visibility beats attribution here.
+ */
+function logPlanInvalid(format: OutputFormat, details: string[]): void {
+  import("@/lib/analytics/events")
+    .then(({ logAnalyticsEvent }) =>
+      logAnalyticsEvent({
+        eventName: "suite_generation_failed",
+        properties: {
+          source: "app-v3-generate",
+          format,
+          reason: "plan_invalid",
+          detail: details.join("; ").slice(0, 300),
+        },
+      })
+    )
+    .catch(() => {})
 }
 
 function topicForGraphicBrief(
@@ -392,6 +428,7 @@ function normalizeBrief(brief: unknown): CreativeBrief | null {
 }
 
 export async function POST(request: NextRequest) {
+  const requestStartedAt = Date.now()
   const rate = await rateLimit(request, { maxRequests: 20, windowMs: 60000 })
   if (!rate.success) {
     return NextResponse.json(
@@ -453,8 +490,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "A complete concept brief is required" }, { status: 400 })
       }
       if (isMultiSlideGraphicFormat(format)) {
-        const validationErrors = validateCustomerCarouselBrief(brief, body.conceptTitle)
+        // STORY-GENERATION fix: a story sequence validates as a story sequence (3/5/7
+        // emotional beats, one world), never against carousel-only teaching rules.
+        const validationErrors = validateCustomerCarouselBrief(brief, body.conceptTitle, {
+          mode: format === "story-sequence" ? "story_sequence" : "carousel",
+        })
         if (validationErrors.length > 0) {
+          logPlanInvalid(format, validationErrors)
           return NextResponse.json(
             {
               error:
@@ -495,6 +537,7 @@ export async function POST(request: NextRequest) {
         const shootBriefs = normalizeShootBriefs(body.shootBriefs, brief)
         const validationErrors = validatePhotoshootBriefs(shootBriefs)
         if (validationErrors.length > 0) {
+          logPlanInvalid(format, validationErrors)
           return NextResponse.json(
             {
               error: "That photoshoot plan was too thin. Ask Maya for a fuller shoot plan.",
@@ -1044,11 +1087,11 @@ export async function POST(request: NextRequest) {
             slide: job.slide,
             referenceMode: "identity-scene",
             inspirationReferenceUrl,
-            // A story sequence reuses the carousel pipeline but renders 9:16 instead of 4:5.
-            size:
-              format === "story-sequence"
-                ? process.env.APP_V3_PORTRAIT_SIZE || "1024x1536"
-                : undefined,
+            // STORY-GENERATION fix: every format renders at its own concept size (9:16 portrait
+            // for story-sequence, story-slide, and reel-cover; 4:5 for carousel). This also keeps
+            // the clean render and the auto-bake pass the SAME size - they use this same value -
+            // so baking never stretches a 4:5 render into a 9:16 frame.
+            size,
             // Suite renders everything at medium (cost control); admin keeps high.
             quality: IMAGE_QUALITY,
             textMode: textOverlayEnabled ? "clean-background" : "baked",
@@ -1174,11 +1217,37 @@ export async function POST(request: NextRequest) {
     let bakedImageUrls: Array<string | null> | null = null
     let bakeCreditsDeducted = 0
     let responseBalance = deduction.newBalance
-    const wantsAutoBake =
+    let autoBakeSkipped: string | null = null
+    const wantsAutoBakeBase =
       (body as { autoBake?: unknown }).autoBake === true &&
       textOverlayEnabled &&
       graphicJobs.length > 0 &&
       textOverlaySpecs.length === buffers.length
+    // Time-budget guard: never start a bake leg the 300s ceiling can't fit. Skipping is
+    // graceful (clean render + CSS text layer, bake later per-slide in the Text Studio);
+    // a mid-bake timeout is not (dead card, kept bake credits, zero telemetry).
+    const bakeElapsedMs = Date.now() - requestStartedAt
+    const wantsAutoBake = wantsAutoBakeBase && bakeElapsedMs < AUTO_BAKE_TIME_BUDGET_MS
+    if (wantsAutoBakeBase && !wantsAutoBake) {
+      autoBakeSkipped = "time_budget"
+      console.warn(
+        `[app-v3 generate] auto bake skipped (elapsed ${Math.round(bakeElapsedMs / 1000)}s > budget) format=${format} images=${buffers.length}`
+      )
+      import("@/lib/analytics/events")
+        .then(({ logAnalyticsEvent }) =>
+          logAnalyticsEvent({
+            eventName: "suite_text_bake_failed",
+            userId: String(neonUser.id),
+            properties: {
+              source: "app-v3-generate-auto-bake",
+              format,
+              reason: "time_budget_skipped",
+              total: buffers.length,
+            },
+          })
+        )
+        .catch(() => {})
+    }
     if (wantsAutoBake) {
       const bakeCost = CREDIT_COSTS.IMAGE * buffers.length
       const canBake = await checkCredits(neonUser.id, bakeCost).catch(() => false)
@@ -1260,6 +1329,7 @@ export async function POST(request: NextRequest) {
       imageUrls,
       ...(textOverlaySpecs.length ? { textOverlaySpecs } : {}),
       ...(bakedImageUrls ? { bakedImageUrls } : {}),
+      ...(autoBakeSkipped ? { autoBakeSkipped } : {}),
       imageCount: imageUrls.length,
       aiImageId: persisted[0]?.id ?? null,
       aiImageIds: persisted.map(p => p.id),

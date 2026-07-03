@@ -187,25 +187,47 @@ function effectiveCarouselSlides(
   return fallback ? [{ heading: fallback }] : []
 }
 
+export interface CustomerCreativePlanOptions {
+  /**
+   * STORY-GENERATION fix (2026-07-03): a story sequence must validate as a story sequence,
+   * not as a teaching carousel. The old hard-coded "carousel" mode applied carousel-only
+   * editorial rules (6+ educational slides, varied backgrounds) to 3/5/7-beat one-world
+   * story plans and silently 400'd them. The route passes its format here.
+   */
+  mode?: "carousel" | "story_sequence"
+}
+
 export function buildCustomerCarouselCreativePlan(
   brief: CreativeBrief,
-  conceptTitle?: string
+  conceptTitle?: string,
+  opts?: CustomerCreativePlanOptions
 ): CreativePlan {
   const g = brief.graphic
   const topic = carouselTopicFromBrief(brief, conceptTitle)
   const supplied = g?.creativePlan
   const useCase = normalizeUseCase(supplied?.useCase ?? g?.contentType, topic)
   const effectiveSlides = effectiveCarouselSlides(brief, conceptTitle)
-  const outputs = supplied?.outputs?.length
+  const suppliedOutputs = supplied?.outputs?.length
     ? supplied.outputs
     : effectiveSlides.map((slide, index) => outputFromSlide(slide, index))
+  // Graceful backfill: Maya's quick emotional story beats sometimes skip imagePromptDirection
+  // (optional in the tool schema). The renderer falls back to visualConcept anyway, so a
+  // missing direction must never hard-fail the plan - fill it the same way.
+  const outputs = suppliedOutputs.map((output, index) => ({
+    ...output,
+    imagePromptDirection:
+      clean(output.imagePromptDirection) ||
+      clean(output.visualConcept) ||
+      clean(output.title) ||
+      `Slide ${index + 1}`,
+  }))
   const vaultStyleReferences = supplied?.vaultStyleReferences?.length
     ? supplied.vaultStyleReferences
     : vaultStyleReferencesFromBrief(brief)
   const outputCount = supplied?.outputCount ?? g?.slideCount ?? outputs.length
 
   return {
-    mode: "carousel",
+    mode: opts?.mode ?? "carousel",
     userIntent: supplied?.userIntent ? clean(supplied.userIntent) : topic,
     useCase,
     audienceEmotion: clean(supplied?.audienceEmotion) || "This feels clear, useful, and possible for me.",
@@ -227,7 +249,7 @@ export function buildCustomerCarouselCreativePlan(
       supplied?.validationRules?.length
         ? supplied.validationRules
         : buildDefaultCreativePlanValidationRules({
-            mode: "carousel",
+            mode: opts?.mode ?? "carousel",
             useCase,
             userIntent: supplied?.userIntent ? clean(supplied.userIntent) : topic,
           }),
@@ -236,9 +258,10 @@ export function buildCustomerCarouselCreativePlan(
 
 export function validateCustomerCarouselBrief(
   brief: CreativeBrief,
-  conceptTitle?: string
+  conceptTitle?: string,
+  opts?: CustomerCreativePlanOptions
 ): string[] {
-  const plan = buildCustomerCarouselCreativePlan(brief, conceptTitle)
+  const plan = buildCustomerCarouselCreativePlan(brief, conceptTitle, opts)
   const result = validateCreativePlan(plan)
   const errors = [...result.errors]
   const slides = effectiveCarouselSlides(brief, conceptTitle)
