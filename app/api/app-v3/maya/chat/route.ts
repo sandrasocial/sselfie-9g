@@ -1256,8 +1256,27 @@ export async function POST(req: Request) {
                 const invalid = (call as { invalid?: boolean }).invalid === true
                 const truncated = typeof (call.input as unknown) === "string"
                 if (invalid || count === null) {
+                  // Capture the exact failure: the zod cause tells us WHICH field broke the
+                  // schema, the payload head tells us what shape the model actually sent
+                  // (live 2026-07-03: an invalid story-sequence call arrived as an object
+                  // with no top-level concepts array - unseeable without this).
+                  const callError = (call as { error?: unknown }).error
+                  const cause =
+                    callError instanceof Error
+                      ? `${callError.message} | cause: ${String((callError as { cause?: unknown }).cause ?? "")}`
+                      : String(callError ?? "")
+                  let payloadHead = ""
+                  try {
+                    payloadHead =
+                      typeof call.input === "string"
+                        ? (call.input as string).slice(0, 2000)
+                        : JSON.stringify(call.input).slice(0, 2000)
+                  } catch {
+                    payloadHead = "[unserializable]"
+                  }
                   console.error(
-                    `[app-v3 maya chat] emit_concepts input did not parse (truncated=${truncated}) format=${format} - concept cards may be lost`
+                    `[app-v3 maya chat] emit_concepts input did not parse (truncated=${truncated}) format=${format} - concept cards may be lost\n` +
+                      `error: ${cause.slice(0, 1500)}\npayload head: ${payloadHead}`
                   )
                 }
                 logBehavior("suite_concepts_emitted", {

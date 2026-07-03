@@ -129,6 +129,22 @@ describe("salvageConceptsPayload (truncated emit_concepts tool JSON)", () => {
     expect((salvaged?.concepts[0] as any).description).toContain("{finally}")
   })
 
+  it("finds a concepts array buried under a wrapper key (invalid story-sequence shape, 2026-07-03)", () => {
+    const wrapped = { input: { format: "story-sequence", concepts: [concept(1), concept(2)] } }
+    const salvaged = salvageConceptsPayload(wrapped)
+    expect(salvaged?.concepts).toHaveLength(2)
+    expect(salvaged?.format).toBe("story-sequence")
+
+    const doubleWrapped = {
+      format: "story-sequence",
+      plan: { data: { concepts: [concept(1)] } },
+    }
+    const salvaged2 = salvageConceptsPayload(doubleWrapped)
+    expect(salvaged2?.concepts).toHaveLength(1)
+    // Format inherited from the outer object when the inner one has none.
+    expect(salvaged2?.format).toBe("story-sequence")
+  })
+
   it("returns null for garbage, empty, and concept-free inputs", () => {
     expect(salvageConceptsPayload(null)).toBeNull()
     expect(salvageConceptsPayload(undefined)).toBeNull()
@@ -142,6 +158,10 @@ describe("salvageConceptsPayload (truncated emit_concepts tool JSON)", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
     expect(concierge).toContain('from "@/lib/app-v3/concept-salvage"')
     expect(concierge).toContain("salvageConceptsPayload(part.rawInput ?? part.input)?.concepts")
+    // 2026-07-03: the extractor must not discard story concepts missing a photo brief
+    // field - it coerces the brief instead of filtering on brief.outfit.
+    expect(concierge).not.toContain('typeof c.brief.outfit === "string"')
+    expect(concierge).toContain("cameraSpec: str(brief.cameraSpec)")
     expect(concierge).toContain("salvageConceptsPayload(part.rawInput ?? part.input)?.format")
   })
 })

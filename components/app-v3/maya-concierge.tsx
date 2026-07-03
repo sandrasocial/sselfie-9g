@@ -260,9 +260,28 @@ function extractConcepts(part: any): ConceptCardData[] | null {
     part.rawInput?.concepts ??
     salvageConceptsPayload(part.rawInput ?? part.input)?.concepts
   if (!Array.isArray(payload)) return null
-  return payload.filter(
-    (c: any) => c && typeof c.title === "string" && c.brief && typeof c.brief.outfit === "string"
-  )
+  // Story/graphic concepts are creativePlan-led and may arrive without a full photo brief
+  // (live 2026-07-03: requiring brief.outfit here silently discarded intact story slides).
+  // Keep any concept with a title and coerce the brief so the prompt compiler's clean()
+  // guards see strings, never undefined.
+  return payload
+    .filter((c: any) => c && typeof c.title === "string" && (c.brief == null || typeof c.brief === "object"))
+    .map((c: any) => {
+      const brief = c.brief && typeof c.brief === "object" ? c.brief : {}
+      const str = (v: unknown) => (typeof v === "string" ? v : "")
+      return {
+        ...c,
+        brief: {
+          ...brief,
+          outfit: str(brief.outfit),
+          setting: str(brief.setting),
+          mood: str(brief.mood),
+          pose: str(brief.pose),
+          cameraSpec: str(brief.cameraSpec),
+          lighting: str(brief.lighting),
+        },
+      }
+    })
 }
 
 /** Pull the format attached to an emit_concepts batch. This prevents an old sticky session

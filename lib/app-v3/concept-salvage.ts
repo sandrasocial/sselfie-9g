@@ -59,20 +59,48 @@ function extractCompleteObjects(raw: string, from: number): unknown[] {
   return objects
 }
 
+/** Bounded deep search for a `concepts` array the model buried under a wrapper key
+ *  (live 2026-07-03: an invalid story-sequence call parsed as an object with NO top-level
+ *  concepts array - the payload shape itself was wrong, not just a missing field). */
+function findNestedConcepts(
+  value: unknown,
+  depth: number
+): { format?: string; concepts: unknown[] } | null {
+  if (!value || typeof value !== "object" || depth > 4) return null
+  const obj = value as Record<string, unknown>
+  if (Array.isArray(obj.concepts)) {
+    return {
+      format: typeof obj.format === "string" ? obj.format : undefined,
+      concepts: obj.concepts,
+    }
+  }
+  for (const key of Object.keys(obj)) {
+    const child = obj[key]
+    if (Array.isArray(child)) continue
+    const found = findNestedConcepts(child, depth + 1)
+    if (found) {
+      return {
+        format:
+          found.format ?? (typeof obj.format === "string" ? (obj.format as string) : undefined),
+        concepts: found.concepts,
+      }
+    }
+  }
+  return null
+}
+
 /**
  * Recover `{ format, concepts }` from an emit_concepts payload of ANY shape:
- * - a parsed object (schema-invalid but complete JSON): passed through,
+ * - a parsed object (schema-invalid but complete JSON): passed through, including
+ *   wrapper shapes where `concepts` sits one or more levels deep,
  * - a raw string of truncated JSON: every complete concept object is extracted,
  * - anything else: null.
  */
 export function salvageConceptsPayload(raw: unknown): SalvagedConceptsPayload | null {
   if (raw && typeof raw === "object") {
-    const value = raw as { format?: unknown; concepts?: unknown }
-    if (!Array.isArray(value.concepts)) return null
-    return {
-      format: typeof value.format === "string" ? value.format : undefined,
-      concepts: value.concepts,
-    }
+    const found = findNestedConcepts(raw, 0)
+    if (!found) return null
+    return { format: found.format, concepts: found.concepts }
   }
 
   if (typeof raw !== "string" || raw.trim().length === 0) return null
