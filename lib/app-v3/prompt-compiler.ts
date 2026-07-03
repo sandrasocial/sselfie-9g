@@ -131,8 +131,18 @@ function carouselTopicFromBrief(brief: CreativeBrief, fallbackTitle?: string): s
   )
 }
 
+/** Maya's internal beat labels must never reach a baked slide (live 2026-07-03: a paying
+ *  member's story sequence rendered "Slide 1: The Hook" as the actual on-image headline).
+ *  The persona now forbids planning language in titles; this is the mechanical backstop. */
+export function stripStructuralHeading(value: string): string {
+  return value
+    .replace(/^slide\s*\d+\s*[:.\-–—]?\s*/i, "")
+    .replace(/^(the\s+)?(hook|cta)\s*([:.\-–—]\s*|$)/i, "")
+    .trim()
+}
+
 function outputFromSlide(slide: CarouselSlidePlanLike, index: number): CreativePlanOutput {
-  const title = clean(slide.heading) || `Slide ${index + 1}`
+  const title = stripStructuralHeading(clean(slide.heading)) || `Slide ${index + 1}`
   const visualConcept = clean(slide.visualConcept) || title
   const imagePromptDirection =
     clean(slide.imagePromptDirection) ||
@@ -156,7 +166,7 @@ function outputFromSlide(slide: CarouselSlidePlanLike, index: number): CreativeP
 
 function outputAsSlide(output: CreativePlanOutput, index: number): CarouselSlidePlanLike {
   return {
-    heading: clean(output.title) || `Slide ${index + 1}`,
+    heading: stripStructuralHeading(clean(output.title)) || `Slide ${index + 1}`,
     purpose: clean(output.purpose),
     visualConcept: clean(output.visualConcept),
     imagePrompt: clean(output.imagePromptDirection),
@@ -215,6 +225,7 @@ export function buildCustomerCarouselCreativePlan(
   // missing direction must never hard-fail the plan - fill it the same way.
   const outputs = suppliedOutputs.map((output, index) => ({
     ...output,
+    title: stripStructuralHeading(clean(output.title)) || clean(output.title) || `Slide ${index + 1}`,
     imagePromptDirection:
       clean(output.imagePromptDirection) ||
       clean(output.visualConcept) ||
@@ -626,7 +637,10 @@ export function buildGraphicRedesignSlides(
       const planOutput = plan.outputs[index]
       return {
         kind: slideKindForRole(role, index, slides.length),
-        title: clean(slide.heading) || clean(planOutput?.title) || `Slide ${index + 1}`,
+        title:
+          stripStructuralHeading(clean(slide.heading)) ||
+          stripStructuralHeading(clean(planOutput?.title)) ||
+          `Slide ${index + 1}`,
         body: clean(slide.body),
         purpose: clean(slide.purpose) || clean(planOutput?.purpose),
         visualConcept: clean(slide.visualConcept) || clean(planOutput?.visualConcept),
@@ -647,8 +661,8 @@ export function buildGraphicRedesignSlides(
 
   const planOutput = g?.creativePlan?.outputs?.[0]
   const title =
-    clean(g?.headline) ||
-    clean(planOutput?.title) ||
+    stripStructuralHeading(clean(g?.headline)) ||
+    stripStructuralHeading(clean(planOutput?.title)) ||
     clean(conceptTitle) ||
     (format === "reel-cover" ? "Reel cover" : "Story slide")
   const role = resolveRole(g?.role, 0, 1)

@@ -20,6 +20,7 @@ import { describe, expect, it } from "vitest"
 import { salvageConceptsPayload } from "@/lib/app-v3/concept-salvage"
 import {
   buildGraphicRedesignSlides,
+  stripStructuralHeading,
   validateCustomerCarouselBrief,
 } from "@/lib/app-v3/prompt-compiler"
 import { makeTextOverlaySpec } from "@/lib/app-v3/text-overlay"
@@ -367,5 +368,40 @@ describe("persona story-sequence contract (lib/app-v3/maya/persona)", () => {
 
   it("requires imagePromptDirection on every story output", () => {
     expect(persona).toContain("Every output MUST include imagePromptDirection")
+  })
+
+  it("bans planning labels on images and demands HER real story (premium copy, 2026-07-03)", () => {
+    // Live failure: a paying member's story sequence baked "Slide 1: The Hook" as the
+    // actual headline with generic placeholder copy. Titles ARE the baked text.
+    expect(persona).toContain("the title of every output IS the literal text baked onto that slide")
+    expect(persona).toContain("must NEVER appear in a title or on an image")
+    expect(persona).toContain("her transformation story, her niche, her brand voice, her memory notes")
+    expect(persona).toContain("do not invent a generic story for a paying member")
+  })
+})
+
+describe("baked-slide structural label backstop (lib/app-v3/prompt-compiler)", () => {
+  it("strips Maya's internal beat labels from headings at bake time", () => {
+    expect(stripStructuralHeading("Slide 5: The Invitation")).toBe("The Invitation")
+    expect(stripStructuralHeading("Slide 1 - The Hook")).toBe("")
+    expect(stripStructuralHeading("slide 2. I almost quit this year")).toBe(
+      "I almost quit this year"
+    )
+    expect(stripStructuralHeading("Hook: your first line matters")).toBe("your first line matters")
+    // Real story lines pass through untouched.
+    expect(stripStructuralHeading("Nobody knew I was starting over")).toBe(
+      "Nobody knew I was starting over"
+    )
+    expect(stripStructuralHeading("The shift that changed my business")).toBe(
+      "The shift that changed my business"
+    )
+  })
+
+  it("is applied at every heading composition point", () => {
+    const compiler = read("lib/app-v3/prompt-compiler.ts")
+    const applications = compiler.match(/stripStructuralHeading\(/g) || []
+    // 1 definition + outputFromSlide + outputAsSlide + plan outputs + multi-slide title
+    // + single-slide title (headline + planOutput).
+    expect(applications.length).toBeGreaterThanOrEqual(7)
   })
 })
