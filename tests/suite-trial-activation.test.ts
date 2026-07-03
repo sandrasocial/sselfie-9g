@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest"
 
 import {
   generateTrialDay0Email,
+  generateTrialDay3Email,
   generateTrialNoFirstImageEmail,
+  TRIAL_DAY3_EMAIL_TYPE,
 } from "@/lib/email/templates/suite-trial"
 
 const ROOT = process.cwd()
@@ -21,24 +23,47 @@ describe("SUITE trial first-image activation", () => {
       customerEmail: "sandra@example.com",
     })
 
-    expect(email.subject).toBe("You're in. Here's step one 🤍")
-    expect(email.text).toContain("Step 1 is simple: add one clear selfie.")
-    expect(email.text).toContain("Maya can keep it looking like you")
-    expect(email.text).toContain("AI should not erase you. It should frame you.")
-    expect(email.text).not.toContain("Pick a look. Maya pulls three concepts")
+    expect(email.subject).toBe("your 7 days start now. do this first")
+    expect(email.text).toContain("add one clear selfie")
+    expect(email.text).toContain("Not an AI stranger. You, on your best day.")
+    expect(email.text).toContain("Make my first photo:")
+    expect(email.text).toContain("photos you'd actually post")
   })
 
-  it("renders the no-first-image nudge as a single clear action", () => {
+  it("renders the no-first-image nudge as reassurance plus a single clear action", () => {
     const email = generateTrialNoFirstImageEmail({
       customerName: "Sandra",
       customerEmail: "sandra@example.com",
     })
 
-    expect(email.subject).toContain("make your first photo")
-    expect(email.text).toContain("You haven't made your first photo yet")
-    expect(email.text).toContain("add one clear selfie")
-    expect(email.text).toContain("doesn't need to be perfect")
-    expect(email.text).toContain("Open your Studio:")
+    expect(email.subject).toBe("two minutes, love. that's all this takes")
+    expect(email.text).toContain("haven't made a photo yet")
+    expect(email.text).toContain("You don't need a better selfie.")
+    expect(email.text).toContain("stays recognizably you")
+    expect(email.text).toContain("Add my selfie:")
+    expect(email.text).toContain("doesn't need to be perfect. It just needs to exist.")
+  })
+
+  it("sends the day-3 momentum email only to activated trials, once, outside the day-5 window", () => {
+    const email = generateTrialDay3Email({
+      customerName: "Sandra",
+      customerEmail: "sandra@example.com",
+    })
+
+    expect(email.subject).toBe("did you post one yet?")
+    expect(email.text).toContain("pick the one that feels most like you and post it today")
+    expect(email.text).toContain('"this doesn\'t feel like me"')
+    expect(email.text).toContain("But today, just post one.")
+
+    const route = read("app/api/cron/suite-trial-expiry/route.ts")
+    expect(TRIAL_DAY3_EMAIL_TYPE).toBe("suite_trial_day3_post_one")
+    expect(route).toContain("generateTrialDay3Email")
+    expect(route).toContain("alreadyEmailed(trial.email, TRIAL_DAY3_EMAIL_TYPE)")
+    // Positive activation gate: EXISTS trial_first_generation (the nudge uses NOT EXISTS).
+    expect(route).toContain("AND EXISTS (")
+    // Day-5 window exclusion so nobody gets two lifecycle emails at once.
+    expect(route.split("s.trial_ends_at > NOW() + INTERVAL '2 days'").length).toBe(3)
+    expect(route).toContain("s.created_at <= NOW() - INTERVAL '3 days'")
   })
 
   it("pins the cron guard: no nudge after trial_first_generation", () => {

@@ -18,10 +18,12 @@ import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
 import {
   generateTrialCapUpgradeEmail,
+  generateTrialDay3Email,
   generateTrialDay5Email,
   generateTrialEndedEmail,
   generateTrialNoFirstImageEmail,
   TRIAL_CAP_UPGRADE_EMAIL_TYPE,
+  TRIAL_DAY3_EMAIL_TYPE,
 } from "@/lib/email/templates/suite-trial"
 import { TRIAL_CREDITS } from "@/lib/trial/suite-trial"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
@@ -63,6 +65,7 @@ export async function GET(request: Request) {
 
     const results = {
       noFirstImage: { sent: 0, failed: 0, skipped: 0 },
+      day3: { sent: 0, failed: 0, skipped: 0 },
       day5: { sent: 0, failed: 0, skipped: 0 },
       trialCap: { enabled: false, sent: 0, failed: 0, skipped: 0 },
       expired: { flipped: 0, creditsZeroed: 0, emailed: 0, failed: 0 },
@@ -114,6 +117,58 @@ export async function GET(request: Request) {
       } catch (e) {
         console.error(`[suite-trial-expiry] no-first-image send failed for ${trial.email}:`, e)
         results.noFirstImage.failed++
+      }
+    }
+
+    // ── Day-3 momentum: active trials 3+ days in that DID make their first image get the
+    //    "post one today" email. Mirror image of the no-first-image nudge: activated women
+    //    previously heard nothing between first photo and "2 days left". Excludes trials
+    //    ending within 2 days (the day-5 email owns that window) so nobody gets both at once. ──
+    const day3Trials = await sql`
+      SELECT s.user_id, u.email, u.display_name
+      FROM subscriptions s
+      JOIN users u ON u.id = s.user_id
+      WHERE s.product_type = 'suite_trial'
+        AND s.status = 'active'
+        AND s.created_at <= NOW() - INTERVAL '3 days'
+        AND s.trial_ends_at > NOW() + INTERVAL '2 days'
+        AND u.email IS NOT NULL
+        AND EXISTS (
+          SELECT 1
+          FROM analytics_events ae
+          WHERE ae.user_id = s.user_id::text
+            AND ae.event_name = 'trial_first_generation'
+          LIMIT 1
+        )
+    `
+
+    for (const trial of day3Trials) {
+      try {
+        if (await alreadyEmailed(trial.email, TRIAL_DAY3_EMAIL_TYPE)) {
+          results.day3.skipped++
+          continue
+        }
+        const email = generateTrialDay3Email({
+          customerName: trial.display_name,
+          customerEmail: trial.email,
+        })
+        const result = await sendEmail({
+          to: trial.email,
+          subject: email.subject,
+          html: email.html,
+          text: email.text,
+          emailType: TRIAL_DAY3_EMAIL_TYPE,
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
+          tags: ["suite-trial", "day3-post-one"],
+          marketing: true,
+        })
+        if (result.success) results.day3.sent++
+        else results.day3.failed++
+        await new Promise((r) => setTimeout(r, 150))
+      } catch (e) {
+        console.error(`[suite-trial-expiry] day-3 send failed for ${trial.email}:`, e)
+        results.day3.failed++
       }
     }
 

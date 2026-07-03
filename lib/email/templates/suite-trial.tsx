@@ -71,7 +71,7 @@ Sandra`
   return { html, text, subject }
 }
 
-// FUNNEL-2026-06-11: day-0 activation for fresh trials (tap-first, mirrors member Day 0).
+// TRIAL-SEQUENCE-2026-07-03: day-0 activation for fresh trials. Copy approved by Sandra.
 export function generateTrialDay0Email(params: {
   customerName?: string | null
   customerEmail: string
@@ -80,15 +80,15 @@ export function generateTrialDay0Email(params: {
   const name = getFirstNameForEmail({ fullName: customerName, email: customerEmail })
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
   const appUrl = `${siteUrl}/app`
-  const subject = "You're in. Here's step one 🤍"
+  const subject = "your 7 days start now. do this first"
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your 7 days just started. Step 1 is simple: add one clear selfie.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is how Maya can keep it looking like you in the image. Not a random AI version of you. You, framed in the visual world you choose.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Open the app, pick a vibe, and add the selfie when Maya asks. She'll take it from there.</p>
-    <div style="margin:26px 0 22px;">${renderStoneButton("Open your Studio", appUrl)}</div>
-    <p style="margin:0;font-size:16px;line-height:1.75;">One promise before you start: these photos will look like you. AI should not erase you. It should frame you.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You're in. 7 days, 20 photos, everything I've made.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here's the only thing to do today: add one clear selfie. That's how Maya keeps every photo looking like you. Not an AI stranger. You, on your best day.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It takes two minutes. Open the Studio, Maya asks for your selfie, you pick a look you like, and she makes your first photo while you watch.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Make my first photo", appUrl)}</div>
+    <p style="margin:0;font-size:16px;line-height:1.75;">By tomorrow you'll have photos you'd actually post. That's the whole point of this week.</p>
   `
 
   const html = renderStoneShell({
@@ -101,17 +101,17 @@ export function generateTrialDay0Email(params: {
 
 Hey ${name},
 
-Your 7 days just started. Step 1 is simple: add one clear selfie.
+You're in. 7 days, 20 photos, everything I've made.
 
-This is how Maya can keep it looking like you in the image. Not a random AI version of you. You, framed in the visual world you choose.
+Here's the only thing to do today: add one clear selfie. That's how Maya keeps every photo looking like you. Not an AI stranger. You, on your best day.
 
-Open the app, pick a vibe, and add the selfie when Maya asks. She'll take it from there.
+It takes two minutes. Open the Studio, Maya asks for your selfie, you pick a look you like, and she makes your first photo while you watch.
 
-Open your Studio: ${appUrl}
+Make my first photo: ${appUrl}
 
-One promise before you start: these photos will look like you. AI should not erase you. It should frame you.
+By tomorrow you'll have photos you'd actually post. That's the whole point of this week.
 
-Sandra`
+Sandra x`
 
   return { html, text, subject }
 }
@@ -124,15 +124,16 @@ export function generateTrialNoFirstImageEmail(params: {
   const name = getFirstNameForEmail({ fullName: customerName, email: customerEmail })
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
   const appUrl = `${siteUrl}/app?view=create`
-  const subject = "Come make your first photo"
+  const subject = "two minutes, love. that's all this takes"
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You haven't made your first photo yet, so here is the only step I want you to do today:</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Open the Studio and add one clear selfie. Maya uses it to keep you recognizable, your features, and the image feeling like you.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">After that, choose the visual world you want. The first image doesn't need to be perfect. It just needs to exist.</p>
-    <div style="margin:26px 0 22px;">${renderStoneButton("Make your first photo", appUrl)}</div>
-    <p style="margin:0;font-size:16px;line-height:1.75;">Start with one selfie. Let Maya do the rest.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You claimed your 7 days but haven't made a photo yet. Can I guess why?</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Either life got busy (fair, you're a woman with a life). Or there's a little voice saying you'll do it later, when you find a better selfie.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You don't need a better selfie. The one already in your camera roll from a good day is enough. Maya just needs to see your face once, and everything she makes stays recognizably you.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here's exactly what happens: you open the Studio, add one selfie, tap a look you like. Two minutes later you're looking at your first photo.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Add my selfie", appUrl)}</div>
+    <p style="margin:0;font-size:16px;line-height:1.75;">The first one doesn't need to be perfect. It just needs to exist.</p>
   `
 
   const html = renderStoneShell({
@@ -145,17 +146,71 @@ export function generateTrialNoFirstImageEmail(params: {
 
 Hey ${name},
 
-You haven't made your first photo yet, so here is the only step I want you to do today:
+You claimed your 7 days but haven't made a photo yet. Can I guess why?
 
-Open the Studio and add one clear selfie. Maya uses it to keep you recognizable, your features, and the image feeling like you.
+Either life got busy (fair, you're a woman with a life). Or there's a little voice saying you'll do it later, when you find a better selfie.
 
-After that, choose the visual world you want. The first image doesn't need to be perfect. It just needs to exist.
+You don't need a better selfie. The one already in your camera roll from a good day is enough. Maya just needs to see your face once, and everything she makes stays recognizably you.
 
-Open your Studio: ${appUrl}
+Here's exactly what happens: you open the Studio, add one selfie, tap a look you like. Two minutes later you're looking at your first photo.
 
-Start with one selfie. Let Maya do the rest.
+Add my selfie: ${appUrl}
 
-Sandra`
+The first one doesn't need to be perfect. It just needs to exist.
+
+Sandra x`
+
+  return { html, text, subject }
+}
+
+// TRIAL-SEQUENCE-2026-07-03: day-3 momentum email for trials that DID generate. The
+// activated women previously heard nothing between first photo and "2 days left" - this
+// is the email that turns photos into a posting win (and quietly sells the monthly rhythm).
+export const TRIAL_DAY3_EMAIL_TYPE = "suite_trial_day3_post_one"
+
+export function generateTrialDay3Email(params: {
+  customerName?: string | null
+  customerEmail: string
+}): { html: string; text: string; subject: string } {
+  const { customerName, customerEmail } = params
+  const name = getFirstNameForEmail({ fullName: customerName, email: customerEmail })
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+  const appUrl = `${siteUrl}/app`
+  const subject = "did you post one yet?"
+
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You've made your first photos with Maya. Go look at them again. I'll wait.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Now here's what I want you to do, because this is the part most women skip: pick the one that feels most like you and post it today. Story or feed, doesn't matter. Just say something true next to it.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That's the whole method. The photo gets you past "I have nothing to post." The true sentence does the rest.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">And if none of them feel quite right yet? Tell Maya. Literally type "this doesn't feel like me" and what's off. She adjusts, and she remembers for next time.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Open my Studio", appUrl)}</div>
+    <p style="margin:0;font-size:16px;line-height:1.75;">This is what the SUITE is every month: new looks, new photos, Maya knowing your style a little better each time. But today, just post one.</p>
+  `
+
+  const html = renderStoneShell({
+    title: "Post one today",
+    eyebrow: "SSELFIE SUITE",
+    bodyHtml,
+  })
+
+  const text = `SSELFIE SUITE
+
+Hey ${name},
+
+You've made your first photos with Maya. Go look at them again. I'll wait.
+
+Now here's what I want you to do, because this is the part most women skip: pick the one that feels most like you and post it today. Story or feed, doesn't matter. Just say something true next to it.
+
+That's the whole method. The photo gets you past "I have nothing to post." The true sentence does the rest.
+
+And if none of them feel quite right yet? Tell Maya. Literally type "this doesn't feel like me" and what's off. She adjusts, and she remembers for next time.
+
+Open my Studio: ${appUrl}
+
+This is what the SUITE is every month: new looks, new photos, Maya knowing your style a little better each time. But today, just post one.
+
+Sandra x`
 
   return { html, text, subject }
 }
@@ -180,9 +235,10 @@ export function generateTrialDay5Email(params: TrialReminderParams): {
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Short check-in: your trial ends ${endsOn}. If you've made photos you love, the SUITE is &euro;97 a month, cancel anytime, and everything I've made is included.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If it's not for you, that's honestly fine. Your photos stay yours either way.</p>
-    <div style="margin:26px 0 12px;">${renderStoneButton("Keep your Studio", joinUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Quick one: your trial ends ${endsOn}.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If Maya made you photos you'd actually post, that feeling doesn't have to end. The SUITE is &euro;97 a month: 200 photos, every look I make, and Maya remembering what feels like you. Cancel anytime.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Keep my Studio", joinUrl)}</div>
+    <p style="margin:0;font-size:16px;line-height:1.75;">And if it's not for you, that's honestly fine. Everything you made stays yours.</p>
   `
 
   const html = renderStoneShell({
@@ -195,13 +251,15 @@ export function generateTrialDay5Email(params: TrialReminderParams): {
 
 Hey ${name},
 
-Short check-in: your trial ends ${endsOn}. If you've made photos you love, the SUITE is €97 a month, cancel anytime, and everything I've made is included.
+Quick one: your trial ends ${endsOn}.
 
-If it's not for you, that's honestly fine. Your photos stay yours either way.
+If Maya made you photos you'd actually post, that feeling doesn't have to end. The SUITE is €97 a month: 200 photos, every look I make, and Maya remembering what feels like you. Cancel anytime.
 
-Keep your Studio: ${joinUrl}
+Keep my Studio: ${joinUrl}
 
-Sandra`
+And if it's not for you, that's honestly fine. Everything you made stays yours.
+
+Sandra x`
 
   return { html, text, subject }
 }
@@ -274,9 +332,10 @@ export function generateTrialEndedEmail(params: {
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your 7 days are up, so photo-making is paused. Your gallery, your photos, and everything you own are still yours and still open.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">When you want Maya back:</p>
-    <div style="margin:26px 0 12px;">${renderStoneButton("Join the SUITE", joinUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your 7 days are up, so photo-making is paused. Everything you made is still yours, and your gallery stays open.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you weren't done creating, the door isn't locked:</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Rejoin the SUITE", joinUrl)}</div>
+    <p style="margin:0;font-size:16px;line-height:1.75;">No pressure from me. But if you posted even one photo this week and it felt good? That feeling is repeatable.</p>
   `
 
   const html = renderStoneShell({
@@ -289,11 +348,13 @@ export function generateTrialEndedEmail(params: {
 
 Hey ${name},
 
-Your 7 days are up, so photo-making is paused. Your gallery, your photos, and everything you own are still yours and still open.
+Your 7 days are up, so photo-making is paused. Everything you made is still yours, and your gallery stays open.
 
-When you want Maya back, join the SUITE: ${joinUrl}
+If you weren't done creating, the door isn't locked. Rejoin the SUITE: ${joinUrl}
 
-Sandra`
+No pressure from me. But if you posted even one photo this week and it felt good? That feeling is repeatable.
+
+Sandra x`
 
   return { html, text, subject }
 }
