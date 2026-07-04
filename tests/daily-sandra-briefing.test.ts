@@ -5,6 +5,7 @@ import { buildDailySandraBriefing, generateDailySandraBriefingEmail } from "@/li
 import {
   buildDailyBriefingSnapshot,
   generateDailyBriefingIntelligence,
+  getTodaysContentPost,
   sanitizeIntelligenceText,
 } from "@/lib/admin/daily-briefing-intelligence"
 import type { ContentBrief } from "@/lib/content-engine/brief-generator"
@@ -264,7 +265,60 @@ const intelligenceSections = {
   todaysMove: "Post the Tuesday reel from this week's brief. First frame shows the finished photo on your phone. It's engineered for shares. CTA: comment PROMPT.",
   whatChanged: "One new payment came in yesterday and one new trial claimed. Nothing else moved.",
   watchThis: "Trial first-generation rate got worse since yesterday. Watch the selfie upload step today.",
+  todaysContentPost: null,
 }
+
+describe("getTodaysContentPost (deterministic, no AI paraphrase)", () => {
+  // 2026-07-04: Sandra's real complaint - "what to post today" was an AI-summarized one-liner
+  // that never even looked at the day's story sequence. This pulls the exact stored copy.
+  const weeklyBrief = {
+    contentPlan: [
+      {
+        day: "Wednesday",
+        format: "reel",
+        funnelStage: "cold",
+        title: "The 3 selfies you need",
+        hook: "hook",
+        visualHook: "visual",
+        onScreenText: ["line one", "line two"],
+        caption: "Full caption text.",
+        ctaKeyword: "PROMPT",
+        whyThisWorks: "works",
+      },
+    ],
+    dailyStories: [
+      {
+        day: "Wednesday",
+        theme: "Behind the setup",
+        objective: "warm trust",
+        offerMention: "Prompt Vault",
+        ctaKeyword: "PROMPT",
+        frames: [{ frame: 1, content: "frame one", interaction: "poll" }],
+      },
+    ],
+  } as unknown as ContentBrief
+
+  it("finds today's exact feed post and story sequence by matching weekday", () => {
+    const result = getTodaysContentPost(weeklyBrief, new Date("2026-07-01T12:00:00Z")) // a Wednesday
+    expect(result.weekday).toBe("Wednesday")
+    expect(result.feedPost?.title).toBe("The 3 selfies you need")
+    expect(result.feedPost?.caption).toBe("Full caption text.")
+    expect(result.storySequence?.theme).toBe("Behind the setup")
+    expect(result.storySequence?.frames).toHaveLength(1)
+  })
+
+  it("returns nulls, never a wrong day's piece, when today has no match", () => {
+    const result = getTodaysContentPost(weeklyBrief, new Date("2026-07-02T12:00:00Z")) // a Thursday
+    expect(result.weekday).toBe("Thursday")
+    expect(result.feedPost).toBeNull()
+    expect(result.storySequence).toBeNull()
+  })
+
+  it("returns nulls for an empty or old-shape brief instead of throwing", () => {
+    expect(getTodaysContentPost(null).feedPost).toBeNull()
+    expect(getTodaysContentPost({ contentPlan: [] } as unknown as ContentBrief).feedPost).toBeNull()
+  })
+})
 
 describe("daily briefing intelligence path", () => {
   it("builds the briefing with no intelligence attached by default", () => {
@@ -284,7 +338,7 @@ describe("daily briefing intelligence path", () => {
     expect(email.html).toContain("Today's move")
     expect(email.html).toContain("What changed since yesterday")
     expect(email.html).toContain("Watch this")
-    expect(email.text).toContain("Today's move (from this week's brief)")
+    expect(email.text).toContain("Today's move")
 
     // The static template sections are GONE from the intelligence path.
     expect(email.html).not.toContain("What to post today")
@@ -294,6 +348,90 @@ describe("daily briefing intelligence path", () => {
     expect(email.html).not.toContain("Choose today's reel angle from the strongest visual signal above")
     expect(email.html).not.toContain("Keep posting transformation proof before teaching the prompt mechanics")
     expect(email.text).not.toContain("What to post today")
+  })
+
+  it("renders today's full ready-to-post script and story sequence prominently, verbatim", () => {
+    // 2026-07-04: Sandra's ask - a real "what to post today" instead of a vague one-line
+    // AI paraphrase buried in the email. This must be the exact stored copy, not a summary.
+    const briefing = {
+      ...buildDailySandraBriefing(baseReport),
+      intelligence: {
+        ...intelligenceSections,
+        todaysContentPost: {
+          weekday: "Wednesday",
+          feedPost: {
+            day: "Wednesday",
+            format: "reel",
+            funnelStage: "cold",
+            title: "The 3 selfies you need before AI can give you a brand shoot",
+            hook: "Before AI can give you a brand shoot, it needs 3 selfies",
+            visualHook: "Propping the phone against books by a window.",
+            onScreenText: [
+              "Before AI can give you a brand shoot, it needs 3 selfies. That's it.",
+              "1. One clear face selfie. Window light.",
+              "Comment PROMPT and I'll send you the exact prompt I use.",
+            ],
+            caption: "This is step 1 of everything I teach. Comment PROMPT and I'll send it.",
+            ctaKeyword: "PROMPT",
+            whyThisWorks: "Tutorial lane is the reliable engine.",
+          },
+          storySequence: {
+            day: "Wednesday",
+            theme: "Behind the 3-selfie setup",
+            objective: "Warm trust before the ask",
+            offerMention: "Prompt Vault",
+            ctaKeyword: "PROMPT",
+            frames: [
+              { frame: 1, content: "Here's the exact setup I use.", interaction: "poll: window or lamp?" },
+              { frame: 2, content: "Comment PROMPT and I'll send it.", interaction: "none" },
+            ],
+          },
+        },
+      },
+      intelligenceNote: null,
+    }
+    const email = generateDailySandraBriefingEmail(briefing)
+
+    expect(email.html).toContain("The 3 selfies you need before AI can give you a brand shoot")
+    expect(email.html).toContain("Comment PROMPT and I'll send you the exact prompt I use.")
+    expect(email.html).toContain("This is step 1 of everything I teach")
+    expect(email.html).toContain("PROMPT")
+    expect(email.html).toContain("Behind the 3-selfie setup")
+    expect(email.html).toContain("Here's the exact setup I use.")
+    expect(email.html).toContain("poll: window or lamp?")
+
+    expect(email.text).toContain("The 3 selfies you need before AI can give you a brand shoot")
+    expect(email.text).toContain("This is step 1 of everything I teach")
+    expect(email.text).toContain("Behind the 3-selfie setup")
+    expect(email.text).toContain("Here's the exact setup I use.")
+  })
+
+  it("says plainly when today has no story sequence yet instead of hiding the gap", () => {
+    const briefing = {
+      ...buildDailySandraBriefing(baseReport),
+      intelligence: {
+        ...intelligenceSections,
+        todaysContentPost: {
+          weekday: "Wednesday",
+          feedPost: {
+            day: "Wednesday",
+            format: "reel",
+            funnelStage: "cold",
+            title: "Test post",
+            hook: "hook",
+            visualHook: "visual",
+            onScreenText: ["line one"],
+            whyThisWorks: "works",
+          },
+          storySequence: null,
+        },
+      },
+      intelligenceNote: null,
+    }
+    const email = generateDailySandraBriefingEmail(briefing)
+
+    expect(email.html).toContain("No story sequence stored for today yet")
+    expect(email.text).toContain("No story sequence stored for today yet")
   })
 
   it("keeps the template sections in the fallback and marks the fallback honestly", () => {
@@ -372,7 +510,12 @@ describe("daily briefing intelligence generation (mocked API)", () => {
     anthropicCreateMock.mockResolvedValueOnce(toolResponse(intelligenceSections))
     const briefing = buildDailySandraBriefing(baseReport)
 
-    const result = await generateDailyBriefingIntelligence({ briefing, weeklyBrief, yesterday: null })
+    const result = await generateDailyBriefingIntelligence({
+      briefing,
+      weeklyBrief,
+      yesterday: null,
+      now: new Date("2026-06-30T12:00:00Z"),
+    })
 
     expect(anthropicCreateMock).toHaveBeenCalledTimes(1)
     expect(result.todaysMove).toContain("Tuesday reel")
@@ -386,8 +529,9 @@ describe("daily briefing intelligence generation (mocked API)", () => {
 
     const result = await generateDailyBriefingIntelligence({ briefing, weeklyBrief: null, yesterday: null })
 
-    expect(result.todaysMove).toContain("no content plan")
+    expect(result.todaysMove).toContain("no matching post for today")
     expect(result.todaysMove).toContain("Regenerate")
+    expect(result.todaysContentPost.feedPost).toBeNull()
   })
 
   it("retries once on max_tokens, then succeeds", async () => {
@@ -396,7 +540,12 @@ describe("daily briefing intelligence generation (mocked API)", () => {
       .mockResolvedValueOnce(toolResponse(intelligenceSections))
     const briefing = buildDailySandraBriefing(baseReport)
 
-    const result = await generateDailyBriefingIntelligence({ briefing, weeklyBrief, yesterday: null })
+    const result = await generateDailyBriefingIntelligence({
+      briefing,
+      weeklyBrief,
+      yesterday: null,
+      now: new Date("2026-06-30T12:00:00Z"),
+    })
 
     expect(anthropicCreateMock).toHaveBeenCalledTimes(2)
     expect(result.watchThis).toBeTruthy()

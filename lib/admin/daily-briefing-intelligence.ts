@@ -15,7 +15,7 @@ import Anthropic from "@anthropic-ai/sdk"
 import type { ContentBlock, Tool, ToolUseBlock } from "@anthropic-ai/sdk/resources/messages"
 import { sanitizeGroundedText } from "@/lib/content/grounding"
 import type { DailySandraBriefing } from "@/lib/admin/daily-sandra-briefing"
-import type { ContentBrief, ContentBriefPiece } from "@/lib/content-engine/brief-generator"
+import type { ContentBrief, ContentBriefPiece, DailyStory } from "@/lib/content-engine/brief-generator"
 
 const INTELLIGENCE_MODEL = "claude-sonnet-4-5"
 const DAILY_BRIEFING_REPORT_TYPE = "daily_sandra_briefing"
@@ -24,6 +24,35 @@ export type DailyBriefingIntelligence = {
   todaysMove: string
   whatChanged: string
   watchThis: string
+  /** The verbatim, ready-to-post feed script + story sequence for today - deterministic,
+   *  pulled straight from the stored weekly brief, never AI-paraphrased (2026-07-04: Sandra
+   *  asked for "what to post today" and the old todaysMove was a vague one-line summary that
+   *  also never even looked at the daily story sequence). Null when the stored brief predates
+   *  day-labeled daily cadence or has no piece for today. */
+  todaysContentPost: TodaysContentPost | null
+}
+
+export type TodaysContentPost = {
+  weekday: string
+  feedPost: ContentBriefPiece | null
+  storySequence: DailyStory | null
+}
+
+/** Deterministic lookup: today's weekday's feed piece + story sequence, verbatim from the
+ *  stored brief. No AI call, no paraphrase - this is the exact copy Sandra can film/post from. */
+export function getTodaysContentPost(
+  weeklyBrief: ContentBrief | null,
+  now: Date = new Date()
+): TodaysContentPost {
+  const weekday = now.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })
+  const plan = Array.isArray(weeklyBrief?.contentPlan) ? weeklyBrief.contentPlan : []
+  const stories = Array.isArray(weeklyBrief?.dailyStories) ? weeklyBrief.dailyStories : []
+  const matchesDay = (day: string) => day?.toLowerCase().trim() === weekday.toLowerCase()
+  return {
+    weekday,
+    feedPost: plan.find(piece => matchesDay(piece.day)) ?? null,
+    storySequence: stories.find(story => matchesDay(story.day)) ?? null,
+  }
 }
 
 export type DailyBriefingSnapshot = {
@@ -213,7 +242,7 @@ Ground rules, non-negotiable:
 - Write in Sandra's voice: warm, direct, like texting a friend who runs the business with you. Short sentences. Contractions.
 - Each section is 3 sentences maximum. No filler, no pep talk, no restating what the numbers sections already show.
 
-todaysMove: ONE concrete content action from the weekly content plan in the input. Pick the piece whose day matches today's weekday; if none matches, pick the strongest piece that has not been used in a previous daily snapshot. Give her: the hook, what is literally on screen in second one, the ONE engagement action it is engineered for, and the CTA. If the weekly plan is empty, say plainly that this week's brief has no content plan and she should regenerate it; never invent a piece.
+todaysMove: ONE short line (max 2 sentences) introducing today's content post below - name the title and the one engagement action it is engineered for. The full ready-to-post script and story sequence are rendered separately from real stored data, not from you: do not restate the hook, caption, or on-screen text yourself, and never invent content. If todaysContentPost.feedPost in the input is null, say plainly that today has no matching piece in this week's brief and she should regenerate it from the admin content brief page.
 
 whatChanged: ONLY genuine changes since yesterday's snapshot in the input: a new payment, a new trial, a metric that actually moved, a new DM theme, a new support thread. Compare today's metrics against yesterday's metrics field by field. If nothing changed, one honest line saying nothing moved since yesterday. Never restate standing facts like total followers or member counts unless they changed. If there is no yesterday snapshot, say the day-over-day diff starts tomorrow and name today's single plainest fact.
 
@@ -233,9 +262,11 @@ export async function generateDailyBriefingIntelligence(
   const now = input.now ?? new Date()
   const weekday = now.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })
   const planPieces = weeklyPlanForPrompt(input.weeklyBrief)
+  const todaysContentPost = getTodaysContentPost(input.weeklyBrief, now)
 
   const payload = {
     todayWeekday: weekday,
+    todaysContentPost,
     moneyHeader: input.briefing.moneyHeader,
     truthSnapshot: input.briefing.truthSnapshot,
     revenueScorecard: input.briefing.revenueScorecard,
@@ -294,13 +325,14 @@ export async function generateDailyBriefingIntelligence(
     todaysMove: sanitizeIntelligenceText(raw.todaysMove),
     whatChanged: sanitizeIntelligenceText(raw.whatChanged),
     watchThis: sanitizeIntelligenceText(raw.watchThis),
+    todaysContentPost,
   }
 
-  // Old briefs stored before the two-pass fix have empty content plans. Never
-  // let the model paper over that with filler.
-  if (planPieces.length === 0) {
+  // Old briefs stored before the daily-cadence fix have no piece for today. Never let the
+  // model paper over that with filler - the deterministic lookup is the source of truth here.
+  if (!todaysContentPost.feedPost) {
     result.todaysMove =
-      "This week's brief has no content plan. Regenerate it from the admin content brief page before picking today's post."
+      "This week's brief has no matching post for today. Regenerate it from the admin content brief page."
   }
 
   if (!result.todaysMove || !result.whatChanged || !result.watchThis) {

@@ -1,5 +1,6 @@
 import type { GrowthTruthSnapshot } from "@/lib/admin/growth-truth"
 import type { RevenueTruthScorecard } from "@/lib/admin/revenue-truth-scorecard"
+import type { ContentBriefPiece, DailyStory } from "@/lib/content-engine/brief-generator"
 
 type ReportRow = {
   [key: string]: unknown
@@ -82,10 +83,17 @@ export type DailyBriefingExtras = {
   inboxFlaggedCount?: number
 }
 
+export type TodaysContentPost = {
+  weekday: string
+  feedPost: ContentBriefPiece | null
+  storySequence: DailyStory | null
+}
+
 export type DailyBriefingIntelligenceSections = {
   todaysMove: string
   whatChanged: string
   watchThis: string
+  todaysContentPost: TodaysContentPost | null
 }
 
 export type DailySandraBriefing = {
@@ -551,22 +559,87 @@ function revenueScorecardText(scorecard: RevenueTruthScorecard | null): string {
   return `\n\nRevenue truth\n- Members: ${compactNumber(scorecard.members.active)} active · ${currencyBreakdown(scorecard.members.netMrrByCurrency)} net MRR · ${compactNumber(scorecard.members.discountedMembers)} discounted (${scorecard.sources.activeMembersAndMrr})\n- Trials: ${compactNumber(scorecard.trials.claimed30d)} claimed · ${compactNumber(scorecard.trials.firstGeneration30d)} first generations · ${compactNumber(scorecard.trials.downloads30d)} downloads (${scorecard.sources.audienceBehavior})\n- Work With Me: ${compactNumber(scorecard.workWithMe.applications30d)} applications · ${compactNumber(scorecard.workWithMe.qualifiedOpen)} qualified/open · ${compactNumber(scorecard.workWithMe.bookedCalls)} booked · ${compactNumber(scorecard.workWithMe.won)} won (${scorecard.sources.workWithMePipeline})\n- Best email: ${topEmail ? `${topEmail.emailType} · ${compactNumber(topEmail.clicks)} clicks · ${compactNumber(topEmail.conversions)} conversions` : "no converting email signal yet"}\n- Best free prompt: ${topPrompt ? `${topPrompt.title} · ${compactNumber(topPrompt.copies)} copies` : "no prompt-copy signal yet"}\n- Labels: payments are charge rows; members are active Stripe subscriptions; MRR is net of discounts.`
 }
 
+/** The full ready-to-post block: today's feed script verbatim + today's story sequence
+ *  verbatim. Deterministic, pulled straight from the stored brief (2026-07-04: Sandra asked
+ *  for a clear daily "what to post today" instead of a vague one-line summary buried in a
+ *  long email). Rendered ABOVE the rest of the advice sections so it's the first thing she
+ *  sees, not the last. */
+function todaysContentPostHtml(post: TodaysContentPost | null): string {
+  if (!post?.feedPost) return ""
+  const { feedPost, storySequence, weekday } = post
+  const ctaLine = feedPost.ctaKeyword && feedPost.ctaKeyword.toLowerCase() !== "none"
+    ? `<p style="margin:10px 0 0;font-size:13px;color:#9A9A9A;">Keyword: ${escapeHtml(feedPost.ctaKeyword.toUpperCase())}</p>`
+    : ""
+  const feedHtml = `
+      <div style="background:#0D0E10;color:#fff;padding:24px;margin:0 0 4px;">
+        <p style="margin:0 0 6px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#C5C6C8;">${escapeHtml(weekday)} · feed post</p>
+        <h2 style="margin:0 0 12px;font-size:17px;font-weight:600;">${escapeHtml(feedPost.title)}</h2>
+        ${feedPost.onScreenText?.length ? `<p style="margin:0 0 10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9A9A9A;">On-screen text</p>
+        <ol style="margin:0 0 14px;padding-left:18px;">${feedPost.onScreenText.map((line) => `<li style="margin:0 0 6px;font-size:14px;line-height:1.6;">${escapeHtml(line)}</li>`).join("")}</ol>` : ""}
+        ${feedPost.caption ? `<p style="margin:0 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9A9A9A;">Caption</p>
+        <p style="margin:0;font-size:14px;line-height:1.7;white-space:pre-wrap;">${escapeHtml(feedPost.caption)}</p>` : ""}
+        ${ctaLine}
+      </div>`
+
+  const storyHtml = storySequence
+    ? `
+      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:24px;margin:0 0 14px;">
+        <p style="margin:0 0 6px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#818283;">${escapeHtml(weekday)} · story sequence</p>
+        <h3 style="margin:0 0 8px;font-size:15px;font-weight:600;color:#0D0E10;">${escapeHtml(storySequence.theme)}</h3>
+        <p style="margin:0 0 10px;font-size:14px;color:#4F5052;">${escapeHtml(storySequence.objective)}${storySequence.offerMention && storySequence.offerMention.toLowerCase() !== "none" ? ` · Offer: ${escapeHtml(storySequence.offerMention)}` : ""}</p>
+        <ol style="margin:0;padding-left:18px;">${storySequence.frames.map((frame) => `<li style="margin:0 0 10px;font-size:14px;line-height:1.6;color:#0D0E10;"><strong>${escapeHtml(frame.content)}</strong><br/><span style="color:#818283;font-size:13px;">Interaction: ${escapeHtml(frame.interaction)}</span></li>`).join("")}</ol>
+      </div>`
+    : `
+      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:14px 24px;margin:0 0 14px;">
+        <p style="margin:0;color:#818283;font-size:13px;">No story sequence stored for today yet. Regenerate this week's brief to add it.</p>
+      </div>`
+
+  return feedHtml + storyHtml
+}
+
+function todaysContentPostText(post: TodaysContentPost | null): string {
+  if (!post?.feedPost) return ""
+  const { feedPost, storySequence, weekday } = post
+  const lines = [
+    `\n\n${weekday} · FEED POST`,
+    feedPost.title,
+    feedPost.onScreenText?.length ? `\nOn-screen text:\n${feedPost.onScreenText.map((l) => `${l}`).join("\n")}` : "",
+    feedPost.caption ? `\nCaption:\n${feedPost.caption}` : "",
+    feedPost.ctaKeyword && feedPost.ctaKeyword.toLowerCase() !== "none"
+      ? `\nKeyword: ${feedPost.ctaKeyword.toUpperCase()}`
+      : "",
+  ]
+  const storyLines = storySequence
+    ? [
+        `\n\n${weekday} · STORY SEQUENCE`,
+        storySequence.theme,
+        `${storySequence.objective}${storySequence.offerMention && storySequence.offerMention.toLowerCase() !== "none" ? ` (Offer: ${storySequence.offerMention})` : ""}`,
+        ...storySequence.frames.map((frame) => `- ${frame.content} [${frame.interaction}]`),
+      ]
+    : [`\n\n${weekday} · STORY SEQUENCE`, "No story sequence stored for today yet."]
+  return [...lines, ...storyLines].filter(Boolean).join("\n")
+}
+
 function adviceSectionsHtml(briefing: DailySandraBriefing): string {
   if (briefing.intelligence) {
+    const contentPostHtml = todaysContentPostHtml(briefing.intelligence.todaysContentPost)
     const sections: Array<[string, string]> = [
-      ["Today's move · from this week's brief", briefing.intelligence.todaysMove],
+      ["Today's move", briefing.intelligence.todaysMove],
       ["What changed since yesterday", briefing.intelligence.whatChanged],
       ["Watch this", briefing.intelligence.watchThis],
     ]
-    return sections
-      .map(
-        ([title, body]) => `
+    return (
+      contentPostHtml +
+      sections
+        .map(
+          ([title, body]) => `
       <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
         <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">${escapeHtml(title)}</h2>
         <p style="margin:0;color:#4F5052;font-size:14px;line-height:1.7;">${escapeHtml(body)}</p>
       </div>`,
-      )
-      .join("")
+        )
+        .join("")
+    )
   }
 
   const fallbackNote = briefing.intelligenceNote
@@ -595,7 +668,8 @@ function adviceSectionsHtml(briefing: DailySandraBriefing): string {
 
 function adviceSectionsText(briefing: DailySandraBriefing): string {
   if (briefing.intelligence) {
-    return `\n\nToday's move (from this week's brief)\n${briefing.intelligence.todaysMove}\n\nWhat changed since yesterday\n${briefing.intelligence.whatChanged}\n\nWatch this\n${briefing.intelligence.watchThis}`
+    const contentPostText = todaysContentPostText(briefing.intelligence.todaysContentPost)
+    return `${contentPostText}\n\nToday's move\n${briefing.intelligence.todaysMove}\n\nWhat changed since yesterday\n${briefing.intelligence.whatChanged}\n\nWatch this\n${briefing.intelligence.watchThis}`
   }
   const note = briefing.intelligenceNote ? `\n\n${briefing.intelligenceNote}` : ""
   return `${note}\n\nWhat to post today\n${listText(briefing.postToday)}\n\nWhat Codex should fix next\n${listText(briefing.codexNext)}\n\nWhat Sandra does\n${listText(briefing.sandraNext)}`
