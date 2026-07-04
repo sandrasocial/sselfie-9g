@@ -148,4 +148,30 @@ describe("Content tools shoot-first workflow", () => {
     const storyClient = read("components/admin/content-story-client.tsx")
     expect(storyClient).not.toContain("CTA: PROMPT")
   })
+
+  it("SHOOT-TREND-PRESET-01: surfaces this week's trend radar as Shoot Studio vibe presets", () => {
+    const route = read("app/api/admin/content-kit/trend-vibes/route.ts")
+    const shootClient = read("components/admin/shoot-studio-client.tsx")
+    const briefClient = read("components/admin/content-brief-client.tsx")
+
+    // Admin-gated, same pattern as the other content-kit routes.
+    expect(route).toContain("requireAdmin")
+    expect(route).toContain('{ error: "Unauthorized" }')
+    // "This week only" per Sandra - a freshness window, not an accumulating library.
+    expect(route).toContain("THIS_WEEK_MAX_AGE_MS")
+    expect(route).toContain("age > THIS_WEEK_MAX_AGE_MS")
+    // Only trends with a synthesized vibe preset become chips (some trends are pure content
+    // mechanics with nothing to shoot differently).
+    expect(route).toContain("Boolean(entry?.vibePreset?.trim())")
+
+    // Shoot Studio fetches on mount and renders the trend chips alongside the static presets.
+    expect(shootClient).toContain('fetch("/api/admin/content-kit/trend-vibes")')
+    expect(shootClient).toContain("trendVibes")
+    expect(shootClient).toContain("onClick={() => setVibe(entry.vibePreset)}")
+    expect(shootClient).toContain("This week&apos;s trends")
+
+    // The brief page surfaces the same vibe preset text for Sandra to audit.
+    expect(briefClient).toContain("Shoot Studio vibe preset:")
+    expect(briefClient).toContain("this week only")
+  })
 })

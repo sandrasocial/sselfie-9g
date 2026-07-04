@@ -417,9 +417,19 @@ function TrendRadarSection({ brief }: { brief: ContentBrief }) {
               <span className="uppercase tracking-wide">No-fake guardrail: </span>
               {entry.noFakeGuardrail}
             </p>
+            {entry.vibePreset && (
+              <p className="mt-2 text-xs leading-relaxed text-stone-500">
+                <span className="uppercase tracking-wide">Shoot Studio vibe preset: </span>
+                {entry.vibePreset}
+              </p>
+            )}
           </div>
         ))}
       </div>
+      <p className="mt-3 text-xs text-stone-400">
+        Trends with a vibe preset show up as one-tap chips in Shoot Studio&apos;s story
+        collection vibe picker, this week only.
+      </p>
     </section>
   )
 }

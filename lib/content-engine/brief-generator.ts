@@ -109,6 +109,15 @@ export type TrendRadarEntry = {
   whyItsMoving: string
   howSandraRidesIt: string
   noFakeGuardrail: string
+  /** SHOOT-TREND-PRESET-01 (2026-07-05): a clean, generic, buyer-safe image-style directive
+   *  synthesized from this trend, in the register of Shoot Studio's hardcoded story-collection
+   *  vibe presets ("iPhone mirror selfie", "Photodump / camera-roll"). Unlike howSandraRidesIt
+   *  (a content-strategy paragraph that names Sandra, Vault drops, Reels, CTAs), this field is
+   *  safe to paste directly into a shareable ChatGPT prompt: no names, no product/channel
+   *  mentions, just the visual world + an identity-lock reminder. Empty on trends the writer
+   *  judges are a content mechanic rather than a visual style (nothing to shoot differently).
+   */
+  vibePreset: string
 }
 
 export type OnScreenHookBankEntry = {
@@ -459,6 +468,12 @@ function sanitizeContentBriefOutput<T extends Omit<ContentBrief, "periodStart" |
         whyItsMoving: safeBriefText(normalized.whyItsMoving, vault),
         howSandraRidesIt: safeBriefText(normalized.howSandraRidesIt, vault),
         noFakeGuardrail: safeBriefText(normalized.noFakeGuardrail, vault),
+        // Defensive: this field feeds a buyer-facing shareable prompt (unlike the other three,
+        // which are Sandra's own strategy notes). Strip a name slip even though the prompt below
+        // instructs against it - the writer already reliably names her in howSandraRidesIt.
+        vibePreset: safeBriefText(normalized.vibePreset, vault)
+          .replace(/\bsandra's\b/gi, "her")
+          .replace(/\bsandra\b/gi, "the woman"),
       }
     }),
     hookIntelligence: asArray<ContentBrief["hookIntelligence"][number]>(normalizedBrief.hookIntelligence).map(hook => ({
@@ -800,8 +815,9 @@ const BRIEF_PLAN_SCHEMA: Tool.InputSchema = {
           whyItsMoving: { type: "string" },
           howSandraRidesIt: { type: "string" },
           noFakeGuardrail: { type: "string" },
+          vibePreset: { type: "string" },
         },
-        required: ["trend", "whyItsMoving", "howSandraRidesIt", "noFakeGuardrail"],
+        required: ["trend", "whyItsMoving", "howSandraRidesIt", "noFakeGuardrail", "vibePreset"],
       },
     },
   },
@@ -1155,7 +1171,8 @@ CONTENT PLAN RULES:
 - audioSuggestion: for reels, suggest the sound direction that fits this specific piece. Name the TYPE and why it fits (trending upbeat for a fast tutorial, original voiceover over soft background for a story/teaching piece, calm acoustic for a slow reveal, satisfying transition sound for a before/after). If the research memo names a specific current trending sound or audio trend that fits, name it and say to verify it is still trending in the Instagram audio panel before posting, since sound names go stale fast. For carousels and feed posts, either suggest a subtle background track if it is a video carousel or say audio is optional. One or two short sentences. No banned words, no m-dashes.
 - reelCoverText, carouselOutline, photoshootPrompt, and hashtags are optional legacy fields. Leave them empty unless absolutely necessary for interpreting an old format. Do not spend tokens filling them. (caption and ctaKeyword are NOT legacy: both are required per the deliverable contract above.)
 - storySequence: one short strategic story sequence, 3-5 frames, not a full script. Include the point of each frame and the interaction to test. Use the STORY SEQUENCE MECHANICS section of the research memo: build a micro-commitment ladder (poll, then slider, then question box, then DM reply) and treat story replies as the DM conversion moment.
-- trendRadar: 2-3 entries built from the TREND RADAR section of the research memo. Each entry names one viral AI-photo trend moving right now (trend), why it is spreading (whyItsMoving), the concrete way Sandra rides that wave this week with her own face and real places (howSandraRidesIt), and the no-fake guardrail that keeps it "still you, never fake" and out of synthetic-avatar territory (noFakeGuardrail). If the memo has fewer than 2 evidenced trends, include only what is evidenced and say so in whyItsMoving; never invent a trend.`
+- trendRadar: 2-3 entries built from the TREND RADAR section of the research memo. Each entry names one viral AI-photo trend moving right now (trend), why it is spreading (whyItsMoving), the concrete way Sandra rides that wave this week with her own face and real places (howSandraRidesIt), and the no-fake guardrail that keeps it "still you, never fake" and out of synthetic-avatar territory (noFakeGuardrail). If the memo has fewer than 2 evidenced trends, include only what is evidenced and say so in whyItsMoving; never invent a trend.
+- vibePreset (SHOOT-TREND-PRESET-01): a clean, generic, buyer-safe image-style directive synthesized from THIS trend, meant to be pasted directly into a shareable ChatGPT photo prompt for any buyer. Write it in the exact register of these two real examples from Shoot Studio's existing presets, which you must match in length, structure, and specificity: (1) "iPhone mirror selfie collection: ultra-realistic casual mirror selfies taken on a phone, real mirror reflection and correct mirror physics, natural phone-camera quality with realistic skin texture and soft everyday imperfections, not a studio shoot and not AI-smooth. Vary the mirror and room per shot (bathroom, bedroom, floor mirror, elevator, car)." (2) "Photodump collection: everyday candid camera-roll moments, natural light, relaxed and unposed, real phone-camera quality, not editorial or studio. Vary the everyday scene per shot." Rules: NEVER write "Sandra", a product name, a channel (Reel, carousel, CTA), a keyword, a Vault/Studio mention, or any business-strategy language - only the visual world (camera/lens feel, texture, lighting, grain, mood) plus one line on what should vary shot to shot, ending with an identity-lock reminder like "keep facial features and skin texture identical to the uploaded reference photo." If a trend is a content mechanic with no distinct visual style to shoot differently (nothing a photographer would do differently), set vibePreset to an empty string rather than forcing one.`
 
   const briefUserContent = `Here is this week's data. Build the brief.\n\n${JSON.stringify(dataPacket, null, 2)}`
 

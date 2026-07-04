@@ -501,6 +501,7 @@ export function ShootStudioClient({
   const [notes, setNotes] = useState("")
   const [collectionType, setCollectionType] = useState<"cohesive" | "story">("cohesive")
   const [vibe, setVibe] = useState("")
+  const [trendVibes, setTrendVibes] = useState<{ trend: string; vibePreset: string }[]>([])
   const story = collectionType === "story"
   const maxInspiration = story ? 9 : 3
   const [uploading, setUploading] = useState(false)
@@ -525,6 +526,17 @@ export function ShootStudioClient({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // SHOOT-TREND-PRESET-01: this week's live Trend Radar entries (from the weekly content
+  // brief) as extra vibe-preset chips, so a current AI-photo trend is one tap away instead of
+  // hand-transcribed from the brief. Best-effort - an empty/failed fetch just means no extra
+  // chips this week, never blocks the page.
+  useEffect(() => {
+    fetch("/api/admin/content-kit/trend-vibes")
+      .then((res) => (res.ok ? res.json() : { trends: [] }))
+      .then((data) => setTrendVibes(Array.isArray(data?.trends) ? data.trends : []))
+      .catch(() => setTrendVibes([]))
   }, [])
 
   async function uploadInspiration(files: FileList | null) {
@@ -746,6 +758,25 @@ export function ShootStudioClient({
                 </button>
               ))}
             </div>
+            {trendVibes.length > 0 && (
+              <div className="mt-2">
+                <p className="text-[10px] uppercase tracking-wide text-stone-400">
+                  This week&apos;s trends (from the weekly brief)
+                </p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {trendVibes.map((entry) => (
+                    <button
+                      key={entry.trend}
+                      type="button"
+                      onClick={() => setVibe(entry.vibePreset)}
+                      className="rounded-full border border-stone-950 bg-stone-950 px-3 py-1 text-[11px] uppercase tracking-wide text-white hover:bg-stone-800"
+                    >
+                      {entry.trend}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <textarea
               value={vibe}
               onChange={(event) => setVibe(event.target.value)}

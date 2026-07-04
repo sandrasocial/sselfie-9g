@@ -57,6 +57,25 @@ describe("weekly content brief: two-pass generation", () => {
     expect(generator).toContain("trendRadar: asArray<TrendRadarEntry>")
   })
 
+  it("SHOOT-TREND-PRESET-01: adds a buyer-safe vibePreset to every trend, for Shoot Studio's vibe picker", () => {
+    // Sandra's ask (2026-07-05): "a new preset that helps me create the trends we're pulling
+    // from the weekly brief." howSandraRidesIt is a strategy paragraph that names her, Vault
+    // drops, Reels, and CTAs - unsafe to paste into a shareable buyer prompt. vibePreset is a
+    // separate, clean, generic directive synthesized just for that purpose.
+    expect(generator).toContain(
+      'required: ["trend", "whyItsMoving", "howSandraRidesIt", "noFakeGuardrail", "vibePreset"]'
+    )
+    expect(generator).toContain("vibePreset: { type: \"string\" }")
+    expect(generator).toContain(
+      "a clean, generic, buyer-safe image-style directive synthesized from THIS trend"
+    )
+    expect(generator).toContain('NEVER write "Sandra", a product name, a channel')
+    expect(generator).toContain("set vibePreset to an empty string rather than forcing one")
+    // Defensive sanitizer strip, in case the model names her anyway.
+    expect(generator).toContain('.replace(/\\bsandra\'s\\b/gi, "her")')
+    expect(generator).toContain('.replace(/\\bsandra\\b/gi, "the woman")')
+  })
+
   it("adds audienceQuestions to the demand map schema and sanitizer, traced to real DMs", () => {
     expect(generator).toContain("export type AudienceQuestion")
     expect(generator).toContain("audienceQuestions")
