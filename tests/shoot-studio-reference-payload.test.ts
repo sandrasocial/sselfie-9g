@@ -127,6 +127,29 @@ describe("Shoot Studio reference payload", () => {
     )
   })
 
+  it("sends up to 6 selfie angles as identity references, not just 4 (2026-07-05)", async () => {
+    // Sandra's ask: gpt-image-2's edit endpoint accepts multiple reference images, and more
+    // real angles (front, both side profiles, full body, plus extras) improves how well it
+    // captures facial AND body features. Raised the cap from 4 to 6 end to end.
+    const { generateShotImage } = await import("@/lib/content-kit/shoot-generator")
+    const base = "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com"
+    const sevenSelfies = Array.from({ length: 7 }, (_, i) => `${base}/selfie-${i}.png`)
+
+    await generateShotImage({
+      selfieUrls: sevenSelfies,
+      inspirationUrls: [`${base}/inspo.png`],
+      prompt: "Create image 2 of a 6-part editorial photoshoot. Pose: seated, relaxed.",
+      shotRole: "seated-hero",
+      quality: "medium",
+    })
+
+    const payload = mocks.edit.mock.calls[0][0]
+    // 6 selfies + 1 inspiration = 7 images total; the 7th selfie is dropped, never a duplicate.
+    expect(payload.image).toHaveLength(7)
+    expect(payload.prompt).toContain("Use input images 1-6 as IDENTITY REFERENCES ONLY")
+    expect(payload.prompt).toContain("Use input image 7 as ORIGINAL INSPIRATION REFERENCES ONLY")
+  })
+
   it("uses close recreation for shot one and set variation for later shots", async () => {
     const { generateShotImage } = await import("@/lib/content-kit/shoot-generator")
 

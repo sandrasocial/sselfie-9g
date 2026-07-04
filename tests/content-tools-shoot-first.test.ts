@@ -174,4 +174,22 @@ describe("Content tools shoot-first workflow", () => {
     expect(briefClient).toContain("Shoot Studio vibe preset:")
     expect(briefClient).toContain("this week only")
   })
+
+  it("raises the Shoot Studio selfie cap from 4 to 6, end to end (2026-07-05)", () => {
+    const shootClient = read("components/admin/shoot-studio-client.tsx")
+    const shootGenerator = read("lib/content-kit/shoot-generator.ts")
+
+    // UI: selection toggle, auto-select-after-upload, and the picker's own label.
+    expect(shootClient).not.toContain("current, url].slice(0, 4)")
+    expect(shootClient).toContain("current, url].slice(0, 6)")
+    expect(shootClient).not.toContain("...urls])).slice(0, 4)")
+    expect(shootClient).toContain("...urls])).slice(0, 6)")
+    expect(shootClient).toContain("Pick up to 6")
+
+    // Backend: createShootDraft's accepted input cap and generateShotImage's actual
+    // identity-reference cap sent to gpt-image-2 - the one that really matters.
+    expect(shootGenerator).not.toContain("input.selfieUrls.filter(Boolean).slice(0, 4)")
+    const capOccurrences = shootGenerator.match(/input\.selfieUrls\.filter\(Boolean\)\.slice\(0, 6\)/g) || []
+    expect(capOccurrences.length).toBe(2)
+  })
 })

@@ -562,7 +562,7 @@ export function ShootStudioClient({
 
   function toggleSelfie(url: string) {
     setSelfieUrls((current) =>
-      current.includes(url) ? current.filter((u) => u !== url) : [...current, url].slice(0, 4),
+      current.includes(url) ? current.filter((u) => u !== url) : [...current, url].slice(0, 6),
     )
   }
 
@@ -585,7 +585,7 @@ export function ShootStudioClient({
         setSelfieOptions((current) => [...urls, ...current])
       }
       // Auto-select the new uploads, respecting the 4-image cap.
-      setSelfieUrls((current) => Array.from(new Set([...current, ...urls])).slice(0, 4))
+      setSelfieUrls((current) => Array.from(new Set([...current, ...urls])).slice(0, 6))
     } catch (err: any) {
       setError(err?.message || "Upload failed")
     } finally {
@@ -888,7 +888,8 @@ export function ShootStudioClient({
               />
             </div>
             <p className="mt-1 text-[11px] text-stone-400">
-              Pick up to 4. Front, both side profiles, and full body give the truest likeness.
+              Pick up to 6. Front, both side profiles, and full body give the truest likeness -
+              add more angles if you have them.
             </p>
           </div>
         </div>

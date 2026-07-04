@@ -530,8 +530,11 @@ export async function generateShotImage(input: {
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured")
   const openai = new OpenAI({ apiKey })
 
-  // Selfies FIRST (identity, up to 4 angles), inspiration after (style, up to 3).
-  const selfieUrls = input.selfieUrls.filter(Boolean).slice(0, 4)
+  // Selfies FIRST (identity, up to 6 angles), inspiration after (style, up to 3). 2026-07-05:
+  // raised from 4 per Sandra - gpt-image-2's edit endpoint accepts multiple reference images,
+  // and more real angles (front, both side profiles, full body, plus extras) improves how well
+  // it captures facial and body features, not just the face.
+  const selfieUrls = input.selfieUrls.filter(Boolean).slice(0, 6)
   const styleUrls = input.inspirationUrls.filter(Boolean).slice(0, 3)
   const continuityUrls = (input.continuityUrls || []).filter(isAllowedUrl).slice(0, 2)
   if (selfieUrls.length === 0) throw new Error("At least one selfie reference is required")
@@ -817,7 +820,7 @@ export async function createShootDraft(input: {
   const inspirationUrls = input.inspirationUrls.filter(isAllowedUrl).slice(0, story ? 9 : 3)
   if (inspirationUrls.length === 0) throw new Error("Add at least one inspiration image")
   const shotCount = story ? inspirationUrls.length : DEFAULT_SHOTS_PER_SHOOT
-  const requestedSelfieUrls = input.selfieUrls.filter(Boolean).slice(0, 4)
+  const requestedSelfieUrls = input.selfieUrls.filter(Boolean).slice(0, 6)
   const selfieUrls = requestedSelfieUrls.filter(isAllowedUrl)
   if (selfieUrls.length === 0) throw new Error("Pick at least one of your selfies")
   if (selfieUrls.length !== requestedSelfieUrls.length) {
