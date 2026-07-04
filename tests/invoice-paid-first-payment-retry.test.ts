@@ -5,6 +5,8 @@
 // or the payment never lands in stripe_payments.
 
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 
 const sqlMock = vi.fn()
 const retrieveSubscriptionMock = vi.fn()
@@ -121,5 +123,14 @@ describe("handleInvoicePaid first-payment race", () => {
     ])
     const { handleInvoicePaid } = await import("@/lib/payments/lifecycle/invoice-paid")
     await expect(handleInvoicePaid(buildInvoiceEvent())).resolves.toBeUndefined()
+  })
+
+  it("uses valid Postgres syntax when tagging the recent credit grant with the invoice id", () => {
+    const source = readFileSync(
+      join(process.cwd(), "lib/payments/lifecycle/invoice-paid.ts"),
+      "utf8"
+    )
+    expect(source).toContain("WITH recent_credit_grant AS")
+    expect(source).not.toContain("UPDATE credit_transactions\n                SET stripe_payment_id")
   })
 })

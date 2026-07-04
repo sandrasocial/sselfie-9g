@@ -388,13 +388,20 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
           if (result.success) {
             try {
               await sql`
-                UPDATE credit_transactions
+                WITH recent_credit_grant AS (
+                  SELECT id
+                  FROM credit_transactions
+                  WHERE user_id = ${sub.user_id}
+                    AND transaction_type = 'subscription_grant'
+                    AND stripe_payment_id IS NULL
+                    AND created_at >= NOW() - INTERVAL '10 seconds'
+                  ORDER BY created_at DESC
+                  LIMIT 1
+                )
+                UPDATE credit_transactions ct
                 SET stripe_payment_id = ${invoiceId}
-                WHERE user_id = ${sub.user_id}
-                AND transaction_type = 'subscription_grant'
-                AND stripe_payment_id IS NULL
-                AND created_at >= NOW() - INTERVAL '10 seconds'
-                LIMIT 1
+                FROM recent_credit_grant
+                WHERE ct.id = recent_credit_grant.id
               `
               console.log(
                 `[v0] ✅ Updated credit transaction with invoice ID for idempotency`

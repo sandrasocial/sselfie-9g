@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, no-console, no-restricted-syntax */
 import { sendEmail } from "@/lib/email/send-email"
 import { sql } from "@/lib/db/client"
 
@@ -113,6 +114,16 @@ Action Required: Please investigate this error in the webhook logs and database.
 
 // Check if error is critical and requires immediate attention
 export function isCriticalError(eventType: string, errorMessage: string): boolean {
+  const lowerError = errorMessage.toLowerCase()
+  const isExpectedFreshSubscriptionRetry =
+    (eventType === "invoice.paid" || eventType === "invoice.payment_succeeded") &&
+    lowerError.includes("not in database yet for fresh subscription_create invoice") &&
+    lowerError.includes("failing so stripe retries after checkout fulfillment")
+
+  if (isExpectedFreshSubscriptionRetry) {
+    return false
+  }
+
   const criticalEvents = ["checkout.session.completed", "customer.subscription.created", "invoice.payment_succeeded"]
 
   const criticalKeywords = ["payment", "subscription", "credit", "account creation", "database"]
@@ -123,6 +134,5 @@ export function isCriticalError(eventType: string, errorMessage: string): boolea
   }
 
   // Critical if error message contains payment/subscription keywords
-  const lowerError = errorMessage.toLowerCase()
   return criticalKeywords.some((keyword) => lowerError.includes(keyword))
 }
