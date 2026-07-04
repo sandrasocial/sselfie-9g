@@ -290,6 +290,8 @@ describe("getTodaysContentPost (deterministic, no AI paraphrase)", () => {
       {
         day: "Wednesday",
         theme: "Behind the setup",
+        conversationType: "my-story",
+        sourceStoryTheme: "The bathroom studio",
         objective: "warm trust",
         offerMention: "Prompt Vault",
         ctaKeyword: "PROMPT",
@@ -378,7 +380,9 @@ describe("daily briefing intelligence path", () => {
           storySequence: {
             day: "Wednesday",
             theme: "Behind the 3-selfie setup",
-            objective: "Warm trust before the ask",
+            conversationType: "my-story",
+            sourceStoryTheme: "The bathroom studio",
+            objective: "Connection, being remembered",
             offerMention: "Prompt Vault",
             ctaKeyword: "PROMPT",
             frames: [
@@ -399,11 +403,48 @@ describe("daily briefing intelligence path", () => {
     expect(email.html).toContain("Behind the 3-selfie setup")
     expect(email.html).toContain("Here's the exact setup I use.")
     expect(email.html).toContain("poll: window or lamp?")
+    expect(email.html).toContain("My Story")
+    expect(email.html).toContain("Grounded in: The bathroom studio")
 
     expect(email.text).toContain("The 3 selfies you need before AI can give you a brand shoot")
     expect(email.text).toContain("This is step 1 of everything I teach")
     expect(email.text).toContain("Behind the 3-selfie setup")
     expect(email.text).toContain("Here's the exact setup I use.")
+    expect(email.text).toContain("MY STORY")
+    expect(email.text).toContain("Grounded in: The bathroom studio")
+  })
+
+  it("renders an old-shape story sequence (predating conversationType) without crashing", () => {
+    // Backward compat: a stored brief generated before the 2026-07-04 Story Engine rebuild
+    // has no conversationType/sourceStoryTheme. Must degrade gracefully, never throw.
+    const briefing = {
+      ...buildDailySandraBriefing(baseReport),
+      intelligence: {
+        ...intelligenceSections,
+        todaysContentPost: {
+          weekday: "Wednesday",
+          feedPost: {
+            day: "Wednesday",
+            format: "reel",
+            funnelStage: "cold",
+            title: "Old-shape post",
+            hook: "hook",
+            visualHook: "visual",
+            onScreenText: ["line one"],
+            whyThisWorks: "works",
+          },
+          storySequence: {
+            day: "Wednesday",
+            theme: "An old-shape story",
+            objective: "warm trust",
+            offerMention: "none",
+            frames: [{ frame: 1, content: "frame content", interaction: "none" }],
+          },
+        },
+      },
+      intelligenceNote: null,
+    }
+    expect(() => generateDailySandraBriefingEmail(briefing as any)).not.toThrow()
   })
 
   it("says plainly when today has no story sequence yet instead of hiding the gap", () => {

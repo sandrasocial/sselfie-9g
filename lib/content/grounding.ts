@@ -239,6 +239,167 @@ export const STILL_YOU_METHOD = {
     "THE 3-SECOND RULE (Sandra, 2026-07-03, binding): a cold stranger must understand what she gets in under 3 seconds, in her own words. Hooks, first frames, headlines, and ad-style copy may NEVER use brand language: no 'STILL YOU Method', no 'visual world', no invented collection poetry. Plain outcome words only ('brand photos from one selfie', 'what to post every day'). The method name appears AFTER attention is earned: caption body, sales page section two, emails, inside the app. Style/collection names must be self-describing aesthetics a stranger can picture before tapping ('old money summer', '90s supermodel'), never invented poetry ('Mystic Vogue' fails).",
 } as const
 
+// SOURCE: docs/brand/source/2026-06-27/SSELFIE_REWRITTEN_STORY_BANK.md - her real, specific
+// story, rewritten in her voice. Locked 2026-07-04: her daily story sequences were reading as
+// generic emotional beats ("I was still figuring it out") instead of HER real story, and it
+// showed - her highest-performing recent Story was the one where she actually told a real,
+// specific piece of this. Warm-audience content (Stories, not cold feed reels) must be built
+// FROM one of these named themes, using its real specific details, never invented generically.
+export const STORY_BANK = {
+  positioningNote:
+    "The real story is not \"I separated.\" The real story is: I stopped waiting. I started with what I had. I used my phone, my face, my story, and later AI. And I built something that helped me become visible again. That is the becoming your audience needs to feel, not the drama or every detail.",
+  themes: [
+    {
+      name: "I stopped waiting for permission",
+      realDetail:
+        "For years she believed someone else had to tell her what to do (a mentor, a partner, an algorithm). She kept waiting for the right moment, the right plan, the right confidence. Her first real step was a selfie, not because it was magic but because it was simple: she could do it today.",
+      useWhen: "starting before you feel ready, visibility fears, why a selfie is the first step, the woman who keeps watching but not posting",
+    },
+    {
+      name: "The two-bedroom apartment was not the ending",
+      realDetail:
+        "After separating after a 14-year relationship, she moved into a two-bedroom apartment with her three kids and their dog. The boys shared one room, her daughter had the other, she slept on the couch. Empty fridge, tight bank account. That apartment was not the ending, it was where she started listening to herself again.",
+      useWhen: "building from where you are, not needing perfect conditions, being a mum and still building, small spaces and scrappy content creation",
+    },
+    {
+      name: "The quiet weeks became my creative space",
+      realDetail:
+        "The weeks the kids were with their dad, the apartment went painfully quiet and she felt guilty for even noticing the space. Slowly she started using it: walking, journaling, filming, testing ideas. That quiet became where she heard her own voice come back, the one that said maybe there is more for you.",
+      useWhen: "motherhood and identity, guilt around wanting more, using small pockets of time, rebuilding confidence after a hard season",
+    },
+    {
+      name: "The bathroom studio",
+      realDetail:
+        "Her new apartment did not have the big windows she used to have. She tried every room and corner, got annoyed, tried again, and finally realized the bathroom had the most workable light. Cheap softboxes, a ring light, a phone on a tripod. Some of it looked bad, but that bathroom became proof that her phone was enough to start.",
+      useWhen: "scrappy content creation, iPhone selfies, home filming setups, confidence with limited resources, making aesthetic content from normal life",
+    },
+    {
+      name: "Selfies were never just selfies",
+      realDetail:
+        "For the women she helps, a selfie is rarely just a selfie: it is the first time she sees herself differently, the first photo she actually likes, the first brand image she can use without feeling embarrassed. She could not build everything around expensive photographer shoots, so she learned to create what she needed with her phone.",
+      useWhen: "why selfies matter for business, brand photos on a budget, iPhone selfie education, visibility and confidence",
+    },
+    {
+      name: "The first messy posts",
+      realDetail:
+        "Her first posts felt awkward: her voice felt weird, her face looked strange to her, the lighting was wrong. She kept posting anyway, not because she suddenly became confident but because she started seeing every post as practice, teaching her voice and her angles.",
+      useWhen: "content confidence, fear of judgment, starting messy, consistency without pressure, learning by doing",
+    },
+    {
+      name: "Being judged did not stop me",
+      realDetail:
+        "Old friends and people from her past wondered what she was doing, who she thought she was becoming. That noise got to her for a while, until she started getting messages from women saying thank you for showing up, I finally posted because of you. She realized the people judging her were not the people she was building for.",
+      useWhen: "fear of what people will think, visibility and judgment, building for the right audience, staying visible",
+    },
+    {
+      name: "The selfie that made people stop",
+      realDetail:
+        "One of her selfies took off past a million views. Comments, DMs, shares, women asking how she took it. The deeper thing was not the views, it was the proof that visibility works when people feel the woman behind it, and that women were hungry for this.",
+      useWhen: "the viral selfie moment, proof of demand, selfie confidence, why simple content can work",
+    },
+    {
+      name: "I thought I needed someone else to provide",
+      realDetail:
+        "She grew up believing a secure life meant someone else carried the money. Standing on her own felt not just practical but deeply scary: can I actually do this, can I provide. Then she made her first money from her phone, and it was evidence that money could come from her creativity, not from being saved.",
+      useWhen: "women wanting their own money, building online income, money mindset, starting with a small offer, financial confidence",
+    },
+    {
+      name: "My ADHD brain was not the problem",
+      realDetail:
+        "She spent years believing her brain was too impulsive, too scattered, too much. She realized the same impulsive energy that scared her also helped her post before fear could talk her out of it. She needed simple systems, short lists, creative bursts, not thirty-step content strategies, and that is one reason she loves using AI: not to replace her brain, to organize it.",
+      useWhen: "ADHD and content creation, simple systems, AI as support, messy creativity, showing up without perfection",
+    },
+    {
+      name: "I became visible by becoming myself again",
+      realDetail:
+        "She used to think visibility meant performing: louder, more polished, more like the women she saw online. The more she posted, the more she realized visibility is about letting people recognize the real her, not pretending to be someone else. That is why she does not believe in AI images that make women look like a different person.",
+      useWhen: "AI without looking fake, personal brand identity, recognizable visuals, using AI as a tool not the brand",
+    },
+    {
+      name: "From selfie to content",
+      realDetail:
+        "A mirror selfie can become a Reel cover, a car selfie a story opener, a simple portrait a sales post. Women already have content sitting in their camera roll, they just do not know how to use it. Photos are personal brand assets, not random pictures.",
+      useWhen: "selfie as content, camera roll content ideas, personal brand assets, Reel covers and story openers",
+    },
+    {
+      name: "What To Say was the missing piece",
+      realDetail:
+        "She first thought the problem was photos, but even women with better photos still froze, not because they had nothing to share but because they did not know what they were trying to say. Visibility is not just being seen, it is being understood: a photo makes someone stop, but her words make her stay.",
+      useWhen: "captions and messaging, content pillars, personal brand clarity, selling without feeling weird",
+    },
+    {
+      name: "My first online income changed how I saw myself",
+      realDetail:
+        "Her first money from her phone was not about the amount, it was proof: she could create something, talk about it, help someone, and someone could choose to pay her. After that her brain connected the dots: a selfie becomes content, content builds trust, trust leads to an offer, an offer creates income.",
+      useWhen: "turning visibility into income, first offer, getting paid from your phone, trust before sales",
+    },
+    {
+      name: "Selfie to CEO does not mean becoming someone else",
+      realDetail:
+        "Selfie to CEO never meant becoming a polished business woman with everything figured out. For her it meant: I own my life, I lead myself, I stop waiting for someone else to choose me. The selfie was the first visible move, but the deeper shift was identity, from hiding to showing up.",
+      useWhen: "personal brand identity, confidence and leadership, building something of your own, visibility to paid",
+    },
+    {
+      name: "This became bigger than me",
+      realDetail:
+        "She was just trying to rebuild, and then women started responding: their selfies, their first posts, their nervous messages before hitting publish. She saw the same pattern everywhere: women were not lazy, they were overwhelmed; not vain, trying to feel visible again. That is when this became a movement, not just her own comeback.",
+      useWhen: "community, customer wins, the SSELFIE movement, women supporting women",
+    },
+  ],
+  signatureLines: [
+    "This was never just about selfies.",
+    "The selfie is where we start. Visibility is where it leads.",
+    "Your phone is enough to begin.",
+    "You do not become ready by waiting. You become ready by starting.",
+    "The photo gets attention. The story builds connection. The message builds trust. The offer creates income.",
+    "You do not need to become someone else to build online.",
+    "AI is the tool. You are the brand.",
+    "Your face makes you recognizable. Your voice makes you memorable.",
+    "You are not building for the people who want you to stay the same.",
+    "A woman with a phone, a story, and the right tools can build something real.",
+  ],
+  // SOURCE: docs/brand/source/2026-06-27/SANDRA_EXPERTISE.md, "What I Believe" / "What I
+  // Don't Believe In". Her philosophy, verbatim in spirit - the raw material for "My Beliefs"
+  // conversations, so belief statements are HERS, never invented generically.
+  beliefs: [
+    "Your phone is enough to start.",
+    "Your story is not random.",
+    "Women are allowed to want their own money.",
+    "Visibility opens doors.",
+    "You do not need a perfect life, perfect body, perfect home, or perfect confidence to begin.",
+    "AI can help women create more without burning themselves out.",
+    "Looking good online is not shallow when it helps you feel brave enough to show up.",
+    "Simple beats complicated.",
+    "You can build from where you are.",
+    "A woman with a phone, a story, and the right tools can change her life.",
+    "Pretending is not the answer. Fake AI images that do not look like you are not the answer.",
+    "Women do not need to become someone else to build online.",
+    "Business does not need to be more complicated than it needs to be.",
+    "Women should not be shamed for wanting to look good.",
+    "You should not wait until you feel ready.",
+    "You are not building for the people who want you to stay the same.",
+  ],
+  // 2026-07-04 rebuild, per Sandra's direction: stories were reading as "here is today's
+  // lesson," an extension of the cold feed reel selling the same low-ticket keyword. Her real
+  // highest-performing recent Story (her son bringing her flowers) taught nothing and sold
+  // nothing, and it was one of her best-viewed Stories in a long time - because people were not
+  // consuming content, they were spending time with her. Feed and Stories now have DIFFERENT
+  // jobs: feed earns cold attention, Stories deepen the relationship with people who already
+  // know her, and only THAT trust makes a real personal-brand or Suite/coaching sale possible.
+  conversationTypes: {
+    myStory:
+      "MY STORY - a real, specific lived moment from the Story Bank themes above (hairdresser years, three kids, starting over, the two-bedroom apartment, the bathroom studio, moving, a failure, a win). Always cite the named theme it comes from.",
+    myClients:
+      "MY CLIENTS - something a real woman told her, ONLY from real data provided (audienceDemand.dmThemes or demandMap.audienceQuestions), quoted or closely paraphrased, never a name or identifying detail. If no real client material exists for this week, do not invent one - use a different conversation type instead.",
+    myBeliefs:
+      "MY BELIEFS - a philosophy statement from the beliefs list above, unpacked in her voice: why she believes it, what she used to believe instead, what changed her mind.",
+    myLife:
+      "MY LIFE - an everyday behind-the-scenes beat (coffee, the kids, a normal work moment, something she is thinking about right now). Keep it plausible and general, never invent a specific event, date, or fact she has not told you.",
+  },
+  warmStorytellingRule:
+    "THE STORY ENGINE REBUILD (2026-07-04, binding): Stories are daily CONVERSATIONS with Sandra, not daily lessons and not an extension of the day's feed reel. Do not echo, explain, or repeat the day's feed post - a feed reel can teach a fix for fake AI photos while that same day's Story is a completely unrelated real moment; they complement without repeating. Rotate across the four conversation types (My Story, My Clients, My Beliefs, My Life) across the week for variety - do not repeat the same type two days running unless the real-data constraint on My Clients forces it. Every story sequence follows the same real shape: (1) a real moment or observation, opened like she is telling a friend something ('I realized something today...', 'Someone messaged me...', 'I used to think...', 'Years ago...', 'One thing I wish someone told me...') - NEVER opened like a lesson or a hook; (2) the belief or lesson that came from it; (3) one plain, clear sentence of what she actually helps women achieve (become visible, build a recognizable personal brand, create content people remember, make money from what they know) - the AI, the prompts, the photos are HOW, never the headline; (4) a gentle, natural bridge into the ONE offer that genuinely fits that transformation, phrased as a discovery she is sharing ('That is exactly why I built the Vault', 'That is why I created the Suite', 'That is why I coach women privately'), never a bare keyword command. Interactions (poll, question box, DM reply) are optional light texture that fits the real moment, never a mandatory lead-gen ladder bolted onto the story. If someone watched every day for 30 days, they should know without doubt: Sandra helps women stop hiding, build a recognizable personal brand, create content with confidence, and turn that visibility into a business.",
+} as const
+
 export const EXPERTISE = {
   whoSheIs:
     "Sandra Sigurjonsdottir Aamodt, founder of SSELFIE. A former model and hairdresser of 15 years, a digital marketer, a single mum of three who rebuilt her life and business from scratch with her phone, her story, and AI. She grew @sandra.social to 110K in about a year.",
@@ -334,6 +495,25 @@ export function stillYouMethodBlock(): string {
     listBlock("Product doors into the method:", STILL_YOU_METHOD.doors),
     `Content rule: ${STILL_YOU_METHOD.contentRule}`,
     STILL_YOU_METHOD.coldClarityRule,
+  ].join("\n")
+}
+
+export function storyBankBlock(): string {
+  return [
+    "SANDRA'S STORY BANK (her real, specific story, rewritten in her voice - use for warm-audience Story content):",
+    `Positioning note: ${STORY_BANK.positioningNote}`,
+    listBlock(
+      "Named themes for MY STORY conversations (cite one per use, use its real detail, never invent generically):",
+      STORY_BANK.themes.map(t => `${t.name} - ${t.realDetail} (Use when: ${t.useWhen})`)
+    ),
+    listBlock("Signature lines she reuses:", STORY_BANK.signatureLines),
+    listBlock("Her real beliefs, for MY BELIEFS conversations:", STORY_BANK.beliefs),
+    "The four recurring conversation types:",
+    `- ${STORY_BANK.conversationTypes.myStory}`,
+    `- ${STORY_BANK.conversationTypes.myClients}`,
+    `- ${STORY_BANK.conversationTypes.myBeliefs}`,
+    `- ${STORY_BANK.conversationTypes.myLife}`,
+    STORY_BANK.warmStorytellingRule,
   ].join("\n")
 }
 

@@ -1,7 +1,11 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import type { ContentBrief, ContentBriefPiece } from "@/lib/content-engine/brief-generator"
+import type {
+  ContentBrief,
+  ContentBriefPiece,
+  DailyStoryConversationType,
+} from "@/lib/content-engine/brief-generator"
 
 export type ContentBriefReportRow = {
   id: number
@@ -88,6 +92,13 @@ function DetailRow({ label, value }: { label: string; value?: string }) {
 
 function safeArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : []
+}
+
+const CONVERSATION_TYPE_LABELS: Record<DailyStoryConversationType, string> = {
+  "my-story": "My Story",
+  "my-clients": "My Clients",
+  "my-beliefs": "My Beliefs",
+  "my-life": "My Life",
 }
 
 const FUNNEL_STAGE_META: Record<
@@ -1027,11 +1038,11 @@ export function ContentBriefClient({
           {dailyStories.length > 0 ? (
             <section className="rounded-2xl border border-stone-200 bg-white p-5">
               <h2 className="font-serif text-xl text-stone-950">
-                Daily stories: one sequence every day
+                Daily stories: a conversation every day
               </h2>
               <p className="mt-1 text-xs text-stone-500">
-                The feed post earns attention. The story sells the door. Film these with the same
-                batch.
+                Stories connect, feed earns attention. Each day is one of four conversations
+                (My Story, My Clients, My Beliefs, My Life), decoupled from the feed post below.
               </p>
               <div className="mt-4 space-y-4">
                 {dailyStories.map((story, index) => (
@@ -1040,6 +1051,9 @@ export function ContentBriefClient({
                       <span className="rounded-full bg-stone-950 px-3 py-1 text-xs uppercase tracking-wide text-white">
                         {story.day}
                       </span>
+                      <span className="rounded-full border border-stone-950 px-2 py-0.5 text-xs uppercase tracking-wide text-stone-700">
+                        {CONVERSATION_TYPE_LABELS[story.conversationType] ?? story.conversationType}
+                      </span>
                       <span className="text-sm font-medium text-stone-900">{story.theme}</span>
                       {story.ctaKeyword && story.ctaKeyword.toLowerCase() !== "none" && (
                         <span className="rounded-full border border-stone-300 px-2 py-0.5 text-xs uppercase tracking-wide text-stone-600">
@@ -1047,6 +1061,11 @@ export function ContentBriefClient({
                         </span>
                       )}
                     </div>
+                    {story.sourceStoryTheme && (
+                      <p className="mt-1 text-xs italic text-stone-500">
+                        Grounded in: {story.sourceStoryTheme}
+                      </p>
+                    )}
                     <p className="mt-2 text-xs text-stone-500">
                       {story.objective}
                       {story.offerMention && story.offerMention.toLowerCase() !== "none"

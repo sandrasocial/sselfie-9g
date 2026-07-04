@@ -581,11 +581,18 @@ function todaysContentPostHtml(post: TodaysContentPost | null): string {
         ${ctaLine}
       </div>`
 
+  const conversationTypeLabel = storySequence
+    ? { "my-story": "My Story", "my-clients": "My Clients", "my-beliefs": "My Beliefs", "my-life": "My Life" }[
+        storySequence.conversationType
+      ] ?? storySequence.conversationType ?? "story"
+    : ""
+
   const storyHtml = storySequence
     ? `
       <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:24px;margin:0 0 14px;">
-        <p style="margin:0 0 6px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#818283;">${escapeHtml(weekday)} · story sequence</p>
+        <p style="margin:0 0 6px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#818283;">${escapeHtml(weekday)} · ${escapeHtml(conversationTypeLabel)}</p>
         <h3 style="margin:0 0 8px;font-size:15px;font-weight:600;color:#0D0E10;">${escapeHtml(storySequence.theme)}</h3>
+        ${storySequence.sourceStoryTheme ? `<p style="margin:0 0 8px;font-size:12px;font-style:italic;color:#9A9A9A;">Grounded in: ${escapeHtml(storySequence.sourceStoryTheme)}</p>` : ""}
         <p style="margin:0 0 10px;font-size:14px;color:#4F5052;">${escapeHtml(storySequence.objective)}${storySequence.offerMention && storySequence.offerMention.toLowerCase() !== "none" ? ` · Offer: ${escapeHtml(storySequence.offerMention)}` : ""}</p>
         <ol style="margin:0;padding-left:18px;">${storySequence.frames.map((frame) => `<li style="margin:0 0 10px;font-size:14px;line-height:1.6;color:#0D0E10;"><strong>${escapeHtml(frame.content)}</strong><br/><span style="color:#818283;font-size:13px;">Interaction: ${escapeHtml(frame.interaction)}</span></li>`).join("")}</ol>
       </div>`
@@ -611,12 +618,17 @@ function todaysContentPostText(post: TodaysContentPost | null): string {
   ]
   const storyLines = storySequence
     ? [
-        `\n\n${weekday} · STORY SEQUENCE`,
+        `\n\n${weekday} · ${
+          { "my-story": "MY STORY", "my-clients": "MY CLIENTS", "my-beliefs": "MY BELIEFS", "my-life": "MY LIFE" }[
+            storySequence.conversationType
+          ] ?? storySequence.conversationType?.toUpperCase() ?? "STORY"
+        }`,
         storySequence.theme,
+        storySequence.sourceStoryTheme ? `Grounded in: ${storySequence.sourceStoryTheme}` : "",
         `${storySequence.objective}${storySequence.offerMention && storySequence.offerMention.toLowerCase() !== "none" ? ` (Offer: ${storySequence.offerMention})` : ""}`,
         ...storySequence.frames.map((frame) => `- ${frame.content} [${frame.interaction}]`),
       ]
-    : [`\n\n${weekday} · STORY SEQUENCE`, "No story sequence stored for today yet."]
+    : [`\n\n${weekday} · STORY`, "No story sequence stored for today yet."]
   return [...lines, ...storyLines].filter(Boolean).join("\n")
 }
 

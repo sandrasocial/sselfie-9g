@@ -17,6 +17,7 @@ import {
   proofBlock,
   sanitizeGroundedText,
   stillYouMethodBlock,
+  storyBankBlock,
   voiceBlock,
 } from "@/lib/content/grounding"
 import { getAcademyProductCatalog } from "@/lib/academy-entitlements"
@@ -157,10 +158,19 @@ export type ContentBriefPiece = {
 
 /** One day's story sequence (daily cadence, 2026-07-03: Sandra posts one feed piece and one
  *  story sequence every single day; stories carry the offer talk feed posts stay lighter on). */
+/** 2026-07-04 Story Engine rebuild: stories are daily CONVERSATIONS with Sandra, not daily
+ *  lessons tied to the feed reel. Rotate across these across the week. */
+export type DailyStoryConversationType = "my-story" | "my-clients" | "my-beliefs" | "my-life"
+
 export type DailyStory = {
   day: string
   theme: string
-  /** What this day's story is FOR: warm trust, offer clarity, proof, DM harvest. */
+  conversationType: DailyStoryConversationType
+  /** Citation of what grounds this day: a named STORY_BANK theme for my-story, a real
+   *  dmTheme/audienceQuestion paraphrase for my-clients (never fabricated), the belief
+   *  statement for my-beliefs, or a short label for my-life. */
+  sourceStoryTheme: string
+  /** What this day's story is FOR: connection, trust, proof, being remembered. */
   objective: string
   /** The one offer this day mentions plainly, or "none" on pure-connection days. */
   offerMention: string
@@ -485,9 +495,15 @@ function sanitizeContentBriefOutput<T extends Omit<ContentBrief, "periodStart" |
 function sanitizeDailyStories(value: unknown, vault: VaultBriefContext): DailyStory[] {
   return asArray<DailyStory>(value).map(entry => {
     const story = asObject<DailyStory>(entry)
+    const validTypes: DailyStoryConversationType[] = ["my-story", "my-clients", "my-beliefs", "my-life"]
+    const conversationType = validTypes.includes(story.conversationType as DailyStoryConversationType)
+      ? (story.conversationType as DailyStoryConversationType)
+      : "my-story"
     return {
       day: safeBriefText(story.day, vault),
       theme: safeBriefText(story.theme, vault),
+      conversationType,
+      sourceStoryTheme: safeBriefText(story.sourceStoryTheme, vault),
       objective: safeBriefText(story.objective, vault),
       offerMention: safeBriefText(story.offerMention, vault),
       ctaKeyword: safeBriefText(story.ctaKeyword, vault),
@@ -803,6 +819,11 @@ const DAILY_STORIES_SCHEMA: Tool.InputSchema = {
         properties: {
           day: { type: "string" },
           theme: { type: "string" },
+          conversationType: {
+            type: "string",
+            enum: ["my-story", "my-clients", "my-beliefs", "my-life"],
+          },
+          sourceStoryTheme: { type: "string" },
           objective: { type: "string" },
           offerMention: { type: "string" },
           ctaKeyword: { type: "string" },
@@ -819,7 +840,16 @@ const DAILY_STORIES_SCHEMA: Tool.InputSchema = {
             },
           },
         },
-        required: ["day", "theme", "objective", "offerMention", "ctaKeyword", "frames"],
+        required: [
+          "day",
+          "theme",
+          "conversationType",
+          "sourceStoryTheme",
+          "objective",
+          "offerMention",
+          "ctaKeyword",
+          "frames",
+        ],
       },
     },
   },
@@ -933,10 +963,13 @@ SHARED DATA RULES:
 }
 
 /**
- * Phase 3 of the weekly brief (own cron leg, 07:00 Mondays): one story sequence for every
- * day of the week. Sandra posts one feed piece AND one story sequence daily (2026-07-03);
- * stories carry the plain offer talk. Runs after the build phase stored the brief, takes
- * the stored brief as input, and returns sanitized dailyStories for re-storing.
+ * Phase 3 of the weekly brief (own cron leg, 07:00 Mondays): one Story conversation for every
+ * day of the week. STORY ENGINE REBUILD (2026-07-04, Sandra's direction): Stories are daily
+ * CONVERSATIONS with her, not a daily lesson tied to the feed reel and not a low-ticket keyword
+ * push. Her real highest-performing recent Story (her son bringing her flowers) taught and sold
+ * nothing and still landed as one of her best-viewed Stories in a long time, because people were
+ * spending time with her, not consuming content. Runs after the build phase stored the brief,
+ * takes the stored brief as input, and returns sanitized dailyStories for re-storing.
  */
 export async function generateDailyStoriesForBrief(brief: ContentBrief): Promise<DailyStory[]> {
   const client = getAnthropicClient()
@@ -944,15 +977,21 @@ export async function generateDailyStoriesForBrief(brief: ContentBrief): Promise
 
   const storiesSystem = `${briefSystemBase()}
 
+${storyBankBlock()}
+
 DAILY STORY RULES:
 - Deliver EXACTLY 7 story sequences, one per day, day-labeled Monday through Sunday, 3 to 6 frames each.
-- Stories are where the offer talk lives. Sandra's direction (2026-07-03): she must talk about her offers plainly and daily; the feed piece earns attention, the story sells the door. Every day names ONE offer plainly in offerMention. Across the week, rotate so every core STILL YOU Method door gets at least one day: the free guide or free prompts, the Kit or Prompt Vault, the SUITE, and one warm Visibility To Paid / Work With Me day. At most one day may be "none" (pure connection day).
+- conversationType: rotate across my-story, my-clients, my-beliefs, my-life across the week for variety. Do not repeat the same type on consecutive days unless the my-clients real-data constraint below forces it.
+- Stories are DECOUPLED from that day's feed piece in dataPacket.weekPlan. Do not echo, explain, or continue the feed reel's topic - a feed reel teaching a fix for fake AI photos and that same day's Story being a completely unrelated real moment is correct, not a mistake. weekPlan is background awareness only, never the story's subject.
+- my-clients days: sourceStoryTheme must quote or closely paraphrase a REAL entry from dataPacket.audienceDemand.dmThemes or dataPacket.demandMap.audienceQuestions, with zero names or identifying detail. If no real client material exists this week, do NOT invent one - use a different conversationType that day instead.
+- my-story days: cite one named theme from the Story Bank above in sourceStoryTheme and use its real specific detail (the apartment, the bathroom studio, the viral selfie, the ADHD brain, the first sale), never a generic invented emotional beat.
+- my-beliefs days: sourceStoryTheme is the belief statement itself, from the beliefs list above.
+- my-life days: sourceStoryTheme is a short plausible label (e.g. "morning coffee, thinking about the week"); never invent a specific event, date, or fact not already established.
+- Every sequence follows the same real shape across its frames: (1) open like she is telling a friend something real - "I realized something today...", "Someone messaged me...", "I used to think...", "Years ago...", "One thing I wish someone told me..." - NEVER open like a lesson, a hook, or a tip; (2) the belief or lesson that came from it; (3) one plain clear sentence of what she actually helps women achieve (become visible, build a recognizable personal brand, create content people remember, make money from what they know) - never a feature, never AI/prompts as the headline; (4) if an offer fits, a gentle natural bridge phrased as a discovery she is sharing ("That is exactly why I built the Vault", "That is why I created the Suite", "That is why I coach women privately"), never a bare keyword command.
 - Sandra NEVER talks on camera. Every frame's content field = what is literally on screen: the visual (b-roll clip, photo, screen recording, poll background) PLUS the literal overlay text, max 20 words of overlay per frame.
-- Each day's sequence must echo or extend that day's feed piece from weekPlan (behind the scenes of it, the deeper why, the offer behind it), never a second unrelated topic.
-- Build each day as a micro-commitment ladder: open with a light tap (poll or slider), deepen (question box, quiz, this-or-that), and end with the day's one ask. Story replies are the DM conversion moment.
-- interaction: the concrete sticker or action for that frame (poll with the two options, slider, question box prompt, link sticker with destination, DM keyword ask). "none" is allowed for pure-visual frames.
-- Across the week: at least 2 days end in a DM keyword ask (ctaKeyword PROMPT, SELFIE, or KIT), at least 1 day ends with a link sticker to a real money page (Vault, SUITE, or Kit checkout from the technical constants), and the warm day ends asking her to reply WORK.
-- objective: what this day is FOR in one short line (warm trust, offer clarity, proof, DM harvest).
+- interaction: OPTIONAL light texture that fits the real moment (a poll about a shared feeling, a question box, a DM reply invite), never a mandatory lead-gen ladder. "none" is expected and fine on most frames; do not force a poll-then-deepen-then-ask structure onto every day.
+- offerMention: name the ONE offer this day's bridge points to, or "none" on days that are pure connection with no bridge. Do not force a bridge onto every day - most days should end in connection, not a pitch. When a bridge does land naturally, prefer whichever offer genuinely fits that day's transformation; do not mechanically force variety, but across a full week avoid making Prompt Vault or the Kit the only offers ever mentioned - SUITE and Work With Me / Visibility To Paid should each appear naturally at least once when the story's real content actually supports it.
+- objective: what this day's conversation is FOR in one short line (connection, being remembered, trust, a real belief landing).
 - Prices only from canonicalPricing, verbatim. No banned words, no m-dashes, No-Fake compliant.`
 
   const weekPlan = brief.contentPlan.map(piece => ({
@@ -961,9 +1000,6 @@ DAILY STORY RULES:
     funnelStage: piece.funnelStage,
     title: piece.title,
     hook: piece.hook,
-    offerBridge: piece.offerBridge,
-    ctaKeyword: piece.ctaKeyword,
-    onScreenText: piece.onScreenText,
   }))
 
   const output = await runBriefToolCall({
@@ -972,13 +1008,11 @@ DAILY STORY RULES:
     toolDescription: "Deliver seven daily story sequences as structured data.",
     schema: DAILY_STORIES_SCHEMA,
     system: storiesSystem,
-    userContent: `Here is this week's approved feed plan and strategy. Build the seven daily story sequences from it.\n\n${JSON.stringify(
+    userContent: `Build the seven daily Story conversations. The feed plan below is background awareness ONLY - do not echo or repeat it. The audienceDemand.dmThemes and demandMap.audienceQuestions are the ONLY allowed source for my-clients days: real, quoted or closely paraphrased, no names.\n\n${JSON.stringify(
       {
         weekPlan,
         demandMap: brief.demandMap,
         audienceDemand: brief.audienceDemand,
-        onScreenHookBank: brief.onScreenHookBank,
-        weeklyStoryAngle: brief.storySequence,
         canonicalPricing: CANONICAL_PRICING,
       },
       null,

@@ -244,3 +244,70 @@ describe("weekly content brief: surfaces", () => {
     expect(client).not.toContain("Run the local worker")
   })
 })
+
+describe("Story Engine rebuild (2026-07-04): Stories are conversations, not lessons", () => {
+  // Sandra's direction: her real highest-performing recent Story (her son bringing her
+  // flowers) taught and sold nothing, and still landed as one of her best-viewed Stories in a
+  // long time - because people were spending time with her, not consuming content. Stories were
+  // wrongly built as a daily lesson tied to the feed reel, selling a low-ticket keyword. This
+  // pins the rebuilt system: four conversation types, decoupled from the feed, real client
+  // material only, grounded in her actual Story Bank and beliefs, never invented generically.
+  const generator = read("lib/content-engine/brief-generator.ts")
+  const grounding = read("lib/content/grounding.ts")
+
+  it("wires the real Story Bank and beliefs into the daily stories prompt, not a generic template", () => {
+    expect(generator).toContain("${storyBankBlock()}")
+    expect(grounding).toContain("export const STORY_BANK")
+    expect(grounding).toContain("export function storyBankBlock")
+    // A sample of real, specific named themes must be present, not paraphrased away.
+    expect(grounding).toContain("The bathroom studio")
+    expect(grounding).toContain("The two-bedroom apartment was not the ending")
+    expect(grounding).toContain("My ADHD brain was not the problem")
+    expect(grounding).toContain("The selfie that made people stop")
+    // Her real beliefs (SANDRA_EXPERTISE.md "What I Believe"), not invented philosophy.
+    expect(grounding).toContain("Your phone is enough to start.")
+    expect(grounding).toContain("Simple beats complicated.")
+  })
+
+  it("decouples Stories from the day's feed piece instead of echoing it", () => {
+    expect(generator).toContain("DECOUPLED from that day's feed piece")
+    expect(generator).not.toContain("must echo or extend that day's feed piece")
+    expect(generator).toContain("never the story's subject")
+  })
+
+  it("requires my-clients days to use only real DM/audience-question data, never invented", () => {
+    expect(generator).toContain("my-clients days: sourceStoryTheme must quote or closely paraphrase a REAL entry")
+    expect(generator).toContain("do NOT invent one - use a different conversationType that day instead")
+  })
+
+  it("requires the real-life-conversation shape instead of a lesson/hook opener", () => {
+    expect(generator).toContain("NEVER open like a lesson, a hook, or a tip")
+    expect(generator).toContain("I realized something today")
+    expect(generator).toContain("what she actually helps women achieve")
+    expect(generator).toContain("never a bare keyword command")
+  })
+
+  it("rotates across four conversation types and removed the old mechanical CTA quota", () => {
+    expect(generator).toContain('"my-story", "my-clients", "my-beliefs", "my-life"')
+    expect(generator).not.toContain("at least 2 days end in a DM keyword ask")
+    expect(generator).not.toContain("Build each day as a micro-commitment ladder")
+    expect(generator).toContain("never a mandatory lead-gen ladder")
+  })
+
+  it("adds conversationType and sourceStoryTheme to the schema, type, and sanitizer", () => {
+    expect(generator).toContain("export type DailyStoryConversationType")
+    expect(generator).toContain('enum: ["my-story", "my-clients", "my-beliefs", "my-life"]')
+    expect(generator).toContain("conversationType: {")
+    expect(generator).toContain("sourceStoryTheme: safeBriefText(story.sourceStoryTheme, vault)")
+  })
+
+  it("surfaces the conversation type and grounding citation on the admin page and daily email", () => {
+    const client = read("components/admin/content-brief-client.tsx")
+    expect(client).toContain("CONVERSATION_TYPE_LABELS")
+    expect(client).toContain("Grounded in: {story.sourceStoryTheme}")
+
+    const dailyEmail = read("lib/admin/daily-sandra-briefing.ts")
+    expect(dailyEmail).toContain("conversationTypeLabel")
+    expect(dailyEmail).toContain("Grounded in:")
+  })
+})
