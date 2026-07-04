@@ -650,7 +650,7 @@ export function ContentStoryClient({
           value={topic}
           onChange={event => setTopic(event.target.value)}
           rows={2}
-          placeholder="Today's story idea, e.g. the fear behind posting AI photos, CTA: PROMPT"
+          placeholder="Today's story idea, e.g. a real moment or belief (no CTA needed) or an announcement for a new drop (ends in VAULT/PRESETS/SUITE)"
           className="w-full rounded-xl border border-stone-300 bg-white p-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-950 focus:outline-none"
         />
         <div className="mt-3 grid gap-3 sm:grid-cols-2">

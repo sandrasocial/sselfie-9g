@@ -72,6 +72,10 @@ export type StorySlideRole =
   | "desire"
   | "bridge"
   | "cta"
+  /** 2026-07-04 Story Engine rebuild: a warm closing beat with no product ask, for sequences
+   *  that are pure connection (My Story / My Clients / My Beliefs / My Life topics that never
+   *  called for an offer). Not every sequence needs to end in "cta" anymore. */
+  | "close"
 
 export type StoryLine = {
   text: string

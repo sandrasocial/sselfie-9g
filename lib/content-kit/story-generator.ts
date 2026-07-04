@@ -12,43 +12,55 @@ import {
   noFakeBlock,
   proofBlock,
   sanitizeGroundedText,
+  storyBankBlock,
   voiceBlock,
 } from "@/lib/content/grounding"
 
-// Condensed from Sandra's own Story Prompt Engineer spec:
-// docs/funnel/STORY_SLIDE_DOCTRINE_2026-06-12.md (that doc wins on conflict).
+// STORY ENGINE REBUILD (2026-07-04, Sandra's direction): the old doctrine forced every
+// sequence into a fixed sales arc (hook -> tension -> shift -> proof -> desire -> bridge ->
+// cta) with a paid-offer CTA the code guaranteed even if the writer skipped one. Her real
+// highest-performing recent Story (her son bringing her flowers) taught and sold nothing and
+// still landed as one of her best-viewed Stories in a long time, because people were spending
+// time with her, not consuming a pitch. This tool is used for BOTH personal daily stories and
+// product/drop announcements from the same "today's story idea" field, so the offer is now
+// OPTIONAL and driven entirely by what she actually typed - never forced by the code.
 const STORY_DOCTRINE = `
-STORY DOCTRINE (Sandra's own framework, non-negotiable):
-- Audience: women who secretly want to become visible online but fear being judged
-  "while they're still becoming her". Visibility is the method, income the outcome,
-  confidence the bridge. Core belief: a woman with a phone and a story is unstoppable.
-- Sequences SELL THROUGH STORYTELLING, not constant teaching. 5 to 12 slides (roughly one
-  per selected photo), each with a different emotional job, ALWAYS ending in the CTA, in this arc:
-  hook (make her feel seen, bold + minimal) ->
-  tension (name the hidden fear, intimate + honest) ->
-  shift (new way of seeing it, a realization) ->
-  proof OR teaching (credible / one tiny lesson) ->
-  desire (paint the future identity, aspirational) ->
-  bridge (the product as the natural next step, never salesy) ->
-  cta (one clear action to a PAID offer).
-- Slide text: SHORT lines, one idea per slide, readable in 2 seconds on a phone.
-  Mark 1-2 lines per slide with "emphasis": true: the identity phrases ("visible
-  online", "still becoming her", "You stop hiding"). Never more than 3 emphasized
-  phrases per slide.
-- The handwritten "note" is OPTIONAL and goes on only 2-4 slides, never all. When you use one
-  it MUST be in Sandra's real voice (texting a close friend: lowercase, warm, short, human, never
+STORY DOCTRINE (rebuilt 2026-07-04 - stories are conversations, not lessons or pitches):
+- Audience: women who secretly want to become visible online but fear being judged "while
+  they're still becoming her". Core belief: a woman with a phone and a story is unstoppable.
+- First decide what "today's story idea" actually is:
+  - If it is a real personal moment, a client message, a belief, or an everyday behind-the-scenes
+    beat (no product, drop, or offer mentioned), this is a CONNECTION sequence. Do not end it with
+    a paid CTA slide. End on role "close": a warm, honest final beat with no ask, or at most a
+    light "reply and tell me" invitation. Use the Story Bank above and its real specific details
+    when the topic matches a named theme, rather than inventing a generic version of it.
+  - If it clearly names or implies an offer, drop, collection, or something to buy, this is an
+    ANNOUNCEMENT sequence. It may end in role "cta" with a natural bridge, phrased as a discovery
+    she is sharing ("That is exactly why I built this", "This is what's inside"), never a bare
+    sales command. Only then may the final slide use a paid keyword (VAULT, PRESETS, or SUITE).
+- 5 to 12 slides (roughly one per selected photo). Every sequence opens like she is telling a
+  friend something real - "I realized...", "Someone messaged me...", "I used to think...",
+  "Years ago...", "One thing I wish someone told me..." - NEVER a bold sales-style hook. From
+  there: the belief or lesson it taught her, then one plain clear sentence of what she actually
+  helps women achieve (become visible, build a recognizable personal brand, create content
+  people remember, make money from what they know) - the AI, the prompts, the photos are HOW,
+  never the headline. Only then, if it fits, the optional bridge/cta beat.
+- Slide text: SHORT lines, one idea per slide, readable in 2 seconds on a phone. Mark 1-2 lines
+  per slide with "emphasis": true for the identity phrases. Never more than 3 emphasized phrases
+  per slide.
+- The handwritten "note" is OPTIONAL and goes on only 2-4 slides, never all. When you use one it
+  MUST be in Sandra's real voice (texting a close friend: lowercase, warm, short, human, never
   corporate, never a slogan) AND it must speak to THAT exact slide's moment. A generic or
   mismatched note is worse than none, so leave "note" out unless it genuinely deepens that slide.
   Do NOT reuse stock phrases; write a fresh line that sounds like her for that specific slide.
-- CTA architecture (the FINAL slide, ALWAYS present, exactly this structure):
-  line 1 (size "lead"): short desire question, e.g. "Want the full collection I used?"
-  line 2 (size "support"): "DM me:"
-  line 3 (size "keyword"): ONE keyword for a PAID offer only: VAULT (the Prompt Vault), PRESETS,
-    or SUITE. Never a free keyword (no PROMPT, no KIT, no START).
-  line 4 (size "support"): short warm reassurance, e.g. "and I'll send you the link."
-  Every sequence MUST end with this CTA pointing to a paid offer.
-- Never the word "reinvention". No em-dashes anywhere. No emoji unless one truly
-  earns its place in a CTA.
+- If (and only if) the sequence is an ANNOUNCEMENT ending in role "cta", use exactly this
+  structure for that final slide: line 1 (size "lead") a short natural bridge line, line 2
+  (size "support") "DM me:", line 3 (size "keyword") ONE keyword for a PAID offer only: VAULT,
+  PRESETS, or SUITE (never a free keyword like PROMPT, KIT, or START), line 4 (size "support")
+  a short warm reassurance. A CONNECTION sequence ending in role "close" has no keyword line at
+  all - just a warm human close.
+- Never the word "reinvention". No em-dashes anywhere. No emoji unless one truly earns its
+  place.
 `.trim()
 
 type StoryRow = {
@@ -118,19 +130,11 @@ function sanitizeSlides(slides: StorySlide[]): StorySlide[] {
   })
 }
 
-// Every sequence must end with a CTA to a PAID offer (Sandra's rule). Guarantee exactly one CTA at
-// the end, with a paid keyword, appending a default if the writer forgot one.
+// 2026-07-04: a CTA slide, when the writer includes one, must point to a PAID offer only - but
+// the code no longer FORCES a CTA onto a sequence that didn't call for one. Whether the sequence
+// ends in "cta" or "close" is the model's judgment call, driven by what Sandra actually typed as
+// today's story idea (a personal moment vs. an announcement).
 const PAID_CTA_KEYWORDS = new Set(["VAULT", "PRESETS", "SUITE"])
-
-const DEFAULT_CTA_SLIDE: StorySlide = {
-  role: "cta",
-  lines: [
-    { text: "Want the full collection I used?", size: "lead", emphasis: false },
-    { text: "DM me:", size: "support", emphasis: false },
-    { text: "VAULT", size: "keyword", emphasis: false },
-    { text: "and I'll send you the link.", size: "support", emphasis: false },
-  ],
-}
 
 function normalizeCta(cta: StorySlide): StorySlide {
   const lines = (cta.lines || []).map(line =>
@@ -144,16 +148,17 @@ function normalizeCta(cta: StorySlide): StorySlide {
         }
       : line
   )
-  if (!lines.some(line => line.size === "keyword" && line.text.trim())) return DEFAULT_CTA_SLIDE
   return { ...cta, role: "cta", lines }
 }
 
-// Returns the story body (no CTA, capped to leave room) plus exactly one paid CTA as the last slide.
-function assembleWithCta(slides: StorySlide[], targetTotal: number): StorySlide[] {
-  const body = slides.filter(slide => slide.role !== "cta").slice(0, Math.max(targetTotal - 1, 1))
-  const writerCta = slides.find(slide => slide.role === "cta")
-  const cta = writerCta ? normalizeCta(writerCta) : DEFAULT_CTA_SLIDE
-  return [...body, cta]
+// Cap to the target slide count. If the writer's last slide is a CTA, normalize its keyword to a
+// paid offer; otherwise leave the sequence exactly as written (including ending on "close" or any
+// other non-cta role) - no default CTA is ever appended.
+function assembleSlides(slides: StorySlide[], targetTotal: number): StorySlide[] {
+  const capped = slides.slice(0, Math.max(targetTotal, 1))
+  const last = capped[capped.length - 1]
+  if (last?.role === "cta") capped[capped.length - 1] = normalizeCta(last)
+  return capped
 }
 
 // STORY-OVERLAY-02: a vision pass reads each background and decides where the text should sit so it
@@ -295,7 +300,7 @@ export async function generateStorySequence(input: {
     selectedImageUrls.length > 0 ? selectedImageUrls : sourceShoot.imageUrls
   ).slice(0, 12)
   const overlayUrls = (input.overlayUrls ?? []).filter(isAllowedImageUrl).slice(0, 12)
-  // One slide per selected photo (incl. the final CTA), clamped to a sane range.
+  // One slide per selected photo (incl. an optional final cta/close beat), clamped to a sane range.
   const targetSlides = Math.max(5, Math.min(12, imageUrls.length || 6))
 
   const prompt = `You are Sandra's Instagram Story strategist for @sandra.social (selfie education, AI-assisted brand imagery from one selfie, personal branding for women).
@@ -310,23 +315,27 @@ ${proofBlock()}
 
 ${funnelBlock()}
 
+${storyBankBlock()}
+
 ${STORY_DOCTRINE}
 
 TODAY'S STORY IDEA (from Sandra): ${topic}
 ${sourceShoot.title ? `\nSOURCE PHOTOSHOOT CONTEXT: "${sourceShoot.title}". Sandra may have selected only some images from this shoot. Write this as story copy layered onto the selected image backgrounds, so it feels like the story version of those exact visuals, not a separate design.` : ""}
 
-NO-FAKE REMINDER FOR THE DESIRE/BRIDGE BEAT:
-Identity content must never imply she becomes someone else. The promise is "Look like yourself, at your best." Use story to create recognition and permission, then bridge to the keyword/capture mechanic.
+NO-FAKE REMINDER:
+Identity content must never imply she becomes someone else. The promise is "Look like yourself, at your best."
 
-PROOF REMINDER:
-Stories support the funnel. Use them to warm desire, handle the fake fear, and point to the right keyword or Vault step when the sequence earns it.
+Write the story across exactly ${targetSlides} slides. Decide from the story idea above whether this is a CONNECTION sequence (ending in role "close", no product ask) or an ANNOUNCEMENT sequence (ending in role "cta" with a natural bridge to a paid offer) - per the doctrine's rule. Do not default to "cta" just because that used to be required. Line sizes: "lead" = the big serif statement (max 16 words), "support" = smaller context line (max 18 words), "keyword" = only the CTA keyword. 1-3 lines per slide (a "cta" slide has 4; a "close" slide has 1-2).
 
-Write the story across exactly ${targetSlides} slides following the doctrine arc. The FINAL slide MUST be the CTA slide (role "cta") with a keyword for a PAID offer (VAULT, PRESETS, or SUITE). Line sizes: "lead" = the big serif statement (max 16 words), "support" = smaller context line (max 18 words), "keyword" = only the CTA keyword. 1-3 lines per slide (CTA slide has 4).
-
-Return ONLY a JSON array of slides, no commentary:
+Return ONLY a JSON array of slides, no commentary. Example of a CONNECTION sequence (ends in "close", no keyword):
+[
+  { "role": "hook", "lines": [ { "text": "I realized something today...", "size": "lead", "emphasis": true } ] },
+  { "role": "close", "lines": [ { "text": "If this is you too, you are not behind.", "size": "lead" } ] }
+]
+Example of an ANNOUNCEMENT sequence (ends in "cta" with a paid keyword, only when the topic actually calls for it):
 [
   { "role": "hook", "lines": [ { "text": "...", "size": "lead", "emphasis": true }, { "text": "...", "size": "support" } ], "note": "..." },
-  { "role": "cta", "lines": [ { "text": "Want the full collection I used?", "size": "lead" }, { "text": "DM me:", "size": "support" }, { "text": "VAULT", "size": "keyword" }, { "text": "and I'll send you the link.", "size": "support" } ] }
+  { "role": "cta", "lines": [ { "text": "That is exactly why I built this.", "size": "lead" }, { "text": "DM me:", "size": "support" }, { "text": "VAULT", "size": "keyword" }, { "text": "and I'll send you the link.", "size": "support" } ] }
 ]`
 
   const text = await callContentKitLlm(prompt)
@@ -337,7 +346,7 @@ Return ONLY a JSON array of slides, no commentary:
     ? []
     : await listAdminSelfies().catch(() => [] as string[])
   const slides = await compositeStorySlides({
-    slides: assembleWithCta(sanitizeSlides(raw.slice(0, 12)), targetSlides),
+    slides: assembleSlides(sanitizeSlides(raw.slice(0, 12)), targetSlides),
     backgroundUrls: [...imageUrls, ...fallbackSelfies],
     overlayUrls,
   })

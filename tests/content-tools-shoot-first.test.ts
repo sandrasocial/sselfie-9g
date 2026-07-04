@@ -95,11 +95,17 @@ describe("Content tools shoot-first workflow", () => {
     expect(renderer).toContain("textScale")
     expect(types).toContain("textOffsetX?: number")
 
-    // Every sequence must end in a paid CTA and is no longer capped at 8 slides.
-    expect(storyGenerator).toContain("assembleWithCta")
+    // 2026-07-04 Story Engine rebuild: a CTA is now OPTIONAL, driven by what Sandra typed as
+    // today's story idea (personal moment vs. announcement), not forced by the code. Still
+    // capped at 12 slides via targetSlides, and a CTA slide (when present) still gets a paid
+    // keyword normalized onto it.
+    expect(storyGenerator).toContain("assembleSlides")
     expect(storyGenerator).toContain("PAID_CTA_KEYWORDS")
     expect(storyGenerator).toContain("targetSlides")
     expect(storyGenerator).not.toContain("raw.slice(0, 8)")
+    expect(storyGenerator).not.toContain("DEFAULT_CTA_SLIDE")
+    expect(storyGenerator).not.toContain("assembleWithCta")
+    expect(types).toContain('| "close"')
   })
 
   it("keeps member Maya carousels photoshoot-first by default", () => {
@@ -110,5 +116,36 @@ describe("Content tools shoot-first workflow", () => {
     expect(designSystems).toContain("real-image redesigns")
     expect(compiler).toContain("buildGraphicRedesignSlides")
     expect(chatRoute).toContain("CURRENT WEEKLY BRIEF CONTEXT")
+  })
+
+  it("Content Kit story sequences are no longer forced into a sales arc (2026-07-04)", () => {
+    // This is the SAME generator behind both the admin Maya chat story tool and the dedicated
+    // "Story sequences" panel in Content Kit (POST /api/admin/content-kit/stories). Sandra was
+    // actively using this exact panel and hitting the old forced-CTA sales arc.
+    const storyGenerator = read("lib/content-kit/story-generator.ts")
+    const storiesRoute = read("app/api/admin/content-kit/stories/route.ts")
+
+    expect(storiesRoute).toContain("generateStorySequence")
+
+    // The rigid mandatory arc (hook -> tension -> shift -> proof -> desire -> bridge -> cta,
+    // ALWAYS ending in a paid CTA) is gone.
+    expect(storyGenerator).not.toContain("ALWAYS ending in the CTA")
+    expect(storyGenerator).not.toContain("Every sequence MUST end with this CTA")
+    expect(storyGenerator).not.toContain(
+      'Write the story across exactly ${targetSlides} slides following the doctrine arc. The FINAL slide MUST be the CTA slide'
+    )
+
+    // The offer is now optional, decided from what Sandra actually typed as the story idea.
+    expect(storyGenerator).toContain("CONNECTION sequence")
+    expect(storyGenerator).toContain("ANNOUNCEMENT sequence")
+    expect(storyGenerator).toContain('ending in role "close"')
+    expect(storyGenerator).toContain("Do not default to")
+
+    // Real Story Bank grounding is wired in, same as the daily brief rebuild.
+    expect(storyGenerator).toContain("storyBankBlock()")
+
+    // The UI no longer implies every story needs a CTA in its example placeholder.
+    const storyClient = read("components/admin/content-story-client.tsx")
+    expect(storyClient).not.toContain("CTA: PROMPT")
   })
 })
