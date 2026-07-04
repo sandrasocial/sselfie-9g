@@ -384,6 +384,30 @@ describe("persona story-sequence contract (lib/app-v3/maya/persona)", () => {
     )
     expect(persona).toContain("do not invent a generic story for a paying member")
   })
+
+  it("uses exact user-provided story text as the source copy, not generic suggestions", () => {
+    expect(persona).toContain("If she gives a specific line, quote, phrase")
+    expect(persona).toContain("If she gives exact story text, lines, phrases")
+    expect(persona).toContain("use it as source copy and build the sequence around it")
+  })
+})
+
+describe("story text stays in Maya planning, not legacy Text Studio", () => {
+  const concierge = read("components/app-v3/maya-concierge.tsx")
+  const card = read("components/app-v3/concept-card.tsx")
+
+  it("does not intercept story text requests as direct overlay edits", () => {
+    expect(concierge).toContain("function isStoryGraphicFormat")
+    expect(concierge).toContain("if (isStoryGraphicFormat(target.spec.format)) return false")
+    expect(concierge).toContain("Story slides/sequences are content-planning surfaces")
+  })
+
+  it("hides the old Text Studio entry points for story slides and story sequences", () => {
+    expect(concierge).toContain("isStoryGraphicFormat(conceptFormat)")
+    expect(concierge).toContain("lightbox.key && !isStoryGraphicFormat(lightbox.format)")
+    expect(card).toContain("function isStoryGraphicFormat")
+    expect(card).toContain("!isStoryGraphicFormat(format)")
+  })
 })
 
 describe("baked-slide structural label backstop (lib/app-v3/prompt-compiler)", () => {

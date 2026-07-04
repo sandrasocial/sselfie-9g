@@ -61,6 +61,10 @@ const FRAME_ASPECT: Record<OutputFormat, string> = {
   video: "aspect-[9/16]",
 }
 
+function isStoryGraphicFormat(format: OutputFormat): boolean {
+  return format === "story-slide" || format === "story-sequence"
+}
+
 export function ConceptCard({
   concept,
   gen,
@@ -203,15 +207,19 @@ export function ConceptCard({
                   Download
                 </button>
               )}
-              {firstOverlay && onOpenTextStudio && !isCarousel && !isVideoDone && (
-                <button
-                  type="button"
-                  onClick={onOpenTextStudio}
-                  className="inline-flex min-h-11 items-center justify-center rounded-[4px] border border-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] hover:bg-[#0D0E10]/[0.04] min-[380px]:px-5 min-[380px]:tracking-[0.18em]"
-                >
-                  Edit text
-                </button>
-              )}
+              {firstOverlay &&
+                onOpenTextStudio &&
+                !isStoryGraphicFormat(format) &&
+                !isCarousel &&
+                !isVideoDone && (
+                  <button
+                    type="button"
+                    onClick={onOpenTextStudio}
+                    className="inline-flex min-h-11 items-center justify-center rounded-[4px] border border-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] hover:bg-[#0D0E10]/[0.04] min-[380px]:px-5 min-[380px]:tracking-[0.18em]"
+                  >
+                    Edit text
+                  </button>
+                )}
               {onEdit && !isCarousel && !isVideoDone && (
                 <button
                   type="button"

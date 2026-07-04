@@ -95,6 +95,10 @@ function isGraphicOutputFormat(format: OutputFormat): boolean {
   )
 }
 
+function isStoryGraphicFormat(format: OutputFormat | null | undefined): boolean {
+  return format === "story-slide" || format === "story-sequence"
+}
+
 function overlayFormatForOutput(format: OutputFormat): OverlayFormat {
   if (format === "carousel") return "carousel"
   if (format === "story-slide") return "story-slide"
@@ -483,6 +487,7 @@ export function MayaConcierge({
   // Fullscreen viewer: the set of image urls currently open (null = closed).
   const [lightbox, setLightbox] = useState<{
     key?: string
+    format?: OutputFormat
     images: string[]
     textOverlaySpecs?: TextOverlaySpec[]
   } | null>(null)
@@ -1428,6 +1433,11 @@ export function MayaConcierge({
   async function applyTextRefinement(refinement: TextRefinement): Promise<boolean> {
     const target = findTextRefinementTarget()
     if (!target) return false
+    // Story slides/sequences are content-planning surfaces, not text-layer editing surfaces.
+    // If she types exact story text ("make it say...", "use this line..."), let Maya see it
+    // and rebuild the story brief instead of silently routing her back into the old Text Studio
+    // architecture against the latest overlay spec.
+    if (isStoryGraphicFormat(target.spec.format)) return false
 
     if (refinement.kind === "remove-text") {
       const current = genState[target.key]
@@ -2322,6 +2332,7 @@ export function MayaConcierge({
                               onClick={() =>
                                 setLightbox({
                                   key,
+                                  format: "photoshoot",
                                   images: urls,
                                   textOverlaySpecs: gen.textOverlaySpecs,
                                 })
@@ -2407,11 +2418,16 @@ export function MayaConcierge({
                           onOpen={urls =>
                             setLightbox({
                               key,
+                              format: conceptFormat,
                               images: urls,
                               textOverlaySpecs: genState[key]?.textOverlaySpecs,
                             })
                           }
-                          onOpenTextStudio={() => setTextStudio({ key, index: 0 })}
+                          onOpenTextStudio={
+                            isStoryGraphicFormat(conceptFormat)
+                              ? undefined
+                              : () => setTextStudio({ key, index: 0 })
+                          }
                           onEdit={() => {
                             const url = (genState[key]?.imageUrls ?? [])[0]
                             if (url) setEditTarget({ key, url, format: conceptFormat })
@@ -2592,7 +2608,7 @@ export function MayaConcierge({
           textOverlaySpecs={lightbox.textOverlaySpecs}
           bakedImageUrls={lightbox.key ? genState[lightbox.key]?.bakedImageUrls : undefined}
           onOpenTextStudio={
-            lightbox.key
+            lightbox.key && !isStoryGraphicFormat(lightbox.format)
               ? index => setTextStudio({ key: lightbox.key as string, index })
               : undefined
           }
