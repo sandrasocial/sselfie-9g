@@ -58,8 +58,16 @@ export const SSELFIE_INSPIRATION_CLOSE_RECREATE = [
 export const SSELFIE_INSPIRATION_SET_VARIATION = [
   "TASK TYPE: STYLE-WORLD VARIATION.",
   "Use the inspiration image as the visual world for this set, not as a loose vibe board.",
-  "Poses and angles may vary by shot or slide role, but the result must stay in the same visual world: wardrobe energy, visible prop logic, material texture, lighting direction, shadow language, color grade, mood, crop family, camera-distance family, background simplicity, lens feel, and editorial styling.",
+  // 2026-07-05: "crop family" and "camera-distance family" used to sit in the locked list below,
+  // directly contradicting the sentence right before it ("poses and angles may vary"). Camera
+  // distance and crop ARE the primary way an establishing wide shot, a seated medium shot, and a
+  // close portrait read as visually distinct - locking them anchored the whole set to whatever
+  // distance the single inspiration image happened to be shot at, so every shot in a "cohesive"
+  // photoshoot came out looking like near-duplicates. Removed from the lock list; called out
+  // explicitly below as something that MUST vary by shot role.
+  "Poses and angles may vary by shot or slide role, but the result must stay in the same visual world: wardrobe energy, visible prop logic, material texture, lighting direction, shadow language, color grade, mood, background simplicity, lens feel, and editorial styling.",
+  "Camera distance and crop MUST vary to match each shot's role: a wide establishing/full-body shot, a medium seated or lifestyle shot, and a close portrait should read as genuinely different distances and framings from each other and from the inspiration image, not near-duplicate crops. Only wardrobe, lighting, color grade, mood, and location stay anchored to the inspiration image's world.",
   "Do not restyle the set into a generic new scene, generic studio setup, unrelated outfit shoot, or broad interpretation of the prompt.",
   "The inspiration image contributes 0% facial information. The uploaded identity reference images are the only source for face, age, body proportions, skin texture, hair color, and recognizable identity. Do not copy or blend the inspiration person's face.",
-  "If any written prompt conflicts with the inspiration image, keep the inspiration image's visual world. Ignore invented props or scene details that are not visible in the inspiration image unless the user explicitly requested that change.",
+  "If any written prompt conflicts with the inspiration image, keep the inspiration image's visual world (wardrobe, lighting, color grade, mood, location), but shot-role camera distance and crop win over the inspiration image's specific framing. Ignore invented props or scene details that are not visible in the inspiration image unless the user explicitly requested that change.",
 ].join("\n")

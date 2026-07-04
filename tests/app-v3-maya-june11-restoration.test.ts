@@ -153,6 +153,22 @@ describe("Maya June 11 restoration guardrails", () => {
     expect(persona).toContain("Do not invent props, hats, furniture")
   })
 
+  it("requires camera-distance/crop variety by shot role instead of anchoring it to the inspiration image (2026-07-05)", () => {
+    // Photoshoots (admin Shoot Studio, suite Maya, admin slide redesign - all share this
+    // constant by design) were coming out near-identical shot to shot. Root cause: the locked
+    // "stay in the same visual world" list included "crop family, camera-distance family",
+    // directly contradicting the very next clause ("poses and angles may vary"). Camera distance
+    // is the primary way an establishing wide shot and a close portrait read as different shots.
+    expect(SSELFIE_INSPIRATION_SET_VARIATION).not.toContain("crop family, camera-distance family")
+    expect(SSELFIE_INSPIRATION_SET_VARIATION).toContain(
+      "Camera distance and crop MUST vary to match each shot's role"
+    )
+    // The lock list still legitimately protects wardrobe/lighting/mood/location cohesion.
+    expect(SSELFIE_INSPIRATION_SET_VARIATION).toContain("wardrobe energy")
+    expect(SSELFIE_INSPIRATION_SET_VARIATION).toContain("lighting direction")
+    expect(SSELFIE_INSPIRATION_SET_VARIATION).toContain("color grade")
+  })
+
   it("lets text-overlay graphics use an attached inspiration as a third style-world reference", () => {
     const prompt = buildContentSlideRedesignPrompt({
       category: "photoshoot-carousel",

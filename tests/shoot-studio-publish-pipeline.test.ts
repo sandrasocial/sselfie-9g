@@ -122,7 +122,16 @@ describe("Shoot Studio publish pipeline", () => {
     expect(generator).toContain("FIRST attached inspiration image as the primary guide")
     expect(generator).toContain("SHOT 1 NON-NEGOTIABLE")
     expect(generator).toContain("If the inspiration image is a tight face crop")
-    expect(generator).toContain("Do not force full-body, arrival, or lifestyle-action shots")
+    // 2026-07-05: cohesive photoshoots were coming out near-identical because the writer and
+    // render prompts anchored "crop family" to the inspiration image for every shot, and banned
+    // wider shot roles outright for a tight inspiration crop. Fixed to require genuine camera-
+    // distance/crop variety across shot roles instead.
+    expect(generator).not.toContain("Do not force full-body, arrival, or lifestyle-action shots")
+    expect(generator).toContain("genuinely varied MIX of shot roles")
+    expect(generator).toContain("CROP and CAMERA DISTANCE must vary by shot role")
+    expect(generator).not.toContain(
+      "keep the visible garment/fabric family, lens feel, crop family, light, shadow language and color grade anchored to the first inspiration image"
+    )
     expect(generator).not.toContain("FIRST style reference image is a mandatory visual reference")
     expect(generator).not.toContain("WRITTEN SHOT PROMPT (secondary planning notes")
     expect(generator).not.toContain("FINAL RENDER AUTHORITY")

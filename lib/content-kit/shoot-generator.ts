@@ -425,7 +425,7 @@ ${buildJsonContract(shotCount)}`
 
 SHOT 1 NON-NEGOTIABLE: shot 1 must be a close visual reconstruction of the FIRST inspiration image. Preserve its crop, composition, framing, subject scale, pose geometry, expression energy, camera distance, lens perspective, lighting direction, shadow pattern, visible wardrobe silhouette, visible props/accessories, background tone, color grade and mood. If the inspiration image is a tight face crop, shot 1 must stay a tight face crop. Do not turn it into full-body, seated, walking, arrival, lifestyle, wider studio, or outfit-establishing content.
 
-PLANNING RULE: describe only what is visible or structurally implied by the inspiration image. Do not invent jeans, shoes, bags, chairs, locations, full outfits, or body framing when the inspiration image does not show them. For shots 2-${shotCount}, create believable variations from the same photoshoot world, but keep the visible garment/fabric family, lens feel, crop family, light, shadow language and color grade anchored to the first inspiration image.
+PLANNING RULE: describe only what is visible or structurally implied by the inspiration image. Do not invent jeans, shoes, bags, chairs, locations, full outfits, or body framing when the inspiration image does not show them. For shots 2-${shotCount}, create believable variations from the same photoshoot world, keeping the visible garment/fabric family, lens feel, light, shadow language and color grade anchored to the first inspiration image, but the CROP and CAMERA DISTANCE must vary by shot role (see below) - do not anchor crop family to shot 1's specific framing, or every shot reads as a near-duplicate.
 
 ${notes ? `Sandra's direction for this shoot: ${notes}\n\n` : ""}${buildVaultAnatomy(shotCount)}
 
@@ -439,7 +439,7 @@ ${audienceBlock()}
 PROOF CONTEXT FOR SHOT UTILITY ONLY:
 ${proofBlock()}
 
-After shot 1, make the shot mix useful for the proven formats only when that format naturally belongs to the attached inspiration world: profile/detail crops, seated or still hero, close-up, cover-safe negative space, or a wider frame only if the inspiration image clearly supports a wider outfit/location. Assign shotRole on every shot. true-detail is optional: use at most one faceless detail only when it clearly improves the set. Do not force a faceless detail shot. Do not force full-body, arrival, or lifestyle-action shots when the inspiration image is a tight portrait or beauty crop.
+After shot 1, use a genuinely varied MIX of shot roles so the set does not read as six near-identical crops: establishing/wider, seated or still hero, profile, close portrait, and cover-safe hero should each land at a clearly different camera distance and framing. A tight inspiration crop does not mean every shot must stay tight - reasonably and tastefully extrapolate the outfit/location for a wider or medium shot (same wardrobe family, same world) rather than banning wider shot roles outright; only avoid inventing SPECIFIC unseen details (a particular prop, a specific room, an object) that the inspiration image gives no basis for. Assign shotRole on every shot. true-detail is optional: use at most one faceless detail only when it clearly improves the set. Do not force a faceless detail shot.
 
 Keep the prompt body generic and usable for any buyer; put Sandra/audience-specific posting guidance only in whenToUse.
 
