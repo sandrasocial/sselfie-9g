@@ -743,7 +743,7 @@ export function ContentBriefClient({
       setLatestJob(json.job ?? null)
       setNotice(
         json.message ||
-          "Weekly brief queued. Run the local worker and this page will refresh when it is done."
+          "Weekly brief queued. It builds automatically in the background over the next 10 to 15 minutes."
       )
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Queue failed")
@@ -824,15 +824,16 @@ export function ContentBriefClient({
           </div>
           {latestJob.status === "queued" && (
             <p className="mt-1">
-              This is safe now. The browser is not waiting for Anthropic. Run{" "}
-              <code className="rounded bg-stone-100 px-1 py-0.5">pnpm content-brief:worker</code>{" "}
-              locally or from an automation to build it.
+              Queued. A background job picks this up automatically within a few minutes and
+              builds it in three steps (research, plan, daily stories). This page checks for
+              updates every 8 seconds, no need to do anything else.
             </p>
           )}
           {latestJob.status === "running" && (
             <p className="mt-1">
-              The worker is running outside the admin request. This page checks for updates every 8
-              seconds.
+              Building in the background ({phaseLabel?.toLowerCase() || "working"}...). This
+              usually takes 10 to 15 minutes across its three steps. This page checks for
+              updates every 8 seconds.
             </p>
           )}
           {latestJob.status === "failed" && latestJob.error && (

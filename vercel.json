@@ -73,6 +73,10 @@
       "schedule": "0 7 * * 1"
     },
     {
+      "path": "/api/cron/content-brief-jobs",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/suite-trial-expiry",
       "schedule": "45 8 * * *"
     },

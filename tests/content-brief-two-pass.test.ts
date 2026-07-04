@@ -185,7 +185,10 @@ describe("weekly content brief: surfaces", () => {
 
     expect(client).toContain("Queue this week's brief")
     expect(client).toContain("latestJob")
-    expect(client).toContain("content-brief:worker")
+    // 2026-07-04: the admin UI must never tell Sandra to run a terminal command - the
+    // content-brief-jobs cron tick drains the queue automatically. The worker script is a
+    // manual/local fallback only, never the admin-facing instruction.
+    expect(client).not.toContain("content-brief:worker")
     expect(client).not.toContain("GENERATION_STEPS")
 
     expect(worker).toContain("claimNextContentBriefJob")
@@ -217,5 +220,27 @@ describe("weekly content brief: surfaces", () => {
     expect(toolCallHelper).toContain(".stream({")
     expect(toolCallHelper).toContain(".finalMessage()")
     expect(toolCallHelper).not.toContain(".messages.create({")
+  })
+
+  it("drains a queued admin brief job automatically, without a manual worker command", () => {
+    // 2026-07-04: the job queue (content_brief_jobs) fixed the admin "Queue this week's
+    // brief" button timing out, but nothing served the queue in production except a local
+    // `pnpm content-brief:worker` command Sandra would never run. A cron tick must exist
+    // that drains it on its own, mirroring the Monday research/build/stories cron split.
+    const tick = read("app/api/cron/content-brief-jobs/route.ts")
+    expect(tick).toContain("claimNextContentBriefJob")
+    expect(tick).toContain("markContentBriefJobPhase")
+    expect(tick).toContain("completeContentBriefJob")
+    expect(tick).toContain("generateContentBriefResearchMemo")
+    expect(tick).toContain("generateContentBrief(")
+    expect(tick).toContain("generateDailyStoriesForBrief")
+
+    const vercelConfig = read("vercel.json")
+    expect(vercelConfig).toContain('"path": "/api/cron/content-brief-jobs"')
+
+    // The UI must not tell a non-technical founder to run a terminal command.
+    const client = read("components/admin/content-brief-client.tsx")
+    expect(client).not.toContain("pnpm content-brief:worker")
+    expect(client).not.toContain("Run the local worker")
   })
 })
