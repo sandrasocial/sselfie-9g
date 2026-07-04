@@ -4,7 +4,7 @@ import {
   type ServerMayaDraftSnapshot,
 } from "@/lib/app-v3/maya/draft-snapshot"
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
-import type { ConciergeSession, OutputFormat } from "./types"
+import type { AestheticShot, ConciergeSession, OutputFormat } from "./types"
 import type { ConceptGenState } from "./concept-card"
 import { sanitizeTextOverlaySpec } from "@/lib/app-v3/text-overlay"
 
@@ -65,6 +65,21 @@ function writeJson(key: string, value: unknown) {
   }
 }
 
+function sanitizeAestheticShot(value: unknown): AestheticShot | null {
+  if (!value || typeof value !== "object") return null
+  const shot = value as Record<string, unknown>
+  if (typeof shot.id !== "string" || typeof shot.title !== "string") return null
+  if (typeof shot.image !== "string" || shot.image.length === 0) return null
+  return {
+    id: shot.id,
+    title: shot.title,
+    image: shot.image,
+    whenToUse: typeof shot.whenToUse === "string" ? shot.whenToUse : undefined,
+    mood: typeof shot.mood === "string" ? shot.mood : undefined,
+    stylePrompt: typeof shot.stylePrompt === "string" ? shot.stylePrompt : undefined,
+  }
+}
+
 export function coerceStoredAppSection(value: unknown, fallback: AppV3Section): AppV3Section {
   return VALID_SECTIONS.includes(value as AppV3Section) ? (value as AppV3Section) : fallback
 }
@@ -108,6 +123,7 @@ function sanitizeSession(value: unknown): ConciergeSession | null {
         ? aesthetic.thumbnails.filter((item): item is string => typeof item === "string")
         : [],
       shotCount: typeof aesthetic.shotCount === "number" ? aesthetic.shotCount : 0,
+      selectedShot: sanitizeAestheticShot(aesthetic.selectedShot),
       intent: aesthetic.intent,
     },
     outputFormat,

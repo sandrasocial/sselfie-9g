@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { AESTHETICS } from "@/components/app-v3/aesthetics"
+import { stripIdentityParagraph } from "@/lib/app-v3/maya/vault-styles"
 import { getPublishedVaultCollections, toAestheticId, toDisplayName } from "@/lib/vault/published-collections"
 import { weeklyDropLookForDate } from "@/lib/email/templates/suite-habit-emails"
 import { matchWeeklyLookAesthetic } from "@/lib/app-v3/weekly-look"
@@ -12,6 +13,16 @@ export async function GET() {
   const dynamicAesthetics: Aesthetic[] = published
     .map((collection) => {
       const coverImage = collection.heroImage ?? collection.cards[0]?.exampleImage ?? ""
+      const shots = collection.cards
+        .map(card => ({
+          id: card.id,
+          title: card.title,
+          image: card.exampleImage ?? "",
+          whenToUse: card.whenToUse,
+          mood: card.mood,
+          stylePrompt: stripIdentityParagraph(card.prompt),
+        }))
+        .filter(shot => shot.image.length > 0)
       return {
         id: toAestheticId(collection.title),
         name: toDisplayName(collection.title),
@@ -22,6 +33,7 @@ export async function GET() {
           .filter((url): url is string => !!url)
           .slice(0, 4),
         shotCount: collection.cards.length,
+        shots,
         intent: `${toDisplayName(collection.title)} editorial look: ${collection.moodLine || "cohesive styling, refined light, brand-shoot quality"}`,
       }
     })

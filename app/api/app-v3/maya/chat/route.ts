@@ -389,12 +389,48 @@ interface ChatBody {
   aestheticName?: string
   aestheticIntent?: string
   aestheticId?: string
+  selectedShot?: {
+    id?: string
+    title?: string
+    image?: string
+    whenToUse?: string
+    mood?: string
+    stylePrompt?: string
+  } | null
   format?: OutputFormat
   inspirationImageUrl?: string | null
   videoSourceUrl?: string | null
   brandKit?: { colors?: string[]; fonts?: string[]; vibe?: string } | null
   /** MAYA-ADMIN-01: the /admin surface sets this; only honored for the admin email. */
   adminSession?: boolean
+}
+
+function clampText(value: unknown, max = 900): string {
+  return typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, max) : ""
+}
+
+function selectedShotContext(shot: ChatBody["selectedShot"]): string | null {
+  if (!shot) return null
+  const title = clampText(shot.title, 160)
+  const image = clampText(shot.image, 300)
+  if (!title || !image) return null
+  const whenToUse = clampText(shot.whenToUse, 500)
+  const mood = clampText(shot.mood, 260)
+  const stylePrompt = clampText(shot.stylePrompt, 2600)
+  return [
+    `## SELECTED VAULT SHOT - recreate this frame`,
+    "",
+    "She picked one exact shot from the vibe before opening Maya. This is the strongest visual anchor.",
+    `Shot: ${title}`,
+    `Reference image: ${image}`,
+    whenToUse ? `Use case: ${whenToUse}` : "",
+    mood ? `Mood: ${mood}` : "",
+    stylePrompt ? `Shot styling DNA: ${stylePrompt}` : "",
+    "",
+    "When you write concept briefs, prioritize this shot's composition, camera distance, pose logic, outfit direction, props, lighting, and background world. Keep her real face from her selfie. Do not drift to a different shot in the same collection unless she asks for a variation.",
+  ]
+    .filter(Boolean)
+    .join("\n")
 }
 
 function summarizeBriefValue(value: unknown): string {
@@ -714,6 +750,7 @@ export async function POST(req: Request) {
 
     const vaultStyleGuide =
       (await getVaultStyleGuide(body?.aestheticId)) ?? (await getVaultOverviewGuide())
+    const selectedShotGuide = selectedShotContext(body?.selectedShot ?? null)
     let system = getAppV3MayaSystemPrompt({
       aestheticName: body?.aestheticName?.trim() || "SSELFIE editorial",
       aestheticIntent:
@@ -728,6 +765,7 @@ export async function POST(req: Request) {
       // sessions (a Content idea, "maya-general") fall back to the all-collections overview so
       // EVERY generation path carries Vault DNA, never a generic posed-studio default.
       vaultStyleGuide,
+      selectedShotGuide,
     })
 
     if (format === "video" && isAllowedInspirationUrl(body?.videoSourceUrl)) {

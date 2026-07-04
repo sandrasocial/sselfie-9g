@@ -12,6 +12,16 @@ export type OutputFormat =
   | "story-sequence"
   | "video"
 
+export interface AestheticShot {
+  id: string
+  title: string
+  image: string
+  whenToUse?: string
+  mood?: string
+  /** Stripped styling DNA from the Vault prompt. Identity text is not included. */
+  stylePrompt?: string
+}
+
 /** A single aesthetic the user can pick from the Visual Front Door. Derived from the
  *  existing Prompt Vault collections so the grid always reflects the real vault. */
 export interface Aesthetic {
@@ -27,6 +37,10 @@ export interface Aesthetic {
   thumbnails: string[]
   /** Number of looks in the underlying vault collection. */
   shotCount: number
+  /** Individual shot references inside this Vault collection. */
+  shots?: AestheticShot[]
+  /** The exact shot the user chose before handing off to Maya. */
+  selectedShot?: AestheticShot | null
   /** The styling intent handed to Maya + the prompt compiler when this vibe is chosen. */
   intent: string
 }

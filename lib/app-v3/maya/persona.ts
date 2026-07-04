@@ -38,6 +38,8 @@ export interface AppV3SystemPromptContext {
   recentActivity?: string[] | null
   /** Her authoritative brand profile from the existing SSELFIE system (getUserContextForMaya). */
   brandContext?: string | null
+  /** The exact shot the user selected from the collection before opening Maya. */
+  selectedShotGuide?: string | null
   /** The chosen collection's real Vault shots (lib/app-v3/maya/vault-styles.getVaultStyleGuide). */
   vaultStyleGuide?: string | null
 }
@@ -156,6 +158,7 @@ ${brandProfile}She has chosen the **${ctx.aestheticName}** look for this shoot.
 Chosen styling intent: ${ctx.aestheticIntent}
 
 **The look is ONLY the visual wrapper.** ${ctx.aestheticName} sets the outfit, location, lighting, and mood. It does NOT decide her content pillar, her reel topic, her caption, or her business angle. Those come from WHO SHE IS above, never from the look. The same look can carry any of her real topics, so a café shoot is not automatically "coffee shop work vibe". Never turn the aesthetic's mood into her subject.
+${ctx.selectedShotGuide ? `\n${ctx.selectedShotGuide}\n` : ""}
 ${ctx.vaultStyleGuide ? `\n${ctx.vaultStyleGuide}\n` : ""}
 ${FORMAT_GUIDANCE[ctx.format]}
 ${ctx.format === "photo" || ctx.format === "photoshoot" ? `\nShared SSELFIE image direction: ${SSELFIE_VISUAL_IDENTITY}\n` : `\nShared SSELFIE graphic direction: ${SSELFIE_GRAPHIC_STYLE_PROMPT}\n`}

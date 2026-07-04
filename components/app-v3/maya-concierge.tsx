@@ -36,7 +36,7 @@ import {
   buildVideoMotionPrompt,
 } from "@/lib/app-v3/custom-model-brief"
 import type { ServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
-import type { AppV3AnalyticsCohort, OutputFormat } from "./types"
+import type { AestheticShot, AppV3AnalyticsCohort, OutputFormat } from "./types"
 import {
   OVERLAY_STYLE_PRESETS,
   resolveOverlayStyle,
@@ -603,6 +603,7 @@ export function MayaConcierge({
     aestheticName: string
     aestheticIntent: string
     aestheticId: string
+    selectedShot: AestheticShot | null
     format: OutputFormat
     referenceSelfieUrl: string | null
     videoSourceUrl: string | null
@@ -613,6 +614,7 @@ export function MayaConcierge({
     aestheticName: "",
     aestheticIntent: "",
     aestheticId: "",
+    selectedShot: null,
     format: "photo",
     referenceSelfieUrl: null,
     videoSourceUrl: null,
@@ -840,6 +842,7 @@ export function MayaConcierge({
 
   if (!isOpen || !session) return null
   const { aesthetic, outputFormat, referenceSelfieUrl } = session
+  const selectedShot = aesthetic.selectedShot ?? null
   const format: OutputFormat = outputFormat ?? "photo"
   const videoSourceUrl = session.videoSourceUrl
   const customModelAvailable = hasTrainedModel && format === "photo" && !admin
@@ -865,6 +868,7 @@ export function MayaConcierge({
     aestheticName: aesthetic.name,
     aestheticIntent: aesthetic.intent,
     aestheticId: aesthetic.id,
+    selectedShot: aesthetic.selectedShot ?? null,
     format,
     referenceSelfieUrl,
     videoSourceUrl,
@@ -1597,6 +1601,11 @@ export function MayaConcierge({
             <h2 className="mt-0.5 truncate font-serif text-[21px] font-light leading-tight text-[#0D0E10]">
               {aesthetic.name}
             </h2>
+            {selectedShot && (
+              <p className="mt-0.5 truncate text-[11px] leading-snug text-[#6D6E70]">
+                Shot reference: {selectedShot.title}
+              </p>
+            )}
           </div>
           <div className="relative flex shrink-0 items-center gap-4">
             <button
@@ -2071,7 +2080,9 @@ export function MayaConcierge({
             <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
             <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728] [overflow-wrap:anywhere] sm:max-w-[80%]">
               <p>
-                {aesthetic.name}. {aesthetic.blurb}
+                {selectedShot
+                  ? `${aesthetic.name}. Starting from ${selectedShot.title}.`
+                  : `${aesthetic.name}. ${aesthetic.blurb}`}
               </p>
               <p className="mt-2">{openerLine}</p>
             </div>

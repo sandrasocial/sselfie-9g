@@ -11,7 +11,7 @@ import Image from "next/image"
 import { AESTHETICS } from "./aesthetics"
 import { useConcierge } from "./concierge-context"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
-import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
+import type { Aesthetic, AestheticShot, AppV3AnalyticsCohort, OutputFormat } from "./types"
 
 const MAYA_BLANK: Aesthetic = {
   id: "maya-blank",
@@ -136,6 +136,102 @@ const LookbookAction = memo(function LookbookAction({
   )
 })
 
+function compactAestheticForMaya(aesthetic: Aesthetic, selectedShot: AestheticShot): Aesthetic {
+  return {
+    ...aesthetic,
+    coverImage: selectedShot.image || aesthetic.coverImage,
+    thumbnails: [selectedShot.image, ...aesthetic.thumbnails]
+      .filter((url): url is string => typeof url === "string" && url.length > 0)
+      .slice(0, 4),
+    shots: [],
+    selectedShot,
+    intent: [
+      aesthetic.intent,
+      `Selected shot: ${selectedShot.title}.`,
+      selectedShot.whenToUse ? `Use case: ${selectedShot.whenToUse}` : "",
+      selectedShot.mood ? `Mood: ${selectedShot.mood}` : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
+  }
+}
+
+function ShotPickerDialog({
+  aesthetic,
+  onClose,
+  onSelect,
+}: {
+  aesthetic: Aesthetic
+  onClose: () => void
+  onSelect: (shot: AestheticShot) => void
+}) {
+  const shots = aesthetic.shots ?? []
+
+  return (
+    <div className="fixed inset-0 z-[80] bg-[#0D0E10]/55 px-3 py-4 backdrop-blur-sm sm:px-6 sm:py-8">
+      <div className="mx-auto flex h-full max-w-6xl flex-col overflow-hidden rounded-[8px] bg-[#F8FAFA] shadow-[0_30px_80px_rgba(13,14,16,0.22)]">
+        <div className="flex items-start justify-between gap-5 border-b border-[#C5C6C8]/55 px-5 py-5 sm:px-7">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Choose the shot</p>
+            <h2 className="mt-2 font-serif text-[30px] font-light leading-[1.05] text-[#0D0E10] sm:text-[40px]">
+              {aesthetic.name}
+            </h2>
+            <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-[#6D6E70]">
+              Pick the exact frame you want Maya to recreate with your selfie. The vibe stays the
+              same, but this shot becomes the reference.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-h-10 rounded-[4px] border border-[#C5C6C8] px-4 text-[10px] uppercase tracking-[0.18em] text-[#0D0E10] transition-colors hover:border-[#0D0E10]"
+          >
+            Close
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-7">
+          <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {shots.map((shot, index) => (
+              <button
+                key={shot.id || `${shot.title}-${index}`}
+                type="button"
+                onClick={() => onSelect(shot)}
+                className="group overflow-hidden rounded-[7px] border border-[#D8D9DA] bg-white text-left transition-colors hover:border-[#0D0E10]/55 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10]"
+              >
+                <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#E9EAEB]">
+                  <Image
+                    src={shot.image}
+                    alt={shot.title}
+                    fill
+                    sizes="(max-width: 640px) 90vw, (max-width: 1024px) 42vw, 25vw"
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.025]"
+                  />
+                </div>
+                <div className="p-4">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+                    Shot {index + 1}
+                  </p>
+                  <p className="mt-2 text-[14px] font-medium leading-snug text-[#0D0E10]">
+                    {shot.title}
+                  </p>
+                  {shot.whenToUse && (
+                    <p className="mt-2 line-clamp-3 text-[12px] leading-relaxed text-[#6D6E70]">
+                      {shot.whenToUse}
+                    </p>
+                  )}
+                  <span className="mt-4 inline-flex min-h-9 items-center rounded-[4px] bg-[#0D0E10] px-3 text-[10px] uppercase tracking-[0.16em] text-white transition-colors group-hover:bg-[#282728]">
+                    Use this shot
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function VisualFrontDoor({
   // MAYA-ADMIN-01: header copy is overridable so the admin mount doesn't show member
   // marketing lines. Defaults keep /app exactly as it was.
@@ -176,6 +272,7 @@ export function VisualFrontDoor({
   const [frontDoorUploading, setFrontDoorUploading] = useState(false)
   const [frontDoorUploadError, setFrontDoorUploadError] = useState<string | null>(null)
   const [frontDoorHasSelfie, setFrontDoorHasSelfie] = useState(hasSelfie)
+  const [shotPickerAesthetic, setShotPickerAesthetic] = useState<Aesthetic | null>(null)
 
   const effectiveHasSelfie = hasSelfie || frontDoorHasSelfie
   const shouldShowTrialFirstRun = showTrialFirstRunStep && !effectiveHasSelfie
@@ -256,8 +353,21 @@ export function VisualFrontDoor({
   }
 
   function openAesthetic(aesthetic: Aesthetic) {
+    if (aesthetic.shots?.length) {
+      trackFirstAction("vault_look_shots")
+      setShotPickerAesthetic(aesthetic)
+      return
+    }
     trackFirstAction("vault_look")
     openWithAesthetic(aesthetic)
+  }
+
+  function openAestheticShot(aesthetic: Aesthetic, shot: AestheticShot) {
+    trackFirstAction("vault_shot")
+    setShotPickerAesthetic(null)
+    openWithAesthetic(compactAestheticForMaya(aesthetic, shot), {
+      seed: `I want to recreate the "${shot.title}" shot from this vibe with my selfie.`,
+    })
   }
 
   function openTrainedModel() {
@@ -462,6 +572,14 @@ export function VisualFrontDoor({
             </div>
           ))}
         </div>
+      )}
+
+      {shotPickerAesthetic && (
+        <ShotPickerDialog
+          aesthetic={shotPickerAesthetic}
+          onClose={() => setShotPickerAesthetic(null)}
+          onSelect={shot => openAestheticShot(shotPickerAesthetic, shot)}
+        />
       )}
     </section>
   )

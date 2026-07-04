@@ -17,6 +17,14 @@ export type ServerAestheticSnapshot = {
   coverImage: string
   thumbnails: string[]
   shotCount: number
+  selectedShot?: {
+    id: string
+    title: string
+    image: string
+    whenToUse?: string
+    mood?: string
+    stylePrompt?: string
+  } | null
   intent: string
 }
 
@@ -69,6 +77,21 @@ function nowish(value: unknown): value is number {
   )
 }
 
+function sanitizeAestheticShot(value: unknown): ServerAestheticSnapshot["selectedShot"] {
+  if (!value || typeof value !== "object") return null
+  const shot = value as Record<string, unknown>
+  if (typeof shot.id !== "string" || typeof shot.title !== "string") return null
+  if (typeof shot.image !== "string" || shot.image.length === 0) return null
+  return {
+    id: shot.id,
+    title: shot.title,
+    image: shot.image,
+    whenToUse: typeof shot.whenToUse === "string" ? shot.whenToUse : undefined,
+    mood: typeof shot.mood === "string" ? shot.mood : undefined,
+    stylePrompt: typeof shot.stylePrompt === "string" ? shot.stylePrompt : undefined,
+  }
+}
+
 function sanitizeAesthetic(value: unknown): ServerAestheticSnapshot | null {
   if (!value || typeof value !== "object") return null
   const aesthetic = value as Record<string, unknown>
@@ -83,6 +106,7 @@ function sanitizeAesthetic(value: unknown): ServerAestheticSnapshot | null {
       ? aesthetic.thumbnails.filter((item): item is string => typeof item === "string")
       : [],
     shotCount: typeof aesthetic.shotCount === "number" ? aesthetic.shotCount : 0,
+    selectedShot: sanitizeAestheticShot(aesthetic.selectedShot),
     intent: aesthetic.intent,
   }
 }

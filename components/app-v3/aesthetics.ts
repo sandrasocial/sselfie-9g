@@ -51,6 +51,11 @@ export const AESTHETICS: Aesthetic[] = VAULT_COLLECTION_META.map((c): Aesthetic 
     coverImage: c.thumbnails[0] ?? "",
     thumbnails: c.thumbnails.slice(0, 4),
     shotCount: c.shotCount,
+    shots: c.thumbnails.map((image, index) => ({
+      id: `${id}-shot-${index + 1}`,
+      title: `${toDisplayName(c.name)} · Shot ${index + 1}`,
+      image,
+    })),
     intent:
       INTENTS[id] ??
       `${toDisplayName(c.name)} editorial look: connected styling, refined light, brand-shoot quality.`,
