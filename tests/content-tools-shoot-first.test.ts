@@ -192,4 +192,15 @@ describe("Content tools shoot-first workflow", () => {
     const capOccurrences = shootGenerator.match(/input\.selfieUrls\.filter\(Boolean\)\.slice\(0, 6\)/g) || []
     expect(capOccurrences.length).toBe(2)
   })
+
+  it("wires slide position into the graphic redesign call so story-sequence gets beat framing (2026-07-06)", () => {
+    const generateRoute = read("app/api/app-v3/maya/generate/route.ts")
+    const slideRedesignGenerator = read("lib/content-kit/slide-redesign-generator.ts")
+
+    expect(generateRoute).toContain("slideIndex: index")
+    expect(generateRoute).toContain("totalSlides: graphicJobs.length")
+    expect(slideRedesignGenerator).toContain("storyBeatFraming")
+    expect(slideRedesignGenerator).toContain("reelCoverShotFraming")
+    expect(slideRedesignGenerator).toContain("identityScenePolish")
+  })
 })

@@ -1084,6 +1084,10 @@ export async function POST(request: NextRequest) {
             textMode: textOverlayEnabled ? "clean-background" : "baked",
             // LIKENESS-MEMORY-01: her stored accuracy corrections ride slide renders too.
             extraIdentityInstruction: likenessBlock || undefined,
+            // 2026-07-06 audit fix: beat-position framing for a generated story-sequence slide
+            // (see buildContentSlideRedesignPrompt) - only meaningful across the real slide set.
+            slideIndex: index,
+            totalSlides: graphicJobs.length,
           })
           actualPromptRecords[index] = [
             `Prompt version: ${SSELFIE_PROMPT_VERSION}`,

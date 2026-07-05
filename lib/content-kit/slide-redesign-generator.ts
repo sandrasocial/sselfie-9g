@@ -7,6 +7,7 @@ import { sql } from "@/lib/db/client"
 import type { CarouselSlide } from "@/lib/content-kit/types"
 import { SSELFIE_INSPIRATION_SET_VARIATION } from "@/lib/app-v3/maya/visual-rules"
 import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
+import { AVOID_LIST, ELEVATION, REALISM_TOKENS } from "@/lib/app-v3/maya/ingredients"
 
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 const CAROUSEL_SIZE = process.env.APP_V3_CAROUSEL_SIZE || "1024x1280"
@@ -101,6 +102,8 @@ export function buildContentSlideRedesignPrompt({
   referenceMode,
   hasInspirationReference,
   textMode = "baked",
+  slideIndex,
+  totalSlides,
 }: {
   slide: CarouselSlide
   category: StyleReferenceCategory
@@ -109,8 +112,35 @@ export function buildContentSlideRedesignPrompt({
   referenceMode?: RedesignReferenceMode
   hasInspirationReference?: boolean
   textMode?: SlideTextMode
+  /** Position in a multi-slide set (0-based). Used for story-sequence beat framing. */
+  slideIndex?: number
+  totalSlides?: number
 }) {
   const cleanBackground = textMode === "clean-background"
+  // 2026-07-06 audit fix: "identity-scene" is the only mode that actually BUILDS a new scene
+  // (preserve-frame/story-sequence/tutorial modes preserve an existing photo untouched) - so
+  // this is the one mode that was missing the quality/lighting/makeup anchors every from-scratch
+  // photo prompt gets elsewhere in the app (photo, photoshoot). Scoped here, not applied globally,
+  // so it never contradicts a "preserve exactly" instruction.
+  const isNewScene = referenceMode === "identity-scene"
+  const identityScenePolish = isNewScene
+    ? `Lighting: natural, directional, editorial light - soft window light or golden-hour warmth. Avoid flat on-camera flash or harsh overhead light.\n${ELEVATION}\n${REALISM_TOKENS}.\n${AVOID_LIST}`
+    : ""
+  // Reel-cover has one job a carousel/story slide doesn't: hold space for a headline overlay.
+  const reelCoverShotFraming =
+    category === "reel-cover" && isNewScene
+      ? "Shot: frame her as the cover-safe hero. Confident, anchoring presence, clear of clutter, with clean negative space reserved at the top or center for a headline overlay."
+      : ""
+  // Beat-position framing for a generated (not preserved-photo) story-sequence slide: without
+  // this, every identity-scene slide in the set defaults to the same shot distance and mood.
+  const storyBeatFraming =
+    category === "story-sequence" && isNewScene && typeof slideIndex === "number" && typeof totalSlides === "number" && totalSlides > 1
+      ? slideIndex === 0
+        ? `This is the opening frame of a ${totalSlides}-slide story sequence: establish the moment with a slightly wider, settling-in framing.`
+        : slideIndex === totalSlides - 1
+          ? `This is the closing frame of the sequence: warmer, closer, more intimate framing than the opening.`
+          : `This is a middle frame (${slideIndex + 1} of ${totalSlides}) in the sequence: keep pace and energy consistent with the frames around it.`
+      : ""
   const tutorialGrounding =
     category === "story-sequence"
       ? "The FIRST reference image is the exact story background photo. Preserve the original photo exactly. Do not change the person's identity, face, body, outfit, pose, lighting, background, colors, composition, skin texture, or natural details. Do not retouch, beautify, smooth skin, reshape the body, alter the face, change the outfit, change the room, or make the image look AI-generated. This is an overlay-only design: only add text, small labels, simple arrows, subtle borders, minimal editorial layout details, or light hand-drawn accents."
@@ -133,6 +163,12 @@ Internal slide kind (do not render): ${slide.kind}
 Style anchor: ${styleLabel || "approved SSELFIE reference"}
 
 ${tutorialGrounding}
+
+${identityScenePolish}
+
+${reelCoverShotFraming}
+
+${storyBeatFraming}
 
 ${cleanBackground ? "Use the SECOND reference image for the premium editorial visual world only: restrained cool monochrome palette, generous negative space, calm Scandinavian spacing, subtle film grain, soft shadows, and tasteful minimal accents. Do NOT copy or render any typography from the reference image." : category === "story-sequence" ? "Use the SECOND reference image for typography, spacing, hierarchy, and neutral editorial overlay taste only. Do not use it to alter the first photo." : "Match the SECOND reference image's style as closely as possible: premium editorial quiet-luxury magazine design, elegant high-contrast serif headlines with tasteful italics for emphasis, clean sans-serif supporting text, a restrained cool monochrome palette (charcoal, smoke gray, cream white, near-black), generous negative space, calm Scandinavian spacing, and the same kind of subtle hand-drawn accents, highlight boxes behind key phrases, and small handwritten notes shown in that reference. Integrate the text into the scene, never pasted on a card. Never a white lesson card, never a flat Canva template, no emojis, no gradients, no neon, no bright red or green callouts."}
 
@@ -213,6 +249,8 @@ export async function redesignContentSlideToBuffer({
   size,
   textMode = "baked",
   extraIdentityInstruction,
+  slideIndex,
+  totalSlides,
 }: {
   referenceUrl: string
   styleReferenceUrl: string
@@ -230,6 +268,9 @@ export async function redesignContentSlideToBuffer({
   // LIKENESS-MEMORY-01: the member's stored accuracy corrections, appended after the
   // built prompt so /app slides honor them too. Admin content-kit callers leave this unset.
   extraIdentityInstruction?: string
+  /** Position in a multi-slide set (0-based). Used for story-sequence beat framing. */
+  slideIndex?: number
+  totalSlides?: number
 }): Promise<{ buffer: Buffer; prompt: string }> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured")
@@ -258,6 +299,8 @@ export async function redesignContentSlideToBuffer({
         referenceMode,
         hasInspirationReference: Boolean(inspirationReferenceUrl),
         textMode,
+        slideIndex,
+        totalSlides,
       }),
       extraIdentityInstruction?.trim() || "",
     ]
