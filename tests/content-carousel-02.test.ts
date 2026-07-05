@@ -151,4 +151,25 @@ describe("CONTENT-CAROUSEL-02/03 tutorial image-to-image generation", () => {
     expect(deck.slides.every(slide => !slide.overlayAssets?.length)).toBe(true)
     expect(deck.slides.every(slide => !slide.accents?.length)).toBe(true)
   })
+
+  it("accepts a Suite-feature-demo topic alongside photo-technique topics (2026-07-05)", async () => {
+    // Sandra: no new carousel engine needed, but the tutorial mode's rules only ever described
+    // teaching a photo technique (settings/light/pose/crop). A "showcase what the Suite does"
+    // marketing topic needs the same engine to recognize a second, distinct teaching mode: walk
+    // through a real app workflow using real screenshots, never an invented mockup.
+    const { generateTutorialCarousels } = await import("@/lib/content-kit/carousel-generator")
+    const { callContentKitLlm } = await import("@/lib/content-kit/llm")
+
+    await generateTutorialCarousels({
+      mode: "tutorial",
+      topic: "what SSELFIE Suite actually creates from one selfie",
+      keyword: "KIT",
+    })
+
+    const prompt = (callContentKitLlm as any).mock.calls.at(-1)[0] as string
+    expect(prompt).toContain("what a specific SSELFIE Suite feature or workflow actually does")
+    expect(prompt).toContain("real app screenshots/reel references as the visual proof")
+    expect(prompt).toContain("never an invented mockup or generic SaaS-style illustration")
+    expect(prompt).toContain("it does not also teach a photo technique")
+  })
 })

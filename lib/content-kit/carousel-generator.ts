@@ -716,7 +716,7 @@ ${sourceShoot.title ? `SOURCE PHOTOSHOOT: "${sourceShoot.title}". Use it as the 
 Write ONE premium editorial tutorial carousel. It should feel like a practical saved post, not a loud Canva tutorial.
 
 Rules:
-- The tutorial must teach one clear visual method: settings, light, pose, crop, prompt, edit, or phone setup.
+- The tutorial must teach ONE of two things, matched to the requested topic above: (a) a clear visual photo method (settings, light, pose, crop, prompt, edit, phone setup), for teaching selfie/content technique to a cold audience, OR (b) what a specific SSELFIE Suite feature or workflow actually does and looks like in real use (2026-07-05, Sandra's marketing-to-strangers demo carousels) - walk through the real steps a member takes (choose a look, generate, review results) using real app screenshots/reel references as the visual proof for each step, never an invented mockup or generic SaaS-style illustration. Never mix the two: a demo carousel about the app stays about the app, it does not also teach a photo technique.
 - Use Sandra's exact promise: "Look like yourself, at your best."
 - Avoid "elevate", "elevated", "flawless", "perfect skin", "fake photoshoot", "no one will know", and any trickery language.
 - Keep the iPhone/settings/screenshot slides practical and precise.
