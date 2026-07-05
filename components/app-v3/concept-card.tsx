@@ -7,10 +7,9 @@
 // success state: Use/Download primary, Regenerate secondary, "Ask Maya to tweak" tiny.
 
 import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
-import type { ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import type { OutputFormat } from "./types"
 import { Spinner } from "./loading"
-import { downloadImageWithOverlay, TextOverlayLayer } from "./text-overlay-layer"
 import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 
 export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
@@ -19,12 +18,14 @@ export interface ConceptGenState {
   status: ConceptGenStatus
   imageUrls?: string[]
   textOverlaySpecs?: TextOverlaySpec[]
+  textOverlayMode?: "with-text" | "without-text"
   /**
-   * TEXT-STUDIO-01: per-image baked text renders, index-aligned with imageUrls. The clean
-   * base in imageUrls is the source of truth and is never overwritten; a baked entry means
-   * "show this instead", and "without text" is an instant swap back.
+   * Per-image baked text renders, index-aligned with imageUrls. The clean base in imageUrls is
+   * the source of truth and is never overwritten. We no longer render CSS text fallback on
+   * customer results; if a bake is missing, she sees the clean image and the copyable words.
    */
   bakedImageUrls?: Array<string | null>
+  autoBakeSkipped?: string | null
   aiImageId?: number | null
   aiImageIds?: Array<number | null>
   videoUrl?: string
@@ -42,8 +43,6 @@ interface ConceptCardProps {
   onOpen?: (imageUrls: string[]) => void
   /** Open true Edit Mode on the finished image. */
   onEdit?: () => void
-  /** Open the full-screen Text Studio on the finished image (TEXT-STUDIO-01). */
-  onOpenTextStudio?: () => void
   /** Replaces the single idle button when a guided picker should own the next step. */
   idleAction?: ReactNode
   /** Extra guided next steps after a result is created. */
@@ -63,6 +62,18 @@ const FRAME_ASPECT: Record<OutputFormat, string> = {
   video: "aspect-[9/16]",
 }
 
+function buildSuggestedTextCopy(specs: TextOverlaySpec[] | undefined): string {
+  if (!specs?.length) return ""
+  return specs
+    .map((spec, index) => {
+      const lines = [spec.headline, spec.subline].filter(Boolean)
+      if (lines.length === 0) return ""
+      return specs.length > 1 ? `Slide ${index + 1}\n${lines.join("\n")}` : lines.join("\n")
+    })
+    .filter(Boolean)
+    .join("\n\n")
+}
+
 export function ConceptCard({
   concept,
   gen,
@@ -70,7 +81,6 @@ export function ConceptCard({
   onGenerate,
   onOpen,
   onEdit,
-  onOpenTextStudio,
   idleAction,
   resultActions,
   promptAssetId,
@@ -85,6 +95,11 @@ export function ConceptCard({
   const firstOverlay = gen.textOverlaySpecs?.[0] ?? null
   // A baked render (text in the pixels) wins the card; the clean base stays kept underneath.
   const firstBaked = gen.bakedImageUrls?.[0] ?? null
+  const suggestedText = buildSuggestedTextCopy(gen.textOverlaySpecs)
+  const [copiedText, setCopiedText] = useState(false)
+  const requestedBakedText = gen.textOverlayMode === "with-text"
+  const hasAnyBakedText = Boolean(gen.bakedImageUrls?.some(Boolean))
+  const bakeMissing = requestedBakedText && Boolean(firstOverlay) && !hasAnyBakedText
 
   return (
     <div className="min-w-0 max-w-full overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white [overflow-x:clip]">
@@ -112,7 +127,6 @@ export function ConceptCard({
                 decoding="async"
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               />
-              {firstOverlay && !firstBaked && <TextOverlayLayer spec={firstOverlay} />}
               {isCarousel && (
                 <span className="absolute left-2 top-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
                   {images.length} slides
@@ -165,6 +179,35 @@ export function ConceptCard({
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#818283]">
               {isVideoDone ? "Saved to your videos" : "Saved to your gallery"}
             </p>
+            {bakeMissing && (
+              <p className="rounded-[4px] bg-[#282728]/5 px-3 py-2 text-[12px] leading-relaxed text-[#4F5052]">
+                The clean image is ready. The text did not bake into this one, so Maya left the
+                words below for you to copy or try again.
+              </p>
+            )}
+            {suggestedText && (
+              <div className="rounded-[5px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#818283]">
+                    Maya&apos;s suggested text
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void navigator.clipboard?.writeText(suggestedText)
+                      setCopiedText(true)
+                      window.setTimeout(() => setCopiedText(false), 1800)
+                    }}
+                    className="inline-flex min-h-8 items-center text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                  >
+                    {copiedText ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <pre className="mt-2 whitespace-pre-wrap break-words font-sans text-[12px] leading-relaxed text-[#282728] [overflow-wrap:anywhere]">
+                  {suggestedText}
+                </pre>
+              </div>
+            )}
             <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 min-[380px]:gap-3">
               {isVideoDone ? (
                 <a
@@ -197,29 +240,13 @@ export function ConceptCard({
                         })
                       )
                       .catch(() => {})
-                    if (firstBaked) window.open(firstBaked, "_blank", "noreferrer")
-                    else if (firstOverlay) void downloadImageWithOverlay(images[0], firstOverlay)
-                    else window.open(images[0], "_blank", "noreferrer")
+                    window.open(firstBaked ?? images[0], "_blank", "noreferrer")
                   }}
                   className="inline-flex min-h-11 items-center justify-center rounded-[4px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
                 >
                   Download
                 </button>
               )}
-              {firstOverlay &&
-                onOpenTextStudio &&
-                format !== "story-slide" &&
-                format !== "story-sequence" &&
-                !isCarousel &&
-                !isVideoDone && (
-                  <button
-                    type="button"
-                    onClick={onOpenTextStudio}
-                    className="inline-flex min-h-11 items-center justify-center rounded-[4px] border border-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] hover:bg-[#0D0E10]/[0.04] min-[380px]:px-5 min-[380px]:tracking-[0.18em]"
-                  >
-                    Edit text
-                  </button>
-                )}
               {onEdit && !isCarousel && !isVideoDone && (
                 <button
                   type="button"

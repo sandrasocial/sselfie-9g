@@ -43,7 +43,6 @@ import {
   type StyleReferenceCategory,
 } from "@/lib/content-kit/slide-redesign-generator"
 import {
-  isTextOverlayLayerEnabled,
   makeTextOverlaySpec,
   OVERLAY_STYLE_PRESETS,
   type OverlayStyleId,
@@ -68,8 +67,8 @@ export const maxDuration = 300
 // serial OpenAI legs (hero render -> parallel rest -> parallel bake) at ~60-120s each, which
 // can blow past the 300s function ceiling - the function dies with no response, no refund of
 // the bake deduction, and no analytics. If the clean renders already ate the budget, SKIP the
-// bake instead: the response returns on time with clean slides + the app-composited text layer,
-// and every slide can still be baked one-by-one in the Text Studio.
+// bake instead: the response returns on time with clean slides + Maya's suggested words below
+// the result, and chat can still re-bake from the clean original when the member asks.
 // 170s keeps the typical 5-slide sequence baking (hero ~82s + rest ~82s = ~164s elapsed) while
 // the worst accepted case (169s + ~120s bake + persist) still lands inside the 300s ceiling.
 const AUTO_BAKE_TIME_BUDGET_MS = 170_000
@@ -102,6 +101,7 @@ const SHOOT_SHOT_ROLES = new Set<ShootShotRole>([
 // for cost control (trials grant 20 images; high would ~4x the cost). High quality is reserved for
 // admin content only. APP_V3_IMAGE_QUALITY can still override per environment.
 type ImgQuality = "low" | "medium" | "high"
+type GraphicTextMode = "with-text" | "without-text"
 type OpenAIImageEditResponse = { data?: Array<{ b64_json?: string | null }> }
 const QUALITY_OVERRIDE = process.env.APP_V3_IMAGE_QUALITY as ImgQuality | undefined
 function qualityForFormat(_format: OutputFormat): ImgQuality {
@@ -147,16 +147,16 @@ function normalizeRequestedOverlayStyle(value: unknown): OverlayStyleId | null {
   return match?.id ?? null
 }
 
-function usesCompositedTextOverlay(
+function normalizeGraphicTextMode(value: unknown): GraphicTextMode | null {
+  return value === "with-text" || value === "without-text" ? value : null
+}
+
+function shouldBakeGraphicText(
   format: OutputFormat,
-  requestedOverlayStyle: OverlayStyleId | null
+  requestedTextOverlayMode: GraphicTextMode | null
 ): boolean {
-  // Maya's guided style cards are now part of the member flow, not a hidden experiment.
-  // If the request carries a tapped style, honor it even when the old rollout env flag is off.
-  return (
-    isRedesignGraphicFormat(format) &&
-    (isTextOverlayLayerEnabled() || Boolean(requestedOverlayStyle))
-  )
+  // Maya's guided text cards are now the default member flow, not a hidden experiment.
+  return isRedesignGraphicFormat(format) && requestedTextOverlayMode === "with-text"
 }
 
 function categoryForGraphicFormat(format: OutputFormat): StyleReferenceCategory {
@@ -218,6 +218,7 @@ function buildAppGraphicRedesignJobs({
   referenceUrls,
   inspirationReferenceUrl,
   textOverlayEnabled,
+  textSuggestionEnabled,
   overlayStyleOverride,
 }: {
   brief: CreativeBrief
@@ -226,6 +227,7 @@ function buildAppGraphicRedesignJobs({
   referenceUrls: string[]
   inspirationReferenceUrl?: string
   textOverlayEnabled?: boolean
+  textSuggestionEnabled?: boolean
   /** MAYA-GUIDED-TEXT-01: the member's tapped template. Wins over Maya's per-concept pick. */
   overlayStyleOverride?: string | null
 }): AppGraphicRedesignJob[] {
@@ -237,7 +239,7 @@ function buildAppGraphicRedesignJobs({
     return {
       label: `${format} ${index + 1}/${slides.length}`,
       slide,
-      textOverlaySpec: textOverlayEnabled
+      textOverlaySpec: textSuggestionEnabled
         ? makeTextOverlaySpec({
             heading: slide.title,
             body: slide.body,
@@ -262,7 +264,11 @@ function buildAppGraphicRedesignJobs({
       inspirationReferenceUrl: inspirationReferenceUrl ?? undefined,
       recordPrompt: [
         `SSELFIE redesign engine (${category})`,
-        textOverlayEnabled ? "Text mode: clean background + composited app overlay" : "",
+        textOverlayEnabled
+          ? "Text mode: clean background + baked text render"
+          : textSuggestionEnabled
+            ? "Text mode: clean background + copy suggestions only"
+            : "",
         `Topic: ${topic}`,
         `Slide: ${slide.title}`,
         slide.body ? `Body: ${slide.body}` : "",
@@ -456,6 +462,8 @@ export async function POST(request: NextRequest) {
           shootBriefs?: unknown
           /** MAYA-GUIDED-TEXT-01: member-tapped cover/story/carousel text style. */
           overlayStyle?: unknown
+          /** Customer-facing choice: bake text into the image or keep the visual clean. */
+          textOverlayMode?: unknown
         })
       | null
     if (!body) {
@@ -465,6 +473,8 @@ export async function POST(request: NextRequest) {
     const format: OutputFormat =
       body.format && VALID_FORMATS.includes(body.format) ? body.format : "photo"
     const requestedOverlayStyle = normalizeRequestedOverlayStyle(body.overlayStyle)
+    const requestedTextOverlayMode =
+      normalizeGraphicTextMode(body.textOverlayMode) ?? (requestedOverlayStyle ? "with-text" : null)
 
     const baseImageUrl = typeof body.baseImageUrl === "string" ? body.baseImageUrl : null
 
@@ -473,7 +483,10 @@ export async function POST(request: NextRequest) {
     let photoshootJobs: PhotoshootJob[] = []
     let graphicJobs: AppGraphicRedesignJob[] = []
     let graphicStyle: Awaited<ReturnType<typeof pickContentStyleReference>> | null = null
-    const textOverlayEnabled = usesCompositedTextOverlay(format, requestedOverlayStyle)
+    const textOverlayEnabled = shouldBakeGraphicText(format, requestedTextOverlayMode)
+    const cleanGraphicBackground =
+      isRedesignGraphicFormat(format) &&
+      (textOverlayEnabled || requestedTextOverlayMode === "without-text")
     let referenceUrls: string[] = []
     let inspirationReferenceUrl: string | null = null
     const baseImageSource: string | null = null
@@ -590,6 +603,7 @@ export async function POST(request: NextRequest) {
           referenceUrls,
           inspirationReferenceUrl: inspirationReferenceUrl ?? undefined,
           textOverlayEnabled,
+          textSuggestionEnabled: Boolean(requestedTextOverlayMode),
           overlayStyleOverride: requestedOverlayStyle,
         })
         graphicStyle = await pickContentStyleReference(
@@ -1094,7 +1108,7 @@ export async function POST(request: NextRequest) {
             size,
             // Suite renders everything at medium (cost control); admin keeps high.
             quality: IMAGE_QUALITY,
-            textMode: textOverlayEnabled ? "clean-background" : "baked",
+            textMode: cleanGraphicBackground ? "clean-background" : "baked",
             // LIKENESS-MEMORY-01: her stored accuracy corrections ride slide renders too.
             extraIdentityInstruction: likenessBlock || undefined,
             // 2026-07-06 audit fix: beat-position framing for a generated story-sequence slide
@@ -1217,7 +1231,8 @@ export async function POST(request: NextRequest) {
     //
     // Credits: the bake leg is a SECOND deduction (1 IMAGE per baked image), mirroring the
     // standalone bake route. It never blocks the generation result: insufficient credits
-    // skips the bake (clean + CSS layer still work), and any failed bake leg is refunded.
+    // skips the bake (clean render + copy suggestions still work), and any failed bake leg is
+    // refunded. We never show a CSS text fallback on customer results.
     let bakedImageUrls: Array<string | null> | null = null
     let bakeCreditsDeducted = 0
     let responseBalance = deduction.newBalance
@@ -1228,7 +1243,7 @@ export async function POST(request: NextRequest) {
       graphicJobs.length > 0 &&
       textOverlaySpecs.length === buffers.length
     // Time-budget guard: never start a bake leg the 300s ceiling can't fit. Skipping is
-    // graceful (clean render + CSS text layer, bake later per-slide in the Text Studio);
+    // graceful (clean render + copy suggestions; chat can re-bake from the clean base);
     // a mid-bake timeout is not (dead card, kept bake credits, zero telemetry).
     const bakeElapsedMs = Date.now() - requestStartedAt
     const wantsAutoBake = wantsAutoBakeBase && bakeElapsedMs < AUTO_BAKE_TIME_BUDGET_MS
@@ -1300,7 +1315,7 @@ export async function POST(request: NextRequest) {
           )
           const failedBakes = bakedImageUrls.filter(url => url === null).length
           if (failedBakes > 0) {
-            // Refund only the failed legs: those images fall back to clean + CSS layer.
+            // Refund only the failed legs: those images fall back to clean + copy suggestions.
             await refundCredits(
               neonUser.id,
               CREDIT_COSTS.IMAGE * failedBakes,
@@ -1333,6 +1348,7 @@ export async function POST(request: NextRequest) {
       imageUrl: imageUrls[0],
       imageUrls,
       ...(textOverlaySpecs.length ? { textOverlaySpecs } : {}),
+      ...(requestedTextOverlayMode ? { textOverlayMode: requestedTextOverlayMode } : {}),
       ...(bakedImageUrls ? { bakedImageUrls } : {}),
       ...(autoBakeSkipped ? { autoBakeSkipped } : {}),
       imageCount: imageUrls.length,

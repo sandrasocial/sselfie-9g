@@ -313,10 +313,12 @@ describe("generate route story wiring (app/api/app-v3/maya/generate)", () => {
     expect(route).toContain("...(autoBakeSkipped ? { autoBakeSkipped } : {})")
   })
 
-  it("bypasses the retired composited overlay path for story slides and sequences", () => {
-    expect(route).toContain("function usesCompositedTextOverlay")
-    expect(route).toContain('format !== "story-slide" && format !== "story-sequence"')
-    expect(route).toContain("const textOverlayEnabled = usesCompositedTextOverlay(format)")
+  it("uses the explicit graphic text mode for story slides and sequences", () => {
+    expect(route).toContain("function shouldBakeGraphicText")
+    expect(route).toContain("normalizeGraphicTextMode(body.textOverlayMode)")
+    expect(route).toContain("const cleanGraphicBackground")
+    expect(route).toContain('textMode: cleanGraphicBackground ? "clean-background" : "baked"')
+    expect(route).toContain("textSuggestionEnabled: Boolean(requestedTextOverlayMode)")
   })
 
   it("keeps the graceful credit paths: 402 with code + current balance before any charge", () => {
@@ -409,13 +411,13 @@ describe("story text stays in Maya planning, not legacy Text Studio", () => {
     expect(concierge).toContain("Story slides/sequences are content-planning surfaces")
   })
 
-  it("hides the old Text Studio entry points for story slides and story sequences", () => {
-    expect(concierge).toContain("isStoryGraphicFormat(conceptFormat)")
-    expect(concierge).toContain("lightbox.key && !isStoryGraphicFormat(lightbox.format)")
-    expect(card).toContain("function isStoryGraphicFormat")
-    expect(card).toContain("isStoryGraphicFormat(format) ? null")
-    expect(lightbox).toContain('format === "story-slide" || format === "story-sequence"')
-    expect(card).toContain("!isStoryGraphicFormat(format)")
+  it("removes the old Text Studio entry points for every graphic format", () => {
+    expect(concierge).not.toContain("<TextStudio")
+    expect(concierge).not.toContain("setTextStudio")
+    expect(card).not.toContain("onOpenTextStudio")
+    expect(card).not.toContain("TextOverlayLayer")
+    expect(lightbox).not.toContain("onOpenTextStudio")
+    expect(lightbox).not.toContain("TextOverlayLayer")
   })
 })
 

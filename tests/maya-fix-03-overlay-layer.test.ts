@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { describe, expect, it, vi } from "vitest"
 
 import {
@@ -432,25 +432,29 @@ describe("MAYA-FIX-03 composited overlay layer", () => {
     expect(guide).toContain("brief.graphic.overlayStyle")
     const persona = readFileSync("lib/app-v3/maya/persona.ts", "utf8")
     expect(persona).toContain("getOverlayStyleGuide")
-    expect(persona).toContain("isTextOverlayLayerEnabled")
+    expect(persona).not.toContain("isTextOverlayLayerEnabled")
   })
 
-  it("gives the member style, size, and position controls in the editor", () => {
+  it("keeps only the lightweight overlay preview layer for picker examples", () => {
     const editor = readFileSync("components/app-v3/text-overlay-layer.tsx", "utf8")
-    expect(editor).toContain("OVERLAY_STYLE_PRESETS.map")
-    expect(editor).toContain("Text size")
-    expect(editor).toMatch(/onChange\(\{ \.\.\.spec, size: size\.id \}\)/)
-    // The live layer and the export both come from computeOverlayLayout (always match).
-    expect(editor.split("computeOverlayLayout").length).toBeGreaterThan(2)
+    expect(editor).toContain("export function TextOverlayLayer")
+    expect(editor).not.toContain("export function TextOverlayEditor")
+    expect(editor).not.toContain("downloadImageWithOverlay")
+    expect(editor).not.toContain("Text size")
+    // The preview layer comes from computeOverlayLayout, matching the bake prompt geometry.
+    expect(editor).toContain("computeOverlayLayout")
   })
 
-  it("keeps the generate route wired for clean-background graphics + overlay specs", () => {
+  it("keeps the generate route wired for explicit clean/baked graphic text choices", () => {
     const route = readFileSync("app/api/app-v3/maya/generate/route.ts", "utf8")
-    expect(route).toContain("isTextOverlayLayerEnabled")
-    expect(route).toContain("function usesCompositedTextOverlay")
+    expect(route).not.toContain("isTextOverlayLayerEnabled")
+    expect(route).toContain("function shouldBakeGraphicText")
     expect(route).toContain("isRedesignGraphicFormat(format)")
-    expect(route).toContain("Boolean(requestedOverlayStyle)")
-    expect(route).toContain('textMode: textOverlayEnabled ? "clean-background" : "baked"')
+    expect(route).toContain("requestedTextOverlayMode === \"with-text\"")
+    expect(route).toContain("normalizeGraphicTextMode(body.textOverlayMode)")
+    expect(route).toContain("const cleanGraphicBackground")
+    expect(route).toContain('textMode: cleanGraphicBackground ? "clean-background" : "baked"')
+    expect(route).toContain("textSuggestionEnabled: Boolean(requestedTextOverlayMode)")
     expect(route).toContain("textOverlaySpecs")
   })
 })
@@ -498,55 +502,61 @@ describe("overlay visual picker (Sandra's 2026-07-02 feedback)", () => {
     expect(toggleMarkedWord("look expensive", -1)).toBe("look expensive")
   })
 
-  it("renders the style picker as live mini previews on the member's own image", () => {
+  it("renders the style picker as mini previews without bringing back the old editor", () => {
     const editor = readFileSync("components/app-v3/text-overlay-layer.tsx", "utf8")
-    // The editor receives the generated image and previews every preset on it.
-    expect(editor).toContain("imageUrl: string")
-    expect(editor).toContain("OVERLAY_STYLE_PRESETS.map")
-    expect(editor).toContain("<TextOverlayLayer spec={previewSpec} />")
-    expect(editor).toContain("src={imageUrl}")
+    const concierge = readFileSync("components/app-v3/maya-concierge.tsx", "utf8")
+    expect(concierge).toContain("OVERLAY_STYLE_PRESETS.map")
+    expect(concierge).toContain("<TextOverlayLayer spec={spec} />")
+    expect(editor).not.toContain("src={imageUrl}")
     // No invisible title-attribute hints; no asterisk-typing instructions.
     expect(editor).not.toContain("title={style.hint}")
     expect(editor).not.toContain("Star one phrase")
-    // Tap-to-highlight chips are wired for marked-phrase styles.
-    expect(editor).toContain("toggleMarkedWord")
-    expect(editor).toContain("getOverlayMarkableWords")
+    expect(editor).not.toContain("toggleMarkedWord")
+    expect(editor).not.toContain("getOverlayMarkableWords")
   })
 
   it("shows all six styles at once in a grid, never a horizontal hunt", () => {
     // Sandra's 2026-07-02 feedback: Cutout Editorial scrolled off the horizontal row.
-    const editor = readFileSync("components/app-v3/text-overlay-layer.tsx", "utf8")
-    expect(editor).toContain("grid grid-cols-3")
-    expect(editor).not.toContain("overflow-x-auto")
+    const concierge = readFileSync("components/app-v3/maya-concierge.tsx", "utf8")
+    expect(concierge).toContain("grid grid-cols-2")
+    expect(concierge).toContain("OVERLAY_STYLE_PRESETS.map")
+    expect(concierge).not.toContain("OVERLAY_STYLE_PRESETS.map(preset => {\\n          return")
     expect(OVERLAY_STYLE_PRESETS).toHaveLength(6)
   })
 })
 
-describe("text studio entry points (TEXT-STUDIO-01, Sandra's 2026-07-02 feedback)", () => {
-  it("opens the studio from the concept card instead of rendering the editor inline", () => {
+describe("retired Text Studio surface (Sandra's 2026-07-05 direction)", () => {
+  it("keeps finished results free of CSS overlay fallback and shows copyable suggestions instead", () => {
     const card = readFileSync("components/app-v3/concept-card.tsx", "utf8")
     expect(card).not.toContain("TextOverlayEditor")
-    expect(card).toContain("onOpenTextStudio")
-    expect(card).toContain("Edit text")
+    expect(card).not.toContain("onOpenTextStudio")
+    expect(card).not.toContain("TextOverlayLayer")
+    expect(card).not.toContain("downloadImageWithOverlay")
+    expect(card).toContain("Maya&apos;s suggested text")
+    expect(card).toContain("navigator.clipboard?.writeText(suggestedText)")
     // A baked render wins the card view and the download; the clean base stays kept.
     expect(card).toContain("firstBaked ?? images[0]")
-    expect(card).toContain("{firstOverlay && !firstBaked && <TextOverlayLayer spec={firstOverlay} />}")
-    expect(card).toContain('if (firstBaked) window.open(firstBaked, "_blank", "noreferrer")')
+    expect(card).toContain('window.open(firstBaked ?? images[0], "_blank", "noreferrer")')
   })
 
-  it("opens the studio from the lightbox instead of rendering the editor inline", () => {
+  it("keeps the lightbox free of CSS overlay fallback and exposes suggested words", () => {
     const lightbox = readFileSync("components/app-v3/image-lightbox.tsx", "utf8")
     expect(lightbox).not.toContain("TextOverlayEditor")
-    expect(lightbox).toContain("onOpenTextStudio")
-    expect(lightbox).toContain("Edit text")
+    expect(lightbox).not.toContain("onOpenTextStudio")
+    expect(lightbox).not.toContain("TextOverlayLayer")
+    expect(lightbox).not.toContain("downloadImageWithOverlay")
+    expect(lightbox).toContain("Suggested text")
+    expect(lightbox).toContain("navigator.clipboard?.writeText(suggestedText)")
     expect(lightbox).toContain("baked ?? url")
-    expect(lightbox).toContain("{overlay && !baked && <TextOverlayLayer spec={overlay} />}")
   })
 
-  it("wires the studio in the concierge: spec edits retire stale bakes, bakes persist per index", () => {
+  it("removes the Text Studio component while keeping chat-based re-bake state per image", () => {
     const concierge = readFileSync("components/app-v3/maya-concierge.tsx", "utf8")
-    expect(concierge).toContain("<TextStudio")
-    expect(concierge).toContain("setTextStudio({ key, index: 0 })")
+    expect(concierge).not.toContain("<TextStudio")
+    expect(concierge).not.toContain("setTextStudio")
+    expect(concierge).toContain("function GraphicTextChoiceCard")
+    expect(concierge).toContain("textOverlayMode === \"with-text\"")
+    expect(concierge).toContain('onChoose("without-text")')
     expect(concierge).toContain("updateBakedImage")
     // Editing the design retires the baked render (its pixels carry the OLD words).
     expect(concierge).toMatch(/nextBaked\[index\] = null/)
@@ -560,13 +570,7 @@ describe("text studio entry points (TEXT-STUDIO-01, Sandra's 2026-07-02 feedback
     }
   })
 
-  it("pins the preview at the top of the studio and scrolls the controls beneath it", () => {
-    const studio = readFileSync("components/app-v3/text-studio.tsx", "utf8")
-    // Pinned preview region (fixed height, shrink-0) + scrollable controls (flex-1).
-    expect(studio).toMatch(/h-\[46vh\][^"]*shrink-0/)
-    expect(studio).toMatch(/flex-1 overflow-y-auto/)
-    // The studio reuses the full editor (6-card grid, chips, size, position) below the preview.
-    expect(studio).toContain("<TextOverlayEditor spec={spec} imageUrl={cleanImageUrl} onChange={changeSpec} />")
-    expect(studio).toContain("Apply to photo")
+  it("deletes the old Text Studio file so it cannot reappear in the member flow", () => {
+    expect(existsSync("components/app-v3/text-studio.tsx")).toBe(false)
   })
 })

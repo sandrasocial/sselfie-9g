@@ -1,13 +1,12 @@
 // @vitest-environment node
 
-// TEXT-STUDIO-01 - hybrid baked-text pipeline.
-// The clean text-free image stays the source of truth; "Apply to photo" runs ONE
-// openai.images.edit pass on the CLEAN base with a style-true prompt; "without text" is a
-// client-side swap. These tests pin the bake prompt contract (exact words, style typography,
-// IG safe zones, No-Fake identity rule), the route wiring (auth, credits, refund, flag-off),
-// and the analytics contract.
+// Baked-text pipeline.
+// The clean text-free image stays the source of truth. Maya auto-bakes when the member chooses
+// text, and chat edits run ONE openai.images.edit pass on the CLEAN base with a style-true
+// prompt. These tests pin the bake prompt contract (exact words, style typography, IG safe
+// zones, No-Fake identity rule), route wiring (auth, credits, refund), and analytics contract.
 
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
 import {
@@ -151,9 +150,9 @@ describe("bake prompt contract", () => {
 describe("bake route wiring (app/api/app-v3/maya/bake-text)", () => {
   const route = readFileSync("app/api/app-v3/maya/bake-text/route.ts", "utf8")
 
-  it("is a no-op 404 when the overlay flag is off", () => {
-    expect(route).toContain("isTextOverlayLayerEnabled()")
-    expect(route).toMatch(/isTextOverlayLayerEnabled\(\)[\s\S]{0,120}status: 404/)
+  it("is no longer gated by the retired Text Studio feature flag", () => {
+    expect(route).not.toContain("isTextOverlayLayerEnabled")
+    expect(route).toContain("sanitizeTextOverlaySpec(body.spec)")
   })
 
   it("requires auth and the member/trial generation lock, like the edit route", () => {
@@ -203,32 +202,15 @@ describe("analytics contract", () => {
   })
 })
 
-describe("text studio client (hybrid two-source model)", () => {
-  const studio = readFileSync("components/app-v3/text-studio.tsx", "utf8")
-
-  it("pins the preview and scrolls only the controls", () => {
-    // The preview block is a fixed-height, shrink-0 region; controls scroll beneath it.
-    expect(studio).toMatch(/h-\[46vh\][^"]*shrink-0/)
-    expect(studio).toMatch(/flex-1 overflow-y-auto/)
-    // Live preview = the clean image + the CSS layer, unless a fresh bake is showing.
-    expect(studio).toContain("{showText && !showBaked && <TextOverlayLayer spec={spec} />}")
-  })
-
-  it("keeps remove-text as an instant client-side swap (zero API calls)", () => {
-    expect(studio).toContain("onClick={() => setShowText(current => !current)}")
-    expect(studio).toContain("Without text")
-    // The ONLY fetch in the studio is the bake call itself.
-    expect(studio.match(/fetch\(/g) ?? []).toHaveLength(1)
-    expect(studio).toContain('fetch("/api/app-v3/maya/bake-text"')
-  })
-
-  it("bakes from the clean base and never sends a baked result back", () => {
-    expect(studio).toContain("JSON.stringify({ cleanImageUrl, spec })")
-    expect(studio).not.toContain("cleanImageUrl: bakedUrl")
-  })
-
-  it("falls back to the flattened layer download when there is no fresh bake", () => {
-    expect(studio).toContain("downloadImageWithOverlay(cleanImageUrl, spec)")
-    expect(studio).toContain('window.open(bakedUrl, "_blank", "noreferrer")')
+describe("retired Text Studio client", () => {
+  it("keeps the old manual studio deleted while the bake route remains for Maya chat edits", () => {
+    expect(existsSync("components/app-v3/text-studio.tsx")).toBe(false)
+    expect(readFileSync("components/app-v3/maya-concierge.tsx", "utf8")).not.toContain("<TextStudio")
+    expect(readFileSync("components/app-v3/concept-card.tsx", "utf8")).not.toContain(
+      "downloadImageWithOverlay"
+    )
+    expect(readFileSync("components/app-v3/image-lightbox.tsx", "utf8")).not.toContain(
+      "TextOverlayLayer"
+    )
   })
 })

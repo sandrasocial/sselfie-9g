@@ -100,18 +100,24 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).not.toContain("fixed inset-0 z-50 flex w-full")
   })
 
-  it("passes the member-selected text style into every graphic generation", () => {
+  it("requires an explicit text/no-text choice before graphic generation", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
     const route = read("app/api/app-v3/maya/generate/route.ts")
     const card = read("components/app-v3/concept-card.tsx")
     const lightbox = read("components/app-v3/image-lightbox.tsx")
 
-    expect(concierge).toContain("isGraphicOutputFormat(conceptFormat) ? textStyleChoice : null")
+    expect(concierge).toContain("function GraphicTextChoiceCard")
+    expect(concierge).toContain('setTextOverlayMode(mode)')
+    expect(concierge).toContain("textOverlayMode === \"with-text\"")
+    expect(concierge).toContain('onChoose("without-text")')
     expect(route).toContain("normalizeRequestedOverlayStyle(body.overlayStyle)")
-    expect(route).toContain("usesCompositedTextOverlay(format, requestedOverlayStyle)")
-    expect(route).toContain("Boolean(requestedOverlayStyle)")
+    expect(route).toContain("normalizeGraphicTextMode(body.textOverlayMode)")
+    expect(route).toContain("shouldBakeGraphicText(format, requestedTextOverlayMode)")
+    expect(route).toContain("textSuggestionEnabled: Boolean(requestedTextOverlayMode)")
     expect(card).toContain("const firstOverlay = gen.textOverlaySpecs?.[0] ?? null")
+    expect(card).not.toContain("TextOverlayLayer")
     expect(lightbox).toContain("const overlay = textOverlaySpecs?.[index] ?? null")
+    expect(lightbox).not.toContain("TextOverlayLayer")
   })
 
   it("makes continuing old Maya sessions an explicit choice", () => {

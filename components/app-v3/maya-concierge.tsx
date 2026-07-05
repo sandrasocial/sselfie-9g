@@ -21,7 +21,6 @@ import { AdminContentToolCard, type AdminContentToolResult } from "./admin-conte
 import { Markdown } from "./markdown"
 import { TypingDots } from "./loading"
 import { ImageLightbox } from "./image-lightbox"
-import { TextStudio } from "./text-studio"
 import { TextOverlayLayer } from "./text-overlay-layer"
 import {
   InlineFormatChoice,
@@ -127,6 +126,8 @@ const STYLE_PREVIEW_BACKGROUNDS: Record<OverlayStyleId, string> = {
   "cutout-editorial": "/images/selfie-to-brand-shoot/module-5-content-use/detail-coffee.jpg",
 }
 
+type GraphicTextMode = "with-text" | "without-text"
+
 function isGraphicOutputFormat(format: OutputFormat): boolean {
   return (
     format === "reel-cover" ||
@@ -202,6 +203,50 @@ function TextStyleTemplatePicker({
           )
         })}
       </div>
+    </div>
+  )
+}
+
+function GraphicTextChoiceCard({
+  onChoose,
+}: {
+  onChoose: (mode: GraphicTextMode) => void
+}) {
+  return (
+    <div className="space-y-3 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4">
+      <div>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-[#818283]">Text on image</p>
+        <p className="mt-1 text-[14px] leading-relaxed text-[#4F5052]">
+          Maya can bake short words into the finished image. Choose this now, so nothing appears
+          on your result by surprise.
+        </p>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => onChoose("with-text")}
+          className="min-h-20 rounded-[6px] border border-[#0D0E10] bg-[#0D0E10] px-4 py-3 text-left text-white transition hover:bg-[#282728]"
+        >
+          <span className="block text-[11px] uppercase tracking-[0.16em] text-white/65">
+            Baked in
+          </span>
+          <span className="mt-1 block text-[15px] leading-snug">Add text to the image</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onChoose("without-text")}
+          className="min-h-20 rounded-[6px] border border-[#C5C6C8]/70 bg-[#F8FAFA] px-4 py-3 text-left text-[#0D0E10] transition hover:border-[#0D0E10]"
+        >
+          <span className="block text-[11px] uppercase tracking-[0.16em] text-[#818283]">
+            Clean image
+          </span>
+          <span className="mt-1 block text-[15px] leading-snug">No text, just the visual</span>
+        </button>
+      </div>
+      <p className="text-[12px] leading-relaxed text-[#818283]">
+        If you choose no text, Maya still writes suggested words below the result so you can copy
+        them into Instagram, Canva, or your caption.
+      </p>
     </div>
   )
 }
@@ -506,6 +551,7 @@ export function MayaConcierge({
   // tap. Until she picks one, the concept pull is held and the six example cards sit inline in
   // the thread. The choice rides every generation in this chat; the chip above the direction
   // cards swaps it later.
+  const [textOverlayMode, setTextOverlayMode] = useState<GraphicTextMode | null>(null)
   const [textStyleChoice, setTextStyleChoice] = useState<OverlayStyleId | null>(null)
   const [styleSwapOpen, setStyleSwapOpen] = useState(false)
   const [inlineAesthetics, setInlineAesthetics] = useState<Aesthetic[] | null>(null)
@@ -547,8 +593,6 @@ export function MayaConcierge({
     url: string
     format: OutputFormat
   } | null>(null)
-  // TEXT-STUDIO-01: which generated graphic the full-screen Text Studio is open on.
-  const [textStudio, setTextStudio] = useState<{ key: string; index: number } | null>(null)
   const [textRefining, setTextRefining] = useState(false)
   // Out-of-credits modal (opened when /generate returns 402).
   const [creditModal, setCreditModal] = useState<{ open: boolean; balance: number | null }>({
@@ -857,8 +901,13 @@ export function MayaConcierge({
       hasTrainedModel && !admin && generationSource === "trained-model" && fmt === "photo"
     if (fmt === "video" && !session.videoSourceUrl) return
     if (fmt !== "video" && !session.referenceSelfieUrl && !canUseTrainedModelWithoutSelfie) return
-    // Graphic formats wait for the style tap: the template picker is on screen instead.
-    if (isGraphicOutputFormat(fmt) && !textStyleChoice) return
+    // Graphic formats wait for an explicit text choice. If she wants text, she picks the
+    // baked style before Maya pulls directions; if she wants clean images, Maya still writes
+    // copy suggestions for her to use elsewhere.
+    if (isGraphicOutputFormat(fmt)) {
+      if (!textOverlayMode) return
+      if (textOverlayMode === "with-text" && !textStyleChoice) return
+    }
     if (lastPulledFormatRef.current === fmt) return
     const isFirstPull = lastPulledFormatRef.current === null
     lastPulledFormatRef.current = fmt
@@ -885,6 +934,7 @@ export function MayaConcierge({
     isThinking,
     sendMessage,
     textStyleChoice,
+    textOverlayMode,
   ])
 
   // Maya-first blank starts: if the Create page opened with typed text but no committed format,
@@ -919,7 +969,12 @@ export function MayaConcierge({
         latest = fmt
       }
     }
-    if (latest && session?.outputFormat !== latest) setOutputFormat(latest)
+    if (latest && session?.outputFormat !== latest) {
+      setTextOverlayMode(null)
+      setTextStyleChoice(null)
+      setStyleSwapOpen(false)
+      setOutputFormat(latest)
+    }
   }, [messages, isThinking, session, setOutputFormat])
 
   useEffect(() => {
@@ -934,6 +989,9 @@ export function MayaConcierge({
     }
     if (!latest || session?.outputFormat === latest) return
     lastPulledFormatRef.current = latest
+    setTextOverlayMode(null)
+    setTextStyleChoice(null)
+    setStyleSwapOpen(false)
     setOutputFormat(latest)
   }, [messages, isThinking, session, setOutputFormat])
 
@@ -1063,6 +1121,7 @@ export function MayaConcierge({
     savedCountRef.current = 0
     lastPulledFormatRef.current = null
     seededMessageSentRef.current = null
+    setTextOverlayMode(null)
     setTextStyleChoice(null)
     setStyleSwapOpen(false)
     setInlineShotPickerAesthetic(null)
@@ -1225,8 +1284,13 @@ export function MayaConcierge({
         return
       }
 
-      // The chat-level style choice rides every graphic generation unless a card passes its own.
-      const bakeStyle = overlayStyle ?? (isGraphicOutputFormat(targetFormat) ? textStyleChoice : null)
+      // The chat-level text choice rides every graphic generation. Text is either baked into the
+      // final image, or kept off the visual with Maya's suggested words shown below the result.
+      const wantsGraphicText =
+        isGraphicOutputFormat(targetFormat) && textOverlayMode === "with-text"
+      const graphicTextMode =
+        isGraphicOutputFormat(targetFormat) && textOverlayMode ? textOverlayMode : null
+      const bakeStyle = overlayStyle ?? (wantsGraphicText ? textStyleChoice : null)
       const wantsBakedText = Boolean(bakeStyle && isGraphicOutputFormat(targetFormat))
       const res = await fetch("/api/app-v3/maya/generate", {
         method: "POST",
@@ -1240,6 +1304,7 @@ export function MayaConcierge({
           aestheticId: aesthetic.id,
           conceptTitle: concept.title,
           rerun,
+          ...(graphicTextMode ? { textOverlayMode: graphicTextMode } : {}),
           ...(bakeStyle ? { overlayStyle: bakeStyle } : {}),
           ...(wantsBakedText ? { autoBake: true } : {}),
           // Single-image formats stream progressive previews; carousels keep the JSON path.
@@ -1270,6 +1335,8 @@ export function MayaConcierge({
               imageUrls?: string[]
               textOverlaySpecs?: TextOverlaySpec[]
               bakedImageUrls?: Array<string | null>
+              textOverlayMode?: GraphicTextMode
+              autoBakeSkipped?: string | null
               aiImageId?: number | null
               aiImageIds?: Array<number | null>
               error?: string
@@ -1295,6 +1362,8 @@ export function MayaConcierge({
                   imageUrls: evt!.imageUrls,
                   textOverlaySpecs: evt!.textOverlaySpecs,
                   bakedImageUrls: evt!.bakedImageUrls,
+                  textOverlayMode: evt!.textOverlayMode,
+                  autoBakeSkipped: evt!.autoBakeSkipped,
                   aiImageId: evt!.aiImageId ?? null,
                   aiImageIds: evt!.aiImageIds,
                 },
@@ -1325,6 +1394,8 @@ export function MayaConcierge({
         imageUrls?: string[]
         textOverlaySpecs?: TextOverlaySpec[]
         bakedImageUrls?: Array<string | null>
+        textOverlayMode?: GraphicTextMode
+        autoBakeSkipped?: string | null
         aiImageId?: number | null
         aiImageIds?: Array<number | null>
         error?: string
@@ -1358,6 +1429,8 @@ export function MayaConcierge({
           imageUrls: urls,
           textOverlaySpecs: data?.textOverlaySpecs,
           bakedImageUrls: data?.bakedImageUrls,
+          textOverlayMode: data?.textOverlayMode,
+          autoBakeSkipped: data?.autoBakeSkipped,
           aiImageId: data?.aiImageId ?? null,
           aiImageIds: data?.aiImageIds,
         },
@@ -1484,6 +1557,12 @@ export function MayaConcierge({
   // Tap-first: choosing a format asks Maya to pull 3 directions for it (no typing needed).
   function handlePickFormat(id: OutputFormat) {
     if (isThinking) return
+    if (id !== outputFormat) {
+      setTextOverlayMode(null)
+      setTextStyleChoice(null)
+      setStyleSwapOpen(false)
+      lastPulledFormatRef.current = null
+    }
     const intent = intentForFormat(id, activeCreationIntent.source === "starter_chip" ? "starter_chip" : "manual")
     setLocalCreationIntent(intent)
     extrasRef.current = { ...extrasRef.current, format: intent.format, creationIntent: intent }
@@ -1541,6 +1620,9 @@ export function MayaConcierge({
     extrasRef.current = { ...extrasRef.current, format: intent.format, creationIntent: intent }
     trackInlineChoice("typed_message", intent)
     if (intent.format && session?.outputFormat !== intent.format) {
+      setTextOverlayMode(null)
+      setTextStyleChoice(null)
+      setStyleSwapOpen(false)
       setOutputFormat(intent.format)
       setSetupOpen(false)
     }
@@ -1562,6 +1644,9 @@ export function MayaConcierge({
       event: "suite_next_action_selected",
       properties: { cohort, kind, format: nextFormat },
     })
+    setTextOverlayMode(null)
+    setTextStyleChoice(null)
+    setStyleSwapOpen(false)
     setOutputFormat(nextFormat)
     setSetupOpen(false)
     lastPulledFormatRef.current = nextFormat
@@ -1667,10 +1752,6 @@ export function MayaConcierge({
   }
 
   function findTextRefinementTarget(): TextRefinementTarget | null {
-    if (textStudio) {
-      const target = textTargetForKey(textStudio.key, textStudio.index)
-      if (target) return target
-    }
     if (lightbox?.key) {
       const target = textTargetForKey(lightbox.key, 0)
       if (target) return target
@@ -2647,17 +2728,27 @@ export function MayaConcierge({
                       <p className="text-[11px] uppercase tracking-[0.2em] text-[#818283]">
                         Choose your direction
                       </p>
-                      {isGraphicOutputFormat(conceptFormat) && textStyleChoice && (
+                      {isGraphicOutputFormat(conceptFormat) && textOverlayMode && (
                         <button
                           type="button"
-                          onClick={() => setStyleSwapOpen(open => !open)}
+                          onClick={() => {
+                            setTextOverlayMode(null)
+                            setTextStyleChoice(null)
+                            setStyleSwapOpen(false)
+                            lastPulledFormatRef.current = null
+                          }}
                           className="shrink-0 rounded-[4px] border border-[#C5C6C8]/70 bg-white px-2.5 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#4F5052] hover:border-[#0D0E10]"
                         >
-                          {resolveOverlayStyle(textStyleChoice).name} · change
+                          {textOverlayMode === "with-text" && textStyleChoice
+                            ? `${resolveOverlayStyle(textStyleChoice).name} · text`
+                            : "No text"}{" "}
+                          · change
                         </button>
                       )}
                     </div>
-                    {isGraphicOutputFormat(conceptFormat) && styleSwapOpen && (
+                    {isGraphicOutputFormat(conceptFormat) &&
+                      textOverlayMode === "with-text" &&
+                      styleSwapOpen && (
                       <TextStyleTemplatePicker
                         format={conceptFormat}
                         onPick={style => {
@@ -2680,7 +2771,10 @@ export function MayaConcierge({
                               key,
                               concept,
                               conceptFormat,
-                              isGraphicOutputFormat(conceptFormat) ? textStyleChoice : null
+                              isGraphicOutputFormat(conceptFormat) &&
+                                textOverlayMode === "with-text"
+                                ? textStyleChoice
+                                : null
                             )
                           }
                           onOpen={urls =>
@@ -2690,11 +2784,6 @@ export function MayaConcierge({
                               images: urls,
                               textOverlaySpecs: genState[key]?.textOverlaySpecs,
                             })
-                          }
-                          onOpenTextStudio={
-                            isStoryGraphicFormat(conceptFormat)
-                              ? undefined
-                              : () => setTextStudio({ key, index: 0 })
                           }
                           onEdit={() => {
                             const url = (genState[key]?.imageUrls ?? [])[0]
@@ -2721,20 +2810,30 @@ export function MayaConcierge({
             )
           })}
 
-          {/* MAYA-GUIDED-TEXT-01: the style tap comes FIRST for graphic formats. The concept
-              pull is held until she picks, so these six example cards are the next step in the
-              conversation, not a control panel. */}
+          {/* Graphic formats need an explicit text decision before Maya pulls directions. This
+              prevents surprise text on generated results and keeps the old Text Studio fallback
+              retired: with text means baked text; without text means clean image + copy suggestions. */}
           {outputFormat &&
             isGraphicOutputFormat(outputFormat) &&
-            !textStyleChoice &&
+            (!textOverlayMode || (textOverlayMode === "with-text" && !textStyleChoice)) &&
             lastPulledFormatRef.current !== outputFormat && (
               <div className="flex min-w-0 max-w-full items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
                 <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
                 <div className="min-w-0 max-w-[calc(100%-2.25rem)] flex-1 sm:max-w-[88%]">
-                  <TextStyleTemplatePicker
-                    format={outputFormat}
-                    onPick={style => setTextStyleChoice(style)}
-                  />
+                  {!textOverlayMode ? (
+                    <GraphicTextChoiceCard
+                      onChoose={mode => {
+                        setTextOverlayMode(mode)
+                        setTextStyleChoice(null)
+                        setStyleSwapOpen(false)
+                      }}
+                    />
+                  ) : (
+                    <TextStyleTemplatePicker
+                      format={outputFormat}
+                      onPick={style => setTextStyleChoice(style)}
+                    />
+                  )}
                 </div>
               </div>
             )}
@@ -2881,43 +2980,9 @@ export function MayaConcierge({
           images={lightbox.images}
           textOverlaySpecs={lightbox.textOverlaySpecs}
           bakedImageUrls={lightbox.key ? genState[lightbox.key]?.bakedImageUrls : undefined}
-          format={lightbox.format}
-          onOpenTextStudio={
-            lightbox.key && !isStoryGraphicFormat(lightbox.format)
-              ? index => setTextStudio({ key: lightbox.key as string, index })
-              : undefined
-          }
           onClose={() => setLightbox(null)}
         />
       )}
-
-      {/* TEXT-STUDIO-01: full-screen text studio (pinned preview + scrollable controls).
-          Renders above the lightbox so "Edit text" from a slide lands right on top of it. */}
-      {textStudio &&
-        (() => {
-          const gen = genState[textStudio.key]
-          const cleanUrl = gen?.imageUrls?.[textStudio.index]
-          const spec = gen?.textOverlaySpecs?.[textStudio.index]
-          if (!cleanUrl || !spec) return null
-          return (
-            <TextStudio
-              cleanImageUrl={cleanUrl}
-              spec={spec}
-              bakedUrl={gen?.bakedImageUrls?.[textStudio.index] ?? null}
-              onSpecChange={next => {
-                updateTextOverlaySpec(textStudio.key, textStudio.index, next)
-                setLightbox(current => {
-                  if (!current || current.key !== textStudio.key) return current
-                  const nextSpecs = [...(current.textOverlaySpecs ?? [])]
-                  nextSpecs[textStudio.index] = next
-                  return { ...current, textOverlaySpecs: nextSpecs }
-                })
-              }}
-              onBaked={url => updateBakedImage(textStudio.key, textStudio.index, url)}
-              onClose={() => setTextStudio(null)}
-            />
-          )
-        })()}
 
       <CreditModal
         open={creditModal.open}

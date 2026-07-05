@@ -6,20 +6,15 @@
 // Supports keyboard (Esc, arrows), prev/next for multi-image sets, and download.
 
 import { useEffect, useState } from "react"
-import { downloadImageWithOverlay, TextOverlayLayer } from "./text-overlay-layer"
 import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
-import type { OutputFormat } from "./types"
 
 interface ImageLightboxProps {
   images: string[]
   textOverlaySpecs?: TextOverlaySpec[]
-  /** TEXT-STUDIO-01: per-image baked text renders, index-aligned with images. */
+  /** Per-image baked text renders, index-aligned with images. */
   bakedImageUrls?: Array<string | null>
-  format?: OutputFormat
   startIndex?: number
   onClose: () => void
-  /** Open the full-screen Text Studio for this slide (replaces the old inline editor). */
-  onOpenTextStudio?: (index: number) => void
 }
 
 export function ImageLightbox({
@@ -28,7 +23,6 @@ export function ImageLightbox({
   bakedImageUrls,
   startIndex = 0,
   onClose,
-  onOpenTextStudio,
 }: ImageLightboxProps) {
   const count = images.length
   const [index, setIndex] = useState(Math.min(Math.max(startIndex, 0), Math.max(count - 1, 0)))
@@ -49,6 +43,8 @@ export function ImageLightbox({
   const overlay = textOverlaySpecs?.[index] ?? null
   // A baked render wins the view; the clean base in images[] stays kept underneath.
   const baked = bakedImageUrls?.[index] ?? null
+  const suggestedText = [overlay?.headline, overlay?.subline].filter(Boolean).join("\n")
+  const [copied, setCopied] = useState(false)
   if (!url) return null
 
   return (
@@ -104,19 +100,35 @@ export function ImageLightbox({
           decoding="async"
           className="max-h-full max-w-full rounded-[6px] object-contain"
         />
-        {overlay && !baked && <TextOverlayLayer spec={overlay} />}
       </div>
 
       <div className="flex shrink-0 flex-col items-center justify-center gap-2 pt-3">
+        {suggestedText && (
+          <div className="w-full max-w-md rounded-[5px] border border-white/15 bg-white/10 p-3 text-white">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-white/55">
+                Suggested text
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(suggestedText)
+                  setCopied(true)
+                  window.setTimeout(() => setCopied(false), 1800)
+                }}
+                className="inline-flex min-h-8 items-center text-[10px] uppercase tracking-[0.14em] text-white/75 underline underline-offset-2 hover:text-white"
+              >
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+            <pre className="mt-2 whitespace-pre-wrap break-words font-sans text-[12px] leading-relaxed text-white/85 [overflow-wrap:anywhere]">
+              {suggestedText}
+            </pre>
+          </div>
+        )}
         <div className="flex items-center justify-center gap-4">
-          {overlay && onOpenTextStudio && (
-            <button
-              type="button"
-              onClick={() => onOpenTextStudio(index)}
-              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
-            >
-              Edit text
-            </button>
+          {overlay && !baked && (
+            <span className="text-[11px] text-white/50">Clean image shown. Text is below.</span>
           )}
           <button
             type="button"
@@ -130,9 +142,7 @@ export function ImageLightbox({
                   })
                 )
                 .catch(() => {})
-              if (baked) window.open(baked, "_blank", "noreferrer")
-              else if (overlay) void downloadImageWithOverlay(url, overlay, `sselfie-${index + 1}.png`)
-              else window.open(url, "_blank", "noreferrer")
+              window.open(baked ?? url, "_blank", "noreferrer")
             }}
             className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
           >

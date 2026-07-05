@@ -1,11 +1,9 @@
-// SSELFIE Studio 3.0 - TEXT-STUDIO-01: bake the member's text design into her graphic.
+// SSELFIE Studio 3.0 - bake Maya's text design into a graphic result.
 //
-// Hybrid two-source model: graphic formats generate a CLEAN text-free image (overlay mode) and
-// the words live as an editable CSS layer. When she taps "Apply to photo", this route runs ONE
-// openai.images.edit pass on the CLEAN base image, baking her exact words in the chosen overlay
-// style (prompt built by lib/app-v3/text-bake.ts). The clean base is never overwritten, so
-// "without text" stays a free client-side swap and a re-apply always starts from the clean
-// source - never from a previous baked result (iterative passes degrade the photo).
+// Graphic formats generate a CLEAN text-free image first. If the member chose text, the generate
+// route auto-bakes it. If she later asks Maya to change the words or styling, this route runs ONE
+// openai.images.edit pass on the CLEAN base image (never a previous baked result), preserving
+// quality while keeping the old manual Text Studio surface retired.
 //
 // Auth, credits, refund-on-failure, and persistence mirror app/api/app-v3/maya/edit/route.ts.
 
@@ -19,7 +17,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
 import { conceptRequestSize } from "@/lib/app-v3/prompt-compiler"
-import { isTextOverlayLayerEnabled, sanitizeTextOverlaySpec } from "@/lib/app-v3/text-overlay"
+import { sanitizeTextOverlaySpec } from "@/lib/app-v3/text-overlay"
 import { buildBakePrompt, sanitizeBakeStyleAdjustments } from "@/lib/app-v3/text-bake"
 
 export const maxDuration = 300
@@ -73,10 +71,6 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Flag-off = this surface does not exist (the studio ships behind APP_V3_TEXT_OVERLAY_LAYER).
-    if (!isTextOverlayLayerEnabled()) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 })
-    }
     if (!isOpenAIImageEnabled()) {
       return NextResponse.json({ error: "This feature is not currently enabled." }, { status: 403 })
     }
@@ -177,8 +171,8 @@ export async function POST(request: NextRequest) {
     const size = toOpenAIEditSize(conceptRequestSize(spec.format))
     const prompt = buildBakePrompt(spec, styleAdjustments ? { styleAdjustments } : undefined)
 
-    // ONE pass on the clean base. No retries, no chained edits: research shows iterative
-    // passes degrade the photo, and the CSS layer already covers the failure path.
+    // ONE pass on the clean base. No retries, no chained edits: iterative passes degrade the
+    // photo, and the generated clean image remains available if baking fails.
     let imageBuffer: Buffer
     try {
       const sourceFile = await toFile(await normalize(await loadImage(cleanImageUrl)), "maya-bake-source.png", { type: "image/png" })
