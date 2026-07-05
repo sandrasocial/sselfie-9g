@@ -167,6 +167,7 @@ export async function POST(request: NextRequest) {
     size: "1024x1536",
     quality: "high",
     output_format: "png",
+    moderation: "low",
   } as any)
 
   const b64 = response.data?.[0]?.b64_json

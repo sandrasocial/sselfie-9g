@@ -23,6 +23,7 @@ import {
   SSELFIE_INSPIRATION_SET_VARIATION,
 } from "@/lib/app-v3/maya/visual-rules"
 import { AVOID_LIST } from "@/lib/app-v3/maya/ingredients"
+import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
 
 // SHOOT-STUDIO-01: Sandra's real workflow, automated. Inspiration images + her selfie →
 // vault-anatomy shot prompts (the comment-PROMPT giveaway asset) → gpt-image-2 edit with
@@ -241,41 +242,6 @@ function normalizeShotRole(value: unknown, index: number): ShootShotRole {
   return SHOT_ROLES.has(role) ? role : SHOT_ROLE_SEQUENCE[index % SHOT_ROLE_SEQUENCE.length]
 }
 
-function sanitizePromptForImageSafety(prompt: string): string {
-  return prompt
-    .replace(/deep\s+v\s+neckline/gi, "modest rounded neckline")
-    .replace(/off[-\s]?shoulder(?:ed)?/gi, "covered bateau-neck")
-    .replace(/strapless/gi, "covered sleeveless")
-    .replace(/bardot\s+neckline/gi, "covered bateau neckline")
-    .replace(/low[-\s]?cut/gi, "modest cut")
-    .replace(/plunging\s+neckline/gi, "modest neckline")
-    .replace(/bare\s+shoulders?/gi, "covered shoulders")
-    .replace(/open\s+back/gi, "covered back")
-    .replace(/halter\s+dress/gi, "sleeveless linen midi dress with a modest neckline")
-    .replace(/mid-thigh/gi, "midi length")
-    .replace(/mid-chest/gi, "upper torso")
-    .replace(/near the chest/gi, "near the shoulder")
-    .replace(/from chest to head/gi, "from upper torso to head")
-    .replace(/nude pink lips/gi, "soft neutral pink lips")
-    .replace(/natural skin texture/gi, "natural complexion texture")
-    .replace(/skin tones?/gi, "complexion tones")
-    .replace(/skin looks/gi, "complexion looks")
-    .replace(/plastic skin/gi, "over-smoothed complexion")
-    .replace(/body proportions/gi, "natural proportions")
-    .replace(/head-to-body ratio/gi, "natural overall proportion")
-    .replace(/body angled/gi, "person angled")
-    .replace(
-      /shoulders proportional to hips and torso/gi,
-      "shoulders and torso naturally proportioned"
-    )
-    .replace(/shoulders proportional to torso/gi, "shoulders naturally proportioned")
-    .replace(/shoulder width proportional/gi, "shoulder width natural")
-    .replace(/\bhips\b/gi, "frame")
-    .replace(/\bchest\b/gi, "upper torso")
-    .replace(/\bthigh\b/gi, "leg")
-    .replace(/intimate/gi, "quiet")
-}
-
 function getGenerationFailureSummary(error: unknown): string {
   const candidate = error as { message?: unknown; code?: unknown; status?: unknown; type?: unknown }
   const message = typeof candidate?.message === "string" ? candidate.message : "Unknown image error"
@@ -288,22 +254,6 @@ function getGenerationFailureSummary(error: unknown): string {
   return [status && `status=${status}`, code && `code=${code}`, type && `type=${type}`, message]
     .filter(Boolean)
     .join(" · ")
-}
-
-function isContentPolicyError(error: unknown): boolean {
-  const candidate = error as { message?: unknown; code?: unknown; type?: unknown }
-  const haystack = [candidate?.message, candidate?.code, candidate?.type]
-    .filter((value): value is string => typeof value === "string")
-    .join(" ")
-    .toLowerCase()
-  return (
-    haystack.includes("content_policy") ||
-    haystack.includes("content policy") ||
-    haystack.includes("safety") ||
-    haystack.includes("moderation") ||
-    haystack.includes("violat") ||
-    haystack.includes("rejected")
-  )
 }
 
 function isAllowedUrl(value: string): boolean {
@@ -564,6 +514,10 @@ export async function generateShotImage(input: {
     size: PORTRAIT_SIZE,
     quality: input.quality,
     output_format: "png",
+    // Documented OpenAI param (images.d.ts): "low" is less restrictive than the "auto" default
+    // while still hard-blocking genuinely explicit content. Our own prompts are always tasteful
+    // editorial fashion photography, so the stricter default only produces false positives here.
+    moderation: "low",
   }
   if (OPENAI_IMAGE_MODEL !== "gpt-image-2") editInput.input_fidelity = "high"
 

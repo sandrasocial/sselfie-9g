@@ -22,6 +22,7 @@ import {
   VANITY_DRIFT_PATTERN,
 } from "@/lib/app-v3/likeness-memory"
 import { addLikenessNote, getMemory } from "@/lib/app-v3/maya/memory-store"
+import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
 import type { OutputFormat } from "@/components/app-v3/types"
 
 export const maxDuration = 300
@@ -79,19 +80,6 @@ function isAllowedImageUrl(value: unknown): value is string {
   }
 }
 
-function isContentPolicyError(err: unknown): boolean {
-  const m = (err instanceof Error ? err.message : String(err)).toLowerCase()
-  return (
-    m.includes("content_policy") ||
-    m.includes("content policy") ||
-    m.includes("safety") ||
-    m.includes("moderation") ||
-    m.includes("violat") ||
-    m.includes("rejected") ||
-    m.includes("not allowed")
-  )
-}
-
 async function loadImage(url: string): Promise<Buffer> {
   const res = await fetch(url)
   if (!res.ok) throw new Error("Could not load the image to edit")
@@ -131,7 +119,16 @@ function buildEditPrompt(
     : ` Keep it natural and editorial. ${ELEVATION} ${AVOID_LIST}`
   // LIKENESS-MEMORY-01: stored accuracy notes complement the real-selfie anchor above.
   const likeness = likenessBlock ? `\n\n${likenessBlock}` : ""
-  return `${base}${instruction.trim()}.${identity}${doctrine}${tail}${likeness}`
+  // On the safer retry, actually scrub the member's own free-typed instruction text (previously
+  // this only appended a modest tail - a risky word IN the instruction itself, e.g. "make it
+  // lace", was never touched, so the retry could fail for the same reason as the first attempt).
+  const cleanInstruction = safer
+    ? sanitizePromptForImageSafety(instruction.trim()).replace(
+        /\nKeep the styling modest, fully clothed, elegant, and tasteful\.$/,
+        ""
+      )
+    : instruction.trim()
+  return `${base}${cleanInstruction}.${identity}${doctrine}${tail}${likeness}`
 }
 
 export async function POST(request: NextRequest) {
@@ -286,6 +283,7 @@ export async function POST(request: NextRequest) {
         size,
         quality: EDIT_IMAGE_QUALITY,
         output_format: "png",
+        moderation: "low",
       }
       if (OPENAI_IMAGE_MODEL !== "gpt-image-2") editInput.input_fidelity = "high"
       const response = await openai.images.edit(editInput as any)

@@ -255,6 +255,7 @@ export async function POST(request: NextRequest) {
           size: "1024x1536",
           quality: "medium",
           output_format: "png",
+          moderation: "low",
         }
 
         if (OPENAI_IMAGE_MODEL !== "gpt-image-2") {
@@ -272,6 +273,7 @@ export async function POST(request: NextRequest) {
           size: resolveOpenAIImageSize(size),
           quality: resolveOpenAIImageQuality(quality),
           output_format: "png",
+          moderation: "low",
         })
 
         b64 = response.data?.[0]?.b64_json

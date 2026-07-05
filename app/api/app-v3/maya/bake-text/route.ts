@@ -190,6 +190,7 @@ export async function POST(request: NextRequest) {
         size,
         quality: BAKE_IMAGE_QUALITY,
         output_format: "png",
+        moderation: "low",
       } as Parameters<typeof openai.images.edit>[0])) as unknown as OpenAIImageEditResponse
       const b64 = response.data?.[0]?.b64_json
       if (!b64) throw new Error("No image data returned from OpenAI")

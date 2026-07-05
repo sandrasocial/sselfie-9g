@@ -54,6 +54,7 @@ import {
   isLikenessMemoryEnabled,
 } from "@/lib/app-v3/likeness-memory"
 import { getMemory } from "@/lib/app-v3/maya/memory-store"
+import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
 import type { CarouselSlide, ShootShotRole } from "@/lib/content-kit/types"
 import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "@/components/app-v3/types"
@@ -335,34 +336,15 @@ function withInspirationReferenceInstruction(
   }
 }
 
-/** True when an OpenAI error looks like a moderation / content-policy rejection. */
-function isContentPolicyError(err: unknown): boolean {
-  const m = (err instanceof Error ? err.message : String(err)).toLowerCase()
-  return (
-    m.includes("content_policy") ||
-    m.includes("content policy") ||
-    m.includes("safety") ||
-    m.includes("moderation") ||
-    m.includes("violat") ||
-    m.includes("rejected") ||
-    m.includes("not allowed")
-  )
-}
-
-// Wardrobe words that read as suggestive to OpenAI moderation; softened only on a retry.
-const RISKY_WARDROBE =
-  /\b(sheer|see-?through|lace|lingerie|bodysuit|bikini|swimsuit|underwear|undergarment|bra|cleavage|topless|nude|naked|bare(?:\s+(?:skin|shoulders|legs))?|body-conscious|wet)\b/gi
-
 /**
  * Soften a compiled prompt for a single content-policy retry: swap in the gentler identity
- * wording, neutralize suggestive wardrobe terms, and add a modest-styling nudge.
+ * wording, then run the shared wardrobe/setting scrub (lib/ai/image-safety.ts - the same list
+ * Shoot Studio and the Content Kit slide redesigner use, consolidated 2026-07-05 after two
+ * story-sequence rejections showed the old wardrobe-only list here missed setting/pose triggers).
  */
 function sanitizePromptForModeration(prompt: string): string {
-  const softened = prompt
-    .split(IDENTITY_ANCHOR)
-    .join(IDENTITY_ANCHOR_SAFE)
-    .replace(RISKY_WARDROBE, "elegant")
-  return `${softened}\nKeep the styling modest, fully clothed, elegant, and tasteful.`
+  const identitySwapped = prompt.split(IDENTITY_ANCHOR).join(IDENTITY_ANCHOR_SAFE)
+  return sanitizePromptForImageSafety(identitySwapped)
 }
 
 /** Only public Vercel Blob https URLs (or data: images) are accepted as the identity ref. */
@@ -799,6 +781,10 @@ export async function POST(request: NextRequest) {
         size,
         quality: IMAGE_QUALITY,
         output_format: "png",
+        // Documented OpenAI param: "low" is less restrictive than the "auto" default while still
+        // hard-blocking genuinely explicit content. Our prompts are always tasteful editorial
+        // fashion photography, so the stricter default only produces false positives here.
+        moderation: "low",
       }
       // gpt-image-2 processes every input at high fidelity automatically; older models need the flag.
       if (OPENAI_IMAGE_MODEL !== "gpt-image-2") editInput.input_fidelity = "high"
@@ -942,6 +928,7 @@ export async function POST(request: NextRequest) {
         output_format: "png",
         stream: true,
         partial_images: 2,
+        moderation: "low",
       }
       if (OPENAI_IMAGE_MODEL !== "gpt-image-2") base.input_fidelity = "high"
       const events = await openai.images.edit({
@@ -1278,6 +1265,7 @@ export async function POST(request: NextRequest) {
                   size,
                   quality: IMAGE_QUALITY,
                   output_format: "png",
+                  moderation: "low",
                 } as Parameters<typeof openai.images.edit>[0])) as unknown as OpenAIImageEditResponse
                 const b64 = bakeResponse.data?.[0]?.b64_json
                 if (!b64) throw new Error("No image data returned from OpenAI")

@@ -41,6 +41,11 @@ describe("SHOOT-TAXONOMY-01 shot roles", () => {
     expect(source).not.toContain("Shoot plan must include 1-2 true-detail shots")
     expect(source).toContain("shotRoleRenderInstruction(input.shotRole)")
     expect(source).toContain("Safety retry:")
-    expect(source).toContain("off[-\\s]?shoulder")
+
+    // 2026-07-05: the wardrobe/setting safety-retry sanitizer moved into a shared module
+    // (lib/ai/image-safety.ts) so Content Kit's slide redesigner and app-v3's generate route
+    // get the same, single, incident-tuned list instead of three independent, drifting copies.
+    const safetySource = readFileSync("lib/ai/image-safety.ts", "utf8")
+    expect(safetySource).toContain("off[-\\s]?shoulder")
   })
 })
