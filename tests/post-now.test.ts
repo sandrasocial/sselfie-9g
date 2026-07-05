@@ -216,6 +216,11 @@ describe("post-now generation", () => {
     // The system prompt forbids repeats and invented numbers.
     expect(call.system).toContain("doNotRepeat")
     expect(call.system).toContain("ONLY numbers that appear in the input JSON")
+    expect(anthropicCreateMock.mock.calls[0][1]).toMatchObject({
+      maxRetries: 0,
+      timeout: expect.any(Number),
+    })
+    expect((anthropicCreateMock.mock.calls[0][1] as { timeout: number }).timeout).toBeLessThan(60_000)
   })
 
   it("throws when the model does not return three distinct types", async () => {
@@ -342,6 +347,29 @@ describe("post-now route", () => {
     expect(body.missingInputs).toEqual(["weekly brief"])
   })
 
+  it("returns a JSON timeout before the platform can return a non-JSON 504", async () => {
+    vi.useFakeTimers()
+    process.env.CRON_SECRET = "test-cron"
+    process.env.POST_NOW_ROUTE_TIMEOUT_MS = "10"
+    runPostNowMock.mockImplementation(() => new Promise(() => {}))
+    const { POST } = await import("@/app/api/admin/content-kit/post-now/route")
+    const promise = POST(
+      new Request("http://localhost/api/admin/content-kit/post-now", {
+        method: "POST",
+        headers: { authorization: "Bearer test-cron" },
+      }) as any,
+    )
+
+    await vi.advanceTimersByTimeAsync(11)
+    const response = await promise
+    const body = await response.json()
+    expect(response.status).toBe(504)
+    expect(body.success).toBe(false)
+    expect(body.error).toContain("took too long")
+    vi.useRealTimers()
+    delete process.env.POST_NOW_ROUTE_TIMEOUT_MS
+  })
+
   it("allows the admin session user", async () => {
     getUserMock.mockResolvedValue({ data: { user: { email: "ssa@ssasocial.com" } } })
     runPostNowMock.mockResolvedValue({ options: [], missingInputs: [] })
@@ -412,6 +440,13 @@ describe("post-now UI wiring", () => {
     expect(client).toContain("Open the original post")
     expect(client).toContain("option.permalink")
     expect(client).toContain("missingInputs")
+  })
+
+  it("does not parse admin responses with raw res.json only", () => {
+    expect(client).toContain("readAdminJson")
+    expect(client).toContain("response.text()")
+    expect(client).toContain("non-JSON")
+    expect(client).not.toContain("const json = await res.json()")
   })
 
   it("is embedded on the content page and linked from admin home (no new admin page)", () => {

@@ -28,6 +28,7 @@ import type { ContentBrief } from "@/lib/content-engine/brief-generator"
 import type { InstagramPerformanceSnapshot } from "@/lib/content-engine/instagram-performance"
 
 const POST_NOW_MODEL = "claude-sonnet-4-5"
+const POST_NOW_ANTHROPIC_TIMEOUT_MS = 45_000
 // Sandra posts on Norway time; the tool exists for "tonight".
 const POST_NOW_TIME_ZONE = "Europe/Oslo"
 
@@ -353,6 +354,9 @@ export async function generatePostNowOptions(input: GeneratePostNowInput): Promi
         },
       ],
       tool_choice: { type: "tool", name: "deliver_post_now_options" },
+    }, {
+      maxRetries: 0,
+      timeout: POST_NOW_ANTHROPIC_TIMEOUT_MS,
     })
 
   let response = await attempt()

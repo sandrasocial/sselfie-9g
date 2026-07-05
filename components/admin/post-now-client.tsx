@@ -22,6 +22,23 @@ const TYPE_META: Record<PostNowOption["type"], { label: string; badgeClass: stri
   "story-sequence": { label: "Tonight's story sequence", badgeClass: "bg-stone-100 text-stone-700" },
 }
 
+async function readAdminJson(response: Response) {
+  const text = await response.text()
+  if (!text.trim()) return null
+  try {
+    return JSON.parse(text)
+  } catch {
+    const compact = text.replace(/\s+/g, " ").trim().slice(0, 180)
+    return {
+      success: false,
+      error:
+        response.status === 504
+          ? "The content picker timed out before it could finish. Try again in a minute."
+          : `The server returned a non-JSON error (${response.status}). ${compact || "Try again in a minute."}`,
+    }
+  }
+}
+
 function OptionCard({ option }: { option: PostNowOption }) {
   const [status, setStatus] = useState<"open" | "saving" | "used" | "dismissed" | "error">("open")
   const meta = TYPE_META[option.type]
@@ -35,7 +52,7 @@ function OptionCard({ option }: { option: PostNowOption }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: option.id, status: next }),
       })
-      const json = await res.json()
+      const json = await readAdminJson(res)
       if (!res.ok || !json?.success) throw new Error(json?.error || "Update failed")
       setStatus(next)
     } catch {
@@ -128,7 +145,7 @@ export function PostNowClient() {
     setError(null)
     try {
       const res = await fetch("/api/admin/content-kit/post-now", { method: "POST" })
-      const json = await res.json()
+      const json = await readAdminJson(res)
       if (!res.ok || !json?.success) {
         throw new Error(json?.error || "Could not pull options right now")
       }

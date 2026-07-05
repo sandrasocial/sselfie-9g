@@ -9,6 +9,38 @@ export const dynamic = "force-dynamic"
 export const maxDuration = 60
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
+const DEFAULT_ROUTE_TIMEOUT_MS = 50_000
+
+class PostNowTimeoutError extends Error {
+  constructor(timeoutMs: number) {
+    super(`The post-now generator took too long after ${Math.ceil(timeoutMs / 1000)} seconds.`)
+    this.name = "PostNowTimeoutError"
+  }
+}
+
+function routeTimeoutMs() {
+  const raw = Number(process.env.POST_NOW_ROUTE_TIMEOUT_MS)
+  if (Number.isFinite(raw) && raw > 0) return raw
+  return DEFAULT_ROUTE_TIMEOUT_MS
+}
+
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
+
+async function withRouteTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new PostNowTimeoutError(timeoutMs)), timeoutMs)
+      }),
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
 
 async function requireAdmin(request?: NextRequest) {
   // CRON_SECRET bearer lets server-side automation use this too (same
@@ -28,16 +60,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   try {
-    const result = await runPostNow()
+    const result = await withRouteTimeout(runPostNow(), routeTimeoutMs())
     return NextResponse.json({
       success: true,
       options: result.options,
       missingInputs: result.missingInputs,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[post-now] generation failed:", error)
+    if (error instanceof PostNowTimeoutError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "This took too long to finish in the browser. Try again in a minute, or use the latest weekly brief while I check the generator.",
+        },
+        { status: 504 },
+      )
+    }
     return NextResponse.json(
-      { success: false, error: error?.message || "Generation failed" },
+      { success: false, error: errorMessage(error, "Generation failed") },
       { status: 500 },
     )
   }
@@ -62,10 +104,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Suggestion not found" }, { status: 404 })
     }
     return NextResponse.json({ success: true })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[post-now] status update failed:", error)
     return NextResponse.json(
-      { success: false, error: error?.message || "Update failed" },
+      { success: false, error: errorMessage(error, "Update failed") },
       { status: 500 },
     )
   }
