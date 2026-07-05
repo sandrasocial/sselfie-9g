@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import type { Aesthetic, AestheticShot, InlineActionKind, OutputFormat } from "./types"
 
@@ -18,7 +19,7 @@ export const SIMPLE_FORMAT_OPTIONS: InlineFormatOption[] = [
   {
     format: "photoshoot",
     label: "A full shoot",
-    description: "A connected set in one visual world.",
+    description: "A connected set with the same style.",
   },
   {
     format: "reel-cover",
@@ -126,11 +127,21 @@ export function InlineVibePicker({
   disabled?: boolean
   onPick: (aesthetic: Aesthetic) => void
 }) {
+  const [showAllStyles, setShowAllStyles] = useState(false)
+  const visibleAesthetics = showAllStyles ? aesthetics : aesthetics.slice(0, 6)
+  const hasMoreStyles = aesthetics.length > 6
+
   return (
     <div className="min-w-0 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4 [overflow-x:clip]">
-      <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">Choose a visual world</p>
+      <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ss-gray)]">
+        Choose your style
+      </p>
+      <p className="mt-2 text-[12px] leading-relaxed text-[color:var(--ss-davy)]">
+        Pick the look you want Maya to follow. You can also add an inspiration image if you want her
+        to use a pose, light, or vibe.
+      </p>
       <div className="mt-3 grid grid-cols-2 gap-2">
-        {aesthetics.slice(0, 6).map(aesthetic => (
+        {visibleAesthetics.map(aesthetic => (
           <button
             key={aesthetic.id}
             type="button"
@@ -153,6 +164,15 @@ export function InlineVibePicker({
           </button>
         ))}
       </div>
+      {hasMoreStyles && (
+        <button
+          type="button"
+          onClick={() => setShowAllStyles(v => !v)}
+          className="mt-3 min-h-10 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-davy)] underline underline-offset-4 transition-colors hover:text-[color:var(--ss-night)]"
+        >
+          {showAllStyles ? "Show fewer styles" : `Show all ${aesthetics.length} styles`}
+        </button>
+      )}
     </div>
   )
 }
@@ -197,33 +217,14 @@ export function InlineShotPicker({
   )
 }
 
-function nextActionsForFormat(format: OutputFormat): { format: OutputFormat; label: string }[] {
-  if (format === "video") {
-    return [{ format: "photo", label: "Make another photo" }]
-  }
-  if (format === "carousel") {
-    return [
-      { format: "story-sequence", label: "Make stories from this" },
-      { format: "reel-cover", label: "Make a cover" },
-    ]
-  }
-  if (format === "reel-cover") {
-    return [
-      { format: "story-sequence", label: "Make a story from this" },
-      { format: "carousel", label: "Make a carousel" },
-    ]
-  }
-  if (format === "story-slide" || format === "story-sequence") {
-    return [
-      { format: "reel-cover", label: "Make a cover" },
-      { format: "carousel", label: "Make a carousel" },
-    ]
-  }
-  return [
-    { format: "reel-cover", label: "Turn this into a cover" },
-    { format: "story-sequence", label: "Make stories from this" },
-    { format: "video", label: "Make it move" },
-  ]
+const NEXT_FORMAT_LABELS: Record<OutputFormat, string> = {
+  photo: "Photo",
+  photoshoot: "Full shoot",
+  "reel-cover": "Reel cover",
+  carousel: "Carousel",
+  "story-slide": "Story",
+  "story-sequence": "Stories",
+  video: "Motion",
 }
 
 export function InlineResultActions({
@@ -233,17 +234,30 @@ export function InlineResultActions({
   format: OutputFormat
   onNextFormat: (format: OutputFormat, kind: InlineActionKind) => void
 }) {
-  const actions = nextActionsForFormat(format)
+  const actions = SIMPLE_FORMAT_OPTIONS.map(option => ({
+    format: option.format,
+    label:
+      option.format === format
+        ? `Another ${NEXT_FORMAT_LABELS[option.format].toLowerCase()}`
+        : NEXT_FORMAT_LABELS[option.format],
+  }))
+
   return (
     <div className="rounded-[6px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-[#818283]">Next step</p>
-      <div className="mt-2 flex flex-wrap gap-2">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-gray)]">
+        Keep this style going
+      </p>
+      <p className="mt-1 text-[12px] leading-relaxed text-[color:var(--ss-davy)]">
+        Choose what to make next. Maya will use this result as the style reference and change the
+        pose, location, or angle so it does not feel repeated.
+      </p>
+      <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1">
         {actions.map(action => (
           <button
             key={action.format}
             type="button"
             onClick={() => onNextFormat(action.format, "next_action")}
-            className="min-h-10 rounded-[4px] border border-[#C5C6C8]/70 bg-white px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-[#4F5052] transition-colors hover:border-[#0D0E10] hover:text-[#0D0E10]"
+            className="min-h-10 shrink-0 rounded-[4px] border border-[#C5C6C8]/70 bg-white px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-[#4F5052] transition-colors hover:border-[#0D0E10] hover:text-[#0D0E10]"
           >
             {action.label}
           </button>

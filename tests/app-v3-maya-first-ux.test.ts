@@ -33,7 +33,7 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).toContain("onPick={sendInlineAnswer}")
   })
 
-  it("waits for a visual world before pulling initial non-video directions", () => {
+  it("waits for a style before pulling initial non-video directions", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
     const renderHasStarted = concierge.indexOf(
       "const hasStarted = messages.length > 0\n  const activeCreationIntent"
@@ -52,7 +52,17 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).toContain("const shouldShowFormatChoice = !outputFormat || (hasStarted && setupOpen)")
     expect(concierge).toContain("shouldShowFormatChoice &&")
     expect(concierge).toContain("shouldShowVibeChoice &&")
-    expect(concierge).toContain("Choose a visual world first")
+    expect(concierge).toContain("Choose a style first")
+  })
+
+  it("lets members expand the style picker beyond the first six looks", () => {
+    const inline = read("components/app-v3/maya-inline-components.tsx")
+
+    expect(inline).toContain("Choose your style")
+    expect(inline).toContain("showAllStyles")
+    expect(inline).toContain("showAllStyles ? aesthetics : aesthetics.slice(0, 6)")
+    expect(inline).toContain("Show all ${aesthetics.length} styles")
+    expect(inline).toContain("add an inspiration image")
   })
 
   it("keeps the server from defaulting unclear requests into photo concepts", () => {
@@ -149,5 +159,19 @@ describe("Maya-first Suite creation UX", () => {
     expect(manager).toContain("Maya will not use this as your face")
     expect(manager).toContain("/api/app-v3/reference-library")
     expect(manager).toContain("/api/app-v3/upload-selfie")
+  })
+
+  it("carries a finished result into the next format as the style reference", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    const inline = read("components/app-v3/maya-inline-components.tsx")
+
+    expect(inline).toContain("Keep this style going")
+    expect(inline).toContain("SIMPLE_FORMAT_OPTIONS.map")
+    expect(inline).toContain("overflow-x-auto")
+    expect(concierge).toContain("styleReferenceUrl?: string | null")
+    expect(concierge).toContain("setInspirationUrl(styleReferenceUrl)")
+    expect(concierge).toContain("setVideoSourceUrl(styleReferenceUrl)")
+    expect(concierge).toContain("const latestStyleReferenceUrl")
+    expect(concierge).toContain("handleNextFormat(nextFormat, kind, latestStyleReferenceUrl)")
   })
 })

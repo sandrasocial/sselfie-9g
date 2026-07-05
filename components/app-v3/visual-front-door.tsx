@@ -28,7 +28,7 @@ const MAYA_BLANK: Aesthetic = {
 
 const FORMAT_STARTERS: { format: OutputFormat; label: string; line: string }[] = [
   { format: "photo", label: "Photo", line: "One clear selfie into a photo you can post." },
-  { format: "photoshoot", label: "Photoshoot", line: "A small shoot in one visual world." },
+  { format: "photoshoot", label: "Photoshoot", line: "A small shoot in one style." },
   {
     format: "reel-cover",
     label: "Reel cover",
@@ -57,7 +57,7 @@ const STARTER_CHIPS: { format: OutputFormat; label: string; prompt: string }[] =
   {
     format: "photoshoot",
     label: "Create a full shoot",
-    prompt: "I want to create a full shoot in one visual world.",
+    prompt: "I want to create a full shoot in one style.",
   },
   {
     format: "reel-cover",
@@ -639,7 +639,7 @@ export function VisualFrontDoor({
             Start from a Vault look
           </p>
           <p className="mt-2 max-w-md text-[13px] leading-relaxed text-[#6D6E70]">
-            Optional. Use these when you want the visual world chosen before Maya starts.
+            Optional. Use these when you want the style chosen before Maya starts.
           </p>
         </div>
       )}

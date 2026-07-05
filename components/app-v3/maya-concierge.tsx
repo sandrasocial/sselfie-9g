@@ -1641,15 +1641,26 @@ export function MayaConcierge({
     sendMessage({ text: answer })
   }
 
-  function handleNextFormat(nextFormat: OutputFormat, kind: InlineActionKind) {
+  function handleNextFormat(
+    nextFormat: OutputFormat,
+    kind: InlineActionKind,
+    styleReferenceUrl?: string | null
+  ) {
     if (isThinking) return
     const intent = intentForFormat(nextFormat, "gallery_action")
     setLocalCreationIntent(intent)
     extrasRef.current = { ...extrasRef.current, format: intent.format, creationIntent: intent }
     void trackAnalyticsEvent({
       event: "suite_next_action_selected",
-      properties: { cohort, kind, format: nextFormat },
+      properties: { cohort, kind, format: nextFormat, style_reference: Boolean(styleReferenceUrl) },
     })
+    if (styleReferenceUrl) {
+      if (nextFormat === "video") {
+        setVideoSourceUrl(styleReferenceUrl)
+      } else {
+        setInspirationUrl(styleReferenceUrl)
+      }
+    }
     setTextOverlayMode(null)
     setTextStyleChoice(null)
     setStyleSwapOpen(false)
@@ -2067,7 +2078,7 @@ export function MayaConcierge({
                       onClick={() => setInlineShotPickerAesthetic(null)}
                       className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#818283] underline underline-offset-2 hover:text-[#0D0E10]"
                     >
-                      Choose another visual world
+                      Choose another style
                     </button>
                   </>
                 ) : (
@@ -2313,7 +2324,7 @@ export function MayaConcierge({
                 {isThinking
                   ? "Creating…"
                   : needsInitialVisualWorld
-                    ? "Choose a visual world first"
+                    ? "Choose a style first"
                     : !outputFormat
                       ? "Pick a format to start"
                       : outputFormat === "video"
@@ -2767,6 +2778,9 @@ export function MayaConcierge({
                     {conceptPart.map(concept => {
                       const key = `${m.id}:${concept.id}`
                       const gen = genState[key] ?? { status: "idle" as const }
+                      const resultUrls = gen.imageUrls ?? []
+                      const latestStyleReferenceUrl =
+                        resultUrls.length > 0 ? resultUrls[resultUrls.length - 1] : null
                       return (
                         <ConceptCard
                           key={key}
@@ -2805,7 +2819,9 @@ export function MayaConcierge({
                           resultActions={
                             <InlineResultActions
                               format={conceptFormat}
-                              onNextFormat={handleNextFormat}
+                              onNextFormat={(nextFormat, kind) =>
+                                handleNextFormat(nextFormat, kind, latestStyleReferenceUrl)
+                              }
                             />
                           }
                         />
