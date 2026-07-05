@@ -60,4 +60,16 @@ describe("Maya-first Suite creation UX", () => {
     expect(shell).toContain("intentForFormat(\"video\", \"gallery_action\")")
     expect(shell).toContain("creationIntent: intentForFormat(format, \"manual\")")
   })
+
+  it("makes continuing old Maya sessions an explicit choice", () => {
+    const context = read("components/app-v3/concierge-context.tsx")
+    const launcher = read("components/app-v3/maya-floating-launcher.tsx")
+
+    expect(context).toContain("const hasSavedSession = Boolean(session)")
+    expect(context).toContain("const openFresh = useCallback")
+    expect(context).toContain("setIsOpen(false)")
+    expect(launcher).toContain("Start new")
+    expect(launcher).toContain("Continue history")
+    expect(launcher).toContain("openFresh()")
+  })
 })

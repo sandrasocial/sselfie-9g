@@ -24,6 +24,7 @@ import type {
 } from "./types"
 import {
   cacheServerMayaDraftSnapshot,
+  clearMayaDraft,
   readConciergeSnapshot,
   saveConciergeSnapshot,
 } from "./continuity"
@@ -45,6 +46,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
   const restoredSavedAtRef = useRef<number | null>(null)
   const [session, setSession] = useState<ConciergeSession | null>(null)
   const [isOpen, setIsOpen] = useState(false)
+  const hasSavedSession = Boolean(session)
 
   const openWithAesthetic = useCallback((aesthetic: Aesthetic, opts?: OpenConciergeOptions) => {
     // Stamp now (cheap, urgent), but mark the heavy concierge mount as a non-urgent transition
@@ -120,6 +122,25 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
     })
   }, [])
 
+  const openFresh = useCallback(() => {
+    const startedAt = Date.now()
+    clearMayaDraft()
+    void fetch("/api/app-v3/maya/draft", { method: "DELETE" }).catch(() => {})
+    startTransition(() => {
+      setSession({
+        aesthetic: GENERAL_MAYA_AESTHETIC,
+        outputFormat: null,
+        referenceSelfieUrl: null,
+        videoSourceUrl: null,
+        graphicText: null,
+        seedPrompt: "Help me choose what to make today.",
+        creationIntent: { format: null, source: "manual", confidence: "needs_clarify" },
+        startedAt,
+      })
+      setIsOpen(true)
+    })
+  }, [])
+
   const close = useCallback(() => setIsOpen(false), [])
 
   useEffect(() => {
@@ -131,7 +152,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
     if (local) {
       restoredSavedAtRef.current = local.savedAt
       setSession(local.session)
-      setIsOpen(local.isOpen)
+      setIsOpen(false)
     }
 
     let cancelled = false
@@ -144,7 +165,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
         if (restoredSavedAtRef.current && restoredSavedAtRef.current >= serverDraft.savedAt) return
         restoredSavedAtRef.current = serverDraft.savedAt
         setSession(serverDraft.session as ConciergeSession)
-        setIsOpen(serverDraft.isOpen)
+        setIsOpen(false)
       })
       .catch(() => {})
     return () => {
@@ -156,7 +177,9 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
     () => ({
       session,
       isOpen,
+      hasSavedSession,
       open,
+      openFresh,
       openWithAesthetic,
       resetCurrentSession,
       setOutputFormat,
@@ -168,7 +191,9 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
     [
       session,
       isOpen,
+      hasSavedSession,
       open,
+      openFresh,
       openWithAesthetic,
       resetCurrentSession,
       setOutputFormat,

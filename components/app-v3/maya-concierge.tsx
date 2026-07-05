@@ -1937,7 +1937,7 @@ export function MayaConcierge({
           </div>
         )}
         {(!hasStarted || setupOpen) && (
-          <div className="min-w-0 shrink-0 space-y-3 border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
+          <div className="min-h-0 min-w-0 shrink space-y-3 overflow-y-auto overscroll-contain border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
             <InlineFormatChoice disabled={isThinking} onPick={handlePickFormat} />
 
             {!hasStarted && inlineAesthetics && inlineAesthetics.length > 0 && (
