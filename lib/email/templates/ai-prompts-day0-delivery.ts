@@ -1,7 +1,7 @@
 import { getEmailHeroImage } from "../email-image-assets"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
 import { buildRevenueEmailLink } from "./revenue-links"
-import { promptVaultCheckoutUrl } from "./selfie-education-links"
+import { selfieAiPhotosKitCheckoutUrl } from "./selfie-education-links"
 
 export interface AiPromptsDay0DeliveryParams {
   firstName: string
@@ -18,16 +18,16 @@ export function generateAiPromptsDay0DeliveryEmail(params: AiPromptsDay0Delivery
 
   const subject = "your selfie prompts are here"
   const heroImage = getEmailHeroImage("prompt_pack_hero")
-  const promptVaultUrl = new URL(buildRevenueEmailLink(promptVaultCheckoutUrl(), {
-    campaign: "vault_bridge",
+  const aiPhotosKitUrl = new URL(buildRevenueEmailLink(selfieAiPhotosKitCheckoutUrl(), {
+    campaign: "ai_prompts_to_selfie_ai_photos_kit",
     medium: "ai_prompts_day0",
     emailType: "ai_prompts_delivery",
     checkoutEmail: params.recipientEmail,
   }))
 
-  promptVaultUrl.searchParams.set("checkout_source", "ai_prompts_day0_vault_bridge")
-  promptVaultUrl.searchParams.set("cta_keyword", "PROMPTS")
-  promptVaultUrl.searchParams.set("buyer_stage", "lead")
+  aiPhotosKitUrl.searchParams.set("checkout_source", "ai_prompts_day0_ai_photos_kit_bridge")
+  aiPhotosKitUrl.searchParams.set("cta_keyword", "first_ai_photos_after_free_prompt")
+  aiPhotosKitUrl.searchParams.set("buyer_stage", "lead")
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${firstName},</p>
@@ -37,8 +37,9 @@ export function generateAiPromptsDay0DeliveryEmail(params: AiPromptsDay0Delivery
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One quick thing first, because it trips almost everyone up:</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If your photo comes back looking a little plastic or fake, it&apos;s almost never the AI. It&apos;s the lighting in your original selfie. When the light is dark or harsh, the AI gets bad information and starts guessing, and that&apos;s when skin goes waxy.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The fix is simple. Start with a clearer, better-lit photo. That one change does more than any prompt ever will.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">When you&apos;re ready for more than one look, the full Vault is where it lives. Every editorial world I&apos;ve shot, each a full sequence, every prompt with the example image so you&apos;re never guessing. One selfie, as many shoots as you want. It&apos;s a one-time $37.</p>
-    <div style="margin:26px 0 26px;">${renderStoneButton("See the full Vault · $37", promptVaultUrl.toString(), "outline")}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you want the step-by-step version, start with the AI Photos Kit. It shows you how to choose the right selfie, create your first three AI photos, and fix the result if it starts looking fake.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Not a huge course. Just the next clear step after the free prompts.</p>
+    <div style="margin:26px 0 26px;">${renderStoneButton("Get the AI Photos Kit · $37", aiPhotosKitUrl.toString(), "outline")}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">Have fun with these. Reply and show me what you make. I read every message.</p>
   `
 
@@ -69,10 +70,12 @@ If your photo comes back looking a little plastic or fake, it's almost never the
 
 The fix is simple. Start with a clearer, better-lit photo. That one change does more than any prompt ever will.
 
-When you're ready for more than one look, the full Vault is where it lives. Every editorial world I've shot, each a full sequence, every prompt with the example image so you're never guessing. One selfie, as many shoots as you want. It's a one-time $37.
+If you want the step-by-step version, start with the AI Photos Kit. It shows you how to choose the right selfie, create your first three AI photos, and fix the result if it starts looking fake.
 
-See the full Vault · $37:
-${promptVaultUrl.toString()}
+Not a huge course. Just the next clear step after the free prompts.
+
+Get the AI Photos Kit · $37:
+${aiPhotosKitUrl.toString()}
 
 Have fun with these. Reply and show me what you make. I read every message.
 

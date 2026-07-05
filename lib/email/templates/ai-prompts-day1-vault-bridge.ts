@@ -1,5 +1,5 @@
 import { buildRevenueEmailLink } from "./revenue-links"
-import { promptVaultCheckoutUrl } from "./selfie-education-links"
+import { selfieAiPhotosKitCheckoutUrl } from "./selfie-education-links"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
 
 export interface AiPromptsDay1VaultBridgeParams {
@@ -13,9 +13,9 @@ export function generateAiPromptsDay1VaultBridgeEmail({
   firstName,
   recipientEmail,
 }: AiPromptsDay1VaultBridgeParams): { html: string; text: string; subject: string } {
-  const promptVaultUrl = buildRevenueEmailLink(promptVaultCheckoutUrl(), {
-    campaign: "ai_prompts_day1_vault_bridge",
-    content: "get_full_vault",
+  const aiPhotosKitUrl = buildRevenueEmailLink(selfieAiPhotosKitCheckoutUrl(), {
+    campaign: "ai_prompts_day1_ai_photos_kit_bridge",
+    content: "get_ai_photos_kit",
     medium: "nurture",
     emailType: EMAIL_TYPE,
     checkoutEmail: recipientEmail,
@@ -29,10 +29,11 @@ export function generateAiPromptsDay1VaultBridgeEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You&apos;re not unphotogenic. You never were.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The reason your photos never looked like the woman you feel like inside is simple. You had a phone and no direction. Nobody telling you the light, the angle, the world to step into.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That free prompt you copied was direction. One clear selfie, one look, and suddenly it&apos;s you. Still your face, still recognizable. Just finally framed right.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Vault is the rest of the directions. Coastal mornings, dark feminine, quiet luxury, editorial street. Every look is a full shoot, not one lucky photo. One selfie, as many shoots as you want.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It&apos;s $37, one time, and every new collection I add lands in your vault for free.</p>
-    <div style="margin:26px 0 20px;">${renderStoneButton("See the full Vault", promptVaultUrl)}</div>
-    <p style="margin:0;font-size:16px;line-height:1.75;">You were always this woman. Now you&apos;ve got the direction to show her. 🤍</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">But the next question is usually, "Okay, how do I actually make this work?"</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That is what the AI Photos Kit is for. It shows you how to choose the right source selfie, create your first three AI photos, and fix the result if it starts looking fake or not like you.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Simple. Clear. Still you.</p>
+    <div style="margin:26px 0 20px;">${renderStoneButton("Get the AI Photos Kit · $37", aiPhotosKitUrl)}</div>
+    <p style="margin:0;font-size:16px;line-height:1.75;">Start with one clear selfie. I&apos;ll show you what to do next.</p>
   `
 
   const html = renderStoneShell({
@@ -40,7 +41,7 @@ export function generateAiPromptsDay1VaultBridgeEmail({
     eyebrow: "AI Photoshoot Prompts",
     subtitle: "The problem was never you. It was the direction.",
     bodyHtml,
-    footerLead: "One selfie. As many shoots as you want.",
+    footerLead: "One clear selfie. Three usable AI photos.",
     footerSignoff: "Sandra",
   })
 
@@ -54,14 +55,16 @@ The reason your photos never looked like the woman you feel like inside is simpl
 
 That free prompt you copied was direction. One clear selfie, one look, and suddenly it's you. Still your face, still recognizable. Just finally framed right.
 
-The Vault is the rest of the directions. Coastal mornings, dark feminine, quiet luxury, editorial street. Every look is a full shoot, not one lucky photo. One selfie, as many shoots as you want.
+But the next question is usually, "Okay, how do I actually make this work?"
 
-It's $37, one time, and every new collection I add lands in your vault for free.
+That is what the AI Photos Kit is for. It shows you how to choose the right source selfie, create your first three AI photos, and fix the result if it starts looking fake or not like you.
 
-See the full Vault:
-${promptVaultUrl}
+Simple. Clear. Still you.
 
-You were always this woman. Now you've got the direction to show her.
+Get the AI Photos Kit · $37:
+${aiPhotosKitUrl}
+
+Start with one clear selfie. I'll show you what to do next.
 
 Sandra`
 
