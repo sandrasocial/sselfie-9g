@@ -90,6 +90,10 @@ function ShellInner({
 
   useEffect(() => {
     if (initialSection !== "create") return
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search)
+      if (params.has("view")) return
+    }
     const stored = readStoredAppSection(initialSection)
     if (stored !== initialSection) setSection(stored)
   }, [initialSection])

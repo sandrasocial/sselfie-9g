@@ -205,7 +205,7 @@ export function AccountView({
               ? `${data.credits} credits`
               : data?.creditsUnlimited
                 ? "Unlimited"
-                : "Couldn't load credits"}
+                : "Credit balance unavailable"}
           </p>
           <p className="mt-1 text-[13px] text-[#818283]">
             Each image is one credit. Your plan refills monthly.

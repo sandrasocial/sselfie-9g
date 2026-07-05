@@ -10,6 +10,7 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
 
     expect(shell).toContain("const [section, setSection] = useState<AppV3Section>(initialSection)")
+    expect(shell).toContain('if (params.has("view")) return')
     expect(shell).toContain("const stored = readStoredAppSection(initialSection)")
     expect(shell).toContain('if (initialSection !== "create") return')
     expect(shell).not.toContain("useState<AppV3Section>(() =>")
@@ -48,7 +49,7 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
     expect(route).toContain("isAdminEmail(user.email)")
     expect(account).toContain("creditsUnlimited")
     expect(account).toContain("Unlimited")
-    expect(account).toContain("Couldn't load credits")
+    expect(account).toContain("Credit balance unavailable")
     expect(account).not.toContain(' : "—"')
   })
 
