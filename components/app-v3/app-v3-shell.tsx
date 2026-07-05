@@ -21,6 +21,7 @@ import { AccountView } from "./account-view"
 import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
 import type { AppV3Section } from "@/lib/app-v3/navigation"
 import { buildStoredSectionHref, readStoredAppSection, saveStoredAppSection } from "./continuity"
+import { intentForFormat } from "@/lib/app-v3/maya/intent-router"
 
 export interface AppV3ShellProps {
   firstName?: string | null
@@ -105,7 +106,10 @@ function ShellInner({
 
   // Maya woven in: open a general session preset to a format, so she begins on it.
   function createFormat(format: OutputFormat) {
-    openWithAesthetic(MAYA_GENERAL, { format })
+    openWithAesthetic(MAYA_GENERAL, {
+      format,
+      creationIntent: intentForFormat(format, "manual"),
+    })
   }
 
   // From a Content recommendation: open Maya seeded with that exact idea.
@@ -113,6 +117,7 @@ function ShellInner({
     openWithAesthetic(MAYA_GENERAL, {
       format,
       seed: `Let's create a ${FORMAT_LABEL[format]} about: ${title}.`,
+      creationIntent: intentForFormat(format, "content_card"),
     })
   }
 
@@ -121,6 +126,7 @@ function ShellInner({
       format: "video",
       videoSourceUrl: imageUrl,
       seed: "Let's add subtle editorial motion to this exact image. Keep it natural, polished, and true to the original.",
+      creationIntent: intentForFormat("video", "gallery_action"),
     })
   }
 
@@ -128,6 +134,7 @@ function ShellInner({
     openWithAesthetic(MAYA_GENERAL, {
       format: "photo",
       seed: "Let's create a photo using my trained model.",
+      creationIntent: intentForFormat("photo", "manual"),
     })
   }
 

@@ -12,6 +12,30 @@ export type OutputFormat =
   | "story-sequence"
   | "video"
 
+export type CreationIntentSource =
+  | "typed"
+  | "starter_chip"
+  | "content_card"
+  | "vault_shot"
+  | "gallery_action"
+  | "manual"
+
+export type CreationIntentConfidence = "high" | "needs_clarify"
+
+export interface CreationIntent {
+  format: OutputFormat | null
+  source: CreationIntentSource
+  confidence: CreationIntentConfidence
+}
+
+export type InlineActionKind =
+  | "upload_selfie"
+  | "choose_format"
+  | "choose_vibe"
+  | "choose_shot"
+  | "generate"
+  | "next_action"
+
 export interface AestheticShot {
   id: string
   title: string
@@ -74,6 +98,8 @@ export interface ConciergeSession {
   graphicText: GraphicTextSpec | null
   /** Optional first message to seed Maya with (e.g. a Content recommendation idea). */
   seedPrompt?: string | null
+  /** How the creation started, so Maya can route without making the member navigate. */
+  creationIntent?: CreationIntent | null
   startedAt: number
 }
 
@@ -86,6 +112,8 @@ export interface OpenConciergeOptions {
   referenceSelfieUrl?: string | null
   /** Optional gallery/uploaded image to animate when opening Maya in video mode. */
   videoSourceUrl?: string | null
+  /** Deterministic client-side routing hint for Maya-first creation. */
+  creationIntent?: CreationIntent | null
 }
 
 export type AppV3AnalyticsCohort = "member" | "trial" | "limited" | "admin"

@@ -158,6 +158,14 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "suite_image_generated",
   "suite_image_downloaded",
   "suite_edit_applied",
+  // MAYA-FIRST-SUITE-UX — inline guided creation path. Behavior only.
+  "suite_maya_inline_started",
+  "suite_intent_detected",
+  "suite_inline_choice_selected",
+  "suite_inline_selfie_uploaded",
+  "suite_generation_path_completed",
+  "suite_next_action_selected",
+  "suite_maya_recovery_shown",
   // App v3 generation reliability + trial-cap conversion moments (behavior only).
   "suite_generation_failed",
   // STORY-GENERATION round 3 (2026-07-03): a malformed emit_concepts call was repaired

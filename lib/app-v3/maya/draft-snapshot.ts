@@ -10,6 +10,20 @@ export type ServerOutputFormat =
   | "story-sequence"
   | "video"
 
+export type ServerCreationIntentSource =
+  | "typed"
+  | "starter_chip"
+  | "content_card"
+  | "vault_shot"
+  | "gallery_action"
+  | "manual"
+
+export type ServerCreationIntentSnapshot = {
+  format: ServerOutputFormat | null
+  source: ServerCreationIntentSource
+  confidence: "high" | "needs_clarify"
+}
+
 export type ServerAestheticSnapshot = {
   id: string
   name: string
@@ -35,6 +49,7 @@ export type ServerConciergeSessionSnapshot = {
   videoSourceUrl: string | null
   graphicText: unknown | null
   seedPrompt?: string | null
+  creationIntent?: ServerCreationIntentSnapshot | null
   startedAt: number
 }
 
@@ -68,6 +83,14 @@ const VALID_FORMATS: ServerOutputFormat[] = [
   "story-slide",
   "story-sequence",
   "video",
+]
+const VALID_INTENT_SOURCES: ServerCreationIntentSource[] = [
+  "typed",
+  "starter_chip",
+  "content_card",
+  "vault_shot",
+  "gallery_action",
+  "manual",
 ]
 const MAX_SNAPSHOT_AGE_MS = 1000 * 60 * 60 * 24 * 14
 
@@ -111,6 +134,19 @@ function sanitizeAesthetic(value: unknown): ServerAestheticSnapshot | null {
   }
 }
 
+function sanitizeCreationIntent(value: unknown): ServerCreationIntentSnapshot | null {
+  if (!value || typeof value !== "object") return null
+  const intent = value as Record<string, unknown>
+  const format = VALID_FORMATS.includes(intent.format as ServerOutputFormat)
+    ? (intent.format as ServerOutputFormat)
+    : null
+  const source = VALID_INTENT_SOURCES.includes(intent.source as ServerCreationIntentSource)
+    ? (intent.source as ServerCreationIntentSource)
+    : "manual"
+  const confidence = intent.confidence === "high" ? "high" : "needs_clarify"
+  return { format, source, confidence }
+}
+
 function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null {
   if (!value || typeof value !== "object") return null
   const session = value as Record<string, unknown>
@@ -132,6 +168,7 @@ function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null 
     graphicText:
       session.graphicText && typeof session.graphicText === "object" ? session.graphicText : null,
     seedPrompt: typeof session.seedPrompt === "string" ? session.seedPrompt : null,
+    creationIntent: sanitizeCreationIntent(session.creationIntent),
     startedAt: session.startedAt,
   }
 }

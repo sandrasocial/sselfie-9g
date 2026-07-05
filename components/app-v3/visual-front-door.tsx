@@ -11,6 +11,7 @@ import Image from "next/image"
 import { AESTHETICS } from "./aesthetics"
 import { useConcierge } from "./concierge-context"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import { detectCreationIntent, intentForFormat } from "@/lib/app-v3/maya/intent-router"
 import type { Aesthetic, AestheticShot, AppV3AnalyticsCohort, OutputFormat } from "./types"
 
 const MAYA_BLANK: Aesthetic = {
@@ -44,6 +45,34 @@ const FORMAT_STARTERS: { format: OutputFormat; label: string; line: string }[] =
     line: "A full multi-slide story in one clear world.",
   },
   { format: "video", label: "Video", line: "Add subtle motion to a photo you already made." },
+]
+
+const STARTER_CHIPS: { format: OutputFormat; label: string; prompt: string }[] = [
+  {
+    format: "photo",
+    label: "Make my first photo",
+    prompt: "I want to make my first photo from one selfie.",
+  },
+  {
+    format: "photoshoot",
+    label: "Create a full shoot",
+    prompt: "I want to create a full shoot in one visual world.",
+  },
+  {
+    format: "reel-cover",
+    label: "Make a reel cover",
+    prompt: "I want to make a Reel cover.",
+  },
+  {
+    format: "carousel",
+    label: "Turn an idea into a carousel",
+    prompt: "I want to turn an idea into a carousel.",
+  },
+  {
+    format: "story-sequence",
+    label: "Make stories",
+    prompt: "I want to make a story sequence.",
+  },
 ]
 
 // Memoized + receives onOpen as a STABLE prop, so opening the concierge (which changes the
@@ -273,6 +302,8 @@ export function VisualFrontDoor({
   const [frontDoorUploadError, setFrontDoorUploadError] = useState<string | null>(null)
   const [frontDoorHasSelfie, setFrontDoorHasSelfie] = useState(hasSelfie)
   const [shotPickerAesthetic, setShotPickerAesthetic] = useState<Aesthetic | null>(null)
+  const [startText, setStartText] = useState("")
+  const [manualOpen, setManualOpen] = useState(false)
 
   const effectiveHasSelfie = hasSelfie || frontDoorHasSelfie
   const shouldShowTrialFirstRun = showTrialFirstRunStep && !effectiveHasSelfie
@@ -317,7 +348,6 @@ export function VisualFrontDoor({
 
   const heroImage = aesthetics[0]?.coverImage || AESTHETICS[0]?.coverImage || ""
   const selfieImage = aesthetics[1]?.coverImage || heroImage
-  const formatImage = aesthetics[2]?.coverImage || heroImage
 
   function trackFirstAction(action: string) {
     void trackAnalyticsEvent({
@@ -326,29 +356,59 @@ export function VisualFrontDoor({
     })
   }
 
-  function openBlank() {
-    trackFirstAction("start_blank")
-    openWithAesthetic(MAYA_BLANK)
+  function trackInlineStart(action: string, format: OutputFormat | null, confidence: string) {
+    void trackAnalyticsEvent({
+      event: "suite_maya_inline_started",
+      properties: { cohort, action, format, confidence },
+    })
+    void trackAnalyticsEvent({
+      event: "suite_intent_detected",
+      properties: { cohort, action, format, confidence },
+    })
+  }
+
+  function startFromText() {
+    const text = startText.trim()
+    const seed = text || "I know I want to create something, but I need Maya to help me choose."
+    const intent = detectCreationIntent(seed, "typed")
+    trackFirstAction("maya_text_start")
+    trackInlineStart("typed_start", intent.format, intent.confidence)
+    openWithAesthetic(MAYA_BLANK, {
+      format: intent.format ?? undefined,
+      seed,
+      creationIntent: intent,
+    })
+  }
+
+  function openStarterChip(item: (typeof STARTER_CHIPS)[number]) {
+    const intent = intentForFormat(item.format, "starter_chip")
+    trackFirstAction(`starter_${item.format}`)
+    trackInlineStart("starter_chip", intent.format, intent.confidence)
+    openWithAesthetic(MAYA_BLANK, {
+      format: item.format,
+      seed: item.prompt,
+      creationIntent: intent,
+    })
   }
 
   function openSelfieStart() {
     trackFirstAction("add_selfie")
+    const intent = intentForFormat("photo", "starter_chip")
     openWithAesthetic(MAYA_BLANK, {
       format: "photo",
       seed: "I want to start with one selfie and make a photo I can post.",
+      creationIntent: intent,
     })
-  }
-
-  function openFormatPicker() {
-    trackFirstAction("pick_format")
-    openWithAesthetic(MAYA_BLANK)
   }
 
   function openFormat(format: OutputFormat, label: string) {
     trackFirstAction(`format_${format}`)
+    const intent = intentForFormat(format, "manual")
+    trackInlineStart("manual_format", intent.format, intent.confidence)
     openWithAesthetic(MAYA_BLANK, {
       format,
       seed: `Let's create a ${label.toLowerCase()}.`,
+      creationIntent: intent,
     })
   }
 
@@ -367,6 +427,7 @@ export function VisualFrontDoor({
     setShotPickerAesthetic(null)
     openWithAesthetic(compactAestheticForMaya(aesthetic, shot), {
       seed: `I want to recreate the "${shot.title}" shot from this vibe with my selfie.`,
+      creationIntent: intentForFormat("photo", "vault_shot"),
     })
   }
 
@@ -451,52 +512,115 @@ export function VisualFrontDoor({
       )}
 
       {!shouldShowTrialFirstRun && !compact && (
-        <div className="mb-9 grid grid-cols-1 gap-3 lg:grid-cols-[1.2fr_0.8fr] lg:gap-4">
-          <LookbookAction
-            image={heroImage}
-            eyebrow="Blank start"
-            title="Tell Maya what you want."
-            body="No look required. Start with an idea, a product, a caption, a photo, or the content you need today."
-            action="Start blank"
-            tall
-            onClick={openBlank}
-          />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 lg:gap-4">
-            <LookbookAction
-              image={selfieImage}
-              eyebrow="Fastest path"
-              title="Start with one selfie."
-              body="Best when you want the first photo, cover, or content direction without overthinking it."
-              action="Add one selfie"
+        <div className="mb-9 overflow-hidden rounded-[10px] border border-[#C5C6C8]/60 bg-white">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="min-w-0 p-5 sm:p-7">
+              <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">
+                Start with Maya
+              </p>
+              <h2 className="mt-3 font-serif text-[30px] font-light leading-[1.04] text-[#0D0E10] sm:text-[42px]">
+                What do you want to make today?
+              </h2>
+              <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-[#4F5052]">
+                Tell Maya in your own words. She will choose the path, ask only what she needs, and
+                keep the next step in front of you.
+              </p>
+
+              <form
+                className="mt-5 space-y-3"
+                onSubmit={event => {
+                  event.preventDefault()
+                  startFromText()
+                }}
+              >
+                <label className="block">
+                  <span className="sr-only">Tell Maya what you want to make</span>
+                  <textarea
+                    value={startText}
+                    onChange={event => setStartText(event.target.value)}
+                    rows={3}
+                    placeholder="Example: I need a reel cover for my new offer"
+                    className="min-h-[112px] w-full resize-none rounded-[7px] border border-[#C5C6C8]/70 bg-[#F8FAFA] px-4 py-3 text-[15px] leading-relaxed text-[#282728] outline-none transition-colors placeholder:text-[#9B9C9D] focus:border-[#0D0E10]"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="min-h-12 w-full rounded-[5px] bg-[#0D0E10] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#282728] sm:w-auto"
+                >
+                  Ask Maya
+                </button>
+              </form>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                {STARTER_CHIPS.filter(item => videoEnabled || item.format !== "video").map(item => (
+                  <button
+                    key={item.format}
+                    type="button"
+                    onClick={() => openStarterChip(item)}
+                    className="min-h-10 rounded-full border border-[#C5C6C8]/70 bg-white px-3.5 py-2 text-[12px] text-[#4F5052] transition-colors hover:border-[#0D0E10] hover:text-[#0D0E10]"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setManualOpen(open => !open)}
+                  className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#4F5052] underline underline-offset-4 hover:text-[#0D0E10]"
+                >
+                  {manualOpen ? "Hide manual choices" : "Choose manually"}
+                </button>
+                {hasTrainedModel && onUseTrainedModel && (
+                  <button
+                    type="button"
+                    onClick={openTrainedModel}
+                    className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#4F5052] underline underline-offset-4 hover:text-[#0D0E10]"
+                  >
+                    Use my trained model
+                  </button>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
               onClick={openSelfieStart}
-            />
-            {hasTrainedModel && onUseTrainedModel ? (
-              <LookbookAction
-                image={formatImage}
-                eyebrow="Saved model"
-                title="Use your trained model."
-                body="Create with the model you already trained, inside Maya."
-                action="Use my model"
-                onClick={openTrainedModel}
-              />
-            ) : (
-              <LookbookAction
-                image={formatImage}
-                eyebrow="Not sure yet"
-                title="Choose the format first."
-                body="Pick photo, photoshoot, cover, carousel, story, or video. Maya will only ask what she needs."
-                action="Pick a format"
-                onClick={openFormatPicker}
-              />
-            )}
+              className="group relative min-h-[260px] overflow-hidden bg-[#0D0E10] text-left lg:min-h-full"
+            >
+              {heroImage && (
+                <Image
+                  src={heroImage}
+                  alt=""
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover opacity-90 transition-transform duration-700 ease-out group-hover:scale-[1.025]"
+                />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0D0E10]/85 via-[#0D0E10]/25 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
+                <p className="text-[10px] uppercase tracking-[0.28em] text-white/75">
+                  Fastest path
+                </p>
+                <p className="mt-2 font-serif text-[30px] font-light leading-[1.04] text-white sm:text-[40px]">
+                  Start with one selfie.
+                </p>
+                <p className="mt-2 max-w-sm text-[13px] leading-relaxed text-white/82">
+                  Maya keeps your real face, then pulls the look, format, and next step around it.
+                </p>
+                <span className="mt-4 inline-flex min-h-10 items-center rounded-[4px] bg-white px-4 text-[10px] uppercase tracking-[0.18em] text-[#0D0E10] transition-colors group-hover:bg-[#F8FAFA]">
+                  Add one selfie
+                </span>
+              </div>
+            </button>
           </div>
         </div>
       )}
 
-      {!shouldShowTrialFirstRun && !compact && (
+      {!shouldShowTrialFirstRun && !compact && manualOpen && (
         <div className="mb-10 border-y border-[#C5C6C8]/50 py-4">
           <p className="mb-3 text-[10px] uppercase tracking-[0.26em] text-[#818283]">
-            What are we making?
+            Manual format choices
           </p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
             {FORMAT_STARTERS.filter(item => videoEnabled || item.format !== "video").map(item => (
@@ -518,19 +642,19 @@ export function VisualFrontDoor({
         </div>
       )}
 
-      {!shouldShowTrialFirstRun && !compact && (
+      {!shouldShowTrialFirstRun && !compact && manualOpen && (
         <div className="mb-5">
           <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">
-            Or start from a Vault look
+            Start from a Vault look
           </p>
           <p className="mt-2 max-w-md text-[13px] leading-relaxed text-[#6D6E70]">
-            Use these when you want the look chosen before Maya starts.
+            Optional. Use these when you want the visual world chosen before Maya starts.
           </p>
         </div>
       )}
 
       {/* This week's look: the same drop the Monday email announces, one tap into Maya. */}
-      {!shouldShowTrialFirstRun && !compact && weeklyAesthetic && (
+      {!shouldShowTrialFirstRun && !compact && manualOpen && weeklyAesthetic && (
         <div className="mb-4">
           <button
             type="button"
@@ -564,7 +688,7 @@ export function VisualFrontDoor({
       )}
 
       {/* Editorial masonry: CSS columns for an organic, Pinterest-style flow. */}
-      {!shouldShowTrialFirstRun && (
+      {!shouldShowTrialFirstRun && (!compact ? manualOpen : true) && (
         <div className="[column-fill:_balance] columns-1 gap-3 min-[380px]:columns-2 sm:columns-3 sm:gap-4 lg:columns-4">
           {aesthetics.map((aesthetic, i) => (
             <div key={aesthetic.id} className="mb-3 break-inside-avoid sm:mb-4">

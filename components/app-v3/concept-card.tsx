@@ -46,6 +46,8 @@ interface ConceptCardProps {
   onOpenTextStudio?: () => void
   /** Replaces the single idle button when a guided picker should own the next step. */
   idleAction?: ReactNode
+  /** Extra guided next steps after a result is created. */
+  resultActions?: ReactNode
   /** Admin-only prompt inspector asset id, e.g. ai_123. */
   promptAssetId?: string | null
   disabled?: boolean
@@ -74,6 +76,7 @@ export function ConceptCard({
   onEdit,
   onOpenTextStudio,
   idleAction,
+  resultActions,
   promptAssetId,
   disabled,
 }: ConceptCardProps) {
@@ -248,6 +251,7 @@ export function ConceptCard({
             >
               Make another version
             </button>
+            {resultActions}
           </div>
         ) : idleAction ? (
           idleAction

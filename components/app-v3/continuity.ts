@@ -4,7 +4,13 @@ import {
   type ServerMayaDraftSnapshot,
 } from "@/lib/app-v3/maya/draft-snapshot"
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
-import type { AestheticShot, ConciergeSession, OutputFormat } from "./types"
+import type {
+  AestheticShot,
+  ConciergeSession,
+  CreationIntent,
+  CreationIntentSource,
+  OutputFormat,
+} from "./types"
 import type { ConceptGenState } from "./concept-card"
 import { sanitizeTextOverlaySpec } from "@/lib/app-v3/text-overlay"
 
@@ -21,6 +27,14 @@ const VALID_FORMATS: OutputFormat[] = [
   "story-slide",
   "story-sequence",
   "video",
+]
+const VALID_INTENT_SOURCES: CreationIntentSource[] = [
+  "typed",
+  "starter_chip",
+  "content_card",
+  "vault_shot",
+  "gallery_action",
+  "manual",
 ]
 const MAX_SNAPSHOT_AGE_MS = 1000 * 60 * 60 * 24 * 14
 
@@ -80,6 +94,19 @@ function sanitizeAestheticShot(value: unknown): AestheticShot | null {
   }
 }
 
+function sanitizeCreationIntent(value: unknown): CreationIntent | null {
+  if (!value || typeof value !== "object") return null
+  const intent = value as Record<string, unknown>
+  const format = VALID_FORMATS.includes(intent.format as OutputFormat)
+    ? (intent.format as OutputFormat)
+    : null
+  const source = VALID_INTENT_SOURCES.includes(intent.source as CreationIntentSource)
+    ? (intent.source as CreationIntentSource)
+    : "manual"
+  const confidence = intent.confidence === "high" ? "high" : "needs_clarify"
+  return { format, source, confidence }
+}
+
 export function coerceStoredAppSection(value: unknown, fallback: AppV3Section): AppV3Section {
   return VALID_SECTIONS.includes(value as AppV3Section) ? (value as AppV3Section) : fallback
 }
@@ -134,6 +161,7 @@ function sanitizeSession(value: unknown): ConciergeSession | null {
         ? (session.graphicText as ConciergeSession["graphicText"])
         : null,
     seedPrompt,
+    creationIntent: sanitizeCreationIntent(session.creationIntent),
     startedAt: session.startedAt,
   }
 }

@@ -23,6 +23,13 @@ import { TypingDots } from "./loading"
 import { ImageLightbox } from "./image-lightbox"
 import { TextStudio } from "./text-studio"
 import { TextOverlayLayer } from "./text-overlay-layer"
+import {
+  InlineFormatChoice,
+  InlineResultActions,
+  InlineSelfieUpload,
+  InlineShotPicker,
+  InlineVibePicker,
+} from "./maya-inline-components"
 import { CreditModal } from "./credit-modal"
 import { TrialCapOffer } from "./trial-cap-offer"
 import { ReferenceLibraryModal } from "./reference-library-modal"
@@ -36,7 +43,19 @@ import {
   buildVideoMotionPrompt,
 } from "@/lib/app-v3/custom-model-brief"
 import type { ServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
-import type { AestheticShot, AppV3AnalyticsCohort, OutputFormat } from "./types"
+import type {
+  Aesthetic,
+  AestheticShot,
+  AppV3AnalyticsCohort,
+  CreationIntent,
+  InlineActionKind,
+  OutputFormat,
+} from "./types"
+import {
+  detectCreationIntent,
+  intentForFormat,
+  needsClarificationIntent,
+} from "@/lib/app-v3/maya/intent-router"
 import {
   OVERLAY_STYLE_PRESETS,
   resolveOverlayStyle,
@@ -75,6 +94,28 @@ function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
       )}
     </div>
   )
+}
+
+function compactInlineAestheticForMaya(aesthetic: Aesthetic, selectedShot: AestheticShot): Aesthetic {
+  const thumbnails = [
+    selectedShot.image,
+    ...(aesthetic.thumbnails ?? []).filter(url => url !== selectedShot.image),
+  ].slice(0, 3)
+  return {
+    ...aesthetic,
+    coverImage: selectedShot.image,
+    thumbnails,
+    selectedShot,
+    intent: [
+      aesthetic.intent,
+      `Selected shot: ${selectedShot.title}. Recreate this frame's composition, camera distance, pose logic, styling, light, and background world with the member's real face.`,
+      selectedShot.whenToUse ? `Use case: ${selectedShot.whenToUse}` : "",
+      selectedShot.mood ? `Mood: ${selectedShot.mood}` : "",
+      selectedShot.stylePrompt ? `Shot styling DNA: ${selectedShot.stylePrompt}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  }
 }
 
 const STYLE_PREVIEW_BACKGROUNDS: Record<OverlayStyleId, string> = {
@@ -437,6 +478,7 @@ export function MayaConcierge({
   const {
     session,
     isOpen,
+    openWithAesthetic,
     resetCurrentSession,
     setOutputFormat,
     setReferenceSelfieUrl,
@@ -466,7 +508,15 @@ export function MayaConcierge({
   // cards swaps it later.
   const [textStyleChoice, setTextStyleChoice] = useState<OverlayStyleId | null>(null)
   const [styleSwapOpen, setStyleSwapOpen] = useState(false)
+  const [inlineAesthetics, setInlineAesthetics] = useState<Aesthetic[] | null>(null)
+  const [inlineShotPickerAesthetic, setInlineShotPickerAesthetic] = useState<Aesthetic | null>(null)
   const sessionStartRef = useRef<number | null>(restoredDraft ? (session?.startedAt ?? null) : null)
+  const seededMessageSentRef = useRef<number | null>(
+    restoredDraft?.messages.length ? (session?.startedAt ?? null) : null
+  )
+  const [localCreationIntent, setLocalCreationIntent] = useState<CreationIntent | null>(
+    () => session?.creationIntent ?? null
+  )
   // "New chat" retires the session's seeded idea (a Content recommendation) without mutating
   // the session itself; a genuinely new session re-arms it.
   const seedRetiredRef = useRef(Boolean(restoredDraft?.messages.length))
@@ -604,7 +654,8 @@ export function MayaConcierge({
     aestheticIntent: string
     aestheticId: string
     selectedShot: AestheticShot | null
-    format: OutputFormat
+    format: OutputFormat | null
+    creationIntent: CreationIntent | null
     referenceSelfieUrl: string | null
     videoSourceUrl: string | null
     inspirationImageUrl: string | null
@@ -615,7 +666,8 @@ export function MayaConcierge({
     aestheticIntent: "",
     aestheticId: "",
     selectedShot: null,
-    format: "photo",
+    format: null,
+    creationIntent: null,
     referenceSelfieUrl: null,
     videoSourceUrl: null,
     inspirationImageUrl: null,
@@ -671,6 +723,7 @@ export function MayaConcierge({
     setGenState(draft.genState)
     setGeneratedOnce(draft.generatedOnce)
     setSetupOpen(draft.setupOpen)
+    setLocalCreationIntent(session.creationIntent ?? null)
   }, [session, setMessages])
 
   useEffect(() => {
@@ -727,9 +780,12 @@ export function MayaConcierge({
     if (session.startedAt === sessionStartRef.current) return
     sessionStartRef.current = session.startedAt
     lastPulledFormatRef.current = null
+    seededMessageSentRef.current = null
     seedRetiredRef.current = false
     setTextStyleChoice(null)
     setStyleSwapOpen(false)
+    setInlineShotPickerAesthetic(null)
+    setLocalCreationIntent(session.creationIntent ?? null)
   }, [session])
 
   // Mirror of the active selfie for async callbacks (avoids clobbering a fresh upload).
@@ -769,6 +825,17 @@ export function MayaConcierge({
       .catch(() => {})
   }, [isOpen, session, setReferenceSelfieUrl])
 
+  useEffect(() => {
+    if (!isOpen || inlineAesthetics) return
+    fetch("/api/app-v3/aesthetics")
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (!Array.isArray(data?.aesthetics)) return
+        setInlineAesthetics(data.aesthetics)
+      })
+      .catch(() => {})
+  }, [inlineAesthetics, isOpen])
+
   // Maya-guided: once a format is chosen (a chip tap, or preselected from Content), she
   // pulls directions automatically. One pull per format; resets on a new chat or new session.
   // IDENTITY FIRST (P0): nothing streams until the selfie exists - the moment it's added,
@@ -786,7 +853,8 @@ export function MayaConcierge({
     if (lastPulledFormatRef.current === fmt) return
     const isFirstPull = lastPulledFormatRef.current === null
     lastPulledFormatRef.current = fmt
-    extrasRef.current = { ...extrasRef.current, format: fmt }
+    const pullIntent = localCreationIntent ?? session.creationIntent ?? intentForFormat(fmt, "manual")
+    extrasRef.current = { ...extrasRef.current, format: fmt, creationIntent: pullIntent }
     // First pull may carry a seeded idea (a Content recommendation); after that, plain format.
     const seed = !seedRetiredRef.current ? session.seedPrompt : null
     const text =
@@ -798,7 +866,31 @@ export function MayaConcierge({
           ? "Let's create photos using my trained model."
           : FORMAT_PHRASE[fmt]
     sendMessage({ text })
-  }, [admin, generationSource, hasTrainedModel, isOpen, session, isThinking, sendMessage, textStyleChoice])
+  }, [
+    admin,
+    generationSource,
+    hasTrainedModel,
+    isOpen,
+    localCreationIntent,
+    session,
+    isThinking,
+    sendMessage,
+    textStyleChoice,
+  ])
+
+  // Maya-first blank starts: if the Create page opened with typed text but no committed format,
+  // send that sentence into Maya so she asks one inline clarifying question. Without this, a
+  // needs-clarify session opened to a quiet drawer that still expected the member to pick a chip.
+  useEffect(() => {
+    if (!isOpen || !session || isThinking) return
+    if (session.outputFormat) return
+    if (messages.length > 0) return
+    const seed = session.seedPrompt?.trim()
+    if (!seed) return
+    if (seededMessageSentRef.current === session.startedAt) return
+    seededMessageSentRef.current = session.startedAt
+    sendMessage({ text: seed })
+  }, [isOpen, isThinking, messages.length, sendMessage, session])
 
   // Conversational format switching (SUITE-UX-02): when Maya calls set_format mid-chat
   // ("make me a carousel" typed, no chip), commit the switch here - the auto-pull effect
@@ -844,6 +936,10 @@ export function MayaConcierge({
   const { aesthetic, outputFormat, referenceSelfieUrl } = session
   const selectedShot = aesthetic.selectedShot ?? null
   const format: OutputFormat = outputFormat ?? "photo"
+  const activeCreationIntent =
+    localCreationIntent ??
+    session.creationIntent ??
+    (outputFormat ? intentForFormat(outputFormat, "manual") : needsClarificationIntent("manual"))
   const videoSourceUrl = session.videoSourceUrl
   const customModelAvailable = hasTrainedModel && format === "photo" && !admin
   const activeGenerationSource: GenerationSource = customModelAvailable
@@ -869,7 +965,8 @@ export function MayaConcierge({
     aestheticIntent: aesthetic.intent,
     aestheticId: aesthetic.id,
     selectedShot: aesthetic.selectedShot ?? null,
-    format,
+    format: activeCreationIntent.format ?? outputFormat ?? null,
+    creationIntent: activeCreationIntent,
     referenceSelfieUrl,
     videoSourceUrl,
     inspirationImageUrl: inspirationUrl,
@@ -894,6 +991,10 @@ export function MayaConcierge({
         void trackAnalyticsEvent({
           event: "activation_selfie_uploaded",
           properties: { cohort, source: "maya_drawer" },
+        })
+        void trackAnalyticsEvent({
+          event: "suite_inline_selfie_uploaded",
+          properties: { cohort, source: "maya_drawer", format },
         })
       } else if (slot === "side") setSideProfileUrl(data.url)
       else if (slot === "body") setFullBodyUrl(data.url)
@@ -925,6 +1026,7 @@ export function MayaConcierge({
       setInput("")
       return
     }
+    commitDetectedIntent(text)
     sendMessage({ text })
     setInput("")
   }
@@ -938,8 +1040,11 @@ export function MayaConcierge({
     setSetupOpen(false)
     savedCountRef.current = 0
     lastPulledFormatRef.current = null
+    seededMessageSentRef.current = null
     setTextStyleChoice(null)
     setStyleSwapOpen(false)
+    setInlineShotPickerAesthetic(null)
+    setLocalCreationIntent(null)
     seedRetiredRef.current = true // a clean session never replays the old seeded idea
     restoredDraftRef.current = null
     appliedDraftSessionRef.current = null
@@ -991,6 +1096,7 @@ export function MayaConcierge({
     const canUseCustomModel = activeGenerationSource === "trained-model" && targetFormat === "photo"
 
     if (targetFormat === "video" && !videoSourceUrl) {
+      trackRecoveryShown(targetFormat, "missing_video_source")
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: "Choose or upload the photo you want to animate first." },
@@ -999,6 +1105,7 @@ export function MayaConcierge({
       return
     }
     if (targetFormat !== "video" && !referenceSelfieUrl && !canUseCustomModel) {
+      trackRecoveryShown(targetFormat, "missing_selfie")
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: "Add a selfie first so it still looks like you." },
@@ -1032,6 +1139,7 @@ export function MayaConcierge({
 
         if (startRes.status === 402 || startData?.code === "insufficient_credits") {
           setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+          trackRecoveryShown(targetFormat, "insufficient_credits")
           showCreditBlock(typeof startData?.current === "number" ? startData.current : null)
           return
         }
@@ -1048,6 +1156,7 @@ export function MayaConcierge({
         const videoUrl = await pollVideoGeneration(startData.predictionId, startData.videoId)
         setGenState(s => ({ ...s, [key]: { status: "done", videoUrl } }))
         setGeneratedOnce(true)
+        trackGenerationCompleted(targetFormat, "video")
         showTrialCapIfDepleted(startData.newBalance)
         return
       }
@@ -1073,6 +1182,7 @@ export function MayaConcierge({
 
         if (startRes.status === 402 || startData?.code === "insufficient_credits") {
           setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+          trackRecoveryShown(targetFormat, "insufficient_credits")
           showCreditBlock(typeof startData?.current === "number" ? startData.current : null)
           return
         }
@@ -1089,6 +1199,7 @@ export function MayaConcierge({
         const url = await pollCustomModelGeneration(startData.predictionId, startData.generationId)
         setGenState(s => ({ ...s, [key]: { status: "done", imageUrls: [url] } }))
         setGeneratedOnce(true)
+        trackGenerationCompleted(targetFormat, "custom_model")
         return
       }
 
@@ -1167,9 +1278,11 @@ export function MayaConcierge({
                 },
               }))
               setGeneratedOnce(true)
+              trackGenerationCompleted(targetFormat, "stream")
               showTrialCapIfDepleted(evt.newBalance)
               settled = true
             } else if (evt?.type === "error") {
+              trackRecoveryShown(targetFormat, "stream_error")
               setGenState(s => ({
                 ...s,
                 [key]: { status: "error", error: evt!.error || "Generation failed" },
@@ -1179,6 +1292,7 @@ export function MayaConcierge({
           }
         }
         if (!settled) {
+          trackRecoveryShown(targetFormat, "stream_unsettled")
           setGenState(s => ({ ...s, [key]: { status: "error", error: "Generation failed" } }))
         }
         return
@@ -1199,6 +1313,7 @@ export function MayaConcierge({
       if (res.status === 402 || data?.code === "insufficient_credits") {
         // Graceful path: reset the card and open the right offer instead of a raw error.
         setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+        trackRecoveryShown(targetFormat, "insufficient_credits")
         showCreditBlock(typeof data?.current === "number" ? data.current : null)
         return
       }
@@ -1226,8 +1341,10 @@ export function MayaConcierge({
         },
       }))
       setGeneratedOnce(true) // unlocks the gentle "tell Maya about your brand" moment (value first)
+      trackGenerationCompleted(targetFormat, "generate")
       showTrialCapIfDepleted(data?.newBalance)
     } catch (e) {
+      trackRecoveryShown(targetFormat, "exception")
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: e instanceof Error ? e.message : "Generation failed" },
@@ -1237,6 +1354,7 @@ export function MayaConcierge({
 
   async function generatePhotoshootSet(key: string, concepts: ConceptCardData[]) {
     if (!referenceSelfieUrl) {
+      trackRecoveryShown("photoshoot", "missing_selfie")
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: "Add a selfie first so it still looks like you." },
@@ -1245,6 +1363,7 @@ export function MayaConcierge({
     }
     const shootConcepts = concepts.slice(0, 9)
     if (shootConcepts.length < 6) {
+      trackRecoveryShown("photoshoot", "thin_shoot_plan")
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: "Ask Maya for a fuller shoot plan first." },
@@ -1281,6 +1400,7 @@ export function MayaConcierge({
       } | null
       if (res.status === 402 || data?.code === "insufficient_credits") {
         setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+        trackRecoveryShown("photoshoot", "insufficient_credits")
         showCreditBlock(typeof data?.current === "number" ? data.current : null)
         return
       }
@@ -1307,8 +1427,10 @@ export function MayaConcierge({
         },
       }))
       setGeneratedOnce(true)
+      trackGenerationCompleted("photoshoot", "photoshoot_set")
       showTrialCapIfDepleted(data?.newBalance)
     } catch (e) {
+      trackRecoveryShown("photoshoot", "exception")
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: e instanceof Error ? e.message : "Generation failed" },
@@ -1323,11 +1445,118 @@ export function MayaConcierge({
   )
   const agentLabel = memory?.agentName?.trim() || "Maya"
 
+  function trackInlineChoice(
+    action: string,
+    intent: CreationIntent,
+    properties: Record<string, unknown> = {}
+  ) {
+    void trackAnalyticsEvent({
+      event: "suite_inline_choice_selected",
+      properties: { cohort, action, ...intent, ...properties },
+    })
+    void trackAnalyticsEvent({
+      event: "suite_intent_detected",
+      properties: { cohort, action, ...intent, ...properties },
+    })
+  }
+
   // Tap-first: choosing a format asks Maya to pull 3 directions for it (no typing needed).
   function handlePickFormat(id: OutputFormat) {
     if (isThinking) return
+    const intent = intentForFormat(id, "manual")
+    setLocalCreationIntent(intent)
+    extrasRef.current = { ...extrasRef.current, format: intent.format, creationIntent: intent }
+    trackInlineChoice("format_choice", intent)
     setOutputFormat(id) // the auto-pull effect sends the request for the chosen format
     setSetupOpen(false) // a committed pick collapses setup so the directions are visible
+  }
+
+  function intentForCurrentVibeChoice(source: "manual" | "vault_shot"): CreationIntent {
+    const currentFormat = activeCreationIntent.format ?? outputFormat ?? null
+    if (!currentFormat) return needsClarificationIntent(source)
+    return intentForFormat(currentFormat, source)
+  }
+
+  function handleInlineVibePick(nextAesthetic: Aesthetic) {
+    if (isThinking) return
+    const intent = intentForCurrentVibeChoice("manual")
+    trackInlineChoice("choose_vibe", intent, { aestheticId: nextAesthetic.id })
+    if (nextAesthetic.shots?.length) {
+      setInlineShotPickerAesthetic(nextAesthetic)
+      return
+    }
+    openWithAesthetic(nextAesthetic, {
+      format: intent.format ?? undefined,
+      seed: session?.seedPrompt ?? undefined,
+      referenceSelfieUrl,
+      videoSourceUrl,
+      creationIntent: intent,
+    })
+  }
+
+  function handleInlineShotPick(shot: AestheticShot) {
+    if (isThinking || !inlineShotPickerAesthetic) return
+    const intent = intentForCurrentVibeChoice("vault_shot")
+    trackInlineChoice("choose_shot", intent, {
+      aestheticId: inlineShotPickerAesthetic.id,
+      shotId: shot.id,
+    })
+    openWithAesthetic(compactInlineAestheticForMaya(inlineShotPickerAesthetic, shot), {
+      format: intent.format ?? undefined,
+      seed: `I want to recreate the "${shot.title}" shot from this vibe with my selfie.`,
+      referenceSelfieUrl,
+      videoSourceUrl,
+      creationIntent: intent,
+    })
+    setInlineShotPickerAesthetic(null)
+  }
+
+  function commitDetectedIntent(text: string, source: CreationIntent["source"] = "typed") {
+    const intent = detectCreationIntent(text, source)
+    setLocalCreationIntent(intent)
+    extrasRef.current = { ...extrasRef.current, format: intent.format, creationIntent: intent }
+    trackInlineChoice("typed_message", intent)
+    if (intent.format && session?.outputFormat !== intent.format) {
+      setOutputFormat(intent.format)
+      setSetupOpen(false)
+    }
+    return intent
+  }
+
+  function sendInlineAnswer(answer: string) {
+    if (isThinking) return
+    commitDetectedIntent(answer, "typed")
+    sendMessage({ text: answer })
+  }
+
+  function handleNextFormat(nextFormat: OutputFormat, kind: InlineActionKind) {
+    if (isThinking) return
+    const intent = intentForFormat(nextFormat, "gallery_action")
+    setLocalCreationIntent(intent)
+    extrasRef.current = { ...extrasRef.current, format: intent.format, creationIntent: intent }
+    void trackAnalyticsEvent({
+      event: "suite_next_action_selected",
+      properties: { cohort, kind, format: nextFormat },
+    })
+    setOutputFormat(nextFormat)
+    setSetupOpen(false)
+    lastPulledFormatRef.current = nextFormat
+    seedRetiredRef.current = true
+    sendMessage({ text: FORMAT_PHRASE[nextFormat] })
+  }
+
+  function trackGenerationCompleted(targetFormat: OutputFormat, source: string) {
+    void trackAnalyticsEvent({
+      event: "suite_generation_path_completed",
+      properties: { cohort, format: targetFormat, source },
+    })
+  }
+
+  function trackRecoveryShown(targetFormat: OutputFormat, reason: string) {
+    void trackAnalyticsEvent({
+      event: "suite_maya_recovery_shown",
+      properties: { cohort, format: targetFormat, reason },
+    })
   }
 
   function focusComposer() {
@@ -1709,28 +1938,34 @@ export function MayaConcierge({
         )}
         {(!hasStarted || setupOpen) && (
           <div className="min-w-0 shrink-0 space-y-3 border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
-            <div className="flex flex-wrap gap-2">
-              {FORMAT_OPTIONS.map(opt => {
-                // Honest selection: only a COMMITTED format shows selected (outputFormat, not the
-                // display fallback) - after "New chat" no chip is selected until she picks again.
-                const selected = outputFormat === opt.id
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => handlePickFormat(opt.id)}
+            <InlineFormatChoice disabled={isThinking} onPick={handlePickFormat} />
+
+            {!hasStarted && inlineAesthetics && inlineAesthetics.length > 0 && (
+              <div className="space-y-2">
+                {inlineShotPickerAesthetic ? (
+                  <>
+                    <InlineShotPicker
+                      shots={inlineShotPickerAesthetic.shots ?? []}
+                      disabled={isThinking}
+                      onPick={handleInlineShotPick}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setInlineShotPickerAesthetic(null)}
+                      className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#818283] underline underline-offset-2 hover:text-[#0D0E10]"
+                    >
+                      Choose another visual world
+                    </button>
+                  </>
+                ) : (
+                  <InlineVibePicker
+                    aesthetics={inlineAesthetics}
                     disabled={isThinking}
-                    className={`min-h-10 rounded-full border px-3.5 py-2 text-[12px] transition-colors disabled:opacity-50 ${
-                      selected
-                        ? "border-[#0D0E10] bg-[#0D0E10] text-white"
-                        : "border-[#C5C6C8]/60 bg-white text-[#4F5052] hover:border-[#0D0E10]/40"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                )
-              })}
-            </div>
+                    onPick={handleInlineVibePick}
+                  />
+                )}
+              </div>
+            )}
 
             {customModelAvailable && (
               <div className="rounded-[6px] border border-[#C5C6C8]/60 bg-white p-2.5">
@@ -2205,31 +2440,13 @@ export function MayaConcierge({
             !referenceSelfieUrl &&
             hasStarted &&
             activeGenerationSource !== "trained-model" && (
-              <div className="min-w-0 max-w-full rounded-[8px] border border-[#0D0E10]/20 bg-[#0D0E10]/[0.03] p-4 [overflow-x:clip]">
-                <p className="font-serif text-[18px] font-light leading-tight text-[#0D0E10]">
-                  Start your brand shoot
-                </p>
-                <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
-                  Add one clear selfie and Maya turns it into your first brand shoot.
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fileInput.current?.click()}
-                    disabled={uploadingSlot === "face"}
-                    className="min-h-11 rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-60"
-                  >
-                    {uploadingSlot === "face" ? "Uploading…" : "Upload selfie"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLibraryOpen(true)}
-                    className="min-h-11 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:border-[#0D0E10]/40"
-                  >
-                    Use existing
-                  </button>
-                </div>
-              </div>
+              <InlineSelfieUpload
+                title="Start your brand shoot"
+                description="Add one clear selfie and Maya turns it into the result you chose."
+                uploading={uploadingSlot === "face"}
+                onUpload={() => fileInput.current?.click()}
+                onUseExisting={() => setLibraryOpen(true)}
+              />
             )}
 
           {messages.map((m: any) => {
@@ -2281,7 +2498,7 @@ export function MayaConcierge({
                 {clarifyPart && (
                   <ClarifyCard
                     clarify={clarifyPart}
-                    onPick={answer => sendMessage({ text: answer })}
+                    onPick={sendInlineAnswer}
                     onFreeText={focusComposer}
                     disabled={isThinking}
                   />
@@ -2449,6 +2666,12 @@ export function MayaConcierge({
                               : !referenceSelfieUrl && activeGenerationSource !== "trained-model"
                           }
                           promptAssetId={admin ? promptAssetIdFromGen(gen) : null}
+                          resultActions={
+                            <InlineResultActions
+                              format={conceptFormat}
+                              onNextFormat={handleNextFormat}
+                            />
+                          }
                         />
                       )
                     })}

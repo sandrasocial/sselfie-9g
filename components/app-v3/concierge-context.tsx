@@ -58,6 +58,11 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
         videoSourceUrl: opts?.videoSourceUrl ?? null,
         graphicText: null,
         seedPrompt: opts?.seed ?? null,
+        creationIntent:
+          opts?.creationIntent ??
+          (opts?.format
+            ? { format: opts.format, source: "manual", confidence: "high" }
+            : null),
         startedAt,
       })
       setIsOpen(true)
@@ -84,6 +89,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
             outputFormat: null,
             graphicText: null,
             seedPrompt: null,
+            creationIntent: null,
             startedAt: Date.now(),
           }
         : prev
@@ -106,6 +112,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
             videoSourceUrl: null,
             graphicText: null,
             seedPrompt: null,
+            creationIntent: null,
             startedAt: Date.now(),
           }
       )

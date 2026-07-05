@@ -57,6 +57,13 @@ describe("analytics event contract", () => {
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("selfie_to_brand_shoot_access_opened")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_home_viewed")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("first_action_selected")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_maya_inline_started")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_intent_detected")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_inline_choice_selected")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_inline_selfie_uploaded")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_generation_path_completed")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_next_action_selected")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_maya_recovery_shown")
   })
 
   it("rejects unknown event names", () => {
@@ -88,5 +95,7 @@ describe("analytics event contract", () => {
     expect(isAllowedAnalyticsEventName("selfie_to_brand_shoot_access_opened")).toBe(true)
     expect(isAllowedAnalyticsEventName("suite_home_viewed")).toBe(true)
     expect(isAllowedAnalyticsEventName("first_action_selected")).toBe(true)
+    expect(isAllowedAnalyticsEventName("suite_maya_inline_started")).toBe(true)
+    expect(isAllowedAnalyticsEventName("suite_generation_path_completed")).toBe(true)
   })
 })

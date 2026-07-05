@@ -22,7 +22,7 @@ import { salvageConceptsPayload } from "@/lib/app-v3/concept-salvage"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
-import type { OutputFormat } from "@/components/app-v3/types"
+import type { CreationIntent, CreationIntentSource, OutputFormat } from "@/components/app-v3/types"
 import { NextResponse } from "next/server"
 
 export const maxDuration = 300
@@ -397,7 +397,8 @@ interface ChatBody {
     mood?: string
     stylePrompt?: string
   } | null
-  format?: OutputFormat
+  format?: OutputFormat | null
+  creationIntent?: CreationIntent | null
   inspirationImageUrl?: string | null
   videoSourceUrl?: string | null
   brandKit?: { colors?: string[]; fonts?: string[]; vibe?: string } | null
@@ -407,6 +408,35 @@ interface ChatBody {
 
 function clampText(value: unknown, max = 900): string {
   return typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, max) : ""
+}
+
+function isOutputFormat(value: unknown): value is OutputFormat {
+  return typeof value === "string" && VALID_FORMATS.includes(value as OutputFormat)
+}
+
+const VALID_CREATION_INTENT_SOURCES: CreationIntentSource[] = [
+  "typed",
+  "starter_chip",
+  "content_card",
+  "vault_shot",
+  "gallery_action",
+  "manual",
+]
+
+function normalizeCreationIntent(value: unknown): CreationIntent | null {
+  if (!value || typeof value !== "object") return null
+  const record = value as Record<string, unknown>
+  const source =
+    typeof record.source === "string" &&
+    VALID_CREATION_INTENT_SOURCES.includes(record.source as CreationIntentSource)
+      ? (record.source as CreationIntentSource)
+      : "typed"
+  const confidence = record.confidence === "needs_clarify" ? "needs_clarify" : "high"
+  return {
+    format: isOutputFormat(record.format) ? record.format : null,
+    source,
+    confidence,
+  }
 }
 
 function selectedShotContext(shot: ChatBody["selectedShot"]): string | null {
@@ -712,8 +742,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "messages is required" }, { status: 400 })
     }
 
-    const format: OutputFormat =
-      body?.format && VALID_FORMATS.includes(body.format) ? body.format : "photo"
+    const creationIntent = normalizeCreationIntent(body?.creationIntent ?? null)
+    const requestedFormat = isOutputFormat(body?.format) ? body.format : null
+    const intentFormat = creationIntent?.format ?? null
+    const committedFormat = intentFormat ?? requestedFormat
+    const format: OutputFormat = committedFormat ?? "photo"
+    const needsFormatClarification = creationIntent?.confidence === "needs_clarify" || !committedFormat
 
     // Her authoritative brand profile from the EXISTING SSELFIE system (reuse, don't rebuild).
     // This is what makes Maya know the creator (not just the look). Best-effort; never blocks chat.
@@ -767,6 +801,12 @@ export async function POST(req: Request) {
       vaultStyleGuide,
       selectedShotGuide,
     })
+
+    if (needsFormatClarification) {
+      system = `${system}\n\n## MAYA-FIRST ROUTING\nNo output format has been committed yet. Do not assume this is a photo request. Ask exactly one inline clarifying question with ask_clarify and short tappable choices such as \"A photo\", \"A full shoot\", \"A reel cover\", \"A carousel\", \"Stories\", or \"Motion\". Do not call emit_concepts until she chooses.`
+    } else if (creationIntent) {
+      system = `${system}\n\n## MAYA-FIRST ROUTING\nCommitted format: ${format}. Intent source: ${creationIntent.source}. Intent confidence: ${creationIntent.confidence}. Treat this as the creation path unless the user clearly changes it.`
+    }
 
     if (format === "video" && isAllowedInspirationUrl(body?.videoSourceUrl)) {
       system = `${system}\n\nVIDEO SOURCE CONTEXT: The user has already selected the still image she wants to animate. Create motion directions for that exact selected image. Do not ask her for another selfie or a new photo unless she asks to replace it.`
