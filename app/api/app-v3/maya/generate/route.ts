@@ -755,10 +755,11 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: openaiApiKey })
 
-    // Prepare the selfie reference file(s) once, reused across every pass and job (Modes A/B).
-    const generationReferenceUrls = inspirationReferenceUrl
-      ? Array.from(new Set([...referenceUrls, inspirationReferenceUrl]))
-      : referenceUrls
+    // Prepare identity reference file(s) once, reused across every pass and job (Modes A/B).
+    // Keep inspiration separate in code/logs: it can guide pose/style when explicitly attached,
+    // but it must never be treated as a face/body identity anchor.
+    const identityReferenceUrls = referenceUrls
+    const inspirationReferenceUrls = inspirationReferenceUrl ? [inspirationReferenceUrl] : []
     actualPromptRecords = recordPrompts.map((prompt, index) =>
       [
         `Prompt version: ${SSELFIE_PROMPT_VERSION}`,
@@ -766,7 +767,8 @@ export async function POST(request: NextRequest) {
         `Model: ${OPENAI_IMAGE_MODEL}`,
         `Format: ${format}`,
         `Generation job: ${jobs[index]?.label ?? graphicJobs[index]?.label ?? `image ${index + 1}`}`,
-        `Reference URLs used: ${generationReferenceUrls.join(", ") || "none"}`,
+        `Identity reference URLs used: ${identityReferenceUrls.join(", ") || "none"}`,
+        `Inspiration reference URLs used: ${inspirationReferenceUrls.join(", ") || "none"}`,
         likenessBlock ? "Likeness memory notes applied: yes" : "",
         photoshootJobs.length > 0
           ? "Photoshoot reference flow: hero shot uses uploaded identity references; non-hero shots use uploaded identity references plus generated hero anchor."
@@ -778,11 +780,19 @@ export async function POST(request: NextRequest) {
         .join("\n")
     )
     const selfieFiles = await Promise.all(
-      generationReferenceUrls.map(async (url, i) => {
+      identityReferenceUrls.map(async (url, i) => {
         const buf = await normalizeReferenceForOpenAI(await readReferenceImage(url))
-        return toFile(buf, `maya-reference-${i}.png`, { type: "image/png" })
+        return toFile(buf, `maya-identity-reference-${i}.png`, { type: "image/png" })
       })
     )
+    const inspirationFiles = await Promise.all(
+      inspirationReferenceUrls.map(async (url, i) => {
+        const buf = await normalizeReferenceForOpenAI(await readReferenceImage(url))
+        return toFile(buf, `maya-inspiration-reference-${i}.png`, { type: "image/png" })
+      })
+    )
+    const selfieAndInspirationFiles =
+      inspirationFiles.length > 0 ? [...selfieFiles, ...inspirationFiles] : selfieFiles
 
     // Retired Mode C placeholder. Kept empty so old request shapes fail safely above.
     const baseFiles = baseImageSource
@@ -841,7 +851,7 @@ export async function POST(request: NextRequest) {
     // A/B concept), a retired base image path, or the prior pass's output.
     const runJob = async (
       job: (typeof jobs)[number],
-      selfieInputFiles: Awaited<ReturnType<typeof toFile>>[] = selfieFiles
+      selfieInputFiles: Awaited<ReturnType<typeof toFile>>[] = selfieAndInspirationFiles
     ): Promise<Buffer> => {
       let current: Buffer | null = null
       for (const pass of job.passes) {
@@ -864,7 +874,7 @@ export async function POST(request: NextRequest) {
 
       // CUSTOMER-PHOTOSHOOT-02: hero first from real selfies only, then every other
       // shot references selfies FIRST for identity and the generated hero SECOND for cohesion.
-      const heroBuffer = await runJob(hero.job, selfieFiles)
+      const heroBuffer = await runJob(hero.job, selfieAndInspirationFiles)
       const heroFile = await toFile(heroBuffer, "maya-photoshoot-hero-anchor.png", {
         type: "image/png",
       })
@@ -1126,7 +1136,7 @@ export async function POST(request: NextRequest) {
             `Topic: ${job.topic}`,
             `Slide: ${job.slide.title}`,
             `Style anchor: ${style.label ?? "approved SSELFIE reference"}`,
-            `Reference URL used: ${job.referenceUrl}`,
+            `Identity reference URL used: ${job.referenceUrl}`,
             `Style reference URL used: ${style.imageUrl}`,
             job.textOverlaySpec ? `Text overlay spec: ${JSON.stringify(job.textOverlaySpec)}` : "",
             inspirationReferenceUrl

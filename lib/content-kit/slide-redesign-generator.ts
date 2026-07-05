@@ -294,7 +294,7 @@ export async function redesignContentSlideToBuffer({
 
   const openai = new OpenAI({ apiKey })
   const files = [
-    await toFile(await toPng(referenceUrl), "reference-frame.png", { type: "image/png" }),
+    await toFile(await toPng(referenceUrl), "identity-reference.png", { type: "image/png" }),
     await toFile(await toPng(styleReferenceUrl), "style-anchor.png", { type: "image/png" }),
     ...(inspirationReferenceUrl
       ? [

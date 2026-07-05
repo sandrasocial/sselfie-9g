@@ -332,7 +332,7 @@ const CTA_LABEL: Record<OutputFormat, string> = {
   video: "Create my video directions",
 }
 
-type UploadSlot = "face" | "side" | "body" | "inspiration" | "video"
+type UploadSlot = "face" | "angle" | "side" | "body" | "inspiration" | "video"
 type GenerationSource = "selfie" | "trained-model"
 
 /** Pull the 3 concepts out of an emit_concepts tool part (output first, input while streaming).
@@ -531,6 +531,7 @@ export function MayaConcierge({
     close,
   } = useConcierge()
   const fileInput = useRef<HTMLInputElement>(null)
+  const angleInput = useRef<HTMLInputElement>(null)
   const sideInput = useRef<HTMLInputElement>(null)
   const bodyInput = useRef<HTMLInputElement>(null)
   const inspoInput = useRef<HTMLInputElement>(null)
@@ -666,6 +667,7 @@ export function MayaConcierge({
 
   // Optional uploads (front face lives in session). Kept simple: hidden until "Add more".
   const [showMore, setShowMore] = useState(false)
+  const [threeQuarterUrl, setThreeQuarterUrl] = useState<string | null>(null)
   const [sideProfileUrl, setSideProfileUrl] = useState<string | null>(null)
   const [fullBodyUrl, setFullBodyUrl] = useState<string | null>(null)
   const [inspirationUrl, setInspirationUrl] = useState<string | null>(null)
@@ -859,9 +861,11 @@ export function MayaConcierge({
         // member just uploaded or removed this session.
         const asUrl = (v: unknown): string | null =>
           typeof v === "string" && v.length > 0 ? v : null
+        const angle = asUrl(d?.extras?.threeQuarter)
         const side = asUrl(d?.extras?.sideProfile)
         const body = asUrl(d?.extras?.fullBody)
         const inspo = asUrl(d?.extras?.inspiration)
+        if (angle) setThreeQuarterUrl(prev => prev ?? angle)
         if (side) setSideProfileUrl(prev => prev ?? side)
         if (body) setFullBodyUrl(prev => prev ?? body)
         if (inspo) setInspirationUrl(prev => prev ?? inspo)
@@ -1076,7 +1080,8 @@ export function MayaConcierge({
           event: "suite_inline_selfie_uploaded",
           properties: { cohort, source: "maya_drawer", format },
         })
-      } else if (slot === "side") setSideProfileUrl(data.url)
+      } else if (slot === "angle") setThreeQuarterUrl(data.url)
+      else if (slot === "side") setSideProfileUrl(data.url)
       else if (slot === "body") setFullBodyUrl(data.url)
       else if (slot === "video") {
         setVideoSourceUrl(data.url)
@@ -1091,8 +1096,9 @@ export function MayaConcierge({
 
   // SUITE-UX-02: removing an optional image must stick across refreshes, so clear the
   // saved copy too (best-effort - local state clears either way).
-  function clearSlot(slot: "side" | "body" | "inspiration") {
-    if (slot === "side") setSideProfileUrl(null)
+  function clearSlot(slot: "angle" | "side" | "body" | "inspiration") {
+    if (slot === "angle") setThreeQuarterUrl(null)
+    else if (slot === "side") setSideProfileUrl(null)
     else if (slot === "body") setFullBodyUrl(null)
     else setInspirationUrl(null)
     void fetch(`/api/app-v3/upload-selfie?slot=${slot}`, { method: "DELETE" }).catch(() => {})
@@ -1299,7 +1305,7 @@ export function MayaConcierge({
           brief: concept.brief,
           format: targetFormat,
           referenceSelfieUrl,
-          referenceSelfieUrls: [sideProfileUrl, fullBodyUrl].filter(Boolean),
+          referenceSelfieUrls: [threeQuarterUrl, sideProfileUrl, fullBodyUrl].filter(Boolean),
           inspirationImageUrl: inspirationUrl,
           aestheticId: aesthetic.id,
           conceptTitle: concept.title,
@@ -1475,7 +1481,7 @@ export function MayaConcierge({
           shootBriefs: shootConcepts.map(concept => concept.brief),
           format: "photoshoot",
           referenceSelfieUrl,
-          referenceSelfieUrls: [sideProfileUrl, fullBodyUrl].filter(Boolean),
+          referenceSelfieUrls: [threeQuarterUrl, sideProfileUrl, fullBodyUrl].filter(Boolean),
           inspirationImageUrl: inspirationUrl,
           aestheticId: aesthetic.id,
           conceptTitle: "Full photoshoot",
@@ -2334,12 +2340,18 @@ export function MayaConcierge({
             {format !== "video" && showMore && (
               <div className="space-y-2">
                 <p className="text-[11px] leading-relaxed text-[#818283]">
-                  For best results, add one full-body shot and one side profile so Maya can keep you
-                  recognizable and your body true to you. You can also add an inspo picture and ask
-                  Maya for that same vibe, still you. All optional.
+                  For stronger likeness, add 1-3 extra identity photos: a three-quarter face,
+                  side profile, and full-body shot. Inspiration is separate: Maya uses it for
+                  pose, light, or vibe, never as your face.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {[
+                    {
+                      slot: "angle" as const,
+                      ref: angleInput,
+                      added: !!threeQuarterUrl,
+                      label: "Three-quarter face",
+                    },
                     {
                       slot: "side" as const,
                       ref: sideInput,

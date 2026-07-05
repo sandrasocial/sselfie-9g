@@ -112,7 +112,7 @@ export default async function StudioV3Page({
               FROM user_avatar_images
               WHERE user_id = ${String(neonUserId)}
                 AND is_active = ${true}
-                AND (image_type IS NULL OR image_type NOT IN ('side-profile', 'full-body', 'inspiration'))
+                AND image_type = 'selfie'
               LIMIT 1
             `
             )

@@ -18,13 +18,20 @@ const ALLOWED = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"])
 // restore-on-open flow never mixes a vibe image into the face picker.
 const SLOT_TO_TYPE: Record<string, string> = {
   face: "selfie",
+  angle: "three-quarter",
   side: "side-profile",
   body: "full-body",
   inspiration: "inspiration",
   video: "video-source",
 }
 // Slots that hold exactly ONE active image: a new upload replaces the old one.
-const SINGLE_ACTIVE_TYPES = new Set(["side-profile", "full-body", "inspiration"])
+const SINGLE_ACTIVE_TYPES = new Set(["three-quarter", "side-profile", "full-body", "inspiration"])
+
+function blobFolderForImageType(imageType: string): string {
+  if (imageType === "inspiration") return "app-v3/inspiration-references"
+  if (imageType === "video-source") return "app-v3/video-sources"
+  return "app-v3/identity-references"
+}
 
 export async function POST(request: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser()
@@ -53,9 +60,10 @@ export async function POST(request: NextRequest) {
   }
 
   const ext = file.type.includes("png") ? "png" : file.type.includes("webp") ? "webp" : "jpg"
+  const imageType = SLOT_TO_TYPE[slot]
   let blob: { url: string }
   try {
-    blob = await put(`app-v3/reference-selfies/${user.id}-${Date.now()}.${ext}`, file, {
+    blob = await put(`${blobFolderForImageType(imageType)}/${user.id}-${Date.now()}.${ext}`, file, {
       access: "public",
       contentType: file.type,
       addRandomSuffix: true,
@@ -69,8 +77,7 @@ export async function POST(request: NextRequest) {
   // history (the "use a past selfie" picker); the optional slots keep one active image
   // each, so a new upload replaces the old one instead of accumulating.
   // image_type MUST be one of the values allowed by the table's CHECK constraint
-  // (migration 59: selfie/lifestyle/mirror/casual/professional/side-profile/full-body/inspiration).
-  const imageType = SLOT_TO_TYPE[slot]
+  // (migration 60: selfie/lifestyle/mirror/casual/professional/three-quarter/side-profile/full-body/inspiration).
   try {
     const neonUserId = await getUserIdFromSupabase(user.id)
     if (neonUserId && imageType !== "video-source") {

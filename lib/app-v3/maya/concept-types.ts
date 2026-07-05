@@ -151,7 +151,7 @@ export interface MayaGenerateConceptRequest {
   format: OutputFormat
   /** Front-face selfie — required identity anchor. */
   referenceSelfieUrl: string
-  /** Optional extra identity angles (side profile, full body) for better fidelity. */
+  /** Optional extra identity angles (three-quarter, side profile, full body) for better fidelity. */
   referenceSelfieUrls?: string[]
   /** Optional pose/style reference. Never identity; attached after selfie references. */
   inspirationImageUrl?: string | null
