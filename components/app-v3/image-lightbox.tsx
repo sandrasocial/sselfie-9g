@@ -26,7 +26,6 @@ export function ImageLightbox({
   images,
   textOverlaySpecs,
   bakedImageUrls,
-  format,
   startIndex = 0,
   onClose,
   onOpenTextStudio,
@@ -47,8 +46,7 @@ export function ImageLightbox({
   }, [count, onClose])
 
   const url = images[index]
-  const isStoryGraphic = format === "story-slide" || format === "story-sequence"
-  const overlay = isStoryGraphic ? null : (textOverlaySpecs?.[index] ?? null)
+  const overlay = textOverlaySpecs?.[index] ?? null
   // A baked render wins the view; the clean base in images[] stays kept underneath.
   const baked = bakedImageUrls?.[index] ?? null
   if (!url) return null

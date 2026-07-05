@@ -83,6 +83,37 @@ describe("Maya-first Suite creation UX", () => {
     expect(shell).toContain("creationIntent: intentForFormat(format, \"manual\")")
   })
 
+  it("keeps the bottom nav visible while Maya is open and closes Maya on section navigation", () => {
+    const shell = read("components/app-v3/app-v3-shell.tsx")
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+
+    expect(shell).toContain("close: closeMaya, isOpen: mayaOpen")
+    expect(shell).toContain("if (mayaOpen) closeMaya()")
+    expect(shell).toContain("\"--sselfie-bottom-nav-height\"")
+    expect(shell).toContain("pb-[var(--sselfie-bottom-nav-height)]")
+
+    expect(concierge).toContain(
+      "bottom: \"var(--sselfie-bottom-nav-height, calc(56px + env(safe-area-inset-bottom)))\""
+    )
+    expect(concierge).toContain("fixed inset-x-0 top-0 z-50")
+    expect(concierge).toContain("className=\"relative flex h-full")
+    expect(concierge).not.toContain("fixed inset-0 z-50 flex w-full")
+  })
+
+  it("passes the member-selected text style into every graphic generation", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    const route = read("app/api/app-v3/maya/generate/route.ts")
+    const card = read("components/app-v3/concept-card.tsx")
+    const lightbox = read("components/app-v3/image-lightbox.tsx")
+
+    expect(concierge).toContain("isGraphicOutputFormat(conceptFormat) ? textStyleChoice : null")
+    expect(route).toContain("normalizeRequestedOverlayStyle(body.overlayStyle)")
+    expect(route).toContain("usesCompositedTextOverlay(format, requestedOverlayStyle)")
+    expect(route).toContain("Boolean(requestedOverlayStyle)")
+    expect(card).toContain("const firstOverlay = gen.textOverlaySpecs?.[0] ?? null")
+    expect(lightbox).toContain("const overlay = textOverlaySpecs?.[index] ?? null")
+  })
+
   it("makes continuing old Maya sessions an explicit choice", () => {
     const context = read("components/app-v3/concierge-context.tsx")
     const launcher = read("components/app-v3/maya-floating-launcher.tsx")

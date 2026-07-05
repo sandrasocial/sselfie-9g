@@ -63,10 +63,6 @@ const FRAME_ASPECT: Record<OutputFormat, string> = {
   video: "aspect-[9/16]",
 }
 
-function isStoryGraphicFormat(format: OutputFormat): boolean {
-  return format === "story-slide" || format === "story-sequence"
-}
-
 export function ConceptCard({
   concept,
   gen,
@@ -86,7 +82,7 @@ export function ConceptCard({
   const isDone = gen.status === "done" && images.length > 0
   const isVideoDone = gen.status === "done" && !!videoUrl
   const isCarousel = images.length > 1
-  const firstOverlay = isStoryGraphicFormat(format) ? null : (gen.textOverlaySpecs?.[0] ?? null)
+  const firstOverlay = gen.textOverlaySpecs?.[0] ?? null
   // A baked render (text in the pixels) wins the card; the clean base stays kept underneath.
   const firstBaked = gen.bakedImageUrls?.[0] ?? null
 
@@ -212,7 +208,8 @@ export function ConceptCard({
               )}
               {firstOverlay &&
                 onOpenTextStudio &&
-                !isStoryGraphicFormat(format) &&
+                format !== "story-slide" &&
+                format !== "story-sequence" &&
                 !isCarousel &&
                 !isVideoDone && (
                   <button
