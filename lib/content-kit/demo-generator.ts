@@ -119,6 +119,7 @@ export async function generateDemoPair(input: {
     size: PORTRAIT_SIZE,
     quality: "high",
     output_format: "png",
+    moderation: "low",
   }
   if (OPENAI_IMAGE_MODEL !== "gpt-image-2") editInput.input_fidelity = "high"
 

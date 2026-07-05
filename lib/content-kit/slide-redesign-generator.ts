@@ -6,6 +6,7 @@ import { put } from "@vercel/blob"
 import { sql } from "@/lib/db/client"
 import type { CarouselSlide } from "@/lib/content-kit/types"
 import { SSELFIE_INSPIRATION_SET_VARIATION } from "@/lib/app-v3/maya/visual-rules"
+import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
 
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 const CAROUSEL_SIZE = process.env.APP_V3_CAROUSEL_SIZE || "1024x1280"
@@ -266,15 +267,41 @@ export async function redesignContentSlideToBuffer({
     size: size ?? (category === "story-sequence" ? STORY_SIZE : CAROUSEL_SIZE),
     quality,
     output_format: "png",
+    // See lib/ai/image-safety.ts - less-restrictive-but-still-safe filtering for our own
+    // always-tasteful editorial prompts.
+    moderation: "low",
   }
   if (OPENAI_IMAGE_MODEL !== "gpt-image-2") editInput.input_fidelity = "high"
 
-  const response = await openai.images.edit(editInput as any)
+  // 2026-07-05 fix: this call previously had NO moderation retry at all - a content-policy
+  // rejection here (the path behind story-sequence/carousel/reel-cover slides) went straight to
+  // the caller's generic "even after I softened it" message even though no softening had ever
+  // been attempted. Real incident: two story-sequence rejections (safety_violations=[sexual])
+  // on otherwise-tasteful personal-story content, with the softening claim false both times.
+  let response
+  let finalPrompt = String(editInput.prompt)
+  try {
+    response = await openai.images.edit(editInput as any)
+  } catch (firstError) {
+    if (!isContentPolicyError(firstError)) throw firstError
+    finalPrompt = sanitizePromptForImageSafety(finalPrompt)
+    try {
+      response = await openai.images.edit({ ...editInput, prompt: finalPrompt } as any)
+    } catch (secondError) {
+      // Both attempts were rejected. Prior to this, the raw OpenAI error (no prompt text) was
+      // all the analytics event downstream could log - undiagnosable without guessing. Prepend
+      // a truncated copy of what we actually sent so a repeat incident is traceable.
+      const detail = secondError instanceof Error ? secondError.message : String(secondError)
+      throw new Error(
+        `${detail} | softened prompt sent: ${finalPrompt.slice(0, 400)}`
+      )
+    }
+  }
   const b64 = response.data?.[0]?.b64_json
   if (!b64) throw new Error("No image data returned from OpenAI")
 
   return {
     buffer: Buffer.from(b64, "base64"),
-    prompt: String(editInput.prompt),
+    prompt: finalPrompt,
   }
 }
