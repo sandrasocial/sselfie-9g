@@ -8,7 +8,10 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
 import { TrackedLink } from "@/components/ai-prompts/tracked-link"
-import { buildPromptVaultFreebieCheckoutHref } from "@/lib/revenue-engine/prompt-vault-freebie-checkout-url"
+import {
+  buildPromptVaultFreebieCheckoutHref,
+  buildSelfieAiPhotosKitFreebieCheckoutHref,
+} from "@/lib/revenue-engine/prompt-vault-freebie-checkout-url"
 import {
   REUSABLE_STARTER,
   FREEBIE_ROTATING_DROP_LIMIT,
@@ -68,11 +71,13 @@ function PreviewCardEl({
   collectionName,
   shotCount,
   upgradeHref,
+  kitHref,
 }: {
   card: PromptCard
   collectionName: string
   shotCount: number
   upgradeHref?: string
+  kitHref?: string
 }) {
   return (
     <article id={card.id} className="ap-preview-card">
@@ -104,19 +109,19 @@ function PreviewCardEl({
             text={card.prompt}
             promptTitle={card.title}
             promptNumber={card.number}
-            afterCopyHref={upgradeHref}
-            afterCopyTitle="You're not unphotogenic. You just needed direction."
-            afterCopyLabel="See the full Vault · $27"
-            afterCopyNote="Every look in the Vault is a full shoot. Matching shots that belong together like a real shoot day, with you recognizable in every frame. Every collection, plus each new drop I add."
-            afterCopyFootnote="One payment. Yours for good. Reply anytime, a real person answers."
-            afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
-            afterCopyTrackEvent="ai_prompts_prompt_vault_click"
+            afterCopyHref={kitHref ?? upgradeHref}
+            afterCopyTitle="Want the step-by-step version?"
+            afterCopyLabel="Get the AI Photos Kit · $37"
+            afterCopyNote="The free prompt lets you test one look. The Kit shows you how to choose the right selfie, create your first three AI photos, and fix the result if it starts looking fake."
+            afterCopyFootnote="Start with one clear selfie. Keep it still you."
+            afterCopyViewEvent="ai_prompts_after_copy_kit_cta_view"
+            afterCopyTrackEvent="ai_prompts_selfie_ai_photos_kit_click"
             afterCopyTrackProperties={{
               source: "ai-prompts",
-              destination: "checkout-prompt-vault",
-              utm_campaign: "ai_prompts_to_prompt_vault",
+              destination: "checkout-selfie-ai-photos-kit",
+              utm_campaign: "ai_prompts_to_selfie_ai_photos_kit",
               utm_content: `copy_${card.id}`,
-              checkout_source: "after_copy_prompt_cta",
+              checkout_source: "after_copy_prompt_kit_cta",
               cta_position: "after_copy",
               prompt_id: card.id,
               prompt_title: card.title,
@@ -311,6 +316,10 @@ export default async function AiPromptsAccessPage({
                   promptId: card.id,
                   accessToken: token,
                 })
+                const kitHref = buildSelfieAiPhotosKitFreebieCheckoutHref({
+                  promptId: card.id,
+                  accessToken: token,
+                })
                 return (
                   <div key={card.id} className="ap-vault-item">
                     <PreviewCardEl
@@ -318,6 +327,7 @@ export default async function AiPromptsAccessPage({
                       collectionName={collection.name}
                       shotCount={collection.shotCount}
                       upgradeHref={upgradeHref}
+                      kitHref={kitHref}
                     />
                     {collection.lockedShots.length > 0 && (
                       <div className="ap-thumb-wrap">
@@ -379,8 +389,26 @@ export default async function AiPromptsAccessPage({
             </div>
             <div className="ap-vault-cta-row">
               <TrackedLink
-                href={vaultPreviewCheckoutHref}
+                href={buildSelfieAiPhotosKitFreebieCheckoutHref({
+                  promptId: "vault_preview",
+                  accessToken: token,
+                })}
                 className="ap-bridge-cta ap-bridge-cta-primary"
+                trackEvent="ai_prompts_selfie_ai_photos_kit_click"
+                trackProperties={{
+                  source: "ai-prompts",
+                  destination: "checkout-selfie-ai-photos-kit",
+                  utm_campaign: "ai_prompts_to_selfie_ai_photos_kit",
+                  utm_content: "vault_preview_primary",
+                  checkout_source: "free_prompts_kit_bridge",
+                  cta_position: "vault_preview_primary",
+                }}
+              >
+                Get the AI Photos Kit · $37
+              </TrackedLink>
+              <TrackedLink
+                href={vaultPreviewCheckoutHref}
+                className="ap-bridge-cta ap-bridge-cta-secondary"
                 trackEvent="ai_prompts_prompt_vault_click"
                 trackProperties={{
                   source: "ai-prompts",
@@ -390,7 +418,7 @@ export default async function AiPromptsAccessPage({
                   checkout_source: "free_prompts_bridge",
                 }}
               >
-                Get the Full Vault + Future Drops · $27
+                Or enter the full Vault
               </TrackedLink>
             </div>
           </div>

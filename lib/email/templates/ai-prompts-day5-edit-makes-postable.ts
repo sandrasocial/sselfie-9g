@@ -1,5 +1,5 @@
 import { buildRevenueEmailLink } from "./revenue-links"
-import { promptVaultCheckoutUrl } from "./selfie-education-links"
+import { selfieAiPhotosKitCheckoutUrl } from "./selfie-education-links"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
 
 export interface AiPromptsDay5Params {
@@ -18,9 +18,9 @@ export function generateAiPromptsDay5EditMakesPostableEmail({
     content: "open_prompt_pack",
     emailType: "ai-prompts-day5-edit-makes-postable",
   })
-  const promptVaultUrl = buildRevenueEmailLink(promptVaultCheckoutUrl(), {
-    campaign: "ai_prompts_day5_vault_bridge",
-    content: "see_full_vault",
+  const aiPhotosKitUrl = buildRevenueEmailLink(selfieAiPhotosKitCheckoutUrl(), {
+    campaign: "ai_prompts_day5_ai_photos_kit_bridge",
+    content: "get_ai_photos_kit",
     medium: "nurture",
     emailType: "ai-prompts-day5-edit-makes-postable",
     checkoutEmail: recipientEmail ?? undefined,
@@ -34,8 +34,8 @@ export function generateAiPromptsDay5EditMakesPostableEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Try one clean selfie in soft window light. Paste the anchor line first, then paste the look you want.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Run it once. If the face still drifts, reply and tell me what changed.</p>
     <div style="margin:26px 0 20px;">${renderStoneButton("Open my prompts", promptPackUrl)}</div>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Want to stop guessing entirely? The Vault shows you the example image for every shot, so you always know what you&apos;re aiming for before you run it. Still you in every frame.</p>
-    <div style="margin:0 0 8px;">${renderStoneButton("See the full Vault · $37", promptVaultUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Want the simple path instead of guessing? The AI Photos Kit shows you how to choose the right selfie, create your first three AI photos, and fix the result when it looks too fake.</p>
+    <div style="margin:0 0 8px;">${renderStoneButton("Get the AI Photos Kit · $37", aiPhotosKitUrl)}</div>
   `
 
   const html = renderStoneShell({
@@ -60,10 +60,10 @@ Run it once. If the face still drifts, reply and tell me what changed.
 Open my prompts:
 ${promptPackUrl}
 
-Want to stop guessing entirely? The Vault shows you the example image for every shot, so you always know what you're aiming for before you run it. Still you in every frame.
+Want the simple path instead of guessing? The AI Photos Kit shows you how to choose the right selfie, create your first three AI photos, and fix the result when it looks too fake.
 
-See the full Vault · $37:
-${promptVaultUrl}
+Get the AI Photos Kit · $37:
+${aiPhotosKitUrl}
 
 Sandra x`
 
