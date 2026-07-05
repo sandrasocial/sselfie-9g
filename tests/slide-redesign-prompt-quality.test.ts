@@ -112,4 +112,20 @@ describe("buildContentSlideRedesignPrompt quality anchors", () => {
     })
     expect(preserved).not.toContain("opening frame")
   })
+
+  it("uses the selfie as an identity reference for generated story sequences", () => {
+    const generatedStory = buildContentSlideRedesignPrompt({
+      category: "story-sequence",
+      topic: "her real story",
+      referenceMode: "identity-scene",
+      slide: baseSlide,
+      slideIndex: 0,
+      totalSlides: 5,
+    })
+
+    expect(generatedStory).toContain("The FIRST reference image is the identity reference")
+    expect(generatedStory).toContain("Build a new slide-specific editorial scene")
+    expect(generatedStory).not.toContain("The FIRST reference image is the exact story background photo")
+    expect(generatedStory).not.toContain("Preserve the original photo exactly")
+  })
 })
