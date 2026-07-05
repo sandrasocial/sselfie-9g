@@ -10,6 +10,7 @@ import { memo, useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { AESTHETICS } from "./aesthetics"
 import { useConcierge } from "./concierge-context"
+import { SelfieReferenceManagerModal } from "./selfie-reference-manager-modal"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { detectCreationIntent, intentForFormat } from "@/lib/app-v3/maya/intent-router"
 import type { Aesthetic, AestheticShot, AppV3AnalyticsCohort, OutputFormat } from "./types"
@@ -304,15 +305,14 @@ export function VisualFrontDoor({
   // Subscribe to the context ONCE here, not in every tile. openWithAesthetic is a stable
   // useCallback, so the memoized tiles below never re-render when the concierge opens.
   const { openWithAesthetic } = useConcierge()
-  const firstRunSelfieInputRef = useRef<HTMLInputElement>(null)
   const homeTrackedRef = useRef(false)
   const firstRunTrackedRef = useRef(false)
   const [aesthetics, setAesthetics] = useState<Aesthetic[]>(AESTHETICS)
   const [weeklyLook, setWeeklyLook] = useState<{ aestheticId: string; oneLiner: string } | null>(
     null
   )
-  const [frontDoorUploading, setFrontDoorUploading] = useState(false)
-  const [frontDoorUploadError, setFrontDoorUploadError] = useState<string | null>(null)
+  const [selfieManagerOpen, setSelfieManagerOpen] = useState(false)
+  const [frontDoorFaceUrl, setFrontDoorFaceUrl] = useState<string | null>(null)
   const [frontDoorHasSelfie, setFrontDoorHasSelfie] = useState(hasSelfie)
   const [firstRunAlreadySeen] = useState(readFirstRunSeen)
   const [shotPickerAesthetic, setShotPickerAesthetic] = useState<Aesthetic | null>(null)
@@ -417,9 +417,18 @@ export function VisualFrontDoor({
 
   function openSelfieStart() {
     trackFirstAction("add_selfie")
+    setSelfieManagerOpen(true)
+  }
+
+  function continueFromSelfieManager(url: string) {
+    setFrontDoorFaceUrl(url)
+    setFrontDoorHasSelfie(true)
+    setSelfieManagerOpen(false)
     const intent = intentForFormat("photo", "starter_chip")
+    trackInlineStart("selfie_manager_continue", intent.format, intent.confidence)
     openWithAesthetic(MAYA_BLANK, {
       format: "photo",
+      referenceSelfieUrl: url,
       seed: "I want to start with one selfie and make a photo I can post.",
       creationIntent: intent,
     })
@@ -460,33 +469,6 @@ export function VisualFrontDoor({
     onUseTrainedModel?.()
   }
 
-  async function handleFirstRunSelfie(file: File) {
-    setFrontDoorUploading(true)
-    setFrontDoorUploadError(null)
-    try {
-      const form = new FormData()
-      form.append("file", file)
-      form.append("slot", "face")
-      const res = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
-      const data = (await res.json().catch(() => null)) as { url?: string; error?: string } | null
-      if (!res.ok || !data?.url) throw new Error(data?.error || "Upload failed")
-      setFrontDoorHasSelfie(true)
-      void trackAnalyticsEvent({
-        event: "activation_selfie_uploaded",
-        properties: { cohort, source: "front_door" },
-      })
-      openWithAesthetic(MAYA_BLANK, {
-        format: "photo",
-        referenceSelfieUrl: data.url,
-        seed: "I added my selfie. Help me make my first photo.",
-      })
-    } catch (e) {
-      setFrontDoorUploadError(e instanceof Error ? e.message : "Upload failed")
-    } finally {
-      setFrontDoorUploading(false)
-    }
-  }
-
   return (
     <section className={compact ? "w-full" : "mx-auto w-full max-w-6xl px-4 py-7 sm:px-8 sm:py-16"}>
       <header className={compact ? "mb-6" : "mb-7 sm:mb-10"}>
@@ -509,27 +491,11 @@ export function VisualFrontDoor({
             eyebrow="SSELFIE SUITE"
             title="Hi, I'm Maya. Let's make your first photo."
             body="Add one clear selfie and I'll keep your real face, then build the rest around you."
-            action={frontDoorUploading ? "Uploading..." : "Add my selfie"}
+            action="Add my selfie"
             tall
             onClick={() => {
               trackFirstAction("add_selfie")
-              firstRunSelfieInputRef.current?.click()
-            }}
-          />
-          {frontDoorUploadError && (
-            <p className="mt-3 text-[13px] leading-relaxed text-[#282728]">
-              {frontDoorUploadError}
-            </p>
-          )}
-          <input
-            ref={firstRunSelfieInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={e => {
-              const file = e.target.files?.[0]
-              if (file) void handleFirstRunSelfie(file)
-              if (firstRunSelfieInputRef.current) firstRunSelfieInputRef.current.value = ""
+              setSelfieManagerOpen(true)
             }}
           />
         </div>
@@ -730,6 +696,22 @@ export function VisualFrontDoor({
           onSelect={shot => openAestheticShot(shotPickerAesthetic, shot)}
         />
       )}
+
+      <SelfieReferenceManagerModal
+        open={selfieManagerOpen}
+        initialFaceUrl={frontDoorFaceUrl}
+        onClose={() => setSelfieManagerOpen(false)}
+        onFaceReady={(url, source) => {
+          setFrontDoorFaceUrl(url)
+          setFrontDoorHasSelfie(true)
+          if (source !== "upload") return
+          void trackAnalyticsEvent({
+            event: "activation_selfie_uploaded",
+            properties: { cohort, source: "front_door" },
+          })
+        }}
+        onContinue={continueFromSelfieManager}
+      />
     </section>
   )
 }

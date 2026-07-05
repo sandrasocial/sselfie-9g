@@ -128,4 +128,26 @@ describe("Maya-first Suite creation UX", () => {
     expect(launcher).toContain("Continue history")
     expect(launcher).toContain("openFresh()")
   })
+
+  it("opens a dedicated selfie manager before starting Maya from the selfie card", () => {
+    const frontDoor = read("components/app-v3/visual-front-door.tsx")
+    const manager = read("components/app-v3/selfie-reference-manager-modal.tsx")
+    const openSelfieStartIndex = frontDoor.indexOf("function openSelfieStart()")
+    const continueIndex = frontDoor.indexOf("function continueFromSelfieManager")
+
+    expect(frontDoor).toContain("SelfieReferenceManagerModal")
+    expect(frontDoor).toContain("setSelfieManagerOpen(true)")
+    expect(frontDoor).toContain("onContinue={continueFromSelfieManager}")
+    expect(openSelfieStartIndex).toBeGreaterThan(-1)
+    expect(continueIndex).toBeGreaterThan(openSelfieStartIndex)
+    expect(frontDoor.slice(openSelfieStartIndex, continueIndex)).not.toContain("openWithAesthetic")
+
+    expect(manager).toContain("Start with one clear selfie.")
+    expect(manager).toContain("Continue with Maya")
+    expect(manager).toContain("Three-quarter face")
+    expect(manager).toContain("Inspiration")
+    expect(manager).toContain("Maya will not use this as your face")
+    expect(manager).toContain("/api/app-v3/reference-library")
+    expect(manager).toContain("/api/app-v3/upload-selfie")
+  })
 })
