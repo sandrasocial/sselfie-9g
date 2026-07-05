@@ -35,8 +35,17 @@ describe("Maya-first Suite creation UX", () => {
 
   it("waits for a visual world before pulling initial non-video directions", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
+    const renderHasStarted = concierge.indexOf(
+      "const hasStarted = messages.length > 0\n  const activeCreationIntent"
+    )
+    const renderNeedsVisualWorld = concierge.indexOf(
+      'const needsInitialVisualWorld =\n    Boolean(outputFormat) && outputFormat !== "video"'
+    )
 
     expect(concierge).toContain("const needsInitialVisualWorld")
+    expect(renderHasStarted).toBeGreaterThan(-1)
+    expect(renderNeedsVisualWorld).toBeGreaterThan(-1)
+    expect(renderHasStarted).toBeLessThan(renderNeedsVisualWorld)
     expect(concierge).toContain("fmt !== \"video\"")
     expect(concierge).toContain("!hasSpecificSessionWorld")
     expect(concierge).toContain("if (needsInitialVisualWorld) return")

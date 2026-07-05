@@ -945,6 +945,7 @@ export function MayaConcierge({
   const { aesthetic, outputFormat, referenceSelfieUrl } = session
   const selectedShot = aesthetic.selectedShot ?? null
   const format: OutputFormat = outputFormat ?? "photo"
+  const hasStarted = messages.length > 0
   const activeCreationIntent =
     localCreationIntent ??
     session.creationIntent ??
@@ -1459,7 +1460,6 @@ export function MayaConcierge({
     }
   }
 
-  const hasStarted = messages.length > 0
   // Are Maya's direction cards already on screen? Drives the loading-vs-typing copy.
   const hasConcepts = messages.some(
     (m: any) => Array.isArray(m?.parts) && m.parts.some((p: any) => !!extractConcepts(p))
