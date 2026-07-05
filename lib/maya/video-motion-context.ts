@@ -93,6 +93,11 @@ export function buildMayaMotionPromptInput(input: {
   category?: string
   imageUrl?: string
   snapshot: MayaUserSnapshot | null
+  // LIKENESS-MEMORY-01 (video, 2026-07-06): her stored accuracy corrections, same block every
+  // other format already rides (see lib/app-v3/likeness-memory.ts buildLikenessPromptBlock).
+  // Video was the one format that never received it - motion could drift a correction (e.g.
+  // hair color, a mole) right back in with nothing telling the model to hold it.
+  likenessBlock?: string
 }): string {
   const parts: string[] = [
     `Scene: "${normalizeLine(input.fluxPrompt)}"`,
@@ -115,6 +120,10 @@ export function buildMayaMotionPromptInput(input: {
   const snapshotContext = buildMayaMotionSnapshotContext(input.snapshot)
   if (snapshotContext) {
     parts.push(`User context:\n${snapshotContext}`)
+  }
+
+  if (input.likenessBlock?.trim()) {
+    parts.push(input.likenessBlock.trim())
   }
 
   parts.push(

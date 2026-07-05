@@ -19,6 +19,8 @@ import {
   resolveFluxPromptForMotion,
 } from "@/lib/maya/video-motion-context"
 import { getReplicateClient } from "@/lib/replicate-client"
+import { buildLikenessPromptBlock, isLikenessMemoryEnabled } from "@/lib/app-v3/likeness-memory"
+import { getMemory } from "@/lib/app-v3/maya/memory-store"
 
 export type VideoGenerationInput = {
   userId: string | number
@@ -225,6 +227,7 @@ Rules:
 - Use what is visible in the image. Do not invent a new outfit, location, person, product, or camera setup.
 - Keep movement subtle-to-moderate: natural blink, tiny expression shift, soft breathing, fabric or hair movement, gentle push-in, slow parallax, ambient movement.
 - Preserve identity, face shape, skin tone, body proportions, outfit, composition, and scene.
+- If the input names known likeness corrections for this member, honor them exactly - they take priority over anything the still image itself seems to show.
 - Avoid subtitles, text overlays, aggressive camera shake, big body changes, extra people, face morphing, or scene changes.
 - Output exactly one line with no markdown, bullets, headings, or quotes.`
 
@@ -274,12 +277,27 @@ async function buildMotionPrompt(input: VideoGenerationInput): Promise<string> {
     imageUrl: input.imageUrl,
   })
   if (effectiveScene && isMotionPromptReferenceImageUrl(input.imageUrl)) {
+    // LIKENESS-MEMORY-01 (video, 2026-07-06): every other format (photo, carousel, story) already
+    // rides her stored accuracy corrections; video never did. Same flag, same fetch, same block
+    // builder as app-v3/generate route - fail-open so a lookup error never blocks the video.
+    let likenessBlock = ""
+    if (isLikenessMemoryEnabled()) {
+      try {
+        const memory = await getMemory(String(input.userId))
+        if (memory.likenessNotes.length > 0) {
+          likenessBlock = buildLikenessPromptBlock(memory.likenessNotes)
+        }
+      } catch (likenessError) {
+        console.error("[app-v3-video] likeness notes skipped:", likenessError)
+      }
+    }
     const promptInput = buildMayaMotionPromptInput({
       fluxPrompt: effectiveScene,
       description: typeof input.imageDescription === "string" ? input.imageDescription : "",
       category: typeof input.category === "string" ? input.category : "",
       imageUrl: input.imageUrl,
       snapshot,
+      likenessBlock,
     })
     const generatedPrompt = await generateMotionPromptWithVisionFallbacks(
       MOTION_PROMPT_SYSTEM,

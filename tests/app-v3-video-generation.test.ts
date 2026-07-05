@@ -13,6 +13,8 @@ const mockReplicateGet = vi.fn()
 const mockPut = vi.fn()
 const mockGenerateMotionPromptWithVisionFallbacks = vi.fn()
 const mockLogAnalyticsEvent = vi.fn()
+const mockIsLikenessMemoryEnabled = vi.fn()
+const mockGetMemory = vi.fn()
 
 vi.mock("@/lib/analytics/events", () => ({
   logAnalyticsEvent: mockLogAnalyticsEvent,
@@ -57,6 +59,20 @@ vi.mock("@vercel/blob", () => ({
   put: mockPut,
 }))
 
+vi.mock("@/lib/app-v3/likeness-memory", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/app-v3/likeness-memory")>(
+    "@/lib/app-v3/likeness-memory"
+  )
+  return {
+    ...actual,
+    isLikenessMemoryEnabled: mockIsLikenessMemoryEnabled,
+  }
+})
+
+vi.mock("@/lib/app-v3/maya/memory-store", () => ({
+  getMemory: mockGetMemory,
+}))
+
 describe("app-v3 video generation service", () => {
   beforeEach(() => {
     vi.resetModules()
@@ -91,6 +107,8 @@ describe("app-v3 video generation service", () => {
     mockReplicateCreate.mockResolvedValue({ id: "pred_video_123", status: "starting" })
     mockReplicateGet.mockResolvedValue({ status: "processing" })
     mockPut.mockResolvedValue({ url: "https://blob.example.com/video.mp4" })
+    mockIsLikenessMemoryEnabled.mockReturnValue(false)
+    mockGetMemory.mockResolvedValue({ likenessNotes: [] })
   })
 
   it("starts Kling Omni image-to-video generation by default without requiring a trained model", async () => {
@@ -139,6 +157,47 @@ describe("app-v3 video generation service", () => {
     const insertSql = (mockSql.mock.calls[0][0] as TemplateStringsArray).join(" ")
     expect(insertSql).toContain("INSERT INTO generated_videos")
     expect(insertSql).not.toContain("user_models")
+  })
+
+  it("LIKENESS-MEMORY-01 (video, 2026-07-06): threads her stored corrections into the motion prompt input", async () => {
+    mockIsLikenessMemoryEnabled.mockReturnValue(true)
+    mockGetMemory.mockResolvedValue({
+      likenessNotes: ["hair: my hair is dark brown, not black"],
+    })
+    const { startVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    await startVideoGeneration({
+      userId: "user-1",
+      imageUrl: "https://cdn.example.com/source.png",
+      motionPrompt: "slow camera push-in, natural blink",
+      imageDescription: "Founder portrait in window light",
+      category: "editorial",
+    })
+
+    expect(mockGetMemory).toHaveBeenCalledWith("user-1")
+    expect(mockGenerateMotionPromptWithVisionFallbacks).toHaveBeenCalledWith(
+      expect.stringContaining("honor them exactly"),
+      expect.stringContaining("hair: my hair is dark brown, not black"),
+      "https://cdn.example.com/source.png"
+    )
+  })
+
+  it("skips the likeness lookup entirely when the flag is off (fail-open, no notes leak)", async () => {
+    mockIsLikenessMemoryEnabled.mockReturnValue(false)
+    const { startVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    await startVideoGeneration({
+      userId: "user-1",
+      imageUrl: "https://cdn.example.com/source.png",
+      motionPrompt: "slow camera push-in, natural blink",
+      imageDescription: "Founder portrait in window light",
+      category: "editorial",
+    })
+
+    expect(mockGetMemory).not.toHaveBeenCalled()
+    expect(mockGenerateMotionPromptWithVisionFallbacks.mock.calls[0][1]).not.toContain(
+      "Known likeness corrections"
+    )
   })
 
   it("keeps the Wan 2.2 fast input shape behind an explicit model override", async () => {

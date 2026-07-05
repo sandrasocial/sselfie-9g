@@ -67,6 +67,25 @@ describe("maya video motion context", () => {
     expect(input).toContain("Return a single line only")
   })
 
+  it("LIKENESS-MEMORY-01 (video, 2026-07-06): appends the likeness block when provided, omits it when empty", () => {
+    const withNotes = buildMayaMotionPromptInput({
+      fluxPrompt: "Luxury cafe portrait",
+      imageUrl: "https://example.com/image.jpg",
+      snapshot: createSnapshot(),
+      likenessBlock: "Known likeness corrections from this member. She has corrected these before, always honor them:\n- hair: my hair is dark brown, not black",
+    })
+    expect(withNotes).toContain("Known likeness corrections from this member")
+    expect(withNotes).toContain("hair: my hair is dark brown, not black")
+
+    const withoutNotes = buildMayaMotionPromptInput({
+      fluxPrompt: "Luxury cafe portrait",
+      imageUrl: "https://example.com/image.jpg",
+      snapshot: createSnapshot(),
+      likenessBlock: "",
+    })
+    expect(withoutNotes).not.toContain("Known likeness corrections")
+  })
+
   it("cleans markdown wrappers from generated motion prompt", () => {
     const cleaned = cleanGeneratedMotionPrompt("**Motion:** Head turns gently toward the window, soft breeze lifts hair.")
     expect(cleaned).toBe("Head turns gently toward the window, soft breeze lifts hair.")
