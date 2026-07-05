@@ -837,7 +837,11 @@ export function ShootStudioClient({
             <p className="text-xs uppercase tracking-wide text-stone-500">
               2 · Your selfies (front, side profiles, full body)
             </p>
-            <div className="mt-2 flex gap-2 overflow-x-auto pb-1" style={{ maxWidth: "24rem" }}>
+            {/* 2026-07-06: was a fixed-width horizontal-scroll row - once 5+ selfies were
+                already selected, the "+" upload button scrolled out of view with no visible
+                scroll affordance, reading as "the upload button is gone". Wraps instead, same
+                pattern as the inspiration row above, so every tile (including "+") always shows. */}
+            <div className="mt-2 flex flex-wrap gap-2 pb-1">
               {selfieOptions.map((url) => {
                 const selected = selfieUrls.includes(url)
                 const order = selfieUrls.indexOf(url) + 1

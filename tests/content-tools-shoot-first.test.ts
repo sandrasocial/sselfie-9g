@@ -203,4 +203,14 @@ describe("Content tools shoot-first workflow", () => {
     expect(slideRedesignGenerator).toContain("reelCoverShotFraming")
     expect(slideRedesignGenerator).toContain("identityScenePolish")
   })
+
+  it("wraps the selfie picker instead of clipping the upload button off-screen (2026-07-06)", () => {
+    // Sandra reported the selfie upload "+" looked missing once she already had 5-6 selected.
+    // Root cause: a fixed maxWidth + overflow-x-auto row scrolled the trailing "+" tile out of
+    // view with no visible scroll affordance. The inspiration row one section above never had
+    // this bug because it wraps - matched that pattern here instead of scrolling.
+    const shootClient = read("components/admin/shoot-studio-client.tsx")
+    expect(shootClient).not.toContain('overflow-x-auto pb-1" style={{ maxWidth: "24rem" }}')
+    expect(shootClient).toContain("flex flex-wrap gap-2 pb-1")
+  })
 })
