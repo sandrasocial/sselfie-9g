@@ -217,7 +217,7 @@ function GraphicTextChoiceCard({
       <div>
         <p className="text-[10px] uppercase tracking-[0.2em] text-[#818283]">Text on image</p>
         <p className="mt-1 text-[14px] leading-relaxed text-[#4F5052]">
-          Maya can bake short words into the finished image. Choose this now, so nothing appears
+          Maya can bake short words into the finished image. Choose this now, so nothing shows up
           on your result by surprise.
         </p>
       </div>

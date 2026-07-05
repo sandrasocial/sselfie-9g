@@ -10,8 +10,8 @@ import { generateAiPromptsDay9PromptVaultProofEmail } from "@/lib/email/template
 import { generateAiPromptsDay11PromptVaultWhyNowEmail } from "@/lib/email/templates/ai-prompts-day11-prompt-vault-why-now"
 import { generateAiPromptsDay10SuiteTrialEmail } from "@/lib/email/templates/ai-prompts-day10-suite-trial"
 
-describe("BRIDGE-01 free prompts to Vault bridge", () => {
-  it("starts the AI prompts nurture with the day 1 Vault bridge", () => {
+describe("BRIDGE-01 free prompts email bridge", () => {
+  it("starts the AI prompts nurture with the day 1 AI Photos Kit bridge", () => {
     expect(AI_PROMPTS_EMAIL_TOUCHES.map(touch => touch.emailType)).toEqual([
       "ai-prompts-day1-vault-bridge",
       "ai-prompts-day5-edit-makes-postable",
@@ -51,13 +51,13 @@ describe("BRIDGE-01 free prompts to Vault bridge", () => {
     expect(activeGuideEmails).not.toContain("freebie-guide-day8-starter-kit-direct")
   })
 
-  it("renders the approved day 1 Vault bridge email with checkout attribution", () => {
+  it("renders the approved day 1 AI Photos Kit bridge email with checkout attribution", () => {
     const email = generateAiPromptsDay1VaultBridgeEmail({ firstName: "Sandra" })
 
     expect(email.subject).toBe("you're not unphotogenic, babe")
     expect(email.text).toContain("Hi Sandra,")
-    expect(email.text).toContain("The Vault is the rest of the directions")
-    expect(email.text).toContain("/checkout/prompt-vault")
+    expect(email.text).toContain("That is what the AI Photos Kit is for")
+    expect(email.text).toContain("/checkout/selfie-to-ai-photos-kit")
     expect(email.text).toContain("email_type=ai-prompts-day1-vault-bridge")
     expect(email.text).not.toContain("www.sselfie.ai/prompt-vault?")
   })

@@ -75,7 +75,7 @@ describe("in-app freshness wiring", () => {
     expect(frontDoor).toContain("weeklyLook")
     expect(frontDoor).toContain("openAesthetic(weeklyAesthetic)")
     // Members only: the admin compact mount and the trial first-run stay unchanged.
-    expect(frontDoor).toContain("!shouldShowTrialFirstRun && !compact && weeklyAesthetic")
+    expect(frontDoor).toContain("!shouldShowTrialFirstRun && !compact && manualOpen && weeklyAesthetic")
   })
 
   it("library API carries publishedAt for both vault and academy drops", () => {

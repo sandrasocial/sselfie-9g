@@ -217,7 +217,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
               </p>
               <p className="mt-1 text-[12px] leading-relaxed text-[#4F5052]">
                 Learned from your photo corrections, so every new photo stays you. Remove
-                anything that's off.
+                anything that feels off.
               </p>
               <ul className="mt-2 space-y-1.5">
                 {likenessNotes.map(note => (
