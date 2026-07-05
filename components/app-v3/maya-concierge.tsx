@@ -844,6 +844,12 @@ export function MayaConcierge({
     if (!isOpen || !session) return
     const fmt = session.outputFormat
     if (!fmt || isThinking) return
+    const pullIntent = localCreationIntent ?? session.creationIntent ?? intentForFormat(fmt, "manual")
+    const needsStarterChipVibe =
+      pullIntent.source === "starter_chip" &&
+      session.aesthetic.id === "maya-blank" &&
+      !session.aesthetic.selectedShot
+    if (needsStarterChipVibe) return
     const canUseTrainedModelWithoutSelfie =
       hasTrainedModel && !admin && generationSource === "trained-model" && fmt === "photo"
     if (fmt === "video" && !session.videoSourceUrl) return
@@ -853,7 +859,6 @@ export function MayaConcierge({
     if (lastPulledFormatRef.current === fmt) return
     const isFirstPull = lastPulledFormatRef.current === null
     lastPulledFormatRef.current = fmt
-    const pullIntent = localCreationIntent ?? session.creationIntent ?? intentForFormat(fmt, "manual")
     extrasRef.current = { ...extrasRef.current, format: fmt, creationIntent: pullIntent }
     // First pull may carry a seeded idea (a Content recommendation); after that, plain format.
     const seed = !seedRetiredRef.current ? session.seedPrompt : null
@@ -941,6 +946,8 @@ export function MayaConcierge({
     session.creationIntent ??
     (outputFormat ? intentForFormat(outputFormat, "manual") : needsClarificationIntent("manual"))
   const videoSourceUrl = session.videoSourceUrl
+  const needsStarterChipVibe =
+    activeCreationIntent.source === "starter_chip" && aesthetic.id === "maya-blank" && !selectedShot
   const customModelAvailable = hasTrainedModel && format === "photo" && !admin
   const activeGenerationSource: GenerationSource = customModelAvailable
     ? generationSource
@@ -987,7 +994,9 @@ export function MayaConcierge({
       if (slot === "face") {
         setSelfieRestored(false) // she chose this one herself
         setReferenceSelfieUrl(data.url)
-        setSetupOpen(false) // replacement done: give the screen back to the thread
+        if (!needsStarterChipVibe) {
+          setSetupOpen(false) // replacement done: give the screen back to the thread
+        }
         void trackAnalyticsEvent({
           event: "activation_selfie_uploaded",
           properties: { cohort, source: "maya_drawer" },
@@ -1463,12 +1472,14 @@ export function MayaConcierge({
   // Tap-first: choosing a format asks Maya to pull 3 directions for it (no typing needed).
   function handlePickFormat(id: OutputFormat) {
     if (isThinking) return
-    const intent = intentForFormat(id, "manual")
+    const intent = intentForFormat(id, needsStarterChipVibe ? "starter_chip" : "manual")
     setLocalCreationIntent(intent)
     extrasRef.current = { ...extrasRef.current, format: intent.format, creationIntent: intent }
     trackInlineChoice("format_choice", intent)
     setOutputFormat(id) // the auto-pull effect sends the request for the chosen format
-    setSetupOpen(false) // a committed pick collapses setup so the directions are visible
+    if (!needsStarterChipVibe) {
+      setSetupOpen(false) // a committed pick collapses setup so the directions are visible
+    }
   }
 
   function intentForCurrentVibeChoice(source: "manual" | "vault_shot"): CreationIntent {
@@ -2184,7 +2195,7 @@ export function MayaConcierge({
               <button
                 type="button"
                 onClick={() => {
-                  if (!outputFormat) return
+                  if (!outputFormat || needsStarterChipVibe) return
                   // Identity first (P0): with no selfie the CTA commits the format and opens the
                   // upload - the gated auto-pull then starts the moment her selfie is in.
                   handlePickFormat(outputFormat)
@@ -2194,20 +2205,22 @@ export function MayaConcierge({
                     fileInput.current?.click()
                   }
                 }}
-                disabled={isThinking || !outputFormat}
+                disabled={isThinking || !outputFormat || needsStarterChipVibe}
                 className="min-h-12 w-full rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#282728] disabled:cursor-not-allowed disabled:opacity-50 sm:tracking-[0.18em]"
               >
                 {isThinking
                   ? "Creating…"
-                  : !outputFormat
-                    ? "Pick a format to start"
-                    : outputFormat === "video"
-                      ? videoSourceUrl
-                        ? CTA_LABEL[outputFormat]
-                        : "Choose image to animate"
-                      : referenceSelfieUrl || activeGenerationSource === "trained-model"
-                        ? CTA_LABEL[outputFormat]
-                        : "Add my selfie to start"}
+                  : needsStarterChipVibe
+                    ? "Choose a visual world first"
+                    : !outputFormat
+                      ? "Pick a format to start"
+                      : outputFormat === "video"
+                        ? videoSourceUrl
+                          ? CTA_LABEL[outputFormat]
+                          : "Choose image to animate"
+                        : referenceSelfieUrl || activeGenerationSource === "trained-model"
+                          ? CTA_LABEL[outputFormat]
+                          : "Add my selfie to start"}
               </button>
             )}
 

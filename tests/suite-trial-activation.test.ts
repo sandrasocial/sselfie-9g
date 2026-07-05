@@ -84,15 +84,22 @@ describe("SUITE trial first-image activation", () => {
 
     expect(appPage).toContain("trialHasGeneratedImages")
     expect(appPage).toContain("trialHasSavedSelfie")
+    expect(appPage).toContain("trialHasSeenFirstRunStep")
     expect(appPage).toContain("FROM ai_images")
     expect(appPage).toContain("FROM user_avatar_images")
+    expect(appPage).toContain("suite_trial_first_run_seen")
     expect(shell).toContain("showTrialFirstRunStep")
     expect(shell).toContain(
-      'accessLevel === "trial" && !trialHasGeneratedImages && !trialHasSavedSelfie'
+      'accessLevel === "trial" &&'
     )
+    expect(shell).toContain("!trialHasSeenFirstRunStep")
     expect(shell).toContain("trialHasSavedSelfie={trialHasSavedSelfie}")
+    expect(shell).toContain("trialHasSeenFirstRunStep={trialHasSeenFirstRunStep}")
     expect(shell).toContain("analyticsCohort={analyticsCohort}")
     expect(shell).toContain("analyticsCohort={cohort}")
+    expect(frontDoor).toContain("FIRST_RUN_SEEN_KEY")
+    expect(frontDoor).toContain("markFirstRunSeen()")
+    expect(frontDoor).toContain('event: "suite_trial_first_run_seen"')
     expect(frontDoor).toContain("Hi, I'm Maya. Let's make your first photo.")
     expect(frontDoor).toContain("Add one clear selfie and I'll keep your real face")
     expect(frontDoor).toContain("Add my selfie")

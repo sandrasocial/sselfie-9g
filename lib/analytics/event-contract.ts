@@ -148,6 +148,7 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "membership_checkout_email_capture_view",
   "membership_checkout_recovery_sent",
   "suite_home_viewed",
+  "suite_trial_first_run_seen",
   "first_action_selected",
   // ManyChat vault-step DM email capture (behavior/lead-source only; never money)
   "manychat_vault_email_captured",

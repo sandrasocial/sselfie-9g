@@ -56,6 +56,7 @@ export default async function StudioV3Page({
   let trialDaysLeft: number | null = null
   let trialHasGeneratedImages = false
   let trialHasSavedSelfie = false
+  let trialHasSeenFirstRunStep = false
   // Whether this member has a completed, non-test trained LoRA model. When true, App v3
   // surfaces a quiet "use my trained model" entry into legacy /studio?legacy=1. Never-trained
   // members never see it. Admins resolve this separately below.
@@ -87,6 +88,20 @@ export default async function StudioV3Page({
               trialHasGeneratedImages = rows.length > 0
             } catch (imageErr) {
               console.error("[/app gate] trial generated-image check failed:", imageErr)
+            }
+            try {
+              const rows = await import("@/lib/db/client").then(
+                ({ sql }) => sql`
+                SELECT 1
+                FROM analytics_events
+                WHERE user_id = ${String(neonUserId)}
+                  AND event_name = 'suite_trial_first_run_seen'
+                LIMIT 1
+              `
+              )
+              trialHasSeenFirstRunStep = rows.length > 0
+            } catch (seenErr) {
+              console.error("[/app gate] trial first-run seen check failed:", seenErr)
             }
           } else if (access.level === "limited") resolved = "limited"
 
@@ -150,6 +165,7 @@ export default async function StudioV3Page({
       hasTrainedModel={hasTrainedModel}
       trialHasGeneratedImages={trialHasGeneratedImages}
       trialHasSavedSelfie={trialHasSavedSelfie}
+      trialHasSeenFirstRunStep={trialHasSeenFirstRunStep}
       videoEnabled={isVideoGenerationEnabled()}
     />
   )

@@ -75,6 +75,18 @@ const STARTER_CHIPS: { format: OutputFormat; label: string; prompt: string }[] =
   },
 ]
 
+const FIRST_RUN_SEEN_KEY = "sselfie_app_v3_first_run_seen"
+
+function readFirstRunSeen() {
+  if (typeof window === "undefined") return false
+  return window.localStorage.getItem(FIRST_RUN_SEEN_KEY) === "true"
+}
+
+function markFirstRunSeen() {
+  if (typeof window === "undefined") return
+  window.localStorage.setItem(FIRST_RUN_SEEN_KEY, "true")
+}
+
 // Memoized + receives onOpen as a STABLE prop, so opening the concierge (which changes the
 // concierge context value) does NOT re-render every image tile. Subscribing each tile to the
 // context made all tiles re-render on open, a long synchronous commit that tripped INP.
@@ -294,6 +306,7 @@ export function VisualFrontDoor({
   const { openWithAesthetic } = useConcierge()
   const firstRunSelfieInputRef = useRef<HTMLInputElement>(null)
   const homeTrackedRef = useRef(false)
+  const firstRunTrackedRef = useRef(false)
   const [aesthetics, setAesthetics] = useState<Aesthetic[]>(AESTHETICS)
   const [weeklyLook, setWeeklyLook] = useState<{ aestheticId: string; oneLiner: string } | null>(
     null
@@ -301,12 +314,13 @@ export function VisualFrontDoor({
   const [frontDoorUploading, setFrontDoorUploading] = useState(false)
   const [frontDoorUploadError, setFrontDoorUploadError] = useState<string | null>(null)
   const [frontDoorHasSelfie, setFrontDoorHasSelfie] = useState(hasSelfie)
+  const [firstRunAlreadySeen] = useState(readFirstRunSeen)
   const [shotPickerAesthetic, setShotPickerAesthetic] = useState<Aesthetic | null>(null)
   const [startText, setStartText] = useState("")
   const [manualOpen, setManualOpen] = useState(false)
 
   const effectiveHasSelfie = hasSelfie || frontDoorHasSelfie
-  const shouldShowTrialFirstRun = showTrialFirstRunStep && !effectiveHasSelfie
+  const shouldShowTrialFirstRun = showTrialFirstRunStep && !effectiveHasSelfie && !firstRunAlreadySeen
 
   useEffect(() => {
     let alive = true
@@ -340,6 +354,16 @@ export function VisualFrontDoor({
       properties: { cohort, hasSelfie: effectiveHasSelfie, section: "create" },
     })
   }, [cohort, effectiveHasSelfie])
+
+  useEffect(() => {
+    if (!shouldShowTrialFirstRun || firstRunTrackedRef.current) return
+    firstRunTrackedRef.current = true
+    markFirstRunSeen()
+    void trackAnalyticsEvent({
+      event: "suite_trial_first_run_seen",
+      properties: { cohort, source: "front_door" },
+    })
+  }, [cohort, shouldShowTrialFirstRun])
 
   // The same rotating look the Monday email announces, matched server-side to a tile.
   const weeklyAesthetic = weeklyLook

@@ -33,6 +33,17 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).toContain("onPick={sendInlineAnswer}")
   })
 
+  it("waits for a visual world before pulling directions from starter chips", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+
+    expect(concierge).toContain("const needsStarterChipVibe")
+    expect(concierge).toContain('pullIntent.source === "starter_chip"')
+    expect(concierge).toContain('session.aesthetic.id === "maya-blank"')
+    expect(concierge).toContain("if (needsStarterChipVibe) return")
+    expect(concierge).toContain('intentForFormat(id, needsStarterChipVibe ? "starter_chip" : "manual")')
+    expect(concierge).toContain("Choose a visual world first")
+  })
+
   it("keeps the server from defaulting unclear requests into photo concepts", () => {
     const route = read("app/api/app-v3/maya/chat/route.ts")
 

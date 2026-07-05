@@ -31,6 +31,7 @@ export interface AppV3ShellProps {
   trialDaysLeft?: number | null
   trialHasGeneratedImages?: boolean
   trialHasSavedSelfie?: boolean
+  trialHasSeenFirstRunStep?: boolean
   initialSection?: AppV3Section
   /** True when the member has a completed, non-test trained model (legacy /studio entry point). */
   hasTrainedModel?: boolean
@@ -75,6 +76,7 @@ function ShellInner({
   trialDaysLeft,
   trialHasGeneratedImages = false,
   trialHasSavedSelfie = false,
+  trialHasSeenFirstRunStep = false,
   initialSection = "create",
   hasTrainedModel = false,
   videoEnabled = true,
@@ -201,7 +203,10 @@ function ShellInner({
         ) : (
           <VisualFrontDoor
             showTrialFirstRunStep={
-              accessLevel === "trial" && !trialHasGeneratedImages && !trialHasSavedSelfie
+              accessLevel === "trial" &&
+              !trialHasGeneratedImages &&
+              !trialHasSavedSelfie &&
+              !trialHasSeenFirstRunStep
             }
             hasTrainedModel={hasTrainedModel}
             onUseTrainedModel={createWithTrainedModel}
@@ -269,6 +274,7 @@ export function AppV3Shell({
   trialDaysLeft,
   trialHasGeneratedImages,
   trialHasSavedSelfie,
+  trialHasSeenFirstRunStep,
   initialSection,
   hasTrainedModel,
   videoEnabled,
@@ -282,6 +288,7 @@ export function AppV3Shell({
         trialDaysLeft={trialDaysLeft}
         trialHasGeneratedImages={trialHasGeneratedImages}
         trialHasSavedSelfie={trialHasSavedSelfie}
+        trialHasSeenFirstRunStep={trialHasSeenFirstRunStep}
         initialSection={initialSection}
         hasTrainedModel={hasTrainedModel}
         videoEnabled={videoEnabled}
