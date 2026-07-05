@@ -1908,12 +1908,7 @@ export function MayaConcierge({
   }
 
   return (
-    <div
-      style={{
-        bottom: "var(--sselfie-bottom-nav-height, calc(56px + env(safe-area-inset-bottom)))",
-      }}
-      className="fixed inset-x-0 top-0 z-50 flex w-full max-w-[100dvw] justify-end overscroll-x-none [overflow-x:clip]"
-    >
+    <div className="fixed inset-0 z-50 flex w-full max-w-[100dvw] justify-end overscroll-x-none [overflow-x:clip]">
       <button
         type="button"
         aria-label="Close"
@@ -1928,7 +1923,7 @@ export function MayaConcierge({
             ? { height: keyboardBox.height, transform: `translateY(${keyboardBox.top}px)` }
             : undefined
         }
-        className="relative flex h-full w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden bg-[#F8FAFA] shadow-xl animate-in fade-in duration-200 ease-out motion-reduce:animate-none sm:max-w-md sm:slide-in-from-right sm:duration-300"
+        className="relative flex h-[100dvh] w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden bg-[#F8FAFA] shadow-xl animate-in fade-in duration-200 ease-out motion-reduce:animate-none sm:max-w-md sm:slide-in-from-right sm:duration-300"
       >
         {/* Header - one calm row. Actions live in a quiet menu, and Close is always visible
             (on phones the drawer is full-width, so the backdrop can't be tapped to leave). */}

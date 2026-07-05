@@ -83,21 +83,18 @@ describe("Maya-first Suite creation UX", () => {
     expect(shell).toContain("creationIntent: intentForFormat(format, \"manual\")")
   })
 
-  it("keeps the bottom nav visible while Maya is open and closes Maya on section navigation", () => {
+  it("uses the full-screen Maya drawer so the bottom nav does not compete with chat", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
-    expect(shell).toContain("close: closeMaya, isOpen: mayaOpen")
-    expect(shell).toContain("if (mayaOpen) closeMaya()")
-    expect(shell).toContain("\"--sselfie-bottom-nav-height\"")
-    expect(shell).toContain("pb-[var(--sselfie-bottom-nav-height)]")
+    expect(shell).not.toContain("close: closeMaya, isOpen: mayaOpen")
+    expect(shell).not.toContain("if (mayaOpen) closeMaya()")
+    expect(shell).not.toContain("\"--sselfie-bottom-nav-height\"")
+    expect(shell).toContain("pb-[calc(4.75rem+env(safe-area-inset-bottom))]")
 
-    expect(concierge).toContain(
-      "bottom: \"var(--sselfie-bottom-nav-height, calc(56px + env(safe-area-inset-bottom)))\""
-    )
-    expect(concierge).toContain("fixed inset-x-0 top-0 z-50")
-    expect(concierge).toContain("className=\"relative flex h-full")
-    expect(concierge).not.toContain("fixed inset-0 z-50 flex w-full")
+    expect(concierge).toContain("fixed inset-0 z-50 flex w-full")
+    expect(concierge).toContain("className=\"relative flex h-[100dvh]")
+    expect(concierge).not.toContain("fixed inset-x-0 top-0 z-50")
   })
 
   it("requires an explicit text/no-text choice before graphic generation", () => {

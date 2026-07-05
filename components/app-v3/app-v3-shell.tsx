@@ -9,7 +9,7 @@
 // untouched for members on /studio).
 // Isolated tree: imports only from components/app-v3/ + lib/. No components/sselfie/.
 
-import { useEffect, useState, type CSSProperties } from "react"
+import { useEffect, useState } from "react"
 import { ConciergeProvider, useConcierge } from "./concierge-context"
 import { VisualFrontDoor } from "./visual-front-door"
 import { MayaConcierge } from "./maya-concierge"
@@ -82,7 +82,7 @@ function ShellInner({
   videoEnabled = true,
 }: AppV3ShellProps) {
   const [section, setSection] = useState<AppV3Section>(initialSection)
-  const { openWithAesthetic, close: closeMaya, isOpen: mayaOpen } = useConcierge()
+  const { openWithAesthetic } = useConcierge()
   const limited = accessLevel === "limited"
   const cohort: AppV3AnalyticsCohort =
     analyticsCohort ??
@@ -101,7 +101,6 @@ function ShellInner({
   function goToSection(next: AppV3Section) {
     setSection(next)
     saveStoredAppSection(next)
-    if (mayaOpen) closeMaya()
     if (typeof window !== "undefined") {
       window.history.replaceState(null, "", buildStoredSectionHref(next))
     }
@@ -145,15 +144,8 @@ function ShellInner({
     })
   }
 
-  const shellStyle = {
-    "--sselfie-bottom-nav-height": "calc(56px + env(safe-area-inset-bottom))",
-  } as CSSProperties
-
   return (
-    <main
-      style={shellStyle}
-      className="min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[var(--sselfie-bottom-nav-height)] text-[#0D0E10] [overflow-x:clip]"
-    >
+    <main className="min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10] [overflow-x:clip]">
       {/* Trial: quiet days-left bar. Limited: photo-making paused, everything she owns stays open. */}
       {accessLevel === "trial" && typeof trialDaysLeft === "number" && (
         <div className="border-b border-[#C5C6C8]/50 bg-white px-5 py-2.5 text-center">
