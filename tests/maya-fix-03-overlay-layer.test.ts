@@ -447,6 +447,8 @@ describe("MAYA-FIX-03 composited overlay layer", () => {
   it("keeps the generate route wired for clean-background graphics + overlay specs", () => {
     const route = readFileSync("app/api/app-v3/maya/generate/route.ts", "utf8")
     expect(route).toContain("isTextOverlayLayerEnabled")
+    expect(route).toContain("function usesCompositedTextOverlay")
+    expect(route).toContain('format !== "story-slide" && format !== "story-sequence"')
     expect(route).toContain('textMode: textOverlayEnabled ? "clean-background" : "baked"')
     expect(route).toContain("textOverlaySpecs")
   })

@@ -2618,6 +2618,7 @@ export function MayaConcierge({
           images={lightbox.images}
           textOverlaySpecs={lightbox.textOverlaySpecs}
           bakedImageUrls={lightbox.key ? genState[lightbox.key]?.bakedImageUrls : undefined}
+          format={lightbox.format}
           onOpenTextStudio={
             lightbox.key && !isStoryGraphicFormat(lightbox.format)
               ? index => setTextStudio({ key: lightbox.key as string, index })

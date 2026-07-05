@@ -8,12 +8,14 @@
 import { useEffect, useState } from "react"
 import { downloadImageWithOverlay, TextOverlayLayer } from "./text-overlay-layer"
 import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
+import type { OutputFormat } from "./types"
 
 interface ImageLightboxProps {
   images: string[]
   textOverlaySpecs?: TextOverlaySpec[]
   /** TEXT-STUDIO-01: per-image baked text renders, index-aligned with images. */
   bakedImageUrls?: Array<string | null>
+  format?: OutputFormat
   startIndex?: number
   onClose: () => void
   /** Open the full-screen Text Studio for this slide (replaces the old inline editor). */
@@ -24,6 +26,7 @@ export function ImageLightbox({
   images,
   textOverlaySpecs,
   bakedImageUrls,
+  format,
   startIndex = 0,
   onClose,
   onOpenTextStudio,
@@ -44,7 +47,8 @@ export function ImageLightbox({
   }, [count, onClose])
 
   const url = images[index]
-  const overlay = textOverlaySpecs?.[index] ?? null
+  const isStoryGraphic = format === "story-slide" || format === "story-sequence"
+  const overlay = isStoryGraphic ? null : (textOverlaySpecs?.[index] ?? null)
   // A baked render wins the view; the clean base in images[] stays kept underneath.
   const baked = bakedImageUrls?.[index] ?? null
   if (!url) return null

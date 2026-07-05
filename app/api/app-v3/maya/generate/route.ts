@@ -140,6 +140,13 @@ function isMultiSlideGraphicFormat(format: OutputFormat): boolean {
   return format === "carousel" || format === "story-sequence"
 }
 
+function usesCompositedTextOverlay(format: OutputFormat): boolean {
+  // Story slides and story sequences must return finished, baked slides. The composited
+  // text-layer path can gracefully fall back to old overlay rendering when auto-bake is
+  // skipped, which is exactly what made Maya's story sequences look like the retired studio.
+  return isTextOverlayLayerEnabled() && format !== "story-slide" && format !== "story-sequence"
+}
+
 function categoryForGraphicFormat(format: OutputFormat): StyleReferenceCategory {
   // story-sequence reuses the carousel style anchors (NOT the overlay-only "story-sequence" grounding).
   if (format === "carousel" || format === "story-sequence") return "photoshoot-carousel"
@@ -451,7 +458,7 @@ export async function POST(request: NextRequest) {
     let photoshootJobs: PhotoshootJob[] = []
     let graphicJobs: AppGraphicRedesignJob[] = []
     let graphicStyle: Awaited<ReturnType<typeof pickContentStyleReference>> | null = null
-    const textOverlayEnabled = isTextOverlayLayerEnabled()
+    const textOverlayEnabled = usesCompositedTextOverlay(format)
     let referenceUrls: string[] = []
     let inspirationReferenceUrl: string | null = null
     const baseImageSource: string | null = null

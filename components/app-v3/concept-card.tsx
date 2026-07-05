@@ -83,7 +83,7 @@ export function ConceptCard({
   const isDone = gen.status === "done" && images.length > 0
   const isVideoDone = gen.status === "done" && !!videoUrl
   const isCarousel = images.length > 1
-  const firstOverlay = gen.textOverlaySpecs?.[0] ?? null
+  const firstOverlay = isStoryGraphicFormat(format) ? null : (gen.textOverlaySpecs?.[0] ?? null)
   // A baked render (text in the pixels) wins the card; the clean base stays kept underneath.
   const firstBaked = gen.bakedImageUrls?.[0] ?? null
 

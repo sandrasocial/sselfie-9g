@@ -313,6 +313,12 @@ describe("generate route story wiring (app/api/app-v3/maya/generate)", () => {
     expect(route).toContain("...(autoBakeSkipped ? { autoBakeSkipped } : {})")
   })
 
+  it("bypasses the retired composited overlay path for story slides and sequences", () => {
+    expect(route).toContain("function usesCompositedTextOverlay")
+    expect(route).toContain('format !== "story-slide" && format !== "story-sequence"')
+    expect(route).toContain("const textOverlayEnabled = usesCompositedTextOverlay(format)")
+  })
+
   it("keeps the graceful credit paths: 402 with code + current balance before any charge", () => {
     expect(route).toContain('code: "insufficient_credits"')
     expect(route).toContain("required: totalCost")
@@ -395,6 +401,7 @@ describe("persona story-sequence contract (lib/app-v3/maya/persona)", () => {
 describe("story text stays in Maya planning, not legacy Text Studio", () => {
   const concierge = read("components/app-v3/maya-concierge.tsx")
   const card = read("components/app-v3/concept-card.tsx")
+  const lightbox = read("components/app-v3/image-lightbox.tsx")
 
   it("does not intercept story text requests as direct overlay edits", () => {
     expect(concierge).toContain("function isStoryGraphicFormat")
@@ -406,6 +413,8 @@ describe("story text stays in Maya planning, not legacy Text Studio", () => {
     expect(concierge).toContain("isStoryGraphicFormat(conceptFormat)")
     expect(concierge).toContain("lightbox.key && !isStoryGraphicFormat(lightbox.format)")
     expect(card).toContain("function isStoryGraphicFormat")
+    expect(card).toContain("isStoryGraphicFormat(format) ? null")
+    expect(lightbox).toContain('format === "story-slide" || format === "story-sequence"')
     expect(card).toContain("!isStoryGraphicFormat(format)")
   })
 })
