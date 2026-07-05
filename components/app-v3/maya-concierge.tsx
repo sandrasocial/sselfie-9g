@@ -845,11 +845,14 @@ export function MayaConcierge({
     const fmt = session.outputFormat
     if (!fmt || isThinking) return
     const pullIntent = localCreationIntent ?? session.creationIntent ?? intentForFormat(fmt, "manual")
-    const needsStarterChipVibe =
-      pullIntent.source === "starter_chip" &&
-      session.aesthetic.id === "maya-blank" &&
+    const hasSpecificSessionWorld =
+      session.aesthetic.id !== "maya-blank" && session.aesthetic.id !== "maya-general"
+    const needsInitialVisualWorld =
+      messages.length === 0 &&
+      fmt !== "video" &&
+      !hasSpecificSessionWorld &&
       !session.aesthetic.selectedShot
-    if (needsStarterChipVibe) return
+    if (needsInitialVisualWorld) return
     const canUseTrainedModelWithoutSelfie =
       hasTrainedModel && !admin && generationSource === "trained-model" && fmt === "photo"
     if (fmt === "video" && !session.videoSourceUrl) return
@@ -877,6 +880,7 @@ export function MayaConcierge({
     hasTrainedModel,
     isOpen,
     localCreationIntent,
+    messages.length,
     session,
     isThinking,
     sendMessage,
@@ -946,8 +950,16 @@ export function MayaConcierge({
     session.creationIntent ??
     (outputFormat ? intentForFormat(outputFormat, "manual") : needsClarificationIntent("manual"))
   const videoSourceUrl = session.videoSourceUrl
-  const needsStarterChipVibe =
-    activeCreationIntent.source === "starter_chip" && aesthetic.id === "maya-blank" && !selectedShot
+  const hasSpecificVisualWorld = aesthetic.id !== "maya-blank" && aesthetic.id !== "maya-general"
+  const needsInitialVisualWorld =
+    Boolean(outputFormat) && outputFormat !== "video" && !hasStarted && !hasSpecificVisualWorld
+  const shouldShowFormatChoice = !outputFormat || (hasStarted && setupOpen)
+  const shouldShowVibeChoice =
+    Boolean(outputFormat) &&
+    outputFormat !== "video" &&
+    !hasStarted &&
+    Boolean(inlineAesthetics?.length) &&
+    (!hasSpecificVisualWorld || Boolean(inlineShotPickerAesthetic))
   const customModelAvailable = hasTrainedModel && format === "photo" && !admin
   const activeGenerationSource: GenerationSource = customModelAvailable
     ? generationSource
@@ -994,7 +1006,7 @@ export function MayaConcierge({
       if (slot === "face") {
         setSelfieRestored(false) // she chose this one herself
         setReferenceSelfieUrl(data.url)
-        if (!needsStarterChipVibe) {
+        if (!needsInitialVisualWorld) {
           setSetupOpen(false) // replacement done: give the screen back to the thread
         }
         void trackAnalyticsEvent({
@@ -1472,12 +1484,13 @@ export function MayaConcierge({
   // Tap-first: choosing a format asks Maya to pull 3 directions for it (no typing needed).
   function handlePickFormat(id: OutputFormat) {
     if (isThinking) return
-    const intent = intentForFormat(id, needsStarterChipVibe ? "starter_chip" : "manual")
+    const intent = intentForFormat(id, activeCreationIntent.source === "starter_chip" ? "starter_chip" : "manual")
     setLocalCreationIntent(intent)
     extrasRef.current = { ...extrasRef.current, format: intent.format, creationIntent: intent }
     trackInlineChoice("format_choice", intent)
     setOutputFormat(id) // the auto-pull effect sends the request for the chosen format
-    if (!needsStarterChipVibe) {
+    const keepSetupForVibe = id !== "video" && !hasStarted && !hasSpecificVisualWorld
+    if (!keepSetupForVibe) {
       setSetupOpen(false) // a committed pick collapses setup so the directions are visible
     }
   }
@@ -1949,9 +1962,11 @@ export function MayaConcierge({
         )}
         {(!hasStarted || setupOpen) && (
           <div className="min-h-0 min-w-0 shrink space-y-3 overflow-y-auto overscroll-contain border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
-            <InlineFormatChoice disabled={isThinking} onPick={handlePickFormat} />
+            {shouldShowFormatChoice && (
+              <InlineFormatChoice disabled={isThinking} onPick={handlePickFormat} />
+            )}
 
-            {!hasStarted && inlineAesthetics && inlineAesthetics.length > 0 && (
+            {shouldShowVibeChoice && (
               <div className="space-y-2">
                 {inlineShotPickerAesthetic ? (
                   <>
@@ -2195,7 +2210,7 @@ export function MayaConcierge({
               <button
                 type="button"
                 onClick={() => {
-                  if (!outputFormat || needsStarterChipVibe) return
+                  if (!outputFormat || needsInitialVisualWorld) return
                   // Identity first (P0): with no selfie the CTA commits the format and opens the
                   // upload - the gated auto-pull then starts the moment her selfie is in.
                   handlePickFormat(outputFormat)
@@ -2205,12 +2220,12 @@ export function MayaConcierge({
                     fileInput.current?.click()
                   }
                 }}
-                disabled={isThinking || !outputFormat || needsStarterChipVibe}
+                disabled={isThinking || !outputFormat || needsInitialVisualWorld}
                 className="min-h-12 w-full rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#282728] disabled:cursor-not-allowed disabled:opacity-50 sm:tracking-[0.18em]"
               >
                 {isThinking
                   ? "Creating…"
-                  : needsStarterChipVibe
+                  : needsInitialVisualWorld
                     ? "Choose a visual world first"
                     : !outputFormat
                       ? "Pick a format to start"

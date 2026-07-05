@@ -33,14 +33,16 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).toContain("onPick={sendInlineAnswer}")
   })
 
-  it("waits for a visual world before pulling directions from starter chips", () => {
+  it("waits for a visual world before pulling initial non-video directions", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
-    expect(concierge).toContain("const needsStarterChipVibe")
-    expect(concierge).toContain('pullIntent.source === "starter_chip"')
-    expect(concierge).toContain('session.aesthetic.id === "maya-blank"')
-    expect(concierge).toContain("if (needsStarterChipVibe) return")
-    expect(concierge).toContain('intentForFormat(id, needsStarterChipVibe ? "starter_chip" : "manual")')
+    expect(concierge).toContain("const needsInitialVisualWorld")
+    expect(concierge).toContain("fmt !== \"video\"")
+    expect(concierge).toContain("!hasSpecificSessionWorld")
+    expect(concierge).toContain("if (needsInitialVisualWorld) return")
+    expect(concierge).toContain("const shouldShowFormatChoice = !outputFormat || (hasStarted && setupOpen)")
+    expect(concierge).toContain("shouldShowFormatChoice &&")
+    expect(concierge).toContain("shouldShowVibeChoice &&")
     expect(concierge).toContain("Choose a visual world first")
   })
 
