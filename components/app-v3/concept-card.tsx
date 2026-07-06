@@ -44,6 +44,9 @@ interface ConceptCardProps {
   onOpen?: (imageUrls: string[]) => void
   /** Open true Edit Mode on the finished image. */
   onEdit?: () => void
+  /** Feed Planner Phase 2c: Maya saves this photo to the member's content calendar herself,
+   *  picking the slot - resolves with the day it landed on for the confirmation label. */
+  onAddToCalendar?: () => Promise<{ scheduledAt: string } | null>
   /** Replaces the single idle button when a guided picker should own the next step. */
   idleAction?: ReactNode
   /** Extra guided next steps after a result is created. */
@@ -82,6 +85,7 @@ export function ConceptCard({
   onGenerate,
   onOpen,
   onEdit,
+  onAddToCalendar,
   idleAction,
   resultActions,
   promptAssetId,
@@ -98,6 +102,22 @@ export function ConceptCard({
   const firstBaked = gen.bakedImageUrls?.[0] ?? null
   const suggestedText = buildSuggestedTextCopy(gen.textOverlaySpecs)
   const [copiedText, setCopiedText] = useState(false)
+  const [calendarStatus, setCalendarStatus] = useState<"idle" | "saving" | "saved" | "error">("idle")
+  const [savedDateLabel, setSavedDateLabel] = useState<string | null>(null)
+
+  const handleAddToCalendar = async () => {
+    if (!onAddToCalendar || calendarStatus === "saving" || calendarStatus === "saved") return
+    setCalendarStatus("saving")
+    try {
+      const result = await onAddToCalendar()
+      if (!result) throw new Error("no result")
+      const date = new Date(`${result.scheduledAt}T00:00:00Z`)
+      setSavedDateLabel(date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }))
+      setCalendarStatus("saved")
+    } catch {
+      setCalendarStatus("error")
+    }
+  }
   const requestedBakedText = gen.textOverlayMode === "with-text"
   const hasAnyBakedText = Boolean(gen.bakedImageUrls?.some(Boolean))
   const bakeMissing = requestedBakedText && Boolean(firstOverlay) && !hasAnyBakedText
@@ -185,6 +205,12 @@ export function ConceptCard({
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#818283]">
               {isVideoDone ? "Saved to your videos" : "Saved to your gallery"}
             </p>
+            {onAddToCalendar && !isCarousel && !isVideoDone && calendarStatus === "idle" && (
+              <p className="text-[13px] leading-relaxed text-[#4F5052]">
+                This would work well for your feed. Want me to save it to your calendar and get
+                the caption ready for you?
+              </p>
+            )}
             {bakeMissing && (
               <p className="rounded-[4px] bg-[#282728]/5 px-3 py-2 text-[12px] leading-relaxed text-[#4F5052]">
                 The clean image is ready. The text did not bake into this one, so Maya left the
@@ -261,6 +287,26 @@ export function ConceptCard({
                 >
                   Edit this photo
                 </button>
+              )}
+              {onAddToCalendar && !isCarousel && !isVideoDone && (
+                calendarStatus === "saved" ? (
+                  <span className="inline-flex min-h-11 items-center justify-center rounded-[8px] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052]">
+                    Added · {savedDateLabel}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleAddToCalendar}
+                    disabled={calendarStatus === "saving"}
+                    className="inline-flex min-h-11 items-center justify-center rounded-[8px] border border-[#C5C6C8] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] transition-[transform,background-color] duration-150 hover:bg-[#0D0E10]/[0.04] active:scale-[0.98] disabled:opacity-50 min-[380px]:px-5 min-[380px]:tracking-[0.18em]"
+                  >
+                    {calendarStatus === "saving"
+                      ? "Saving…"
+                      : calendarStatus === "error"
+                        ? "Try again"
+                        : "Add to calendar"}
+                  </button>
+                )
               )}
               {promptAssetId && !isVideoDone && (
                 <a

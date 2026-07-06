@@ -145,6 +145,28 @@ export default function FeedGrid({
     }
   }
 
+  // Feed Planner Phase 2b: "Different idea" for a Maya-drafted post before it's generated.
+  const handleRegenerateIdea = async (postId: number) => {
+    try {
+      const response = await fetch(`/api/feed/${feedId}/regenerate-idea`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId }),
+      })
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to get a new idea" }))
+        throw new Error(errorData.error || "Failed to get a new idea")
+      }
+      await onGenerateImage?.(postId)
+    } catch (error) {
+      toast({
+        title: "Couldn't get a new idea",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      })
+    }
+  }
+
   // Phase 5.1: Determine if generation button should be shown
   const showGenerateButton = access?.canGenerateImages ?? false
   // Phase 4: Changed from grid-cols-3 (9 posts) to grid-cols-4 (12 posts) for paid blueprint
@@ -166,6 +188,8 @@ export default function FeedGrid({
           onDragOver={(e) => onDragOver(e, index)}
           onDragEnd={onDragEnd}
           onGenerate={handleGenerateImage}
+          onRegenerateIdea={handleRegenerateIdea}
+          isMembership={access?.isMembership}
         />
       ))}
     </div>

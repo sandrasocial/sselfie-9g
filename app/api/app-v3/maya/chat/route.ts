@@ -24,6 +24,7 @@ import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import type { CreationIntent, CreationIntentSource, OutputFormat } from "@/components/app-v3/types"
 import { NextResponse } from "next/server"
+import { sql } from "@/lib/db/client"
 
 export const maxDuration = 300
 
@@ -984,6 +985,51 @@ export async function POST(req: Request) {
       modelMessages = attachVideoSource(modelMessages, body.videoSourceUrl)
     }
 
+    // Feed Planner Phase 2c: pull the real content calendar inline into chat - when she asks
+    // ("what's planned this week?", "show me my calendar") or right after emit_concepts /
+    // place-photo has just saved something, so she can say "here's your week so far" and show
+    // it. Real DB data, not something Maya invents - the execute function is a genuine lookup,
+    // mirroring `remember` above rather than emit_concepts' pure-echo pattern.
+    const showFeedPlan = tool({
+      description:
+        "Show her upcoming content calendar inline in chat - the days already planned, which " +
+        "already have a photo, and which are still open. Call this when she asks what's " +
+        "planned/next/this week, or right after you've saved a photo to her calendar to show " +
+        "her the week it landed in.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        if (!memoryUserId) return { days: [] }
+        try {
+          const [layout] = await sql`
+            SELECT id FROM feed_layouts
+            WHERE user_id = ${memoryUserId}
+            ORDER BY created_at DESC
+            LIMIT 1
+          `
+          if (!layout) return { days: [] }
+          const rows = await sql`
+            SELECT position, scheduled_at, content_pillar, image_url
+            FROM feed_posts
+            WHERE feed_layout_id = ${layout.id} AND scheduled_at >= CURRENT_DATE
+            ORDER BY scheduled_at ASC
+            LIMIT 7
+          `
+          return {
+            days: rows.map((r: any) => ({
+              position: r.position,
+              scheduledAt: new Date(r.scheduled_at).toISOString().slice(0, 10),
+              contentPillar: r.content_pillar || null,
+              imageUrl: r.image_url || null,
+              filled: !!r.image_url,
+            })),
+          }
+        } catch (e) {
+          console.error("[app-v3 maya chat] show_feed_plan lookup failed:", e)
+          return { days: [] }
+        }
+      },
+    })
+
     // SUITE-UX-02: Maya learns as she goes. When the user expresses a lasting brand fact or
     // style preference, she appends it to cross-session memory (app_v3_memory) herself -
     // silently, no announcement (persona rule). Dedup + 2000-char cap keep notes sane.
@@ -1407,6 +1453,7 @@ export async function POST(req: Request) {
       emit_concepts: emitConcepts,
       ask_clarify: askClarify,
       set_format: setFormat,
+      show_feed_plan: showFeedPlan,
       remember,
       ...(isAdminSession
         ? {

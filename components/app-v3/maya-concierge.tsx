@@ -18,6 +18,7 @@ import { useConcierge } from "./concierge-context"
 import { ConceptCard, type ConceptGenState } from "./concept-card"
 import { ClarifyCard } from "./clarify-card"
 import { AdminContentToolCard, type AdminContentToolResult } from "./admin-content-tool-card"
+import { FeedPlanPreviewCard, type FeedPlanPreviewDay } from "./feed-plan-preview-card"
 import { Markdown } from "./markdown"
 import { TypingDots } from "./loading"
 import { ImageLightbox } from "./image-lightbox"
@@ -476,6 +477,21 @@ function extractFormatSwitch(part: any): OutputFormat | null {
   }
   const fmt = part.output?.format ?? part.input?.format
   return FORMAT_OPTIONS.some(o => o.id === fmt) ? (fmt as OutputFormat) : null
+}
+
+/** Pull the show_feed_plan tool's real DB lookup out of Maya's stream (Feed Planner Phase 2c).
+ *  Unlike emit_concepts this is a genuine server-side query, not model-generated JSON, so there's
+ *  no truncation/salvage concern - `output` is either populated or the part isn't this tool. */
+function extractFeedPlanDays(part: any): FeedPlanPreviewDay[] | null {
+  if (!part || typeof part !== "object") return null
+  if (
+    part.type !== "tool-show_feed_plan" &&
+    !(part.type === "dynamic-tool" && part.toolName === "show_feed_plan")
+  ) {
+    return null
+  }
+  const days = part.output?.days
+  return Array.isArray(days) ? (days as FeedPlanPreviewDay[]) : null
 }
 
 /** Pull admin-only content tool results out of Maya's stream (MAYA-ADMIN-01 slice 2). */
@@ -3009,6 +3025,9 @@ export function MayaConcierge({
             const adminContentPart = parts.map(extractAdminContentTool).find(Boolean) as
               | AdminContentToolResult
               | undefined
+            const feedPlanDays = parts.map(extractFeedPlanDays).find(Boolean) as
+              | FeedPlanPreviewDay[]
+              | undefined
             // Maya tried to present directions but none survived (truncated/failed tool call):
             // never leave a dead end - offer a one-tap re-pull instead.
             const conceptsLost =
@@ -3049,6 +3068,15 @@ export function MayaConcierge({
                 )}
 
                 {adminContentPart && <AdminContentToolCard result={adminContentPart} />}
+
+                {feedPlanDays && (
+                  <FeedPlanPreviewCard
+                    days={feedPlanDays}
+                    onOpenCalendar={() => {
+                      window.location.href = "/app?view=calendar"
+                    }}
+                  />
+                )}
 
                 {conceptsLost && (
                   <div className="min-w-0 max-w-full rounded-[10px] bg-[#282728]/5 px-4 py-3 [overflow-x:clip]">
@@ -3282,6 +3310,32 @@ export function MayaConcierge({
                               })
                             }
                           }}
+                          onAddToCalendar={
+                            conceptFormat === "photo"
+                              ? async () => {
+                                  const current = genState[key]
+                                  const url = (current?.imageUrls ?? [])[0]
+                                  if (!url) return null
+                                  const aiImageId = current?.aiImageIds?.[0] ?? current?.aiImageId ?? null
+                                  try {
+                                    const res = await fetch("/api/app-v3/maya/feed-plan/place-photo", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({
+                                        imageUrl: url,
+                                        aiImageId,
+                                        conceptTitle: concept.title,
+                                      }),
+                                    })
+                                    if (!res.ok) return null
+                                    const data = await res.json()
+                                    return data?.scheduledAt ? { scheduledAt: data.scheduledAt } : null
+                                  } catch {
+                                    return null
+                                  }
+                                }
+                              : undefined
+                          }
                           disabled={
                             conceptFormat === "video"
                               ? !videoSourceUrl

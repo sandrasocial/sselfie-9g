@@ -12,10 +12,13 @@ interface FeedTabsProps {
 }
 
 export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsProps) {
-  // For free users: Grid - Captions - Strategy
-  // For paid/membership: Grid - Posts - Strategy
+  // For free users: Grid - Captions - Strategy - Ideas (all unchanged, out of scope here).
+  // For paid/membership (Feed Planner Phase 2b): Grid only - Posts, Plan, and Ideas fold into
+  // the "About this month" strip above the grid (themeSummary/pillars Maya already wrote when
+  // she auto-drafted the month) plus per-tile pillar tags and the post editor overlay. Nothing
+  // about the free-user tab set changes.
   const isFreeUser = access?.isFree ?? false
-  const showStrategyTab = access?.canGenerateStrategy ?? true // Default to true if access not provided
+  const showStrategyTab = isFreeUser && (access?.canGenerateStrategy ?? true)
 
   // Phase 4.3: If strategy tab is hidden and activeTab is strategy, switch to grid
   useEffect(() => {
@@ -24,10 +27,13 @@ export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsPro
     }
   }, [showStrategyTab, activeTab, onTabChange])
 
-  // For free users, redirect "posts" tab to "captions"
+  // For free users, redirect "posts" tab to "captions"; for paid/membership, "posts"/"pillars"
+  // no longer exist as tabs at all - redirect straight back to grid.
   useEffect(() => {
     if (isFreeUser && activeTab === "posts") {
       onTabChange("captions")
+    } else if (!isFreeUser && (activeTab === "posts" || activeTab === "pillars")) {
+      onTabChange("grid")
     }
   }, [isFreeUser, activeTab, onTabChange])
 
@@ -48,20 +54,14 @@ export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsPro
           Grid
         </button>
 
-        {/* For free users: Show Captions tab, for paid/membership: Show Posts tab */}
-        {isFreeUser ? (
+        {/* Free users only: Captions tab. Paid/membership: Posts folded into the grid + the
+            month strip, so no second tab for it. */}
+        {isFreeUser && (
           <button
             onClick={() => onTabChange("captions")}
             className={tabClass("captions")}
           >
             Captions
-          </button>
-        ) : (
-          <button
-            onClick={() => onTabChange("posts")}
-            className={tabClass("posts")}
-          >
-            Posts
           </button>
         )}
 
@@ -74,13 +74,16 @@ export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsPro
           </button>
         )}
 
-        {/* Brand Pillars tab - show for all users who have completed onboarding */}
-        <button
-          onClick={() => onTabChange("pillars")}
-          className={tabClass("pillars")}
-        >
-          Ideas
-        </button>
+        {/* Brand Pillars tab - free users only. Paid/membership: pillars fold into the month
+            strip + per-tile pillar tags Maya already writes when she auto-drafts the month. */}
+        {isFreeUser && (
+          <button
+            onClick={() => onTabChange("pillars")}
+            className={tabClass("pillars")}
+          >
+            Ideas
+          </button>
+        )}
       </div>
     </div>
   )

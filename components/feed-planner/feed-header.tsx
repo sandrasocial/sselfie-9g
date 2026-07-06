@@ -51,6 +51,14 @@ export default function FeedHeader({
   const [showFeedStyleModal, setShowFeedStyleModal] = useState(false)
   const [isPreviewFeedModal, setIsPreviewFeedModal] = useState(false) // Track if modal is for preview or full feed
   const [isCreatingNewFeed, setIsCreatingNewFeed] = useState(false) // Track if user explicitly wants to create NEW feed (vs update existing)
+  const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false)
+
+  const feedPosts: any[] = Array.isArray(feedData?.posts)
+    ? feedData.posts
+    : Array.isArray(feedData?.feed?.posts)
+      ? feedData.feed.posts
+      : []
+  const needsCaptions = feedPosts.length > 0 && feedPosts.every((p) => !p?.caption)
   
   // Fetch user's last feed style from personal brand
   const { data: personalBrandData } = useSWR(
@@ -134,6 +142,37 @@ export default function FeedHeader({
     } finally {
       setIsCreatingPreviewFeed(false)
       setIsPreviewFeedModal(false)
+    }
+  }
+
+  // Feed Planner Phase 2b: ported from the retired Posts tab (feed-posts-list.tsx) - bulk
+  // caption generation for a legacy/manual plan where no post has a caption yet. A Maya
+  // auto-drafted plan always writes a caption per post at creation time, so this only ever
+  // shows for older plans - per-post caption edit/enhance/copy already lives in the post
+  // editor overlay (FeedPostCard), unchanged.
+  const handleCreateCaptions = async () => {
+    if (!currentFeedId) return
+    setIsGeneratingCaptions(true)
+    try {
+      const response = await fetch(`/api/feed/${currentFeedId}/generate-captions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      })
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to generate captions" }))
+        throw new Error(errorData.error || "Failed to generate captions")
+      }
+      await mutate("/api/feed/latest")
+      toast({ title: "Captions created", description: "Maya wrote captions for this month's posts." })
+    } catch (error) {
+      toast({
+        title: "Couldn't create captions",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      })
+    } finally {
+      setIsGeneratingCaptions(false)
     }
   }
 
@@ -660,6 +699,15 @@ export default function FeedHeader({
                   className={feedHeaderChipClass}
                 >
                   Highlights
+                </button>
+              )}
+              {!access?.isFree && needsCaptions && (
+                <button
+                  onClick={handleCreateCaptions}
+                  disabled={isGeneratingCaptions}
+                  className={`${feedHeaderChipClass} disabled:cursor-not-allowed disabled:opacity-50`}
+                >
+                  {isGeneratingCaptions ? "Creating..." : "Create Captions"}
                 </button>
               )}
             </div>

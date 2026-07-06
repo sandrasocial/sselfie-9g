@@ -17,6 +17,7 @@ import FeedStrategy from "./feed-strategy"
 import FeedCaptionTemplates from "./feed-caption-templates"
 import FeedContentCalendar from "./feed-content-calendar"
 import FeedBrandPillars from "./feed-brand-pillars"
+import FeedMonthSummary from "./feed-month-summary"
 import FeedModals from "./feed-modals"
 import FeedLoadingOverlay from "./feed-loading-overlay"
 import FeedHighlightsModal from "./feed-highlights-modal"
@@ -512,6 +513,19 @@ export default function InstagramFeedView({
   // Use reorderedPosts from drag-drop hook
   const displayPosts = dragDrop.reorderedPosts
 
+  // Feed Planner Phase 2b: distinct pillars across this month's posts, for the "About this
+  // month" strip (replaces the retired standalone Pillars tab for paid/membership users).
+  // Plain computation, not useMemo - this function has early returns above and below this
+  // point, and a hook here would violate Rules of Hooks on the renders that hit them.
+  const monthPillars: string[] = (() => {
+    const seen = new Set<string>()
+    for (const post of displayPosts || []) {
+      const pillar = typeof post?.content_pillar === "string" ? post.content_pillar.trim() : ""
+      if (pillar) seen.add(pillar)
+    }
+    return Array.from(seen)
+  })()
+
   // Show loading overlay ONLY for Maya feeds that are actively generating (paid users, full grid)
   // NEVER show for manual feeds - they should always show the grid
   // NEVER show for free users (single placeholder) - they should see placeholder with inline generation
@@ -552,6 +566,13 @@ export default function InstagramFeedView({
         access={access} // Phase 4.2: Pass access control instead of mode
       />
 
+      {!access?.isFree && (
+        <FeedMonthSummary
+          themeSummary={feedData?.feed?.overall_vibe}
+          schedulingRationale={feedData?.feed?.strategic_rationale}
+          pillars={monthPillars}
+        />
+      )}
 
 
       <div className="pb-20">
