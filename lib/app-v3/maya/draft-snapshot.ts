@@ -60,6 +60,8 @@ export type ServerConciergeSessionSnapshot = {
   shotDirector?: ServerShotDirectorSnapshot | null
   generationSource?: ServerGenerationSourceSnapshot | null
   initialSetupAction?: "selfie_manager" | null
+  /** The member's carried idea (structured context, never a replayed message). */
+  creationIdea?: string | null
   startedAt: number
 }
 
@@ -217,6 +219,12 @@ function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null 
     // initialSetupAction is a one-shot launch instruction, never durable state: restoring it
     // would re-open the selfie manager on every reload of this draft.
     initialSetupAction: null,
+    // The carried idea IS durable session state: it must survive a reload so Maya keeps
+    // the member's context without her restating it.
+    creationIdea:
+      typeof session.creationIdea === "string" && session.creationIdea.trim()
+        ? session.creationIdea.slice(0, 400)
+        : null,
     startedAt: session.startedAt,
   }
 }

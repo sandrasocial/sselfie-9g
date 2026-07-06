@@ -24,8 +24,8 @@ OpenAI codified this in the Apps SDK: silent `update-model-context` for UI state
 | Rule | Status |
 |------|--------|
 | 1-2 Truthful turns | ✅ After `2a262a08`: FORMAT_PHRASE turns are terse + literal; no fabricated seeds; regression-tested |
-| 3 Structured sync | 🟡 Mostly: `extrasRef` carries format/intent/refs structurally. **Gap: the seed-relay** — cross-session context passes as replayed user prose. Works now that seeds are always real words, but the modern pattern is a structured context block server-side. Candidate spec, not urgent. |
-| 4 Authoritative snapshots | 🟡 Prompt records + extras exist per call; no single re-emitted "session state" object after each generation. Candidate spec (small server change, pairs with rule 3). |
+| 3 Structured sync | ✅ Implemented same day: style relays pass `creationIdea` as structured context (extras → chat-route SESSION IDEA block); inherited seeds are never replayed as user messages. Guard: `tests/maya-structured-context.test.ts`. |
+| 4 Authoritative snapshots | ✅ Implemented same day: every completed render records a `lastGeneration` snapshot that rides every chat turn (chat-route AUTHORITATIVE SESSION STATE block, validated server-side). |
 | 5 Artifact anchoring | ✅ Direction is right: concept cards, variant lineage (`variant_of`), drafts, fresh chatId per new session. |
 | 6 No blank canvas | ✅ Create tab: starter chips + Ask Maya + selfie card; style picker leads with vault looks + "Use my inspiration" + "Let Maya decide". |
 | 7 Refinement chat | ✅ Edit/bake flows are delta-based on the current image. |
@@ -40,7 +40,7 @@ Do NOT adopt (for now):
 - **AG-UI / A2UI** protocols: for multi-framework agent backends (LangGraph/CrewAI). Unnecessary for a first-party Next.js app.
 
 Hygiene items:
-- `package.json` pins `ai`, `@ai-sdk/react`, `@ai-sdk/openai`, `@ai-sdk/anthropic` to `"latest"` — pin to exact versions (lockfile currently protects CI, but any bare update pulls unvetted majors).
+- ~~`package.json` `"latest"` pins~~ — DONE same day: all 37 floating deps (incl. `stripe`, Supabase, Neon, Resend, the AI SDK set) pinned to their installed versions; guarded by `tests/maya-structured-context.test.ts`.
 - AI SDK 6's `needsApproval` + AI Elements are available on our installed version if/when rule 8 needs a real approval card.
 
 ## Sources

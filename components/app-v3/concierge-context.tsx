@@ -66,6 +66,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
         shotDirector: opts?.shotDirector ?? null,
         generationSource: opts?.generationSource ?? null,
         initialSetupAction: opts?.initialSetupAction ?? null,
+        creationIdea: opts?.creationIdea ?? null,
         startedAt,
       })
       setIsOpen(true)
@@ -96,6 +97,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
             shotDirector: null,
             generationSource: null,
             initialSetupAction: null,
+            creationIdea: null,
             startedAt: Date.now(),
           }
         : prev
@@ -122,6 +124,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
             shotDirector: null,
             generationSource: null,
             initialSetupAction: null,
+            creationIdea: null,
             startedAt: Date.now(),
           }
       )
@@ -145,6 +148,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
         shotDirector: null,
         generationSource: null,
         initialSetupAction: null,
+        creationIdea: null,
         startedAt,
       })
       setIsOpen(true)

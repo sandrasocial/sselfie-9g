@@ -107,6 +107,10 @@ export interface ConciergeSession {
   graphicText: GraphicTextSpec | null
   /** Optional first message to seed Maya with (e.g. a Content recommendation idea). */
   seedPrompt?: string | null
+  /** Structured session context: the member's idea carried across a style/session relay.
+   * Rides the chat request body, never rendered as a user message (2026 UX contract:
+   * selection = structured context, intent = visible turn). */
+  creationIdea?: string | null
   /** How the creation started, so Maya can route without making the member navigate. */
   creationIntent?: CreationIntent | null
   /** Maya director choice after a Vault shot is selected. */
@@ -116,6 +120,17 @@ export interface ConciergeSession {
   /** Optional one-shot setup action Maya should open after the drawer mounts. */
   initialSetupAction?: "selfie_manager" | null
   startedAt: number
+}
+
+/** Authoritative snapshot of the most recent completed render in this session. Sent with every
+ * chat turn so Maya's belief about "what just rendered" is ground truth, never thread inference. */
+export interface LastGenerationSnapshot {
+  format: OutputFormat
+  imageCount: number
+  styleName: string | null
+  conceptTitle: string | null
+  usedInspiration: boolean
+  usedTrainedModel: boolean
 }
 
 /** Options when opening the concierge from a surface (format preselect + an idea to start on). */
@@ -135,6 +150,8 @@ export interface OpenConciergeOptions {
   generationSource?: GenerationSource | null
   /** Optional one-shot setup action Maya should open after the drawer mounts. */
   initialSetupAction?: "selfie_manager" | null
+  /** Carry the member's idea into the new session as structured context (not a replayed message). */
+  creationIdea?: string | null
 }
 
 export type AppV3AnalyticsCohort = "member" | "trial" | "limited" | "admin"

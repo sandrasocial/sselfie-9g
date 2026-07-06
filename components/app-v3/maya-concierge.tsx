@@ -51,6 +51,7 @@ import type {
   CreationIntent,
   GenerationSource,
   InlineActionKind,
+  LastGenerationSnapshot,
   OutputFormat,
   ShotDirectorIntent,
   ShotDirectorMode,
@@ -650,6 +651,9 @@ export function MayaConcierge({
     () => restoredDraft?.genState ?? {}
   )
   const inFlightGenerationKeysRef = useRef<Set<string>>(new Set())
+  // Authoritative snapshot of the most recent completed render (2026 UX contract rule 4):
+  // sent with every chat turn so Maya's belief about "what just rendered" is ground truth.
+  const [lastGeneration, setLastGeneration] = useState<LastGenerationSnapshot | null>(null)
   // MAYA-GUIDED-TEXT-01: "remove text" is an instant clean-image swap. Keep the previous
   // baked render in memory so "put the text back" can restore it without another API call.
   const hiddenBakedTextRef = useRef<Record<string, Array<string | null>>>({})
@@ -790,6 +794,10 @@ export function MayaConcierge({
     referenceSelfieUrl: string | null
     videoSourceUrl: string | null
     inspirationImageUrl: string | null
+    /** The member's carried idea - structured context, never a replayed user message. */
+    creationIdea: string | null
+    /** Ground truth about the most recent completed render in this session. */
+    lastGeneration: LastGenerationSnapshot | null
     /** MAYA-ADMIN-01: set by the /admin mount; server-verified against the admin email. */
     adminSession?: boolean
   }>({
@@ -803,6 +811,8 @@ export function MayaConcierge({
     referenceSelfieUrl: null,
     videoSourceUrl: null,
     inspirationImageUrl: null,
+    creationIdea: null,
+    lastGeneration: null,
     adminSession: admin || undefined,
   })
 
@@ -935,6 +945,7 @@ export function MayaConcierge({
     setStyleSwapOpen(false)
     setInlineShotPickerAesthetic(null)
     setPendingShotDirector(null)
+    setLastGeneration(null) // a new session has no completed render yet
     setLocalCreationIntent(session.creationIntent ?? null)
     setGenerationSource(
       session.generationSource === "trained-model" && hasTrainedModel && !admin
@@ -1172,6 +1183,8 @@ export function MayaConcierge({
     referenceSelfieUrl,
     videoSourceUrl,
     inspirationImageUrl: inspirationUrl,
+    creationIdea: session.creationIdea ?? null,
+    lastGeneration,
     adminSession: admin || undefined,
   }
 
@@ -1370,6 +1383,7 @@ export function MayaConcierge({
 
         const videoUrl = await pollVideoGeneration(startData.predictionId, startData.videoId)
         setGenState(s => ({ ...s, [key]: { status: "done", videoUrl } }))
+        recordCompletedRender("video", 1, concept.title)
         setGeneratedOnce(true)
         trackGenerationCompleted(targetFormat, "video")
         showTrialCapIfDepleted(startData.newBalance)
@@ -1414,6 +1428,7 @@ export function MayaConcierge({
         const url = await pollCustomModelGeneration(startData.predictionId, startData.generationId)
         setGenState(s => ({ ...s, [key]: { status: "done", imageUrls: [url] } }))
         setGeneratedOnce(true)
+        recordCompletedRender(targetFormat, 1, concept.title)
         trackGenerationCompleted(targetFormat, "custom_model")
         return
       }
@@ -1504,6 +1519,7 @@ export function MayaConcierge({
                 },
               }))
               setGeneratedOnce(true)
+              recordCompletedRender(targetFormat, evt.imageUrls.length, concept.title)
               trackGenerationCompleted(targetFormat, "stream")
               showTrialCapIfDepleted(evt.newBalance)
               settled = true
@@ -1571,6 +1587,7 @@ export function MayaConcierge({
         },
       }))
       setGeneratedOnce(true) // unlocks the gentle "tell Maya about your brand" moment (value first)
+      recordCompletedRender(targetFormat, urls.length, concept.title)
       trackGenerationCompleted(targetFormat, "generate")
       showTrialCapIfDepleted(data?.newBalance)
     } catch (e) {
@@ -1661,6 +1678,7 @@ export function MayaConcierge({
         },
       }))
       setGeneratedOnce(true)
+      recordCompletedRender("photoshoot", urls.length, "Full photoshoot")
       trackGenerationCompleted("photoshoot", "photoshoot_set")
       showTrialCapIfDepleted(data?.newBalance)
     } catch (e) {
@@ -1728,6 +1746,31 @@ export function MayaConcierge({
     return intentForFormat(currentFormat, source)
   }
 
+  // Cross-session relay context (2026 UX contract rule 3): when a style tap opens a fresh
+  // session, the member's idea travels as STRUCTURED context on every chat request - never
+  // by replaying her earlier sentence as a new user message. The visible first turn of the
+  // new session is only the tap's own terse phrase.
+  function carriedCreationIdea(): string | null {
+    return session?.creationIdea ?? session?.seedPrompt ?? null
+  }
+
+  // Rule 4 of the 2026 UX contract: after every completed render, record ground truth so
+  // every later chat turn carries an authoritative snapshot instead of thread inference.
+  function recordCompletedRender(
+    format: OutputFormat,
+    imageCount: number,
+    conceptTitle?: string | null
+  ) {
+    setLastGeneration({
+      format,
+      imageCount,
+      styleName: session?.aesthetic?.name?.trim() || null,
+      conceptTitle: conceptTitle?.trim() || null,
+      usedInspiration: Boolean(inspirationUrl),
+      usedTrainedModel: generationSource === "trained-model",
+    })
+  }
+
   function handleInspirationReady(
     url: string | null,
     source: "upload" | "style_picker" | "manager"
@@ -1752,9 +1795,8 @@ export function MayaConcierge({
     trackInlineChoice("inspiration_style_committed", intent, { source })
     openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
       format: nextFormat ?? undefined,
-      seed:
-        session?.seedPrompt ??
-        "Use my inspiration image as the style direction and show me the best starting options.",
+      seed: "Use my inspiration image as the style direction and show me the best starting options.",
+      creationIdea: carriedCreationIdea(),
       referenceSelfieUrl,
       videoSourceUrl,
       creationIntent: intent,
@@ -1773,7 +1815,7 @@ export function MayaConcierge({
     }
     openWithAesthetic(nextAesthetic, {
       format: intent.format ?? undefined,
-      seed: session?.seedPrompt ?? undefined,
+      creationIdea: carriedCreationIdea(),
       referenceSelfieUrl,
       videoSourceUrl,
       creationIntent: intent,
@@ -1798,9 +1840,8 @@ export function MayaConcierge({
     trackInlineChoice("maya_decides", intent, { aestheticId: MAYA_DECIDES_AESTHETIC.id })
     openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
       format: intent.format ?? undefined,
-      seed:
-        session?.seedPrompt ??
-        "Choose the strongest SSELFIE style direction for this and show me the best starting options.",
+      seed: "Choose the strongest SSELFIE style direction for this and show me the best starting options.",
+      creationIdea: carriedCreationIdea(),
       referenceSelfieUrl,
       videoSourceUrl,
       creationIntent: intent,
@@ -1841,6 +1882,7 @@ export function MayaConcierge({
     openWithAesthetic(compactInlineAestheticForMaya(chosenAesthetic, shot), {
       format: nextFormat,
       seed,
+      creationIdea: carriedCreationIdea(),
       referenceSelfieUrl,
       videoSourceUrl,
       creationIntent: nextIntent,

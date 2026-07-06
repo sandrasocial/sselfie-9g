@@ -406,6 +406,18 @@ interface ChatBody {
   inspirationImageUrl?: string | null
   videoSourceUrl?: string | null
   brandKit?: { colors?: string[]; fonts?: string[]; vibe?: string } | null
+  /** Structured session context: the member's idea carried across a style/session relay
+   * (never replayed as a user message - 2026 UX contract rule 3). */
+  creationIdea?: string | null
+  /** Authoritative snapshot of the most recent completed render in this session (rule 4). */
+  lastGeneration?: {
+    format?: unknown
+    imageCount?: unknown
+    styleName?: unknown
+    conceptTitle?: unknown
+    usedInspiration?: unknown
+    usedTrainedModel?: unknown
+  } | null
   /** MAYA-ADMIN-01: the /admin surface sets this; only honored for the admin email. */
   adminSession?: boolean
 }
@@ -416,6 +428,31 @@ function clampText(value: unknown, max = 900): string {
 
 function isOutputFormat(value: unknown): value is OutputFormat {
   return typeof value === "string" && VALID_FORMATS.includes(value as OutputFormat)
+}
+
+function normalizeLastGeneration(value: ChatBody["lastGeneration"]): {
+  format: OutputFormat
+  imageCount: number
+  styleName: string
+  conceptTitle: string
+  usedInspiration: boolean
+  usedTrainedModel: boolean
+} | null {
+  if (!value || typeof value !== "object") return null
+  if (!isOutputFormat(value.format)) return null
+  const imageCount =
+    typeof value.imageCount === "number" && Number.isInteger(value.imageCount)
+      ? Math.min(Math.max(value.imageCount, 1), 12)
+      : null
+  if (!imageCount) return null
+  return {
+    format: value.format,
+    imageCount,
+    styleName: clampText(value.styleName, 80),
+    conceptTitle: clampText(value.conceptTitle, 120),
+    usedInspiration: value.usedInspiration === true,
+    usedTrainedModel: value.usedTrainedModel === true,
+  }
 }
 
 const VALID_CREATION_INTENT_SOURCES: CreationIntentSource[] = [
@@ -855,6 +892,26 @@ export async function POST(req: Request) {
               ? `She chose Full shoot / Recreate this collection. Emit exactly ${shotDirector.requestedShotCount} cohesive photoshoot briefs. Use the chosen Vault collection as the map: same visual world, varied shotRole values, 1-2 true-detail shots, and no repeated pose.`
               : `She chose Full shoot / New shoot in this style. Emit exactly ${shotDirector.requestedShotCount} cohesive photoshoot briefs. Keep the chosen shot and Vault styling DNA, but create fresh scenes, poses, camera distances, and angles in the same world. Include 1-2 true-detail shots.`
       system = `${system}\n\n## MAYA DIRECTOR MODE\n${directorLine}\nShot count is a real credit cost, so do not exceed it. If the mode is a full shoot, format must be photoshoot and the emitted concept count must match the requested shot count exactly.`
+    }
+
+    // Structured session context (2026 UX contract): the idea travels with every request
+    // instead of being replayed as a user message when a style tap opens a fresh thread.
+    const creationIdea = clampText(body?.creationIdea, 400)
+    if (creationIdea) {
+      system = `${system}\n\n## SESSION IDEA (carried from an earlier step)\nShe already told the app what this session is about: "${creationIdea}". Carry that idea through every suggestion and concept. Do not ask her to restate it, and do not treat the thread's first message as her full request.`
+    }
+
+    // Authoritative render snapshot: ground truth beats anything implied earlier in-thread.
+    const lastGeneration = normalizeLastGeneration(body?.lastGeneration ?? null)
+    if (lastGeneration) {
+      const parts = [
+        `${lastGeneration.imageCount} ${lastGeneration.format} render${lastGeneration.imageCount > 1 ? "s" : ""}`,
+        lastGeneration.styleName ? `style: "${lastGeneration.styleName}"` : "",
+        lastGeneration.conceptTitle ? `concept: "${lastGeneration.conceptTitle}"` : "",
+        lastGeneration.usedInspiration ? "grounded in her inspiration image" : "",
+        lastGeneration.usedTrainedModel ? "rendered with her trained model" : "",
+      ].filter(Boolean)
+      system = `${system}\n\n## AUTHORITATIVE SESSION STATE\nMost recent completed render in this session: ${parts.join(", ")}. Treat this as ground truth over anything implied earlier in the thread. If she asks for a change, it is a delta on THIS render unless she clearly starts something new.`
     }
 
     if (format === "video" && isAllowedInspirationUrl(body?.videoSourceUrl)) {
