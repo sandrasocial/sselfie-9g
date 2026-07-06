@@ -55,6 +55,7 @@ import {
 } from "@/lib/app-v3/likeness-memory"
 import { getMemory } from "@/lib/app-v3/maya/memory-store"
 import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
+import { logAdminError } from "@/lib/admin-error-log"
 import type { CarouselSlide, ShootShotRole } from "@/lib/content-kit/types"
 import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
 import type { OutputFormat } from "@/components/app-v3/types"
@@ -109,6 +110,17 @@ function qualityForFormat(_format: OutputFormat): ImgQuality {
     return QUALITY_OVERRIDE
   return "medium"
 }
+
+// Text-bake pass only: baked typography is the most quality-sensitive render (OpenAI's own
+// guidance reserves high for "dense text / identity-sensitive edits"), and the six style
+// previews members pick from were generated at HIGH. Default stays medium per Sandra's
+// 2026-06-22 cost lock — flip APP_V3_BAKE_TEXT_QUALITY=high to close the previews-vs-live
+// fidelity gap (~$0.21 vs ~$0.05 per baked slide, ~191s vs ~82s).
+const BAKE_QUALITY_OVERRIDE = process.env.APP_V3_BAKE_TEXT_QUALITY as ImgQuality | undefined
+const BAKE_TEXT_QUALITY: ImgQuality =
+  BAKE_QUALITY_OVERRIDE === "low" || BAKE_QUALITY_OVERRIDE === "medium" || BAKE_QUALITY_OVERRIDE === "high"
+    ? BAKE_QUALITY_OVERRIDE
+    : qualityForFormat("story-slide")
 
 type AppGraphicRedesignJob = {
   label: string
@@ -325,6 +337,10 @@ function withPhotoshootCohesionInstruction(
         "Photoshoot cohesion role: ANCHORED SET SHOT.",
         "Use the uploaded selfies as the identity anchor. Use the generated hero reference only as a style/cohesion anchor for outfit, accessories, lighting, palette, and world.",
         "Match the hero shot's wardrobe, accessories, hair, makeup, color grade, and location mood while creating this shot's distinct role and composition. Do not copy the hero pose unless this shot asks for it.",
+        // Same near-duplicate failure the inspiration path hit (SSELFIE_INSPIRATION_SET_VARIATION,
+        // fixed 2026-07-05): a real photo reference pulls framing harder than text, so the crop
+        // rule must be explicit or every shot copies the hero's exact camera distance and angle.
+        "Camera distance, crop, and angle MUST follow THIS shot's role, not the hero reference image's framing. A full-body, a seated medium, and a close portrait must read as genuinely different framings from the hero and from each other - never near-duplicate crops of the hero.",
         role === "true-detail"
           ? "For this true-detail shot, keep the same outfit/world from the hero but do NOT show the full face or full body."
           : "",
@@ -906,20 +922,36 @@ export async function POST(request: NextRequest) {
             contentType: "image/png",
           })
           let id: number | null = null
-          try {
-            const storedPrompt = actualPromptRecords[i] ?? recordPrompts[i] ?? recordPrompts[0]
+          const storedPrompt = actualPromptRecords[i] ?? recordPrompts[i] ?? recordPrompts[0]
+          // category = the real output format, so the gallery can label the asset without
+          // keyword-sniffing the prompt text (legacy rows keep the old 'concept' value).
+          const insertRow = async () => {
             const inserted = await sql`
               INSERT INTO ai_images (
                 user_id, image_url, prompt, generated_prompt, prediction_id,
                 generation_status, source, category, created_at
               ) VALUES (
                 ${neonUser.id}, ${blob.url}, ${storedPrompt}, ${storedPrompt},
-                ${"app-v3-" + stamp + "-" + i}, 'completed', 'openai', 'concept', NOW()
+                ${"app-v3-" + stamp + "-" + i}, 'completed', 'openai', ${format}, NOW()
               ) RETURNING id
             `
-            id = inserted[0]?.id ?? null
-          } catch (dbError) {
-            console.error("[app-v3 generate] DB insert failed (image saved to Blob):", dbError)
+            return inserted[0]?.id ?? null
+          }
+          try {
+            id = await insertRow()
+          } catch {
+            // One retry, then surface: a swallowed failure here means the image exists in
+            // Blob but never appears in the gallery — invisible loss the member can't report.
+            try {
+              id = await insertRow()
+            } catch (dbError) {
+              console.error("[app-v3 generate] DB insert failed (image saved to Blob):", dbError)
+              void logAdminError({
+                toolName: "app-v3-generate-gallery-insert",
+                error: dbError,
+                context: { userId: neonUser.id, blobUrl: blob.url, format },
+              }).catch(() => {})
+            }
           }
           return { url: blob.url, id }
         })
@@ -1017,7 +1049,7 @@ export async function POST(request: NextRequest) {
               const isFinal = pi === job.passes.length - 1
               const images: Awaited<ReturnType<typeof toFile>>[] =
                 pass.input === "selfie"
-                  ? selfieFiles
+                  ? selfieAndInspirationFiles
                   : pass.input === "base"
                     ? baseFiles
                     : [await toFile(current as Buffer, "maya-base.png", { type: "image/png" })]
@@ -1305,7 +1337,7 @@ export async function POST(request: NextRequest) {
                   prompt: buildBakePrompt(spec),
                   n: 1,
                   size,
-                  quality: IMAGE_QUALITY,
+                  quality: BAKE_TEXT_QUALITY,
                   output_format: "png",
                   moderation: "low",
                 } as Parameters<typeof openai.images.edit>[0])) as unknown as OpenAIImageEditResponse

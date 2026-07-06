@@ -46,7 +46,10 @@ export const BAKE_STYLE_DIRECTIVES: Record<OverlayStyleId, BakeStyleDirective> =
   "editorial-serif-center": {
     typography:
       "Typography: a large high-contrast elegant serif headline (Cormorant style), generous margins " +
-      "and calm spacing, centered like a magazine cover. The supporting line is small, uppercase, " +
+      "and calm spacing, centered like a magazine cover. The headline is the dominant graphic element: " +
+      "sized like a real magazine cover masthead, spanning roughly 80-90% of the frame width, each line " +
+      "about 10% of the frame height, with medium-weight strokes that stay crisp - never thin or faint. " +
+      "The supporting line is small, uppercase, " +
       "letter-spaced clean sans. A single thin hairline rule between headline and supporting line is " +
       "allowed. A soft dark floor fade behind the text area is allowed for legibility, never a hard box.",
     accents: "none",
@@ -54,7 +57,8 @@ export const BAKE_STYLE_DIRECTIVES: Record<OverlayStyleId, BakeStyleDirective> =
   "lower-third-accent": {
     typography:
       "Typography: an elegant serif headline sitting low in the frame, left aligned, intimate and " +
-      "honest, with ONE key word emphasized. The supporting line is small and quiet.",
+      "honest, with ONE key word emphasized. Each headline line is about 7-9% of the frame height " +
+      "with medium-weight strokes, clearly readable on a phone feed. The supporting line is small and quiet.",
     accents:
       "Accents (subtle, thin, hand-drawn in the same ink as the text, never childish): a soft underline " +
       "under the key word at most. No sparkles, no clip-art, no arrows on the face. At most two marks.",
@@ -62,20 +66,23 @@ export const BAKE_STYLE_DIRECTIVES: Record<OverlayStyleId, BakeStyleDirective> =
   "top-band-minimal": {
     typography:
       "Typography: one short refined serif headline set across the top of the frame with wide letter " +
-      "spacing, very minimal, lots of negative space. The supporting line is tiny, uppercase, " +
-      "letter-spaced clean sans. No rules, no boxes, no darkening, no accents.",
+      "spacing, very minimal, lots of negative space. Minimal never means faint: the headline stays " +
+      "about 5-7% of the frame height with confident, clearly visible strokes. The supporting line is " +
+      "tiny, uppercase, letter-spaced clean sans. No rules, no boxes, no darkening, no accents.",
     accents: "none",
   },
   "quote-statement": {
     typography:
-      "Typography: a short serif statement, calm and confident, centered. If the area behind the text " +
+      "Typography: a short serif statement, calm and confident, centered, large and assured - each " +
+      "line about 8-10% of the frame height with medium-to-semibold strokes. If the area behind the text " +
       "is busy, a very subtle darkening of just that area is allowed for legibility (never a colored " +
       "box, never a gradient banner).",
     accents: "none",
   },
   "series-cover": {
     typography:
-      "Typography: a bold repeatable series title in elegant serif as the main element, with a small " +
+      "Typography: a bold repeatable series title in elegant serif as the main element - about " +
+      "12-14% of the frame height, unmissable in a feed - with a small " +
       "uppercase letter-spaced sans label beneath it. Keep the placement centered and consistent so " +
       "the series stays recognizable in the grid.",
     accents: "Optional single subtle accent: a small imperfect hand-drawn circle around the label. Nothing else.",
@@ -83,7 +90,8 @@ export const BAKE_STYLE_DIRECTIVES: Record<OverlayStyleId, BakeStyleDirective> =
   "cutout-editorial": {
     typography:
       "Typography: editorial collage energy, like a curated moodboard page. A large cream serif display " +
-      "headline near the top, left aligned, with a sentence-case clean sans supporting line. One key " +
+      "headline near the top (each line about 9-11% of the frame height, medium-weight strokes), " +
+      "left aligned, with a sentence-case clean sans supporting line. One key " +
       "phrase may sit on a small cut-paper label strip like a pasted sticker. Subtle film grain is " +
       "welcome. Calm, premium, never cluttered. No emojis, no clip-art, no gradients, no neon, no " +
       "Canva-template look.",
@@ -162,6 +170,13 @@ export function buildBakePrompt(spec: TextOverlaySpec, options?: BakePromptOptio
     lines.push(`Render this smaller supporting line EXACTLY, correct spelling: "${subline}"`)
   }
   lines.push(directive.typography)
+  // Hard floor against the "thin and short" failure: qualitative words alone ("large",
+  // "refined") let the model render hairline type that dies on a phone screen.
+  lines.push(
+    "Text presence (hard rule): the text must read instantly on a phone screen at feed size. " +
+      "Headline strokes are medium weight or heavier - never hairline, never faint, never undersized. " +
+      "If in doubt, render the type larger and stronger, not smaller."
+  )
   if (directive.accents !== "none") lines.push(directive.accents)
 
   // The member's tap-to-highlight marks translate into the style's own accent treatment.

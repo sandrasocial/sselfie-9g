@@ -87,6 +87,24 @@ export function inferGalleryContentType(input: {
   const category = cleanString(input.category).toLowerCase()
   const source = cleanString(input.source).toLowerCase()
   const prompt = cleanString(input.prompt).toLowerCase()
+
+  // Rows written since 2026-07-06 store the real output format in `category` — trust it
+  // directly. The keyword sniffing below stays only for legacy rows whose category is a
+  // coarse bucket ('concept' / 'edit' / 'text-bake' / 'openai').
+  switch (category) {
+    case "photo":
+      return "photo"
+    case "photoshoot":
+      return "photoshoot"
+    case "carousel":
+      return "carousel"
+    case "story-slide":
+    case "story-sequence":
+      return "story-slide"
+    case "reel-cover":
+      return "reel-cover"
+  }
+
   const haystack = [category, source, prompt].filter(Boolean).join(" ")
 
   if (haystack.includes("photoshoot") || haystack.includes("shoot")) return "photoshoot"

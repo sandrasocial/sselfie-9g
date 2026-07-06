@@ -31,7 +31,8 @@ import {
 } from "./maya-inline-components"
 import { CreditModal } from "./credit-modal"
 import { TrialCapOffer } from "./trial-cap-offer"
-import { ReferenceLibraryModal } from "./reference-library-modal"
+import { SelfieReferenceManagerModal } from "./selfie-reference-manager-modal"
+import { retryGeneratedImageOnce } from "./image-retry"
 import { ChatHistoryModal } from "./chat-history-modal"
 import { MemoryModal, type Memory } from "./memory-modal"
 import { EditMode } from "./edit-mode"
@@ -611,7 +612,9 @@ export function MayaConcierge({
     if (cohort === "trial" && typeof balance === "number" && balance <= 0) setTrialCapOpen(true)
   }
   // Past-selfie picker.
-  const [libraryOpen, setLibraryOpen] = useState(false)
+  // One selfie surface everywhere in chat: the full reference manager (main selfie +
+  // saved selfies + angle/side/body/inspiration slots), not a raw file picker.
+  const [selfieManagerOpen, setSelfieManagerOpen] = useState(false)
   // Header overflow menu (New chat / History / Memory live here, not as stacked buttons).
   const [menuOpen, setMenuOpen] = useState(false)
   // Once the conversation starts, the setup block collapses to a one-line strip so the thread
@@ -977,6 +980,9 @@ export function MayaConcierge({
       setTextOverlayMode(null)
       setTextStyleChoice(null)
       setStyleSwapOpen(false)
+      // Re-arm the auto-pull too: if this format was already pulled earlier in the thread,
+      // a stale lastPulledFormatRef blocks both the pull and the inline text-choice cards.
+      lastPulledFormatRef.current = null
       setOutputFormat(latest)
     }
   }, [messages, isThinking, session, setOutputFormat])
@@ -1563,12 +1569,14 @@ export function MayaConcierge({
   // Tap-first: choosing a format asks Maya to pull 3 directions for it (no typing needed).
   function handlePickFormat(id: OutputFormat) {
     if (isThinking) return
-    if (id !== outputFormat) {
-      setTextOverlayMode(null)
-      setTextStyleChoice(null)
-      setStyleSwapOpen(false)
-      lastPulledFormatRef.current = null
-    }
+    // Always re-arm the graphic-text gate and the auto-pull - including when she re-taps
+    // the SAME format mid-thread to start a fresh piece. Gating this on id !== outputFormat
+    // left textOverlayMode/textStyleChoice/lastPulledFormatRef stale, so the inline text
+    // question cards never re-appeared and the chip tap was a silent no-op.
+    setTextOverlayMode(null)
+    setTextStyleChoice(null)
+    setStyleSwapOpen(false)
+    lastPulledFormatRef.current = null
     const intent = intentForFormat(id, activeCreationIntent.source === "starter_chip" ? "starter_chip" : "manual")
     setLocalCreationIntent(intent)
     extrasRef.current = { ...extrasRef.current, format: intent.format, creationIntent: intent }
@@ -2259,7 +2267,7 @@ export function MayaConcierge({
                   </span>
                   <button
                     type="button"
-                    onClick={() => fileInput.current?.click()}
+                    onClick={() => setSelfieManagerOpen(true)}
                     disabled={uploadingSlot === "face"}
                     className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10] disabled:opacity-60"
                   >
@@ -2275,7 +2283,7 @@ export function MayaConcierge({
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => fileInput.current?.click()}
+                  onClick={() => setSelfieManagerOpen(true)}
                   disabled={uploadingSlot === "face"}
                   className="flex min-h-11 items-center gap-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3.5 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
                 >
@@ -2283,7 +2291,7 @@ export function MayaConcierge({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setLibraryOpen(true)}
+                  onClick={() => setSelfieManagerOpen(true)}
                   className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
                 >
                   Use a past selfie
@@ -2315,7 +2323,7 @@ export function MayaConcierge({
                   if (outputFormat === "video" && !videoSourceUrl) {
                     videoInput.current?.click()
                   } else if (!referenceSelfieUrl && activeGenerationSource !== "trained-model") {
-                    fileInput.current?.click()
+                    setSelfieManagerOpen(true)
                   }
                 }}
                 disabled={isThinking || !outputFormat || needsInitialVisualWorld}
@@ -2576,8 +2584,8 @@ export function MayaConcierge({
                 title="Start your brand shoot"
                 description="Add one clear selfie and Maya turns it into the result you chose."
                 uploading={uploadingSlot === "face"}
-                onUpload={() => fileInput.current?.click()}
-                onUseExisting={() => setLibraryOpen(true)}
+                onUpload={() => setSelfieManagerOpen(true)}
+                onUseExisting={() => setSelfieManagerOpen(true)}
               />
             )}
 
@@ -2704,6 +2712,7 @@ export function MayaConcierge({
                                   key={`${url}-${index}`}
                                   src={url}
                                   alt=""
+                                  onError={retryGeneratedImageOnce}
                                   className="aspect-[4/5] w-full rounded-[6px] object-cover"
                                 />
                               ))}
@@ -3015,12 +3024,21 @@ export function MayaConcierge({
 
       <TrialCapOffer open={trialCapOpen} onClose={() => setTrialCapOpen(false)} />
 
-      <ReferenceLibraryModal
-        open={libraryOpen}
-        onClose={() => setLibraryOpen(false)}
-        onPick={url => {
+      {/* In-thread selfie management: commits the URL in place via setReferenceSelfieUrl.
+          Never route this through the front door's onContinue handler - that starts a new
+          session and would wipe the running conversation. */}
+      <SelfieReferenceManagerModal
+        open={selfieManagerOpen}
+        initialFaceUrl={referenceSelfieUrl}
+        onClose={() => setSelfieManagerOpen(false)}
+        onFaceReady={url => {
           setSelfieRestored(false) // she chose this one herself
           setReferenceSelfieUrl(url)
+        }}
+        onContinue={url => {
+          setSelfieRestored(false)
+          setReferenceSelfieUrl(url)
+          setSelfieManagerOpen(false)
         }}
       />
 

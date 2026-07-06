@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { ImageLightbox } from "./image-lightbox"
 import type { AppV3GalleryAsset, AppV3GalleryCounts } from "@/lib/app-v3/gallery-assets"
+import { retryGeneratedImageOnce } from "./image-retry"
 
 type GalleryFilter =
   | "all"
@@ -167,6 +168,7 @@ const AssetTile = memo(function AssetTile({
             src={asset.url}
             alt={asset.prompt || `Gallery image ${index + 1}`}
             fill
+            onError={retryGeneratedImageOnce}
             className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             sizes="(max-width:640px) 45vw, 240px"
           />
