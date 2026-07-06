@@ -20,8 +20,8 @@ export function generateMasterclassDay0DeliveryEmail({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Your Masterclass is ready. All the lessons are waiting for you, starting with lesson one.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">One tip before you start: your purchase also includes the Brand Strategy tool. If you want your positioning clear before you build content, <a href="${brandStrategyUrl}" style="color:#2c2b29;">do that first</a>. It takes a few minutes and makes every lesson easier to use.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Your Masterclass is ready. Every lesson is waiting for you, starting with lesson one.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">One tip: your purchase also includes the Brand Strategy tool. Want your positioning clear before you build content? <a href="${brandStrategyUrl}" style="color:#2c2b29;">Do that first</a>. Takes a few minutes, and it makes every lesson easier to use.</p>
     <div style="margin:28px 0 14px;">${primaryButton}</div>
     ${secondaryButton}
   `
@@ -37,7 +37,7 @@ export function generateMasterclassDay0DeliveryEmail({
       footerLead: "One lesson at a time. You don't have to rush this.",
       footerSignoff: "Sandra x",
     }),
-    text: `Hi ${firstName},\n\nYour Masterclass is ready. All the lessons are waiting for you, starting with lesson one.\n\nOne tip before you start: your purchase also includes the Brand Strategy tool. If you want your positioning clear before you build content, do that first: ${brandStrategyUrl}\n\n${
+    text: `Hi ${firstName},\n\nYour Masterclass is ready. Every lesson is waiting for you, starting with lesson one.\n\nOne tip: your purchase also includes the Brand Strategy tool. Want your positioning clear before you build content? Do that first: ${brandStrategyUrl}\n\n${
       passwordSetupUrl
         ? `Set your password: ${passwordSetupUrl}\nOpen the Masterclass: ${courseUrl}\n`
         : `Open the Masterclass: ${courseUrl}\n`

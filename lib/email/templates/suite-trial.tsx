@@ -34,8 +34,8 @@ export function generateTrialUnlockEmail(params: TrialUnlockParams): {
       : `A while back you bought the ${productLabel} from me. This email is something extra.`
   const bridge =
     variant === "legacy"
-      ? `What you bought still works. But my Studio has grown since then. Maya is the creative director inside it now. She pulls the looks for you, keeps it looking like you in every photo, and gets smarter the more you use her.`
-      : `The prompts you bought work anywhere. But inside my Studio, Maya already knows the SSELFIE worlds. She pulls the looks for you, keeps it looking like you in every photo, and gets sharper the more you use her.`
+      ? `What you bought still works. But my Studio has grown since then. Maya runs it now. She pulls the looks, keeps every photo looking like you, and gets better at it the more you use her.`
+      : `The prompts you bought work anywhere. But inside my Studio, Maya already knows the SSELFIE worlds. She pulls the looks, keeps every photo looking like you, and gets better at it the more you use her.`
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
@@ -66,7 +66,7 @@ Claim your 7 days: ${claimUrl}
 
 Whatever you make is yours to keep, trial or not.
 
-Sandra`
+Sandra x`
 
   return { html, text, subject }
 }
@@ -315,7 +315,7 @@ Keep creating with Maya: ${joinUrl}
 
 And if now's not the moment, that's okay. Your photos are yours to keep either way.
 
-Sandra`
+Sandra x`
 
   return { html, text, subject }
 }

@@ -23,11 +23,11 @@ export function generateSelfieAiPhotosKitDeliveryEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Your Selfie To AI Photos Kit is ready.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Start with the source selfie checklist. Then copy the first prompt and use one clear selfie for your first AI photo.</p>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.8;">Inside you'll find the checklist, good vs bad source photo notes, starter prompts, still-you fix prompts, and a simple 3-image path: profile photo, reel cover, and lifestyle image.</p>
-    <p style="margin:0 0 16px;font-size:15px;line-height:1.8;">The goal isn't to look like someone else. It's to get a result that feels like you, on a good day.</p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.8;">The goal isn't to look like someone else. It's to get a photo that still looks like you, on your best day.</p>
     ${primaryButton}
-    <p style="margin:26px 0 10px;font-size:14px;line-height:1.7;color:#8a8780;">When you want more visual worlds, open the full Prompt Vault:</p>
+    <p style="margin:26px 0 10px;font-size:14px;line-height:1.7;color:#8a8780;">Want more visual worlds? Open the full Prompt Vault:</p>
     <div style="margin:0 0 18px;">${renderStoneButton("Get the Prompt Vault", vaultUrl, "outline")}</div>
-    <p style="margin:0 0 10px;font-size:14px;line-height:1.7;color:#8a8780;">When you want Maya to help you keep creating every month, this is the SUITE:</p>
+    <p style="margin:0 0 10px;font-size:14px;line-height:1.7;color:#8a8780;">Want Maya to help you keep creating every month? That's the SUITE:</p>
     <div style="margin:0;">${renderStoneButton("See SSELFIE SUITE", suiteUrl, "outline")}</div>
     <p style="margin:24px 0 0;font-size:14px;line-height:1.7;color:#8a8780;">Questions? Reply here or email <a href="mailto:support@sselfie.ai" style="color:#8a8780;">support@sselfie.ai</a></p>
   `
@@ -55,7 +55,7 @@ export function generateSelfieAiPhotosKitDeliveryEmail({
       "",
       "Inside you'll find the checklist, good vs bad source photo notes, starter prompts, still-you fix prompts, and a simple 3-image path: profile photo, reel cover, and lifestyle image.",
       "",
-      "The goal isn't to look like someone else. It's to get a result that feels like you, on a good day.",
+      "The goal isn't to look like someone else. It's to get a photo that still looks like you, on your best day.",
       "",
       textPrimaryLine,
       "",

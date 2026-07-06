@@ -41,9 +41,9 @@ export function generateStarterKitDay0DeliveryEmail({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hey ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">You&apos;re in. Your Starter Kit is ready and waiting here:</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">You're in. Your Starter Kit is ready and waiting here:</p>
     ${kitButton}
-    <p style="margin:24px 0 16px;font-size:16px;line-height:1.8;">Start with the presets and the setup guide. That&apos;s the fastest win. Everything else is there when you want it: the posing guide, the captions, and your 7-day content plan.</p>
+    <p style="margin:24px 0 16px;font-size:16px;line-height:1.8;">Start with the presets and the setup guide. That's your fastest win. Everything else is there when you want it: the posing guide, the captions, and your 7-day content plan.</p>
     <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#8a8780;">Inside your kit:</p>
     <ul style="margin:0 0 20px;padding-left:20px;font-size:15px;line-height:2;color:#3a3a3a;">
       <li>The SSELFIE Presets (phone + desktop)</li>
@@ -54,8 +54,8 @@ export function generateStarterKitDay0DeliveryEmail({
       <li>The 7-Day Content Starter</li>
       <li>The Selfie Guide</li>
     </ul>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">And one more thing, because I want this to keep paying off for you:</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">I&apos;ve added your <strong>$37 as a credit</strong> to your account. So whenever you&apos;re ready for the full guided path, the Selfie to Brand Shoot System, your $37 comes right off the top. <strong>$197 becomes $160.</strong> No code to remember, no deadline. It&apos;s just there when you want it.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">One more thing, because I want this to keep paying off for you.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">I've added your <strong>$37 as a credit</strong> on your account. Whenever you're ready for the full guided path, the Selfie to Brand Shoot System, that $37 comes right off the top. <strong>$197 becomes $160.</strong> No code to remember, no deadline. It's just there when you want it.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">The System is the whole method: how to choose your look, build a full shoot from one selfie, pick the images that still look like you, and turn them into content. The Prompt Vault is included too.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">No rush at all. Enjoy your kit first. I just wanted you to know the credit is waiting.</p>
     <div style="margin:28px 0 14px;">${renderStoneButton("See the System · your price $160", systemUrl.toString(), "outline")}</div>
@@ -78,6 +78,6 @@ export function generateStarterKitDay0DeliveryEmail({
       footerLead: "No rush. Enjoy the kit first.",
       footerSignoff: "Sandra x",
     }),
-    text: `Hey ${firstName},\n\nYou're in. Your Starter Kit is ready and waiting here:\n\n${textKitLine}\nStart with the presets and the setup guide. That's the fastest win. Everything else is there when you want it: the posing guide, the captions, and your 7-day content plan.\n\nInside your kit:\n- The SSELFIE Presets (phone + desktop)\n- Quick Preset Setup Guide\n- The Posing Playbook\n- The Caption & Content Library\n- The Storytelling Captions\n- The 7-Day Content Starter\n- The Selfie Guide\n\nAnd one more thing, because I want this to keep paying off for you:\n\nI've added your $37 as a credit to your account. So whenever you're ready for the full guided path, the Selfie to Brand Shoot System, your $37 comes right off the top. $197 becomes $160. No code to remember, no deadline. It's just there when you want it.\n\nThe System is the whole method: how to choose your look, build a full shoot from one selfie, pick the images that still look like you, and turn them into content. The Prompt Vault is included too.\n\nNo rush at all. Enjoy your kit first. I just wanted you to know the credit is waiting.\n\nSee the System · your price $160:\n${systemUrl.toString()}\n\nNeed help? Reply here or email support@sselfie.ai\n\nSandra x`,
+    text: `Hey ${firstName},\n\nYou're in. Your Starter Kit is ready and waiting here:\n\n${textKitLine}\nStart with the presets and the setup guide. That's your fastest win. Everything else is there when you want it: the posing guide, the captions, and your 7-day content plan.\n\nInside your kit:\n- The SSELFIE Presets (phone + desktop)\n- Quick Preset Setup Guide\n- The Posing Playbook\n- The Caption & Content Library\n- The Storytelling Captions\n- The 7-Day Content Starter\n- The Selfie Guide\n\nOne more thing, because I want this to keep paying off for you.\n\nI've added your $37 as a credit on your account. Whenever you're ready for the full guided path, the Selfie to Brand Shoot System, that $37 comes right off the top. $197 becomes $160. No code to remember, no deadline. It's just there when you want it.\n\nThe System is the whole method: how to choose your look, build a full shoot from one selfie, pick the images that still look like you, and turn them into content. The Prompt Vault is included too.\n\nNo rush at all. Enjoy your kit first. I just wanted you to know the credit is waiting.\n\nSee the System · your price $160:\n${systemUrl.toString()}\n\nNeed help? Reply here or email support@sselfie.ai\n\nSandra x`,
   }
 }

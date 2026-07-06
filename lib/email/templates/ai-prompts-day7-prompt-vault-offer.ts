@@ -31,11 +31,11 @@ export function generateAiPromptsDay7PromptVaultOfferEmail({
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">${firstName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The free preview gave you a few looks to test. The half-light close-up. The clean-girl morning. The denim street.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here&apos;s what most people don&apos;t realise. Each one is shot 1 of a whole story.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here&apos;s what most people don&apos;t realize. Each one is shot 1 of a whole story.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Take Quiet Luxury London. It&apos;s not one café photo. It&apos;s the whole day. The arrival. The coffee run. The seated hero shot. The reel-cover walk-away. All from one selfie.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Vault holds every one of those worlds, each a full shoot from start to finish. Still you in every frame, and a new world every time I shoot one.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">No studio. No photographer. No perfect setup. One clear selfie and the direction does the rest.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It&apos;s $37, one time. Yours for good, every future drop included. And if anything snags, just reply. A real person reads it, usually me.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">No studio. No photographer. No perfect setup. One clear selfie, and the direction does the rest.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It&apos;s $37, one time. Yours for good, every future drop included. If anything snags, just reply. A real person reads it, usually me.</p>
     <div style="margin:26px 0 20px;">${renderStoneButton("Get the Vault · $37 · one time", promptVaultUrl)}</div>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Start with one world. See where it goes. 🤍</p>
     <p style="margin:0;font-size:16px;line-height:1.75;">Sandra x</p>
@@ -55,15 +55,15 @@ export function generateAiPromptsDay7PromptVaultOfferEmail({
 
 The free preview gave you a few looks to test. The half-light close-up. The clean-girl morning. The denim street.
 
-Here's what most people don't realise. Each one is shot 1 of a whole story.
+Here's what most people don't realize. Each one is shot 1 of a whole story.
 
 Take Quiet Luxury London. It's not one café photo. It's the whole day. The arrival. The coffee run. The seated hero shot. The reel-cover walk-away. All from one selfie.
 
 The Vault holds every one of those worlds, each a full shoot from start to finish. Still you in every frame, and a new world every time I shoot one.
 
-No studio. No photographer. No perfect setup. One clear selfie and the direction does the rest.
+No studio. No photographer. No perfect setup. One clear selfie, and the direction does the rest.
 
-It's $37, one time. Yours for good, every future drop included. And if anything snags, just reply. A real person reads it, usually me.
+It's $37, one time. Yours for good, every future drop included. If anything snags, just reply. A real person reads it, usually me.
 
 Get the Vault · $37 · one time:
 ${promptVaultUrl}

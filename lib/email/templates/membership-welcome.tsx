@@ -71,14 +71,14 @@ ${passwordSetupUrl ? `Set your password: ${ctaUrl}\n\nThen you land straight in 
 
 One promise before you start: these photos will look like you. Not a filtered stranger. AI should not erase you. It should frame you.
 
-Sandra`
+Sandra x`
 
     return { html, text, subject: MEMBERSHIP_WELCOME_SUBJECTS.new }
   }
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You're a member now. That changes what you have access to, so here's the short version:</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You're a member now. Here's what that opens up for you:</p>
     ${renderStonePanel(
       `<p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">Maya inside the Studio app<br />200 photos a month<br />The Prompt Vault, the Starter Kit, and the course library<br />New SSELFIE drops as they are released</p>`,
       "Now Included With Your Membership",
@@ -97,7 +97,7 @@ Sandra`
 
 Hey ${name},
 
-You're a member now. That changes what you have access to, so here's the short version:
+You're a member now. Here's what that opens up for you:
 
 Now included with your membership:
 Maya inside the Studio app
@@ -109,7 +109,7 @@ The thing I'd do first: open the app and pick a look. Maya shows you three direc
 
 Open your Studio: ${appUrl}
 
-Sandra`
+Sandra x`
 
   return { html, text, subject: MEMBERSHIP_WELCOME_SUBJECTS.existing }
 }

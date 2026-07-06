@@ -11,7 +11,7 @@ export function generateAiPromptsDay10SuiteTrialEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">If you've been making photos with the prompts, you know the feeling. That little "oh, that's actually me" moment.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Here's something I don't talk about much.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Doing it by hand with prompts works. But there's a faster way inside my Studio. Her name's Maya.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">She's the creative director I built. She already knows every prompt I've ever written. You pick a look, she pulls three concepts, your photos are done in minutes. They still look like you. Same promise, less work.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">She's the creative director I built. She already knows every prompt I've ever written. You pick a look, she pulls three concepts, and your photos are done in minutes. Still you, just less work.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Try her free. 7 days in the SUITE, 20 photos on me. No card. Nothing turns into a charge. It just ends.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Your prompts stay yours either way.</p>
     <div style="margin:28px 0 14px;">${renderStoneButton("Claim your 7 days", claimUrl)}</div>
@@ -33,7 +33,7 @@ Here's something I don't talk about much.
 
 Doing it by hand with prompts works. But there's a faster way inside my Studio. Her name's Maya.
 
-She's the creative director I built. She already knows every prompt I've ever written. You pick a look, she pulls three concepts, your photos are done in minutes. They still look like you. Same promise, less work.
+She's the creative director I built. She already knows every prompt I've ever written. You pick a look, she pulls three concepts, and your photos are done in minutes. Still you, just less work.
 
 Try her free. 7 days in the SUITE, 20 photos on me. No card. Nothing turns into a charge. It just ends.
 
