@@ -613,10 +613,19 @@ function compilePhotoPrompt(
   // Ground the photo in the chosen Vault collection's real DNA (auto-derived, stays in sync).
   const signature = getVaultSignatureDna(opts?.aestheticId)
 
+  // Feed Planner template grounding (2026-07-07): when the brief carries a hand-approved
+  // scene template (copied verbatim by Maya from her calendar context), it becomes the scene
+  // foundation of the prompt - its realism block, lens language, and scene craft reach the
+  // image model unchanged. The brief fields that follow personalize on top of it.
+  const sceneFoundation = clean(brief.sceneTemplate)
+    ? `Scene foundation - follow this proven scene direction closely; the fields below adapt it to her:\n${clean(brief.sceneTemplate)}`
+    : ""
+
   return [
     "Create an ultra-realistic editorial brand photograph of the same woman.",
     IDENTITY_ANCHOR,
     signature || "",
+    sceneFoundation,
     clean(brief.setting) ? `Scene: ${clean(brief.setting)}.` : "",
     clean(brief.outfit) ? `Outfit: ${clean(brief.outfit)}.` : "",
     "Hair: keep her natural hair color and texture from the reference photo.",

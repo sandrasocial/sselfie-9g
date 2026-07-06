@@ -53,7 +53,7 @@ export async function draftMonthPlanForUser(
 
     const cadence = await resolvePostingCadence(neonUserId)
     const postCount = postsPerMonthForCadence(cadence)
-    const resolvedStyle = await resolveFeedStyleForUser(personalBrand)
+    const resolvedStyle = await resolveFeedStyleForUser(personalBrand, neonUserId)
 
     let agentName = "Maya"
     if (memory?.agentName?.trim()) agentName = memory.agentName.trim()

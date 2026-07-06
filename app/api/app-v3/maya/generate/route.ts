@@ -457,6 +457,9 @@ function normalizeBrief(brief: unknown): CreativeBrief | null {
     cameraSpec: str(b.cameraSpec),
     lighting: str(b.lighting),
     shotRole: SHOOT_SHOT_ROLES.has(shotRole) ? shotRole : undefined,
+    // Feed Planner template grounding: the verbatim hand-approved scene template must survive
+    // normalization - it's the craft foundation the compiler injects into the image prompt.
+    sceneTemplate: str(b.sceneTemplate) || undefined,
     graphic:
       b.graphic && typeof b.graphic === "object"
         ? (b.graphic as CreativeBrief["graphic"])

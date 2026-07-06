@@ -28,6 +28,11 @@ export interface CreativeBrief {
   lighting: string
   /** Optional full-shoot role. Required when Maya is planning a cohesive 6-9 shot photoshoot. */
   shotRole?: ShootShotRole
+  /** Feed Planner template grounding (2026-07-07): the hand-approved scene template for the
+   *  member's next calendar slot, copied VERBATIM from Maya's context. The compiler injects
+   *  this text directly into the image prompt so the template's craft language (realism
+   *  block, lens, lighting, scene detail) reaches the image model unparaphrased. */
+  sceneTemplate?: string
   /** Optional on-image graphic direction for non-photo formats. */
   graphic?: ConceptGraphicSpec
 }

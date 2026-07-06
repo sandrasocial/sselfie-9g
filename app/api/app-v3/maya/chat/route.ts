@@ -298,6 +298,12 @@ const conceptSchema = z.object({
       .enum(SHOOT_SHOT_ROLES)
       .optional()
       .describe("Required for full photoshoot/series requests: the structural shot role."),
+    sceneTemplate: z
+      .string()
+      .optional()
+      .describe(
+        "When your context contains a PROVEN SCENE TEMPLATE and this concept is for her feed calendar, copy that template text here EXACTLY as given - character for character, no paraphrasing, no shortening. Your member-specific adjustments go in the other brief fields; this field carries the template's craft language straight to the image model."
+      ),
     graphic: graphicSpec,
   }),
 })
@@ -1000,7 +1006,7 @@ export async function POST(req: Request) {
                   planLayout.feed_style_variation_id ?? null,
                 )
                 if (scene?.prompt_text) {
-                  templateBlock = `\n\nPROVEN SCENE TEMPLATE for that slot (hand-approved, the quality bar for her grid):\n"""\n${scene.prompt_text}\n"""\nWhen she creates a photo for her feed, build your concept briefs FROM this template: keep its composition, lighting, camera craft, and scene structure, and adapt the wardrobe, colors, setting details, and story to HER brand, her stored preferences, and what she asks for. Do not discard the template and invent from scratch - adapt it.`
+                  templateBlock = `\n\nPROVEN SCENE TEMPLATE for that slot (hand-approved, the quality bar for her grid):\n"""\n${scene.prompt_text}\n"""\nWhen she creates a photo for her feed: copy this template text EXACTLY into each concept's brief.sceneTemplate field (character for character - never paraphrase, shorten, or rewrite it; it goes straight to the image model). Then use the OTHER brief fields (outfit, setting, mood, pose) for your member-specific adjustments: her wardrobe, her brand colors, her story. The template is the craft foundation; your brief fields are the personal layer on top.`
                 }
               }
             } catch (templateError) {
@@ -1008,7 +1014,7 @@ export async function POST(req: Request) {
             }
           }
 
-          system = `${system}\n\n## HER CONTENT CALENDAR\nShe has a content calendar you drafted for her${planLayout.feed_style ? ` in the "${planLayout.feed_style}" feed style` : ""}. ${slotLine} When she creates a single photo without a specific ask, lean your concepts toward that theme and keep the feed style world consistent so her grid stays cohesive. When a photo she loves is done, the card under it shows an "Add to calendar" button - if she asks you to save or schedule a photo, tell her to tap that button (you cannot place it yourself). To SHOW her the plan, call show_feed_plan.${templateBlock}`
+          system = `${system}\n\n## HER CONTENT CALENDAR\nShe has a content calendar you drafted for her${planLayout.feed_style ? ` in the "${planLayout.feed_style}" feed style` : ""}. ${slotLine} When she creates a single photo without a specific ask, lean your concepts toward that theme and keep the feed style world consistent so her grid stays cohesive. If she expresses a different visual direction for her feed (warmer, darker, more minimal, beachy), quietly call remember with the matching feedStyle - her whole calendar's template world switches to it. When a photo she loves is done, the card under it shows an "Add to calendar" button - if she asks you to save or schedule a photo, tell her to tap that button (you cannot place it yourself). To SHOW her the plan, call show_feed_plan.${templateBlock}`
         }
       } catch (e) {
         console.error("[app-v3 maya chat] calendar context skipped:", e)
@@ -1095,7 +1101,7 @@ export async function POST(req: Request) {
     // silently, no announcement (persona rule). Dedup + 2000-char cap keep notes sane.
     const remember = tool({
       description:
-        "Quietly save a LASTING fact about the user's brand or a style preference/aversion they just expressed, so future sessions already know it. Also capture how often she wants to post (postingCadencePerWeek) when she mentions it - her content calendar drafts around that number. Never announce the save in your reply.",
+        "Quietly save a LASTING fact about the user's brand or a style preference/aversion they just expressed, so future sessions already know it. Also capture how often she wants to post (postingCadencePerWeek) when she mentions it, and her feed style world (feedStyle) when she expresses a clear visual direction - warmer, darker, more minimal, beachy - so her whole calendar's template world follows her taste. Never announce the save in your reply.",
       inputSchema: z.object({
         brandNote: z
           .string()
@@ -1118,11 +1124,25 @@ export async function POST(req: Request) {
           .describe(
             "Posts per week she wants, when she says it ('I post twice a week' -> 2). Drives her auto-drafted content calendar."
           ),
+        feedStyle: z
+          .enum([
+            "Dark & Moody",
+            "Beige Aesthetic",
+            "Light & Minimalistic",
+            "Luxury Future Self",
+            "Casual Bohemian",
+            "Athletic & Wellness",
+            "Coastal Aesthetics",
+          ])
+          .optional()
+          .describe(
+            "Her feed's style world, when she expresses a clear direction: 'I want warmer, creamier vibes' -> Beige Aesthetic; 'more minimal and clean' -> Light & Minimalistic; 'beachy summer feel' -> Coastal Aesthetics. Switches the scene templates her whole calendar uses, effective immediately."
+          ),
       }),
-      execute: async ({ brandNote, preference, postingCadencePerWeek }) => {
+      execute: async ({ brandNote, preference, postingCadencePerWeek, feedStyle }) => {
         if (
           !memoryUserId ||
-          (!brandNote?.trim() && !preference?.trim() && postingCadencePerWeek == null)
+          (!brandNote?.trim() && !preference?.trim() && postingCadencePerWeek == null && !feedStyle)
         ) {
           return { saved: false }
         }
@@ -1131,7 +1151,14 @@ export async function POST(req: Request) {
             const { savePostingCadence } = await import("@/lib/feed-planner/cadence")
             await savePostingCadence(memoryUserId, postingCadencePerWeek).catch(() => {})
             logBehavior("suite_posting_cadence_saved", { cadence: postingCadencePerWeek })
-            if (!brandNote?.trim() && !preference?.trim()) return { saved: true }
+          }
+          if (feedStyle) {
+            const { savePreferredFeedStyle } = await import("@/lib/feed-planner/resolve-feed-style")
+            await savePreferredFeedStyle(memoryUserId, feedStyle).catch(() => {})
+            logBehavior("suite_feed_style_saved", { feedStyle })
+          }
+          if ((postingCadencePerWeek != null || feedStyle) && !brandNote?.trim() && !preference?.trim()) {
+            return { saved: true }
           }
           const current = await getMemory(memoryUserId)
           const append = (cur: string | null, add?: string): string | undefined => {

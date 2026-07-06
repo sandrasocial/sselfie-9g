@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     // stub, so the auto-draft route knows it may still fill this month in around her photo.
     if (!feedLayout) {
       const personalBrand = await getUserPersonalBrand(neonUser.id).catch(() => null)
-      const style = await resolveFeedStyleForUser(personalBrand)
+      const style = await resolveFeedStyleForUser(personalBrand, neonUser.id)
       const [stub] = await sql`
         INSERT INTO feed_layouts (
           user_id, title, layout_type, status, feed_style, feed_style_variation_id, period_month
