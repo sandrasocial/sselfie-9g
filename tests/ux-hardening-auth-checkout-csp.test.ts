@@ -30,4 +30,12 @@ describe("post-phase4 ux hardening", () => {
     expect(middleware).toContain("https://fonts.googleapis.com")
     expect(middleware).toContain("https://fonts.gstatic.com")
   })
+
+  it("allows Vercel Blob client uploads in CSP connect-src", () => {
+    const middleware = readFile("middleware.ts")
+
+    expect(middleware).toContain("https://vercel.com")
+    expect(middleware).toContain("https://blob.vercel-storage.com")
+    expect(middleware).toContain("https://*.blob.vercel-storage.com")
+  })
 })
