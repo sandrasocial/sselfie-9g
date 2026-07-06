@@ -12,9 +12,8 @@ function read(relPath: string): string {
 describe("feed planner layout hygiene", () => {
   it("keeps feed tabs visually lightweight", () => {
     const tabs = read("components/feed-planner/feed-tabs.tsx")
-    expect(tabs).toContain("min-h-[34px] shrink-0")
-    expect(tabs).toContain("sm:min-h-[36px]")
-    expect(tabs).toContain("tracking-[0.16em]")
+    expect(tabs).toContain("min-h-9 shrink-0")
+    expect(tabs).toContain("tracking-[0.14em]")
     expect(tabs).not.toContain("rounded-full border border-white/15 bg-white/[0.04] p-1")
   })
 
@@ -25,8 +24,9 @@ describe("feed planner layout hygiene", () => {
 
   it("uses compact action chips in feed header instead of large heavy buttons", () => {
     const header = read("components/feed-planner/feed-header.tsx")
-    expect(header).toContain("min-h-[34px] sm:min-h-[36px]")
-    expect(header).toContain("stone-chip rounded-full px-3 py-1.5")
+    expect(header).toContain("min-h-[34px]")
+    expect(header).toContain("sm:min-h-[36px]")
+    expect(header).not.toContain("stone-chip rounded-full px-3 py-1.5")
     expect(header).not.toContain("rounded-full border border-white/15 bg-white/[0.05]")
   })
 })

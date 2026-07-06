@@ -39,7 +39,7 @@ export default function FeedModals({
     <>
       {selectedPost && typeof window !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[110] bg-black/90 flex items-center justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-[#0D0E10]/95 p-4 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none"
           onClick={onClosePost}
           style={{
             paddingTop: "calc(1rem + env(safe-area-inset-top))",
@@ -47,15 +47,15 @@ export default function FeedModals({
           }}
         >
           <div
-            className="relative w-full max-w-[470px] my-8"
+            className="relative my-8 w-full max-w-[470px] animate-in fade-in zoom-in-[0.98] duration-300 motion-reduce:animate-none"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
             <button
               onClick={onClosePost}
-              className="absolute -top-12 right-0 z-10 p-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full transition-colors"
+              className="absolute -top-12 right-0 z-10 inline-flex min-h-11 items-center rounded-full px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
             >
-              <span className="text-[10px] uppercase tracking-[0.16em] text-white">Close</span>
+              Close
             </button>
 
             {/* Action buttons - shown when image exists */}
@@ -67,7 +67,7 @@ export default function FeedModals({
                       e.stopPropagation()
                       onNavigateToMaya()
                     }}
-                    className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-lg transition-colors"
+                    className="inline-flex min-h-11 items-center rounded-full px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
                   >
                     Regenerate in Maya
                   </button>
@@ -78,7 +78,7 @@ export default function FeedModals({
                     onShowGallery(selectedPost.id)
                     onClosePost()
                   }}
-                  className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-lg transition-colors"
+                  className="inline-flex min-h-11 items-center rounded-full px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
                 >
                   Choose from Gallery
                 </button>

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
+import { Square } from "lucide-react"
 import { useFeedPostPolling } from "@/lib/hooks/use-feed-post-polling"
 import { toast } from "@/hooks/use-toast"
+import { Spinner } from "@/components/app-v3/loading"
 
 interface FeedGridItemProps {
   post: any
@@ -182,20 +184,23 @@ function renderContent({
 
   if (isGenerating) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[rgba(255,255,255,0.78)] backdrop-blur-sm">
-        <span className="mb-2 h-5 w-5 animate-spin rounded-full border border-[color:var(--app-glass-border)] border-t-[color:var(--app-text-primary)]" />
-        <div className="text-center text-[10px] font-['Inter'] font-medium text-[color:var(--app-text-secondary)]">
-          Creating...
-        </div>
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#F8FAFA]/90 backdrop-blur-sm">
+        <Spinner className="h-5 w-5" />
+        <span className="rounded-full bg-[#0D0E10]/65 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+          Creating…
+        </span>
         <button
           type="button"
           onClick={onStopGeneration}
           disabled={!canStop || isStopping}
-          className={`mt-2 text-[10px] font-light ${
-            !canStop || isStopping ? "text-[color:var(--app-text-muted)] opacity-40" : "text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)]"
+          aria-label={isStopping ? "Stopping generation" : "Stop generation"}
+          className={`mt-1 flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+            !canStop || isStopping
+              ? "text-[#818283] opacity-40"
+              : "text-[#4F5052] hover:bg-[#0D0E10]/[0.06] hover:text-[#0D0E10]"
           }`}
         >
-          {isStopping ? "Stopping..." : "Stop generation"}
+          <Square size={12} className={isStopping ? "animate-pulse" : ""} />
         </button>
       </div>
     )
@@ -205,15 +210,12 @@ function renderContent({
     return (
       <button
         type="button"
-        className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[color:var(--app-btn-secondary-bg)] p-3 transition-colors hover:bg-[color:var(--app-btn-secondary-hover)]"
+        className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-1 bg-[#F8FAFA] p-3 transition-colors hover:bg-[#F1F2F2]"
         onClick={onGenerateClick}
       >
-        <div className="stone-chip mb-2 rounded-[4px] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
-          Add
-        </div>
-        <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
+        <span className="text-center text-[10px] font-medium uppercase tracking-[0.2em] text-[#4F5052]">
           Generate image
-        </div>
+        </span>
       </button>
     )
   }
@@ -221,18 +223,15 @@ function renderContent({
   return (
     <button
       type="button"
-      className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[color:var(--app-btn-secondary-bg)] p-3 transition-colors hover:bg-[color:var(--app-btn-secondary-hover)]"
+      className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-1 bg-[#F8FAFA] p-3 transition-colors hover:bg-[#F1F2F2]"
       onClick={(event) => {
         event.stopPropagation()
         onAddImage?.(post.id)
       }}
     >
-      <div className="stone-chip mb-2 rounded-[4px] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
-        Add
-      </div>
-      <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
+      <span className="text-center text-[10px] font-medium uppercase tracking-[0.2em] text-[#4F5052]">
         Click to add image
-      </div>
+      </span>
     </button>
   )
 }
@@ -320,7 +319,7 @@ export default function FeedGridItem({
     onStopGeneration: handleStopGeneration,
   })
 
-  const baseClassName = `relative block aspect-square w-full overflow-hidden rounded-none border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] backdrop-blur-[20px] transition-all duration-200 ${
+  const baseClassName = `relative block aspect-square w-full overflow-hidden rounded-[6px] border border-[#C5C6C8]/40 bg-[#F8FAFA] transition-all duration-200 ${
     isDragging ? "scale-95 opacity-50" : ""
   }`
 

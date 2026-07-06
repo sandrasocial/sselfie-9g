@@ -1,6 +1,13 @@
-export type AppV3Section = "create" | "photos" | "content" | "library" | "account"
+export type AppV3Section = "create" | "photos" | "content" | "calendar" | "library" | "account"
 
-const APP_V3_SECTIONS = new Set<AppV3Section>(["create", "photos", "content", "library", "account"])
+const APP_V3_SECTIONS = new Set<AppV3Section>([
+  "create",
+  "photos",
+  "content",
+  "calendar",
+  "library",
+  "account",
+])
 
 export function resolveAppV3InitialSection(view?: string | string[] | null): AppV3Section {
   const value = Array.isArray(view) ? view[0] : view

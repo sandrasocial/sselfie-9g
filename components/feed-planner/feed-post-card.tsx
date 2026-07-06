@@ -288,29 +288,27 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
   }
 
   return (
-    <div className="bg-white rounded-xl border border-stone-200 overflow-hidden shadow-md max-w-[470px] mx-auto">
+    <div className="mx-auto max-w-[470px] overflow-hidden rounded-[14px] border border-[#C5C6C8]/35 bg-white shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)]">
       {/* Instagram Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-stone-100">
+      <div className="flex items-center justify-between border-b border-[#C5C6C8]/35 px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 p-[2px]">
-            <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-              <span className="text-xs font-bold text-stone-950">S</span>
-            </div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0D0E10]">
+            <span className="text-xs font-bold text-white">S</span>
           </div>
           <div>
-            <p className="text-sm font-semibold text-stone-950">sselfie</p>
+            <p className="text-sm font-semibold text-[#0D0E10]">sselfie</p>
             {post.content_pillar && (
-              <p className="text-xs text-stone-500 capitalize">{post.content_pillar}</p>
+              <p className="text-xs capitalize text-[#818283]">{post.content_pillar}</p>
             )}
           </div>
         </div>
-        <button className="p-2 hover:bg-stone-50 rounded-full transition-colors">
-          <span className="text-[10px] uppercase tracking-[0.16em] text-stone-950">Menu</span>
+        <button className="rounded-full p-2 transition-colors hover:bg-[#F8FAFA]">
+          <span className="text-[10px] uppercase tracking-[0.16em] text-[#0D0E10]">Menu</span>
         </button>
       </div>
 
       {/* Instagram Image */}
-      <div className="relative aspect-square bg-gradient-to-br from-stone-50 to-stone-100">
+      <div className="relative aspect-square bg-[#F1F2F2]">
         {/* PHASE 5 FIX: Use preview_image_url as fallback for preview feeds */}
         {(() => {
           const imageUrl = post.image_url || post.preview_image_url
@@ -323,16 +321,16 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
               sizes="(max-width: 768px) 100vw, 470px"
             />
           ) : post.generation_status === "generating" && post.prediction_id ? (
-          <div className="w-full h-full flex flex-col items-center justify-center">
+          <div className="flex h-full w-full flex-col items-center justify-center">
             <div className="relative mb-4">
-              <div className="w-16 h-16 rounded-full border-4 border-stone-200 border-t-stone-900 animate-spin"></div>
-              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[9px] uppercase tracking-[0.16em] text-stone-900">AI</span>
+              <div className="h-16 w-16 animate-spin rounded-full border-4 border-[#C5C6C8] border-t-[#0D0E10]"></div>
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[9px] uppercase tracking-[0.16em] text-[#0D0E10]">AI</span>
             </div>
-            <p className="text-sm text-stone-700 font-light tracking-wider">Creating your image...</p>
-            <p className="text-xs text-stone-500 mt-1">This usually takes 1-2 minutes</p>
+            <p className="text-sm font-light tracking-wider text-[#4F5052]">Creating your image...</p>
+            <p className="mt-1 text-xs text-[#818283]">This usually takes 1-2 minutes</p>
           </div>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center p-8 relative">
+          <div className="relative flex h-full w-full flex-col items-center justify-center p-8">
             {/* Subtle background pattern */}
             <div className="absolute inset-0 opacity-5">
               <div className="w-full h-full" style={{
@@ -340,41 +338,41 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                 backgroundSize: '24px 24px'
               }}></div>
             </div>
-            
+
             {/* Content */}
-            <div className="relative z-10 flex flex-col items-center w-full max-w-xs">
+            <div className="relative z-10 flex w-full max-w-xs flex-col items-center">
               {/* Post Type Badge */}
-              <div className="mb-6 px-4 py-1.5 bg-white/80 backdrop-blur-sm border border-stone-200 rounded-full">
-                <span className="text-xs font-medium text-stone-900 tracking-wider uppercase">
+              <div className="mb-6 rounded-full border border-[#C5C6C8]/50 bg-white/80 px-4 py-1.5 backdrop-blur-sm">
+                <span className="text-xs font-medium uppercase tracking-wider text-[#0D0E10]">
                   {postTypeLabel}
                 </span>
               </div>
-              
+
               {/* Icon */}
-              <div className="mb-4 w-20 h-20 rounded-full bg-white/60 backdrop-blur-sm border border-stone-200 flex items-center justify-center shadow-sm">
-                <span className="text-[10px] uppercase tracking-[0.18em] text-stone-400">Image</span>
+              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full border border-[#C5C6C8]/50 bg-white/60 shadow-sm backdrop-blur-sm">
+                <span className="text-[10px] uppercase tracking-[0.18em] text-[#818283]">Image</span>
               </div>
-              
+
               {/* Description */}
-              <p className="text-sm text-stone-700 text-center font-light leading-relaxed mb-8 px-4">
+              <p className="mb-8 px-4 text-center text-sm font-light leading-relaxed text-[#4F5052]">
                 {getPostDescription()}
               </p>
-              
+
               {/* Go to Maya Button */}
               {onNavigateToMaya && (
                 <button
                   onClick={handleNavigateToMaya}
-                  className="group px-8 py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium tracking-wide rounded-xl transition-all hover:shadow-xl hover:scale-[1.02] flex items-center gap-2"
+                  className="group flex items-center gap-2 rounded-[8px] bg-[#0D0E10] px-8 py-3.5 text-sm font-medium tracking-wide text-white transition-all hover:scale-[1.02] hover:opacity-90 hover:shadow-xl"
                 >
                   <span className="text-[10px] uppercase tracking-[0.16em]">AI</span>
                   <span>Generate in Maya</span>
                 </button>
               )}
             </div>
-            
+
             {/* Position indicator - subtle in corner */}
-            <div className="absolute top-4 right-4 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm border border-stone-200">
-              <span className="text-[10px] font-medium text-stone-700">{post.position}</span>
+            <div className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full bg-[#0D0E10]/65 backdrop-blur-sm">
+              <span className="text-[10px] font-medium text-white">{post.position}</span>
             </div>
           </div>
           )
@@ -382,41 +380,41 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
       </div>
 
       {/* Instagram Action Bar */}
-      <div className="px-4 py-3 space-y-3">
+      <div className="space-y-3 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button className="hover:opacity-60 transition-opacity">
-              <span className="text-[10px] uppercase tracking-[0.16em] text-stone-950">Like</span>
+            <button className="transition-opacity hover:opacity-60">
+              <span className="text-[10px] uppercase tracking-[0.16em] text-[#0D0E10]">Like</span>
             </button>
-            <button className="hover:opacity-60 transition-opacity">
-              <span className="text-[10px] uppercase tracking-[0.16em] text-stone-950">Reply</span>
+            <button className="transition-opacity hover:opacity-60">
+              <span className="text-[10px] uppercase tracking-[0.16em] text-[#0D0E10]">Reply</span>
             </button>
-            <button className="hover:opacity-60 transition-opacity">
-              <span className="text-[10px] uppercase tracking-[0.16em] text-stone-950">Send</span>
+            <button className="transition-opacity hover:opacity-60">
+              <span className="text-[10px] uppercase tracking-[0.16em] text-[#0D0E10]">Send</span>
             </button>
           </div>
-          <button className="hover:opacity-60 transition-opacity">
-            <span className="text-[10px] uppercase tracking-[0.16em] text-stone-950">Save</span>
+          <button className="transition-opacity hover:opacity-60">
+            <span className="text-[10px] uppercase tracking-[0.16em] text-[#0D0E10]">Save</span>
           </button>
         </div>
 
         {/* Caption */}
         {isRegenerating ? (
-          <div className="space-y-2 px-4 py-3 bg-stone-50 rounded-lg border border-stone-200">
+          <div className="space-y-2 rounded-[10px] border border-[#C5C6C8]/50 bg-[#F8FAFA] px-4 py-3">
             <div className="flex items-center gap-3">
-              <span className="inline-flex w-4 h-4 rounded-full border border-stone-400 border-t-stone-700 animate-spin" />
-              <p className="text-sm text-stone-700">Maya is creating a new caption...</p>
+              <span className="inline-flex h-4 w-4 animate-spin rounded-full border border-[#C5C6C8] border-t-[#4F5052]" />
+              <p className="text-sm text-[#4F5052]">Maya is creating a new caption...</p>
             </div>
           </div>
         ) : isEditing ? (
           <div className="space-y-3 px-4 py-3">
             <div className="flex items-start gap-2">
-              <span className="text-sm font-semibold text-stone-950">sselfie</span>
+              <span className="text-sm font-semibold text-[#0D0E10]">sselfie</span>
             </div>
             <textarea
               value={editedCaption}
               onChange={(e) => setEditedCaption(e.target.value)}
-              className="w-full min-h-[120px] px-3 py-2 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent resize-y"
+              className="min-h-[120px] w-full resize-y rounded-[10px] border border-[#C5C6C8] px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#0D0E10]"
               placeholder="Write your caption here..."
               maxLength={2200}
             />
@@ -426,14 +424,14 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                   {editedCaption.length}/2,200 • {getLengthIndicator(editedCaption.length)}
                 </span>
                 {editedCaption.length >= 125 && editedCaption.length <= 150 && (
-                  <span className="text-xs text-green-600">Optimal</span>
+                  <span className="text-xs text-[#4F5052]">Optimal</span>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleCancelEdit}
                   disabled={isSaving}
-                  className="px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                  className="flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-xs font-medium text-[#4F5052] transition-colors hover:bg-[#F8FAFA] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="text-[10px] uppercase tracking-[0.16em]">Cancel</span>
                   Cancel
@@ -441,11 +439,11 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                 <button
                   onClick={handleSaveEdit}
                   disabled={isSaving || editedCaption.trim() === caption}
-                  className="px-3 py-1.5 text-xs font-medium bg-stone-900 hover:bg-stone-800 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                  className="flex items-center gap-1.5 rounded-[8px] bg-[#0D0E10] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSaving ? (
                     <>
-                      <span className="inline-flex w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
+                      <span className="inline-flex h-3 w-3 animate-spin rounded-full border border-white/30 border-t-white" />
                       Saving...
                     </>
                   ) : (
@@ -462,97 +460,97 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
           <div className="space-y-2">
             {/* caption then buttons stacked */}
             <div className="text-sm">
-              <span className="font-semibold text-stone-950">sselfie</span>{" "}
-              <span className="text-stone-950 whitespace-pre-wrap break-words">
+              <span className="font-semibold text-[#0D0E10]">sselfie</span>{" "}
+              <span className="whitespace-pre-wrap break-words text-[#0D0E10]">
                 {showFullCaption ? caption : truncatedCaption}
               </span>
               {caption.length > 100 && (
                 <button
                   onClick={() => setShowFullCaption(!showFullCaption)}
-                  className="text-stone-500 ml-1 hover:text-stone-700 transition-colors"
+                  className="ml-1 text-[#818283] transition-colors hover:text-[#4F5052]"
                 >
                   {showFullCaption ? "less" : "more"}
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex flex-wrap items-center gap-1.5">
               <button
                 onClick={copyCaptionToClipboard}
-                className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300"
+                className="rounded-[8px] border border-[#C5C6C8]/50 p-2 transition-colors hover:border-[#C5C6C8] hover:bg-[#F8FAFA]"
                 title="Copy caption"
               >
                 {copiedCaption ? (
-                  <span className="text-[10px] uppercase tracking-[0.16em] text-green-600">Done</span>
+                  <span className="text-[10px] uppercase tracking-[0.16em] text-[#0D0E10]">Done</span>
                 ) : (
-                  <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Copy</span>
+                  <span className="text-[10px] uppercase tracking-[0.16em] text-[#4F5052]">Copy</span>
                 )}
               </button>
               {hashtags && (
                 <button
                   onClick={handleCopyHashtags}
-                  className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300"
+                  className="rounded-[8px] border border-[#C5C6C8]/50 p-2 transition-colors hover:border-[#C5C6C8] hover:bg-[#F8FAFA]"
                   title="Copy hashtags"
                 >
                   {copiedHashtags ? (
-                    <span className="text-[10px] uppercase tracking-[0.16em] text-green-600">Done</span>
+                    <span className="text-[10px] uppercase tracking-[0.16em] text-[#0D0E10]">Done</span>
                   ) : (
-                    <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Tags</span>
+                    <span className="text-[10px] uppercase tracking-[0.16em] text-[#4F5052]">Tags</span>
                   )}
                 </button>
               )}
               <button
                 onClick={handleStartEdit}
                 disabled={isRegenerating || isEnhancing}
-                className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-[8px] border border-[#C5C6C8]/50 p-2 transition-colors hover:border-[#C5C6C8] hover:bg-[#F8FAFA] disabled:cursor-not-allowed disabled:opacity-50"
                 title="Edit caption"
               >
-                <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Edit</span>
+                <span className="text-[10px] uppercase tracking-[0.16em] text-[#4F5052]">Edit</span>
               </button>
               <button
                 onClick={handleRegenerateCaption}
                 disabled={isRegenerating || isEnhancing}
-                className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-[8px] border border-[#C5C6C8]/50 p-2 transition-colors hover:border-[#C5C6C8] hover:bg-[#F8FAFA] disabled:cursor-not-allowed disabled:opacity-50"
                 title="Regenerate caption"
               >
-                <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Redo</span>
+                <span className="text-[10px] uppercase tracking-[0.16em] text-[#4F5052]">Redo</span>
               </button>
               <button
                 onClick={handleEnhanceCaption}
                 disabled={isEnhancing || isRegenerating}
-                className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-[8px] border border-[#C5C6C8]/50 p-2 transition-colors hover:border-[#C5C6C8] hover:bg-[#F8FAFA] disabled:cursor-not-allowed disabled:opacity-50"
                 title="Enhance caption (make it longer)"
               >
                 {isEnhancing ? (
-                  <span className="inline-flex w-4 h-4 rounded-full border border-stone-400 border-t-stone-700 animate-spin" />
+                  <span className="inline-flex h-4 w-4 animate-spin rounded-full border border-[#C5C6C8] border-t-[#4F5052]" />
                 ) : (
-                  <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Boost</span>
+                  <span className="text-[10px] uppercase tracking-[0.16em] text-[#4F5052]">Boost</span>
                 )}
               </button>
             </div>
             <div className="flex items-center justify-between px-4">
-              <p className="text-xs text-stone-400 uppercase tracking-wide">Just now</p>
+              <p className="text-xs uppercase tracking-wide text-[#818283]">Just now</p>
               <div className="flex items-center gap-2">
                 <span className={`text-xs font-medium ${getLengthColor(caption.length)}`}>
                   {caption.length} chars • {getLengthIndicator(caption.length)}
                 </span>
                 {caption.length >= 125 && caption.length <= 150 && (
-                  <span className="text-xs text-green-600">Optimal</span>
+                  <span className="text-xs text-[#4F5052]">Optimal</span>
                 )}
               </div>
             </div>
           </div>
         ) : (
-          <div className="space-y-2 px-4 py-2 bg-stone-50 rounded-lg border border-stone-200">
+          <div className="space-y-2 rounded-[10px] border border-[#C5C6C8]/50 bg-[#F8FAFA] px-4 py-2">
             <div className="flex items-center justify-between">
-              <p className="text-xs text-stone-500 italic">No caption yet</p>
+              <p className="text-xs italic text-[#818283]">No caption yet</p>
               <button
                 onClick={handleRegenerateCaption}
                 disabled={isRegenerating}
-                className="px-3 py-1.5 text-xs font-medium bg-stone-900 hover:bg-stone-800 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="flex items-center gap-2 rounded-[8px] bg-[#0D0E10] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isRegenerating ? (
                   <>
-                    <span className="inline-flex w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
+                    <span className="inline-flex h-3 w-3 animate-spin rounded-full border border-white/30 border-t-white" />
                     <span>Generating...</span>
                   </>
                 ) : (

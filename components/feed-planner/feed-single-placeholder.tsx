@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { trackCTAClick } from "@/lib/analytics"
 import FreeModeUpsellModal from "./free-mode-upsell-modal"
 import { useFeedPostPolling } from "@/lib/hooks/use-feed-post-polling"
+import { Spinner } from "@/components/app-v3/loading"
 
 interface FeedSinglePlaceholderProps {
   feedId: number
@@ -481,8 +482,8 @@ export default function FeedSinglePlaceholder({
         {/* Single Image Placeholder - ONE placeholder for ONE image */}
         {hasImage ? (
           // Show generated image with download button
-          <div className="relative group">
-            <div className="aspect-9/16 overflow-hidden rounded-[20px] border border-white/15 bg-white/[0.04] backdrop-blur-xl">
+          <div className="group relative overflow-hidden rounded-[14px] border border-[#C5C6C8]/35 bg-white shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)]">
+            <div className="aspect-9/16 overflow-hidden bg-[#F1F2F2]">
               <img
                 src={displayImageUrl}
                 alt="Generated post"
@@ -501,25 +502,25 @@ export default function FeedSinglePlaceholder({
               <Button
                 onClick={async () => {
                   if (!displayImageUrl) return
-                  
+
                   setIsDownloading(true)
                   try {
                     const response = await fetch(displayImageUrl)
                     if (!response.ok) throw new Error("Failed to fetch image")
                     const blob = await response.blob()
-                    
+
                     // Mobile: Use Share API for camera roll saving (proper image, not file)
                     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                     if (isMobile && navigator.share) {
                       try {
                         const fileName = `sselfie-preview-${feedId}-${Date.now()}.png`
                         const file = new File([blob], fileName, { type: "image/png" })
-                        
+
                         const shareData: ShareData = {
                           files: [file],
                           title: "SSELFIE Preview",
                         }
-                        
+
                         if (!navigator.canShare || navigator.canShare(shareData)) {
                           await navigator.share(shareData)
                           toast({
@@ -539,7 +540,7 @@ export default function FeedSinglePlaceholder({
                         console.log("[Feed Single Placeholder] Share API failed, falling back to download:", shareError?.message)
                       }
                     }
-                    
+
                     // Fallback: Desktop or Share API not available - use download method
                     const url = window.URL.createObjectURL(blob)
                     const a = document.createElement("a")
@@ -547,12 +548,12 @@ export default function FeedSinglePlaceholder({
                     a.download = `sselfie-preview-${feedId}-${Date.now()}.png`
                     document.body.appendChild(a)
                     a.click()
-                    
+
                     setTimeout(() => {
                       window.URL.revokeObjectURL(url)
                       document.body.removeChild(a)
                     }, 100)
-                    
+
                     toast({
                       title: "Download started",
                       description: "Image saved to your device",
@@ -569,12 +570,12 @@ export default function FeedSinglePlaceholder({
                   }
                 }}
                 disabled={isDownloading}
-                className="border border-white/25 bg-white/12 text-white shadow-lg backdrop-blur-xl hover:bg-white/18"
+                className="rounded-full bg-[#0D0E10]/65 px-5 text-white backdrop-blur-sm hover:bg-[#0D0E10]/80"
                 size="sm"
               >
                 {isDownloading ? (
                   <>
-                    <span className="mr-2 h-4 w-4 rounded-full border border-white/40 border-t-white animate-spin" />
+                    <Spinner className="mr-2 h-4 w-4" />
                     Saving...
                   </>
                 ) : (
@@ -587,8 +588,8 @@ export default function FeedSinglePlaceholder({
           </div>
         ) : (
           // Show single placeholder
-          <div className="relative">
-            <div className="aspect-9/16 rounded-[20px] border border-dashed border-white/20 bg-white/[0.04] backdrop-blur-xl"></div>
+          <div className="relative overflow-hidden rounded-[14px] border border-[#C5C6C8]/35 bg-white shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)]">
+            <div className="aspect-9/16 bg-[#F1F2F2]"></div>
 
             {/* Generation button overlay - only show if NOT generating and post is ready */}
             {!isPostGenerating && post?.id && (
@@ -599,7 +600,7 @@ export default function FeedSinglePlaceholder({
                       e.stopPropagation()
                       handleGenerateImage()
                     }}
-                    className="border border-white/25 bg-white/12 text-white hover:bg-white/18 backdrop-blur-xl"
+                    className="rounded-full bg-[#0D0E10] px-6 text-white hover:opacity-90"
                     size="default"
                   >
                     Generate Image
@@ -610,20 +611,22 @@ export default function FeedSinglePlaceholder({
 
             {!isPostGenerating && !post?.id && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center space-y-2 px-4">
-                  <div className="mx-auto h-6 w-6 rounded-full border border-white/40 border-t-white animate-spin" />
-                  <div className="text-xs font-light text-white/60">Preparing your preview...</div>
+                <div className="text-center space-y-3 px-4">
+                  <Spinner className="mx-auto h-6 w-6" />
+                  <div className="text-xs font-light text-[#818283]">Preparing your preview...</div>
                 </div>
               </div>
             )}
 
             {/* Loading state - show when generating (from API call OR from post data) */}
             {isPostGenerating && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-[20px] bg-black/45 backdrop-blur-md">
+              <div className="absolute inset-0 flex items-center justify-center bg-[#F8FAFA]/90 backdrop-blur-sm">
                 <div className="text-center space-y-3 px-4 max-w-sm mx-auto">
-                  <div className="mx-auto h-8 w-8 rounded-full border border-white/40 border-t-white animate-spin" />
-                  <div className="text-sm font-medium text-white">Generating your preview feed</div>
-                  <div className="text-xs font-light text-white/65">This usually takes 1-2 minutes...</div>
+                  <Spinner className="mx-auto h-8 w-8" />
+                  <div className="font-serif text-[19px] font-light leading-tight text-[#0D0E10]">
+                    Generating your preview feed
+                  </div>
+                  <div className="text-xs font-light text-[#818283]">This usually takes 1-2 minutes...</div>
                   <Button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -631,13 +634,13 @@ export default function FeedSinglePlaceholder({
                     }}
                     disabled={!canStop || isStopping}
                     size="sm"
-                    className="border border-white/20 bg-white/10 text-white hover:bg-white/15"
+                    className="rounded-full border border-[#C5C6C8] bg-white text-[#4F5052] hover:bg-[#F1F2F2]"
                   >
                     {isStopping ? "Stopping..." : "Stop generation"}
                   </Button>
                   {isTakingLonger && (
-                    <div className="mt-4 border-t border-white/15 pt-4">
-                      <p className="text-xs font-light leading-relaxed text-white/65">
+                    <div className="mt-4 border-t border-[#C5C6C8]/50 pt-4">
+                      <p className="text-xs font-light leading-relaxed text-[#818283]">
                         This is taking longer than expected. Your photo is still processing and should be ready soon.
                       </p>
                     </div>
@@ -651,14 +654,14 @@ export default function FeedSinglePlaceholder({
         {/* Helper text and Upsell CTA */}
         <div className="mt-6 text-center space-y-4">
           <div>
-            <p className="text-xs text-white/65 font-light">
+            <p className="text-xs text-[#4F5052] font-light">
               This is a preview of your feed grid
             </p>
-            <p className="text-xs text-white/45 font-light mt-1">
+            <p className="text-xs text-[#818283] font-light mt-1">
               Get Studio for more photos, captions, and post planning
             </p>
           </div>
-          
+
           {/* "Continue Creating" button - routes to current Studio membership checkout */}
           {/* Does NOT trigger upsell modal (modal shows automatically after generation) */}
           <Button
@@ -666,7 +669,7 @@ export default function FeedSinglePlaceholder({
               trackCTAClick("feed_preview_placeholder", "Continue Creating", "/checkout/membership")
               router.push("/checkout/membership")
             }}
-            className="w-full border border-white/25 bg-white/12 text-white font-medium shadow-lg backdrop-blur-xl hover:bg-white/18 transition-all"
+            className="w-full rounded-[8px] bg-[#0D0E10] text-white font-medium hover:opacity-90 transition-all"
             size="default"
           >
             Continue Creating

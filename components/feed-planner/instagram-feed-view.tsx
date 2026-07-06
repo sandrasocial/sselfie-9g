@@ -318,7 +318,7 @@ export default function InstagramFeedView({
         sessionStorage.setItem(`warned-no-prediction-${feedId}`, 'true')
       }
     }
-  }, [feedData.feed?.created_at, feedData.posts, feedId])
+  }, [feedData?.feed?.created_at, feedData?.posts, feedId])
 
   // Handle error responses
   if (feedData?.error) {

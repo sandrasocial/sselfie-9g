@@ -32,54 +32,56 @@ export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsPro
   }, [isFreeUser, activeTab, onTabChange])
 
   const tabClass = (tab: FeedTab) =>
-    `flex min-h-[34px] shrink-0 items-center justify-center rounded-[6px] px-3 py-1.5 transition-colors sm:min-h-[36px] ${
+    `min-h-9 shrink-0 rounded-full border px-3 text-[10px] uppercase tracking-[0.14em] transition-colors ${
       activeTab === tab
-        ? "bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)] shadow-[0_8px_18px_rgba(61,56,48,0.12)]"
-        : "text-[color:var(--app-text-secondary)] hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)]"
+        ? "border-[#0D0E10] bg-[#0D0E10] text-white"
+        : "border-[#C5C6C8] bg-white text-[#4F5052] hover:border-[#0D0E10]/40"
     }`
 
   return (
-    <div className="mx-3 mb-3 flex items-center gap-1 overflow-x-auto rounded-[12px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.72)] p-1.5 shadow-[0_12px_32px_rgba(61,56,48,0.06)] backdrop-blur-[18px]">
-      <button
-        onClick={() => onTabChange("grid")}
-        className={tabClass("grid")}
-      >
-        <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Grid</span>
-      </button>
-      
-      {/* For free users: Show Captions tab, for paid/membership: Show Posts tab */}
-      {isFreeUser ? (
+    <div className="mb-3 overflow-x-auto px-3 [scrollbar-width:none]">
+      <div className="flex min-w-max gap-2">
         <button
-          onClick={() => onTabChange("captions")}
-          className={tabClass("captions")}
+          onClick={() => onTabChange("grid")}
+          className={tabClass("grid")}
         >
-          <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Captions</span>
+          Grid
         </button>
-      ) : (
+
+        {/* For free users: Show Captions tab, for paid/membership: Show Posts tab */}
+        {isFreeUser ? (
+          <button
+            onClick={() => onTabChange("captions")}
+            className={tabClass("captions")}
+          >
+            Captions
+          </button>
+        ) : (
+          <button
+            onClick={() => onTabChange("posts")}
+            className={tabClass("posts")}
+          >
+            Posts
+          </button>
+        )}
+
+        {showStrategyTab && (
+          <button
+            onClick={() => onTabChange("strategy")}
+            className={tabClass("strategy")}
+          >
+            Plan
+          </button>
+        )}
+
+        {/* Brand Pillars tab - show for all users who have completed onboarding */}
         <button
-          onClick={() => onTabChange("posts")}
-          className={tabClass("posts")}
+          onClick={() => onTabChange("pillars")}
+          className={tabClass("pillars")}
         >
-          <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Posts</span>
+          Ideas
         </button>
-      )}
-      
-      {showStrategyTab && (
-        <button
-          onClick={() => onTabChange("strategy")}
-          className={tabClass("strategy")}
-        >
-          <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Plan</span>
-        </button>
-      )}
-      
-      {/* Brand Pillars tab - show for all users who have completed onboarding */}
-      <button
-        onClick={() => onTabChange("pillars")}
-        className={tabClass("pillars")}
-      >
-        <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Ideas</span>
-      </button>
+      </div>
     </div>
   )
 }

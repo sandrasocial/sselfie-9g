@@ -149,7 +149,7 @@ export default function FeedGrid({
   const showGenerateButton = access?.canGenerateImages ?? false
   // Phase 4: Changed from grid-cols-3 (9 posts) to grid-cols-4 (12 posts) for paid blueprint
   return (
-    <div className="grid grid-cols-3 gap-1 overflow-hidden rounded-[8px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-glass-border)] p-1">
+    <div className="grid grid-cols-3 gap-1 overflow-hidden rounded-[14px] border border-[#C5C6C8]/35 bg-[#F8FAFA] p-1 shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)]">
       {posts.map((post: any, index: number) => (
         <FeedGridItem
           key={post.id}

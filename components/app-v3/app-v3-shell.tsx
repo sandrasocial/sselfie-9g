@@ -1,12 +1,16 @@
 "use client"
 
 // SSELFIE Studio 3.0 - app shell + product navigation (MAYA-REBUILD-05 Phase H.2).
-// Maya is the product, not a tab. She is woven through every surface. The nav is the five
-// places content lives: Create · Photos · Content · Library · Account (BRIDGE-01 Phase C:
-// the photo gallery became "Photos" and "Library" is now everything she owns - courses,
-// products, drops). No standalone "Maya" tab, and no link to the legacy Instagram
-// feed-planner (that planner mentality is the old SSELFIE; the live Feed Planner stays
-// untouched for members on /studio).
+// Maya is the product, not a tab. She is woven through every surface. The nav is the six
+// places content lives: Create · Photos · Content · Calendar · Library · Account (BRIDGE-01
+// Phase C: the photo gallery became "Photos" and "Library" is now everything she owns -
+// courses, products, drops). No standalone "Maya" tab.
+// Calendar (2026-07-06, Feed Planner Phase 2): the live Feed Planner product now lives here
+// too, in the same visual language as the rest of the shell, gated the same way Create is
+// (!limited - Suite members already have full Feed Planner entitlement via the existing
+// isMembership/hasFullAccess check in lib/feed-planner/access-control.ts). The standalone
+// /feed-planner route stays fully intact for any Blueprint-only buyer who isn't a Suite
+// member - this addition changes nothing about how that route works.
 // Isolated tree: imports only from components/app-v3/ + lib/. No components/sselfie/.
 
 import { useEffect, useState } from "react"
@@ -16,6 +20,7 @@ import { MayaConcierge } from "./maya-concierge"
 import { MayaFloatingLauncher } from "./maya-floating-launcher"
 import { GalleryView } from "./gallery-view"
 import { ContentView } from "./content-view"
+import { FeedPlannerView } from "./feed-planner-view"
 import { LibraryView } from "./library-view"
 import { AccountView } from "./account-view"
 import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
@@ -43,6 +48,7 @@ const NAV: { id: AppV3Section; label: string }[] = [
   { id: "create", label: "Create" },
   { id: "photos", label: "Photos" },
   { id: "content", label: "Content" },
+  { id: "calendar", label: "Calendar" },
   { id: "library", label: "Library" },
   { id: "account", label: "Account" },
 ]
@@ -233,6 +239,31 @@ function ShellInner({
           onBrowse={() => goToSection("photos")}
         />
       )}
+      {section === "calendar" &&
+        (limited ? (
+          <div className="mx-auto max-w-3xl px-5 py-10">
+            <div className="rounded-[8px] border border-[#0D0E10] bg-white p-5 shadow-sm">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+                SSELFIE SUITE
+              </p>
+              <h2 className="mt-2 font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
+                Your Calendar is waiting.
+              </h2>
+              <p className="mt-1.5 text-[14px] leading-relaxed text-[#4F5052]">
+                Members plan a full month of posts, captions, and strategy from one selfie.
+                Cancel anytime.
+              </p>
+              <a
+                href="/checkout/membership?interval=month&source=app_limited_calendar"
+                className="mt-4 inline-block rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728]"
+              >
+                Join SSELFIE SUITE
+              </a>
+            </div>
+          </div>
+        ) : (
+          <FeedPlannerView />
+        ))}
       {section === "library" && <LibraryView />}
       {section === "account" && (
         <AccountView
