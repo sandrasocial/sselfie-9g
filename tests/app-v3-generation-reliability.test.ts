@@ -36,6 +36,21 @@ describe("App V3 image reliability persistence", () => {
     expect(editRoute).toContain("aiImageId: insertedId")
   })
 
+  it("never trusts a client-sent parent image id: variant_of is ownership-scoped in SQL", () => {
+    const bakeRoute = read("app/api/app-v3/maya/bake-text/route.ts")
+    const editRoute = read("app/api/app-v3/maya/edit/route.ts")
+
+    expect(bakeRoute).toContain(
+      "(SELECT id FROM ai_images WHERE id = ${cleanImageId} AND user_id = ${neonUser.id})"
+    )
+    expect(editRoute).toContain(
+      "(SELECT id FROM ai_images WHERE id = ${sourceImageId} AND user_id = ${neonUser.id})"
+    )
+    // The raw client value must never be inserted directly as variant_of.
+    expect(bakeRoute).not.toContain("${imageTitle}, ${cleanImageId},")
+    expect(editRoute).not.toContain("${imageTitle}, ${sourceImageId},")
+  })
+
   it("gallery data exposes title and variant metadata for the Photos tab", () => {
     const images = read("lib/data/images.ts")
     const assets = read("lib/app-v3/gallery-assets.ts")

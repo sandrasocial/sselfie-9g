@@ -283,12 +283,17 @@ export async function POST(request: NextRequest) {
 
     let insertedId: number | null = null
     try {
+      // variant_of resolves through an ownership-scoped subquery: cleanImageId comes from
+      // the client, and a raw insert would let any member link their row to another
+      // member's image id. Not owned (or missing) -> NULL, insert still succeeds.
       const inserted = await sql`
         INSERT INTO ai_images (
           user_id, image_url, title, variant_of, prompt, generated_prompt, prediction_id,
           generation_status, source, category, created_at
         ) VALUES (
-          ${neonUser.id}, ${blob.url}, ${imageTitle}, ${cleanImageId}, ${spec.headline}, ${prompt.slice(0, 2000)},
+          ${neonUser.id}, ${blob.url}, ${imageTitle},
+          (SELECT id FROM ai_images WHERE id = ${cleanImageId} AND user_id = ${neonUser.id}),
+          ${spec.headline}, ${prompt.slice(0, 2000)},
           ${"app-v3-bake-" + Date.now()}, 'completed', 'openai', ${spec.format || "text-bake"}, NOW()
         )
         RETURNING id
