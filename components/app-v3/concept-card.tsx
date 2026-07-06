@@ -45,8 +45,9 @@ interface ConceptCardProps {
   /** Open true Edit Mode on the finished image. */
   onEdit?: () => void
   /** Feed Planner Phase 2c: Maya saves this photo to the member's content calendar herself,
-   *  picking the slot - resolves with the day it landed on for the confirmation label. */
-  onAddToCalendar?: () => Promise<{ scheduledAt: string } | null>
+   *  picking the slot - resolves with the day it landed on for the confirmation label.
+   *  "forbidden" = this plan has no Calendar (403); the action and offer hide themselves. */
+  onAddToCalendar?: () => Promise<{ scheduledAt: string } | "forbidden" | null>
   /** Replaces the single idle button when a guided picker should own the next step. */
   idleAction?: ReactNode
   /** Extra guided next steps after a result is created. */
@@ -102,7 +103,9 @@ export function ConceptCard({
   const firstBaked = gen.bakedImageUrls?.[0] ?? null
   const suggestedText = buildSuggestedTextCopy(gen.textOverlaySpecs)
   const [copiedText, setCopiedText] = useState(false)
-  const [calendarStatus, setCalendarStatus] = useState<"idle" | "saving" | "saved" | "error">("idle")
+  const [calendarStatus, setCalendarStatus] = useState<
+    "idle" | "saving" | "saved" | "error" | "unavailable"
+  >("idle")
   const [savedDateLabel, setSavedDateLabel] = useState<string | null>(null)
 
   const handleAddToCalendar = async () => {
@@ -110,6 +113,11 @@ export function ConceptCard({
     setCalendarStatus("saving")
     try {
       const result = await onAddToCalendar()
+      if (result === "forbidden") {
+        // Her plan doesn't include the calendar - hide the whole affordance, don't tease it.
+        setCalendarStatus("unavailable")
+        return
+      }
       if (!result) throw new Error("no result")
       const date = new Date(`${result.scheduledAt}T00:00:00Z`)
       setSavedDateLabel(date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }))
@@ -118,6 +126,7 @@ export function ConceptCard({
       setCalendarStatus("error")
     }
   }
+  const calendarAvailable = !!onAddToCalendar && calendarStatus !== "unavailable"
   const requestedBakedText = gen.textOverlayMode === "with-text"
   const hasAnyBakedText = Boolean(gen.bakedImageUrls?.some(Boolean))
   const bakeMissing = requestedBakedText && Boolean(firstOverlay) && !hasAnyBakedText
@@ -205,7 +214,7 @@ export function ConceptCard({
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#818283]">
               {isVideoDone ? "Saved to your videos" : "Saved to your gallery"}
             </p>
-            {onAddToCalendar && !isCarousel && !isVideoDone && calendarStatus === "idle" && (
+            {calendarAvailable && !isCarousel && !isVideoDone && calendarStatus === "idle" && (
               <p className="text-[13px] leading-relaxed text-[#4F5052]">
                 This would work well for your feed. Want me to save it to your calendar and get
                 the caption ready for you?
@@ -288,7 +297,7 @@ export function ConceptCard({
                   Edit this photo
                 </button>
               )}
-              {onAddToCalendar && !isCarousel && !isVideoDone && (
+              {calendarAvailable && !isCarousel && !isVideoDone && (
                 calendarStatus === "saved" ? (
                   <span className="inline-flex min-h-11 items-center justify-center rounded-[8px] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052]">
                     Added · {savedDateLabel}

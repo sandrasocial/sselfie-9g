@@ -19,10 +19,11 @@ export function useFeedDragDrop(
   // Include image_url so we detect generated images, and content_pillar/caption so we detect
   // Maya's-idea edits (Feed Planner Phase 2b: "Different idea", caption enhance/regenerate) -
   // without this, reorderedPosts goes stale after those actions even though the SWR cache
-  // behind `posts` already has the fresh row.
+  // behind `posts` already has the fresh row. Caption participates by LENGTH only: full
+  // captions run ~700 chars each and this key rebuilds every render.
   const prevPostsRef = useRef<string>('')
   const postsKey = posts
-    .map((p: any) => `${p.id}-${p.position}-${p.image_url || ''}-${p.content_pillar || ''}-${p.caption || ''}`)
+    .map((p: any) => `${p.id}-${p.position}-${p.image_url || ''}-${p.content_pillar || ''}-${p.caption?.length || 0}`)
     .join(',')
 
   // Initialize reorderedPosts when posts change (only if not currently dragging)

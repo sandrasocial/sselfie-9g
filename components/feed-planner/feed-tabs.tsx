@@ -44,6 +44,10 @@ export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsPro
         : "border-[#C5C6C8] bg-white text-[#4F5052] hover:border-[#0D0E10]/40"
     }`
 
+  // Paid/membership collapsed to Grid-only above - a switcher with one pill is dead chrome,
+  // so render nothing at all for them. (Placed after the hooks; Rules of Hooks stay intact.)
+  if (!isFreeUser) return null
+
   return (
     <div className="mb-3 overflow-x-auto px-3 [scrollbar-width:none]">
       <div className="flex min-w-max gap-2">

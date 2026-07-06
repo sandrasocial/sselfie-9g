@@ -22,20 +22,14 @@ import { CURATED_FEED_STYLE_MAP } from "@/lib/style-presets"
 import {
   validateFeedMonthPlan,
   writeAutoDraft,
-  hasPlanForMonth,
+  getMonthPlanState,
   currentPeriodMonth,
 } from "@/lib/feed-planner/write-auto-draft"
 import { sql } from "@/lib/db/client"
+import { extractJson } from "@/lib/ai/extract-json"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
-
-function extractJson(s: string): string {
-  const t = s.replace(/```(?:json)?/gi, "").trim()
-  const start = t.indexOf("{")
-  const end = t.lastIndexOf("}")
-  return start >= 0 && end > start ? t.slice(start, end + 1) : t
-}
 
 export async function POST() {
   const { user, error: authError } = await getAuthenticatedUser()
@@ -56,10 +50,14 @@ export async function POST() {
     }
 
     // Hard guard, re-checked under the lock: never draft twice, never touch a month that
-    // already has a plan (even a manually-created one with real generated images).
-    if (await hasPlanForMonth(neonUser.id, periodMonth)) {
+    // already has a real plan (even a manually-created one with real generated images). A
+    // place-photo STUB (she saved a chat photo before any plan existed) is the one exception:
+    // the draft fills that layout in around her photo instead of creating a competing one.
+    const monthState = await getMonthPlanState(neonUser.id, periodMonth)
+    if (monthState.state === "planned") {
       return NextResponse.json({ created: false, reason: "plan_exists" })
     }
+    const stubLayoutId = monthState.state === "stub" ? (monthState.layoutId ?? undefined) : undefined
 
     const [brandContext, personalBrand, memory] = await Promise.all([
       getUserContextForMaya(user.id),
@@ -124,6 +122,7 @@ export async function POST() {
       styleId: resolvedStyle.styleId,
       variationId: resolvedStyle.variationId,
       grid,
+      existingLayoutId: stubLayoutId,
     })
 
     return NextResponse.json({ created: true, feedLayoutId, postCount: postIds.length })

@@ -12,6 +12,7 @@ import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getMemory } from "@/lib/app-v3/maya/memory-store"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
 import { sql } from "@/lib/db/client"
+import { extractJson } from "@/lib/ai/extract-json"
 import type { OutputFormat } from "@/components/app-v3/types"
 
 export const dynamic = "force-dynamic"
@@ -69,13 +70,6 @@ function scorePrompt(promptText: string, intent: Intent): number {
   return (promptText.match(IMAGE_CUES[intent]) || []).length
 }
 
-// Pull the JSON object out of the model's reply even if it wrapped it in prose or code fences.
-function extractJson(s: string): string {
-  const t = s.replace(/```(?:json)?/gi, "").trim()
-  const start = t.indexOf("{")
-  const end = t.lastIndexOf("}")
-  return start >= 0 && end > start ? t.slice(start, end + 1) : t
-}
 
 export async function GET() {
   const { user, error: authError } = await getAuthenticatedUser()

@@ -3327,6 +3327,7 @@ export function MayaConcierge({
                                         conceptTitle: concept.title,
                                       }),
                                     })
+                                    if (res.status === 403) return "forbidden" as const
                                     if (!res.ok) return null
                                     const data = await res.json()
                                     return data?.scheduledAt ? { scheduledAt: data.scheduledAt } : null

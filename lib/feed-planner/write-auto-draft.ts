@@ -96,6 +96,9 @@ export interface WriteAutoDraftInput {
   styleId: number
   variationId: number | null
   grid: readonly string[]
+  /** Fill INTO this existing layout (a place-photo stub for the month) instead of creating a
+   *  new one. Days already occupied by her posts are skipped, her rows are never touched. */
+  existingLayoutId?: number
 }
 
 export interface WriteAutoDraftResult {
@@ -104,36 +107,65 @@ export interface WriteAutoDraftResult {
 }
 
 export async function writeAutoDraft(input: WriteAutoDraftInput): Promise<WriteAutoDraftResult> {
-  const { userId, periodMonth, plan, feedStyle, styleId, variationId } = input
+  const { userId, periodMonth, plan, feedStyle, styleId, variationId, existingLayoutId } = input
 
-  const [layoutRow] = await sql`
-    INSERT INTO feed_layouts (
-      user_id, title, description, layout_type, status,
-      feed_style, feed_style_variation_id, period_month,
-      overall_vibe, strategic_rationale
-    ) VALUES (
-      ${userId}, ${`Feed plan - ${periodMonth}`}, ${plan.themeSummary}, 'grid_3x3', 'draft',
-      ${feedStyle}, ${variationId}, ${periodMonth},
-      ${plan.themeSummary}, ${plan.schedulingRationale}
+  let feedLayoutId: number
+  let positionOffset = 0
+  let occupiedDates = new Set<string>()
+
+  if (existingLayoutId) {
+    // Stub created by place-photo (she saved a chat photo before any plan existed). Fill the
+    // month's plan in around what's already there: update the plan metadata, then only add
+    // posts on days she hasn't already used.
+    feedLayoutId = existingLayoutId
+    await sql`
+      UPDATE feed_layouts
+      SET description = ${plan.themeSummary}, overall_vibe = ${plan.themeSummary},
+          strategic_rationale = ${plan.schedulingRationale}
+      WHERE id = ${feedLayoutId} AND user_id = ${userId}
+    `
+    const existingPosts = await sql`
+      SELECT position, scheduled_at FROM feed_posts WHERE feed_layout_id = ${feedLayoutId}
+    `
+    positionOffset = existingPosts.reduce((max: number, p: any) => Math.max(max, Number(p.position) || 0), 0)
+    occupiedDates = new Set(
+      existingPosts
+        .map((p: any) => (p.scheduled_at ? new Date(p.scheduled_at).toISOString().slice(0, 10) : null))
+        .filter((d: string | null): d is string => !!d),
     )
-    RETURNING id
-  `
-  const feedLayoutId = Number(layoutRow.id)
+  } else {
+    const [layoutRow] = await sql`
+      INSERT INTO feed_layouts (
+        user_id, title, description, layout_type, status,
+        feed_style, feed_style_variation_id, period_month,
+        overall_vibe, strategic_rationale
+      ) VALUES (
+        ${userId}, ${`Feed plan - ${periodMonth}`}, ${plan.themeSummary}, 'grid_3x3', 'draft',
+        ${feedStyle}, ${variationId}, ${periodMonth},
+        ${plan.themeSummary}, ${plan.schedulingRationale}
+      )
+      RETURNING id
+    `
+    feedLayoutId = Number(layoutRow.id)
+  }
 
   // The shared `sql` client (lib/db/client.ts) wraps the raw neon client as a plain tagged-
   // template function and does not forward `.transaction`/`.query` - so these are sequential
   // inserts, not an atomic batch, matching how the rest of lib/feed-planner already writes
-  // multi-row data. `feed_posts.feed_layout_id` has ON DELETE CASCADE, so deleting the layout
-  // row on any failure below cleans up every post inserted so far in the same call.
+  // multi-row data.
+  const postIds: number[] = []
   try {
-    const postIds: number[] = []
+    let insertIndex = 0
     for (const post of plan.posts) {
+      if (occupiedDates.has(post.plannedDate)) continue
+      insertIndex += 1
+      const position = positionOffset + insertIndex
       const [row] = await sql`
         INSERT INTO feed_posts (
           feed_layout_id, user_id, position, post_type, caption,
           content_pillar, scheduled_at, generation_status
         ) VALUES (
-          ${feedLayoutId}, ${userId}, ${post.position}, ${postTypeForPosition(input.grid, post.position)},
+          ${feedLayoutId}, ${userId}, ${position}, ${postTypeForPosition(input.grid, position)},
           ${post.caption}, ${post.contentPillar}, ${post.plannedDate}, 'pending'
         )
         RETURNING id
@@ -142,39 +174,66 @@ export async function writeAutoDraft(input: WriteAutoDraftInput): Promise<WriteA
     }
     return { feedLayoutId, postIds }
   } catch (error) {
-    // Compensating cleanup: never leave an orphaned feed_layouts row with a partial post set.
-    await sql`DELETE FROM feed_layouts WHERE id = ${feedLayoutId} AND user_id = ${userId}`.catch(() => {})
+    // Compensating cleanup. Fresh layout: drop it (ON DELETE CASCADE clears its posts). Stub
+    // fill-in: only remove the rows THIS call inserted - her placed photo must survive.
+    if (existingLayoutId) {
+      for (const id of postIds) {
+        await sql`DELETE FROM feed_posts WHERE id = ${id}`.catch(() => {})
+      }
+    } else {
+      await sql`DELETE FROM feed_layouts WHERE id = ${feedLayoutId} AND user_id = ${userId}`.catch(() => {})
+    }
     throw error
   }
 }
 
 /**
- * True if this user already has a plan for this month - the auto-draft must never run again.
- * Covers two cases: (1) a plan this feature itself already drafted (period_month is set), and
- * (2) a legacy/manual plan (period_month is NULL, since it predates this column) that was
- * created this calendar month and already has real content - a generated image or a
- * generation in flight. Case (2) matters because a legacy row is otherwise invisible to a
- * plain period_month match, and silently drafting a second plan on top of one with real
- * generated images is exactly the overwrite this guard exists to prevent.
+ * How this month stands for the auto-draft:
+ * - "planned": a real plan exists (drafted with strategic_rationale set, or a legacy/manual
+ *   plan from this month that already has real content). Never draft again.
+ * - "stub": place-photo created a bare month layout (strategic_rationale IS NULL) because she
+ *   saved a chat photo before any plan existed. The draft should FILL this layout in around
+ *   her photo, not create a competing one.
+ * - "none": nothing for this month - draft fresh.
  */
-export async function hasPlanForMonth(userId: number | string, periodMonth: string): Promise<boolean> {
-  const rows = await sql`
+export async function getMonthPlanState(
+  userId: number | string,
+  periodMonth: string,
+): Promise<{ state: "planned" | "stub" | "none"; layoutId: number | null }> {
+  const [thisMonth] = await sql`
+    SELECT id, strategic_rationale FROM feed_layouts
+    WHERE user_id = ${userId} AND period_month = ${periodMonth}
+    ORDER BY created_at ASC
+    LIMIT 1
+  `
+  if (thisMonth) {
+    const isStub = thisMonth.strategic_rationale == null
+    return { state: isStub ? "stub" : "planned", layoutId: Number(thisMonth.id) }
+  }
+
+  // Legacy/manual plan (period_month IS NULL, predates the column) created this calendar
+  // month with real content - a generated image or a generation in flight. Silently drafting
+  // a second plan on top of one with real generated images is exactly the overwrite this
+  // guard exists to prevent.
+  const legacy = await sql`
     SELECT fl.id
     FROM feed_layouts fl
     WHERE fl.user_id = ${userId}
-      AND (
-        fl.period_month = ${periodMonth}
-        OR (
-          fl.period_month IS NULL
-          AND to_char(fl.created_at, 'YYYY-MM') = ${periodMonth}
-          AND EXISTS (
-            SELECT 1 FROM feed_posts fp
-            WHERE fp.feed_layout_id = fl.id
-              AND (fp.image_url IS NOT NULL OR fp.generation_status = 'generating')
-          )
-        )
+      AND fl.period_month IS NULL
+      AND to_char(fl.created_at, 'YYYY-MM') = ${periodMonth}
+      AND EXISTS (
+        SELECT 1 FROM feed_posts fp
+        WHERE fp.feed_layout_id = fl.id
+          AND (fp.image_url IS NOT NULL OR fp.generation_status = 'generating')
       )
     LIMIT 1
   `
-  return rows.length > 0
+  if (legacy.length > 0) return { state: "planned", layoutId: Number(legacy[0].id) }
+  return { state: "none", layoutId: null }
+}
+
+/** True if this user already has a plan for this month - kept as the simple yes/no wrapper. */
+export async function hasPlanForMonth(userId: number | string, periodMonth: string): Promise<boolean> {
+  const { state } = await getMonthPlanState(userId, periodMonth)
+  return state === "planned"
 }

@@ -14,13 +14,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { createMayaOpenRouterModel, getMayaMaxTokensForTask } from "@/lib/maya/openrouter"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { sql } from "@/lib/db/client"
-
-function extractJson(s: string): string {
-  const t = s.replace(/```(?:json)?/gi, "").trim()
-  const start = t.indexOf("{")
-  const end = t.lastIndexOf("}")
-  return start >= 0 && end > start ? t.slice(start, end + 1) : t
-}
+import { extractJson } from "@/lib/ai/extract-json"
 
 export async function POST(
   req: NextRequest,

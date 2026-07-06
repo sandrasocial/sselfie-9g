@@ -10,6 +10,9 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
 import { currentPeriodMonth, postTypeForPosition } from "@/lib/feed-planner/write-auto-draft"
 import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
+import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
+import { resolveFeedStyleForUser } from "@/lib/feed-planner/resolve-feed-style"
+import { getUserPersonalBrand } from "@/lib/data/maya"
 import { CURATED_FEED_STYLE_MAP, type CuratedFeedStyleName } from "@/lib/style-presets"
 
 export const dynamic = "force-dynamic"
@@ -36,6 +39,13 @@ export async function POST(req: Request) {
   }
 
   try {
+    // Same entitlement that gates the Calendar tab itself - a limited/free session must not
+    // be able to create calendar rows it can't see. 403 tells the card to hide the action.
+    const access = await getFeedPlannerAccess(user.id)
+    if (!access.isMembership && !access.isPaidBlueprint) {
+      return NextResponse.json({ error: "Calendar not included in this plan" }, { status: 403 })
+    }
+
     const periodMonth = currentPeriodMonth()
 
     // Prefer this month's auto-drafted plan; fall back to the user's latest plan of any month
@@ -47,7 +57,7 @@ export async function POST(req: Request) {
         LIMIT 1
       `.catch(() => [])) as any[]
 
-    const feedLayout =
+    let feedLayout =
       layout ||
       (
         await sql`
@@ -58,40 +68,60 @@ export async function POST(req: Request) {
         `
       )[0]
 
+    // No plan at all yet (she generated a photo before ever opening Calendar): create a
+    // month stub instead of dead-ending. strategic_rationale stays NULL - that marks it as a
+    // stub, so the auto-draft route knows it may still fill this month in around her photo.
     if (!feedLayout) {
-      return NextResponse.json({ error: "No feed plan found for this account" }, { status: 404 })
+      const personalBrand = await getUserPersonalBrand(neonUser.id).catch(() => null)
+      const style = await resolveFeedStyleForUser(personalBrand)
+      const [stub] = await sql`
+        INSERT INTO feed_layouts (
+          user_id, title, layout_type, status, feed_style, feed_style_variation_id, period_month
+        ) VALUES (
+          ${neonUser.id}, ${`Feed plan - ${periodMonth}`}, 'grid_3x3', 'draft',
+          ${style.feedStyle}, ${style.variationId}, ${periodMonth}
+        )
+        RETURNING id, feed_style
+      `
+      feedLayout = stub
     }
 
     const feedLayoutId = Number(feedLayout.id)
 
+    // Only today or future days count as open - never quietly fill a day that already passed.
     const [openSlot] = await sql`
       SELECT id, position, scheduled_at, content_pillar, caption
       FROM feed_posts
-      WHERE feed_layout_id = ${feedLayoutId} AND image_url IS NULL
-      ORDER BY scheduled_at ASC NULLS LAST, position ASC
+      WHERE feed_layout_id = ${feedLayoutId} AND image_url IS NULL AND scheduled_at >= CURRENT_DATE
+      ORDER BY scheduled_at ASC, position ASC
       LIMIT 1
     `
 
     let targetPostId: number
+    let targetPosition: number
     let scheduledAt: string
     let contentPillar: string | null
     let caption: string | null
 
     if (openSlot) {
       targetPostId = Number(openSlot.id)
+      targetPosition = Number(openSlot.position)
       scheduledAt = new Date(openSlot.scheduled_at).toISOString().slice(0, 10)
       contentPillar = openSlot.content_pillar
       caption = openSlot.caption
     } else {
-      // Month's full - extend it by one day past the latest scheduled post (or today, if the
-      // plan somehow has none), rather than failing the action.
+      // No open future day - extend the plan by one day past the latest scheduled post, but
+      // never into the past (a stub or an old plan may have its latest post days ago).
       const [latest] = await sql`
         SELECT MAX(position) AS max_position, MAX(scheduled_at) AS max_date
         FROM feed_posts
         WHERE feed_layout_id = ${feedLayoutId}
       `
       const nextPosition = Number(latest?.max_position || 0) + 1
-      scheduledAt = latest?.max_date ? addDays(latest.max_date, 1) : new Date().toISOString().slice(0, 10)
+      const today = new Date().toISOString().slice(0, 10)
+      const dayAfterLatest = latest?.max_date ? addDays(latest.max_date, 1) : today
+      scheduledAt = dayAfterLatest > today ? dayAfterLatest : today
+      targetPosition = nextPosition
       contentPillar = typeof conceptTitle === "string" && conceptTitle.trim() ? conceptTitle.trim() : "From your chat"
       caption = null
 
@@ -148,7 +178,7 @@ export async function POST(req: Request) {
       WHERE id = ${targetPostId}
     `
 
-    return NextResponse.json({ position: (openSlot?.position ?? null), scheduledAt, caption })
+    return NextResponse.json({ position: targetPosition, scheduledAt, caption })
   } catch (error) {
     console.error("[place-photo] failed:", error)
     return NextResponse.json({ error: "Failed to save to calendar" }, { status: 500 })

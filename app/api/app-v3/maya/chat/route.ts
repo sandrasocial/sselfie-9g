@@ -955,6 +955,35 @@ export async function POST(req: Request) {
       }
     }
 
+    // Feed Planner Phase 2c: Maya knows the month plan, so her photo concepts can lean toward
+    // the next open day's theme and the plan's one feed style - a cohesive grid without the
+    // member managing anything. Best-effort, one query pair; never blocks chat. Member
+    // sessions only (admin Maya plans Sandra's business content, not a member calendar).
+    if (memoryUserId && !isAdminSession) {
+      try {
+        const [planLayout] = await sql`
+          SELECT id, feed_style FROM feed_layouts
+          WHERE user_id = ${memoryUserId}
+          ORDER BY created_at DESC
+          LIMIT 1
+        `
+        if (planLayout) {
+          const [nextOpen] = await sql`
+            SELECT scheduled_at, content_pillar FROM feed_posts
+            WHERE feed_layout_id = ${planLayout.id} AND image_url IS NULL AND scheduled_at >= CURRENT_DATE
+            ORDER BY scheduled_at ASC
+            LIMIT 1
+          `
+          const slotLine = nextOpen
+            ? `Her next open calendar day is ${new Date(nextOpen.scheduled_at).toISOString().slice(0, 10)}${nextOpen.content_pillar ? ` with the planned theme "${nextOpen.content_pillar}"` : ""}.`
+            : "Every planned day this month already has a photo."
+          system = `${system}\n\n## HER CONTENT CALENDAR\nShe has a content calendar you drafted for her${planLayout.feed_style ? ` in the "${planLayout.feed_style}" feed style` : ""}. ${slotLine} When she creates a single photo without a specific ask, lean your concepts toward that theme and keep the feed style world consistent so her grid stays cohesive. When a photo she loves is done, the card under it shows an "Add to calendar" button - if she asks you to save or schedule a photo, tell her to tap that button (you cannot place it yourself). To SHOW her the plan, call show_feed_plan.`
+        }
+      } catch (e) {
+        console.error("[app-v3 maya chat] calendar context skipped:", e)
+      }
+    }
+
     // SUITE-UX-02 member pulse: behavior events only (Admin Data Contract), fail-open,
     // admin sessions tagged so the weekly aggregate can exclude Sandra's own use.
     const logBehavior = (eventName: string, properties: Record<string, unknown>) => {
