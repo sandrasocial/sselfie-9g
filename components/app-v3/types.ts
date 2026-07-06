@@ -165,6 +165,10 @@ export interface ConciergeContextValue {
   open: () => void
   /** Start a clean guided Maya thread instead of restoring the active draft. */
   openFresh: () => void
+  /** Open the drawer WITH the chat-history list showing: "continue" means picking a real
+   * past thread, not just re-showing whatever is in memory. Increments on every request. */
+  openHistory: () => void
+  historyRequestId: number
   /** Open the concierge with a chosen aesthetic preloaded (the Handoff). */
   openWithAesthetic: (aesthetic: Aesthetic, opts?: OpenConciergeOptions) => void
   /** Start a clean thread while keeping the active reference image available. */

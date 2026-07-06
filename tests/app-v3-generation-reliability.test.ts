@@ -141,7 +141,8 @@ describe("Maya style chooser slice", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
     expect(inline).toContain("Use my inspiration")
-    expect(inline).toContain("Let Maya decide")
+    // Renamed 2026-07-06 (UX audit #4): a preview, not a blind commitment.
+    expect(inline).toContain("Not sure? Let Maya suggest looks")
     expect(inline).toContain("onUseInspiration")
     expect(inline).toContain("onLetMayaDecide")
 

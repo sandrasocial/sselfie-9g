@@ -91,6 +91,47 @@ describe("anti-copy-paste realism (both directions)", () => {
   })
 })
 
+describe("QA open-list build (2026-07-06)", () => {
+  it("the credit balance is visible in the Maya drawer and stays fresh after renders", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    expect(concierge).toContain("creditBalance")
+    expect(concierge).toContain('fetch("/api/app-v3/account")')
+    expect(concierge).toContain("credits`")
+    // Every generation response refreshes it via the shared depletion handler.
+    expect(concierge).toContain("if (typeof balance === \"number\") setCreditBalance(balance)")
+  })
+
+  it("Continue history opens the real chat list, not just the in-memory drawer", () => {
+    const context = read("components/app-v3/concierge-context.tsx")
+    const launcher = read("components/app-v3/maya-floating-launcher.tsx")
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    expect(context).toContain("openHistory")
+    expect(context).toContain("historyRequestId")
+    expect(launcher).toContain("openHistory()")
+    expect(concierge).toContain("lastHistoryRequestRef")
+    expect(concierge).toContain("setHistoryOpen(true)")
+  })
+
+  it("Maya suggests looks as taps BEFORE planning anything", () => {
+    const route = read("app/api/app-v3/maya/chat/route.ts")
+    expect(route).toContain("MAYA SUGGESTS LOOKS")
+    expect(route).toContain('body?.aestheticId === "maya-decides"')
+    const inline = read("components/app-v3/maya-inline-components.tsx")
+    expect(inline).toContain("You choose before anything is")
+  })
+
+  it("legacy members are told their trained model came with them", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    expect(concierge).toContain("Your trained model from Studio came with you.")
+  })
+
+  it("without a selfie the selfie card leads Create; with one, the typed start leads", () => {
+    const frontDoor = read("components/app-v3/visual-front-door.tsx")
+    expect(frontDoor).toContain("{!hasSelfie && (")
+    expect(frontDoor).toContain("{hasSelfie && (")
+  })
+})
+
 describe("activation clarity (first-session audit quick wins)", () => {
   it("the first-photo CTA says what it is and what it costs", () => {
     const card = read("components/app-v3/concept-card.tsx")

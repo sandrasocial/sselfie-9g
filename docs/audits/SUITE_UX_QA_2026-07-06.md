@@ -18,14 +18,14 @@ Guard tests: `tests/maya-session-and-inspiration-qa.test.ts`.*
 | 6 | Reference manager had three exit buttons (Close/Done/Continue) at the most fragile moment. | One way forward: "Continue with Maya" (top Close covers leaving). |
 | 7 | No identity-safety reassurance at the upload button. | Trust line at the button: "Your selfie stays yours. Maya only uses it to keep your real face in every photo." |
 
-## Open — next build queue (Codex-ready, ranked by churn impact)
+## Open list — ALL BUILT same day (second commit)
 
-1. **Credit balance in the Maya drawer header.** Balance lives only in Account; the pre-generation freeze ("will this use up my credits?") is the top activation blocker. Show balance once in the drawer + keep per-action costs on every spend button.
-2. **"Continue history" should open the chat-history list** (explicit past threads) instead of just re-showing the in-memory drawer. "Start new" is now hard-guaranteed clean; make Continue equally explicit.
-3. **"Let Maya decide" should preview before committing**: return the 2-3 style options as tappable cards *before* any generation planning, and rename toward "Not sure? Let Maya suggest looks."
-4. **Legacy member welcome**: members with a trained model get a one-line "Your trained model came with you" and trained-model as their default source (today it's a quiet Account entry; their first selfie-engine result can read as a downgrade).
-5. **Create-tab hierarchy**: one hero action (selfie card), typed box + starter chips demoted to a secondary row — three co-equal doors is choice overload.
-6. **Weekly look surface**: the Monday email's look has no in-app home since the single-owner cleanup; give it a Maya starter chip.
+1. ✅ **Credit balance in the Maya drawer.** Shown in the drawer header ("N credits" / "Unlimited credits"), fetched on open, refreshed from every generation response. Per-action costs already on spend buttons.
+2. ✅ **"Continue history" opens the real chat list.** New `openHistory()` context channel; the launcher's Continue shows past threads to pick from. "Start new" is hard-guaranteed clean.
+3. ✅ **"Not sure? Let Maya suggest looks."** Renamed tile + server rule: for maya-decides sessions she must FIRST offer 2-3 named Vault looks as taps (ask_clarify) and may not emit concepts until one is picked.
+4. ✅ **Legacy welcome** — "Your trained model from Studio came with you" sits at the Photo source choice. *Deliberate divergence from the audit's rec:* selfie engine stays the DEFAULT — flagship doctrine (gpt-image-2 reference edits; LoRA kept as opt-in, not promoted). If legacy likeness complaints persist, revisit per-member defaulting.
+5. ✅ **Create-tab hierarchy**: without a saved selfie the selfie card leads and typing/chips are secondary; with a selfie the typed start leads (her power path).
+6. ✅ **Weekly look chip**: "New this week: {name}" starter chip opens Maya with the look preloaded; format stays Maya's question. No vault grid returned to Create.
 
 ## Standing verdicts (do not relitigate)
 

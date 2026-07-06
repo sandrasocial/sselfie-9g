@@ -591,6 +591,7 @@ export function MayaConcierge({
   const {
     session,
     isOpen,
+    historyRequestId,
     openWithAesthetic,
     resetCurrentSession,
     setOutputFormat,
@@ -686,11 +687,17 @@ export function MayaConcierge({
   // TRIAL-CAP-01: a blocked trial user sees the membership offer (her photos are the proof),
   // never the top-up modal. Members keep the credits path.
   const [trialCapOpen, setTrialCapOpen] = useState(false)
+  // Pre-generation freeze fix (UX audit 2026-07-06 #1): the balance is visible IN the
+  // drawer, so "will this use up my credits?" never blocks the first image.
+  const [creditBalance, setCreditBalance] = useState<number | null>(null)
+  const [creditsUnlimited, setCreditsUnlimited] = useState(false)
   const showCreditBlock = (balance: number | null) => {
+    if (typeof balance === "number") setCreditBalance(balance)
     if (cohort === "trial") setTrialCapOpen(true)
     else setCreditModal({ open: true, balance })
   }
   const showTrialCapIfDepleted = (balance: unknown) => {
+    if (typeof balance === "number") setCreditBalance(balance)
     if (cohort === "trial" && typeof balance === "number" && balance <= 0) setTrialCapOpen(true)
   }
   // Past-selfie picker.
@@ -978,6 +985,31 @@ export function MayaConcierge({
   useEffect(() => {
     activeSelfieRef.current = session?.referenceSelfieUrl ?? null
   }, [session])
+
+  // "Continue history" from the launcher: the chat list shows as soon as the drawer opens.
+  const lastHistoryRequestRef = useRef(0)
+  useEffect(() => {
+    if (historyRequestId === 0 || historyRequestId === lastHistoryRequestRef.current) return
+    lastHistoryRequestRef.current = historyRequestId
+    setHistoryOpen(true)
+  }, [historyRequestId])
+
+  // Balance on open; generation responses keep it fresh via showTrialCapIfDepleted.
+  useEffect(() => {
+    if (!isOpen || admin) return
+    let alive = true
+    fetch("/api/app-v3/account")
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (!alive || !d) return
+        if (typeof d.credits === "number") setCreditBalance(d.credits)
+        setCreditsUnlimited(d.creditsUnlimited === true)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [isOpen, admin])
 
   // Identity persistence (QA P1-3 + SUITE-UX-02): one quiet restore attempt per session.
   // Brings back the newest saved face selfie AND the optional slots (side profile, full
@@ -2299,6 +2331,11 @@ export function MayaConcierge({
                 Shot reference: {selectedShot.title}
               </p>
             )}
+            {!admin && (creditsUnlimited || creditBalance != null) && (
+              <p className="mt-0.5 truncate text-[11px] leading-snug text-[#6D6E70]">
+                {creditsUnlimited ? "Unlimited credits" : `${creditBalance} credits`}
+              </p>
+            )}
           </div>
           <div className="relative flex shrink-0 items-center gap-4">
             <button
@@ -2461,6 +2498,13 @@ export function MayaConcierge({
               <div className="rounded-[6px] border border-[#C5C6C8]/60 bg-white p-2.5">
                 <p className="mb-2 px-1 text-[10px] uppercase tracking-[0.2em] text-[#818283]">
                   Photo source
+                </p>
+                {/* Legacy Studio members: their model came along - say so, once, right where
+                    the choice lives. Selfie engine stays the default (flagship doctrine:
+                    gpt-image-2 reference edits; the LoRA path is kept, not promoted). */}
+                <p className="mb-2 px-1 text-[11px] leading-relaxed text-[#818283]">
+                  Your trained model from Studio came with you. Use it any time - or let the
+                  selfie engine work straight from your photos.
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   {[

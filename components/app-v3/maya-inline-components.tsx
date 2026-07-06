@@ -180,10 +180,11 @@ export function InlineVibePicker({
               className="min-h-16 rounded-[6px] border border-[color:var(--ss-night)]/30 bg-white px-3 py-3 text-left transition-colors hover:border-[color:var(--ss-night)] disabled:opacity-45"
             >
               <span className="block text-[12px] font-medium text-[color:var(--ss-night)]">
-                Let Maya decide
+                Not sure? Let Maya suggest looks
               </span>
               <span className="mt-1 block text-[11px] leading-relaxed text-[color:var(--ss-davy)]">
-                Maya will pull 2-3 strong style options from your profile.
+                She picks 2-3 looks from the SSELFIE Vault. You choose before anything is
+                created.
               </span>
             </button>
           )}

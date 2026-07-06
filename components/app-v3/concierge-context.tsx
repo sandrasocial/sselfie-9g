@@ -160,6 +160,31 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
 
   const close = useCallback(() => setIsOpen(false), [])
 
+  // "Continue history" opens the real chat list inside the drawer (UX audit 2026-07-06 #2):
+  // continuing means choosing a past thread explicitly, not re-showing in-memory state.
+  const [historyRequestId, setHistoryRequestId] = useState(0)
+  const openHistory = useCallback(() => {
+    setSession(
+      prev =>
+        prev ?? {
+          aesthetic: GENERAL_MAYA_AESTHETIC,
+          outputFormat: null,
+          referenceSelfieUrl: null,
+          videoSourceUrl: null,
+          graphicText: null,
+          seedPrompt: null,
+          creationIntent: null,
+          shotDirector: null,
+          generationSource: null,
+          initialSetupAction: null,
+          creationIdea: null,
+          startedAt: Date.now(),
+        }
+    )
+    setIsOpen(true)
+    setHistoryRequestId(n => n + 1)
+  }, [])
+
   useEffect(() => {
     saveConciergeSnapshot({ isOpen, session })
   }, [isOpen, session])
@@ -197,6 +222,8 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
       hasSavedSession,
       open,
       openFresh,
+      openHistory,
+      historyRequestId,
       openWithAesthetic,
       resetCurrentSession,
       setOutputFormat,
@@ -211,6 +238,8 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
       hasSavedSession,
       open,
       openFresh,
+      openHistory,
+      historyRequestId,
       openWithAesthetic,
       resetCurrentSession,
       setOutputFormat,

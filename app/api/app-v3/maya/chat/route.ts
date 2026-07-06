@@ -894,6 +894,12 @@ export async function POST(req: Request) {
       system = `${system}\n\n## MAYA DIRECTOR MODE\n${directorLine}\nShot count is a real credit cost, so do not exceed it. If the mode is a full shoot, format must be photoshoot and the emitted concept count must match the requested shot count exactly.`
     }
 
+    // "Let Maya suggest looks" is a PREVIEW, never a blind commitment (UX audit 2026-07-06):
+    // she must see 2-3 named looks as taps before anything is planned or generated.
+    if (body?.aestheticId === "maya-decides") {
+      system = `${system}\n\n## MAYA SUGGESTS LOOKS\nShe asked you to suggest looks instead of picking one herself. FIRST call ask_clarify with 2-3 named Vault looks as short tappable choices (name each look in a few words, grounded in the Vault style guide and anything you know about her). Do NOT call emit_concepts until she taps one. When she picks, treat that look as the committed style.`
+    }
+
     // Structured session context (2026 UX contract): the idea travels with every request
     // instead of being replayed as a user message when a style tap opens a fresh thread.
     const creationIdea = clampText(body?.creationIdea, 400)

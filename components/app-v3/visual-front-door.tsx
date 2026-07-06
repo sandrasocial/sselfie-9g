@@ -148,6 +148,7 @@ export function VisualFrontDoor({
   const homeTrackedRef = useRef(false)
   const firstRunTrackedRef = useRef(false)
   const [aesthetics, setAesthetics] = useState<Aesthetic[]>(AESTHETICS)
+  const [weeklyLook, setWeeklyLook] = useState<{ aestheticId: string; name: string } | null>(null)
   const [firstRunAlreadySeen] = useState(readFirstRunSeen)
   const [startText, setStartText] = useState("")
 
@@ -162,6 +163,11 @@ export function VisualFrontDoor({
       .then(data => {
         if (!alive || !Array.isArray(data?.aesthetics) || data.aesthetics.length === 0) return
         setAesthetics(data.aesthetics)
+        // The same rotating look the Monday email announces - surfaced as ONE starter chip
+        // (a tap into Maya), never a vault grid on Create (single-owner contract).
+        if (data.weeklyLook?.aestheticId && typeof data.weeklyLook.name === "string") {
+          setWeeklyLook({ aestheticId: String(data.weeklyLook.aestheticId), name: data.weeklyLook.name })
+        }
       })
       .catch(() => {})
     return () => {
@@ -230,6 +236,19 @@ export function VisualFrontDoor({
     })
   }
 
+  function openWeeklyLook() {
+    if (!weeklyLook) return
+    const matched = aesthetics.find(a => a.id === weeklyLook.aestheticId)
+    if (!matched) return
+    trackFirstAction("weekly_look_chip")
+    trackInlineStart("weekly_look_chip", null, "needs_clarify")
+    // Single-owner contract: the chip only opens Maya with the look preloaded. Format is
+    // still Maya's one next question - no fabricated seed, no preset format.
+    openWithAesthetic(matched, {
+      creationIntent: { format: null, source: "manual", confidence: "needs_clarify" },
+    })
+  }
+
   function openSelfieManagerInMaya() {
     trackFirstAction("add_selfie")
     trackInlineStart("selfie_manager", null, "needs_clarify")
@@ -284,6 +303,18 @@ export function VisualFrontDoor({
       {!shouldShowTrialFirstRun && !compact && (
         <div className="mb-9 overflow-hidden rounded-[10px] border border-[color:var(--ss-silver)]/60 bg-white">
           <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
+            {/* No selfie yet: the selfie card IS the hero - it leads, and typing/chips become
+                the secondary path. With a selfie saved, the typed start leads (her power path). */}
+            {!hasSelfie && (
+              <LookbookAction
+                image={heroImage}
+                eyebrow={CARD_COPY.eyebrow}
+                title={CARD_COPY.title}
+                body={CARD_COPY.body}
+                action={CARD_COPY.action}
+                onClick={openSelfieManagerInMaya}
+              />
+            )}
             <div className="min-w-0 p-5 sm:p-7">
               <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ss-gray)]">
                 Start with Maya
@@ -322,6 +353,15 @@ export function VisualFrontDoor({
               </form>
 
               <div className="mt-5 flex flex-wrap gap-2">
+                {weeklyLook && aesthetics.some(a => a.id === weeklyLook.aestheticId) && (
+                  <button
+                    type="button"
+                    onClick={openWeeklyLook}
+                    className="min-h-10 rounded-full border border-[color:var(--ss-night)]/50 bg-white px-3.5 py-2 text-[12px] text-[color:var(--ss-night)] transition-colors hover:border-[color:var(--ss-night)]"
+                  >
+                    New this week: {weeklyLook.name}
+                  </button>
+                )}
                 {STARTER_CHIPS.filter(item => videoEnabled || item.format !== "video").map(item => (
                   <button
                     key={item.format}
@@ -339,14 +379,16 @@ export function VisualFrontDoor({
                 after you start. One flow, no second setup screen.
               </p>
             </div>
-            <LookbookAction
-              image={heroImage}
-              eyebrow={CARD_COPY.eyebrow}
-              title={CARD_COPY.title}
-              body={CARD_COPY.body}
-              action={CARD_COPY.action}
-              onClick={openSelfieManagerInMaya}
-            />
+            {hasSelfie && (
+              <LookbookAction
+                image={heroImage}
+                eyebrow={CARD_COPY.eyebrow}
+                title={CARD_COPY.title}
+                body={CARD_COPY.body}
+                action={CARD_COPY.action}
+                onClick={openSelfieManagerInMaya}
+              />
+            )}
           </div>
         </div>
       )}

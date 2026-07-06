@@ -14,7 +14,7 @@ import { useConcierge } from "./concierge-context"
 const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
 
 export function MayaFloatingLauncher() {
-  const { isOpen, open, openFresh, hasSavedSession } = useConcierge()
+  const { isOpen, openFresh, openHistory, hasSavedSession } = useConcierge()
   const [choiceOpen, setChoiceOpen] = useState(false)
 
   if (isOpen) return null
@@ -49,7 +49,9 @@ export function MayaFloatingLauncher() {
                 type="button"
                 onClick={() => {
                   setChoiceOpen(false)
-                  open()
+                  // Opens the drawer WITH the chat list: continuing means picking a real
+                  // past conversation, not re-showing whatever was left in memory.
+                  openHistory()
                 }}
                 className="min-h-11 rounded-[4px] border border-[#C5C6C8]/70 bg-white px-3 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:border-[#0D0E10]/40"
               >
