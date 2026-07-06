@@ -1,6 +1,7 @@
 "use client"
 
 import { type DragEvent, useEffect, useState } from "react"
+import { readJsonResponse } from "@/lib/admin/safe-fetch-json"
 import type { CarouselDeck, CarouselSlide } from "@/lib/content-kit/types"
 import { CarouselSlideEditor } from "@/components/admin/carousel-slide-editor"
 
@@ -361,7 +362,7 @@ export function ContentKitClient({
         method: "POST",
         body: form,
       })
-      const data = await response.json()
+      const data = await readJsonResponse<any>(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Upload failed")
       if (kind === "background")
         addBackgrounds(
@@ -400,7 +401,7 @@ export function ContentKitClient({
           overlayUrls: overlays.map(asset => asset.url),
         }),
       })
-      const data = await response.json()
+      const data = await readJsonResponse<any>(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Generation failed")
       setDecks([...data.carousels, ...decks])
       setTopic("")
@@ -428,7 +429,7 @@ export function ContentKitClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, slides }),
       })
-      const data = await response.json()
+      const data = await readJsonResponse<any>(response)
       if (!response.ok || !data.success || !data.deck) {
         setError(data.error || "Could not save slide")
         return false

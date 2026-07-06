@@ -1,6 +1,7 @@
 "use client"
 
 import { type DragEvent, useEffect, useState } from "react"
+import { readJsonResponse } from "@/lib/admin/safe-fetch-json"
 import type { StorySequence, StorySlide } from "@/lib/content-kit/types"
 import { StorySlideEditor } from "@/components/admin/story-slide-editor"
 
@@ -363,7 +364,7 @@ export function ContentStoryClient({
         method: "POST",
         body: form,
       })
-      const data = await response.json()
+      const data = await readJsonResponse<any>(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Upload failed")
       const assets = Array.isArray(data.assets) ? data.assets : []
       if (kind === "background") {
@@ -411,7 +412,7 @@ export function ContentStoryClient({
           overlayUrls: overlays.map(asset => asset.url),
         }),
       })
-      const data = await response.json()
+      const data = await readJsonResponse<any>(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Generation failed")
       setSequences([data.sequence, ...sequences])
       setTopic("")
@@ -448,7 +449,7 @@ export function ContentStoryClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, slides }),
       })
-      const data = await response.json()
+      const data = await readJsonResponse<any>(response)
       if (!response.ok || !data.success || !data.sequence) {
         setError(data.error || "Could not save slide")
         return false

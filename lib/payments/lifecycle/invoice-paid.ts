@@ -165,16 +165,14 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
   const isTestMode = !event.livemode
   const customerId =
     typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id || null
-  const chargeId =
-    typeof invoice.charge === "string" ? invoice.charge : invoice.charge?.id || null
-  const paymentIntentId = invoice.payment_intent
-    ? typeof invoice.payment_intent === "string"
-      ? invoice.payment_intent
-      : invoice.payment_intent?.id
-    : null
-
-  // Use charge ID or payment intent ID as the payment identifier
-  const paymentId = chargeId || paymentIntentId || invoice.id
+  // Key invoice-based revenue rows on the invoice id, always. On the pinned Clover API
+  // version invoices no longer carry top-level charge/payment_intent fields, so the old
+  // `chargeId || paymentIntentId || invoice.id` fallback already resolved to invoice.id
+  // on every live event — but if Stripe ever reintroduces those fields, a key flip
+  // (ch_/pi_ vs in_) would record the same charge twice under different ids. That exact
+  // duplication existed in stripe_payments (23 rows cleaned 2026-07-06) via backfills.
+  // One invoice = one row, keyed in_..., enforced by idx_stripe_payments_invoice_unique.
+  const paymentId = invoice.id
 
   if (paymentId && customerId && invoice.amount_paid > 0) {
     try {

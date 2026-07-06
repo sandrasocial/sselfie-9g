@@ -23,7 +23,6 @@ active and were run separately before quarantine.
 | `tests/funnel-2026-report.test.ts` | References removed funnel analytics route. |
 | `tests/funnel-cleanup-admin-page.test.ts` | References removed funnel cleanup admin page. |
 | `tests/funnel-cleanup-candidates.test.ts` | References removed cleanup candidate module. |
-| `tests/funnel-cleanup-evidence.test.ts` | References removed cleanup evidence module. |
 | `tests/funnel-final-leaks-regression.test.ts` | Encodes retired Brand Strategy/Paid Blueprint route contracts. |
 | `tests/funnel-ladder-regression.test.ts` | Encodes pre-pivot public funnel ladder expectations. |
 | `tests/instagram-login-routing.test.ts` | References removed admin dashboard path and old token-shape assertions. |

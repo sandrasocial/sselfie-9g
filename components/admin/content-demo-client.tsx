@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { readJsonResponse } from "@/lib/admin/safe-fetch-json"
 import type { DemoPair } from "@/lib/content-kit/types"
 
 // Sandra's editing-prompt topics: each preset is ChatGPT-ready and identity-safe.
@@ -55,7 +56,7 @@ export function ContentDemoClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ selfieUrl, prompt }),
       })
-      const data = await response.json()
+      const data = await readJsonResponse<any>(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Generation failed")
       setPairs([data.pair, ...pairs])
     } catch (err: any) {

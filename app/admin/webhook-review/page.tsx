@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { AdminNav } from "@/components/admin/admin-nav"
+import { readAdminJson } from "@/lib/admin/safe-fetch-json"
 
 interface ReviewEvent {
   id: number
@@ -60,8 +61,8 @@ export default function WebhookReviewPage() {
     setLoading(true)
     try {
       const res = await fetch(`/api/admin/webhook-review?resolved=${showResolved}`)
-      const j = await res.json()
-      setEvents(j.events || [])
+      const j = await readAdminJson(res)
+      setEvents(j?.events || [])
     } finally {
       setLoading(false)
     }

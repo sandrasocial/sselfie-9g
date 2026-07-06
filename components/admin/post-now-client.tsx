@@ -5,6 +5,7 @@
 // Mobile-first: Sandra uses this on her phone at night.
 
 import { useState } from "react"
+import { readAdminJson } from "@/lib/admin/safe-fetch-json"
 
 export type PostNowOption = {
   id?: number
@@ -20,23 +21,6 @@ const TYPE_META: Record<PostNowOption["type"], { label: string; badgeClass: stri
   repurpose: { label: "Repurpose a winner", badgeClass: "bg-stone-950 text-white" },
   "trend-test": { label: "Trend to test", badgeClass: "bg-stone-200 text-stone-800" },
   "story-sequence": { label: "Tonight's story sequence", badgeClass: "bg-stone-100 text-stone-700" },
-}
-
-async function readAdminJson(response: Response) {
-  const text = await response.text()
-  if (!text.trim()) return null
-  try {
-    return JSON.parse(text)
-  } catch {
-    const compact = text.replace(/\s+/g, " ").trim().slice(0, 180)
-    return {
-      success: false,
-      error:
-        response.status === 504
-          ? "The content picker timed out before it could finish. Try again in a minute."
-          : `The server returned a non-JSON error (${response.status}). ${compact || "Try again in a minute."}`,
-    }
-  }
 }
 
 function OptionCard({ option }: { option: PostNowOption }) {
