@@ -12,17 +12,21 @@
 //   - The <style> block adds mobile overrides (classes prefixed st- to avoid collisions).
 //   - No web fonts. Georgia / Arial only.
 
+// EMAIL-02 (2026-07-06): palette shifted from warm cream to Sandra's COOL editorial tokens
+// (docs/SSELFIE_DESIGN_SYSTEM.md base + the 2026-06-19 cool-monochrome lock: warmth comes
+// from her images, never from beige surfaces). Structure unchanged; every template that
+// renders through this shell recolored in one move.
 const COLORS = {
-  shell: "#F5EFE6", // outer cream
+  shell: "#F8FAFA", // Seasalt outer
   card: "#FFFFFF", // main content card
-  panel: "#FAF8F4", // quiet section tint (panels, pull-quote blocks)
-  text: "#0A0A0A", // headlines, primary black
-  body: "#3A3632", // body copy charcoal
-  muted: "#9B9189", // captions, eyebrows, footer
-  quiet: "#9B9189", // kept as an alias - legacy templates referenced both tones
-  line: "#E5DDD4", // separators
-  lineSoft: "#E5DDD4",
-  cta: "#0A0A0A",
+  panel: "#F8FAFA", // quiet section tint (panels, pull-quote blocks)
+  text: "#0D0E10", // Night - headlines, primary
+  body: "#282728", // Raisin - body copy
+  muted: "#818283", // Gray - captions, eyebrows, footer
+  quiet: "#818283", // kept as an alias - legacy templates referenced both tones
+  line: "#D8D9DA", // cool separators
+  lineSoft: "#E9EAEB",
+  cta: "#0D0E10",
 } as const
 
 export function escapeHtml(value: string): string {
@@ -69,6 +73,19 @@ function normalizeLegacyStoneHtml(html: string): string {
       .replaceAll("#fffdf9", COLORS.card)
       .replaceAll("#f7f3ee", COLORS.shell)
       .replaceAll("#fbf8f4", COLORS.panel)
+      // cream editorial era (EMAIL-01, retired 2026-07-06 for the cool palette)
+      .replaceAll("#F5EFE6", COLORS.shell)
+      .replaceAll("#FAF8F4", COLORS.panel)
+      .replaceAll("#3A3632", COLORS.body)
+      .replaceAll("#9B9189", COLORS.muted)
+      .replaceAll("#E5DDD4", COLORS.line)
+      .replaceAll("#0A0A0A", COLORS.text)
+      .replaceAll("#f5efe6", COLORS.shell)
+      .replaceAll("#faf8f4", COLORS.panel)
+      .replaceAll("#3a3632", COLORS.body)
+      .replaceAll("#9b9189", COLORS.muted)
+      .replaceAll("#e5ddd4", COLORS.line)
+      .replaceAll("#0a0a0a", COLORS.text)
   )
 }
 

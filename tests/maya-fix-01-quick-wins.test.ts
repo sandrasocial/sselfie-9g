@@ -28,13 +28,15 @@ describe("MAYA-FIX-01 quick wins", () => {
     expect(route).not.toContain("Never more or fewer than 3")
   })
 
-  it("keeps Maya Concierge CTA copy count-agnostic", () => {
+  it("keeps Maya Concierge CTA copy count-agnostic and jargon-free", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
     expect(concierge).not.toContain("pull three directions")
     expect(concierge).not.toContain("Create my 3")
-    expect(concierge).toContain("Create my photo directions")
-    expect(concierge).toContain("Create my carousel directions")
+    // 2026-07-06 voice pass: "directions" was studio jargon a new member had to decode.
+    expect(concierge).toContain("Show me photo ideas")
+    expect(concierge).toContain("Show me carousel ideas")
+    expect(concierge).not.toContain("photo directions")
   })
 
   it("keeps customer carousel slides on the selfie/reference path", () => {

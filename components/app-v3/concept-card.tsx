@@ -103,10 +103,14 @@ export function ConceptCard({
   const bakeMissing = requestedBakedText && Boolean(firstOverlay) && !hasAnyBakedText
 
   return (
-    <div className="min-w-0 max-w-full overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white [overflow-x:clip]">
+    <div className="min-w-0 max-w-full overflow-hidden rounded-[14px] border border-[#C5C6C8]/35 bg-white shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)] transition-shadow duration-300 hover:shadow-[0_2px_4px_rgba(13,14,16,0.05),0_16px_40px_rgba(13,14,16,0.09)] [overflow-x:clip]">
       {/* Visual area ONLY exists once we're generating or done - never an empty placeholder box. */}
       {(isGenerating || isDone || isVideoDone) && (
-        <div className={`relative w-full bg-[#F1F2F2] ${FRAME_ASPECT[format]}`}>
+        <div
+          className={`relative w-full bg-[#F1F2F2] ${FRAME_ASPECT[format]} ${
+            isGenerating && !gen.previewUrl ? "animate-pulse motion-reduce:animate-none" : ""
+          }`}
+        >
           {isVideoDone ? (
             <video
               src={videoUrl}
@@ -130,11 +134,11 @@ export function ConceptCard({
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               />
               {isCarousel && (
-                <span className="absolute left-2 top-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
+                <span className="absolute left-2.5 top-2.5 rounded-full bg-[#0D0E10]/65 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white backdrop-blur-sm">
                   {images.length} slides
                 </span>
               )}
-              <span className="absolute bottom-2 right-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="absolute bottom-2.5 right-2.5 rounded-full bg-[#0D0E10]/65 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
                 {isCarousel ? "Swipe" : "View"}
               </span>
             </button>
@@ -147,7 +151,7 @@ export function ConceptCard({
                 decoding="async"
                 className="h-full w-full object-cover opacity-95"
               />
-              <span className="absolute bottom-2 left-2 rounded-full bg-[#0D0E10]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
+              <span className="absolute bottom-2.5 left-2.5 rounded-full bg-[#0D0E10]/65 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white backdrop-blur-sm">
                 Developing…
               </span>
             </div>
@@ -161,10 +165,10 @@ export function ConceptCard({
       )}
 
       {/* Copy + action */}
-      <div className="min-w-0 space-y-3 p-4">
+      <div className="min-w-0 space-y-3 p-4 sm:p-5">
         <div className="min-w-0 break-words [overflow-wrap:anywhere]">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">Direction</p>
-          <h4 className="mt-1.5 font-serif text-[19px] font-light leading-tight text-[#0D0E10]">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">Maya&apos;s idea</p>
+          <h4 className="mt-1.5 font-serif text-[21px] font-light leading-tight text-[#0D0E10]">
             {concept.title}
           </h4>
           <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">{concept.description}</p>
@@ -188,7 +192,7 @@ export function ConceptCard({
               </p>
             )}
             {suggestedText && (
-              <div className="rounded-[5px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
+              <div className="rounded-[10px] border border-[#C5C6C8]/50 bg-[#F8FAFA] p-3">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-[10px] uppercase tracking-[0.18em] text-[#818283]">
                     Maya&apos;s suggested text
@@ -217,7 +221,7 @@ export function ConceptCard({
                   download
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex min-h-11 items-center justify-center rounded-[4px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
+                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
                 >
                   Download video
                 </a>
@@ -225,7 +229,7 @@ export function ConceptCard({
                 <button
                   type="button"
                   onClick={() => onOpen?.(images)}
-                  className="inline-flex min-h-11 items-center justify-center rounded-[4px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
+                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
                 >
                   View all slides
                 </button>
@@ -244,7 +248,7 @@ export function ConceptCard({
                       .catch(() => {})
                     window.open(firstBaked ?? images[0], "_blank", "noreferrer")
                   }}
-                  className="inline-flex min-h-11 items-center justify-center rounded-[4px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
+                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
                 >
                   Download
                 </button>
@@ -253,7 +257,7 @@ export function ConceptCard({
                 <button
                   type="button"
                   onClick={onEdit}
-                  className="inline-flex min-h-11 items-center justify-center rounded-[4px] border border-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] hover:bg-[#0D0E10]/[0.04] min-[380px]:px-5 min-[380px]:tracking-[0.18em]"
+                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] border border-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] transition-[transform,background-color] duration-150 hover:bg-[#0D0E10]/[0.04] active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.18em]"
                 >
                   Edit this photo
                 </button>
@@ -263,7 +267,7 @@ export function ConceptCard({
                   href={`/api/admin/app-v3/generation-prompt?id=${encodeURIComponent(promptAssetId)}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex min-h-11 items-center justify-center rounded-[4px] border border-[#C5C6C8] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#0D0E10]/[0.04] min-[380px]:px-5 min-[380px]:tracking-[0.18em]"
+                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] border border-[#C5C6C8] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] transition-[transform,background-color] duration-150 hover:bg-[#0D0E10]/[0.04] active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.18em]"
                 >
                   View prompt
                 </a>
@@ -286,7 +290,7 @@ export function ConceptCard({
             type="button"
             onClick={onGenerate}
             disabled={disabled || isGenerating}
-            className="min-h-11 w-full rounded-[4px] bg-[#0D0E10] px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-40 sm:tracking-[0.2em]"
+            className="min-h-11 w-full rounded-[8px] bg-[#0D0E10] px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.99] disabled:opacity-40 sm:tracking-[0.2em]"
           >
             {isGenerating
               ? "Creating…"

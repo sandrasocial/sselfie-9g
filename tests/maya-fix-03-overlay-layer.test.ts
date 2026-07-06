@@ -545,7 +545,7 @@ describe("retired Text Studio surface (Sandra's 2026-07-05 direction)", () => {
     expect(lightbox).not.toContain("onOpenTextStudio")
     expect(lightbox).not.toContain("TextOverlayLayer")
     expect(lightbox).not.toContain("downloadImageWithOverlay")
-    expect(lightbox).toContain("Suggested text")
+    expect(lightbox).toContain("Words for this one")
     expect(lightbox).toContain("navigator.clipboard?.writeText(suggestedText)")
     expect(lightbox).toContain("baked ?? url")
   })

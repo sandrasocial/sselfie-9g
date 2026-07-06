@@ -16,15 +16,17 @@
 const SITE = "https://www.sselfie.ai"
 
 // ── Colour tokens ──────────────────────────────────────────────────────────
+// EMAIL-02 (2026-07-06): cool editorial palette (design-system base + the cool-monochrome
+// lock). Warmth comes from Sandra's images, never from beige surfaces.
 const C = {
-  bg:        "#F5EFE6",   // outer cream shell
+  bg:        "#F8FAFA",   // Seasalt outer shell
   card:      "#FFFFFF",   // main content card
-  section:   "#FAF8F4",   // alternating section tint
-  text:      "#0A0A0A",   // primary black
-  body:      "#3A3632",   // body copy charcoal
-  muted:     "#9B9189",   // captions, eyebrows, footer
-  separator: "#E5DDD4",   // horizontal rules and column borders
-  cta:       "#0A0A0A",   // button background
+  section:   "#F8FAFA",   // alternating section tint
+  text:      "#0D0E10",   // Night - primary
+  body:      "#282728",   // Raisin - body copy
+  muted:     "#818283",   // Gray - captions, eyebrows, footer
+  separator: "#D8D9DA",   // horizontal rules and column borders
+  cta:       "#0D0E10",   // button background
   ctaText:   "#FFFFFF",   // button text
 } as const
 

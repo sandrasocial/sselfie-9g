@@ -167,7 +167,7 @@ Rules:
 
 Current note:
 
-- `lib/email/templates/stone-email.ts` is the main active shared email shell and currently uses a dark stone template. This is active code and should not be archived as documentation. It should be replaced in a future email redesign batch with a light editorial shell that follows this file.
+- `lib/email/templates/stone-email.ts` is the main active shared email shell. As of 2026-07-06 (EMAIL-02) it follows this file: Seasalt outer, white card, serif headline, Gray eyebrows, Night CTA, cool separators. The vault `lib/email/editorial-email.ts` shell uses the same cool palette. The earlier warm-cream palette is retired (cool-monochrome lock).
 
 ## Public Page Direction
 

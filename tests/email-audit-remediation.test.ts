@@ -40,18 +40,18 @@ describe("email audit remediation", () => {
     expect(content.html).toContain("Open your guide")
     expect(content.html).toContain("See the Starter Kit")
     expect(content.html).not.toContain("Visibility Suite")
-    expect(content.html).toContain("#0A0A0A")
-    expect(content.html).toContain("#F5EFE6")
+    expect(content.html).toContain("#0D0E10")
+    expect(content.html).toContain("#F8FAFA")
   })
 
-  it("uses Sandra as the Day 0 onboarding sign-off and earth-stone palette", () => {
+  it("uses Sandra as the Day 0 onboarding sign-off and the cool editorial palette", () => {
     const content = generateOnboardingDay0Email({ firstName: "Sandra" })
 
     expect(content.html).not.toContain("Maya + The SSELFIE Studio Team")
     expect(content.text).not.toContain("Maya + The SSELFIE Studio Team")
     expect(content.html).toContain("Sandra")
-    expect(content.html).toContain("#0A0A0A")
-    expect(content.html).toContain("#F5EFE6")
+    expect(content.html).toContain("#0D0E10")
+    expect(content.html).toContain("#F8FAFA")
   })
 
   it("uses the canonical Studio URL in the welcome email template", () => {
@@ -65,8 +65,8 @@ describe("email audit remediation", () => {
 
     expect(content.html).toContain("https://sselfie.ai/app")
     expect(content.html).not.toContain("app.sselfie.ai")
-    expect(content.html).toContain("#0A0A0A")
-    expect(content.html).toContain("#F5EFE6")
+    expect(content.html).toContain("#0D0E10")
+    expect(content.html).toContain("#F8FAFA")
   })
 
   it("prefers a real customer name over the email local-part", () => {

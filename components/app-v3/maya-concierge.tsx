@@ -89,7 +89,7 @@ const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
 const MAYA_DECIDES_AESTHETIC: Aesthetic = {
   id: "maya-decides",
   name: "Maya decides",
-  blurb: "Maya chooses the strongest style direction from your profile and the Vault.",
+  blurb: "Maya picks the strongest looks from the Vault and what she knows about you.",
   coverImage: "",
   thumbnails: [],
   shotCount: 0,
@@ -356,7 +356,7 @@ const FORMAT_PHRASE: Record<OutputFormat, string> = {
 // brand shoot" framing so the system status is clear (the photo case is the one that changes most).
 // Sandra-approved short openers (2026-06-11): two lines max before anything happens.
 const FORMAT_OPENER: Record<OutputFormat, string> = {
-  photo: "Add one selfie and I'll pull directions. Soft window light works best. 🤍",
+  photo: "Add one selfie and I'll show you a few ideas. Soft window light works best. 🤍",
   photoshoot: "Add one selfie and I'll plan a full shoot in one world. 🤍",
   "reel-cover":
     "Hit create and I'll show you six cover styles. Tap the one you love and I'll take it from there.",
@@ -366,11 +366,11 @@ const FORMAT_OPENER: Record<OutputFormat, string> = {
     "Hit create and I'll show you six styles. Tap the one you love, then pick the story idea that fits.",
   "story-sequence":
     "Hit create and I'll show you six styles. Tap the one that feels like you and I'll build the sequence.",
-  video: "Add or choose the image you want to move, and I'll pull motion directions.",
+  video: "Add or choose the image you want to move, and I'll show you a few ways to bring it to life.",
 }
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
   photo:
-    "Your selfie's in, and it's still you. Hit create and pick the direction that feels most like you.",
+    "Your selfie's in, and it's still you. Hit create and pick the idea that feels most like you.",
   photoshoot:
     "Your selfie's in, and it's still you. Hit create and I'll build the full shoot plan.",
   "reel-cover":
@@ -387,13 +387,13 @@ const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
 // The primary "go" button. It commits the chosen format, which triggers Maya to pull directions,
 // so the customer never has to type to move forward.
 const CTA_LABEL: Record<OutputFormat, string> = {
-  photo: "Create my photo directions",
-  photoshoot: "Create my shoot plan",
-  "reel-cover": "Create my cover directions",
-  carousel: "Create my carousel directions",
-  "story-slide": "Create my story directions",
-  "story-sequence": "Create my story sequence directions",
-  video: "Create my video directions",
+  photo: "Show me photo ideas",
+  photoshoot: "Plan my shoot",
+  "reel-cover": "Show me cover ideas",
+  carousel: "Show me carousel ideas",
+  "story-slide": "Show me story ideas",
+  "story-sequence": "Plan my full story",
+  video: "Show me motion ideas",
 }
 
 const IMAGE_UPLOAD_ACCEPT = "image/jpeg,image/png,image/webp"
@@ -3026,14 +3026,14 @@ export function MayaConcierge({
                   (isUser ? (
                     <div className="flex min-w-0 max-w-full flex-row-reverse items-end gap-2">
                       <Avatar src={userAvatar} fallback="You" />
-                      <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[6px] rounded-tr-[2px] bg-[#0D0E10] p-3.5 text-[15px] leading-relaxed text-white [overflow-wrap:anywhere] sm:max-w-[80%]">
+                      <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[18px] rounded-br-[6px] bg-[#0D0E10] px-4 py-3 text-[15px] leading-relaxed text-white [overflow-wrap:anywhere] sm:max-w-[80%]">
                         {text}
                       </div>
                     </div>
                   ) : (
                     <div className="flex min-w-0 max-w-full items-end gap-2">
                       <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
-                      <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[6px] rounded-tl-[2px] bg-white p-4 [overflow-wrap:anywhere] sm:max-w-[80%]">
+                      <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[18px] rounded-bl-[6px] border border-[#C5C6C8]/30 bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(13,14,16,0.04)] [overflow-wrap:anywhere] sm:max-w-[80%]">
                         <Markdown>{text}</Markdown>
                       </div>
                     </div>
@@ -3051,16 +3051,16 @@ export function MayaConcierge({
                 {adminContentPart && <AdminContentToolCard result={adminContentPart} />}
 
                 {conceptsLost && (
-                  <div className="min-w-0 max-w-full rounded-[6px] bg-[#282728]/5 px-4 py-3 [overflow-x:clip]">
+                  <div className="min-w-0 max-w-full rounded-[10px] bg-[#282728]/5 px-4 py-3 [overflow-x:clip]">
                     <p className="text-[13px] text-[#282728]">
-                      Your directions didn&apos;t come through cleanly.
+                      That didn&apos;t come through. One tap and Maya tries again.
                     </p>
                     <button
                       type="button"
                       onClick={() => sendMessage({ text: FORMAT_PHRASE[format] })}
                       className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] underline underline-offset-2 hover:opacity-70"
                     >
-                      Pull fresh directions
+                      Show me new ideas
                     </button>
                   </div>
                 )}
@@ -3410,7 +3410,7 @@ export function MayaConcierge({
               <img
                 src={inspirationUrl}
                 alt="Inspiration"
-                className="h-9 w-9 rounded-[4px] object-cover"
+                className="h-9 w-9 rounded-[8px] object-cover"
               />
               <span className="min-w-0 flex-1 truncate text-[11px] text-[#818283]">
                 Inspiration attached. Maya uses its style, never its face.
@@ -3442,7 +3442,7 @@ export function MayaConcierge({
               title="Attach an inspiration image"
               onClick={() => attachInputRef.current?.click()}
               disabled={uploadingSlot === "inspiration"}
-              className="h-12 w-12 shrink-0 rounded-[4px] border border-[#C5C6C8]/60 bg-white text-[20px] font-light leading-none text-[#4F5052] hover:border-[#0D0E10] hover:text-[#0D0E10] disabled:opacity-40"
+              className="h-12 w-12 shrink-0 rounded-full border border-[#C5C6C8]/60 bg-white text-[20px] font-light leading-none text-[#4F5052] transition-[transform,border-color,color] duration-150 hover:border-[#0D0E10] hover:text-[#0D0E10] active:scale-95 disabled:opacity-40"
             >
               {uploadingSlot === "inspiration" ? "…" : "+"}
             </button>
@@ -3460,13 +3460,13 @@ export function MayaConcierge({
               placeholder={
                 textRefining ? "Maya is updating the text…" : "Want something different? Ask Maya…"
               }
-              className="h-12 min-w-0 flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10] min-[380px]:px-4"
+              className="h-12 min-w-0 flex-1 rounded-full border border-[#C5C6C8]/60 bg-white px-4 text-[15px] text-[#282728] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#0D0E10] focus:shadow-[0_0_0_3px_rgba(13,14,16,0.06)] min-[380px]:px-5"
             />
             <button
               type="button"
               onClick={() => void handleSend()}
               disabled={isThinking || textRefining || input.trim().length === 0}
-              className="h-12 rounded-[4px] bg-[#0D0E10] px-3 text-[11px] uppercase tracking-[0.1em] text-white disabled:opacity-40 min-[380px]:px-5 min-[380px]:text-[12px] min-[380px]:tracking-[0.16em]"
+              className="h-12 rounded-full bg-[#0D0E10] px-4 text-[11px] uppercase tracking-[0.1em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-95 disabled:opacity-40 min-[380px]:px-6 min-[380px]:text-[12px] min-[380px]:tracking-[0.16em]"
             >
               {textRefining ? "Updating" : "Send"}
             </button>

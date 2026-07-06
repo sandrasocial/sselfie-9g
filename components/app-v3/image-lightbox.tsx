@@ -78,7 +78,7 @@ export function ImageLightbox({
               type="button"
               aria-label="Previous"
               onClick={() => setIndex(p => (p > 0 ? p - 1 : count - 1))}
-              className="absolute left-0 top-1/2 z-10 min-h-11 min-w-11 -translate-y-1/2 px-3 py-3 text-3xl leading-none text-white/70 hover:text-white sm:left-1"
+              className="absolute left-0 top-1/2 z-10 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-full px-3 py-3 text-3xl leading-none text-white/70 transition-colors hover:bg-white/10 hover:text-white sm:left-1"
             >
               ‹
             </button>
@@ -86,7 +86,7 @@ export function ImageLightbox({
               type="button"
               aria-label="Next"
               onClick={() => setIndex(p => (p < count - 1 ? p + 1 : 0))}
-              className="absolute right-0 top-1/2 z-10 min-h-11 min-w-11 -translate-y-1/2 px-3 py-3 text-3xl leading-none text-white/70 hover:text-white sm:right-1"
+              className="absolute right-0 top-1/2 z-10 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-full px-3 py-3 text-3xl leading-none text-white/70 transition-colors hover:bg-white/10 hover:text-white sm:right-1"
             >
               ›
             </button>
@@ -96,18 +96,18 @@ export function ImageLightbox({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={baked ?? url}
-          alt={`Result ${index + 1}`}
+          alt={`Photo ${index + 1}`}
           decoding="async"
-          className="max-h-full max-w-full rounded-[6px] object-contain"
+          className="max-h-full max-w-full rounded-[10px] object-contain shadow-[0_24px_80px_rgba(0,0,0,0.55)] animate-in fade-in zoom-in-[0.98] duration-300 motion-reduce:animate-none"
         />
       </div>
 
       <div className="flex shrink-0 flex-col items-center justify-center gap-2 pt-3">
         {suggestedText && (
-          <div className="w-full max-w-md rounded-[5px] border border-white/15 bg-white/10 p-3 text-white">
+          <div className="w-full max-w-md rounded-[12px] border border-white/15 bg-white/10 p-3 text-white">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[10px] uppercase tracking-[0.18em] text-white/55">
-                Suggested text
+                Words for this one
               </p>
               <button
                 type="button"
@@ -144,7 +144,7 @@ export function ImageLightbox({
                 .catch(() => {})
               window.open(baked ?? url, "_blank", "noreferrer")
             }}
-            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-white/80 underline underline-offset-4 hover:text-white"
+            className="inline-flex min-h-11 items-center rounded-full bg-white px-6 py-2.5 text-[11px] uppercase tracking-[0.18em] text-[#0D0E10] transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-95"
           >
             Download
           </button>
