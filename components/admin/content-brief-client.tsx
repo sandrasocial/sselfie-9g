@@ -44,7 +44,11 @@ type ContentBriefJob = {
 
 function formatDate(value: string) {
   try {
-    return new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+    return new Date(value).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    })
   } catch {
     return value
   }

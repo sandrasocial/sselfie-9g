@@ -231,6 +231,13 @@ describe("weekly content brief: surfaces", () => {
     expect(client).not.toContain(".then((r) => r.json())")
   })
 
+  it("formats admin brief dates with a fixed timezone so hydration text matches Vercel and the browser", () => {
+    const client = read("components/admin/content-brief-client.tsx")
+
+    expect(client).toContain('timeZone: "UTC"')
+    expect(client).not.toContain('toLocaleDateString("en-GB", { day: "numeric", month: "short" })')
+  })
+
   it("uses streaming for long structured Anthropic brief calls", () => {
     const generator = read("lib/content-engine/brief-generator.ts")
     const toolCallHelper = generator.slice(

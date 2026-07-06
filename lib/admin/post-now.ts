@@ -271,6 +271,44 @@ function compactWeeklyBrief(brief: ContentBrief | null) {
   }
 }
 
+export function buildPerformanceFromWeeklyBrief(
+  weeklyBrief: ContentBrief | null,
+): InstagramPerformanceSnapshot | null {
+  if (!weeklyBrief?.performanceRecap?.length) return null
+  return {
+    username: weeklyBrief.accountSnapshot?.username || "sandra.social",
+    followers: weeklyBrief.accountSnapshot?.followers ?? null,
+    postsAnalyzed: weeklyBrief.accountSnapshot?.postsAnalyzed ?? weeklyBrief.performanceRecap.length,
+    insightsLevel: weeklyBrief.accountSnapshot?.insightsLevel || "basic",
+    topPosts: weeklyBrief.performanceRecap.slice(0, 8).map((post, index) => {
+      const likes = Number(post.likes || 0)
+      const comments = Number(post.comments || 0)
+      return {
+        id: post.permalink || `weekly-brief-${index + 1}`,
+        permalink: post.permalink || "",
+        format:
+          post.format === "reel" ||
+          post.format === "carousel" ||
+          post.format === "feed" ||
+          post.format === "other"
+            ? post.format
+            : "other",
+        postedAt: weeklyBrief.periodStart,
+        caption: "",
+        hookLine: post.hookLine || post.whyItWorked || "Stored weekly brief winner",
+        likes,
+        comments,
+        views: null,
+        reach: null,
+        saves: null,
+        shares: null,
+        engagementScore: likes + comments * 2,
+      }
+    }),
+    allPosts: [],
+  }
+}
+
 export function findMissingInputs(
   weeklyBrief: ContentBrief | null,
   performance: InstagramPerformanceSnapshot | null,
@@ -291,6 +329,99 @@ export function findMissingInputs(
     missing.push("Instagram top posts")
   }
   return missing
+}
+
+function firstNonEmpty(...values: Array<string | null | undefined>): string {
+  for (const value of values) {
+    const clean = sanitizeIntelligenceText(value)
+    if (clean) return clean
+  }
+  return ""
+}
+
+function firstOverlayText(weeklyBrief: ContentBrief | null, fallback: string): string {
+  const fromBank = weeklyBrief?.onScreenHookBank?.find((entry) => entry?.text)?.text
+  const fromPlan = weeklyBrief?.contentPlan?.find((piece) => piece?.onScreenText?.[0])?.onScreenText?.[0]
+  return firstNonEmpty(fromBank, fromPlan, fallback).slice(0, 80)
+}
+
+function optionWithFingerprint(option: Omit<PostNowOption, "fingerprint">): PostNowOption {
+  const next: PostNowOption = { ...option, fingerprint: "" }
+  next.fingerprint = deriveFingerprint(next)
+  return next
+}
+
+export function buildPostNowFallbackOptions(input: {
+  weeklyBrief: ContentBrief | null
+  performance: InstagramPerformanceSnapshot | null
+}): PostNowOption[] {
+  const weeklyBrief = input.weeklyBrief
+  const topPost = input.performance?.topPosts?.[0] ?? null
+  const trend = weeklyBrief?.trendRadar?.[0] ?? null
+  const hook = weeklyBrief?.hookIntelligence?.[0] ?? null
+  const demand = weeklyBrief?.demandMap ?? null
+  const question = demand?.audienceQuestions?.[0]?.question
+  const overlay = firstOverlayText(weeklyBrief, topPost?.hookLine || "One clear selfie is enough")
+  const demandLine = firstNonEmpty(
+    demand?.strongestDemandSignal,
+    question,
+    weeklyBrief?.storySequence?.theme,
+    "what to post when you feel stuck",
+  )
+
+  return [
+    optionWithFingerprint({
+      type: "repurpose",
+      title: topPost?.hookLine
+        ? `Re-cut: ${topPost.hookLine.slice(0, 70)}`
+        : "Re-cut the clearest lesson from this week",
+      source: topPost
+        ? `stored weekly brief winner (${topPost.likes.toLocaleString("en-US")} likes, ${topPost.comments.toLocaleString("en-US")} comments)`
+        : "no Instagram top posts this run, built from the stored weekly brief",
+      executeIn: "20 min",
+      steps: [
+        `Put "${overlay}" on the first frame.`,
+        "Use the same idea, but change the opening visual.",
+        "Make the caption one short lesson, not a full explanation.",
+        "End with the one action this post was built for.",
+      ],
+      permalink: topPost?.permalink || null,
+    }),
+    optionWithFingerprint({
+      type: "trend-test",
+      title: trend?.trend ? `Test: ${trend.trend.slice(0, 70)}` : "Test the strongest hook pattern",
+      source: trend
+        ? `this week's stored trend radar: ${trend.whyItsMoving}`
+        : hook
+          ? `no trend radar this run, built from hook pattern: ${hook.pattern}`
+          : "no trend radar this run, built from the stored brief",
+      executeIn: "25 min",
+      steps: [
+        `Put "${firstOverlayText(weeklyBrief, hook?.hook || overlay)}" on screen first.`,
+        trend?.howSandraRidesIt || "Show your real face and the simple result side by side.",
+        trend?.noFakeGuardrail || "Keep the image recognizable and true to you.",
+        "Use one CTA only: comment PROMPT or reply with the question.",
+      ],
+      permalink: null,
+    }),
+    optionWithFingerprint({
+      type: "story-sequence",
+      title: `Story: ${demandLine.slice(0, 70)}`,
+      source: question
+        ? `audience question from the stored weekly brief: ${question}`
+        : demand
+          ? `stored demand map: ${demand.strongestDemandSignal}`
+          : "stored weekly brief story sequence",
+      executeIn: "15 min",
+      steps: [
+        `Frame 1: "${overlay}" plus a yes/no poll.`,
+        `Frame 2: name the stuck point: ${firstNonEmpty(demand?.painfulBefore, "not knowing what to post")}.`,
+        `Frame 3: show the tiny shift: ${firstNonEmpty(demand?.beliefShift, "one clear starting point is enough")}.`,
+        "Frame 4: add a question box or PROMPT reply CTA.",
+      ],
+      permalink: null,
+    }),
+  ]
 }
 
 export async function generatePostNowOptions(input: GeneratePostNowInput): Promise<PostNowResult> {
@@ -449,13 +580,7 @@ export function validatePostNowOptions(
 // ---------------------------------------------------------------------------
 
 export async function runPostNow(now: Date = new Date()): Promise<PostNowResult> {
-  const [performance, weeklyBrief, exclusions] = await Promise.all([
-    import("@/lib/content-engine/instagram-performance")
-      .then((mod) => mod.collectInstagramPerformance())
-      .catch((error) => {
-        console.error("[post-now] instagram performance unavailable:", error)
-        return null
-      }),
+  const [weeklyBrief, exclusions] = await Promise.all([
     getLatestWeeklyContentBrief().catch((error) => {
       console.error("[post-now] weekly brief unavailable:", error)
       return null
@@ -465,6 +590,7 @@ export async function runPostNow(now: Date = new Date()): Promise<PostNowResult>
       return { recentFingerprints: [], dismissedFingerprints: [] }
     }),
   ])
+  const performance = buildPerformanceFromWeeklyBrief(weeklyBrief)
 
   const result = await generatePostNowOptions({
     weeklyBrief,
@@ -472,6 +598,12 @@ export async function runPostNow(now: Date = new Date()): Promise<PostNowResult>
     recentFingerprints: exclusions.recentFingerprints,
     dismissedFingerprints: exclusions.dismissedFingerprints,
     now,
+  }).catch((error) => {
+    console.error("[post-now] AI draft generator unavailable, using fallback options:", error)
+    return {
+      options: buildPostNowFallbackOptions({ weeklyBrief, performance }),
+      missingInputs: [...findMissingInputs(weeklyBrief, performance), "AI draft generator"],
+    }
   })
 
   const options = await logSuggestedOptions(result.options).catch((error) => {

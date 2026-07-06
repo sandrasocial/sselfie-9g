@@ -419,6 +419,64 @@ describe("post-now route", () => {
   })
 })
 
+describe("post-now stability fallbacks", () => {
+  beforeEach(() => {
+    vi.resetModules()
+    vi.doUnmock("@/lib/admin/post-now")
+    vi.doUnmock("@/lib/supabase/server")
+    vi.clearAllMocks()
+    sqlMock.mockResolvedValue([])
+    delete process.env.CRON_SECRET
+    delete process.env.POST_NOW_ROUTE_TIMEOUT_MS
+  })
+
+  it("uses stored weekly brief performance instead of live Instagram and falls back when the model stalls", async () => {
+    const collectInstagramPerformanceMock = vi.fn(async () => {
+      throw new Error("live Instagram should not be called from post-now")
+    })
+    const weeklyWithPerformance = {
+      ...miniBrief,
+      accountSnapshot: {
+        username: "sandra.social",
+        followers: 110000,
+        postsAnalyzed: 20,
+        insightsLevel: "full",
+      },
+      performanceRecap: [
+        {
+          permalink: "https://www.instagram.com/p/stored-winner/",
+          format: "reel",
+          hookLine: "You only need one clear selfie",
+          likes: 5000,
+          comments: 200,
+          whyItWorked: "High saves from a simple before/after promise.",
+        },
+      ],
+    } as any
+
+    vi.doMock("@/lib/content-engine/instagram-performance", () => ({
+      collectInstagramPerformance: collectInstagramPerformanceMock,
+    }))
+    vi.doMock("@/lib/analytics/reports", () => ({
+      getLatestAnalyticsReports: vi.fn(async ({ reportType }: { reportType: string }) =>
+        reportType === "content_brief_weekly" ? [{ payload: weeklyWithPerformance }] : []
+      ),
+    }))
+    anthropicCreateMock.mockRejectedValue(new Error("model timeout"))
+
+    const { runPostNow } = await import("@/lib/admin/post-now")
+    const result = await runPostNow(new Date("2026-07-06T18:00:00.000Z"))
+
+    expect(collectInstagramPerformanceMock).not.toHaveBeenCalled()
+    expect(result.options).toHaveLength(3)
+    expect(new Set(result.options.map((option) => option.type))).toEqual(
+      new Set(["repurpose", "trend-test", "story-sequence"]),
+    )
+    expect(result.options[0].permalink).toBe("https://www.instagram.com/p/stored-winner/")
+    expect(result.missingInputs).toContain("AI draft generator")
+  })
+})
+
 describe("post-now UI wiring", () => {
   const client = read("components/admin/post-now-client.tsx")
 

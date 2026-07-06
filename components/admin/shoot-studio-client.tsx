@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { upload } from "@vercel/blob/client"
 import type { Shoot, ShootShot } from "@/lib/content-kit/types"
 import { getShootPublishReadiness } from "@/lib/content-kit/shoot-readiness"
 
@@ -22,6 +23,23 @@ const VIBE_PRESETS: { label: string; value: string }[] = [
       "Photodump collection: everyday candid camera-roll moments, natural light, relaxed and unposed, real phone-camera quality, not editorial or studio. Vary the everyday scene per shot.",
   },
 ]
+
+const MAX_INSPIRATION_BYTES = 20 * 1024 * 1024
+const MULTIPART_UPLOAD_BYTES = 8 * 1024 * 1024
+
+function uploadExtension(file: File) {
+  if (file.type.includes("png")) return "png"
+  if (file.type.includes("webp")) return "webp"
+  if (file.type.includes("heic")) return "heic"
+  if (file.type.includes("heif")) return "heif"
+  return "jpg"
+}
+
+function inspirationUploadPath(file: File) {
+  const stamp = Date.now()
+  const random = Math.floor(Math.random() * 1e6)
+  return `content-kit/inspiration/${stamp}-${random}.${uploadExtension(file)}`
+}
 
 // A timed-out or crashed function returns Vercel's plain-text error page, not JSON. Surface
 // that as a readable message instead of "Unexpected token 'A' ... is not valid JSON".
@@ -544,14 +562,26 @@ export function ShootStudioClient({
     setUploading(true)
     setError(null)
     try {
-      const form = new FormData()
-      Array.from(files)
-        .slice(0, maxInspiration)
-        .forEach((file) => form.append("files", file))
-      const response = await fetch("/api/admin/content-kit/shoots/upload", { method: "POST", body: form })
-      const data = await readJson(response)
-      if (!response.ok || !data.success) throw new Error(data.error || "Upload failed")
-      setInspiration((current) => [...current, ...data.urls].slice(0, maxInspiration))
+      const selected = Array.from(files).slice(0, maxInspiration)
+      for (const file of selected) {
+        if (!file.type.startsWith("image/")) {
+          throw new Error(`${file.name} is not an image`)
+        }
+        if (file.size > MAX_INSPIRATION_BYTES) {
+          throw new Error(`${file.name} is over 20MB`)
+        }
+      }
+      const blobs = await Promise.all(
+        selected.map((file) =>
+          upload(inspirationUploadPath(file), file, {
+            access: "public",
+            contentType: file.type,
+            handleUploadUrl: "/api/admin/content-kit/shoots/upload-token",
+            multipart: file.size > MULTIPART_UPLOAD_BYTES,
+          }),
+        ),
+      )
+      setInspiration((current) => [...current, ...blobs.map((blob) => blob.url)].slice(0, maxInspiration))
     } catch (err: any) {
       setError(err?.message || "Upload failed")
     } finally {

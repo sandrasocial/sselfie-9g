@@ -146,4 +146,26 @@ describe("Shoot Studio publish pipeline", () => {
     expect(route).toContain('action === "extend"')
     expect(route).toContain('action === "publish"')
   })
+
+  it("uploads inspiration images directly to Vercel Blob instead of proxying large files through the API route", () => {
+    const root = process.cwd()
+    const client = fs.readFileSync(
+      path.join(root, "components/admin/shoot-studio-client.tsx"),
+      "utf8"
+    )
+    const uploadTokenRoute = fs.readFileSync(
+      path.join(root, "app/api/admin/content-kit/shoots/upload-token/route.ts"),
+      "utf8"
+    )
+
+    expect(client).toContain('import { upload } from "@vercel/blob/client"')
+    expect(client).toContain('handleUploadUrl: "/api/admin/content-kit/shoots/upload-token"')
+    expect(client).toContain("multipart: file.size >")
+    expect(client).not.toContain('fetch("/api/admin/content-kit/shoots/upload", { method: "POST", body: form })')
+
+    expect(uploadTokenRoute).toContain('import { handleUpload, type HandleUploadBody } from "@vercel/blob/client"')
+    expect(uploadTokenRoute).toContain('allowedContentTypes: ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]')
+    expect(uploadTokenRoute).toContain("maximumSizeInBytes")
+    expect(uploadTokenRoute).toContain("requireAdmin(request")
+  })
 })
