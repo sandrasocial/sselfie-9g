@@ -9,7 +9,13 @@ import OpenAI, { toFile } from "openai"
 import sharp from "sharp"
 import { put } from "@vercel/blob"
 import { getDbClient } from "@/lib/db/client"
-import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS, refundCredits } from "@/lib/credits"
+import {
+  checkCredits,
+  deductCredits,
+  getUserCredits,
+  CREDIT_COSTS,
+  refundCredits,
+} from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
@@ -29,7 +35,14 @@ export const maxDuration = 300
 
 const sql = getDbClient()
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
-const VALID_FORMATS: OutputFormat[] = ["photo", "reel-cover", "carousel", "story-slide"]
+const VALID_FORMATS: OutputFormat[] = [
+  "photo",
+  "photoshoot",
+  "reel-cover",
+  "carousel",
+  "story-slide",
+  "story-sequence",
+]
 
 // Matches qualityForFormat in the generate route (MEASURED there): SUITE renders at MEDIUM with
 // the same env override, so refining a photo never silently changes its quality tier.
@@ -134,7 +147,10 @@ function buildEditPrompt(
 export async function POST(request: NextRequest) {
   const rate = await rateLimit(request, { maxRequests: 20, windowMs: 60000 })
   if (!rate.success) {
-    return NextResponse.json({ error: "Rate limit exceeded", retryAfter: rate.retryAfter }, { status: 429 })
+    return NextResponse.json(
+      { error: "Rate limit exceeded", retryAfter: rate.retryAfter },
+      { status: 429 }
+    )
   }
 
   try {
@@ -145,21 +161,39 @@ export async function POST(request: NextRequest) {
     const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const body = (await request.json().catch(() => null)) as
-      | { imageUrl?: string; instruction?: string; format?: OutputFormat; referenceSelfieUrl?: string }
-      | null
+    const body = (await request.json().catch(() => null)) as {
+      imageUrl?: string
+      instruction?: string
+      format?: OutputFormat
+      referenceSelfieUrl?: string
+      sourceImageId?: number
+      sourceTitle?: string
+    } | null
     if (!body || !isAllowedImageUrl(body.imageUrl)) {
       return NextResponse.json({ error: "A valid image to edit is required" }, { status: 400 })
     }
     const instruction = typeof body.instruction === "string" ? body.instruction.trim() : ""
-    if (!instruction) return NextResponse.json({ error: "Tell Maya what to change" }, { status: 400 })
+    if (!instruction)
+      return NextResponse.json({ error: "Tell Maya what to change" }, { status: 400 })
 
-    const format: OutputFormat = body.format && VALID_FORMATS.includes(body.format) ? body.format : "photo"
+    const format: OutputFormat =
+      body.format && VALID_FORMATS.includes(body.format) ? body.format : "photo"
+    const sourceImageId =
+      typeof body.sourceImageId === "number" &&
+      Number.isInteger(body.sourceImageId) &&
+      body.sourceImageId > 0
+        ? body.sourceImageId
+        : null
+    const imageTitle =
+      typeof body.sourceTitle === "string" && body.sourceTitle.trim()
+        ? body.sourceTitle.trim().slice(0, 120)
+        : `Edited ${format}`
     const size = toOpenAIEditSize(conceptRequestSize(format))
 
     const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
     const neonUser = await getEffectiveNeonUser(user.id)
-    if (!neonUser) return NextResponse.json({ error: "User not found in database" }, { status: 404 })
+    if (!neonUser)
+      return NextResponse.json({ error: "User not found in database" }, { status: 404 })
 
     // BRIDGE-01 Phase D: members and active trials only (same lock as generate).
     {
@@ -173,7 +207,7 @@ export async function POST(request: NextRequest) {
               code: "generation_locked",
               action: "open_membership_checkout",
             },
-            { status: 403 },
+            { status: 403 }
           )
         }
       }
@@ -206,7 +240,7 @@ export async function POST(request: NextRequest) {
                     updated: saved.updated,
                     total_notes: saved.total,
                   },
-                }),
+                })
               )
               .catch(() => {})
           }
@@ -220,25 +254,54 @@ export async function POST(request: NextRequest) {
     if (!hasEnough) {
       const current = await getUserCredits(neonUser.id)
       return NextResponse.json(
-        { error: "Insufficient credits", code: "insufficient_credits", action: "open_credits_topup", required: CREDIT_COSTS.IMAGE, current },
-        { status: 402 },
+        {
+          error: "Insufficient credits",
+          code: "insufficient_credits",
+          action: "open_credits_topup",
+          required: CREDIT_COSTS.IMAGE,
+          current,
+        },
+        { status: 402 }
       )
     }
-    const deduction = await deductCredits(neonUser.id, CREDIT_COSTS.IMAGE, "image", `app-v3 edit: ${instruction.slice(0, 50)}`)
+    const deduction = await deductCredits(
+      neonUser.id,
+      CREDIT_COSTS.IMAGE,
+      "image",
+      `app-v3 edit: ${instruction.slice(0, 50)}`
+    )
     if (!deduction.success) {
-      return NextResponse.json({ error: deduction.error ?? "Credit deduction failed.", code: "credit_deduction_failed" }, { status: 402 })
+      return NextResponse.json(
+        { error: deduction.error ?? "Credit deduction failed.", code: "credit_deduction_failed" },
+        { status: 402 }
+      )
     }
 
     const refundRef = `app-v3-edit-fail-${neonUser.id}-${Date.now()}`
     const openaiApiKey = process.env.OPENAI_API_KEY
     if (!openaiApiKey) {
       console.error("[app-v3 edit] OPENAI_API_KEY is not set in this environment.")
-      await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "OpenAI API key not configured", refundRef).catch(() => {})
-      return NextResponse.json({ error: "Editing is temporarily unavailable. Please try again later.", code: "openai_not_configured" }, { status: 500 })
+      await refundCredits(
+        neonUser.id,
+        CREDIT_COSTS.IMAGE,
+        "OpenAI API key not configured",
+        refundRef
+      ).catch(() => {})
+      return NextResponse.json(
+        {
+          error: "Editing is temporarily unavailable. Please try again later.",
+          code: "openai_not_configured",
+        },
+        { status: 500 }
+      )
     }
 
     const openai = new OpenAI({ apiKey: openaiApiKey })
-    const sourceFile = await toFile(await normalize(await loadImage(body.imageUrl)), "maya-edit-source.png", { type: "image/png" })
+    const sourceFile = await toFile(
+      await normalize(await loadImage(body.imageUrl)),
+      "maya-edit-source.png",
+      { type: "image/png" }
+    )
 
     // Re-attach her real selfie so likeness is anchored to the person, not the previous
     // generation. Best effort: if no selfie is resolvable, the edit still runs (old behavior).
@@ -270,7 +333,7 @@ export async function POST(request: NextRequest) {
               reason,
               detail: (detail instanceof Error ? detail.message : String(detail)).slice(0, 300),
             },
-          }),
+          })
         )
         .catch(() => {})
 
@@ -294,48 +357,82 @@ export async function POST(request: NextRequest) {
 
     let imageBuffer: Buffer
     try {
-      imageBuffer = await runEdit(buildEditPrompt(instruction, false, hasIdentityReference, likenessBlock))
+      imageBuffer = await runEdit(
+        buildEditPrompt(instruction, false, hasIdentityReference, likenessBlock)
+      )
     } catch (firstError) {
       if (isContentPolicyError(firstError)) {
         try {
-          imageBuffer = await runEdit(buildEditPrompt(instruction, true, hasIdentityReference, likenessBlock))
+          imageBuffer = await runEdit(
+            buildEditPrompt(instruction, true, hasIdentityReference, likenessBlock)
+          )
         } catch (retryError) {
-          await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "OpenAI content policy", refundRef).catch(() => {})
+          await refundCredits(
+            neonUser.id,
+            CREDIT_COSTS.IMAGE,
+            "OpenAI content policy",
+            refundRef
+          ).catch(() => {})
           if (isContentPolicyError(retryError)) {
             await logEditFailure("content_policy", retryError)
-            return NextResponse.json({ error: "That change isn't available. Try wording it differently.", code: "content_policy" }, { status: 400 })
+            return NextResponse.json(
+              {
+                error: "That change isn't available. Try wording it differently.",
+                code: "content_policy",
+              },
+              { status: 400 }
+            )
           }
           console.error("[app-v3 edit] edit failed on retry:", retryError)
           await logEditFailure("retry_failed", retryError)
-          return NextResponse.json({ error: "Couldn't make that change. Please try again." }, { status: 500 })
+          return NextResponse.json(
+            { error: "Couldn't make that change. Please try again." },
+            { status: 500 }
+          )
         }
       } else {
-        await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "OpenAI edit failed", refundRef).catch(() => {})
+        await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "OpenAI edit failed", refundRef).catch(
+          () => {}
+        )
         console.error("[app-v3 edit] edit failed:", firstError)
         await logEditFailure("edit_failed", firstError)
-        return NextResponse.json({ error: "Couldn't make that change. Please try again." }, { status: 500 })
+        return NextResponse.json(
+          { error: "Couldn't make that change. Please try again." },
+          { status: 500 }
+        )
       }
     }
 
     let blob: { url: string }
     try {
-      blob = await put(`maya-app-v3/${neonUser.id}/edit-${Date.now()}.png`, imageBuffer, { access: "public", contentType: "image/png" })
+      blob = await put(`maya-app-v3/${neonUser.id}/edit-${Date.now()}.png`, imageBuffer, {
+        access: "public",
+        contentType: "image/png",
+      })
     } catch (blobError) {
-      await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "Blob upload failed", refundRef).catch(() => {})
+      await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "Blob upload failed", refundRef).catch(
+        () => {}
+      )
       console.error("[app-v3 edit] blob upload failed:", blobError)
-      return NextResponse.json({ error: "Failed to save the edit. Please try again." }, { status: 500 })
+      return NextResponse.json(
+        { error: "Failed to save the edit. Please try again." },
+        { status: 500 }
+      )
     }
 
+    let insertedId: number | null = null
     try {
-      await sql`
+      const inserted = await sql`
         INSERT INTO ai_images (
-          user_id, image_url, prompt, generated_prompt, prediction_id,
+          user_id, image_url, title, variant_of, prompt, generated_prompt, prediction_id,
           generation_status, source, category, created_at
         ) VALUES (
-          ${neonUser.id}, ${blob.url}, ${instruction}, ${instruction},
-          ${"app-v3-edit-" + Date.now()}, 'completed', 'openai', 'edit', NOW()
+          ${neonUser.id}, ${blob.url}, ${imageTitle}, ${sourceImageId}, ${instruction}, ${instruction},
+          ${"app-v3-edit-" + Date.now()}, 'completed', 'openai', ${format}, NOW()
         )
+        RETURNING id
       `
+      insertedId = inserted[0]?.id ?? null
     } catch (dbError) {
       console.error("[app-v3 edit] DB insert failed (image saved to Blob):", dbError)
     }
@@ -348,18 +445,22 @@ export async function POST(request: NextRequest) {
           eventName: "suite_edit_applied",
           userId: String(neonUser.id),
           properties: { source: "app-v3-edit", format, instruction: instruction.slice(0, 120) },
-        }),
+        })
       )
       .catch(() => {})
 
     return NextResponse.json({
       success: true,
       imageUrl: blob.url,
+      aiImageId: insertedId,
       creditsDeducted: CREDIT_COSTS.IMAGE,
       newBalance: deduction.newBalance,
     })
   } catch (error) {
     console.error("[app-v3 edit] Unexpected error:", error)
-    return NextResponse.json({ error: "Couldn't make that change. Please try again." }, { status: 500 })
+    return NextResponse.json(
+      { error: "Couldn't make that change. Please try again." },
+      { status: 500 }
+    )
   }
 }

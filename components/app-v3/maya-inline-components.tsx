@@ -122,10 +122,14 @@ export function InlineVibePicker({
   aesthetics,
   disabled,
   onPick,
+  onUseInspiration,
+  onLetMayaDecide,
 }: {
   aesthetics: Aesthetic[]
   disabled?: boolean
   onPick: (aesthetic: Aesthetic) => void
+  onUseInspiration?: () => void
+  onLetMayaDecide?: () => void
 }) {
   const [showAllStyles, setShowAllStyles] = useState(false)
   const visibleAesthetics = showAllStyles ? aesthetics : aesthetics.slice(0, 6)
@@ -140,6 +144,40 @@ export function InlineVibePicker({
         Pick the look you want Maya to follow. You can also add an inspiration image if you want her
         to use a pose, light, or vibe.
       </p>
+      {(onUseInspiration || onLetMayaDecide) && (
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {onUseInspiration && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onUseInspiration}
+              className="min-h-16 rounded-[6px] border border-[color:var(--ss-silver)]/70 bg-[color:var(--ss-seasalt)] px-3 py-3 text-left transition-colors hover:border-[color:var(--ss-night)] disabled:opacity-45"
+            >
+              <span className="block text-[12px] font-medium text-[color:var(--ss-night)]">
+                Use my inspiration
+              </span>
+              <span className="mt-1 block text-[11px] leading-relaxed text-[color:var(--ss-davy)]">
+                Add a photo for pose, light, styling, or mood.
+              </span>
+            </button>
+          )}
+          {onLetMayaDecide && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onLetMayaDecide}
+              className="min-h-16 rounded-[6px] border border-[color:var(--ss-night)]/30 bg-white px-3 py-3 text-left transition-colors hover:border-[color:var(--ss-night)] disabled:opacity-45"
+            >
+              <span className="block text-[12px] font-medium text-[color:var(--ss-night)]">
+                Let Maya decide
+              </span>
+              <span className="mt-1 block text-[11px] leading-relaxed text-[color:var(--ss-davy)]">
+                Maya will pull 2-3 strong style options from your profile.
+              </span>
+            </button>
+          )}
+        </div>
+      )}
       <div className="mt-3 grid grid-cols-2 gap-2">
         {visibleAesthetics.map(aesthetic => (
           <button

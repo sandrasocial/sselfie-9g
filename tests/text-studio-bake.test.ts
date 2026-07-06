@@ -17,7 +17,11 @@ import {
   bakeMarkedPhrase,
   buildBakePrompt,
 } from "@/lib/app-v3/text-bake"
-import { OVERLAY_STYLE_PRESETS, type OverlayStyleId, type TextOverlaySpec } from "@/lib/app-v3/text-overlay"
+import {
+  OVERLAY_STYLE_PRESETS,
+  type OverlayStyleId,
+  type TextOverlaySpec,
+} from "@/lib/app-v3/text-overlay"
 import { ALLOWED_ANALYTICS_EVENTS } from "@/lib/analytics/event-contract"
 
 function specFor(style: OverlayStyleId, overrides?: Partial<TextOverlaySpec>): TextOverlaySpec {
@@ -181,7 +185,7 @@ describe("bake route wiring (app/api/app-v3/maya/bake-text)", () => {
   it("copies the edit route's credits behavior: check, deduct, refund on every failure", () => {
     expect(route).toContain("checkCredits(neonUser.id, CREDIT_COSTS.IMAGE)")
     expect(route).toContain('code: "insufficient_credits"')
-    expect(route).toContain('deductCredits(neonUser.id, CREDIT_COSTS.IMAGE, "image"')
+    expect(route).toMatch(/deductCredits\(\s*neonUser\.id,\s*CREDIT_COSTS\.IMAGE,\s*"image"/)
     // Refunds on: missing key, bake failure, blob failure.
     expect(route.match(/refundCredits\(/g)?.length).toBeGreaterThanOrEqual(3)
     expect(route).toContain("newBalance: deduction.newBalance")
@@ -205,7 +209,9 @@ describe("analytics contract", () => {
 describe("retired Text Studio client", () => {
   it("keeps the old manual studio deleted while the bake route remains for Maya chat edits", () => {
     expect(existsSync("components/app-v3/text-studio.tsx")).toBe(false)
-    expect(readFileSync("components/app-v3/maya-concierge.tsx", "utf8")).not.toContain("<TextStudio")
+    expect(readFileSync("components/app-v3/maya-concierge.tsx", "utf8")).not.toContain(
+      "<TextStudio"
+    )
     expect(readFileSync("components/app-v3/concept-card.tsx", "utf8")).not.toContain(
       "downloadImageWithOverlay"
     )
