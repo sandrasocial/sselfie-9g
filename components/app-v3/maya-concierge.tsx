@@ -225,9 +225,7 @@ function TextStyleTemplatePicker({
           disabled={disabled}
           className="min-h-12 w-full rounded-[6px] border border-[#0D0E10]/25 bg-white px-3 py-2.5 text-left transition-colors hover:border-[#0D0E10] disabled:opacity-45"
         >
-          <span className="block text-[12px] font-medium text-[#0D0E10]">
-            Use your usual style
-          </span>
+          <span className="block text-[12px] font-medium text-[#0D0E10]">Use your usual style</span>
           <span className="mt-1 block text-[11px] leading-relaxed text-[#6D6E70]">
             {rememberedPreset.name}
           </span>
@@ -396,6 +394,8 @@ const CTA_LABEL: Record<OutputFormat, string> = {
   "story-sequence": "Create my story sequence directions",
   video: "Create my video directions",
 }
+
+const IMAGE_UPLOAD_ACCEPT = "image/jpeg,image/png,image/webp"
 
 type UploadSlot = "face" | "angle" | "side" | "body" | "inspiration" | "video"
 
@@ -644,9 +644,7 @@ export function MayaConcierge({
   const [uploadingSlot, setUploadingSlot] = useState<UploadSlot | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [input, setInput] = useState("")
-  const [generationSource, setGenerationSource] = useState<GenerationSource>(() =>
-    "selfie"
-  )
+  const [generationSource, setGenerationSource] = useState<GenerationSource>(() => "selfie")
   // Per-card generation state, keyed by `${messageId}:${conceptId}`.
   const [genState, setGenState] = useState<Record<string, ConceptGenState>>(
     () => restoredDraft?.genState ?? {}
@@ -758,6 +756,7 @@ export function MayaConcierge({
   const [inspirationUrl, setInspirationUrl] = useState<string | null>(null)
   // SUITE-UX-02: inspiration attaches straight from the composer (no buried slot).
   const attachInputRef = useRef<HTMLInputElement>(null)
+  const pendingInspirationIntentRef = useRef<CreationIntent | null>(null)
 
   // SUITE-UX-02 mobile: when the on-screen keyboard opens, iOS shrinks only the VISUAL
   // viewport; a 100dvh drawer keeps its layout height and a dead dark gap opens under the
@@ -844,6 +843,7 @@ export function MayaConcierge({
       seedRetiredRef.current = false
       formatSwitchAppliedRef.current.clear()
       inFlightGenerationKeysRef.current.clear()
+      pendingInspirationIntentRef.current = null
       setChatId(newChatId())
       setMessages([])
       setGenState({})
@@ -929,6 +929,7 @@ export function MayaConcierge({
     lastPulledFormatRef.current = null
     seededMessageSentRef.current = null
     seedRetiredRef.current = false
+    pendingInspirationIntentRef.current = null
     setTextStyleChoice(null)
     setTextStyleAdjustments(null)
     setStyleSwapOpen(false)
@@ -1201,7 +1202,11 @@ export function MayaConcierge({
       else if (slot === "video") {
         setVideoSourceUrl(data.url)
         setSetupOpen(false)
-      } else setInspirationUrl(data.url)
+      } else
+        handleInspirationReady(
+          data.url,
+          pendingInspirationIntentRef.current ? "style_picker" : "upload"
+        )
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : "Upload failed")
     } finally {
@@ -1215,7 +1220,7 @@ export function MayaConcierge({
     if (slot === "angle") setThreeQuarterUrl(null)
     else if (slot === "side") setSideProfileUrl(null)
     else if (slot === "body") setFullBodyUrl(null)
-    else setInspirationUrl(null)
+    else handleInspirationReady(null, "manager")
     void fetch(`/api/app-v3/upload-selfie?slot=${slot}`, { method: "DELETE" }).catch(() => {})
   }
 
@@ -1430,9 +1435,9 @@ export function MayaConcierge({
           conceptTitle: concept.title,
           rerun,
           ...(graphicTextMode ? { textOverlayMode: graphicTextMode } : {}),
-            ...(bakeStyle ? { overlayStyle: bakeStyle } : {}),
-            ...(textStyleAdjustments ? { styleAdjustments: textStyleAdjustments } : {}),
-            ...(wantsBakedText ? { autoBake: true } : {}),
+          ...(bakeStyle ? { overlayStyle: bakeStyle } : {}),
+          ...(textStyleAdjustments ? { styleAdjustments: textStyleAdjustments } : {}),
+          ...(wantsBakedText ? { autoBake: true } : {}),
           // Single-image formats stream progressive previews; carousels keep the JSON path.
           // Auto-baked text needs the JSON path so the baked URL returns with the clean base.
           stream: wantsBakedText ? false : targetFormat !== "carousel",
@@ -1719,6 +1724,40 @@ export function MayaConcierge({
     return intentForFormat(currentFormat, source)
   }
 
+  function handleInspirationReady(
+    url: string | null,
+    source: "upload" | "style_picker" | "manager"
+  ) {
+    setInspirationUrl(url)
+    if (!url) {
+      pendingInspirationIntentRef.current = null
+      return
+    }
+
+    const intent = pendingInspirationIntentRef.current ?? intentForCurrentVibeChoice("manual")
+    pendingInspirationIntentRef.current = null
+    const nextFormat = intent.format ?? outputFormat ?? null
+    const shouldCommitAsStyle =
+      Boolean(nextFormat) &&
+      nextFormat !== "video" &&
+      !hasSpecificVisualWorld &&
+      messages.length === 0
+
+    if (!shouldCommitAsStyle) return
+
+    trackInlineChoice("inspiration_style_committed", intent, { source })
+    openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
+      format: nextFormat ?? undefined,
+      seed:
+        session?.seedPrompt ??
+        "Use my inspiration image as the style direction and show me the best starting options.",
+      referenceSelfieUrl,
+      videoSourceUrl,
+      creationIntent: intent,
+    })
+    setSetupOpen(false)
+  }
+
   function handleInlineVibePick(nextAesthetic: Aesthetic) {
     if (isThinking) return
     const intent = intentForCurrentVibeChoice("manual")
@@ -1741,7 +1780,12 @@ export function MayaConcierge({
     if (isThinking) return
     const intent = intentForCurrentVibeChoice("manual")
     trackInlineChoice("use_inspiration", intent)
-    setSelfieManagerOpen(true)
+    pendingInspirationIntentRef.current = intent
+    if (inspirationUrl) {
+      handleInspirationReady(inspirationUrl, "style_picker")
+      return
+    }
+    attachInputRef.current?.click()
   }
 
   function handleInlineMayaDecides() {
@@ -2477,7 +2521,7 @@ export function MayaConcierge({
                 <input
                   ref={videoInput}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept={IMAGE_UPLOAD_ACCEPT}
                   className="hidden"
                   onChange={e => {
                     const f = e.target.files?.[0]
@@ -2542,11 +2586,12 @@ export function MayaConcierge({
             <input
               ref={fileInput}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept={IMAGE_UPLOAD_ACCEPT}
               className="hidden"
               onChange={e => {
                 const f = e.target.files?.[0]
                 if (f) void handleUpload("face", f)
+                if (fileInput.current) fileInput.current.value = ""
               }}
             />
 
@@ -2659,11 +2704,12 @@ export function MayaConcierge({
                       <input
                         ref={ref}
                         type="file"
-                        accept="image/jpeg,image/png,image/webp"
+                        accept={IMAGE_UPLOAD_ACCEPT}
                         className="hidden"
                         onChange={e => {
                           const f = e.target.files?.[0]
                           if (f) void handleUpload(slot, f)
+                          if (ref.current) ref.current.value = ""
                         }}
                       />
                     </span>
@@ -3054,7 +3100,9 @@ export function MayaConcierge({
                                 <button
                                   key={variation.label}
                                   type="button"
-                                  onClick={() => setTextStyleAdjustments(variation.styleAdjustments)}
+                                  onClick={() =>
+                                    setTextStyleAdjustments(variation.styleAdjustments)
+                                  }
                                   className={`min-h-10 shrink-0 rounded-full border px-3 text-[11px] uppercase tracking-[0.12em] ${
                                     selected
                                       ? "border-[#0D0E10] bg-[#0D0E10] text-white"
@@ -3160,11 +3208,11 @@ export function MayaConcierge({
                       }}
                     />
                   ) : (
-                      <TextStyleTemplatePicker
-                        format={outputFormat}
-                        rememberedStyle={rememberedOverlayStyle}
-                        onPick={handleTextStylePick}
-                      />
+                    <TextStyleTemplatePicker
+                      format={outputFormat}
+                      rememberedStyle={rememberedOverlayStyle}
+                      onPick={handleTextStylePick}
+                    />
                   )}
                 </div>
               </div>
@@ -3263,7 +3311,7 @@ export function MayaConcierge({
             <input
               ref={attachInputRef}
               type="file"
-              accept="image/*"
+              accept={IMAGE_UPLOAD_ACCEPT}
               className="hidden"
               onChange={e => {
                 const file = e.target.files?.[0]
@@ -3341,7 +3389,7 @@ export function MayaConcierge({
           if (slot === "angle") setThreeQuarterUrl(url)
           else if (slot === "side") setSideProfileUrl(url)
           else if (slot === "body") setFullBodyUrl(url)
-          else if (slot === "inspiration") setInspirationUrl(url)
+          else if (slot === "inspiration") handleInspirationReady(url, "manager")
         }}
         onContinue={url => {
           setSelfieRestored(false)

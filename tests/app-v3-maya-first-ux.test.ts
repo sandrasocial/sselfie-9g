@@ -46,10 +46,12 @@ describe("Maya-first Suite creation UX", () => {
     expect(renderHasStarted).toBeGreaterThan(-1)
     expect(renderNeedsVisualWorld).toBeGreaterThan(-1)
     expect(renderHasStarted).toBeLessThan(renderNeedsVisualWorld)
-    expect(concierge).toContain("fmt !== \"video\"")
+    expect(concierge).toContain('fmt !== "video"')
     expect(concierge).toContain("!hasSpecificSessionWorld")
     expect(concierge).toContain("if (needsInitialVisualWorld) return")
-    expect(concierge).toContain("const shouldShowFormatChoice = !outputFormat || (hasStarted && setupOpen)")
+    expect(concierge).toContain(
+      "const shouldShowFormatChoice = !outputFormat || (hasStarted && setupOpen)"
+    )
     expect(concierge).toContain("shouldShowFormatChoice &&")
     expect(concierge).toContain("shouldShowVibeChoice &&")
     expect(concierge).toContain("Choose a style first")
@@ -63,6 +65,34 @@ describe("Maya-first Suite creation UX", () => {
     expect(inline).toContain("showAllStyles ? aesthetics : aesthetics.slice(0, 6)")
     expect(inline).toContain("Show all ${aesthetics.length} styles")
     expect(inline).toContain("add an inspiration image")
+  })
+
+  it("treats inspiration upload as a real style choice instead of an optional dead end", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    const inline = read("components/app-v3/maya-inline-components.tsx")
+
+    expect(concierge).toContain("function handleInspirationReady")
+    expect(concierge).toContain("pendingInspirationIntentRef")
+    expect(concierge).toContain("inspiration_style_committed")
+    expect(inline).toContain("Use my inspiration")
+    expect(concierge).toContain("attachInputRef.current?.click()")
+    expect(concierge).toContain("openWithAesthetic(MAYA_DECIDES_AESTHETIC")
+    expect(concierge).toContain("Use my inspiration image as the style direction")
+    expect(concierge).toContain('handleInspirationReady(url, "manager")')
+    expect(concierge).not.toContain(
+      'trackInlineChoice("use_inspiration", intent)\n    setSelfieManagerOpen(true)'
+    )
+  })
+
+  it("keeps inspiration upload affordances on the same accepted-file contract", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    const manager = read("components/app-v3/selfie-reference-manager-modal.tsx")
+
+    expect(concierge).toContain('const IMAGE_UPLOAD_ACCEPT = "image/jpeg,image/png,image/webp"')
+    expect(manager).toContain('const IMAGE_UPLOAD_ACCEPT = "image/jpeg,image/png,image/webp"')
+    expect(concierge).toContain("accept={IMAGE_UPLOAD_ACCEPT}")
+    expect(manager).toContain("accept={IMAGE_UPLOAD_ACCEPT}")
+    expect(concierge).not.toContain('accept="image/*"')
   })
 
   it("keeps the server from defaulting unclear requests into photo concepts", () => {
@@ -88,9 +118,9 @@ describe("Maya-first Suite creation UX", () => {
   it("routes existing Content and Gallery entry points into Maya with source context", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
 
-    expect(shell).toContain("intentForFormat(format, \"content_card\")")
-    expect(shell).toContain("intentForFormat(\"video\", \"gallery_action\")")
-    expect(shell).toContain("creationIntent: intentForFormat(format, \"manual\")")
+    expect(shell).toContain('intentForFormat(format, "content_card")')
+    expect(shell).toContain('intentForFormat("video", "gallery_action")')
+    expect(shell).toContain('creationIntent: intentForFormat(format, "manual")')
   })
 
   it("uses the full-screen Maya drawer so the bottom nav does not compete with chat", () => {
@@ -99,11 +129,11 @@ describe("Maya-first Suite creation UX", () => {
 
     expect(shell).not.toContain("close: closeMaya, isOpen: mayaOpen")
     expect(shell).not.toContain("if (mayaOpen) closeMaya()")
-    expect(shell).not.toContain("\"--sselfie-bottom-nav-height\"")
+    expect(shell).not.toContain('"--sselfie-bottom-nav-height"')
     expect(shell).toContain("pb-[calc(4.75rem+env(safe-area-inset-bottom))]")
 
     expect(concierge).toContain("fixed inset-0 z-50 flex w-full")
-    expect(concierge).toContain("className=\"relative flex h-[100dvh]")
+    expect(concierge).toContain('className="relative flex h-[100dvh]')
     expect(concierge).not.toContain("fixed inset-x-0 top-0 z-50")
   })
 
@@ -114,8 +144,8 @@ describe("Maya-first Suite creation UX", () => {
     const lightbox = read("components/app-v3/image-lightbox.tsx")
 
     expect(concierge).toContain("function GraphicTextChoiceCard")
-    expect(concierge).toContain('setTextOverlayMode(mode)')
-    expect(concierge).toContain("textOverlayMode === \"with-text\"")
+    expect(concierge).toContain("setTextOverlayMode(mode)")
+    expect(concierge).toContain('textOverlayMode === "with-text"')
     expect(concierge).toContain('onChoose("without-text")')
     expect(route).toContain("normalizeRequestedOverlayStyle(body.overlayStyle)")
     expect(route).toContain("normalizeGraphicTextMode(body.textOverlayMode)")
@@ -165,7 +195,7 @@ describe("Maya-first Suite creation UX", () => {
     expect(commitEnd).toBeGreaterThan(commitStart)
     expect(commitBody).toContain("suppressAutoPull")
     expect(commitBody).toContain("lastPulledFormatRef.current = intent.format")
-    expect(concierge).toContain("commitDetectedIntent(text, \"typed\", { suppressAutoPull: true })")
+    expect(concierge).toContain('commitDetectedIntent(text, "typed", { suppressAutoPull: true })')
   })
 
   it("guards generation actions against duplicate in-flight requests", () => {

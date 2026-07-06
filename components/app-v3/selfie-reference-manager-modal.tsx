@@ -24,6 +24,8 @@ type ManagedSlot = {
   inputRef: RefObject<HTMLInputElement | null>
 }
 
+const IMAGE_UPLOAD_ACCEPT = "image/jpeg,image/png,image/webp"
+
 export function SelfieReferenceManagerModal({
   open,
   initialFaceUrl,
@@ -226,7 +228,7 @@ export function SelfieReferenceManagerModal({
                 <input
                   ref={faceInputRef}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept={IMAGE_UPLOAD_ACCEPT}
                   className="hidden"
                   onChange={event => {
                     const file = event.target.files?.[0]
@@ -348,7 +350,7 @@ export function SelfieReferenceManagerModal({
                           <input
                             ref={item.inputRef}
                             type="file"
-                            accept="image/jpeg,image/png,image/webp"
+                            accept={IMAGE_UPLOAD_ACCEPT}
                             className="hidden"
                             onChange={event => {
                               const file = event.target.files?.[0]
