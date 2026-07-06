@@ -2,7 +2,6 @@ import { NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { checkCredits, deductCredits } from "@/lib/credits"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
-import { getFeedPlannerV2Flag } from "@/lib/feed-planner/feature-flag"
 import { getFeedStyleV2ByName } from "@/lib/feed-planner/feed-style-prompt-loader"
 import { getPreviewPromptForStyle, selectPromptForPosition } from "@/lib/feed-planner/feed-style-generation"
 import { withAuth } from "@/lib/auth/with-auth"
@@ -19,17 +18,6 @@ async function handleRegeneratePost(
   { params: _params }: { params: Promise<{ feedId: string }> },
 ) {
   try {
-    const useFeedPlannerV2 = await getFeedPlannerV2Flag(neonUser.id)
-    if (!useFeedPlannerV2) {
-      return NextResponse.json(
-        {
-          error: "FEED_PLANNER_V2_REQUIRED",
-          details: "Feed Planner V2 is required for regeneration.",
-        },
-        { status: 410 },
-      )
-    }
-
     const { postId } = await request.json()
 
     // Get post data and feed layout (including generation_mode)

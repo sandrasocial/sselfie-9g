@@ -1,7 +1,6 @@
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { getDb } from "@/lib/db/client"
-import { getFeedPlannerV2Flag } from "@/lib/feed-planner/feature-flag"
 import { withAuth } from "@/lib/auth/with-auth"
 import {
   getDefaultVariationId,
@@ -24,16 +23,6 @@ async function handleCreateManualFeed({
 }) {
   try {
     const sql = getDb()
-    const useFeedPlannerV2 = await getFeedPlannerV2Flag(user.id)
-    if (!useFeedPlannerV2) {
-      return NextResponse.json(
-        {
-          error: "FEED_PLANNER_V2_REQUIRED",
-          details: "Feed Planner V2 is now required for manual feeds.",
-        },
-        { status: 410 },
-      )
-    }
 
     // Get optional title, feedStyle, visualAesthetic, and fashionStyle from request body
     let body: any = {}

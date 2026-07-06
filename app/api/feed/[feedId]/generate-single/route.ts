@@ -45,7 +45,6 @@ import { extractReplicateVersionId, ensureTriggerWordPrefix, ensureGenderInPromp
 import { validatePrompt } from "@/lib/generation/prompt"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
-import { getFeedPlannerV2Flag } from "@/lib/feed-planner/feature-flag"
 import { getFeedStyleV2ByName } from "@/lib/feed-planner/feed-style-prompt-loader"
 import { getPreviewPromptForStyle, selectPromptForPosition } from "@/lib/feed-planner/feed-style-generation"
 
@@ -156,7 +155,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     // Free users can generate ONE image (they have 2 credits), others can generate unlimited
     // Also used later to determine default generation mode
     const access = await getFeedPlannerAccess(user.id.toString())
-    const useFeedPlannerV2 = await getFeedPlannerV2Flag(user.id)
 
     if (!access.canGenerateImages) {
       console.error("[v0] [GENERATE-SINGLE] User does not have generation access", {
@@ -498,79 +496,69 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           console.log(
             `[v0] [GENERATE-SINGLE] ⚠️ Pro Mode post ${post.position} missing prompt. Generating based on feed type and user type...`
           )
-          if (useFeedPlannerV2) {
-            try {
-              if (!feedLayout?.feed_style) {
-                return Response.json(
-                  {
-                    error: "FEED_STYLE_REQUIRED",
-                    details: "Feed style is required for Feed Planner V2 generation.",
-                  },
-                  { status: 422 },
-                )
-              }
-
-              const style = await getFeedStyleV2ByName(feedLayout.feed_style)
-              if (!style || !style.enabled) {
-                return Response.json(
-                  { error: "FEED_STYLE_NOT_READY", details: "Feed style is not available for V2." },
-                  { status: 422 },
-                )
-              }
-
-              const feedVariationId = feedLayout?.feed_style_variation_id ?? null
-              console.log(`[v0] [GENERATE-SINGLE] Loading prompt for feed: feedId=${feedIdInt}, styleId=${style.id}, feedStyle=${feedLayout?.feed_style}, variationId=${feedVariationId}, isPreviewFeed=${isPreviewFeed}, position=${post.position}`)
-              
-              // Validate variation_id is a valid number if provided
-              if (feedVariationId !== null && feedVariationId !== undefined) {
-                const numericVariationId = Number(feedVariationId)
-                if (!Number.isFinite(numericVariationId) || numericVariationId <= 0) {
-                  console.warn(`[v0] [GENERATE-SINGLE] Invalid variation_id in feed_layouts: ${feedVariationId}, using null`)
-                  feedLayout.feed_style_variation_id = null
-                }
-              }
-              
-              if (isPreviewFeed) {
-                finalPrompt = await getPreviewPromptForStyle(style.id, feedVariationId)
-                chosenPromptSource = "v2_preview_prompt"
-                console.log(`[v0] [GENERATE-SINGLE] Preview prompt loaded: variationId=${feedVariationId}, length=${finalPrompt?.length || 0}`)
-              } else {
-                const selected = await selectPromptForPosition(
-                  style.id,
-                  post.position,
-                  feedVariationId,
-                )
-                finalPrompt = selected.prompt_text
-                chosenPromptSource = "v2_scene_prompt"
-                console.log(`[v0] [GENERATE-SINGLE] Scene prompt loaded: position=${post.position}, variationId=${feedVariationId}, selectedVariationId=${selected.variation_id}, length=${finalPrompt?.length || 0}`)
-              }
-
-              await sql`
-                UPDATE feed_posts
-                SET prompt = ${finalPrompt}
-                WHERE id = ${postId}
-                AND user_id = ${user.id}
-              `
-            } catch (v2Error) {
-              const errorMessage = v2Error instanceof Error ? v2Error.message : "Unknown error"
-              console.error("[v0] [GENERATE-SINGLE] ❌ V2 prompt generation failed:", errorMessage)
+          try {
+            if (!feedLayout?.feed_style) {
               return Response.json(
                 {
-                  error: "V2_PROMPT_GENERATION_FAILED",
-                  details: errorMessage,
-                  position: post.position,
-                  feedId: feedIdInt,
+                  error: "FEED_STYLE_REQUIRED",
+                  details: "Feed style is required for Feed Planner V2 generation.",
                 },
-                { status: 500 },
+                { status: 422 },
               )
             }
-          } else {
+
+            const style = await getFeedStyleV2ByName(feedLayout.feed_style)
+            if (!style || !style.enabled) {
+              return Response.json(
+                { error: "FEED_STYLE_NOT_READY", details: "Feed style is not available for V2." },
+                { status: 422 },
+              )
+            }
+
+            const feedVariationId = feedLayout?.feed_style_variation_id ?? null
+            console.log(`[v0] [GENERATE-SINGLE] Loading prompt for feed: feedId=${feedIdInt}, styleId=${style.id}, feedStyle=${feedLayout?.feed_style}, variationId=${feedVariationId}, isPreviewFeed=${isPreviewFeed}, position=${post.position}`)
+
+            // Validate variation_id is a valid number if provided
+            if (feedVariationId !== null && feedVariationId !== undefined) {
+              const numericVariationId = Number(feedVariationId)
+              if (!Number.isFinite(numericVariationId) || numericVariationId <= 0) {
+                console.warn(`[v0] [GENERATE-SINGLE] Invalid variation_id in feed_layouts: ${feedVariationId}, using null`)
+                feedLayout.feed_style_variation_id = null
+              }
+            }
+
+            if (isPreviewFeed) {
+              finalPrompt = await getPreviewPromptForStyle(style.id, feedVariationId)
+              chosenPromptSource = "v2_preview_prompt"
+              console.log(`[v0] [GENERATE-SINGLE] Preview prompt loaded: variationId=${feedVariationId}, length=${finalPrompt?.length || 0}`)
+            } else {
+              const selected = await selectPromptForPosition(
+                style.id,
+                post.position,
+                feedVariationId,
+              )
+              finalPrompt = selected.prompt_text
+              chosenPromptSource = "v2_scene_prompt"
+              console.log(`[v0] [GENERATE-SINGLE] Scene prompt loaded: position=${post.position}, variationId=${feedVariationId}, selectedVariationId=${selected.variation_id}, length=${finalPrompt?.length || 0}`)
+            }
+
+            await sql`
+              UPDATE feed_posts
+              SET prompt = ${finalPrompt}
+              WHERE id = ${postId}
+              AND user_id = ${user.id}
+            `
+          } catch (v2Error) {
+            const errorMessage = v2Error instanceof Error ? v2Error.message : "Unknown error"
+            console.error("[v0] [GENERATE-SINGLE] ❌ V2 prompt generation failed:", errorMessage)
             return Response.json(
               {
-                error: "FEED_PLANNER_V2_REQUIRED",
-                details: "Feed Planner V2 is required for feed generation.",
+                error: "V2_PROMPT_GENERATION_FAILED",
+                details: errorMessage,
+                position: post.position,
+                feedId: feedIdInt,
               },
-              { status: 410 },
+              { status: 500 },
             )
           }
         }

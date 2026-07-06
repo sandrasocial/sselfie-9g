@@ -1,7 +1,6 @@
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { getDb } from "@/lib/db/client"
-import { getFeedPlannerV2Flag } from "@/lib/feed-planner/feature-flag"
 import { withAuth } from "@/lib/auth/with-auth"
 import { rateLimit } from "@/lib/rate-limit-api"
 import {
@@ -27,13 +26,6 @@ async function handleCreateFreeExample({
   user: { id: string | number; name?: string | null }
 }) {
   try {
-    const useFeedPlannerV2 = await getFeedPlannerV2Flag(user.id)
-    if (!useFeedPlannerV2) {
-      console.warn(
-        "[v0] Feed Planner V2 flag is off for user, but preview feeds are V2-only now. Proceeding."
-      )
-    }
-
     // Parse request body for feedStyle, visualAesthetic, and fashionStyle
     let requestedFeedStyle: string | null = null
     let requestedVisualAesthetic: any = null
