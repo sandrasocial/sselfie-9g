@@ -39,6 +39,8 @@ export interface ShotDirectorIntent {
   requestedShotCount: 6 | 8 | 9
 }
 
+export type GenerationSource = "selfie" | "trained-model"
+
 export type InlineActionKind =
   | "upload_selfie"
   | "choose_format"
@@ -113,6 +115,8 @@ export interface ConciergeSession {
   creationIntent?: CreationIntent | null
   /** Maya director choice after a Vault shot is selected. */
   shotDirector?: ShotDirectorIntent | null
+  /** Optional explicit engine choice. Normal sessions default to selfie; trained model is opt-in. */
+  generationSource?: GenerationSource | null
   startedAt: number
 }
 
@@ -129,6 +133,8 @@ export interface OpenConciergeOptions {
   creationIntent?: CreationIntent | null
   /** Optional director decision for a selected Vault shot. */
   shotDirector?: ShotDirectorIntent | null
+  /** Explicitly open the legacy trained-model path. Normal Maya opens default to selfie. */
+  generationSource?: GenerationSource | null
 }
 
 export type AppV3AnalyticsCohort = "member" | "trial" | "limited" | "admin"

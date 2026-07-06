@@ -141,6 +141,7 @@ function ShellInner({
       format: "photo",
       seed: "Let's create a photo using my trained model.",
       creationIntent: intentForFormat("photo", "manual"),
+      generationSource: "trained-model",
     })
   }
 

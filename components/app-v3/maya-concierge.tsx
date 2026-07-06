@@ -49,6 +49,7 @@ import type {
   AestheticShot,
   AppV3AnalyticsCohort,
   CreationIntent,
+  GenerationSource,
   InlineActionKind,
   OutputFormat,
   ShotDirectorIntent,
@@ -397,7 +398,6 @@ const CTA_LABEL: Record<OutputFormat, string> = {
 }
 
 type UploadSlot = "face" | "angle" | "side" | "body" | "inspiration" | "video"
-type GenerationSource = "selfie" | "trained-model"
 
 /** Pull the 3 concepts out of an emit_concepts tool part (output first, input while streaming).
  *  `rawInput` is the salvage path: if the tool call finished but failed schema validation (a
@@ -645,12 +645,13 @@ export function MayaConcierge({
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [input, setInput] = useState("")
   const [generationSource, setGenerationSource] = useState<GenerationSource>(() =>
-    hasTrainedModel ? "trained-model" : "selfie"
+    "selfie"
   )
   // Per-card generation state, keyed by `${messageId}:${conceptId}`.
   const [genState, setGenState] = useState<Record<string, ConceptGenState>>(
     () => restoredDraft?.genState ?? {}
   )
+  const inFlightGenerationKeysRef = useRef<Set<string>>(new Set())
   // MAYA-GUIDED-TEXT-01: "remove text" is an instant clean-image swap. Keep the previous
   // baked render in memory so "put the text back" can restore it without another API call.
   const hiddenBakedTextRef = useRef<Record<string, Array<string | null>>>({})
@@ -836,7 +837,21 @@ export function MayaConcierge({
     if (appliedDraftSessionRef.current === session.startedAt) return
     const draft = readMayaDraftForSession(session.startedAt)
     appliedDraftSessionRef.current = session.startedAt
-    if (!draft) return
+    if (!draft) {
+      restoredDraftRef.current = null
+      savedCountRef.current = 0
+      lastPulledFormatRef.current = null
+      seedRetiredRef.current = false
+      formatSwitchAppliedRef.current.clear()
+      inFlightGenerationKeysRef.current.clear()
+      setChatId(newChatId())
+      setMessages([])
+      setGenState({})
+      setGeneratedOnce(false)
+      setSetupOpen(false)
+      setLocalCreationIntent(session.creationIntent ?? null)
+      return
+    }
 
     restoredDraftRef.current = draft
     savedCountRef.current = draft.messages.length
@@ -920,7 +935,12 @@ export function MayaConcierge({
     setInlineShotPickerAesthetic(null)
     setPendingShotDirector(null)
     setLocalCreationIntent(session.creationIntent ?? null)
-  }, [session])
+    setGenerationSource(
+      session.generationSource === "trained-model" && hasTrainedModel && !admin
+        ? "trained-model"
+        : "selfie"
+    )
+  }, [admin, hasTrainedModel, session])
 
   // Mirror of the active selfie for async callbacks (avoids clobbering a fresh upload).
   useEffect(() => {
@@ -1207,7 +1227,7 @@ export function MayaConcierge({
       setInput("")
       return
     }
-    commitDetectedIntent(text)
+    commitDetectedIntent(text, "typed", { suppressAutoPull: true })
     sendMessage({ text })
     setInput("")
   }
@@ -1299,6 +1319,8 @@ export function MayaConcierge({
     // "Make another version" on a finished card is a re-roll - a friction signal the
     // member pulse tracks server-side (SUITE-UX-02).
     const rerun = genState[key]?.status === "done"
+    if (inFlightGenerationKeysRef.current.has(key)) return
+    inFlightGenerationKeysRef.current.add(key)
     setGenState(s => ({ ...s, [key]: { status: "generating" } }))
     try {
       if (targetFormat === "video") {
@@ -1548,6 +1570,8 @@ export function MayaConcierge({
         ...s,
         [key]: { status: "error", error: e instanceof Error ? e.message : "Generation failed" },
       }))
+    } finally {
+      inFlightGenerationKeysRef.current.delete(key)
     }
   }
 
@@ -1569,6 +1593,8 @@ export function MayaConcierge({
       }))
       return
     }
+    if (inFlightGenerationKeysRef.current.has(key)) return
+    inFlightGenerationKeysRef.current.add(key)
     setGenState(s => ({ ...s, [key]: { status: "generating" } }))
     try {
       const res = await fetch("/api/app-v3/maya/generate", {
@@ -1634,6 +1660,8 @@ export function MayaConcierge({
         ...s,
         [key]: { status: "error", error: e instanceof Error ? e.message : "Generation failed" },
       }))
+    } finally {
+      inFlightGenerationKeysRef.current.delete(key)
     }
   }
 
@@ -1774,11 +1802,18 @@ export function MayaConcierge({
     setPendingShotDirector(null)
   }
 
-  function commitDetectedIntent(text: string, source: CreationIntent["source"] = "typed") {
+  function commitDetectedIntent(
+    text: string,
+    source: CreationIntent["source"] = "typed",
+    opts: { suppressAutoPull?: boolean } = {}
+  ) {
     const intent = detectCreationIntent(text, source)
     setLocalCreationIntent(intent)
     extrasRef.current = { ...extrasRef.current, format: intent.format, creationIntent: intent }
     trackInlineChoice("typed_message", intent)
+    if (opts.suppressAutoPull && intent.format) {
+      lastPulledFormatRef.current = intent.format
+    }
     if (intent.format && session?.outputFormat !== intent.format) {
       setTextOverlayMode(null)
       setTextStyleChoice(null)
@@ -1792,7 +1827,7 @@ export function MayaConcierge({
 
   function sendInlineAnswer(answer: string) {
     if (isThinking) return
-    commitDetectedIntent(answer, "typed")
+    commitDetectedIntent(answer, "typed", { suppressAutoPull: true })
     sendMessage({ text: answer })
   }
 

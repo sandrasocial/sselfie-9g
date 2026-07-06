@@ -29,6 +29,8 @@ export type ServerShotDirectorSnapshot = {
   requestedShotCount: 6 | 8 | 9
 }
 
+export type ServerGenerationSourceSnapshot = "selfie" | "trained-model"
+
 export type ServerAestheticSnapshot = {
   id: string
   name: string
@@ -56,6 +58,7 @@ export type ServerConciergeSessionSnapshot = {
   seedPrompt?: string | null
   creationIntent?: ServerCreationIntentSnapshot | null
   shotDirector?: ServerShotDirectorSnapshot | null
+  generationSource?: ServerGenerationSourceSnapshot | null
   startedAt: number
 }
 
@@ -108,6 +111,7 @@ const VALID_SHOT_DIRECTOR_MODES: ServerShotDirectorSnapshot["mode"][] = [
   "collection-shoot",
   "new-shoot",
 ]
+const VALID_GENERATION_SOURCES: ServerGenerationSourceSnapshot[] = ["selfie", "trained-model"]
 const MAX_SNAPSHOT_AGE_MS = 1000 * 60 * 60 * 24 * 14
 
 function nowish(value: unknown): value is number {
@@ -177,6 +181,12 @@ function sanitizeShotDirector(value: unknown): ServerShotDirectorSnapshot | null
   }
 }
 
+function sanitizeGenerationSource(value: unknown): ServerGenerationSourceSnapshot | null {
+  return VALID_GENERATION_SOURCES.includes(value as ServerGenerationSourceSnapshot)
+    ? (value as ServerGenerationSourceSnapshot)
+    : null
+}
+
 function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null {
   if (!value || typeof value !== "object") return null
   const session = value as Record<string, unknown>
@@ -200,6 +210,7 @@ function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null 
     seedPrompt: typeof session.seedPrompt === "string" ? session.seedPrompt : null,
     creationIntent: sanitizeCreationIntent(session.creationIntent),
     shotDirector: sanitizeShotDirector(session.shotDirector),
+    generationSource: sanitizeGenerationSource(session.generationSource),
     startedAt: session.startedAt,
   }
 }

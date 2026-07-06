@@ -9,6 +9,7 @@ import type {
   ConciergeSession,
   CreationIntent,
   CreationIntentSource,
+  GenerationSource,
   OutputFormat,
   ShotDirectorIntent,
   ShotDirectorMode,
@@ -44,6 +45,7 @@ const VALID_SHOT_DIRECTOR_MODES: ShotDirectorMode[] = [
   "collection-shoot",
   "new-shoot",
 ]
+const VALID_GENERATION_SOURCES: GenerationSource[] = ["selfie", "trained-model"]
 const MAX_SNAPSHOT_AGE_MS = 1000 * 60 * 60 * 24 * 14
 
 export type ConciergeSnapshot = {
@@ -127,6 +129,12 @@ function sanitizeShotDirector(value: unknown): ShotDirectorIntent | null {
   }
 }
 
+function sanitizeGenerationSource(value: unknown): GenerationSource | null {
+  return VALID_GENERATION_SOURCES.includes(value as GenerationSource)
+    ? (value as GenerationSource)
+    : null
+}
+
 export function coerceStoredAppSection(value: unknown, fallback: AppV3Section): AppV3Section {
   return VALID_SECTIONS.includes(value as AppV3Section) ? (value as AppV3Section) : fallback
 }
@@ -183,6 +191,7 @@ function sanitizeSession(value: unknown): ConciergeSession | null {
     seedPrompt,
     creationIntent: sanitizeCreationIntent(session.creationIntent),
     shotDirector: sanitizeShotDirector(session.shotDirector),
+    generationSource: sanitizeGenerationSource(session.generationSource),
     startedAt: session.startedAt,
   }
 }

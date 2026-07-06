@@ -66,6 +66,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
             ? { format: opts.format, source: "manual", confidence: "high" }
             : null),
         shotDirector: opts?.shotDirector ?? null,
+        generationSource: opts?.generationSource ?? null,
         startedAt,
       })
       setIsOpen(true)
@@ -94,6 +95,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
             seedPrompt: null,
             creationIntent: null,
             shotDirector: null,
+            generationSource: null,
             startedAt: Date.now(),
           }
         : prev
@@ -118,6 +120,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
             seedPrompt: null,
             creationIntent: null,
             shotDirector: null,
+            generationSource: null,
             startedAt: Date.now(),
           }
       )
@@ -139,6 +142,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
         seedPrompt: "Help me choose what to make today.",
         creationIntent: { format: null, source: "manual", confidence: "needs_clarify" },
         shotDirector: null,
+        generationSource: null,
         startedAt,
       })
       setIsOpen(true)

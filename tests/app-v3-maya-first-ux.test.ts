@@ -22,7 +22,7 @@ describe("Maya-first Suite creation UX", () => {
   it("routes clear typed requests before Maya replies", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
-    expect(concierge).toContain("commitDetectedIntent(text)")
+    expect(concierge).toContain('commitDetectedIntent(text, "typed", { suppressAutoPull: true })')
     expect(concierge).toContain("extrasRef.current = { ...extrasRef.current, format: intent.format")
     expect(concierge).toContain("creationIntent: activeCreationIntent")
     expect(concierge).toContain("InlineFormatChoice")
@@ -130,13 +130,51 @@ describe("Maya-first Suite creation UX", () => {
   it("makes continuing old Maya sessions an explicit choice", () => {
     const context = read("components/app-v3/concierge-context.tsx")
     const launcher = read("components/app-v3/maya-floating-launcher.tsx")
+    const concierge = read("components/app-v3/maya-concierge.tsx")
 
     expect(context).toContain("const hasSavedSession = Boolean(session)")
     expect(context).toContain("const openFresh = useCallback")
     expect(context).toContain("setIsOpen(false)")
+    expect(concierge).toContain("if (!draft) {")
+    expect(concierge).toContain("setMessages([])")
+    expect(concierge).toContain("setChatId(newChatId())")
     expect(launcher).toContain("Start new")
     expect(launcher).toContain("Continue history")
     expect(launcher).toContain("openFresh()")
+  })
+
+  it("keeps selfie generation as the default even when a trained model exists", () => {
+    const types = read("components/app-v3/types.ts")
+    const shell = read("components/app-v3/app-v3-shell.tsx")
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+
+    expect(types).toContain('export type GenerationSource = "selfie" | "trained-model"')
+    expect(shell).toContain('generationSource: "trained-model"')
+    expect(concierge).toContain("useState<GenerationSource>(() =>")
+    expect(concierge).toContain('"selfie"')
+    expect(concierge).toContain('session.generationSource === "trained-model" && hasTrainedModel')
+  })
+
+  it("does not double-send typed format requests through the auto-pull effect", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    const commitStart = concierge.indexOf("function commitDetectedIntent")
+    const commitEnd = concierge.indexOf("function sendInlineAnswer")
+    const commitBody = concierge.slice(commitStart, commitEnd)
+
+    expect(commitStart).toBeGreaterThan(-1)
+    expect(commitEnd).toBeGreaterThan(commitStart)
+    expect(commitBody).toContain("suppressAutoPull")
+    expect(commitBody).toContain("lastPulledFormatRef.current = intent.format")
+    expect(concierge).toContain("commitDetectedIntent(text, \"typed\", { suppressAutoPull: true })")
+  })
+
+  it("guards generation actions against duplicate in-flight requests", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+
+    expect(concierge).toContain("inFlightGenerationKeysRef")
+    expect(concierge).toContain("if (inFlightGenerationKeysRef.current.has(key)) return")
+    expect(concierge).toContain("inFlightGenerationKeysRef.current.add(key)")
+    expect(concierge).toContain("inFlightGenerationKeysRef.current.delete(key)")
   })
 
   it("opens a dedicated selfie manager before starting Maya from the selfie card", () => {
