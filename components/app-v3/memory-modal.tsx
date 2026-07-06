@@ -12,6 +12,7 @@ export interface Memory {
   brandNotes: string | null
   preferences: string | null
   userAvatarUrl: string | null
+  preferredOverlayStyle?: string | null
   /** LIKENESS-MEMORY-01: accuracy notes Maya learned from her photo corrections. */
   likenessNotes?: string[]
 }
@@ -99,6 +100,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
           brandNotes: d.brandNotes ?? null,
           preferences: d.preferences ?? null,
           userAvatarUrl: d.userAvatarUrl ?? null,
+          preferredOverlayStyle: d.preferredOverlayStyle ?? null,
           likenessNotes: Array.isArray(d.likenessNotes) ? d.likenessNotes : [],
         })
       }
@@ -217,7 +219,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
               </p>
               <p className="mt-1 text-[12px] leading-relaxed text-[#4F5052]">
                 Learned from your photo corrections, so every new photo stays you. Remove
-                anything that's off.
+                anything that&apos;s off.
               </p>
               <ul className="mt-2 space-y-1.5">
                 {likenessNotes.map(note => (

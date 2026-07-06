@@ -2,7 +2,13 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import type { Aesthetic, AestheticShot, InlineActionKind, OutputFormat } from "./types"
+import type {
+  Aesthetic,
+  AestheticShot,
+  InlineActionKind,
+  OutputFormat,
+  ShotDirectorMode,
+} from "./types"
 
 export type InlineFormatOption = {
   format: OutputFormat
@@ -251,6 +257,147 @@ export function InlineShotPicker({
           </button>
         ))}
       </div>
+    </div>
+  )
+}
+
+export function InlineShotDirectorCard({
+  aestheticName,
+  shot,
+  disabled,
+  onBack,
+  onPick,
+}: {
+  aestheticName: string
+  shot: AestheticShot
+  disabled?: boolean
+  onBack: () => void
+  onPick: (mode: ShotDirectorMode, requestedShotCount: 6 | 8 | 9) => void
+}) {
+  const [shootMode, setShootMode] = useState<Extract<ShotDirectorMode, "collection-shoot" | "new-shoot">>(
+    "collection-shoot"
+  )
+  const [shotCount, setShotCount] = useState<6 | 8 | 9>(6)
+  const counts: Array<6 | 8 | 9> = [6, 8, 9]
+
+  return (
+    <div className="min-w-0 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4 [overflow-x:clip]">
+      <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">Choose the next step</p>
+      <div className="mt-3 flex gap-3">
+        <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-[6px] bg-[#E9EAEB]">
+          <Image src={shot.image} alt="" fill sizes="80px" className="object-cover" />
+        </div>
+        <div className="min-w-0">
+          <p className="font-serif text-[20px] font-light leading-tight text-[#0D0E10]">
+            {shot.title}
+          </p>
+          <p className="mt-1 text-[12px] leading-relaxed text-[#6D6E70]">
+            {aestheticName}. Maya can recreate it, pull more angles, or turn it into a full shoot.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onPick("recreate-shot", 6)}
+          className="min-h-14 rounded-[6px] border border-[#C5C6C8]/70 bg-[#F8FAFA] px-3.5 py-3 text-left transition-colors hover:border-[#0D0E10] disabled:opacity-45"
+        >
+          <span className="block text-[13px] font-medium text-[#0D0E10]">Recreate this shot</span>
+          <span className="mt-1 block text-[12px] leading-relaxed text-[#6D6E70]">
+            One close version with your selfie. 1 credit.
+          </span>
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onPick("more-angles", 6)}
+          className="min-h-14 rounded-[6px] border border-[#C5C6C8]/70 bg-[#F8FAFA] px-3.5 py-3 text-left transition-colors hover:border-[#0D0E10] disabled:opacity-45"
+        >
+          <span className="block text-[13px] font-medium text-[#0D0E10]">
+            More angles of this look
+          </span>
+          <span className="mt-1 block text-[12px] leading-relaxed text-[#6D6E70]">
+            Three options with the same styling, but different pose and crop. 3 credits if you make
+            all three.
+          </span>
+        </button>
+      </div>
+
+      <div className="mt-4 rounded-[6px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">Full shoot</p>
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {[
+            {
+              mode: "collection-shoot" as const,
+              label: "Recreate this collection",
+              note: "Use the full Vault shoot as the map.",
+            },
+            {
+              mode: "new-shoot" as const,
+              label: "New shoot in this style",
+              note: "Keep the style, change the scenes and angles.",
+            },
+          ].map(option => {
+            const selected = shootMode === option.mode
+            return (
+              <button
+                key={option.mode}
+                type="button"
+                disabled={disabled}
+                onClick={() => setShootMode(option.mode)}
+                className={`min-h-16 rounded-[5px] border px-3 py-2.5 text-left transition-colors disabled:opacity-45 ${
+                  selected
+                    ? "border-[#0D0E10] bg-white text-[#0D0E10]"
+                    : "border-[#C5C6C8]/70 bg-[#F1F2F2] text-[#4F5052] hover:border-[#0D0E10]/40"
+                }`}
+              >
+                <span className="block text-[12px] font-medium">{option.label}</span>
+                <span className="mt-1 block text-[11px] leading-relaxed text-[#6D6E70]">
+                  {option.note}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {counts.map(count => {
+            const selected = shotCount === count
+            return (
+              <button
+                key={count}
+                type="button"
+                disabled={disabled}
+                onClick={() => setShotCount(count)}
+                className={`min-h-10 rounded-full border px-3.5 text-[11px] uppercase tracking-[0.14em] transition-colors disabled:opacity-45 ${
+                  selected
+                    ? "border-[#0D0E10] bg-[#0D0E10] text-white"
+                    : "border-[#C5C6C8]/70 bg-white text-[#4F5052] hover:border-[#0D0E10]/40"
+                }`}
+              >
+                {count} shots · {count} credits
+              </button>
+            )
+          })}
+        </div>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onPick(shootMode, shotCount)}
+          className="mt-3 min-h-11 rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-45"
+        >
+          Plan full shoot
+        </button>
+      </div>
+
+      <button
+        type="button"
+        onClick={onBack}
+        className="mt-3 inline-flex min-h-10 items-center text-[11px] uppercase tracking-[0.16em] text-[#818283] underline underline-offset-2 hover:text-[#0D0E10]"
+      >
+        Choose another shot
+      </button>
     </div>
   )
 }

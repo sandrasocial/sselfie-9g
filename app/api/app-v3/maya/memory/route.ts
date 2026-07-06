@@ -16,6 +16,7 @@ const EMPTY = {
   brandNotes: null,
   preferences: null,
   userAvatarUrl: null,
+  preferredOverlayStyle: null,
   likenessNotes: [] as string[],
   hasBrandProfile: true,
 }
@@ -55,6 +56,7 @@ export async function PUT(request: Request) {
         brandNotes?: string | null
         preferences?: string | null
         userAvatarUrl?: string | null
+        preferredOverlayStyle?: string | null
         /** LIKENESS-MEMORY-01: delete one stored likeness note (a wrong note must be removable). */
         removeLikenessNote?: string
       }
@@ -74,13 +76,15 @@ export async function PUT(request: Request) {
       body.agentName !== undefined ||
       body.brandNotes !== undefined ||
       body.preferences !== undefined ||
-      body.userAvatarUrl !== undefined
+      body.userAvatarUrl !== undefined ||
+      body.preferredOverlayStyle !== undefined
     ) {
       await saveMemory(String(neonUserId), {
         agentName: body.agentName,
         brandNotes: body.brandNotes,
         preferences: body.preferences,
         userAvatarUrl: body.userAvatarUrl,
+        preferredOverlayStyle: body.preferredOverlayStyle,
       })
     }
     return NextResponse.json(await getMemory(String(neonUserId)))

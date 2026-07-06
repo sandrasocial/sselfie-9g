@@ -26,6 +26,7 @@ import {
   InlineFormatChoice,
   InlineResultActions,
   InlineSelfieUpload,
+  InlineShotDirectorCard,
   InlineShotPicker,
   InlineVibePicker,
 } from "./maya-inline-components"
@@ -50,6 +51,8 @@ import type {
   CreationIntent,
   InlineActionKind,
   OutputFormat,
+  ShotDirectorIntent,
+  ShotDirectorMode,
 } from "./types"
 import {
   detectCreationIntent,
@@ -164,17 +167,44 @@ function overlayFormatForOutput(format: OutputFormat): OverlayFormat {
   return "reel-cover"
 }
 
+function normalizeOverlayStyleId(value: unknown): OverlayStyleId | null {
+  if (typeof value !== "string") return null
+  const id = value.trim()
+  return OVERLAY_STYLE_PRESETS.some(preset => preset.id === id) ? (id as OverlayStyleId) : null
+}
+
+const TEXT_STYLE_VARIATIONS: { label: string; styleAdjustments: string }[] = [
+  {
+    label: "Softer ink",
+    styleAdjustments:
+      "Keep the exact same layout and placement. Use softer charcoal ink instead of stark black.",
+  },
+  {
+    label: "Stronger contrast",
+    styleAdjustments:
+      "Keep the exact same layout and placement. Increase text contrast and weight slightly.",
+  },
+  {
+    label: "No accent",
+    styleAdjustments:
+      "Keep the exact same layout and placement. Remove decorative accents and keep the type clean.",
+  },
+]
+
 function TextStyleTemplatePicker({
   format,
   disabled,
+  rememberedStyle,
   onPick,
 }: {
   format: OutputFormat
   disabled?: boolean
+  rememberedStyle?: OverlayStyleId | null
   onPick: (style: OverlayStyleId) => void
 }) {
   const previewFormat = overlayFormatForOutput(format)
   const frameClass = previewFormat === "carousel" ? "aspect-[4/5]" : "aspect-[9/16]"
+  const rememberedPreset = rememberedStyle ? resolveOverlayStyle(rememberedStyle) : null
 
   return (
     <div className="space-y-3 rounded-[8px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
@@ -187,6 +217,21 @@ function TextStyleTemplatePicker({
           start.
         </p>
       </div>
+      {rememberedPreset && (
+        <button
+          type="button"
+          onClick={() => onPick(rememberedPreset.id)}
+          disabled={disabled}
+          className="min-h-12 w-full rounded-[6px] border border-[#0D0E10]/25 bg-white px-3 py-2.5 text-left transition-colors hover:border-[#0D0E10] disabled:opacity-45"
+        >
+          <span className="block text-[12px] font-medium text-[#0D0E10]">
+            Use your usual style
+          </span>
+          <span className="mt-1 block text-[11px] leading-relaxed text-[#6D6E70]">
+            {rememberedPreset.name}
+          </span>
+        </button>
+      )}
       <div className="grid grid-cols-2 gap-2">
         {OVERLAY_STYLE_PRESETS.map(preset => {
           const exampleUrl = getTextStyleExampleImage(preset.id)
@@ -576,9 +621,15 @@ export function MayaConcierge({
   // cards swaps it later.
   const [textOverlayMode, setTextOverlayMode] = useState<GraphicTextMode | null>(null)
   const [textStyleChoice, setTextStyleChoice] = useState<OverlayStyleId | null>(null)
+  const [textStyleAdjustments, setTextStyleAdjustments] = useState<string | null>(null)
   const [styleSwapOpen, setStyleSwapOpen] = useState(false)
   const [inlineAesthetics, setInlineAesthetics] = useState<Aesthetic[] | null>(null)
   const [inlineShotPickerAesthetic, setInlineShotPickerAesthetic] = useState<Aesthetic | null>(null)
+  const [pendingShotDirector, setPendingShotDirector] = useState<{
+    aesthetic: Aesthetic
+    shot: AestheticShot
+    intent: CreationIntent
+  } | null>(null)
   const sessionStartRef = useRef<number | null>(restoredDraft ? (session?.startedAt ?? null) : null)
   const seededMessageSentRef = useRef<number | null>(
     restoredDraft?.messages.length ? (session?.startedAt ?? null) : null
@@ -667,11 +718,18 @@ export function MayaConcierge({
           brandNotes: d?.brandNotes ?? null,
           preferences: d?.preferences ?? null,
           userAvatarUrl: d?.userAvatarUrl ?? null,
+          preferredOverlayStyle: d?.preferredOverlayStyle ?? null,
         })
         setHasBrandProfile(d?.hasBrandProfile ?? true)
       })
       .catch(() =>
-        setMemory({ agentName: null, brandNotes: null, preferences: null, userAvatarUrl: null })
+        setMemory({
+          agentName: null,
+          brandNotes: null,
+          preferences: null,
+          userAvatarUrl: null,
+          preferredOverlayStyle: null,
+        })
       )
   }, [isOpen])
 
@@ -728,6 +786,7 @@ export function MayaConcierge({
     selectedShot: AestheticShot | null
     format: OutputFormat | null
     creationIntent: CreationIntent | null
+    shotDirector: ShotDirectorIntent | null
     referenceSelfieUrl: string | null
     videoSourceUrl: string | null
     inspirationImageUrl: string | null
@@ -740,6 +799,7 @@ export function MayaConcierge({
     selectedShot: null,
     format: null,
     creationIntent: null,
+    shotDirector: null,
     referenceSelfieUrl: null,
     videoSourceUrl: null,
     inspirationImageUrl: null,
@@ -855,8 +915,10 @@ export function MayaConcierge({
     seededMessageSentRef.current = null
     seedRetiredRef.current = false
     setTextStyleChoice(null)
+    setTextStyleAdjustments(null)
     setStyleSwapOpen(false)
     setInlineShotPickerAesthetic(null)
+    setPendingShotDirector(null)
     setLocalCreationIntent(session.creationIntent ?? null)
   }, [session])
 
@@ -1003,6 +1065,7 @@ export function MayaConcierge({
     if (latest && session?.outputFormat !== latest) {
       setTextOverlayMode(null)
       setTextStyleChoice(null)
+      setTextStyleAdjustments(null)
       setStyleSwapOpen(false)
       // Re-arm the auto-pull too: if this format was already pulled earlier in the thread,
       // a stale lastPulledFormatRef blocks both the pull and the inline text-choice cards.
@@ -1025,6 +1088,7 @@ export function MayaConcierge({
     lastPulledFormatRef.current = latest
     setTextOverlayMode(null)
     setTextStyleChoice(null)
+    setTextStyleAdjustments(null)
     setStyleSwapOpen(false)
     setOutputFormat(latest)
   }, [messages, isThinking, session, setOutputFormat])
@@ -1079,6 +1143,7 @@ export function MayaConcierge({
     selectedShot: aesthetic.selectedShot ?? null,
     format: activeCreationIntent.format ?? outputFormat ?? null,
     creationIntent: activeCreationIntent,
+    shotDirector: session.shotDirector ?? null,
     referenceSelfieUrl,
     videoSourceUrl,
     inspirationImageUrl: inspirationUrl,
@@ -1159,8 +1224,10 @@ export function MayaConcierge({
     seededMessageSentRef.current = null
     setTextOverlayMode(null)
     setTextStyleChoice(null)
+    setTextStyleAdjustments(null)
     setStyleSwapOpen(false)
     setInlineShotPickerAesthetic(null)
+    setPendingShotDirector(null)
     setLocalCreationIntent(null)
     seedRetiredRef.current = true // a clean session never replays the old seeded idea
     restoredDraftRef.current = null
@@ -1341,8 +1408,9 @@ export function MayaConcierge({
           conceptTitle: concept.title,
           rerun,
           ...(graphicTextMode ? { textOverlayMode: graphicTextMode } : {}),
-          ...(bakeStyle ? { overlayStyle: bakeStyle } : {}),
-          ...(wantsBakedText ? { autoBake: true } : {}),
+            ...(bakeStyle ? { overlayStyle: bakeStyle } : {}),
+            ...(textStyleAdjustments ? { styleAdjustments: textStyleAdjustments } : {}),
+            ...(wantsBakedText ? { autoBake: true } : {}),
           // Single-image formats stream progressive previews; carousels keep the JSON path.
           // Auto-baked text needs the JSON path so the baked URL returns with the clean base.
           stream: wantsBakedText ? false : targetFormat !== "carousel",
@@ -1599,7 +1667,9 @@ export function MayaConcierge({
     // question cards never re-appeared and the chip tap was a silent no-op.
     setTextOverlayMode(null)
     setTextStyleChoice(null)
+    setTextStyleAdjustments(null)
     setStyleSwapOpen(false)
+    setPendingShotDirector(null)
     lastPulledFormatRef.current = null
     const intent = intentForFormat(
       id,
@@ -1625,6 +1695,7 @@ export function MayaConcierge({
     if (isThinking) return
     const intent = intentForCurrentVibeChoice("manual")
     trackInlineChoice("choose_vibe", intent, { aestheticId: nextAesthetic.id })
+    setPendingShotDirector(null)
     if (nextAesthetic.shots?.length) {
       setInlineShotPickerAesthetic(nextAesthetic)
       return
@@ -1667,14 +1738,40 @@ export function MayaConcierge({
       aestheticId: inlineShotPickerAesthetic.id,
       shotId: shot.id,
     })
-    openWithAesthetic(compactInlineAestheticForMaya(inlineShotPickerAesthetic, shot), {
-      format: intent.format ?? undefined,
-      seed: `I want to recreate the "${shot.title}" shot from this vibe with my selfie.`,
+    setPendingShotDirector({ aesthetic: inlineShotPickerAesthetic, shot, intent })
+  }
+
+  function handleShotDirectorChoice(mode: ShotDirectorMode, requestedShotCount: 6 | 8 | 9) {
+    if (isThinking || !pendingShotDirector) return
+    const { aesthetic: chosenAesthetic, shot, intent } = pendingShotDirector
+    const wantsFullShoot = mode === "collection-shoot" || mode === "new-shoot"
+    const nextFormat: OutputFormat = wantsFullShoot ? "photoshoot" : (intent.format ?? "photo")
+    const nextIntent = intentForFormat(nextFormat, "vault_shot")
+    const shotDirector: ShotDirectorIntent = { mode, requestedShotCount }
+    const seed =
+      mode === "recreate-shot"
+        ? `Recreate the "${shot.title}" shot with my selfie.`
+        : mode === "more-angles"
+          ? `Pull three different angles of the "${shot.title}" look with my selfie. Keep the same style, but vary the pose, camera distance, and crop.`
+          : mode === "collection-shoot"
+            ? `Plan a ${requestedShotCount}-shot full shoot that recreates the "${chosenAesthetic.name}" collection, starting from "${shot.title}".`
+            : `Plan a ${requestedShotCount}-shot new shoot in the "${chosenAesthetic.name}" style, using "${shot.title}" as the anchor.`
+    trackInlineChoice("shot_director", nextIntent, {
+      aestheticId: chosenAesthetic.id,
+      shotId: shot.id,
+      directorMode: mode,
+      requestedShotCount,
+    })
+    openWithAesthetic(compactInlineAestheticForMaya(chosenAesthetic, shot), {
+      format: nextFormat,
+      seed,
       referenceSelfieUrl,
       videoSourceUrl,
-      creationIntent: intent,
+      creationIntent: nextIntent,
+      shotDirector,
     })
     setInlineShotPickerAesthetic(null)
+    setPendingShotDirector(null)
   }
 
   function commitDetectedIntent(text: string, source: CreationIntent["source"] = "typed") {
@@ -1685,6 +1782,7 @@ export function MayaConcierge({
     if (intent.format && session?.outputFormat !== intent.format) {
       setTextOverlayMode(null)
       setTextStyleChoice(null)
+      setTextStyleAdjustments(null)
       setStyleSwapOpen(false)
       setOutputFormat(intent.format)
       setSetupOpen(false)
@@ -1720,6 +1818,7 @@ export function MayaConcierge({
     }
     setTextOverlayMode(null)
     setTextStyleChoice(null)
+    setTextStyleAdjustments(null)
     setStyleSwapOpen(false)
     setOutputFormat(nextFormat)
     setSetupOpen(false)
@@ -1745,6 +1844,45 @@ export function MayaConcierge({
   function focusComposer() {
     composerRef.current?.focus()
   }
+  const rememberedOverlayStyle = normalizeOverlayStyleId(memory?.preferredOverlayStyle)
+
+  function savePreferredOverlayStyle(style: OverlayStyleId) {
+    setMemory(current =>
+      current
+        ? { ...current, preferredOverlayStyle: style }
+        : {
+            agentName: null,
+            brandNotes: null,
+            preferences: null,
+            userAvatarUrl: null,
+            preferredOverlayStyle: style,
+          }
+    )
+    void fetch("/api/app-v3/maya/memory", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preferredOverlayStyle: style }),
+    })
+      .then(r => (r.ok ? r.json() : null))
+      .then((data: Memory | null) => {
+        if (!data) return
+        setMemory({
+          agentName: data.agentName ?? null,
+          brandNotes: data.brandNotes ?? null,
+          preferences: data.preferences ?? null,
+          userAvatarUrl: data.userAvatarUrl ?? null,
+          preferredOverlayStyle: data.preferredOverlayStyle ?? style,
+        })
+      })
+      .catch(() => {})
+  }
+
+  function handleTextStylePick(style: OverlayStyleId) {
+    setTextStyleChoice(style)
+    setTextStyleAdjustments(null)
+    savePreferredOverlayStyle(style)
+  }
+
   const userAvatar = memory?.userAvatarUrl ?? null
   const showNaming = memory !== null && !memory.agentName && !namingDismissed && !hasStarted
   // Tiny, value-first: only after she's generated, only if Maya doesn't already know her brand.
@@ -2129,14 +2267,27 @@ export function MayaConcierge({
               <div className="space-y-2">
                 {inlineShotPickerAesthetic ? (
                   <>
-                    <InlineShotPicker
-                      shots={inlineShotPickerAesthetic.shots ?? []}
-                      disabled={isThinking}
-                      onPick={handleInlineShotPick}
-                    />
+                    {pendingShotDirector ? (
+                      <InlineShotDirectorCard
+                        aestheticName={pendingShotDirector.aesthetic.name}
+                        shot={pendingShotDirector.shot}
+                        disabled={isThinking}
+                        onBack={() => setPendingShotDirector(null)}
+                        onPick={handleShotDirectorChoice}
+                      />
+                    ) : (
+                      <InlineShotPicker
+                        shots={inlineShotPickerAesthetic.shots ?? []}
+                        disabled={isThinking}
+                        onPick={handleInlineShotPick}
+                      />
+                    )}
                     <button
                       type="button"
-                      onClick={() => setInlineShotPickerAesthetic(null)}
+                      onClick={() => {
+                        setPendingShotDirector(null)
+                        setInlineShotPickerAesthetic(null)
+                      }}
                       className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#818283] underline underline-offset-2 hover:text-[#0D0E10]"
                     >
                       Choose another style
@@ -2816,6 +2967,7 @@ export function MayaConcierge({
                           onClick={() => {
                             setTextOverlayMode(null)
                             setTextStyleChoice(null)
+                            setTextStyleAdjustments(null)
                             setStyleSwapOpen(false)
                             lastPulledFormatRef.current = null
                           }}
@@ -2833,11 +2985,56 @@ export function MayaConcierge({
                       styleSwapOpen && (
                         <TextStyleTemplatePicker
                           format={conceptFormat}
+                          rememberedStyle={rememberedOverlayStyle}
                           onPick={style => {
-                            setTextStyleChoice(style)
+                            handleTextStylePick(style)
                             setStyleSwapOpen(false)
                           }}
                         />
+                      )}
+                    {isGraphicOutputFormat(conceptFormat) &&
+                      textOverlayMode === "with-text" &&
+                      rememberedOverlayStyle &&
+                      textStyleChoice === rememberedOverlayStyle &&
+                      !styleSwapOpen && (
+                        <div className="min-w-0 rounded-[6px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
+                          <p className="text-[10px] uppercase tracking-[0.18em] text-[#818283]">
+                            Usual style variations
+                          </p>
+                          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                            <button
+                              type="button"
+                              onClick={() => setTextStyleAdjustments(null)}
+                              className={`min-h-10 shrink-0 rounded-full border px-3 text-[11px] uppercase tracking-[0.12em] ${
+                                !textStyleAdjustments
+                                  ? "border-[#0D0E10] bg-[#0D0E10] text-white"
+                                  : "border-[#C5C6C8]/70 bg-white text-[#4F5052]"
+                              }`}
+                            >
+                              Original
+                            </button>
+                            {TEXT_STYLE_VARIATIONS.map(variation => {
+                              const selected = textStyleAdjustments === variation.styleAdjustments
+                              return (
+                                <button
+                                  key={variation.label}
+                                  type="button"
+                                  onClick={() => setTextStyleAdjustments(variation.styleAdjustments)}
+                                  className={`min-h-10 shrink-0 rounded-full border px-3 text-[11px] uppercase tracking-[0.12em] ${
+                                    selected
+                                      ? "border-[#0D0E10] bg-[#0D0E10] text-white"
+                                      : "border-[#C5C6C8]/70 bg-white text-[#4F5052]"
+                                  }`}
+                                >
+                                  {variation.label}
+                                </button>
+                              )
+                            })}
+                          </div>
+                          <p className="mt-1 text-[11px] leading-relaxed text-[#818283]">
+                            Layout stays the same. Only the text finish changes.
+                          </p>
+                        </div>
                       )}
                     {conceptPart.map(concept => {
                       const key = `${m.id}:${concept.id}`
@@ -2923,14 +3120,16 @@ export function MayaConcierge({
                       onChoose={mode => {
                         setTextOverlayMode(mode)
                         setTextStyleChoice(null)
+                        setTextStyleAdjustments(null)
                         setStyleSwapOpen(false)
                       }}
                     />
                   ) : (
-                    <TextStyleTemplatePicker
-                      format={outputFormat}
-                      onPick={style => setTextStyleChoice(style)}
-                    />
+                      <TextStyleTemplatePicker
+                        format={outputFormat}
+                        rememberedStyle={rememberedOverlayStyle}
+                        onPick={handleTextStylePick}
+                      />
                   )}
                 </div>
               </div>

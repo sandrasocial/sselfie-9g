@@ -537,6 +537,8 @@ export interface MakeOverlaySpecInput {
   designSystem?: string | null
   /** Maya's explicit style pick (brief.graphic.overlayStyle). Wins when present. */
   overlayStyle?: string | null
+  /** Member's remembered style from app_v3_memory. Used before generic defaults. */
+  rememberedOverlayStyle?: string | null
   /** The concept's emotional register (brief.mood) - a cheap starting-style signal. */
   emotion?: string | null
 }
@@ -547,13 +549,22 @@ export interface MakeOverlaySpecInput {
  * defaulting to the editorial magazine cover. The member can switch styles after.
  */
 export function pickOverlayStyle(
-  input: Pick<MakeOverlaySpecInput, "format" | "designSystem" | "overlayStyle" | "emotion" | "body">
+  input: Pick<
+    MakeOverlaySpecInput,
+    "format" | "designSystem" | "overlayStyle" | "rememberedOverlayStyle" | "emotion" | "body"
+  >
 ): OverlayStyleId {
   const explicit = (input.overlayStyle ?? "").toLowerCase().trim()
   if (explicit) {
     const mapped = LEGACY_STYLE_MAP[explicit] ?? explicit
     const preset = OVERLAY_STYLE_PRESETS.find(p => p.id === mapped)
     if (preset) return preset.id
+  }
+  const rememberedOverlayStyle = (input.rememberedOverlayStyle ?? "").toLowerCase().trim()
+  if (rememberedOverlayStyle) {
+    const mapped = LEGACY_STYLE_MAP[rememberedOverlayStyle] ?? rememberedOverlayStyle
+    const rememberedPreset = OVERLAY_STYLE_PRESETS.find(p => p.id === mapped)
+    if (rememberedPreset) return rememberedPreset.id
   }
   if (input.format === "carousel" || input.format === "story-sequence") {
     const key = (input.designSystem ?? "").toLowerCase().trim()

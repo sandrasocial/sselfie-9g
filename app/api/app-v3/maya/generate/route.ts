@@ -479,6 +479,8 @@ export async function POST(request: NextRequest) {
           shootBriefs?: unknown
           /** MAYA-GUIDED-TEXT-01: member-tapped cover/story/carousel text style. */
           overlayStyle?: unknown
+          /** Optional safe text-style variation line, e.g. ink color or accent on/off. */
+          styleAdjustments?: unknown
           /** Customer-facing choice: bake text into the image or keep the visual clean. */
           textOverlayMode?: unknown
         })
@@ -490,6 +492,8 @@ export async function POST(request: NextRequest) {
     const format: OutputFormat =
       body.format && VALID_FORMATS.includes(body.format) ? body.format : "photo"
     const requestedOverlayStyle = normalizeRequestedOverlayStyle(body.overlayStyle)
+    const requestedStyleAdjustments =
+      typeof body.styleAdjustments === "string" ? body.styleAdjustments.slice(0, 220) : undefined
     const requestedTextOverlayMode =
       normalizeGraphicTextMode(body.textOverlayMode) ?? (requestedOverlayStyle ? "with-text" : null)
 
@@ -1397,7 +1401,12 @@ export async function POST(request: NextRequest) {
                 const bakeSource = await toFile(cleanBuffer, `maya-bake-source-${index}.png`, {
                   type: "image/png",
                 })
-                const bakePrompt = buildBakePrompt(spec)
+                const bakePrompt = buildBakePrompt(
+                  spec,
+                  requestedStyleAdjustments
+                    ? { styleAdjustments: requestedStyleAdjustments }
+                    : undefined
+                )
                 const bakeResponse = (await openai.images.edit({
                   model: OPENAI_IMAGE_MODEL,
                   image: bakeSource,

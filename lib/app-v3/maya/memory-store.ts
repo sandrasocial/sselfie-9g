@@ -12,6 +12,7 @@ export interface AppV3Memory {
   brandNotes: string | null
   preferences: string | null
   userAvatarUrl: string | null
+  preferredOverlayStyle: string | null
   /** LIKENESS-MEMORY-01: durable accuracy corrections ("hair: dark brown, not black"). */
   likenessNotes: string[]
 }
@@ -21,6 +22,7 @@ const EMPTY: AppV3Memory = {
   brandNotes: null,
   preferences: null,
   userAvatarUrl: null,
+  preferredOverlayStyle: null,
   likenessNotes: [],
 }
 
@@ -40,6 +42,7 @@ export function ensureMemoryTable(): Promise<void> {
       `
       // Added after the initial Phase E table; ADD COLUMN IF NOT EXISTS is idempotent.
       await sql`ALTER TABLE app_v3_memory ADD COLUMN IF NOT EXISTS user_avatar_url text`
+      await sql`ALTER TABLE app_v3_memory ADD COLUMN IF NOT EXISTS preferred_overlay_style text`
       // LIKENESS-MEMORY-01 (formal record: migrations/20260702_app_v3_likeness_memory.sql).
       await sql`ALTER TABLE app_v3_memory ADD COLUMN IF NOT EXISTS likeness_notes jsonb NOT NULL DEFAULT '[]'::jsonb`
     })().catch((e) => {
@@ -54,7 +57,7 @@ export function ensureMemoryTable(): Promise<void> {
 export async function getMemory(userId: string): Promise<AppV3Memory> {
   await ensureMemoryTable()
   const rows = await sql`
-    SELECT agent_name, brand_notes, preferences, user_avatar_url, likeness_notes
+    SELECT agent_name, brand_notes, preferences, user_avatar_url, preferred_overlay_style, likeness_notes
     FROM app_v3_memory
     WHERE user_id = ${userId}
     LIMIT 1
@@ -65,6 +68,7 @@ export async function getMemory(userId: string): Promise<AppV3Memory> {
         brand_notes: string | null
         preferences: string | null
         user_avatar_url: string | null
+        preferred_overlay_style: string | null
         likeness_notes: unknown
       }
     | undefined
@@ -74,6 +78,7 @@ export async function getMemory(userId: string): Promise<AppV3Memory> {
     brandNotes: row.brand_notes ?? null,
     preferences: row.preferences ?? null,
     userAvatarUrl: row.user_avatar_url ?? null,
+    preferredOverlayStyle: row.preferred_overlay_style ?? null,
     likenessNotes: parseLikenessNotes(row.likeness_notes),
   }
 }
@@ -117,6 +122,7 @@ export async function saveMemory(
     brandNotes?: string | null
     preferences?: string | null
     userAvatarUrl?: string | null
+    preferredOverlayStyle?: string | null
   },
 ): Promise<void> {
   await ensureMemoryTable()
@@ -125,16 +131,34 @@ export async function saveMemory(
   const brandNotes = resolve(patch.brandNotes, current.brandNotes)
   const preferences = resolve(patch.preferences, current.preferences)
   const userAvatarUrl = resolve(patch.userAvatarUrl, current.userAvatarUrl)
+  const preferredOverlayStyle = resolve(patch.preferredOverlayStyle, current.preferredOverlayStyle)
 
   await sql`
-    INSERT INTO app_v3_memory (user_id, agent_name, brand_notes, preferences, user_avatar_url, updated_at)
-    VALUES (${userId}, ${agentName}, ${brandNotes}, ${preferences}, ${userAvatarUrl}, now())
+    INSERT INTO app_v3_memory (
+      user_id,
+      agent_name,
+      brand_notes,
+      preferences,
+      user_avatar_url,
+      preferred_overlay_style,
+      updated_at
+    )
+    VALUES (
+      ${userId},
+      ${agentName},
+      ${brandNotes},
+      ${preferences},
+      ${userAvatarUrl},
+      ${preferredOverlayStyle},
+      now()
+    )
     ON CONFLICT (user_id) DO UPDATE SET
-      agent_name      = EXCLUDED.agent_name,
-      brand_notes     = EXCLUDED.brand_notes,
-      preferences     = EXCLUDED.preferences,
-      user_avatar_url = EXCLUDED.user_avatar_url,
-      updated_at      = now()
+      agent_name              = EXCLUDED.agent_name,
+      brand_notes             = EXCLUDED.brand_notes,
+      preferences             = EXCLUDED.preferences,
+      user_avatar_url         = EXCLUDED.user_avatar_url,
+      preferred_overlay_style = EXCLUDED.preferred_overlay_style,
+      updated_at              = now()
   `
 }
 

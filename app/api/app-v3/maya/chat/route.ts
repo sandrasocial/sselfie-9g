@@ -397,6 +397,10 @@ interface ChatBody {
     mood?: string
     stylePrompt?: string
   } | null
+  shotDirector?: {
+    mode?: string
+    requestedShotCount?: unknown
+  } | null
   format?: OutputFormat | null
   creationIntent?: CreationIntent | null
   inspirationImageUrl?: string | null
@@ -439,7 +443,31 @@ function normalizeCreationIntent(value: unknown): CreationIntent | null {
   }
 }
 
-function selectedShotContext(shot: ChatBody["selectedShot"]): string | null {
+function normalizeShotDirector(value: unknown): {
+  mode: "recreate-shot" | "more-angles" | "collection-shoot" | "new-shoot"
+  requestedShotCount: 6 | 8 | 9
+} | null {
+  if (!value || typeof value !== "object") return null
+  const record = value as Record<string, unknown>
+  const mode =
+    record.mode === "recreate-shot" ||
+    record.mode === "more-angles" ||
+    record.mode === "collection-shoot" ||
+    record.mode === "new-shoot"
+      ? record.mode
+      : null
+  if (!mode) return null
+  const requestedShotCount =
+    record.requestedShotCount === 8 || record.requestedShotCount === 9
+      ? record.requestedShotCount
+      : 6
+  return { mode, requestedShotCount }
+}
+
+function selectedShotContext(
+  shot: ChatBody["selectedShot"],
+  director?: ReturnType<typeof normalizeShotDirector>
+): string | null {
   if (!shot) return null
   const title = clampText(shot.title, 160)
   const image = clampText(shot.image, 300)
@@ -447,17 +475,24 @@ function selectedShotContext(shot: ChatBody["selectedShot"]): string | null {
   const whenToUse = clampText(shot.whenToUse, 500)
   const mood = clampText(shot.mood, 260)
   const stylePrompt = clampText(shot.stylePrompt, 2600)
+  const variationAllowed = Boolean(director && director.mode !== "recreate-shot")
   return [
-    `## SELECTED VAULT SHOT - recreate this frame`,
+    variationAllowed
+      ? `## SELECTED VAULT SHOT - style anchor for variation`
+      : `## SELECTED VAULT SHOT - recreate this frame`,
     "",
-    "She picked one exact shot from the vibe before opening Maya. This is the strongest visual anchor.",
+    variationAllowed
+      ? "She picked one exact shot from the vibe before opening Maya. This is the strongest visual anchor, but she asked for variation around it."
+      : "She picked one exact shot from the vibe before opening Maya. This is the strongest visual anchor.",
     `Shot: ${title}`,
     `Reference image: ${image}`,
     whenToUse ? `Use case: ${whenToUse}` : "",
     mood ? `Mood: ${mood}` : "",
     stylePrompt ? `Shot styling DNA: ${stylePrompt}` : "",
     "",
-    "When you write concept briefs, prioritize this shot's composition, camera distance, pose logic, outfit direction, props, lighting, and background world. Keep her real face from her selfie. Do not drift to a different shot in the same collection unless she asks for a variation.",
+    variationAllowed
+      ? "When you write concept briefs, preserve this shot's styling DNA, outfit direction, props, lighting, background world, and editorial feeling. Keep her real face from her selfie. Vary pose, camera distance, crop, and moment so the set feels useful, not duplicated."
+      : "When you write concept briefs, prioritize this shot's composition, camera distance, pose logic, outfit direction, props, lighting, and background world. Keep her real face from her selfie. Do not drift to a different shot in the same collection unless she asks for a variation.",
   ]
     .filter(Boolean)
     .join("\n")
@@ -743,6 +778,7 @@ export async function POST(req: Request) {
     }
 
     const creationIntent = normalizeCreationIntent(body?.creationIntent ?? null)
+    const shotDirector = normalizeShotDirector(body?.shotDirector ?? null)
     const requestedFormat = isOutputFormat(body?.format) ? body.format : null
     const intentFormat = creationIntent?.format ?? null
     const committedFormat = intentFormat ?? requestedFormat
@@ -783,8 +819,9 @@ export async function POST(req: Request) {
     }
 
     const vaultStyleGuide =
-      (await getVaultStyleGuide(body?.aestheticId)) ?? (await getVaultOverviewGuide())
-    const selectedShotGuide = selectedShotContext(body?.selectedShot ?? null)
+      (await getVaultStyleGuide(body?.aestheticId, shotDirector?.requestedShotCount ?? 8)) ??
+      (await getVaultOverviewGuide())
+    const selectedShotGuide = selectedShotContext(body?.selectedShot ?? null, shotDirector)
     let system = getAppV3MayaSystemPrompt({
       aestheticName: body?.aestheticName?.trim() || "SSELFIE editorial",
       aestheticIntent:
@@ -806,6 +843,18 @@ export async function POST(req: Request) {
       system = `${system}\n\n## MAYA-FIRST ROUTING\nNo output format has been committed yet. Do not assume this is a photo request. Ask exactly one inline clarifying question with ask_clarify and short tappable choices such as \"A photo\", \"A full shoot\", \"A reel cover\", \"A carousel\", \"Stories\", or \"Motion\". Do not call emit_concepts until she chooses.`
     } else if (creationIntent) {
       system = `${system}\n\n## MAYA-FIRST ROUTING\nCommitted format: ${format}. Intent source: ${creationIntent.source}. Intent confidence: ${creationIntent.confidence}. Treat this as the creation path unless the user clearly changes it.`
+    }
+
+    if (shotDirector) {
+      const directorLine =
+        shotDirector.mode === "recreate-shot"
+          ? "She chose Recreate this shot. Emit 1 close concept direction for the selected Vault shot. Keep the composition close, but preserve her real face from her selfie."
+          : shotDirector.mode === "more-angles"
+            ? "She chose More angles of this look. Emit exactly 3 concept directions in the committed format. Keep the selected shot's styling DNA, but vary pose, camera distance, crop, angle, and moment so the options do not feel duplicated."
+            : shotDirector.mode === "collection-shoot"
+              ? `She chose Full shoot / Recreate this collection. Emit exactly ${shotDirector.requestedShotCount} cohesive photoshoot briefs. Use the chosen Vault collection as the map: same visual world, varied shotRole values, 1-2 true-detail shots, and no repeated pose.`
+              : `She chose Full shoot / New shoot in this style. Emit exactly ${shotDirector.requestedShotCount} cohesive photoshoot briefs. Keep the chosen shot and Vault styling DNA, but create fresh scenes, poses, camera distances, and angles in the same world. Include 1-2 true-detail shots.`
+      system = `${system}\n\n## MAYA DIRECTOR MODE\n${directorLine}\nShot count is a real credit cost, so do not exceed it. If the mode is a full shoot, format must be photoshoot and the emitted concept count must match the requested shot count exactly.`
     }
 
     if (format === "video" && isAllowedInspirationUrl(body?.videoSourceUrl)) {

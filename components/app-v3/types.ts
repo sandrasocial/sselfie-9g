@@ -28,6 +28,17 @@ export interface CreationIntent {
   confidence: CreationIntentConfidence
 }
 
+export type ShotDirectorMode =
+  | "recreate-shot"
+  | "more-angles"
+  | "collection-shoot"
+  | "new-shoot"
+
+export interface ShotDirectorIntent {
+  mode: ShotDirectorMode
+  requestedShotCount: 6 | 8 | 9
+}
+
 export type InlineActionKind =
   | "upload_selfie"
   | "choose_format"
@@ -100,6 +111,8 @@ export interface ConciergeSession {
   seedPrompt?: string | null
   /** How the creation started, so Maya can route without making the member navigate. */
   creationIntent?: CreationIntent | null
+  /** Maya director choice after a Vault shot is selected. */
+  shotDirector?: ShotDirectorIntent | null
   startedAt: number
 }
 
@@ -114,6 +127,8 @@ export interface OpenConciergeOptions {
   videoSourceUrl?: string | null
   /** Deterministic client-side routing hint for Maya-first creation. */
   creationIntent?: CreationIntent | null
+  /** Optional director decision for a selected Vault shot. */
+  shotDirector?: ShotDirectorIntent | null
 }
 
 export type AppV3AnalyticsCohort = "member" | "trial" | "limited" | "admin"

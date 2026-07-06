@@ -24,6 +24,11 @@ export type ServerCreationIntentSnapshot = {
   confidence: "high" | "needs_clarify"
 }
 
+export type ServerShotDirectorSnapshot = {
+  mode: "recreate-shot" | "more-angles" | "collection-shoot" | "new-shoot"
+  requestedShotCount: 6 | 8 | 9
+}
+
 export type ServerAestheticSnapshot = {
   id: string
   name: string
@@ -50,6 +55,7 @@ export type ServerConciergeSessionSnapshot = {
   graphicText: unknown | null
   seedPrompt?: string | null
   creationIntent?: ServerCreationIntentSnapshot | null
+  shotDirector?: ServerShotDirectorSnapshot | null
   startedAt: number
 }
 
@@ -95,6 +101,12 @@ const VALID_INTENT_SOURCES: ServerCreationIntentSource[] = [
   "vault_shot",
   "gallery_action",
   "manual",
+]
+const VALID_SHOT_DIRECTOR_MODES: ServerShotDirectorSnapshot["mode"][] = [
+  "recreate-shot",
+  "more-angles",
+  "collection-shoot",
+  "new-shoot",
 ]
 const MAX_SNAPSHOT_AGE_MS = 1000 * 60 * 60 * 24 * 14
 
@@ -151,6 +163,20 @@ function sanitizeCreationIntent(value: unknown): ServerCreationIntentSnapshot | 
   return { format, source, confidence }
 }
 
+function sanitizeShotDirector(value: unknown): ServerShotDirectorSnapshot | null {
+  if (!value || typeof value !== "object") return null
+  const director = value as Record<string, unknown>
+  if (!VALID_SHOT_DIRECTOR_MODES.includes(director.mode as ServerShotDirectorSnapshot["mode"])) {
+    return null
+  }
+  const requestedShotCount =
+    director.requestedShotCount === 8 || director.requestedShotCount === 9 ? director.requestedShotCount : 6
+  return {
+    mode: director.mode as ServerShotDirectorSnapshot["mode"],
+    requestedShotCount,
+  }
+}
+
 function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null {
   if (!value || typeof value !== "object") return null
   const session = value as Record<string, unknown>
@@ -173,6 +199,7 @@ function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null 
       session.graphicText && typeof session.graphicText === "object" ? session.graphicText : null,
     seedPrompt: typeof session.seedPrompt === "string" ? session.seedPrompt : null,
     creationIntent: sanitizeCreationIntent(session.creationIntent),
+    shotDirector: sanitizeShotDirector(session.shotDirector),
     startedAt: session.startedAt,
   }
 }

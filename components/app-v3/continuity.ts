@@ -10,6 +10,8 @@ import type {
   CreationIntent,
   CreationIntentSource,
   OutputFormat,
+  ShotDirectorIntent,
+  ShotDirectorMode,
 } from "./types"
 import type { ConceptGenState } from "./concept-card"
 import { sanitizeTextOverlaySpec } from "@/lib/app-v3/text-overlay"
@@ -35,6 +37,12 @@ const VALID_INTENT_SOURCES: CreationIntentSource[] = [
   "vault_shot",
   "gallery_action",
   "manual",
+]
+const VALID_SHOT_DIRECTOR_MODES: ShotDirectorMode[] = [
+  "recreate-shot",
+  "more-angles",
+  "collection-shoot",
+  "new-shoot",
 ]
 const MAX_SNAPSHOT_AGE_MS = 1000 * 60 * 60 * 24 * 14
 
@@ -107,6 +115,18 @@ function sanitizeCreationIntent(value: unknown): CreationIntent | null {
   return { format, source, confidence }
 }
 
+function sanitizeShotDirector(value: unknown): ShotDirectorIntent | null {
+  if (!value || typeof value !== "object") return null
+  const director = value as Record<string, unknown>
+  if (!VALID_SHOT_DIRECTOR_MODES.includes(director.mode as ShotDirectorMode)) return null
+  const requestedShotCount =
+    director.requestedShotCount === 8 || director.requestedShotCount === 9 ? director.requestedShotCount : 6
+  return {
+    mode: director.mode as ShotDirectorMode,
+    requestedShotCount,
+  }
+}
+
 export function coerceStoredAppSection(value: unknown, fallback: AppV3Section): AppV3Section {
   return VALID_SECTIONS.includes(value as AppV3Section) ? (value as AppV3Section) : fallback
 }
@@ -162,6 +182,7 @@ function sanitizeSession(value: unknown): ConciergeSession | null {
         : null,
     seedPrompt,
     creationIntent: sanitizeCreationIntent(session.creationIntent),
+    shotDirector: sanitizeShotDirector(session.shotDirector),
     startedAt: session.startedAt,
   }
 }
