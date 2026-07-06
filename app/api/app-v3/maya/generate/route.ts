@@ -811,6 +811,29 @@ export async function POST(request: NextRequest) {
     const selfieAndInspirationFiles =
       inspirationFiles.length > 0 ? [...selfieFiles, ...inspirationFiles] : selfieFiles
 
+    // P3 (gpt-image-2 research 2026-07-06, DARK until A/B'd — flip APP_V3_REF_LABELING=on):
+    // OpenAI's official mechanism for multi-reference control is labeling each attached
+    // image's index and role in the prompt. IDENTITY_ANCHOR still says "the attached
+    // reference photo" (singular) while up to 6 files attach. Labels ride a WeakMap keyed
+    // by the exact file-array so runEdit needs no signature change; unknown arrays
+    // (prior-pass buffers) simply get no label.
+    const REF_LABELING_ENABLED =
+      process.env.APP_V3_REF_LABELING === "on" || process.env.APP_V3_REF_LABELING === "true"
+    const referenceRoleLabels = new WeakMap<object, string>()
+    if (REF_LABELING_ENABLED) {
+      const identityLine =
+        selfieFiles.length > 1
+          ? `Attached images: Image 1 is her primary selfie - the only source for her face. Images 2-${selfieFiles.length} are more identity photos of the same woman (angles / full body). Her face and body always come from these photos.`
+          : "Attached images: Image 1 is her selfie - the only source for her face and body."
+      referenceRoleLabels.set(selfieFiles, identityLine)
+      if (inspirationFiles.length > 0) {
+        referenceRoleLabels.set(
+          selfieAndInspirationFiles,
+          `${identityLine} The LAST attached image is inspiration only: take styling, light, mood, or pose energy from it - never her face or body.`
+        )
+      }
+    }
+
     // Retired Mode C placeholder. Kept empty so old request shapes fail safely above.
     const baseFiles = baseImageSource
       ? [
@@ -827,10 +850,11 @@ export async function POST(request: NextRequest) {
       promptText: string,
       images: Awaited<ReturnType<typeof toFile>>[]
     ): Promise<Buffer> => {
+      const roleLabel = referenceRoleLabels.get(images as unknown as object)
       const editInput: Record<string, unknown> = {
         model: OPENAI_IMAGE_MODEL,
         image: images.length === 1 ? images[0] : images,
-        prompt: withLikeness(promptText),
+        prompt: withLikeness(roleLabel ? `${roleLabel}\n\n${promptText}` : promptText),
         n: 1,
         size,
         quality: IMAGE_QUALITY,
@@ -849,7 +873,17 @@ export async function POST(request: NextRequest) {
       return Buffer.from(b64, "base64")
     }
 
-    // One edit call with a single graceful retry on a content-policy rejection.
+    // One edit call with a single graceful retry on a content-policy rejection, and ONE
+    // retry with a short backoff on transient failures (5xx/network). Before this, one
+    // flaky call failed and refunded an entire multi-image set. Content-policy retries
+    // never stack with transient retries (each error class gets exactly one extra call).
+    const isTransientOpenAIError = (error: unknown): boolean => {
+      if (isContentPolicyError(error)) return false
+      const status = (error as { status?: number })?.status
+      if (typeof status === "number") return status >= 500 || status === 429
+      const message = error instanceof Error ? error.message : String(error)
+      return /ECONNRESET|ETIMEDOUT|ECONNREFUSED|fetch failed|socket hang up|network/i.test(message)
+    }
     const runEditWithRetry = async (
       promptText: string,
       images: Awaited<ReturnType<typeof toFile>>[]
@@ -859,6 +893,10 @@ export async function POST(request: NextRequest) {
       } catch (firstError) {
         if (isContentPolicyError(firstError)) {
           return await runEdit(sanitizePromptForModeration(promptText), images)
+        }
+        if (isTransientOpenAIError(firstError)) {
+          await new Promise(resolve => setTimeout(resolve, 2500))
+          return await runEdit(promptText, images)
         }
         throw firstError
       }
@@ -896,6 +934,16 @@ export async function POST(request: NextRequest) {
         type: "image/png",
       })
       const selfieAndHeroFiles = [...selfieFiles, heroFile]
+      if (REF_LABELING_ENABLED) {
+        referenceRoleLabels.set(
+          selfieAndHeroFiles,
+          `Attached images: Image 1 is her primary selfie - the only source for her face.${
+            selfieFiles.length > 1
+              ? ` Images 2-${selfieFiles.length} are more identity photos of the same woman.`
+              : ""
+          } The LAST attached image is the generated hero shot from this same photoshoot: match its wardrobe, light, palette, and world only - her face always comes from the selfies.`
+        )
+      }
 
       const restJobs = setJobs
         .map((item, index) => ({ item, index }))
@@ -996,9 +1044,10 @@ export async function POST(request: NextRequest) {
       images: Awaited<ReturnType<typeof toFile>>[],
       onPartial: (b64: string) => void
     ): Promise<Buffer> => {
+      const streamRoleLabel = referenceRoleLabels.get(images as unknown as object)
       const base: Record<string, unknown> = {
         model: OPENAI_IMAGE_MODEL,
-        prompt: withLikeness(promptText),
+        prompt: withLikeness(streamRoleLabel ? `${streamRoleLabel}\n\n${promptText}` : promptText),
         n: 1,
         size,
         quality: IMAGE_QUALITY,
@@ -1180,7 +1229,11 @@ export async function POST(request: NextRequest) {
             `Style reference URL used: ${style.imageUrl}`,
             job.textOverlaySpec ? `Text overlay spec: ${JSON.stringify(job.textOverlaySpec)}` : "",
             inspirationReferenceUrl
-              ? `Inspiration reference URL used: ${inspirationReferenceUrl}`
+              ? `Inspiration reference URL used: ${
+                  inspirationReferenceUrl.startsWith("data:")
+                    ? "in-memory hero anchor (slide 1 render)"
+                    : inspirationReferenceUrl
+                }`
               : "",
           ].join("\n")
           return result.buffer
@@ -1190,14 +1243,13 @@ export async function POST(request: NextRequest) {
           // Hero-anchored like the photoshoot: render slide 1 first, then anchor every other slide
           // to it (as the shared visual world) so the whole set keeps one outfit/lighting/world and
           // one consistent person across slides, instead of drifting into a different look each time.
+          // The hero rides as a data: URL (fetch() resolves it in-process): the previous
+          // put() + fetch-back uploaded the same buffer twice and orphaned one
+          // graphic-hero-*.png blob per multi-slide set.
           const heroBuffer = await renderGraphicJob(graphicJobs[0], 0)
-          const heroBlob = await put(
-            `maya-app-v3/${neonUser.id}/graphic-hero-${Date.now()}.png`,
-            heroBuffer,
-            { access: "public", contentType: "image/png" }
-          )
+          const heroDataUrl = `data:image/png;base64,${heroBuffer.toString("base64")}`
           const restBuffers = await Promise.all(
-            graphicJobs.slice(1).map((job, i) => renderGraphicJob(job, i + 1, heroBlob.url))
+            graphicJobs.slice(1).map((job, i) => renderGraphicJob(job, i + 1, heroDataUrl))
           )
           buffers = [heroBuffer, ...restBuffers]
         } else {
