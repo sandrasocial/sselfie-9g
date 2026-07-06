@@ -957,27 +957,58 @@ export async function POST(req: Request) {
 
     // Feed Planner Phase 2c: Maya knows the month plan, so her photo concepts can lean toward
     // the next open day's theme and the plan's one feed style - a cohesive grid without the
-    // member managing anything. Best-effort, one query pair; never blocks chat. Member
-    // sessions only (admin Maya plans Sandra's business content, not a member calendar).
+    // member managing anything. Best-effort; never blocks chat. Member sessions only (admin
+    // Maya plans Sandra's business content, not a member calendar).
+    //
+    // TEMPLATE GROUNDING (Sandra, 2026-07-06): the hand-approved scene templates
+    // (scene_prompts_v2) are the QUALITY BAR - grid images from free-written briefs weren't
+    // matching them. So Maya gets the actual approved template for the next open slot and is
+    // told to build her briefs FROM it - adapt wardrobe/colors/story to the member, keep the
+    // template's composition, lighting, and scene craft.
     if (memoryUserId && !isAdminSession) {
       try {
         const [planLayout] = await sql`
-          SELECT id, feed_style FROM feed_layouts
+          SELECT id, feed_style, feed_style_variation_id FROM feed_layouts
           WHERE user_id = ${memoryUserId}
           ORDER BY created_at DESC
           LIMIT 1
         `
         if (planLayout) {
           const [nextOpen] = await sql`
-            SELECT scheduled_at, content_pillar FROM feed_posts
+            SELECT position, post_type, scheduled_at, content_pillar FROM feed_posts
             WHERE feed_layout_id = ${planLayout.id} AND image_url IS NULL AND scheduled_at >= CURRENT_DATE
             ORDER BY scheduled_at ASC
             LIMIT 1
           `
           const slotLine = nextOpen
-            ? `Her next open calendar day is ${new Date(nextOpen.scheduled_at).toISOString().slice(0, 10)}${nextOpen.content_pillar ? ` with the planned theme "${nextOpen.content_pillar}"` : ""}.`
+            ? `Her next open calendar day is ${new Date(nextOpen.scheduled_at).toISOString().slice(0, 10)}${nextOpen.content_pillar ? ` with the planned theme "${nextOpen.content_pillar}"` : ""}${nextOpen.post_type ? ` (a ${nextOpen.post_type} shot)` : ""}.`
             : "Every planned day this month already has a photo."
-          system = `${system}\n\n## HER CONTENT CALENDAR\nShe has a content calendar you drafted for her${planLayout.feed_style ? ` in the "${planLayout.feed_style}" feed style` : ""}. ${slotLine} When she creates a single photo without a specific ask, lean your concepts toward that theme and keep the feed style world consistent so her grid stays cohesive. When a photo she loves is done, the card under it shows an "Add to calendar" button - if she asks you to save or schedule a photo, tell her to tap that button (you cannot place it yourself). To SHOW her the plan, call show_feed_plan.`
+
+          // The approved scene template for that slot - same source of truth the classic grid
+          // generation uses (positions cycle through the 9-scene set for longer months).
+          let templateBlock = ""
+          if (nextOpen && planLayout.feed_style) {
+            try {
+              const { getFeedStyleV2ByName } = await import("@/lib/feed-planner/feed-style-prompt-loader")
+              const { selectPromptForPosition } = await import("@/lib/feed-planner/feed-style-generation")
+              const style = await getFeedStyleV2ByName(planLayout.feed_style)
+              if (style?.enabled) {
+                const templatePosition = ((Number(nextOpen.position) - 1) % 9) + 1
+                const scene = await selectPromptForPosition(
+                  style.id,
+                  templatePosition,
+                  planLayout.feed_style_variation_id ?? null,
+                )
+                if (scene?.prompt_text) {
+                  templateBlock = `\n\nPROVEN SCENE TEMPLATE for that slot (hand-approved, the quality bar for her grid):\n"""\n${scene.prompt_text}\n"""\nWhen she creates a photo for her feed, build your concept briefs FROM this template: keep its composition, lighting, camera craft, and scene structure, and adapt the wardrobe, colors, setting details, and story to HER brand, her stored preferences, and what she asks for. Do not discard the template and invent from scratch - adapt it.`
+                }
+              }
+            } catch (templateError) {
+              console.error("[app-v3 maya chat] scene template skipped:", templateError)
+            }
+          }
+
+          system = `${system}\n\n## HER CONTENT CALENDAR\nShe has a content calendar you drafted for her${planLayout.feed_style ? ` in the "${planLayout.feed_style}" feed style` : ""}. ${slotLine} When she creates a single photo without a specific ask, lean your concepts toward that theme and keep the feed style world consistent so her grid stays cohesive. When a photo she loves is done, the card under it shows an "Add to calendar" button - if she asks you to save or schedule a photo, tell her to tap that button (you cannot place it yourself). To SHOW her the plan, call show_feed_plan.${templateBlock}`
         }
       } catch (e) {
         console.error("[app-v3 maya chat] calendar context skipped:", e)
