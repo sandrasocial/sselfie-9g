@@ -136,8 +136,9 @@ describe("prompt injection", () => {
     const src = read("app/api/app-v3/maya/generate/route.ts")
     expect(src).toContain("isLikenessMemoryEnabled()")
     expect(src).toContain("buildLikenessPromptBlock")
-    // Both non-streaming and streaming OpenAI calls wrap the prompt.
-    expect(src.match(/withLikeness\(promptText\)/g)?.length).toBeGreaterThanOrEqual(2)
+    // Both non-streaming and streaming OpenAI calls wrap the prompt (the argument now
+    // carries an optional reference-role label, so match the call site, not the exact arg).
+    expect(src.match(/withLikeness\(/g)?.length).toBeGreaterThanOrEqual(2)
     // The graphic/slide pipeline carries the notes too.
     expect(src).toContain("extraIdentityInstruction: likenessBlock || undefined")
   })

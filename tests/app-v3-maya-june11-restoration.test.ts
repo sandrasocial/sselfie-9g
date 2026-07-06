@@ -236,7 +236,9 @@ describe("Maya June 11 restoration guardrails", () => {
 
     expect(route).toContain("Model provider: openai")
     expect(route).toContain("Model: ${OPENAI_IMAGE_MODEL}")
-    expect(route).toContain("Reference URLs used:")
+    // Identity vs inspiration references are recorded separately since the 2026-07 split.
+    expect(route).toContain("Identity reference URLs used:")
+    expect(route).toContain("Inspiration reference URLs used:")
     expect(route).toContain("Style reference URL used:")
   })
 })

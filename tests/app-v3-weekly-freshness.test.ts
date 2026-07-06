@@ -69,13 +69,14 @@ describe("in-app freshness wiring", () => {
     expect(route).toContain("aestheticId: matched.id")
   })
 
-  it("Create view features this week's look above the vault grid, reusing the aesthetic tap", () => {
+  it("keeps the weekly look server-side only: Create stays a calm start surface (single-owner UX 2026-07-06)", () => {
+    // The Monday email still announces the weekly look and the aesthetics API still matches
+    // it to a tile (asserted above). The Create tab no longer renders a weekly tile or vault
+    // grid - creation decisions live inside Maya per SUITE_MAYA_SINGLE_OWNER_UX_2026-07-06.
     const frontDoor = read("components/app-v3/visual-front-door.tsx")
-    expect(frontDoor).toContain("New this week")
-    expect(frontDoor).toContain("weeklyLook")
-    expect(frontDoor).toContain("openAesthetic(weeklyAesthetic)")
-    // Members only: the admin compact mount and the trial first-run stay unchanged.
-    expect(frontDoor).toContain("!shouldShowTrialFirstRun && !compact && weeklyAesthetic")
+    expect(frontDoor).not.toContain("New this week")
+    expect(frontDoor).not.toContain("weeklyAesthetic")
+    expect(frontDoor).not.toContain("openAesthetic(")
   })
 
   it("library API carries publishedAt for both vault and academy drops", () => {

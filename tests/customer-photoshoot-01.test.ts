@@ -36,7 +36,8 @@ describe("CUSTOMER-PHOTOSHOOT-01 format contract", () => {
     expect(route).toContain("Use the generated hero reference only as a style/cohesion anchor")
     expect(route).toContain("const selfieAndHeroFiles = [...selfieFiles, heroFile]")
 
-    const heroFirst = route.indexOf("const heroBuffer = await runJob(hero.job, selfieFiles)")
+    // Hero renders from selfies + optional inspiration (identity + style ground truth).
+    const heroFirst = route.indexOf("const heroBuffer = await runJob(hero.job, selfieAndInspirationFiles)")
     const restAfter = route.indexOf("restJobs.map(async ({ item, index })")
     expect(heroFirst).toBeGreaterThan(-1)
     expect(restAfter).toBeGreaterThan(heroFirst)

@@ -51,15 +51,16 @@ describe("BRIDGE-01 free prompts to Vault bridge", () => {
     expect(activeGuideEmails).not.toContain("freebie-guide-day8-starter-kit-direct")
   })
 
-  it("renders the approved day 1 Vault bridge email with checkout attribution", () => {
+  it("renders the day 1 bridge email routing cold leads to the AI Photos Kit with checkout attribution", () => {
     const email = generateAiPromptsDay1VaultBridgeEmail({ firstName: "Sandra" })
 
     expect(email.subject).toBe("you're not unphotogenic, babe")
     expect(email.text).toContain("Hi Sandra,")
-    expect(email.text).toContain("The Vault is the rest of the directions")
-    expect(email.text).toContain("/checkout/prompt-vault")
+    // Forward Revenue Plan 2026-07-01: cold prompt leads get the Kit, not the Vault.
+    expect(email.text).toContain("That is what the AI Photos Kit is for")
+    expect(email.text).toContain("/checkout/selfie-to-ai-photos-kit")
     expect(email.text).toContain("email_type=ai-prompts-day1-vault-bridge")
-    expect(email.text).not.toContain("www.sselfie.ai/prompt-vault?")
+    expect(email.text).not.toContain("/checkout/prompt-vault")
   })
 
   it("renders the approved Vault offer sequence with attribution and text-only proof", () => {

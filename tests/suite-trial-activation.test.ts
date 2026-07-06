@@ -103,8 +103,12 @@ describe("SUITE trial first-image activation", () => {
     expect(frontDoor).toContain("Hi, I'm Maya. Let's make your first photo.")
     expect(frontDoor).toContain("Add one clear selfie and I'll keep your real face")
     expect(frontDoor).toContain("Add my selfie")
-    expect(concierge).toContain("For best results")
-    expect(concierge).toContain("one full-body shot and one side profile")
-    expect(concierge).toContain("All optional.")
+    // Best-results recipe (main selfie + optional angles) now lives as structured slots in
+    // the reference manager Maya owns, not as a prose blurb in the chat.
+    const managerModal = read("components/app-v3/selfie-reference-manager-modal.tsx")
+    expect(managerModal).toContain('label: "Side profile"')
+    expect(managerModal).toContain('label: "Full body"')
+    expect(managerModal).toContain("Optional. Helps Maya understand your face shape.")
+    expect(managerModal).toContain("Optional. Helps with outfits, posture, and proportions.")
   })
 })

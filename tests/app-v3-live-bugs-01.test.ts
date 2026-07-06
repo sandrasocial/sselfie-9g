@@ -18,6 +18,7 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
 
   it("collapses the trial first-run front door to a single selfie action with activation analytics", () => {
     const frontDoor = read("components/app-v3/visual-front-door.tsx")
+    const concierge = read("components/app-v3/maya-concierge.tsx")
     const events = read("lib/analytics/event-contract.ts")
 
     expect(frontDoor).toContain("Hi, I'm Maya. Let's make your first photo.")
@@ -25,9 +26,12 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
     expect(frontDoor).toContain("Add my selfie")
     expect(frontDoor).toContain("suite_home_viewed")
     expect(frontDoor).toContain("first_action_selected")
-    expect(frontDoor).toContain("activation_selfie_uploaded")
-    expect(frontDoor).toContain('source: "front_door"')
     expect(frontDoor).toContain("!shouldShowTrialFirstRun && !compact")
+    // Single-owner UX (2026-07-06): the front door routes into Maya's reference manager;
+    // the activation event now fires from the Maya-mounted upload, not a Create-tab modal.
+    expect(frontDoor).toContain('initialSetupAction: "selfie_manager"')
+    expect(concierge).toContain("activation_selfie_uploaded")
+    expect(concierge).toContain('source: "maya_drawer"')
     expect(events).toContain('"suite_home_viewed"')
     expect(events).toContain('"first_action_selected"')
   })
