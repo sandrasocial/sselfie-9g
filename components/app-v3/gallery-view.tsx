@@ -131,6 +131,7 @@ const AssetTile = memo(function AssetTile({
   onMakeMotion?: (url: string) => void
 }) {
   const isVideo = asset.kind === "video"
+  const title = asset.title?.trim()
   return (
     <div
       className={`group relative overflow-hidden rounded-[6px] border bg-[#F1F2F2] transition-shadow ${
@@ -166,7 +167,7 @@ const AssetTile = memo(function AssetTile({
         ) : (
           <Image
             src={asset.url}
-            alt={asset.prompt || `Gallery image ${index + 1}`}
+            alt={title || asset.prompt || `Gallery image ${index + 1}`}
             fill
             onError={retryGeneratedImageOnce}
             className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
@@ -180,6 +181,20 @@ const AssetTile = memo(function AssetTile({
       {showLabel && (
         <span className="pointer-events-none absolute left-2 top-2 rounded-[3px] bg-[#0D0E10]/55 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.16em] text-white backdrop-blur-sm">
           {assetLabel(asset)}
+        </span>
+      )}
+      {asset.variantOf && (
+        <span
+          className={`pointer-events-none absolute left-2 rounded-[3px] bg-white/85 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.14em] text-[color:var(--ss-charcoal)] backdrop-blur-sm ${
+            showLabel ? "top-8" : "top-2"
+          }`}
+        >
+          Variant
+        </span>
+      )}
+      {title && (
+        <span className="pointer-events-none absolute inset-x-2 bottom-12 line-clamp-2 rounded-[3px] bg-[color:var(--ss-night)]/45 px-2 py-1 text-[10px] leading-snug text-white backdrop-blur-sm">
+          {title}
         </span>
       )}
 

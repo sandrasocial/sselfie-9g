@@ -49,10 +49,7 @@ import {
   type TextOverlaySpec,
 } from "@/lib/app-v3/text-overlay"
 import { buildBakePrompt } from "@/lib/app-v3/text-bake"
-import {
-  buildLikenessPromptBlock,
-  isLikenessMemoryEnabled,
-} from "@/lib/app-v3/likeness-memory"
+import { buildLikenessPromptBlock, isLikenessMemoryEnabled } from "@/lib/app-v3/likeness-memory"
 import { getMemory } from "@/lib/app-v3/maya/memory-store"
 import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
 import { logAdminError } from "@/lib/admin-error-log"
@@ -118,7 +115,9 @@ function qualityForFormat(_format: OutputFormat): ImgQuality {
 // fidelity gap (~$0.21 vs ~$0.05 per baked slide, ~191s vs ~82s).
 const BAKE_QUALITY_OVERRIDE = process.env.APP_V3_BAKE_TEXT_QUALITY as ImgQuality | undefined
 const BAKE_TEXT_QUALITY: ImgQuality =
-  BAKE_QUALITY_OVERRIDE === "low" || BAKE_QUALITY_OVERRIDE === "medium" || BAKE_QUALITY_OVERRIDE === "high"
+  BAKE_QUALITY_OVERRIDE === "low" ||
+  BAKE_QUALITY_OVERRIDE === "medium" ||
+  BAKE_QUALITY_OVERRIDE === "high"
     ? BAKE_QUALITY_OVERRIDE
     : qualityForFormat("story-slide")
 
@@ -181,7 +180,9 @@ function categoryForGraphicFormat(format: OutputFormat): StyleReferenceCategory 
   return "reel-cover"
 }
 
-function fallbackCategoryForGraphicFormat(format: OutputFormat): StyleReferenceCategory | undefined {
+function fallbackCategoryForGraphicFormat(
+  format: OutputFormat
+): StyleReferenceCategory | undefined {
   // The DB has no "reel-cover" style references yet; both single verticals fall back to the
   // story-sequence style anchors (typography/spacing taste only - the grounding stays per format).
   return format === "reel-cover" || format === "story-slide" ? "story-sequence" : undefined
@@ -595,11 +596,7 @@ export async function POST(request: NextRequest) {
         const heroJobIndex = pickPhotoshootHeroJobIndex(plannedPhotoshootJobs)
         photoshootJobs = plannedPhotoshootJobs.map((item, index) => {
           const isHero = index === heroJobIndex
-          const cohesiveJob = withPhotoshootCohesionInstruction(
-            item.job,
-            item.role,
-            isHero
-          )
+          const cohesiveJob = withPhotoshootCohesionInstruction(item.job, item.role, isHero)
           return {
             ...item,
             job: inspirationReferenceUrl
@@ -737,6 +734,10 @@ export async function POST(request: NextRequest) {
     }
 
     const label = body.conceptTitle || body.brief?.outfit?.slice(0, 60) || `${format} concept`
+    const imageTitle =
+      typeof body.conceptTitle === "string" && body.conceptTitle.trim()
+        ? body.conceptTitle.trim().slice(0, 120)
+        : String(label).trim().slice(0, 120) || `${format} concept`
     const deduction = await deductCredits(
       neonUser.id,
       totalCost,
@@ -895,19 +896,26 @@ export async function POST(request: NextRequest) {
         type: "image/png",
       })
       const selfieAndHeroFiles = [...selfieFiles, heroFile]
-      const buffers = new Array<Buffer>(setJobs.length)
-      buffers[heroJobIndex] = heroBuffer
 
       const restJobs = setJobs
         .map((item, index) => ({ item, index }))
         .filter(({ index }) => index !== heroJobIndex)
-      await Promise.all(
+      const restResults = await Promise.all(
         restJobs.map(async ({ item, index }) => {
-          buffers[index] = await runJob(item.job, selfieAndHeroFiles)
+          const buffer = await runJob(item.job, selfieAndHeroFiles)
+          return { index, buffer }
         })
       )
 
-      return buffers
+      const orderedResults = [
+        { index: heroJobIndex, buffer: heroBuffer },
+        ...restResults.sort((a, b) => a.index - b.index),
+      ]
+      actualPromptRecords = orderedResults.map(
+        result =>
+          actualPromptRecords[result.index] ?? recordPrompts[result.index] ?? recordPrompts[0]
+      )
+      return orderedResults.map(result => result.buffer)
     }
 
     // Persist buffers to Blob + gallery. Throws on blob failure (caller refunds).
@@ -928,10 +936,10 @@ export async function POST(request: NextRequest) {
           const insertRow = async () => {
             const inserted = await sql`
               INSERT INTO ai_images (
-                user_id, image_url, prompt, generated_prompt, prediction_id,
+                user_id, image_url, title, variant_of, prompt, generated_prompt, prediction_id,
                 generation_status, source, category, created_at
               ) VALUES (
-                ${neonUser.id}, ${blob.url}, ${storedPrompt}, ${storedPrompt},
+                ${neonUser.id}, ${blob.url}, ${imageTitle}, ${null}, ${storedPrompt}, ${storedPrompt},
                 ${"app-v3-" + stamp + "-" + i}, 'completed', 'openai', ${format}, NOW()
               ) RETURNING id
             `
@@ -1096,7 +1104,7 @@ export async function POST(request: NextRequest) {
                     reason: isContentPolicyError(err) ? "content_policy" : "generation_failed",
                     detail: (err instanceof Error ? err.message : String(err)).slice(0, 300),
                   },
-                }),
+                })
               )
               .catch(() => {})
             controller.enqueue(
@@ -1215,10 +1223,13 @@ export async function POST(request: NextRequest) {
               source: "app-v3-generate",
               format,
               reason: failureReason,
-              detail: (genError instanceof Error ? genError.message : String(genError)).slice(0, 300),
+              detail: (genError instanceof Error ? genError.message : String(genError)).slice(
+                0,
+                300
+              ),
               image_count: imageCount,
             },
-          }),
+          })
         )
         .catch(() => {})
       if (isContentPolicyError(genError)) {
@@ -1276,6 +1287,7 @@ export async function POST(request: NextRequest) {
     // skips the bake (clean render + copy suggestions still work), and any failed bake leg is
     // refunded. We never show a CSS text fallback on customer results.
     let bakedImageUrls: Array<string | null> | null = null
+    let bakedAiImageIds: Array<number | null> | null = null
     let bakeCreditsDeducted = 0
     let responseBalance = deduction.newBalance
     let autoBakeSkipped: string | null = null
@@ -1323,24 +1335,29 @@ export async function POST(request: NextRequest) {
           responseBalance = bakeDeduction.newBalance
           const bakeRefundRef = `app-v3-auto-bake-fail-${neonUser.id}-${Date.now()}`
           const bakeStamp = Date.now()
+          bakedAiImageIds = new Array<number | null>(buffers.length).fill(null)
           bakedImageUrls = await Promise.all(
             buffers.map(async (cleanBuffer, index): Promise<string | null> => {
               const spec = textOverlaySpecs[index]
+              const variantOf: number | null = persisted[index]?.id ?? null
               try {
                 // ONE pass on the clean render (never a previous baked result, no retries).
                 const bakeSource = await toFile(cleanBuffer, `maya-bake-source-${index}.png`, {
                   type: "image/png",
                 })
+                const bakePrompt = buildBakePrompt(spec)
                 const bakeResponse = (await openai.images.edit({
                   model: OPENAI_IMAGE_MODEL,
                   image: bakeSource,
-                  prompt: buildBakePrompt(spec),
+                  prompt: bakePrompt,
                   n: 1,
                   size,
                   quality: BAKE_TEXT_QUALITY,
                   output_format: "png",
                   moderation: "low",
-                } as Parameters<typeof openai.images.edit>[0])) as unknown as OpenAIImageEditResponse
+                } as Parameters<
+                  typeof openai.images.edit
+                >[0])) as unknown as OpenAIImageEditResponse
                 const b64 = bakeResponse.data?.[0]?.b64_json
                 if (!b64) throw new Error("No image data returned from OpenAI")
                 const blob = await put(
@@ -1348,6 +1365,27 @@ export async function POST(request: NextRequest) {
                   Buffer.from(b64, "base64"),
                   { access: "public", contentType: "image/png" }
                 )
+                try {
+                  const inserted = await sql`
+                    INSERT INTO ai_images (
+                      user_id, image_url, title, variant_of, prompt, generated_prompt,
+                      prediction_id, generation_status, source, category, created_at
+                    ) VALUES (
+                      ${neonUser.id}, ${blob.url}, ${imageTitle}, ${variantOf}, ${spec.headline},
+                      ${bakePrompt.slice(0, 2000)}, ${"app-v3-auto-bake-" + bakeStamp + "-" + index},
+                      'completed', 'openai', ${format}, NOW()
+                    )
+                    RETURNING id
+                  `
+                  bakedAiImageIds![index] = inserted[0]?.id ?? null
+                } catch (dbError) {
+                  console.error("[app-v3 generate] auto bake DB insert failed:", dbError)
+                  void logAdminError({
+                    toolName: "app-v3-auto-bake-gallery-insert",
+                    error: dbError,
+                    context: { userId: neonUser.id, blobUrl: blob.url, format, variantOf },
+                  }).catch(() => {})
+                }
                 return blob.url
               } catch (bakeError) {
                 console.error(`[app-v3 generate] auto bake failed (image ${index}):`, bakeError)
@@ -1392,6 +1430,7 @@ export async function POST(request: NextRequest) {
       ...(textOverlaySpecs.length ? { textOverlaySpecs } : {}),
       ...(requestedTextOverlayMode ? { textOverlayMode: requestedTextOverlayMode } : {}),
       ...(bakedImageUrls ? { bakedImageUrls } : {}),
+      ...(bakedAiImageIds ? { bakedAiImageIds } : {}),
       ...(autoBakeSkipped ? { autoBakeSkipped } : {}),
       imageCount: imageUrls.length,
       aiImageId: persisted[0]?.id ?? null,

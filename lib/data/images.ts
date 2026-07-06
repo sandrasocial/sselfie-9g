@@ -5,11 +5,13 @@ export interface AIImage {
   user_id: string
   image_url: string
   prompt: string
+  title?: string
   style?: string
   is_selected?: boolean
   is_favorite?: boolean
   created_at: string
   category?: string
+  variant_of?: number
   prediction_id?: string
   generation_status?: string
 }
@@ -32,10 +34,12 @@ export interface GalleryImage {
   user_id: string
   image_url: string
   prompt: string
+  title?: string
   description?: string
   category?: string
   style?: string
   is_favorite?: boolean
+  variant_of?: number
   created_at: string
   source: "ai_images" | "generated_images" | "feed"
   feed_layout_id?: number
@@ -67,10 +71,12 @@ export async function getUserImages(
         id,
         user_id,
         image_url,
+        title,
         prompt,
         generated_prompt,
         style,
         category,
+        variant_of,
         is_favorite,
         source,
         created_at
@@ -86,11 +92,13 @@ export async function getUserImages(
       id: `ai_${img.id}`,
       user_id: img.user_id,
       image_url: img.image_url,
+      title: img.title || undefined,
       prompt: img.prompt || "",
       description: img.generated_prompt || img.prompt || "",
       category: img.category,
       style: img.style,
       is_favorite: img.is_favorite || false,
+      variant_of: img.variant_of ? Number(img.variant_of) : undefined,
       created_at: img.created_at,
       source: "ai_images" as const,
     }))
@@ -113,10 +121,12 @@ export async function getAllUserImages(userId: string): Promise<GalleryImage[]> 
         id,
         user_id,
         image_url,
+        title,
         prompt,
         generated_prompt,
         style,
         category,
+        variant_of,
         is_favorite,
         source,
         created_at
@@ -153,11 +163,13 @@ export async function getAllUserImages(userId: string): Promise<GalleryImage[]> 
         id: `ai_${img.id}`,
         user_id: img.user_id,
         image_url: img.image_url,
+        title: img.title || undefined,
         prompt: img.prompt || "",
         description: img.generated_prompt || img.prompt || "",
         category: img.category,
         style: img.style,
         is_favorite: img.is_favorite || false,
+        variant_of: img.variant_of ? Number(img.variant_of) : undefined,
         created_at: img.created_at,
         source: "ai_images" as const,
       })),
@@ -192,10 +204,12 @@ export async function getImageById(imageId: string): Promise<GalleryImage | null
           id,
           user_id,
           image_url,
+          title,
           prompt,
           generated_prompt,
           style,
           category,
+          variant_of,
           is_favorite,
           source,
           created_at
@@ -210,11 +224,13 @@ export async function getImageById(imageId: string): Promise<GalleryImage | null
           id: `ai_${img.id}`,
           user_id: img.user_id,
           image_url: img.image_url,
+          title: img.title || undefined,
           prompt: img.prompt || "",
           description: img.generated_prompt || img.prompt || "",
           category: img.category,
           style: img.style,
           is_favorite: img.is_favorite || false,
+          variant_of: img.variant_of ? Number(img.variant_of) : undefined,
           created_at: img.created_at,
           source: "ai_images",
         }

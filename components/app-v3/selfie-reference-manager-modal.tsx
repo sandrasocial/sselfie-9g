@@ -29,12 +29,14 @@ export function SelfieReferenceManagerModal({
   initialFaceUrl,
   onClose,
   onFaceReady,
+  onExtraReady,
   onContinue,
 }: {
   open: boolean
   initialFaceUrl?: string | null
   onClose: () => void
   onFaceReady?: (url: string, source: "upload" | "saved") => void
+  onExtraReady?: (slot: Exclude<ReferenceSlot, "face">, url: string | null) => void
   onContinue: (url: string) => void
 }) {
   const faceInputRef = useRef<HTMLInputElement>(null)
@@ -90,19 +92,29 @@ export function SelfieReferenceManagerModal({
       form.append("file", file)
       form.append("slot", slot)
       const response = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
-      const data = (await response.json().catch(() => null)) as
-        | { url?: string; error?: string }
-        | null
+      const data = (await response.json().catch(() => null)) as {
+        url?: string
+        error?: string
+      } | null
       if (!response.ok || !data?.url) throw new Error(data?.error || "Upload failed")
 
       if (slot === "face") {
         setFaceUrl(data.url)
         setPastSelfies(current => [data.url, ...(current ?? []).filter(url => url !== data.url)])
         onFaceReady?.(data.url, "upload")
-      } else if (slot === "angle") setThreeQuarterUrl(data.url)
-      else if (slot === "side") setSideProfileUrl(data.url)
-      else if (slot === "body") setFullBodyUrl(data.url)
-      else setInspirationUrl(data.url)
+      } else if (slot === "angle") {
+        setThreeQuarterUrl(data.url)
+        onExtraReady?.("angle", data.url)
+      } else if (slot === "side") {
+        setSideProfileUrl(data.url)
+        onExtraReady?.("side", data.url)
+      } else if (slot === "body") {
+        setFullBodyUrl(data.url)
+        onExtraReady?.("body", data.url)
+      } else {
+        setInspirationUrl(data.url)
+        onExtraReady?.("inspiration", data.url)
+      }
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Upload failed")
     } finally {
@@ -115,6 +127,7 @@ export function SelfieReferenceManagerModal({
     else if (slot === "side") setSideProfileUrl(null)
     else if (slot === "body") setFullBodyUrl(null)
     else setInspirationUrl(null)
+    onExtraReady?.(slot, null)
     void fetch(`/api/app-v3/upload-selfie?slot=${slot}`, { method: "DELETE" }).catch(() => {})
   }
 
@@ -154,7 +167,9 @@ export function SelfieReferenceManagerModal({
       <div className="mx-auto flex h-full max-w-5xl flex-col overflow-hidden rounded-[10px] bg-[color:var(--ss-seasalt)] shadow-[0_30px_90px_rgba(13,14,16,0.24)]">
         <div className="flex items-start justify-between gap-4 border-b border-[color:var(--ss-silver)]/55 px-5 py-5 sm:px-7">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ss-gray)]">Your face</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ss-gray)]">
+              Your face
+            </p>
             <h2 className="mt-2 font-serif text-[30px] font-light leading-[1.05] text-[color:var(--ss-night)] sm:text-[40px]">
               Start with one clear selfie.
             </h2>
@@ -175,11 +190,19 @@ export function SelfieReferenceManagerModal({
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-7">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="rounded-[8px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)] p-4">
-              <p className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--ss-gray)]">Main selfie</p>
+              <p className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--ss-gray)]">
+                Main selfie
+              </p>
               <div className="mt-3 overflow-hidden rounded-[7px] border border-[color:var(--ss-silver)] bg-[color:var(--ss-seasalt)]">
                 <div className="relative aspect-[4/5] w-full">
                   {faceUrl ? (
-                    <Image src={faceUrl} alt="Selected main selfie" fill className="object-cover" sizes="420px" />
+                    <Image
+                      src={faceUrl}
+                      alt="Selected main selfie"
+                      fill
+                      className="object-cover"
+                      sizes="420px"
+                    />
                   ) : (
                     <div className="flex h-full items-center justify-center px-6 text-center text-[13px] leading-relaxed text-[color:var(--ss-gray)]">
                       Add one clear selfie to start.
@@ -194,7 +217,11 @@ export function SelfieReferenceManagerModal({
                   disabled={uploadingSlot === "face"}
                   className="min-h-11 rounded-[4px] bg-[color:var(--ss-night)] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-60"
                 >
-                  {uploadingSlot === "face" ? "Uploading..." : faceUrl ? "Change selfie" : "Upload selfie"}
+                  {uploadingSlot === "face"
+                    ? "Uploading..."
+                    : faceUrl
+                      ? "Change selfie"
+                      : "Upload selfie"}
                 </button>
                 <input
                   ref={faceInputRef}
@@ -215,9 +242,13 @@ export function SelfieReferenceManagerModal({
 
             <div className="space-y-4">
               <div className="rounded-[8px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)] p-4">
-                <p className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--ss-gray)]">Saved selfies</p>
+                <p className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--ss-gray)]">
+                  Saved selfies
+                </p>
                 {pastSelfies === null && (
-                  <p className="mt-3 text-[13px] text-[color:var(--ss-gray)]">Loading your saved selfies…</p>
+                  <p className="mt-3 text-[13px] text-[color:var(--ss-gray)]">
+                    Loading your saved selfies…
+                  </p>
                 )}
                 {pastSelfies && pastSelfies.length === 0 && (
                   <p className="mt-3 text-[13px] leading-relaxed text-[color:var(--ss-gray)]">
@@ -241,7 +272,13 @@ export function SelfieReferenceManagerModal({
                         }`}
                         aria-label="Use saved selfie"
                       >
-                        <Image src={url} alt="Saved selfie" fill className="object-cover" sizes="120px" />
+                        <Image
+                          src={url}
+                          alt="Saved selfie"
+                          fill
+                          className="object-cover"
+                          sizes="120px"
+                        />
                       </button>
                     ))}
                   </div>
@@ -258,11 +295,20 @@ export function SelfieReferenceManagerModal({
                 </p>
                 <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {optionalSlots.map(item => (
-                    <div key={item.slot} className="rounded-[6px] border border-[color:var(--ss-silver)] bg-[color:var(--ss-seasalt)] p-3">
+                    <div
+                      key={item.slot}
+                      className="rounded-[6px] border border-[color:var(--ss-silver)] bg-[color:var(--ss-seasalt)] p-3"
+                    >
                       <div className="flex gap-3">
                         <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-[4px] bg-[color:var(--ss-white)]">
                           {item.value ? (
-                            <Image src={item.value} alt={item.label} fill className="object-cover" sizes="80px" />
+                            <Image
+                              src={item.value}
+                              alt={item.label}
+                              fill
+                              className="object-cover"
+                              sizes="80px"
+                            />
                           ) : (
                             <div className="flex h-full items-center justify-center text-[18px] text-[color:var(--ss-gray)]">
                               +
@@ -270,8 +316,12 @@ export function SelfieReferenceManagerModal({
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-medium text-[color:var(--ss-night)]">{item.label}</p>
-                          <p className="mt-1 text-[11px] leading-relaxed text-[color:var(--ss-davy)]">{item.help}</p>
+                          <p className="text-[13px] font-medium text-[color:var(--ss-night)]">
+                            {item.label}
+                          </p>
+                          <p className="mt-1 text-[11px] leading-relaxed text-[color:var(--ss-davy)]">
+                            {item.help}
+                          </p>
                           <div className="mt-2 flex flex-wrap gap-2">
                             <button
                               type="button"
@@ -279,7 +329,11 @@ export function SelfieReferenceManagerModal({
                               disabled={uploadingSlot === item.slot}
                               className="min-h-9 rounded-[4px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)] px-3 text-[10px] uppercase tracking-[0.14em] text-[color:var(--ss-davy)] hover:border-[color:var(--ss-night)]/40 disabled:opacity-60"
                             >
-                              {uploadingSlot === item.slot ? "Uploading..." : item.value ? "Change" : "Add"}
+                              {uploadingSlot === item.slot
+                                ? "Uploading..."
+                                : item.value
+                                  ? "Change"
+                                  : "Add"}
                             </button>
                             {item.value && (
                               <button
@@ -309,7 +363,9 @@ export function SelfieReferenceManagerModal({
                 </div>
               </div>
 
-              {error && <p className="text-[13px] leading-relaxed text-[color:var(--ss-raisin)]">{error}</p>}
+              {error && (
+                <p className="text-[13px] leading-relaxed text-[color:var(--ss-raisin)]">{error}</p>
+              )}
             </div>
           </div>
         </div>

@@ -81,6 +81,17 @@ import {
 /** Maya's profile image (one of Sandra's editorial portraits). Swap freely. */
 const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
 
+const MAYA_DECIDES_AESTHETIC: Aesthetic = {
+  id: "maya-decides",
+  name: "Maya decides",
+  blurb: "Maya chooses the strongest style direction from your profile and the Vault.",
+  coverImage: "",
+  thumbnails: [],
+  shotCount: 0,
+  intent:
+    "The member chose 'Let Maya decide'. Use her memory, brand profile, recent activity, and the full Vault overview to pick 2-3 strong style options that fit her request. Start with the best fit, explain the choice simply, and keep the result in a real SSELFIE Vault world. Do not drift into generic studio posing.",
+}
+
 /** Small round avatar for the chat thread (texting-a-friend feel). */
 function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
   return (
@@ -96,7 +107,10 @@ function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
   )
 }
 
-function compactInlineAestheticForMaya(aesthetic: Aesthetic, selectedShot: AestheticShot): Aesthetic {
+function compactInlineAestheticForMaya(
+  aesthetic: Aesthetic,
+  selectedShot: AestheticShot
+): Aesthetic {
   const thumbnails = [
     selectedShot.image,
     ...(aesthetic.thumbnails ?? []).filter(url => url !== selectedShot.image),
@@ -120,7 +134,8 @@ function compactInlineAestheticForMaya(aesthetic: Aesthetic, selectedShot: Aesth
 
 const STYLE_PREVIEW_BACKGROUNDS: Record<OverlayStyleId, string> = {
   "editorial-serif-center": "/images/selfie-to-brand-shoot/module-5-content-use/detail-coffee.jpg",
-  "lower-third-accent": "/images/selfie-to-brand-shoot/module-5-content-use/creator-phone-detail.jpg",
+  "lower-third-accent":
+    "/images/selfie-to-brand-shoot/module-5-content-use/creator-phone-detail.jpg",
   "top-band-minimal": "/images/selfie-to-brand-shoot/module-5-content-use/quiet-product-detail.jpg",
   "quote-statement": "/images/selfie-to-brand-shoot/module-5-content-use/detail-wine.jpg",
   "series-cover": "/images/selfie-to-brand-shoot/module-5-content-use/lifestyle-work-laptop.jpg",
@@ -164,9 +179,12 @@ function TextStyleTemplatePicker({
   return (
     <div className="space-y-3 rounded-[8px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
       <div>
-        <p className="text-[10px] uppercase tracking-[0.2em] text-[#818283]">Maya pulled six looks</p>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-[#818283]">
+          Maya pulled six looks
+        </p>
         <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
-          Tap the cover style that feels closest. Maya will bake the text into your image from the start.
+          Tap the cover style that feels closest. Maya will bake the text into your image from the
+          start.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -208,18 +226,14 @@ function TextStyleTemplatePicker({
   )
 }
 
-function GraphicTextChoiceCard({
-  onChoose,
-}: {
-  onChoose: (mode: GraphicTextMode) => void
-}) {
+function GraphicTextChoiceCard({ onChoose }: { onChoose: (mode: GraphicTextMode) => void }) {
   return (
     <div className="space-y-3 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4">
       <div>
         <p className="text-[10px] uppercase tracking-[0.2em] text-[#818283]">Text on image</p>
         <p className="mt-1 text-[14px] leading-relaxed text-[#4F5052]">
-          Maya can bake short words into the finished image. Choose this now, so nothing appears
-          on your result by surprise.
+          Maya can bake short words into the finished image. Choose this now, so nothing appears on
+          your result by surprise.
         </p>
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
@@ -299,10 +313,14 @@ const FORMAT_PHRASE: Record<OutputFormat, string> = {
 const FORMAT_OPENER: Record<OutputFormat, string> = {
   photo: "Add one selfie and I'll pull directions. Soft window light works best. 🤍",
   photoshoot: "Add one selfie and I'll plan a full shoot in one world. 🤍",
-  "reel-cover": "Hit create and I'll show you six cover styles. Tap the one you love and I'll take it from there.",
-  carousel: "Hit create and I'll show you six text styles. Tap the one that feels like you and I'll build the slides.",
-  "story-slide": "Hit create and I'll show you six styles. Tap the one you love, then pick the story idea that fits.",
-  "story-sequence": "Hit create and I'll show you six styles. Tap the one that feels like you and I'll build the sequence.",
+  "reel-cover":
+    "Hit create and I'll show you six cover styles. Tap the one you love and I'll take it from there.",
+  carousel:
+    "Hit create and I'll show you six text styles. Tap the one that feels like you and I'll build the slides.",
+  "story-slide":
+    "Hit create and I'll show you six styles. Tap the one you love, then pick the story idea that fits.",
+  "story-sequence":
+    "Hit create and I'll show you six styles. Tap the one that feels like you and I'll build the sequence.",
   video: "Add or choose the image you want to move, and I'll pull motion directions.",
 }
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
@@ -356,7 +374,10 @@ function extractConcepts(part: any): ConceptCardData[] | null {
   // Keep any concept with a title and coerce the brief so the prompt compiler's clean()
   // guards see strings, never undefined.
   return payload
-    .filter((c: any) => c && typeof c.title === "string" && (c.brief == null || typeof c.brief === "object"))
+    .filter(
+      (c: any) =>
+        c && typeof c.title === "string" && (c.brief == null || typeof c.brief === "object")
+    )
     .map((c: any) => {
       const brief = c.brief && typeof c.brief === "object" ? c.brief : {}
       const str = (v: unknown) => (typeof v === "string" ? v : "")
@@ -594,6 +615,8 @@ export function MayaConcierge({
     key: string
     url: string
     format: OutputFormat
+    sourceImageId: number | null
+    sourceTitle: string | null
   } | null>(null)
   const [textRefining, setTextRefining] = useState(false)
   // Out-of-credits modal (opened when /generate returns 402).
@@ -895,7 +918,8 @@ export function MayaConcierge({
     if (!isOpen || !session) return
     const fmt = session.outputFormat
     if (!fmt || isThinking) return
-    const pullIntent = localCreationIntent ?? session.creationIntent ?? intentForFormat(fmt, "manual")
+    const pullIntent =
+      localCreationIntent ?? session.creationIntent ?? intentForFormat(fmt, "manual")
     const hasSpecificSessionWorld =
       session.aesthetic.id !== "maya-blank" && session.aesthetic.id !== "maya-general"
     const needsInitialVisualWorld =
@@ -1577,7 +1601,10 @@ export function MayaConcierge({
     setTextStyleChoice(null)
     setStyleSwapOpen(false)
     lastPulledFormatRef.current = null
-    const intent = intentForFormat(id, activeCreationIntent.source === "starter_chip" ? "starter_chip" : "manual")
+    const intent = intentForFormat(
+      id,
+      activeCreationIntent.source === "starter_chip" ? "starter_chip" : "manual"
+    )
     setLocalCreationIntent(intent)
     extrasRef.current = { ...extrasRef.current, format: intent.format, creationIntent: intent }
     trackInlineChoice("format_choice", intent)
@@ -1605,6 +1632,28 @@ export function MayaConcierge({
     openWithAesthetic(nextAesthetic, {
       format: intent.format ?? undefined,
       seed: session?.seedPrompt ?? undefined,
+      referenceSelfieUrl,
+      videoSourceUrl,
+      creationIntent: intent,
+    })
+  }
+
+  function handleInlineUseInspiration() {
+    if (isThinking) return
+    const intent = intentForCurrentVibeChoice("manual")
+    trackInlineChoice("use_inspiration", intent)
+    setSelfieManagerOpen(true)
+  }
+
+  function handleInlineMayaDecides() {
+    if (isThinking) return
+    const intent = intentForCurrentVibeChoice("manual")
+    trackInlineChoice("maya_decides", intent, { aestheticId: MAYA_DECIDES_AESTHETIC.id })
+    openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
+      format: intent.format ?? undefined,
+      seed:
+        session?.seedPrompt ??
+        "Choose the strongest SSELFIE style direction for this and show me the best starting options.",
       referenceSelfieUrl,
       videoSourceUrl,
       creationIntent: intent,
@@ -1757,6 +1806,7 @@ export function MayaConcierge({
     key: string
     index: number
     cleanImageUrl: string
+    cleanImageId: number | null
     spec: TextOverlaySpec
     bakedUrl: string | null
   }
@@ -1765,12 +1815,14 @@ export function MayaConcierge({
     const gen = genState[key]
     if (!gen || gen.status !== "done") return null
     const cleanImageUrl = gen.imageUrls?.[index]
+    const cleanImageId = gen.aiImageIds?.[index] ?? (index === 0 ? (gen.aiImageId ?? null) : null)
     const spec = gen.textOverlaySpecs?.[index]
     if (!cleanImageUrl || !spec) return null
     return {
       key,
       index,
       cleanImageUrl,
+      cleanImageId,
       spec,
       bakedUrl: gen.bakedImageUrls?.[index] ?? null,
     }
@@ -1841,19 +1893,20 @@ export function MayaConcierge({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cleanImageUrl: target.cleanImageUrl,
+          cleanImageId: target.cleanImageId ?? undefined,
+          conceptTitle: target.spec.headline,
           spec: nextSpec,
           ...(styleAdjustments ? { styleAdjustments } : {}),
         }),
       })
-      const data = (await res.json().catch(() => null)) as
-        | {
-            bakedUrl?: string
-            error?: string
-            code?: string
-            current?: number
-            newBalance?: number
-          }
-        | null
+      const data = (await res.json().catch(() => null)) as {
+        bakedUrl?: string
+        aiImageId?: number | null
+        error?: string
+        code?: string
+        current?: number
+        newBalance?: number
+      } | null
 
       if (res.status === 402 || data?.code === "insufficient_credits") {
         showCreditBlock(typeof data?.current === "number" ? data.current : null)
@@ -2094,6 +2147,8 @@ export function MayaConcierge({
                     aesthetics={inlineAesthetics}
                     disabled={isThinking}
                     onPick={handleInlineVibePick}
+                    onUseInspiration={handleInlineUseInspiration}
+                    onLetMayaDecide={handleInlineMayaDecides}
                   />
                 )}
               </div>
@@ -2275,8 +2330,8 @@ export function MayaConcierge({
                   </button>
                 </div>
                 <p className="mt-1 text-[11px] leading-relaxed text-[#818283]">
-                  Maya will keep your skin tone and natural features recognizable, so it&apos;s still
-                  you.
+                  Maya will keep your skin tone and natural features recognizable, so it&apos;s
+                  still you.
                 </p>
               </div>
             ) : format !== "video" ? (
@@ -2359,9 +2414,9 @@ export function MayaConcierge({
             {format !== "video" && showMore && (
               <div className="space-y-2">
                 <p className="text-[11px] leading-relaxed text-[#818283]">
-                  For stronger likeness, add 1-3 extra identity photos: a three-quarter face,
-                  side profile, and full-body shot. Inspiration is separate: Maya uses it for
-                  pose, light, or vibe, never as your face.
+                  For stronger likeness, add 1-3 extra identity photos: a three-quarter face, side
+                  profile, and full-body shot. Inspiration is separate: Maya uses it for pose,
+                  light, or vibe, never as your face.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -2776,14 +2831,14 @@ export function MayaConcierge({
                     {isGraphicOutputFormat(conceptFormat) &&
                       textOverlayMode === "with-text" &&
                       styleSwapOpen && (
-                      <TextStyleTemplatePicker
-                        format={conceptFormat}
-                        onPick={style => {
-                          setTextStyleChoice(style)
-                          setStyleSwapOpen(false)
-                        }}
-                      />
-                    )}
+                        <TextStyleTemplatePicker
+                          format={conceptFormat}
+                          onPick={style => {
+                            setTextStyleChoice(style)
+                            setStyleSwapOpen(false)
+                          }}
+                        />
+                      )}
                     {conceptPart.map(concept => {
                       const key = `${m.id}:${concept.id}`
                       const gen = genState[key] ?? { status: "idle" as const }
@@ -2816,8 +2871,19 @@ export function MayaConcierge({
                             })
                           }
                           onEdit={() => {
-                            const url = (genState[key]?.imageUrls ?? [])[0]
-                            if (url) setEditTarget({ key, url, format: conceptFormat })
+                            const current = genState[key]
+                            const url = (current?.imageUrls ?? [])[0]
+                            const sourceImageId =
+                              current?.aiImageIds?.[0] ?? current?.aiImageId ?? null
+                            if (url) {
+                              setEditTarget({
+                                key,
+                                url,
+                                format: conceptFormat,
+                                sourceImageId,
+                                sourceTitle: concept.title,
+                              })
+                            }
                           }}
                           disabled={
                             conceptFormat === "video"
@@ -2992,7 +3058,9 @@ export function MayaConcierge({
                   void handleSend()
                 }
               }}
-              placeholder={textRefining ? "Maya is updating the text…" : "Want something different? Ask Maya…"}
+              placeholder={
+                textRefining ? "Maya is updating the text…" : "Want something different? Ask Maya…"
+              }
               className="h-12 min-w-0 flex-1 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10] min-[380px]:px-4"
             />
             <button
@@ -3035,6 +3103,12 @@ export function MayaConcierge({
           setSelfieRestored(false) // she chose this one herself
           setReferenceSelfieUrl(url)
         }}
+        onExtraReady={(slot, url) => {
+          if (slot === "angle") setThreeQuarterUrl(url)
+          else if (slot === "side") setSideProfileUrl(url)
+          else if (slot === "body") setFullBodyUrl(url)
+          else if (slot === "inspiration") setInspirationUrl(url)
+        }}
         onContinue={url => {
           setSelfieRestored(false)
           setReferenceSelfieUrl(url)
@@ -3059,15 +3133,28 @@ export function MayaConcierge({
         <EditMode
           imageUrl={editTarget.url}
           format={editTarget.format}
+          sourceImageId={editTarget.sourceImageId}
+          sourceTitle={editTarget.sourceTitle}
           onClose={() => setEditTarget(null)}
           onCreditBlock={balance => {
             setEditTarget(null)
             showCreditBlock(balance)
           }}
-          onResult={newUrl =>
+          onResult={(newUrl, aiImageId) =>
             setGenState(s => {
-              const prev = s[editTarget.key]?.imageUrls ?? []
-              return { ...s, [editTarget.key]: { status: "done", imageUrls: [newUrl, ...prev] } }
+              const current = s[editTarget.key]
+              const prevUrls = current?.imageUrls ?? []
+              const prevIds = current?.aiImageIds ?? []
+              return {
+                ...s,
+                [editTarget.key]: {
+                  ...(current ?? { status: "done" }),
+                  status: "done",
+                  imageUrls: [newUrl, ...prevUrls],
+                  aiImageId: aiImageId ?? current?.aiImageId ?? null,
+                  aiImageIds: [aiImageId ?? null, ...prevIds],
+                },
+              }
             })
           }
         />

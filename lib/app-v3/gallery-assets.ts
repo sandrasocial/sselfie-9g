@@ -18,6 +18,8 @@ export type AppV3GalleryAsset = {
   sourceImageUrl?: string | null
   createdAt: string
   isFavorite: boolean
+  title?: string | null
+  variantOf?: string | null
   prompt?: string | null
   motionPrompt?: string | null
   status?: string | null
@@ -132,6 +134,8 @@ export function imageToGalleryAsset(image: GalleryImage): AppV3GalleryAsset | nu
     sourceImageUrl: null,
     createdAt: createdAtString(image.created_at),
     isFavorite: Boolean(image.is_favorite),
+    title: image.title || null,
+    variantOf: image.variant_of ? `ai_${image.variant_of}` : null,
     prompt: image.prompt || null,
     motionPrompt: null,
     status: null,

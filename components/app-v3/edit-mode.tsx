@@ -16,8 +16,10 @@ import { Spinner } from "./loading"
 interface EditModeProps {
   imageUrl: string
   format: OutputFormat
+  sourceImageId?: number | null
+  sourceTitle?: string | null
   onClose: () => void
-  onResult: (newUrl: string) => void
+  onResult: (newUrl: string, aiImageId?: number | null) => void
   /** TRIAL-CAP-01: called when the edit is blocked for credits, so the parent can show the
    * right offer (trial-cap membership offer for trials, top-up for members) instead of a
    * dead error string. */
@@ -68,7 +70,15 @@ const QUICK_EDITS: { label: string; instruction: string }[] = [
   { label: "Black & white", instruction: "convert to a rich editorial black and white" },
 ]
 
-export function EditMode({ imageUrl, format, onClose, onResult, onCreditBlock }: EditModeProps) {
+export function EditMode({
+  imageUrl,
+  format,
+  sourceImageId,
+  sourceTitle,
+  onClose,
+  onResult,
+  onCreditBlock,
+}: EditModeProps) {
   const [current, setCurrent] = useState(imageUrl)
   const [instruction, setInstruction] = useState("")
   const [busy, setBusy] = useState(false)
@@ -83,10 +93,17 @@ export function EditMode({ imageUrl, format, onClose, onResult, onCreditBlock }:
       const res = await fetch("/api/app-v3/maya/edit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: current, instruction: change, format }),
+        body: JSON.stringify({
+          imageUrl: current,
+          instruction: change,
+          format,
+          sourceImageId,
+          sourceTitle,
+        }),
       })
       const data = (await res.json().catch(() => null)) as {
         imageUrl?: string
+        aiImageId?: number | null
         error?: string
         code?: string
         current?: number
@@ -103,7 +120,7 @@ export function EditMode({ imageUrl, format, onClose, onResult, onCreditBlock }:
       if (!res.ok || !data?.imageUrl) throw new Error(data?.error || "Couldn't make that change.")
       setCurrent(data.imageUrl)
       setInstruction("")
-      onResult(data.imageUrl)
+      onResult(data.imageUrl, data.aiImageId ?? null)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't make that change.")
     } finally {
