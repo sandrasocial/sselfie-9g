@@ -25,13 +25,19 @@ export const maxDuration = 300
 const sql = getDbClient()
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 
-// Matches the edit route (which matches qualityForFormat in generate): baking text never
-// silently changes the image's quality tier.
+// Baked typography is the most quality-sensitive render (OpenAI reserves high for
+// "dense text / identity-sensitive edits") and the six style previews were generated at
+// HIGH. Default stays medium per Sandra's 2026-06-22 cost lock; APP_V3_BAKE_TEXT_QUALITY
+// overrides just the bake pass, APP_V3_IMAGE_QUALITY remains the general fallback.
 type ImgQuality = "low" | "medium" | "high"
 type OpenAIImageEditResponse = { data?: Array<{ b64_json?: string | null }> }
+const isImgQuality = (v: string | undefined): v is ImgQuality =>
+  v === "low" || v === "medium" || v === "high"
+const BAKE_QUALITY_OVERRIDE = process.env.APP_V3_BAKE_TEXT_QUALITY as ImgQuality | undefined
 const QUALITY_OVERRIDE = process.env.APP_V3_IMAGE_QUALITY as ImgQuality | undefined
-const BAKE_IMAGE_QUALITY: ImgQuality =
-  QUALITY_OVERRIDE === "low" || QUALITY_OVERRIDE === "medium" || QUALITY_OVERRIDE === "high"
+const BAKE_IMAGE_QUALITY: ImgQuality = isImgQuality(BAKE_QUALITY_OVERRIDE)
+  ? BAKE_QUALITY_OVERRIDE
+  : isImgQuality(QUALITY_OVERRIDE)
     ? QUALITY_OVERRIDE
     : "medium"
 
@@ -216,7 +222,7 @@ export async function POST(request: NextRequest) {
           generation_status, source, category, created_at
         ) VALUES (
           ${neonUser.id}, ${blob.url}, ${spec.headline}, ${prompt.slice(0, 2000)},
-          ${"app-v3-bake-" + Date.now()}, 'completed', 'openai', 'text-bake', NOW()
+          ${"app-v3-bake-" + Date.now()}, 'completed', 'openai', ${spec.format || "text-bake"}, NOW()
         )
       `
     } catch (dbError) {

@@ -11,6 +11,7 @@ import { useState, type ReactNode } from "react"
 import type { OutputFormat } from "./types"
 import { Spinner } from "./loading"
 import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
+import { retryGeneratedImageOnce } from "./image-retry"
 
 export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
 
@@ -125,6 +126,7 @@ export function ConceptCard({
                 src={firstBaked ?? images[0]}
                 alt={concept.title}
                 decoding="async"
+                onError={retryGeneratedImageOnce}
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               />
               {isCarousel && (

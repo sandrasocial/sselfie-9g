@@ -203,7 +203,7 @@ Rules:
 - ${firstReferenceRule}
 - ${category === "story-sequence" ? "Place the text in clean negative space. Do not cover the face, eyes, phone, hands, or strongest visual details. If text needs more contrast, add only a very subtle transparent dark or cream overlay behind the text area, not over the face or main subject." : "If a tutorial needs emphasis, use scale, spacing, thin rules, underlines, or neutral contrast instead of colored warning callouts."}
 - Keep the slide full-bleed and finished. No separate card, no border, no post mockup.
-- Create the final slide in high resolution 2K quality, vertical 9:16 Instagram Story format, crisp and clean${cleanBackground ? ", with a calm empty text zone." : ", with readable text."}`
+- Create the final slide in high resolution 2K quality, ${category === "carousel" ? "vertical 4:5 Instagram carousel format" : "vertical portrait Instagram Story format"}, crisp and clean${cleanBackground ? ", with a calm empty text zone." : ", with readable text."}`
 }
 
 export async function redesignContentSlide({

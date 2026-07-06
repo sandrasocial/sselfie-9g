@@ -91,3 +91,38 @@ The guard against Vercel's plain-text error pages had been written **three separ
   3. Optional: deterministic week-over-week duplicate-visual check for the content brief (current guard is prompt-level only; the one stored sample looks good).
   4. Repo hygiene: ~35 stale local `codex/*` branches contradict AS-BUILT's "only main exists" rule — prune after confirming merged.
 - **Do not touch again:** Maya/Suite UX items in §3 (shipped + test-locked); the brief's full-post deliverable contract (Sandra's 2026-07-03 decision); `stripe_payments` duplicate rows (marked, audited — don't "clean them up" further or delete them).
+
+---
+
+# Part 2 — Maya live-QA fixes (2026-07-06, branch codex/maya-qa-fixes-20260706)
+
+Sandra hand-tested Maya image generation and reported 8 issues. Each was root-caused in code before touching anything; the verified bugs shipped same-day, the feature work became two grounded specs.
+
+## Bugs found + fixed (all root-caused, test-locked)
+
+1. **Chat selfie management** — every selfie affordance inside chat ("Replace selfie", "Add your selfie", "Use a past selfie", the inline upload card, the primary CTA) opened a raw file picker or the old single-grid picker; the full `SelfieReferenceManagerModal` was only wired to the front door. All five now open the manager modal, committing the selfie IN-thread (never the front door's new-session path). Old `ReferenceLibraryModal` unmounted from chat (component file left for Codex cleanup).
+2. **Mid-thread format chips were silent no-ops** — two staleness bugs: `handlePickFormat` skipped its reset when re-tapping the SAME format, and Maya's own `set_format` (typed "make me a carousel") never re-armed `lastPulledFormatRef`. Both left the text-overlay gate stale, so the inline question cards never re-appeared and no new pull happened. Both paths now always re-arm.
+3. **"Broken first image"** — NOT a moved/deleted blob (verified: nothing rewrites app-v3 image URLs; reconcile crons can't match app-v3 rows). Real causes: zero `onError` handling on generated-image tiles (one transient Blob-CDN first-paint miss = permanently broken tile) + a silently swallowed gallery DB insert. Fixed: one delayed retry on all three render surfaces (`image-retry.ts`), insert retried once then surfaced to admin error log.
+4. **Identical poses in shoots** — the hero-anchor instruction disclaimed only "pose", not framing; a real photo reference pulls framing harder than text (the inspiration path hit and fixed this exact failure on 2026-07-05, hero path never got the fix). Explicit per-role crop/camera-distance rule added.
+5. **"Retired thin overlays"** — verified NOT a routing bug: no retired path can execute (old overlay mode returns HTTP 410); every story/carousel goes through baked text. The real causes: bake directives were qualitative-only ("large", "refined" — no size/weight floor) and live bakes render at medium while the six style previews were generated at HIGH. Fixed: explicit sizing/weight/coverage per style + a hard "never hairline, never faint" rule; new `APP_V3_BAKE_TEXT_QUALITY` env lever (default medium per Sandra's cost lock — see decisions below).
+6. **Gallery labels** — `category` was hardcoded ('concept'/'text-bake') and the gallery keyword-sniffed raw prompt text. Generate + bake routes now write the real format; classifier trusts it first (legacy sniffing kept for old rows). Full labeling (titles, edit/bake variant linkage) needs a migration → spec'd.
+7. **Streaming inspiration drop** (found by research, not QA) — streamed single photos attached only selfies while the prompt referenced an inspiration image that was never attached. One-line fix to match the JSON path.
+8. **Aspect contradictions** — prompts claimed "9:16" while rendering 2:3 (1024×1536), and carousel slides were told "Story format"; conflicting aspect claims are a documented gpt-image-2 layout weak spot. Reworded to match the actual canvas.
+
+## Specs written (feature work, for Codex)
+
+- `tasks/MAYA-STYLE-DIRECTOR-01-choose-your-own-and-shoot-options.md` — "Choose your own" style (inspiration image / let Maya decide, grounded in the vault), Maya-as-director after a shot pick (more angles / recreate the collection's shoot / new shoot in that style / shot count 6-9), overlay style memory in `app_v3_memory` + same-layout variations. Built on verified extension points — the inspiration plumbing and photoshoot pipeline already exist end-to-end. Two open questions for Sandra at the bottom.
+- `tasks/APP-V3-GEN-RELIABILITY-01-labels-variants-retries.md` — gallery title/variant-linkage migration, edit-route format forwarding, hero-first ordering, double-upload cleanup, transient-error retry, min-res selfie guard (needs her copy), baked-headline length cap.
+
+## Research
+
+`docs/research/GPT_IMAGE_2_INTEGRATION_RESEARCH_2026-07-06.md` — official-docs-cited gpt-image-2 best practices + full audit of our integration. Verdict: the integration is strong (ref ordering, anchor-don't-chain, no-input_fidelity on -2, edit re-anchoring all match OpenAI guidance); remaining gaps are ranked P3-P8 in the doc.
+
+## Two env decisions for Sandra (money vs quality, no code needed)
+
+1. `APP_V3_BAKE_TEXT_QUALITY=high` — crisp baked text matching the previews members pick from. ~$0.21 vs ~$0.05 per baked slide, ~2.3x slower per bake. Recommendation: try it; the thin-text complaint is a named member frustration and only with-text graphics pay it.
+2. `APP_V3_PORTRAIT_SIZE=1024x1824` — true story-shaped canvas instead of 2:3. ~19% more output pixels; smoke on staging first.
+
+## Verification (Part 2)
+
+134 existing tests green across all touched suites (`text-studio-bake`, `maya-fix-03-overlay-layer`, `story-generation`, `app-v3-maya-first-ux`, `app-v3-live-bugs-01`, `app-v3-continuity`, gallery suites) + 6 new regression tests (`tests/maya-chat-selfie-manager.test.ts`). `pnpm type-check:ci` clean, lint 0 errors. Not done: authenticated live tap-through of /app — that's Sandra's mobile pass; the fixes are exactly at the seams her testing exposed.

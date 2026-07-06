@@ -102,9 +102,13 @@ export const AVOID_LIST =
   "compression haze, overly staged stock-photo look, cluttered props, random logos, " +
   "fake-looking brand marks."
 
-/** Output quality + format block per aspect (Sandra's proven 9:16 / 4:5, 2K, anti-blur rules). */
+/** Output quality + format block per aspect (Sandra's proven anti-blur rules).
+ * No numeric ratio in the portrait block: the actual canvas is APP_V3_PORTRAIT_SIZE
+ * (1024x1536 = 2:3 today), and claiming "9:16" while rendering 2:3 pushes composition
+ * and text placement toward the wrong frame shape (gpt-image-2 research 2026-07-06:
+ * conflicting aspect instructions are a documented layout weak spot). */
 export const PORTRAIT_QUALITY =
-  "Image quality: vertical 9:16 portrait, 2K quality, crisp editorial sharpness, realistic depth " +
+  "Image quality: vertical portrait filling the full frame, 2K quality, crisp editorial sharpness, realistic depth " +
   "and detail, no blur, no low-resolution softness, no compression haze."
 export const CAROUSEL_QUALITY =
   "Image quality: vertical 4:5 Instagram format, 2K quality, crisp editorial sharpness, no blur, " +
