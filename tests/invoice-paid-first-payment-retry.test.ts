@@ -125,6 +125,29 @@ describe("handleInvoicePaid first-payment race", () => {
     await expect(handleInvoicePaid(buildInvoiceEvent())).resolves.toBeUndefined()
   })
 
+  it("keys the stripe_payments row on the invoice id even when legacy charge/payment_intent fields are present", async () => {
+    // Pre-Clover payloads carried invoice.charge / invoice.payment_intent, and the old
+    // `chargeId || paymentIntentId || invoice.id` fallback keyed the row on ch_/pi_ ids.
+    // The webhook + backfills then recorded the same renewal under different ids (84
+    // duplicate rows cleaned 2026-07-06). One invoice = one row keyed in_....
+    sqlMock.mockResolvedValueOnce([
+      { user_id: "user-1", product_type: "sselfie_studio_membership", current_period_start: null },
+    ])
+    const { handleInvoicePaid } = await import("@/lib/payments/lifecycle/invoice-paid")
+    await handleInvoicePaid(
+      buildInvoiceEvent({ charge: "ch_legacy_1", payment_intent: "pi_legacy_1" })
+    )
+
+    const insertCall = sqlMock.mock.calls.find((call) =>
+      String(call[0]?.join?.("?")).includes("INSERT INTO stripe_payments")
+    )
+    expect(insertCall).toBeDefined()
+    const values = insertCall!.slice(1)
+    expect(values).toContain("in_test_1")
+    expect(values).not.toContain("ch_legacy_1")
+    expect(values).not.toContain("pi_legacy_1")
+  })
+
   it("uses valid Postgres syntax when tagging the recent credit grant with the invoice id", () => {
     const source = readFileSync(
       join(process.cwd(), "lib/payments/lifecycle/invoice-paid.ts"),

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { readJsonResponse } from "@/lib/admin/safe-fetch-json"
 
 type Audience = "nonbuyer" | "buyer"
 
@@ -52,7 +53,7 @@ export function VaultDropEmailPreview() {
     try {
       const query = ids.length > 0 ? `?collectionIds=${encodeURIComponent(ids.join(","))}` : ""
       const response = await fetch(`/api/admin/vault-drop-email${query}`, { cache: "no-store" })
-      const data = await response.json()
+      const data = await readJsonResponse<any>(response)
       if (!response.ok) throw new Error(data.error || "Preview failed")
       setPayload(data)
       setRun(data.latestRun || null)
@@ -76,7 +77,7 @@ export function VaultDropEmailPreview() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "send_test", audience: target, collectionIds: selectedCollectionIds }),
       })
-      const data = await response.json()
+      const data = await readJsonResponse<any>(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Test send failed")
       setMessage(`Sent ${target === "buyer" ? "buyer" : "free preview"} test to ${data.to}.`)
     } catch (err: any) {
@@ -96,7 +97,7 @@ export function VaultDropEmailPreview() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "send_live_now", collectionIds: selectedCollectionIds }),
       })
-      const data = await response.json()
+      const data = await readJsonResponse<any>(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Could not send live email")
       setRun(data.run)
       setMessage(
@@ -129,7 +130,7 @@ export function VaultDropEmailPreview() {
           collectionIds: selectedCollectionIds,
         }),
       })
-      const data = await response.json()
+      const data = await readJsonResponse<any>(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Batch failed")
       if (data.run) setRun(data.run)
       setMessage(data.done?.all ? "Done. The drop email was sent." : "Batch sent. Keep going until both groups are done.")

@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { readJsonResponse } from "@/lib/admin/safe-fetch-json"
 import type {
   ContentBrief,
   ContentBriefPiece,
@@ -39,19 +40,6 @@ type ContentBriefJob = {
   completed_at: string | null
   created_at: string
   updated_at: string
-}
-
-async function readJsonResponse<T>(response: Response): Promise<T> {
-  const text = await response.text()
-  if (!text.trim()) return {} as T
-  try {
-    return JSON.parse(text) as T
-  } catch {
-    const excerpt = text.replace(/\s+/g, " ").trim().slice(0, 180)
-    throw new Error(
-      `The server returned a non-JSON error (${response.status}). ${excerpt || "No details were returned."}`
-    )
-  }
 }
 
 function formatDate(value: string) {

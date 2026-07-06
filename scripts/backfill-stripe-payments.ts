@@ -118,7 +118,7 @@ async function identifyPaymentType(
   return { payment_type: "one_time_session" }
 }
 
-async function backfillPaymentIntents() {
+async function backfillPaymentIntents(invoiceLinkedPaymentIds: Set<string>) {
   console.log("=".repeat(80))
   console.log("Starting Payment Intents Backfill")
   console.log("=".repeat(80))
@@ -148,7 +148,19 @@ async function backfillPaymentIntents() {
             totalSkipped++
             continue
           }
-          
+
+          // Invoice-linked payment intents are subscription money. backfillInvoices()
+          // already records them keyed on the invoice id — inserting a second pi_-keyed
+          // row here recorded the same charge twice (61 pi_+ch_/py_ duplicate pairs from
+          // Nov 2025–Jun 2026 were cleaned on 2026-07-06). Never store them from this loop.
+          const legacyInvoiceRef = (pi as Stripe.PaymentIntent & {
+            invoice?: string | Stripe.Invoice | null
+          }).invoice
+          if (legacyInvoiceRef || invoiceLinkedPaymentIds.has(pi.id)) {
+            totalSkipped++
+            continue
+          }
+
           // Get customer ID
           const customerId = typeof pi.customer === 'string' 
             ? pi.customer 
@@ -264,11 +276,12 @@ async function backfillPaymentIntents() {
                 NOW(),
                 NOW()
               )
-              ON CONFLICT (stripe_payment_id) 
+              ON CONFLICT (stripe_payment_id)
               DO UPDATE SET
                 payment_type = ${paymentRecord.payment_type},
                 product_type = ${paymentRecord.product_type || null},
                 updated_at = NOW()
+              WHERE stripe_payments.status IS DISTINCT FROM 'duplicate'
             `
             totalStored++
             
@@ -334,14 +347,16 @@ async function backfillInvoices() {
   console.log("\n" + "=".repeat(80))
   console.log("Starting Invoice Payments Backfill (Subscriptions)")
   console.log("=".repeat(80))
-  
+
   let hasMore = true
   let startingAfter: string | undefined
   let totalProcessed = 0
   let totalStored = 0
   let totalSkipped = 0
   let totalErrors = 0
-  
+  // Charge/payment-intent ids owned by invoices, so backfillPaymentIntents() can skip them.
+  const linkedPaymentIds = new Set<string>()
+
   try {
     while (hasMore) {
       const invoices = await stripe.invoices.list({
@@ -393,12 +408,17 @@ async function backfillInvoices() {
             // Use default
           }
           
-          // Get payment identifier
+          // Record which payment ids this invoice owns, then key the row on the invoice id.
+          // Keying on charge/payment_intent ids made the key depend on the API payload shape,
+          // so the same renewal got recorded under different ids across eras (84 duplicate
+          // rows cleaned 2026-07-06; idx_stripe_payments_invoice_unique enforces the invariant).
           const chargeId = typeof invoice.charge === 'string' ? invoice.charge : invoice.charge?.id || null
-          const paymentIntentId = invoice.payment_intent 
+          const paymentIntentId = invoice.payment_intent
             ? (typeof invoice.payment_intent === 'string' ? invoice.payment_intent : invoice.payment_intent?.id)
             : null
-          const paymentId = chargeId || paymentIntentId || invoice.id
+          if (chargeId) linkedPaymentIds.add(chargeId)
+          if (paymentIntentId) linkedPaymentIds.add(paymentIntentId)
+          const paymentId = invoice.id
           
           const isTestMode = !invoice.livemode
           
@@ -478,7 +498,8 @@ async function backfillInvoices() {
     console.log(`Total Skipped: ${totalSkipped}`)
     console.log(`Total Errors: ${totalErrors}`)
     console.log("=".repeat(80))
-    
+
+    return linkedPaymentIds
   } catch (error: any) {
     console.error("Fatal error during invoice backfill:", error.message)
     throw error
@@ -491,11 +512,12 @@ async function main() {
   console.log("This may take several minutes depending on your payment volume.\n")
   
   try {
+    // Invoices first: they own subscription money and report the charge/payment-intent
+    // ids they cover, so the payment-intent pass never re-records the same charge.
+    const invoiceLinkedPaymentIds = await backfillInvoices()
+
     // Backfill payment intents (one-time and credit purchases)
-    await backfillPaymentIntents()
-    
-    // Backfill invoices (subscription payments)
-    await backfillInvoices()
+    await backfillPaymentIntents(invoiceLinkedPaymentIds)
     
     // Final summary
     const [summary] = await sql`

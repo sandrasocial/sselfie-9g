@@ -233,6 +233,7 @@ async function upsertStripePayment(record: {
       entry_post_slug = COALESCE(stripe_payments.entry_post_slug, ${record.entry_post_slug || null}),
       buyer_stage = COALESCE(stripe_payments.buyer_stage, ${record.buyer_stage || null}),
       updated_at = NOW()
+    WHERE stripe_payments.status IS DISTINCT FROM 'duplicate'
   `
 }
 
@@ -267,7 +268,7 @@ async function markCheckoutAttributionCompletedFromSession(input: {
   `
 }
 
-async function backfillPaymentIntents(startTs: number) {
+async function backfillPaymentIntents(startTs: number, invoiceLinkedPaymentIds: Set<string>) {
   let hasMore = true
   let startingAfter: string | undefined
   let processed = 0
@@ -284,7 +285,11 @@ async function backfillPaymentIntents(startTs: number) {
       processed += 1
       const paymentIntent = pi as Stripe.PaymentIntent & { invoice?: string | Stripe.Invoice | null }
       if (paymentIntent.status !== "succeeded") continue
-      if (paymentIntent.invoice) continue // handled by invoices backfill
+      if (paymentIntent.invoice) continue // pre-Basil shape; absent on Clover
+      // Clover removed pi.invoice, which let renewal PIs slip through as one-time rows and
+      // double-count subscription revenue (8 dup rows, Jun 2026). The invoices backfill now
+      // runs first and reports every payment id it owns via invoice.payments.
+      if (invoiceLinkedPaymentIds.has(paymentIntent.id)) continue
 
       const customerId =
         typeof paymentIntent.customer === "string"
@@ -329,6 +334,9 @@ async function backfillInvoices(startTs: number) {
   let startingAfter: string | undefined
   let processed = 0
   let stored = 0
+  // Every payment/charge id owned by an invoice in this window, so the PI and charge
+  // backfills can skip them instead of re-recording the same money under another id.
+  const linkedPaymentIds = new Set<string>()
 
   while (hasMore) {
     const invoices = await stripe.invoices.list({
@@ -336,6 +344,7 @@ async function backfillInvoices(startTs: number) {
       status: "paid",
       created: { gte: startTs },
       starting_after: startingAfter,
+      expand: ["data.payments"],
     })
 
     for (const invoice of invoices.data) {
@@ -344,11 +353,27 @@ async function backfillInvoices(startTs: number) {
         subscription?: string | Stripe.Subscription | null
         charge?: string | Stripe.Charge | null
         payment_intent?: string | Stripe.PaymentIntent | null
+        parent?: { subscription_details?: { subscription?: string | Stripe.Subscription | null } }
       }
-      const subscriptionId =
-        typeof paidInvoice.subscription === "string"
-          ? paidInvoice.subscription
-          : paidInvoice.subscription?.id
+      // Legacy invoice.charge / invoice.payment_intent (pre-Basil shapes).
+      for (const legacy of [paidInvoice.charge, paidInvoice.payment_intent]) {
+        const id = typeof legacy === "string" ? legacy : legacy?.id
+        if (id) linkedPaymentIds.add(id)
+      }
+      // Clover shape: invoice.payments carries the linked payment intents/charges.
+      for (const p of paidInvoice.payments?.data ?? []) {
+        const pay = p.payment
+        const piId = typeof pay?.payment_intent === "string" ? pay.payment_intent : pay?.payment_intent?.id
+        const chId = typeof pay?.charge === "string" ? pay.charge : pay?.charge?.id
+        if (piId) linkedPaymentIds.add(piId)
+        if (chId) linkedPaymentIds.add(chId)
+      }
+
+      // Basil/Clover moved invoice.subscription to parent.subscription_details.subscription;
+      // reading only the old shape silently skipped every renewal (Jun 2026 backfill runs).
+      const rawSubscription =
+        paidInvoice.subscription ?? paidInvoice.parent?.subscription_details?.subscription
+      const subscriptionId = typeof rawSubscription === "string" ? rawSubscription : rawSubscription?.id
       const customerId =
         typeof paidInvoice.customer === "string" ? paidInvoice.customer : paidInvoice.customer?.id
       if (!subscriptionId || !customerId) continue
@@ -361,10 +386,11 @@ async function backfillInvoices(startTs: number) {
         // fallback to default
       }
 
-      const paymentId =
-        (typeof paidInvoice.charge === "string" ? paidInvoice.charge : paidInvoice.charge?.id) ||
-        (typeof paidInvoice.payment_intent === "string" ? paidInvoice.payment_intent : paidInvoice.payment_intent?.id) ||
-        paidInvoice.id
+      // Always key invoice rows on the invoice id. Preferring charge/payment_intent ids
+      // made the key depend on the API version's payload shape, so the same renewal got
+      // recorded under ch_/py_ AND in_ ids across eras (84 duplicate rows cleaned
+      // 2026-07-06; idx_stripe_payments_invoice_unique now enforces one row per invoice).
+      const paymentId = paidInvoice.id
 
       const userId = await findUserIdByCustomerId(customerId)
 
@@ -393,10 +419,10 @@ async function backfillInvoices(startTs: number) {
     }
   }
 
-  return { processed, stored }
+  return { processed, stored, linkedPaymentIds }
 }
 
-async function backfillCharges(startTs: number) {
+async function backfillCharges(startTs: number, invoiceLinkedPaymentIds: Set<string>) {
   let hasMore = true
   let startingAfter: string | undefined
   let processed = 0
@@ -417,8 +443,9 @@ async function backfillCharges(startTs: number) {
         payment_intent?: string | Stripe.PaymentIntent | null
       }
       if (!paidCharge.paid || paidCharge.refunded) continue
-      if (paidCharge.invoice) continue // handled by invoices backfill
+      if (paidCharge.invoice) continue // pre-Basil shape; absent on Clover
       if (paidCharge.payment_intent) continue // handled by payment intents / checkout sessions backfill
+      if (invoiceLinkedPaymentIds.has(paidCharge.id)) continue // invoice-owned on Clover shapes
 
       const customerId =
         typeof paidCharge.customer === "string" ? paidCharge.customer : paidCharge.customer?.id
@@ -587,9 +614,11 @@ async function main() {
   console.log(`[BACKFILL] Recent Stripe payments (days=${DAYS}, dry run=${DRY_RUN})`)
 
   await ensureStripePaymentAttributionSchema()
-  const piResult = await backfillPaymentIntents(startTs)
+  // Invoices run first: they own subscription money and report the payment/charge ids
+  // they cover, so the PI/charge passes never re-record the same money under another id.
   const invoiceResult = await backfillInvoices(startTs)
-  const chargeResult = await backfillCharges(startTs)
+  const piResult = await backfillPaymentIntents(startTs, invoiceResult.linkedPaymentIds)
+  const chargeResult = await backfillCharges(startTs, invoiceResult.linkedPaymentIds)
   const sessionResult = await backfillCheckoutSessions(startTs)
 
   console.log("[BACKFILL] Payment intents processed:", piResult.processed, "stored:", piResult.stored)

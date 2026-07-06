@@ -14,7 +14,6 @@ const quarantinedSuites = [
   "tests/funnel-2026-report.test.ts",
   "tests/funnel-cleanup-admin-page.test.ts",
   "tests/funnel-cleanup-candidates.test.ts",
-  "tests/funnel-cleanup-evidence.test.ts",
   "tests/funnel-final-leaks-regression.test.ts",
   "tests/funnel-ladder-regression.test.ts",
   "tests/instagram-login-routing.test.ts",

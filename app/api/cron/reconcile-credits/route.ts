@@ -213,6 +213,89 @@ async function reconcileStripePayments(days: number) {
   let stored = 0
   let skipped = 0
 
+  // Invoices first: they own subscription money and report the payment ids they cover, so
+  // the payment-intent pass never re-records the same charge under a pi_ id. On Clover the
+  // old `(pi as any).invoice` guard silently stopped working (field removed) and renewals
+  // were double-recorded as one-time rows (cleaned 2026-07-06).
+  const invoiceLinkedPaymentIds = new Set<string>()
+
+  const invoices = await stripe.invoices.list({
+    limit: 100,
+    status: "paid",
+    created: { gte: startTs },
+    expand: ["data.payments"],
+  })
+
+  for (const invoice of invoices.data) {
+    processed += 1
+    const invoiceAny = invoice as any
+    for (const legacy of [invoiceAny.charge, invoiceAny.payment_intent]) {
+      const id = typeof legacy === "string" ? legacy : legacy?.id
+      if (id) invoiceLinkedPaymentIds.add(id)
+    }
+    for (const p of invoiceAny.payments?.data ?? []) {
+      const piId =
+        typeof p?.payment?.payment_intent === "string" ? p.payment.payment_intent : p?.payment?.payment_intent?.id
+      const chId = typeof p?.payment?.charge === "string" ? p.payment.charge : p?.payment?.charge?.id
+      if (piId) invoiceLinkedPaymentIds.add(piId)
+      if (chId) invoiceLinkedPaymentIds.add(chId)
+    }
+
+    // Basil/Clover moved invoice.subscription to parent.subscription_details.subscription.
+    const rawSubscription =
+      invoiceAny.subscription ?? invoiceAny.parent?.subscription_details?.subscription
+    const subscriptionId = typeof rawSubscription === "string" ? rawSubscription : rawSubscription?.id
+    const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id
+    if (!subscriptionId || !customerId) {
+      skipped += 1
+      continue
+    }
+    // One invoice = one row, always keyed on the invoice id (idx_stripe_payments_invoice_unique).
+    const paymentId = invoice.id
+
+    await sql`
+      INSERT INTO stripe_payments (
+        stripe_payment_id,
+        stripe_invoice_id,
+        stripe_subscription_id,
+        stripe_customer_id,
+        amount_cents,
+        currency,
+        status,
+        payment_type,
+        product_type,
+        metadata,
+        payment_date,
+        is_test_mode,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        ${paymentId},
+        ${invoice.id},
+        ${subscriptionId},
+        ${customerId},
+        ${invoice.amount_paid},
+        ${invoice.currency || "usd"},
+        ${invoice.status || "succeeded"},
+        'subscription',
+        'sselfie_studio_membership',
+        ${JSON.stringify(invoice.metadata || {})},
+        to_timestamp(${invoice.created}),
+        ${!invoice.livemode},
+        NOW(),
+        NOW()
+      )
+      ON CONFLICT (stripe_payment_id)
+      DO UPDATE SET
+        status = ${invoice.status || "succeeded"},
+        payment_type = 'subscription',
+        updated_at = NOW()
+      WHERE stripe_payments.status IS DISTINCT FROM 'duplicate'
+    `
+    stored += 1
+  }
+
   const paymentIntents = await stripe.paymentIntents.list({
     limit: 100,
     created: { gte: startTs },
@@ -225,7 +308,7 @@ async function reconcileStripePayments(days: number) {
       continue
     }
     const invoiceRef = (pi as any).invoice
-    if (invoiceRef) {
+    if (invoiceRef || invoiceLinkedPaymentIds.has(pi.id)) {
       skipped += 1
       continue
     }
@@ -276,69 +359,7 @@ async function reconcileStripePayments(days: number) {
         payment_type = ${paymentType},
         product_type = ${productType},
         updated_at = NOW()
-    `
-    stored += 1
-  }
-
-  const invoices = await stripe.invoices.list({
-    limit: 100,
-    status: "paid",
-    created: { gte: startTs },
-  })
-
-  for (const invoice of invoices.data) {
-    processed += 1
-    const invoiceAny = invoice as any
-    const subscriptionId =
-      typeof invoiceAny.subscription === "string" ? invoiceAny.subscription : invoiceAny.subscription?.id
-    const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id
-    if (!subscriptionId || !customerId) {
-      skipped += 1
-      continue
-    }
-    const paymentId =
-      (typeof invoiceAny.charge === "string" ? invoiceAny.charge : invoiceAny.charge?.id) ||
-      (typeof invoiceAny.payment_intent === "string" ? invoiceAny.payment_intent : invoiceAny.payment_intent?.id) ||
-      invoice.id
-
-    await sql`
-      INSERT INTO stripe_payments (
-        stripe_payment_id,
-        stripe_invoice_id,
-        stripe_subscription_id,
-        stripe_customer_id,
-        amount_cents,
-        currency,
-        status,
-        payment_type,
-        product_type,
-        metadata,
-        payment_date,
-        is_test_mode,
-        created_at,
-        updated_at
-      )
-      VALUES (
-        ${paymentId},
-        ${invoice.id},
-        ${subscriptionId},
-        ${customerId},
-        ${invoice.amount_paid},
-        ${invoice.currency || "usd"},
-        ${invoice.status || "succeeded"},
-        'subscription',
-        'sselfie_studio_membership',
-        ${JSON.stringify(invoice.metadata || {})},
-        to_timestamp(${invoice.created}),
-        ${!invoice.livemode},
-        NOW(),
-        NOW()
-      )
-      ON CONFLICT (stripe_payment_id)
-      DO UPDATE SET
-        status = ${invoice.status || "succeeded"},
-        payment_type = 'subscription',
-        updated_at = NOW()
+      WHERE stripe_payments.status IS DISTINCT FROM 'duplicate'
     `
     stored += 1
   }

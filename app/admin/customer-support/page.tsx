@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { AdminNav } from "@/components/admin/admin-nav"
+import { readAdminJson } from "@/lib/admin/safe-fetch-json"
 
 interface CustomerData {
   user: {
@@ -112,9 +113,9 @@ export default function CustomerSupportPage() {
       if (trimmed) {
         setLoading(true)
         fetch(`/api/admin/customer-support?email=${encodeURIComponent(trimmed)}`)
-          .then((r) => r.json())
+          .then((r) => readAdminJson(r))
           .then((j) => {
-            if (j.error) setError(j.error)
+            if (j?.error) setError(j.error)
             else setData(j)
           })
           .catch(() => setError("Network error"))
@@ -134,12 +135,12 @@ export default function CustomerSupportPage() {
 
     try {
       const res = await fetch(`/api/admin/customer-support?email=${encodeURIComponent(trimmed)}`)
-      if (!res.ok) {
-        const j = await res.json()
-        setError(j.error || "Lookup failed")
+      const j = await readAdminJson(res)
+      if (!res.ok || j?.error) {
+        setError(j?.error || "Lookup failed")
         return
       }
-      setData(await res.json())
+      setData(j)
     } catch {
       setError("Network error")
     } finally {
@@ -162,8 +163,8 @@ export default function CustomerSupportPage() {
           productId: resendProduct,
         }),
       })
-      const j = await res.json()
-      setResendMessage(j.message || (j.ok ? "Sent!" : "Failed"))
+      const j = await readAdminJson(res)
+      setResendMessage(j?.message || j?.error || (j?.ok ? "Sent!" : "Failed"))
     } catch {
       setResendMessage("Network error")
     } finally {

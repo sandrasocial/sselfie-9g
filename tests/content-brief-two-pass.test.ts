@@ -220,10 +220,13 @@ describe("weekly content brief: surfaces", () => {
 
   it("guards admin brief fetches against plain-text timeout responses", () => {
     const client = read("components/admin/content-brief-client.tsx")
+    // 2026-07-06: the guard moved to the shared lib/admin/safe-fetch-json helper so every
+    // admin surface uses one implementation instead of three inline copies.
+    const helper = read("lib/admin/safe-fetch-json.ts")
 
-    expect(client).toContain("async function readJsonResponse")
-    expect(client).toContain("response.text()")
-    expect(client).toContain("The server returned a non-JSON error")
+    expect(client).toContain('import { readJsonResponse } from "@/lib/admin/safe-fetch-json"')
+    expect(helper).toContain("response.text()")
+    expect(helper).toContain("The server returned a non-JSON error")
     expect(client).not.toContain("await res.json()")
     expect(client).not.toContain(".then((r) => r.json())")
   })

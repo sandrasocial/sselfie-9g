@@ -443,9 +443,11 @@ describe("post-now UI wiring", () => {
   })
 
   it("does not parse admin responses with raw res.json only", () => {
-    expect(client).toContain("readAdminJson")
-    expect(client).toContain("response.text()")
-    expect(client).toContain("non-JSON")
+    // 2026-07-06: readAdminJson moved to the shared lib/admin/safe-fetch-json helper.
+    const helper = read("lib/admin/safe-fetch-json.ts")
+    expect(client).toContain('import { readAdminJson } from "@/lib/admin/safe-fetch-json"')
+    expect(helper).toContain("response.text()")
+    expect(helper).toContain("non-JSON")
     expect(client).not.toContain("const json = await res.json()")
   })
 
