@@ -20,9 +20,11 @@ import { describe, expect, it } from "vitest"
 import { salvageConceptsPayload } from "@/lib/app-v3/concept-salvage"
 import {
   buildGraphicRedesignSlides,
+  conceptOpenAISize,
   stripStructuralHeading,
   validateCustomerCarouselBrief,
 } from "@/lib/app-v3/prompt-compiler"
+import { normalizeOpenAIImageSize } from "@/lib/app-v3/openai-image-size"
 import { makeTextOverlaySpec } from "@/lib/app-v3/text-overlay"
 import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
 
@@ -327,6 +329,37 @@ describe("generate route story wiring (app/api/app-v3/maya/generate)", () => {
     expect(route).toContain("current,")
     // Auto-bake stays optional: without bake credits the clean render still returns.
     expect(route).toContain("const canBake = await checkCredits(neonUser.id, bakeCost)")
+  })
+})
+
+// ─── 4. OpenAI size env safety ────────────────────────────────────────────────
+
+describe("OpenAI image size env normalization", () => {
+  it("trims hidden whitespace before sending custom sizes to OpenAI", () => {
+    expect(normalizeOpenAIImageSize("1024x1824\r\n", "1024x1536")).toBe("1024x1824")
+    expect(normalizeOpenAIImageSize(" 1024x1280 ", "1024x1536")).toBe("1024x1280")
+  })
+
+  it("falls back instead of sending malformed sizes to OpenAI", () => {
+    expect(normalizeOpenAIImageSize("1024 x 1824", "1024x1536")).toBe("1024x1536")
+    expect(normalizeOpenAIImageSize("1024x1825", "1024x1536")).toBe("1024x1536")
+  })
+
+  it("uses normalized portrait and carousel env sizes in the Suite generate route", () => {
+    const originalPortrait = process.env.APP_V3_PORTRAIT_SIZE
+    const originalCarousel = process.env.APP_V3_CAROUSEL_SIZE
+    try {
+      process.env.APP_V3_PORTRAIT_SIZE = "1024x1824\r\n"
+      process.env.APP_V3_CAROUSEL_SIZE = "1024x1280\n"
+      expect(conceptOpenAISize("photo")).toBe("1024x1824")
+      expect(conceptOpenAISize("story-sequence")).toBe("1024x1824")
+      expect(conceptOpenAISize("carousel")).toBe("1024x1280")
+    } finally {
+      if (originalPortrait === undefined) delete process.env.APP_V3_PORTRAIT_SIZE
+      else process.env.APP_V3_PORTRAIT_SIZE = originalPortrait
+      if (originalCarousel === undefined) delete process.env.APP_V3_CAROUSEL_SIZE
+      else process.env.APP_V3_CAROUSEL_SIZE = originalCarousel
+    }
   })
 })
 

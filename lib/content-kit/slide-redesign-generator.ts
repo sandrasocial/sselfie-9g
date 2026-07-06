@@ -8,10 +8,11 @@ import type { CarouselSlide } from "@/lib/content-kit/types"
 import { SSELFIE_INSPIRATION_SET_VARIATION } from "@/lib/app-v3/maya/visual-rules"
 import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
 import { AVOID_LIST, ELEVATION, REALISM_TOKENS } from "@/lib/app-v3/maya/ingredients"
+import { normalizeOpenAIImageSize } from "@/lib/app-v3/openai-image-size"
 
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
-const CAROUSEL_SIZE = process.env.APP_V3_CAROUSEL_SIZE || "1024x1280"
-const STORY_SIZE = process.env.APP_V3_PORTRAIT_SIZE || "1024x1536"
+const CAROUSEL_SIZE = normalizeOpenAIImageSize(process.env.APP_V3_CAROUSEL_SIZE, "1024x1280")
+const STORY_SIZE = normalizeOpenAIImageSize(process.env.APP_V3_PORTRAIT_SIZE, "1024x1536")
 const INTERNAL_VISIBLE_LABELS = new Set([
   "hook",
   "value",

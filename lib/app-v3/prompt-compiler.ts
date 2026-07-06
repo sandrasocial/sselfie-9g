@@ -48,6 +48,7 @@ import {
   makeTextOverlaySpec,
   type TextOverlaySpec,
 } from "@/lib/app-v3/text-overlay"
+import { normalizeOpenAIImageSize } from "@/lib/app-v3/openai-image-size"
 
 // Replaces the old posed "ELEVATION" line. The Vault look is candid and on-location, not a stiff
 // studio pose, which was the #1 reason /app output read as fake. Keep the elevation (skin, light,
@@ -1017,6 +1018,8 @@ export function conceptOpenAISize(format: OutputFormat): string {
   // MEASURED 2026-06-10: 2K at high quality takes ~526s per image — past the 300s function
   // ceiling, so 2K must ship as an async "HD export" job, never a synchronous default.
   // (high @ 1024-class: ~191s, fits. medium: ~82s.) Env overrides remain for experiments.
-  if (format === "carousel") return process.env.APP_V3_CAROUSEL_SIZE || "1024x1280"
-  return process.env.APP_V3_PORTRAIT_SIZE || "1024x1536"
+  if (format === "carousel") {
+    return normalizeOpenAIImageSize(process.env.APP_V3_CAROUSEL_SIZE, "1024x1280")
+  }
+  return normalizeOpenAIImageSize(process.env.APP_V3_PORTRAIT_SIZE, "1024x1536")
 }

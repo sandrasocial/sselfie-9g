@@ -5,11 +5,12 @@ import sharp from "sharp"
 import { put } from "@vercel/blob"
 import { sql } from "@/lib/db/client"
 import type { DemoPair } from "@/lib/content-kit/types"
+import { normalizeOpenAIImageSize } from "@/lib/app-v3/openai-image-size"
 
 // Same flagship pipeline as app-v3 (app/api/app-v3/maya/generate/route.ts):
 // gpt-image-2 images.edit with the reference selfie attached keeps her likeness.
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
-const PORTRAIT_SIZE = process.env.APP_V3_PORTRAIT_SIZE || "1024x1536"
+const PORTRAIT_SIZE = normalizeOpenAIImageSize(process.env.APP_V3_PORTRAIT_SIZE, "1024x1536")
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
