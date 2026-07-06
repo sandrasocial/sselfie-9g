@@ -48,6 +48,10 @@ interface ConceptCardProps {
    *  picking the slot - resolves with the day it landed on for the confirmation label.
    *  "forbidden" = this plan has no Calendar (403); the action and offer hide themselves. */
   onAddToCalendar?: () => Promise<{ scheduledAt: string } | "forbidden" | null>
+  /** Show Maya's spoken save-offer line above the actions. The concierge passes true for the
+   *  FIRST finished photo only, so a 3-card batch doesn't repeat the same sentence 3 times -
+   *  the "Add to calendar" button itself stays on every eligible card. */
+  showCalendarOffer?: boolean
   /** Replaces the single idle button when a guided picker should own the next step. */
   idleAction?: ReactNode
   /** Extra guided next steps after a result is created. */
@@ -87,6 +91,7 @@ export function ConceptCard({
   onOpen,
   onEdit,
   onAddToCalendar,
+  showCalendarOffer = true,
   idleAction,
   resultActions,
   promptAssetId,
@@ -214,7 +219,7 @@ export function ConceptCard({
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#818283]">
               {isVideoDone ? "Saved to your videos" : "Saved to your gallery"}
             </p>
-            {calendarAvailable && !isCarousel && !isVideoDone && calendarStatus === "idle" && (
+            {calendarAvailable && showCalendarOffer && !isCarousel && !isVideoDone && calendarStatus === "idle" && (
               <p className="text-[13px] leading-relaxed text-[#4F5052]">
                 This would work well for your feed. Want me to save it to your calendar and get
                 the caption ready for you?

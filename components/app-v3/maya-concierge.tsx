@@ -3009,7 +3009,32 @@ export function MayaConcierge({
               />
             )}
 
-          {messages.map((m: any) => {
+          {(() => {
+            // Feed Planner Phase 2c: Maya's save-offer sentence appears under the FIRST
+            // finished photo only (the button stays on every eligible card) - three cards
+            // repeating the same line reads like a bug, not a concierge. Derived fresh each
+            // render, so it stays stable across reloads and streaming updates.
+            let firstDonePhotoKey: string | null = null
+            for (const m of messages as any[]) {
+              if (firstDonePhotoKey) break
+              if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
+              const msgConcepts = m.parts.map(extractConcepts).find(Boolean) as
+                | ConceptCardData[]
+                | undefined
+              if (!msgConcepts?.length) continue
+              const msgFormat =
+                (m.parts.map(extractConceptFormat).find(Boolean) as OutputFormat | undefined) ??
+                format
+              if (msgFormat !== "photo") continue
+              for (const c of msgConcepts) {
+                const k = `${m.id}:${c.id}`
+                if (genState[k]?.status === "done" && (genState[k]?.imageUrls?.length ?? 0) > 0) {
+                  firstDonePhotoKey = k
+                  break
+                }
+              }
+            }
+            return messages.map((m: any) => {
             const isUser = m.role === "user"
             const parts = Array.isArray(m.parts) ? m.parts : []
             const text = parts
@@ -3343,6 +3368,7 @@ export function MayaConcierge({
                               : !referenceSelfieUrl && activeGenerationSource !== "trained-model"
                           }
                           promptAssetId={admin ? promptAssetIdFromGen(gen) : null}
+                          showCalendarOffer={key === firstDonePhotoKey}
                           resultActions={
                             <InlineResultActions
                               format={conceptFormat}
@@ -3358,7 +3384,8 @@ export function MayaConcierge({
                 )}
               </div>
             )
-          })}
+          })
+          })()}
 
           {/* Graphic formats need an explicit text decision before Maya pulls directions. This
               prevents surprise text on generated results and keeps the old Text Studio fallback

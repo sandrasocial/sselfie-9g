@@ -1064,7 +1064,7 @@ export async function POST(req: Request) {
     // silently, no announcement (persona rule). Dedup + 2000-char cap keep notes sane.
     const remember = tool({
       description:
-        "Quietly save a LASTING fact about the user's brand or a style preference/aversion they just expressed, so future sessions already know it. Never announce the save in your reply.",
+        "Quietly save a LASTING fact about the user's brand or a style preference/aversion they just expressed, so future sessions already know it. Also capture how often she wants to post (postingCadencePerWeek) when she mentions it - her content calendar drafts around that number. Never announce the save in your reply.",
       inputSchema: z.object({
         brandNote: z
           .string()
@@ -1078,10 +1078,30 @@ export async function POST(req: Request) {
           .describe(
             "Short lasting style preference or aversion, e.g. 'Hates studio backdrops; loves warm window light'."
           ),
+        postingCadencePerWeek: z
+          .number()
+          .int()
+          .min(1)
+          .max(7)
+          .optional()
+          .describe(
+            "Posts per week she wants, when she says it ('I post twice a week' -> 2). Drives her auto-drafted content calendar."
+          ),
       }),
-      execute: async ({ brandNote, preference }) => {
-        if (!memoryUserId || (!brandNote?.trim() && !preference?.trim())) return { saved: false }
+      execute: async ({ brandNote, preference, postingCadencePerWeek }) => {
+        if (
+          !memoryUserId ||
+          (!brandNote?.trim() && !preference?.trim() && postingCadencePerWeek == null)
+        ) {
+          return { saved: false }
+        }
         try {
+          if (postingCadencePerWeek != null) {
+            const { savePostingCadence } = await import("@/lib/feed-planner/cadence")
+            await savePostingCadence(memoryUserId, postingCadencePerWeek).catch(() => {})
+            logBehavior("suite_posting_cadence_saved", { cadence: postingCadencePerWeek })
+            if (!brandNote?.trim() && !preference?.trim()) return { saved: true }
+          }
           const current = await getMemory(memoryUserId)
           const append = (cur: string | null, add?: string): string | undefined => {
             const a = add?.trim()
