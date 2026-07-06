@@ -37,6 +37,15 @@ describe("Maya-first Suite creation UX", () => {
     expect(types).toContain('initialSetupAction?: "selfie_manager" | null')
     expect(concierge).toContain('session.initialSetupAction === "selfie_manager"')
     expect(concierge).toContain("setSelfieManagerOpen(true)")
+
+    // One-shot only: neither restore path may persist the launch instruction, or the
+    // selfie manager would re-open on every reload of a saved draft.
+    const continuity = read("components/app-v3/continuity.ts")
+    const serverDraft = read("lib/app-v3/maya/draft-snapshot.ts")
+    for (const source of [continuity, serverDraft]) {
+      expect(source).toContain("initialSetupAction: null")
+      expect(source).not.toContain('initialSetupAction: session.initialSetupAction === "selfie_manager"')
+    }
   })
 
   it("routes clear typed requests before Maya replies", () => {

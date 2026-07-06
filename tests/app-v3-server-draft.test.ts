@@ -85,4 +85,34 @@ describe("App v3 server-backed Maya drafts", () => {
       })
     ).toBeNull()
   })
+
+  it("never restores initialSetupAction: a one-shot launch instruction must not re-open the selfie manager on reload", () => {
+    const snapshot = sanitizeServerMayaDraftSnapshot({
+      isOpen: true,
+      savedAt: Date.now(),
+      chatId: "chat_abc",
+      session: {
+        aesthetic: {
+          id: "maya-blank",
+          name: "Maya",
+          blurb: "Blank session.",
+          coverImage: "",
+          thumbnails: [],
+          shotCount: 0,
+          intent: "Blank.",
+        },
+        outputFormat: "photo",
+        referenceSelfieUrl: null,
+        graphicText: null,
+        initialSetupAction: "selfie_manager",
+        startedAt: 123,
+      },
+      messages: [],
+      genState: {},
+      generatedOnce: false,
+      setupOpen: true,
+    })
+
+    expect(snapshot?.session.initialSetupAction).toBeNull()
+  })
 })

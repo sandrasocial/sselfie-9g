@@ -24,6 +24,7 @@ import {
 } from "@/lib/app-v3/maya/visual-rules"
 import { AVOID_LIST } from "@/lib/app-v3/maya/ingredients"
 import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
+import { normalizeOpenAIImageSize } from "@/lib/app-v3/openai-image-size"
 
 // SHOOT-STUDIO-01: Sandra's real workflow, automated. Inspiration images + her selfie →
 // vault-anatomy shot prompts (the comment-PROMPT giveaway asset) → gpt-image-2 edit with
@@ -35,7 +36,7 @@ const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 // 1440x2560 (both divisible by 16, 16:9 portrait, ~3.7MP). The previous 1024x1536 was 2:3, not
 // 9:16. Kept just under the >2560px "experimental" tier so renders stay reliable inside the route's
 // 300s budget. Own env var so this stays independent of suite Maya's APP_V3_PORTRAIT_SIZE.
-const PORTRAIT_SIZE = process.env.SHOOT_STUDIO_PORTRAIT_SIZE || "1440x2560"
+const PORTRAIT_SIZE = normalizeOpenAIImageSize(process.env.SHOOT_STUDIO_PORTRAIT_SIZE, "1440x2560")
 const DEFAULT_SHOTS_PER_SHOOT = 6
 const SHOT_ROLE_SEQUENCE: ShootShotRole[] = [
   "establishing-full-body",

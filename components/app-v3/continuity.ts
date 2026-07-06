@@ -193,7 +193,9 @@ function sanitizeSession(value: unknown): ConciergeSession | null {
     creationIntent: sanitizeCreationIntent(session.creationIntent),
     shotDirector: sanitizeShotDirector(session.shotDirector),
     generationSource: sanitizeGenerationSource(session.generationSource),
-    initialSetupAction: session.initialSetupAction === "selfie_manager" ? "selfie_manager" : null,
+    // initialSetupAction is a one-shot launch instruction, never durable state: restoring it
+    // would re-open the selfie manager on every reload of this draft.
+    initialSetupAction: null,
     startedAt: session.startedAt,
   }
 }
