@@ -13,9 +13,9 @@ export function generatePaymentFailedEmail(params: PaymentFailedEmailParams): {
   const { firstName, recipientEmail, retryDate, manageBillingUrl } = params
   const displayName = firstName || recipientEmail.split("@")[0]
 
-  const subject = "Payment failed: update your card to keep access"
+  const subject = "Your card didn't go through"
 
-  const retryLine = retryDate ? `I'll retry on ${retryDate}.` : "I'll retry automatically soon."
+  const retryLine = retryDate ? `I'll try again on ${retryDate}.` : "I'll try again automatically soon."
 
   const html = `
 <!DOCTYPE html>
@@ -36,7 +36,7 @@ export function generatePaymentFailedEmail(params: PaymentFailedEmailParams): {
                 S S E L F I E
               </h1>
               <p style="margin: 0; color: #1c1917; font-size: 18px; font-weight: 500;">
-                Payment failed
+                Heads up: your card didn't go through
               </p>
             </td>
           </tr>
@@ -44,10 +44,10 @@ export function generatePaymentFailedEmail(params: PaymentFailedEmailParams): {
             <td style="padding: 0 30px 24px; color: #666666; font-size: 15px; line-height: 1.6;">
               <p style="margin: 0 0 12px;">Hi ${displayName},</p>
               <p style="margin: 0 0 12px;">
-                I couldn’t process your membership payment. ${retryLine}
+                Your SUITE payment didn’t go through. ${retryLine}
               </p>
               <p style="margin: 0 0 16px;">
-                Please update your card to keep your SUITE access active.
+                Update your card so your access stays active.
               </p>
               <p style="margin: 0;">
                 <a href="${manageBillingUrl}" style="display: inline-block; background: #0a0a0a; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: 600;">
@@ -58,7 +58,7 @@ export function generatePaymentFailedEmail(params: PaymentFailedEmailParams): {
           </tr>
           <tr>
             <td style="padding: 0 30px 30px; color: #8a8780; font-size: 13px; line-height: 1.6;">
-              If you need help, just reply and I’ll sort it out.
+              Need help? Just reply and I’ll sort it out.
             </td>
           </tr>
         </table>
@@ -71,12 +71,12 @@ export function generatePaymentFailedEmail(params: PaymentFailedEmailParams): {
 
   const text = `Hi ${displayName},
 
-I couldn’t process your membership payment. ${retryLine}
+Your SUITE payment didn’t go through. ${retryLine}
 
-Please update your card to keep your SUITE access active:
+Update your card so your access stays active:
 ${manageBillingUrl}
 
-If you need help, just reply and I’ll sort it out.
+Need help? Just reply and I’ll sort it out.
 `
 
   return { subject, html, text }

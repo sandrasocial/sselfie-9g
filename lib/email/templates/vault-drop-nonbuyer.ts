@@ -132,7 +132,7 @@ export function generateVaultDropNonbuyerEmail({
   const cw = countWord(n)         // "three"
   const cwCaps = countWordCaps(n) // "Three"
 
-  const subject = `${cw} new shoots just dropped`
+  const subject = `${cw} new shoots just landed in the vault`
   const primaryCtaUrl = previewUrl(accessToken, "updated_preview")
   const secondaryCtaUrl = vaultUrl()
 
@@ -143,8 +143,8 @@ export function generateVaultDropNonbuyerEmail({
 
     editorialStoryRow([
       `Hi ${firstName},`,
-      `${cwCaps} new shoots just dropped, and your free preview has been updated.`,
-      "I have been testing these for weeks. Not just once or twice but until I knew exactly how to describe the light, the framing, the styling, the mood. Until the result felt like a real photoshoot, not a filter.",
+      `${cwCaps} new shoots just landed, and your free preview has been updated.`,
+      "I tested these for weeks. Not once or twice, but until I knew exactly how to describe the light, the framing, the styling, the mood. Until it felt like a real photoshoot, still you, not a filter.",
       "Shot 1 from each new shoot is yours now.",
     ]),
 
@@ -158,7 +158,7 @@ export function generateVaultDropNonbuyerEmail({
 
     editorialClosingRow([
       "The preview gives you the first image from each new shoot.",
-      "The full Vault gives you the full shoot direction, every scene, the styling, the mood, and every copy-paste prompt.",
+      "The full Vault gives you the full shoot direction: every scene, the styling, the mood, and every copy-paste prompt.",
       "Open it once. Pick a shoot. Upload a selfie. That is the whole process.",
     ]),
 
@@ -166,9 +166,9 @@ export function generateVaultDropNonbuyerEmail({
   ].join("\n")
 
   const html = renderEditorialShell({
-    title: `${cwCaps} New Shoots Just Dropped · SSELFIE Vault`,
+    title: `${cwCaps} New Shoots Just Landed · SSELFIE Vault`,
     eyebrow: "SSELFIE VAULT",
-    headline: `${cwCaps} New Shoots\nJust Dropped`,
+    headline: `${cwCaps} New Shoots\nJust Landed`,
     subline: "Shot 1 from each is yours. The full shoots are inside the Vault.",
     bodyRows,
   })
@@ -177,13 +177,13 @@ export function generateVaultDropNonbuyerEmail({
 
   const text = `SSELFIE VAULT
 
-${cwCaps.toUpperCase()} NEW SHOOTS JUST DROPPED
+${cwCaps.toUpperCase()} NEW SHOOTS JUST LANDED
 
 Hi ${firstName},
 
-${cwCaps} new shoots just dropped in the vault.
+${cwCaps} new shoots just landed in the vault.
 
-I've been testing these for weeks. Not just once or twice but until I knew exactly how to describe the light, the framing, the styling, the mood. Until the result felt like a real photoshoot, not a filter.
+I tested these for weeks. Not once or twice, but until I knew exactly how to describe the light, the framing, the styling, the mood. Until it felt like a real photoshoot, still you, not a filter.
 
 That work is done. Now it is yours.
 
@@ -202,7 +202,7 @@ Shot 1 is yours. The full shoots are inside the Vault.
 
 The preview gives you the first image from each new shoot.
 
-The full Vault gives you the full shoot direction, every scene, the styling, the mood, and every copy-paste prompt.
+The full Vault gives you the full shoot direction: every scene, the styling, the mood, and every copy-paste prompt.
 
 GET THE VAULT FOR $37:
 ${secondaryCtaUrl}

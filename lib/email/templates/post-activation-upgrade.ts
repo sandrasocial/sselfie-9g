@@ -21,10 +21,10 @@ export function generatePostActivationUpgradeEmail(input: {
   const html = `
     <div style="font-family: Inter, Arial, sans-serif; color: #1c1917; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 24px;">
       <p style="margin:0 0 12px 0;">Hey ${firstName},</p>
-      <p style="margin:0 0 16px 0;">You made your first brand photo with Maya. That\u2019s the hard part done.</p>
+      <p style="margin:0 0 16px 0;">You made your first photo with Maya. That\u2019s the hard part done.</p>
       ${imageHtml}
-      <p style="margin:0 0 16px 0;">Most creators who make one photo end up making 10 more in the same week.</p>
-      <p style="margin:0 0 16px 0;">The SUITE gives you 200 credits every month. That\u2019s 200 photos, consistently, without worrying about running out.</p>
+      <p style="margin:0 0 16px 0;">Most women who make one photo end up making 10 more in the same week.</p>
+      <p style="margin:0 0 16px 0;">The SUITE gives you 200 credits every month. That\u2019s 200 photos, every month, without worrying about running out.</p>
       <p style="margin:0 0 24px 0;">If you liked what Maya made today, the SUITE just keeps it going.</p>
       <p style="margin:0 0 20px 0;">
         <a href="${ctaUrl}" style="display:inline-block;background:#1c1917;color:#fafaf9;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;letter-spacing:0.05em;">
@@ -39,10 +39,10 @@ export function generatePostActivationUpgradeEmail(input: {
   const text = [
     `Hey ${firstName},`,
     "",
-    "You made your first brand photo with Maya. That\u2019s the hard part done.",
+    "You made your first photo with Maya. That\u2019s the hard part done.",
     "",
-    "Most creators who make one photo end up making 10 more in the same week.",
-    "The SUITE gives you 200 credits every month. That’s 200 photos, consistently.",
+    "Most women who make one photo end up making 10 more in the same week.",
+    "The SUITE gives you 200 credits every month. That’s 200 photos, every month.",
     "",
     `Join SSELFIE SUITE: ${ctaUrl}`,
     `Go back to Maya: ${studioUrl}`,

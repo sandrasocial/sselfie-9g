@@ -23,14 +23,14 @@ export function generateDormantMemberReengagementEmail(input: {
     <div style="font-family: Inter, Arial, sans-serif; color: #1c1917; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 24px;">
       <p style="margin:0 0 12px 0;">Hey ${firstName},</p>
       <p style="margin:0 0 16px 0;">${creditsLine}</p>
-      <p style="margin:0 0 16px 0;">It\u2019s only been a week, but a lot can happen in a week on social media. If you\u2019ve got a post to make, a photo to create, or just want to see what Maya comes up with, she\u2019s ready.</p>
-      <p style="margin:0 0 24px 0;">No agenda. Just open the chat and see what she makes.</p>
+      <p style="margin:0 0 16px 0;">I noticed you haven\u2019t generated anything in a bit. No shame, just curious: did something get in the way, or has life just been busy?</p>
+      <p style="margin:0 0 24px 0;">No agenda here. If you\u2019ve got a post to make or just want to see what Maya comes up with, she\u2019s ready when you are.</p>
       <p style="margin:0 0 20px 0;">
         <a href="${studioUrl}" style="display:inline-block;background:#1c1917;color:#fafaf9;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;letter-spacing:0.05em;">
           Open Maya
         </a>
       </p>
-      <p style="margin:0;font-size:12px;color:#666666;">You\u2019re a SUITE member. This is your space. Use it.</p>
+      <p style="margin:0;font-size:12px;color:#666666;">You\u2019re a SUITE member. This is your space. Use it, or just reply and tell me what\u2019s in the way.</p>
     </div>
   `
 
@@ -39,8 +39,8 @@ export function generateDormantMemberReengagementEmail(input: {
     "",
     creditsLine,
     "",
-    "It\u2019s only been a week, but a lot can happen in a week on social media.",
-    "If you\u2019ve got a post to make, a photo to create, or just want to see what Maya comes up with, she\u2019s ready.",
+    "I noticed you haven\u2019t generated anything in a bit. No shame, just curious: did something get in the way, or has life just been busy?",
+    "No agenda here. If you\u2019ve got a post to make or just want to see what Maya comes up with, she\u2019s ready when you are.",
     "",
     `Open Maya: ${studioUrl}`,
   ].join("\n")

@@ -26,16 +26,16 @@ export function generateSelfieGuideDay7ChallengeEmail({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You do not need another tip.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Honestly? You don&apos;t need another tip.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You need the part where it becomes real.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Go straight to the 7-day challenge. Day 1 is simple. Window light. Ten shots. No pressure to like all of them.</p>
     ${renderStonePanel(
       `<p style="margin:0 0 12px;font-size:15px;line-height:1.7;color:#f0ede8;">Why this matters:</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">The challenge gets you out of the loop of thinking about showing up and back into actually doing it. By Day 7, you should have one photo you would not have taken a week ago.</p>`,
+       <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">The challenge gets you out of thinking about showing up and back into actually doing it. By Day 7, you should have one photo you wouldn&apos;t have taken a week ago.</p>`,
       "The 7-Day Challenge",
     )}
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Open the guide and start there.</p>
-    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">This is the part that changes things.</p>
+    <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">This is the part that actually changes things.</p>
     <div style="margin:26px 0 22px;">${renderStoneButton("See the Starter Kit", trackedStarterKitUrl)}</div>
   `
 
@@ -52,7 +52,7 @@ export function generateSelfieGuideDay7ChallengeEmail({
 
 Hi ${name},
 
-You do not need another tip.
+Honestly? You don't need another tip.
 
 You need the part where it becomes real.
 
@@ -60,11 +60,11 @@ Go straight to the 7-day challenge. Day 1 is simple. Window light. Ten shots. No
 
 Why this matters:
 
-The challenge gets you out of the loop of thinking about showing up and back into actually doing it. By Day 7, you should have one photo you would not have taken a week ago.
+The challenge gets you out of thinking about showing up and back into actually doing it. By Day 7, you should have one photo you wouldn't have taken a week ago.
 
 Open the guide and start there.
 
-This is the part that changes things.
+This is the part that actually changes things.
 
 See the Starter Kit: ${trackedStarterKitUrl}
 
@@ -74,6 +74,6 @@ Sandra x`
   return {
     html,
     text,
-    subject: "You do not need another tip",
+    subject: "you don't need another tip",
   }
 }

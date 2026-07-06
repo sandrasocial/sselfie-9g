@@ -11,7 +11,7 @@ export function generateWelcomeFirstGenerationFollowupEmail(input: {
   const studioUrl = `${SITE_URL}/app?utm_source=email&utm_medium=lifecycle&utm_campaign=free_welcome_day0`
   const upgradeUrl = `${SITE_URL}/checkout/membership?utm_source=email&utm_medium=lifecycle&utm_campaign=free_welcome_day0`
 
-  const subject = "your 2 free photos are inside. Try one now"
+  const subject = "your 2 free photos are ready. try one now"
 
   const html = `<!DOCTYPE html>
 <html>
@@ -40,7 +40,7 @@ export function generateWelcomeFirstGenerationFollowupEmail(input: {
               </p>
 
               <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#1c1917;">
-                No photographer. No shoot. No setup. Just open Maya, describe what you want, and watch it generate a brand photo that actually looks like you.
+                No photographer. No shoot. No setup. Just open Maya, tell her what you want, and she makes a photo that still looks like you.
               </p>
 
               <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#57534e;">
@@ -86,7 +86,7 @@ export function generateWelcomeFirstGenerationFollowupEmail(input: {
     ``,
     `You signed up for SSELFIE, and you've got 2 free photos waiting for you right now.`,
     ``,
-    `No photographer. No shoot. No setup. Just open Maya, describe what you want, and watch it generate a brand photo that actually looks like you.`,
+    `No photographer. No shoot. No setup. Just open Maya, tell her what you want, and she makes a photo that still looks like you.`,
     ``,
     `It takes about 3 minutes. Most people can't believe the first result.`,
     ``,

@@ -25,19 +25,19 @@ export function generateSelfieToBrandShootCheckoutRecoveryEmail({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You were looking at Selfie to Brand Shoot, so I wanted to send the link back to you.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is for the moment where one good AI image is not enough anymore.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You want to know which selfie to use, what style to choose, how to make the images still look like you, and how to actually use them in your content.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You were looking at Selfie to Brand Shoot, so here's the link back.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is for the moment when one good AI photo isn't enough anymore.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You want to know which selfie to use, what style fits you, how to keep it looking like you, and what to actually do with the photos after.</p>
     ${renderStonePanel(
       `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Choose the right source selfie.</p>
        <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Pick one Signature Visual World.</p>
-       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Create your first three brand images.</p>
+       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Create your first three brand photos.</p>
        <p style="margin:0;font-size:15px;line-height:1.8;">Then turn them into content you can actually post.</p>`,
       "Inside the System"
     )}
     <div style="margin:26px 0 22px;">${renderStoneButton("Start the System", checkoutUrl)}</div>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Start with one clear selfie. I will show you what to do with it.</p>
-    <p style="margin:0;font-size:16px;line-height:1.75;">Just one clear selfie, one visual direction, and one simple next step.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Start with one clear selfie. I'll show you what to do with it from there.</p>
+    <p style="margin:0;font-size:16px;line-height:1.75;">One selfie, one direction, one simple next step.</p>
   `
 
   return {
@@ -52,24 +52,24 @@ export function generateSelfieToBrandShootCheckoutRecoveryEmail({
     }),
     text: `Hi ${firstName},
 
-You were looking at Selfie to Brand Shoot, so I wanted to send the link back to you.
+You were looking at Selfie to Brand Shoot, so here's the link back.
 
-This is for the moment where one good AI image is not enough anymore.
+This is for the moment when one good AI photo isn't enough anymore.
 
-You want to know which selfie to use, what style to choose, how to make the images still look like you, and how to actually use them in your content.
+You want to know which selfie to use, what style fits you, how to keep it looking like you, and what to actually do with the photos after.
 
 Inside the System:
 - Choose the right source selfie.
 - Pick one Signature Visual World.
-- Create your first three brand images.
+- Create your first three brand photos.
 - Then turn them into content you can actually post.
 
 Start the System:
 ${checkoutUrl}
 
-Start with one clear selfie. I will show you what to do with it.
+Start with one clear selfie. I'll show you what to do with it from there.
 
-Just one clear selfie, one visual direction, and one simple next step.
+One selfie, one direction, one simple next step.
 
 Reply if checkout gave you trouble.
 
@@ -95,14 +95,14 @@ export function generateSelfieToBrandShootCheckoutRecovery2Email({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">I wanted to send one more note about Selfie to Brand Shoot.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The point is not to make one pretty AI image and then wonder what to do with it.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The point is to create a small set of images that still feel recognizable, fit one visual direction, and have a real job in your content.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One more note about Selfie to Brand Shoot.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The point isn't one pretty AI photo you then don't know what to do with.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It's a small set of photos that still feel like you, fit one visual direction, and actually have a job in your content.</p>
     ${renderStonePanel(
-      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;">One profile image.</p>
+      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;">One profile photo.</p>
        <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">One reel cover.</p>
-       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">One lifestyle image.</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;">One visual direction that helps people recognize you.</p>`,
+       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">One lifestyle photo.</p>
+       <p style="margin:0;font-size:15px;line-height:1.8;">One visual direction that makes you easy to recognize.</p>`,
       "What you build first",
     )}
     <div style="margin:26px 0 22px;">${renderStoneButton("Start the System", checkoutUrl)}</div>
@@ -121,17 +121,17 @@ export function generateSelfieToBrandShootCheckoutRecovery2Email({
     }),
     text: `Hi ${firstName},
 
-I wanted to send one more note about Selfie to Brand Shoot.
+One more note about Selfie to Brand Shoot.
 
-The point is not to make one pretty AI image and then wonder what to do with it.
+The point isn't one pretty AI photo you then don't know what to do with.
 
-The point is to create a small set of images that still feel recognizable, fit one visual direction, and have a real job in your content.
+It's a small set of photos that still feel like you, fit one visual direction, and actually have a job in your content.
 
 What you build first:
-- One profile image.
+- One profile photo.
 - One reel cover.
-- One lifestyle image.
-- One visual direction that helps people recognize you.
+- One lifestyle photo.
+- One visual direction that makes you easy to recognize.
 
 Start the System:
 ${checkoutUrl}

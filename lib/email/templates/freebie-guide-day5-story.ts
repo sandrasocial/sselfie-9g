@@ -20,9 +20,9 @@ export function generateFreebieGuideDay5StoryEmail({
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">I started with a mirror in my living room and an iPhone I already had.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">No studio. No photographer. No budget. Just a decent window, a clean background, and me figuring out which angle I could actually post.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">What made me consistent wasn't motivation. It was having presets I liked so editing wasn't a whole project. And a simple system for turning one photo into enough content to show up that week.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">That's what I put in the Starter Kit. The presets I use, editing walkthroughs, and a 7-day content plan so you know what to do with the photos once you have them.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">No studio. No photographer. No budget. Just a decent window, a plain wall, and me figuring out which angle I could actually post without cringing.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Honestly? Motivation never carried me. What did was having presets I already liked, so editing wasn't a whole event. And one simple system for turning a single photo into enough content to show up for a week.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">That's exactly what's in the Starter Kit. The presets I still use, quick editing walkthroughs, and a 7-day content plan so you know what to do with the photos once you've taken them.</p>
     <div style="margin:28px 0 14px;">${renderStoneButton("Get the Starter Kit · $37", starterKitUrl)}</div>
     <p style="margin:0;font-size:16px;line-height:1.8;">Sandra x</p>
   `
@@ -41,11 +41,11 @@ export function generateFreebieGuideDay5StoryEmail({
 
 I started with a mirror in my living room and an iPhone I already had.
 
-No studio. No photographer. No budget. Just a decent window, a clean background, and me figuring out which angle I could actually post.
+No studio. No photographer. No budget. Just a decent window, a plain wall, and me figuring out which angle I could actually post without cringing.
 
-What made me consistent wasn't motivation. It was having presets I liked so editing wasn't a whole project. And a simple system for turning one photo into enough content to show up that week.
+Honestly? Motivation never carried me. What did was having presets I already liked, so editing wasn't a whole event. And one simple system for turning a single photo into enough content to show up for a week.
 
-That's what I put in the Starter Kit. The presets I use, editing walkthroughs, and a 7-day content plan so you know what to do with the photos once you have them.
+That's exactly what's in the Starter Kit. The presets I still use, quick editing walkthroughs, and a 7-day content plan so you know what to do with the photos once you've taken them.
 
 Get the Starter Kit · $37:
 ${starterKitUrl}

@@ -49,7 +49,7 @@ export function generateFreeUserDay5Email(input: { firstName?: string }): {
               <p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#1c1917;">Hey ${firstName},</p>
 
               <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#1c1917;">
-                It's been a few days since you signed up. I wanted to check in. Did you get a chance to try your free photos?
+                It's been a few days since you signed up. Just checking in. Did you get a chance to try your free photos?
               </p>
 
               <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#1c1917;">
@@ -57,7 +57,7 @@ export function generateFreeUserDay5Email(input: { firstName?: string }): {
               </p>
 
               <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#1c1917;">
-                If you haven't yet, no judgement. Life gets busy. Your credits are still there. It still takes 3 minutes. And the result might actually surprise you.
+                If you haven't yet, no judgment. Life gets busy. Your credits are still there. It still takes 3 minutes. And the result might actually surprise you.
               </p>
 
               <p style="margin:0 0 32px;font-size:16px;line-height:1.6;color:#1c1917;">
@@ -68,7 +68,7 @@ export function generateFreeUserDay5Email(input: { firstName?: string }): {
                 <tr>
                   <td style="padding:16px 20px;background:#fafaf9;border-left:3px solid #1c1917;border-radius:4px;margin-bottom:12px;display:block;">
                     <p style="margin:0;font-size:15px;line-height:1.65;color:#292524;font-style:italic;">
-                      "I genuinely could not tell the difference from a real shoot. I cried a little."
+                      "It still looked like me. Just my best day. I actually got a little emotional."
                     </p>
                   </td>
                 </tr>
@@ -117,15 +117,15 @@ export function generateFreeUserDay5Email(input: { firstName?: string }): {
     ``,
     `Hey ${firstName},`,
     ``,
-    `It's been a few days since you signed up. I wanted to check in. Did you get a chance to try your free photos?`,
+    `It's been a few days since you signed up. Just checking in. Did you get a chance to try your free photos?`,
     ``,
     `If you did: I'd love to know what you thought. Just hit reply.`,
     ``,
-    `If you haven't yet, no judgement. Life gets busy. Your credits are still there. It still takes 3 minutes. And the result might actually surprise you.`,
+    `If you haven't yet, no judgment. Life gets busy. Your credits are still there. It still takes 3 minutes. And the result might actually surprise you.`,
     ``,
     `Here's what a few women told me after their first photo:`,
     ``,
-    `"I genuinely could not tell the difference from a real shoot. I cried a little."`,
+    `"It still looked like me. Just my best day. I actually got a little emotional."`,
     ``,
     `"I've been putting off my content for 6 months because I had no photos. I made 12 in one hour."`,
     ``,

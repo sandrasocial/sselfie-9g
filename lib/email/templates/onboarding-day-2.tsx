@@ -18,21 +18,21 @@ export function generateOnboardingDay2Email(params: OnboardingDay2Params): {
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${displayName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Quick check-in. Have you made your first image yet?</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If not, don't overthink it. You don't have to write anything or figure anything out.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Quick check-in. Have you made your first photo yet?</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If not, don't overthink it. You don't need to write anything or figure anything out.</p>
     ${renderStonePanel(
-      `<p style="margin:0 0 10px;font-size:15px;line-height:1.75;color:#f0ede8;">The whole thing is three taps:</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">Pick a look. Maya pulls three concepts for you. Tap the one that feels most like you, and your photos are done in minutes.</p>`,
+      `<p style="margin:0 0 10px;font-size:15px;line-height:1.75;color:#f0ede8;">It's really just three taps:</p>
+       <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">Pick a look. Maya pulls three concepts for you. Tap the one that feels most like you, and your photos are ready in minutes.</p>`,
       "Quick Win",
     )}
-    <div style="margin:26px 0 22px;">${renderStoneButton("Create your first image", studioUrl)}</div>
-    <p style="margin:0;font-size:15px;line-height:1.75;color:#a8a49c;">You've got this. One image is enough to get momentum back on your side.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Create your first photo", studioUrl)}</div>
+    <p style="margin:0;font-size:15px;line-height:1.75;color:#a8a49c;">You've got this. One photo is enough to get your momentum going.</p>
   `
 
   const html = renderStoneShell({
-    title: "Your first image is waiting",
+    title: "Your first photo is waiting",
     eyebrow: "SUITE Day 2",
-    subtitle: "Keep this simple. One image. One step.",
+    subtitle: "Keep this simple. One photo. One step.",
     bodyHtml,
   })
 
@@ -40,22 +40,22 @@ export function generateOnboardingDay2Email(params: OnboardingDay2Params): {
 
 Hey ${displayName},
 
-Quick check-in. Have you made your first image yet?
+Quick check-in. Have you made your first photo yet?
 
-If not, don't overthink it. You don't have to write anything or figure anything out.
+If not, don't overthink it. You don't need to write anything or figure anything out.
 
-The whole thing is three taps:
-Pick a look. Maya pulls three concepts for you. Tap the one that feels most like you, and your photos are done in minutes.
+It's really just three taps:
+Pick a look. Maya pulls three concepts for you. Tap the one that feels most like you, and your photos are ready in minutes.
 
-Create your first image: ${studioUrl}
+Create your first photo: ${studioUrl}
 
-You've got this. One image is enough to get momentum back on your side.
+You've got this. One photo is enough to get your momentum going.
 
 Sandra`
 
   return {
     html,
     text,
-    subject: "Your first shoot is waiting. Let's make it feel like you",
+    subject: "Your first photo is waiting. Let's make it feel like you",
   }
 }

@@ -34,17 +34,17 @@ export function generatePromptVaultCheckoutRecoveryEmail({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You were looking at the Prompt Vault, so I wanted to send the link back to you.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The free prompt shows you what one selfie can become. The Vault gives you the full set of visual directions to keep creating from that same starting point.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You were looking at the Prompt Vault, so here's the link back.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The free prompt shows you what one selfie can become. The Vault is the full set, so you're never stuck on just one.</p>
     ${renderStonePanel(
-      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Use it when you want more than one random AI image.</p>
-       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Choose a photoshoot world, copy the prompt, upload your selfie, and start testing the version of you that actually feels exciting to post.</p>
+      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;">For when one AI photo isn't enough anymore.</p>
+       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Pick a photoshoot world, copy the prompt, upload your selfie, and see the version of you that actually feels exciting to post.</p>
        <p style="margin:0;font-size:15px;line-height:1.8;">Simple. Visual. No overthinking.</p>`,
       "What the Vault helps with"
     )}
     <div style="margin:26px 0 22px;">${renderStoneButton("Get the Prompt Vault", checkoutUrl)}</div>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you were just browsing, that is completely okay.</p>
-    <p style="margin:0;font-size:16px;line-height:1.75;">But if you still want the prompts, this is the easiest place to start.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you were just browsing, that's completely fine.</p>
+    <p style="margin:0;font-size:16px;line-height:1.75;">But if you still want it, this is the easiest place to start.</p>
   `
 
   return {
@@ -59,21 +59,21 @@ export function generatePromptVaultCheckoutRecoveryEmail({
     }),
     text: `Hi ${firstName},
 
-You were looking at the Prompt Vault, so I wanted to send the link back to you.
+You were looking at the Prompt Vault, so here's the link back.
 
-The free prompt shows you what one selfie can become. The Vault gives you the full set of visual directions to keep creating from that same starting point.
+The free prompt shows you what one selfie can become. The Vault is the full set, so you're never stuck on just one.
 
 What the Vault helps with:
-- Use it when you want more than one random AI image.
-- Choose a photoshoot world, copy the prompt, upload your selfie, and start testing the version of you that actually feels exciting to post.
+- For when one AI photo isn't enough anymore.
+- Pick a photoshoot world, copy the prompt, upload your selfie, and see the version of you that actually feels exciting to post.
 - Simple. Visual. No overthinking.
 
 Get the Prompt Vault:
 ${checkoutUrl}
 
-If you were just browsing, that is completely okay.
+If you were just browsing, that's completely fine.
 
-But if you still want the prompts, this is the easiest place to start.
+But if you still want it, this is the easiest place to start.
 
 Reply if checkout gave you trouble.
 
@@ -100,7 +100,7 @@ export function generatePromptVaultRecovery2Email({
   const bodyHtml = `
     <p style="margin:0 0 18px;">Hi ${firstName},</p>
     <p style="margin:0 0 18px;">Yesterday you were a click away from the Prompt Vault, so I'm sending the link back in case life got in the way.</p>
-    <p style="margin:0 0 18px;">Here's what usually happens next: you pick one photoshoot world, paste the prompt into ChatGPT, add one selfie. Ten minutes later you have a set of photos that look like a quiet luxury morning in London or a dark balcony over the city. Still your face. Still you. Just clearer.</p>
+    <p style="margin:0 0 18px;">Here's what usually happens next: you pick one photoshoot world, paste the prompt into ChatGPT, add one selfie. Ten minutes later you've got a set of photos that look like a quiet luxury morning in London or a dark balcony over the city. Still your real face. Still you. Just clearer.</p>
     <p style="margin:0 0 18px;">AI should not erase you. It should frame you. That's the whole point of the Vault.</p>
     <p style="margin:0 0 18px;">${renderPersonalLink("Get the Prompt Vault here", checkoutUrl)} ($37, once).</p>
     <p style="margin:0;">Every new collection I add lands in your vault automatically.</p>
@@ -113,7 +113,7 @@ export function generatePromptVaultRecovery2Email({
 
 Yesterday you were a click away from the Prompt Vault, so I'm sending the link back in case life got in the way.
 
-Here's what usually happens next: you pick one photoshoot world, paste the prompt into ChatGPT, add one selfie. Ten minutes later you have a set of photos that look like a quiet luxury morning in London or a dark balcony over the city. Still your face. Still you. Just clearer.
+Here's what usually happens next: you pick one photoshoot world, paste the prompt into ChatGPT, add one selfie. Ten minutes later you've got a set of photos that look like a quiet luxury morning in London or a dark balcony over the city. Still your real face. Still you. Just clearer.
 
 AI should not erase you. It should frame you. That's the whole point of the Vault.
 
@@ -145,8 +145,8 @@ export function generatePromptVaultRecovery3Email({
   const bodyHtml = `
     <p style="margin:0 0 18px;">Hi ${firstName},</p>
     <p style="margin:0 0 18px;">Last note from me about the Prompt Vault, I promise.</p>
-    <p style="margin:0 0 18px;">If checkout gave you trouble or the timing was off, just reply. A real person answers, usually me.</p>
-    <p style="margin:0 0 18px;">And if you were waiting for a simple next step: one selfie, every editorial collection, $37 once. New drops included forever.</p>
+    <p style="margin:0 0 18px;">If checkout gave you trouble, or the timing was just off, reply and tell me. A real person answers. Usually me.</p>
+    <p style="margin:0 0 18px;">And if you were just waiting for a simple next step: one selfie, every editorial collection, $37 once. New drops included forever.</p>
     <p style="margin:0 0 18px;">${renderPersonalLink("Here's the link", checkoutUrl)}.</p>
     <p style="margin:0;">Either way, I'm glad you're here.</p>
   `
@@ -158,9 +158,9 @@ export function generatePromptVaultRecovery3Email({
 
 Last note from me about the Prompt Vault, I promise.
 
-If checkout gave you trouble or the timing was off, just reply. A real person answers, usually me.
+If checkout gave you trouble, or the timing was just off, reply and tell me. A real person answers. Usually me.
 
-And if you were waiting for a simple next step: one selfie, every editorial collection, $37 once. New drops included forever.
+And if you were just waiting for a simple next step: one selfie, every editorial collection, $37 once. New drops included forever.
 
 Here's the link:
 ${checkoutUrl}

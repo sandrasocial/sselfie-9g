@@ -27,10 +27,10 @@ export function generateSelfieGuideActivationDay0Email({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your Selfie Guide is ready. Here it is:</p>
     <div style="margin:26px 0 22px;">${renderStoneButton("Open my Selfie Guide", trackedAccessUrl)}</div>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Before you dive in, here&apos;s one fast win you can try in the next five minutes:</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hold your phone a little above eye level and look up at it, just slightly. Not a lot, just enough. It opens your eyes, softens your jaw, and instantly looks more flattering. Most people shoot from too low, and that&apos;s what makes a photo feel a bit off.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Try it by a window with the light on your face. That&apos;s the whole trick.</p>
-    <p style="margin:0;font-size:16px;line-height:1.75;">Have a play with it, and I&apos;ll check in tomorrow to see how it went.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Before you dive in, here&apos;s one fast win. Takes five minutes, tops.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hold your phone a little above eye level and look up at it, just slightly. Not a lot, just enough. It opens your eyes, softens your jaw, and it just looks better. Most of us shoot from too low without noticing, and that&apos;s the whole reason a photo can feel a bit off.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Try it by a window with the light on your face. That&apos;s really the whole trick.</p>
+    <p style="margin:0;font-size:16px;line-height:1.75;">Have a play with it. I&apos;ll check in tomorrow to see how it went.</p>
   `
 
   const html = renderStoneShell({
@@ -49,13 +49,13 @@ Your Selfie Guide is ready. Here it is:
 
 Open my Selfie Guide: ${trackedAccessUrl}
 
-Before you dive in, here's one fast win you can try in the next five minutes:
+Before you dive in, here's one fast win. Takes five minutes, tops.
 
-Hold your phone a little above eye level and look up at it, just slightly. Not a lot, just enough. It opens your eyes, softens your jaw, and instantly looks more flattering. Most people shoot from too low, and that's what makes a photo feel a bit off.
+Hold your phone a little above eye level and look up at it, just slightly. Not a lot, just enough. It opens your eyes, softens your jaw, and it just looks better. Most of us shoot from too low without noticing, and that's the whole reason a photo can feel a bit off.
 
-Try it by a window with the light on your face. That's the whole trick.
+Try it by a window with the light on your face. That's really the whole trick.
 
-Have a play with it, and I'll check in tomorrow to see how it went.
+Have a play with it. I'll check in tomorrow to see how it went.
 
 Sandra x`
 

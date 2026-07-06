@@ -65,15 +65,15 @@ export function generateWinBackDay14Email(params: WinBackDay14Params): {
               </p>
 
               <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                But before I go, I want to say something honestly.
+                But before I go, let me say this straight.
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                SSELFIE is built for the woman who wants to show up consistently online, without it taking over her week. She wants her Instagram to look like her. She wants content that doesn't feel forced. She wants to be the face of her brand without dreading every photoshoot.
+                SSELFIE is built for the woman who wants to show up online without it taking over her week. She wants her Instagram to look like her. She wants content that doesn't feel forced. She wants to be the face of her own brand without dreading every photo.
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                That's what it does. One selfie, and you have a week of content ready. Real photos, real you. Not a stock image, not an AI that looks like a stranger.
+                That's what it does. One selfie, and you've got a week of content ready. Real photos, your real face. Not a stock image, not an AI that looks like a stranger.
               </p>
 
               <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #1c1917;">
@@ -94,7 +94,7 @@ export function generateWinBackDay14Email(params: WinBackDay14Params): {
               </div>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                The door is always open. There's no deadline, no lost discount, no awkward re-join form. Just click whenever the moment feels right.
+                The door is always open. No deadline, no lost discount, no awkward re-join form. Just click whenever the moment feels right.
               </p>
 
               <p style="margin: 0 0 32px; font-size: 16px; line-height: 1.6; color: #1c1917;">
@@ -140,11 +140,11 @@ Last one, I promise.
 
 I've sent two emails already, and I don't want to be the person in your inbox who won't take the hint. So this is it from me.
 
-But before I go, I want to say something honestly.
+But before I go, let me say this straight.
 
-SSELFIE is built for the woman who wants to show up consistently online, without it taking over her week. She wants her Instagram to look like her. She wants content that doesn't feel forced. She wants to be the face of her brand without dreading every photoshoot.
+SSELFIE is built for the woman who wants to show up online without it taking over her week. She wants her Instagram to look like her. She wants content that doesn't feel forced. She wants to be the face of her own brand without dreading every photo.
 
-That's what it does. One selfie, and you have a week of content ready. Real photos, real you. Not a stock image, not an AI that looks like a stranger.
+That's what it does. One selfie, and you've got a week of content ready. Real photos, your real face. Not a stock image, not an AI that looks like a stranger.
 
 If that's still something you want, and the timing just hasn't been right, I get it. Completely.
 
@@ -154,7 +154,7 @@ WHEN YOU'RE READY, HERE'S WHAT'S WAITING:
 - Maya, who gets your style and makes every session faster
 - Me, building this with you, not just for you
 
-The door is always open. There's no deadline, no lost discount, no awkward re-join form. Just click whenever the moment feels right.
+The door is always open. No deadline, no lost discount, no awkward re-join form. Just click whenever the moment feels right.
 
 I hope to see you back in there one day.
 

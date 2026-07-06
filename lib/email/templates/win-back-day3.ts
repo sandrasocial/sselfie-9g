@@ -64,7 +64,7 @@ export function generateWinBackDay3Email(params: WinBackDay3Params): {
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                I've been building and updating and adding things non-stop. And somewhere along the way, SSELFIE got confusing. Features kept changing. The path to actually doing anything wasn't clear. I made it harder than it should have been.
+                I've been building and changing things non-stop. And somewhere along the way, SSELFIE got confusing. Features kept shifting. It wasn't clear what to actually do next. I made it harder than it should have been.
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
@@ -72,24 +72,24 @@ export function generateWinBackDay3Email(params: WinBackDay3Params): {
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                I do have one question, not to pitch you, just because I'm still building this and I want to get it right: <strong>What was the moment it stopped working?</strong>
+                I do have one question, not to pitch you, just because I'm still building this and I want to get it right: <strong>what was the moment it stopped working?</strong>
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                Was it the onboarding? Too slow to see results? Not sure what to do next? Life just got in the way?
+                Was it the onboarding? Too slow to see results? Not sure what to do next? Or did life just get in the way?
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                If you reply to this email, I will read it. Not a bot, not a team. Me.
+                If you reply, I'll read it. Not a bot, not a team. Me.
               </p>
 
               <p style="margin: 0 0 32px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                And if you're curious what's changed: it's a lot. But I'll save that for another day. For now, I just wanted to say: I get it. No hard feelings. You didn't do anything wrong.
+                And if you're curious what's changed, it's a lot. I'll save that for another day. For now, I just wanted to say: I get it. No hard feelings. You didn't do anything wrong.
               </p>
 
               <div style="margin: 0 0 32px; padding: 20px 24px; background-color: #fafaf9; border-left: 3px solid #1c1917; border-radius: 4px;">
                 <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #57534e; font-style: italic;">
-                  And if there's any part of you that's still curious: the door is open. No pressure, no expiry, no pitch.
+                  And if any part of you is still curious, the door's open. No pressure, no expiry, no pitch.
                 </p>
                 <p style="margin: 12px 0 0; font-size: 14px; color: #8a8780;">
                   <a href="${rejoinLink}" style="color: #1c1917; text-decoration: underline;">Come back and start fresh &rarr;</a>
@@ -129,19 +129,19 @@ I noticed you cancelled your SUITE membership a few days ago.
 
 Honestly? I think I know why. And it's on me, not you.
 
-I've been building and updating and adding things non-stop. And somewhere along the way, SSELFIE got confusing. Features kept changing. The path to actually doing anything wasn't clear. I made it harder than it should have been.
+I've been building and changing things non-stop. And somewhere along the way, SSELFIE got confusing. Features kept shifting. It wasn't clear what to actually do next. I made it harder than it should have been.
 
 That's not on you for leaving. That's on me for not making it simple enough to stay.
 
-I do have one question, not to pitch you, just because I'm still building this and I want to get it right: What was the moment it stopped working?
+I do have one question, not to pitch you, just because I'm still building this and I want to get it right: what was the moment it stopped working?
 
-Was it the onboarding? Too slow to see results? Not sure what to do next? Life just got in the way?
+Was it the onboarding? Too slow to see results? Not sure what to do next? Or did life just get in the way?
 
-If you reply to this email, I will read it. Not a bot, not a team. Me.
+If you reply, I'll read it. Not a bot, not a team. Me.
 
-And if you're curious what's changed: it's a lot. But I'll save that for another day. For now, I just wanted to say: I get it. No hard feelings. You didn't do anything wrong.
+And if you're curious what's changed, it's a lot. I'll save that for another day. For now, I just wanted to say: I get it. No hard feelings. You didn't do anything wrong.
 
-And if there's any part of you that's still curious: the door is open. No pressure, no expiry, no pitch.
+And if any part of you is still curious, the door's open. No pressure, no expiry, no pitch.
 
 Come back and start fresh: ${rejoinLink}
 

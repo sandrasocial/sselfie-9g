@@ -114,7 +114,7 @@ export function generateVaultDropBuyerEmail({
   const n = newCollections.length
   const cwCaps = countWordCaps(n) // "Three"
 
-  const subject = `your vault just got bigger`
+  const subject = `your vault just grew`
   const ctaUrl2 = vaultAccessUrl(accessToken, "bottom_cta")
 
   const heroImage = pickHeroImage(newCollections)
@@ -124,9 +124,9 @@ export function generateVaultDropBuyerEmail({
 
     editorialStoryRow([
       `Hi ${firstName},`,
-      "Your vault just got bigger.",
-      `${cwCaps} new shoots are live and they are already in your collection. No extra steps. No new link to find. They are just there, waiting for you.`,
-      "I tested each of these until I was happy with every single shot direction. The light, the framing, the way you stand. All of it.",
+      "Your vault just grew.",
+      `${cwCaps} new shoots are live, and they are already in your collection. No extra steps. No new link to find. They are just there, waiting for you.`,
+      "I tested every one of these until I was happy with the light, the framing, the way you stand. All of it. Still you, just in a new world.",
     ]),
 
     editorialPullquoteRow("You already own this. It just grew."),
@@ -137,7 +137,7 @@ export function generateVaultDropBuyerEmail({
 
     editorialClosingRow([
       "When you are ready, open your vault below.",
-      "Pick the shoot that matches the version of you you want to photograph today.",
+      "Pick the shoot that matches the version of you you want to show up as today.",
       "I hope one of these feels like yours.",
     ]),
 
@@ -160,11 +160,11 @@ ${cwCaps.toUpperCase()} NEW COLLECTIONS ADDED
 
 Hi ${firstName},
 
-Your vault just got bigger.
+Your vault just grew.
 
-${cwCaps} new shoots are live and they're already in your collection. No extra steps. No new link to find. They're just there, waiting for you.
+${cwCaps} new shoots are live, and they're already in your collection. No extra steps. No new link to find. They're just there, waiting for you.
 
-I tested each of these until I was happy with every single shot direction. The light, the framing, the way you stand. All of it.
+I tested every one of these until I was happy with the light, the framing, the way you stand. All of it. Still you, just in a new world.
 
 You already own this. It just grew.
 
@@ -178,7 +178,7 @@ Open your vault. Pick the mood that feels right today. Upload a selfie. That is 
 
 When you are ready, open your vault below.
 
-Pick the shoot that matches the version of you you want to photograph today.
+Pick the shoot that matches the version of you you want to show up as today.
 
 I hope one of these feels like yours.
 

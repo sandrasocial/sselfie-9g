@@ -23,17 +23,17 @@ export function generateStarterKitCheckoutRecoveryEmail({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You were looking at the Starter Kit, so I wanted to send the link back to you.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is the simple place to start if your AI images or brand photos keep feeling a little off because the source selfie is not strong enough yet.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You were looking at the Starter Kit, so here's the link back.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If your AI photos keep feeling a little off, it's usually the source selfie, not you. This is the simple fix.</p>
     ${renderStonePanel(
-      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Choose a clearer source selfie.</p>
-       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Use the posing, light, and phone setup that makes your face easier for AI to keep.</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;">Then use that stronger selfie as the starting point for better brand images.</p>`,
+      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Pick a clearer selfie to start from.</p>
+       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Get the pose, light, and phone setup that makes your real face easier for AI to hold onto.</p>
+       <p style="margin:0;font-size:15px;line-height:1.8;">Then use that stronger selfie for every brand photo after it.</p>`,
       "What the Starter Kit helps with",
     )}
     <div style="margin:26px 0 22px;">${renderStoneButton("Get the Starter Kit", checkoutUrl)}</div>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You don't need a perfect photoshoot setup.</p>
-    <p style="margin:0;font-size:16px;line-height:1.75;">You just need one clearer photo of yourself to build from.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">No photoshoot needed.</p>
+    <p style="margin:0;font-size:16px;line-height:1.75;">Just one clearer photo of you to build from.</p>
   `
 
   return {
@@ -48,21 +48,21 @@ export function generateStarterKitCheckoutRecoveryEmail({
     }),
     text: `Hi ${firstName},
 
-You were looking at the Starter Kit, so I wanted to send the link back to you.
+You were looking at the Starter Kit, so here's the link back.
 
-This is the simple place to start if your AI images or brand photos keep feeling a little off because the source selfie is not strong enough yet.
+If your AI photos keep feeling a little off, it's usually the source selfie, not you. This is the simple fix.
 
 What the Starter Kit helps with:
-- Choose a clearer source selfie.
-- Use the posing, light, and phone setup that makes your face easier for AI to keep.
-- Then use that stronger selfie as the starting point for better brand images.
+- Pick a clearer selfie to start from.
+- Get the pose, light, and phone setup that makes your real face easier for AI to hold onto.
+- Then use that stronger selfie for every brand photo after it.
 
 Get the Starter Kit:
 ${checkoutUrl}
 
-You don't need a perfect photoshoot setup.
+No photoshoot needed.
 
-You just need one clearer photo of yourself to build from.
+Just one clearer photo of you to build from.
 
 Reply if checkout gave you trouble.
 
@@ -88,12 +88,12 @@ export function generateStarterKitCheckoutRecovery2Email({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One more note about the Starter Kit, because this is the part that makes AI photos easier.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The original selfie matters. If the light, angle, or expression is off, the AI has less to work with.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One more note about the Starter Kit, because this is the part that actually matters.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your original selfie sets the ceiling. If the light, angle, or expression is off, AI has less of you to work with.</p>
     ${renderStonePanel(
-      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Start with one clearer source photo.</p>
-       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Make the light softer and the face easier to read.</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;">Then your AI images have a much better chance of still feeling like you.</p>`,
+      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Start with one clearer photo of yourself.</p>
+       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Soften the light and make your face easier to read.</p>
+       <p style="margin:0;font-size:15px;line-height:1.8;">Then your AI photos have a much better shot at still looking like you.</p>`,
       "Why this helps",
     )}
     <div style="margin:26px 0 22px;">${renderStoneButton("Get the Starter Kit", checkoutUrl)}</div>
@@ -112,14 +112,14 @@ export function generateStarterKitCheckoutRecovery2Email({
     }),
     text: `Hi ${firstName},
 
-One more note about the Starter Kit, because this is the part that makes AI photos easier.
+One more note about the Starter Kit, because this is the part that actually matters.
 
-The original selfie matters. If the light, angle, or expression is off, the AI has less to work with.
+Your original selfie sets the ceiling. If the light, angle, or expression is off, AI has less of you to work with.
 
 Why this helps:
-- Start with one clearer source photo.
-- Make the light softer and the face easier to read.
-- Then your AI images have a much better chance of still feeling like you.
+- Start with one clearer photo of yourself.
+- Soften the light and make your face easier to read.
+- Then your AI photos have a much better shot at still looking like you.
 
 Get the Starter Kit:
 ${checkoutUrl}

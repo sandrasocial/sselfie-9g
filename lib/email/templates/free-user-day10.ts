@@ -48,7 +48,7 @@ export function generateFreeUserDay10Email(input: { firstName?: string }): {
               <p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#1c1917;">Hey ${firstName},</p>
 
               <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#1c1917;">
-                You've had SSELFIE for 10 days now. I've sent a couple of emails. I don't want to keep interrupting your inbox, so this is the last one.
+                You've had SSELFIE for 10 days now. I've sent you a couple of emails. I don't want to keep filling up your inbox, so this is the last one.
               </p>
 
               <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#1c1917;">
@@ -65,7 +65,7 @@ export function generateFreeUserDay10Email(input: { firstName?: string }): {
                       That's 200 brand photos every month. No photographer. No shoot. No booking.
                     </p>
                     <p style="margin:0;font-size:15px;line-height:1.65;color:#292524;">
-                      Maya knows your face. She generates photos that actually look like you, in your aesthetic, whenever you need them. Cancel any time.
+                      Maya knows your face. She makes photos that still look like you, in your style, whenever you need them. Cancel any time.
                     </p>
                   </td>
                 </tr>
@@ -114,13 +114,13 @@ export function generateFreeUserDay10Email(input: { firstName?: string }): {
     ``,
     `Hey ${firstName},`,
     ``,
-    `You've had SSELFIE for 10 days now. I've sent a couple of emails. I don't want to keep interrupting your inbox, so this is the last one.`,
+    `You've had SSELFIE for 10 days now. I've sent you a couple of emails. I don't want to keep filling up your inbox, so this is the last one.`,
     ``,
     `Just wanted to say this one thing clearly before I go quiet:`,
     ``,
     `The SUITE is €97/month.`,
     `That's 200 brand photos every month. No photographer. No shoot. No booking.`,
-    `Maya knows your face. She generates photos that actually look like you, in your aesthetic, whenever you need them. Cancel any time.`,
+    `Maya knows your face. She makes photos that still look like you, in your style, whenever you need them. Cancel any time.`,
     ``,
     `I built this because I was spending thousands on photographers and still running out of content. I'm not running out anymore.`,
     ``,

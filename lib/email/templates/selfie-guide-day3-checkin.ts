@@ -25,8 +25,8 @@ export function generateSelfieGuideDay3CheckinEmail({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${name},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">This is usually where people disappear.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Not because they don&apos;t care. Because it gets awkward when it is finally time to put your own face in the frame.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">I've noticed this is usually where people quietly disappear.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Not because they stopped caring. Because it gets awkward the second it's actually your own face in the frame.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">So make today smaller.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Open chapter two. Find the section on window light. Take one photo in the light you already have. No outfit planning. No perfect setup.</p>
     <p style="margin:0 0 24px;font-size:16px;line-height:1.75;">Five minutes is enough.</p>
@@ -36,7 +36,7 @@ export function generateSelfieGuideDay3CheckinEmail({
   const html = renderStoneShell({
     title: "Five minutes. One photo.",
     eyebrow: "Selfie Guide",
-    subtitle: "You do not need to be ready. Just begin smaller.",
+    subtitle: "You don't need to be ready. Just start smaller.",
     bodyHtml,
     footerLead: "Reply if you get stuck. Tell me what feels hard.",
     footerSignoff: "Sandra x",
@@ -46,9 +46,9 @@ export function generateSelfieGuideDay3CheckinEmail({
 
 Hi ${name},
 
-This is usually where people disappear.
+I've noticed this is usually where people quietly disappear.
 
-Not because they don't care. Because it gets awkward when it is finally time to put your own face in the frame.
+Not because they stopped caring. Because it gets awkward the second it's actually your own face in the frame.
 
 So make today smaller.
 
