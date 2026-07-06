@@ -22,14 +22,20 @@ describe("Suite vibe shot picker", () => {
     expect(route).toContain("shots,")
   })
 
-  it("front door opens a shot picker before handing the vibe to Maya", () => {
+  it("Maya opens the shot picker inline instead of the Create front door owning style setup", () => {
     const frontDoor = read("components/app-v3/visual-front-door.tsx")
-    expect(frontDoor).toContain("function ShotPickerDialog")
-    expect(frontDoor).toContain("Pick the exact frame you want Maya to recreate")
-    expect(frontDoor).toContain("setShotPickerAesthetic(aesthetic)")
-    expect(frontDoor).toContain("openAestheticShot")
-    expect(frontDoor).toContain("compactAestheticForMaya")
-    expect(frontDoor).toContain("selectedShot")
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    const inline = read("components/app-v3/maya-inline-components.tsx")
+
+    expect(frontDoor).not.toContain("function ShotPickerDialog")
+    expect(frontDoor).not.toContain("setShotPickerAesthetic")
+    expect(frontDoor).not.toContain("openAestheticShot")
+    expect(frontDoor).not.toContain("compactAestheticForMaya")
+
+    expect(concierge).toContain("setInlineShotPickerAesthetic(nextAesthetic)")
+    expect(concierge).toContain("openWithAesthetic(compactInlineAestheticForMaya")
+    expect(inline).toContain("export function InlineShotPicker")
+    expect(inline).toContain("Choose the shot")
   })
 
   it("selected shots persist through local and server draft restore", () => {

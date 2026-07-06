@@ -941,6 +941,10 @@ export function MayaConcierge({
         ? "trained-model"
         : "selfie"
     )
+    if (session.initialSetupAction === "selfie_manager") {
+      setSetupOpen(true)
+      setSelfieManagerOpen(true)
+    }
   }, [admin, hasTrainedModel, session])
 
   // Mirror of the active selfie for async callbacks (avoids clobbering a fresh upload).

@@ -122,7 +122,9 @@ function sanitizeShotDirector(value: unknown): ShotDirectorIntent | null {
   const director = value as Record<string, unknown>
   if (!VALID_SHOT_DIRECTOR_MODES.includes(director.mode as ShotDirectorMode)) return null
   const requestedShotCount =
-    director.requestedShotCount === 8 || director.requestedShotCount === 9 ? director.requestedShotCount : 6
+    director.requestedShotCount === 8 || director.requestedShotCount === 9
+      ? director.requestedShotCount
+      : 6
   return {
     mode: director.mode as ShotDirectorMode,
     requestedShotCount,
@@ -164,8 +166,7 @@ function sanitizeSession(value: unknown): ConciergeSession | null {
     : null
   const referenceSelfieUrl =
     typeof session.referenceSelfieUrl === "string" ? session.referenceSelfieUrl : null
-  const videoSourceUrl =
-    typeof session.videoSourceUrl === "string" ? session.videoSourceUrl : null
+  const videoSourceUrl = typeof session.videoSourceUrl === "string" ? session.videoSourceUrl : null
   const seedPrompt = typeof session.seedPrompt === "string" ? session.seedPrompt : null
 
   return {
@@ -192,6 +193,7 @@ function sanitizeSession(value: unknown): ConciergeSession | null {
     creationIntent: sanitizeCreationIntent(session.creationIntent),
     shotDirector: sanitizeShotDirector(session.shotDirector),
     generationSource: sanitizeGenerationSource(session.generationSource),
+    initialSetupAction: session.initialSetupAction === "selfie_manager" ? "selfie_manager" : null,
     startedAt: session.startedAt,
   }
 }
@@ -228,7 +230,11 @@ function sanitizeGenState(value: unknown): Record<string, ConceptGenState> {
         status: "done",
         videoUrl: state.videoUrl,
       }
-    } else if (state.status === "done" && Array.isArray(state.imageUrls) && state.imageUrls.length > 0) {
+    } else if (
+      state.status === "done" &&
+      Array.isArray(state.imageUrls) &&
+      state.imageUrls.length > 0
+    ) {
       const textOverlaySpecs = Array.isArray(state.textOverlaySpecs)
         ? state.textOverlaySpecs
             .map(sanitizeTextOverlaySpec)

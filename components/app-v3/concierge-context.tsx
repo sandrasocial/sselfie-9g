@@ -62,11 +62,10 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
         seedPrompt: opts?.seed ?? null,
         creationIntent:
           opts?.creationIntent ??
-          (opts?.format
-            ? { format: opts.format, source: "manual", confidence: "high" }
-            : null),
+          (opts?.format ? { format: opts.format, source: "manual", confidence: "high" } : null),
         shotDirector: opts?.shotDirector ?? null,
         generationSource: opts?.generationSource ?? null,
+        initialSetupAction: opts?.initialSetupAction ?? null,
         startedAt,
       })
       setIsOpen(true)
@@ -96,6 +95,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
             creationIntent: null,
             shotDirector: null,
             generationSource: null,
+            initialSetupAction: null,
             startedAt: Date.now(),
           }
         : prev
@@ -121,6 +121,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
             creationIntent: null,
             shotDirector: null,
             generationSource: null,
+            initialSetupAction: null,
             startedAt: Date.now(),
           }
       )
@@ -143,6 +144,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
         creationIntent: { format: null, source: "manual", confidence: "needs_clarify" },
         shotDirector: null,
         generationSource: null,
+        initialSetupAction: null,
         startedAt,
       })
       setIsOpen(true)

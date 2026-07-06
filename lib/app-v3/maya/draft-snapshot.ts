@@ -59,6 +59,7 @@ export type ServerConciergeSessionSnapshot = {
   creationIntent?: ServerCreationIntentSnapshot | null
   shotDirector?: ServerShotDirectorSnapshot | null
   generationSource?: ServerGenerationSourceSnapshot | null
+  initialSetupAction?: "selfie_manager" | null
   startedAt: number
 }
 
@@ -174,7 +175,9 @@ function sanitizeShotDirector(value: unknown): ServerShotDirectorSnapshot | null
     return null
   }
   const requestedShotCount =
-    director.requestedShotCount === 8 || director.requestedShotCount === 9 ? director.requestedShotCount : 6
+    director.requestedShotCount === 8 || director.requestedShotCount === 9
+      ? director.requestedShotCount
+      : 6
   return {
     mode: director.mode as ServerShotDirectorSnapshot["mode"],
     requestedShotCount,
@@ -211,6 +214,7 @@ function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null 
     creationIntent: sanitizeCreationIntent(session.creationIntent),
     shotDirector: sanitizeShotDirector(session.shotDirector),
     generationSource: sanitizeGenerationSource(session.generationSource),
+    initialSetupAction: session.initialSetupAction === "selfie_manager" ? "selfie_manager" : null,
     startedAt: session.startedAt,
   }
 }
@@ -226,7 +230,11 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
         status: "done",
         videoUrl: state.videoUrl,
       }
-    } else if (state.status === "done" && Array.isArray(state.imageUrls) && state.imageUrls.length > 0) {
+    } else if (
+      state.status === "done" &&
+      Array.isArray(state.imageUrls) &&
+      state.imageUrls.length > 0
+    ) {
       const textOverlaySpecs = Array.isArray(state.textOverlaySpecs)
         ? state.textOverlaySpecs
             .map(sanitizeTextOverlaySpec)

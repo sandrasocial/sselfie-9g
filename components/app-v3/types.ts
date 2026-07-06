@@ -28,11 +28,7 @@ export interface CreationIntent {
   confidence: CreationIntentConfidence
 }
 
-export type ShotDirectorMode =
-  | "recreate-shot"
-  | "more-angles"
-  | "collection-shoot"
-  | "new-shoot"
+export type ShotDirectorMode = "recreate-shot" | "more-angles" | "collection-shoot" | "new-shoot"
 
 export interface ShotDirectorIntent {
   mode: ShotDirectorMode
@@ -117,6 +113,8 @@ export interface ConciergeSession {
   shotDirector?: ShotDirectorIntent | null
   /** Optional explicit engine choice. Normal sessions default to selfie; trained model is opt-in. */
   generationSource?: GenerationSource | null
+  /** Optional one-shot setup action Maya should open after the drawer mounts. */
+  initialSetupAction?: "selfie_manager" | null
   startedAt: number
 }
 
@@ -135,6 +133,8 @@ export interface OpenConciergeOptions {
   shotDirector?: ShotDirectorIntent | null
   /** Explicitly open the legacy trained-model path. Normal Maya opens default to selfie. */
   generationSource?: GenerationSource | null
+  /** Optional one-shot setup action Maya should open after the drawer mounts. */
+  initialSetupAction?: "selfie_manager" | null
 }
 
 export type AppV3AnalyticsCohort = "member" | "trial" | "limited" | "admin"

@@ -13,10 +13,30 @@ describe("Maya-first Suite creation UX", () => {
     expect(frontDoor).toContain("STARTER_CHIPS")
     expect(frontDoor).toContain("Make my first photo")
     expect(frontDoor).toContain("Turn an idea into a carousel")
-    expect(frontDoor).toContain("Choose manually")
-    expect(frontDoor).toContain("manualOpen")
     expect(frontDoor).toContain("detectCreationIntent")
     expect(frontDoor).toContain("creationIntent: intent")
+    expect(frontDoor).not.toContain("manualOpen")
+    expect(frontDoor).not.toContain("Manual format choices")
+    expect(frontDoor).not.toContain("Start from a Vault look")
+    expect(frontDoor).not.toContain("ShotPickerDialog")
+    expect(frontDoor).not.toContain("SelfieReferenceManagerModal")
+  })
+
+  it("keeps Create as a calm start surface and makes Maya the setup owner", () => {
+    const frontDoor = read("components/app-v3/visual-front-door.tsx")
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    const types = read("components/app-v3/types.ts")
+
+    expect(frontDoor).toContain("openSelfieManagerInMaya")
+    expect(frontDoor).toContain('initialSetupAction: "selfie_manager"')
+    expect(frontDoor).not.toContain("function AestheticTile")
+    expect(frontDoor).not.toContain("function ShotPickerDialog")
+    expect(frontDoor).not.toContain("onOpen={openAesthetic}")
+    expect(frontDoor).not.toContain("onUseTrainedModel")
+
+    expect(types).toContain('initialSetupAction?: "selfie_manager" | null')
+    expect(concierge).toContain('session.initialSetupAction === "selfie_manager"')
+    expect(concierge).toContain("setSelfieManagerOpen(true)")
   })
 
   it("routes clear typed requests before Maya replies", () => {
@@ -207,18 +227,16 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).toContain("inFlightGenerationKeysRef.current.delete(key)")
   })
 
-  it("opens a dedicated selfie manager before starting Maya from the selfie card", () => {
+  it("opens the selfie manager inside Maya instead of from the Create tab", () => {
     const frontDoor = read("components/app-v3/visual-front-door.tsx")
+    const concierge = read("components/app-v3/maya-concierge.tsx")
     const manager = read("components/app-v3/selfie-reference-manager-modal.tsx")
-    const openSelfieStartIndex = frontDoor.indexOf("function openSelfieStart()")
-    const continueIndex = frontDoor.indexOf("function continueFromSelfieManager")
 
-    expect(frontDoor).toContain("SelfieReferenceManagerModal")
-    expect(frontDoor).toContain("setSelfieManagerOpen(true)")
-    expect(frontDoor).toContain("onContinue={continueFromSelfieManager}")
-    expect(openSelfieStartIndex).toBeGreaterThan(-1)
-    expect(continueIndex).toBeGreaterThan(openSelfieStartIndex)
-    expect(frontDoor.slice(openSelfieStartIndex, continueIndex)).not.toContain("openWithAesthetic")
+    expect(frontDoor).not.toContain("SelfieReferenceManagerModal")
+    expect(frontDoor).not.toContain("setSelfieManagerOpen(true)")
+    expect(frontDoor).not.toContain("onContinue={continueFromSelfieManager}")
+    expect(frontDoor).toContain("openSelfieManagerInMaya")
+    expect(concierge).toContain("<SelfieReferenceManagerModal")
 
     expect(manager).toContain("Start with one clear selfie.")
     expect(manager).toContain("Continue with Maya")

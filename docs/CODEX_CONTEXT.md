@@ -24,6 +24,7 @@ Do not reuse old Studio marketing copy or generic AI/headshot positioning. SSELF
 - **Backend**: Edge API routes on Vercel, Neon Postgres (via `@neondatabase/serverless`), Stripe for billing, Resend for email, Replicate/Upstash for AI and caching, Vercel Blob for media.
 - **AI agents**: Claude (Cowork) + Codex, OpenAI/Anthropic APIs, Gumloop/Loops integrations for automations.
 - **⚠️ APP V3 IS LIVE (cutover 2026-06-10, APP-CUTOVER-01)**: members use `/app` (Studio 3.0) — code in `app/app/`, `components/app-v3/`, `lib/app-v3/`, `app/api/app-v3/`. **Image generation = `gpt-image-2` via OpenAI API** (reference-selfie edits, `OPENAI_IMAGE_MODEL` env). Legacy `/studio` (Replicate: Flux LoRA "Classic" + Nano Banana Pro "Pro") is retired but still in the repo — any Maya doc below that talks tabs/training/Replicate describes the LEGACY app. Check `app/api/app-v3/maya/generate/route.ts` before claiming stack facts.
+- **SUITE creation UX lock (2026-07-06):** Maya owns creation setup. The Create tab starts Maya only; it must not mount selfie/reference management, manual format grids, Vault look pickers, shot pickers, text/font decisions, or trained-model CTAs. Full contract: `docs/product/SUITE_MAYA_SINGLE_OWNER_UX_2026-07-06.md`.
 - **Tooling**: pnpm 10.23.0, tsx for scripts, Vitest/Playwright/Super + email scripts under `scripts/` for diagnostics, `knip.ts` cleanup configs.
 
 ## Key constraints / guardrails

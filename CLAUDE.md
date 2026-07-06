@@ -120,6 +120,7 @@ Operating rule:
 
 - Code: `app/app/` (route) · `components/app-v3/` (UI: maya-concierge, visual front door, concept cards, edit mode, gallery, reference library, account) · `lib/app-v3/` (persona, prompt compiler, ingredients) · `app/api/app-v3/` (maya/generate, maya/edit, upload-selfie, gallery, reference-library, account).
 - **Image generation flagship: `gpt-image-2` (OpenAI API)** — `openai.images.edit` with the member's reference selfie attached; model switchable via `OPENAI_IMAGE_MODEL` env. **No training. No Replicate/Flux. No Nano Banana in v3.** Those belong to legacy `/studio` only.
+- **Creation UX lock (2026-07-06):** Maya is the single owner of creation setup. The Create tab starts Maya only; it must not become a second studio with selfie, style, shot, text/font, trained-model, or manual format controls. Contract: `docs/product/SUITE_MAYA_SINGLE_OWNER_UX_2026-07-06.md`.
 - Stack questions: code wins over docs — check `app/api/app-v3/maya/generate/route.ts` first. Model landscape research: `docs/audits/SUITE_VALUE_AND_HOME_RESEARCH_2026-06-11.md`.
 
 ## Maya UX — Locked State (LEGACY `/studio` only — superseded by App v3 for members)
