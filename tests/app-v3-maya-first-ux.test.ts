@@ -38,6 +38,15 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).toContain('session.initialSetupAction === "selfie_manager"')
     expect(concierge).toContain("setSelfieManagerOpen(true)")
 
+    // The selfie entry must never speak for the member. A fabricated seed here gets
+    // replayed as HER message on the first format pull and forwarded by every style
+    // relay ("all chips send 'I want to start with one clear selfie'", 2026-07-06).
+    expect(frontDoor).not.toContain("I want to start with one clear selfie.")
+    expect(frontDoor).toContain('trackInlineStart("selfie_manager", null, "needs_clarify")')
+    expect(frontDoor).toContain(
+      'creationIntent: { format: null, source: "manual", confidence: "needs_clarify" }'
+    )
+
     // One-shot only: neither restore path may persist the launch instruction, or the
     // selfie manager would re-open on every reload of a saved draft.
     const continuity = read("components/app-v3/continuity.ts")

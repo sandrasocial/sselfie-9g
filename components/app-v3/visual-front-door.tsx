@@ -231,13 +231,15 @@ export function VisualFrontDoor({
   }
 
   function openSelfieManagerInMaya() {
-    const intent = intentForFormat("photo", "starter_chip")
     trackFirstAction("add_selfie")
-    trackInlineStart("selfie_manager", intent.format, intent.confidence)
+    trackInlineStart("selfie_manager", null, "needs_clarify")
+    // No fabricated seed and no preset format: the member hasn't said anything yet, so
+    // nothing may be sent into the chat on her behalf. Maya opens the reference manager,
+    // then asks the ONE next question (format) with her own inline card. Putting words in
+    // the member's mouth here is what made every later tap replay "I want to start with
+    // one clear selfie." into the thread.
     openWithAesthetic(MAYA_BLANK, {
-      format: "photo",
-      seed: "I want to start with one clear selfie.",
-      creationIntent: intent,
+      creationIntent: { format: null, source: "manual", confidence: "needs_clarify" },
       initialSetupAction: "selfie_manager",
     })
   }
