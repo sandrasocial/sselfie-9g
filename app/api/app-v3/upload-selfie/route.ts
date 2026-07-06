@@ -4,6 +4,7 @@
 
 import { type NextRequest, NextResponse } from "next/server"
 import { put } from "@vercel/blob"
+import sharp from "sharp"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
@@ -13,6 +14,12 @@ export const maxDuration = 60
 
 const MAX_BYTES = 12 * 1024 * 1024 // 12MB
 const ALLOWED = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"])
+
+// Identity references below this short-side floor visibly degrade likeness (the generation
+// pipeline only ever downsizes, never upscales). Inspiration/video slots are exempt —
+// they steer style/motion, not her face.
+const MIN_IDENTITY_SHORT_SIDE = 512
+const IDENTITY_TYPES = new Set(["selfie", "three-quarter", "side-profile", "full-body"])
 
 // SUITE-UX-02: every upload slot persists, each under its own image_type so the
 // restore-on-open flow never mixes a vibe image into the face picker.
@@ -61,6 +68,28 @@ export async function POST(request: NextRequest) {
 
   const ext = file.type.includes("png") ? "png" : file.type.includes("webp") ? "webp" : "jpg"
   const imageType = SLOT_TO_TYPE[slot]
+
+  if (IDENTITY_TYPES.has(imageType)) {
+    try {
+      const meta = await sharp(Buffer.from(await file.arrayBuffer())).metadata()
+      // min(width, height) is EXIF-rotation-invariant: the short side stays the short side.
+      const shortSide = Math.min(meta.width ?? 0, meta.height ?? 0)
+      if (shortSide > 0 && shortSide < MIN_IDENTITY_SHORT_SIDE) {
+        return NextResponse.json(
+          {
+            error:
+              "This photo is a bit too small for Maya to keep you looking like you. Try a larger, clearer selfie - straight from your camera roll works best.",
+            code: "image_too_small",
+          },
+          { status: 400 }
+        )
+      }
+    } catch {
+      // Fail open: an unreadable-but-allowed file shouldn't block the upload here — the
+      // generation pipeline normalizes with sharp again and reports its own errors.
+    }
+  }
+
   let blob: { url: string }
   try {
     blob = await put(`${blobFolderForImageType(imageType)}/${user.id}-${Date.now()}.${ext}`, file, {

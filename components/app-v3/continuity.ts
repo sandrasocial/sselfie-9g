@@ -212,11 +212,22 @@ function sanitizeGenState(value: unknown): Record<string, ConceptGenState> {
             typeof url === "string" && url.startsWith("https://") ? url : null
           )
         : undefined
+      // Variant lineage survives reloads: gallery row ids stay with their URLs so a
+      // bake/edit from a restored card still records variant_of.
+      const aiImageIds = Array.isArray(state.aiImageIds)
+        ? state.aiImageIds.map(id => (typeof id === "number" && Number.isInteger(id) ? id : null))
+        : undefined
+      const aiImageId =
+        typeof state.aiImageId === "number" && Number.isInteger(state.aiImageId)
+          ? state.aiImageId
+          : null
       out[key] = {
         status: "done",
         imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),
         ...(textOverlaySpecs?.length ? { textOverlaySpecs } : {}),
         ...(bakedImageUrls?.some(Boolean) ? { bakedImageUrls } : {}),
+        ...(aiImageId != null ? { aiImageId } : {}),
+        ...(aiImageIds?.some(id => id != null) ? { aiImageIds } : {}),
       }
     } else if (
       state.status === "idle" ||

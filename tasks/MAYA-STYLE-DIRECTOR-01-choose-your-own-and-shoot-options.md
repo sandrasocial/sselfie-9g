@@ -45,7 +45,12 @@ Verified 2026-07-06: `textStyleChoice` is plain React state (`maya-concierge.tsx
 
 Slice 1 → 2 → 3; each slice is shippable alone. Per slice: contract tests (source-level like `tests/maya-chat-selfie-manager.test.ts`), the existing suites (`app-v3-maya-first-ux`, `text-studio-bake`, `story-generation`) stay green, `pnpm type-check:ci`, and a live tap-through by Sandra on mobile before the next slice starts.
 
-## Open questions for Sandra (answer before Slice 2 builds)
+## Decided answers (Sandra delegated 2026-07-06 — build to these)
 
-1. Shot-count choices: 6 / 8 / 9 okay, or do you want a smaller "mini shoot" too? (Server floor is 6 today; lowering it weakens cohesion validation.)
-2. When a member picks "Let Maya decide", should Maya propose ONE style confidently (stylist energy) or offer 2-3 to choose from?
+1. **Shot count: 6 / 8 / 9**, each choice showing its credit cost. No mini-shoot below 6 — the server's cohesion validation (role variety + detail shots) depends on the 6-floor.
+2. **"Let Maya decide" proposes 2-3 options** (already shipped in Slice 1 with that copy). This matches the locked interaction doctrine: "Like a high-end stylist: 'I pulled three looks for you. Which feels most like you?'" — curated taps, not one take-it-or-leave-it pick.
+
+## Status
+
+- Slice 1 SHIPPED 2026-07-06 (Codex `e799b920`, reviewed + merged): "Use my inspiration" + "Let Maya decide" tiles, reference-slot sync. Vault grounding for maya-decides confirmed working via the chat route's existing `getVaultStyleGuide(id) ?? getVaultOverviewGuide()` fallback — no extra server work needed.
+- Slice 2 (director mode) and Slice 3 (overlay memory): OPEN — next Codex build, answers above.

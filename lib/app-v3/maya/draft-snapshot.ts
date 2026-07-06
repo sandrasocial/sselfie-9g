@@ -59,6 +59,10 @@ export type ServerConceptGenState = {
   textOverlaySpecs?: TextOverlaySpec[]
   /** TEXT-STUDIO-01: per-image baked text renders, index-aligned with imageUrls. */
   bakedImageUrls?: Array<string | null>
+  /** Gallery row ids, index-aligned with imageUrls. Without these, a bake/edit started
+   * from a RESTORED card loses its variant_of lineage (parent id unknown after reload). */
+  aiImageId?: number | null
+  aiImageIds?: Array<number | null>
   videoUrl?: string
   error?: string
   previewUrl?: string
@@ -196,11 +200,21 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
             typeof url === "string" && url.startsWith("https://") ? url : null
           )
         : undefined
+      // Variant lineage survives reloads: keep gallery row ids alongside their URLs.
+      const aiImageIds = Array.isArray(state.aiImageIds)
+        ? state.aiImageIds.map(id => (typeof id === "number" && Number.isInteger(id) ? id : null))
+        : undefined
+      const aiImageId =
+        typeof state.aiImageId === "number" && Number.isInteger(state.aiImageId)
+          ? state.aiImageId
+          : null
       out[key] = {
         status: "done",
         imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),
         ...(textOverlaySpecs?.length ? { textOverlaySpecs } : {}),
         ...(bakedImageUrls?.some(Boolean) ? { bakedImageUrls } : {}),
+        ...(aiImageId != null ? { aiImageId } : {}),
+        ...(aiImageIds?.some(id => id != null) ? { aiImageIds } : {}),
       }
     } else if (
       state.status === "idle" ||

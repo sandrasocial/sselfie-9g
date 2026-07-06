@@ -141,6 +141,16 @@ export const OVERLAY_SUBLINE_MAX = 80
 /** Hard caps for stored specs (sanitizer), tolerant of Maya-written longer lines. */
 const HEADLINE_HARD_MAX = 120
 const SUBLINE_HARD_MAX = 160
+/** gpt-image-2's reliable baked-text zone is short strings (~10 words per element); beyond
+ * ~14 words letterforms degrade AND the layout drowns. Runaway headlines get a word-boundary
+ * trim - normal Maya headlines (well under this) pass through untouched. */
+const HEADLINE_RUNAWAY_WORDS = 14
+const HEADLINE_TRIMMED_WORDS = 12
+function clampHeadlineWords(text: string): string {
+  const words = text.split(" ")
+  if (words.length <= HEADLINE_RUNAWAY_WORDS) return text
+  return words.slice(0, HEADLINE_TRIMMED_WORDS).join(" ")
+}
 
 /** Member text-size control: multiplier applied to the preset's type scale. */
 export const OVERLAY_SIZE_MULTIPLIERS: Record<OverlaySize, number> = {
@@ -567,7 +577,9 @@ export function pickOverlayStyle(
  * member can move/edit it after generation.
  */
 export function makeTextOverlaySpec(input: MakeOverlaySpecInput): TextOverlaySpec {
-  const headline = input.heading.replace(/\s+/g, " ").trim().slice(0, HEADLINE_HARD_MAX)
+  const headline = clampHeadlineWords(
+    input.heading.replace(/\s+/g, " ").trim().slice(0, HEADLINE_HARD_MAX)
+  )
   const subline = (input.body ?? "").replace(/\s+/g, " ").trim().slice(0, SUBLINE_HARD_MAX)
   const style = pickOverlayStyle(input)
   const preset = resolveOverlayStyle(style)
