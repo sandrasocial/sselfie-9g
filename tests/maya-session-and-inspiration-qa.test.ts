@@ -1,0 +1,111 @@
+// @vitest-environment node
+
+// Guards for Sandra's 2026-07-06 live QA round #2:
+// 1. "Start new" must never resurrect the previous thread (save-race + draft re-seed).
+// 2. An uploaded inspiration image is never silently ignored - style-led sessions use it
+//    as a pose/light/mood accent, inspiration-led sessions reconstruct it.
+// 3. The memory modal shows what Maya actually learns (not just blank fields).
+// 4. Anti-copy-paste realism: identity refs restyle for the brief in every person pipeline.
+
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
+import { describe, expect, it } from "vitest"
+import { SSELFIE_SELFIE_RESTYLE } from "@/lib/app-v3/maya/visual-rules"
+
+function read(path: string) {
+  return readFileSync(join(process.cwd(), path), "utf8")
+}
+
+describe("start-new chat integrity", () => {
+  it("seeds the local draft once per mount, never re-seeding after a session reset", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    expect(concierge).toContain("draftSeededRef")
+    expect(concierge).toContain("!draftSeededRef.current && session?.startedAt")
+    // The old always-re-seed condition must not come back.
+    expect(concierge).not.toContain("if (restoredDraftRef.current === null && session?.startedAt) {")
+  })
+
+  it("never saves a stale thread under a new session key (the save-race that resurrected old chats)", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    expect(concierge).toContain("sessionChatIdRef")
+    expect(concierge).toContain("sessionChatIdRef.current !== chatId) return")
+    // Every chat re-key keeps the ref in sync: reset, restore, new-chat button, history select.
+    expect(concierge.match(/sessionChatIdRef\.current = /g)?.length).toBeGreaterThanOrEqual(4)
+  })
+
+  it("openFresh outranks any in-flight server-draft restore", () => {
+    const context = read("components/app-v3/concierge-context.tsx")
+    const openFreshStart = context.indexOf("const openFresh")
+    const openFreshBody = context.slice(openFreshStart, context.indexOf("}, [])", openFreshStart))
+    expect(openFreshBody).toContain("restoredSavedAtRef.current = startedAt")
+  })
+})
+
+describe("inspiration image is honored, mode-aware", () => {
+  it("style-led sessions get the accent mode; inspiration-led sessions reconstruct", () => {
+    const route = read("app/api/app-v3/maya/generate/route.ts")
+    expect(route).toContain("SSELFIE_INSPIRATION_STYLE_ACCENT")
+    expect(route).toContain("styleLedSession")
+    expect(route).toContain('!body.aestheticId.startsWith("maya-")')
+    expect(route).toContain("leadInspirationMode")
+    // The old forced close-recreation on every single-photo job is gone.
+    expect(route).not.toContain('withInspirationReferenceInstruction(job, "close-recreation")')
+  })
+
+  it("a rejected inspiration URL is logged, never dropped silently", () => {
+    const route = read("app/api/app-v3/maya/generate/route.ts")
+    expect(route).toContain("inspiration image rejected by reference allowlist")
+  })
+
+  it("the member can SEE her inspiration is in play", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    expect(concierge).toContain('" · Inspiration in"')
+    expect(concierge).toContain("Your inspiration image is in.")
+  })
+})
+
+describe("memory modal shows real knowledge", () => {
+  it("surfaces the learned overlay style with a one-tap forget", () => {
+    const modal = read("components/app-v3/memory-modal.tsx")
+    expect(modal).toContain("preferredOverlayStyle")
+    expect(modal).toContain("Your usual text style")
+    expect(modal).toContain("clearOverlayStyle")
+    expect(modal).toContain("What Maya learns as you create")
+  })
+})
+
+describe("anti-copy-paste realism (both directions)", () => {
+  it("the shared restyle rule forbids lifting the selfie's outfit/pose/background", () => {
+    expect(SSELFIE_SELFIE_RESTYLE).toContain("never what she wears or where she stands")
+    expect(SSELFIE_SELFIE_RESTYLE).toContain("Do not copy the identity photos' clothing")
+    expect(SSELFIE_SELFIE_RESTYLE).toContain("the same woman")
+  })
+
+  it("every person-into-scene pipeline carries BOTH integration and restyle rules", () => {
+    const compiler = read("lib/app-v3/prompt-compiler.ts")
+    const shoot = read("lib/content-kit/shoot-generator.ts")
+    for (const source of [compiler, shoot]) {
+      expect(source).toContain("SSELFIE_ENVIRONMENT_INTEGRATION")
+      expect(source).toContain("SSELFIE_SELFIE_RESTYLE")
+    }
+  })
+})
+
+describe("activation clarity (first-session audit quick wins)", () => {
+  it("the first-photo CTA says what it is and what it costs", () => {
+    const card = read("components/app-v3/concept-card.tsx")
+    expect(card).toContain("Create my photo · 1 credit")
+    expect(card).not.toContain("Start my brand shoot")
+  })
+
+  it("the reference manager has ONE way forward", () => {
+    const modal = read("components/app-v3/selfie-reference-manager-modal.tsx")
+    expect(modal).toContain("Continue with Maya")
+    expect(modal).not.toMatch(/>\s*Done\s*</)
+  })
+
+  it("the trust line sits at the upload button", () => {
+    const inline = read("components/app-v3/maya-inline-components.tsx")
+    expect(inline).toContain("Your selfie stays yours.")
+  })
+})

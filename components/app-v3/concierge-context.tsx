@@ -135,6 +135,9 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
   const openFresh = useCallback(() => {
     const startedAt = Date.now()
     clearMayaDraft()
+    // Also outranks any in-flight server-draft GET: a draft saved before this moment must
+    // never be restored over a session the member explicitly started clean.
+    restoredSavedAtRef.current = startedAt
     void fetch("/api/app-v3/maya/draft", { method: "DELETE" }).catch(() => {})
     startTransition(() => {
       setSession({

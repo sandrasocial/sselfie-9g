@@ -607,7 +607,12 @@ export function MayaConcierge({
   const threadEndRef = useRef<HTMLDivElement>(null)
   const composerRef = useRef<HTMLInputElement>(null)
   const restoredDraftRef = useRef<MayaDraftSnapshot | null>(null)
-  if (restoredDraftRef.current === null && session?.startedAt) {
+  // Seed the draft ONCE per mount. Re-seeding whenever the ref is null let a "Start new"
+  // session re-restore the previous thread: the save effect below could persist the old
+  // messages under the NEW session key for one stale commit, and this line read them back.
+  const draftSeededRef = useRef(false)
+  if (!draftSeededRef.current && session?.startedAt) {
+    draftSeededRef.current = true
     restoredDraftRef.current = readMayaDraftForSession(session.startedAt)
   }
   const restoredDraft = restoredDraftRef.current
@@ -840,6 +845,10 @@ export function MayaConcierge({
   const [historyOpen, setHistoryOpen] = useState(false)
   const savedCountRef = useRef(restoredDraft?.messages.length ?? 0)
   const appliedDraftSessionRef = useRef<number | null>(restoredDraft?.sessionStartedAt ?? null)
+  // The chatId that belongs to the CURRENT session. For one commit after a session switch,
+  // the rendered chatId/messages are still the previous thread's - the save effect must not
+  // persist that stale pairing under the new session key ("Start new shows the old chat").
+  const sessionChatIdRef = useRef<string | null>(restoredDraft?.chatId ?? null)
 
   useEffect(() => {
     if (!session) return
@@ -854,7 +863,9 @@ export function MayaConcierge({
       formatSwitchAppliedRef.current.clear()
       inFlightGenerationKeysRef.current.clear()
       pendingInspirationIntentRef.current = null
-      setChatId(newChatId())
+      const freshChatId = newChatId()
+      sessionChatIdRef.current = freshChatId
+      setChatId(freshChatId)
       setMessages([])
       setGenState({})
       setGeneratedOnce(false)
@@ -875,6 +886,7 @@ export function MayaConcierge({
         if (fmt) formatSwitchAppliedRef.current.add(`${m.id}:${fmt}`)
       }
     }
+    sessionChatIdRef.current = draft.chatId
     setChatId(draft.chatId)
     setMessages(draft.messages as any)
     setGenState(draft.genState)
@@ -885,6 +897,10 @@ export function MayaConcierge({
 
   useEffect(() => {
     if (!isOpen || !session) return
+    // Stale-commit guard: right after a session switch, this render's chatId/messages still
+    // belong to the PREVIOUS thread. Saving them under the new session key is how "Start
+    // new" used to resurrect the old conversation.
+    if (sessionChatIdRef.current !== null && sessionChatIdRef.current !== chatId) return
     const snapshot: ServerMayaDraftSnapshot = {
       isOpen,
       chatId,
@@ -1279,6 +1295,7 @@ export function MayaConcierge({
     setGenState({})
     setGeneratedOnce(false)
     setInput("")
+    sessionChatIdRef.current = nextChatId
     setChatId(nextChatId)
     setHistoryOpen(false)
     // Visible reset (P1): back to the four format chips, NOT an instant re-pull of the same
@@ -1303,6 +1320,7 @@ export function MayaConcierge({
           if (fmt) formatSwitchAppliedRef.current.add(`${m.id}:${fmt}`)
         }
       }
+      sessionChatIdRef.current = id
       setChatId(id)
       setGenState({})
       setGeneratedOnce(false)
@@ -2371,6 +2389,7 @@ export function MayaConcierge({
                   : referenceSelfieUrl
                     ? " · Selfie in"
                     : " · No selfie yet"}
+                {format !== "video" && inspirationUrl ? " · Inspiration in" : ""}
               </span>
             </span>
             <button
@@ -2419,13 +2438,21 @@ export function MayaConcierge({
                     </button>
                   </>
                 ) : (
-                  <InlineVibePicker
-                    aesthetics={inlineAesthetics}
-                    disabled={isThinking}
-                    onPick={handleInlineVibePick}
-                    onUseInspiration={handleInlineUseInspiration}
-                    onLetMayaDecide={handleInlineMayaDecides}
-                  />
+                  <>
+                    {inspirationUrl && (
+                      <p className="px-1 pb-1 text-[12px] leading-relaxed text-[#6D6E70]">
+                        Your inspiration image is in. Pick a style and Maya keeps that style as
+                        the world, using your inspiration for pose, light, and mood.
+                      </p>
+                    )}
+                    <InlineVibePicker
+                      aesthetics={inlineAesthetics}
+                      disabled={isThinking}
+                      onPick={handleInlineVibePick}
+                      onUseInspiration={handleInlineUseInspiration}
+                      onLetMayaDecide={handleInlineMayaDecides}
+                    />
+                  </>
                 )}
               </div>
             )}

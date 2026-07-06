@@ -29,6 +29,8 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
   const [prefs, setPrefs] = useState("")
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [likenessNotes, setLikenessNotes] = useState<string[]>([])
+  const [overlayStyle, setOverlayStyle] = useState<string | null>(null)
+  const [clearingStyle, setClearingStyle] = useState(false)
   const [removingNote, setRemovingNote] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -46,10 +48,26 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
         setPrefs(d?.preferences ?? "")
         setAvatarUrl(d?.userAvatarUrl ?? null)
         setLikenessNotes(Array.isArray(d?.likenessNotes) ? d.likenessNotes : [])
+        setOverlayStyle(typeof d?.preferredOverlayStyle === "string" ? d.preferredOverlayStyle : null)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [open])
+
+  // A learned preference she can't see or undo is a trust gap, not a feature.
+  async function clearOverlayStyle() {
+    setClearingStyle(true)
+    try {
+      const res = await fetch("/api/app-v3/maya/memory", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ preferredOverlayStyle: null }),
+      })
+      if (res.ok) setOverlayStyle(null)
+    } finally {
+      setClearingStyle(false)
+    }
+  }
 
   // LIKENESS-MEMORY-01: a wrong note has to be removable, one tap, right here.
   async function removeNote(note: string) {
@@ -209,6 +227,42 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
               className="mt-1.5 w-full resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[14px] text-[#282728] outline-none focus:border-[#0D0E10]"
             />
           </label>
+
+          {/* What Maya learns on her own - shown so an empty modal never reads as "Maya
+              knows nothing". These fill automatically as she creates. */}
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">
+              What Maya learns as you create
+            </p>
+            <div className="mt-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[12px] text-[#818283]">Your usual text style</p>
+                  <p className="mt-0.5 text-[13px] leading-snug text-[#282728]">
+                    {overlayStyle
+                      ? overlayStyle.replace(/-/g, " ")
+                      : "Not learned yet. Maya remembers it after you pick a text style on a cover or carousel."}
+                  </p>
+                </div>
+                {overlayStyle && (
+                  <button
+                    type="button"
+                    onClick={() => void clearOverlayStyle()}
+                    disabled={clearingStyle}
+                    className="inline-flex min-h-11 shrink-0 items-center text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10] disabled:opacity-40"
+                  >
+                    {clearingStyle ? "Clearing…" : "Forget"}
+                  </button>
+                )}
+              </div>
+            </div>
+            {likenessNotes.length === 0 && (
+              <p className="mt-2 text-[12px] leading-relaxed text-[#818283]">
+                Maya also keeps notes from your photo corrections ("hair: dark brown, not
+                black") so every new photo stays you. They will show up here as she learns.
+              </p>
+            )}
+          </div>
 
           {/* LIKENESS-MEMORY-01: the notes Maya learned from her photo corrections. Visible so
               she can SEE Maya learning, and deletable so a wrong note never sticks. */}

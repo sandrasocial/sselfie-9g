@@ -35,6 +35,18 @@ export const SSELFIE_ENVIRONMENT_INTEGRATION =
   "photographed inside this location, fully integrated into it, never brightly studio-lit on top " +
   "of the background, never a cut-out or composite pasted into the scene."
 
+// The flip side of identity locking (Sandra QA 2026-07-06): identity references pulled too
+// literally - the selfie's outfit, pose, background, even its camera angle leaked into
+// renders, so results read as the selfie pasted into a new scene. Identity is WHO she is,
+// never what she wore or where she stood. Pairs with SSELFIE_ENVIRONMENT_INTEGRATION:
+// integration stops the composite look from the scene side, this stops it from the selfie side.
+export const SSELFIE_SELFIE_RESTYLE =
+  "Identity references define WHO she is - her face, skin, natural age, hair color and texture - " +
+  "never what she wears or where she stands. Do not copy the identity photos' clothing, " +
+  "background, pose, framing, camera angle, or expression into the result. Restyle her fully for " +
+  "THIS shot's brief: its outfit, its setting, its pose, its light - while she stays unmistakably " +
+  "the same woman, photographed fresh, never lifted from her reference photo."
+
 export const SSELFIE_INSPIRATION_CLOSE_RECREATE = [
   "TASK TYPE: IMAGE RECONSTRUCTION.",
   "The inspiration image is the visual blueprint, not a loose mood board and not a prose suggestion.",

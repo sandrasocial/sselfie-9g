@@ -358,15 +358,28 @@ function withPhotoshootCohesionInstruction(
   }
 }
 
+// Style-led sessions (a chosen Vault collection) get inspiration as an ACCENT, never as a
+// competing world: close-recreation/set-variation both let the inspiration image define the
+// scene, which fought the detailed collection brief and made the inspiration look ignored
+// (Sandra QA 2026-07-06). The brief owns the world; the inspiration steers the human moment.
+const SSELFIE_INSPIRATION_STYLE_ACCENT = [
+  "TASK TYPE: STYLED SHOT WITH INSPIRATION ACCENT.",
+  "The scene, wardrobe world, and setting come from the shot brief above - do NOT copy the inspiration image's location, background, or outfit.",
+  "From the inspiration image borrow ONLY: the pose energy and body language, the camera angle and framing feel, the lighting direction and mood.",
+  "The inspiration image is never her face and never the scene. Her face comes only from her identity photos.",
+].join("\n")
+
 function withInspirationReferenceInstruction(
   job: ImageJob,
-  mode: "close-recreation" | "set-variation" = "close-recreation"
+  mode: "close-recreation" | "set-variation" | "style-accent" = "close-recreation"
 ): ImageJob {
   const instruction = [
     "Inspiration reference handling:",
     mode === "close-recreation"
       ? SSELFIE_INSPIRATION_CLOSE_RECREATE
-      : SSELFIE_INSPIRATION_SET_VARIATION,
+      : mode === "style-accent"
+        ? SSELFIE_INSPIRATION_STYLE_ACCENT
+        : SSELFIE_INSPIRATION_SET_VARIATION,
   ].join("\n")
 
   return {
@@ -560,6 +573,14 @@ export async function POST(request: NextRequest) {
         isAllowedReferenceUrl(body.inspirationImageUrl)
           ? body.inspirationImageUrl
           : null
+      if (body.inspirationImageUrl && !inspirationReferenceUrl) {
+        // Never drop her inspiration silently - this exact silence read as "Maya ignored
+        // my image" in live QA (2026-07-06).
+        console.warn(
+          "[app-v3 generate] inspiration image rejected by reference allowlist, generating without it:",
+          String(body.inspirationImageUrl).slice(0, 100)
+        )
+      }
       // Front face first, then any optional identity angles. Dedup + cap at 4. Inspiration is
       // attached separately after identity references so it can guide pose/style without becoming
       // the face anchor.
@@ -571,6 +592,19 @@ export async function POST(request: NextRequest) {
           ].filter(isAllowedReferenceUrl)
         )
       ).slice(0, 4)
+      // Inspiration semantics depend on who leads the style (Sandra QA 2026-07-06):
+      // - inspiration-led (synthetic "maya-*" aesthetics): she picked her image AS the style,
+      //   so reconstruct it closely around her identity.
+      // - style-led (a real Vault collection id): her chosen world wins - the inspiration
+      //   steers pose, light, and mood as a variation. Forcing close-recreation here made the
+      //   detailed collection brief win the conflict and the inspiration looked ignored.
+      const styleLedSession =
+        typeof body.aestheticId === "string" &&
+        body.aestheticId.length > 0 &&
+        !body.aestheticId.startsWith("maya-")
+      const leadInspirationMode: "style-accent" | "close-recreation" = styleLedSession
+        ? "style-accent"
+        : "close-recreation"
       if (format === "photoshoot") {
         const shootBriefs = normalizeShootBriefs(body.shootBriefs, brief)
         const validationErrors = validatePhotoshootBriefs(shootBriefs)
@@ -606,7 +640,7 @@ export async function POST(request: NextRequest) {
             job: inspirationReferenceUrl
               ? withInspirationReferenceInstruction(
                   cohesiveJob,
-                  isHero ? "close-recreation" : "set-variation"
+                  isHero ? leadInspirationMode : "set-variation"
                 )
               : cohesiveJob,
           }
@@ -636,7 +670,7 @@ export async function POST(request: NextRequest) {
       } else {
         jobs = compileConceptJobs(brief, format, { aestheticId: body.aestheticId })
         if (inspirationReferenceUrl) {
-          jobs = jobs.map(job => withInspirationReferenceInstruction(job, "close-recreation"))
+          jobs = jobs.map(job => withInspirationReferenceInstruction(job, leadInspirationMode))
         }
       }
     }

@@ -42,6 +42,7 @@ import {
   SSELFIE_GRAPHIC_STYLE_PROMPT,
   SSELFIE_NEUTRAL_PALETTE,
   SSELFIE_PHOTO_STYLE_PROMPT,
+  SSELFIE_SELFIE_RESTYLE,
 } from "@/lib/app-v3/maya/visual-rules"
 import {
   isTextOverlayLayerEnabled,
@@ -628,6 +629,7 @@ function compilePhotoPrompt(
     SSELFIE_PHOTO_STYLE_PROMPT,
     `Lighting: ${lighting}.`,
     SSELFIE_ENVIRONMENT_INTEGRATION,
+    SSELFIE_SELFIE_RESTYLE,
     CANDID_EDITORIAL,
     REALISM_TOKENS + ".",
     quality,

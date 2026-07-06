@@ -291,7 +291,7 @@ export function ConceptCard({
             {isGenerating
               ? "Creating…"
               : format === "photo"
-                ? "Start my brand shoot"
+                ? "Create my photo · 1 credit"
                 : "Create this"}
           </button>
         )}

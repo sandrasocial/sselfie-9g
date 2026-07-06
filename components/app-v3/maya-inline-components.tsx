@@ -120,6 +120,11 @@ export function InlineSelfieUpload({
           </button>
         )}
       </div>
+      {/* The trust line lives AT the button, not in copy she scrolled past: handing over her
+          face is the app's biggest ask (No-Fake doctrine - identity safety at the moment of fear). */}
+      <p className="mt-2 text-[12px] leading-relaxed text-[#818283]">
+        Your selfie stays yours. Maya only uses it to keep your real face in every photo.
+      </p>
     </div>
   )
 }

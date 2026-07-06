@@ -376,26 +376,19 @@ export function SelfieReferenceManagerModal({
           <p className="text-[12px] leading-relaxed text-[color:var(--ss-davy)]">
             You can come back and change this anytime.
           </p>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={onClose}
-              className="min-h-11 rounded-[4px] border border-[color:var(--ss-silver)]/70 bg-[color:var(--ss-white)] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-davy)] hover:border-[color:var(--ss-night)]/40"
-            >
-              Done
-            </button>
-            <button
-              type="button"
-              disabled={!faceUrl}
-              onClick={() => {
-                if (!faceUrl) return
-                onContinue(faceUrl)
-              }}
-              className="min-h-11 rounded-[4px] bg-[color:var(--ss-night)] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              Continue with Maya
-            </button>
-          </div>
+          {/* ONE way forward. "Done" + "Close" + "Continue" was three exits at the app's most
+              fragile moment (she just uploaded her face) - the top Close already covers leaving. */}
+          <button
+            type="button"
+            disabled={!faceUrl}
+            onClick={() => {
+              if (!faceUrl) return
+              onContinue(faceUrl)
+            }}
+            className="min-h-11 rounded-[4px] bg-[color:var(--ss-night)] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            Continue with Maya
+          </button>
         </div>
       </div>
     </div>

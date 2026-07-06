@@ -205,7 +205,9 @@ describe("Maya-first Suite creation UX", () => {
     expect(context).toContain("setIsOpen(false)")
     expect(concierge).toContain("if (!draft) {")
     expect(concierge).toContain("setMessages([])")
-    expect(concierge).toContain("setChatId(newChatId())")
+    // The fresh id also syncs sessionChatIdRef so the save effect can't persist a stale
+    // thread under the new session (start-new resurrection bug, 2026-07-06).
+    expect(concierge).toContain("setChatId(freshChatId)")
     expect(launcher).toContain("Start new")
     expect(launcher).toContain("Continue history")
     expect(launcher).toContain("openFresh()")

@@ -21,6 +21,7 @@ import {
   SSELFIE_ENVIRONMENT_INTEGRATION,
   SSELFIE_INSPIRATION_CLOSE_RECREATE,
   SSELFIE_INSPIRATION_SET_VARIATION,
+  SSELFIE_SELFIE_RESTYLE,
 } from "@/lib/app-v3/maya/visual-rules"
 import { AVOID_LIST } from "@/lib/app-v3/maya/ingredients"
 import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
@@ -174,6 +175,7 @@ function buildShotRenderPrompt(input: {
     roleInstruction,
     shotBriefInstruction,
     SSELFIE_ENVIRONMENT_INTEGRATION,
+    SSELFIE_SELFIE_RESTYLE,
     SSELFIE_CANDID_REALISM,
     "Photorealistic high-end fashion/editorial image. Natural skin texture, realistic hands, realistic proportions, sharp editorial detail, no CGI, no plastic beauty retouching, no random logos.",
     AVOID_LIST,

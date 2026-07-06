@@ -131,7 +131,9 @@ describe("Maya June 11 restoration guardrails", () => {
     expect(route).toContain("SSELFIE_INSPIRATION_CLOSE_RECREATE")
     expect(route).toContain("close-recreation")
     expect(route).toContain("set-variation")
-    expect(route).toContain('isHero ? "close-recreation" : "set-variation"')
+    // Since 2026-07-06 the hero's inspiration mode is session-aware: close-recreation when
+    // the inspiration IS the style, style-accent when a Vault collection leads.
+    expect(route).toContain('isHero ? leadInspirationMode : "set-variation"')
     expect(route).toContain("inspirationReferenceUrl: inspirationReferenceUrl ?? undefined")
     expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).toContain("TASK TYPE: IMAGE RECONSTRUCTION")
     expect(SSELFIE_INSPIRATION_CLOSE_RECREATE).toContain(
