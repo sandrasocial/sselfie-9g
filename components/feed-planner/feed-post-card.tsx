@@ -317,7 +317,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
               src={imageUrl || "/placeholder.svg"}
               alt={`Post ${post.position}`}
               fill
-              className="object-cover"
+              className="object-cover object-top"
               sizes="(max-width: 768px) 100vw, 470px"
             />
           ) : post.generation_status === "generating" && post.prediction_id ? (

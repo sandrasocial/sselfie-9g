@@ -66,7 +66,7 @@ export default function FeedWeekView({ posts, onPostClick }: FeedWeekViewProps) 
         <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[6px] bg-[#EDEEEF]">
           {post.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={post.image_url} alt="" className="h-full w-full object-cover" />
+            <img src={post.image_url} alt="" className="h-full w-full object-cover object-top" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-[9px] uppercase tracking-[0.14em] text-[#A2A3A5]">
               Photo

@@ -152,7 +152,7 @@ export default function FeedPreviewCard({
                 >
                   {post.image_url ? (
                     <>
-                      <Image src={post.image_url} alt={`Post ${post.position}`} fill sizes="(max-width: 640px) 33vw, 200px" className="object-cover" loading="lazy" quality={85} />
+                      <Image src={post.image_url} alt={`Post ${post.position}`} fill sizes="(max-width: 640px) 33vw, 200px" className="object-cover object-top" loading="lazy" quality={85} />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <span className="text-[#f0ede8] text-xs font-medium">View Post</span>
                       </div>

@@ -189,7 +189,9 @@ function renderContent({
         src={displayImageUrl}
         alt={`Post ${post.position}`}
         fill
-        className="object-cover"
+        // Top-biased crop (2026-07-07): generated photos are portrait (2:3) shown in square
+        // tiles - a center crop routinely cut faces off. Faces live in the upper third.
+        className="object-cover object-top"
         sizes="(max-width: 768px) 33vw, 311px"
       />
     )
@@ -223,18 +225,29 @@ function renderContent({
     const isMayaDraft = typeof post?.content_pillar === "string" && post.content_pillar.trim().length > 0
 
     // Feed Planner Phase 2c: Suite members generate photos in Create/Chat and Maya places
-    // them on the calendar herself - an empty day here is just a quiet preview of what's
-    // planned, nothing to tap. (Paid-blueprint-only buyers, with no Chat surface, fall
-    // through to the button treatment below - their only way to generate is still the grid.)
+    // them on the calendar herself - so no Generate button here. But an empty day IS
+    // tappable (2026-07-07, Sandra's report): it opens the image picker so she can upload
+    // a photo or pull one from her gallery onto that day. Creation stays chat-owned;
+    // placing an existing photo is calendar work.
     if (isMembership) {
       return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-[#F8FAFA] p-3 text-center">
+        <button
+          type="button"
+          className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-1.5 bg-[#F8FAFA] p-3 text-center transition-colors hover:bg-[#F1F2F2]"
+          onClick={(event) => {
+            event.stopPropagation()
+            onAddImage?.(post.id)
+          }}
+        >
           {isMayaDraft && (
             <span className="line-clamp-3 px-1 text-[11px] leading-snug text-[#818283]">
               {post.content_pillar}
             </span>
           )}
-        </div>
+          <span className="text-[9px] uppercase tracking-[0.18em] text-[#A2A3A5]">
+            Add photo
+          </span>
+        </button>
       )
     }
 
