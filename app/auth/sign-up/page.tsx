@@ -16,7 +16,7 @@ import {
   getReferralCodeFromBrowser,
   persistReferralCode,
 } from "@/lib/referrals/routing"
-import { sanitizeRedirect } from "@/lib/security/url-validator"
+import { LIVE_MEMBER_APP_PATH, normalizeLegacyStudioRedirect, sanitizeRedirect } from "@/lib/security/url-validator"
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("")
@@ -36,10 +36,12 @@ export default function SignUpPage() {
         ? "/checkout/membership"
         : checkoutParam === "brand_strategy_pack"
           ? "/checkout/masterclass"
-          : "/studio"
-    const returnTo = sanitizeRedirect(
-      urlParams.get("returnTo"),
-      checkoutDefaultReturnTo,
+          : LIVE_MEMBER_APP_PATH
+    const returnTo = normalizeLegacyStudioRedirect(
+      sanitizeRedirect(
+        urlParams.get("returnTo"),
+        checkoutDefaultReturnTo,
+      ),
     )
     const next = urlParams.get("next")
     const referralCode = getReferralCodeFromBrowser(urlParams)
@@ -82,7 +84,7 @@ export default function SignUpPage() {
 
       // Success! Redirect to Studio (Maya by default for first-time flow)
       const { checkoutParam, returnTo, next } = getRoutingContext()
-      let redirectTo = sanitizeRedirect(next, returnTo)
+      let redirectTo = normalizeLegacyStudioRedirect(sanitizeRedirect(next, returnTo))
       if (checkoutParam === "studio_membership") {
         redirectTo = "/checkout/membership"
       } else if (checkoutParam === "brand_strategy_pack") {
@@ -155,7 +157,7 @@ export default function SignUpPage() {
       if (!signInError && signInData.session) {
         // Success! Redirect to Studio (Maya by default for first-time flow)
         const { checkoutParam, returnTo, next, referralCode } = getRoutingContext()
-        let redirectTo = sanitizeRedirect(next, returnTo)
+        let redirectTo = normalizeLegacyStudioRedirect(sanitizeRedirect(next, returnTo))
         if (checkoutParam === "studio_membership") {
           redirectTo = "/checkout/membership"
         } else if (checkoutParam === "brand_strategy_pack") {

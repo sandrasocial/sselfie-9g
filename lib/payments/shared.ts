@@ -20,7 +20,7 @@ export function getSubscriptionPeriod(sub: any): { start: number | null; end: nu
 export async function generatePasswordSetupLinkForPurchase(
   userId: string | null | undefined,
   email: string,
-  nextAfterSetup = "/studio",
+  nextAfterSetup = "/app",
   options: { skipPasswordSetup?: boolean } = {}
 ) {
   if (!userId) {

@@ -29,7 +29,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
   const membershipPrice = membershipProduct
     ? formatPriceFromCents(membershipProduct.priceInCents, { currency: "eur" })
     : "€97"
-  const loginHref = buildReferralLoginHref({ returnTo: "/studio", referralCode })
+  const loginHref = buildReferralLoginHref({ returnTo: "/app", referralCode })
   const selfieGuideHref = appendReferralParam("/selfie-guide", referralCode)
 
   const totalScenes = 8

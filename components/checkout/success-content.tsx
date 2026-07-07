@@ -131,7 +131,7 @@ const SELFIE_TO_BRAND_SHOOT_INCLUDES = [
 function getSuccessActionConfig(productType: string | undefined): SuccessActionConfig {
   if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") {
     return {
-      href: "/studio?tab=maya&welcome=weekly-system",
+      href: "/app",
       label: "Plan your first week",
       helper:
         "Your Studio membership is active. Open Maya and start with your first weekly content plan.",
@@ -285,14 +285,14 @@ function getSuccessActionConfig(productType: string | undefined): SuccessActionC
 
   if (productType === "transform_starter" || productType === "transform_topup") {
     return {
-      href: "/studio",
+      href: "/app",
       label: "Open Studio",
       helper: "Your visual credits are ready. Open Studio and continue from the current AI workspace.",
     }
   }
 
   return {
-    href: "/studio",
+    href: "/app",
     label: "Open Studio",
     helper: "Your purchase is complete. Open Studio and keep going.",
   }
@@ -447,15 +447,15 @@ export function SuccessContent({
       // For credit topup, redirect immediately (no webhook dependency)
       if (user && purchaseType === "credit_topup") {
         setTimeout(() => {
-          router.push("/studio?tab=feed-planner")
+          router.push("/feed-planner")
         }, 2000)
         return
       }
 
-      // LEGACY_ACCESS_ONLY: Transform purchases now land in Studio instead of the retired Transform surface.
+      // LEGACY_ACCESS_ONLY: Transform purchases now land in the live app instead of the retired Transform surface.
       if (user && (purchaseType === "transform_starter" || purchaseType === "transform_topup")) {
         setTimeout(() => {
-          router.push("/studio")
+          router.push("/app")
         }, 2500)
         return
       }
@@ -1596,16 +1596,16 @@ export function SuccessContent({
               ALL SET
             </h1>
             <p className="text-sm sm:text-base text-brand-pearl font-light leading-relaxed max-w-xl mx-auto px-4">
-              Your credits have been added to your account. Redirecting you back to the studio...
+              Your credits have been added to your account. Redirecting you back to Feed Planner...
             </p>
           </div>
 
           <div className="text-center">
             <button
-              onClick={() => router.push("/studio?tab=feed-planner")}
+              onClick={() => router.push("/feed-planner")}
               className="bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-8 sm:px-12 py-3 sm:py-4 rounded-full hover:bg-brand-porcelain transition-colors min-h-[44px]"
             >
-              Back to Studio
+              Open Feed Planner
             </button>
           </div>
         </div>

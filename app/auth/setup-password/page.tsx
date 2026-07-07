@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { getSupabaseEnvVars } from "@/lib/env"
-import { sanitizeRedirect } from "@/lib/security/url-validator"
+import { LIVE_MEMBER_APP_PATH, normalizeLegacyStudioRedirect, sanitizeRedirect } from "@/lib/security/url-validator"
 
 function SetupPasswordContent() {
   const router = useRouter()
@@ -25,7 +25,9 @@ function SetupPasswordContent() {
   const [error, setError] = useState("")
   const [userEmail, setUserEmail] = useState("")
   const [checkingAuth, setCheckingAuth] = useState(true)
-  const nextAfterSetup = sanitizeRedirect(searchParams.get("next"), "/studio")
+  const nextAfterSetup = normalizeLegacyStudioRedirect(
+    sanitizeRedirect(searchParams.get("next"), LIVE_MEMBER_APP_PATH),
+  )
 
   const { url: supabaseUrl, anonKey: supabaseAnonKey } = getSupabaseEnvVars()
   const supabase =
@@ -183,7 +185,7 @@ function SetupPasswordContent() {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Setting Password...
                 </>
-              ) : nextAfterSetup === "/studio" ? (
+              ) : nextAfterSetup === LIVE_MEMBER_APP_PATH ? (
                 "Continue to SSELFIE"
               ) : (
                 "Open Your Library"

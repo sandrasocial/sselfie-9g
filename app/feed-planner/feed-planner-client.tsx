@@ -520,7 +520,7 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
         onDismiss={() => {
           // Don't allow dismissing wizard - user must complete it
           // But we can redirect to home if they really want to leave
-          window.location.href = "/studio"
+          window.location.href = "/feed-planner"
         }}
         userName={displayName}
         userEmail={userInfo?.email || null}

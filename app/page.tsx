@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import LandingPage from "@/components/sselfie/landing-page-education"
 import { normalizeReferralCode } from "@/lib/referrals/routing"
-import { sanitizeRedirect } from "@/lib/security/url-validator"
+import { LIVE_MEMBER_APP_PATH, normalizeLegacyStudioRedirect, sanitizeRedirect } from "@/lib/security/url-validator"
 
 export const dynamic = "force-dynamic"
 
@@ -36,8 +36,10 @@ export default async function Home({
     (typeof params.redirect === "string" && params.redirect) ||
     ""
   const requestedRedirect =
-    redirectParam || (requestedTab ? `/studio?tab=${encodeURIComponent(requestedTab)}` : "")
-  const safeRedirect = sanitizeRedirect(requestedRedirect || null, "/studio")
+    redirectParam || (requestedTab ? `${LIVE_MEMBER_APP_PATH}?view=${encodeURIComponent(requestedTab)}` : "")
+  const safeRedirect = normalizeLegacyStudioRedirect(
+    sanitizeRedirect(requestedRedirect || null, LIVE_MEMBER_APP_PATH),
+  )
   const referralCode = normalizeReferralCode(typeof params.ref === "string" ? params.ref : null)
 
   const supabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -75,8 +77,8 @@ export default async function Home({
 
   if (user) {
     // Deep link support: if the user is already logged in and came in via a redirect param,
-    // honor it (sanitized) instead of forcing /studio.
-    if (requestedRedirect && safeRedirect !== "/studio" && !safeRedirect.startsWith("/studio")) {
+    // honor it (sanitized) instead of forcing the default app.
+    if (requestedRedirect && safeRedirect !== LIVE_MEMBER_APP_PATH) {
       redirect(safeRedirect)
     }
 
@@ -110,10 +112,10 @@ export default async function Home({
 
       // Only redirect if user is properly synced to database
       if (neonUser) {
-        if (requestedRedirect && safeRedirect.startsWith("/studio")) {
+        if (requestedRedirect) {
           redirect(safeRedirect)
         }
-        redirect("/studio")
+        redirect(LIVE_MEMBER_APP_PATH)
       }
     }
   }

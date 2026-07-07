@@ -1,8 +1,12 @@
 import { describe, expect, it, beforeEach } from "vitest"
+import fs from "fs"
+import path from "path"
 import { buildAppV3ReturnTo, resolveAppV3InitialSection } from "@/lib/app-v3/navigation"
 import { generateCreditRenewalEmail } from "@/lib/email/templates/credit-renewal"
 import { generateDormantMemberReengagementEmail } from "@/lib/email/templates/dormant-member-reengagement"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
+
+const ROOT = process.cwd()
 
 describe("APP-CUTOVER-01 readiness", () => {
   beforeEach(() => {
@@ -51,5 +55,14 @@ describe("APP-CUTOVER-01 readiness", () => {
     expect(resolveAppV3InitialSection(undefined)).toBe("create")
     expect(buildAppV3ReturnTo("create")).toBe("/app")
     expect(buildAppV3ReturnTo("account")).toBe("/app?view=account")
+  })
+
+  it("forwards normal legacy /studio visits into app v3 while the cutover flag is enabled", () => {
+    const studioPage = fs.readFileSync(path.join(ROOT, "app/studio/page.tsx"), "utf8")
+
+    expect(studioPage).toContain('params.legacy !== "1"')
+    expect(studioPage).toContain('process.env.APP_V3_MEMBERS_ENABLED === "true"')
+    expect(studioPage).toContain('["member", "trial", "limited", "none"].includes(access.level)')
+    expect(studioPage).toContain('redirect("/app")')
   })
 })

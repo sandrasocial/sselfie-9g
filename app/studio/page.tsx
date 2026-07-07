@@ -108,7 +108,8 @@ export default async function StudioPage({
   // legacy /studio (retired Replicate generation) and can't generate with Maya. Gated by
   // APP_V3_MEMBERS_ENABLED (one-flip rollback), the same ?legacy=1 escape hatch, and the
   // impersonation guard. Uses the same getSuiteAccess check /app uses, so there is no redirect
-  // loop; "limited"/"none" (expired trials, one-time owners) stay on legacy Studio.
+  // loop; App v3 now owns the limited shell for expired trials, one-time owners, and
+  // brand-new accounts too.
   // NOTE: redirect() must run OUTSIDE the try/catch - it throws NEXT_REDIRECT, which a catch
   // would swallow.
   if (!impersonatedUserId && params.legacy !== "1" && process.env.APP_V3_MEMBERS_ENABLED === "true") {
@@ -116,7 +117,7 @@ export default async function StudioPage({
     try {
       const { getSuiteAccess } = await import("@/lib/trial/suite-trial")
       const access = await getSuiteAccess(String(neonUser.id))
-      forwardToApp = access.level === "member" || access.level === "trial"
+      forwardToApp = ["member", "trial", "limited", "none"].includes(access.level)
     } catch (error) {
       console.error("[studio] App v3 member-forward check failed, staying on legacy:", error)
     }

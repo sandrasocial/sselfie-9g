@@ -11,7 +11,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { buildReferralSignUpHref, getReferralCodeFromBrowser, persistReferralCode } from "@/lib/referrals/routing"
-import { sanitizeRedirect } from "@/lib/security/url-validator"
+import { LIVE_MEMBER_APP_PATH, normalizeLegacyStudioRedirect, sanitizeRedirect } from "@/lib/security/url-validator"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -19,7 +19,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const searchParams = useSearchParams()
-  const returnTo = sanitizeRedirect(searchParams.get("returnTo"), "/studio")
+  const returnTo = normalizeLegacyStudioRedirect(
+    sanitizeRedirect(searchParams.get("returnTo"), LIVE_MEMBER_APP_PATH),
+  )
   const referralCode = getReferralCodeFromBrowser(searchParams)
   const signUpHref = buildReferralSignUpHref({ returnTo, referralCode })
 

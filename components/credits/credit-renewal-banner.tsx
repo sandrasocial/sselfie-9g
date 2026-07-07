@@ -59,7 +59,7 @@ export function CreditRenewalBanner() {
   }
 
   const handleStartCreating = () => {
-    router.push("/studio")
+    router.push("/app")
   }
 
   if (isDismissed || !shouldShow || error) {

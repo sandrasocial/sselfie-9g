@@ -15,6 +15,8 @@ describe("post-phase4 ux hardening", () => {
     const signUpPage = readFile("app/auth/sign-up/page.tsx")
 
     expect(loginPage).toContain("buildReferralSignUpHref")
+    expect(loginPage).toContain("LIVE_MEMBER_APP_PATH")
+    expect(loginPage).toContain("normalizeLegacyStudioRedirect")
     expect(signUpPage).toContain("buildReferralLoginHref")
   })
 

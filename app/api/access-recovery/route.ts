@@ -58,7 +58,7 @@ const PRODUCT_ACCESS_URL: Record<string, string> = {
   what_to_say: "/academy/access/what-to-say",
   show_up: "/academy/access/show-up",
   get_paid: "/academy/access/get-paid",
-  sselfie_studio_membership: "/studio",
+  sselfie_studio_membership: "/app",
   paid_blueprint: "/feed-planner",
   prompt_vault: "/academy/access/prompt-vault",
   "prompt-vault-paid": "/academy/access/prompt-vault",
@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
     const productLines = purchases
       .map((p) => {
         const label = PRODUCT_LABEL[p.product_type] || p.product_type
-        let accessUrl = `${productionUrl}${PRODUCT_ACCESS_URL[p.product_type] || "/studio"}`
+        let accessUrl = `${productionUrl}${PRODUCT_ACCESS_URL[p.product_type] || "/app"}`
 
         // For token-based products, build the direct token URL
         if ((p.product_type === "starter_kit" || p.product_type.includes("starter-kit")) && p.access_token) {

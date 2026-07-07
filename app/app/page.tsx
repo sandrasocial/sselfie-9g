@@ -5,7 +5,7 @@
 // - Admin (ssa@ssasocial.com) → full unrestricted access to Studio 3.0
 // - Active members and active trials → full Studio 3.0 access when APP_V3_MEMBERS_ENABLED=true
 // - Expired trials and one-time owners → limited shell; generation stays locked server-side
-// - No Suite access → bounced to legacy /studio
+// - No Suite access → limited Studio 3.0 shell while App v3 is enabled
 
 import { redirect } from "next/navigation"
 import { createServerClient } from "@/lib/supabase/server"
@@ -132,7 +132,8 @@ export default async function StudioV3Page({
         console.error("[/app gate] access check failed, falling back to /studio:", e)
       }
     }
-    if (resolved === "none") redirect("/studio")
+    if (process.env.APP_V3_MEMBERS_ENABLED !== "true") redirect("/studio")
+    if (resolved === "none") resolved = "limited"
     accessLevel = resolved
     analyticsCohort = resolved === "trial" ? "trial" : resolved === "limited" ? "limited" : "member"
   } else {

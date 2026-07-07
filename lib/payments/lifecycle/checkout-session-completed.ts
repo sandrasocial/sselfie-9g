@@ -1076,7 +1076,7 @@ export async function handleCheckoutSessionCompleted(
                                 : productType === "selfie_guide" ||
                                     productType === "selfie_guide_bundle"
                                   ? "/selfie-guide"
-                                  : "/studio"
+                                  : "/app"
             const { data: resetData, error: resetError } =
               await supabaseAdmin.auth.admin.generateLink({
                 type: "recovery",

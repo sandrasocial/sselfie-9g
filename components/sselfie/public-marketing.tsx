@@ -737,7 +737,7 @@ const FAQS = {
 
 export function HomePageContent({ referralCode }: { referralCode?: string | null } = {}) {
   const r     = (href: string) => appendReferralParam(href, referralCode)
-  const login = buildReferralLoginHref({ returnTo: "/studio", referralCode })
+  const login = buildReferralLoginHref({ returnTo: "/app", referralCode })
 
   return (
     <PublicPageShell>

@@ -4,6 +4,8 @@
  */
 
 const ALLOWED_PROTOCOLS = ["http:", "https:"]
+export const LIVE_MEMBER_APP_PATH = "/app"
+
 const ALLOWED_REDIRECT_PATHS = [
   "/app",
   "/studio",
@@ -17,6 +19,15 @@ const ALLOWED_REDIRECT_PATHS = [
   "/brand-strategy",
   "/strategy",
 ]
+
+const LEGACY_STUDIO_TAB_TO_APP_VIEW: Record<string, string> = {
+  maya: "create",
+  studio: "create",
+  gallery: "photos",
+  "feed-planner": "calendar",
+  academy: "library",
+  account: "account",
+}
 
 /**
  * Validates that a redirect path is safe (relative path only)
@@ -72,7 +83,7 @@ export function isValidExternalUrl(url: string): boolean {
 /**
  * Sanitizes a redirect parameter - returns safe path or default
  */
-export function sanitizeRedirect(redirect: string | null, defaultPath = "/studio"): string {
+export function sanitizeRedirect(redirect: string | null, defaultPath = LIVE_MEMBER_APP_PATH): string {
   if (!redirect) {
     return defaultPath
   }
@@ -84,6 +95,33 @@ export function sanitizeRedirect(redirect: string | null, defaultPath = "/studio
   // Invalid redirect - return default
   console.warn("[Security] Blocked invalid redirect attempt:", redirect)
   return defaultPath
+}
+
+/**
+ * Converts ordinary legacy Studio shell redirects to the live member app.
+ * Explicit legacy inspection links keep working through ?legacy=1.
+ */
+export function normalizeLegacyStudioRedirect(redirect: string): string {
+  if (!redirect.startsWith("/studio")) {
+    return redirect
+  }
+
+  try {
+    const url = new URL(redirect, "https://sselfie.ai")
+    if (url.searchParams.get("legacy") === "1") {
+      return redirect
+    }
+
+    const tab = url.searchParams.get("tab")
+    const appView = tab ? LEGACY_STUDIO_TAB_TO_APP_VIEW[tab] : null
+    if (!appView || appView === "create") {
+      return LIVE_MEMBER_APP_PATH
+    }
+
+    return `${LIVE_MEMBER_APP_PATH}?view=${encodeURIComponent(appView)}`
+  } catch {
+    return LIVE_MEMBER_APP_PATH
+  }
 }
 
 /**

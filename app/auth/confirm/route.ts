@@ -2,15 +2,15 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { type NextRequest, NextResponse } from "next/server"
 import type { EmailOtpType } from "@supabase/supabase-js"
-import { sanitizeRedirect } from "@/lib/security/url-validator"
+import { LIVE_MEMBER_APP_PATH, normalizeLegacyStudioRedirect, sanitizeRedirect } from "@/lib/security/url-validator"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const token_hash = searchParams.get("token_hash") ?? searchParams.get("token")
   const type = searchParams.get("type") as EmailOtpType | null
-  const next = searchParams.get("next") ?? searchParams.get("redirect_to") ?? "/studio"
+  const next = searchParams.get("next") ?? searchParams.get("redirect_to") ?? LIVE_MEMBER_APP_PATH
 
-  const safeNext = sanitizeRedirect(next, "/studio")
+  const safeNext = normalizeLegacyStudioRedirect(sanitizeRedirect(next, LIVE_MEMBER_APP_PATH))
 
   console.log("[v0] Auth confirm - Full URL:", request.url)
   console.log("[v0] Auth confirm - token_hash:", token_hash ? "present" : "missing")

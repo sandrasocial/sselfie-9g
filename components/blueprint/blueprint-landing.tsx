@@ -81,7 +81,7 @@ export default function BlueprintLanding() {
         // Keep modal open briefly to show success, then redirect
         setTimeout(() => {
           setShowSignupModal(false)
-          router.push("/studio?tab=feed-planner")
+          router.push("/feed-planner")
         }, 500)
         return
       }

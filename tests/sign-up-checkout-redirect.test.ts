@@ -87,25 +87,36 @@ describe("sign-up checkout redirect", () => {
     })
   })
 
-  it("falls back to safe default when next path is not allowlisted", async () => {
+  it("falls back to app v3 when next path is not allowlisted", async () => {
     setSearch("?next=/some-path")
 
     render(createElement(SignUpPage))
     await submitSignUpForm()
 
     await waitFor(() => {
-      expect(pushMock).toHaveBeenCalledWith("/studio")
+      expect(pushMock).toHaveBeenCalledWith("/app")
     })
   })
 
-  it("keeps default redirect when no params are provided", async () => {
+  it("defaults new accounts to app v3 when no params are provided", async () => {
     setSearch("")
 
     render(createElement(SignUpPage))
     await submitSignUpForm()
 
     await waitFor(() => {
-      expect(pushMock).toHaveBeenCalledWith("/studio")
+      expect(pushMock).toHaveBeenCalledWith("/app")
+    })
+  })
+
+  it("normalizes legacy studio returnTo links into app v3", async () => {
+    setSearch("?returnTo=%2Fstudio%3Ftab%3Dmaya")
+
+    render(createElement(SignUpPage))
+    await submitSignUpForm()
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith("/app")
     })
   })
 

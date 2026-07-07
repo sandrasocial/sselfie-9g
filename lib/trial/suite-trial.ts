@@ -15,7 +15,7 @@ export type SuiteAccessLevel =
   | "member" // active paid membership — full app
   | "trial" // active trial — full app, badge + days left
   | "limited" // expired trial or one-time owner with an account — shell, no generation
-  | "none" // no relationship — bounce to /studio (legacy behavior)
+  | "none" // no relationship — app gate decides limited shell vs rollback behavior
 
 export interface SuiteAccess {
   level: SuiteAccessLevel
@@ -64,7 +64,7 @@ export async function grantSuiteTrial(
 
 /**
  * Resolve what the /app shell and generation APIs should allow for this Neon user.
- * "none" keeps the legacy bounce for users with no SUITE relationship at all.
+ * "none" lets the app gate distinguish new free accounts from one-time owners.
  */
 export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
   const rows = await sql`
