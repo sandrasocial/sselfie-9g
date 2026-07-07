@@ -11,6 +11,7 @@ import {
   funnelBlock,
   noFakeBlock,
   proofBlock,
+  sandraContentIdentityBlock,
   sanitizeGroundedText,
   storyBankBlock,
   voiceBlock,
@@ -307,6 +308,8 @@ export async function generateStorySequence(input: {
 
 ${voiceBlock()}
 
+${sandraContentIdentityBlock()}
+
 ${noFakeBlock()}
 
 ${audienceBlock()}
@@ -326,6 +329,8 @@ NO-FAKE REMINDER:
 Identity content must never imply she becomes someone else. The promise is "Look like yourself, at your best."
 
 Write the story across exactly ${targetSlides} slides. Decide from the story idea above whether this is a CONNECTION sequence (ending in role "close", no product ask) or an ANNOUNCEMENT sequence (ending in role "cta" with a natural bridge to a paid offer) - per the doctrine's rule. Do not default to "cta" just because that used to be required. Line sizes: "lead" = the big serif statement (max 16 words), "support" = smaller context line (max 18 words), "keyword" = only the CTA keyword. 1-3 lines per slide (a "cta" slide has 4; a "close" slide has 1-2).
+
+Before writing, choose the Sandra anchor for this sequence: a named Story Bank theme, one real audience question, one no-fake belief, or one actual buyer fear. The first two slides must make that anchor feel specific. Do not write a generic "behind the scenes" or "visibility" story.
 
 Return ONLY a JSON array of slides, no commentary. Example of a CONNECTION sequence (ends in "close", no keyword):
 [

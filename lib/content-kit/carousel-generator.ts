@@ -22,6 +22,7 @@ import {
   funnelBlock,
   noFakeBlock,
   proofBlock,
+  sandraContentIdentityBlock,
   sanitizeGroundedText,
   voiceBlock,
 } from "@/lib/content/grounding"
@@ -555,6 +556,8 @@ export async function generateCarousels(input: GeneratorInput = {}): Promise<Car
 
 ${voiceBlock()}
 
+${sandraContentIdentityBlock()}
+
 ${noFakeBlock()}
 
 ${audienceBlock()}
@@ -581,6 +584,7 @@ ${sourceShoot.title ? `\nSOURCE PHOTOSHOOT (visual source of truth): "${sourceSh
 Write ${count} complete carousel deck(s). Teach something stealable: her audience saves carousels that give them numbered, concrete steps they can use today (selfie angles, ChatGPT photo prompts, posing, editing prompts like color grading / lens looks / outfit changes).
 
 Every carousel must:
+- Name the Sandra anchor in the caption or first teaching slide when it fits: a Story Bank theme, a real audience question, a buyer fear, or a real SSELFIE belief. If the carousel could be from any personal-brand account, rewrite it.
 - Speak to one of the real pain points in the audience block.
 - Use the reach-vs-desire truth: teach the selfie/AI skill, then connect it to the income, identity, relief, or visibility she wants.
 - Use the proof block's save-bait structure: numbered steps, clear cover text, one keyword/save CTA, no known-flop formats.
@@ -690,6 +694,8 @@ export async function generateTutorialCarousels(input: GeneratorInput): Promise<
 
 ${voiceBlock()}
 
+${sandraContentIdentityBlock()}
+
 ${noFakeBlock()}
 
 ${audienceBlock()}
@@ -716,6 +722,7 @@ ${sourceShoot.title ? `SOURCE PHOTOSHOOT: "${sourceShoot.title}". Use it as the 
 Write ONE premium editorial tutorial carousel. It should feel like a practical saved post, not a loud Canva tutorial.
 
 Rules:
+- The tutorial needs a Sandra anchor: her phone, real face, bathroom-studio practicality, first messy posts, no-fake belief, or the exact audience fear the tutorial solves. Do not write a generic creator tutorial.
 - The tutorial must teach ONE of two things, matched to the requested topic above: (a) a clear visual photo method (settings, light, pose, crop, prompt, edit, phone setup), for teaching selfie/content technique to a cold audience, OR (b) what a specific SSELFIE Suite feature or workflow actually does and looks like in real use (2026-07-05, Sandra's marketing-to-strangers demo carousels) - walk through the real steps a member takes (choose a look, generate, review results) using real app screenshots/reel references as the visual proof for each step, never an invented mockup or generic SaaS-style illustration. Never mix the two: a demo carousel about the app stays about the app, it does not also teach a photo technique.
 - Use Sandra's exact promise: "Look like yourself, at your best."
 - Avoid "elevate", "elevated", "flawless", "perfect skin", "fake photoshoot", "no one will know", and any trickery language.

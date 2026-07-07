@@ -15,6 +15,7 @@ import {
   funnelBlock,
   noFakeBlock,
   proofBlock,
+  sandraContentIdentityBlock,
   sanitizeGroundedText,
   stillYouMethodBlock,
   storyBankBlock,
@@ -137,6 +138,8 @@ export type ContentBriefPiece = {
   funnelStage: "cold" | "warm" | "activation"
   engineeredFor?: "save" | "share" | "comment" | "follow"
   engagementMechanic?: string
+  /** Visible audit trail: the real Sandra story, belief, audience question, buyer fear, or data signal this piece comes from. */
+  sandraStoryAnchor?: string
   title: string
   hook: string
   demandSignal?: string
@@ -392,6 +395,7 @@ function sanitizeContentBriefOutput<T extends Omit<ContentBrief, "periodStart" |
           ? normalizedPiece.engineeredFor
           : undefined,
       engagementMechanic: safeBriefText(normalizedPiece.engagementMechanic, vault),
+      sandraStoryAnchor: safeBriefText(normalizedPiece.sandraStoryAnchor, vault),
       title: safeBriefText(normalizedPiece.title, vault),
       hook: safeBriefText(normalizedPiece.hook, vault),
       demandSignal: safeBriefText(normalizedPiece.demandSignal, vault),
@@ -732,6 +736,7 @@ const BRIEF_PLAN_SCHEMA: Tool.InputSchema = {
           funnelStage: { type: "string", enum: ["cold", "warm", "activation"] },
           engineeredFor: { type: "string", enum: ["save", "share", "comment", "follow"] },
           engagementMechanic: { type: "string" },
+          sandraStoryAnchor: { type: "string" },
           title: { type: "string" },
           hook: { type: "string" },
           demandSignal: { type: "string" },
@@ -764,6 +769,7 @@ const BRIEF_PLAN_SCHEMA: Tool.InputSchema = {
           "funnelStage",
           "engineeredFor",
           "engagementMechanic",
+          "sandraStoryAnchor",
           "title",
           "hook",
           "demandSignal",
@@ -945,6 +951,8 @@ function briefSystemBase(): string {
   return `You are Sandra's content strategist for SSELFIE (@sandra.social). You produce her weekly content brief. Every suggestion must be traceable to the data you're given: her top posts, what her audience copies, what they DM her, and the research memo. Never invent statistics. If a claim comes from research, say so.
 
 ${voiceBlock()}
+
+${sandraContentIdentityBlock()}
 
 ${noFakeBlock()}
 
@@ -1139,6 +1147,8 @@ CONTENT PLAN RULES:
 - Sandra NEVER talks in her content. Every piece is text-on-screen over b-roll. onScreenText is therefore the COMPLETE frame-by-frame overlay script (5 to 8 lines): line 1 is the first-frame hook (max 9 words, from the onScreenHookBank or a named pattern), the middle lines are the beats in order, and the LAST line is always the CTA frame naming the keyword (e.g. "Comment PROMPT and I'll send you the exact prompt I use."). executionNotes describes the b-roll for each beat: what she films, where, what moves.
 - caption is REQUIRED and final-draft quality in Sandra's voice: warm, texting a friend, short sentences, contractions, 40 to 80 words, ending in the keyword CTA. It is still a draft Sandra approves before posting, so write it as if it will be pasted as-is.
 - ctaKeyword is REQUIRED: the single ManyChat keyword this piece asks for (PROMPT, SELFIE, KIT, or WORK), or "none" for a pure connection piece (max 1 "none" per week).
+- sandraStoryAnchor is REQUIRED and visible in the admin UI. It must name the exact grounding source for the idea: a Story Bank theme ("The bathroom studio"), a real audience question/DM theme, a buyer fear ("I don't want to look fake"), a top-post signal, or a SSELFIE belief. Never write a vague anchor like "confidence", "personal brand", "visibility", or "AI photos".
+- Caption voice test: it must sound like Sandra texting one woman. It should include one observation or confession ("I used to think...", "I've noticed...", "The funny thing is..."), one concrete first step, and one clear reason it matters. If it reads like a content strategist wrote it, rewrite it.
 - FORMAT MIX LOCKED BY LIVE DATA (2026-07-03 pull of her last 45 posts): selfie tutorials with a keyword CTA are her reliable engine (median 10.9K reach, 57 saves/1K); generic before/after transformation reels are burned out (median under 5K, 14 saves/1K, newest ones 488 to 973 reach). So: 2 to 3 teaching tutorials per week (each framed as a STILL YOU Method step), at most 1 prompt reel and ONLY as a named specific style tied to a Vault collection (like "the Riviera editorial"), NEVER a generic "one selfie becomes THIS" awe reel. Re-running a proven old tutorial with a fresh treatment is a legitimate weekly move.
 - The strategy layer (performanceRecap, audienceDemand, hookIntelligence, onScreenHookBank, demandMap) was already built in a first pass and is included in the user message. Build the content plan FROM it: every piece must trace back to a hook from hookIntelligence or a signal from the demandMap, and must respect demandMap.contentWarning.
 - Every contentPlan piece must include demandSignal, painfulBefore, desiredAfter, beliefShift, visualProof, offerBridge, and whyThisCreatesDemand.
@@ -1151,6 +1161,7 @@ CONTENT PLAN RULES:
 - Each piece must connect to a real demand signal (a top-copied prompt, a DM theme, or a proven hook from her own winners). Name the signal in whyThisWorks.
 - Tag every contentPlan piece with funnelStage per FUNNEL_SEGMENTATION_CONTEXT above: "cold" (feed reach -> correct first step: KIT for iPhone selfie education, PROMPT for AI photo/prompt content), "warm" (Story/DM/email -> Visibility To Paid Sprint), or "activation" (Vault buyers/trial members -> SUITE). Include at least 1 cold piece and at least 1 warm piece. A warm piece's offerBridge must point at the Visibility To Paid Sprint (apply / reply WORK), never at the Kit or Vault.
 - Anchor at least 2 content pieces to a specific pain point found in the pass-1 dmThemes or demandMap.audienceQuestions, and tag those pieces funnelStage "warm".
+- Warm pieces must be built from one named Story Bank theme or one real audience question. They should feel like Sandra letting people into the real reason she knows this, not teaching a generic lesson. Use specific details when relevant: two-bedroom apartment, sleeping on the couch, bathroom studio, first messy posts, first money from her phone, ADHD simple systems, being judged, or the viral selfie.
 - Her own viral DNA and top posts win over the research memo for TOPIC, PILLAR, HOOK MECHANIC, and CTA. They do NOT win for repeating the exact same visual scene. If a top post worked, keep the demand signal and create a new execution.
 - Do not recommend simply reposting Sandra's existing top visual. Do not keep serving the same mirror selfie, dark cafe arrival, window half-light, or car selfie treatment unless the data includes a new specific reason.
 - Every contentPlan piece must include a fresh creative treatment: vary setting, perspective, object/prop, camera distance, proof format, story structure, and content role. Same pillar is fine; same visual execution is not.
@@ -1166,6 +1177,7 @@ CONTENT PLAN RULES:
 - visualHook: describe what is literally on screen in the first 2 seconds that stops the scroll. Concrete and filmable: camera position, what the viewer sees, what moves or changes. Sandra's real face/body in an everyday place, plus a visible change, reveal, or intriguing object. This is what she SEES, not why it works and not the caption. One or two short sentences. Do not repeat her overused scenes (mirror selfie, dark cafe arrival, window half-light, car selfie) unless the data gives a new reason.
 - onScreenText: 2 to 5 possible on-screen text lines only. These are hooks and beat labels, not a full script. Every line must either come straight from the pass-1 onScreenHookBank or follow one of its named patterns, and the piece must say which (name the bank hook or pattern in executionNotes). The FIRST line is the first-frame overlay: max 9 words, readable on a phone, scroll-stopping on mute. For every reel, the watch-through mechanic must be visible ON SCREEN in these lines (e.g. "5 mistakes" then counts down 5..1, a before/after reveal beat, or a "wait for #3" marker), so the viewer has a reason to watch the entire video.
 - executionNotes: practical filming/build notes. Include what analytics, trend, or audience signal this direction came from.
+- executionNotes must repeat the Sandra anchor in plain words and explain how to keep the piece from sounding generic.
 - whatToAvoid: what would make this feel stale, repetitive, off-brand, or too similar to Sandra's old top post.
 - chatgptContextPrompt: a compact prompt Sandra can paste into ChatGPT. It should summarize the analytics signal, trend/competitor mechanic, visual hook, target emotion, CTA, and what not to repeat. It must ask ChatGPT to help develop the idea, not to generate an AI photoshoot image.
 - audioSuggestion: for reels, suggest the sound direction that fits this specific piece. Name the TYPE and why it fits (trending upbeat for a fast tutorial, original voiceover over soft background for a story/teaching piece, calm acoustic for a slow reveal, satisfying transition sound for a before/after). If the research memo names a specific current trending sound or audio trend that fits, name it and say to verify it is still trending in the Instagram audio panel before posting, since sound names go stale fast. For carousels and feed posts, either suggest a subtle background track if it is a video carousel or say audio is optional. One or two short sentences. No banned words, no m-dashes.

@@ -118,7 +118,7 @@ const FUNNEL_STAGE_META: Record<
 }
 
 function pieceToHandoffTopic(piece: ContentBriefPiece): string {
-  return [piece.hook, piece.shortSuggestion, piece.demandSignal, piece.offerBridge]
+  return [piece.hook, piece.sandraStoryAnchor, piece.shortSuggestion, piece.demandSignal, piece.offerBridge]
     .filter(Boolean)
     .join(" · ")
 }
@@ -480,6 +480,17 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
       )}
 
       <p className="mt-4 font-serif text-lg text-stone-900">{piece.hook}</p>
+
+      {piece.sandraStoryAnchor && (
+        <div className="mt-4 rounded-xl border border-stone-300 bg-white p-4">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+            Sandra anchor
+          </p>
+          <p className="mt-1 text-sm leading-relaxed text-stone-800">
+            {piece.sandraStoryAnchor}
+          </p>
+        </div>
+      )}
 
       {piece.shortSuggestion && (
         <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
