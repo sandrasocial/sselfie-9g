@@ -6,6 +6,10 @@ import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { getRevenueTruthScorecard, type RevenueTruthScorecard } from "@/lib/admin/revenue-truth-scorecard"
 import { getStudioMemberHealthReport, type StudioMemberHealthReport } from "@/lib/admin/studio-member-health"
 import {
+  buildHigherSelfCommandCenter,
+  type HigherSelfCommandCenter,
+} from "@/lib/admin/higher-self-command-center"
+import {
   FOUNDING_ANNUAL_CAP,
   FOUNDING_ANNUAL_CLOSES_AT,
   getFoundingAnnualOfferStatus,
@@ -18,6 +22,7 @@ import {
 
 export type AdminHomeReport = {
   money: {
+    last48h: { payments: number; revenue: number }
     week: { payments: number; revenue: number }
     month: { payments: number; revenue: number }
     byProduct: Array<{ product: string; payments: number; revenue: number }>
@@ -67,6 +72,7 @@ export type AdminHomeReport = {
     nextPostHook: string | null
     topPrompt: { title: string; copies: number } | null
   }
+  commandCenter: HigherSelfCommandCenter
 }
 
 type ProductRow = { product: string | null; payments: number; revenue_cents: string | number }
@@ -103,6 +109,8 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
   ] = await Promise.all([
     sql`
       SELECT
+        COUNT(*) FILTER (WHERE payment_date > NOW() - INTERVAL '48 hours')::int AS last_48h_payments,
+        COALESCE(SUM(amount_cents) FILTER (WHERE payment_date > NOW() - INTERVAL '48 hours'), 0)::bigint AS last_48h_cents,
         COUNT(*) FILTER (WHERE payment_date > NOW() - INTERVAL '7 days')::int AS week_payments,
         COALESCE(SUM(amount_cents) FILTER (WHERE payment_date > NOW() - INTERVAL '7 days'), 0)::bigint AS week_cents,
         COUNT(*) FILTER (WHERE payment_date > NOW() - INTERVAL '30 days')::int AS month_payments,
@@ -171,24 +179,40 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
   const firstPiece = brief?.contentPlan?.[0] || null
   const topPrompt = brief?.audienceDemand?.topPrompts?.[0] || null
   const foundingAnnual = getFoundingAnnualOfferStatus(Number(foundingCount || 0))
+  const moneyReport = {
+    last48h: {
+      payments: Number(money.last_48h_payments || 0),
+      revenue: Number(money.last_48h_cents || 0) / 100,
+    },
+    week: {
+      payments: Number(money.week_payments || 0),
+      revenue: Number(money.week_cents || 0) / 100,
+    },
+    month: {
+      payments: Number(money.month_payments || 0),
+      revenue: Number(money.month_cents || 0) / 100,
+    },
+    byProduct: (productRows || []).map((row) => ({
+      product: labelProduct(row.product),
+      payments: Number(row.payments || 0),
+      revenue: Number(row.revenue_cents || 0) / 100,
+    })),
+    source: "stripe_payments" as const,
+  }
+  const needsMe = {
+    flaggedConversations: Number(needs.flagged_conversations || 0),
+    webhookReviews: Number(needs.webhook_reviews || 0),
+    newSupportThreads: Number(needs.new_support_threads || 0),
+  }
+  const content = {
+    briefGeneratedAt: brief?.periodEnd || null,
+    nextPostTitle: firstPiece?.title || null,
+    nextPostHook: firstPiece?.hook || null,
+    topPrompt: topPrompt ? { title: topPrompt.title, copies: Number(topPrompt.copies || 0) } : null,
+  }
 
   return {
-    money: {
-      week: {
-        payments: Number(money.week_payments || 0),
-        revenue: Number(money.week_cents || 0) / 100,
-      },
-      month: {
-        payments: Number(money.month_payments || 0),
-        revenue: Number(money.month_cents || 0) / 100,
-      },
-      byProduct: (productRows || []).map((row) => ({
-        product: labelProduct(row.product),
-        payments: Number(row.payments || 0),
-        revenue: Number(row.revenue_cents || 0) / 100,
-      })),
-      source: "stripe_payments",
-    },
+    money: moneyReport,
     members: {
       active: memberMetrics?.activeSubscriptions ?? 0,
       mrr: memberMetrics?.mrr ?? 0,
@@ -219,16 +243,13 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
         source: "subscriptions",
       },
     },
-    needsMe: {
-      flaggedConversations: Number(needs.flagged_conversations || 0),
-      webhookReviews: Number(needs.webhook_reviews || 0),
-      newSupportThreads: Number(needs.new_support_threads || 0),
-    },
-    content: {
-      briefGeneratedAt: brief?.periodEnd || null,
-      nextPostTitle: firstPiece?.title || null,
-      nextPostHook: firstPiece?.hook || null,
-      topPrompt: topPrompt ? { title: topPrompt.title, copies: Number(topPrompt.copies || 0) } : null,
-    },
+    needsMe,
+    content,
+    commandCenter: buildHigherSelfCommandCenter({
+      money: moneyReport,
+      needsMe,
+      content,
+      scorecard,
+    }),
   }
 }
