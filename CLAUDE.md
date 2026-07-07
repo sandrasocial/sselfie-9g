@@ -18,6 +18,10 @@ Also read the purpose/category lock:
 
 **`docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`**
 
+For daily CEO focus, money moves, offer-temperature routing, and the admin Command Center, read:
+
+**`docs/business/SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md`**
+
 Its source files live in `docs/brand/source/2026-06-27/`.
 
 The former Voice Bible, former content grounding doc, and old Studio marketing drafts have been removed from active guidance. Do not recreate or reuse them unless Sandra explicitly asks for historical context.
@@ -28,6 +32,7 @@ Core lock:
 - AI is not the hero. The woman is.
 - The selfie is where we start. Visibility is where it leads.
 - Low-ticket offers are bridges. Warm trust gets Visibility To Paid / Work With Me. SUITE is the monthly creation system.
+- Daily operating rule: do the money move before opening a new build thread. One story, one offer bridge, one follow-up loop, one system improvement.
 - Sandra writes like a real woman texting another woman: simple, warm, direct, human.
 - Do not drift into generic AI/photo-tool, corporate personal-brand, or motivational-coach language.
 - Do not use old Studio marketing drafts as current copy.

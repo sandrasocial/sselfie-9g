@@ -42,6 +42,38 @@ function SourceTag({ label }: { label: string }) {
   )
 }
 
+function CommandMoveCard({
+  eyebrow,
+  move,
+}: {
+  eyebrow: string
+  move: {
+    title: string
+    action: string
+    reason: string
+    source: string
+    link: { label: string; href: string }
+  }
+}) {
+  return (
+    <Link
+      href={move.link.href}
+      className="block rounded-2xl border border-stone-200 bg-white p-5 transition hover:border-stone-950"
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-xs uppercase tracking-wide text-stone-500">{eyebrow}</p>
+        <SourceTag label={move.source} />
+      </div>
+      <p className="mt-3 font-serif text-xl leading-tight text-stone-950">{move.title}</p>
+      <p className="mt-2 text-sm leading-6 text-stone-700">{move.action}</p>
+      <p className="mt-3 text-xs leading-5 text-stone-500">{move.reason}</p>
+      <p className="mt-4 text-xs uppercase tracking-wide text-stone-950 underline underline-offset-4">
+        {move.link.label} →
+      </p>
+    </Link>
+  )
+}
+
 export default async function AdminPage({
   searchParams,
 }: {
@@ -143,6 +175,73 @@ export default async function AdminPage({
         <h1 className="font-serif text-3xl font-light tracking-tight text-stone-950">
           Hey Sandra
         </h1>
+
+        <section className="mt-6 rounded-2xl border border-stone-950 bg-stone-950 p-5 text-white sm:p-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-xs uppercase tracking-wide text-stone-300">Higher Self Command Center</h2>
+            <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-stone-300">
+              purpose lock
+            </span>
+            <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-stone-300">
+              stripe_payments
+            </span>
+          </div>
+          <div className="mt-4 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+            <div>
+              <p className="font-serif text-3xl leading-tight sm:text-4xl">
+                {report.commandCenter.headline}
+              </p>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-300">
+                {report.commandCenter.truth}
+              </p>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-200">
+                {report.commandCenter.coreLock}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
+              <p className="text-xs uppercase tracking-wide text-stone-300">CEO rule today</p>
+              <p className="mt-2 text-sm leading-6 text-white">{report.commandCenter.ceoRule}</p>
+              <p className="mt-4 text-xs text-stone-300">
+                Last 48h: {report.money.last48h.payments} payments · {money(report.money.last48h.revenue)}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-3 grid gap-3 lg:grid-cols-3">
+          <CommandMoveCard eyebrow="Money move" move={report.commandCenter.moneyMove} />
+          <CommandMoveCard eyebrow="Offer bridge" move={report.commandCenter.offerBridge} />
+          <CommandMoveCard eyebrow="Follow-up loop" move={report.commandCenter.followUpMove} />
+        </section>
+
+        <section className="mt-3 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-2xl border border-stone-200 bg-white p-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs uppercase tracking-wide text-stone-500">Story to post today</p>
+              <SourceTag label={report.commandCenter.storyMove.source} />
+            </div>
+            <p className="mt-3 font-serif text-2xl leading-tight text-stone-950">
+              {report.commandCenter.storyMove.title}
+            </p>
+            <p className="mt-2 text-sm text-stone-600">
+              Anchor: {report.commandCenter.storyMove.anchor}
+            </p>
+            <p className="mt-4 text-sm leading-6 text-stone-800">
+              {report.commandCenter.storyMove.opener}
+            </p>
+            <ul className="mt-3 space-y-2 text-sm leading-6 text-stone-700">
+              {report.commandCenter.storyMove.frames.map((frame) => (
+                <li key={frame} className="border-l border-stone-200 pl-3">
+                  {frame}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 rounded-xl bg-stone-50 p-3 text-sm leading-6 text-stone-800">
+              {report.commandCenter.storyMove.bridge}
+            </p>
+          </div>
+          <CommandMoveCard eyebrow="One system improvement" move={report.commandCenter.systemMove} />
+        </section>
 
         {/* 1. How much money? */}
         <section className="mt-8">
