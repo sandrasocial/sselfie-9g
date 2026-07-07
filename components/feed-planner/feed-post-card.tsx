@@ -31,6 +31,37 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
   const [editedCaption, setEditedCaption] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [copiedHashtags, setCopiedHashtags] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
+  const [isRemovingImage, setIsRemovingImage] = useState(false)
+
+  async function handleRemoveImage() {
+    if (!confirmRemove) {
+      setConfirmRemove(true)
+      // Confirmation window resets itself so a stray tap doesn't arm the button forever.
+      setTimeout(() => setConfirmRemove(false), 4000)
+      return
+    }
+    setIsRemovingImage(true)
+    try {
+      const res = await fetch(`/api/feed/${feedId}/remove-post-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ postId: post.id }),
+      })
+      if (!res.ok) throw new Error("Failed to remove image")
+      toast({
+        title: "Photo removed",
+        description: "The day is open again. The photo is still in your Gallery.",
+      })
+      onUpdate?.()
+    } catch {
+      toast({ title: "Couldn't remove the photo", description: "Please try again", variant: "destructive" })
+    } finally {
+      setIsRemovingImage(false)
+      setConfirmRemove(false)
+    }
+  }
 
   // Get post type label (portrait, carousel, quote, etc.)
   const postTypeLabel = post.post_type?.toLowerCase() || 'portrait'
@@ -313,6 +344,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
         {(() => {
           const imageUrl = post.image_url || post.preview_image_url
           return imageUrl ? (
+            <>
             <Image
               src={imageUrl || "/placeholder.svg"}
               alt={`Post ${post.position}`}
@@ -320,6 +352,21 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
               className="object-cover object-top"
               sizes="(max-width: 768px) 100vw, 470px"
             />
+            {/* Remove from grid (2026-07-07): clears the slot back to planned - the photo
+                itself stays in her Gallery. Two-tap confirm, no modal. */}
+            <button
+              type="button"
+              onClick={() => void handleRemoveImage()}
+              disabled={isRemovingImage}
+              className={`absolute right-2 top-2 rounded-full px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] backdrop-blur-sm transition-colors ${
+                confirmRemove
+                  ? "bg-[#0D0E10] text-white"
+                  : "bg-white/85 text-[#4F5052] hover:bg-white hover:text-[#0D0E10]"
+              } disabled:opacity-50`}
+            >
+              {isRemovingImage ? "Removing…" : confirmRemove ? "Tap again to remove" : "Remove"}
+            </button>
+            </>
           ) : post.generation_status === "generating" && post.prediction_id ? (
           <div className="flex h-full w-full flex-col items-center justify-center">
             <div className="relative mb-4">
