@@ -980,33 +980,47 @@ export async function POST(req: Request) {
           LIMIT 1
         `
         if (planLayout) {
-          const [nextOpen] = await sql`
+          // GRID DESIGN INTEGRITY (Sandra, 2026-07-07): the curated grid rotates slot roles
+          // (person shots at varied framings, plus face-free flatlay/detail object shots) so
+          // the feed looks PLANNED, not nine identical portraits. Chat photos always carry
+          // her face by design, so Maya grounds in the next open PERSON slot; object slots
+          // are generated face-free straight from the calendar tile.
+          const openSlots = await sql`
             SELECT position, post_type, scheduled_at, content_pillar FROM feed_posts
             WHERE feed_layout_id = ${planLayout.id} AND image_url IS NULL AND scheduled_at >= CURRENT_DATE
             ORDER BY scheduled_at ASC
-            LIMIT 1
+            LIMIT 6
           `
-          const slotLine = nextOpen
-            ? `Her next open calendar day is ${new Date(nextOpen.scheduled_at).toISOString().slice(0, 10)}${nextOpen.content_pillar ? ` with the planned theme "${nextOpen.content_pillar}"` : ""}${nextOpen.post_type ? ` (a ${nextOpen.post_type} shot)` : ""}.`
-            : "Every planned day this month already has a photo."
+          const nextOpen = openSlots[0]
+          const isObjectSlot = (p: any) => p?.post_type === "flatlay" || p?.post_type === "detail"
+          const nextPersonSlot = openSlots.find((p: any) => !isObjectSlot(p)) ?? null
 
-          // The approved scene template for that slot - same source of truth the classic grid
-          // generation uses (positions cycle through the 9-scene set for longer months).
+          let slotLine: string
+          if (!nextOpen) {
+            slotLine = "Every planned day this month already has a photo."
+          } else if (isObjectSlot(nextOpen)) {
+            slotLine = `Her next open calendar day is ${new Date(nextOpen.scheduled_at).toISOString().slice(0, 10)}, planned as a ${nextOpen.post_type} shot (an object scene WITHOUT her in it - by design, so her grid doesn't become nine identical portraits). That one she generates directly on the calendar tile with its Generate image button; if she asks about it, point her there.${nextPersonSlot ? ` Her next PERSON slot is ${new Date(nextPersonSlot.scheduled_at).toISOString().slice(0, 10)}${nextPersonSlot.content_pillar ? ` with the theme "${nextPersonSlot.content_pillar}"` : ""} - aim your photo concepts at that one.` : ""}`
+          } else {
+            slotLine = `Her next open calendar day is ${new Date(nextOpen.scheduled_at).toISOString().slice(0, 10)}${nextOpen.content_pillar ? ` with the planned theme "${nextOpen.content_pillar}"` : ""}.`
+          }
+
+          // The approved scene template for the next PERSON slot - same source of truth the
+          // classic grid generation uses (positions cycle through the 9-scene set).
           let templateBlock = ""
-          if (nextOpen && planLayout.feed_style) {
+          if (nextPersonSlot && planLayout.feed_style) {
             try {
               const { getFeedStyleV2ByName } = await import("@/lib/feed-planner/feed-style-prompt-loader")
               const { selectPromptForPosition } = await import("@/lib/feed-planner/feed-style-generation")
               const style = await getFeedStyleV2ByName(planLayout.feed_style)
               if (style?.enabled) {
-                const templatePosition = ((Number(nextOpen.position) - 1) % 9) + 1
+                const templatePosition = ((Number(nextPersonSlot.position) - 1) % 9) + 1
                 const scene = await selectPromptForPosition(
                   style.id,
                   templatePosition,
                   planLayout.feed_style_variation_id ?? null,
                 )
                 if (scene?.prompt_text) {
-                  templateBlock = `\n\nPROVEN SCENE TEMPLATE for that slot (hand-approved, the quality bar for her grid):\n"""\n${scene.prompt_text}\n"""\nWhen she creates a photo for her feed: copy this template text EXACTLY into each concept's brief.sceneTemplate field (character for character - never paraphrase, shorten, or rewrite it; it goes straight to the image model). Then use the OTHER brief fields (outfit, setting, mood, pose) for your member-specific adjustments: her wardrobe, her brand colors, her story. The template is the craft foundation; your brief fields are the personal layer on top.`
+                  templateBlock = `\n\nPROVEN SCENE TEMPLATE for that slot (hand-approved, the quality bar for her grid):\n"""\n${scene.prompt_text}\n"""\nWhen she creates a photo for her feed: copy this template text EXACTLY into each concept's brief.sceneTemplate field (character for character - never paraphrase, shorten, or rewrite it; it goes straight to the image model). Then use the OTHER brief fields (outfit, setting, mood, pose) for your member-specific adjustments: her wardrobe, her brand colors, her story. The template is the craft foundation; your brief fields are the personal layer on top.\nGRID DESIGN RULES:\n- KEEP the template's framing and shot type (full body, half body, close-up, seated, walking) - never flatten every shot into the same eye-level portrait.\n- Rotate the scene's vibe across her days WITHIN her feed style world (different rooms, streets, moments, props, energy) so consecutive photos never feel like duplicates - and never default to a generic business portrait.`
                 }
               }
             } catch (templateError) {

@@ -8,7 +8,7 @@ import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
-import { currentPeriodMonth, postTypeForPosition } from "@/lib/feed-planner/write-auto-draft"
+import { currentPeriodMonth } from "@/lib/feed-planner/write-auto-draft"
 import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { resolveFeedStyleForUser } from "@/lib/feed-planner/resolve-feed-style"
@@ -89,10 +89,15 @@ export async function POST(req: Request) {
     const feedLayoutId = Number(feedLayout.id)
 
     // Only today or future days count as open - never quietly fill a day that already passed.
+    // GRID DESIGN INTEGRITY (2026-07-07): chat photos carry her face, so they land on PERSON
+    // slots only - flatlay/detail slots are face-free object scenes by the curated grid's
+    // design (generated on the calendar tile) and a portrait dropped there would collapse
+    // the planned look into wall-to-wall faces.
     const [openSlot] = await sql`
       SELECT id, position, scheduled_at, content_pillar, caption
       FROM feed_posts
       WHERE feed_layout_id = ${feedLayoutId} AND image_url IS NULL AND scheduled_at >= CURRENT_DATE
+        AND COALESCE(post_type, 'selfie') NOT IN ('flatlay', 'detail')
       ORDER BY scheduled_at ASC, position ASC
       LIMIT 1
     `
@@ -125,13 +130,12 @@ export async function POST(req: Request) {
       contentPillar = typeof conceptTitle === "string" && conceptTitle.trim() ? conceptTitle.trim() : "From your chat"
       caption = null
 
-      const feedStyle = (feedLayout.feed_style as CuratedFeedStyleName) || "Dark & Moody"
-      const grid = CURATED_FEED_STYLE_MAP[feedStyle]?.grid || CURATED_FEED_STYLE_MAP["Dark & Moody"].grid
-      const postType = postTypeForPosition(grid, nextPosition)
-
+      // The photo being placed comes from chat, so it IS a person shot - the new day is
+      // 'selfie' regardless of what the grid pattern would put at this position (the pattern
+      // governs pre-planned slots, not an extension day created for an existing photo).
       const [inserted] = await sql`
         INSERT INTO feed_posts (feed_layout_id, user_id, position, post_type, content_pillar, scheduled_at, generation_status)
-        VALUES (${feedLayoutId}, ${neonUser.id}, ${nextPosition}, ${postType}, ${contentPillar}, ${scheduledAt}, 'pending')
+        VALUES (${feedLayoutId}, ${neonUser.id}, ${nextPosition}, ${'selfie'}, ${contentPillar}, ${scheduledAt}, 'pending')
         RETURNING id
       `
       targetPostId = Number(inserted.id)
