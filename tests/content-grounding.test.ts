@@ -8,6 +8,7 @@ import {
   findGroundingViolations,
   groundingSystemPrompt,
   hasGroundingViolations,
+  sandraContentIdentityBlock,
   sanitizeGroundedText,
 } from "@/lib/content/grounding"
 
@@ -18,6 +19,16 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     expect(BANNED_WORDS).toContain("elevate")
     expect(BANNED_WORDS).toContain("elevated")
     expect(groundingSystemPrompt()).toContain("Look like yourself, at your best.")
+  })
+
+  it("locks Sandra's story and selling anchors for content generation", () => {
+    const block = sandraContentIdentityBlock()
+
+    expect(block).toContain("generic content strategist")
+    expect(block).toContain("two-bedroom apartment")
+    expect(block).toContain("bathroom studio")
+    expect(block).toContain("The photo gets attention")
+    expect(block).toContain("Sandra anchor")
   })
 
   it("flags banned wording and m-dashes through one shared guard", () => {
@@ -51,13 +62,22 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     const carousel = read("lib/content-kit/carousel-generator.ts")
     const story = read("lib/content-kit/story-generator.ts")
     const shoot = read("lib/content-kit/shoot-generator.ts")
+    const brief = read("lib/content-engine/brief-generator.ts")
+    const dailyIntelligence = read("lib/admin/daily-briefing-intelligence.ts")
+    const briefClient = read("components/admin/content-brief-client.tsx")
 
     expect(carousel).toContain("audienceBlock()")
     expect(carousel).toContain("proofBlock()")
+    expect(carousel).toContain("sandraContentIdentityBlock()")
     expect(carousel).toContain("getCarouselDesignGuide()")
     expect(story).toContain("NO-FAKE REMINDER")
     expect(story).toContain("proofBlock()")
+    expect(story).toContain("sandraContentIdentityBlock()")
     expect(shoot).toContain("AUDIENCE CONTEXT FOR whenToUse ONLY")
     expect(shoot).toContain("PROOF CONTEXT FOR SHOT UTILITY ONLY")
+    expect(brief).toContain("sandraContentIdentityBlock()")
+    expect(brief).toContain("sandraStoryAnchor")
+    expect(dailyIntelligence).toContain("sandraContentIdentityBlock()")
+    expect(briefClient).toContain("Sandra anchor")
   })
 })

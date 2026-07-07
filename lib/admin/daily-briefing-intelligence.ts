@@ -13,7 +13,7 @@
 
 import Anthropic from "@anthropic-ai/sdk"
 import type { ContentBlock, Tool, ToolUseBlock } from "@anthropic-ai/sdk/resources/messages"
-import { sanitizeGroundedText } from "@/lib/content/grounding"
+import { sandraContentIdentityBlock, sanitizeGroundedText } from "@/lib/content/grounding"
 import type { DailySandraBriefing } from "@/lib/admin/daily-sandra-briefing"
 import type { ContentBrief, ContentBriefPiece, DailyStory } from "@/lib/content-engine/brief-generator"
 
@@ -235,12 +235,16 @@ const INTELLIGENCE_SCHEMA: Tool.InputSchema = {
 
 const INTELLIGENCE_SYSTEM = `You write the three advice sections of Sandra's daily SSELFIE briefing. Sandra runs SSELFIE (sselfie.ai): AI-assisted brand photos from one selfie, for women building a personal brand. The numbers sections of her email are built elsewhere from Stripe truth; your job is only the thinking on top.
 
+${sandraContentIdentityBlock()}
+
 Ground rules, non-negotiable:
 - Use ONLY numbers that appear in the input JSON. Never invent, estimate, or round a number that is not there. If a number is missing, do not mention it.
 - No m-dashes anywhere. Use a period or a colon instead.
 - Never use these words: leverage, synergy, transform, game-changer, skyrocket, unlock, elevate, elevated, empower, utilize.
 - Write in Sandra's voice: warm, direct, like texting a friend who runs the business with you. Short sentences. Contractions.
 - Each section is 3 sentences maximum. No filler, no pep talk, no restating what the numbers sections already show.
+- If you mention today's content, use todaysContentPost.feedPost.sandraStoryAnchor when present. If it is missing, say the brief needs a stronger Sandra anchor instead of inventing one.
+- Do not write generic advice like "stay consistent", "show up with confidence", "build your brand", or "share your story" unless it is tied to a concrete stored content piece, a real audience question, or a real Sandra story detail in the input.
 
 todaysMove: ONE short line (max 2 sentences) introducing today's content post below - name the title and the one engagement action it is engineered for. The full ready-to-post script and story sequence are rendered separately from real stored data, not from you: do not restate the hook, caption, or on-screen text yourself, and never invent content. If todaysContentPost.feedPost in the input is null, say plainly that today has no matching piece in this week's brief and she should regenerate it from the admin content brief page.
 
