@@ -11,8 +11,6 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 const HERO_IMAGE = path.join(process.cwd(), "public", "images", "ai-prompts", "ai-prompts-hero.jpg")
 const DEMO_VAULT_CHECKOUT_HREF =
   "/checkout/prompt-vault?source=ai_prompts_demo&utm_source=ai_prompts&utm_medium=preview&utm_campaign=ai_prompts_to_prompt_vault&utm_content=bottom_bridge&checkout_source=free_prompts_demo_bridge&buyer_stage=lead&cta_keyword=full_shoot_after_free_prompt"
-const DEMO_KIT_CHECKOUT_HREF =
-  "/checkout/selfie-to-ai-photos-kit?source=ai_prompts_demo&utm_source=ai_prompts&utm_medium=preview&utm_campaign=ai_prompts_to_selfie_ai_photos_kit&utm_content=after_copy_demo&checkout_source=after_copy_prompt_kit_cta&buyer_stage=lead&cta_keyword=first_ai_photos_after_free_prompt"
 
 // ---------------------------------------------------------------------------
 // Prompt data
@@ -177,20 +175,20 @@ function PromptCardEl({ card, isWorkflow }: { card: PromptCard; isWorkflow?: boo
         <div className="pc-copy-row">
           <CopyButton
             text={card.prompt}
-            afterCopyHref={DEMO_KIT_CHECKOUT_HREF}
-            afterCopyLabel="Get the AI Photos Kit · $37"
-            afterCopyTitle="Want the step-by-step version?"
-            afterCopyNote="The free prompt lets you test one look. The Kit shows you how to choose the right selfie, create your first three AI photos, and fix the result if it starts looking fake."
-            afterCopyFootnote="Start with one clear selfie. Keep it still you."
-            afterCopyViewEvent="ai_prompts_after_copy_kit_cta_view"
-            afterCopyTrackEvent="ai_prompts_selfie_ai_photos_kit_click"
+            afterCopyHref={DEMO_VAULT_CHECKOUT_HREF}
+            afterCopyLabel="Get the full Vault · $37"
+            afterCopyTitle="Want the rest of this shoot?"
+            afterCopyNote="The free prompt lets you test one look. The Vault gives you the full shoot sequence, more visual worlds, and future SSELFIE drops in one private archive."
+            afterCopyFootnote="One selfie. One visual direction. No random prompt guessing."
+            afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
+            afterCopyTrackEvent="ai_prompts_prompt_vault_click"
             afterCopyTrackProperties={{
               prompt_id: card.id,
               prompt_title: card.title,
               source: "ai_prompts_demo_after_copy",
-              destination: "checkout-selfie-ai-photos-kit",
-              utm_campaign: "ai_prompts_to_selfie_ai_photos_kit",
-              checkout_source: "after_copy_prompt_kit_cta",
+              destination: "checkout-prompt-vault",
+              utm_campaign: "ai_prompts_to_prompt_vault",
+              checkout_source: "after_copy_prompt_vault_cta",
             }}
           />
         </div>
@@ -282,20 +280,20 @@ export default function AiPromptsDemoPage() {
             <div className="pc-copy-row">
               <CopyButton
                 text={REUSABLE_STARTER}
-                afterCopyHref={DEMO_KIT_CHECKOUT_HREF}
-                afterCopyLabel="Get the AI Photos Kit · $37"
-                afterCopyTitle="Want the step-by-step version?"
-                afterCopyNote="The free prompt helps you test the transformation. The Kit shows you the full path: choose the selfie, create the first three images, and keep the result believable."
-                afterCopyFootnote="One clear selfie. Three usable AI photos."
-                afterCopyViewEvent="ai_prompts_after_copy_kit_cta_view"
-                afterCopyTrackEvent="ai_prompts_selfie_ai_photos_kit_click"
+                afterCopyHref={DEMO_VAULT_CHECKOUT_HREF}
+                afterCopyLabel="Get the full Vault · $37"
+                afterCopyTitle="Want the rest of this shoot?"
+                afterCopyNote="The free prompt helps you test the transformation. The Vault gives you complete shoot worlds, matching shot directions, and examples so your AI photos belong together."
+                afterCopyFootnote="Start with one clear selfie. Keep it still you."
+                afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
+                afterCopyTrackEvent="ai_prompts_prompt_vault_click"
                 afterCopyTrackProperties={{
                   prompt_id: "reusable-starter-line",
                   prompt_title: "Reusable Starter Line",
                   source: "ai_prompts_demo_after_copy",
-                  destination: "checkout-selfie-ai-photos-kit",
-                  utm_campaign: "ai_prompts_to_selfie_ai_photos_kit",
-                  checkout_source: "after_copy_prompt_kit_cta",
+                  destination: "checkout-prompt-vault",
+                  utm_campaign: "ai_prompts_to_prompt_vault",
+                  checkout_source: "after_copy_prompt_vault_cta",
                 }}
               />
             </div>

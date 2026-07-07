@@ -168,4 +168,14 @@ describe("AI prompts free page locked Vault previews", () => {
     expect(vaultAccessContents).toContain("Start with one full shoot")
     expect(vaultAccessContents).not.toContain("See the System · $170")
   })
+
+  it("keeps the after-copy CTA pointed at the Prompt Vault", () => {
+    const freePageContents = read("app/ai-prompts/access/[token]/page.tsx")
+
+    expect(freePageContents).toContain("afterCopyViewEvent=\"ai_prompts_after_copy_vault_cta_view\"")
+    expect(freePageContents).toContain("afterCopyTrackEvent=\"ai_prompts_prompt_vault_click\"")
+    expect(freePageContents).toContain("checkout_source: \"after_copy_prompt_vault_cta\"")
+    expect(freePageContents).not.toContain("checkout_source: \"after_copy_prompt_kit_cta\"")
+    expect(freePageContents).not.toContain("afterCopyViewEvent=\"ai_prompts_after_copy_kit_cta_view\"")
+  })
 })
