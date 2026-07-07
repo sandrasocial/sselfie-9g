@@ -103,6 +103,10 @@
     {
       "path": "/api/cron/feed-plan-monthly-draft",
       "schedule": "0 6 1 * *"
+    },
+    {
+      "path": "/api/cron/weekly-content-trends",
+      "schedule": "0 5 * * 1"
     }
   ]
 }

@@ -266,7 +266,7 @@ function ShellInner({
             </div>
           </div>
         ) : (
-          <FeedPlannerView />
+          <FeedPlannerView onCreateIdea={createIdea} />
         ))}
       {section === "library" && <LibraryView />}
       {section === "account" && (

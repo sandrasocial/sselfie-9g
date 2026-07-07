@@ -16,6 +16,8 @@
 import { useEffect, useMemo, useState } from "react"
 import FeedPlannerClient from "@/app/feed-planner/feed-planner-client"
 import { FeedNavContext } from "@/components/feed-planner/feed-nav-context"
+import { ThisWeekStrip } from "./this-week-strip"
+import type { OutputFormat } from "./types"
 
 const ONBOARDING_KEY = "calendar:onboarding:v1"
 
@@ -62,7 +64,12 @@ function CalendarExplainer({ onDismiss }: { onDismiss: () => void }) {
   )
 }
 
-export function FeedPlannerView() {
+export function FeedPlannerView({
+  onCreateIdea,
+}: {
+  /** Starts Maya seeded with a THIS WEEK idea (the shell's creationIdea channel). */
+  onCreateIdea?: (format: OutputFormat, title: string) => void
+} = {}) {
   const [selectedFeedId, setSelectedFeedId] = useState<number | null>(null)
   const [showExplainer, setShowExplainer] = useState(false)
 
@@ -92,6 +99,7 @@ export function FeedPlannerView() {
     <FeedNavContext.Provider value={nav}>
       <div className="min-h-[calc(100dvh-3.5rem)] bg-[#F8FAFA] pb-24">
         {showExplainer && <CalendarExplainer onDismiss={dismissExplainer} />}
+        {onCreateIdea && <ThisWeekStrip onCreateIdea={onCreateIdea} />}
         <FeedPlannerClient userId="" />
       </div>
     </FeedNavContext.Provider>
