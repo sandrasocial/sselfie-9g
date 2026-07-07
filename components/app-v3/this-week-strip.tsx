@@ -29,6 +29,11 @@ function fmtWeek(weekStart: string): string {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" })
 }
 
+// Closing the strip hides it for THIS week only - a new week brings new ideas, so it
+// reappears on Monday. Stored per week, not forever: dismissing July 6 must not silence
+// July 13.
+const DISMISS_KEY = "this-week:dismissed"
+
 export function ThisWeekStrip({
   onCreateIdea,
 }: {
@@ -37,6 +42,7 @@ export function ThisWeekStrip({
   const [weekStart, setWeekStart] = useState<string | null>(null)
   const [ideas, setIdeas] = useState<WeeklyIdea[] | null>(null)
   const [failed, setFailed] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -45,8 +51,14 @@ export function ThisWeekStrip({
       .then((data) => {
         if (cancelled) return
         if (Array.isArray(data?.ideas) && data.ideas.length > 0) {
+          const week = typeof data.weekStart === "string" ? data.weekStart : null
           setIdeas(data.ideas)
-          setWeekStart(typeof data.weekStart === "string" ? data.weekStart : null)
+          setWeekStart(week)
+          try {
+            if (week && window.localStorage.getItem(DISMISS_KEY) === week) setDismissed(true)
+          } catch {
+            // storage unavailable - just show the strip
+          }
         } else {
           setFailed(true)
         }
@@ -59,21 +71,42 @@ export function ThisWeekStrip({
     }
   }, [])
 
-  // Never block the calendar: nothing to show -> render nothing.
-  if (failed) return null
+  const dismiss = () => {
+    setDismissed(true)
+    try {
+      if (weekStart) window.localStorage.setItem(DISMISS_KEY, weekStart)
+    } catch {
+      // best effort
+    }
+  }
+
+  // Never block the calendar: nothing to show (or closed for this week) -> render nothing.
+  if (failed || dismissed) return null
 
   return (
     <div className="mx-auto mb-4 max-w-3xl px-3 pt-4">
       <div className="rounded-[14px] border border-[#C5C6C8]/50 bg-white p-4 shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)] sm:p-5">
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">
             This week on Instagram
           </p>
-          {weekStart && (
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[#A2A3A5]">
-              Week of {fmtWeek(weekStart)}
-            </p>
-          )}
+          <div className="flex items-center gap-3">
+            {weekStart && (
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[#A2A3A5]">
+                Week of {fmtWeek(weekStart)}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={dismiss}
+              aria-label="Close for this week"
+              className="-m-1.5 rounded-full p-1.5 text-[#A2A3A5] transition-colors hover:text-[#0D0E10]"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {!ideas ? (
