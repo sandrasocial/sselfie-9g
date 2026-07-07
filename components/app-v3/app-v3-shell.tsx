@@ -44,12 +44,16 @@ export interface AppV3ShellProps {
   videoEnabled?: boolean
 }
 
+// Nav rename (Sandra, 2026-07-07): Photos -> Gallery, Library -> Learn, and the Content tab
+// is removed from the nav - it duplicated Maya's chat (her recommendations + the format
+// chips both live there). Internal section ids are unchanged; the "content" section renderer
+// stays so any stale saved state degrades gracefully. The freed slot is reserved for a
+// member-facing weekly content-trends surface (direction pending Sandra's pick).
 const NAV: { id: AppV3Section; label: string }[] = [
   { id: "create", label: "Create" },
-  { id: "photos", label: "Photos" },
-  { id: "content", label: "Content" },
+  { id: "photos", label: "Gallery" },
   { id: "calendar", label: "Calendar" },
-  { id: "library", label: "Library" },
+  { id: "library", label: "Learn" },
   { id: "account", label: "Account" },
 ]
 

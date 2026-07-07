@@ -217,16 +217,16 @@ export function AccountView({
           </div>
         </div>
 
-        {/* Your SSELFIE - pointer into the Library tab (BRIDGE-01 Phase C) */}
+        {/* Your SSELFIE - pointer into the Learn tab (BRIDGE-01 Phase C, renamed 2026-07-07) */}
         {onOpenLibrary && (
           <div className={card}>
             <p className={cardTitle}>Your SSELFIE</p>
           <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
-              Every product you own, your courses, and your weekly drops live in your Library.
+              Every product you own, your courses, and your weekly drops live in Learn.
             </p>
             <div className="mt-4">
               <button type="button" onClick={onOpenLibrary} className={primaryBtn}>
-                Open Library
+                Open Learn
               </button>
             </div>
           </div>
