@@ -4,6 +4,7 @@
 // the repo only for the legacy Classic (trained-model) opt-in and emergency rollback.
 
 import OpenAI, { toFile } from "openai"
+import sharp from "sharp"
 
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 
@@ -13,11 +14,20 @@ function getClient(): OpenAI {
   return new OpenAI({ apiKey })
 }
 
+// Same normalization as the app-v3 chat route: members' avatar uploads can be HEIC-derived,
+// EXIF-rotated, alpha, or oversized - OpenAI's edit endpoint 400s on those ("Invalid image
+// file or mode"). Proven live 2026-07-07: Sandra's own reference set had one such file.
 async function fetchAsFile(url: string, name: string) {
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Failed to fetch reference image (${res.status})`)
-  const buffer = Buffer.from(await res.arrayBuffer())
-  return toFile(buffer, name, { type: "image/png" })
+  const raw = Buffer.from(await res.arrayBuffer())
+  const normalized = await sharp(raw, { animated: false })
+    .rotate()
+    .resize({ width: 1536, height: 1536, fit: "inside", withoutEnlargement: true })
+    .flatten({ background: "#ffffff" })
+    .png()
+    .toBuffer()
+  return toFile(normalized, name, { type: "image/png" })
 }
 
 function isTransientError(error: unknown): boolean {
@@ -44,9 +54,16 @@ export async function generateFeedImageWithOpenAI(req: FeedImageRequest): Promis
 
   const run = async (): Promise<Buffer> => {
     if (req.referenceUrls.length > 0) {
-      const files = await Promise.all(
+      // One unreadable reference must not kill the shot - generate with the ones that load.
+      const settled = await Promise.allSettled(
         req.referenceUrls.slice(0, 5).map((url, i) => fetchAsFile(url, `identity-${i + 1}.png`)),
       )
+      const files = settled
+        .filter((s): s is PromiseFulfilledResult<Awaited<ReturnType<typeof fetchAsFile>>> => s.status === "fulfilled")
+        .map((s) => s.value)
+      const failed = settled.length - files.length
+      if (failed > 0) console.warn(`[feed openai] ${failed} reference image(s) skipped (unreadable)`)
+      if (files.length === 0) throw new Error("No readable identity reference images")
       const input: Record<string, unknown> = {
         model: OPENAI_IMAGE_MODEL,
         image: files.length === 1 ? files[0] : files,
