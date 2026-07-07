@@ -1,5 +1,5 @@
 # AGENTS Instructions — Codex (Code Implementation Agent)
-*Last updated: 2026-04-09*
+*Last updated: 2026-07-07*
 
 ## ⚠️ Repo identity — read this before touching any code
 
@@ -60,6 +60,7 @@ When you get a task:
 5. **Live users exist** — minimize blast radius; never `git reset --hard` or revert without explicit approval
 6. **Vercel-only hosting** — all deploys go through `main` branch auto-deploy
 7. **Budget-aware** — avoid expensive broad rebuilds; localized targeted changes only
+8. **Branch hygiene** — after a `codex/` branch is merged and pushed to `main`, delete that task branch locally and remotely. Periodically prune only branches Git reports as already merged into `main` / `origin/main`. Never force-delete unmerged branches or branches checked out by another worktree without explicit approval.
 
 ---
 

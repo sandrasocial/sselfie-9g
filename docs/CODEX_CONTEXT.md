@@ -125,7 +125,8 @@ Next steps: Codex implements tasks in order: A-01 → A-02 → B-01 → E-01/02/
    Next steps: [What will happen next]
    ```
    Mention this template in new threads and keep it synchronized with `docs/CODEX_CONTEXT.md`.
-5. **Worktrees & automations hygiene** – keep worktrees topic-specific (`worktree-{topic}`), avoid creating multiples unless needed, and archive/close automations only when fully resolved. Automation files (`$CODEX_HOME/automations`) are operational config and should only be edited on explicit automation requests.
+5. **Branch hygiene** – after a `codex/` branch is merged and pushed to `main`, delete that task branch locally and remotely. Periodically prune only branches Git reports as already merged into `main` / `origin/main`; do not force-delete unmerged branches or branches checked out by another worktree without explicit approval.
+6. **Worktrees & automations hygiene** – keep worktrees topic-specific (`worktree-{topic}`), avoid creating multiples unless needed, and archive/close automations only when fully resolved. Automation files (`$CODEX_HOME/automations`) are operational config and should only be edited on explicit automation requests.
 
 ## Automation/Lock hygiene reminders
 
