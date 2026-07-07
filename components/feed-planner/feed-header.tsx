@@ -660,6 +660,12 @@ export default function FeedHeader({
             </div>
 
             <div className="flex gap-1.5 flex-wrap">
+              {/* Preview feed = the FREE funnel's taste of the product (one moodboard image in
+                  a chosen style). Members/paid pick styles in the style modal (which already
+                  shows real preview imagery) and restyle via Maya - for them this button only
+                  minted junk feed rows (data check 2026-07-07: 1,198 preview feeds ever, 93%
+                  abandoned without generating, 0 created in the last 30 days). Free-only now. */}
+              {access?.isFree && (
               <button
                 onClick={handleCreatePreviewFeed}
                 disabled={isCreatingPreviewFeed}
@@ -675,6 +681,7 @@ export default function FeedHeader({
                   </>
                 )}
               </button>
+              )}
               {!access?.isFree && (access?.isPaidBlueprint || access?.isMembership) && (
                 <button
                   onClick={handleCreateNewFeedClick}

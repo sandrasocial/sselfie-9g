@@ -794,13 +794,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           const names = ["January","February","March","April","May","June","July","August","September","October","November","December"]
           return names[(m || 1) - 1] && y ? `${names[(m || 1) - 1]} ${y}` : null
         })()
-        const galleryTitle = [
-          "Calendar",
-          monthLabel,
-          post.content_pillar || (isObjectScene ? post.post_type : null),
-        ]
-          .filter(Boolean)
-          .join(" · ")
+        const galleryTitle = isPreviewFeed
+          ? ["Style preview", feedLayout?.feed_style].filter(Boolean).join(" · ")
+          : [
+              "Calendar",
+              monthLabel,
+              post.content_pillar || (isObjectScene ? post.post_type : null),
+            ]
+              .filter(Boolean)
+              .join(" · ")
         await sql`
           INSERT INTO ai_images (
             user_id, image_url, title, prompt, generated_prompt, prediction_id,
