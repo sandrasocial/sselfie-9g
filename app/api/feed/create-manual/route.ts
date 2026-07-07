@@ -284,7 +284,16 @@ async function handleCreateManualFeed({
       console.error(`[v0] ⚠️ Variation ID mismatch! Stored: ${storedVariationId}, Requested: ${feedStyleVariationIdToStore}`)
     }
 
-    // Create 9 empty posts (position 1-9) for 3x3 grid
+    // Create 9 empty posts (position 1-9) for 3x3 grid.
+    // GRID DESIGN (Sandra, 2026-07-07): post_type follows the style's curated rotation
+    // (selfie / flatlay / detail) instead of the old flat 'user' - the rotation is what makes
+    // a grid look PLANNED (varied framings + face-free object scenes) instead of nine
+    // identical portraits, and the generator keys identity-reference attachment off it.
+    const { CURATED_FEED_STYLE_MAP } = await import("@/lib/style-presets")
+    const { postTypeForPosition } = await import("@/lib/feed-planner/write-auto-draft")
+    const gridPattern =
+      CURATED_FEED_STYLE_MAP[feedStyle as keyof typeof CURATED_FEED_STYLE_MAP]?.grid ??
+      CURATED_FEED_STYLE_MAP["Dark & Moody"].grid
     const posts = []
     for (let position = 1; position <= 9; position++) {
       const postResult = await sql`
@@ -303,7 +312,7 @@ async function handleCreateManualFeed({
           ${feedId},
           ${user.id},
           ${position},
-          'user',
+          ${postTypeForPosition(gridPattern, position)},
           NULL,
           NULL,
           'pending',

@@ -436,7 +436,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       
       // Object scenes (flatlay/detail) generate WITHOUT identity references - attaching her
       // selfie to a product shot risks painting her into it. Only person scenes require one.
-      const isObjectScene = post.post_type === "flatlay" || post.post_type === "detail"
+      // Legacy rows (2026-07-07, Sandra's duplicate-portraits report): older manual grids
+      // wrote post_type 'user' for every slot, killing the curated selfie/flatlay/detail
+      // rotation - resolve those from the style's own grid pattern by position instead.
+      const { CURATED_FEED_STYLE_MAP: STYLE_MAP } = await import("@/lib/style-presets")
+      const { postTypeForPosition: slotTypeFor } = await import("@/lib/feed-planner/write-auto-draft")
+      const declaredType = typeof post.post_type === "string" ? post.post_type : ""
+      const effectivePostType =
+        declaredType === "selfie" || declaredType === "flatlay" || declaredType === "detail"
+          ? declaredType
+          : slotTypeFor(
+              (STYLE_MAP[feedLayout?.feed_style as keyof typeof STYLE_MAP]?.grid ??
+                STYLE_MAP["Dark & Moody"].grid) as readonly string[],
+              Number(post.position) || 1,
+            )
+      const isObjectScene = effectivePostType === "flatlay" || effectivePostType === "detail"
+      console.log(`[v0] [GENERATE-SINGLE] Slot role: declared=${declaredType || "(none)"} effective=${effectivePostType} objectScene=${isObjectScene}`)
       if (referenceImageCount === 0 && !isObjectScene) {
         return Response.json(
           {
@@ -729,19 +744,46 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         await import("@/lib/app-v3/maya/ingredients")
       const { SSELFIE_ENVIRONMENT_INTEGRATION, SSELFIE_SELFIE_RESTYLE } =
         await import("@/lib/app-v3/maya/visual-rules")
-      const usesIdentity = !isObjectScene && baseImages.length > 0
+      // SCENE LEADS, IDENTITY FOLLOWS (2026-07-07, Sandra's duplicate-portraits report):
+      // with the identity anchor on line one, every render collapsed into the same medium
+      // eye-level portrait regardless of what the scene template asked for. The template now
+      // opens the prompt and an explicit framing-supremacy line keeps close-ups close and
+      // full-bodies full.
+      //
+      // WHO IS IN FRAME is decided by the TEMPLATE TEXT, not the slot label (live proof
+      // 2026-07-07: a person-free "detail" template rendered a STRANGER because the model
+      // invented one, and several "flatlay"-labeled templates legitimately describe her in
+      // the scene). Template mentions a person -> attach her references. No person in the
+      // template -> forbid people entirely.
+      const templateMentionsPerson = /\b(woman|person|she|her|hers|model|girl|lady)\b/i.test(cleanedPrompt)
+      if (templateMentionsPerson && baseImages.length === 0) {
+        return Response.json(
+          {
+            error: "Pro Mode requires reference images",
+            details: "Please upload at least one avatar image in your profile settings to use Pro Mode.",
+          },
+          { status: 400 },
+        )
+      }
+      const usesIdentity = templateMentionsPerson && baseImages.length > 0
       const openaiPrompt = usesIdentity
         ? [
-            IDENTITY_ANCHOR,
+            "THE SCENE (this controls composition, framing, camera distance, pose, and what is in frame):",
             cleanedPrompt,
+            "Follow the scene's stated framing and camera distance exactly - a close-up stays a close-up, a full-body shot stays full-body, a seated or walking moment stays exactly that. Never flatten the scene into a standard eye-level portrait.",
+            IDENTITY_ANCHOR,
+            SSELFIE_SELFIE_RESTYLE,
             SSELFIE_ENVIRONMENT_INTEGRATION,
             PHOTOGRAPHER_REALISM,
-            SSELFIE_SELFIE_RESTYLE,
             REALISM_TOKENS + ".",
             PORTRAIT_QUALITY,
             AVOID_LIST,
           ].join("\n")
-        : [cleanedPrompt, PORTRAIT_QUALITY].join("\n")
+        : [
+            cleanedPrompt,
+            "No people in this photo: it is a scene, object, or detail shot exactly as described. Do not add a person, a face, hands, or any human presence.",
+            PORTRAIT_QUALITY,
+          ].join("\n")
 
       // Synchronous generation: on ANY failure before the image is saved, refund the credits
       // (the async Nano Banana flow couldn't do this; the sync flow can and should).
