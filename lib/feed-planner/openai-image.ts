@@ -8,6 +8,14 @@ import sharp from "sharp"
 
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 
+// Sandra's 2026-06-22 cost lock: images render at MEDIUM (~$0.05 vs ~$0.19 at high per
+// portrait) unless APP_V3_IMAGE_QUALITY overrides - same dial as the chat engine. Without
+// an explicit value OpenAI defaults to auto (usually high), silently 3-4x-ing image spend.
+const IMAGE_QUALITY = ((): "low" | "medium" | "high" => {
+  const q = process.env.APP_V3_IMAGE_QUALITY
+  return q === "low" || q === "medium" || q === "high" ? q : "medium"
+})()
+
 function getClient(): OpenAI {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured")
@@ -70,6 +78,7 @@ export async function generateFeedImageWithOpenAI(req: FeedImageRequest): Promis
         prompt: req.prompt,
         n: 1,
         size,
+        quality: IMAGE_QUALITY,
         output_format: "png",
         // Same rationale as app-v3: prompts are tasteful editorial fashion photography; the
         // "auto" default only produces false positives here.
@@ -89,6 +98,7 @@ export async function generateFeedImageWithOpenAI(req: FeedImageRequest): Promis
       prompt: req.prompt,
       n: 1,
       size,
+      quality: IMAGE_QUALITY,
       output_format: "png",
       moderation: "low",
     } as any)
