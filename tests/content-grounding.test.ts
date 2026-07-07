@@ -8,6 +8,7 @@ import {
   findGroundingViolations,
   groundingSystemPrompt,
   hasGroundingViolations,
+  purposeMessagingBlock,
   sandraContentIdentityBlock,
   sanitizeGroundedText,
 } from "@/lib/content/grounding"
@@ -25,10 +26,23 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     const block = sandraContentIdentityBlock()
 
     expect(block).toContain("generic content strategist")
+    expect(block).toContain("SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md")
     expect(block).toContain("two-bedroom apartment")
     expect(block).toContain("bathroom studio")
     expect(block).toContain("The photo gets attention")
     expect(block).toContain("Sandra anchor")
+  })
+
+  it("locks the purpose/category message that all content must ladder back to", () => {
+    const block = purposeMessagingBlock()
+
+    expect(block).toContain("SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md")
+    expect(block).toContain("This was never just about selfies")
+    expect(block).toContain("stop hiding")
+    expect(block).toContain("build something of their own")
+    expect(block).toContain("Low-ticket offers are bridges")
+    expect(block).toContain("Visibility To Paid / Work With Me")
+    expect(groundingSystemPrompt()).toContain("PURPOSE MESSAGING LOCK SOURCE")
   })
 
   it("flags banned wording and m-dashes through one shared guard", () => {
@@ -65,19 +79,42 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     const brief = read("lib/content-engine/brief-generator.ts")
     const dailyIntelligence = read("lib/admin/daily-briefing-intelligence.ts")
     const briefClient = read("components/admin/content-brief-client.tsx")
+    const adminPersona = read("lib/app-v3/maya/admin-persona.ts")
+    const corePersonality = read("lib/maya/core-personality.ts")
 
+    expect(carousel).toContain("purposeMessagingBlock()")
     expect(carousel).toContain("audienceBlock()")
     expect(carousel).toContain("proofBlock()")
     expect(carousel).toContain("sandraContentIdentityBlock()")
     expect(carousel).toContain("getCarouselDesignGuide()")
+    expect(story).toContain("purposeMessagingBlock()")
     expect(story).toContain("NO-FAKE REMINDER")
     expect(story).toContain("proofBlock()")
     expect(story).toContain("sandraContentIdentityBlock()")
     expect(shoot).toContain("AUDIENCE CONTEXT FOR whenToUse ONLY")
     expect(shoot).toContain("PROOF CONTEXT FOR SHOT UTILITY ONLY")
+    expect(brief).toContain("purposeMessagingBlock()")
     expect(brief).toContain("sandraContentIdentityBlock()")
     expect(brief).toContain("sandraStoryAnchor")
+    expect(dailyIntelligence).toContain("purposeMessagingBlock()")
     expect(dailyIntelligence).toContain("sandraContentIdentityBlock()")
+    expect(adminPersona).toContain("purposeMessagingBlock()")
+    expect(corePersonality).toContain("purposeMessagingBlock()")
     expect(briefClient).toContain("Sandra anchor")
+  })
+
+  it("documents the purpose lock everywhere future agents start", () => {
+    const lockPath = "docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md"
+    const lock = read(lockPath)
+    const sourceOfTruth = read("docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md")
+    const claude = read("CLAUDE.md")
+    const codex = read("docs/CODEX_CONTEXT.md")
+
+    expect(lock).toContain("SSELFIE is Sandra's category")
+    expect(lock).toContain("This was never just about selfies")
+    expect(lock).toContain("Low-ticket offers are bridges")
+    expect(sourceOfTruth).toContain(lockPath)
+    expect(claude).toContain(lockPath)
+    expect(codex).toContain(lockPath)
   })
 })

@@ -109,6 +109,50 @@ export const SANDRA_VOICE = {
   ],
 } as const
 
+export const PURPOSE_MESSAGING = {
+  source: "docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md",
+  category:
+    "I help women stop hiding, become recognizable, know what to say, and build something of their own from their phone, their story, and AI.",
+  coreLock:
+    "This was never just about selfies. It was about becoming visible enough to build something of your own.",
+  businessTruths: [
+    "SSELFIE is not an AI photo tool, a prompt marketplace, a content planner, or a low-ticket funnel.",
+    "Low-ticket offers are bridges, not the empire.",
+    "Cold content earns attention with a simple visible result: a better selfie, a realistic AI photo, a prompt that works, or one small action she can do today.",
+    "Warm content builds trust through Sandra's real story, beliefs, proof, audience questions, and the money/confidence/time desire already showing up in the data.",
+    "Visibility To Paid / Work With Me is the warm offer for women who already have a skill, service, story, expertise, or idea, but do not know what to post, what to say, or what they can sell first.",
+    "SUITE is the recurring monthly creation system: the place where the method becomes repeatable.",
+  ],
+  transformation: [
+    "Stop hiding.",
+    "Start with one photo.",
+    "Become recognizable.",
+    "Know what to say.",
+    "Build trust through content and story.",
+    "Turn that trust into an offer.",
+    "Build something of your own.",
+  ],
+  mandatoryQuestions: [
+    "Does this help a woman stop hiding?",
+    "Does it make the first step smaller?",
+    "Does it connect photo to visibility, story, trust, offer, or income?",
+    "Is there a real Sandra anchor?",
+    "Could only Sandra say this in this way?",
+    "Is the offer bridge right for the audience temperature?",
+  ],
+  bannedDrift: [
+    "AI photo tool",
+    "AI headshot app",
+    "prompt marketplace",
+    "content planner",
+    "generic personal brand advice",
+    "motivational confidence content",
+    "post more advice",
+    "feature-first software copy",
+    "low-ticket-only strategy",
+  ],
+} as const
+
 export const AUDIENCE = {
   who: "A woman, often 35-64, who wants to build online but feels stuck at the first step. She has ideas, taste, skills, lived experience, and a story. She has not learned how to turn those things into content, trust, and income yet.",
   desiresRanked: [
@@ -449,6 +493,20 @@ export function voiceBlock(): string {
   ].join("\n")
 }
 
+export function purposeMessagingBlock(): string {
+  return [
+    `PURPOSE MESSAGING LOCK SOURCE: ${PURPOSE_MESSAGING.source}`,
+    "SSELFIE PURPOSE AND CATEGORY LOCK:",
+    `Category sentence: ${PURPOSE_MESSAGING.category}`,
+    `Core lock: ${PURPOSE_MESSAGING.coreLock}`,
+    listBlock("Business truths:", PURPOSE_MESSAGING.businessTruths),
+    listBlock("Transformation path:", PURPOSE_MESSAGING.transformation),
+    listBlock("Mandatory preflight questions:", PURPOSE_MESSAGING.mandatoryQuestions),
+    listBlock("Banned drift:", PURPOSE_MESSAGING.bannedDrift),
+    "Every generated brief, story, carousel, Maya/admin answer, email, and public copy must ladder back to this lock.",
+  ].join("\n")
+}
+
 export function audienceBlock(): string {
   return [
     "AUDIENCE SOURCE: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md",
@@ -520,6 +578,8 @@ export function storyBankBlock(): string {
 export function sandraContentIdentityBlock(): string {
   return [
     "SANDRA CONTENT IDENTITY LOCK (use this before writing admin content, daily briefs, weekly briefs, carousels, and stories):",
+    `Purpose source: ${PURPOSE_MESSAGING.source}`,
+    `Core purpose: ${PURPOSE_MESSAGING.coreLock}`,
     "The output must not sound like a generic content strategist, a social media manager, a motivational coach, or ChatGPT giving creator tips.",
     "Every content idea needs a visible Sandra anchor: a named Story Bank theme, a real audience question, a real buyer fear, a real top-post signal, or a real SSELFIE belief.",
     "For warm, selling, Story, email, and Work With Me content, start from Sandra's actual life and beliefs: the two-bedroom apartment, sleeping on the couch, the bathroom studio, the quiet weeks, the first messy posts, the viral selfie, the first money from her phone, ADHD and simple systems, being judged, or becoming visible by becoming herself again.",
@@ -547,6 +607,7 @@ export function noFakeBlock(): string {
 export function groundingSystemPrompt(): string {
   return [
     "You write for Sandra and SSELFIE. Use the approved grounding below as binding system truth.",
+    purposeMessagingBlock(),
     voiceBlock(),
     sandraContentIdentityBlock(),
     noFakeBlock(),

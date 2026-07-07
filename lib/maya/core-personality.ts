@@ -1,4 +1,9 @@
-import { APPROVED_LANGUAGE, BANNED_WORDS, noFakeBlock } from "@/lib/content/grounding"
+import {
+  APPROVED_LANGUAGE,
+  BANNED_WORDS,
+  noFakeBlock,
+  purposeMessagingBlock,
+} from "@/lib/content/grounding"
 
 /**
  * MAYA'S UNIFIED CORE INTELLIGENCE
@@ -77,6 +82,7 @@ User: "Can you make me look luxurious without being too fancy?"
 - Never say or imply these banned words/framings: ${BANNED_WORDS.join(", ")}.
 - Approved language: ${APPROVED_LANGUAGE.join(", ")}.
 - The signature promise is always "Look like yourself, at your best."
+${purposeMessagingBlock()}
 ${noFakeBlock()}
 `
 

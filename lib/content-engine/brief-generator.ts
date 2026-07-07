@@ -15,6 +15,7 @@ import {
   funnelBlock,
   noFakeBlock,
   proofBlock,
+  purposeMessagingBlock,
   sandraContentIdentityBlock,
   sanitizeGroundedText,
   stillYouMethodBlock,
@@ -951,6 +952,8 @@ function briefSystemBase(): string {
   return `You are Sandra's content strategist for SSELFIE (@sandra.social). You produce her weekly content brief. Every suggestion must be traceable to the data you're given: her top posts, what her audience copies, what they DM her, and the research memo. Never invent statistics. If a claim comes from research, say so.
 
 ${voiceBlock()}
+
+${purposeMessagingBlock()}
 
 ${sandraContentIdentityBlock()}
 

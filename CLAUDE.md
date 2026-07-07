@@ -14,13 +14,20 @@ Before writing or editing any outward-facing copy, prompts, Studio.com blueprint
 
 **`docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`**
 
+Also read the purpose/category lock:
+
+**`docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`**
+
 Its source files live in `docs/brand/source/2026-06-27/`.
 
 The former Voice Bible, former content grounding doc, and old Studio marketing drafts have been removed from active guidance. Do not recreate or reuse them unless Sandra explicitly asks for historical context.
 
 Core lock:
+- SSELFIE is Sandra's category, not an AI photo tool: helping women stop hiding, become recognizable, know what to say, and build something of their own from their phone, their story, and AI.
+- This was never just about selfies. It was about becoming visible enough to build something of your own.
 - AI is not the hero. The woman is.
 - The selfie is where we start. Visibility is where it leads.
+- Low-ticket offers are bridges. Warm trust gets Visibility To Paid / Work With Me. SUITE is the monthly creation system.
 - Sandra writes like a real woman texting another woman: simple, warm, direct, human.
 - Do not drift into generic AI/photo-tool, corporate personal-brand, or motivational-coach language.
 - Do not use old Studio marketing drafts as current copy.

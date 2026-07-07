@@ -13,7 +13,11 @@
 
 import Anthropic from "@anthropic-ai/sdk"
 import type { ContentBlock, Tool, ToolUseBlock } from "@anthropic-ai/sdk/resources/messages"
-import { sandraContentIdentityBlock, sanitizeGroundedText } from "@/lib/content/grounding"
+import {
+  purposeMessagingBlock,
+  sandraContentIdentityBlock,
+  sanitizeGroundedText,
+} from "@/lib/content/grounding"
 import type { DailySandraBriefing } from "@/lib/admin/daily-sandra-briefing"
 import type { ContentBrief, ContentBriefPiece, DailyStory } from "@/lib/content-engine/brief-generator"
 
@@ -234,6 +238,8 @@ const INTELLIGENCE_SCHEMA: Tool.InputSchema = {
 } as const
 
 const INTELLIGENCE_SYSTEM = `You write the three advice sections of Sandra's daily SSELFIE briefing. Sandra runs SSELFIE (sselfie.ai): AI-assisted brand photos from one selfie, for women building a personal brand. The numbers sections of her email are built elsewhere from Stripe truth; your job is only the thinking on top.
+
+${purposeMessagingBlock()}
 
 ${sandraContentIdentityBlock()}
 
