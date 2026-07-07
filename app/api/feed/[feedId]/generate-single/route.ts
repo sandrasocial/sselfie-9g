@@ -46,7 +46,7 @@ import { validatePrompt } from "@/lib/generation/prompt"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getFeedStyleV2ByName } from "@/lib/feed-planner/feed-style-prompt-loader"
-import { getPreviewPromptForStyle, selectPromptForPosition } from "@/lib/feed-planner/feed-style-generation"
+import { selectPromptForPosition } from "@/lib/feed-planner/feed-style-generation"
 
 /* eslint-disable no-console */
 // Console statements are used for debugging and monitoring in development
@@ -470,9 +470,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         LIMIT 1
       `
       
-      // 🔴 CRITICAL: Check if this is a preview feed FIRST (before access checks)
-      // Preview feeds use full template (all 9 scenes) for ALL users (free and paid)
+      // FREE FUNNEL RETIRED (Sandra, 2026-07-07): preview feeds can no longer be created and
+      // existing rows are pruned - generation against a leftover preview layout is refused.
       const isPreviewFeed = feedLayout?.layout_type === 'preview'
+      if (isPreviewFeed) {
+        return Response.json(
+          { error: "PREVIEW_RETIRED", details: "Preview feeds are no longer available." },
+          { status: 410 },
+        )
+      }
       let chosenPromptSource:
         | "v2_preview_prompt"
         | "v2_scene_prompt"
@@ -535,20 +541,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               }
             }
 
-            if (isPreviewFeed) {
-              finalPrompt = await getPreviewPromptForStyle(style.id, feedVariationId)
-              chosenPromptSource = "v2_preview_prompt"
-              console.log(`[v0] [GENERATE-SINGLE] Preview prompt loaded: variationId=${feedVariationId}, length=${finalPrompt?.length || 0}`)
-            } else {
-              const selected = await selectPromptForPosition(
-                style.id,
-                post.position,
-                feedVariationId,
-              )
-              finalPrompt = selected.prompt_text
-              chosenPromptSource = "v2_scene_prompt"
-              console.log(`[v0] [GENERATE-SINGLE] Scene prompt loaded: position=${post.position}, variationId=${feedVariationId}, selectedVariationId=${selected.variation_id}, length=${finalPrompt?.length || 0}`)
-            }
+            const selected = await selectPromptForPosition(
+              style.id,
+              post.position,
+              feedVariationId,
+            )
+            finalPrompt = selected.prompt_text
+            chosenPromptSource = "v2_scene_prompt"
+            console.log(`[v0] [GENERATE-SINGLE] Scene prompt loaded: position=${post.position}, variationId=${feedVariationId}, selectedVariationId=${selected.variation_id}, length=${finalPrompt?.length || 0}`)
 
             await sql`
               UPDATE feed_posts
@@ -794,15 +794,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           const names = ["January","February","March","April","May","June","July","August","September","October","November","December"]
           return names[(m || 1) - 1] && y ? `${names[(m || 1) - 1]} ${y}` : null
         })()
-        const galleryTitle = isPreviewFeed
-          ? ["Style preview", feedLayout?.feed_style].filter(Boolean).join(" · ")
-          : [
-              "Calendar",
-              monthLabel,
-              post.content_pillar || (isObjectScene ? post.post_type : null),
-            ]
-              .filter(Boolean)
-              .join(" · ")
+        const galleryTitle = [
+          "Calendar",
+          monthLabel,
+          post.content_pillar || (isObjectScene ? post.post_type : null),
+        ]
+          .filter(Boolean)
+          .join(" · ")
         await sql`
           INSERT INTO ai_images (
             user_id, image_url, title, prompt, generated_prompt, prediction_id,

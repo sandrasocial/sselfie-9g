@@ -39,7 +39,6 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isCreatingManual, setIsCreatingManual] = useState(false)
-  const [isCreatingFreeExample, setIsCreatingFreeExample] = useState(false)
   const [localFeedStyleModal, setLocalFeedStyleModal] = useState(false)
   const didOpenFeedStyleFromQuery = useRef(false)
   const didOpenWizardFromQuery = useRef(false)
@@ -136,16 +135,11 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
 
   // Handle redirect from preview feed (paid users accessing preview feeds)
   useEffect(() => {
+    // Preview feeds retired (2026-07-07): the redirect-from-preview handling is gone with them.
     if (feedData?.redirectedFromPreview && feedData?.feed?.id) {
       const newFeedId = feedData.feed.id
-      console.log('[Feed Planner] ⚠️ Redirected from preview feed to full feed:', newFeedId)
-      if (feedNav) {
-        // Embedded in /app: swap the feed in place, never bounce to the standalone route.
-        feedNav.navigateToFeed(newFeedId)
-      } else {
-        // Update URL to reflect the new feedId
-        router.replace(`/feed-planner?feedId=${newFeedId}`, { scroll: false })
-      }
+      if (feedNav) feedNav.navigateToFeed(newFeedId)
+      else router.replace(`/feed-planner?feedId=${newFeedId}`, { scroll: false })
     }
   }, [feedData?.redirectedFromPreview, feedData?.feed?.id, router, feedNav])
 
@@ -234,50 +228,9 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     }
   }, [access, feedData, isLoading, isExpandingFeed, mutateFeedList, router])
 
-  // Phase 5.3.2: Auto-create feed for free users when no feed exists
-  useEffect(() => {
-    const autoCreateFreeExample = async () => {
-      // Only auto-create for free users when no feed exists
-      if (
-        !feedExists &&
-        !feedIdFromQuery &&
-        feedData?.exists === false &&
-        access?.isFree &&
-        !isCreatingFreeExample
-      ) {
-        setIsCreatingFreeExample(true)
-        try {
-          const response = await fetch('/api/feed/create-free-example', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-          })
-
-          if (!response.ok) {
-            console.error('[Feed Planner] Failed to create free example feed')
-            setIsCreatingFreeExample(false)
-            return
-          }
-
-          const data = await response.json()
-          console.log('[Feed Planner] ✅ Free example feed created:', data.feedId)
-
-          // Refresh feed data to show the new feed (in place when embedded in /app)
-          if (feedNav) feedNav.navigateToFeed(data.feedId)
-          else router.push(`/feed-planner?feedId=${data.feedId}`)
-          setIsCreatingFreeExample(false)
-        } catch (error) {
-          console.error('[Feed Planner] Error creating free example feed:', error)
-          setIsCreatingFreeExample(false)
-        }
-      }
-    }
-
-    // Only run if we've confirmed no feed exists (not during initial load)
-    if (!isLoading && feedData) {
-      autoCreateFreeExample()
-    }
-  }, [feedExists, feedIdFromQuery, feedData, access?.isFree, isLoading, router, isCreatingFreeExample])
+  // FREE FUNNEL RETIRED (Sandra, 2026-07-07): free users no longer get an auto-created
+  // example feed - the Feed Planner is a paid product surface. The upsell render below
+  // (early return) is the whole free experience now.
 
   const handleBackToMaya = () => {
     // Route to Maya Feed tab using hash navigation
@@ -356,11 +309,37 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   }
 
   // Loading state - show unified loader during initial load
-  // But don't block if we're creating a free example (that has its own loading state)
-  if (isLoading && !isCreatingFreeExample) {
+  if (isLoading) {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
         <UnifiedLoading variant="screen" message="Loading Feed Planner" />
+      </div>
+    )
+  }
+
+  // FREE FUNNEL RETIRED (Sandra, 2026-07-07): the Feed Planner is a paid product surface.
+  // Free accounts see one honest card instead of an example feed.
+  if (access?.isFree) {
+    return (
+      <div className="app-light-panel-text flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
+        <div className="flex min-h-[400px] items-center justify-center p-4 sm:p-6">
+          <div className="w-full max-w-md space-y-4 rounded-[14px] border border-[#C5C6C8]/50 bg-white p-6 text-center shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)]">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">Feed Planner</p>
+            <h2 className="font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
+              Plan a month of posts from one selfie
+            </h2>
+            <p className="text-[14px] leading-relaxed text-[#4F5052]">
+              The Feed Planner is part of the paid Blueprint: a full planned grid, captions, and
+              strategy, styled to your brand.
+            </p>
+            <a
+              href="/checkout/blueprint"
+              className="inline-block rounded-[4px] bg-[#0D0E10] px-5 py-3 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728]"
+            >
+              Get the Blueprint
+            </a>
+          </div>
+        </div>
       </div>
     )
   }
@@ -382,15 +361,6 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   // For free users, we auto-create the feed (handled in useEffect above)
   // For paid users, show the create feed options
   if (!feedExists || (!feedIdFromQuery && feedData?.exists === false)) {
-    // Free users: Show loading while auto-creating feed
-    if (access?.isFree && isCreatingFreeExample) {
-      return (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
-          <UnifiedLoading variant="screen" message="Setting up your feed" />
-        </div>
-      )
-    }
-
     return (
       <div className="app-light-panel-text flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
         {/* Placeholder State - paid blueprint: inline "Set up in 30 seconds" card (A-02) */}

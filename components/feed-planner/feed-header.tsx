@@ -54,9 +54,7 @@ export default function FeedHeader({
     else router.push(`/feed-planner?feedId=${feedId}`)
   }
   const [isCreatingFeed, setIsCreatingFeed] = useState(false)
-  const [isCreatingPreviewFeed, setIsCreatingPreviewFeed] = useState(false)
   const [showFeedStyleModal, setShowFeedStyleModal] = useState(false)
-  const [isPreviewFeedModal, setIsPreviewFeedModal] = useState(false) // Track if modal is for preview or full feed
   const [isCreatingNewFeed, setIsCreatingNewFeed] = useState(false) // Track if user explicitly wants to create NEW feed (vs update existing)
   const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false)
 
@@ -83,74 +81,7 @@ export default function FeedHeader({
   // Extract last feed style from settings_preference[0]
   const lastFeedStyle: FeedStyle | null = personalBrandData?.data?.settingsPreference?.[0] || null
 
-  const handleCreatePreviewFeed = () => {
-    // Show feed style modal first (same as new feed)
-    setIsPreviewFeedModal(true)
-    setShowFeedStyleModal(true)
-  }
-
-  const handlePreviewFeedStyleConfirm = async (data: FeedStyleModalData) => {
-    setShowFeedStyleModal(false)
-    setIsCreatingPreviewFeed(true)
-    
-    try {
-      // Update personal brand in background (non-blocking) - don't await it
-      fetch('/api/profile/personal-brand', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          settingsPreference: [data.feedStyle],
-          feedStyleVariationId: data.feedStyleVariationId,
-        }),
-      }).catch((error) => {
-        console.error('[Feed Header] Background personal brand update failed (non-blocking):', error)
-      })
-
-      // CRITICAL: Always pass feedStyleVariationId to feed creation (even if null)
-      const feedCreationPayload = {
-        feedStyle: data.feedStyle,
-        visualAesthetic: data.visualAesthetic,
-        feedStyleVariationId: data.feedStyleVariationId,
-      }
-      console.log('[Feed Header] Creating preview feed with:', {
-        feedStyle: feedCreationPayload.feedStyle,
-        feedStyleVariationId: feedCreationPayload.feedStyleVariationId,
-      })
-      
-      const response = await fetch('/api/feed/create-free-example', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(feedCreationPayload),
-      })
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Failed to create preview feed' }))
-        throw new Error(error.error || 'Failed to create preview feed')
-      }
-
-      const responseData = await response.json()
-      
-      // Navigate to the new preview feed (in place when embedded in /app)
-      goToFeed(responseData.feedId)
-      
-      toast({
-        title: "Preview feed created",
-        description: "Your preview feed is ready. Generate your preview image!",
-      })
-    } catch (error) {
-      console.error("[v0] Error creating preview feed:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create preview feed. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsCreatingPreviewFeed(false)
-      setIsPreviewFeedModal(false)
-    }
-  }
+  // Preview feed creation removed with the free blueprint funnel (Sandra, 2026-07-07).
 
   // Feed Planner Phase 2b: ported from the retired Posts tab (feed-posts-list.tsx) - bulk
   // caption generation for a legacy/manual plan where no post has a caption yet. A Maya
@@ -185,24 +116,18 @@ export default function FeedHeader({
 
   const handleCreateNewFeedClick = () => {
     // Show feed style modal first
-    setIsPreviewFeedModal(false)
     setIsCreatingNewFeed(true) // Explicitly mark as "create new" (not update)
     setShowFeedStyleModal(true)
   }
 
   const handleFeedStyleConfirm = async (data: FeedStyleModalData) => {
-    // Route to appropriate handler based on modal type
-    if (isPreviewFeedModal) {
-      await handlePreviewFeedStyleConfirm(data)
+    // Check if user explicitly wants to create NEW feed (not update existing)
+    // OR if there's no existing feed to update
+    if (isCreatingNewFeed || !currentFeedId || !feedData?.feed?.id) {
+      await handleFullFeedStyleConfirm(data)
     } else {
-      // Check if user explicitly wants to create NEW feed (not update existing)
-      // OR if there's no existing feed to update
-      if (isCreatingNewFeed || !currentFeedId || !feedData?.feed?.id) {
-        await handleFullFeedStyleConfirm(data)
-      } else {
-        // User is updating existing feed
-        await handleUpdateFeedStyle(data)
-      }
+      // User is updating existing feed
+      await handleUpdateFeedStyle(data)
     }
     // Reset the flag after handling
     setIsCreatingNewFeed(false)
@@ -660,28 +585,7 @@ export default function FeedHeader({
             </div>
 
             <div className="flex gap-1.5 flex-wrap">
-              {/* Preview feed = the FREE funnel's taste of the product (one moodboard image in
-                  a chosen style). Members/paid pick styles in the style modal (which already
-                  shows real preview imagery) and restyle via Maya - for them this button only
-                  minted junk feed rows (data check 2026-07-07: 1,198 preview feeds ever, 93%
-                  abandoned without generating, 0 created in the last 30 days). Free-only now. */}
-              {access?.isFree && (
-              <button
-                onClick={handleCreatePreviewFeed}
-                disabled={isCreatingPreviewFeed}
-                className={`${feedHeaderChipClass} disabled:cursor-not-allowed disabled:opacity-50`}
-              >
-                {isCreatingPreviewFeed ? (
-                  <>
-                    <span>Creating...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Preview</span>
-                  </>
-                )}
-              </button>
-              )}
+              {/* Preview feed retired with the free blueprint funnel (Sandra, 2026-07-07). */}
               {!access?.isFree && (access?.isPaidBlueprint || access?.isMembership) && (
                 <button
                   onClick={handleCreateNewFeedClick}
@@ -808,8 +712,7 @@ export default function FeedHeader({
         onConfirm={handleFeedStyleConfirm}
         defaultFeedStyle={feedData?.feed?.feed_style || lastFeedStyle}
         defaultFeedStyleVariationId={feedData?.feed?.feed_style_variation_id ?? undefined}
-        isLoading={isCreatingFeed || isCreatingPreviewFeed}
-        isPreviewFeed={isPreviewFeedModal}
+        isLoading={isCreatingFeed}
       />
     </div>
   )
