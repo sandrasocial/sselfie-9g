@@ -21,6 +21,7 @@ import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
 import { conceptRequestSize } from "@/lib/app-v3/prompt-compiler"
 import { AVOID_LIST, ELEVATION } from "@/lib/app-v3/maya/ingredients"
+import { SSELFIE_ENVIRONMENT_INTEGRATION } from "@/lib/app-v3/maya/visual-rules"
 import {
   buildLikenessPromptBlock,
   classifyLikenessCorrection,
@@ -127,9 +128,11 @@ function buildEditPrompt(
       "body proportions, age, and natural skin texture. No beauty-filter smoothing, no face slimming, " +
       "no de-aging. Still clearly recognizable as the same woman."
     : ""
+  // If the edit changes the scene or background, her lighting must follow it - re-lit by the
+  // new environment, never carried over from the old frame (that's the pasted-in look).
   const tail = safer
     ? " Keep it tasteful, fully clothed, and modest."
-    : ` Keep it natural and editorial. ${ELEVATION} ${AVOID_LIST}`
+    : ` Keep it natural and editorial. If this change alters the background, location, or time of day, re-light her to match the new scene. ${SSELFIE_ENVIRONMENT_INTEGRATION} ${ELEVATION} ${AVOID_LIST}`
   // LIKENESS-MEMORY-01: stored accuracy notes complement the real-selfie anchor above.
   const likeness = likenessBlock ? `\n\n${likenessBlock}` : ""
   // On the safer retry, actually scrub the member's own free-typed instruction text (previously

@@ -252,10 +252,10 @@ The brief below is the VISUAL recipe. The title and description are HER content.
 - **outfit**: exact brand + garment. "The Row cream cashmere turtleneck", "Alo Yoga ribbed set in bone", "Toteme tailored camel coat". NEVER "luxury sweater" or "nice outfit".
 - **setting**: a concrete place with real detail.
 - **mood**: the emotional register, in a few words.
-- **pose**: one simple, natural pose (a real moment, not a stiff pose).
-- **cameraSpec**: a NAMED camera body + lens chosen to match the positioning. Pick from:
+- **pose**: one caught, in-between moment - weight shifted, hands doing something real (holding a coffee, adjusting a sleeve, mid-step), gaze natural. Never stiff, symmetrical, or camera-aware posing unless her inspiration image poses exactly that way.
+- **cameraSpec**: a NAMED camera body + lens, PLUS the angle a human would actually shoot from (eye level across the table, slight low angle from the sidewalk, over-the-shoulder). Pick from:
 ${cameraPalette}
-- **lighting**: a NAMED lighting setup, not "soft light". Pick from or adapt:
+- **lighting**: you are the photographer reading the scene. Name the light source that actually EXISTS in that location at that time of day - outdoors it is only sun, sky, and weather (golden hour side light, overcast diffusion, open shade under an awning); indoors it is windows, doorways, and the room's own practical lamps (café pendants, a bedside lamp, screen glow). NEVER write "studio lighting", "editorial lighting", "cinematic lighting", or any lighting rig for a real location - a photographer on location has no softbox. The light must explain her shadows, her skin tone, and the scene's mood all at once. Reference palette (adapt to the actual scene):
 ${lightingPalette}
 - **NEVER describe hair color**. The attached reference photo carries that.
 - When presenting DIRECTIONS (the default 3), make them genuinely different from each other (vary photography style: an iPhone-candid, a candid-lifestyle, an editorial, mixed per what fits the request). EXCEPTION: a full-photoshoot set is ONE world, so vary the shot (framing, pose, moment, crop), never the world.

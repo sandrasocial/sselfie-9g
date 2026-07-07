@@ -38,7 +38,7 @@ export const LIGHTING_OPTIONS: Record<string, string> = {
   casual: "soft afternoon sunlight with a warm natural glow",
   "coffee-run": "soft afternoon sunlight with a warm natural glow",
   "street-style": "golden hour light at 5pm with long natural shadows",
-  luxury: "warm cinematic lighting with golden tones and soft shadows",
+  luxury: "warm late-afternoon window light with golden tones and soft natural shadows",
   travel: "natural terminal light through floor-to-ceiling windows",
   airport: "natural terminal light through floor-to-ceiling windows",
   cozy: "soft natural window light with a warm ambient glow",
@@ -80,7 +80,10 @@ export const IDENTITY_ANCHOR =
   "facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair " +
   "color, and overall look from the reference. The reference defines the person; this prompt " +
   "defines only the styling, outfit, location, pose, mood, and editorial look. Keep the result " +
-  "realistic, editorial, sharp, and clearly recognizable as the same woman."
+  "realistic, editorial, sharp, and clearly recognizable as the same woman. Her skin tone stays " +
+  "hers, but render it under THIS scene's light - picking up its color cast, direction, and " +
+  "shadow falloff exactly as a camera would see her standing there, never lit separately from " +
+  "the background."
 
 /**
  * Accessories discipline (Sandra's proven rule): the phone is the main accessory; don't over-
@@ -100,7 +103,9 @@ export const AVOID_LIST =
   "unrealistic body proportions, plastic skin, over-smoothed beauty filter, heavy glam makeup, " +
   "cartoonish AI style, CGI, fantasy lighting, messy anatomy, blur, low-resolution softness, " +
   "compression haze, overly staged stock-photo look, cluttered props, random logos, " +
-  "fake-looking brand marks."
+  "fake-looking brand marks, studio lighting or softbox glow in outdoor or naturally lit " +
+  "scenes, a subject lit differently from her background, missing contact shadows, " +
+  "pasted-in composite look, HDR over-processing."
 
 /** Output quality + format block per aspect (Sandra's proven anti-blur rules).
  * No numeric ratio in the portrait block: the actual canvas is APP_V3_PORTRAIT_SIZE
@@ -113,6 +118,24 @@ export const PORTRAIT_QUALITY =
 export const CAROUSEL_QUALITY =
   "Image quality: vertical 4:5 Instagram format, 2K quality, crisp editorial sharpness, no blur, " +
   "no low-resolution softness, no compression haze."
+
+/**
+ * The photographer doctrine (Sandra, 2026-07-07): images were reading fake because light was
+ * applied like a studio grade instead of coming FROM the scene. This block makes every photo
+ * behave like a real human shot it on location in real time - light sources must exist in
+ * the scene, the subject moves like a person mid-moment, and the physics (shadows, grain,
+ * slight motion) anchor her INTO the location instead of on top of it.
+ */
+export const PHOTOGRAPHER_REALISM =
+  "Shoot this like a real photographer working the location in real time: light comes ONLY " +
+  "from sources that actually exist in the scene - sun, sky, and weather outdoors; windows, " +
+  "doorways, and practical lamps indoors. Never add studio lighting, softbox glow, rim light, " +
+  "or flash to a place that would not naturally contain them. Anchor her physically in the " +
+  "space: real contact shadows under feet and hands, soft ambient occlusion where her body " +
+  "meets surfaces, reflected color from nearby walls and objects on her skin and clothes. Let " +
+  "the frame breathe like a real capture: a caught in-between moment, natural imperfect " +
+  "posture, fabric and hair responding to movement and air, a believable handheld angle, fine " +
+  "film grain, and honest shadows where the scene makes them."
 
 /**
  * Even softer identity wording used only on a content_policy retry, plus a styling note that

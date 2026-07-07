@@ -11,6 +11,7 @@ import {
   REALISM_TOKENS,
   ACCESSORIES_NOTE,
   AVOID_LIST,
+  PHOTOGRAPHER_REALISM,
   PORTRAIT_QUALITY,
   CAROUSEL_QUALITY,
   cameraForText,
@@ -603,7 +604,14 @@ function compilePhotoPrompt(
 ): string {
   const positioning = `${brief.outfit} ${brief.setting} ${brief.mood}`
   const camera = clean(brief.cameraSpec) || cameraForText(positioning)
-  const lighting = clean(brief.lighting) || lightingForText(positioning)
+  // Lighting precedence (realism pass 2026-07-07): Maya's scene-read lighting wins; a scene
+  // template carries its own lighting so the generic keyword fallback must NOT stack a second
+  // lighting recipe on top of it (stacked lighting = the studio-lit-on-location composite look).
+  const lighting = clean(brief.lighting)
+    ? clean(brief.lighting)
+    : clean(brief.sceneTemplate)
+      ? ""
+      : lightingForText(positioning)
   const quality = format === "carousel" ? CAROUSEL_QUALITY : PORTRAIT_QUALITY
 
   const composition = safeSpace
@@ -636,8 +644,9 @@ function compilePhotoPrompt(
     clean(brief.mood) ? `Mood: ${clean(brief.mood)}.` : "",
     gradeLine(opts),
     SSELFIE_PHOTO_STYLE_PROMPT,
-    `Lighting: ${lighting}.`,
+    lighting ? `Lighting: ${lighting}.` : "",
     SSELFIE_ENVIRONMENT_INTEGRATION,
+    PHOTOGRAPHER_REALISM,
     SSELFIE_SELFIE_RESTYLE,
     CANDID_EDITORIAL,
     REALISM_TOKENS + ".",

@@ -31,7 +31,10 @@ export const SSELFIE_ENVIRONMENT_INTEGRATION =
   "Lighting and integration: light the person with the scene's own light, matching the location's " +
   "light direction, color temperature, intensity, and ambient color bounce. Match the background's " +
   "exposure, contrast, and color grade so the subject is color-matched to the environment, with " +
-  "natural contact shadows and reflected light from the setting. The person must look genuinely " +
+  "natural contact shadows and reflected light from the setting. Use only light sources that " +
+  "plausibly exist in this location: sun, sky, and weather outdoors; windows, doorways, and " +
+  "practical lamps indoors. Never introduce studio lighting, softbox glow, rim light, or flash " +
+  "into a scene that would not naturally contain them. The person must look genuinely " +
   "photographed inside this location, fully integrated into it, never brightly studio-lit on top " +
   "of the background, never a cut-out or composite pasted into the scene."
 
