@@ -323,6 +323,18 @@ async function handleCreateManualFeed({
 
     console.log(`[v0] Created full feed ${feedId} with ${posts.length} empty posts for user ${user.id} (layout_type: grid_3x3)`)
 
+    // Keep Maya in sync with the picker: a style chosen here becomes her preferred style
+    // world (chat context, scene templates, next month's auto-draft). The new feed already
+    // carries the member's exact style/variation, so skip the default-variation restyle.
+    if (feedStyle) {
+      try {
+        const { savePreferredFeedStyle } = await import("@/lib/feed-planner/resolve-feed-style")
+        await savePreferredFeedStyle(user.id, feedStyle, { restyleCurrentMonth: false })
+      } catch (syncError) {
+        console.error("[create-manual] preferred style sync skipped:", syncError)
+      }
+    }
+
     return NextResponse.json({
       feedId,
       feed: feedLayout,

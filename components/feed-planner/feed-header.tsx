@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast"
 import FeedStyleModal, { type FeedStyle, type FeedStyleModalData } from "./feed-style-modal"
 import useSWR, { mutate } from "swr"
 import MayaModeToggle from "@/components/sselfie/maya/maya-mode-toggle"
+import { useFeedNav } from "./feed-nav-context"
 
 interface FeedHeaderProps {
   feedData: any
@@ -46,6 +47,12 @@ export default function FeedHeader({
   onToggleGenerationMode,
 }: FeedHeaderProps) {
   const router = useRouter()
+  const feedNav = useFeedNav()
+  // Inside /app the planner is embedded - switch feeds in place. Standalone route: navigate.
+  const goToFeed = (feedId: number) => {
+    if (feedNav) feedNav.navigateToFeed(feedId)
+    else router.push(`/feed-planner?feedId=${feedId}`)
+  }
   const [isCreatingFeed, setIsCreatingFeed] = useState(false)
   const [isCreatingPreviewFeed, setIsCreatingPreviewFeed] = useState(false)
   const [showFeedStyleModal, setShowFeedStyleModal] = useState(false)
@@ -125,8 +132,8 @@ export default function FeedHeader({
 
       const responseData = await response.json()
       
-      // Navigate to the new preview feed
-      router.push(`/feed-planner?feedId=${responseData.feedId}`)
+      // Navigate to the new preview feed (in place when embedded in /app)
+      goToFeed(responseData.feedId)
       
       toast({
         title: "Preview feed created",
@@ -498,8 +505,8 @@ export default function FeedHeader({
 
       const responseData = await response.json()
       
-      // Navigate to the new feed
-      router.push(`/feed-planner?feedId=${responseData.feedId}`)
+      // Navigate to the new feed (in place when embedded in /app)
+      goToFeed(responseData.feedId)
       
       toast({
         title: "Feed created",

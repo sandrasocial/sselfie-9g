@@ -93,6 +93,17 @@ async function handleUpdateFeedStyle(
 
     console.log(`[v0] Updated feed ${feedIdInt} style: ${feedStyle}, variation_id: ${feedStyleVariationIdToStore}`)
 
+    // Keep Maya in sync with the picker: her chat context, scene templates, and next month's
+    // auto-draft all follow preferred_feed_style - a modal pick and a "Maya, warmer vibes"
+    // chat pick write the same key, latest wins. This route already applied the member's
+    // exact variation, so skip the default-variation restyle.
+    try {
+      const { savePreferredFeedStyle } = await import("@/lib/feed-planner/resolve-feed-style")
+      await savePreferredFeedStyle(user.id, feedStyle, { restyleCurrentMonth: false })
+    } catch (syncError) {
+      console.error("[update-style] preferred style sync skipped:", syncError)
+    }
+
     return NextResponse.json({
       success: true,
       feedStyle,

@@ -140,12 +140,20 @@ export async function resolveFeedStyleForUser(
 export async function savePreferredFeedStyle(
   userId: number | string,
   styleName: string,
+  options?: {
+    /** Set false when the caller already restyled the layout itself (e.g. the update-style
+     *  route, which applies the member's EXACT variation pick - the default-variation
+     *  restyle here would overwrite it). Memory is always written. */
+    restyleCurrentMonth?: boolean
+  },
 ): Promise<CuratedFeedStyleName | null> {
   const matched = matchCuratedName([styleName])
   if (!matched) return null
 
   const { mergeMayaMemoryData } = await import("@/lib/maya/memory-store")
   await mergeMayaMemoryData(userId, { preferred_feed_style: matched })
+
+  if (options?.restyleCurrentMonth === false) return matched
 
   try {
     const style = await getFeedStyleV2ByName(matched)

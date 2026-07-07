@@ -11,6 +11,7 @@ import { useFeedActions } from "./hooks/use-feed-actions"
 import { useFeedConfetti } from "./hooks/use-feed-confetti"
 import FeedHeader from "./feed-header"
 import FeedTabs, { type FeedTab } from "./feed-tabs"
+import FeedWeekView from "./feed-week-view"
 import FeedGrid from "./feed-grid"
 import FeedPostsList from "./feed-posts-list"
 import FeedStrategy from "./feed-strategy"
@@ -63,6 +64,8 @@ export default function InstagramFeedView({
   // Removed excessive console.log statements that were causing performance issues during polling
 
   const [activeTab, setActiveTab] = useState<FeedTab>("grid")
+  // 2026-07-07: Week view - same month plan as a week-by-week schedule (paid/membership).
+  const [calendarLens, setCalendarLens] = useState<"grid" | "week">("grid")
   const [businessType, setBusinessType] = useState<string | undefined>(undefined)
   const [showBioModal, setShowBioModal] = useState(false)
   
@@ -564,6 +567,7 @@ export default function InstagramFeedView({
         activeTab={activeTab}
         onTabChange={setActiveTab}
         access={access} // Phase 4.2: Pass access control instead of mode
+        currentFeedId={feedId} // 2026-07-07: plan switcher highlights the open plan
       />
 
       {!access?.isFree && (
@@ -593,6 +597,29 @@ export default function InstagramFeedView({
               />
             ) : (
               <>
+                {/* Grid | Week lens toggle - only when the plan has scheduled dates */}
+                {!access?.isFree && displayPosts.some((p: any) => p.scheduled_at) && (
+                  <div className="mx-auto mb-3 flex max-w-3xl justify-end px-3">
+                    <div className="flex gap-1 rounded-full border border-[#C5C6C8]/60 bg-white p-1">
+                      {(["grid", "week"] as const).map((lens) => (
+                        <button
+                          key={lens}
+                          onClick={() => setCalendarLens(lens)}
+                          className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.14em] transition-colors ${
+                            calendarLens === lens
+                              ? "bg-[#0D0E10] text-white"
+                              : "text-[#4F5052] hover:text-[#0D0E10]"
+                          }`}
+                        >
+                          {lens === "grid" ? "Grid" : "Week"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {calendarLens === "week" && !access?.isFree && displayPosts.some((p: any) => p.scheduled_at) ? (
+                  <FeedWeekView posts={displayPosts} onPostClick={setSelectedPost} />
+                ) : (
                 <FeedGrid
                   posts={displayPosts}
                   postStatuses={postStatuses}
@@ -611,8 +638,9 @@ export default function InstagramFeedView({
                   onDragEnd={dragDrop.handleDragEnd}
                   generationMode={generationMode}
                 />
-                {/* Helpful hint for empty posts */}
-                {displayPosts.some((p: any) => !p.image_url) && (
+                )}
+                {/* Helpful hint for empty posts (grid lens only - week cards carry their own state) */}
+                {calendarLens !== "week" && displayPosts.some((p: any) => !p.image_url) && (
         <div className="mt-6 px-4 text-center">
                     <p className="text-xs font-light text-[color:var(--app-text-secondary)]">
                       Click any empty post to upload an image or select from your gallery

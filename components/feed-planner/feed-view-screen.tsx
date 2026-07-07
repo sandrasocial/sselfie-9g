@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
 import FeedStyleModal, { type FeedStyle, type FeedStyleModalData } from "./feed-style-modal"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
+import { useFeedNav } from "./feed-nav-context"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -87,8 +88,9 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   // Use provided access or fetched access
   const access = accessProp || accessData
   
-  // Get feedId from prop, query param, or null
-  const feedIdFromQuery = feedIdProp ?? (searchParams.get('feedId') ? parseInt(searchParams.get('feedId')!, 10) : null)
+  // Get feedId from embedded nav (inside /app), prop, query param, or null
+  const feedNav = useFeedNav()
+  const feedIdFromQuery = feedNav?.feedId ?? feedIdProp ?? (searchParams.get('feedId') ? parseInt(searchParams.get('feedId')!, 10) : null)
   const activationAction = searchParams.get("activation") === "generate" ? "generate" : null
   const createFirstFeedParam = searchParams.get("createFirstFeed") === "1"
 
@@ -137,10 +139,15 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     if (feedData?.redirectedFromPreview && feedData?.feed?.id) {
       const newFeedId = feedData.feed.id
       console.log('[Feed Planner] ⚠️ Redirected from preview feed to full feed:', newFeedId)
-      // Update URL to reflect the new feedId
-      router.replace(`/feed-planner?feedId=${newFeedId}`, { scroll: false })
+      if (feedNav) {
+        // Embedded in /app: swap the feed in place, never bounce to the standalone route.
+        feedNav.navigateToFeed(newFeedId)
+      } else {
+        // Update URL to reflect the new feedId
+        router.replace(`/feed-planner?feedId=${newFeedId}`, { scroll: false })
+      }
     }
-  }, [feedData?.redirectedFromPreview, feedData?.feed?.id, router])
+  }, [feedData?.redirectedFromPreview, feedData?.feed?.id, router, feedNav])
 
   // Extract effective feedId from response
   // If using latest endpoint, extract feedId from response
@@ -254,9 +261,10 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
 
           const data = await response.json()
           console.log('[Feed Planner] ✅ Free example feed created:', data.feedId)
-          
-          // Refresh feed data to show the new feed
-          router.push(`/feed-planner?feedId=${data.feedId}`)
+
+          // Refresh feed data to show the new feed (in place when embedded in /app)
+          if (feedNav) feedNav.navigateToFeed(data.feedId)
+          else router.push(`/feed-planner?feedId=${data.feedId}`)
           setIsCreatingFreeExample(false)
         } catch (error) {
           console.error('[Feed Planner] Error creating free example feed:', error)
@@ -327,9 +335,10 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
         await mutateFeedList()
       }
       
-      // Navigate to the new feed
-      router.push(`/feed-planner?feedId=${data.feedId}`)
-      
+      // Navigate to the new feed (in place when embedded in /app)
+      if (feedNav) feedNav.navigateToFeed(data.feedId)
+      else router.push(`/feed-planner?feedId=${data.feedId}`)
+
       toast({
         title: "Feed created",
         description: "Your new feed is ready. Start adding images!",

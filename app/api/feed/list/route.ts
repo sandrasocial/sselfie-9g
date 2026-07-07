@@ -83,6 +83,7 @@ async function handleGetFeedList({
         created_at: feed.created_at,
         status: feed.status,
         layout_type: feed.layout_type || 'grid_3x3', // Default to grid_3x3 for backward compatibility
+        period_month: feed.period_month || null, // "2026-07" for month plans, null for classic grids
         post_count: counts.post_count,
         image_count: counts.image_count,
         display_color: feed.display_color || null,
