@@ -597,8 +597,11 @@ export default function InstagramFeedView({
               />
             ) : (
               <>
-                {/* Grid | Week lens toggle - only when the plan has scheduled dates */}
-                {!access?.isFree && displayPosts.some((p: any) => p.scheduled_at) && (
+                {/* Grid | Week lens toggle - always visible for paid plans (2026-07-07:
+                    Sandra's report - gating it on scheduled dates made it vanish on classic
+                    grids, leaving "nowhere to switch". Week view handles undated posts via
+                    its Anytime section, so the toggle is safe everywhere). */}
+                {!access?.isFree && (
                   <div className="mx-auto mb-3 flex max-w-3xl justify-end px-3">
                     <div className="flex gap-1 rounded-full border border-[#C5C6C8]/60 bg-white p-1">
                       {(["grid", "week"] as const).map((lens) => (
@@ -617,7 +620,7 @@ export default function InstagramFeedView({
                     </div>
                   </div>
                 )}
-                {calendarLens === "week" && !access?.isFree && displayPosts.some((p: any) => p.scheduled_at) ? (
+                {calendarLens === "week" && !access?.isFree ? (
                   <FeedWeekView posts={displayPosts} onPostClick={setSelectedPost} />
                 ) : (
                 <FeedGrid

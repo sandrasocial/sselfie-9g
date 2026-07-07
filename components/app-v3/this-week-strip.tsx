@@ -80,8 +80,33 @@ export function ThisWeekStrip({
     }
   }
 
-  // Never block the calendar: nothing to show (or closed for this week) -> render nothing.
-  if (failed || dismissed) return null
+  const reopen = () => {
+    setDismissed(false)
+    try {
+      window.localStorage.removeItem(DISMISS_KEY)
+    } catch {
+      // best effort
+    }
+  }
+
+  // Never block the calendar: nothing to show -> render nothing.
+  if (failed) return null
+
+  // Closed for this week: keep a small reopen chip in place (2026-07-07, Sandra's report -
+  // closing the strip left NO way back into it until Monday).
+  if (dismissed) {
+    return (
+      <div className="mx-auto mb-2 flex max-w-3xl justify-end px-3 pt-3">
+        <button
+          type="button"
+          onClick={reopen}
+          className="rounded-full border border-[#C5C6C8]/60 bg-white px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-[#4F5052] transition-colors hover:border-[#0D0E10]/40 hover:text-[#0D0E10]"
+        >
+          This week on Instagram
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto mb-4 max-w-3xl px-3 pt-4">
