@@ -1,0 +1,92 @@
+// Feed Planner image engine (2026-07-07). The calendar grid now generates with the same
+// flagship model as Maya chat: gpt-image-2 via OpenAI (env-switchable through
+// OPENAI_IMAGE_MODEL, same contract as app-v3). Nano Banana Pro / Replicate Flux remain in
+// the repo only for the legacy Classic (trained-model) opt-in and emergency rollback.
+
+import OpenAI, { toFile } from "openai"
+
+const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
+
+function getClient(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured")
+  return new OpenAI({ apiKey })
+}
+
+async function fetchAsFile(url: string, name: string) {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Failed to fetch reference image (${res.status})`)
+  const buffer = Buffer.from(await res.arrayBuffer())
+  return toFile(buffer, name, { type: "image/png" })
+}
+
+function isTransientError(error: unknown): boolean {
+  const status = (error as { status?: number })?.status
+  if (typeof status === "number") return status >= 500 || status === 429
+  const message = error instanceof Error ? error.message : String(error)
+  return /ECONNRESET|ETIMEDOUT|ECONNREFUSED|fetch failed|socket hang up|network/i.test(message)
+}
+
+export interface FeedImageRequest {
+  prompt: string
+  /** Identity reference URLs (the member's avatar selfies). Empty for object scenes
+   *  (flatlay/detail) - those generate without references so the model never paints the
+   *  member into a product shot. */
+  referenceUrls: string[]
+  /** gpt-image portrait canvas; the grid renders 4:5-ish tiles from it. */
+  size?: "1024x1536" | "1024x1024"
+}
+
+/** Generate one feed image. Returns the PNG buffer (synchronous - no prediction polling). */
+export async function generateFeedImageWithOpenAI(req: FeedImageRequest): Promise<Buffer> {
+  const openai = getClient()
+  const size = req.size ?? "1024x1536"
+
+  const run = async (): Promise<Buffer> => {
+    if (req.referenceUrls.length > 0) {
+      const files = await Promise.all(
+        req.referenceUrls.slice(0, 5).map((url, i) => fetchAsFile(url, `identity-${i + 1}.png`)),
+      )
+      const input: Record<string, unknown> = {
+        model: OPENAI_IMAGE_MODEL,
+        image: files.length === 1 ? files[0] : files,
+        prompt: req.prompt,
+        n: 1,
+        size,
+        output_format: "png",
+        // Same rationale as app-v3: prompts are tasteful editorial fashion photography; the
+        // "auto" default only produces false positives here.
+        moderation: "low",
+      }
+      // gpt-image-2 processes every input at high fidelity automatically; older models need the flag.
+      if (OPENAI_IMAGE_MODEL !== "gpt-image-2") input.input_fidelity = "high"
+      const response = await openai.images.edit(input as any)
+      const b64 = response.data?.[0]?.b64_json
+      if (!b64) throw new Error("No image data returned from OpenAI")
+      return Buffer.from(b64, "base64")
+    }
+
+    // Object scene (flatlay/detail): plain text-to-image, no identity references.
+    const response = await openai.images.generate({
+      model: OPENAI_IMAGE_MODEL,
+      prompt: req.prompt,
+      n: 1,
+      size,
+      output_format: "png",
+      moderation: "low",
+    } as any)
+    const b64 = response.data?.[0]?.b64_json
+    if (!b64) throw new Error("No image data returned from OpenAI")
+    return Buffer.from(b64, "base64")
+  }
+
+  try {
+    return await run()
+  } catch (error) {
+    if (isTransientError(error)) {
+      await new Promise((resolve) => setTimeout(resolve, 2500))
+      return await run()
+    }
+    throw error
+  }
+}

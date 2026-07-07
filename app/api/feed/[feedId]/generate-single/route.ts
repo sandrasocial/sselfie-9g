@@ -62,6 +62,7 @@ interface FeedLayout {
   layout_type?: string | null
   visual_aesthetic?: string | unknown[] | null
   fashion_style?: string | unknown[] | null
+  period_month?: string | null
 }
 
 interface AvatarImage {
@@ -80,6 +81,10 @@ interface Model {
   lora_weights_url?: string | null
   [key: string]: unknown
 }
+
+// gpt-image-2 generates synchronously (no prediction polling) - the call itself takes
+// 30-90s, so the route needs the extended window.
+export const maxDuration = 180
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
   let claimedPostId: number | null = null
@@ -325,8 +330,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     let feedLayout: FeedLayout | undefined
     try {
       const result = await sql`
-        SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed, feed_style, feed_style_variation_id, layout_type, visual_aesthetic, fashion_style
-        FROM feed_layouts 
+        SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed, feed_style, feed_style_variation_id, layout_type, visual_aesthetic, fashion_style, period_month
+        FROM feed_layouts
         WHERE id = ${feedIdInt}
         AND user_id = ${user.id}
       `
@@ -429,7 +434,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       const referenceImageCount = avatarImages.length
       console.log(`[v0] [GENERATE-SINGLE] 📸 Reference images found: ${referenceImageCount} (max 5, optimal: 3-5)`)
       
-      if (referenceImageCount === 0) {
+      // Object scenes (flatlay/detail) generate WITHOUT identity references - attaching her
+      // selfie to a product shot risks painting her into it. Only person scenes require one.
+      const isObjectScene = post.post_type === "flatlay" || post.post_type === "detail"
+      if (referenceImageCount === 0 && !isObjectScene) {
         return Response.json(
           {
             error: "Pro Mode requires reference images",
@@ -665,46 +673,157 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         )
       }
 
-      let generation
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          generation = await generateWithNanoBanana({
-            prompt: cleanedPrompt,
-            image_input: baseImages.map(img => img.url),
-            aspect_ratio: aspectRatio,
-            resolution: '2K',
-            output_format: 'png',
-            safety_filter_level: 'block_only_high',
-          })
-          break
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error)
-          const retryable = message.includes("502") || message.includes("Bad Gateway")
-          if (attempt === 1 || !retryable) {
-            throw error
+      // ── FLAGSHIP ENGINE (2026-07-07): gpt-image-2 via OpenAI, same model as Maya chat. ──
+      // Nano Banana Pro is retired here; FEED_PLANNER_IMAGE_ENGINE=nano-banana is the
+      // emergency rollback only. Classic (Flux trained model) stays as the legacy opt-in
+      // branch below - never the default.
+      if (process.env.FEED_PLANNER_IMAGE_ENGINE === "nano-banana") {
+        let generation
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            generation = await generateWithNanoBanana({
+              prompt: cleanedPrompt,
+              image_input: baseImages.map(img => img.url),
+              aspect_ratio: aspectRatio,
+              resolution: '2K',
+              output_format: 'png',
+              safety_filter_level: 'block_only_high',
+            })
+            break
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            const retryable = message.includes("502") || message.includes("Bad Gateway")
+            if (attempt === 1 || !retryable) {
+              throw error
+            }
+            await new Promise(resolve => setTimeout(resolve, 1200))
           }
-          await new Promise(resolve => setTimeout(resolve, 1200))
         }
+        if (!generation) {
+          throw new Error("Failed to generate image")
+        }
+
+        await sql`
+          UPDATE feed_posts
+          SET generation_status = 'generating',
+              prediction_id = ${generation.predictionId},
+              prompt = ${cleanedPrompt},
+              updated_at = NOW()
+          WHERE id = ${postId}
+          AND user_id = ${user.id}
+        `
+
+        return Response.json({
+          predictionId: generation.predictionId,
+          success: true,
+          message: "Pro Mode image generation started",
+          mode: 'pro',
+        })
       }
-      if (!generation) {
-        throw new Error("Failed to generate image")
+
+      // Compose the full prompt the way the chat compiler does: the approved template is the
+      // scene foundation; identity + environment-true realism wrap it for person scenes.
+      // Object scenes (flatlay/detail) ship the template as-is - it's already a complete,
+      // person-free scene prompt with the realism header.
+      const { IDENTITY_ANCHOR, PHOTOGRAPHER_REALISM, REALISM_TOKENS, AVOID_LIST, PORTRAIT_QUALITY } =
+        await import("@/lib/app-v3/maya/ingredients")
+      const { SSELFIE_ENVIRONMENT_INTEGRATION, SSELFIE_SELFIE_RESTYLE } =
+        await import("@/lib/app-v3/maya/visual-rules")
+      const usesIdentity = !isObjectScene && baseImages.length > 0
+      const openaiPrompt = usesIdentity
+        ? [
+            IDENTITY_ANCHOR,
+            cleanedPrompt,
+            SSELFIE_ENVIRONMENT_INTEGRATION,
+            PHOTOGRAPHER_REALISM,
+            SSELFIE_SELFIE_RESTYLE,
+            REALISM_TOKENS + ".",
+            PORTRAIT_QUALITY,
+            AVOID_LIST,
+          ].join("\n")
+        : [cleanedPrompt, PORTRAIT_QUALITY].join("\n")
+
+      // Synchronous generation: on ANY failure before the image is saved, refund the credits
+      // (the async Nano Banana flow couldn't do this; the sync flow can and should).
+      let blob: { url: string }
+      try {
+        const { generateFeedImageWithOpenAI } = await import("@/lib/feed-planner/openai-image")
+        const imageBuffer = await generateFeedImageWithOpenAI({
+          prompt: openaiPrompt,
+          referenceUrls: usesIdentity ? baseImages.map(img => img.url) : [],
+        })
+
+        const { put } = await import("@vercel/blob")
+        blob = await put(
+          `feed-images/${user.id}/${feedIdInt}-${postId}-${Date.now()}.png`,
+          imageBuffer,
+          { access: "public", contentType: "image/png" },
+        )
+      } catch (generationError) {
+        try {
+          const { refundCredits } = await import("@/lib/credits")
+          await refundCredits(
+            user.id.toString(),
+            getStudioProCreditCost('2K'),
+            "Refund: feed image generation failed",
+            `feed-${feedIdInt}-${postId}`,
+          )
+        } catch (refundError) {
+          console.error("[v0] [GENERATE-SINGLE] Credit refund failed:", refundError)
+        }
+        throw generationError
       }
 
       await sql`
         UPDATE feed_posts
-        SET generation_status = 'generating',
-            prediction_id = ${generation.predictionId},
+        SET generation_status = 'completed',
+            image_url = ${blob.url},
             prompt = ${cleanedPrompt},
             updated_at = NOW()
         WHERE id = ${postId}
         AND user_id = ${user.id}
       `
-      
-      return Response.json({ 
-        predictionId: generation.predictionId,
+
+      // Gallery tagging: every calendar image also lands in ai_images so the Photos tab
+      // shows it, labeled by plan month + the day's theme. category='photo' keeps it under
+      // the Photos filter; source records the engine.
+      try {
+        const monthLabel = (() => {
+          if (!feedLayout?.period_month) return null
+          const [y, m] = String(feedLayout.period_month).split("-").map(Number)
+          const names = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+          return names[(m || 1) - 1] && y ? `${names[(m || 1) - 1]} ${y}` : null
+        })()
+        const galleryTitle = [
+          "Calendar",
+          monthLabel,
+          post.content_pillar || (isObjectScene ? post.post_type : null),
+        ]
+          .filter(Boolean)
+          .join(" · ")
+        await sql`
+          INSERT INTO ai_images (
+            user_id, image_url, title, prompt, generated_prompt, prediction_id,
+            generation_status, source, category, created_at
+          ) VALUES (
+            ${user.id}, ${blob.url}, ${galleryTitle}, ${cleanedPrompt}, ${openaiPrompt},
+            ${"feed-" + feedIdInt + "-" + postId + "-" + Date.now()},
+            'completed', 'openai', 'photo', NOW()
+          )
+        `
+      } catch (galleryError) {
+        // The feed post is already updated - a gallery-insert failure must not fail the
+        // generation, but it must be visible in logs (image exists but is missing from Photos).
+        console.error("[v0] [GENERATE-SINGLE] Gallery insert failed (image saved to feed):", galleryError)
+      }
+
+      return Response.json({
         success: true,
-        message: "Pro Mode image generation started",
+        imageUrl: blob.url,
+        completed: true,
+        message: "Image generated",
         mode: 'pro',
+        engine: 'openai',
       })
     }
     
