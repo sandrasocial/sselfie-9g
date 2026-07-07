@@ -11,6 +11,7 @@ import {
   funnelBlock,
   noFakeBlock,
   proofBlock,
+  purposeMessagingBlock,
   sandraContentIdentityBlock,
   sanitizeGroundedText,
   storyBankBlock,
@@ -307,6 +308,8 @@ export async function generateStorySequence(input: {
   const prompt = `You are Sandra's Instagram Story strategist for @sandra.social (selfie education, AI-assisted brand imagery from one selfie, personal branding for women).
 
 ${voiceBlock()}
+
+${purposeMessagingBlock()}
 
 ${sandraContentIdentityBlock()}
 

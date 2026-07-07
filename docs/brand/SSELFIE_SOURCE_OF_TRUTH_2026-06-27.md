@@ -6,6 +6,8 @@ Status: Current controlling source for SSELFIE voice, audience, story, expertise
 
 If this document conflicts with older docs, this document wins.
 
+Purpose and category extension: `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md` now controls the highest-level message, founder-led category, offer-temperature rules, and drift prevention. Use both docs together for copy, content, prompts, Maya/admin language, and product positioning.
+
 ## Source Files
 
 This document is based on Sandra's new source files, stored here:

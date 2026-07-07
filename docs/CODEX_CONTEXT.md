@@ -12,11 +12,15 @@ As of 2026-06-27, all voice, audience, story, expertise, product-positioning, an
 
 `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
 
+As of 2026-07-07, all purpose, category, founder-led messaging, content-system, and drift-prevention work must also start from:
+
+`docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`
+
 Fresh source files are stored in `docs/brand/source/2026-06-27/`.
 
 The former Voice Bible, former content grounding doc, and old Studio marketing drafts have been removed from active guidance. Do not recreate or reuse them unless Sandra explicitly asks for historical context.
 
-Do not reuse old Studio marketing copy or generic AI/headshot positioning. SSELFIE's current lock: AI is a tool, the woman is the point, the selfie is the first step, visibility is the transformation, and Sandra's voice is simple, warm, direct, and human.
+Do not reuse old Studio marketing copy or generic AI/headshot positioning. SSELFIE's current lock: this was never just about selfies, it was about becoming visible enough to build something of your own. AI is a tool, the woman is the point, the selfie is the first step, visibility is the transformation, low-ticket offers are bridges, warm trust gets Visibility To Paid / Work With Me, SUITE is the monthly creation system, and Sandra's voice is simple, warm, direct, and human.
 
 ## Tech stack overview
 

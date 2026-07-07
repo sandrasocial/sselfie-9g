@@ -22,6 +22,7 @@ import {
   funnelBlock,
   noFakeBlock,
   proofBlock,
+  purposeMessagingBlock,
   sandraContentIdentityBlock,
   sanitizeGroundedText,
   voiceBlock,
@@ -556,6 +557,8 @@ export async function generateCarousels(input: GeneratorInput = {}): Promise<Car
 
 ${voiceBlock()}
 
+${purposeMessagingBlock()}
+
 ${sandraContentIdentityBlock()}
 
 ${noFakeBlock()}
@@ -693,6 +696,8 @@ export async function generateTutorialCarousels(input: GeneratorInput): Promise<
   const prompt = `You are Sandra's tutorial carousel writer for @sandra.social.
 
 ${voiceBlock()}
+
+${purposeMessagingBlock()}
 
 ${sandraContentIdentityBlock()}
 
