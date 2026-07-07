@@ -3417,29 +3417,28 @@ export function MayaConcierge({
               </div>
             )}
 
+          {/* MAYA'S FIRST COFFEE invite (2026-07-07): after her first photo, Maya offers a
+              3-question get-to-know-you IN CHAT (persona carries the interview; answers save
+              to her real brand profile via save_brand_profile). The old one-box free-text
+              stays as the fallback path for someone who'd rather type it in one go. */}
           {showBrandPrompt && (
             <div className="flex min-w-0 max-w-full items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
               <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
               <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[6px] rounded-tl-[2px] border border-[#C5C6C8]/60 bg-white p-4 [overflow-wrap:anywhere] sm:max-w-[88%]">
                 <p className="text-[15px] leading-relaxed text-[#282728]">
-                  Love that. So I can make these really yours, tell me a little about your brand:
-                  what you do and who you help. 🤍
+                  Love that. Can I ask you three quick things? Then everything I make starts
+                  sounding like you: your business, your story, your words. 🤍
                 </p>
-                <textarea
-                  value={brandDraft}
-                  onChange={e => setBrandDraft(e.target.value)}
-                  rows={2}
-                  placeholder="e.g. I'm a founder coach for women starting an online business"
-                  className="mt-3 w-full resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[14px] text-[#282728] outline-none focus:border-[#0D0E10]"
-                />
-                <div className="mt-2 flex min-w-0 flex-wrap items-center gap-3">
+                <div className="mt-3 flex min-w-0 flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => void saveBrand()}
-                    disabled={brandDraft.trim().length === 0}
-                    className="min-h-11 rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-40"
+                    onClick={() => {
+                      setBrandPromptDismissed(true)
+                      sendMessage({ text: "Yes, ask me your three questions 🤍" })
+                    }}
+                    className="min-h-11 rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white"
                   >
-                    Save
+                    Ask away
                   </button>
                   <button
                     type="button"
@@ -3449,6 +3448,26 @@ export function MayaConcierge({
                     Not now
                   </button>
                 </div>
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-[11px] uppercase tracking-[0.14em] text-[#818283] hover:text-[#4F5052]">
+                    Rather type it yourself?
+                  </summary>
+                  <textarea
+                    value={brandDraft}
+                    onChange={e => setBrandDraft(e.target.value)}
+                    rows={2}
+                    placeholder="e.g. I'm a founder coach for women starting an online business"
+                    className="mt-2 w-full resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[14px] text-[#282728] outline-none focus:border-[#0D0E10]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void saveBrand()}
+                    disabled={brandDraft.trim().length === 0}
+                    className="mt-2 min-h-11 rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-40"
+                  >
+                    Save
+                  </button>
+                </details>
               </div>
             </div>
           )}

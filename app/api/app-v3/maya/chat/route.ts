@@ -1570,12 +1570,48 @@ export async function POST(req: Request) {
       },
     })
 
+    // MAYA'S FIRST COFFEE (2026-07-07): the interview's structured save. Maya extracts what
+    // the member tells her (business, audience, story, goals) and writes it to
+    // user_personal_brand - the profile every system reads (chat context, month drafts,
+    // This Week, feed style). Fields are optional so she saves after EACH answer, not only
+    // at the end; agentName rides along for the "what should I call myself" moment.
+    const saveBrandProfile = tool({
+      description:
+        "Quietly save what she just told you about her brand during your get-to-know-you questions: her business, who it's for, her story, her goals. Call it after EACH answer with only the fields she gave - never announce the save. Also saves the name she gives you (agentName) if she names you.",
+      inputSchema: z.object({
+        name: z.string().optional().describe("Her name, if she shares it."),
+        businessType: z.string().optional().describe("What she does, e.g. 'Pilates studio for new moms'."),
+        targetAudience: z.string().optional().describe("Who it's for, in her words."),
+        transformationStory: z.string().optional().describe("Her story: what she was doing before, what changed, in her words."),
+        goals: z.string().optional().describe("What showing up online should get her in the next ~90 days."),
+        futureVision: z.string().optional().describe("The bigger picture she's building toward, if she shares it."),
+        brandVoice: z.string().optional().describe("How she talks/wants to sound, if it comes up."),
+        agentName: z.string().optional().describe("The name she gives YOU, if she names you."),
+      }),
+      execute: async ({ agentName, ...facts }) => {
+        if (!memoryUserId || isAdminSession) return { saved: false }
+        try {
+          const { saveBrandProfileFacts } = await import("@/lib/app-v3/maya/brand-profile-store")
+          const saved = await saveBrandProfileFacts(memoryUserId, facts)
+          if (agentName?.trim()) {
+            await saveMemory(String(memoryUserId), { agentName: agentName.trim() }).catch(() => {})
+          }
+          if (saved) logBehavior("suite_brand_interview_saved", { fields: Object.keys(facts).filter(k => (facts as any)[k]) })
+          return { saved: saved || Boolean(agentName?.trim()) }
+        } catch (error) {
+          console.error("[app-v3 maya chat] brand profile save failed:", error)
+          return { saved: false }
+        }
+      },
+    })
+
     const tools = {
       emit_concepts: emitConcepts,
       ask_clarify: askClarify,
       set_format: setFormat,
       show_feed_plan: showFeedPlan,
       remember,
+      save_brand_profile: saveBrandProfile,
       ...(isAdminSession
         ? {
             show_admin_content_sources: showAdminContentSources,
