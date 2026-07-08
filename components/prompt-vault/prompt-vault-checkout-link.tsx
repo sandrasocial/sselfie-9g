@@ -51,9 +51,16 @@ function buildCheckoutHref(searchParams: { get(name: string): string | null }): 
   return query ? `/checkout/prompt-vault?${query}` : "/checkout/prompt-vault"
 }
 
-export function PromptVaultCheckoutLink({ label = "Get the Vault · $27" }: { label?: string }) {
+export function PromptVaultCheckoutLink({
+  label = "Get the Vault · $27",
+  surface = "dark",
+}: {
+  label?: string
+  surface?: "dark" | "cream"
+}) {
   const searchParams = useSearchParams()
   const href = buildCheckoutHref(searchParams)
+  const dark = surface === "dark"
 
   return (
     <Link
@@ -64,19 +71,21 @@ export function PromptVaultCheckoutLink({ label = "Get the Vault · $27" }: { la
         justifyContent: "center",
         padding: "13px 32px",
         minHeight: "46px",
-        background: "#f5f5f5",
-        color: "#0a0a0a",
+        background: dark ? "#f5f5f5" : "#0a0a0a",
+        color: dark ? "#0a0a0a" : "#f5f5f5",
         fontSize: "10px",
         fontWeight: 600,
         letterSpacing: "0.22em",
         textTransform: "uppercase",
         textDecoration: "none",
         border: "1px solid transparent",
-        boxShadow:
-          "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
+        boxShadow: dark
+          ? "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)"
+          : "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -2px 0 rgba(0,0,0,0.45), 0 1px 5px rgba(0,0,0,0.25)",
         whiteSpace: "normal",
         textAlign: "center",
         lineHeight: 1.35,
+        width: "fit-content",
       }}
     >
       {label}

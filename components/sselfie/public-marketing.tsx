@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition, type ReactNode } from "react"
 import Link from "next/link"
 import { appendReferralParam, buildReferralLoginHref } from "@/lib/referrals/routing"
+import { PromptVaultCheckoutLink } from "@/components/prompt-vault/prompt-vault-checkout-link"
 
 // ─── Vercel Blob images ───────────────────────────────────────────────────────
 const BLOB = "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com"
@@ -489,12 +490,13 @@ export function PublicFooter() {
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 function Hero({
-  eyebrow, title, body, primary, secondary, imageSrc,
+  eyebrow, title, body, primary, primaryNode, secondary, imageSrc,
 }: {
   eyebrow:    string
   title:      ReactNode
   body:       ReactNode
-  primary:    { href: string; label: string }
+  primary?:   { href: string; label: string }
+  primaryNode?: ReactNode
   secondary?: { href: string; label: string }
   imageSrc:   string
 }) {
@@ -518,7 +520,7 @@ function Hero({
             {body}
           </div>
           <div className="mf flex flex-col sm:flex-row gap-3 items-center justify-center" style={{ transitionDelay: "0.15s" }}>
-            <Btn href={primary.href} surface="dark">{primary.label}</Btn>
+            {primaryNode ?? (primary && <Btn href={primary.href} surface="dark">{primary.label}</Btn>)}
             {secondary && <Btn href={secondary.href} ghost surface="dark">{secondary.label}</Btn>}
           </div>
         </div>
@@ -529,17 +531,18 @@ function Hero({
 
 // ─── Section ──────────────────────────────────────────────────────────────────
 function Section({
-  eyebrow, title, children, dark = true, narrow = false,
+  eyebrow, title, children, dark = true, narrow = false, id,
 }: {
   eyebrow?: string
   title?:   ReactNode
   children: ReactNode
   dark?:    boolean
   narrow?:  boolean
+  id?:      string
 }) {
   const surface = dark ? C.ink : C.cream
   return (
-    <section style={{ position: "relative", background: surface, padding: "clamp(60px, 8vw, 88px) clamp(18px, 4vw, 24px)", overflow: "hidden" }}>
+    <section id={id} style={{ position: "relative", background: surface, padding: "clamp(60px, 8vw, 88px) clamp(18px, 4vw, 24px)", overflow: "hidden", scrollMarginTop: "60px" }}>
       <PaperTexture dark={dark} />
       <div className={`mx-auto relative ${narrow ? "max-w-3xl" : "max-w-6xl"}`} style={{ zIndex: 2 }}>
         {eyebrow && <span className="mf block mb-4" style={ty("eyebrow", dark)}>{eyebrow}</span>}
@@ -1611,5 +1614,205 @@ function InquiryForm() {
       </button>
       {error && <p style={{ fontSize: "13px", color: "#f87171", fontFamily: F.sans }}>{error}</p>}
     </form>
+  )
+}
+
+// ─── Prompt Vault landing (copy + design approved by Sandra 2026-07-08) ───────
+export type VaultCollectionCard = {
+  id: string
+  number: string
+  title: string
+  mood?: string
+  whenToUse?: string
+  image?: string
+  shotCount?: number
+}
+
+const VAULT_PROOF = [
+  { quote: "Best one so far. I love that it looks real, and me.", who: "A SSELFIE member · 50 & fabulous" },
+  { quote: "I just took the best photo of myself in years.", who: "A SSELFIE member · One selfie" },
+  { quote: "I'm so picky it's not even funny. But this... my God. I'm blown away.", who: "A SSELFIE member · AI photoshoot" },
+  { quote: "I don't often have a good photo of myself. This solves that.", who: "A SSELFIE member · AI photoshoot" },
+  { quote: "I made the most beautiful selfie since I got my iPhone. Even in my pajamas.", who: "Medina C. · One selfie" },
+  { quote: "I used to hate taking photos. Now I feel like a queen.", who: "A SSELFIE member · AI photoshoot" },
+]
+
+const VAULT_FAQ = [
+  {
+    question: "Will it still look like me?",
+    answer:
+      "That is the goal. You use your own selfie, then check the result before you post. The image should feel recognizable, not like a stranger.",
+  },
+  {
+    question: "What if I only have my phone?",
+    answer: "That is enough to start. One clear selfie in soft light gives AI a much better base.",
+  },
+  {
+    question: "Is it really one payment?",
+    answer: "Yes. One payment, instant access, and every new collection I add lands in your Vault.",
+  },
+]
+
+function VaultRiskLine({ dark }: { dark: boolean }) {
+  return (
+    <p style={{ ...ty("body", dark), fontSize: "12px", color: dark ? C.onDarkMuted : C.onCreamMuted, margin: "12px 0 0", maxWidth: "420px" }}>
+      One payment. Instant access. Reply to me and a real person, usually me, helps.
+    </p>
+  )
+}
+
+export function PromptVaultPageContent({
+  collections,
+  collectionCount,
+  shotCount,
+  priceLabel,
+  ctaLabel,
+  checkoutFailed = false,
+}: {
+  collections: VaultCollectionCard[]
+  collectionCount: number
+  shotCount: number
+  priceLabel: string
+  ctaLabel: string
+  checkoutFailed?: boolean
+}) {
+  return (
+    <PublicPageShell>
+      <PublicNav />
+
+      {checkoutFailed && (
+        <section className="mf" style={{ background: C.cream, borderBottom: `1px solid ${C.divCream}`, padding: "18px 22px" }}>
+          <div style={{ maxWidth: "1120px", margin: "0 auto", display: "flex", flexWrap: "wrap", gap: "14px", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ minWidth: "240px", flex: "1 1 420px" }}>
+              <p style={{ ...ty("eyebrow", false), marginBottom: "6px" }}>Checkout</p>
+              <p style={{ ...ty("body", false), margin: 0, fontSize: "14px" }}>
+                Your payment form did not open cleanly. Try once more and keep this page open while Stripe loads.
+              </p>
+            </div>
+            <PromptVaultCheckoutLink label="Retry checkout" surface="cream" />
+          </div>
+        </section>
+      )}
+
+      {/* HERO - dark full-bleed */}
+      <Hero
+        eyebrow="The AI Photo Prompt Vault"
+        title={<>Turn one selfie into unlimited photoshoots.</>}
+        body={
+          <>
+            <p style={{ marginBottom: "14px" }}>
+              Every prompt in the Vault is a full shoot: the outfit, the light, the mood, the angles.
+              You copy, you paste it into ChatGPT with one clear selfie, and you get photos of you.
+              Not a stranger with your haircut.
+            </p>
+            <p style={{ fontSize: "13px", color: C.onDarkMuted }}>
+              Still you. Still recognizable. AI shouldn&apos;t erase you. It should frame you.
+            </p>
+          </>
+        }
+        primaryNode={<PromptVaultCheckoutLink label={ctaLabel} />}
+        secondary={{ href: "#collections", label: "See the shoots" }}
+        imageSrc="/images/ai-prompts/dark-feminine-cafe-shot-3.jpg"
+      />
+
+      {/* THE PROBLEM - cream */}
+      <Section eyebrow="The part nobody tells you" title={<>You tried an AI photo. It didn&apos;t look like you.</>} dark={false} narrow>
+        <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
+          <p>
+            The tool matters less than the prompt. A vague prompt gives you a random woman.
+            A Vault prompt locks in your face and your body, and only upgrades the light,
+            the outfit, the location.
+          </p>
+        </div>
+      </Section>
+
+      {/* PROOF - dark */}
+      <Section eyebrow="Real customer words" title="What women say after their first shoot." dark>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {VAULT_PROOF.map((item) => (
+            <FCard key={item.quote} dark title={`“${item.quote}”`} body={item.who} />
+          ))}
+        </div>
+      </Section>
+
+      {/* COLLECTIONS - cream */}
+      <Section id="collections" eyebrow="The full library" title="Pick a shoot. See the first photo free." dark={false}>
+        <p className="mf max-w-3xl" style={{ ...ty("body", false), fontSize: "16px", marginBottom: "40px" }}>
+          Every collection is a full shoot with matching angles, outfits and moods.
+          Shot 1 is free to preview. The rest is inside.
+        </p>
+        <div className="grid gap-5 md:grid-cols-2">
+          {collections.map((card) => (
+            <article key={card.id} className="mf" style={{ ...cardSx(false), padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+              {card.image && (
+                <div className="relative overflow-hidden" style={{ aspectRatio: "4/5", flexShrink: 0 }}>
+                  <img src={card.image} alt={`${card.title} example`} loading="lazy" className="w-full h-full object-cover" style={{ objectPosition: "center top" }} />
+                  {card.shotCount ? (
+                    <span className="absolute bottom-4 left-4" style={{ ...ty("eyebrow", true), letterSpacing: "0.2em", color: C.onDark, background: "color-mix(in srgb, var(--color-obsidian) 62%, transparent)", padding: "5px 10px" }}>
+                      Shot 1 of {card.shotCount}
+                    </span>
+                  ) : null}
+                </div>
+              )}
+              <div style={{ padding: "24px 24px 26px", display: "flex", flexDirection: "column", flex: 1 }}>
+                <span style={{ ...ty("eyebrow", false), marginBottom: "8px" }}>{card.number}</span>
+                <h3 style={{ ...ty("h3", false), textShadow: "none", marginBottom: "8px" }}>{card.title}</h3>
+                {card.mood && <p style={{ ...ty("body", false), fontSize: "13px", fontStyle: "italic", color: C.onCreamMuted, marginBottom: "8px" }}>{card.mood}</p>}
+                {card.whenToUse && <p style={{ ...ty("body", false), fontSize: "14px", marginBottom: "18px" }}>{card.whenToUse}</p>}
+                {card.shotCount ? (
+                  <p style={{ ...ty("body", false), fontSize: "12px", color: C.onCreamMuted, margin: "auto 0 16px" }}>
+                    This is shot 1. The other {card.shotCount - 1} shots and their copy-paste prompts are in the Vault.
+                  </p>
+                ) : null}
+                <PromptVaultCheckoutLink label={`Get full sequence · ${priceLabel}`} surface="cream" />
+                <VaultRiskLine dark={false} />
+              </div>
+            </article>
+          ))}
+        </div>
+      </Section>
+
+      {/* HOW IT WORKS - dark */}
+      <Section eyebrow="How it works" title="Three steps. No learning curve." dark>
+        <div className="grid gap-4 md:grid-cols-3">
+          <FCard dark eyebrow="01" title="Pick a shoot" body="Browse the collections and pick the vibe you want." />
+          <FCard dark eyebrow="02" title="Copy the prompt" body="Paste it into ChatGPT with one clear selfie." />
+          <FCard dark eyebrow="03" title="Post it" body="You get a set of photos that match, not one random image." />
+        </div>
+        <p className="mf" style={{ ...ty("body", true), fontSize: "15px", color: C.onDarkMuted, marginTop: "32px" }}>
+          You bring the selfie. The prompts do the rest.
+        </p>
+      </Section>
+
+      {/* EVERYTHING - cream */}
+      <Section eyebrow="Everything in the Vault" title={<>One payment. Every shoot, forever.</>} dark={false} narrow>
+        <ul className="mf" style={{ listStyle: "none", padding: 0, margin: "0 0 30px", display: "flex", flexDirection: "column", gap: "9px" }}>
+          {[
+            `All ${collectionCount} current collections · ${shotCount} copy-paste prompts`,
+            "Example photo for every prompt",
+            "Every future drop included",
+            `${priceLabel} once · instant access`,
+          ].map((item) => (
+            <li key={item} style={{ ...ty("body", false), fontSize: "15px" }}>
+              <span style={{ color: C.onCreamMuted, marginRight: "10px" }}>·</span>
+              {item}
+            </li>
+          ))}
+        </ul>
+        <PromptVaultCheckoutLink label={ctaLabel} surface="cream" />
+        <VaultRiskLine dark={false} />
+      </Section>
+
+      {/* FAQ + final CTA - dark */}
+      <Section eyebrow="Quick answers" title="Before you get the Vault." dark narrow>
+        <FaqAccordion items={VAULT_FAQ} dark />
+        <div className="mf flex flex-col items-center text-center" style={{ marginTop: "44px" }}>
+          <PromptVaultCheckoutLink label={ctaLabel} />
+          <VaultRiskLine dark />
+        </div>
+      </Section>
+
+      <PublicFooter />
+    </PublicPageShell>
   )
 }
