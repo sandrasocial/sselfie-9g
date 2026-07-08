@@ -18,6 +18,7 @@ describe("admin Maya editorial memory", () => {
     mockSql.mockResolvedValueOnce([]) // kind index
     mockSql.mockResolvedValueOnce([]) // duplicate lookup
     mockSql.mockResolvedValueOnce([{ id: 42 }]) // insert
+    mockSql.mockResolvedValueOnce([]) // prune beyond 200 rows
 
     const { addAdminMemoryNote } = await import("@/lib/app-v3/maya/admin-memory-store")
     const result = await addAdminMemoryNote({
@@ -31,7 +32,7 @@ describe("admin Maya editorial memory", () => {
     })
 
     expect(result).toEqual({ saved: true, id: 42 })
-    expect(mockSql).toHaveBeenCalledTimes(5)
+    expect(mockSql).toHaveBeenCalledTimes(6)
   })
 
   it("formats recent notes into an admin-only prompt context", async () => {
