@@ -8,6 +8,7 @@ import {
 } from "@/lib/audience/ai-photoshoot-segment"
 import { createCronLogger } from "@/lib/cron-logger"
 import { sql } from "@/lib/db/client"
+import { envFlag } from "@/lib/env-flags"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { sendEmail } from "@/lib/email/send-email"
 import { stripe } from "@/lib/stripe"
@@ -445,7 +446,7 @@ export async function GET(request: Request) {
       }
     }
 
-    if (process.env.PROMPT_VAULT_CHECKOUT_RECOVERY_ENABLED !== "true") {
+    if (!envFlag("PROMPT_VAULT_CHECKOUT_RECOVERY_ENABLED")) {
       const summary = { enabled: false, found: 0, sent: 0, failed: 0, hydrated: 0 }
       await cronLogger.success(summary)
       return NextResponse.json({ success: true, ...summary })
@@ -495,7 +496,7 @@ export async function GET(request: Request) {
     }
 
     // Stages 2 + 3 gated separately: copy is Sandra-approval-gated, flip the env to go live.
-    if (process.env.PROMPT_VAULT_RECOVERY_FOLLOWUPS_ENABLED === "true") {
+    if (envFlag("PROMPT_VAULT_RECOVERY_FOLLOWUPS_ENABLED")) {
       results.followups = {}
       for (const stage of FOLLOWUP_STAGES) {
         results.followups[stage.emailType] = await sendFollowupStage(stage)

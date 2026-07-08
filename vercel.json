@@ -93,6 +93,10 @@
       "schedule": "50 5 * * *"
     },
     {
+      "path": "/api/cron/product-qa-daily",
+      "schedule": "55 5 * * *"
+    },
+    {
       "path": "/api/cron/payment-reconciliation",
       "schedule": "45 5 * * *"
     },

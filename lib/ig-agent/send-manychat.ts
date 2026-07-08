@@ -10,6 +10,7 @@
 // an error which we surface as a flagged failure instead of throwing.
 
 import { sql } from "@/lib/db/client"
+import { envFlag } from "@/lib/env-flags"
 
 export type SendManychatDmResult = { sent: boolean; reason?: string }
 
@@ -34,7 +35,7 @@ export async function sendManychatDm(params: {
     `
   }
 
-  if (fromType !== "sandra" && process.env.IG_AGENT_AUTO_SEND_ENABLED !== "true") {
+  if (fromType !== "sandra" && !envFlag("IG_AGENT_AUTO_SEND_ENABLED")) {
     await record("draft", false)
     return { sent: false, reason: "auto_send_disabled" }
   }

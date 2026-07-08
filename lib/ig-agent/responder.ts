@@ -6,6 +6,7 @@ import { IG_AGENT_PROMPT_VAULT_URL } from "@/lib/ig-agent/links"
 import { buildSandraSystemPrompt } from "@/lib/ig-agent/voice-prompt"
 import { detectGrowthTags } from "@/lib/ig-agent/triage"
 import type { IgResponderResult } from "@/lib/ig-agent/types"
+import { envFlag } from "@/lib/env-flags"
 
 const DraftResponseSchema = z.object({
   response: z.string().min(1),
@@ -42,7 +43,7 @@ export async function generateSandraDraft(params: {
   latestMessage: string
   forceFallback?: boolean
 }): Promise<IgResponderResult> {
-  if (params.forceFallback || process.env.IG_AGENT_AI_DRAFTS_ENABLED === "false") {
+  if (params.forceFallback || !envFlag("IG_AGENT_AI_DRAFTS_ENABLED", true)) {
     return fallbackDraft(params.latestMessage)
   }
 

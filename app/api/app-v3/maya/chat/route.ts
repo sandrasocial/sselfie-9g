@@ -693,7 +693,23 @@ async function getAdminBriefContext(): Promise<string> {
     })
 
     const report = reports[0]
-    if (!report?.payload) return ""
+    if (!report?.payload) {
+      try {
+        const { logAdminError } = await import("@/lib/admin-error-log")
+        void logAdminError({
+          toolName: "app-v3-maya-admin-brief-context",
+          error: new Error("Missing content_brief_weekly report for admin Maya grounding"),
+          context: { reportType: "content_brief_weekly", route: "app/api/app-v3/maya/chat" },
+        })
+      } catch (error) {
+        console.error("[app-v3 maya chat] admin error log unavailable:", error)
+      }
+      return [
+        "---",
+        "## CURRENT WEEKLY BRIEF CONTEXT",
+        "No content_brief_weekly report was available. Say this plainly to Sandra and do not invent a plan, demand map, story anchor, or content sequence.",
+      ].join("\n")
+    }
     const payload = report.payload as Record<string, unknown>
     const period = report.period_start
       ? new Date(report.period_start).toISOString().slice(0, 10)

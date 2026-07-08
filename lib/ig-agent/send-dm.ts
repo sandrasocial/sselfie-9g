@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db/client"
+import { envFlag } from "@/lib/env-flags"
 import { resolveInstagramConnectionMode } from "@/lib/instagram/connection-mode"
 
 export type SendIgDmResult =
@@ -37,7 +38,7 @@ export async function sendInstagramDm(params: {
 }): Promise<SendIgDmResult> {
   const fromType = params.fromType || "agent"
 
-  if (fromType !== "sandra" && process.env.IG_AGENT_AUTO_SEND_ENABLED !== "true") {
+  if (fromType !== "sandra" && !envFlag("IG_AGENT_AUTO_SEND_ENABLED")) {
     await sql`
       INSERT INTO ig_messages (
         conversation_id,

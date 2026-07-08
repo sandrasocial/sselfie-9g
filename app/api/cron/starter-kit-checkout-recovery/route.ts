@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { createCronLogger } from "@/lib/cron-logger"
 import { sql } from "@/lib/db/client"
+import { envFlag } from "@/lib/env-flags"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { sendEmail } from "@/lib/email/send-email"
 import {
@@ -404,7 +405,7 @@ export async function GET(request: Request) {
       }
     }
 
-    if (process.env.STARTER_KIT_CHECKOUT_RECOVERY_ENABLED !== "true") {
+    if (!envFlag("STARTER_KIT_CHECKOUT_RECOVERY_ENABLED")) {
       const summary = { enabled: false, found: 0, sent: 0, failed: 0, hydrated: 0 }
       await cronLogger.success(summary)
       return NextResponse.json({ success: true, ...summary })
@@ -450,7 +451,7 @@ export async function GET(request: Request) {
       await sleep(SEND_DELAY_MS)
     }
 
-    if (process.env.STARTER_KIT_RECOVERY_FOLLOWUPS_ENABLED === "true") {
+    if (envFlag("STARTER_KIT_RECOVERY_FOLLOWUPS_ENABLED")) {
       results.followups = {}
       for (const stage of FOLLOWUP_STAGES) {
         results.followups[stage.emailType] = await sendFollowupStage(stage)

@@ -8,6 +8,7 @@ import {
 import { getLatestAnalyticsReports, storeAnalyticsReport } from "@/lib/analytics/reports"
 import { createCronLogger } from "@/lib/cron-logger"
 import { sendEmail } from "@/lib/email/send-email"
+import { envFlag } from "@/lib/env-flags"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 300
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    if (process.env.CONTENT_BRIEF_ENABLED !== "true") {
+    if (!envFlag("CONTENT_BRIEF_ENABLED")) {
       await logger.success({ generated: false, skipped: "disabled" })
       return NextResponse.json({ success: true, generated: false, skipped: "disabled" })
     }

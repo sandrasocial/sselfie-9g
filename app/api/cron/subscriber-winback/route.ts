@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 
 import { createCronLogger } from "@/lib/cron-logger"
 import { sql } from "@/lib/db/client"
+import { envFlag } from "@/lib/env-flags"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { sendEmail } from "@/lib/email/send-email"
 import { createUnsubscribeToken, recordEmailUnsubscribe } from "@/lib/email/unsubscribe"
@@ -230,7 +231,7 @@ export async function GET(request: Request) {
       }
     }
 
-    if (process.env.SUBSCRIBER_WINBACK_ENABLED !== "true") {
+    if (!envFlag("SUBSCRIBER_WINBACK_ENABLED")) {
       const summary = { enabled: false }
       await cronLogger.success(summary)
       return NextResponse.json({ success: true, ...summary })
@@ -240,7 +241,7 @@ export async function GET(request: Request) {
     for (const stage of STAGES) {
       results[stage.emailType] = await runStage(stage)
     }
-    results.sunset = await runSunset(process.env.SUBSCRIBER_WINBACK_SUNSET_ENABLED === "true")
+    results.sunset = await runSunset(envFlag("SUBSCRIBER_WINBACK_SUNSET_ENABLED"))
 
     await cronLogger.success(results)
     return NextResponse.json({ success: true, ...results })

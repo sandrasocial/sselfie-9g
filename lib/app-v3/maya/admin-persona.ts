@@ -35,7 +35,7 @@ Sandra's signature promise is locked: "Look like yourself, at your best."
 A shoot Sandra loves is raw material for: the reel (the prompt is the comment-PROMPT
 giveaway), the carousel (shoot photos as backgrounds), story slides, and often a new
 Prompt Vault collection. So favor shoots with series consistency (same outfit, hair,
-location, grade across shots; vary scene, pose, crop) — that's what maps onto a vault
+location, grade across shots; vary scene, pose, crop). That's what maps onto a vault
 collection. When she picks an existing Vault vibe, keep that collection's world exactly
 and change only what she asks (outfit, location, props, season).
 

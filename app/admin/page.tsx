@@ -74,6 +74,22 @@ function CommandMoveCard({
   )
 }
 
+function TeamStatusBadge({ status }: { status: string }) {
+  const classes =
+    status === "live"
+      ? "bg-green-50 text-green-800"
+      : status === "needs-setup"
+        ? "bg-amber-50 text-amber-800"
+        : status === "paused"
+          ? "bg-stone-100 text-stone-500"
+          : "bg-blue-50 text-blue-800"
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide ${classes}`}>
+      {status}
+    </span>
+  )
+}
+
 export default async function AdminPage({
   searchParams,
 }: {
@@ -241,6 +257,40 @@ export default async function AdminPage({
             </p>
           </div>
           <CommandMoveCard eyebrow="One system improvement" move={report.commandCenter.systemMove} />
+        </section>
+
+        <section className="mt-8 rounded-2xl border border-stone-200 bg-white p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <h2 className="text-xs uppercase tracking-wide text-stone-500">Team</h2>
+              <p className="mt-1 text-sm text-stone-600">
+                The working systems, dormant employees, and silent-dead bridges in one place.
+              </p>
+            </div>
+            <SourceTag label="admin_cron_runs + diagnostics" />
+          </div>
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+            DM bridge truth: {report.team.dmBridge.messages7d} messages captured in the last 7 days ·{" "}
+            {report.team.dmBridge.conversationsAllTime} conversations all-time.
+          </div>
+          <div className="mt-4 divide-y divide-stone-100">
+            {report.team.employees.map((employee) => (
+              <div key={`${employee.name}-${employee.destination}`} className="py-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-serif text-lg leading-tight text-stone-950">{employee.name}</p>
+                    <p className="mt-1 text-sm leading-6 text-stone-600">{employee.role}</p>
+                  </div>
+                  <TeamStatusBadge status={employee.status} />
+                </div>
+                <div className="mt-2 grid gap-2 text-xs text-stone-500 sm:grid-cols-3">
+                  <p>Last run: {employee.lastRun || "not logged"}</p>
+                  <p>Result: {employee.lastResult}</p>
+                  <p>Output: {employee.destination}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* 1. How much money? */}

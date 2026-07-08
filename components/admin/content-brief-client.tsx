@@ -168,6 +168,70 @@ function HandoffButton({
   )
 }
 
+function LearningButton({
+  decision,
+  piece,
+}: {
+  decision: "approval" | "rejection"
+  piece: ContentBriefPiece
+}) {
+  const [status, setStatus] = useState<"idle" | "busy" | "saved" | "error">("idle")
+
+  async function remember() {
+    const reason =
+      decision === "rejection"
+        ? window.prompt("What is off about this direction?") || ""
+        : window.prompt("What makes this feel like you?") || ""
+    setStatus("busy")
+    try {
+      const res = await fetch("/api/admin/content-brief/memory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          decision,
+          reason,
+          title: piece.title,
+          hook: piece.hook,
+          sandraStoryAnchor: piece.sandraStoryAnchor,
+          format: piece.format,
+          funnelStage: piece.funnelStage,
+          ctaKeyword: piece.ctaKeyword,
+          sourceId: `${piece.day || "piece"}:${piece.title || piece.hook || piece.format}`,
+        }),
+      })
+      const json = await readJsonResponse<AdminContentBriefResponse>(res)
+      if (!res.ok || !json?.success) throw new Error(json?.error || "Could not save memory")
+      setStatus("saved")
+      setTimeout(() => setStatus("idle"), 1800)
+    } catch {
+      setStatus("error")
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={remember}
+      disabled={status === "busy"}
+      className={`rounded-full border px-3 py-1 text-xs uppercase tracking-wide transition disabled:opacity-50 ${
+        decision === "approval"
+          ? "border-stone-950 bg-stone-950 text-white"
+          : "border-stone-300 bg-white text-stone-600 hover:border-stone-950"
+      }`}
+    >
+      {status === "busy"
+        ? "Saving..."
+        : status === "saved"
+          ? "Saved"
+          : status === "error"
+            ? "Try again"
+            : decision === "approval"
+              ? "This works"
+              : "Off voice"}
+    </button>
+  )
+}
+
 function compactNumber(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "n/a"
   return value.toLocaleString("en-US")
@@ -657,6 +721,8 @@ function PieceCard({ piece }: { piece: ContentBriefPiece }) {
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
+        <LearningButton decision="approval" piece={piece} />
+        <LearningButton decision="rejection" piece={piece} />
         {piece.chatgptContextPrompt && (
           <CopyChip label="Copy ChatGPT context" text={piece.chatgptContextPrompt} />
         )}

@@ -2,7 +2,15 @@ import { sql } from "@/lib/db/client"
 
 export type AdminMemoryKind = "approval" | "rejection" | "preference" | "voice" | "workflow" | "content_signal"
 
-export type AdminMemorySourceType = "maya_chat" | "shoot" | "shot" | "carousel" | "story" | "vault_drop" | "manual"
+export type AdminMemorySourceType =
+  | "maya_chat"
+  | "shoot"
+  | "shot"
+  | "carousel"
+  | "story"
+  | "content_brief"
+  | "vault_drop"
+  | "manual"
 
 export type AdminMemoryNoteInput = {
   adminUserId?: string | null
@@ -97,6 +105,16 @@ export async function addAdminMemoryNote(input: AdminMemoryNoteInput): Promise<{
     )
     RETURNING id
   `) as Array<{ id: number }>
+
+  await sql`
+    DELETE FROM app_v3_admin_memory
+    WHERE id IN (
+      SELECT id
+      FROM app_v3_admin_memory
+      ORDER BY created_at DESC
+      OFFSET 200
+    )
+  `
 
   return { saved: true, id: Number(rows[0]?.id || 0) || undefined }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 
 import { createCronLogger } from "@/lib/cron-logger"
 import { sql } from "@/lib/db/client"
+import { envFlag } from "@/lib/env-flags"
 import {
   AI_PROMPTS_EMAIL_TOUCHES,
   type AiPromptsEmailType,
@@ -385,8 +386,8 @@ export async function GET(request: Request) {
       }
     }
 
-    const aiPromptsEnabled = process.env.AI_PROMPTS_NURTURE_ENABLED === "true"
-    const promptVaultEnabled = process.env.PROMPT_VAULT_NURTURE_ENABLED === "true"
+    const aiPromptsEnabled = envFlag("AI_PROMPTS_NURTURE_ENABLED")
+    const promptVaultEnabled = envFlag("PROMPT_VAULT_NURTURE_ENABLED")
     const maxPerTouch = readIntEnv("AI_PHOTOSHOOT_NURTURE_MAX_PER_TOUCH", MAX_PER_TOUCH_DEFAULT)
     const maxTotalPerRun = readIntEnv(
       "AI_PHOTOSHOOT_NURTURE_MAX_TOTAL_PER_RUN",

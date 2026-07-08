@@ -2,10 +2,12 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import {
   generateCarousels,
+  getCarousel,
   listCarousels,
   setCarouselStatus,
   updateCarouselSlides,
 } from "@/lib/content-kit/carousel-generator"
+import { addAdminMemoryNote } from "@/lib/app-v3/maya/admin-memory-store"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 300
@@ -115,5 +117,22 @@ export async function PATCH(request: NextRequest) {
     )
   }
   await setCarouselStatus(id, status)
+  if (status === "approved" || status === "draft") {
+    const deck = await getCarousel(id).catch(() => null)
+    if (deck) {
+      await addAdminMemoryNote({
+        adminUserId: ADMIN_EMAIL,
+        kind: status === "approved" ? "approval" : "rejection",
+        sourceType: "carousel",
+        sourceId: id,
+        sourceTitle: deck.title,
+        note:
+          status === "approved"
+            ? `Sandra approved carousel "${deck.title}". Hook: "${deck.slides[0]?.title || deck.caption.slice(0, 160)}".`
+            : `Sandra moved carousel "${deck.title}" back to draft. Treat this as a needs-work signal before repeating this direction.`,
+        metadata: { status, slideCount: deck.slides.length },
+      }).catch((error) => console.error("[content-kit] carousel memory failed:", error))
+    }
+  }
   return NextResponse.json({ success: true })
 }
