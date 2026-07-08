@@ -74,6 +74,11 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 2. Read this file (`CLAUDE.md`) for business context
 3. Read `docs/CODEX_CONTEXT.md` for tech stack + file map
 4. Check `tasks/` for active specs
+5. Before creating, enabling, or debugging ANY automation: read `docs/AUTOMATION_ROSTER.md` —
+   the single map of every automation across all layers (repo/Vercel, Claude Cowork, Codex app,
+   ManyChat/Resend/Stripe) plus the lane rules for where new automations may live. Update it the
+   same day anything changes. Core lane rule: customer/money automations live in the repo ONLY;
+   Claude layer = drafts + watching only; Codex hosts no business automations.
 
 ---
 
