@@ -49,6 +49,8 @@ Older MAYA-FIX/GROUNDING rows below are prior-thread items (mostly shipped); the
 
 | Priority | Spec | Owner | Why it remains |
 |---:|---|---|---|
+| 1 | `VOICE-LOOP-01-apprentice-loop.md` | Codex | 2026-07-08 audit: editorial memory exists only in Admin Maya; grounding is hand-synced code; generators never learn from Sandra's edits. This is the fix for "generated content never sounds like me". |
+| 2 | `EMPLOYEE-01-roster-and-dormant-crons.md` | Codex | 2026-07-08 audit: product-qa-daily built but never scheduled/read; diagnostics APIs unwired; Resend bounces never alert; DM bridge has captured ZERO messages all-time and nothing surfaced that silence; poisoned env boolean. |
 | 1 | `MAYA-FIX-01-quick-wins.md` | Codex | P0 quick wins from Maya deep audit 2026-06-15: kill EXACTLY-3 contradiction (full shoots return 6-9), face-first carousels + 2-slide cap, remove banned word in persona. Prompt/logic only, ~1 day, no UI rebuild. |
 | ❌ superseded | `MAYA-FIX-03-overlay-text-layer.md` | — | SHIPPED then SUPERSEDED 2026-06-15. Sandra: remove the text-overlay generator once and for all (incl. customer Maya + text previews). The editable text layer is the wrong approach — replaced by image-to-image redesign (CAROUSEL-03). To be REMOVED, not maintained. |
 | 3 | `MAYA-FIX-02-edit-likeness-tapfirst-voice.md` | Codex | P1 from Maya audit: Edit Mode likeness drift, tap-first for carousel/reel/story, caption banned-word guard, slim the shared brain, delete dead font modules. |
