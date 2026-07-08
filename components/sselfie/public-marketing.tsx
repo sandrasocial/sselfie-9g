@@ -12,6 +12,7 @@ const IMG = {
   homeHero:    "/academy/visibility-suite/sandra-hero.png",
   homeFounder: "/academy/visibility-suite/sandra-founder.webp",
   homeStudio:  "/academy/visibility-suite/hero.png",
+  workSprint:  "/academy/visibility-suite/sandra-sprint.png",
   homeSelfie:  "/images/selfie-guide/img-editorial-dark.png",
   before:      `${BLOB}/sandra-portrait-before.jpg`,
   after:       `${BLOB}/sandra-portrait-after.jpg`,
@@ -1350,30 +1351,67 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function WorkWithMePageContent() {
-  const buildItems = [
-    "One sentence that says what you help with",
-    "Your buyer and before/after",
-    "Your first simple offer idea",
-    "Your profile direction",
-    "Your content pillars",
-    "Your first 7 posts or story ideas",
-    "Your selfie and AI visual direction",
-    "Your simple CTA and next step",
+  const clarityItems = [
+    {
+      title: "Your message",
+      body: "One clear sentence for what you help with, who it is for, and why it matters now.",
+    },
+    {
+      title: "Your buyer",
+      body: "The woman you are speaking to, what she is stuck in, and the before/after she wants.",
+    },
+    {
+      title: "Your first offer",
+      body: "A simple paid path people can understand without you explaining your whole life story.",
+    },
+    {
+      title: "Your content direction",
+      body: "The posts, stories, profile lines, and CTAs that make the next step obvious.",
+    },
+    {
+      title: "Your visual direction",
+      body: "Selfie and AI photo direction that supports your message instead of making you look like someone else.",
+    },
+    {
+      title: "Your next move",
+      body: "A small plan you can actually use after the sprint, not a strategy document you avoid opening.",
+    },
   ]
   const fitItems = [
-    "You already have a skill, service, story, idea, or experience",
-    "People cannot clearly understand what you do from your profile yet",
-    "You want to build online, but you do not know what to post or say",
-    "You think you could sell something, but the first offer feels unclear",
-    "You want Sandra's eyes on the full picture before you waste more time",
-    "You want a human plan, not another folder of ideas you never use",
+    {
+      title: "You have something real",
+      body: "A skill, service, story, idea, lived experience, or offline credibility you have not turned into a clear online path yet.",
+    },
+    {
+      title: "Your profile does not explain you",
+      body: "People may like you, but they cannot quickly understand what you do, what to remember you for, or how to take the next step.",
+    },
+    {
+      title: "You are tired of collecting ideas",
+      body: "You do not need another folder of prompts, hooks, or content advice. You need someone to connect the full picture with you.",
+    },
   ]
   const processSteps = [
-    "Apply",
-    "I review your application",
-    "If it looks like a fit, you book a short call",
-    "If the fit is clear, you receive the private payment link",
-    "You leave with your message, first offer, content direction, visual direction, and next step",
+    {
+      step: "01",
+      title: "Apply",
+      body: "Tell me what you have, what feels unclear, and what you want your online presence to lead toward.",
+    },
+    {
+      step: "02",
+      title: "I read it myself",
+      body: "If I can see a clear place to help, I will send the next step. If not, I will not push you into it.",
+    },
+    {
+      step: "03",
+      title: "Fit call",
+      body: "We use a short call to make sure the sprint is the right container before any private payment link is sent.",
+    },
+    {
+      step: "04",
+      title: "Sprint work",
+      body: "We make your message, first offer, content direction, visual direction, and next step easier to understand.",
+    },
   ]
 
   return (
@@ -1382,61 +1420,107 @@ export function WorkWithMePageContent() {
 
       {/* HERO - dark */}
       <Hero
-        eyebrow="Visibility To Paid Sprint"
-        title={<>Make what you already have visible, clear, and easier to buy from.</>}
-        body={<p>I built this for the woman who already has a skill, a story, a service, or an idea, but doesn&apos;t know what to post, what to say, or what she could actually sell first.</p>}
+        eyebrow="Work With Me · Visibility To Paid"
+        title={<>Turn what you already have into a clear reason to be hired.</>}
+        body={<p>For the woman with a skill, story, service, or idea who knows she is meant to build online, but cannot yet explain what she does, what to post, or what people can buy from her.</p>}
         primary={{ href: "#inquiry",       label: "Apply for the Sprint" }}
         secondary={{ href: "/join/studio", label: "See SSELFIE SUITE" }}
-        imageSrc={IMG.founder}
+        imageSrc={IMG.workSprint}
+      />
+
+      {/* DIAGNOSIS - cream */}
+      <Section
+        eyebrow="Sound familiar?"
+        title={<>You are not starting from zero. You are starting from unclear.</>}
+        dark={false}
+        narrow
+      >
+        <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
+          <p>You might already have the experience. The taste. The story. The thing people ask you about. Maybe even an idea for what you could sell.</p>
+          <p>But online, it still feels scattered. Your profile does not quite explain you. Your posts do not lead anywhere. Your photos get attention, but the message behind them is not doing enough work yet.</p>
+          <p>The problem is not that you need to become someone else. The problem is that people cannot understand what you already are.</p>
+        </div>
+      </Section>
+
+      {/* BRIDGE - dark */}
+      <Split
+        eyebrow="The bridge"
+        title={<>The photo gets attention. The message builds trust. The offer gives it somewhere to go.</>}
+        body={
+          <div className="space-y-4">
+            <p>That is the work. We connect how people see you, what they understand about you, and the first paid step they can take with you.</p>
+            <p>Not a generic niche exercise. Not a content calendar full of filler. A clear line from your face, story, skills, and lived experience to a simple offer people can recognize.</p>
+          </div>
+        }
+        imgSrc={IMG.homeFounder}
+        imgAlt="Sandra holding a tablet in warm daylight"
+        imgFirst
+        dark
+        cta={<Btn href="#inquiry" surface="dark" ghost>Apply for the Sprint</Btn>}
       />
 
       {/* WHAT WE BUILD - cream */}
-      <Section eyebrow="The outcome" title="You already have something real. I just help you make it understandable." dark={false}>
-        <div className="mf max-w-3xl mb-10 space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>This isn&apos;t another content course. I look at the full picture: your story, your skills, your profile, your visuals, your words, and the first thing people could actually buy from you.</p>
-          <p>The goal is simple. Make the first step obvious, for you and for the people already looking at you online.</p>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {buildItems.map((item) => (
-            <FCard key={item} dark={false} title={item} body="" />
+      <Section eyebrow="What we make clear" title={<>You leave with the pieces connected.</>} dark={false}>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {clarityItems.map((item) => (
+            <FCard key={item.title} dark={false} title={item.title} body={item.body} />
           ))}
         </div>
       </Section>
 
       {/* WHO IT IS FOR - dark */}
-      <Section eyebrow="Who it is for" title="This is for you if" dark>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <Section eyebrow="Who it is for" title={<>This is for the woman who has outgrown &ldquo;just post more.&rdquo;</>} dark>
+        <div className="grid gap-4 md:grid-cols-3">
           {fitItems.map((item) => (
-            <FCard key={item} dark title={item} body="" />
+            <FCard key={item.title} dark title={item.title} body={item.body} />
           ))}
-        </div>
-        <div className="mt-10">
-          <Btn href="#inquiry" surface="dark">Apply for the Sprint</Btn>
         </div>
       </Section>
 
-      {/* HOW IT WORKS - cream */}
-      <Section eyebrow="How it works" title="Application first. Fit call second. Payment link only if it makes sense." dark={false}>
-        <div className="grid gap-4 md:grid-cols-5">
-          {processSteps.map((step, index) => (
-            <FCard key={step} dark={false} title={`${index + 1}. ${step}`} body="" />
+      {/* SANDRA NOTE - cream */}
+      <Split
+        eyebrow="From Sandra"
+        title={<>I know what it feels like to build from what you have.</>}
+        body={
+          <div className="space-y-4">
+            <p>I started with my phone, my story, imperfect light, and a life I was trying to rebuild. The selfie was never the whole thing. It was the first place I stopped hiding.</p>
+            <p>Work With Me is where I bring my eyes to your full picture: what you have lived, what you know, what people already come to you for, and the first paid path we can make visible.</p>
+          </div>
+        }
+        imgSrc={SUITE_IMG.plan}
+        imgAlt="Editorial AI-assisted brand photo used in the SSELFIE visual system"
+        dark={false}
+        cta={<Btn href="#inquiry" surface="cream">Apply for the Sprint</Btn>}
+      />
+
+      {/* HOW IT WORKS - dark */}
+      <Section eyebrow="How it works" title={<>Application first. Fit call second. Payment link only if it makes sense.</>} dark>
+        <div className="grid gap-4 md:grid-cols-4">
+          {processSteps.map((step) => (
+            <article key={step.step} className="mf" style={{ ...cardSx(true), minHeight: "260px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div>
+                <span style={{ ...ty("eyebrow", true), marginBottom: "18px" }}>{step.step}</span>
+                <h3 style={{ ...ty("h3", true), marginBottom: "10px" }}>{step.title}</h3>
+                <p style={{ ...ty("body", true), fontSize: "14px" }}>{step.body}</p>
+              </div>
+            </article>
           ))}
         </div>
-        <div className="mf max-w-3xl mt-10 space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>I read every application myself. This isn&apos;t an instant checkout, because the work has to be a real fit. If it&apos;s not right, I won&apos;t push you into it.</p>
-          <p>I&apos;m running this personally, with the first small group of women. There&apos;s no long list of case studies yet, because this is new. That&apos;s exactly why I&apos;m doing it hands-on instead of handing you a course and disappearing.</p>
+        <div className="mf max-w-3xl mt-10 space-y-4" style={{ ...ty("body", true), fontSize: "16px" }}>
+          <p>I read every application myself. This is not an instant checkout, because the work has to be a real fit.</p>
+          <p>I am running this personally with the first small group of women. There is no long wall of case studies yet, because this offer is intentionally hands-on while the proof is being built.</p>
         </div>
       </Section>
 
-      {/* INVESTMENT - dark */}
-      <Section eyebrow="Investment" title="Private sprint: €2,000" dark narrow>
-        <div className="mf space-y-5" style={{ ...ty("body", true), fontSize: "16px" }}>
-          <p><span style={{ color: C.onDarkSub }}>Payment plan:</span> 2 x €1,100</p>
-          <p>I don&apos;t take payment when you apply. If your application looks like a fit, the next step is a short call first.</p>
-          <p style={{ color: C.onDarkMuted }}>This isn&apos;t a promise of income. It&apos;s a focused private sprint to make your message, offer, profile, content direction, and first paid path clearer.</p>
+      {/* INVESTMENT - cream */}
+      <Section eyebrow="Investment" title={<>Private sprint: €2,000</>} dark={false} narrow>
+        <div className="mf space-y-5" style={{ ...ty("body", false), fontSize: "16px" }}>
+          <p><span style={{ color: C.onCream }}>Payment plan:</span> 2 x €1,100.</p>
+          <p>No payment is taken when you apply. If your application looks like a fit, the next step is a short call first.</p>
+          <p style={{ color: C.onCreamMuted }}>This is not a promise of income. It is a focused private sprint to make your message, offer, profile, content direction, and first paid path clearer.</p>
           <div className="flex flex-wrap gap-3 pt-3">
-            <Btn href="#inquiry" surface="dark">Apply for the Sprint</Btn>
-            <Btn href="/join/studio" surface="dark" ghost>See SSELFIE SUITE</Btn>
+            <Btn href="#inquiry" surface="cream">Apply for the Sprint</Btn>
+            <Btn href="/join/studio" surface="cream" ghost>See SSELFIE SUITE</Btn>
           </div>
         </div>
       </Section>
