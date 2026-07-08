@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { readFileSync } from "node:fs"
+import { execFileSync } from "node:child_process"
 import { describe, expect, it } from "vitest"
 
 import {
@@ -116,5 +117,13 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     expect(sourceOfTruth).toContain(lockPath)
     expect(claude).toContain(lockPath)
     expect(codex).toContain(lockPath)
+  })
+
+  it("keeps generated grounding in sync with canonical docs", () => {
+    const before = read("lib/content/grounding.ts")
+
+    execFileSync("pnpm", ["-s", "sync:grounding"], { stdio: "pipe" })
+
+    expect(read("lib/content/grounding.ts")).toBe(before)
   })
 })

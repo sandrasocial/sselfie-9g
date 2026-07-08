@@ -18,6 +18,7 @@ import {
   sandraContentIdentityBlock,
   sanitizeGroundedText,
 } from "@/lib/content/grounding"
+import { getAdminMemoryContext } from "@/lib/app-v3/maya/admin-memory-store"
 import type { DailySandraBriefing } from "@/lib/admin/daily-sandra-briefing"
 import type { ContentBrief, ContentBriefPiece, DailyStory } from "@/lib/content-engine/brief-generator"
 
@@ -237,7 +238,7 @@ const INTELLIGENCE_SCHEMA: Tool.InputSchema = {
   required: ["todaysMove", "whatChanged", "watchThis"],
 } as const
 
-const INTELLIGENCE_SYSTEM = `You write the three advice sections of Sandra's daily SSELFIE briefing. Sandra runs SSELFIE (sselfie.ai): AI-assisted brand photos from one selfie, for women building a personal brand. The numbers sections of her email are built elsewhere from Stripe truth; your job is only the thinking on top.
+const INTELLIGENCE_SYSTEM_BASE = `You write the three advice sections of Sandra's daily SSELFIE briefing. Sandra runs SSELFIE (sselfie.ai): AI-assisted brand photos from one selfie, for women building a personal brand. The numbers sections of her email are built elsewhere from Stripe truth; your job is only the thinking on top.
 
 ${purposeMessagingBlock()}
 
@@ -273,6 +274,23 @@ export async function generateDailyBriefingIntelligence(
   const weekday = now.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })
   const planPieces = weeklyPlanForPrompt(input.weeklyBrief)
   const todaysContentPost = getTodaysContentPost(input.weeklyBrief, now)
+  if (!input.weeklyBrief) {
+    try {
+      const { logAdminError } = await import("@/lib/admin-error-log")
+      void logAdminError({
+        toolName: "daily-briefing-intelligence",
+        error: new Error("Missing weekly content brief for daily briefing intelligence"),
+        context: { reportType: "content_brief_weekly", weekday },
+      })
+    } catch (error) {
+      console.error("[daily-briefing-intelligence] admin error log unavailable:", error)
+    }
+  }
+  const adminMemoryContext = await getAdminMemoryContext().catch((error) => {
+    console.error("[daily-briefing-intelligence] admin memory unavailable:", error)
+    return ""
+  })
+  const intelligenceSystem = [INTELLIGENCE_SYSTEM_BASE, adminMemoryContext].filter(Boolean).join("\n\n")
 
   const payload = {
     todayWeekday: weekday,
@@ -298,7 +316,7 @@ export async function generateDailyBriefingIntelligence(
     client.messages.create({
       model: INTELLIGENCE_MODEL,
       max_tokens: 1600,
-      system: INTELLIGENCE_SYSTEM,
+      system: intelligenceSystem,
       messages: [
         {
           role: "user",

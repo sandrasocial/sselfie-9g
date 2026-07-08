@@ -1,6 +1,5 @@
-// Machine-readable source for docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md.
-// Keep this module aligned with the current source; generators import this instead of hand-copying rules.
-
+// Machine-readable source synced from Sandra's canonical brand docs.
+// Edit docs first, run `pnpm sync:grounding`, commit docs and this file together.
 export const BANNED_WORDS = [
   "leverage",
   "synergy",

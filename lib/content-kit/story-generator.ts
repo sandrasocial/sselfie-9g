@@ -17,6 +17,7 @@ import {
   storyBankBlock,
   voiceBlock,
 } from "@/lib/content/grounding"
+import { getAdminMemoryContext } from "@/lib/app-v3/maya/admin-memory-store"
 
 // STORY ENGINE REBUILD (2026-07-04, Sandra's direction): the old doctrine forced every
 // sequence into a fixed sales arc (hook -> tension -> shift -> proof -> desire -> bridge ->
@@ -305,9 +306,16 @@ export async function generateStorySequence(input: {
   // One slide per selected photo (incl. an optional final cta/close beat), clamped to a sane range.
   const targetSlides = Math.max(5, Math.min(12, imageUrls.length || 6))
 
+  const adminMemoryContext = await getAdminMemoryContext().catch((error) => {
+    console.error("[story-generator] admin memory unavailable:", error)
+    return ""
+  })
+
   const prompt = `You are Sandra's Instagram Story strategist for @sandra.social (selfie education, AI-assisted brand imagery from one selfie, personal branding for women).
 
 ${voiceBlock()}
+
+${adminMemoryContext}
 
 ${purposeMessagingBlock()}
 

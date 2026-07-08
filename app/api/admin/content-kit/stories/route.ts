@@ -3,10 +3,12 @@ import { createServerClient } from "@/lib/supabase/server"
 import {
   deleteStorySequence,
   generateStorySequence,
+  getStorySequence,
   listStorySequences,
   setStoryStatus,
   updateStorySlides,
 } from "@/lib/content-kit/story-generator"
+import { addAdminMemoryNote } from "@/lib/app-v3/maya/admin-memory-store"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 300
@@ -70,6 +72,23 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "id and status (draft|approved|posted) required" }, { status: 400 })
   }
   await setStoryStatus(id, status)
+  if (status === "approved" || status === "draft") {
+    const sequence = await getStorySequence(id).catch(() => null)
+    if (sequence) {
+      await addAdminMemoryNote({
+        adminUserId: ADMIN_EMAIL,
+        kind: status === "approved" ? "approval" : "rejection",
+        sourceType: "story",
+        sourceId: id,
+        sourceTitle: sequence.title,
+        note:
+          status === "approved"
+            ? `Sandra approved story sequence "${sequence.title}". Topic: "${sequence.topic}".`
+            : `Sandra moved story sequence "${sequence.title}" back to draft. Treat this as a needs-work signal before repeating this direction.`,
+        metadata: { status, slideCount: sequence.slides.length },
+      }).catch((error) => console.error("[content-kit stories] story memory failed:", error))
+    }
+  }
   return NextResponse.json({ success: true })
 }
 
@@ -102,6 +121,18 @@ export async function DELETE(request: NextRequest) {
   const body = await request.json().catch(() => ({}))
   const id = Number(body.id)
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
+  const sequence = await getStorySequence(id).catch(() => null)
+  if (sequence) {
+    await addAdminMemoryNote({
+      adminUserId: ADMIN_EMAIL,
+      kind: "rejection",
+      sourceType: "story",
+      sourceId: id,
+      sourceTitle: sequence.title,
+      note: `Sandra deleted story sequence "${sequence.title}". Topic: "${sequence.topic}". Do not repeat this direction without a clearer Sandra anchor.`,
+      metadata: { status: "deleted", slideCount: sequence.slides.length },
+    }).catch((error) => console.error("[content-kit stories] delete memory failed:", error))
+  }
   await deleteStorySequence(id)
   return NextResponse.json({ success: true })
 }

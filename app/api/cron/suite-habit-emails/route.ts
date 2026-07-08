@@ -10,6 +10,7 @@ import { NextResponse } from "next/server"
 
 import { createCronLogger } from "@/lib/cron-logger"
 import { sql } from "@/lib/db/client"
+import { envFlag } from "@/lib/env-flags"
 import { getUserCredits } from "@/lib/credits"
 import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 import { sendEmail } from "@/lib/email/send-email"
@@ -113,7 +114,7 @@ export async function GET(request: Request) {
       }
     }
 
-    if (process.env.SUITE_HABIT_EMAILS_ENABLED !== "true") {
+    if (!envFlag("SUITE_HABIT_EMAILS_ENABLED")) {
       const summary = { enabled: false, day0: 0, nudges: 0, weekly: 0 }
       await cronLogger.success(summary)
       return NextResponse.json({ success: true, ...summary })

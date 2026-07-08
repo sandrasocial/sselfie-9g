@@ -28,6 +28,7 @@ import {
   voiceBlock,
 } from "@/lib/content/grounding"
 import { getCarouselDesignGuide } from "@/lib/app-v3/maya/carousel-design-systems"
+import { getAdminMemoryContext } from "@/lib/app-v3/maya/admin-memory-store"
 
 const SLIDE_RULES = `
 SLIDE RULES (these render to fixed 1080x1350 editorial templates, so respect limits):
@@ -553,9 +554,16 @@ export async function generateCarousels(input: GeneratorInput = {}): Promise<Car
       ].join("\n")
     : ""
 
+  const adminMemoryContext = await getAdminMemoryContext().catch((error) => {
+    console.error("[carousel-generator] admin memory unavailable:", error)
+    return ""
+  })
+
   const prompt = `You are Sandra's carousel writer for @sandra.social (Instagram, AI-assisted brand imagery from one selfie, personal branding for women building from their phone).
 
 ${voiceBlock()}
+
+${adminMemoryContext}
 
 ${purposeMessagingBlock()}
 
@@ -693,9 +701,16 @@ export async function generateTutorialCarousels(input: GeneratorInput): Promise<
     ? new Date(briefs[0].period_start).toISOString().slice(0, 10)
     : null
 
+  const adminMemoryContext = await getAdminMemoryContext().catch((error) => {
+    console.error("[tutorial-carousel-generator] admin memory unavailable:", error)
+    return ""
+  })
+
   const prompt = `You are Sandra's tutorial carousel writer for @sandra.social.
 
 ${voiceBlock()}
+
+${adminMemoryContext}
 
 ${purposeMessagingBlock()}
 

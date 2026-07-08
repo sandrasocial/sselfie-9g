@@ -25,6 +25,7 @@ import {
 import { getAcademyProductCatalog } from "@/lib/academy-entitlements"
 import { getStaticVaultInventory } from "@/lib/ai-prompts/prompt-data"
 import { getPublishedVaultCollections } from "@/lib/vault/published-collections"
+import { getAdminMemoryContext } from "@/lib/app-v3/maya/admin-memory-store"
 
 const RESEARCH_MODEL = "claude-sonnet-4-5"
 const BRIEF_MODEL = "claude-sonnet-4-5"
@@ -948,10 +949,12 @@ const CANONICAL_PRICING = {
 
 // Shared system base for every brief pass. All blocks are static, so this lives at module
 // level and the daily-stories pass (its own cron phase) reuses it without a dataPacket.
-function briefSystemBase(): string {
+function briefSystemBase(adminMemoryContext = ""): string {
   return `You are Sandra's content strategist for SSELFIE (@sandra.social). You produce her weekly content brief. Every suggestion must be traceable to the data you're given: her top posts, what her audience copies, what they DM her, and the research memo. Never invent statistics. If a claim comes from research, say so.
 
 ${voiceBlock()}
+
+${adminMemoryContext}
 
 ${purposeMessagingBlock()}
 
@@ -1001,8 +1004,12 @@ SHARED DATA RULES:
 export async function generateDailyStoriesForBrief(brief: ContentBrief): Promise<DailyStory[]> {
   const client = getAnthropicClient()
   const vault = await getVaultBriefContext()
+  const adminMemoryContext = await getAdminMemoryContext().catch((error) => {
+    console.error("[content-brief] admin memory unavailable:", error)
+    return ""
+  })
 
-  const storiesSystem = `${briefSystemBase()}
+  const storiesSystem = `${briefSystemBase(adminMemoryContext)}
 
 ${storyBankBlock()}
 
@@ -1123,7 +1130,11 @@ export async function generateContentBrief(options?: {
     researchMemo: researchNotes,
   }
 
-  const systemBase = briefSystemBase()
+  const adminMemoryContext = await getAdminMemoryContext().catch((error) => {
+    console.error("[content-brief] admin memory unavailable:", error)
+    return ""
+  })
+  const systemBase = briefSystemBase(adminMemoryContext)
 
   const strategySystem = `${systemBase}
 

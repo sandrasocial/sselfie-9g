@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 import { sql } from "@/lib/db/client"
+import { sendEmail } from "@/lib/email/send-email"
+import { envNumber } from "@/lib/env-flags"
 
 const WEBHOOK_EVENT_TYPES = new Set([
   "email.sent",
@@ -527,6 +529,64 @@ async function updateABTestIfNeeded(rows: any[], eventType: string) {
   }
 }
 
+async function maybeSendDeliverabilityAlert(eventType: string) {
+  if (eventType !== "email.bounced" && eventType !== "email.complained") return
+
+  const threshold = envNumber("EMAIL_BOUNCE_ALERT_THRESHOLD", 10)
+  const rows = await sql`
+    SELECT COUNT(*)::int AS damage_count
+    FROM email_logs
+    WHERE status IN ('bounced', 'complained')
+      AND COALESCE(sent_at, created_at) > NOW() - INTERVAL '24 hours'
+  `
+  const damageCount = Number(rows?.[0]?.damage_count || 0)
+  if (damageCount < threshold) return
+
+  const alertId = `resend-deliverability-${new Date().toISOString().slice(0, 10)}`
+  const existing = await sql`
+    SELECT id
+    FROM admin_alert_sent
+    WHERE alert_id = ${alertId}
+      AND sent_at > NOW() - INTERVAL '24 hours'
+    LIMIT 1
+  `
+  if (existing.length > 0) return
+
+  const to = process.env.IG_AGENT_ADMIN_EMAIL || process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
+  const subject = "SSELFIE alert: email deliverability needs review"
+  const html = `
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.6;color:#111;">
+      <h1 style="font-family:Georgia,serif;font-weight:400;">Email deliverability needs review</h1>
+      <p>${damageCount} bounces or complaints were logged in the last 24 hours.</p>
+      <p>Threshold: ${threshold}. Source: <code>email_logs</code> via Resend webhook.</p>
+      <p>Review recent broadcasts and lifecycle sends before sending more volume.</p>
+    </div>`
+  const text = `Email deliverability needs review\n\n${damageCount} bounces or complaints were logged in the last 24 hours.\nThreshold: ${threshold}. Source: email_logs via Resend webhook.\n\nReview recent broadcasts and lifecycle sends before sending more volume.`
+
+  const result = await sendEmail({
+    to,
+    from: "SSELFIE Alerts <hello@sselfie.ai>",
+    subject,
+    html,
+    text,
+    emailType: "email_deliverability_alert",
+    tags: ["admin-alert", "deliverability"],
+  })
+
+  if (result.success) {
+    await sql`
+      INSERT INTO admin_alert_sent (alert_id, alert_type, sent_at, alert_data)
+      VALUES (
+        ${alertId},
+        'email_deliverability',
+        NOW(),
+        ${JSON.stringify({ damageCount, threshold, eventType })}::jsonb
+      )
+      ON CONFLICT DO NOTHING
+    `
+  }
+}
+
 async function buildContext(body: any): Promise<ResendEventContext> {
   const eventType = String(body?.type || "unknown")
   const eventData = body?.data || {}
@@ -635,6 +695,7 @@ export async function POST(request: NextRequest) {
 
     const result = await updateEmailLog(context)
     await updateABTestIfNeeded(result.rows, context.eventType)
+    await maybeSendDeliverabilityAlert(context.eventType)
 
     const eventStatus = result.matched ? "processed" : "unmatched"
     await updateEmailEventStatus(eventRowId, eventStatus)

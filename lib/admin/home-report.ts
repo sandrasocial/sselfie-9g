@@ -73,6 +73,26 @@ export type AdminHomeReport = {
     topPrompt: { title: string; copies: number } | null
   }
   commandCenter: HigherSelfCommandCenter
+  team: {
+    employees: Array<{
+      name: string
+      role: string
+      status: "live" | "paused" | "needs-setup" | "watching"
+      lastRun: string | null
+      lastResult: string
+      destination: string
+      source: string
+    }>
+    dmBridge: {
+      messages7d: number
+      conversationsAllTime: number
+      source: "ig_messages + ig_conversations"
+    }
+    diagnostics: {
+      errors24h: number
+      source: "admin_email_errors"
+    }
+  }
 }
 
 type ProductRow = { product: string | null; payments: number; revenue_cents: string | number }
@@ -106,6 +126,9 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
     trialRows,
     studioHealth,
     foundingCount,
+    cronRows,
+    diagnosticsRows,
+    dmBridgeRows,
   ] = await Promise.all([
     sql`
       SELECT
@@ -170,6 +193,33 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
       console.error("[admin-home] founding annual count failed:", error)
       return 0
     }),
+    sql`
+      SELECT DISTINCT ON (job_name)
+        job_name,
+        status,
+        started_at,
+        finished_at,
+        summary
+      FROM admin_cron_runs
+      WHERE job_name IN (
+        'product-qa-daily',
+        'cron-health-check',
+        'daily-sandra-briefing',
+        'content-brief-jobs',
+        'payment-reconciliation'
+      )
+      ORDER BY job_name, started_at DESC
+    `.catch(() => []) as unknown as Promise<any[]>,
+    sql`
+      SELECT COUNT(*)::int AS errors_24h
+      FROM admin_email_errors
+      WHERE created_at > NOW() - INTERVAL '24 hours'
+    `.catch(() => []) as unknown as Promise<any[]>,
+    sql`
+      SELECT
+        (SELECT COUNT(*)::int FROM ig_messages WHERE sent_at > NOW() - INTERVAL '7 days') AS messages_7d,
+        (SELECT COUNT(*)::int FROM ig_conversations) AS conversations_all_time
+    `.catch(() => []) as unknown as Promise<any[]>,
   ])
 
   const money = moneyRows[0] || {}
@@ -209,6 +259,30 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
     nextPostTitle: firstPiece?.title || null,
     nextPostHook: firstPiece?.hook || null,
     topPrompt: topPrompt ? { title: topPrompt.title, copies: Number(topPrompt.copies || 0) } : null,
+  }
+  const cronByJob = new Map<string, any>()
+  for (const row of cronRows as any[]) cronByJob.set(String(row.job_name), row)
+  const employeeFor = (
+    jobName: string,
+    name: string,
+    role: string,
+    destination: string,
+  ) => {
+    const row = cronByJob.get(jobName)
+    return {
+      name,
+      role,
+      status: "live" as const,
+      lastRun: row?.started_at ? String(row.started_at) : null,
+      lastResult: row?.status ? String(row.status) : "No run logged yet",
+      destination,
+      source: "admin_cron_runs",
+    }
+  }
+  const dmBridge = {
+    messages7d: Number((dmBridgeRows as any[])[0]?.messages_7d || 0),
+    conversationsAllTime: Number((dmBridgeRows as any[])[0]?.conversations_all_time || 0),
+    source: "ig_messages + ig_conversations" as const,
   }
 
   return {
@@ -251,5 +325,72 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
       content,
       scorecard,
     }),
+    team: {
+      employees: [
+        employeeFor(
+          "product-qa-daily",
+          "Product QA Reporter",
+          "Finds bug, reliability, and stuck-system risks before the daily briefing.",
+          "analytics_reports.product_qa_daily + Daily Sandra Briefing",
+        ),
+        employeeFor(
+          "cron-health-check",
+          "Cron Health Watchdog",
+          "Watches stale crons, failures, and AI-credit canaries.",
+          "admin alert email",
+        ),
+        employeeFor(
+          "daily-sandra-briefing",
+          "Daily Sandra Briefing",
+          "Sends the one daily money, member, needs-me, and content email.",
+          "email to Sandra",
+        ),
+        employeeFor(
+          "content-brief-jobs",
+          "Content Brief Worker",
+          "Processes queued weekly brief phases and story generation jobs.",
+          "/admin/content-brief",
+        ),
+        {
+          name: "DM Bridge",
+          role: "ManyChat inbound bridge into ig_conversations and ig_messages.",
+          status: dmBridge.messages7d > 0 ? "live" : "needs-setup",
+          lastRun: null,
+          lastResult: `${dmBridge.messages7d} messages captured in the last 7 days; ${dmBridge.conversationsAllTime} conversations all-time.`,
+          destination: "/admin/ig-inbox",
+          source: dmBridge.source,
+        },
+        {
+          name: "Diagnostics APIs",
+          role: "Expose cron status and admin errors for the Team panel.",
+          status: "watching",
+          lastRun: null,
+          lastResult: `${Number((diagnosticsRows as any[])[0]?.errors_24h || 0)} admin errors in the last 24h.`,
+          destination: "/api/admin/diagnostics/cron-status + /api/admin/diagnostics/errors",
+          source: "admin_email_errors",
+        },
+        ...[
+          "reindex-codebase",
+          "refresh-segments",
+          "sync-audience-segments",
+          "backfill-resend-audience",
+          "referral-bonus-notifications",
+          "maya-instagram-trends-weekly",
+        ].map((name) => ({
+          name,
+          role: "Dormant-by-choice automation. Visible here so it cannot disappear silently.",
+          status: "paused" as const,
+          lastRun: null,
+          lastResult: "Paused by EMPLOYEE-01. Do not schedule in this task.",
+          destination: "none",
+          source: "docs/AUTOMATION_ROSTER.md",
+        })),
+      ],
+      dmBridge,
+      diagnostics: {
+        errors24h: Number((diagnosticsRows as any[])[0]?.errors_24h || 0),
+        source: "admin_email_errors",
+      },
+    },
   }
 }

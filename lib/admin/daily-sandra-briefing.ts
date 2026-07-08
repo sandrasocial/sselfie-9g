@@ -81,6 +81,17 @@ export type DailyBriefingExtras = {
   }
   inboxFlagged?: Array<{ username: string; message: string }>
   inboxFlaggedCount?: number
+  systemHealth?: DailyBriefingSystemHealth | null
+}
+
+export type DailyBriefingSystemHealth = {
+  source: "analytics_reports.product_qa_daily"
+  generatedAt: string | null
+  risks: Array<{
+    severity: string
+    summary: string
+    recommendation: string
+  }>
 }
 
 export type TodaysContentPost = {
@@ -129,6 +140,7 @@ export type DailySandraBriefing = {
     action: string
     createdAt?: string | null
   }>
+  systemHealth: DailyBriefingSystemHealth | null
   links: {
     growthIntelligence: string
     promptVault: string
@@ -212,6 +224,26 @@ function escapeHtml(value: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
+}
+
+export function buildSystemHealthFromProductQa(payload: unknown): DailyBriefingSystemHealth | null {
+  const report = payload as any
+  const topRisks = Array.isArray(report?.topRisks) ? report.topRisks : []
+  const risks = topRisks
+    .filter((risk: any) => risk?.summary)
+    .slice(0, 3)
+    .map((risk: any) => ({
+      severity: cleanLabel(risk.severity, "medium"),
+      summary: cleanLabel(risk.summary, "System risk needs review"),
+      recommendation: cleanLabel(risk.recommendation, "Open admin diagnostics."),
+    }))
+
+  if (risks.length === 0) return null
+  return {
+    source: "analytics_reports.product_qa_daily",
+    generatedAt: report?.periodEnd || report?.generatedAt || null,
+    risks,
+  }
 }
 
 export function buildDailySandraBriefing(
@@ -435,6 +467,7 @@ export function buildDailySandraBriefing(
     codexNext: codexNext.slice(0, 3),
     sandraNext: sandraNext.slice(0, 3),
     supportThreads,
+    systemHealth: extras.systemHealth || null,
     links: {
       growthIntelligence: `${SITE_URL}/admin`,
       promptVault: `${SITE_URL}/admin/prompt-vault`,
@@ -480,6 +513,28 @@ function supportThreadsText(threads: DailySandraBriefing["supportThreads"]): str
     .slice(0, 4)
     .map((thread) => `- [${thread.status}] ${thread.subject} from ${thread.customer} <${thread.email}>: ${thread.message} Action: ${thread.action}`)
     .join("\n")
+}
+
+function systemHealthHtml(systemHealth: DailyBriefingSystemHealth | null): string {
+  if (!systemHealth?.risks.length) return ""
+  return `
+      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
+        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">System health</h2>
+        <p style="margin:0 0 10px;font-size:12px;color:#818283;">Source: ${escapeHtml(systemHealth.source)}</p>
+        <ul style="padding-left:18px;margin:0;color:#4F5052;">${systemHealth.risks
+          .map(
+            (risk) =>
+              `<li style="margin:0 0 10px;line-height:1.6;"><strong>${escapeHtml(risk.severity)}</strong>: ${escapeHtml(risk.summary)} ${escapeHtml(risk.recommendation)}</li>`,
+          )
+          .join("")}</ul>
+      </div>`
+}
+
+function systemHealthText(systemHealth: DailyBriefingSystemHealth | null): string {
+  if (!systemHealth?.risks.length) return ""
+  return `\n\nSystem health (${systemHealth.source})\n${systemHealth.risks
+    .map((risk) => `- ${risk.severity}: ${risk.summary} ${risk.recommendation}`)
+    .join("\n")}`
 }
 
 function truthSnapshotHtml(snapshot: GrowthTruthSnapshot | null): string {
@@ -709,6 +764,7 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
       </div>` : ""}
       ${truthSnapshotHtml(briefing.truthSnapshot)}
       ${revenueScorecardHtml(briefing.revenueScorecard)}
+      ${systemHealthHtml(briefing.systemHealth)}
 
       <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
         <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What's working</h2>
@@ -741,7 +797,7 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
     ? `\n\nInbox: ${briefing.inboxFlaggedCount} flagged\n${briefing.inboxFlagged.map((item) => `- @${item.username}: ${item.message}`).join("\n")}`
     : ""
 
-  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${inboxTextSection}${truthSnapshotText(briefing.truthSnapshot)}${revenueScorecardText(briefing.revenueScorecard)}\n\nWhat's working\n${listText(briefing.working)}\n\nWhat's leaking\n${listText(briefing.leaking)}\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}${adviceSectionsText(briefing)}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
+  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${inboxTextSection}${truthSnapshotText(briefing.truthSnapshot)}${revenueScorecardText(briefing.revenueScorecard)}${systemHealthText(briefing.systemHealth)}\n\nWhat's working\n${listText(briefing.working)}\n\nWhat's leaking\n${listText(briefing.leaking)}\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}${adviceSectionsText(briefing)}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
 
   return {
     subject: briefing.subject,

@@ -1,5 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { buildDailySandraBriefing, generateDailySandraBriefingEmail } from "@/lib/admin/daily-sandra-briefing"
+import {
+  buildDailySandraBriefing,
+  buildSystemHealthFromProductQa,
+  generateDailySandraBriefingEmail,
+} from "@/lib/admin/daily-sandra-briefing"
 import {
   buildDailyBriefingSnapshot,
   generateDailyBriefingIntelligence,
@@ -11,6 +15,7 @@ import { getGrowthIntelligenceReport } from "@/lib/admin/growth-intelligence"
 import { createCronLogger } from "@/lib/cron-logger"
 import { sendEmail } from "@/lib/email/send-email"
 import { sql } from "@/lib/db/client"
+import { envFlag } from "@/lib/env-flags"
 
 export const dynamic = "force-dynamic"
 
@@ -27,16 +32,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    if (process.env.DAILY_SANDRA_BRIEFING_ENABLED !== "true") {
+    if (!envFlag("DAILY_SANDRA_BRIEFING_ENABLED")) {
       await logger.success({ sent: false, skipped: "disabled" })
       return NextResponse.json({ success: true, sent: false, skipped: "disabled" })
     }
 
     const report = await getGrowthIntelligenceReport(7)
+    const { getLatestAnalyticsReports } = await import("@/lib/analytics/reports")
 
     // Money header from stripe_payments (the only allowed money source) and the
     // flagged-DM list this briefing absorbed from the old IG morning briefing.
-    const [moneyRows, flaggedRows] = await Promise.all([
+    const [moneyRows, flaggedRows, productQaRows] = await Promise.all([
       sql`
         SELECT
           COUNT(*) FILTER (WHERE payment_date > NOW() - INTERVAL '1 day')::int AS yesterday_payments,
@@ -61,6 +67,7 @@ export async function GET(request: NextRequest) {
         ORDER BY c.updated_at DESC
         LIMIT 5
       ` as unknown as Promise<any[]>,
+      getLatestAnalyticsReports({ reportType: "product_qa_daily", limit: 1 }).catch(() => []),
     ])
 
     const money = moneyRows[0] || {}
@@ -77,6 +84,7 @@ export async function GET(request: NextRequest) {
         message: String(row.message || "").slice(0, 180),
       })),
       inboxFlaggedCount: flaggedRows.length,
+      systemHealth: buildSystemHealthFromProductQa(productQaRows[0]?.payload),
     })
 
     // Intelligence layer: today's move from the stored weekly brief, a genuine
