@@ -38,6 +38,26 @@ function fallbackDraft(message: string): IgResponderResult {
   }
 }
 
+// Used ONLY when the real drafting call itself failed (LLM/network/parsing error) — a genuine
+// AI failure, not a deliberate "AI drafts disabled" choice. Cross-industry escalation guidance
+// (Replicant, CX Today — see docs/business/AI_COMMUNITY_MANAGEMENT_RESEARCH_2026-07-09.md) is
+// consistent that an AI should self-escalate on its own detected failure rather than paper over
+// it. The plain fallbackDraft() above was being used for this too, which was actively dangerous
+// here: it can score 0.82 on a bare prompt/vault keyword match (above the 0.8 auto-flag
+// threshold), so an infrastructure failure would silently sail through as a normal, unflagged
+// reply — AND that same canned text pastes a raw prompt link directly, which breaks the
+// documented "never paste prompt links yourself" rule. This variant always flags and never
+// includes a raw link, regardless of what the message said.
+function generationFailedDraft(message: string): IgResponderResult {
+  return {
+    response: "Awww babe 😭🫶🏼\n\nI saw this and I'm saving it for Sandra to look at properly 🤍",
+    confidence: 0.3,
+    intent: "generation_failed",
+    shouldSend: false,
+    growthTags: detectGrowthTags(message),
+  }
+}
+
 export async function generateSandraDraft(params: {
   igUserId: string
   latestMessage: string
@@ -77,6 +97,6 @@ export async function generateSandraDraft(params: {
     }
   } catch (error) {
     console.warn("[ig-agent] Draft generation failed, using fallback:", error)
-    return fallbackDraft(params.latestMessage)
+    return generationFailedDraft(params.latestMessage)
   }
 }

@@ -57,7 +57,7 @@ async function triage() {
       AND c.last_message_at > NOW() - (${days} || ' days')::interval
     ORDER BY
       -- surface personal/urgent flags first, then everything else by recency
-      CASE WHEN c.flag_reason IN ('friend_or_family', 'icelandic_contact', 'refund_or_complaint', 'emotional_or_distressed') THEN 0 ELSE 1 END,
+      CASE WHEN c.flag_reason IN ('friend_or_family', 'icelandic_contact', 'refund_or_complaint', 'emotional_or_distressed', 'ai_generation_failed') THEN 0 ELSE 1 END,
       c.last_message_at DESC
     LIMIT 60
   ` as any[]

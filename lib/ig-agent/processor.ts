@@ -204,16 +204,15 @@ export async function processInboundInstagramMessage(input: InboundMessage) {
     ON CONFLICT (ig_message_id) DO NOTHING
   `
 
-  const skipDraft = triage.action === "ignore" || triage.action === "keyword_handled"
-  const draft = skipDraft
+  const draft = triage.action === "ignore"
     ? null
     : await generateSandraDraft({
         igUserId: input.igUserId,
         latestMessage: input.text,
       })
 
-  const shouldFlag = !skipDraft && (triage.action === "flag" || !draft || draft.confidence < 0.8)
-  const status = triage.action === "keyword_handled" ? "auto_handled" : shouldFlag ? "flagged" : "pending"
+  const shouldFlag = triage.action === "flag" || !draft || draft.confidence < 0.8
+  const status = shouldFlag ? "flagged" : "pending"
   const flagReason = triage.flagReason || (draft && draft.confidence < 0.8 ? "low_confidence" : null)
 
   if (draft) {
