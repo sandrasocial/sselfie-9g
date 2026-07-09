@@ -81,7 +81,7 @@ automation.
 | Task | Schedule | Status | Job |
 |---|---|---|---|
 | `daily-email-draft` | 06:34 daily | ✅ ACTIVE (re-grounded 2026-07-08) | Drafts ONE story-first broadcast + preview to Sandra. NEVER sends. |
-| `manychat-agent-watch` | 09:03 daily | ✅ ACTIVE (upgraded 2026-07-08) | Checks ManyChat AI replies + config; hunts WORK leads first. Needs her Chrome logged in. |
+| `manychat-agent-watch` | 09:03 daily | ✅ ACTIVE (upgraded 2026-07-09) | Checks ManyChat AI replies + config; hunts WORK leads first; now also watches the direct Instagram Graph DM channel (`npm run ig:graph-test`, token expiry, messaging_status) and judges replies against a customer-service facts block. Needs her Chrome logged in. |
 | `funnel-health-daily` | — | ❌ RETIRED 2026-07-08 | Superseded by repo `cron-health-check` + `payment-reconciliation`. |
 | `claude-codex-loop` | — | ❌ RETIRED 2026-07-08 | Old 15-min loop protocol; superseded by direct Cowork sessions. |
 | `weekly-content-trends` (Claude copy) | — | ❌ RETIRED 2026-07-08 | Duplicate of the repo cron of the same name. |
