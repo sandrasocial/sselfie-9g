@@ -1,6 +1,6 @@
 # SSELFIE Purpose Messaging Lock
 
-Last updated: 2026-07-07
+Last updated: 2026-07-09
 
 Status: Current controlling extension for SSELFIE purpose, category, founder-led messaging, content direction, and story systems.
 
@@ -90,6 +90,16 @@ Paid activation:
 - Make the next step smaller, clearer, and easier to complete.
 - Keep SUITE framed as the monthly creation system, not a pile of tools.
 
+## The Recurring Drift To Watch (locked 2026-07-09)
+
+Every offer, product, or service will eventually get tempted to broaden: "help with everything," a longer feature list, more roles, more deliverables. That temptation is not caution or thoroughness. It is the same avoidance that shows up everywhere else in this business as over-building — reaching for breadth because it feels safer and bigger than committing to depth in one narrow thing.
+
+The correction is always the same:
+
+Identity and clarity work leads. Content production, research, planning, design, and sales support are the delivery mechanism that keeps that clarity alive day to day. They are never the point of the offer themselves.
+
+A woman does not come to Sandra because she needs a social media manager. She comes because she does not know who she is yet online, what she stands for, or what she could sell. Any offer (Work With Me, Visibility To Paid, SUITE, a future product) must lead with that transformation first, and name the tactical/production support as how she keeps living it after the identity is clear. If a page, a brief, or a roadmap starts to read like a list of services with identity-clarity as one bullet among several, that is the drift. Narrow it back.
+
 ## The Mandatory Questions
 
 Before shipping copy, content, prompts, brief output, or Maya/admin language, ask:
@@ -100,6 +110,7 @@ Before shipping copy, content, prompts, brief output, or Maya/admin language, as
 - Is there a real Sandra anchor?
 - Could only Sandra say this in this way?
 - Is the offer bridge right for the audience temperature?
+- Does identity/clarity lead, with content and production support named as the delivery mechanism, not the point?
 
 If the answer is no, rewrite.
 
@@ -116,6 +127,7 @@ Do not reduce SSELFIE to:
 - "post more" advice
 - feature-first software copy
 - low-ticket-only strategy
+- an offer where content production, social-media-management, or design services read as the transformation itself, instead of the delivery mechanism for an identity/clarity transformation
 
 The business can sell tools, prompts, kits, and software. The message is bigger:
 
