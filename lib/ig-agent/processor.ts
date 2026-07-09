@@ -7,6 +7,7 @@ import { triageIncomingMessage } from "@/lib/ig-agent/triage"
 import type { IgChannel } from "@/lib/ig-agent/types"
 
 const ADMIN_EMAIL = process.env.IG_AGENT_ADMIN_EMAIL || "ssa@ssasocial.com"
+const IG_AGENT_ALERT_COOLDOWN_MINUTES = Number(process.env.IG_AGENT_ALERT_COOLDOWN_MINUTES || 20)
 
 type InboundMessage = {
   igUserId: string
@@ -31,6 +32,38 @@ type ContactRow = {
   tags: string[] | null
 }
 
+// Stopgap volume cap: with no cooldown, a burst of flagged messages (e.g. real drafting
+// failing over to the same canned fallback) sent one email per conversation. This caps it to
+// one email per window; every flagged conversation still lands in /admin/ig-inbox regardless
+// of whether an email fired for it. Reuses the admin_alert_sent table cron-health-check already
+// writes to, keyed on a fixed alert_id since this is a global rate limit, not per-conversation.
+async function wasIgAgentAlertSentRecently(): Promise<boolean> {
+  try {
+    const [result] = await sql`
+      SELECT sent_at FROM admin_alert_sent
+      WHERE alert_id = 'ig-agent-flagged'
+        AND sent_at > NOW() - ${IG_AGENT_ALERT_COOLDOWN_MINUTES} * INTERVAL '1 minute'
+      ORDER BY sent_at DESC
+      LIMIT 1
+    `
+    return Boolean(result?.sent_at)
+  } catch (error) {
+    console.warn("[ig-agent] Alert cooldown check unavailable:", error)
+    return false
+  }
+}
+
+async function recordIgAgentAlertSent() {
+  try {
+    await sql`
+      INSERT INTO admin_alert_sent (alert_id, alert_type, sent_at, alert_data)
+      VALUES ('ig-agent-flagged', 'ig_flag_notification', NOW(), '{}'::jsonb)
+    `
+  } catch (error) {
+    console.warn("[ig-agent] Failed to record alert sent:", error)
+  }
+}
+
 async function notifyIfFlagged(params: {
   conversationId: number
   username: string
@@ -40,6 +73,8 @@ async function notifyIfFlagged(params: {
   profilePicUrl?: string | null
   isIcelandic?: boolean
 }) {
+  if (await wasIgAgentAlertSentRecently()) return
+
   const email = generateIgFlagNotificationEmail(params)
   await sendEmail({
     to: ADMIN_EMAIL,
@@ -50,6 +85,7 @@ async function notifyIfFlagged(params: {
     emailType: "ig_flag_notification",
     tags: ["ig-agent", "flagged"],
   })
+  await recordIgAgentAlertSent()
 }
 
 export async function processInboundInstagramMessage(input: InboundMessage) {

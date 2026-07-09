@@ -1,6 +1,6 @@
 import { generateText } from "ai"
 import { z } from "zod"
-import { createMayaAnthropicModel, createMayaOpenRouterModel } from "@/lib/maya/openrouter"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import { buildContactContext } from "@/lib/ig-agent/contact-profiler"
 import { IG_AGENT_PROMPT_VAULT_URL } from "@/lib/ig-agent/links"
 import { buildSandraSystemPrompt } from "@/lib/ig-agent/voice-prompt"
@@ -51,7 +51,12 @@ export async function generateSandraDraft(params: {
   const system = buildSandraSystemPrompt({ contact })
 
   try {
-    const model = createMayaAnthropicModel("instagram_strategy") || createMayaOpenRouterModel("instagram_strategy")
+    // OpenRouter is the funded, primary Maya lane (see lib/maya/openrouter.ts) — it already
+    // falls back to direct Anthropic internally if OpenRouter is unavailable. Calling direct
+    // Anthropic first here bypassed that: createMayaAnthropicModel only checks that
+    // ANTHROPIC_API_KEY is set, not that the account has credit, so a billing failure only
+    // surfaced later inside generateText() and always landed on the canned fallbackDraft below.
+    const model = createMayaOpenRouterModel("instagram_strategy")
     const { text } = await generateText({
       model,
       system,
