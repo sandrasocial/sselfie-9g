@@ -14,6 +14,7 @@ type ConnectionRow = {
   access_token: string | null
   page_access_token?: string | null
   instagram_user_id?: string | null
+  page_id?: string | null
   account_type?: string | null
   id?: number
 }
@@ -63,7 +64,7 @@ export async function sendInstagramDm(params: {
   }
 
   const rows = await sql`
-    SELECT id, instagram_user_id, access_token, page_access_token, account_type
+    SELECT id, instagram_user_id, page_id, access_token, page_access_token, account_type
     FROM instagram_connections
     WHERE instagram_username = 'sandra.social'
       AND is_active = TRUE
@@ -84,7 +85,21 @@ export async function sendInstagramDm(params: {
   const endpoint =
     mode === "instagram_login"
       ? `https://graph.instagram.com/v21.0/${connection.instagram_user_id}/messages`
-      : "https://graph.facebook.com/v21.0/me/messages"
+      : connection.page_id
+        ? `https://graph.facebook.com/v21.0/${connection.page_id}/messages`
+        : "https://graph.facebook.com/v21.0/me/messages"
+
+  const body =
+    mode === "instagram_login"
+      ? {
+          recipient: { id: params.igUserId },
+          message: { text: params.message },
+        }
+      : {
+          messaging_type: "RESPONSE",
+          recipient: { id: params.igUserId },
+          message: { text: params.message },
+        }
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -92,10 +107,7 @@ export async function sendInstagramDm(params: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      recipient: { id: params.igUserId },
-      message: { text: params.message },
-    }),
+    body: JSON.stringify(body),
   })
   const payload = await response.json().catch(() => null)
 

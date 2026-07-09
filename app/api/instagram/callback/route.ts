@@ -318,11 +318,15 @@ export async function GET(request: NextRequest) {
       )
       ON CONFLICT (user_id, instagram_username)
       DO UPDATE SET
+        instagram_user_id = ${instagramUserId},
         access_token = ${accessToken},
         page_id = ${selectedPage.id || null},
         page_name = ${selectedPage.name || null},
         page_access_token = ${selectedPage.access_token || null},
         token_expires_at = ${expiresAt.toISOString()},
+        account_type = ${"business"},
+        messaging_status = ${"needs_permission_test"},
+        messaging_test_error = NULL,
         is_active = true,
         updated_at = NOW()
     `

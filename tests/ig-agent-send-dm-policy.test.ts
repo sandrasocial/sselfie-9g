@@ -30,6 +30,7 @@ describe("Instagram DM send policy", () => {
           {
             id: 7,
             instagram_user_id: "1784_owner",
+            page_id: "174704043326739",
             access_token: "EAAR_user_token",
             page_access_token: "EAAR_page_token",
             account_type: "facebook_page",
@@ -78,12 +79,17 @@ describe("Instagram DM send policy", () => {
 
     expect(result).toEqual({ sent: true, messageId: "ig_mid_123" })
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v21.0/me/messages",
+      "https://graph.facebook.com/v21.0/174704043326739/messages",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
           Authorization: "Bearer EAAR_page_token",
           "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          messaging_type: "RESPONSE",
+          recipient: { id: "1784_contact" },
+          message: { text: "Yes, send me a screenshot and I will check it." },
         }),
       }),
     )

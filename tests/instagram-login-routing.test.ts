@@ -20,6 +20,7 @@ describe("Instagram Login routing", () => {
     expect(connectRoute).toContain("instagram_business_manage_comments")
     expect(connectRoute).toContain("instagram_business_manage_insights")
     expect(connectRoute).toContain("'pages_messaging'")
+    expect(connectRoute).toContain("'pages_manage_metadata'")
     expect(connectRoute).toContain("'instagram_manage_messages'")
     expect(connectRoute).toContain("'instagram_manage_comments'")
   })
@@ -35,8 +36,9 @@ describe("Instagram Login routing", () => {
     expect(callbackRoute).toContain("https://graph.instagram.com/access_token")
     expect(callbackRoute).toContain("page_access_token = NULL")
     expect(callbackRoute).toContain("account_type = ${\"instagram_login\"}")
+    expect(callbackRoute).toContain("messaging_status = ${\"needs_permission_test\"}")
     expect(sendDm).toContain("https://graph.instagram.com/v21.0/${connection.instagram_user_id}/messages")
-    expect(sendDm).toContain("https://graph.facebook.com/v21.0/me/messages")
+    expect(sendDm).toContain("https://graph.facebook.com/v21.0/${connection.page_id}/messages")
   })
 
   it("keeps the Facebook Page fallback separate from Instagram Login app configuration", () => {

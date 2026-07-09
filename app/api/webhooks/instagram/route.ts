@@ -111,7 +111,11 @@ export async function POST(request: NextRequest) {
   const body = await request.text()
   const signature = request.headers.get("x-hub-signature-256")
 
-  if (!verifyMetaSignature({ body, signature, appSecret: process.env.INSTAGRAM_APP_SECRET })) {
+  const validSignature = [process.env.INSTAGRAM_APP_SECRET, process.env.INSTAGRAM_LOGIN_APP_SECRET]
+    .filter(Boolean)
+    .some((appSecret) => verifyMetaSignature({ body, signature, appSecret }))
+
+  if (!validSignature) {
     return new Response("Forbidden", { status: 403 })
   }
 
