@@ -57,24 +57,33 @@ automation.
 ### Sandra-facing intelligence (LIVE)
 | Cron | Schedule | Job |
 |---|---|---|
-| `daily-sandra-briefing` | 06:15 | THE daily email: money, members, needs-me, content move |
-| `content-brief-weekly` (3 phases) + `content-brief-jobs` | Mon 06:00–07:00 + */5 min | Weekly content brief (research → build → stories) |
+| `daily-sandra-briefing` | 06:15 | Trimmed to a ~15-second read 2026-07-09: money, growth/revenue truth, one compact "today's move" line (reuses already-computed working/leaking signal), customer threads only if any. Retired its daily `lib/admin/daily-briefing-intelligence.ts` LLM call (same Anthropic-billing root cause as the weekly brief; degraded to generic filler on every failure). That file stays for now (its own tests still exercise it directly) until the Phase 2 Codex cleanup removes it. |
+| ~~`content-brief-weekly` (3 phases) + `content-brief-jobs`~~ | — | RETIRED FROM SERVICE 2026-07-09 (had been failing since 2026-07-02 on an Anthropic credit-balance error) — replaced by the `weekly-content-brief-draft` Cowork task below. Disabled via `CONTENT_BRIEF_ENABLED=false` in Vercel prod (flip back to re-enable) to avoid colliding with the new task on the same stored report row. Actual code/cron-entry deletion is scoped into the Phase 2 Codex cleanup (`tasks/README.md`). |
 | `ig-insights-sync` | 05:50 | Nightly IG post snapshots |
 | `weekly-content-trends` | Mon 05:00 | Trend digest pre-warm |
 | `feed-plan-monthly-draft` | 1st, 06:00 | Maya drafts member feed calendars |
 | `cron-health-check` | hourly | Watchdog: stale crons, failures, AI-credit canary → alerts |
+| `product-qa-daily` | 05:55 | Bug/reliability reporter (deterministic, no LLM) → feeds briefing "System health" |
 
-### Built but NOT scheduled (dormant; see EMPLOYEE-01)
-`product-qa-daily` (bug reporter — being scheduled + piped into briefing), `reindex-codebase`,
-`refresh-segments`, `sync-audience-segments`, `backfill-resend-audience`,
+### Built but NOT scheduled (dormant)
+`reindex-codebase`, `refresh-segments`, `sync-audience-segments`, `backfill-resend-audience`,
 `referral-bonus-notifications`, `maya-instagram-trends-weekly`. Admin diagnostics APIs
-(`cron-status`, `errors`) exist but unwired until EMPLOYEE-01's Team panel.
+(`cron-status`, `errors`) are now wired into the /admin home Team panel (EMPLOYEE-01, shipped
+2026-07-08, commit fcf207ef).
 
 ### Broken wiring (known, visible, owned)
 - **ManyChat inbound bridge** (`/api/webhooks/manychat-inbound`): code live, ManyChat side never
   configured — zero messages captured all-time. Fix = Sandra-attended ManyChat UI task; until
   then the `manychat-agent-watch` Claude task covers the inbox every morning.
-- **Resend bounce webhook**: logs only, no alerting (EMPLOYEE-01 adds it).
+- **Resend bounce webhook**: ✅ alerting LIVE (`maybeSendDeliverabilityAlert` in
+  `app/api/webhooks/resend/route.ts`) — fires when bounces+complaints in `email_logs` cross
+  `EMAIL_BOUNCE_ALERT_THRESHOLD` (default 10) in a rolling 24h, once/day. 2026-07-09: root-caused
+  a live alert to 237 chronically-bouncing contacts (typo domains, dead inboxes) that Resend
+  wasn't auto-suppressing — kept getting re-mailed on every daily Founding-sequence send since
+  2026-06-25 (~200 bounces/send). Unsubscribed all 237 in Resend directly. Also deleted 5 dead
+  drafts + tried to delete 20 failed "Untitled" broadcasts from a retired Feb–Mar 2026 mechanical
+  automation, but Resend's API only allows deleting draft/scheduled broadcasts — failed ones are
+  permanently stuck as clutter in the dashboard, ignore them.
 
 ## Layer 2 — Claude Cowork (Sandra's Mac, `~/.claude/scheduled-tasks`) — drafts & watching only
 
@@ -82,6 +91,8 @@ automation.
 |---|---|---|---|
 | `daily-email-draft` | 06:34 daily | ✅ ACTIVE (re-grounded 2026-07-08) | Drafts ONE story-first broadcast + preview to Sandra. NEVER sends. |
 | `manychat-agent-watch` | 09:03 daily | ✅ ACTIVE (upgraded 2026-07-09) | Checks ManyChat AI replies + config; hunts WORK leads first; now also watches the direct Instagram Graph DM channel (`npm run ig:graph-test`, token expiry, messaging_status) and judges replies against a customer-service facts block. Needs her Chrome logged in. |
+| `weekly-content-brief-draft` | Mon 06:05 | ✅ ACTIVE (new 2026-07-09) | Replaces the retired `content-brief-weekly` repo cron. Real data via `scripts/weekly-brief-prep.ts` (server-only modules can't be imported into a CLI script, so this queries the same tables directly) + live research + live writing, stores into `analytics_reports` (same shape/table so nothing downstream needs to change) and emails Sandra a preview. NEVER posts. |
+| `ig-dm-drafter` | 10:08 + 16:xx daily | ✅ ACTIVE (new 2026-07-09) | The deliberate second pass on flagged DMs/comments via `scripts/ig-dm-draft-prep.ts` — repo's own instant first-pass draft (`lib/ig-agent/responder.ts`) still fires immediately per message; this reviews/improves flagged ones with real context twice a day. NEVER sends — writes to `draft_response` only, same as the repo path. |
 | `funnel-health-daily` | — | ❌ RETIRED 2026-07-08 | Superseded by repo `cron-health-check` + `payment-reconciliation`. |
 | `claude-codex-loop` | — | ❌ RETIRED 2026-07-08 | Old 15-min loop protocol; superseded by direct Cowork sessions. |
 | `weekly-content-trends` (Claude copy) | — | ❌ RETIRED 2026-07-08 | Duplicate of the repo cron of the same name. |

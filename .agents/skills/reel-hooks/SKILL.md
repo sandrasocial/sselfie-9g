@@ -1,6 +1,6 @@
 ---
 name: reel-hooks
-description: Sandra's instant reel assistant — hooks, text-on-screen, and caption one-liners for the reel she's editing RIGHT NOW. Reads the live locked docs at ask time (never stale). Use when Sandra says "reel help", "hooks", "text on screen", "what should this say", or pastes a reel idea.
+description: Sandra's instant reel assistant — hooks, text-on-screen, and caption one-liners for the reel she's editing RIGHT NOW, or a quick "what should I post tonight" pick from what's already working. Reads the live locked docs at ask time (never stale). Use when Sandra says "reel help", "hooks", "text on screen", "what should this say", "what should I post tonight/today", or pastes a reel idea.
 ---
 
 # Reel Hooks — instant, current, in Sandra's voice

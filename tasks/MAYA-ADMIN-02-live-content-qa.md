@@ -2,7 +2,13 @@
 
 OWNER: sandra
 
-Status: code-complete, waiting for live content workflow QA.
+Status: OBSOLETE 2026-07-09. The "Maya-led admin surface" this spec asks Sandra to QA was
+already removed from the live UI on 2026-06-18 (commit 6b124ec6, "Fix admin shoot studio quality
+path") — Shoot Studio became the direct, standalone tool specifically so Suite Maya stays out of
+admin content creation. The admin-Maya chat branch (persona, tool-calling) has been dead code
+since that commit; retiring it fully is scoped into the Phase 2 Codex cleanup alongside
+VOICE-LOOP-01/EMPLOYEE-01 follow-on work (see tasks/README.md). Do not run this QA — the flow
+described below no longer exists.
 
 ## What Is Built
 
