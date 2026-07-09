@@ -97,8 +97,20 @@ automation.
 | `claude-codex-loop` | — | ❌ RETIRED 2026-07-08 | Old 15-min loop protocol; superseded by direct Cowork sessions. |
 | `weekly-content-trends` (Claude copy) | — | ❌ RETIRED 2026-07-08 | Duplicate of the repo cron of the same name. |
 
+**`sselfie-community-manager` skill** (new 2026-07-09, on-demand, no schedule) — replaces `/admin/ig-inbox`
+as Sandra's actual review surface; she never uses that web UI. Invoked by name in chat ("check my
+inbox", "what needs a reply") — pulls both ManyChat (browser/MCP) and the native pipeline
+(`scripts/ig-community-manager.ts triage`), tells her what's auto-handled by keyword automations
+vs what needs her, and can send an approved native reply (`scripts/ig-community-manager.ts send`,
+human-approved path only, never auto). Companion repo fix same day: `lib/ig-agent/triage.ts` now
+recognizes bare "Kit"/"Suite" keyword comments (previously unmatched, flooded `/admin/ig-inbox`
+as false-positive flags) and the webhook now drops Sandra's own account replying to comments
+(was looping back in as a fake customer message). Supersedes the broken `sselfie-email`/
+`sselfie-dm`/`sselfie-community` symlinks referenced in earlier docs (`.claude/skills/*` pointed
+at `.agents/skills/*` paths that were never actually created — dead, removed).
+
 Also in this layer: Cowork skills (`sselfie-brand`, `prompt-my-selfie`, `sselfie-stories`,
-`sselfie-tracker`, `sselfie-optimizer`, email/DM/community skills) — attended routines Sandra
+`sselfie-tracker`, `sselfie-optimizer`, `sselfie-community-manager`) — attended routines Sandra
 invokes by name, not schedulers. Repo-committed skills live in `.agents/skills/` (34, incl.
 `vault-prompt-writer`).
 

@@ -9,6 +9,23 @@ const LINK_RE = /\b(link|send it|where is it|can't find|access)\b/i
 const FREE_RE = /\b(free|download|guide|preview)\b/i
 const FAN_RE = /\b(love|obsessed|amazing|beautiful|thank you|thanks|inspired|this is so good|need this)\b/i
 
+// Bare comments that are just a ManyChat keyword-automation trigger word (e.g. a lone "Kit" or
+// "Suite" comment). ManyChat already delivers the real reply for these; drafting a native
+// response too is redundant, and until this was added they had no matching regex at all and
+// fell through to needs_review, flooding /admin/ig-inbox with noise ManyChat had already handled.
+const BARE_KEYWORD_TRIGGERS: Record<string, string> = {
+  kit: "kit_keyword",
+  suite: "suite_keyword",
+  prompt: "prompt_keyword",
+  prompts: "prompt_keyword",
+  vault: "vault_keyword",
+}
+
+function bareKeywordTrigger(message: string): string | null {
+  const stripped = message.toLowerCase().replace(/[^a-z]/g, "")
+  return BARE_KEYWORD_TRIGGERS[stripped] || null
+}
+
 const AESTHETIC_PATTERNS: Array<[RegExp, string]> = [
   [/\b(dark feminine|dark femme|dark balcony|moody|cinematic|luxury|glam)\b/i, "aesthetic_dark_feminine"],
   [/\b(coastal|white|clean girl|minimal|soft white)\b/i, "aesthetic_coastal_white"],
@@ -106,6 +123,17 @@ export function triageIncomingMessage(message: string, contact: IgContact): IgTr
       intent: "support_issue",
       growthTags,
       confidenceHint: 0.35,
+    }
+  }
+
+  const bareTrigger = bareKeywordTrigger(normalized)
+  if (bareTrigger) {
+    return {
+      action: "keyword_handled",
+      reason: bareTrigger,
+      intent: bareTrigger,
+      growthTags,
+      confidenceHint: 1,
     }
   }
 

@@ -1,7 +1,7 @@
 export type IgChannel = "dm" | "comment" | "story_reply" | "mention"
 export type IgConversationStatus = "pending" | "auto_handled" | "flagged" | "sandra_replied" | "snoozed" | "closed"
 export type IgMessageFromType = "contact" | "agent" | "sandra"
-export type IgTriageAction = "auto_respond" | "flag" | "ignore"
+export type IgTriageAction = "auto_respond" | "flag" | "ignore" | "keyword_handled"
 
 export type IgContact = {
   igUserId: string
