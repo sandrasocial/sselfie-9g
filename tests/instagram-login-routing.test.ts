@@ -19,8 +19,11 @@ describe("Instagram Login routing", () => {
     expect(connectRoute).toContain("instagram_business_manage_messages")
     expect(connectRoute).toContain("instagram_business_manage_comments")
     expect(connectRoute).toContain("instagram_business_manage_insights")
-    expect(connectRoute).toContain("'pages_messaging'")
-    expect(connectRoute).toContain("'pages_manage_metadata'")
+    // pages_messaging / pages_manage_metadata are not part of this Meta app's use
+    // cases - requesting them makes the OAuth dialog fail with "Invalid Scopes"
+    // (broke the admin Connect button 2026-07-09). DMs go through Instagram Login.
+    expect(connectRoute).not.toContain("'pages_messaging'")
+    expect(connectRoute).not.toContain("'pages_manage_metadata'")
     expect(connectRoute).toContain("'instagram_manage_messages'")
     expect(connectRoute).toContain("'instagram_manage_comments'")
   })

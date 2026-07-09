@@ -108,13 +108,13 @@ export async function GET(request: NextRequest) {
 
     // Every scope here must be enabled on the Meta app (use case: Instagram API,
     // status "Ready for testing" or beyond) or the OAuth dialog rejects the WHOLE
-    // request with "Invalid Scopes". pages_messaging is required by Meta when
-    // subscribing the connected Page to Instagram message webhook fields.
+    // request with "Invalid Scopes". pages_manage_metadata and pages_messaging
+    // (Messenger) are NOT part of this app's use cases and were removed 2026-06-11
+    // and again 2026-07-09 for exactly that reason. DM sending runs through the
+    // Instagram Login path (graph.instagram.com), which needs no pages_* scopes.
     const scope = [
       'pages_show_list',
       'pages_read_engagement',
-      'pages_manage_metadata',
-      'pages_messaging',
       'instagram_basic',
       'business_management',
       'instagram_manage_messages',
