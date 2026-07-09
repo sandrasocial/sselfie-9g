@@ -1,10 +1,12 @@
 # Work With Me — Playbook (private 4-week sprint, €2,000)
 
-Reusable system for every Work With Me client. Built 2026-06-23 (first client: Harmony Steingrebe, luxury real estate, Tahoe/Reno).
+Reusable system for every Work With Me client. Built 2026-06-23 (first client: Harmony Steingrebe, luxury real estate, Tahoe/Reno). Rebuilt 2026-07-09 after a zero-conversion audit (see [[work-with-me-system]] memory) — the offer was too broad, and the WOW moment was missing. This version is built entirely from verified, real capabilities (see "The 2-week prep window" below) — nothing here is aspirational.
+
+**The locked purpose** (per `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`): identity and clarity work leads. Content production, research, planning, design, and sales support are the delivery mechanism that keeps that clarity alive — never the point of the offer itself. She is not paying for a content calendar. She is paying to stop being invisible and unclear about who she is, what she's worth, and what to sell — and to leave with a system that keeps that clarity alive without her.
 
 **Design principle:** turn "all of it" into ONE goal + a few bounded deliverables, with a written container, so Sandra over-delivers on the _result_, never on hours. The agreement is the anti-burnout AND anti-disappointment tool.
 
-**Framing (important):** sell it as a focused **sprint to build her foundation + a system she can run**, with SUITE as the ongoing layer after. 4 weeks to build the engine, then she drives it. (4 weeks alone reads as "rushed" for high-ticket; the sprint + SUITE framing fixes that.)
+**Framing (important):** sell it as a focused **sprint to build her foundation + a system she can run**, with SUITE as the ongoing layer after. She should never sit on call 1 figuring things out from zero — the system exists, researched and built, before she ever gets on a call with Sandra. That WOW moment is the whole point of the 2-week prep window.
 
 ---
 
@@ -12,10 +14,11 @@ Reusable system for every Work With Me client. Built 2026-06-23 (first client: H
 
 1. Application (already a mini-intake) → Sandra replies (below) with the payment link.
 2. She pays (standing €2,000 Stripe Payment Link).
-3. **Welcome packet** email lands automatically (below) → 4 steps: okay the plan · fill the intake · start now (Masterclass + Selfie to Brand Shoot + Prompt Vault + photos) · book the first call.
-4. Kickoff call → set the ONE goal + scope from her intake → map the 4 weeks.
-5. 4 weekly 45-min calls + bounded async support.
-6. Handoff → she leaves with her system → continues on SUITE (€97/mo).
+3. **Welcome packet** email lands automatically (below) → intake + selfie upload + book the first call.
+4. **2-week prep window** (new, see below) — Sandra researches, builds, and personalizes her system BEFORE call 1.
+5. Kickoff call → she sees her system already built (the WOW moment) → set the ONE goal from her intake → map the 4 weeks.
+6. 4 weekly 45-min calls to refine it with her + bounded async support.
+7. Handoff → she leaves with her system, live inside her own SUITE account → continues on SUITE (€97/mo).
 
 ---
 
@@ -66,14 +69,18 @@ _Warm and clear, not legal. Both sides agree by starting. Fill the goal + delive
 
 **Work With Me — your four weeks**
 
-**The goal.** [Set at kickoff. Harmony example: a presence that brings in qualified buyer and seller leads on a few minutes a week.] Everything we do serves this one goal.
+**The goal.** [Set at kickoff, personal to her — e.g. Harmony's was a presence that brings in qualified buyer and seller leads on a few minutes a week.] Everything we do serves this one goal.
 
-**What we'll build together (3–4 things, set at kickoff).** Harmony example:
+**What you already have by kickoff (built during the 2-week prep window, not invented live on the call):**
 
-- Your message + brand photos (the recognizable Tahoe luxury name)
-- One simple lead-capture offer and where it lives
-- A light weekly content rhythm + your first batch
-- DM and follow-up scripts that turn inquiries into conversations
+- Your Brand Strategist work: your one-line identity, your audience, your first offer direction
+- Your Market Researcher work: what's working in your niche right now, loaded into your system
+- Your Designer work: your first batch of brand photos, carousel templates, story slides
+- Your Copywriter work: captions and hooks in your voice
+- Your Social Media Manager work: a real weekly content plan
+- Your Sales Assistant: DM reply scripts and follow-ups, live inside your own SUITE account
+
+The calls refine these against your real goal — they do not start from zero.
 
 **Not in this round (great next steps, after).** Anything beyond the goal above. We park it on purpose so you're never buried, and you keep going on SUITE.
 
@@ -107,6 +114,28 @@ Recommended: use the existing **Brand Strategy tool** (bundled in Masterclass) a
 8. Anything you've already tried that didn't work?
 9. Links to any photos, logos, or assets you have.
 
+**Add to the intake, 2026-07-09:** 10. A few captions/posts/DMs she's already written that sound like her (voice samples). 11. 2-3 examples of content she loves, in or out of her niche (style anchors). 12. Her current offer or business idea, even if it feels unclear (raw material for the Brand Strategist pass). 13. Her selfies — front, side profile, full body if possible (needed for both the visual work below and her own SUITE account).
+
+---
+
+## 4b. The 2-week prep window — the WOW moment (new, 2026-07-09)
+
+This is the actual system, mapped to what is verified real today (see [[work-with-me-system]] memory for the full capability audit). Nothing below is aspirational — every step uses a tool that already exists and works.
+
+**Days 1-3 — Market Researcher.** Sandra (with an AI-assisted research session) researches her niche, her competitors, what's trending in her space, and what hooks/formats/topics are working right now. This is Sandra's own judgment and research, not live automated monitoring — that is the honest scope, and it is a strength, not a gap: she gets a real person's research and eyes, not just software.
+
+**Days 3-5 — Brand Strategist.** From the intake + research, Sandra writes her one-line identity, her audience, her first offer direction, and her content pillars — a short source-of-truth doc for her business, the same pattern SSELFIE runs on its own brand. This is the foundation everything else below is built on top of.
+
+**Days 5-10 — Designer.** Using her uploaded selfie in Sandra's existing Shoot Studio / Carousel Kit / Story Sequence tools (admin content-kit — verified: these accept any client's reference photo, not just Sandra's own), Sandra builds her first batch of styled brand photos, carousel templates, and story slide templates.
+
+**Days 8-12 — Copywriter.** Captions, hooks, and story text in her voice, using the research + brand clarity + her own voice samples from the intake.
+
+**Days 10-13 — Social Media Manager.** All of the above turned into an actual weekly content plan — every post has a job: reach, trust, or sales.
+
+**Days 12-14 — Her own SUITE account, live.** Set up her SUITE membership: her selfie(s) uploaded, Maya's brand-profile intake completed (using what's already gathered so she doesn't have to repeat herself), so Maya can keep generating her content after the sprint ends. SUITE membership automatically includes the "Get Paid" Visibility Suite entitlement (verified: `membershipIncluded: true`) — which already generates DM reply scripts, follow-ups, and objection replies for her own audience. This is real, working, bundled infrastructure, not something built new per client.
+
+**By day 14:** her source-of-truth doc, her first content batch (photos, carousels, story sequences, captions), her weekly plan, and her own live SUITE account with Maya + DM scripts already running — all before she and Sandra have had a single call.
+
 ---
 
 ## 5. Setup — DONE (created 2026-06-23)
@@ -116,6 +145,7 @@ Recommended: use the existing **Brand Strategy tool** (bundled in Masterclass) a
 - Link: **https://buy.stripe.com/00wcN55GA25Ra0U1etgMw03**
 - Price `price_1TlWM0EVJvME7vkw6xDQEgfp` · €2,000 EUR · one-time · product "Work With Me · Private 4-Week Sprint" (`prod_Ul2Q2XcO4zt70N`) · metadata `product=work_with_me`, `product_type=work_with_me`, `source=work_with_me_paid`. Shows a "You're in, check your inbox" confirmation after payment. Reuse for every applicant.
 - Webhook fulfillment: `work_with_me` payments create/link the customer account, grant Masterclass + Brand Strategy + Selfie to Brand Shoot + Prompt Vault access, tag the contact, and send the branded Work With Me welcome packet with Calendly.
+- **NOT yet true, flagging honestly rather than assuming it (2026-07-09):** the fulfillment above does not currently grant SUITE membership access. The new 2-week prep plan requires the client to have her own live SUITE account by day 14 (for Maya + the bundled Get Paid DM-scripts entitlement). This needs a small, contained addition — likely a complimentary/comped SUITE status for the sprint period, continuing at the normal €97/mo after, matching the existing "continues on SUITE" framing. Small Codex spec, not yet written.
 
 ### B. The scheduling link (Calendly — LIVE)
 
@@ -127,6 +157,9 @@ Recommended: use the existing **Brand Strategy tool** (bundled in Masterclass) a
 
 ## What we have vs. what's left
 
-- DONE: €2,000 payment link, 45-min scheduling link, the reply, welcome packet, agreement, intake, automatic welcome send, and automatic Masterclass + Brand Strategy + Selfie to Brand Shoot + Prompt Vault access after payment.
+- DONE: €2,000 payment link, 45-min scheduling link, the reply, welcome packet, agreement, intake (updated 2026-07-09 with voice samples + style anchors + selfies), automatic welcome send, and automatic Masterclass + Brand Strategy + Selfie to Brand Shoot + Prompt Vault access after payment.
+- DONE, verified 2026-07-09: the admin content-kit tools (Shoot Studio/Carousel Kit/Story Sequences) work on any client's uploaded selfie today, no new build needed. SUITE membership already bundles the Get Paid DM-scripts entitlement.
+- NOT YET BUILT: fulfillment doesn't grant SUITE access yet (see note above) — needed before the 2-week prep window can actually end with her own live SUITE account.
 - SANDRA, once: tighten the Calendly availability windows.
 - SANDRA, per client: review the application and only send the private payment link when it is a fit.
+- SANDRA/CLAUDE, per client, during the 2-week prep window: actually do the Market Researcher + Brand Strategist + Designer + Copywriter + Social Media Manager work described above. This is real work, accelerated by AI tools, not automated end-to-end — budget real time for it, especially for the first few clients before a rhythm forms.
