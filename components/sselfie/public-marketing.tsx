@@ -724,14 +724,16 @@ const FAQS = {
   visibilityToPaid: [
     { question: "What if I apply and it's not the right fit?",
       answer: "Then I'll tell you honestly, and I won't take your money. Every application gets a real reply from me, not a form rejection." },
+    { question: "What actually happens after I pay?",
+      answer: "You're not waiting for our first call to start. In the two weeks before we speak, I research your niche, get clear on your message and your one first offer, and build your first batch of content. Call one is where you see it, not where we start from zero." },
     { question: "What if I don't know what my offer even is yet?",
-      answer: "That's normal, and it's one of the first things we work on together. You don't need a finished offer, a clear niche, or a business plan to apply. You just need something real to start from." },
+      answer: "That's normal, and it's one of the first things I work on before we even speak. You don't need a finished offer, a clear niche, or a business plan to apply. You just need something real to start from." },
     { question: "Is this AI photos, or business coaching?",
-      answer: "Neither, exactly. It's your message, your profile, your content direction, and your first offer, made clear enough that people understand why they'd buy from you. Your visuals are part of that. They're not the whole thing." },
+      answer: "Neither, exactly. It's clarity on who you are and what you're selling, and a content system that keeps that clarity visible. Your visuals are part of that. They're not the whole thing." },
     { question: "What if I spend €2,000 and still don't use it?",
       answer: "That's exactly why I read applications myself before anyone pays. I'd rather turn down a maybe than take money from someone who isn't ready to do the work." },
     { question: "There's no case study yet. Why should I trust this?",
-      answer: "Because I'm doing this myself, with the first small group, not handing you a course and disappearing. You're not buying a proven system. You're buying my full attention on your specific situation." },
+      answer: "Because I'm doing this myself, with the first small group, not handing you a course and disappearing. And you're not paying for me to figure things out live with you. The research and the first version of your system are built before we ever speak." },
   ],
 }
 
@@ -1353,28 +1355,28 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
 export function WorkWithMePageContent() {
   const clarityItems = [
     {
-      title: "Your message",
-      body: "One clear sentence for what you help with, who it is for, and why it matters now.",
+      title: "Brand Strategist",
+      body: "Keeps you clear on what you're known for, who you're talking to, and what to sell next.",
     },
     {
-      title: "Your buyer",
-      body: "The woman you are speaking to, what she is stuck in, and the before/after she wants.",
+      title: "Market Researcher",
+      body: "Before we start, I research your niche and what's working right now, so your system is never guessing.",
     },
     {
-      title: "Your first offer",
-      body: "A simple paid path people can understand without you explaining your whole life story.",
+      title: "Social Media Manager",
+      body: "Turns that into a real weekly plan. Every post has a job: reach, trust, or sales.",
     },
     {
-      title: "Your content direction",
-      body: "The posts, stories, profile lines, and CTAs that make the next step obvious.",
+      title: "Copywriter",
+      body: "Writes in your voice. Captions, hooks, story text, sales posts.",
     },
     {
-      title: "Your visual direction",
-      body: "Selfie and AI photo direction that supports your message instead of making you look like someone else.",
+      title: "Designer",
+      body: "Styled brand photos, carousels, and story slides, ready to use.",
     },
     {
-      title: "Your next move",
-      body: "A small plan you can actually use after the sprint, not a strategy document you avoid opening.",
+      title: "Sales Assistant",
+      body: "DM replies and follow-ups for the moment someone says, “I'm interested.”",
     },
   ]
   const fitItems = [
@@ -1399,18 +1401,18 @@ export function WorkWithMePageContent() {
     },
     {
       step: "02",
-      title: "I read it myself",
-      body: "If I can see a clear place to help, I will send the next step. If not, I will not push you into it.",
+      title: "Fit call",
+      body: "A short call to make sure the sprint is the right container before any private payment link is sent.",
     },
     {
       step: "03",
-      title: "Fit call",
-      body: "We use a short call to make sure the sprint is the right container before any private payment link is sent.",
+      title: "Two weeks of prep",
+      body: "Before we speak again, I research your niche, get clear on your message and offer, and build your first content batch. This is where the work actually starts, not our first call.",
     },
     {
       step: "04",
-      title: "Sprint work",
-      body: "We make your message, first offer, content direction, visual direction, and next step easier to understand.",
+      title: "Four weeks of calls",
+      body: "We refine it together, using your real goal, so it fits your business and not a template.",
     },
   ]
 
@@ -1420,9 +1422,9 @@ export function WorkWithMePageContent() {
 
       {/* HERO - dark */}
       <Hero
-        eyebrow="Work With Me · Visibility To Paid"
-        title={<>Turn what you already have into a clear reason to be hired.</>}
-        body={<p>For the woman with a skill, story, service, or idea who knows she is meant to build online, but cannot yet explain what she does, what to post, or what people can buy from her.</p>}
+        eyebrow="Work With Me · Private 4-Week Sprint"
+        title={<>Stop hiding. Leave with a clear brand, and the system that keeps you visible.</>}
+        body={<p>For the woman with a skill, a story, or a service, who cannot yet explain what she does, what to post, or what to sell. Before we even speak, I research your niche and build the first version of your system, so our first call is not where we start figuring it out. It is where you see it already working.</p>}
         primary={{ href: "#inquiry",       label: "Apply for the Sprint" }}
         secondary={{ href: "/join/studio", label: "See SSELFIE SUITE" }}
         imageSrc={IMG.workSprint}
@@ -1460,7 +1462,7 @@ export function WorkWithMePageContent() {
       />
 
       {/* WHAT WE BUILD - cream */}
-      <Section eyebrow="What we make clear" title={<>You leave with the pieces connected.</>} dark={false}>
+      <Section eyebrow="What we build" title={<>You leave knowing exactly who you are and what to sell. Built by six people, doing one job each.</>} dark={false}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {clarityItems.map((item) => (
             <FCard key={item.title} dark={false} title={item.title} body={item.body} />
@@ -1517,7 +1519,7 @@ export function WorkWithMePageContent() {
         <div className="mf space-y-5" style={{ ...ty("body", false), fontSize: "16px" }}>
           <p><span style={{ color: C.onCream }}>Payment plan:</span> 2 x €1,100.</p>
           <p>No payment is taken when you apply. If your application looks like a fit, the next step is a short call first.</p>
-          <p style={{ color: C.onCreamMuted }}>This is not a promise of income. It is a focused private sprint to make your message, offer, profile, content direction, and first paid path clearer.</p>
+          <p style={{ color: C.onCreamMuted }}>This is not a promise of income. It is a focused private sprint to make you clear on who you are and what you sell, with a system that keeps that clarity working after we're done.</p>
           <div className="flex flex-wrap gap-3 pt-3">
             <Btn href="#inquiry" surface="cream">Apply for the Sprint</Btn>
             <Btn href="/join/studio" surface="cream" ghost>See SSELFIE SUITE</Btn>
