@@ -34,63 +34,41 @@ function parseOAuthState(rawState?: string | null) {
   return { provider: verified.provider, userId: verified.userId }
 }
 
-async function attemptInstagramTokenExchange(code: string, redirectUri: string) {
-  const res = await fetch("https://api.instagram.com/oauth/access_token", {
+async function exchangeInstagramLoginCode(code: string) {
+  if (!INSTAGRAM_LOGIN_APP_ID || !INSTAGRAM_LOGIN_APP_SECRET) {
+    throw new Error("Instagram Login app id/secret are not configured in Vercel")
+  }
+
+  const tokenResponse = await fetch("https://api.instagram.com/oauth/access_token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       client_id: INSTAGRAM_LOGIN_APP_ID,
       client_secret: INSTAGRAM_LOGIN_APP_SECRET,
       grant_type: "authorization_code",
-      redirect_uri: redirectUri,
+      redirect_uri: REDIRECT_URI,
       code,
     }),
   })
+  const tokenData = await tokenResponse.json()
+
   // api.instagram.com reports failures as {error_type, code, error_message}, NOT
-  // {error: {...}} - checking only .error swallows the real reason.
-  const data = await res.json().catch(() => ({}) as Record<string, unknown>)
-  const errMsg =
-    (data as any).error_message || (data as any).error?.message || (data as any).error_type || null
-  return { ok: Boolean((data as any).access_token), data: data as any, errMsg, status: res.status }
-}
-
-async function exchangeInstagramLoginCode(code: string) {
-  if (!INSTAGRAM_LOGIN_APP_ID || !INSTAGRAM_LOGIN_APP_SECRET) {
-    throw new Error("Instagram Login app id/secret are not configured in Vercel")
+  // {error: {...}} - checking only .error swallowed the real reason behind a
+  // generic message. NOTE 2026-07-09: this dialog also has a live, unresolved
+  // Meta bug - it can reject a fresh, single-use code with "Error validating
+  // verification code" even with a proven-correct secret/redirect_uri/tester
+  // status. If this recurs, use Meta's "Generate access tokens" panel (API
+  // setup with Instagram login, step 2) to mint a token directly instead of
+  // fighting the dialog - see instagram-manual-connect memory for the pattern.
+  if (tokenData.error || tokenData.error_type || tokenData.error_message) {
+    const reason =
+      tokenData.error_message ||
+      tokenData.error?.message ||
+      tokenData.error_type ||
+      "Instagram Login token exchange failed"
+    throw new Error(reason)
   }
 
-  // TEMP diagnostics (2026-07-09): Meta rejects the exchange despite dialog and
-  // exchange provably using the identical redirect_uri on a fresh single-use
-  // code. Try the plausible normalization variants in order and record each
-  // outcome in ig_oauth_callback_hits; whichever succeeds is the real contract.
-  // Collapse back to a single call once the winner is known.
-  const cleanCode = code.replace(/#_$/, "")
-  const variants = [
-    REDIRECT_URI,
-    `${REDIRECT_URI}/`,
-    "https://sselfie.ai/api/instagram/callback",
-    "https://sselfie.ai/api/instagram/callback/",
-  ]
-
-  let result: Awaited<ReturnType<typeof attemptInstagramTokenExchange>> | null = null
-  for (const uri of variants) {
-    result = await attemptInstagramTokenExchange(cleanCode, uri)
-    try {
-      await sql`INSERT INTO ig_oauth_callback_hits (phase, code_prefix, detail) VALUES (
-        'exchange_variant',
-        ${cleanCode.slice(0, 12)},
-        ${`${uri} -> ${result.ok ? "OK" : `${result.status} ${String(result.errMsg).slice(0, 180)}`} [app=${INSTAGRAM_LOGIN_APP_ID} secret_len=${INSTAGRAM_LOGIN_APP_SECRET.length} secret_prefix=${INSTAGRAM_LOGIN_APP_SECRET.slice(0, 4)}]`}
-      )`
-    } catch {}
-    if (result.ok) break
-  }
-
-  if (!result?.ok) {
-    const reason = result?.errMsg || "Instagram Login token exchange failed"
-    throw new Error(`${reason} [exchange used redirect_uri=${REDIRECT_URI}]`)
-  }
-
-  const tokenData = result.data
   const shortLivedToken = tokenData.access_token as string | undefined
   if (!shortLivedToken) {
     throw new Error("Instagram Login did not return an access token")
@@ -142,20 +120,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const code = searchParams.get("code")
     const { provider, userId } = parseOAuthState(searchParams.get("state"))
-
-    // TEMP diagnostics (2026-07-09): Meta rejects the token exchange as if the
-    // single-use code were already consumed. Record every hit so we can see
-    // whether something (scanner, prefetch, Meta probe) hits this URL before
-    // the real browser does. Drop table + this block once connect works.
-    try {
-      await sql`INSERT INTO ig_oauth_callback_hits (phase, code_prefix, detail, user_agent, ip) VALUES (
-        'hit',
-        ${code ? code.slice(0, 12) : null},
-        ${provider || "no_state"},
-        ${request.headers.get("user-agent") || ""},
-        ${request.headers.get("x-forwarded-for") || ""}
-      )`
-    } catch {}
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
 
@@ -220,13 +184,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(`${baseUrl}/admin?ig_connected=${encodeURIComponent(profile.username)}&ig_provider=instagram_login`)
       } catch (error) {
         console.error("[Instagram Callback] Instagram Login flow failed:", error)
-        try {
-          await sql`INSERT INTO ig_oauth_callback_hits (phase, code_prefix, detail) VALUES (
-            'exchange_failed',
-            ${code.slice(0, 12)},
-            ${error instanceof Error ? error.message.slice(0, 300) : String(error).slice(0, 300)}
-          )`
-        } catch {}
         return NextResponse.redirect(`${baseUrl}/admin?ig_error=instagram_login_failed&detail=${encodeURIComponent(error instanceof Error ? error.message : String(error))}`)
       }
     }
