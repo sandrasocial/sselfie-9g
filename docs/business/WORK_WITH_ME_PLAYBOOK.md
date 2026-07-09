@@ -33,7 +33,9 @@ Reusable system for every Work With Me client. Built 2026-06-23 (first client: H
 >
 > Yes. Let's do this. I'd love to work with you.
 >
-> Here's how we start: https://buy.stripe.com/00wcN55GA25Ra0U1etgMw03. As soon as you're in, I'll send your welcome: a few questions so I really get your business, access to the Masterclass, Selfie to Brand Shoot, and Prompt Vault while we get going, and a link to book our first call. That's where we map your four weeks together.
+> Here's how we start: https://buy.stripe.com/00wcN55GA25Ra0U1etgMw03. As soon as you're in, I'll send your welcome: a few questions so I really get your business, plus your Masterclass, Selfie to Brand Shoot, and Prompt Vault access while I get to work.
+>
+> Then I take two weeks to research your niche and build the first version of your system, before we ever get on a call. So when we do talk, you're not starting from zero. You're seeing it already working.
 >
 > So glad you're here.
 > Sandra x
@@ -46,20 +48,24 @@ Reusable system for every Work With Me client. Built 2026-06-23 (first client: H
 
 > Hi [First name],
 >
-> You're in, and I'm so glad. Before our first call, four quick things so we hit the ground running:
+> You're in, and I'm so glad. Here's exactly how the next few weeks go:
 >
 > **1. The plan.** Read the one-page plan below. It's exactly what these four weeks are, so we're on the same page from day one. If anything feels off, tell me.
 >
-> **2. Tell me about you.** Just hit reply and answer the questions at the bottom. Ten minutes. It means our first call is all about you, not catching up.
+> **2. Tell me about you.** Just hit reply and answer the questions at the bottom. Ten minutes. Also send me your selfies here — I'll use them to start building your system.
 >
 > **3. Start now.** Your Masterclass, Selfie to Brand Shoot System, and Prompt Vault access are ready. Start with the System, then open SSELFIE here: https://sselfie.ai/app, so you arrive with a few photos already in progress.
 >
-> **4. Book our first call.** Pick a time here: https://calendly.com/sandrasocial/work-with-me-session-45-min. That's our kickoff, where we map your four weeks. You can use this same Calendly link for the weekly 45-minute sessions too.
+> **4. I get to work.** For the next two weeks, I'm researching your niche and building the first version of your system: your brand clarity, your first content batch, your weekly plan. You don't need to do anything during this part except send me what's in step 2.
 >
-> Once you've booked, we're off. Can't wait to build this with you.
+> **5. Book our first call, about two weeks out.** Pick a time here: https://calendly.com/sandrasocial/work-with-me-session-45-min. That's where you see your system for the first time, and we map your four weeks together. You'll use this same link for the weekly 45-minute calls too.
+>
+> Can't wait to build this with you.
 > Sandra x
 >
 > _(Paste the one-page plan from §3 and the intake questions from §4 below this email, so it's all in one place.)_
+>
+> **Note for Sandra:** set a minimum scheduling notice on this Calendly event (Calendly supports this per event type) so a first call can't accidentally get booked before the two-week prep window is done. Without it, nothing stops her from picking tomorrow.
 
 ---
 
