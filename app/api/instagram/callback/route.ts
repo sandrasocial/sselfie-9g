@@ -125,6 +125,20 @@ export async function GET(request: NextRequest) {
     const code = searchParams.get("code")
     const { provider, userId } = parseOAuthState(searchParams.get("state"))
 
+    // TEMP diagnostics (2026-07-09): Meta rejects the token exchange as if the
+    // single-use code were already consumed. Record every hit so we can see
+    // whether something (scanner, prefetch, Meta probe) hits this URL before
+    // the real browser does. Drop table + this block once connect works.
+    try {
+      await sql`INSERT INTO ig_oauth_callback_hits (phase, code_prefix, detail, user_agent, ip) VALUES (
+        'hit',
+        ${code ? code.slice(0, 12) : null},
+        ${provider || "no_state"},
+        ${request.headers.get("user-agent") || ""},
+        ${request.headers.get("x-forwarded-for") || ""}
+      )`
+    } catch {}
+
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
 
     if (!code || !userId) {
@@ -188,6 +202,13 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(`${baseUrl}/admin?ig_connected=${encodeURIComponent(profile.username)}&ig_provider=instagram_login`)
       } catch (error) {
         console.error("[Instagram Callback] Instagram Login flow failed:", error)
+        try {
+          await sql`INSERT INTO ig_oauth_callback_hits (phase, code_prefix, detail) VALUES (
+            'exchange_failed',
+            ${code.slice(0, 12)},
+            ${error instanceof Error ? error.message.slice(0, 300) : String(error).slice(0, 300)}
+          )`
+        } catch {}
         return NextResponse.redirect(`${baseUrl}/admin?ig_error=instagram_login_failed&detail=${encodeURIComponent(error instanceof Error ? error.message : String(error))}`)
       }
     }
