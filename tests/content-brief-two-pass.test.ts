@@ -330,13 +330,17 @@ describe("Story Engine rebuild (2026-07-04): Stories are conversations, not less
     expect(generator).toContain("sourceStoryTheme: safeBriefText(story.sourceStoryTheme, vault)")
   })
 
-  it("surfaces the conversation type and grounding citation on the admin page and daily email", () => {
+  it("surfaces the conversation type and grounding citation on the admin page", () => {
     const client = read("components/admin/content-brief-client.tsx")
     expect(client).toContain("CONVERSATION_TYPE_LABELS")
     expect(client).toContain("Grounded in: {story.sourceStoryTheme}")
+  })
 
+  // 2026-07-09: the daily email's full feed-script + story-sequence dump was cut (Sandra's own
+  // content workflow lives in her Cowork skills, not this money-truth email) — see
+  // todaysMoveHtml in lib/admin/daily-sandra-briefing.ts. The admin page above still surfaces it.
+  it("no longer dumps today's conversation type/citation into the daily email", () => {
     const dailyEmail = read("lib/admin/daily-sandra-briefing.ts")
-    expect(dailyEmail).toContain("conversationTypeLabel")
-    expect(dailyEmail).toContain("Grounded in:")
+    expect(dailyEmail).not.toContain("conversationTypeLabel")
   })
 })

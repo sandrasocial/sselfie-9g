@@ -213,9 +213,33 @@ describe("daily Sandra briefing", () => {
     const email = generateDailySandraBriefingEmail(briefing)
 
     expect(email.subject).toBe("today's SSELFIE briefing")
-    expect(email.html).toContain("What's working")
-    expect(email.html).toContain("What to post today")
-    expect(email.text).toContain("What Codex should fix next")
+    expect(email.html).toContain("Today's move")
+    expect(email.html).toContain("661 women joined")
+    expect(email.text).toContain("Today's move")
+  })
+
+  // Cut 2026-07-09: "What's working"/"What's leaking" (4-item lists) and the 3-section
+  // intelligence layer all restated the same numbers already shown in the truth blocks above.
+  // Replaced by one compact "Today's move" block reusing the top already-computed signal.
+  it("no longer renders the old four-item working/leaking sections", () => {
+    const briefing = buildDailySandraBriefing(baseReport)
+    const email = generateDailySandraBriefingEmail(briefing)
+
+    expect(email.html).not.toContain("What's working")
+    expect(email.html).not.toContain("What's leaking")
+    expect(email.html).not.toContain("What to post today")
+    expect(email.html).not.toContain("What Codex should fix next")
+    expect(email.html).not.toContain("What Sandra does")
+  })
+
+  it("omits the customer threads section entirely when there are none, instead of a filler line", () => {
+    const briefing = buildDailySandraBriefing(baseReport)
+    expect(briefing.supportThreads).toHaveLength(0)
+    const email = generateDailySandraBriefingEmail(briefing)
+
+    expect(email.html).not.toContain("Customer threads")
+    expect(email.html).not.toContain("No new customer support threads")
+    expect(email.text).not.toContain("Customer threads")
   })
 
   it("puts the truth snapshot and real leak ahead of generic advice", () => {
@@ -329,182 +353,11 @@ describe("daily briefing intelligence path", () => {
     expect(briefing.intelligenceNote).toBeNull()
   })
 
-  it("replaces the canned template sections when intelligence is attached", () => {
-    const briefing = {
-      ...buildDailySandraBriefing(baseReport),
-      intelligence: intelligenceSections,
-      intelligenceNote: null,
-    }
-    const email = generateDailySandraBriefingEmail(briefing)
-
-    expect(email.html).toContain("Today's move")
-    expect(email.html).toContain("What changed since yesterday")
-    expect(email.html).toContain("Watch this")
-    expect(email.text).toContain("Today's move")
-
-    // The static template sections are GONE from the intelligence path.
-    expect(email.html).not.toContain("What to post today")
-    expect(email.html).not.toContain("What Codex should fix next")
-    expect(email.html).not.toContain("What Sandra does")
-    expect(email.html).not.toContain("Post one Prompt My Selfie reel")
-    expect(email.html).not.toContain("Choose today's reel angle from the strongest visual signal above")
-    expect(email.html).not.toContain("Keep posting transformation proof before teaching the prompt mechanics")
-    expect(email.text).not.toContain("What to post today")
-  })
-
-  it("renders today's full ready-to-post script and story sequence prominently, verbatim", () => {
-    // 2026-07-04: Sandra's ask - a real "what to post today" instead of a vague one-line
-    // AI paraphrase buried in the email. This must be the exact stored copy, not a summary.
-    const briefing = {
-      ...buildDailySandraBriefing(baseReport),
-      intelligence: {
-        ...intelligenceSections,
-        todaysContentPost: {
-          weekday: "Wednesday",
-          feedPost: {
-            day: "Wednesday",
-            format: "reel",
-            funnelStage: "cold",
-            title: "The 3 selfies you need before AI can give you a brand shoot",
-            hook: "Before AI can give you a brand shoot, it needs 3 selfies",
-            visualHook: "Propping the phone against books by a window.",
-            onScreenText: [
-              "Before AI can give you a brand shoot, it needs 3 selfies. That's it.",
-              "1. One clear face selfie. Window light.",
-              "Comment PROMPT and I'll send you the exact prompt I use.",
-            ],
-            caption: "This is step 1 of everything I teach. Comment PROMPT and I'll send it.",
-            ctaKeyword: "PROMPT",
-            whyThisWorks: "Tutorial lane is the reliable engine.",
-          },
-          storySequence: {
-            day: "Wednesday",
-            theme: "Behind the 3-selfie setup",
-            conversationType: "my-story",
-            sourceStoryTheme: "The bathroom studio",
-            objective: "Connection, being remembered",
-            offerMention: "Prompt Vault",
-            ctaKeyword: "PROMPT",
-            frames: [
-              { frame: 1, content: "Here's the exact setup I use.", interaction: "poll: window or lamp?" },
-              { frame: 2, content: "Comment PROMPT and I'll send it.", interaction: "none" },
-            ],
-          },
-        },
-      },
-      intelligenceNote: null,
-    }
-    const email = generateDailySandraBriefingEmail(briefing)
-
-    expect(email.html).toContain("The 3 selfies you need before AI can give you a brand shoot")
-    expect(email.html).toContain("Comment PROMPT and I'll send you the exact prompt I use.")
-    expect(email.html).toContain("This is step 1 of everything I teach")
-    expect(email.html).toContain("PROMPT")
-    expect(email.html).toContain("Behind the 3-selfie setup")
-    expect(email.html).toContain("Here's the exact setup I use.")
-    expect(email.html).toContain("poll: window or lamp?")
-    expect(email.html).toContain("My Story")
-    expect(email.html).toContain("Grounded in: The bathroom studio")
-
-    expect(email.text).toContain("The 3 selfies you need before AI can give you a brand shoot")
-    expect(email.text).toContain("This is step 1 of everything I teach")
-    expect(email.text).toContain("Behind the 3-selfie setup")
-    expect(email.text).toContain("Here's the exact setup I use.")
-    expect(email.text).toContain("MY STORY")
-    expect(email.text).toContain("Grounded in: The bathroom studio")
-  })
-
-  it("renders an old-shape story sequence (predating conversationType) without crashing", () => {
-    // Backward compat: a stored brief generated before the 2026-07-04 Story Engine rebuild
-    // has no conversationType/sourceStoryTheme. Must degrade gracefully, never throw.
-    const briefing = {
-      ...buildDailySandraBriefing(baseReport),
-      intelligence: {
-        ...intelligenceSections,
-        todaysContentPost: {
-          weekday: "Wednesday",
-          feedPost: {
-            day: "Wednesday",
-            format: "reel",
-            funnelStage: "cold",
-            title: "Old-shape post",
-            hook: "hook",
-            visualHook: "visual",
-            onScreenText: ["line one"],
-            whyThisWorks: "works",
-          },
-          storySequence: {
-            day: "Wednesday",
-            theme: "An old-shape story",
-            objective: "warm trust",
-            offerMention: "none",
-            frames: [{ frame: 1, content: "frame content", interaction: "none" }],
-          },
-        },
-      },
-      intelligenceNote: null,
-    }
-    expect(() => generateDailySandraBriefingEmail(briefing as any)).not.toThrow()
-  })
-
-  it("says plainly when today has no story sequence yet instead of hiding the gap", () => {
-    const briefing = {
-      ...buildDailySandraBriefing(baseReport),
-      intelligence: {
-        ...intelligenceSections,
-        todaysContentPost: {
-          weekday: "Wednesday",
-          feedPost: {
-            day: "Wednesday",
-            format: "reel",
-            funnelStage: "cold",
-            title: "Test post",
-            hook: "hook",
-            visualHook: "visual",
-            onScreenText: ["line one"],
-            whyThisWorks: "works",
-          },
-          storySequence: null,
-        },
-      },
-      intelligenceNote: null,
-    }
-    const email = generateDailySandraBriefingEmail(briefing)
-
-    expect(email.html).toContain("No story sequence stored for today yet")
-    expect(email.text).toContain("No story sequence stored for today yet")
-  })
-
-  it("keeps the template sections in the fallback and marks the fallback honestly", () => {
-    const briefing = {
-      ...buildDailySandraBriefing(baseReport),
-      intelligence: null,
-      intelligenceNote: "Intelligence layer unavailable today. These are the standard template suggestions, not fresh analysis.",
-    }
-    const email = generateDailySandraBriefingEmail(briefing)
-
-    expect(email.html).toContain("Intelligence layer unavailable today")
-    expect(email.html).toContain("What to post today")
-    expect(email.html).toContain("What Sandra does")
-    expect(email.text).toContain("Intelligence layer unavailable today")
-  })
-
-  it("keeps the truth-number sections identical in both paths", () => {
-    const base = buildDailySandraBriefing({ ...baseReport, truthSnapshot, revenueScorecard })
-    const withIntel = generateDailySandraBriefingEmail({
-      ...base,
-      intelligence: intelligenceSections,
-      intelligenceNote: null,
-    })
-    const fallback = generateDailySandraBriefingEmail(base)
-
-    for (const email of [withIntel, fallback]) {
-      expect(email.html).toContain("Growth truth")
-      expect(email.html).toContain("Revenue truth")
-      expect(email.text).toContain("Members: 8 active")
-      expect(email.text).toContain("Sum of latest per-post reach snapshots")
-    }
-  })
+  // 2026-07-09: the email renderer was decoupled from `briefing.intelligence` entirely (see
+  // "no longer renders the old four-item working/leaking sections" above) — daily-briefing-
+  // intelligence.ts's generation functions are tested directly below (still present, slated for
+  // removal alongside the rest of the retired weekly-brief pipeline once its Cowork replacement
+  // is proven) but no longer affect what the email actually renders.
 
   it("strips m-dashes and banned words from intelligence text", () => {
     const cleaned = sanitizeIntelligenceText("Leverage this — it will unlock an elevated result")
@@ -645,19 +498,20 @@ describe("daily briefing snapshot storage", () => {
     expect(snapshot.sections.leaking.length).toBeGreaterThan(0)
   })
 
-  it("wires the cron to the intelligence layer with snapshot store/read and marked fallback", () => {
+  // 2026-07-09: retired. The daily cron no longer makes its own LLM call for "today's move" —
+  // that fragile fresh-API-call-every-morning layer (which silently degraded to a canned
+  // fallback whenever the Anthropic account hit a billing issue) is replaced by a compact line
+  // reusing the already-deterministic working/leaking signal (see todaysMoveHtml).
+  it("no longer wires the cron to the retired daily intelligence LLM layer", () => {
     const cron = fs.readFileSync(
       path.join(process.cwd(), "app/api/cron/daily-sandra-briefing/route.ts"),
       "utf8",
     )
 
-    expect(cron).toContain("generateDailyBriefingIntelligence")
-    expect(cron).toContain("getYesterdayBriefingSnapshot")
-    expect(cron).toContain("getLatestWeeklyContentBrief")
-    expect(cron).toContain("storeDailyBriefingSnapshot(buildDailyBriefingSnapshot(briefing, moneyInput))")
-    expect(cron).toContain("Intelligence layer unavailable today")
-    // The fallback catch keeps the send alive on any intelligence failure.
-    expect(cron).toContain("intelligence layer failed, using template fallback")
+    expect(cron).not.toContain("generateDailyBriefingIntelligence")
+    expect(cron).not.toContain("getYesterdayBriefingSnapshot")
+    expect(cron).not.toContain("getLatestWeeklyContentBrief")
+    expect(cron).not.toContain("storeDailyBriefingSnapshot")
   })
 
   it("registers the daily_sandra_briefing report type", () => {

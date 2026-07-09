@@ -477,14 +477,6 @@ export function buildDailySandraBriefing(
   }
 }
 
-function listHtml(items: string[]): string {
-  return items.map((item) => `<li style="margin:0 0 10px;line-height:1.6;">${escapeHtml(item)}</li>`).join("")
-}
-
-function listText(items: string[]): string {
-  return items.map((item) => `- ${item}`).join("\n")
-}
-
 function supportThreadsHtml(threads: DailySandraBriefing["supportThreads"]): string {
   if (threads.length === 0) {
     return `<p style="margin:0;color:#4F5052;font-size:14px;line-height:1.7;">No new customer support threads in this window.</p>`
@@ -614,132 +606,27 @@ function revenueScorecardText(scorecard: RevenueTruthScorecard | null): string {
   return `\n\nRevenue truth\n- Members: ${compactNumber(scorecard.members.active)} active · ${currencyBreakdown(scorecard.members.netMrrByCurrency)} net MRR · ${compactNumber(scorecard.members.discountedMembers)} discounted (${scorecard.sources.activeMembersAndMrr})\n- Trials: ${compactNumber(scorecard.trials.claimed30d)} claimed · ${compactNumber(scorecard.trials.firstGeneration30d)} first generations · ${compactNumber(scorecard.trials.downloads30d)} downloads (${scorecard.sources.audienceBehavior})\n- Work With Me: ${compactNumber(scorecard.workWithMe.applications30d)} applications · ${compactNumber(scorecard.workWithMe.qualifiedOpen)} qualified/open · ${compactNumber(scorecard.workWithMe.bookedCalls)} booked · ${compactNumber(scorecard.workWithMe.won)} won (${scorecard.sources.workWithMePipeline})\n- Best email: ${topEmail ? `${topEmail.emailType} · ${compactNumber(topEmail.clicks)} clicks · ${compactNumber(topEmail.conversions)} conversions` : "no converting email signal yet"}\n- Best free prompt: ${topPrompt ? `${topPrompt.title} · ${compactNumber(topPrompt.copies)} copies` : "no prompt-copy signal yet"}\n- Labels: payments are charge rows; members are active Stripe subscriptions; MRR is net of discounts.`
 }
 
-/** The full ready-to-post block: today's feed script verbatim + today's story sequence
- *  verbatim. Deterministic, pulled straight from the stored brief (2026-07-04: Sandra asked
- *  for a clear daily "what to post today" instead of a vague one-line summary buried in a
- *  long email). Rendered ABOVE the rest of the advice sections so it's the first thing she
- *  sees, not the last. */
-function todaysContentPostHtml(post: TodaysContentPost | null): string {
-  if (!post?.feedPost) return ""
-  const { feedPost, storySequence, weekday } = post
-  const ctaLine = feedPost.ctaKeyword && feedPost.ctaKeyword.toLowerCase() !== "none"
-    ? `<p style="margin:10px 0 0;font-size:13px;color:#9A9A9A;">Keyword: ${escapeHtml(feedPost.ctaKeyword.toUpperCase())}</p>`
-    : ""
-  const feedHtml = `
-      <div style="background:#0D0E10;color:#fff;padding:24px;margin:0 0 4px;">
-        <p style="margin:0 0 6px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#C5C6C8;">${escapeHtml(weekday)} · feed post</p>
-        <h2 style="margin:0 0 12px;font-size:17px;font-weight:600;">${escapeHtml(feedPost.title)}</h2>
-        ${feedPost.onScreenText?.length ? `<p style="margin:0 0 10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9A9A9A;">On-screen text</p>
-        <ol style="margin:0 0 14px;padding-left:18px;">${feedPost.onScreenText.map((line) => `<li style="margin:0 0 6px;font-size:14px;line-height:1.6;">${escapeHtml(line)}</li>`).join("")}</ol>` : ""}
-        ${feedPost.caption ? `<p style="margin:0 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9A9A9A;">Caption</p>
-        <p style="margin:0;font-size:14px;line-height:1.7;white-space:pre-wrap;">${escapeHtml(feedPost.caption)}</p>` : ""}
-        ${ctaLine}
-      </div>`
-
-  const conversationTypeLabel = storySequence
-    ? { "my-story": "My Story", "my-clients": "My Clients", "my-beliefs": "My Beliefs", "my-life": "My Life" }[
-        storySequence.conversationType
-      ] ?? storySequence.conversationType ?? "story"
-    : ""
-
-  const storyHtml = storySequence
-    ? `
-      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:24px;margin:0 0 14px;">
-        <p style="margin:0 0 6px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#818283;">${escapeHtml(weekday)} · ${escapeHtml(conversationTypeLabel)}</p>
-        <h3 style="margin:0 0 8px;font-size:15px;font-weight:600;color:#0D0E10;">${escapeHtml(storySequence.theme)}</h3>
-        ${storySequence.sourceStoryTheme ? `<p style="margin:0 0 8px;font-size:12px;font-style:italic;color:#9A9A9A;">Grounded in: ${escapeHtml(storySequence.sourceStoryTheme)}</p>` : ""}
-        <p style="margin:0 0 10px;font-size:14px;color:#4F5052;">${escapeHtml(storySequence.objective)}${storySequence.offerMention && storySequence.offerMention.toLowerCase() !== "none" ? ` · Offer: ${escapeHtml(storySequence.offerMention)}` : ""}</p>
-        <ol style="margin:0;padding-left:18px;">${storySequence.frames.map((frame) => `<li style="margin:0 0 10px;font-size:14px;line-height:1.6;color:#0D0E10;"><strong>${escapeHtml(frame.content)}</strong><br/><span style="color:#818283;font-size:13px;">Interaction: ${escapeHtml(frame.interaction)}</span></li>`).join("")}</ol>
-      </div>`
-    : `
-      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:14px 24px;margin:0 0 14px;">
-        <p style="margin:0;color:#818283;font-size:13px;">No story sequence stored for today yet. Regenerate this week's brief to add it.</p>
-      </div>`
-
-  return feedHtml + storyHtml
-}
-
-function todaysContentPostText(post: TodaysContentPost | null): string {
-  if (!post?.feedPost) return ""
-  const { feedPost, storySequence, weekday } = post
-  const lines = [
-    `\n\n${weekday} · FEED POST`,
-    feedPost.title,
-    feedPost.onScreenText?.length ? `\nOn-screen text:\n${feedPost.onScreenText.map((l) => `${l}`).join("\n")}` : "",
-    feedPost.caption ? `\nCaption:\n${feedPost.caption}` : "",
-    feedPost.ctaKeyword && feedPost.ctaKeyword.toLowerCase() !== "none"
-      ? `\nKeyword: ${feedPost.ctaKeyword.toUpperCase()}`
-      : "",
-  ]
-  const storyLines = storySequence
-    ? [
-        `\n\n${weekday} · ${
-          { "my-story": "MY STORY", "my-clients": "MY CLIENTS", "my-beliefs": "MY BELIEFS", "my-life": "MY LIFE" }[
-            storySequence.conversationType
-          ] ?? storySequence.conversationType?.toUpperCase() ?? "STORY"
-        }`,
-        storySequence.theme,
-        storySequence.sourceStoryTheme ? `Grounded in: ${storySequence.sourceStoryTheme}` : "",
-        `${storySequence.objective}${storySequence.offerMention && storySequence.offerMention.toLowerCase() !== "none" ? ` (Offer: ${storySequence.offerMention})` : ""}`,
-        ...storySequence.frames.map((frame) => `- ${frame.content} [${frame.interaction}]`),
-      ]
-    : [`\n\n${weekday} · STORY`, "No story sequence stored for today yet."]
-  return [...lines, ...storyLines].filter(Boolean).join("\n")
-}
-
-function adviceSectionsHtml(briefing: DailySandraBriefing): string {
-  if (briefing.intelligence) {
-    const contentPostHtml = todaysContentPostHtml(briefing.intelligence.todaysContentPost)
-    const sections: Array<[string, string]> = [
-      ["Today's move", briefing.intelligence.todaysMove],
-      ["What changed since yesterday", briefing.intelligence.whatChanged],
-      ["Watch this", briefing.intelligence.watchThis],
-    ]
-    return (
-      contentPostHtml +
-      sections
-        .map(
-          ([title, body]) => `
+/** Compact "today's move" line — reuses the top already-computed working/leaking signal
+ *  instead of a separate LLM call or four-item lists. Cut 2026-07-09: the old three-section
+ *  intelligence layer plus separate What's Working/What's Leaking lists all restated the same
+ *  numbers already shown in the truth blocks above; this is the one line that's left. */
+function todaysMoveHtml(briefing: DailySandraBriefing): string {
+  const working = briefing.working[0]
+  const leaking = briefing.leaking[0]
+  if (!working && !leaking) return ""
+  return `
       <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
-        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">${escapeHtml(title)}</h2>
-        <p style="margin:0;color:#4F5052;font-size:14px;line-height:1.7;">${escapeHtml(body)}</p>
-      </div>`,
-        )
-        .join("")
-    )
-  }
-
-  const fallbackNote = briefing.intelligenceNote
-    ? `
-      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:14px 22px;margin:0 0 14px;">
-        <p style="margin:0;color:#818283;font-size:13px;line-height:1.6;">${escapeHtml(briefing.intelligenceNote)}</p>
-      </div>`
-    : ""
-
-  return `${fallbackNote}
-      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
-        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What to post today</h2>
-        <ul style="padding-left:18px;margin:0;color:#4F5052;">${listHtml(briefing.postToday)}</ul>
-      </div>
-
-      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
-        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What Codex should fix next</h2>
-        <ul style="padding-left:18px;margin:0;color:#4F5052;">${listHtml(briefing.codexNext)}</ul>
-      </div>
-
-      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 24px;">
-        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What Sandra does</h2>
-        <ul style="padding-left:18px;margin:0;color:#4F5052;">${listHtml(briefing.sandraNext)}</ul>
+        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">Today's move</h2>
+        ${working ? `<p style="margin:0 0 8px;color:#0D0E10;font-size:14px;line-height:1.7;">${escapeHtml(working)}</p>` : ""}
+        ${leaking ? `<p style="margin:0;color:#4F5052;font-size:14px;line-height:1.7;">Watch: ${escapeHtml(leaking)}</p>` : ""}
       </div>`
 }
 
-function adviceSectionsText(briefing: DailySandraBriefing): string {
-  if (briefing.intelligence) {
-    const contentPostText = todaysContentPostText(briefing.intelligence.todaysContentPost)
-    return `${contentPostText}\n\nToday's move\n${briefing.intelligence.todaysMove}\n\nWhat changed since yesterday\n${briefing.intelligence.whatChanged}\n\nWatch this\n${briefing.intelligence.watchThis}`
-  }
-  const note = briefing.intelligenceNote ? `\n\n${briefing.intelligenceNote}` : ""
-  return `${note}\n\nWhat to post today\n${listText(briefing.postToday)}\n\nWhat Codex should fix next\n${listText(briefing.codexNext)}\n\nWhat Sandra does\n${listText(briefing.sandraNext)}`
+function todaysMoveText(briefing: DailySandraBriefing): string {
+  const working = briefing.working[0]
+  const leaking = briefing.leaking[0]
+  if (!working && !leaking) return ""
+  return `\n\nToday's move\n${working || ""}${leaking ? `\nWatch: ${leaking}` : ""}`
 }
 
 export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) {
@@ -765,23 +652,12 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
       ${truthSnapshotHtml(briefing.truthSnapshot)}
       ${revenueScorecardHtml(briefing.revenueScorecard)}
       ${systemHealthHtml(briefing.systemHealth)}
-
-      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
-        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What's working</h2>
-        <ul style="padding-left:18px;margin:0;color:#4F5052;">${listHtml(briefing.working)}</ul>
-      </div>
-
-      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
-        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">What's leaking</h2>
-        <ul style="padding-left:18px;margin:0;color:#4F5052;">${listHtml(briefing.leaking)}</ul>
-      </div>
-
+      ${todaysMoveHtml(briefing)}
+      ${briefing.supportThreads.length > 0 ? `
       <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
         <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">Customer threads</h2>
         ${supportThreadsHtml(briefing.supportThreads)}
-      </div>
-
-      ${adviceSectionsHtml(briefing)}
+      </div>` : ""}
 
       <p style="margin:0 0 12px;">
         <a href="${briefing.links.growthIntelligence}" style="display:inline-block;background:#0D0E10;color:#fff;text-decoration:none;padding:14px 18px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;">Open your admin</a>
@@ -797,7 +673,11 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
     ? `\n\nInbox: ${briefing.inboxFlaggedCount} flagged\n${briefing.inboxFlagged.map((item) => `- @${item.username}: ${item.message}`).join("\n")}`
     : ""
 
-  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${inboxTextSection}${truthSnapshotText(briefing.truthSnapshot)}${revenueScorecardText(briefing.revenueScorecard)}${systemHealthText(briefing.systemHealth)}\n\nWhat's working\n${listText(briefing.working)}\n\nWhat's leaking\n${listText(briefing.leaking)}\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}${adviceSectionsText(briefing)}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
+  const customerThreadsText = briefing.supportThreads.length > 0
+    ? `\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}`
+    : ""
+
+  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${inboxTextSection}${truthSnapshotText(briefing.truthSnapshot)}${revenueScorecardText(briefing.revenueScorecard)}${systemHealthText(briefing.systemHealth)}${todaysMoveText(briefing)}${customerThreadsText}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
 
   return {
     subject: briefing.subject,
