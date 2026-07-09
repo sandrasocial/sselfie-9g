@@ -16,7 +16,7 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
     expect(shell).not.toContain("useState<AppV3Section>(() =>")
   })
 
-  it("collapses the trial first-run front door to a single selfie action with activation analytics", () => {
+  it("collapses the front door to a single selfie action with activation analytics whenever there is no saved selfie", () => {
     const frontDoor = read("components/app-v3/visual-front-door.tsx")
     const concierge = read("components/app-v3/maya-concierge.tsx")
     const events = read("lib/analytics/event-contract.ts")
@@ -26,7 +26,12 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
     expect(frontDoor).toContain("Add my selfie")
     expect(frontDoor).toContain("suite_home_viewed")
     expect(frontDoor).toContain("first_action_selected")
-    expect(frontDoor).toContain("!shouldShowTrialFirstRun && !compact")
+    // AUDIT-01 fix (2026-07-09): gating on !hasSelfie (a real, server-verified signal for
+    // every access level) instead of the fragile trial-only, mount-tracked first-run flag -
+    // so the competing text box never reappears for anyone without a saved selfie, on any
+    // visit, in any cohort.
+    expect(frontDoor).toContain("{!hasSelfie ? (")
+    expect(frontDoor).not.toContain("!shouldShowTrialFirstRun && !compact")
     // Single-owner UX (2026-07-06): the front door routes into Maya's reference manager;
     // the activation event now fires from the Maya-mounted upload, not a Create-tab modal.
     expect(frontDoor).toContain('initialSetupAction: "selfie_manager"')

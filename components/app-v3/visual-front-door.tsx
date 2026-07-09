@@ -166,7 +166,10 @@ export function VisualFrontDoor({
         // The same rotating look the Monday email announces - surfaced as ONE starter chip
         // (a tap into Maya), never a vault grid on Create (single-owner contract).
         if (data.weeklyLook?.aestheticId && typeof data.weeklyLook.name === "string") {
-          setWeeklyLook({ aestheticId: String(data.weeklyLook.aestheticId), name: data.weeklyLook.name })
+          setWeeklyLook({
+            aestheticId: String(data.weeklyLook.aestheticId),
+            name: data.weeklyLook.name,
+          })
         }
       })
       .catch(() => {})
@@ -286,100 +289,99 @@ export function VisualFrontDoor({
         )}
       </header>
 
-      {shouldShowTrialFirstRun && (
+      {/* No selfie yet: the selfie upload is the ONLY action on screen - no competing text
+          box or chips to bypass it. Once a selfie is saved, the typed start leads (her power
+          path) and the selfie card becomes a secondary, always-available action. */}
+      {!hasSelfie ? (
         <div className="mb-9">
           <LookbookAction
             image={selfieImage}
-            eyebrow="SSELFIE SUITE"
-            title="Hi, I'm Maya. Let's make your first photo."
-            body="Add one clear selfie and I'll keep your real face, then build the rest around you."
-            action="Add my selfie"
+            eyebrow={shouldShowTrialFirstRun ? "SSELFIE SUITE" : CARD_COPY.eyebrow}
+            title={
+              shouldShowTrialFirstRun
+                ? "Hi, I'm Maya. Let's make your first photo."
+                : CARD_COPY.title
+            }
+            body={
+              shouldShowTrialFirstRun
+                ? "Add one clear selfie and I'll keep your real face, then build the rest around you."
+                : CARD_COPY.body
+            }
+            action={shouldShowTrialFirstRun ? "Add my selfie" : CARD_COPY.action}
             tall
             onClick={openSelfieManagerInMaya}
           />
         </div>
-      )}
+      ) : (
+        !compact && (
+          <div className="mb-9 overflow-hidden rounded-[10px] border border-[color:var(--ss-silver)]/60 bg-white">
+            <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
+              <div className="min-w-0 p-5 sm:p-7">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ss-gray)]">
+                  Start with Maya
+                </p>
+                <h2 className="mt-3 font-serif text-[30px] font-light leading-[1.04] text-[color:var(--ss-night)] sm:text-[42px]">
+                  What do you want to make today?
+                </h2>
+                <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-[color:var(--ss-davy)]">
+                  Tell Maya in your own words. She will choose the path, ask only what she needs,
+                  and keep the next step in front of you.
+                </p>
 
-      {!shouldShowTrialFirstRun && !compact && (
-        <div className="mb-9 overflow-hidden rounded-[10px] border border-[color:var(--ss-silver)]/60 bg-white">
-          <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
-            {/* No selfie yet: the selfie card IS the hero - it leads, and typing/chips become
-                the secondary path. With a selfie saved, the typed start leads (her power path). */}
-            {!hasSelfie && (
-              <LookbookAction
-                image={heroImage}
-                eyebrow={CARD_COPY.eyebrow}
-                title={CARD_COPY.title}
-                body={CARD_COPY.body}
-                action={CARD_COPY.action}
-                onClick={openSelfieManagerInMaya}
-              />
-            )}
-            <div className="min-w-0 p-5 sm:p-7">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ss-gray)]">
-                Start with Maya
-              </p>
-              <h2 className="mt-3 font-serif text-[30px] font-light leading-[1.04] text-[color:var(--ss-night)] sm:text-[42px]">
-                What do you want to make today?
-              </h2>
-              <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-[color:var(--ss-davy)]">
-                Tell Maya in your own words. She will choose the path, ask only what she needs, and
-                keep the next step in front of you.
-              </p>
-
-              <form
-                className="mt-5 space-y-3"
-                onSubmit={event => {
-                  event.preventDefault()
-                  startFromText()
-                }}
-              >
-                <label className="block">
-                  <span className="sr-only">Tell Maya what you want to make</span>
-                  <textarea
-                    value={startText}
-                    onChange={event => setStartText(event.target.value)}
-                    rows={3}
-                    placeholder="Example: I need a reel cover for my new offer"
-                    className="min-h-[112px] w-full resize-none rounded-[7px] border border-[color:var(--ss-silver)]/70 bg-[color:var(--ss-seasalt)] px-4 py-3 text-[15px] leading-relaxed text-[color:var(--ss-night)] outline-none transition-colors placeholder:text-[color:var(--ss-gray)] focus:border-[color:var(--ss-night)]"
-                  />
-                </label>
-                <button
-                  type="submit"
-                  className="min-h-12 w-full rounded-[5px] bg-[color:var(--ss-night)] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-white transition-opacity hover:opacity-90 sm:w-auto"
+                <form
+                  className="mt-5 space-y-3"
+                  onSubmit={event => {
+                    event.preventDefault()
+                    startFromText()
+                  }}
                 >
-                  Ask Maya
-                </button>
-              </form>
+                  <label className="block">
+                    <span className="sr-only">Tell Maya what you want to make</span>
+                    <textarea
+                      value={startText}
+                      onChange={event => setStartText(event.target.value)}
+                      rows={3}
+                      placeholder="Example: I need a reel cover for my new offer"
+                      className="min-h-[112px] w-full resize-none rounded-[7px] border border-[color:var(--ss-silver)]/70 bg-[color:var(--ss-seasalt)] px-4 py-3 text-[15px] leading-relaxed text-[color:var(--ss-night)] outline-none transition-colors placeholder:text-[color:var(--ss-gray)] focus:border-[color:var(--ss-night)]"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    className="min-h-12 w-full rounded-[5px] bg-[color:var(--ss-night)] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-white transition-opacity hover:opacity-90 sm:w-auto"
+                  >
+                    Ask Maya
+                  </button>
+                </form>
 
-              <div className="mt-5 flex flex-wrap gap-2">
-                {weeklyLook && aesthetics.some(a => a.id === weeklyLook.aestheticId) && (
-                  <button
-                    type="button"
-                    onClick={openWeeklyLook}
-                    className="min-h-10 rounded-full border border-[color:var(--ss-night)]/50 bg-white px-3.5 py-2 text-[12px] text-[color:var(--ss-night)] transition-colors hover:border-[color:var(--ss-night)]"
-                  >
-                    New this week: {weeklyLook.name}
-                  </button>
-                )}
-                {STARTER_CHIPS.filter(item => videoEnabled || item.format !== "video").map(item => (
-                  <button
-                    key={item.format}
-                    type="button"
-                    onClick={() => openStarterChip(item)}
-                    className="min-h-10 rounded-full border border-[color:var(--ss-silver)]/70 bg-white px-3.5 py-2 text-[12px] text-[color:var(--ss-davy)] transition-colors hover:border-[color:var(--ss-night)] hover:text-[color:var(--ss-night)]"
-                  >
-                    {item.label}
-                  </button>
-                ))}
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {weeklyLook && aesthetics.some(a => a.id === weeklyLook.aestheticId) && (
+                    <button
+                      type="button"
+                      onClick={openWeeklyLook}
+                      className="min-h-10 rounded-full border border-[color:var(--ss-night)]/50 bg-white px-3.5 py-2 text-[12px] text-[color:var(--ss-night)] transition-colors hover:border-[color:var(--ss-night)]"
+                    >
+                      New this week: {weeklyLook.name}
+                    </button>
+                  )}
+                  {STARTER_CHIPS.filter(item => videoEnabled || item.format !== "video").map(
+                    item => (
+                      <button
+                        key={item.format}
+                        type="button"
+                        onClick={() => openStarterChip(item)}
+                        className="min-h-10 rounded-full border border-[color:var(--ss-silver)]/70 bg-white px-3.5 py-2 text-[12px] text-[color:var(--ss-davy)] transition-colors hover:border-[color:var(--ss-night)] hover:text-[color:var(--ss-night)]"
+                      >
+                        {item.label}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                <p className="mt-5 max-w-lg text-[12px] leading-relaxed text-[color:var(--ss-gray)]">
+                  Style, inspiration, shot choice, text on image, and selfie details happen with
+                  Maya after you start. One flow, no second setup screen.
+                </p>
               </div>
-
-              <p className="mt-5 max-w-lg text-[12px] leading-relaxed text-[color:var(--ss-gray)]">
-                Style, inspiration, shot choice, text on image, and selfie details happen with Maya
-                after you start. One flow, no second setup screen.
-              </p>
-            </div>
-            {hasSelfie && (
               <LookbookAction
                 image={heroImage}
                 eyebrow={CARD_COPY.eyebrow}
@@ -388,9 +390,9 @@ export function VisualFrontDoor({
                 action={CARD_COPY.action}
                 onClick={openSelfieManagerInMaya}
               />
-            )}
+            </div>
           </div>
-        </div>
+        )
       )}
     </section>
   )

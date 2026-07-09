@@ -125,10 +125,13 @@ describe("QA open-list build (2026-07-06)", () => {
     expect(concierge).toContain("Your trained model from Studio came with you.")
   })
 
-  it("without a selfie the selfie card leads Create; with one, the typed start leads", () => {
+  it("without a selfie the selfie action is the ONLY thing on Create; with one, the typed start leads", () => {
     const frontDoor = read("components/app-v3/visual-front-door.tsx")
-    expect(frontDoor).toContain("{!hasSelfie && (")
-    expect(frontDoor).toContain("{hasSelfie && (")
+    // AUDIT-01 fix (2026-07-09): no more split screen for someone without a selfie - the
+    // typed start / chips column must not render at all until she has one saved.
+    expect(frontDoor).toContain("{!hasSelfie ? (")
+    expect(frontDoor).not.toContain("{!hasSelfie && (")
+    expect(frontDoor).not.toContain("{hasSelfie && (")
   })
 })
 
