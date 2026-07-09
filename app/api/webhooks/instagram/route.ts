@@ -1,8 +1,6 @@
 import { after, type NextRequest, NextResponse } from "next/server"
-import { createHmac } from "crypto"
 import { processInboundInstagramMessage } from "@/lib/ig-agent/processor"
 import { verifyMetaSignature } from "@/lib/ig-agent/webhook-security"
-import { sql } from "@/lib/db/client"
 import type { IgChannel } from "@/lib/ig-agent/types"
 
 export const runtime = "nodejs"
@@ -117,36 +115,6 @@ export async function POST(request: NextRequest) {
     .filter(Boolean)
     .some((appSecret) => verifyMetaSignature({ body, signature, appSecret }))
 
-  // TEMP diagnostics (2026-07-09): live customer traffic is landing in ManyChat's
-  // own separate Instagram subscription but not showing up in ig_messages via
-  // this app's webhook. Record every hit (valid or not) so we can see whether
-  // Meta is even calling us, and if so, why it's being rejected before
-  // processing. Also record secret LENGTHS (never the secret) and the computed
-  // HMAC for each candidate secret (HMAC output does not reveal the secret) so
-  // we can tell whether the env vars are populated at runtime and, if so,
-  // whether either one actually matches what Meta signed with.
-  // Drop table + this block once inbound capture is confirmed working.
-  try {
-    const appSecret = process.env.INSTAGRAM_APP_SECRET || ""
-    const loginSecret = process.env.INSTAGRAM_LOGIN_APP_SECRET || ""
-    const computedWithAppSecret = appSecret
-      ? `sha256=${createHmac("sha256", appSecret).update(body).digest("hex")}`
-      : null
-    const computedWithLoginSecret = loginSecret
-      ? `sha256=${createHmac("sha256", loginSecret).update(body).digest("hex")}`
-      : null
-
-    await sql`INSERT INTO ig_webhook_hits (
-      signature_present, signature_valid, entry_summary,
-      app_secret_len, login_app_secret_len, received_signature,
-      computed_with_app_secret, computed_with_login_secret
-    ) VALUES (
-      ${Boolean(signature)}, ${validSignature}, ${body.slice(0, 500)},
-      ${appSecret.length}, ${loginSecret.length}, ${signature},
-      ${computedWithAppSecret}, ${computedWithLoginSecret}
-    )`
-  } catch {}
-
   if (!validSignature) {
     return new Response("Forbidden", { status: 403 })
   }
@@ -160,19 +128,12 @@ export async function POST(request: NextRequest) {
 
   const messages = extractInboundMessages(payload)
 
-  try {
-    await sql`UPDATE ig_webhook_hits SET extracted_count = ${messages.length} WHERE id = (SELECT MAX(id) FROM ig_webhook_hits)`
-  } catch {}
-
   after(async () => {
     for (const message of messages) {
       try {
         await processInboundInstagramMessage(message)
       } catch (error) {
         console.error("[ig-agent] Failed to process inbound webhook message:", error)
-        try {
-          await sql`UPDATE ig_webhook_hits SET process_error = ${error instanceof Error ? error.message.slice(0, 300) : String(error).slice(0, 300)} WHERE id = (SELECT MAX(id) FROM ig_webhook_hits)`
-        } catch {}
       }
     }
   })
