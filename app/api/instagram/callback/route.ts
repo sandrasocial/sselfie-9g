@@ -56,12 +56,15 @@ async function exchangeInstagramLoginCode(code: string) {
   // {error: {...}} - checking only .error swallowed the real reason (invalid
   // secret, redirect mismatch, reused code) behind a generic message.
   if (tokenData.error || tokenData.error_type || tokenData.error_message) {
-    throw new Error(
+    const reason =
       tokenData.error_message ||
-        tokenData.error?.message ||
-        tokenData.error_type ||
-        "Instagram Login token exchange failed",
-    )
+      tokenData.error?.message ||
+      tokenData.error_type ||
+      "Instagram Login token exchange failed"
+    // The redirect_uri is public (it's in the browser URL during OAuth); exposing
+    // which value this deployment used lets the admin error banner prove whether a
+    // reported mismatch is server config or a stale dialog tab.
+    throw new Error(`${reason} [exchange used redirect_uri=${REDIRECT_URI}]`)
   }
 
   const shortLivedToken = tokenData.access_token as string | undefined
