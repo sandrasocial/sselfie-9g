@@ -10,7 +10,12 @@ const FACEBOOK_APP_ID = (process.env.INSTAGRAM_APP_ID || '1210263417166165').tri
 const FACEBOOK_APP_SECRET = (process.env.INSTAGRAM_APP_SECRET || '').trim()
 const INSTAGRAM_LOGIN_APP_ID = (process.env.INSTAGRAM_LOGIN_APP_ID || '').trim()
 const INSTAGRAM_LOGIN_APP_SECRET = (process.env.INSTAGRAM_LOGIN_APP_SECRET || '').trim()
-const REDIRECT_URI = `${process.env.NEXT_PUBLIC_SITE_URL}/api/instagram/callback`
+// INSTAGRAM_REDIRECT_URI must be the canonical host (www.sselfie.ai). The apex
+// 307-redirects to www, and a cross-host hop mid-OAuth makes Meta reject the
+// token exchange with "Error validating verification code".
+const REDIRECT_URI = (
+  process.env.INSTAGRAM_REDIRECT_URI || `${process.env.NEXT_PUBLIC_SITE_URL}/api/instagram/callback`
+).trim()
 
 function shouldUseInstagramLogin(provider?: string | null) {
   const resolved = provider || process.env.INSTAGRAM_CONNECT_PROVIDER || ""

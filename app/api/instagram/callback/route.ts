@@ -13,7 +13,10 @@ const FACEBOOK_APP_ID = (process.env.INSTAGRAM_APP_ID || "1210263417166165").tri
 const FACEBOOK_APP_SECRET = (process.env.INSTAGRAM_APP_SECRET || "").trim()
 const INSTAGRAM_LOGIN_APP_ID = (process.env.INSTAGRAM_LOGIN_APP_ID || "").trim()
 const INSTAGRAM_LOGIN_APP_SECRET = (process.env.INSTAGRAM_LOGIN_APP_SECRET || "").trim()
-const REDIRECT_URI = `${process.env.NEXT_PUBLIC_SITE_URL}/api/instagram/callback`
+// Must exactly match the connect route's REDIRECT_URI - see the comment there.
+const REDIRECT_URI = (
+  process.env.INSTAGRAM_REDIRECT_URI || `${process.env.NEXT_PUBLIC_SITE_URL}/api/instagram/callback`
+).trim()
 const PREFERRED_INSTAGRAM_USERNAMES = [
   process.env.INSTAGRAM_PREFERRED_USERNAME,
   process.env.INSTAGRAM_TARGET_USERNAME,
