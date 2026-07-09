@@ -100,6 +100,69 @@ _By starting, we're both agreeing to this plan._
 
 ---
 
+## 3b. The four calls — what actually happens live (new, 2026-07-09)
+
+Everything above covers what's prepared before and around the calls. This is the missing piece: what you actually talk about, in the room, each week. Each call walks in with something already built from the prep window — you are never starting from a blank page with her. Each call has one job, a few real questions (not a script to read verbatim, a shape to hold), and ends with one thing locked before the next call begins.
+
+Hold the room simply: mostly listen and ask. When she goes quiet or gets emotional, reflect back what you heard rather than filling the silence with advice. Your own story is a tool, not a spotlight — use it when it genuinely makes her feel less alone, not on every question.
+
+### Call 1 — This Is You (identity + the one goal)
+
+**Walking in:** her researched brand-strategist draft already exists — a first version of her one-line identity, her audience, her offer direction. This is her WOW moment: she is seeing herself reflected back, not starting from zero.
+
+**Ask:**
+- "When I read this back to you, does it feel true, or does something feel off?"
+- "What do people already come to you for, even before you called it a business?"
+- "If these four weeks worked, what would be true about you online that isn't true today?"
+- "What's the one thing you want people to remember you for?"
+
+**Your story fits here:** the moment you realized the photo was never the problem, that you'd just stopped seeing yourself clearly.
+
+**Locked by the end:** her one-line identity confirmed or adjusted, the ONE goal for the four weeks, the agreement filled in.
+
+### Call 2 — Being Seen (visibility + content)
+
+**Walking in:** her first visual and content batch already exists — brand photos, carousel templates, story slides, a weekly plan.
+
+**Ask:**
+- "Does this look like you, or like someone you're supposed to be?"
+- "What feels like a stretch, and what feels like relief?"
+- "What's one thing you're scared people will think when they see this?"
+
+**Your story fits here:** the bathroom studio, the imperfect light, the first messy posts you almost didn't publish.
+
+**Locked by the end:** her visual direction confirmed, her weekly posting rhythm agreed, her first week of content approved to go out.
+
+### Call 3 — Your Words (voice + trust)
+
+**Walking in:** caption, hook, and DM-reply drafts already exist in her voice.
+
+**Ask:**
+- "Read this caption out loud. Does it sound like you talking, or like a template?"
+- "What's the story you keep almost telling but don't?"
+- "When someone DMs you interested, what do you actually want to say back?"
+
+**Your story fits here:** being judged by people from your past, and building for the women who needed you anyway.
+
+**Locked by the end:** her caption/voice bank finalized, her DM and follow-up scripts approved, she's comfortable with her Sales Assistant tools inside SUITE.
+
+### Call 4 — Getting Paid (offer + handoff)
+
+**Walking in:** her offer direction from call 1 has been lived with for three weeks; her SUITE account is set up and running.
+
+**Ask:**
+- "If someone said yes right now, what exactly would they be buying?"
+- "What's stopped you from naming a price before?"
+- "What does 'enough' look like for you in the next 90 days?"
+
+**Your story fits here:** the first money you made from your phone.
+
+**Locked by the end:** her first offer and price named out loud, she's driven her own SUITE account at least once with you watching, the handoff conversation — what she leaves with, what continues on SUITE.
+
+Sources on session structure (used for shape, not content — the substance above is yours): [junebird creative](https://junebirdcreative.com/services/strategy/brand-clarity-intensive/), [EntreBrand](https://entrebrand.com/brand-clarity-coaching/).
+
+---
+
 ## 4. The intake (so the first call is productive)
 
 Recommended: use the existing **Brand Strategy tool** (bundled in Masterclass) as the intake — it captures most of this AND gives her a strategy result (instant value). If a plain form is easier, these are the questions:
