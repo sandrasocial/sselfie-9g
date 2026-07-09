@@ -26,20 +26,27 @@ export async function GET(req: NextRequest) {
   const startTime = Date.now()
   const cronLogger = createCronLogger("send-scheduled-newsletters")
   await cronLogger.start()
+
+  // Authenticate before acquiring the lock or touching campaign data. This
+  // route can send approved broadcasts, so a missing secret must fail closed.
+  const authHeader = req.headers.get("authorization")
+  const cronSecret = process.env.CRON_SECRET?.trim()
+
+  if (!cronSecret) {
+    await cronLogger.error(new Error("CRON_SECRET not configured"))
+    return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 })
+  }
+
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    console.warn("[Cron: Send Newsletters] Unauthorized cron attempt")
+    await cronLogger.error(new Error("Unauthorized"))
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const lock = await acquireCronLock("send-scheduled-newsletters", 20 * 60)
 
   try {
     console.log('[Cron: Send Newsletters] Starting scheduled newsletter check...')
-
-    // Verify cron secret (security)
-    const authHeader = req.headers.get('authorization')
-    const expectedAuth = `Bearer ${process.env.CRON_SECRET}`
-
-    if (process.env.CRON_SECRET && authHeader !== expectedAuth) {
-      console.warn('[Cron: Send Newsletters] Unauthorized cron attempt')
-      await cronLogger.error(new Error("Unauthorized"))
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
 
     if (!lock.acquired) {
       await cronLogger.success({ skipped: true, reason: "lock_not_acquired" })
