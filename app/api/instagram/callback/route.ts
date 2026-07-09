@@ -7,10 +7,12 @@ import {
 } from "@/lib/instagram/page-selection"
 
 
-const FACEBOOK_APP_ID = process.env.INSTAGRAM_APP_ID || "1210263417166165"
-const FACEBOOK_APP_SECRET = process.env.INSTAGRAM_APP_SECRET!
-const INSTAGRAM_LOGIN_APP_ID = process.env.INSTAGRAM_LOGIN_APP_ID
-const INSTAGRAM_LOGIN_APP_SECRET = process.env.INSTAGRAM_LOGIN_APP_SECRET
+// trim() defuses pasted trailing newlines/spaces in Vercel env values - a literal
+// "\n" in an env var has silently broken auth here before (APP_V3_PORTRAIT_SIZE incident).
+const FACEBOOK_APP_ID = (process.env.INSTAGRAM_APP_ID || "1210263417166165").trim()
+const FACEBOOK_APP_SECRET = (process.env.INSTAGRAM_APP_SECRET || "").trim()
+const INSTAGRAM_LOGIN_APP_ID = (process.env.INSTAGRAM_LOGIN_APP_ID || "").trim()
+const INSTAGRAM_LOGIN_APP_SECRET = (process.env.INSTAGRAM_LOGIN_APP_SECRET || "").trim()
 const REDIRECT_URI = `${process.env.NEXT_PUBLIC_SITE_URL}/api/instagram/callback`
 const PREFERRED_INSTAGRAM_USERNAMES = [
   process.env.INSTAGRAM_PREFERRED_USERNAME,
@@ -47,12 +49,26 @@ async function exchangeInstagramLoginCode(code: string) {
   })
   const tokenData = await tokenResponse.json()
 
-  if (tokenData.error) {
-    throw new Error(tokenData.error_message || tokenData.error?.message || "Instagram Login token exchange failed")
+  // api.instagram.com reports failures as {error_type, code, error_message}, NOT
+  // {error: {...}} - checking only .error swallowed the real reason (invalid
+  // secret, redirect mismatch, reused code) behind a generic message.
+  if (tokenData.error || tokenData.error_type || tokenData.error_message) {
+    throw new Error(
+      tokenData.error_message ||
+        tokenData.error?.message ||
+        tokenData.error_type ||
+        "Instagram Login token exchange failed",
+    )
   }
 
   const shortLivedToken = tokenData.access_token as string | undefined
   if (!shortLivedToken) {
+    console.error(
+      "[Instagram Callback] Token exchange returned no access_token. Response keys:",
+      Object.keys(tokenData || {}),
+      "status:",
+      tokenResponse.status,
+    )
     throw new Error("Instagram Login did not return an access token")
   }
 

@@ -4,10 +4,12 @@ import { getAuthenticatedUser } from '@/lib/auth-helper'
 import { createInstagramOAuthState } from '@/lib/instagram/oauth-state'
 import { getUserByAuthId } from '@/lib/user-mapping'
 
-const FACEBOOK_APP_ID = process.env.INSTAGRAM_APP_ID || '1210263417166165'
-const FACEBOOK_APP_SECRET = process.env.INSTAGRAM_APP_SECRET!
-const INSTAGRAM_LOGIN_APP_ID = process.env.INSTAGRAM_LOGIN_APP_ID
-const INSTAGRAM_LOGIN_APP_SECRET = process.env.INSTAGRAM_LOGIN_APP_SECRET
+// trim() defuses pasted trailing newlines/spaces in Vercel env values (see
+// callback route - the same poisoning has broken auth envs before).
+const FACEBOOK_APP_ID = (process.env.INSTAGRAM_APP_ID || '1210263417166165').trim()
+const FACEBOOK_APP_SECRET = (process.env.INSTAGRAM_APP_SECRET || '').trim()
+const INSTAGRAM_LOGIN_APP_ID = (process.env.INSTAGRAM_LOGIN_APP_ID || '').trim()
+const INSTAGRAM_LOGIN_APP_SECRET = (process.env.INSTAGRAM_LOGIN_APP_SECRET || '').trim()
 const REDIRECT_URI = `${process.env.NEXT_PUBLIC_SITE_URL}/api/instagram/callback`
 
 function shouldUseInstagramLogin(provider?: string | null) {
