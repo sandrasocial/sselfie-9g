@@ -1,6 +1,6 @@
 # Current Task Board
 
-Last cleaned: 2026-06-14
+Last cleaned: 2026-07-09
 
 This folder now contains only current work. Old completed, stale, superseded, and planning specs
 were moved to `tasks/archive/2026-06-14-spec-cleanup/` so the active surface is readable.
@@ -29,6 +29,19 @@ The previous active board was stale. Code inspection and recent verification sho
 - IG inbox manual send policy is live. Native IG replies can send manually, automated sends remain
   gated, and ManyChat replies now have the production API key.
 
+## Stabilization truth pass — 2026-07-09
+
+- Phase 2 dead-admin cleanup and the current-model refresh are shipped on `main` and archived under
+  `tasks/archive/2026-07-09-stabilization/`.
+- MAYA-FIX-01 and MAYA-FIX-02 are already implemented with active regression coverage. Their old
+  June specs are archived; the later all-real-image carousel direction supersedes the old two-face
+  slide cap.
+- The June Vault/founding launch specs are complete and archived. The last missing safety contract,
+  per-campaign Resend audience override, was restored so a one-person delivery test cannot silently
+  fall back to the global Main Audience.
+- The Phase 2B content-engine deletion remains held until the replacement Cowork tasks complete
+  their first real runs. Disabled code is safer than deleting the fallback early.
+
 ## Active build order — content/Maya thread (Sandra approved 2026-06-15, run in THIS order)
 
 Codex: execute these in sequence (they share `prompt-compiler.ts` + `shoot-generator.ts`, so serial
@@ -52,14 +65,14 @@ Older MAYA-FIX/GROUNDING rows below are prior-thread items (mostly shipped); the
 | ✅ shipped | `VOICE-LOOP-01-apprentice-loop.md` | Codex | SHIPPED 2026-07-08 (merge cdb30714, impl fcf207ef; test fix 178b6555 after Claude caught a stale test in full-suite verification). Apprentice loop + editorial memory injection live. |
 | ✅ shipped | `EMPLOYEE-01-roster-and-dormant-crons.md` | Codex | SHIPPED 2026-07-08, same merge as above. product-qa-daily scheduled + piped into briefing, Team panel live on /admin home, envFlag hardening in place. |
 | ❌ obsolete | `MAYA-ADMIN-02-live-content-qa.md` | — | OBSOLETE 2026-07-09 — asks Sandra to QA the Admin-Maya-chat content surface, which was already retired from the live UI on 2026-06-18 (Shoot Studio replaced it). Do not run this QA. Full deletion of the dead admin-Maya branch is scoped into the Phase 2 Codex cleanup below. |
-| Needs verify | `CODEX-BROADCAST-SEND-PIPELINE-2026-06-22.md`, `CODEX-CASH-LAUNCH-STRIPE-2026-06-22.md`, `CODEX-CREATE-FLASH-BROADCAST-2026-06-23.md`, `CODEX-LAUNCH-E2E-HANDOVER-2026-06-23.md` | — | The founding-annual launch these gate appears complete (first €697 sale landed 2026-07-02) but these 4 specs were never confirmed-done or archived. Verify against live state, then archive. |
+| ✅ verified + archived | `archive/2026-07-09-stabilization/CODEX-BROADCAST-SEND-PIPELINE-2026-06-22.md` and the three related launch specs | Codex | Verified 2026-07-09: explicit Resend send, scheduled cron, price/cap fallback, first-run path, and regression tests are present. Restored the missing per-campaign audience override before archiving. |
 | 3 | `NEEDS-ME-01-waiting-on-sandra-queue.md` | Codex | 2026-07-08: approval items (broadcast drafts, flagged DMs, webhook review, codex PRs, concierge list) pile up invisibly with no notifications — one aggregated "Waiting on you" queue in /admin home + daily briefing + alert-only for new today-urgency items. |
-| 4 (DISPATCHED) | `PHASE2-CLEANUP-01-dead-admin-maya-and-nav.md` | Codex | 2026-07-09: the "safe half" of Phase 2 — no dependency on the new Cowork tasks proving themselves (neither had run at all as of dispatch: weekly-content-brief-draft's first run is 2026-07-13, ig-dm-drafter's first run is later the same day). Deletes the dead Admin Maya brain (confirmed dead since 2026-06-18), lib/admin/post-now.ts (replaced by the reel-hooks Cowork skill), collapses /admin nav to Home/Inbox/Content/Support/Tools. |
-| 5 (DISPATCHED) | `PHASE2-MODEL-REFRESH-01-current-models.md` | Codex | 2026-07-09: updates stale hardcoded model IDs (Sonnet 4.5-era strings) to the current Sonnet 5/Opus 4.8 family. Higher risk than the cleanup spec (touches lib/maya/openrouter.ts, the central routing file) — requires live-verified model IDs (not guessed) + a real smoke-test call before merge. |
+| ✅ shipped + archived | `archive/2026-07-09-stabilization/PHASE2-CLEANUP-01-dead-admin-maya-and-nav.md` | Codex | Shipped 2026-07-09 (`30b0bd12`): dead Admin Maya and Post Now removed; admin nav reduced to Home/Inbox/Content/Support/Tools. |
+| ✅ shipped + archived | `archive/2026-07-09-stabilization/PHASE2-MODEL-REFRESH-01-current-models.md` | Codex | Shipped 2026-07-09 (`f98cd1c3`): live-verified Sonnet 5/OpenRouter routing, safe direct fallback, real provider smoke, and full local suite. |
 | HELD | `PHASE2B` (not yet written) | Codex | Retires `content-brief-weekly`/`content-brief-jobs` crons + `lib/content-engine/brief-generator.ts` + `lib/admin/daily-briefing-intelligence.ts`. Explicitly held until the weekly-content-brief-draft Cowork task has completed at least one real Monday run (next: 2026-07-13) and ig-dm-drafter has run at least once — deleting the old pipeline before confirming the replacement works would leave no working weekly brief if something's wrong with the new one. The old cron is already harmlessly disabled (`CONTENT_BRIEF_ENABLED=false` in Vercel prod), so there's no cost to waiting. |
-| 1 | `MAYA-FIX-01-quick-wins.md` | Codex | P0 quick wins from Maya deep audit 2026-06-15: kill EXACTLY-3 contradiction (full shoots return 6-9), face-first carousels + 2-slide cap, remove banned word in persona. Prompt/logic only, ~1 day, no UI rebuild. |
+| ✅ shipped + archived | `archive/2026-07-09-stabilization/MAYA-FIX-01-quick-wins.md` | Codex | Verified 2026-07-09: ask-sized concept sets, count-agnostic tap copy, all-real-image carousel guidance, and banned-word guard are covered by `tests/maya-fix-01-quick-wins.test.ts`. The old two-face cap is superseded. |
 | ❌ superseded | `MAYA-FIX-03-overlay-text-layer.md` | — | SHIPPED then SUPERSEDED 2026-06-15. Sandra: remove the text-overlay generator once and for all (incl. customer Maya + text previews). The editable text layer is the wrong approach — replaced by image-to-image redesign (CAROUSEL-03). To be REMOVED, not maintained. |
-| 3 | `MAYA-FIX-02-edit-likeness-tapfirst-voice.md` | Codex | P1 from Maya audit: Edit Mode likeness drift, tap-first for carousel/reel/story, caption banned-word guard, slim the shared brain, delete dead font modules. |
+| ✅ shipped + archived | `archive/2026-07-09-stabilization/MAYA-FIX-02-edit-likeness-tapfirst-voice.md` | Codex | Verified 2026-07-09: identity-selfie edit anchoring, vanity/quality guards, tap-first graphics, caption voice enforcement, slim v3 brain, and dead-module cleanup all have active tests. |
 | ❌ removed from active root | Content grounding reset | — | Removed from the active task root on 2026-07-01 because it pointed to stale voice guidance. Future generator grounding work needs a fresh task based on `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md` and `docs/brand/source/2026-06-27/`. |
 | ✅ shipped | `CONTENT-CAROUSEL-01-tutorial-carousel-mode.md` | Codex | SHIPPED 2026-06-15 (commit b5243528, deploy READY). Tutorial carousel mode, before/after slide, burgundy callouts, screenshot-safe compositing, Maya tool reading `content_reel_references`. Verified: tests 5/5, screenshots never redrawn by AI. Phase-1 slice = assembles from existing reel references (no gpt-image-2 generation yet → CAROUSEL-02). |
 | ✅ shipped | `CONTENT-CAROUSEL-02-new-world-generation.md` | Codex | SHIPPED 2026-06-15 (commit 4e85f111, deploy READY). Phase 1.5: gpt-image-2 new-world cover/result generation (identity-locked from selfies), 6 world presets + custom, baked-headline flag + composited fallback, nit fixes. Verified: tests 6/6, settings-screenshot safety preserved (scene screenshots composited, never generated). |

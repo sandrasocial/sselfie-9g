@@ -11,7 +11,10 @@ const mocks = vi.hoisted(() => {
     preview_text: "The Vault price changes Friday.",
     body_html: "<p>Hey love,</p><p><a href=\"https://sselfie.ai/prompt-vault\">Get the Vault</a></p>",
     body_text: "Hey love,\n\nGet the Vault: https://sselfie.ai/prompt-vault",
-    target_audience: { segment: "Main Audience" },
+    target_audience: {
+      segment: "Main Audience",
+      audience_id: undefined as string | undefined,
+    },
     status: "scheduled",
     approval_status: "approved",
     scheduled_for: null,
@@ -60,6 +63,10 @@ describe("sendNewsletterBroadcast", () => {
   beforeEach(() => {
     process.env.RESEND_AUDIENCE_ID = "aud_main"
     process.env.RESEND_FROM_EMAIL = "Sandra @ SSELFIE <hello@sselfie.ai>"
+    mocks.campaign.target_audience = {
+      segment: "Main Audience",
+      audience_id: undefined,
+    }
     mocks.sqlCalls.length = 0
     mocks.sendConfirmed = false
     mocks.createBroadcast.mockReset()
@@ -97,6 +104,25 @@ describe("sendNewsletterBroadcast", () => {
 
     const finalSentUpdate = mocks.sqlCalls.find((call) => call.text.includes("sent_at ="))
     expect(finalSentUpdate?.sendConfirmed).toBe(true)
+  })
+
+  it("prefers a campaign-specific audience so a one-person test cannot hit the main list", async () => {
+    mocks.campaign.target_audience = {
+      segment: "Sandra only",
+      audience_id: "aud_sandra_test",
+    }
+
+    const { sendNewsletterBroadcast } = await import("@/lib/email/send-newsletter-broadcast")
+
+    await sendNewsletterBroadcast(38, {
+      totalAudience: 1,
+      suppressedCount: 0,
+      sendableCount: 1,
+    })
+
+    expect(mocks.createBroadcast).toHaveBeenCalledWith(
+      expect.objectContaining({ audienceId: "aud_sandra_test" }),
+    )
   })
 
   it("marks the campaign failed when Resend send fails after draft creation", async () => {

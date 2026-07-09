@@ -125,13 +125,16 @@ export async function sendNewsletterBroadcast(
   const targetAudience = campaign.target_audience || {}
   const segmentName = targetAudience.segment || 'Main Audience'
 
-  // Get Resend audience ID (you'll need to set this in env)
-  const audienceId = process.env.RESEND_AUDIENCE_ID
+  // A campaign-specific audience is the blast-radius guard for one-person delivery tests.
+  // Only fall back to the global Main Audience when the campaign does not name an override.
+  const campaignAudienceId =
+    typeof targetAudience.audience_id === "string" ? targetAudience.audience_id.trim() : ""
+  const audienceId = campaignAudienceId || process.env.RESEND_AUDIENCE_ID?.trim()
 
   if (!audienceId) {
     throw new Error(
-      'RESEND_AUDIENCE_ID not configured. ' +
-      'Get this from Resend dashboard: Audience > Copy ID'
+      'No Resend audience configured. Set target_audience.audience_id for this campaign or ' +
+      'configure RESEND_AUDIENCE_ID for the default audience.'
     )
   }
 
