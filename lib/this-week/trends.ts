@@ -19,7 +19,7 @@ import type { ToolUnion } from "@anthropic-ai/sdk/resources/messages"
 import { sql } from "@/lib/db/client"
 import { extractJson } from "@/lib/ai/extract-json"
 
-const DIGEST_MODEL = "claude-sonnet-4-5"
+const DIGEST_MODEL = "claude-sonnet-5"
 
 const WEB_SEARCH_TOOL: ToolUnion = {
   type: "web_search_20250305",

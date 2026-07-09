@@ -5,8 +5,8 @@ import { groundingSystemPrompt } from "@/lib/content/grounding"
 
 // OpenRouter is primary because it's the funded key (Maya runs on it).
 // Direct Anthropic is the fallback when OpenRouter is down.
-const OPENROUTER_MODEL = "anthropic/claude-sonnet-4.5"
-const ANTHROPIC_MODEL = "claude-sonnet-4-5"
+const OPENROUTER_MODEL = "anthropic/claude-sonnet-5"
+const ANTHROPIC_MODEL = "claude-sonnet-5"
 const MAX_TOKENS = 8000
 
 export async function callContentKitLlm(

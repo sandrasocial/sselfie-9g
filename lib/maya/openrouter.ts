@@ -25,22 +25,22 @@ export type MayaRoutingTask =
 
 const TASK_MODEL_MAP: Record<MayaRoutingTask, string> = {
   chat_default: "anthropic/claude-haiku-4.5",
-  chat_pro: "anthropic/claude-sonnet-4.5",
-  prompt_builder: "anthropic/claude-sonnet-4.5",
-  feed_planner: "anthropic/claude-sonnet-4.5",
-  pro_photoshoot: "anthropic/claude-sonnet-4.5",
-  feed_prompt: "anthropic/claude-sonnet-4.5",
-  feed_prompt_locked_aesthetic: "anthropic/claude-sonnet-4.5",
-  feed_prompt_batch: "anthropic/claude-sonnet-4.5",
-  feed_strategy_document: "anthropic/claude-sonnet-4",
-  feed_highlights: "anthropic/claude-sonnet-4",
+  chat_pro: "anthropic/claude-sonnet-5",
+  prompt_builder: "anthropic/claude-sonnet-5",
+  feed_planner: "anthropic/claude-sonnet-5",
+  pro_photoshoot: "anthropic/claude-sonnet-5",
+  feed_prompt: "anthropic/claude-sonnet-5",
+  feed_prompt_locked_aesthetic: "anthropic/claude-sonnet-5",
+  feed_prompt_batch: "anthropic/claude-sonnet-5",
+  feed_strategy_document: "anthropic/claude-sonnet-5",
+  feed_highlights: "anthropic/claude-sonnet-5",
   feed_highlight_overlay: "anthropic/claude-haiku-4.5",
-  feed_profile_design: "anthropic/claude-sonnet-4",
-  feed_add_row: "anthropic/claude-sonnet-4.5",
+  feed_profile_design: "anthropic/claude-sonnet-5",
+  feed_add_row: "anthropic/claude-sonnet-5",
   feed_enhance_caption: "anthropic/claude-haiku-4.5",
   feed_enhance_goal: "anthropic/claude-haiku-4.5",
   instagram_strategy: "anthropic/claude-haiku-4.5",
-  instagram_caption: "anthropic/claude-sonnet-4",
+  instagram_caption: "anthropic/claude-sonnet-5",
   instagram_bio: "anthropic/claude-haiku-4.5",
   instagram_tips: "openai/gpt-4o-mini",
 }
@@ -106,10 +106,11 @@ export function resolveMayaChatTask(input: {
 // Maps OpenRouter model IDs to direct Anthropic API model IDs.
 // Used when OpenRouter is unavailable — ensures Maya always has a working fallback.
 const OPENROUTER_TO_ANTHROPIC_ID: Record<string, string> = {
-  "anthropic/claude-haiku-4.5": "claude-3-5-haiku-20241022",
-  "anthropic/claude-sonnet-4.5": "claude-3-7-sonnet-20250219",
-  "anthropic/claude-sonnet-4": "claude-3-5-sonnet-20241022",
-  "openai/gpt-4o-mini": "claude-3-5-haiku-20241022", // fast/cheap equivalent
+  "anthropic/claude-haiku-4.5": "claude-haiku-4-5-20251001",
+  // Sonnet 5 rejects the non-default temperature used by existing Maya callers on the direct
+  // Anthropic API. Sonnet 4.6 is current, live-verified, and preserves the emergency fallback.
+  "anthropic/claude-sonnet-5": "claude-sonnet-4-6",
+  "openai/gpt-4o-mini": "claude-haiku-4-5-20251001", // fast/cheap equivalent
 }
 
 export function createMayaOpenRouterProvider() {
@@ -142,7 +143,7 @@ export function createMayaAnthropicModel(task: MayaRoutingTask) {
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) return null
     const openRouterModelId = getMayaModelForTask(task)
-    const anthropicModelId = OPENROUTER_TO_ANTHROPIC_ID[openRouterModelId] ?? "claude-3-5-haiku-20241022"
+    const anthropicModelId = OPENROUTER_TO_ANTHROPIC_ID[openRouterModelId] ?? "claude-haiku-4-5-20251001"
     return createAnthropic({ apiKey })(anthropicModelId)
   } catch {
     return null

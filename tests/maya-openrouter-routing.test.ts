@@ -35,11 +35,11 @@ describe("Maya OpenRouter model routing", () => {
   })
 
   it("uses higher-quality model for pro and prompt-heavy tasks", () => {
-    expect(getMayaModelForTask("chat_pro")).toBe("anthropic/claude-sonnet-4.5")
-    expect(getMayaModelForTask("prompt_builder")).toBe("anthropic/claude-sonnet-4.5")
-    expect(getMayaModelForTask("feed_prompt")).toBe("anthropic/claude-sonnet-4.5")
-    expect(getMayaModelForTask("instagram_caption")).toBe("anthropic/claude-sonnet-4")
-    expect(getMayaModelForTask("feed_strategy_document")).toBe("anthropic/claude-sonnet-4")
+    expect(getMayaModelForTask("chat_pro")).toBe("anthropic/claude-sonnet-5")
+    expect(getMayaModelForTask("prompt_builder")).toBe("anthropic/claude-sonnet-5")
+    expect(getMayaModelForTask("feed_prompt")).toBe("anthropic/claude-sonnet-5")
+    expect(getMayaModelForTask("instagram_caption")).toBe("anthropic/claude-sonnet-5")
+    expect(getMayaModelForTask("feed_strategy_document")).toBe("anthropic/claude-sonnet-5")
   })
 
   it("gives feed planner extra output budget to finish inline strategy payloads", () => {
