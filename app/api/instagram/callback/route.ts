@@ -79,7 +79,7 @@ async function exchangeInstagramLoginCode(code: string) {
       await sql`INSERT INTO ig_oauth_callback_hits (phase, code_prefix, detail) VALUES (
         'exchange_variant',
         ${cleanCode.slice(0, 12)},
-        ${`${uri} -> ${result.ok ? "OK" : `${result.status} ${String(result.errMsg).slice(0, 180)}`}`}
+        ${`${uri} -> ${result.ok ? "OK" : `${result.status} ${String(result.errMsg).slice(0, 180)}`} [app=${INSTAGRAM_LOGIN_APP_ID} secret_len=${INSTAGRAM_LOGIN_APP_SECRET.length}]`}
       )`
     } catch {}
     if (result.ok) break
