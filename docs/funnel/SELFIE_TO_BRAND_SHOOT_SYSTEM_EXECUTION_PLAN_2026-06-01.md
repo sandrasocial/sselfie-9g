@@ -2,7 +2,10 @@
 
 Date: 2026-06-01
 Status: Operating plan for consolidating SSELFIE into one transformation ecosystem
-Source of truth: `docs/source-of-truth/SSELFIE_STRATEGIC_LOCK_IN_2026-06-01.md`
+Historical strategy input: `docs/archive/2026-07-09-documentation-cleanup/SSELFIE_STRATEGIC_LOCK_IN_2026-06-01.md`
+
+Current purpose and revenue direction come from `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`
+and `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`.
 
 ## CEO Decision
 

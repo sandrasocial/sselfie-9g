@@ -35,14 +35,15 @@
 - Buyer behavior priority: use prompt view/copy frequency as the demand signal for the next "PROMPT MY SELFIE" reel. Current strongest aesthetic signal is Dark Balcony / Reel Cover Hero.
 - Checkout recovery: abandoned Prompt Vault checkouts are handled by `/api/cron/prompt-vault-checkout-recovery`, gated by `PROMPT_VAULT_CHECKOUT_RECOVERY_ENABLED=true`.
 - AI audience segmentation: use **AI Photoshoot Audience** as the clean business segment for AI prompt opt-ins, Prompt Vault buyers, checkout abandoners, access openers, prompt copiers, and ManyChat prompt-reel leads. Canonical rule: `docs/funnel/AI_PHOTOSHOOT_AUDIENCE_SEGMENT_RULE_2026-05-27.md`; code source: `lib/audience/ai-photoshoot-segment.ts`; Resend env: `RESEND_SEGMENT_AI_PHOTOSHOOT_AUDIENCE`.
-- Launch broadcast draft: `docs/email/PROMPT_VAULT_LAUNCH_BROADCAST_DRAFT_2026-05-26.md` — Sandra must approve before any send.
+- Historical launch broadcast draft: `docs/archive/2026-07-09-documentation-cleanup/email/PROMPT_VAULT_LAUNCH_BROADCAST_DRAFT_2026-05-26.md`.
 - SOP for adding new collections: `docs/PROMPT_VAULT_ADD_COLLECTION_SOP.md`.
 - Membership reposition plan: `docs/funnel/PROMPT_VAULT_MEMBERSHIP_REPOSITION_PLAN_2026-05-27.md`. Working direction is SSELFIE Vault Club: weekly AI photoshoot transformation drops, seasonal collections, creator challenges, and referral/community loop. Do not build the subscription until validation gates in that doc are met.
 - Starter Kit is no longer the primary next step from AI prompts. It may remain as a secondary support product only when clearly framed as "make the original selfie stronger before AI."
 
 ### Selfie Education Reposition (April 23, 2026 — Superseded For Front-Door Growth)
 
-- Approved direction: `docs/SELFIE-EDUCATION-REPOSITION-PLAN-2026-04-23.md`
+- Historical direction:
+  `docs/archive/2026-07-09-documentation-cleanup/SELFIE-EDUCATION-REPOSITION-PLAN-2026-04-23.md`
 - Old public ladder: Free Selfie Guide -> Starter Kit ($37) -> Masterclass ($147) -> Studio (€97/mo) -> 1:1
 - Status: keep routes and fulfillment working for existing buyers, but do not treat this as the active front-door growth funnel.
 - Lifecycle owner: `app/api/cron/nurture-sequence/route.ts`
@@ -88,4 +89,3 @@
 - May 26, 2026: Growth pivot documented. Prompt Vault is the primary paid bridge from AI prompt demand. Do not promote Starter Kit as the main AI prompts upgrade unless Sandra explicitly reverses this decision.
 
 ---
-

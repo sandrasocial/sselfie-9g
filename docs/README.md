@@ -1,83 +1,76 @@
-# SSELFIE Docs Index
+# SSELFIE Documentation Index
 
-This folder contains current operating docs, product history, audits, and archived planning notes.
+Last verified: 2026-07-09
 
-Use this file to avoid treating old strategy drafts as current truth.
+This index separates current operating truth from research, audits, implementation history, and
+archives. A document being detailed does not make it current.
 
 ## Read First
 
-Current operating docs:
+Use this order:
 
-- `../AS-BUILT.md` — verified repo facts and live app stack.
-- `../CLAUDE.md` — live business context, admin data contract, and current priorities.
-- `CODEX_CONTEXT.md` — implementation context and file map.
-- `brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md` — current voice, audience, story, expertise, and product positioning.
-- `SSELFIE_DESIGN_SYSTEM.md` — current product, page, and email design authority.
+1. `../AS-BUILT.md` — repository, hosting, and live-stack facts.
+2. `../CLAUDE.md` — business state, admin data contract, and priorities.
+3. `CODEX_CONTEXT.md` — compact technical context and file map.
+4. `../tasks/README.md` — active, completed, and held implementation work.
 
-## Brand And Copy
+## Current Brand And Business Contracts
 
-Current:
+- `brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md` — voice, audience, story, expertise, and
+  positioning.
+- `brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md` — purpose, category, founder-led message,
+  and drift prevention.
+- `business/SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md` — daily CEO focus and offer
+  routing.
+- `business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md` — current revenue direction.
+- `funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` — recognizable, still-you AI doctrine.
 
-- `brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
-- `brand/source/2026-06-27/SSELFIE_VOICE_STYLE_GUIDE.md`
-- `brand/source/2026-06-27/SSELFIE_TARGET_AUDIENCE_PERSONA.md`
-- `brand/source/2026-06-27/SSELFIE_REWRITTEN_STORY_BANK.md`
-- `brand/source/2026-06-27/SANDRA_EXPERTISE.md`
+The supporting brand source files live in `brand/source/2026-06-27/`.
 
-Historical or superseded copy docs should not be used as active guidance.
+## Current Product And Operations Contracts
 
-## Design
+- `SSELFIE_DESIGN_SYSTEM.md` — product, public-page, and email design authority.
+- `product/SUITE_MAYA_SINGLE_OWNER_UX_2026-07-06.md` — Maya-owned creation workflow.
+- `AUTOMATION_ROSTER.md` — the only cross-layer automation map.
+- `PROMPT_VAULT_ADD_COLLECTION_SOP.md` — collection publishing procedure.
+- `MAYA_RELIABILITY_PROGRAM_2026-03-11.md` — legacy Maya compatibility guardrails only; `/app`
+  behavior is controlled by the current SUITE product contract and code.
 
-Current:
+## Research, Audits, And Plans
 
-- `SSELFIE_DESIGN_SYSTEM.md`
-- `brand/DESIGN_SYSTEM.md` — compatibility pointer to the current design system.
-
-Historical:
-
-- `archive/legacy-design-systems/`
-
-## Product And Funnel
-
-Current context depends on the surface:
-
-- Prompt Vault funnel: `funnel/AI_PROMPT_FUNNEL_RESEARCH_AND_LADDER_2026-05-26.md`
-- No-fake buyer psychology: `funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md`
-- Prompt Vault collection SOP: `PROMPT_VAULT_ADD_COLLECTION_SOP.md`
-- Business and revenue audits: `business/`
-- Current live app architecture: `CLAUDE.md`, `CODEX_CONTEXT.md`, and code under `app/app/`
-
-Treat older funnel plans as historical unless `CLAUDE.md` still references them as active.
-
-## Audits And Reports
-
-Audit reports live in:
+These folders contain evidence and proposals. They do not automatically override the current
+contracts above:
 
 - `audits/`
 - `business/`
-- `output/automation/` at repo root
+- `funnel/`
+- `research/`
+- `strategy/`
+- `academy/`
 
-They are evidence and history. They are not automatically current strategy.
+Before implementing from a plan, confirm that `CLAUDE.md` or `tasks/README.md` still names it as
+active and verify its assumptions against current code.
 
 ## Email
 
-Email drafts and audits live in:
+Production templates and send logic live in `../lib/email/` and `../lib/resend/`. Historical email
+drafts and audits are archived. A Markdown draft never authorizes a send.
 
-- `email/`
+## Archive
 
-Production email templates live in:
+`archive/` contains historical plans, drafts, audits, and retired operating systems. Archived files
+may intentionally contain old routes, metrics, models, product names, and agent instructions.
 
-- `../lib/email/templates/`
-
-Never send or schedule emails from a doc alone. Sandra approval is required.
+Do not revive an archived document directly. If a real gap remains, write a current task or contract
+that references the historical evidence and the live code.
 
 ## Cleanup Rule
 
-If a doc:
+Archive or correct a document when it:
 
-- says it is the source of truth but is older than the current source docs,
-- contains old Studio, AI-headshot, or prompt-marketplace positioning,
-- tells agents to use `VOICE_BIBLE.md` as the active voice source,
-- contradicts `CLAUDE.md`, `CODEX_CONTEXT.md`, or `brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`,
-
-then either delete it, move it to an archive, or add an explicit superseded warning.
+- claims current authority but is superseded by a newer protected contract;
+- points agents at missing directories, retired tools, or inactive automations;
+- uses pre-cutover `/studio` behavior as the definition of the live `/app`;
+- presents old metrics, prices, models, or funnels as live truth;
+- duplicates an operating map already owned by `CLAUDE.md`, `CODEX_CONTEXT.md`,
+  `AUTOMATION_ROSTER.md`, or `tasks/README.md`.

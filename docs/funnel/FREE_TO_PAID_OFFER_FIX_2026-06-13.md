@@ -1,9 +1,11 @@
 # Free → Paid Offer Fix (AI Prompts → $27 Vault)
 
 Date: 2026-06-13 · Owner: Claude (Cowork) brief, Sandra approves direction
-Governed by: `docs/funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` (doctrine),
-`docs/funnel/PROMPT_VAULT_MEMBERSHIP_REPOSITION_PLAN_2026-05-27.md`,
-`docs/funnel/PROMPT_VAULT_7_DAY_VALUE_CERTAINTY_TEST_2026-06-01.md`.
+Governed by: `docs/funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` (doctrine) and
+`docs/funnel/PROMPT_VAULT_MEMBERSHIP_REPOSITION_PLAN_2026-05-27.md`.
+
+Historical experiment input:
+`docs/archive/2026-07-09-documentation-cleanup/PROMPT_VAULT_7_DAY_VALUE_CERTAINTY_TEST_2026-06-01.md`.
 
 ## Thesis (one line)
 
@@ -61,9 +63,10 @@ the other eight in that world: the café arrival, the seated hero, the reel-cove
 Show the story they're one shot into.
 
 ### Move 3 — Put proof + objection-handling in the ask
-The objection tracker already names them: *will it work for me, how do I use it, ChatGPT
-friction, price pause* (`PROMPT_VAULT_PROOF_AND_OBJECTION_TRACKER_2026-06-01.md`). Each gets
-one line of answer and one real buyer result. Stop asking cold.
+The archived objection tracker names them: *will it work for me, how do I use it, ChatGPT
+friction, price pause*
+(`docs/archive/2026-07-09-documentation-cleanup/PROMPT_VAULT_PROOF_AND_OBJECTION_TRACKER_2026-06-01.md`).
+Each gets one line of answer and one real buyer result. Stop asking cold.
 
 ### Move 4 — Make it a 3-touch micro-sequence, not one email
 - **Day 7:** the concrete offer (the missing shots from the world they tasted).

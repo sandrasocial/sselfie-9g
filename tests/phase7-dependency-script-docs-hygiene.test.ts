@@ -33,7 +33,7 @@ describe("phase 7 dependency, script, and docs hygiene", () => {
     const workflow = read(".github/workflows/automation-daily.yml")
 
     expect(workflow).toContain("pnpm/action-setup")
-    expect(workflow).toContain("cache: \"pnpm\"")
+    expect(workflow).toContain('cache: "pnpm"')
     expect(workflow).toContain("pnpm install --frozen-lockfile")
     expect(workflow).toContain("pnpm automation:daily")
     expect(workflow).not.toContain("npm ci")
@@ -63,13 +63,50 @@ describe("phase 7 dependency, script, and docs hygiene", () => {
 
   it("labels stale planning docs so they do not compete with live truth", () => {
     for (const relPath of [
-      "docs/ACADEMY-BUYER-HOME-PLAN-2026-04-24.md",
-      "docs/MAYA_2_0_E2E_EXECUTION_PLAN_2026-05-01.md",
-      "docs/MAYA_AUDIT_AND_REPOSITIONING_2026-05-01.md",
+      "docs/archive/2026-07-09-documentation-cleanup/ACADEMY-BUYER-HOME-PLAN-2026-04-24.md",
+      "docs/archive/2026-07-09-documentation-cleanup/MAYA_2_0_E2E_EXECUTION_PLAN_2026-05-01.md",
+      "docs/archive/2026-07-09-documentation-cleanup/MAYA_AUDIT_AND_REPOSITIONING_2026-05-01.md",
     ]) {
       expect(read(relPath).slice(0, 400)).toContain("Planning snapshot")
     }
 
-    expect(read("docs/source-of-truth/dependency-script-docs-hygiene.md")).toContain("pnpm is canonical")
+    expect(read("docs/source-of-truth/dependency-script-docs-hygiene.md")).toContain(
+      "pnpm is canonical"
+    )
+  })
+
+  it("keeps the active documentation index free of retired systems and missing directories", () => {
+    const context = read("docs/CODEX_CONTEXT.md")
+    const docsIndex = read("docs/README.md")
+
+    for (const retiredReference of [
+      "docs/codex-tasks/",
+      "docs/in-app-funnel/",
+      "docs/features/",
+      "docs/automation/SSELFIE_AUTOMATION_CORE_2026-03-10.md",
+      "North's SHARED_MEMORY.md",
+      "AGENTS.md for Stella",
+    ]) {
+      expect(context).not.toContain(retiredReference)
+    }
+
+    for (const currentSource of [
+      "brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md",
+      "business/SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md",
+      "AUTOMATION_ROSTER.md",
+      "product/SUITE_MAYA_SINGLE_OWNER_UX_2026-07-06.md",
+    ]) {
+      expect(docsIndex).toContain(currentSource)
+    }
+
+    expect(fs.existsSync(path.join(ROOT, "docs/founder-content"))).toBe(false)
+    expect(
+      fs.existsSync(
+        path.join(
+          ROOT,
+          "docs/archive/2026-07-09-documentation-cleanup/founder-content/START-HERE.md"
+        )
+      )
+    ).toBe(true)
   })
 })

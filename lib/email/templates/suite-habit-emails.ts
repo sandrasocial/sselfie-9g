@@ -1,5 +1,6 @@
 // SUITE month-one habit system - the three lifecycle emails that turn "joined" into "weekly
-// habit". Copy approved by Sandra 2026-06-10 (docs/email/SUITE_HABIT_EMAILS_DRAFTS_2026-06-10.md
+// habit". Copy approved by Sandra 2026-06-10 (historical draft archived under
+// docs/archive/2026-07-09-documentation-cleanup/email/SUITE_HABIT_EMAILS_DRAFTS_2026-06-10.md
 // on studio-v3-staging). Why this exists: average member lifetime is ~102 days, churn clusters
 // at month 3, and credits pile up unused - the product's job is the weekly habit, not the tool.
 

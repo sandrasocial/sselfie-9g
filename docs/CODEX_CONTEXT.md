@@ -1,149 +1,166 @@
 # CODEX_CONTEXT
 
+Last verified: 2026-07-09
+
 ## Purpose
 
-- Record the live stack so every new thread can start from a shared, trusted memory vault.
-- Surface the operational constraints (Vercel-only, live users, low budget) and current priorities (marketing automation, email reliability, monitoring).
-- Offer a reusable "State Summary Template" so future threads can quickly resume context without rereading every message.
+This is the compact technical handoff for SSELFIE Studio. It records the current stack,
+ownership boundaries, protected surfaces, and verification rules. It is not a business roadmap or
+historical project log.
 
-## Current SSELFIE Voice / Audience Source Of Truth
+When this file conflicts with code, code wins. When it conflicts with `CLAUDE.md`, `CLAUDE.md`
+wins for business state and operating decisions.
 
-As of 2026-06-27, all voice, audience, story, expertise, product-positioning, and Studio.com copy work must start from:
+## Read Order
 
-`docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
+1. `AS-BUILT.md` — verified repository and deployment identity.
+2. `CLAUDE.md` — live business context, admin data contract, and current priorities.
+3. `docs/CODEX_CONTEXT.md` — technical constraints and file map.
+4. `tasks/README.md` — current implementation queue and held work.
+5. The relevant current contract below before changing that surface.
 
-As of 2026-07-07, all purpose, category, founder-led messaging, content-system, and drift-prevention work must also start from:
+Current contracts:
 
-`docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`
+- Voice, audience, story, and positioning:
+  `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
+- Purpose, category, and messaging:
+  `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`
+- Daily CEO focus and offer routing:
+  `docs/business/SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md`
+- Revenue direction:
+  `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`
+- Product UI and visual system:
+  `docs/SSELFIE_DESIGN_SYSTEM.md`
+- SUITE creation ownership:
+  `docs/product/SUITE_MAYA_SINGLE_OWNER_UX_2026-07-06.md`
+- Automation ownership:
+  `docs/AUTOMATION_ROSTER.md`
 
-Daily CEO focus and admin Command Center decisions are controlled by:
+## Live Stack
 
-`docs/business/SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md`
+- Next.js 16 and React 19.
+- Vercel-only hosting with automatic production deployment from `main`.
+- Neon Postgres through `@neondatabase/serverless`.
+- Stripe for payments and subscriptions.
+- Resend for email delivery and broadcasts.
+- Vercel Blob for media.
+- Upstash for locks/cache where configured.
+- OpenAI `gpt-image-2` for the live `/app` image-generation path.
+- OpenRouter is Maya's primary text-model gateway. Quality tasks use Claude Sonnet 5; fast tasks
+  use Claude Haiku 4.5. Direct Anthropic is an emergency fallback.
+- pnpm 10.23.0 is the only package manager. Vitest is the main test runner; Playwright is used for
+  browser flows.
 
-Fresh source files are stored in `docs/brand/source/2026-06-27/`.
+## Live Product Architecture
 
-The former Voice Bible, former content grounding doc, and old Studio marketing drafts have been removed from active guidance. Do not recreate or reuse them unless Sandra explicitly asks for historical context.
+### Member app
 
-Do not reuse old Studio marketing copy or generic AI/headshot positioning. SSELFIE's current lock: this was never just about selfies, it was about becoming visible enough to build something of your own. AI is a tool, the woman is the point, the selfie is the first step, visibility is the transformation, low-ticket offers are bridges, warm trust gets Visibility To Paid / Work With Me, SUITE is the monthly creation system, and Sandra's voice is simple, warm, direct, and human. Daily operating rule: do the money move before opening a new build thread.
+Members use `/app`.
 
-## Tech stack overview
+Primary locations:
 
-- **Frontend**: Next.js 16, React 19, Sonner for notifications, Recharts for charts, Tailwind + custom typography.
-- **Backend**: Edge API routes on Vercel, Neon Postgres (via `@neondatabase/serverless`), Stripe for billing, Resend for email, Replicate/Upstash for AI and caching, Vercel Blob for media.
-- **AI agents**: Claude (Cowork) + Codex, OpenAI/Anthropic APIs, Gumloop/Loops integrations for automations.
-- **⚠️ APP V3 IS LIVE (cutover 2026-06-10, APP-CUTOVER-01)**: members use `/app` (Studio 3.0) — code in `app/app/`, `components/app-v3/`, `lib/app-v3/`, `app/api/app-v3/`. **Image generation = `gpt-image-2` via OpenAI API** (reference-selfie edits, `OPENAI_IMAGE_MODEL` env). Legacy `/studio` (Replicate: Flux LoRA "Classic" + Nano Banana Pro "Pro") is retired but still in the repo — any Maya doc below that talks tabs/training/Replicate describes the LEGACY app. Check `app/api/app-v3/maya/generate/route.ts` before claiming stack facts.
-- **SUITE creation UX lock (2026-07-06):** Maya owns creation setup. The Create tab starts Maya only; it must not mount selfie/reference management, manual format grids, Vault look pickers, shot pickers, text/font decisions, or trained-model CTAs. Full contract: `docs/product/SUITE_MAYA_SINGLE_OWNER_UX_2026-07-06.md`.
-- **Tooling**: pnpm 10.23.0, tsx for scripts, Vitest/Playwright/Super + email scripts under `scripts/` for diagnostics, `knip.ts` cleanup configs.
+- `app/app/`
+- `components/app-v3/`
+- `lib/app-v3/`
+- `app/api/app-v3/`
 
-## Key constraints / guardrails
+Maya owns creation setup inside the chat drawer. The Create tab may start Maya, but it must not
+become a parallel studio with separate selfie, style, shot, text, or model controls.
 
-1. **Vercel-only hosting** – no alternative infra; deployments go through the `main` branch + automatic Vercel deploys.
-2. **Live users** – minimize blast radius: use read-only inspections before writes, keep cron secrets protected, never run `git reset --hard` or revert unexpected changes.
-3. **Budget-tight** – API and cron cost control matters (prompt caching, Upstash locks, limited replicate usage). Avoid expensive broad rebuilds unless absolutely necessary.
-4. **Test-first mindset** – for bugfixes write a repro or failing test before patching. If automated tests don't exist, document the manual steps and regressions.
-5. **No broad refactors** without explicit ask; focus on localized changes that support diagnostics, automations, or reliability.
+### Legacy app
 
-## Current focus areas (updated 2026-05-26)
+`/studio` and the large legacy Maya tree still exist for compatibility, but they are not the live
+member architecture. Legacy Replicate, Flux LoRA, Nano Banana, tab, training, and Feed-era docs do
+not define `/app` behavior.
 
-- **Forward revenue plan (locked 2026-07-01)**: Current source is `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`. Do not treat all traffic as one buyer. Cold top-of-funnel traffic now has the dedicated **Selfie To AI Photos Kit** code path: a simple low-ticket paid result from selfie/AI reels. Warm audience needs the planned **Visibility To Paid Sprint**: a clear path for women with skills, a service, expertise, a story, or an idea to become visible, clear, and easier to buy from online. Prompt Vault remains the proven buyer bridge. SUITE remains the recurring core. Selfie To Brand Shoot is a bonus/onboarding/support asset until proof changes.
-- **Product separation lock (2026-07-01):** The existing `starter_kit` product, `/starter-kit`, `/checkout/starter-kit`, `/access/starter-kit/[token]`, and `KIT` keyword are the **Selfie Starter Kit** path for better iPhone selfies/photos from the Free Selfie Guide funnel. Do not repurpose them into Selfie To AI Photos Kit. The **Selfie To AI Photos Kit** belongs to the Free AI Prompts / `PROMPT` funnel and uses its own product key, checkout, access page, delivery email, and webhook handler.
-- **Prompt Vault pivot**: Sandra approved a front-door growth pivot on 2026-05-26 and sharpened it on 2026-05-27. Audience behavior is strongest around instant AI photoshoot transformations from one selfie. Position the Vault as "turn one selfie into unlimited photoshoots," not "learn prompts" or a static prompt collection. The active public path is now `/ai-prompts` free lead magnet -> `/prompt-vault` paid low-ticket offer -> deeper offers. Do not drift back to making Starter Kit the primary upgrade from AI prompts. Starter Kit remains live for existing buyers and as a secondary support product only.
-- **Top-of-funnel paid kit direction**: The Selfie To AI Photos Kit sells the immediate result cold traffic already asks for: one clear selfie -> AI photos that still look like her. Do not use the existing Starter Kit checkout for it. Production has `STRIPE_PRICE_SELFIE_AI_PHOTOS_KIT`; launch still needs Claude/Sandra voice QA, merge/deploy, and a live checkout smoke.
-- **Warm-audience offer direction**: The planned Visibility To Paid Sprint should use the existing Work With Me infrastructure first. It is for women who already have something real and need help with visibility, message clarity, content direction, a first offer, and a path toward trust/inquiries. Do not send passive payment links as the primary sales process for this offer.
-- **AI prompt product ladder**: Current strategic source of truth is `docs/funnel/AI_PROMPT_FUNNEL_RESEARCH_AND_LADDER_2026-05-26.md`. It replaces the old public assumption that Studio/Maya/Feed Planner should be the next paid step. For prompt buyers, Studio/Maya/Feed Planner are legacy/existing-user surfaces unless rebuilt as a prompt library, buyer hub, or content planning layer.
-- **Prompt Vault membership planning**: Recurring offer planning lives in `docs/funnel/PROMPT_VAULT_MEMBERSHIP_REPOSITION_PLAN_2026-05-27.md`. The working direction is SSELFIE Vault Club: weekly AI photoshoot transformation drops, seasonal collections, creator challenges, and a referral/community loop. Do not build the subscription until validation gates in that doc are met.
-- **Prompt Vault implementation**: Product id is `prompt_vault`. Routes: `/prompt-vault`, `/checkout/prompt-vault`, `/access/prompt-vault/[token]`, `/academy/access/prompt-vault`, and `/api/prompt-vault/access-token`. Fulfillment uses `freebie_subscribers` with source/tag `prompt-vault-paid`, Academy entitlement recovery, and `lib/email/templates/prompt-vault-delivery.ts`.
-- **ManyChat PROMPT operating model (locked 2026-06-30)**: `PROMPT` is the public keyword and it sends people to `/ai-prompts`, not numbered prompt pages. The free page is capped at the latest five SSELFIE shoot previews (`FREEBIE_TOTAL_SHOOT_LIMIT = 5`) selected from newest published/freebie collections. Do not wire `n={{last_text_input}}`, create per-number ManyChat keywords, or use `/p/latest` as the default PROMPT destination. `tasks/MANYCHAT-FUNNEL-01-numbered-prompts.md` is superseded history.
-- **Prompt Vault buyer success**: Post-purchase nurture drafts live in `lib/email/templates/prompt-vault-buyer-sequence.ts`, with touch timing in `lib/email/prompt-vault-email-sequence.ts`. The cron path is built but gated by `PROMPT_VAULT_NURTURE_ENABLED=true` so copy can be approved before sends begin.
-- **Prompt Vault launch ops**: `/admin/prompt-vault` is the live launch monitor for visits, checkout starts, purchases, access opens, prompt views, and prompt copies. Preserve `source`, UTM params, `entry_post_slug`, `cta_keyword`, and `buyer_stage` across ManyChat/reel/email/free-prompt links into `/checkout/prompt-vault`. Abandoned checkout recovery lives at `/api/cron/prompt-vault-checkout-recovery` and is gated by `PROMPT_VAULT_CHECKOUT_RECOVERY_ENABLED=true`. The approval-only launch broadcast draft is `docs/email/PROMPT_VAULT_LAUNCH_BROADCAST_DRAFT_2026-05-26.md`.
-- **LLM Council protocol**: For major business decisions, use `docs/source-of-truth/SSELFIE_LLM_COUNCIL_PROTOCOL.md`. It adapts Andrej Karpathy's LLM Council pattern into five SSELFIE advisor roles: Constrain, First Principles Thinker, Expansionist, Outsider, and Executor. Use it for offer ladder, pricing, funnel, product, and high-stakes strategy calls before committing to a build.
-- **AI Photoshoot Audience segment**: Treat AI prompt traffic as its own business segment, not as general selfie education. Canonical docs: `docs/funnel/AI_PHOTOSHOOT_AUDIENCE_SEGMENT_RULE_2026-05-27.md`. Code constants live in `lib/audience/ai-photoshoot-segment.ts`; backfill/sync lives in `scripts/sync-ai-photoshoot-audience.ts`; Resend segment env is `RESEND_SEGMENT_AI_PHOTOSHOOT_AUDIENCE`.
-- **Selfie education reposition**: Approved source of truth is `docs/SELFIE-EDUCATION-REPOSITION-PLAN-2026-04-23.md`, but its Starter Kit-first ladder is not the AI Prompts growth funnel. Keep `/selfie-guide`, `/starter-kit`, `/masterclass`, `/join/studio`, `/work-with-me`, `/checkout/starter-kit`, `/checkout/masterclass`, and `/access/starter-kit/[token]` working for the Free Selfie Guide / iPhone photo education path.
-- **Lifecycle email update**: `app/api/cron/nurture-sequence/route.ts` owns lifecycle sends for Free Guide, Starter Kit, Masterclass, and AI Prompts touches. AI Prompts needs to bridge to Prompt Vault, not Starter Kit. Free Guide uses `freebie_subscribers` + `/selfie-guide/access/[token]`. Starter Kit uses tokenized access at `/access/starter-kit/[token]`. Masterclass uses Academy-style entitlement delivery plus a dedicated email sequence.
-- **Email system cleanup**: Live lifecycle paths remain `onboarding-sequence`, `nurture-sequence`, and `win-back-sequence`. The old manual/scheduled campaign catalog, archived cron copies, and dead funnel templates were removed on 2026-03-09 to reduce agent confusion.
-- **Maya UX stabilization**: Shipped 2026-03-11 (commit `b950f1db`). Source of truth: `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`. Locked surface: `Photos`, `Videos`, `Train` tabs only — no Feed tab, no new top tabs. Mode toggle (`MY MODEL / SELFIE`) is now visible to all Photos tab users. Mode-aware quick prompts live in `lib/maya/prompt-contract.ts`. Maya's system prompt always receives a `CURRENT GENERATION MODE` block so she can guide users to the toggle. Pro concept card JSONB save now passes `chatId` as fallback. Do not add new Maya tabs or `chat_type` values without DB migration + load/save/new-chat/renderer/test coverage. Still open: Videos tab full Maya-guided flow rebuild; chat tab prompt-scope cleanup.
-- **Automation layer**: Codex Desktop automations were rebuilt on 2026-03-10 into 7 engine loops: Product Health, User Journey, Maya Quality, Brand Consistency, Growth Intelligence, Code Stability, and Revenue Intelligence. Legacy report-only automations were archived out of the active folder. The User Journey Engine now runs a repo-owned Playwright smoke (`pnpm automation:journey-smoke`) before deeper diagnosis and a filtered activation check (`node scripts/product-qa-digest.mjs`) for `signup -> first Maya output`. The Maya Quality Engine runs `pnpm audit:maya-quality`, and the Brand Consistency Engine runs `pnpm audit:brand-consistency`. The compact repo-control suite is `pnpm diagnostics:core`. Source of truth: `docs/automation/SSELFIE_AUTOMATION_CORE_2026-03-10.md` plus `docs/source-of-truth/dependency-script-docs-hygiene.md`.
-- **Agent V1** (Website Agent €27/mo): Spec at `docs/codex-tasks/AGENT-V1-EXECUTION-SPEC-2026-02-28.md`. Waiting Sandra go/no-go.
-- **Academy**: Monthly drops E2E blocked — no published rows in `academy_monthly_drops` table. Marked in STATUS.md commit `4b28007a`.
-- **Academy library**: The authenticated Academy surface now uses the course-library flow from `tasks/ACADEMY-03-course-library-ui.md`: `/academy` library, `/academy/courses/[courseId]`, lesson viewer at `/academy/courses/[courseId]/lessons/[lessonId]`, lesson notes in `user_lesson_notes`, and Maya-profile sync through `/api/academy/lessons/[lessonId]/notes`.
-- **Reconciliation pipelines**: `reconcile-generation-assets`, `reconcile-generations`, `reconcile-subscriptions` — keep running and logging cleanly.
-- **State + memory**: `CLAUDE.md` (root) is the single source of truth. `AGENTS.md` for Stella's rules. `docs/CODEX_CONTEXT.md` for tech context. Use `tasks/README.md` before choosing a task spec. On 2026-06-14 the task folder was cleaned: stale/completed/superseded specs and old loop state were archived under `tasks/archive/2026-06-14-spec-cleanup/`; the active root now contains only current QA/scale-readiness work. North's SHARED_MEMORY.md and NORTH_TASK_QUEUE.md are RETIRED.
+Do not remove legacy routes or shared `lib/maya/` modules without importer checks and a dedicated
+spec. Feed Planner is still live and is not the same thing as the retired Maya Feed tab.
 
-## File map (anchor points for future work)
+### Admin
 
-| Area                                           | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/cron/*`                               | Vercel API routes that power daily/weekly automations, reconciliation, marketing sequences, email triggers, and diagnostics.                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `lib/email/`                                   | Marketing queue, marketing-runner, Resend integration (broadcasts + contact sync), email templates, and helper config.                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `docs/PROMPT_VAULT_ADD_COLLECTION_SOP.md`      | Source of truth for adding Prompt Vault collections. It locks the rule: free AI prompts show a curated starter shoot plus the newest drop preview; paid Prompt Vault gets the full collection archive.                                                                                                                                                                                                                                                                                                                                                                          |
-| `lib/cron-logger.ts`, `lib/admin-error-log.ts` | Shared logging helpers used by every cron; failures feed into `output/automation/*`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `lib/cache.ts`                                 | Upstash Redis lock + cache helpers – critical for handling Resend rate limits and marketing-runner locks. Make sure Upstash env vars exist in both env.local and Vercel production.                                                                                                                                                                                                                                                                                                                                                                                             |
-| `output/automation/`                           | Automation outputs (health reports, triage, cleanup). Treat these as immutable logs; refer to them when diagnosing incidents.                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `scripts/`                                     | Diagnostic + onboarding scripts (Resend tests, automation instrumentation). Includes `user-journey-smoke.ts` for headless public funnel validation, `maya-quality-audit.ts` for Maya prompt/tool drift, `brand-consistency-audit.ts` for voice/design drift, and `verify-onboarding-segment-env.ts` for real Resend segment drift checks. Run them to double-check behavior before code changes.                                                                                                                                                                                |
-| `docs/`                                        | Strategy + context docs (read `STRATEGIC_CLEANUP_RECOMMENDATION.md`, `MASTER_COMMAND_CENTER.md`, etc.) before altering automation flows.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `docs/SSELFIE_DESIGN_SYSTEM.md`                | **Single visual + product UI contract for SSELFIE.** All design decisions and token usage must align here first.                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `docs/features/`                               | **Per-feature source of truth** for research and implementation: `maya.md`, `feed-planner.md`, `gallery.md`, `academy.md`, `profile.md`, `admin.md`. **Research agents:** read the relevant feature doc, then fill "Current value / pain" and "Opportunities" using `output/automation/funnel-digest-*.md`, `output/automation/support-digest-*.md`, and feedback. See `docs/features/README.md` for how to use.                                                                                                                                                                |
-| `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`  | Current Maya stabilization and UX recovery program. Read before changing Maya tabs, chat types, quick prompts, or handoff behavior.                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `lib/maya/prompt-contract.ts`                  | **Single source of truth for Maya quick prompts and input placeholder.** Mode-aware: prompts differ by `proMode` and `hasTrainedModel`. Edit here when changing chips or placeholder copy — do not hardcode prompts in components.                                                                                                                                                                                                                                                                                                                                              |
-| `lib/maya/tab-scope.ts`                        | Tab-scoped chat type resolution and cross-tab intent detection (`resolveMayaTabHandoff`). Controls `isMayaTabScopedChatEnabled` feature flag.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `lib/maya/tool-markers.ts`                     | Parser/stripper for Maya inline tool markers (`[GENERATE_CONCEPTS]`, `[CREATE_ASSET]`, `[MAYA_GAP_OFFER]`, `[SWITCH_MAYA_TAB]`, etc.). Add new markers here.                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `docs/codex-tasks/`                            | **Implementation task list for Codex.** Read `RESEARCH-SPRINT-CODEX-TASKS-2026-02-25.md` for the current 11 prioritized tasks (A-01 → E-03). Start here for implementation work.                                                                                                                                                                                                                                                                                                                                                                                                |
-| `docs/in-app-funnel/`                          | **Research deliverables for in-app journey + Academy funnel integration** (produced Feb 2026). Read these before implementing tasks A-01, C-01, C-02, C-03: `01-journey-map-2026-02-25.md` (4-stage funnel map), `02-content-copy-2026-02-25.md` (all CTAs, Maya system prompts, email copy), `03-designs-wireframes-2026-02-25.md` (mobile wireframes for Academy tab, post-purchase modal, Maya guided path), `04-prioritized-list-2026-02-25.md` (3-slice sprint plan + open questions for Sandra), `05-slice-1-verification-checklist.md` (QA checklist for Slice 1 tasks). |
-| `docs/automation/`                             | Automation operating model and engine inventory. Read `SSELFIE_AUTOMATION_CORE_2026-03-10.md` before changing Codex Desktop automations or platform maintenance loops.                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `skills/sselfie-maya-os/`                      | **Shared agent skill for Maya-first operating model.** Contains canonical user journey, screen map, scaling playbook, and QA checklist for funnel/frontend changes.                                                                                                                                                                                                                                                                                                                                                                                                             |
+The admin navigation is:
 
-## Current state — Research Sprint Feb 2026
+- Home
+- Inbox
+- Content
+- Support
+- Tools
 
+Do not add a new admin page, metric card, or recurring admin email without consolidating an existing
+surface. Money comes only from Stripe or qualifying `stripe_payments` rows. Behavioral analytics are
+not revenue truth.
+
+### Product and funnel separation
+
+- `KIT` / Starter Kit is the iPhone and selfie-education path.
+- `PROMPT` / AI Prompts is the AI-photo path and bridges to Prompt Vault or the AI Photos Kit.
+- Warm trust bridges to Visibility To Paid / Work With Me.
+- SUITE is the recurring monthly creation system.
+
+Do not reuse the Starter Kit checkout or entitlement for the AI Photos Kit.
+
+## Automation Ownership
+
+Read `docs/AUTOMATION_ROSTER.md` before changing any scheduled or event-driven workflow.
+
+- Customer, payment, fulfillment, and lifecycle automations live in the repo and run on Vercel.
+- Claude Cowork may draft and monitor, but it does not send customer messages automatically.
+- Codex hosts no business automations. Code-hygiene automation is the only allowed Codex lane.
+- ManyChat, Resend, Stripe, and similar services provide delivery mechanics; business logic remains
+  in the repo or in an attended Sandra workflow.
+
+The old weekly content-brief repo pipeline is disabled, not yet deleted. Its Phase 2B deletion stays
+held until the replacement Cowork weekly task completes a real Monday run and is verified.
+
+## Safety Rules
+
+1. Live users exist. Inspect before editing and minimize blast radius.
+2. Never use `git reset --hard` or discard unrelated dirty work.
+3. Use a clean `codex/` branch or isolated worktree for implementation.
+4. Bugfixes require a failing test or a documented reproduction before the patch.
+5. No broad code refactors without an explicit spec.
+6. Outward-facing copy stays draft-only until Sandra approves it.
+7. Never print secrets. Report only presence, scope, and whether identifiers resolve.
+8. GitHub Actions workflows are intentionally disabled to avoid paid-run charges. Run required
+   checks locally and do not re-enable workflows without Sandra's approval.
+
+## File Map
+
+| Area                          | Current owner                                                        |
+| ----------------------------- | -------------------------------------------------------------------- |
+| Business context              | `CLAUDE.md`                                                          |
+| Active task queue             | `tasks/README.md`, then the named spec in `tasks/`                   |
+| Documentation index           | `docs/README.md`                                                     |
+| Automation map                | `docs/AUTOMATION_ROSTER.md`                                          |
+| Member app                    | `app/app/`, `components/app-v3/`, `lib/app-v3/`, `app/api/app-v3/`   |
+| Maya model routing            | `lib/maya/openrouter.ts`                                             |
+| Payments                      | `lib/payments/handlers/`, `lib/payments/lifecycle/`, Stripe webhooks |
+| Revenue truth helpers         | `lib/revenue/single-source.ts`                                       |
+| Email sending                 | `lib/email/`, `lib/resend/`, `app/api/cron/`                         |
+| Prompt Vault content          | `lib/ai-prompts/`, `docs/PROMPT_VAULT_ADD_COLLECTION_SOP.md`         |
+| Admin reporting               | `lib/admin/home-report.ts`, `app/admin/`                             |
+| Cron registration             | `vercel.json`                                                        |
+| Production error monitoring   | Sentry plus `lib/admin-error-log.ts`                                 |
+| Historical plans and evidence | `docs/archive/`                                                      |
+
+## Verification
+
+Use checks in proportion to risk. Before a production code merge, the normal local gate is:
+
+```bash
+pnpm type-check:ci
+pnpm verify:repo
+pnpm exec vitest run
+git diff --check
 ```
-Context: Research sprint completed 2026-02-25. All 6 feature docs now have §7 and §8 filled.
-  11 Codex implementation tasks created. 4 in-app funnel research deliverables produced.
-Last actions:
-  - 6 parallel subagents filled §7 (Current value/pain) + §8 (Opportunities) in maya.md,
-    feed-planner.md, gallery.md, academy.md, profile.md, admin.md using funnel/support digests.
-  - Created docs/codex-tasks/RESEARCH-SPRINT-CODEX-TASKS-2026-02-25.md with 11 tasks
-    (A-01 to E-03), prioritized by impact.
-  - Created docs/in-app-funnel/ with 5 files: journey map, content/copy, wireframes,
-    prioritized sprint plan, and Slice 1 QA checklist.
-Files touched: docs/features/*.md (§7/§8 only), docs/codex-tasks/*, docs/in-app-funnel/*
-Outstanding issues:
-  - 0% first-output activation (0/14 new users generated; 3 days in a row)
-  - Feed Planner wizard: 1 "Continue" click in 3 days — wizard is the activation cliff
-  - Academy mini-products not surfaced in-app after purchase
-  - 80 unresolved credit_transaction rows missing stripe_payment_id (historical)
-  - B-03 (Prompts Tab) blocked until Sandra approves a list of 10–15 Nano Banana Pro prompts
-  - 5 open questions for Sandra in docs/in-app-funnel/04-prioritized-list-2026-02-25.md §6
-Next steps: Codex implements tasks in order: A-01 → A-02 → B-01 → E-01/02/03 → B-02 → B-03 → C-01 → C-02 → C-03 → D-01 → D-02. Read docs/in-app-funnel/ before A-01, C-01, C-02, C-03.
-```
 
-## Operating procedure for Codex + Sandra
+For localized changes, also run targeted ESLint and the affected tests first. Vercel must reach
+`Ready`, and `https://sselfie.ai` must return a successful response after following redirects.
 
-1. **Ask vs assume** – if the request references files or behavior not already in context, ask for the minimal additional file(s) needed instead of blindly loading an entire tree.
-2. **Scope tasks** – keep each turn focused on a single topic. Limit touched files to those directly impacted by the requested change or investigation.
-3. **Plan → Implement → Test → Summarize loop**:
-   - Plan: Outline goal + steps before coding.
-   - Implement: Apply targeted edits (using `apply_patch` / scripts). Keep individual commits small.
-   - Test: Run targeted lint/test commands (even manual POST requests) and log results.
-   - Summarize: Share what changed, tests run, and next steps in the final message.
-4. **State Summary Template** – include this block at the start of every new thread/request you open:
-   ```
-   Context: [What we were looking at]
-   Last actions: [Commands/run results plus their purpose]
-   Files touched: [List of files + short reason]
-   Outstanding issues: [Known metrics failing / errors still open]
-   Next steps: [What will happen next]
-   ```
-   Mention this template in new threads and keep it synchronized with `docs/CODEX_CONTEXT.md`.
-5. **Branch hygiene** – after a `codex/` branch is merged and pushed to `main`, delete that task branch locally and remotely. Periodically prune only branches Git reports as already merged into `main` / `origin/main`; do not force-delete unmerged branches or branches checked out by another worktree without explicit approval.
-6. **Worktrees & automations hygiene** – keep worktrees topic-specific (`worktree-{topic}`), avoid creating multiples unless needed, and archive/close automations only when fully resolved. Automation files (`$CODEX_HOME/automations`) are operational config and should only be edited on explicit automation requests.
+## Documentation Rule
 
-## Automation/Lock hygiene reminders
+Active docs may state current rules. Archived docs may preserve historical reasoning, old paths,
+old metrics, and superseded plans, but they must never be treated as implementation authority.
 
-1. **Locking** – `marketing-runner` relies on Upstash locks; `MARKETING_REQUIRE_UPSTASH_LOCKS` defaults to true. If Upstash is unavailable, logs should show `Upstash KV lock required but not configured` and the run should bail without performing broadcasts.
-2. **Resend rate limits** – respect 2 req/sec by spacing `syncMarketingContacts` requests (already uses `CONTACT_UPDATE_DELAY_MS`), but GraphQL + broadcast creation also need guardrails. Use `resendFetchWithRetry` and record `retry-after` headers when 429s happen.
-3. **Cron failure logging** – Cron routes use `createCronLogger` and `logAdminError`. When a failure occurs, the `output/automation` logs capture error IDs. Always reference these before touching the underlying logic.
-
-## Automation/State hygiene go-forward
-
-- Keep `docs/CODEX_CONTEXT.md` updated with new automations, dev notes, and operating-procedure updates.
-- When in doubt, run `scripts/check-production-status.ts` or the appropriate automation and cite the report in follow-ups.
-- Every change touching cron logic should include a mention of the relevant automation file (`output/automation/...`) so we preserve traceability.
+If a document claims to be current while contradicting `CLAUDE.md`, the protected contracts above,
+or live code, either update it, add a superseded notice, or move it to `docs/archive/`.

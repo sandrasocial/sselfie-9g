@@ -2,7 +2,8 @@
 
 Date: 2026-05-26
 Owner: Codex
-Status: Active source of truth for the current front-door offer
+Status: Historical pivot evidence. Use `CLAUDE.md` and
+`docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md` for current offer roles.
 
 ## Decision
 
@@ -78,9 +79,9 @@ Product plumbing:
 - `docs/CODEX_CONTEXT.md`
 - `.agents/product-marketing-context.md`
 - `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
-- `docs/SELFIE-EDUCATION-REPOSITION-PLAN-2026-04-23.md`
+- `docs/archive/2026-07-09-documentation-cleanup/SELFIE-EDUCATION-REPOSITION-PLAN-2026-04-23.md`
 - `docs/funnel/SSELFIE-2026-CTA-METRICS-CLEANUP.md`
-- `docs/email/LIGHT_EDITORIAL_EMAIL_AUDIT_2026-05-21.md`
+- `docs/archive/2026-07-09-documentation-cleanup/email/LIGHT_EDITORIAL_EMAIL_AUDIT_2026-05-21.md`
 - `lib/email/templates/ai-prompts-day7-prompt-vault-offer.ts`
 - `lib/analytics/event-contract.ts`
 

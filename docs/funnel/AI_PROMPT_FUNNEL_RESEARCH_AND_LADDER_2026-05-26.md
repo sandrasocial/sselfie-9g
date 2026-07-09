@@ -2,7 +2,9 @@
 
 Date: 2026-05-26
 Owner: Codex
-Status: Strategic source of truth for the post-Studio front-door funnel
+Status: Historical funnel research. Current revenue authority is
+`docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`; current purpose authority is
+`docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`.
 
 ## Executive Decision
 

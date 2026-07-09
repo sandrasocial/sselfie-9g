@@ -4,7 +4,7 @@ Date: 2026-06-01
 Status: V1 implementation blueprint
 Parent docs:
 
-- `docs/source-of-truth/SSELFIE_STRATEGIC_LOCK_IN_2026-06-01.md`
+- Historical strategy input: `docs/archive/2026-07-09-documentation-cleanup/SSELFIE_STRATEGIC_LOCK_IN_2026-06-01.md`
 - `docs/funnel/SELFIE_TO_BRAND_SHOOT_SYSTEM_EXECUTION_PLAN_2026-06-01.md`
 - `docs/funnel/SELFIE_TO_BRAND_SHOOT_ASSET_MAP_2026-06-01.md`
 - `docs/funnel/SELFIE_TO_BRAND_SHOOT_E2E_BUILD_PLAYBOOK_2026-06-01.md`
