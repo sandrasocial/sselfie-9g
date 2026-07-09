@@ -34,6 +34,17 @@ export async function GET(request: NextRequest) {
     } catch (error) {
       results[app.label] = { appId: app.id, error: error instanceof Error ? error.message : String(error) }
     }
+
+    // Independent check: ask Meta's own OAuth endpoint to mint an app access
+    // token via client_credentials. Cleaner error surface than /subscriptions.
+    try {
+      const oauthUrl = `https://graph.facebook.com/oauth/access_token?client_id=${app.id}&client_secret=${app.secret}&grant_type=client_credentials`
+      const oauthRes = await fetch(oauthUrl)
+      const oauthJson = await oauthRes.json()
+      results[`${app.label} :: client_credentials`] = { status: oauthRes.status, data: oauthJson }
+    } catch (error) {
+      results[`${app.label} :: client_credentials`] = { error: error instanceof Error ? error.message : String(error) }
+    }
   }
 
   return NextResponse.json({ summary: "Instagram webhook subscription check", results })
