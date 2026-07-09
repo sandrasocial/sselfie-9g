@@ -121,23 +121,11 @@ function LookbookAction({
 }
 
 export function VisualFrontDoor({
-  // MAYA-ADMIN-01: header copy is overridable so the admin mount doesn't show member
-  // marketing lines. Defaults keep /app in Sandra's calm, direct product voice.
-  eyebrow = "SSELFIE Studio",
-  title = "Start with one clear next step.",
-  subtitle = "Tell Maya what you want to make. She will ask only what she needs, then guide the rest inside the chat.",
-  note = "Included in SSELFIE SUITE: monthly credits · brand photos · content help · your gallery",
-  compact = false,
   showTrialFirstRunStep = false,
   cohort = "member",
   hasSelfie = false,
   videoEnabled = true,
 }: {
-  eyebrow?: string
-  title?: string
-  subtitle?: string
-  note?: string | null
-  compact?: boolean
   showTrialFirstRunStep?: boolean
   cohort?: AppV3AnalyticsCohort
   hasSelfie?: boolean
@@ -267,26 +255,21 @@ export function VisualFrontDoor({
   }
 
   return (
-    <section className={compact ? "w-full" : "mx-auto w-full max-w-6xl px-4 py-7 sm:px-8 sm:py-16"}>
-      <header className={compact ? "mb-6" : "mb-7 sm:mb-10"}>
+    <section className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-8 sm:py-16">
+      <header className="mb-7 sm:mb-10">
         <p className="text-[10px] uppercase tracking-[0.34em] text-[color:var(--ss-gray)]">
-          {eyebrow}
+          SSELFIE Studio
         </p>
-        <h1
-          className={`mt-3 font-serif font-light leading-[1.05] text-[color:var(--ss-night)] ${
-            compact ? "text-[27px] sm:text-[34px]" : "text-[32px] sm:text-[46px]"
-          }`}
-        >
-          {title}
+        <h1 className="mt-3 font-serif text-[32px] font-light leading-[1.05] text-[color:var(--ss-night)] sm:text-[46px]">
+          Start with one clear next step.
         </h1>
         <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[color:var(--ss-davy)]">
-          {subtitle}
+          Tell Maya what you want to make. She will ask only what she needs, then guide the rest
+          inside the chat.
         </p>
-        {note && (
-          <p className="mt-4 max-w-xl text-[12px] leading-relaxed text-[color:var(--ss-gray)]">
-            {note}
-          </p>
-        )}
+        <p className="mt-4 max-w-xl text-[12px] leading-relaxed text-[color:var(--ss-gray)]">
+          Included in SSELFIE SUITE: monthly credits · brand photos · content help · your gallery
+        </p>
       </header>
 
       {/* No selfie yet: the selfie upload is the ONLY action on screen - no competing text
@@ -313,7 +296,6 @@ export function VisualFrontDoor({
           />
         </div>
       ) : (
-        !compact && (
           <div className="mb-9 overflow-hidden rounded-[10px] border border-[color:var(--ss-silver)]/60 bg-white">
             <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
               <div className="min-w-0 p-5 sm:p-7">
@@ -392,7 +374,6 @@ export function VisualFrontDoor({
               />
             </div>
           </div>
-        )
       )}
     </section>
   )

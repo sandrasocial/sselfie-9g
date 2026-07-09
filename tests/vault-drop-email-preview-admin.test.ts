@@ -34,7 +34,7 @@ describe("Vault drop email admin workflow", () => {
     expect(component).toContain("srcDoc")
     expect(component).not.toContain("No emails have sent yet")
 
-    expect(adminPage).toContain("VaultDropEmailPreview")
+    expect(adminPage).not.toContain("VaultDropEmailPreview")
     expect(sendEmail).toContain("idempotencyKey?: string")
   })
 

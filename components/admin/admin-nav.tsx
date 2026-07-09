@@ -9,23 +9,12 @@ const NAV_ITEMS = [
   { label: 'INBOX', href: '/admin/ig-inbox' },
   { label: 'CONTENT', href: '/admin/content-brief' },
   { label: 'SUPPORT', href: '/admin/customer-support' },
-]
-
-const TOOL_ITEMS = [
-  { label: 'Payment review', href: '/admin/webhook-review' },
-  { label: 'Vault monitor', href: '/admin/prompt-vault' },
-  { label: 'Brand Shoot monitor', href: '/admin/selfie-to-brand-shoot' },
-  { label: 'Credits', href: '/admin/credits' },
-  { label: 'Academy', href: '/admin/academy' },
-  { label: 'Testimonials', href: '/admin/testimonials' },
+  { label: 'TOOLS', href: '/admin/tools' },
 ]
 
 export function AdminNav() {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [toolsOpen, setToolsOpen] = useState(false)
-
-  const isToolPath = TOOL_ITEMS.some((item) => pathname === item.href)
 
   return (
     <nav className="border-b border-stone-200 bg-white sticky top-0 z-50" suppressHydrationWarning>
@@ -55,36 +44,6 @@ export function AdminNav() {
                 {item.label}
               </Link>
             ))}
-            <div className="relative">
-              <button
-                onClick={() => setToolsOpen(!toolsOpen)}
-                className={`text-[10px] lg:text-xs tracking-[0.15em] lg:tracking-[0.2em] uppercase transition-colors py-1 ${
-                  isToolPath || toolsOpen
-                    ? 'text-stone-950 border-b-2 border-stone-950'
-                    : 'text-stone-400 hover:text-stone-600'
-                }`}
-              >
-                TOOLS
-              </button>
-              {toolsOpen && (
-                <div className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-stone-200 bg-white py-2 shadow-sm">
-                  {TOOL_ITEMS.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setToolsOpen(false)}
-                      className={`block px-4 py-2 text-xs transition-colors ${
-                        pathname === item.href
-                          ? 'text-stone-950 bg-stone-50'
-                          : 'text-stone-500 hover:text-stone-950 hover:bg-stone-50'
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Mobile Menu Button */}
@@ -120,21 +79,6 @@ export function AdminNav() {
                     pathname === item.href
                       ? 'text-stone-950 bg-stone-50 border-l-2 border-stone-950'
                       : 'text-stone-400 hover:text-stone-600 hover:bg-stone-50'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-              <p className="px-4 pt-2 text-[10px] uppercase tracking-[0.2em] text-stone-400">Tools</p>
-              {TOOL_ITEMS.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`px-4 py-2 text-xs transition-colors flex items-center ${
-                    pathname === item.href
-                      ? 'text-stone-950 bg-stone-50 border-l-2 border-stone-950'
-                      : 'text-stone-500 hover:text-stone-950 hover:bg-stone-50'
                   }`}
                 >
                   {item.label}

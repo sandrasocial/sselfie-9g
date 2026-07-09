@@ -425,8 +425,6 @@ interface ChatBody {
     usedInspiration?: unknown
     usedTrainedModel?: unknown
   } | null
-  /** MAYA-ADMIN-01: the /admin surface sets this; only honored for the admin email. */
-  adminSession?: boolean
 }
 
 function clampText(value: unknown, max = 900): string {
@@ -540,223 +538,6 @@ function selectedShotContext(
   ]
     .filter(Boolean)
     .join("\n")
-}
-
-function summarizeBriefValue(value: unknown): string {
-  if (typeof value === "string") return value.slice(0, 240)
-  if (typeof value === "number") return String(value)
-  if (Array.isArray(value))
-    return value.slice(0, 5).map(summarizeBriefValue).filter(Boolean).join(" / ")
-  if (value && typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>).slice(0, 8)
-    return entries
-      .map(([key, item]) => `${key}: ${summarizeBriefValue(item)}`)
-      .filter(Boolean)
-      .join("; ")
-  }
-  return ""
-}
-
-type AdminToolShoot = {
-  id: number
-  title: string
-  status: string
-  approvedShotCount: number
-  publishReady: boolean
-  publishNeeded: number
-  publishedVaultSlug: string | null
-  emailDropStatus: string | null
-  heroImageUrl: string | null
-}
-
-async function getAdminContentToolContext(): Promise<{
-  shoots: AdminToolShoot[]
-  summary: string
-}> {
-  try {
-    const { listShoots } = await import("@/lib/content-kit/shoot-generator")
-    const { getShootPublishReadiness } = await import("@/lib/content-kit/shoot-readiness")
-    const shoots = (await listShoots(12))
-      .map((shoot): AdminToolShoot => {
-        const approvedShots = shoot.shots.filter(
-          shot => shot.status === "approved" && shot.imageUrl
-        )
-        const readiness = getShootPublishReadiness(shoot)
-        return {
-          id: shoot.id,
-          title: shoot.title,
-          status: shoot.status,
-          approvedShotCount: approvedShots.length,
-          publishReady: readiness.ready,
-          publishNeeded: readiness.needed,
-          publishedVaultSlug: shoot.publishedVaultSlug ?? null,
-          emailDropStatus: shoot.emailDropStatus ?? null,
-          heroImageUrl: approvedShots[0]?.imageUrl ?? null,
-        }
-      })
-      .filter(shoot => shoot.approvedShotCount >= 2)
-
-    const summary = shoots.length
-      ? shoots
-          .slice(0, 6)
-          .map(shoot => `- ${shoot.id}: ${shoot.title} (${shoot.approvedShotCount} approved shots)`)
-          .join("\n")
-      : "- No approved shoots with at least 2 rendered shots yet."
-
-    return { shoots, summary }
-  } catch (error) {
-    console.error("[app-v3 maya chat] admin content tool context failed:", error)
-    return { shoots: [], summary: "- Shoot list unavailable right now." }
-  }
-}
-
-function pickAdminSourceShootId(
-  inputId: number | undefined,
-  shoots: AdminToolShoot[]
-): number | null {
-  if (inputId && shoots.some(shoot => shoot.id === inputId)) return inputId
-  return shoots[0]?.id ?? null
-}
-
-function summarizeAdminCarouselDeck(deck: any) {
-  return {
-    id: Number(deck.id),
-    kind: "carousel" as const,
-    title: String(deck.title || "Carousel draft"),
-    status: String(deck.status || "draft"),
-    caption: String(deck.caption || ""),
-    sourceShootId: deck.sourceShootId ?? null,
-    sourceShootTitle: deck.sourceShootTitle ?? null,
-    slides: Array.isArray(deck.slides)
-      ? deck.slides.map((slide: any, index: number) => ({
-          index,
-          kind: String(slide?.kind || "slide"),
-          title: String(slide?.title || `Slide ${index + 1}`),
-        }))
-      : [],
-  }
-}
-
-function summarizeAdminStorySequence(sequence: any) {
-  return {
-    id: Number(sequence.id),
-    kind: "story" as const,
-    title: String(sequence.title || "Story sequence draft"),
-    status: String(sequence.status || "draft"),
-    sourceShootId: sequence.sourceShootId ?? null,
-    sourceShootTitle: sequence.sourceShootTitle ?? null,
-    slides: Array.isArray(sequence.slides)
-      ? sequence.slides.map((slide: any, index: number) => ({
-          index,
-          role: String(slide?.role || "slide"),
-          title: Array.isArray(slide?.lines)
-            ? slide.lines
-                .map((line: any) => line?.text)
-                .filter(Boolean)
-                .slice(0, 2)
-                .join(" / ")
-            : `Story ${index + 1}`,
-        }))
-      : [],
-  }
-}
-
-function summarizeVaultDropEmailPreview(preview: any) {
-  return {
-    ready: Boolean(preview.ready),
-    dropKey: String(preview.dropKey || ""),
-    selectedCollectionIds: Array.isArray(preview.selectedCollectionIds)
-      ? preview.selectedCollectionIds
-      : [],
-    missingCollectionIds: Array.isArray(preview.missingCollectionIds)
-      ? preview.missingCollectionIds
-      : [],
-    collections: Array.isArray(preview.collections) ? preview.collections : [],
-    availableCollections: Array.isArray(preview.availableCollections)
-      ? preview.availableCollections
-      : [],
-    segments: preview.segments ?? {
-      nonbuyers: { count: 0, sampleRecipients: [] },
-      buyers: { count: 0, sampleRecipients: [] },
-    },
-    totalRecipients: Number(preview.totalRecipients || 0),
-    latestRun: preview.latestRun ?? null,
-  }
-}
-
-async function getAdminBriefContext(): Promise<string> {
-  try {
-    const { getLatestAnalyticsReports } = await import("@/lib/analytics/reports")
-    const reports = await getLatestAnalyticsReports({
-      reportType: "content_brief_weekly",
-      limit: 1,
-    })
-
-    const report = reports[0]
-    if (!report?.payload) {
-      try {
-        const { logAdminError } = await import("@/lib/admin-error-log")
-        void logAdminError({
-          toolName: "app-v3-maya-admin-brief-context",
-          error: new Error("Missing content_brief_weekly report for admin Maya grounding"),
-          context: { reportType: "content_brief_weekly", route: "app/api/app-v3/maya/chat" },
-        })
-      } catch (error) {
-        console.error("[app-v3 maya chat] admin error log unavailable:", error)
-      }
-      return [
-        "---",
-        "## CURRENT WEEKLY BRIEF CONTEXT",
-        "No content_brief_weekly report was available. Say this plainly to Sandra and do not invent a plan, demand map, story anchor, or content sequence.",
-      ].join("\n")
-    }
-    const payload = report.payload as Record<string, unknown>
-    const period = report.period_start
-      ? new Date(report.period_start).toISOString().slice(0, 10)
-      : "latest"
-    const contentPlan = Array.isArray(payload.contentPlan)
-      ? payload.contentPlan
-          .slice(0, 6)
-          .map((piece: any) => {
-            const title = typeof piece?.title === "string" ? piece.title : "Untitled"
-            const format = typeof piece?.format === "string" ? piece.format : "content"
-            const hook = typeof piece?.hook === "string" ? piece.hook : ""
-            const demand = typeof piece?.demandSignal === "string" ? piece.demandSignal : ""
-            const before = typeof piece?.painfulBefore === "string" ? piece.painfulBefore : ""
-            const after = typeof piece?.desiredAfter === "string" ? piece.desiredAfter : ""
-            return `- ${format}: ${title}${hook ? ` | hook: ${hook}` : ""}${demand ? ` | demand: ${demand}` : ""}${before ? ` | before: ${before}` : ""}${after ? ` | after: ${after}` : ""}`
-          })
-          .join("\n")
-      : ""
-    const demandMap =
-      payload.demandMap && typeof payload.demandMap === "object"
-        ? summarizeBriefValue(payload.demandMap as Record<string, unknown>).slice(0, 700)
-        : ""
-    return [
-      "---",
-      "## CURRENT WEEKLY BRIEF CONTEXT",
-      `Period: ${period}. Use this as live context for Sandra's admin content ideas.`,
-      demandMap ? `Demand map:\n${demandMap}` : "",
-      contentPlan ? `Content plan:\n${contentPlan}` : "",
-      `Other brief signals: ${summarizeBriefValue(payload).slice(0, 1400)}`,
-      "Write in Sandra's simple everyday voice: warm, friendly, clear, no corporate phrasing.",
-    ]
-      .filter(Boolean)
-      .join("\n")
-  } catch (e) {
-    console.error("[app-v3 maya chat] admin brief context load skipped:", e)
-    return ""
-  }
-}
-
-async function getAdminEditorialMemoryContext(): Promise<string> {
-  try {
-    const { getAdminMemoryContext } = await import("@/lib/app-v3/maya/admin-memory-store")
-    return await getAdminMemoryContext()
-  } catch (e) {
-    console.error("[app-v3 maya chat] admin editorial memory load skipped:", e)
-    return ""
-  }
 }
 
 /** Only public Vercel Blob https URLs are accepted as an inspiration image. */
@@ -947,36 +728,6 @@ export async function POST(req: Request) {
       system = `${system}\n\nVIDEO SOURCE CONTEXT: The user has already selected the still image she wants to animate. Create motion directions for that exact selected image. Do not ask her for another selfie or a new photo unless she asks to replace it.`
     }
 
-    // MAYA-ADMIN-01: inside /admin, Maya switches jobs to Sandra's content co-creator.
-    // Server-gated on the admin email - the flag alone does nothing for anyone else.
-    let isAdminSession = false
-    let adminContentToolContext: Awaited<ReturnType<typeof getAdminContentToolContext>> | null =
-      null
-    if (body?.adminSession === true) {
-      const { isAdminEmail } = await import("@/lib/admin-feature-flags")
-      if (isAdminEmail(user.email)) {
-        isAdminSession = true
-        const { ADMIN_MAYA_CONTRACT } = await import("@/lib/app-v3/maya/admin-persona")
-        const [briefContext, adminMemoryContext] = await Promise.all([
-          getAdminBriefContext(),
-          getAdminEditorialMemoryContext(),
-        ])
-        adminContentToolContext = await getAdminContentToolContext()
-        const toolContext = [
-          "---",
-          "## ADMIN CONTENT TOOLS AVAILABLE",
-          "When Sandra asks for a carousel, story sequence, content tool, or wants to reuse an approved shoot, use the admin content tools instead of only explaining.",
-          "When Sandra asks for a tutorial carousel, iPhone/settings carousel, before-after teaching deck, or content based on strong reels, use create_admin_tutorial_carousel so the real reel-reference frames can be redesigned into finished editorial slides.",
-          "When Sandra asks to approve, publish, add to the Vault, or send the drop email, use the admin publish and Vault drop handoff tools.",
-          "Default to the newest approved Shoot Studio collection unless Sandra names another source shoot.",
-          "Carousels and story sequences are drafts only. Publishing a shoot to the Vault is allowed only through the explicit publish tool. Email sends always stay behind the handoff card buttons.",
-          "When Sandra says why something is approved, rejected, too generic, off-voice, or finally feels like her, quietly call remember_admin_decision with that editorial signal.",
-          `Approved shoot sources:\n${adminContentToolContext.summary}`,
-        ].join("\n")
-        system = `${system}\n\n${ADMIN_MAYA_CONTRACT}\n\n${toolContext}${adminMemoryContext ? `\n\n${adminMemoryContext}` : ""}${briefContext ? `\n\n${briefContext}` : ""}`
-      }
-    }
-
     // Feed Planner Phase 2c: Maya knows the month plan, so her photo concepts can lean toward
     // the next open day's theme and the plan's one feed style - a cohesive grid without the
     // member managing anything. Best-effort; never blocks chat. Member sessions only (admin
@@ -987,7 +738,7 @@ export async function POST(req: Request) {
     // matching them. So Maya gets the actual approved template for the next open slot and is
     // told to build her briefs FROM it - adapt wardrobe/colors/story to the member, keep the
     // template's composition, lighting, and scene craft.
-    if (memoryUserId && !isAdminSession) {
+    if (memoryUserId) {
       try {
         const [planLayout] = await sql`
           SELECT id, feed_style, feed_style_variation_id FROM feed_layouts
@@ -1051,8 +802,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // SUITE-UX-02 member pulse: behavior events only (Admin Data Contract), fail-open,
-    // admin sessions tagged so the weekly aggregate can exclude Sandra's own use.
+    // SUITE-UX-02 member pulse: behavior events only (Admin Data Contract), fail-open.
     const logBehavior = (eventName: string, properties: Record<string, unknown>) => {
       if (!memoryUserId) return
       import("@/lib/analytics/events")
@@ -1060,15 +810,13 @@ export async function POST(req: Request) {
           logAnalyticsEvent({
             eventName,
             userId: memoryUserId,
-            properties: { ...properties, admin: isAdminSession },
+            properties,
           })
         )
         .catch(() => {})
     }
 
-    const cleanUiMessages = sanitizeMayaMessages(uiMessages, {
-      admin: isAdminSession,
-    }) as UIMessage[]
+    const cleanUiMessages = sanitizeMayaMessages(uiMessages) as UIMessage[]
     if (cleanUiMessages.length === 0) {
       return NextResponse.json({ error: "messages is required" }, { status: 400 })
     }
@@ -1213,379 +961,6 @@ export async function POST(req: Request) {
       },
     })
 
-    const showAdminContentSources = tool({
-      description:
-        "ADMIN ONLY. Show Sandra the approved Shoot Studio sources that can be used for shoot-based " +
-        "carousels and story sequences. Call this when she asks what shoots/content sources are ready " +
-        "or before making a content tool if the source is unclear.",
-      inputSchema: z.object({
-        format: z.enum(["carousel", "story-sequence"]).optional(),
-      }),
-      execute: async ({ format: requestedFormat }) => {
-        const context = adminContentToolContext ?? (await getAdminContentToolContext())
-        return {
-          kind: "sources" as const,
-          format: requestedFormat ?? null,
-          shoots: context.shoots,
-        }
-      },
-    })
-
-    const rememberAdminDecision = tool({
-      description:
-        "ADMIN ONLY. Quietly save Sandra's LASTING editorial signal: why she approved a shot, why " +
-        "she rejected/killed something, voice corrections, visual taste rules, or workflow preferences. " +
-        "Never announce the save. Use only for decisions that should guide future admin content.",
-      inputSchema: z.object({
-        kind: z
-          .enum(["approval", "rejection", "preference", "voice", "workflow", "content_signal"])
-          .describe("The type of editorial signal."),
-        note: z.string().describe("One clear sentence in simple words. No private speculation."),
-        sourceType: z
-          .enum(["maya_chat", "shoot", "shot", "carousel", "story", "vault_drop", "manual"])
-          .optional(),
-        sourceId: z
-          .string()
-          .optional()
-          .describe("Optional shoot, shot, carousel, story, or collection id."),
-        sourceTitle: z.string().optional().describe("Optional human title of the source item."),
-      }),
-      execute: async ({ kind, note, sourceType, sourceId, sourceTitle }) => {
-        if (!isAdminSession) return { saved: false }
-        try {
-          const { addAdminMemoryNote } = await import("@/lib/app-v3/maya/admin-memory-store")
-          const result = await addAdminMemoryNote({
-            adminUserId: memoryUserId ?? user.id,
-            kind,
-            note,
-            sourceType: sourceType ?? "maya_chat",
-            sourceId: sourceId ?? null,
-            sourceTitle: sourceTitle ?? null,
-          })
-          logBehavior("suite_admin_memory_note_saved", { kind, saved: result.saved })
-          return { saved: result.saved }
-        } catch (e) {
-          console.error("[app-v3 maya chat] remember admin decision failed:", e)
-          return { saved: false }
-        }
-      },
-    })
-
-    const createAdminCarousel = tool({
-      description:
-        "ADMIN ONLY. Create one draft carousel from an approved Shoot Studio shoot using the existing " +
-        "content-kit carousel renderer. Use this when Sandra asks for a carousel, carousel kit, teaching " +
-        "deck, or reel-cover-ready carousel from the current/latest shoot. Draft only, never post.",
-      inputSchema: z.object({
-        topic: z
-          .string()
-          .optional()
-          .describe("Sandra's teaching angle or carousel topic in her words."),
-        sourceShootId: z
-          .number()
-          .optional()
-          .describe("Approved Shoot Studio id. Omit to use the newest ready shoot."),
-        overlayUrls: z
-          .array(z.string())
-          .optional()
-          .describe("Optional Vercel Blob screenshot/proof overlay URLs."),
-      }),
-      execute: async ({ topic, sourceShootId, overlayUrls }) => {
-        const context = adminContentToolContext ?? (await getAdminContentToolContext())
-        const resolvedShootId = pickAdminSourceShootId(sourceShootId, context.shoots)
-        if (!resolvedShootId) {
-          return {
-            kind: "error" as const,
-            tool: "carousel",
-            message:
-              "Approve at least 2 rendered shots in Shoot Studio before I can make a carousel.",
-            shoots: context.shoots,
-          }
-        }
-
-        try {
-          const { generateCarousels } = await import("@/lib/content-kit/carousel-generator")
-          const decks = await generateCarousels({
-            count: 1,
-            topic: topic?.trim() || undefined,
-            sourceShootId: resolvedShootId,
-            overlayUrls: overlayUrls ?? [],
-          })
-          return {
-            kind: "carousel" as const,
-            deck: summarizeAdminCarouselDeck(decks[0]),
-            sourceShoot: context.shoots.find(shoot => shoot.id === resolvedShootId) ?? null,
-          }
-        } catch (error) {
-          console.error("[app-v3 maya chat] admin carousel tool failed:", error)
-          return {
-            kind: "error" as const,
-            tool: "carousel",
-            message: error instanceof Error ? error.message : "Carousel generation failed.",
-            shoots: context.shoots,
-          }
-        }
-      },
-    })
-
-    const createAdminTutorialCarousel = tool({
-      description:
-        "ADMIN ONLY. Create one premium tutorial carousel using Sandra's reel-reference library " +
-        "(content_reel_references) plus optional approved Shoot Studio images or screenshot Blob URLs. " +
-        "Use this when Sandra asks for a tutorial carousel, iPhone/settings carousel, before-after " +
-        "teaching deck, or a carousel based on her strongest reels. Draft only, never post.",
-      inputSchema: z.object({
-        topic: z
-          .string()
-          .describe("The tutorial angle, e.g. 'how to make one selfie look like a full shoot'."),
-        sourceShootId: z
-          .number()
-          .optional()
-          .describe(
-            "Optional approved Shoot Studio id for the finished-result image. Omit to use reel references."
-          ),
-        reelReferenceIds: z
-          .array(z.number())
-          .optional()
-          .describe("Optional content_reel_references ids if Sandra named exact references."),
-        imageUrls: z
-          .array(z.string())
-          .optional()
-          .describe("Optional Vercel Blob result/background images."),
-        overlayUrls: z
-          .array(z.string())
-          .optional()
-          .describe("Optional Vercel Blob screenshots to preserve exactly."),
-        keyword: z
-          .enum(["KIT", "PROMPT", "PRESET", "SELFIE"])
-          .optional()
-          .describe("CTA keyword. Defaults to KIT."),
-      }),
-      execute: async ({
-        topic,
-        sourceShootId,
-        reelReferenceIds,
-        imageUrls,
-        overlayUrls,
-        keyword,
-      }) => {
-        try {
-          const { generateCarousels, listContentReelReferences } =
-            await import("@/lib/content-kit/carousel-generator")
-          const references = await listContentReelReferences({
-            limit: 8,
-            ids: reelReferenceIds,
-          })
-          const referenceUrls = references.map(reference => reference.imageUrl)
-          const sceneReferenceUrls = references
-            .filter(reference => reference.kind === "scene")
-            .map(reference => reference.imageUrl)
-          const decks = await generateCarousels({
-            mode: "tutorial",
-            count: 1,
-            topic: topic.trim(),
-            sourceShootId,
-            reelReferenceIds,
-            imageUrls: [...(imageUrls ?? []), ...referenceUrls],
-            overlayUrls: [...(overlayUrls ?? []), ...sceneReferenceUrls],
-            keyword,
-          })
-          return {
-            kind: "carousel" as const,
-            deck: summarizeAdminCarouselDeck(decks[0]),
-            references: references.map(reference => ({
-              id: reference.id,
-              kind: reference.kind,
-              label: reference.label,
-              views: reference.views,
-              hookLine: reference.hookLine,
-            })),
-          }
-        } catch (error) {
-          console.error("[app-v3 maya chat] admin tutorial carousel tool failed:", error)
-          return {
-            kind: "error" as const,
-            tool: "tutorial-carousel",
-            message:
-              error instanceof Error ? error.message : "Tutorial carousel generation failed.",
-          }
-        }
-      },
-    })
-
-    const createAdminStorySequence = tool({
-      description:
-        "ADMIN ONLY. Create one draft Instagram story sequence from an approved Shoot Studio shoot " +
-        "using the existing story renderer. Use this when Sandra asks for story slides, a story sequence, " +
-        "or a Story Prompt Engineer sequence. Draft only, never post.",
-      inputSchema: z.object({
-        topic: z.string().describe("The story idea, angle, or CTA. Required."),
-        sourceShootId: z
-          .number()
-          .optional()
-          .describe("Approved Shoot Studio id. Omit to use the newest ready shoot."),
-        overlayUrls: z
-          .array(z.string())
-          .optional()
-          .describe("Optional Vercel Blob screenshot/proof overlay URLs."),
-      }),
-      execute: async ({ topic, sourceShootId, overlayUrls }) => {
-        const context = adminContentToolContext ?? (await getAdminContentToolContext())
-        const resolvedShootId = pickAdminSourceShootId(sourceShootId, context.shoots)
-        if (!resolvedShootId) {
-          return {
-            kind: "error" as const,
-            tool: "story",
-            message:
-              "Approve at least 2 rendered shots in Shoot Studio before I can make story slides.",
-            shoots: context.shoots,
-          }
-        }
-
-        try {
-          const { generateStorySequence } = await import("@/lib/content-kit/story-generator")
-          const sequence = await generateStorySequence({
-            topic,
-            sourceShootId: resolvedShootId,
-            overlayUrls: overlayUrls ?? [],
-          })
-          return {
-            kind: "story" as const,
-            sequence: summarizeAdminStorySequence(sequence),
-            sourceShoot: context.shoots.find(shoot => shoot.id === resolvedShootId) ?? null,
-          }
-        } catch (error) {
-          console.error("[app-v3 maya chat] admin story tool failed:", error)
-          return {
-            kind: "error" as const,
-            tool: "story",
-            message: error instanceof Error ? error.message : "Story sequence generation failed.",
-            shoots: context.shoots,
-          }
-        }
-      },
-    })
-
-    const publishAdminShootToVault = tool({
-      description:
-        "ADMIN ONLY. Publish a ready Shoot Studio shoot into the DB-backed Prompt Vault after Sandra " +
-        "explicitly asks to approve, publish, add it to the Vault, or move it into the drop workflow. " +
-        "Only use this for shoots with at least 6 approved rendered shots. After publishing, show the " +
-        "Vault drop email handoff so Sandra can review counts and test emails before any live send.",
-      inputSchema: z.object({
-        sourceShootId: z
-          .number()
-          .optional()
-          .describe("Ready Shoot Studio id. Omit to publish the newest ready unpublished shoot."),
-      }),
-      execute: async ({ sourceShootId }) => {
-        const context = adminContentToolContext ?? (await getAdminContentToolContext())
-        const resolvedShoot =
-          (sourceShootId ? context.shoots.find(shoot => shoot.id === sourceShootId) : null) ??
-          context.shoots.find(shoot => shoot.publishReady && !shoot.publishedVaultSlug)
-
-        if (!resolvedShoot) {
-          return {
-            kind: "error" as const,
-            tool: "publish",
-            message:
-              "There is no ready unpublished shoot to publish. Approve 6 rendered shots on a new Shoot Studio collection first.",
-            shoots: context.shoots,
-          }
-        }
-
-        if (resolvedShoot.publishedVaultSlug) {
-          return {
-            kind: "error" as const,
-            tool: "publish",
-            message: `${resolvedShoot.title} is already published to the Vault as ${resolvedShoot.publishedVaultSlug}. Create or approve the next shoot before publishing again.`,
-            shoots: context.shoots,
-          }
-        }
-
-        if (!resolvedShoot.publishReady) {
-          return {
-            kind: "error" as const,
-            tool: "publish",
-            message: `This shoot needs ${resolvedShoot.publishNeeded} more approved rendered shot${resolvedShoot.publishNeeded === 1 ? "" : "s"} before publishing.`,
-            shoots: context.shoots,
-          }
-        }
-
-        try {
-          const { publishShootToVault } = await import("@/lib/content-kit/shoot-publisher")
-          const { getVaultDropEmailPreview } = await import("@/lib/admin/vault-drop-email-workflow")
-          const { addAdminMemoryNote } = await import("@/lib/app-v3/maya/admin-memory-store")
-          const result = await publishShootToVault(resolvedShoot.id)
-          await addAdminMemoryNote({
-            adminUserId: memoryUserId ?? user.id,
-            kind: "workflow",
-            note: `Published "${result.shoot.title}" to the Vault from Admin Maya after it had enough approved rendered shots.`,
-            sourceType: "shoot",
-            sourceId: result.shoot.id,
-            sourceTitle: result.shoot.title,
-            metadata: { vaultSlug: result.collection.slug },
-          }).catch(memoryError =>
-            console.error("[app-v3 maya chat] publish memory skipped:", memoryError)
-          )
-          const dropEmail = await getVaultDropEmailPreview()
-          return {
-            kind: "vault-publish" as const,
-            shoot: {
-              ...resolvedShoot,
-              publishedVaultSlug: result.collection.slug,
-              emailDropStatus: "queued",
-            },
-            collection: result.collection,
-            dropEmail: summarizeVaultDropEmailPreview(dropEmail),
-          }
-        } catch (error) {
-          console.error("[app-v3 maya chat] admin publish tool failed:", error)
-          return {
-            kind: "error" as const,
-            tool: "publish",
-            message:
-              error instanceof Error ? error.message : "Could not publish this shoot to the Vault.",
-            shoots: context.shoots,
-          }
-        }
-      },
-    })
-
-    const showAdminVaultDropHandoff = tool({
-      description:
-        "ADMIN ONLY. Show Sandra the Vault drop email readiness handoff: selected collections, free " +
-        "preview recipient count, buyer recipient count, latest run, and buttons for test send, live " +
-        "run creation, and batch processing. Use this when she asks if the drop email is ready or says " +
-        "ready to send the drop email. Showing the handoff does not send anything.",
-      inputSchema: z.object({
-        collectionIds: z
-          .array(z.string())
-          .optional()
-          .describe("Optional Vault collection slugs to use for this drop."),
-      }),
-      execute: async ({ collectionIds }) => {
-        try {
-          const { getVaultDropEmailPreview } = await import("@/lib/admin/vault-drop-email-workflow")
-          const dropEmail = await getVaultDropEmailPreview(collectionIds ?? [])
-          return {
-            kind: "vault-drop-handoff" as const,
-            dropEmail: summarizeVaultDropEmailPreview(dropEmail),
-          }
-        } catch (error) {
-          console.error("[app-v3 maya chat] admin vault drop handoff failed:", error)
-          return {
-            kind: "error" as const,
-            tool: "vault-drop",
-            message:
-              error instanceof Error
-                ? error.message
-                : "Could not load the Vault drop email handoff.",
-          }
-        }
-      },
-    })
-
     // MAYA'S FIRST COFFEE (2026-07-07): the interview's structured save. Maya extracts what
     // the member tells her (business, audience, story, goals) and writes it to
     // user_personal_brand - the profile every system reads (chat context, month drafts,
@@ -1605,7 +980,7 @@ export async function POST(req: Request) {
         agentName: z.string().optional().describe("The name she gives YOU, if she names you."),
       }),
       execute: async ({ agentName, ...facts }) => {
-        if (!memoryUserId || isAdminSession) return { saved: false }
+        if (!memoryUserId) return { saved: false }
         try {
           const { saveBrandProfileFacts } = await import("@/lib/app-v3/maya/brand-profile-store")
           const saved = await saveBrandProfileFacts(memoryUserId, facts)
@@ -1628,17 +1003,6 @@ export async function POST(req: Request) {
       show_feed_plan: showFeedPlan,
       remember,
       save_brand_profile: saveBrandProfile,
-      ...(isAdminSession
-        ? {
-            show_admin_content_sources: showAdminContentSources,
-            remember_admin_decision: rememberAdminDecision,
-            create_admin_carousel: createAdminCarousel,
-            create_admin_tutorial_carousel: createAdminTutorialCarousel,
-            create_admin_story_sequence: createAdminStorySequence,
-            publish_admin_shoot_to_vault: publishAdminShootToVault,
-            show_admin_vault_drop_handoff: showAdminVaultDropHandoff,
-          }
-        : {}),
     }
 
     const result = streamText({

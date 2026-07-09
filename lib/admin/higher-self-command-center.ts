@@ -134,7 +134,7 @@ function buildMoneyMove(input: HigherSelfCommandCenterInput): HigherSelfCommandM
       action: "Post the real Story sequence, invite replies with WORK, then personally answer every warm response.",
       reason: "With 0 payments in the last 48 hours, the highest-leverage move is trust plus direct conversation.",
       source: "stripe_payments + purpose lock",
-      link: { label: "Open post-now", href: "/admin/content-brief#post-now" },
+      link: { label: "Open content tools", href: "/admin/content-brief" },
     }
   }
 

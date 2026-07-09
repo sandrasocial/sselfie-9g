@@ -111,17 +111,15 @@ describe("Content tools shoot-first workflow", () => {
   it("keeps member Maya carousels photoshoot-first by default", () => {
     const designSystems = read("lib/app-v3/maya/carousel-design-systems.ts")
     const compiler = read("lib/app-v3/prompt-compiler.ts")
-    const chatRoute = read("app/api/app-v3/maya/chat/route.ts")
 
     expect(designSystems).toContain("real-image redesigns")
     expect(compiler).toContain("buildGraphicRedesignSlides")
-    expect(chatRoute).toContain("CURRENT WEEKLY BRIEF CONTEXT")
   })
 
   it("Content Kit story sequences are no longer forced into a sales arc (2026-07-04)", () => {
-    // This is the SAME generator behind both the admin Maya chat story tool and the dedicated
-    // "Story sequences" panel in Content Kit (POST /api/admin/content-kit/stories). Sandra was
-    // actively using this exact panel and hitting the old forced-CTA sales arc.
+    // This is the generator behind the dedicated "Story sequences" panel in Content Kit
+    // (POST /api/admin/content-kit/stories). Sandra was actively using this exact panel and
+    // hitting the old forced-CTA sales arc.
     const storyGenerator = read("lib/content-kit/story-generator.ts")
     const storiesRoute = read("app/api/admin/content-kit/stories/route.ts")
 

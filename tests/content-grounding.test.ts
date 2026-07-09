@@ -62,13 +62,11 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
 
   it("wires the former drift points to the shared grounding module", () => {
     const brief = read("lib/content-engine/brief-generator.ts")
-    const adminPersona = read("lib/app-v3/maya/admin-persona.ts")
     const corePersonality = read("lib/maya/core-personality.ts")
     const contentKitLlm = read("lib/content-kit/llm.ts")
 
     expect(brief).not.toContain("export const SANDRA_VOICE_RULES")
     expect(brief).toContain("@/lib/content/grounding")
-    expect(adminPersona).toContain("@/lib/content/grounding")
     expect(corePersonality).toContain("@/lib/content/grounding")
     expect(contentKitLlm).toContain("groundingSystemPrompt")
   })
@@ -80,7 +78,6 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     const brief = read("lib/content-engine/brief-generator.ts")
     const dailyIntelligence = read("lib/admin/daily-briefing-intelligence.ts")
     const briefClient = read("components/admin/content-brief-client.tsx")
-    const adminPersona = read("lib/app-v3/maya/admin-persona.ts")
     const corePersonality = read("lib/maya/core-personality.ts")
 
     expect(carousel).toContain("purposeMessagingBlock()")
@@ -99,7 +96,6 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     expect(brief).toContain("sandraStoryAnchor")
     expect(dailyIntelligence).toContain("purposeMessagingBlock()")
     expect(dailyIntelligence).toContain("sandraContentIdentityBlock()")
-    expect(adminPersona).toContain("purposeMessagingBlock()")
     expect(corePersonality).toContain("purposeMessagingBlock()")
     expect(briefClient).toContain("Sandra anchor")
   })

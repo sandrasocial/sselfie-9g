@@ -1,13 +1,7 @@
 import { AdminNav } from "@/components/admin/admin-nav"
-import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
-import { buildMemberPulse, type MemberPulse } from "@/lib/admin/member-pulse"
-import { ContentBriefClient, type ContentBriefReportRow } from "@/components/admin/content-brief-client"
-import { getLatestContentBriefJob } from "@/lib/content-engine/brief-jobs"
-import { PostNowClient } from "@/components/admin/post-now-client"
 import { ContentKitClient } from "@/components/admin/content-kit-client"
 import { ContentStoryClient } from "@/components/admin/content-story-client"
 import { ShootStudioClient } from "@/components/admin/shoot-studio-client"
-import { VaultDropEmailPreview } from "@/components/admin/vault-drop-email-preview"
 import { listCarousels } from "@/lib/content-kit/carousel-generator"
 import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
 import { listShoots } from "@/lib/content-kit/shoot-generator"
@@ -46,96 +40,12 @@ function Collapsed({
   )
 }
 
-function pct(v: number | null): string {
-  return v === null ? "n/a" : `${Math.round(v * 100)}%`
-}
-
-function MemberPulseSection({ pulse }: { pulse: MemberPulse | null }) {
-  if (!pulse) {
-    return <p className="text-sm text-stone-500">Pulse unavailable right now. Try a refresh.</p>
-  }
-  const quiet = pulse.activeMembers === 0 && pulse.imagesGenerated === 0
-  return (
-    <div className="space-y-4 text-sm text-stone-700">
-      <p className="text-xs text-stone-400">
-        Last {pulse.periodDays} days · Source: analytics_events (behavior) + app_v3_memory. Your own
-        admin usage is excluded.
-      </p>
-      {quiet ? (
-        <p>No member activity logged yet this week.</p>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {[
-              { label: "Members creating", value: String(pulse.activeMembers) },
-              { label: "Images made", value: String(pulse.imagesGenerated) },
-              {
-                label: "Loved it (downloads)",
-                value: `${pulse.downloads} · ${pct(pulse.downloadRate)}`,
-              },
-              {
-                label: "Friction (re-rolls)",
-                value: `${pulse.rerolls} · ${pct(pulse.rerollRate)}`,
-              },
-            ].map(s => (
-              <div
-                key={s.label}
-                className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3"
-              >
-                <p className="text-[11px] uppercase tracking-wide text-stone-400">{s.label}</p>
-                <p className="mt-1 font-serif text-xl font-light text-stone-950">{s.value}</p>
-              </div>
-            ))}
-          </div>
-          <p className="text-stone-600">
-            {pulse.conceptsEmitted} concepts across {pulse.conceptSets} sets · {pulse.edits} edits ·{" "}
-            {pulse.clarifiesAsked} clarifying questions · {pulse.memoryNotesSaved} things Maya
-            learned
-          </p>
-          {pulse.topVibes.length > 0 && (
-            <p>
-              <span className="font-medium text-stone-950">Top vibes:</span>{" "}
-              {pulse.topVibes.map(v => `${v.aestheticId} (${v.count})`).join(", ")}
-            </p>
-          )}
-          {pulse.freshPreferenceNotes.length > 0 && (
-            <div>
-              <p className="font-medium text-stone-950">What they told Maya they want</p>
-              <ul className="mt-1 list-disc space-y-1 pl-5 text-stone-600">
-                {pulse.freshPreferenceNotes.map((n, i) => (
-                  <li key={i}>{n}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {pulse.recentEditAsks.length > 0 && (
-            <div>
-              <p className="font-medium text-stone-950">What they keep asking to change</p>
-              <ul className="mt-1 list-disc space-y-1 pl-5 text-stone-600">
-                {pulse.recentEditAsks.map((n, i) => (
-                  <li key={i}>{n}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  )
-}
-
 export default async function ContentBriefPage({
   searchParams,
 }: {
   searchParams?: Promise<{ open?: string }>
 }) {
   const openSection = (await searchParams)?.open
-  const reports = await getLatestAnalyticsReports({
-    reportType: "content_brief_weekly",
-    limit: 8,
-  })
-  const latestJob = await getLatestContentBriefJob().catch(() => null)
-  const pulse = await buildMemberPulse(7).catch(() => null)
   const carousels = await listCarousels().catch(() => [])
   const selfies = await listAdminSelfies().catch(() => [])
   const stories = await listStorySequences().catch(() => [])
@@ -179,10 +89,6 @@ export default async function ContentBriefPage({
           </p>
         </div>
 
-        <div className="mt-6">
-          <PostNowClient />
-        </div>
-
         <div className="mt-8">
           <p className="text-xs uppercase tracking-wide text-stone-400">Content tools</p>
           <Collapsed
@@ -191,21 +97,6 @@ export default async function ContentBriefPage({
             defaultOpen
           >
             <ShootStudioClient initialShoots={shoots} selfies={selfies} />
-          </Collapsed>
-          <Collapsed
-            title="Member pulse"
-            hint="What members do with Maya: loved, friction, missing"
-          >
-            <MemberPulseSection pulse={pulse} />
-          </Collapsed>
-          <Collapsed title="Weekly brief" hint="Post performance, copies, DMs, hooks">
-            <ContentBriefClient
-              initialReports={reports as ContentBriefReportRow[]}
-              initialJob={latestJob}
-            />
-          </Collapsed>
-          <Collapsed title="Vault drop email" hint="Preview + test send before live drop">
-            <VaultDropEmailPreview />
           </Collapsed>
           <Collapsed
             id="carousel-kit"

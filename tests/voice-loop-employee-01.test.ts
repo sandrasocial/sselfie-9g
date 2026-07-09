@@ -47,20 +47,6 @@ describe("VOICE-LOOP-01 apprentice loop", () => {
     expect(storyRoute).toContain("Sandra approved story sequence")
   })
 
-  it("logs missing admin brief context instead of silently inventing it", () => {
-    const route = read("app/api/app-v3/maya/chat/route.ts")
-
-    expect(route).toContain("Missing content_brief_weekly report")
-    expect(route).toContain("logAdminError")
-    expect(route).toContain("do not invent a plan")
-  })
-
-  it("keeps admin persona contract free of m-dashes", () => {
-    const adminPersona = read("lib/app-v3/maya/admin-persona.ts")
-
-    expect(adminPersona).not.toContain("—")
-  })
-
   it("keeps grounding synced from canonical docs by command", () => {
     const packageJson = JSON.parse(read("package.json")) as { scripts: Record<string, string> }
     const script = read("scripts/sync-grounding.ts")

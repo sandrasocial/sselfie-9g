@@ -52,13 +52,9 @@ describe("CONTENT-CAROUSEL-01 tutorial carousel mode", () => {
     expect(route).toContain("PNG pass-through")
   })
 
-  it("exposes tutorial carousel creation through admin Maya and the admin API", () => {
-    const mayaRoute = read("app/api/app-v3/maya/chat/route.ts")
+  it("exposes tutorial carousel creation through the direct admin API", () => {
     const adminRoute = read("app/api/admin/content-kit/route.ts")
 
-    expect(mayaRoute).toContain("createAdminTutorialCarousel")
-    expect(mayaRoute).toContain("create_admin_tutorial_carousel")
-    expect(mayaRoute).toContain("content_reel_references")
     expect(adminRoute).toContain('body.mode === "tutorial"')
     expect(adminRoute).toContain("reelReferenceIds")
   })

@@ -17,7 +17,6 @@ import { DefaultChatTransport } from "ai"
 import { useConcierge } from "./concierge-context"
 import { ConceptCard, type ConceptGenState } from "./concept-card"
 import { ClarifyCard } from "./clarify-card"
-import { AdminContentToolCard, type AdminContentToolResult } from "./admin-content-tool-card"
 import { FeedPlanPreviewCard, type FeedPlanPreviewDay } from "./feed-plan-preview-card"
 import { Markdown } from "./markdown"
 import { TypingDots } from "./loading"
@@ -494,40 +493,6 @@ function extractFeedPlanDays(part: any): FeedPlanPreviewDay[] | null {
   return Array.isArray(days) ? (days as FeedPlanPreviewDay[]) : null
 }
 
-/** Pull admin-only content tool results out of Maya's stream (MAYA-ADMIN-01 slice 2). */
-function extractAdminContentTool(part: any): AdminContentToolResult | null {
-  if (!part || typeof part !== "object") return null
-  const toolName = part.toolName || ""
-  const isAdminTool =
-    part.type === "tool-show_admin_content_sources" ||
-    part.type === "tool-create_admin_carousel" ||
-    part.type === "tool-create_admin_story_sequence" ||
-    part.type === "tool-publish_admin_shoot_to_vault" ||
-    part.type === "tool-show_admin_vault_drop_handoff" ||
-    (part.type === "dynamic-tool" &&
-      [
-        "show_admin_content_sources",
-        "create_admin_carousel",
-        "create_admin_story_sequence",
-        "publish_admin_shoot_to_vault",
-        "show_admin_vault_drop_handoff",
-      ].includes(toolName))
-  if (!isAdminTool) return null
-  const payload = part.output
-  if (!payload || typeof payload.kind !== "string") return null
-  if (payload.kind === "sources" && Array.isArray(payload.shoots))
-    return payload as AdminContentToolResult
-  if (payload.kind === "carousel" && payload.deck) return payload as AdminContentToolResult
-  if (payload.kind === "story" && payload.sequence) return payload as AdminContentToolResult
-  if (payload.kind === "vault-publish" && payload.dropEmail)
-    return payload as AdminContentToolResult
-  if (payload.kind === "vault-drop-handoff" && payload.dropEmail)
-    return payload as AdminContentToolResult
-  if (payload.kind === "error" && typeof payload.message === "string")
-    return payload as AdminContentToolResult
-  return null
-}
-
 /** Pull an inline question out of an ask_clarify tool part. */
 function extractClarify(part: any): ClarifyPrompt | null {
   if (!part || typeof part !== "object") return null
@@ -542,11 +507,6 @@ function extractClarify(part: any): ClarifyPrompt | null {
 
 function wait(ms: number): Promise<void> {
   return new Promise(resolve => window.setTimeout(resolve, ms))
-}
-
-function promptAssetIdFromGen(gen?: ConceptGenState): string | null {
-  const id = gen?.aiImageId ?? gen?.aiImageIds?.find(item => typeof item === "number") ?? null
-  return typeof id === "number" ? `ai_${id}` : null
 }
 
 async function pollCustomModelGeneration(
@@ -595,15 +555,13 @@ async function pollVideoGeneration(predictionId: string, videoId: number): Promi
 }
 
 export function MayaConcierge({
-  admin = false,
   hasTrainedModel = false,
   analyticsCohort,
 }: {
-  admin?: boolean
   hasTrainedModel?: boolean
   analyticsCohort?: AppV3AnalyticsCohort
 } = {}) {
-  const cohort: AppV3AnalyticsCohort = analyticsCohort ?? (admin ? "admin" : "member")
+  const cohort: AppV3AnalyticsCohort = analyticsCohort ?? "member"
   const {
     session,
     isOpen,
@@ -826,8 +784,6 @@ export function MayaConcierge({
     creationIdea: string | null
     /** Ground truth about the most recent completed render in this session. */
     lastGeneration: LastGenerationSnapshot | null
-    /** MAYA-ADMIN-01: set by the /admin mount; server-verified against the admin email. */
-    adminSession?: boolean
   }>({
     aestheticName: "",
     aestheticIntent: "",
@@ -841,7 +797,6 @@ export function MayaConcierge({
     inspirationImageUrl: null,
     creationIdea: null,
     lastGeneration: null,
-    adminSession: admin || undefined,
   })
 
   const transport = useMemo(
@@ -987,7 +942,7 @@ export function MayaConcierge({
     setLastGeneration(null) // a new session has no completed render yet
     setLocalCreationIntent(session.creationIntent ?? null)
     setGenerationSource(
-      session.generationSource === "trained-model" && hasTrainedModel && !admin
+      session.generationSource === "trained-model" && hasTrainedModel
         ? "trained-model"
         : "selfie"
     )
@@ -995,7 +950,7 @@ export function MayaConcierge({
       setSetupOpen(true)
       setSelfieManagerOpen(true)
     }
-  }, [admin, hasTrainedModel, session])
+  }, [hasTrainedModel, session])
 
   // Mirror of the active selfie for async callbacks (avoids clobbering a fresh upload).
   useEffect(() => {
@@ -1012,7 +967,7 @@ export function MayaConcierge({
 
   // Balance on open; generation responses keep it fresh via showTrialCapIfDepleted.
   useEffect(() => {
-    if (!isOpen || admin) return
+    if (!isOpen) return
     let alive = true
     fetch("/api/app-v3/account")
       .then(r => (r.ok ? r.json() : null))
@@ -1025,7 +980,7 @@ export function MayaConcierge({
     return () => {
       alive = false
     }
-  }, [isOpen, admin])
+  }, [isOpen])
 
   // Identity persistence (QA P1-3 + SUITE-UX-02): one quiet restore attempt per session.
   // Brings back the newest saved face selfie AND the optional slots (side profile, full
@@ -1091,7 +1046,7 @@ export function MayaConcierge({
       !session.aesthetic.selectedShot
     if (needsInitialVisualWorld) return
     const canUseTrainedModelWithoutSelfie =
-      hasTrainedModel && !admin && generationSource === "trained-model" && fmt === "photo"
+      hasTrainedModel && generationSource === "trained-model" && fmt === "photo"
     if (fmt === "video" && !session.videoSourceUrl) return
     if (fmt !== "video" && !session.referenceSelfieUrl && !canUseTrainedModelWithoutSelfie) return
     // Graphic formats wait for an explicit text choice. If she wants text, she picks the
@@ -1117,7 +1072,6 @@ export function MayaConcierge({
           : FORMAT_PHRASE[fmt]
     sendMessage({ text })
   }, [
-    admin,
     generationSource,
     hasTrainedModel,
     isOpen,
@@ -1217,7 +1171,7 @@ export function MayaConcierge({
     !hasStarted &&
     Boolean(inlineAesthetics?.length) &&
     (!hasSpecificVisualWorld || Boolean(inlineShotPickerAesthetic))
-  const customModelAvailable = hasTrainedModel && format === "photo" && !admin
+  const customModelAvailable = hasTrainedModel && format === "photo"
   const activeGenerationSource: GenerationSource = customModelAvailable
     ? generationSource
     : "selfie"
@@ -1249,7 +1203,6 @@ export function MayaConcierge({
     inspirationImageUrl: inspirationUrl,
     creationIdea: session.creationIdea ?? null,
     lastGeneration,
-    adminSession: admin || undefined,
   }
 
   async function handleUpload(slot: UploadSlot, file: File) {
@@ -2347,7 +2300,7 @@ export function MayaConcierge({
                 Shot reference: {selectedShot.title}
               </p>
             )}
-            {!admin && (creditsUnlimited || creditBalance != null) && (
+            {(creditsUnlimited || creditBalance != null) && (
               <p className="mt-0.5 truncate text-[11px] leading-snug text-[#6D6E70]">
                 {creditsUnlimited ? "Unlimited credits" : `${creditBalance} credits`}
               </p>
@@ -3047,9 +3000,6 @@ export function MayaConcierge({
             const conceptFormat =
               (parts.map(extractConceptFormat).find(Boolean) as OutputFormat | undefined) ?? format
             const clarifyPart = parts.map(extractClarify).find(Boolean) as ClarifyPrompt | undefined
-            const adminContentPart = parts.map(extractAdminContentTool).find(Boolean) as
-              | AdminContentToolResult
-              | undefined
             const feedPlanDays = parts.map(extractFeedPlanDays).find(Boolean) as
               | FeedPlanPreviewDay[]
               | undefined
@@ -3091,8 +3041,6 @@ export function MayaConcierge({
                     disabled={isThinking}
                   />
                 )}
-
-                {adminContentPart && <AdminContentToolCard result={adminContentPart} />}
 
                 {feedPlanDays && (
                   <FeedPlanPreviewCard
@@ -3148,7 +3096,6 @@ export function MayaConcierge({
                       const key = `${m.id}:photoshoot-set`
                       const gen = genState[key] ?? { status: "idle" as const }
                       const urls = gen.imageUrls ?? []
-                      const promptAssetId = admin ? promptAssetIdFromGen(gen) : null
                       return (
                         <div className="space-y-3">
                           {urls.length > 0 && (
@@ -3190,16 +3137,6 @@ export function MayaConcierge({
                                 ? "Create another set"
                                 : "Create full photoshoot"}
                           </button>
-                          {promptAssetId && (
-                            <a
-                              href={`/api/admin/app-v3/generation-prompt?id=${encodeURIComponent(promptAssetId)}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#818283] underline underline-offset-2 hover:text-[#4F5052]"
-                            >
-                              View prompt
-                            </a>
-                          )}
                         </div>
                       )
                     })()}
@@ -3367,7 +3304,6 @@ export function MayaConcierge({
                               ? !videoSourceUrl
                               : !referenceSelfieUrl && activeGenerationSource !== "trained-model"
                           }
-                          promptAssetId={admin ? promptAssetIdFromGen(gen) : null}
                           showCalendarOffer={key === firstDonePhotoKey}
                           resultActions={
                             <InlineResultActions
