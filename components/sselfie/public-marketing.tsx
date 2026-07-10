@@ -1558,7 +1558,7 @@ export function WorkWithMePageContent() {
 }
 
 // ─── Inline inquiry form ──────────────────────────────────────────────────────
-function InquiryForm() {
+export function InquiryForm() {
   const [name,         setName]         = useState("")
   const [email,        setEmail]        = useState("")
   const [instagram,    setInstagram]    = useState("")
