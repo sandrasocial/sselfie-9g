@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { WorkWithMePageContent } from "@/components/marketing/work-with-me-page"
+import { WorkWithMePageContent } from "@/components/sselfie/public-marketing"
 
 export const metadata: Metadata = {
   title: "Visibility To Paid Sprint",

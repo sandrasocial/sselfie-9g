@@ -31,6 +31,12 @@ const IMG = {
   skBaLightDreamy: "/images/starter-kit/ba-light-dreamy.png",
   skBaNordicDeep:  "/images/starter-kit/ba-nordic-deep.png",
   skBaDarkMoody:   "/images/starter-kit/ba-dark-moody.png",
+  // Work With Me sprint assets
+  wwmHero:        "/images/work-with-me/sprint-hero-new.webp",
+  wwmFounder:     "/images/work-with-me/sandra-founder-new.webp",
+  wwmHowIWork:    "/images/work-with-me/sandra-how-i-work-new.webp",
+  wwmEditorial:   "/images/work-with-me/sprint-editorial-new.webp",
+  wwmApplication: "/images/work-with-me/sprint-application-new.webp",
 }
 
 // SUITE landing assets - Sandra-approved vault collection images (BRIDGE-01 Phase B)
@@ -719,6 +725,20 @@ const FAQS = {
       answer: "No. You tap. Maya does the prompt work." },
     { question: "Can I cancel?",
       answer: "Anytime, from your account, no forms. Your gallery stays yours." },
+  ],
+  visibilityToPaid: [
+    { question: "What if I don't know what my offer is yet?",
+      answer: "That's normal, and it's honestly most of why people apply. You don't need to arrive with a finished offer. You do need something real to work with: a skill, a service, a story, or an idea people already ask you about. Part of the two-week prep is helping you see what that can become." },
+    { question: "Is this business coaching?",
+      answer: "Not really. I'm not sending you away with homework and a generic framework. I spend two weeks researching your niche and building the first version of your system myself, then we refine it together on the calls. It's closer to being built with than being taught." },
+    { question: "Is this mainly about AI photos?",
+      answer: "No. AI helps with the visual side, but it was never the point. The real work is your message, your content, and your offer, so people actually understand you and know what they can buy from you." },
+    { question: "What if I pay and still don't use it?",
+      answer: "I get why that's scary. A lot of women have bought things they never finished. This is different because I'm not handing you a course and disappearing. I'm actively building your system with you. But I can't do the showing up for you. You'll still need to post it, say it, and use it." },
+    { question: "Why is there an application instead of instant checkout?",
+      answer: "Because this is personal, hands-on work, and I read every application myself. I'd rather tell you honestly if I don't think it's a fit than take your money for something that isn't." },
+    { question: "Why should I trust a new offer like this?",
+      answer: "The offer is new. The experience behind it isn't. I've built my own audience, content, offers, and visual identity from nothing, using exactly what I teach. This sprint is the closest way to work with me directly, before you're running it yourself inside SUITE." },
   ],
 }
 
@@ -1677,6 +1697,157 @@ export function PromptVaultPageContent({
           <VaultRiskLine dark />
         </div>
       </Section>
+
+      <PublicFooter />
+    </PublicPageShell>
+  )
+}
+
+// ─── Work With Me · Private 4-Week Sprint ────────────────────────────────────
+export function WorkWithMePageContent() {
+  return (
+    <PublicPageShell>
+      <PublicNav />
+
+      {/* HERO - dark, full-bleed */}
+      <Hero
+        eyebrow="Work With Me · Private 4-Week Sprint"
+        title={<>You&apos;re not confused. You&apos;re just carrying it all in your head.</>}
+        body={
+          <div className="space-y-3">
+            <p>You have the experience. The ideas. The story. The thing people always ask you about.</p>
+            <p>But online, none of it connects. So people scroll past. Not because you&apos;re not good enough. Because they don&apos;t understand you yet. And when people don&apos;t understand you, they don&apos;t buy.</p>
+          </div>
+        }
+        primary={{ href: "#inquiry",       label: "Apply for the Sprint" }}
+        secondary={{ href: "/join/studio", label: "See SSELFIE SUITE" }}
+        imageSrc={IMG.wwmHero}
+      />
+
+      {/* RECOGNITION - cream */}
+      <Section
+        eyebrow="Why this keeps happening"
+        title={<>You&apos;re probably closer than you think.</>}
+        dark={false}
+        narrow
+      >
+        <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
+          <p>People already ask you for advice. You already know things. You&apos;ve already lived through things, and helped people with them.</p>
+          <p>You just haven&apos;t turned it into something people can understand fast enough to remember.</p>
+          <p>Every week you tell yourself you&apos;ll figure it out this weekend. Then another month goes by, and your profile still doesn&apos;t say who you are.</p>
+          <p style={{ color: C.onCream }}>Your Instagram isn&apos;t empty. It&apos;s just unclear.</p>
+        </div>
+      </Section>
+
+      {/* THE STORY - dark */}
+      <Split
+        eyebrow="From Sandra"
+        title={<>I used to think I was rebuilding my business. I was rebuilding myself.</>}
+        body={
+          <div className="space-y-4">
+            <p>A few years ago I moved into a two-bedroom apartment with my three kids and our dog. The boys shared one room. My daughter had the other. I slept on the couch.</p>
+            <p>It wasn&apos;t aesthetic. It wasn&apos;t planned. It was an empty fridge, a tight bank account, and me standing there thinking, okay, now what.</p>
+            <p>I didn&apos;t have a studio. I didn&apos;t have a team. I had my phone. So my bathroom became my studio, cheap softboxes and a ring light, because it had the only light that worked.</p>
+            <p>I thought my problem was my photos. It wasn&apos;t. My problem was that I had years of experience, a story, and things I already knew how to do, and nobody could see any of it. Including me.</p>
+            <p>Then one of my selfies went past a million views. Not because it was perfect. Because for the first time, people could actually see me.</p>
+          </div>
+        }
+        imgSrc={IMG.wwmFounder}
+        imgAlt="Sandra, founder of SSELFIE"
+        imgFirst
+        dark
+        cta={<Btn href="#inquiry" surface="dark" ghost>Apply for the Sprint</Btn>}
+      />
+
+      {/* TRANSFORMATION - dark */}
+      <Section
+        eyebrow="What actually changes"
+        title={<>This isn&apos;t about a clearer brand. It&apos;s about finally building something that&apos;s yours.</>}
+        dark
+      >
+        <div className="mf space-y-4" style={{ ...ty("body", true), fontSize: "16px" }}>
+          <p>A clearer brand was never really what you wanted. You want your own income. You want to stop depending on everyone else to notice you first. You want to become someone people remember, so opportunities start coming to you instead of you chasing them.</p>
+          <p>That&apos;s what changes: you become the woman who knows what to post, knows what to say, gets the DM instead of sending it, and feels proud sending people to her own profile.</p>
+        </div>
+      </Section>
+
+      {/* HOW I WORK - cream */}
+      <Split
+        eyebrow="How I work"
+        title={<>Before we ever speak, I&apos;ve already been inside your business.</>}
+        body={
+          <div className="space-y-4">
+            <p>I don&apos;t want to spend our first call trying to figure out who you are. I want you looking at a version of yourself you&apos;ve never been able to see clearly before.</p>
+            <p>So before we talk, I spend two weeks inside your business. I research your niche and what&apos;s actually working in it right now. I look at your Instagram and figure out exactly why people aren&apos;t getting you yet.</p>
+            <p>Then I build the first version of it: your one-line identity, your first batch of brand photos, captions that sound like you instead of a template, and a real weekly plan.</p>
+            <p>By the time we get on our first call, you&apos;re not staring at a blank page. You&apos;re reacting to something real.</p>
+          </div>
+        }
+        imgSrc={IMG.wwmHowIWork}
+        imgAlt="Sandra researching and building inside a client's business"
+        dark={false}
+        cta={<Btn href="#inquiry" surface="cream">Apply for the Sprint</Btn>}
+      />
+
+      {/* WHY THIS IS DIFFERENT - dark */}
+      <Split
+        eyebrow="Why this is different"
+        title={<>I&apos;m not teaching you a system. I built one for myself, from nothing.</>}
+        body={
+          <div className="space-y-4">
+            <p>I started with my phone, in a bathroom with bad light, trying to become visible again after everything fell apart.</p>
+            <p>I&apos;ve built my own audience, content, offers, and visual identity from scratch, using exactly what I still teach.</p>
+            <p style={{ color: C.onDark }}>You&apos;re not paying for six separate services. You&apos;re paying for one person who can see the full picture of your business and build it with you.</p>
+          </div>
+        }
+        imgSrc={IMG.wwmEditorial}
+        imgAlt="Editorial AI-assisted brand photo used in the SSELFIE visual system"
+        imgFirst
+        dark
+        cta={<Btn href="#inquiry" surface="dark" ghost>Apply for the Sprint</Btn>}
+      />
+
+      {/* THE SPRINT / OFFER - cream */}
+      <Split
+        eyebrow="The sprint"
+        title={<>Private 4-week sprint. &euro;2,000.</>}
+        body={
+          <div className="space-y-4">
+            <p><span style={{ color: C.onCream }}>Payment plan:</span> 2 &times; &euro;1,100. No payment is taken when you apply.</p>
+            <p>Apply, and if it&apos;s a fit, we do a short call first. Then two weeks where I build your system before we speak again. Then four weeks of calls where we refine it against your real business, and you leave running it inside your own SUITE account.</p>
+            <p style={{ color: C.onCreamMuted }}>This isn&apos;t a promise of income. It&apos;s a focused private sprint to make you clear on who you are and what you sell, with a system that keeps that clarity working after we&apos;re done.</p>
+          </div>
+        }
+        imgSrc={IMG.wwmApplication}
+        imgAlt="Applying to work with Sandra"
+        dark={false}
+        cta={<Btn href="#inquiry" surface="cream">Apply for the Sprint</Btn>}
+      />
+
+      {/* FAQ - cream */}
+      <Section eyebrow="Questions" title="Before you apply" dark={false} narrow>
+        <FaqAccordion items={FAQS.visibilityToPaid} dark={false} />
+      </Section>
+
+      {/* INQUIRY FORM - dark */}
+      <section id="inquiry" style={{ position: "relative", background: C.ink, padding: "clamp(60px, 8vw, 88px) clamp(18px, 4vw, 24px)", overflow: "hidden", scrollMarginTop: "60px" }}>
+        <PaperTexture dark />
+        <div className="max-w-5xl mx-auto grid gap-14 md:grid-cols-2 md:items-start relative" style={{ zIndex: 2 }}>
+          <div className="mf">
+            <span style={{ ...ty("eyebrow", true), marginBottom: "14px" }}>Application</span>
+            <h2 style={{ ...ty("h2", true), marginBottom: "16px" }}>Apply for Visibility To Paid</h2>
+            <p style={{ ...ty("body", true), fontSize: "16px" }}>Keep it simple. I only need enough to understand what you already have, what feels unclear, and whether I can help you make it visible and easier to buy from.</p>
+            <div className="mt-8" style={{ ...cardSx(true), padding: "20px" }}>
+              <p style={{ ...ty("body", true), fontSize: "13px", color: C.onDarkMuted }}>
+                <span style={{ color: C.onDarkSub }}>No payment is taken here.</span> If your application looks like the right fit, I&apos;ll reply with the next step. Usually that means a short fit call first.
+              </p>
+            </div>
+          </div>
+          <div className="mf" style={{ transitionDelay: "0.05s" }}>
+            <InquiryForm />
+          </div>
+        </div>
+      </section>
 
       <PublicFooter />
     </PublicPageShell>
