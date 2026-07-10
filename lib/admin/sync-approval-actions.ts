@@ -39,11 +39,28 @@ function summaryFor(action: AdminActionRow): ApprovalActionSummary | null {
 }
 
 async function syncDmActions(): Promise<ApprovalActionSummary[]> {
+  await sql`
+    UPDATE admin_action_queue a
+    SET status = 'dismissed', acted_at = NOW(),
+        review_note = 'Conversation no longer needs a founder decision', updated_at = NOW()
+    WHERE a.kind = 'send_ig_reply'
+      AND a.status = 'pending'
+      AND NOT EXISTS (
+        SELECT 1
+        FROM ig_conversations c
+        WHERE c.id = NULLIF(a.payload->>'conversationId', '')::int
+          AND c.status = 'flagged'
+          AND c.channel = 'dm'
+          AND NULLIF(TRIM(c.draft_response), '') IS NOT NULL
+      )
+  `
+
   const conversations = (await sql`
     SELECT c.id, c.ig_user_id, c.draft_response, c.updated_at, ct.username
     FROM ig_conversations c
     JOIN ig_contacts ct ON ct.ig_user_id = c.ig_user_id
     WHERE c.status = 'flagged'
+      AND c.channel = 'dm'
       AND NULLIF(TRIM(c.draft_response), '') IS NOT NULL
     ORDER BY c.updated_at DESC
     LIMIT 5

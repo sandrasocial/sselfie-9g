@@ -168,9 +168,9 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
     ` as unknown as Promise<ProductRow[]>,
     sql`
       SELECT
-        (SELECT COUNT(*)::int FROM ig_conversations WHERE status = 'flagged') AS flagged_conversations,
+        (SELECT COUNT(*)::int FROM ig_conversations WHERE status = 'flagged' AND channel = 'dm') AS flagged_conversations,
         (SELECT COUNT(*)::int FROM webhook_events_needs_review WHERE resolved = FALSE) AS webhook_reviews,
-        (SELECT COUNT(*)::int FROM feedback WHERE status = 'new') AS new_support_threads
+        (SELECT COUNT(*)::int FROM feedback WHERE status = 'new' AND created_at >= NOW() - INTERVAL '30 days') AS new_support_threads
     ` as unknown as Promise<any[]>,
     getSingleSourceRevenueMetrics().catch(() => null),
     getRevenueTruthScorecard().catch((error) => {

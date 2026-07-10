@@ -105,6 +105,7 @@ export async function GET(request: NextRequest) {
             LIMIT 1
           ) latest ON TRUE
           WHERE c.status = ${status}
+            AND (${status} <> 'flagged' OR c.channel = 'dm')
           ORDER BY (c.status = 'flagged') DESC, c.last_message_at DESC NULLS LAST
           LIMIT ${limit} OFFSET ${offset}
         `

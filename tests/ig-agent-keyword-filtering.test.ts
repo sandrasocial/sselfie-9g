@@ -107,6 +107,38 @@ describe("IG agent ManyChat keyword filtering", () => {
     expect(sendEmailMock).not.toHaveBeenCalled()
   })
 
+  it("treats an Instagram postback from a ManyChat button as already handled", async () => {
+    const result = await processInboundInstagramMessage({
+      igUserId: "contact-1",
+      username: "keyword_user",
+      channel: "dm",
+      text: "Grab it here 🥰",
+      rawPayload: {
+        sender: { id: "contact-1" },
+        postback: { payload: "GET_FREE_PROMPTS" },
+      },
+    })
+
+    expect(result.status).toBe("auto_handled")
+    expect(result.draft).toBeNull()
+    expect(generateDraftMock).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
+  })
+
+  it("does not draft a reply to a business auto-responder", async () => {
+    const result = await processInboundInstagramMessage({
+      igUserId: "contact-1",
+      username: "business_account",
+      channel: "dm",
+      text: "Hi, thanks for contacting us. We've received your message and appreciate your getting in touch.",
+      rawPayload: { sender: { id: "contact-1" }, message: { mid: "auto-reply-1" } },
+    })
+
+    expect(result.status).toBe("auto_handled")
+    expect(result.draft).toBeNull()
+    expect(generateDraftMock).not.toHaveBeenCalled()
+  })
+
   it("keeps per-conversation alert emails off by default", async () => {
     const result = await processInboundInstagramMessage({
       igUserId: "contact-1",

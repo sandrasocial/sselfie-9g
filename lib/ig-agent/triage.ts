@@ -1,4 +1,5 @@
 import type { IgContact, IgTriageResult } from "@/lib/ig-agent/types"
+import { automationInteractionReason } from "@/lib/ig-agent/automation-interaction"
 
 const DISTRESS_RE =
   /\b(struggling|anxious|anxiety|depressed|depression|panic|help me|crying|lost|overwhelmed|hate myself|mental health)\b/i
@@ -82,7 +83,11 @@ export function detectGrowthTags(message: string): string[] {
   return Array.from(tags)
 }
 
-export function triageIncomingMessage(message: string, contact: IgContact): IgTriageResult {
+export function triageIncomingMessage(
+  message: string,
+  contact: IgContact,
+  context?: { rawPayload?: unknown },
+): IgTriageResult {
   const normalized = message.trim()
   const lowerTags = new Set((contact.tags || []).map(tag => tag.toLowerCase()))
   const growthTags = detectGrowthTags(normalized)
@@ -92,6 +97,17 @@ export function triageIncomingMessage(message: string, contact: IgContact): IgTr
       action: "ignore",
       reason: "blocked_contact",
       intent: "blocked",
+      growthTags,
+      confidenceHint: 1,
+    }
+  }
+
+  const automationReason = automationInteractionReason(normalized, context?.rawPayload)
+  if (automationReason) {
+    return {
+      action: "keyword_handled",
+      reason: automationReason,
+      intent: automationReason,
       growthTags,
       confidenceHint: 1,
     }

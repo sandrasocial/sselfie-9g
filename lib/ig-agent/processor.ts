@@ -176,15 +176,19 @@ export async function processInboundInstagramMessage(input: InboundMessage) {
     }
   }
 
-  const triage = triageIncomingMessage(input.text, {
-    igUserId: input.igUserId,
-    username: contact.username,
-    fullName: contact.full_name,
-    profilePicUrl: contact.profile_pic_url,
-    isIcelandic: Boolean(contact.is_icelandic),
-    isVerifiedFriend: Boolean(contact.is_verified_friend),
-    tags: contact.tags || [],
-  })
+  const triage = triageIncomingMessage(
+    input.text,
+    {
+      igUserId: input.igUserId,
+      username: contact.username,
+      fullName: contact.full_name,
+      profilePicUrl: contact.profile_pic_url,
+      isIcelandic: Boolean(contact.is_icelandic),
+      isVerifiedFriend: Boolean(contact.is_verified_friend),
+      tags: contact.tags || [],
+    },
+    { rawPayload: input.rawPayload },
+  )
 
   await sql`
     INSERT INTO ig_messages (

@@ -10,7 +10,7 @@ export type RevenueTruthScorecard = {
     historicalRevenue: "stripe_payments"
     checkoutBehavior: "checkout_attribution"
     audienceBehavior: "analytics_events"
-    workWithMePipeline: "brand_engine_applications"
+    workWithMePipeline: "brand_engine_applications + email_logs"
   }
   members: {
     active: number
@@ -45,6 +45,7 @@ export type RevenueTruthScorecard = {
     revenue: number
   }>
   workWithMe: {
+    receivedTotal: number
     applications30d: number
     qualifiedOpen: number
     bookedCalls: number
@@ -93,6 +94,7 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
     productRows,
     funnelRows,
     workWithMeRows,
+    workWithMeReceiptRows,
     topInstagramRows,
     topFreePromptRows,
     topEmailRows,
@@ -149,6 +151,7 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
     `,
     sql`
       SELECT
+        COUNT(*)::int AS applications_total,
         COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days')::int AS applications_30d,
         COUNT(*) FILTER (WHERE pipeline_stage IN ('qualified_queue', 'contacted'))::int AS qualified_open,
         COUNT(*) FILTER (WHERE pipeline_stage IN ('call_booked', 'call_completed'))::int AS booked_calls,
@@ -160,6 +163,17 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
          OR source_channel = 'work-with-me'
          OR lead_tags ? 'work-with-me'
          OR offer_type = 'work_with_me'
+    `.catch(() => []),
+    sql`
+      SELECT
+        COUNT(DISTINCT LOWER(user_email))::int AS receipts_total,
+        COUNT(DISTINCT LOWER(user_email)) FILTER (
+          WHERE created_at >= NOW() - INTERVAL '30 days'
+        )::int AS receipts_30d
+      FROM email_logs
+      WHERE email_type = 'work_with_me_inquiry_confirmation'
+        AND status IN ('sent', 'delivered')
+        AND NULLIF(BTRIM(user_email), '') IS NOT NULL
     `.catch(() => []),
     sql`
       SELECT hook_line, views, comments, saves, shares, permalink
@@ -196,6 +210,7 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
 
   const trial = (trialRows as any[])[0] || {}
   const workWithMe = (workWithMeRows as any[])[0] || {}
+  const workWithMeReceipts = (workWithMeReceiptRows as any[])[0] || {}
   const netMrrByCurrency = memberMetrics.mrrByCurrency || {}
   const grossMrrByCurrency = memberMetrics.grossMrrByCurrency || {}
 
@@ -216,7 +231,7 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
       historicalRevenue: "stripe_payments",
       checkoutBehavior: "checkout_attribution",
       audienceBehavior: "analytics_events",
-      workWithMePipeline: "brand_engine_applications",
+      workWithMePipeline: "brand_engine_applications + email_logs",
     },
     members: {
       active: memberMetrics.activeSubscriptions,
@@ -251,7 +266,14 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
       revenue: toNumber(row.revenue_cents) / 100,
     })),
     workWithMe: {
-      applications30d: toNumber(workWithMe.applications_30d),
+      receivedTotal: Math.max(
+        toNumber(workWithMe.applications_total),
+        toNumber(workWithMeReceipts.receipts_total),
+      ),
+      applications30d: Math.max(
+        toNumber(workWithMe.applications_30d),
+        toNumber(workWithMeReceipts.receipts_30d),
+      ),
       qualifiedOpen: toNumber(workWithMe.qualified_open),
       bookedCalls: toNumber(workWithMe.booked_calls),
       paymentLinksSent: toNumber(workWithMe.payment_links_sent),
