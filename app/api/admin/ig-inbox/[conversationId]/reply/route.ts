@@ -55,11 +55,21 @@ export async function POST(
     }).catch((error) => console.error("[ig-inbox] failed to store voice memory:", error))
   }
 
-  const result = await sendApprovedInstagramReply({ conversationId, message })
-
-  return NextResponse.json({
-    success: true,
-    result,
-    error: null,
-  })
+  try {
+    const result = await sendApprovedInstagramReply({ conversationId, message })
+    return NextResponse.json({
+      success: result.sent,
+      result,
+      error: result.sent ? null : result.reason || "send_failed",
+    })
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        result: null,
+        error: error instanceof Error ? error.message : "send_failed",
+      },
+      { status: 500 },
+    )
+  }
 }
