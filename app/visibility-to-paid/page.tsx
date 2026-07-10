@@ -1,9 +1,9 @@
 import type { Metadata } from "next"
-import { WorkWithMePageContent } from "@/components/sselfie/public-marketing"
+import { WorkWithMePageContent } from "@/components/marketing/work-with-me-page"
 
 export const metadata: Metadata = {
-  title: "Visibility To Paid Sprint | SSELFIE",
-  description: "Apply to work with Sandra on making your expertise, story, offer, profile, and content clearer online.",
+  title: "Visibility To Paid Sprint",
+  description: "A private four-week sprint with Sandra to connect your story, message, content, visual identity, and clearest paid offer.",
 }
 
 export default function VisibilityToPaidPage() {
