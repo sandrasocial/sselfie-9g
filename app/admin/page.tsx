@@ -219,7 +219,7 @@ export default async function AdminPage({
 
         <section className="mt-8 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="bg-stone-950 p-6 text-white sm:p-8">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-stone-400">Best next move</p>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-stone-400">Higher Self Command Center</p>
             <h2 className="mt-4 font-serif text-3xl font-light">{report.commandCenter.moneyMove.title}</h2>
             <p className="mt-3 max-w-xl text-sm leading-6 text-stone-200">{report.commandCenter.moneyMove.action}</p>
             <p className="mt-3 max-w-xl text-xs leading-5 text-stone-400">{report.commandCenter.moneyMove.reason}</p>
@@ -231,6 +231,9 @@ export default async function AdminPage({
                 {report.commandCenter.moneyMove.link.label}
               </Link>
             </div>
+            <p className="mt-6 max-w-xl border-t border-white/15 pt-4 text-xs leading-5 text-stone-400">
+              <span className="text-stone-300">CEO rule today:</span> {report.commandCenter.ceoRule}
+            </p>
           </div>
           <div className="border border-stone-300 bg-white p-6 sm:p-8">
             <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">Content today</p>
@@ -303,11 +306,15 @@ export default async function AdminPage({
         <section className="mt-4 border border-stone-300 bg-white">
           <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">System health</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">Team</p>
               <p className="mt-2 font-serif text-2xl font-light">
                 {report.team.diagnostics.errors24h + systemsNeedingAttention.length === 0
                   ? "No system exception needs you."
                   : `${report.team.diagnostics.errors24h + systemsNeedingAttention.length} exception${report.team.diagnostics.errors24h + systemsNeedingAttention.length === 1 ? "" : "s"} to inspect.`}
+              </p>
+              <p className="mt-2 text-sm text-stone-600">
+                DM bridge truth: {report.team.dmBridge.messages7d} messages captured in the last 7 days ·{" "}
+                {report.team.dmBridge.conversationsAllTime} conversations all-time.
               </p>
             </div>
             <span className="text-sm text-stone-500">Technical detail stays collapsed</span>
