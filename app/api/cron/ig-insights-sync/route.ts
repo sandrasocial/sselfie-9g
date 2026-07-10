@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 
 import { createCronLogger } from "@/lib/cron-logger"
 import { sql } from "@/lib/db/client"
+import { resolveInstagramGraphBase } from "@/lib/instagram/connection-mode"
 
 // IG-GROWTH-01: nightly snapshot of the last 60 Instagram posts into ig_media_snapshots.
 // History is what the live Graph API can't give us: day-7 verdicts, winner decay,
@@ -15,13 +16,13 @@ import { sql } from "@/lib/db/client"
 export const dynamic = "force-dynamic"
 export const maxDuration = 300
 
-const GRAPH_BASE = "https://graph.facebook.com/v21.0"
 const POST_LIMIT = 60
 
 type ConnectionRow = {
   access_token: string
   instagram_user_id: string
   instagram_username: string
+  account_type: string | null
 }
 
 function classifyFormat(mediaType?: string, productType?: string): string {
@@ -35,11 +36,11 @@ function hookLine(caption: string): string {
   return (caption.split("\n").find((line) => line.trim().length > 0) || "").trim().slice(0, 160)
 }
 
-async function fetchInsights(mediaId: string, format: string, token: string) {
+async function fetchInsights(mediaId: string, format: string, token: string, graphBase: string) {
   // "views" is only valid for reels; other formats take the smaller metric set.
   const metrics = format === "reel" ? "views,reach,saved,shares" : "reach,saved,shares"
   const res = await fetch(
-    `${GRAPH_BASE}/${mediaId}/insights?metric=${metrics}&access_token=${encodeURIComponent(token)}`,
+    `${graphBase}/${mediaId}/insights?metric=${metrics}&access_token=${encodeURIComponent(token)}`,
     { cache: "no-store" },
   )
   const json = await res.json()
@@ -78,7 +79,7 @@ export async function GET(request: Request) {
     }
 
     const connections = (await sql`
-      SELECT access_token, instagram_user_id, instagram_username
+      SELECT access_token, instagram_user_id, instagram_username, account_type
       FROM instagram_connections
       WHERE is_active = true
       ORDER BY id DESC
@@ -93,8 +94,9 @@ export async function GET(request: Request) {
     }
 
     const token = connection.access_token
+    const graphBase = resolveInstagramGraphBase(connection)
     const mediaRes = await fetch(
-      `${GRAPH_BASE}/${connection.instagram_user_id}/media?fields=id,caption,media_type,media_product_type,timestamp,like_count,comments_count,permalink&limit=${POST_LIMIT}&access_token=${encodeURIComponent(token)}`,
+      `${graphBase}/${connection.instagram_user_id}/media?fields=id,caption,media_type,media_product_type,timestamp,like_count,comments_count,permalink&limit=${POST_LIMIT}&access_token=${encodeURIComponent(token)}`,
       { cache: "no-store" },
     )
     const mediaJson = await mediaRes.json()
@@ -109,13 +111,13 @@ export async function GET(request: Request) {
     let insightsLevel: "basic" | "full" = "basic"
     if (rawPosts.length > 0) {
       const probeFormat = classifyFormat(rawPosts[0].media_type, rawPosts[0].media_product_type)
-      if (await fetchInsights(rawPosts[0].id, probeFormat, token)) insightsLevel = "full"
+      if (await fetchInsights(rawPosts[0].id, probeFormat, token, graphBase)) insightsLevel = "full"
     }
 
     let written = 0
     for (const raw of rawPosts) {
       const format = classifyFormat(raw.media_type, raw.media_product_type)
-      const insights = insightsLevel === "full" ? await fetchInsights(raw.id, format, token) : null
+      const insights = insightsLevel === "full" ? await fetchInsights(raw.id, format, token, graphBase) : null
 
       await sql`
         INSERT INTO ig_media_snapshots (

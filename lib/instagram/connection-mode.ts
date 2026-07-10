@@ -6,6 +6,9 @@ type InstagramConnectionModeInput = {
   account_type?: string | null
 }
 
+const FACEBOOK_GRAPH_BASE = "https://graph.facebook.com/v21.0"
+const INSTAGRAM_GRAPH_BASE = "https://graph.instagram.com/v21.0"
+
 export function isInstagramLoginToken(token?: string | null) {
   return Boolean(token?.trim().startsWith("IGAA"))
 }
@@ -24,3 +27,8 @@ export function resolveInstagramConnectionMode(input: InstagramConnectionModeInp
   return "facebook_page"
 }
 
+export function resolveInstagramGraphBase(input: InstagramConnectionModeInput) {
+  return resolveInstagramConnectionMode(input) === "instagram_login"
+    ? INSTAGRAM_GRAPH_BASE
+    : FACEBOOK_GRAPH_BASE
+}
