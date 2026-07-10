@@ -103,11 +103,14 @@ export default async function AdminPage({
   const systemsNeedingAttention = report.team.employees.filter(
     (employee) => employee.status === "needs-setup" || employee.lastResult === "failed",
   )
+  const dmApprovalCount = report.needsMe.approvalActions.filter(
+    (action) => action.source === "ig_conversations",
+  ).length
   const founderDecisionCount =
     report.needsMe.approvalActions.length +
     report.needsMe.webhookReviews +
     report.needsMe.newSupportThreads +
-    report.needsMe.flaggedConversations
+    Math.max(0, report.needsMe.flaggedConversations - dmApprovalCount)
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-950">
