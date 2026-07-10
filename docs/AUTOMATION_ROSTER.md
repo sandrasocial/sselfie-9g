@@ -64,6 +64,7 @@ automation.
 | `feed-plan-monthly-draft` | 1st, 06:00 | Maya drafts member feed calendars |
 | `cron-health-check` | hourly | Watchdog: stale crons, failures, AI-credit canary → alerts |
 | `product-qa-daily` | 05:55 | Bug/reliability reporter (deterministic, no LLM) → feeds briefing "System health" |
+| Instagram webhook → IG inbox | event-driven | Stores every real conversation; exact ManyChat automation keywords (`PROMPT`, `SELFIE`, `KIT`, `SUITE`, `VAULT`, `PRESET`, `ANDROID`) are marked `auto_handled` without an AI draft. `WORK` and real questions remain visible. Per-conversation alert emails are OFF by default (`IG_AGENT_EMAIL_ALERTS_ENABLED=false` unless explicitly enabled); Sandra uses the admin/community-manager queue and daily briefing instead. |
 
 ### Built but NOT scheduled (dormant)
 `reindex-codebase`, `refresh-segments`, `sync-audience-segments`, `backfill-resend-audience`,
@@ -134,7 +135,7 @@ Sandra archives these in the Codex app UI (or asks Claude to do it in an attende
 
 | System | What lives there | Notes |
 |---|---|---|
-| ManyChat (fb877156) | Keyword automations (PROMPT, KIT, coming: WORK → `work-lead` tag id 91411765), conservative AI Replies, Live Chat inbox | Default Reply NOT wired to repo bridge (see Layer 1). Several stale flows (archived selfie flow, Rebecca Adehill imports, "Private 1:1 May") — candidates for ManyChat-side cleanup. |
+| ManyChat (fb877156) | Keyword automations (PROMPT, SELFIE, KIT, SUITE, VAULT, PRESET, ANDROID; coming: WORK → `work-lead` tag id 91411765), conservative AI Replies, Live Chat inbox | Default Reply NOT wired to repo bridge (see Layer 1). The Claude MCP must use a dedicated token and verify `@sandra.social` before it starts; the shared repo token resolved to the stale `sandra.socials` account on 2026-07-10 and must not be reused for MCP access. Several stale flows (archived selfie flow, Rebecca Adehill imports, "Private 1:1 May") — candidates for ManyChat-side cleanup. |
 | Resend | Broadcast delivery, audiences/segments, ~60 mechanical "Sequence:" audiences | Sends only what repo crons or Sandra trigger. |
 | Stripe | Payments, subscriptions, webhooks → repo | Money truth source per Admin Data Contract. |
 | Vercel | Deploys from `main`, runs all Layer-1 crons, holds prod env flags | Env booleans being hardened in EMPLOYEE-01. |

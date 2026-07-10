@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateIgFlagNotificationEmail } from "@/lib/email/templates/ig-flag-notification"
+import { envFlag } from "@/lib/env-flags"
 import { isLikelyIcelandic, mergeIcelandicTag } from "@/lib/ig-agent/icelandic-detector"
 import { generateSandraDraft } from "@/lib/ig-agent/responder"
 import { triageIncomingMessage } from "@/lib/ig-agent/triage"
@@ -73,6 +74,11 @@ async function notifyIfFlagged(params: {
   profilePicUrl?: string | null
   isIcelandic?: boolean
 }) {
+  // Sandra reviews these conversations in the admin/community-manager queue. Per-conversation
+  // emails created a second noisy inbox (45 messages in ~25 hours during the July 10 incident),
+  // so alerts are opt-in only. The conversations are still stored and flagged normally.
+  if (!envFlag("IG_AGENT_EMAIL_ALERTS_ENABLED", false)) return
+
   if (await wasIgAgentAlertSentRecently()) return
 
   const email = generateIgFlagNotificationEmail(params)
@@ -130,7 +136,9 @@ export async function processInboundInstagramMessage(input: InboundMessage) {
   const contact = contacts[0] as ContactRow
 
   const threadId = input.threadId || `${input.channel}:${input.igUserId}`
-  const sentAt = input.timestamp ? new Date(input.timestamp).toISOString() : new Date().toISOString()
+  const sentAt = input.timestamp
+    ? new Date(input.timestamp).toISOString()
+    : new Date().toISOString()
 
   const conversations = await sql`
     INSERT INTO ig_conversations (
@@ -204,16 +212,24 @@ export async function processInboundInstagramMessage(input: InboundMessage) {
     ON CONFLICT (ig_message_id) DO NOTHING
   `
 
-  const draft = triage.action === "ignore"
+  const skipDraft = triage.action === "ignore" || triage.action === "keyword_handled"
+  const draft = skipDraft
     ? null
     : await generateSandraDraft({
         igUserId: input.igUserId,
         latestMessage: input.text,
       })
 
-  const shouldFlag = triage.action === "flag" || !draft || draft.confidence < 0.8
-  const status = shouldFlag ? "flagged" : "pending"
-  const flagReason = triage.flagReason || (draft && draft.confidence < 0.8 ? "low_confidence" : null)
+  const shouldFlag = !skipDraft && (triage.action === "flag" || !draft || draft.confidence < 0.8)
+  const status =
+    triage.action === "keyword_handled" ? "auto_handled" : shouldFlag ? "flagged" : "pending"
+  const flagReason =
+    triage.flagReason ||
+    (draft?.intent === "generation_failed"
+      ? "ai_generation_failed"
+      : draft && draft.confidence < 0.8
+        ? "low_confidence"
+        : null)
 
   if (draft) {
     await sql`
@@ -275,4 +291,3 @@ export async function processInboundInstagramMessage(input: InboundMessage) {
     status,
   }
 }
-
