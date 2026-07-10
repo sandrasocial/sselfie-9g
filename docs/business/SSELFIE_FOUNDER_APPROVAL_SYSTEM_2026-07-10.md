@@ -33,6 +33,9 @@ the send button stays disabled if that preview cannot be loaded.
 - GET requests are read-only, protecting against email-link scanners.
 - POST requests atomically change `pending` to `executing` before sending, preventing duplicate sends.
 - A DM is refused if its saved draft changed after the approval action was created.
+- ManyChat-routed replies fail closed while `MANYCHAT_OUTBOUND_ENABLED=false`. This flag must stay
+  off until a dedicated token is verified against `@sandra.social`; native Instagram Graph replies
+  remain available.
 - Completed and dismissed actions cannot run again.
 - Failed actions retain a short error message and remain visible for manual review; customer sends do not
   silently retry.

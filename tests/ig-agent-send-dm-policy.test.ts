@@ -11,6 +11,7 @@ vi.mock("@/lib/db/client", () => ({
 }))
 
 import { sendInstagramDm } from "@/lib/ig-agent/send-dm"
+import { sendManychatDm } from "@/lib/ig-agent/send-manychat"
 
 const ORIGINAL_ENV = process.env
 
@@ -93,5 +94,23 @@ describe("Instagram DM send policy", () => {
         }),
       }),
     )
+  })
+
+  it("blocks Sandra-approved ManyChat replies until the intended account is verified", async () => {
+    process.env.MANYCHAT_API_KEY = "shared-token"
+    process.env.MANYCHAT_OUTBOUND_ENABLED = "false"
+
+    const result = await sendManychatDm({
+      igUserId: "mc:12345",
+      message: "This must not reach the stale account.",
+      conversationId: 44,
+      fromType: "sandra",
+    })
+
+    expect(result).toEqual({
+      sent: false,
+      reason: "manychat_outbound_disabled_pending_account_verification",
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

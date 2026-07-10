@@ -39,6 +39,12 @@ export async function sendManychatDm(params: {
     await record("draft", false)
     return { sent: false, reason: "auto_send_disabled" }
   }
+  // Fail closed until Sandra's dedicated ManyChat token has been verified against
+  // @sandra.social. The previously shared token resolved to a stale account.
+  if (!envFlag("MANYCHAT_OUTBOUND_ENABLED")) {
+    await record("blocked", false)
+    return { sent: false, reason: "manychat_outbound_disabled_pending_account_verification" }
+  }
   if (!apiKey) {
     await record("failed", false)
     return { sent: false, reason: "manychat_api_key_missing" }
