@@ -1,4 +1,5 @@
 import { getAdminActionByToken } from "@/lib/admin/action-queue"
+import { requireResendClient } from "@/lib/resend/client"
 
 export const dynamic = "force-dynamic"
 
@@ -20,6 +21,24 @@ function StatusMessage({ status, error }: { status: string; error?: string | nul
   )
 }
 
+type BroadcastPreview = {
+  subject: string
+  previewText: string
+  text: string
+}
+
+async function getBroadcastPreview(broadcastId: string): Promise<BroadcastPreview | null> {
+  if (!broadcastId) return null
+  const resend = requireResendClient()
+  const { data, error } = await resend.broadcasts.get(broadcastId)
+  if (error || !data) return null
+  return {
+    subject: String(data.subject || "No subject"),
+    previewText: String(data.preview_text || ""),
+    text: String(data.text || ""),
+  }
+}
+
 export default async function ApproveActionPage({
   params,
 }: {
@@ -35,6 +54,10 @@ export default async function ApproveActionPage({
   }
 
   const draft = action?.kind === "send_ig_reply" ? String(action.payload.draft || "") : ""
+  const broadcastPreview =
+    action?.kind === "send_resend_broadcast" && action.status === "pending"
+      ? await getBroadcastPreview(String(action.payload.broadcastId || "")).catch(() => null)
+      : null
 
   return (
     <main className="min-h-screen bg-stone-50 px-4 py-12 text-stone-950">
@@ -58,6 +81,28 @@ export default async function ApproveActionPage({
               <h2 className="mt-2 font-serif text-2xl">{action.title}</h2>
               <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-stone-700">{action.summary}</p>
 
+              {action.kind === "send_resend_broadcast" && (
+                <div className="mt-5 rounded-xl border border-stone-200 bg-stone-50 p-4">
+                  {broadcastPreview ? (
+                    <>
+                      <p className="text-xs uppercase tracking-wide text-stone-500">Subject</p>
+                      <p className="mt-1 font-medium text-stone-950">{broadcastPreview.subject}</p>
+                      {broadcastPreview.previewText && (
+                        <p className="mt-2 text-sm italic text-stone-500">{broadcastPreview.previewText}</p>
+                      )}
+                      <p className="mt-5 text-xs uppercase tracking-wide text-stone-500">Email preview</p>
+                      <div className="mt-2 max-h-96 overflow-y-auto whitespace-pre-wrap text-sm leading-6 text-stone-700">
+                        {broadcastPreview.text || "This draft has no plain-text preview."}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm leading-6 text-amber-800">
+                      The email preview could not be loaded. Do not send until the preview is visible.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <form action={`/api/admin-actions/${encodeURIComponent(token)}`} method="post" className="mt-6">
                 {action.kind === "send_ig_reply" && (
                   <label className="block">
@@ -76,7 +121,8 @@ export default async function ApproveActionPage({
                     type="submit"
                     name="decision"
                     value="approve"
-                    className="rounded-full bg-stone-950 px-6 py-3 text-sm text-white"
+                    disabled={action.kind === "send_resend_broadcast" && !broadcastPreview}
+                    className="rounded-full bg-stone-950 px-6 py-3 text-sm text-white disabled:cursor-not-allowed disabled:bg-stone-300"
                   >
                     {action.kind === "send_ig_reply" ? "Send this reply" : "Send this email"}
                   </button>

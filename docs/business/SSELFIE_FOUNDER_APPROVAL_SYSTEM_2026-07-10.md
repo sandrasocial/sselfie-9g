@@ -15,7 +15,8 @@ actions appear on the admin home. The first supported actions are:
 
 Open the link, review the exact action, edit a DM if needed, then press **Send**. Press
 **Dismiss — don't send** when it should be removed. Merely opening the email or page never performs
-an action.
+an action. Broadcast approvals show the current Resend subject, preview text, and plain-text body;
+the send button stays disabled if that preview cannot be loaded.
 
 ## Ownership boundaries
 
