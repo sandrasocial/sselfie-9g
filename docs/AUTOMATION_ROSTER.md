@@ -57,7 +57,7 @@ automation.
 ### Sandra-facing intelligence (LIVE)
 | Cron | Schedule | Job |
 |---|---|---|
-| `daily-sandra-briefing` | 06:15 | Trimmed to a ~15-second read 2026-07-09: money, growth/revenue truth, one compact "today's move" line (reuses already-computed working/leaking signal), customer threads only if any. Retired its daily `lib/admin/daily-briefing-intelligence.ts` LLM call (same Anthropic-billing root cause as the weekly brief; degraded to generic filler on every failure). That file stays for now (its own tests still exercise it directly) until the Phase 2 Codex cleanup removes it. |
+| `daily-sandra-briefing` | 06:15 | Trimmed to a ~15-second read 2026-07-09: money, growth/revenue truth, one compact "today's move" line (reuses already-computed working/leaking signal), customer threads only if any. Since 2026-07-10 it also carries the one founder approval queue: up to five flagged DM drafts and recent `Story ·` Resend drafts. Each link opens a review page and never sends on GET; Sandra must confirm the POST action. No separate approval-alert email is sent. Retired its daily `lib/admin/daily-briefing-intelligence.ts` LLM call (same Anthropic-billing root cause as the weekly brief; degraded to generic filler on every failure). That file stays for now (its own tests still exercise it directly) until the Phase 2 Codex cleanup removes it. |
 | ~~`content-brief-weekly` (3 phases) + `content-brief-jobs`~~ | — | RETIRED FROM SERVICE 2026-07-09 (had been failing since 2026-07-02 on an Anthropic credit-balance error) — replaced by the `weekly-content-brief-draft` Cowork task below. Disabled via `CONTENT_BRIEF_ENABLED=false` in Vercel prod (flip back to re-enable) to avoid colliding with the new task on the same stored report row. Actual code/cron-entry deletion is scoped into the Phase 2 Codex cleanup (`tasks/README.md`). |
 | `ig-insights-sync` | 05:50 | Nightly IG post snapshots |
 | `weekly-content-trends` | Mon 05:00 | Trend digest pre-warm |
@@ -65,6 +65,19 @@ automation.
 | `cron-health-check` | hourly | Watchdog: stale crons, failures, AI-credit canary → alerts |
 | `product-qa-daily` | 05:55 | Bug/reliability reporter (deterministic, no LLM) → feeds briefing "System health" |
 | Instagram webhook → IG inbox | event-driven | Stores every real conversation; exact ManyChat automation keywords (`PROMPT`, `SELFIE`, `KIT`, `SUITE`, `VAULT`, `PRESET`, `ANDROID`) are marked `auto_handled` without an AI draft. `WORK` and real questions remain visible. Per-conversation alert emails are OFF by default (`IG_AGENT_EMAIL_ALERTS_ENABLED=false` unless explicitly enabled); Sandra uses the admin/community-manager queue and daily briefing instead. |
+
+### Founder approval queue (LIVE 2026-07-10)
+
+- Durable state lives in `admin_action_queue`; signed links expire after seven days.
+- `ADMIN_ACTION_SECRET` signs approval links and must remain server-only.
+- Supported final actions are `send_ig_reply` and `send_resend_broadcast`.
+- A review-page GET is read-only. Send/dismiss is POST-only, and the database atomically claims
+  each action before execution so retries and double taps cannot send twice.
+- Sandra may edit a DM on the review page. The approved edit is saved as a voice-learning note.
+- Failed actions stay visible with their error for review; they do not silently retry a customer send.
+- Payment, support, and system-health items remain direct admin links rather than executable email
+  actions. GitHub PR approval is intentionally excluded: Sandra's standing direction is direct-to-main,
+  no-PR delivery for this repo.
 
 ### Built but NOT scheduled (dormant)
 `reindex-codebase`, `refresh-segments`, `sync-audience-segments`, `backfill-resend-audience`,

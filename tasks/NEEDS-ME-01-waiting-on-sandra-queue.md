@@ -1,6 +1,7 @@
 # NEEDS-ME-01 — One "Waiting on you" queue (kill the invisible pileup)
 
 Date: 2026-07-08
+Completed: 2026-07-10 (final scope below)
 Owner: Codex (after VOICE-LOOP-01 / EMPLOYEE-01 — shares the briefing + admin surfaces)
 Priority: 3
 
@@ -11,26 +12,24 @@ notifications: Resend draft broadcasts waiting for a send-yes, flagged IG conver
 webhook-review items, content pieces awaiting approval, open `codex/` PRs, trial members
 needing a concierge DM. Nothing finishes because nothing tells her it's waiting.
 
-## Fix (consolidate, don't add)
+## Final scope (consolidate, don't add)
 
-### A. Aggregator: `lib/admin/needs-sandra.ts`
+The original draft below was narrowed after Sandra's operating feedback: extra alert emails created
+more noise, GitHub PR approval is no longer part of the delivery model, and a dead-end list was less
+useful than actions she can actually finish. The shipped system therefore uses the existing daily
+briefing and admin home, with secure completion links only for actions that are safe to finish there.
 
-One function returning a typed list of open items, each: `kind`, `title`, `count`, `age`,
-`link` (deep link to the exact surface), `urgency` (`today` | `this-week`). Sources:
+### A. Durable action queue
+
+`admin_action_queue` stores signed, expiring, idempotent actions. Sources:
 
 1. **Broadcast drafts awaiting send** — Resend API: broadcasts with status draft created by
    the email engine (name prefix `Story ·` etc.).
 2. **Flagged DM conversations** — `ig_conversations` where `status='flagged'` and no admin
    reply after flag time.
-3. **Webhook review items** — existing pending `webhook_review` data (same source
-   resolve-pending-payments alerts on).
-4. **Content awaiting approval** — pieces with approve controls once VOICE-LOOP-01 lands
-   (skip gracefully until then).
-5. **Open `codex/` PRs** — GitHub API via `GITHUB_TOKEN` env; if the token is absent, omit
-   the section (never fake it). Note: per standing approval Claude merges green PRs, so this
-   row is informational ("3 PRs in flight") not an ask.
-6. **Concierge list** — active members/trials with zero generations in 7+ days (reuse the
-   win-back-sequence dormant query), capped at 5 names.
+3. Payment, support, health, and concierge context continues to use the existing admin-home and
+   briefing links. It is not turned into an executable bearer-link action.
+4. GitHub PR items are excluded under Sandra's no-PR direction.
 
 ### B. Surfaces (existing ones only — Admin Data Contract rule 5)
 
@@ -38,21 +37,21 @@ One function returning a typed list of open items, each: `kind`, `title`, `count
   `lib/admin/home-report.ts` consumes the aggregator).
 - **Daily Sandra Briefing**: a "Waiting on you" block — max 5 items, oldest first, each with
   its deep link. Omitted entirely when empty.
-- **Alert-only email** (allowed by contract as exception): when a `today`-urgency item is
-  NEW since the last briefing (e.g. fresh flagged DM, fresh broadcast draft), send one short
-  alert with the deep link. Reuse the `admin_alert_sent` cooldown table; max one alert per
-  item kind per 12h.
+- No separate alert email. The daily briefing is the single approval inbox and is omitted when empty.
 
 ### C. Every item must be closable
 
-Each queue item's `link` lands Sandra on a page where ONE tap resolves it (send/dismiss the
-broadcast, reply/dismiss the DM, approve/kill the content). If a source has no closing
-action, that's a bug in the source — file it, don't ship a dead-end link.
+Each approval link opens a read-only confirmation page. Opening the link never sends. A deliberate
+POST sends/dismisses the item, with an atomic database claim preventing duplicate execution. DM text
+is editable before approval. Failed actions remain visible instead of silently retrying.
 
 ## Acceptance
 
-- Aggregator unit-tested per source incl. empty/absent-token cases.
+- Signed-token creation, tamper rejection, expiry, and conditional briefing rendering covered locally;
+  existing DM-send policy and Resend broadcast-send tests remain green.
 - Briefing shows "Waiting on you" only when non-empty (test with seeded items).
-- Alert email respects cooldown (test).
 - No new admin page, no new daily email. Source labels per Admin Data Contract.
-- Full suite green before merge.
+- Existing `/admin` home renders ready approval links.
+- Focused tests, targeted lint, repo invariants, and production build green before direct-to-main deploy.
+  Repo-wide type-check has unrelated pre-existing failures in concierge/feed/content-kit and archived
+  email-template files; this task does not broaden into those active cleanup areas.

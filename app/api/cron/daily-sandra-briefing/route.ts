@@ -9,6 +9,7 @@ import { createCronLogger } from "@/lib/cron-logger"
 import { sendEmail } from "@/lib/email/send-email"
 import { sql } from "@/lib/db/client"
 import { envFlag } from "@/lib/env-flags"
+import { syncApprovalActions } from "@/lib/admin/sync-approval-actions"
 
 export const dynamic = "force-dynamic"
 
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     // Money header from stripe_payments (the only allowed money source) and the
     // flagged-DM list this briefing absorbed from the old IG morning briefing.
-    const [moneyRows, flaggedRows, productQaRows] = await Promise.all([
+    const [moneyRows, flaggedRows, productQaRows, approvalActions] = await Promise.all([
       sql`
         SELECT
           COUNT(*) FILTER (WHERE payment_date > NOW() - INTERVAL '1 day')::int AS yesterday_payments,
@@ -61,6 +62,10 @@ export async function GET(request: NextRequest) {
         LIMIT 5
       ` as unknown as Promise<any[]>,
       getLatestAnalyticsReports({ reportType: "product_qa_daily", limit: 1 }).catch(() => []),
+      syncApprovalActions().catch((error) => {
+        console.error("[daily-sandra-briefing] approval sync failed:", error)
+        return []
+      }),
     ])
 
     const money = moneyRows[0] || {}
@@ -78,6 +83,7 @@ export async function GET(request: NextRequest) {
       })),
       inboxFlaggedCount: flaggedRows.length,
       systemHealth: buildSystemHealthFromProductQa(productQaRows[0]?.payload),
+      approvalActions,
     })
 
     const email = generateDailySandraBriefingEmail(briefing)

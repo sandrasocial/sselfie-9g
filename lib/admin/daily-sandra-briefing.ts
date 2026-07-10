@@ -1,6 +1,7 @@
 import type { GrowthTruthSnapshot } from "@/lib/admin/growth-truth"
 import type { RevenueTruthScorecard } from "@/lib/admin/revenue-truth-scorecard"
 import type { ContentBriefPiece, DailyStory } from "@/lib/content-engine/brief-generator"
+import type { ApprovalActionSummary } from "@/lib/admin/action-queue"
 
 type ReportRow = {
   [key: string]: unknown
@@ -82,6 +83,7 @@ export type DailyBriefingExtras = {
   inboxFlagged?: Array<{ username: string; message: string }>
   inboxFlaggedCount?: number
   systemHealth?: DailyBriefingSystemHealth | null
+  approvalActions?: ApprovalActionSummary[]
 }
 
 export type DailyBriefingSystemHealth = {
@@ -141,6 +143,7 @@ export type DailySandraBriefing = {
     createdAt?: string | null
   }>
   systemHealth: DailyBriefingSystemHealth | null
+  approvalActions: ApprovalActionSummary[]
   links: {
     growthIntelligence: string
     promptVault: string
@@ -468,6 +471,7 @@ export function buildDailySandraBriefing(
     sandraNext: sandraNext.slice(0, 3),
     supportThreads,
     systemHealth: extras.systemHealth || null,
+    approvalActions: (extras.approvalActions || []).slice(0, 5),
     links: {
       growthIntelligence: `${SITE_URL}/admin`,
       promptVault: `${SITE_URL}/admin/prompt-vault`,
@@ -629,6 +633,33 @@ function todaysMoveText(briefing: DailySandraBriefing): string {
   return `\n\nToday's move\n${working || ""}${leaking ? `\nWatch: ${leaking}` : ""}`
 }
 
+function approvalActionsHtml(actions: ApprovalActionSummary[]): string {
+  if (actions.length === 0) return ""
+  return `
+      <div style="background:#fff;border:2px solid #0D0E10;padding:22px;margin:0 0 14px;">
+        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 6px;">Waiting on you</h2>
+        <p style="margin:0 0 16px;font-size:13px;color:#818283;line-height:1.6;">Nothing sends when you open a link. You see the final version and confirm once more.</p>
+        ${actions
+          .map(
+            (action) => `
+              <div style="border-top:1px solid rgba(197,198,200,.55);padding:14px 0;">
+                <p style="margin:0 0 4px;font-size:15px;color:#0D0E10;"><strong>${escapeHtml(action.title)}</strong></p>
+                <p style="margin:0 0 10px;font-size:13px;color:#4F5052;line-height:1.6;">${escapeHtml(action.summary)}</p>
+                <a href="${action.approvalUrl}" style="display:inline-block;background:#0D0E10;color:#fff;text-decoration:none;padding:10px 14px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;">${action.kind === "send_ig_reply" ? "Review reply" : "Review email"}</a>
+                <span style="margin-left:8px;font-size:11px;color:#9A9A9A;">source: ${escapeHtml(action.source)}</span>
+              </div>`,
+          )
+          .join("")}
+      </div>`
+}
+
+function approvalActionsText(actions: ApprovalActionSummary[]): string {
+  if (actions.length === 0) return ""
+  return `\n\nWaiting on you\n${actions
+    .map((action) => `- ${action.title}: ${action.summary}\n  Review: ${action.approvalUrl}`)
+    .join("\n")}`
+}
+
 export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) {
   const html = `
 <!doctype html>
@@ -643,6 +674,7 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
         <p style="margin:0;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55);">Money · stripe_payments</p>
         <p style="margin:6px 0 0;font-size:16px;line-height:1.5;">${escapeHtml(briefing.moneyHeader)}</p>
       </div>` : ""}
+      ${approvalActionsHtml(briefing.approvalActions)}
       ${briefing.inboxFlaggedCount > 0 ? `
       <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
         <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">Inbox: ${briefing.inboxFlaggedCount} flagged DM${briefing.inboxFlaggedCount === 1 ? "" : "s"}</h2>
@@ -677,7 +709,7 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
     ? `\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}`
     : ""
 
-  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${inboxTextSection}${truthSnapshotText(briefing.truthSnapshot)}${revenueScorecardText(briefing.revenueScorecard)}${systemHealthText(briefing.systemHealth)}${todaysMoveText(briefing)}${customerThreadsText}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
+  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${approvalActionsText(briefing.approvalActions)}${inboxTextSection}${truthSnapshotText(briefing.truthSnapshot)}${revenueScorecardText(briefing.revenueScorecard)}${systemHealthText(briefing.systemHealth)}${todaysMoveText(briefing)}${customerThreadsText}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
 
   return {
     subject: briefing.subject,

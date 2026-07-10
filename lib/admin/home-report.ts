@@ -15,6 +15,7 @@ import {
   getFoundingAnnualOfferStatus,
   getFoundingAnnualPurchaseCount,
 } from "@/lib/launch/cash-launch-pricing"
+import { approvalUrlForAction, listOpenAdminActions } from "@/lib/admin/action-queue"
 
 // Admin data contract: money ONLY from stripe_payments (status succeeded/paid,
 // live mode, payment_date window) or the live Stripe API. Member counts only
@@ -65,6 +66,14 @@ export type AdminHomeReport = {
     flaggedConversations: number
     webhookReviews: number
     newSupportThreads: number
+    approvalActions: Array<{
+      id: number
+      title: string
+      summary: string
+      source: string
+      status: "pending" | "failed"
+      link: string
+    }>
   }
   content: {
     briefGeneratedAt: string | null
@@ -129,6 +138,7 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
     cronRows,
     diagnosticsRows,
     dmBridgeRows,
+    actionRows,
   ] = await Promise.all([
     sql`
       SELECT
@@ -220,6 +230,10 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
         (SELECT COUNT(*)::int FROM ig_messages WHERE sent_at > NOW() - INTERVAL '7 days') AS messages_7d,
         (SELECT COUNT(*)::int FROM ig_conversations) AS conversations_all_time
     `.catch(() => []) as unknown as Promise<any[]>,
+    listOpenAdminActions(8).catch((error) => {
+      console.error("[admin-home] approval action lookup failed:", error)
+      return []
+    }),
   ])
 
   const money = moneyRows[0] || {}
@@ -253,6 +267,14 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
     flaggedConversations: Number(needs.flagged_conversations || 0),
     webhookReviews: Number(needs.webhook_reviews || 0),
     newSupportThreads: Number(needs.new_support_threads || 0),
+    approvalActions: actionRows.map((action) => ({
+      id: Number(action.id),
+      title: action.title,
+      summary: action.summary,
+      source: action.source,
+      status: action.status as "pending" | "failed",
+      link: approvalUrlForAction(action),
+    })),
   }
   const content = {
     briefGeneratedAt: brief?.periodEnd || null,

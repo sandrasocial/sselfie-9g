@@ -147,7 +147,8 @@ export default async function AdminPage({
   const needsTotal =
     report.needsMe.flaggedConversations +
     report.needsMe.webhookReviews +
-    report.needsMe.newSupportThreads
+    report.needsMe.newSupportThreads +
+    report.needsMe.approvalActions.length
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -519,7 +520,32 @@ export default async function AdminPage({
               Nothing needs you. Go make content.
             </p>
           ) : (
-            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <div className="mt-3 space-y-3">
+              {report.needsMe.approvalActions.length > 0 && (
+                <div className="rounded-2xl border border-stone-950 bg-white p-5">
+                  <p className="text-xs uppercase tracking-wide text-stone-500">Ready for approval</p>
+                  <div className="mt-3 divide-y divide-stone-100">
+                    {report.needsMe.approvalActions.map((action) => (
+                      <div key={action.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="font-serif text-lg text-stone-950">{action.title}</p>
+                          <p className="mt-1 text-sm leading-6 text-stone-600">{action.summary}</p>
+                          <p className="mt-1 text-[10px] uppercase tracking-wide text-stone-400">
+                            {action.source} · {action.status}
+                          </p>
+                        </div>
+                        <Link
+                          href={action.link}
+                          className="shrink-0 rounded-full bg-stone-950 px-4 py-2 text-center text-xs uppercase tracking-wide text-white"
+                        >
+                          Review
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="grid gap-3 sm:grid-cols-3">
               <Link
                 href="/admin/ig-inbox"
                 className="rounded-2xl border border-stone-200 bg-white p-5 transition hover:border-stone-950"
@@ -541,6 +567,7 @@ export default async function AdminPage({
                 <p className="font-serif text-3xl text-stone-950">{report.needsMe.newSupportThreads}</p>
                 <p className="text-xs uppercase tracking-wide text-stone-500">new support threads</p>
               </Link>
+              </div>
             </div>
           )}
         </section>

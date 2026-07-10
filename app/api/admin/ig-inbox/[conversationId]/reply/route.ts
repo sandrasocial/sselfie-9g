@@ -1,9 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { sql } from "@/lib/db/client"
-import { sendInstagramDm } from "@/lib/ig-agent/send-dm"
-import { sendManychatDm } from "@/lib/ig-agent/send-manychat"
 import { addAdminMemoryNote } from "@/lib/app-v3/maya/admin-memory-store"
+import { sendApprovedInstagramReply } from "@/lib/ig-agent/send-approved-reply"
 
 export const dynamic = "force-dynamic"
 
@@ -39,8 +38,7 @@ export async function POST(
     LIMIT 1
   `
   const conversation = rows[0] as { ig_user_id?: string; draft_response?: string | null } | undefined
-  const igUserId = conversation?.ig_user_id
-  if (!igUserId) {
+  if (!conversation?.ig_user_id) {
     return NextResponse.json({ error: "Conversation not found" }, { status: 404 })
   }
 
@@ -57,24 +55,11 @@ export async function POST(
     }).catch((error) => console.error("[ig-inbox] failed to store voice memory:", error))
   }
 
-  // Bridge-originated contacts (mc:<subscriber_id>) send via ManyChat - the app Meta
-  // actually delivers DMs to. Native IG contacts keep the Graph sender.
-  const result = igUserId.startsWith("mc:")
-    ? await sendManychatDm({ igUserId, message, conversationId, fromType: "sandra" })
-    : await sendInstagramDm({ igUserId, message, conversationId, fromType: "sandra" })
-
-  await sql`
-    UPDATE ig_conversations
-    SET status = ${result.sent ? "sandra_replied" : "flagged"},
-        flag_reason = ${result.sent ? null : result.reason},
-        last_seen_by_sandra = NOW(),
-        updated_at = NOW()
-    WHERE id = ${conversationId}
-  `
+  const result = await sendApprovedInstagramReply({ conversationId, message })
 
   return NextResponse.json({
-    success: result.sent,
+    success: true,
     result,
-    error: result.sent ? null : result.reason || "send_failed",
+    error: null,
   })
 }
