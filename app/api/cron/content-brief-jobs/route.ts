@@ -14,6 +14,7 @@ import {
   markContentBriefJobPhase,
 } from "@/lib/content-engine/brief-jobs"
 import { createCronLogger } from "@/lib/cron-logger"
+import { envFlag } from "@/lib/env-flags"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 300
@@ -45,6 +46,11 @@ export async function GET(request: NextRequest) {
     if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       await logger.error(new Error("Unauthorized"), { reason: "invalid_cron_secret" })
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (!envFlag("CONTENT_BRIEF_ENABLED")) {
+      await logger.success({ generated: false, skipped: "disabled" })
+      return NextResponse.json({ success: true, generated: false, skipped: "disabled" })
     }
 
     const latest = await getLatestContentBriefJob()
