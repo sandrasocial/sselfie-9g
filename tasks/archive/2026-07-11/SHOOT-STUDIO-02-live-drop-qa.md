@@ -1,5 +1,16 @@
 # SHOOT-STUDIO-02 - Live Drop QA
 
+## ✅ LIVE DROP QA COMPLETE 2026-07-11 (Codex)
+
+- The old "waiting for one more collection" gate was stale. Production has 17 published Shoot Studio collections.
+- The next reviewed drop is `Paris Balcony Dusk` (8 shots) + `Shadow Study Editorial` (6 shots). All 14 image assets return HTTP 200 and both collections are queued.
+- Paid Vault access shows both full collections. Free AI Prompts access shows Shot 1 plus 7 and 5 locked teasers. Both collections appear in the App aesthetics feed, membership Library source, and Maya's dynamic Vault style guide.
+- Buyer and nonbuyer previews contain only the selected new shoot images. The dry run resolved 3,663 free-preview recipients and 49 Vault buyers (3,712 total).
+- Both preview variants were test-sent to Sandra and reached `delivered`. No live audience send was started.
+- One abandoned 24-day-old run with zero claims or sends was cancelled. Future zero-work runs now auto-cancel after 24 hours before a new run is created, preventing permanent stale locks.
+
+Status: Complete. The actual audience send remains an attended Sandra approval action, not unfinished implementation.
+
 OWNER: sandra
 
 Status: built, partially verified 2026-06-14; waiting for one more published Shoot Studio collection.

@@ -200,6 +200,32 @@ export async function getVaultDropRun(runId: string): Promise<VaultDropRunPrevie
   return formatVaultDropRun(rows[0])
 }
 
+async function expireStaleEmptyVaultDropRuns(): Promise<void> {
+  await sql`
+    UPDATE vault_drop_runs r
+    SET status = 'cancelled',
+        completed_at = COALESCE(r.completed_at, NOW()),
+        notes = CONCAT_WS(
+          E'\n',
+          NULLIF(BTRIM(COALESCE(r.notes, '')), ''),
+          'Automatically cancelled after 24 hours with no recipient work.'
+        )
+    WHERE r.status IN ('pending', 'processing')
+      AND r.created_at < NOW() - INTERVAL '24 hours'
+      AND COALESCE(r.non_buyer_sent, 0) = 0
+      AND COALESCE(r.non_buyer_failed, 0) = 0
+      AND COALESCE(r.non_buyer_skipped, 0) = 0
+      AND COALESCE(r.buyer_sent, 0) = 0
+      AND COALESCE(r.buyer_failed, 0) = 0
+      AND COALESCE(r.buyer_skipped, 0) = 0
+      AND NOT EXISTS (
+        SELECT 1
+        FROM vault_drop_recipient_claims claims
+        WHERE claims.run_id = r.id
+      )
+  `
+}
+
 async function latestRunForDropKey(dropKey: string) {
   if (!dropKey) return null
   try {
@@ -286,6 +312,8 @@ export async function createVaultDropLiveRun(selectedIds: string[] = []) {
       missingCollectionIds: payload.missingCollectionIds,
     }
   }
+
+  await expireStaleEmptyVaultDropRuns()
 
   const existingRows = (await sql`
     SELECT * FROM vault_drop_runs
