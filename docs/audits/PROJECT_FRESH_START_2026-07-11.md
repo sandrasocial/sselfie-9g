@@ -19,8 +19,8 @@ files had accumulated even though their work had already shipped through later c
   - `codex/sonar-pr63-cleanup`
   - `fix/shoot-studio-multi-selfie`
   - `fix/trial-cap-upgrade`
-- Preserved `codex/app-mobile-ios-zoom-fix` long enough to carry its one valid missing patch into the
-  fresh-start commit. Delete that remote branch after the commit reaches `main`.
+- Preserved `codex/app-mobile-ios-zoom-fix` long enough to carry its one valid missing patch into
+  `main`, then deleted the remote branch. GitHub now has only `main` and no open PRs.
 
 ## Local cleanup
 
@@ -34,6 +34,10 @@ files had accumulated even though their work had already shipped through later c
   were already on `origin/main`.
 - Ignored the repo-local `tmp/` scratch tree so generated PDF and QA artifacts no longer dirty Git.
 - Recovered roughly 14.5 GB by removing obsolete full worktrees.
+- Backed up all 51 former local branch tips before deletion to
+  `~/Desktop/sselfie-local-branches-2026-07-11.bundle` (verified Git bundle, 467 MB).
+- Deleted the abandoned local branch backlog. The only local branches now are `main` and the checked-
+  out branch used by the allowed Codex lint-cleanup automation worktree.
 
 ## Remaining work
 

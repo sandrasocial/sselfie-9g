@@ -30,7 +30,9 @@ node scripts/verify-repo-invariants.mjs
 
 ## Branches
 
-Only `main` branch exists (local + remote). All `codex/` branches are short-lived feature branches — merged or deleted. Never leave stale branches open.
+GitHub has only `main`. Local task branches are short-lived and must be deleted after merge. The only
+allowed long-lived local exception is the checked-out branch/worktree used by the repo's active Codex
+lint-cleanup automation; it is not pushed to GitHub.
 
 ## Business metrics
 
