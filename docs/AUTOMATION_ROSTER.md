@@ -104,9 +104,9 @@ automation.
 | Task | Schedule | Status | Job |
 |---|---|---|---|
 | `daily-email-draft` | 06:34 daily | ✅ ACTIVE (re-grounded 2026-07-08) | Drafts ONE story-first broadcast + preview to Sandra. NEVER sends. |
-| `daily-story-sequence-draft` | 07:01 daily | ✅ ACTIVE (new 2026-07-10) | Fills the gap `daily-email-draft` flags at the bottom of its own SKILL.md ("a separate, manual step"): reads that morning's already-drafted broadcast via `scripts/daily-story-sequence-prep.ts` and repurposes it into a 7-slide Instagram Story sequence (hook → emotional recognition → belief shift → personal mirror → stuck point → offer bridge → CTA), TEXT ONLY, ready to copy. Stores to `analytics_reports` (`report_type='story_sequence_daily'`) and emails Sandra the slides. NEVER posts. Does not replace `sselfie-stories` (the on-demand skill for full photo-based sequences with background/overlay rendering) — this is the lightweight daily companion. |
+| `daily-story-sequence-draft` | 07:01 daily | ✅ ACTIVE (new 2026-07-10, reconciled 2026-07-11) | Reads that morning's already-drafted broadcast via `scripts/daily-story-sequence-prep.ts` and repurposes it into a 7-slide Instagram Story sequence (hook → emotional recognition → belief shift → personal mirror → stuck point → offer bridge → CTA), TEXT ONLY, ready to copy. Also pulls that weekday's planned theme from the latest `weekly-content-brief-draft` row (if any) as a continuity steer — the two tasks were briefly duplicating "today's Story" (2026-07-11 content-system audit finding); reconciled by making this the sole owner of daily slide text while the weekly brief owns only the week-level theme. Now reads the full voice-doc set (was thinner than its siblings at launch). Stores to `analytics_reports` (`report_type='story_sequence_daily'`) and emails Sandra the slides. NEVER posts. Does not replace `sselfie-stories` (the on-demand skill for full photo-based sequences with background/overlay rendering) — this is the lightweight daily companion. |
 | `manychat-agent-watch` | 09:03 daily | ✅ ACTIVE (upgraded 2026-07-09) | Checks ManyChat AI replies + config; hunts WORK leads first; now also watches the direct Instagram Graph DM channel (`npm run ig:graph-test`, token expiry, messaging_status) and judges replies against a customer-service facts block. Needs her Chrome logged in. |
-| `weekly-content-brief-draft` | Mon 06:05 | ✅ ACTIVE (new 2026-07-09) | Replaces the retired `content-brief-weekly` repo cron. Real data via `scripts/weekly-brief-prep.ts` (server-only modules can't be imported into a CLI script, so this queries the same tables directly) + live research + live writing, stores into `analytics_reports` (same shape/table so nothing downstream needs to change) and emails Sandra a preview. NEVER posts. |
+| `weekly-content-brief-draft` | Mon 06:05 | ✅ ACTIVE (new 2026-07-09, scope narrowed 2026-07-11) | Replaces the retired `content-brief-weekly` repo cron. Real data via `scripts/weekly-brief-prep.ts` (server-only modules can't be imported into a CLI script, so this queries the same tables directly) + live research + live writing, stores into `analytics_reports` (same shape/table so nothing downstream needs to change) and emails Sandra a preview. NEVER posts. Its `dailyStories` output is now a per-weekday THEME only (day/theme/conversationType/offerMention) — `daily-story-sequence-draft` writes the actual daily slide text each morning; this task stopped writing full frames the same day to avoid duplicating that work. |
 | `ig-dm-drafter` | 10:08 + 16:xx daily | ✅ ACTIVE (new 2026-07-09) | The deliberate second pass on flagged DMs/comments via `scripts/ig-dm-draft-prep.ts` — repo's own instant first-pass draft (`lib/ig-agent/responder.ts`) still fires immediately per message; this reviews/improves flagged ones with real context twice a day. NEVER sends — writes to `draft_response` only, same as the repo path. |
 | `funnel-health-daily` | — | ❌ RETIRED 2026-07-08 | Superseded by repo `cron-health-check` + `payment-reconciliation`. |
 | `claude-codex-loop` | — | ❌ RETIRED 2026-07-08 | Old 15-min loop protocol; superseded by direct Cowork sessions. |
@@ -129,6 +129,18 @@ Also in this layer: Cowork skills (`sselfie-brand`, `prompt-my-selfie`, `sselfie
 invokes by name, not schedulers. Repo-committed skills live in `.agents/skills/` (34, incl.
 `vault-prompt-writer`).
 
+**`sselfie-content-engine` plugin — RETIRED 2026-07-11 (content-system audit).** Lived outside
+this repo at `~/Desktop/SSELFIE Work/Business & Admin/SSELFIE/SSELFIE-Content-Engine/` (inside
+the retired NORTH/OpenClaw workspace), last genuinely used 2026-05-08. Every skill/command in it
+duplicated a stronger custom skill above, and two commands (`daily-post`, `weekly-batch`) pushed
+"Comment KIT → Starter Kit" CTAs and a nonexistent "$17 Transform" product — directly against the
+locked 2026-06-30 funnel doctrine. All 9 skill/command files were overwritten with retirement
+stubs that refuse to generate content and redirect to the correct current skill. The plugin's
+registration itself (a `.claude-plugin/plugin.json` manifest in that folder) could not be found in
+any of the standard Claude Code registries checked (`~/.claude/plugins/*`, `~/.claude.json`) — full
+removal from wherever Cowork actually discovered it needs Sandra's action via the app's own
+plugin settings UI, which this session can't reach.
+
 ## Layer 3 — Codex app (`~/.codex/automations`) — being emptied per lane rule 3
 
 12 automations found 2026-07-08. 10 already PAUSED, several pointing at the OLD repo path
@@ -144,6 +156,12 @@ invokes by name, not schedulers. Repo-committed skills live in `.agents/skills/`
 | `process-queued-weekly-brief-jobs` | PAUSED | RETIRE — repo `content-brief-jobs` cron owns this |
 
 Sandra archives these in the Codex app UI (or asks Claude to do it in an attended session).
+
+**Re-verified 2026-07-11 (content-system audit):** all 11 RETIRE-verdict items above are confirmed
+gone — `~/.codex/automations/` now contains only `sselfie-lint-warning-cleanup`, no archive folder
+exists (archiving via the Codex UI deletes the directory outright). That one survivor's live status
+is `PAUSED` (ran once 2026-07-09, then paused), not the `ACTIVE` shown in the 2026-07-08 snapshot
+above — a stale label, not a content risk since it's code-hygiene only.
 
 ## Layer 4 — External SaaS
 

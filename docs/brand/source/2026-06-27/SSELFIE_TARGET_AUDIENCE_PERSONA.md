@@ -1,5 +1,9 @@
 # **SSELFIE Target Audience & Persona Document**
 
+## **Verified real audience data (@sandra.social, Graph API)**
+
+97% women, 86% aged 35-64 (core 35-54), US-dominant, engagement peaks Thursday-Sunday. Write mature — lean on "saves time and money vs. a photographer," not youth-coded language. This is the corrected read; an earlier internal assumption of "25-45" was wrong.
+
 ## **Who SSELFIE Is For**
 
 SSELFIE is for the woman who knows she is meant for more, but feels stuck at the very first step.

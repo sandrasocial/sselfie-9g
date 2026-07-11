@@ -74,6 +74,26 @@ async function pullData() {
     console.log(`  ${(data?.text || "").replace(/\s+/g, " ").trim()}`)
   })
 
+  await section("THIS WEEK'S PLANNED THEME FOR TODAY (from the Monday weekly brief, if any)", async () => {
+    const weekday = new Date().toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })
+    const rows = (await sql`
+      SELECT period_start, payload->'dailyStories' AS daily_stories
+      FROM analytics_reports WHERE report_type='content_brief_weekly'
+      ORDER BY period_start DESC LIMIT 1
+    `) as any[]
+    const stories = rows[0]?.daily_stories as any[] | undefined
+    const today = stories?.find((s: any) => String(s?.day || "").toLowerCase() === weekday.toLowerCase())
+    if (!today) {
+      console.log(`  no planned theme found for ${weekday} in the latest weekly brief — derive purely from today's email.`)
+      return
+    }
+    console.log(`  week of ${String(rows[0].period_start).slice(0, 10)} planned this for ${weekday}:`)
+    console.log(`  theme: ${today.theme || "?"}`)
+    if (today.conversationType) console.log(`  conversationType: ${today.conversationType}`)
+    if (today.offerMention) console.log(`  offerMention: ${today.offerMention}`)
+    console.log(`  Use this as a steer for tone/theme continuity with the week's plan — the email you drafted this morning is still the primary source for the actual story content.`)
+  })
+
   await section("RECENT STORY SEQUENCES (don't reuse the same hook two days running)", async () => {
     const rows = (await sql`
       SELECT period_start, payload->'slides'->0->>'text' AS last_hook, payload->>'offerLabel' AS offer
