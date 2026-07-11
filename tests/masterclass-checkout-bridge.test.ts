@@ -2,6 +2,7 @@
 import fs from "fs"
 import path from "path"
 import { describe, expect, it } from "vitest"
+import { isAllowedAnalyticsEventName } from "@/lib/analytics/event-contract"
 
 const ROOT = process.cwd()
 
@@ -26,5 +27,17 @@ describe("masterclass checkout bridge", () => {
     expect(contents).toContain("One $147 payment gives you the complete course")
     expect(contents).toContain("Start with Your Foundation")
     expect(contents).toContain("Instant course access")
+  })
+
+  it("keeps every bridge step inside the analytics event contract", () => {
+    for (const eventName of [
+      "masterclass_checkout_email_capture_view",
+      "masterclass_checkout_session_requested",
+      "masterclass_checkout_session_created",
+      "masterclass_checkout_session_failed",
+      "masterclass_checkout_payment_entry_shown",
+    ]) {
+      expect(isAllowedAnalyticsEventName(eventName), eventName).toBe(true)
+    }
   })
 })
