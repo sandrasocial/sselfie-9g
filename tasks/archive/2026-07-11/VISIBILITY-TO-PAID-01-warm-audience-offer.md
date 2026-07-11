@@ -1,6 +1,22 @@
 # VISIBILITY-TO-PAID-01 — Build The Warm-Audience Offer
 
-Status: Ready for offer design and implementation planning  
+## ✅ OFFER DECISION COMPLETE 2026-07-11
+
+The task was stale: the offer had already been implemented as a private €2,000 engagement, not an
+unresolved group beta. The locked decision is recorded in
+`docs/business/VISIBILITY_TO_PAID_OFFER_DECISION_2026-07-11.md`.
+
+- Two weeks of Sandra-led preparation, then a private four-week sprint.
+- €2,000 or 2 × €1,100.
+- Existing Work With Me application and pipeline only.
+- Personal review and fit call before any payment link.
+- No passive checkout, no group-course build, and no income promise.
+
+The public page, application, scoring, fit-call routing, pipeline, and confirmation emails already
+implement the decision. No new implementation spec is required. The next work is attended traffic
+and sales proof; production currently has zero applications for this offer.
+
+Status: Complete; decision locked 2026-07-11
 Priority: High  
 Source: `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`
 

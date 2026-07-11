@@ -325,12 +325,12 @@ DB↔Resend sync state (2026-06-11): DB union of email tables = 6,795 distinct; 
 |---------|-------|--------|-------|
 | AI Prompts | Free | ✅ Active front-door lead magnet | Prompt reels -> email capture -> `/ai-prompts/access/[token]` |
 | AI Photo Prompt Vault | $37 (was $27 until the 2026-06-26 flash flip) | ✅ Active low-ticket bridge | Proven buyer activation product. Do not expect it to carry the whole business alone. |
-| Selfie To AI Photos Kit | $37 | 🔒 Built, env configured, pending voice QA + deploy smoke | Dedicated product for viral selfie/AI traffic: one clear selfie -> AI photos that still look like her. Uses its own product key, checkout, access page, delivery email, and webhook handler. |
+| Selfie To AI Photos Kit | $37 | ✅ Active; production checkout verified 2026-07-11 | Dedicated product for viral selfie/AI traffic: one clear selfie -> AI photos that still look like her. Uses its own product key, checkout, access page, delivery email, and webhook handler. |
 | Selfie Guide | Free | ✅ Free lead magnet ONLY (paid tier killed 2026-06-11) | `/selfie-guide` opt-in → token access. Paid checkout redirects to free page; fulfillment for past €17/€27 buyers intact. ⚠️ Follower reported guide content outdated — content refresh pending. |
 | Starter Kit | $37 | ⚠️ Secondary/support only | Not the primary prompt-funnel upgrade. Keep fulfillment for buyers. |
 | Masterclass | $147 | ✅ Active, 14 published lessons | Lessons 15-17 (Offer Map, Content-To-Cash, 30-Day Sprint) to be built as interactive lessons — drafts pending Sandra approval. Bundles Brand Strategy tool. |
 | SUITE membership | €97/mo | ✅ Active | Cancel anytime. No landing page yet (BRIDGE-01 scope). **Includes ALL one-time products (D3, 2026-06-11)**: flags in `academy_products` DB table (DB wins) + `lib/academy-entitlements.ts` defaults. |
-| Visibility To Paid Sprint | TBD | 🔒 Planned warm-audience offer | For women with skills, a service, expertise, a story, or an idea who need help becoming visible, clear, and easy to buy from online. Use existing Work With Me infrastructure first. |
+| Visibility To Paid Sprint | €2,000 or 2 × €1,100 | ✅ Active application offer; decision locked 2026-07-11 | Private two-week build/prep plus four-week sprint. Uses the existing Work With Me application, personal review, fit call, and attended payment-link path. No passive checkout. |
 | Brand Strategy Pack | $19 | ❌ Retired standalone (2026-06-11 verified) | `/brand-strategy` + its checkout redirect to Masterclass; tool bundled into Masterclass. Selfie Guide order-bump path still fulfills. |
 | Feed Planner | See blueprint | ✅ Active | `paid_blueprint` type |
 | Mini-products (4) | DEACTIVATED | ❌ | Prices set `active=false`. Become free workbooks in Academy |
