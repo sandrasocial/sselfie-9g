@@ -1,6 +1,14 @@
 # SELFIE-AI-PHOTOS-KIT-01 — Build The Top-Of-Funnel Paid Kit
 
-Status: Implemented in code; Stripe price + Vercel Production env configured; pending voice QA + deploy smoke
+## ✅ PRODUCTION CHECKOUT VERIFIED 2026-07-11 (Codex)
+
+- Public page, checkout, access page, delivery email, and buyer nurture copy were reviewed against the current SSELFIE voice and No-Fake rules. Automated surface and nurture checks pass.
+- The paid access page now delivers the visual source-selfie comparison and phone-to-prompt walkthrough promised by the sales and delivery copy, using existing approved source-selfie assets.
+- The live Stripe product is active at $37 USD one-time. A production checkout smoke reached the correct embedded Stripe form with the correct product metadata and price; the unpaid QA session was expired immediately.
+- No production buyer exists yet, so fulfillment was verified through the handler/tests rather than by altering customer data or making an artificial paid purchase.
+- Implementation, voice QA, and production checkout readiness are complete.
+
+Status: Complete; verified 2026-07-11
 Priority: High  
 Source: `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`
 
