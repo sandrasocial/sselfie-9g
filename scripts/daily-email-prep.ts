@@ -17,6 +17,7 @@
  */
 import { config } from "dotenv"
 import { resolve, join } from "path"
+import { homedir } from "os"
 config({ path: resolve(__dirname, "..", ".env.local") })
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
@@ -34,11 +35,11 @@ const FROM = process.env.RESEND_FROM_EMAIL || "Sandra from SSELFIE <hello@sselfi
 const PREVIEW_TO = "ssa@ssasocial.com"
 
 // ---------------------------------------------------------- daily life photos
-// Sandra drops real-life photos into her "SSELFIE Email Photos" Photos.app album.
-// scripts/export-daily-photo.ts (its own scheduled task, runs ~30min before this
-// one) pulls new ones into PHOTOS_DIR. This file just reads that pool + tracks
-// which filenames have already been used in an email so nothing repeats.
-const PHOTOS_DIR = resolve(__dirname, "..", "content", "daily-email-photos", "all")
+// Sandra drops real-life photos straight into this Desktop folder whenever she
+// wants one available for an email — no Photos.app export step needed. The
+// manifest (which filenames are already used) stays in the repo since it's app
+// state, not personal photo data; the photos themselves never touch the repo.
+const PHOTOS_DIR = join(homedir(), "Desktop", "SSELFIE Email Photos")
 const PHOTOS_MANIFEST = resolve(__dirname, "..", "content", "daily-email-photos", "used-manifest.json")
 const IMG_EXT = /\.(jpe?g|png|heic)$/i
 
@@ -193,6 +194,16 @@ async function pullData() {
     for (const b of items.slice(0, 6)) {
       console.log(`  ${String(b.status).padEnd(8)} | sent:${b.sent_at ? String(b.sent_at).slice(0, 16) : "—"} | ${b.name || b.subject || b.id}`)
     }
+    // full real subject + body excerpt of the actual last SENT broadcast — not just its name —
+    // so the learning loop knows what was really said, not what the label implies
+    const lastSent = items.find((b: any) => b.status === "sent")
+    if (lastSent) {
+      const full = await resend.broadcasts.get(lastSent.id)
+      const text = (full.data as any)?.text || ""
+      console.log(`\n  LAST SENT IN FULL (${String(lastSent.sent_at).slice(0, 16)}):`)
+      console.log(`  subject: ${(full.data as any)?.subject || "?"}`)
+      console.log(`  body: ${text.replace(/\s+/g, " ").slice(0, 300)}${text.length > 300 ? "…" : ""}`)
+    }
   })
 
   await section("EMAIL DELIVERABILITY last 3d (email_logs)", async () => {
@@ -230,15 +241,15 @@ async function pullData() {
     for (const d of DOORS) console.log(`  - ${d.key} [${d.temp}]: ${d.label}${d.url ? " -> " + d.url : ""}`)
   })
 
-  await section("DAILY LIFE PHOTOS (drop new ones into the 'SSELFIE Email Photos' Photos.app album)", async () => {
+  await section(`DAILY LIFE PHOTOS (drop new ones into ~/Desktop/SSELFIE Email Photos)`, async () => {
     const pool = listUnusedPhotos()
     console.log(`  ${pool.length} unused photo(s) waiting`)
     for (const p of pool.slice(0, 10)) console.log(`  ${p.filename}`)
     if (pool.length) {
-      console.log(`  Pass one that fits today's story via "heroPhoto":"<filename>" in the draft JSON.`)
+      console.log(`  Pass one that fits today's story via "heroPhoto":"<filename>" in the draft JSON. It renders at the BOTTOM of the email, near the sign-off — not as the lead.`)
       console.log(`  Omit heroPhoto to auto-use the oldest unused one, or set "heroPhoto":"none" to skip entirely.`)
     } else {
-      console.log(`  none available — email will be sent without a photo unless Sandra adds some to the album.`)
+      console.log(`  none available — email will be sent without a photo unless Sandra adds some to the folder.`)
     }
   })
 
@@ -286,11 +297,12 @@ function buildHtml(c: EmailContent, heroImageUrl?: string | null): string {
   const blocks: string[] = []
   c.paragraphs.forEach((para, i) => {
     blocks.push(p(para))
-    if (i === 0 && heroImageUrl) {
-      blocks.push(`<p style="margin:0 0 22px;"><img src="${heroImageUrl}" alt="" width="520" style="display:block;width:100%;max-width:520px;height:auto;border:0;outline:none;text-decoration:none;" /></p>`)
-    }
     if (i === c.ctaAfterIndex) blocks.push(p(renderPersonalLink(c.ctaLabel, c.ctaUrl), 22))
   })
+  // photo sits at the BOTTOM, near the sign-off — a closing note, not the lead
+  if (heroImageUrl) {
+    blocks.push(`<p style="margin:8px 0 22px;"><img src="${heroImageUrl}" alt="" width="520" style="display:block;width:100%;max-width:520px;height:auto;border:0;outline:none;text-decoration:none;" /></p>`)
+  }
   blocks.push(`<p style="margin:28px 0 0;color:#0A0A0A;font-family:Georgia,'Times New Roman',serif;font-size:17px;font-style:italic;">Sandra x</p>`)
   blocks.push(`<p style="margin:34px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#9B9189;"><a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#9B9189;text-decoration:underline;">Unsubscribe</a></p>`)
   return renderPersonalNote({ title: c.subject, bodyHtml: blocks.join("\n"), signoff: "" })

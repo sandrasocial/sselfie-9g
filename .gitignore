@@ -65,6 +65,7 @@ verify-*.png
 verify-cust-*.png
 
 # Local QA / typecheck scratch outputs
+/tmp/
 /tmp/*.log
 /tmp/*-qa/
 /tmp/*-previews/
@@ -72,3 +73,6 @@ verify-cust-*.png
 
 # One-off local screenshots
 /studio-flagship-faq.png
+
+# Sandra's daily-email real-life photo pool (local only — personal photos, not app data)
+content/daily-email-photos/
