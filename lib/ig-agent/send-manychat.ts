@@ -49,6 +49,12 @@ export async function sendManychatDm(params: {
     await record("failed", false)
     return { sent: false, reason: "manychat_api_key_missing" }
   }
+  const expectedAccountId = process.env.MANYCHAT_ACCOUNT_ID?.trim() || "877156"
+  const tokenAccountId = apiKey.split(":", 1)[0]
+  if (tokenAccountId !== expectedAccountId) {
+    await record("blocked", false)
+    return { sent: false, reason: "manychat_api_key_account_mismatch" }
+  }
 
   try {
     const res = await fetch("https://api.manychat.com/fb/sending/sendContent", {

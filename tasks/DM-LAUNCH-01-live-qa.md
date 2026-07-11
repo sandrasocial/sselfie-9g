@@ -1,5 +1,13 @@
 # DM-LAUNCH-01 - Instagram DM Live QA
 
+## 2026-07-11 repair and current proof
+
+- The correct ManyChat account (`fb877156`, connected to `@sandra.social`) was already live, but its Default Reply request body mapped the incoming message to `No field selected`. This was repaired to `Last Text Input` and the live flow was updated.
+- The stale-account API key was replaced locally and in Vercel Production with the key issued by account `877156`. Human-approved ManyChat outbound is enabled; `IG_AGENT_AUTO_SEND_ENABLED` remains off.
+- Outbound now fails closed if the token prefix does not match `MANYCHAT_ACCOUNT_ID`, preventing a future cross-account credential regression.
+- Native Instagram is already proven in production: seven Sandra-approved replies are recorded sent/delivered, most recently 2026-07-10. There have been zero automated agent sends in the last 30 days.
+- Remaining: one post-repair real DM through Default Reply, followed by one Sandra-approved reply and arrival confirmation in Instagram.
+
 OWNER: sandra
 
 Status: on hold by Sandra as of 2026-06-14.

@@ -113,4 +113,40 @@ describe("Instagram DM send policy", () => {
     })
     expect(fetchMock).not.toHaveBeenCalled()
   })
+
+  it("refuses a ManyChat API key issued by a different account", async () => {
+    process.env.MANYCHAT_API_KEY = "999999:stale-token"
+    process.env.MANYCHAT_ACCOUNT_ID = "877156"
+    process.env.MANYCHAT_OUTBOUND_ENABLED = "true"
+
+    const result = await sendManychatDm({
+      igUserId: "mc:12345",
+      message: "This must stay inside the intended account.",
+      conversationId: 44,
+      fromType: "sandra",
+    })
+
+    expect(result).toEqual({ sent: false, reason: "manychat_api_key_account_mismatch" })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it("allows a Sandra-approved ManyChat reply with the intended account key", async () => {
+    process.env.MANYCHAT_API_KEY = "877156:verified-token"
+    process.env.MANYCHAT_ACCOUNT_ID = "877156"
+    process.env.MANYCHAT_OUTBOUND_ENABLED = "true"
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ status: "success" }) })
+
+    const result = await sendManychatDm({
+      igUserId: "mc:12345",
+      message: "Your test reply is here.",
+      conversationId: 44,
+      fromType: "sandra",
+    })
+
+    expect(result).toEqual({ sent: true })
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.manychat.com/fb/sending/sendContent",
+      expect.objectContaining({ method: "POST" }),
+    )
+  })
 })
