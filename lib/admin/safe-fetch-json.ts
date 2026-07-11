@@ -1,8 +1,8 @@
 // Canonical guard for admin fetches. Vercel timeouts/errors return plain-text bodies
 // ("An error occurred..."), and calling response.json() on them throws
 // `Unexpected token 'A' ... is not valid JSON` in the admin UI. This helper was
-// previously reimplemented inline in content-brief-client, post-now-client, and
-// credit-manager — one implementation now serves every admin surface.
+// previously reimplemented inline across multiple admin clients. One implementation
+// now serves every admin surface.
 
 /**
  * Strict variant: returns parsed JSON ({} for an empty body) or THROWS a readable

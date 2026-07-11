@@ -43,6 +43,8 @@ describe("PHASE2-CLEANUP-01 admin simplification", () => {
     expect(contentPage).not.toContain("ContentBriefClient")
     expect(contentPage).not.toContain("MemberPulseSection")
     expect(contentPage).not.toContain("VaultDropEmailPreview")
+    expect(existsSync("components/admin/content-brief-client.tsx")).toBe(false)
+    expect(existsSync("app/api/admin/content-brief/route.ts")).toBe(false)
   })
 
   it("renders exactly five top-level admin destinations and one Tools index", () => {

@@ -77,7 +77,6 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     const shoot = read("lib/content-kit/shoot-generator.ts")
     const brief = read("lib/content-engine/brief-generator.ts")
     const dailyIntelligence = read("lib/admin/daily-briefing-intelligence.ts")
-    const briefClient = read("components/admin/content-brief-client.tsx")
     const corePersonality = read("lib/maya/core-personality.ts")
 
     expect(carousel).toContain("purposeMessagingBlock()")
@@ -97,7 +96,6 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     expect(dailyIntelligence).toContain("purposeMessagingBlock()")
     expect(dailyIntelligence).toContain("sandraContentIdentityBlock()")
     expect(corePersonality).toContain("purposeMessagingBlock()")
-    expect(briefClient).toContain("Sandra anchor")
   })
 
   it("documents the purpose lock everywhere future agents start", () => {

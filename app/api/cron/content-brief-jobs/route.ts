@@ -19,11 +19,9 @@ import { envFlag } from "@/lib/env-flags"
 export const dynamic = "force-dynamic"
 export const maxDuration = 300
 
-// Drains the admin "Queue this week's brief" button (app/api/admin/content-brief POST inserts
-// a content_brief_jobs row) without anyone running `pnpm content-brief:worker` by hand - Sandra
-// is not going to open a terminal. Runs one phase per invocation, same pattern as the Monday
-// content-brief-weekly cron (research -> build -> stories, each its own call under the 300s
-// serverless cap), so a queued job drains itself over a few ticks with zero manual step.
+// Formerly drained jobs queued by the retired weekly-brief admin dashboard. The route stays in
+// place for the held Phase 2B pipeline deletion, but CONTENT_BRIEF_ENABLED now gates every tick.
+// When explicitly enabled, it runs one phase per invocation (research -> build -> stories).
 const RESEARCH_MEMO_MAX_AGE_MS = 6 * 60 * 60 * 1000
 
 async function getFreshResearchMemo(): Promise<string | null> {

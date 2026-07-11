@@ -160,28 +160,6 @@ describe("weekly content brief: surfaces", () => {
     expect(cron).toContain("status: 500")
   })
 
-  it("renders trend radar and audience questions on the admin content brief page", () => {
-    const client = read("components/admin/content-brief-client.tsx")
-    expect(client).toContain("TrendRadarSection")
-    expect(client).toContain("noFakeGuardrail")
-    expect(client).toContain("audienceQuestions")
-    expect(client).toContain("Questions your audience actually asked")
-    expect(client).toContain("engineeredFor")
-  })
-
-  it("renders the on-screen hook bank as copyable chips on the admin page, empty-safe", () => {
-    const client = read("components/admin/content-brief-client.tsx")
-    expect(client).toContain("OnScreenHookBankSection")
-    expect(client).toContain("On-screen hooks that stop the scroll")
-    // Each hook is a copyable chip with its pattern label alongside.
-    expect(client).toContain("CopyHookChip")
-    expect(client).toContain("entry.pattern")
-    expect(client).toContain("entry.watchThroughMechanic")
-    // Old stored briefs without the bank render fine: the section disappears.
-    expect(client).toContain("safeArray(brief.onScreenHookBank)")
-    expect(client).toContain("if (entries.length === 0) return null")
-  })
-
   it("adds a short on-screen hooks block to the weekly brief email, empty-safe", () => {
     const cron = read("app/api/cron/content-brief-weekly/route.ts")
     expect(cron).toContain("On-screen hooks this week")
@@ -191,24 +169,11 @@ describe("weekly content brief: surfaces", () => {
     expect(cron).toContain("Array.isArray(brief.onScreenHookBank) ? brief.onScreenHookBank : []")
   })
 
-  it("queues manual admin generation instead of holding the browser request open", () => {
-    const route = read("app/api/admin/content-brief/route.ts")
-    const client = read("components/admin/content-brief-client.tsx")
+  it("removes the orphaned admin dashboard while preserving the local worker fallback", () => {
     const worker = read("scripts/run-content-brief-jobs.ts")
 
-    expect(route).toContain("queueContentBriefJob")
-    expect(route).toContain("getLatestContentBriefJob")
-    expect(route).not.toContain("generateContentBriefResearchMemo")
-    expect(route).not.toContain("generateContentBrief({ prebuiltResearchMemo")
-    expect(route).not.toContain("generateDailyStoriesForBrief")
-
-    expect(client).toContain("Queue this week's brief")
-    expect(client).toContain("latestJob")
-    // 2026-07-04: the admin UI must never tell Sandra to run a terminal command - the
-    // content-brief-jobs cron tick drains the queue automatically. The worker script is a
-    // manual/local fallback only, never the admin-facing instruction.
-    expect(client).not.toContain("content-brief:worker")
-    expect(client).not.toContain("GENERATION_STEPS")
+    expect(fs.existsSync(path.join(root, "components/admin/content-brief-client.tsx"))).toBe(false)
+    expect(fs.existsSync(path.join(root, "app/api/admin/content-brief/route.ts"))).toBe(false)
 
     expect(worker).toContain("claimNextContentBriefJob")
     expect(worker).toContain("generateContentBriefResearchMemo")
@@ -216,26 +181,6 @@ describe("weekly content brief: surfaces", () => {
     expect(worker).toContain("generateDailyStoriesForBrief")
     expect(worker).toContain("completeContentBriefJob")
     expect(worker).toContain("failContentBriefJob")
-  })
-
-  it("guards admin brief fetches against plain-text timeout responses", () => {
-    const client = read("components/admin/content-brief-client.tsx")
-    // 2026-07-06: the guard moved to the shared lib/admin/safe-fetch-json helper so every
-    // admin surface uses one implementation instead of three inline copies.
-    const helper = read("lib/admin/safe-fetch-json.ts")
-
-    expect(client).toContain('import { readJsonResponse } from "@/lib/admin/safe-fetch-json"')
-    expect(helper).toContain("response.text()")
-    expect(helper).toContain("The server returned a non-JSON error")
-    expect(client).not.toContain("await res.json()")
-    expect(client).not.toContain(".then((r) => r.json())")
-  })
-
-  it("formats admin brief dates with a fixed timezone so hydration text matches Vercel and the browser", () => {
-    const client = read("components/admin/content-brief-client.tsx")
-
-    expect(client).toContain('timeZone: "UTC"')
-    expect(client).not.toContain('toLocaleDateString("en-GB", { day: "numeric", month: "short" })')
   })
 
   it("uses streaming for long structured Anthropic brief calls", () => {
@@ -267,10 +212,8 @@ describe("weekly content brief: surfaces", () => {
     const vercelConfig = read("vercel.json")
     expect(vercelConfig).toContain('"path": "/api/cron/content-brief-jobs"')
 
-    // The UI must not tell a non-technical founder to run a terminal command.
-    const client = read("components/admin/content-brief-client.tsx")
-    expect(client).not.toContain("pnpm content-brief:worker")
-    expect(client).not.toContain("Run the local worker")
+    // The queue has no live UI producer now; Phase 2B owns eventual cron/pipeline deletion.
+    expect(fs.existsSync(path.join(root, "components/admin/content-brief-client.tsx"))).toBe(false)
   })
 })
 
@@ -330,15 +273,8 @@ describe("Story Engine rebuild (2026-07-04): Stories are conversations, not less
     expect(generator).toContain("sourceStoryTheme: safeBriefText(story.sourceStoryTheme, vault)")
   })
 
-  it("surfaces the conversation type and grounding citation on the admin page", () => {
-    const client = read("components/admin/content-brief-client.tsx")
-    expect(client).toContain("CONVERSATION_TYPE_LABELS")
-    expect(client).toContain("Grounded in: {story.sourceStoryTheme}")
-  })
-
   // 2026-07-09: the daily email's full feed-script + story-sequence dump was cut (Sandra's own
-  // content workflow lives in her Cowork skills, not this money-truth email) — see
-  // todaysMoveHtml in lib/admin/daily-sandra-briefing.ts. The admin page above still surfaces it.
+  // content workflow lives in her Cowork skills, not this money-truth email).
   it("no longer dumps today's conversation type/citation into the daily email", () => {
     const dailyEmail = read("lib/admin/daily-sandra-briefing.ts")
     expect(dailyEmail).not.toContain("conversationTypeLabel")

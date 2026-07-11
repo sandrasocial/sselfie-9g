@@ -150,7 +150,6 @@ describe("Content tools shoot-first workflow", () => {
   it("SHOOT-TREND-PRESET-01: surfaces this week's trend radar as Shoot Studio vibe presets", () => {
     const route = read("app/api/admin/content-kit/trend-vibes/route.ts")
     const shootClient = read("components/admin/shoot-studio-client.tsx")
-    const briefClient = read("components/admin/content-brief-client.tsx")
 
     // Admin-gated, same pattern as the other content-kit routes.
     expect(route).toContain("requireAdmin")
@@ -168,9 +167,6 @@ describe("Content tools shoot-first workflow", () => {
     expect(shootClient).toContain("onClick={() => setVibe(entry.vibePreset)}")
     expect(shootClient).toContain("This week&apos;s trends")
 
-    // The brief page surfaces the same vibe preset text for Sandra to audit.
-    expect(briefClient).toContain("Shoot Studio vibe preset:")
-    expect(briefClient).toContain("this week only")
   })
 
   it("raises the Shoot Studio selfie cap from 4 to 6, end to end (2026-07-05)", () => {

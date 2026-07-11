@@ -31,16 +31,10 @@ describe("VOICE-LOOP-01 apprentice loop", () => {
     }
   })
 
-  it("captures content brief and content-kit approval decisions as memory", () => {
-    const briefClient = read("components/admin/content-brief-client.tsx")
-    const briefMemoryRoute = read("app/api/admin/content-brief/memory/route.ts")
+  it("captures content-kit approval decisions as memory", () => {
     const carouselRoute = read("app/api/admin/content-kit/route.ts")
     const storyRoute = read("app/api/admin/content-kit/stories/route.ts")
 
-    expect(briefClient).toContain("LearningButton")
-    expect(briefClient).toContain("/api/admin/content-brief/memory")
-    expect(briefMemoryRoute).toContain('sourceType: "content_brief"')
-    expect(briefMemoryRoute).toContain("addAdminMemoryNote")
     expect(carouselRoute).toContain('sourceType: "carousel"')
     expect(carouselRoute).toContain("Sandra approved carousel")
     expect(storyRoute).toContain('sourceType: "story"')
