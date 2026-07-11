@@ -16,11 +16,10 @@ superseded, obsolete, and completed code specs are archived under `tasks/archive
 
 | Order | Task | What remains | Owner |
 |---:|---|---|---|
-| 1 | `PRESETS-PRODUCT-01.md` | Publish real preset collection rows/files/images, verify both production Stripe env vars, run one single and one bundle test purchase, then switch the approved ManyChat flow from holding to live. | Sandra + Codex for defects |
-| 2 | `SELFIE-AI-PHOTOS-KIT-01-build-plan.md` | Sandra/Claude voice QA of the public, checkout, access, and delivery surfaces, followed by one production checkout smoke. Code, Stripe price, and Production env are already present. | Sandra + Codex for defects |
-| 3 | `SHOOT-STUDIO-02-live-drop-qa.md` | Publish and verify the next real Shoot Studio drop across Vault, free previews, Library, Maya, and drop-email preview/delivery. | Sandra + Codex for defects |
-| 4 | `DM-LAUNCH-01-live-qa.md` | Prove the attended ManyChat/native Instagram receive-and-reply paths. Historical backlog import remains intentionally paused. | Sandra |
-| 5 | `VISIBILITY-TO-PAID-01-warm-audience-offer.md` | Finish the offer/product decision and write a fresh implementation spec only after that decision is approved. | Sandra + Claude |
+| 1 | `SELFIE-AI-PHOTOS-KIT-01-build-plan.md` | Sandra/Claude voice QA of the public, checkout, access, and delivery surfaces, followed by one production checkout smoke. Code, Stripe price, and Production env are already present. | Sandra + Codex for defects |
+| 2 | `SHOOT-STUDIO-02-live-drop-qa.md` | Publish and verify the next real Shoot Studio drop across Vault, free previews, Library, Maya, and drop-email preview/delivery. | Sandra + Codex for defects |
+| 3 | `DM-LAUNCH-01-live-qa.md` | Prove the attended ManyChat/native Instagram receive-and-reply paths. Historical backlog import remains intentionally paused. | Sandra |
+| 4 | `VISIBILITY-TO-PAID-01-warm-audience-offer.md` | Finish the offer/product decision and write a fresh implementation spec only after that decision is approved. | Sandra + Claude |
 
 ## Held, not active
 

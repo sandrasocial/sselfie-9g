@@ -6,6 +6,7 @@ import { ALLOWED_ANALYTICS_EVENTS } from "@/lib/analytics/event-contract"
 import { buildCheckoutEmailCaptureHiddenParams } from "@/lib/revenue-engine/anonymous-checkout-capture"
 import { buildCheckoutRedirectUrl } from "@/lib/revenue-engine/checkout-attribution"
 import { getProductById, PRODUCT_REVENUE_PATHS } from "@/lib/products"
+import { isPresetsCheckoutAvailable } from "@/lib/presets/checkout-readiness"
 
 const ROOT = process.cwd()
 
@@ -14,6 +15,14 @@ function read(path: string) {
 }
 
 describe("PRESETS-PRODUCT-01", () => {
+  it("fails closed when no published preset collections are available", () => {
+    expect(isPresetsCheckoutAvailable("single", 0, false)).toBe(false)
+    expect(isPresetsCheckoutAvailable("bundle", 0, false)).toBe(false)
+    expect(isPresetsCheckoutAvailable("single", 1, false)).toBe(false)
+    expect(isPresetsCheckoutAvailable("single", 1, true)).toBe(true)
+    expect(isPresetsCheckoutAvailable("bundle", 1, false)).toBe(true)
+  })
+
   it("registers the single and bundle products at the locked prices", () => {
     expect(getProductById("presets_single")).toMatchObject({
       id: "presets_single",

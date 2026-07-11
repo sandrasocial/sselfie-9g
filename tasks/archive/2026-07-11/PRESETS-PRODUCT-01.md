@@ -1,5 +1,13 @@
 # PRESETS-PRODUCT-01 — Launch "The SSELFIE Presets" as a standalone one-off product
 
+## ✅ PRODUCTION VERIFIED 2026-07-11 (Codex)
+
+- All six published collections have live mobile ZIPs, desktop ZIPs, before/after JPEGs, and the in-app setup guide; all 30 endpoints returned HTTP 200 with the expected content types.
+- The live Stripe prices are active one-time USD prices at $19 single / $39 bundle. Production checkout smokes reached the correct embedded Stripe payment forms, and the temporary unpaid QA sessions were expired immediately.
+- Existing real single and bundle purchases are paid at the correct amounts, their delivery emails show `delivered`, and their token access pages resolve with one and six collections respectively and no placeholder downloads.
+- Checkout now fails closed for both tiers if the published catalog is empty, preventing an empty bundle sale during a catalog outage.
+- The old "preset_collections is empty" launch dependency was stale. Product implementation and production proof are complete; ManyChat receive/reply verification remains tracked separately in `DM-LAUNCH-01-live-qa.md`.
+
 **Owner:** Codex (infra/backend/logic) + Claude (design + copy) · spec by Claude 2026-06-16 · Sandra validated demand via IG Stories → many DM requests
 
 ## Ownership split (LOCKED 2026-06-16)

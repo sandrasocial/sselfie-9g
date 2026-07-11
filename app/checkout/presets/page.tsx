@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import { PromptVaultCheckoutEmailCapture } from "@/components/prompt-vault/prompt-vault-checkout-email-capture"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { isPresetsCheckoutAvailable } from "@/lib/presets/checkout-readiness"
 import { getPublishedPresetCollections } from "@/lib/presets/published-collections"
 import { presetsProductIdForTier, type PresetsTier } from "@/lib/presets/orders"
 import {
@@ -147,12 +148,18 @@ function PresetsChoicePage({
           <p className="mt-2 text-sm leading-6 text-[#4F5052]">
             Every current collection, and every new one added later.
           </p>
-          <Link
-            href={buildPresetsCheckoutHref("bundle")}
-            className="mt-6 block bg-[#0D0E10] px-5 py-4 text-center text-[10px] font-medium uppercase tracking-[0.24em] text-white"
-          >
-            Get everything
-          </Link>
+          {collections.length > 0 ? (
+            <Link
+              href={buildPresetsCheckoutHref("bundle")}
+              className="mt-6 block bg-[#0D0E10] px-5 py-4 text-center text-[10px] font-medium uppercase tracking-[0.24em] text-white"
+            >
+              Get everything
+            </Link>
+          ) : (
+            <p className="mt-6 text-xs leading-6 text-[#818283]">
+              The full collection will be available again as soon as the preset library is online.
+            </p>
+          )}
         </div>
       </section>
     </main>
@@ -177,7 +184,7 @@ export default async function PresetsCheckoutPage({
       ? collections.find(collection => collection.slug === params.collection) || collections[0] || null
       : null
 
-  if (tier === "single" && !selectedCollection) {
+  if (!isPresetsCheckoutAvailable(tier, collections.length, Boolean(selectedCollection))) {
     return <PresetsChoicePage collections={collections} />
   }
 
