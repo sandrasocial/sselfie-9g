@@ -12,6 +12,80 @@ import {
 import { derivePublicVaultWhenToUse } from "@/lib/vault/public-copy"
 import { getHighestStaticPromptNumber, normalizePromptNumber } from "@/lib/ai-prompts/prompt-data"
 
+type PublishedShootLibraryDrop = {
+  shootId: number
+  title: string
+  description: string
+  thumbnailUrl: string | null
+  publishedAt: string | Date
+}
+
+export async function syncPublishedShootToMemberLibrary(
+  drop: PublishedShootLibraryDrop,
+): Promise<boolean> {
+  try {
+    const month = new Date(drop.publishedAt).toISOString().slice(0, 7)
+    const existing = (await sql`
+      SELECT id FROM academy_monthly_drops WHERE title = ${drop.title} LIMIT 1
+    `) as Array<{ id: number }>
+
+    if (existing.length > 0) {
+      await sql`
+        UPDATE academy_monthly_drops
+        SET description = ${drop.description},
+            thumbnail_url = ${drop.thumbnailUrl},
+            month = ${month},
+            resource_type = 'prompt-collection',
+            resource_url = '/academy/access/prompt-vault',
+            category = 'Prompt Vault',
+            status = 'published',
+            updated_at = NOW()
+        WHERE id = ${existing[0].id}
+      `
+    } else {
+      await sql`
+        INSERT INTO academy_monthly_drops (
+          title,
+          description,
+          thumbnail_url,
+          resource_type,
+          resource_url,
+          month,
+          category,
+          order_index,
+          status,
+          download_count,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          ${drop.title},
+          ${drop.description},
+          ${drop.thumbnailUrl},
+          'prompt-collection',
+          '/academy/access/prompt-vault',
+          ${month},
+          'Prompt Vault',
+          0,
+          'published',
+          0,
+          NOW(),
+          NOW()
+        )
+      `
+    }
+
+    return true
+  } catch (error) {
+    console.error("[shoot-publisher] member Library drop sync failed:", {
+      shootId: drop.shootId,
+      title: drop.title,
+      error,
+    })
+    return false
+  }
+}
+
 export async function publishShootToVault(id: number) {
   await ensureVaultCollectionsSchema()
   await ensurePublishedVaultPromptNumbers()
@@ -152,6 +226,15 @@ export async function publishShootToVault(id: number) {
         updated_at = NOW()
     WHERE id = ${shoot.id}
   `
+
+  await syncPublishedShootToMemberLibrary({
+    shootId: shoot.id,
+    title: shoot.title,
+    description: moodLine,
+    thumbnailUrl: cards[0]?.exampleImage ?? null,
+    publishedAt: collection.published_at,
+  })
+
   const updatedShoot = await getShoot(shoot.id)
   return {
     shoot: updatedShoot ?? { ...shoot, status: "approved" as const },
