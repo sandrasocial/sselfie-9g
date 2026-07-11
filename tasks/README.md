@@ -16,7 +16,7 @@ superseded, obsolete, and completed code specs are archived under `tasks/archive
 
 | Order | Task | What remains | Owner |
 |---:|---|---|---|
-| 1 | `DM-LAUNCH-01-live-qa.md` | Prove the attended ManyChat/native Instagram receive-and-reply paths. Historical backlog import remains intentionally paused. | Sandra |
+| 1 | `DM-LAUNCH-01-live-qa.md` | Send one non-keyword test DM after the 2026-07-11 bridge repair, reply from admin, and confirm it arrives. Native replies are already proven; historical backlog import stays paused. | Sandra + Codex |
 
 ## Held, not active
 

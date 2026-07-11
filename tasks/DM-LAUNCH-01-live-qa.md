@@ -10,7 +10,7 @@
 
 OWNER: sandra
 
-Status: on hold by Sandra as of 2026-06-14.
+Status: Bridge repaired and deployed 2026-07-11; waiting for one attended post-repair DM/reply proof.
 
 Forward-going bridge is live. Historical backlog import is paused because Meta Graph times out on
 Sandra's current IG thread volume, and the public ManyChat API does not expose bulk message
