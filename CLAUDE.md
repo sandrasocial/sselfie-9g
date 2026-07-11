@@ -269,7 +269,7 @@ from `stripe_payments` / Stripe API only — never analytics events.
 | What | Value |
 |------|-------|
 | Resend Main Audience ID | `3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd` |
-| Resend total contacts | 7,484 in Main Audience (6,839 subscribed) — verified via Resend API 2026-06-29; re-verify before broadcasts |
+| Resend total contacts | 7,857 in Main Audience (7,059 subscribed, 798 unsubscribed) — verified via full Resend API pagination 2026-07-09; re-verify before broadcasts |
 | Neon DB users | 603 unique emails (verified 2026-03-02) |
 | Studio checkout URL | `https://sselfie.ai/checkout/membership` |
 | Feed Planner checkout | `https://sselfie.ai/checkout/blueprint` |
@@ -305,15 +305,15 @@ from `stripe_payments` / Stripe API only — never analytics events.
 
 | Segment | Count | Notes |
 |---------|-------|-------|
-| Main Audience | 7,484 (6,839 subscribed) | ✅ Use for all broadcasts |
-| AI Photoshoot Audience | 2,798 (2,701 subscribed) | Prompt-funnel segment |
-| Cold Users | 2,754 (2,556 subscribed) | Imported/cold — low engagement expected |
-| Brand Blueprint (legacy) | 901 | Legacy freebie downloaders — no new entries |
-| Paid users | 100 | ⚠️ MIXED: one-time + beta + Studio members |
-| Beta Customers | 73 | Old beta pricing (€47/€79/€99) |
+| Main Audience | 7,857 (7,059 subscribed) — re-verified 2026-07-09 | ✅ Use for all broadcasts |
+| AI Photoshoot Audience | 2,798 (2,701 subscribed) | Prompt-funnel segment — count from 2026-06-11, not re-verified |
+| Cold Users | 2,754 (2,556 subscribed) | Imported/cold — low engagement expected — count from 2026-06-11, not re-verified |
+| Brand Blueprint (legacy) | 901 | Legacy freebie downloaders — no new entries — count from 2026-06-11, not re-verified |
+| Paid users | 100 | ⚠️ MIXED: one-time + beta + Studio members — count from 2026-06-11, not re-verified |
+| Beta Customers | 73 | Old beta pricing (€47/€79/€99) — count from 2026-06-11, not re-verified |
 
 Resend also holds ~60 mechanical "Sequence:"/"Sequence History:" audiences (cron plumbing) — ignore for marketing counts.
-DB↔Resend sync state (2026-06-11): DB union of email tables = 6,795 distinct; 241 DB-only (tests/invalid/old imports, zero real paying customers), 35 Resend-only (manual imports). No paying customer is missing from Main Audience.
+DB↔Resend sync state (2026-06-11): DB union of email tables = 6,795 distinct; 241 DB-only (tests/invalid/old imports, zero real paying customers), 35 Resend-only (manual imports). No paying customer is missing from Main Audience. This sync check has not been re-run since — only the Main Audience total/subscribed count above was refreshed on 2026-07-09.
 
 **Always send to Main Audience for full-list broadcasts — NOT smaller segments**
 
