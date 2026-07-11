@@ -49,6 +49,7 @@ function checkoutAttributionProperties(searchParams: URLSearchParams) {
 function getPaymentEntryEvent(productType: string): string {
   if (productType === "prompt_vault") return "prompt_vault_checkout_payment_entry_shown"
   if (productType === "starter_kit") return "starter_kit_checkout_payment_entry_shown"
+  if (productType === "masterclass") return "masterclass_checkout_payment_entry_shown"
   if (productType === "selfie_to_brand_shoot_system") return "selfie_to_brand_shoot_checkout_payment_entry_shown"
   if (productType === "presets_single" || productType === "presets_bundle") return "presets_checkout_payment_entry_shown"
   if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") {
@@ -82,11 +83,11 @@ const CHECKOUT_COPY: Record<
     footer: "Your Starter Kit access is delivered right after payment.",
   },
   masterclass: {
-    heroTitle: "Complete your Masterclass order",
-    heroBody: "Get Sandra's full selfie method right after payment.",
-    heading: "Secure checkout",
-    blurb: "You're getting Sandra's full selfie method, step by step.",
-    footer: "Your Masterclass access is delivered right after payment.",
+    heroTitle: "Your photos are the start. Now build what they lead to.",
+    heroBody: "One clear method for your positioning, content, captions, offer bridge, and 30-day plan.",
+    heading: "Selfie Branding Masterclass",
+    blurb: "One $147 payment gives you the complete course, instant access, and every current Masterclass resource. No subscription.",
+    footer: "Your receipt and course access are delivered to the email you entered. Start with Your Foundation.",
   },
   prompt_vault: {
     heroTitle: "Get the full shoot and future drops",
@@ -141,6 +142,12 @@ const CHECKOUT_COPY: Record<
 }
 
 const CHECKOUT_CONFIDENCE_POINTS: Record<string, string[]> = {
+  masterclass: [
+    "Instant course access",
+    "One-time $147 purchase",
+    "No subscription",
+    "Foundation, content, captions, offer, and 30-day plan",
+  ],
   starter_kit: [
     "Instant access after payment",
     "One-time $37 purchase",
@@ -190,6 +197,7 @@ function CheckoutContent() {
   const isPresets = productType === "presets_single" || productType === "presets_bundle"
   const isSelfieToBrandShoot = productType === "selfie_to_brand_shoot_system"
   const isStarterKit = productType === "starter_kit"
+  const isMasterclass = productType === "masterclass"
   const isVisualIdentityOffer = isPromptVault || isSelfieAiPhotosKit || isSelfieToBrandShoot
   const hasVaultCredit = isSelfieToBrandShoot && searchParams.get("vault_credit") === "1"
   const checkoutCopy = CHECKOUT_COPY[productType] ?? {
@@ -473,6 +481,16 @@ function CheckoutContent() {
               </p>
               <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
                 Presets, setup guide, posing guide, caption templates, and the 7-day content starter are delivered right away.
+              </p>
+            </div>
+          )}
+          {isMasterclass && (
+            <div className="mx-auto mt-5 max-w-xl border border-[rgba(197,198,200,0.45)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(13,14,16,0.05)] sm:px-5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#818283]">
+                What happens after payment
+              </p>
+              <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
+                Your course opens right away. Start with Your Foundation to clarify what you sell, who it helps, and what you want to be known for before you build the content rhythm.
               </p>
             </div>
           )}
