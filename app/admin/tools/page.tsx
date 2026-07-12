@@ -28,6 +28,11 @@ const TOOLS = [
     href: "/admin/prompt-vault",
   },
   {
+    title: "Activation funnel",
+    description: "See the seven steps from first app open to a second week of creation.",
+    href: "/admin/activation-funnel",
+  },
+  {
     title: "Brand Shoot monitor",
     description: "Check Selfie to Brand Shoot access and progress.",
     href: "/admin/selfie-to-brand-shoot",
