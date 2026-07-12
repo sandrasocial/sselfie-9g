@@ -12,6 +12,7 @@ import type { OutputFormat } from "./types"
 import { Spinner } from "./loading"
 import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 import { retryGeneratedImageOnce } from "./image-retry"
+import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 
 export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
 
@@ -261,6 +262,13 @@ export function ConceptCard({
                   download
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() => {
+                    void recordSuiteDownloadForReview({
+                      source: "concept-card",
+                      format: "video",
+                      assetId: gen.aiImageId,
+                    })
+                  }}
                   className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
                 >
                   Download video
@@ -278,14 +286,11 @@ export function ConceptCard({
                   type="button"
                   onClick={() => {
                     // Member pulse: a download is the strongest "she loved it" signal (SUITE-UX-02).
-                    import("@/lib/analytics/client")
-                      .then(({ trackAnalyticsEvent }) =>
-                        trackAnalyticsEvent({
-                          event: "suite_image_downloaded",
-                          properties: { format, source: "concept-card" },
-                        })
-                      )
-                      .catch(() => {})
+                    void recordSuiteDownloadForReview({
+                      source: "concept-card",
+                      format,
+                      assetId: gen.aiImageId,
+                    })
                     window.open(firstBaked ?? images[0], "_blank", "noreferrer")
                   }}
                   className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.2em]"

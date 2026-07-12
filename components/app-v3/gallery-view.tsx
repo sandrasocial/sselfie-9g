@@ -19,6 +19,7 @@ import {
 import { ImageLightbox } from "./image-lightbox"
 import type { AppV3GalleryAsset, AppV3GalleryCounts } from "@/lib/app-v3/gallery-assets"
 import { retryGeneratedImageOnce } from "./image-retry"
+import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 
 type GalleryFilter =
   | "all"
@@ -86,6 +87,11 @@ function filterAssets(assets: AppV3GalleryAsset[], filter: GalleryFilter): AppV3
 }
 
 function downloadAsset(asset: AppV3GalleryAsset) {
+  void recordSuiteDownloadForReview({
+    source: "gallery",
+    format: asset.contentType,
+    assetId: asset.id,
+  })
   const anchor = document.createElement("a")
   anchor.href = asset.url
   anchor.target = "_blank"

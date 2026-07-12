@@ -20,7 +20,6 @@ import { LowCreditModal } from "@/components/credits/low-credit-modal"
 import { ZeroCreditsUpgradeModal } from "@/components/credits/zero-credits-upgrade-modal"
 import { PostPurchaseWelcomeModal } from "@/components/sselfie/post-purchase-welcome-modal"
 import { CreditRenewalBanner } from "@/components/credits/credit-renewal-banner"
-import { FeedbackButton } from "@/components/feedback/feedback-button"
 import { UpgradeOrCredits } from "@/components/UpgradeOrCredits"
 import type { User as UserType } from "./types"
 import { getAccessState } from "./access"
@@ -1632,11 +1631,6 @@ export default function SselfieApp({
             setPendingWelcomeDismissed(true)
           }}
         />
-      )}
-
-      {/* Hide feedback button when on maya chat screen or feed planner */}
-      {activeTab !== "maya" && activeTab !== "feed-planner" && (
-        <FeedbackButton userId={String(userId)} userEmail={userEmail} userName={userName} />
       )}
 
       {/* Blueprint Welcome Wizard */}

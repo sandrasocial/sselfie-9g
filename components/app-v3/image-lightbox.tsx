@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from "react"
 import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
+import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 
 interface ImageLightboxProps {
   images: string[]
@@ -134,14 +135,7 @@ export function ImageLightbox({
             type="button"
             onClick={() => {
               // Member pulse: downloads = "she loved it" (SUITE-UX-02).
-              import("@/lib/analytics/client")
-                .then(({ trackAnalyticsEvent }) =>
-                  trackAnalyticsEvent({
-                    event: "suite_image_downloaded",
-                    properties: { source: "lightbox" },
-                  })
-                )
-                .catch(() => {})
+              void recordSuiteDownloadForReview({ source: "lightbox" })
               window.open(baked ?? url, "_blank", "noreferrer")
             }}
             className="inline-flex min-h-11 items-center rounded-full bg-white px-6 py-2.5 text-[11px] uppercase tracking-[0.18em] text-[#0D0E10] transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-95"

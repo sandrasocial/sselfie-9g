@@ -44,6 +44,7 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
   CHAT: { interval: 60, limit: 30 }, // 30 messages per minute
   FEED_GENERATION: { interval: 300, limit: 5 }, // 5 feed generations per 5 minutes
   ANALYTICS: { interval: 60, limit: 120 }, // 120 events per minute (fail-open if Redis not configured)
+  REVIEW_SUBMISSION: { interval: 3600, limit: 5 }, // authenticated review attempts per hour
 }
 
 export async function checkRateLimit(

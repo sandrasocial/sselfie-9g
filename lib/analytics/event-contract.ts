@@ -168,6 +168,12 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "suite_image_generated",
   "suite_image_downloaded",
   "suite_edit_applied",
+  // Authenticated, post-download SUITE review capture. Behavior only; approved proof lives in
+  // admin_testimonials and never counts as revenue.
+  "suite_review_prompt_shown",
+  "suite_review_prompt_opened",
+  "suite_review_prompt_dismissed",
+  "suite_review_submitted",
   // MAYA-FIRST-SUITE-UX — inline guided creation path. Behavior only.
   "suite_maya_inline_started",
   "suite_intent_detected",

@@ -27,6 +27,7 @@ import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
 import type { AppV3Section } from "@/lib/app-v3/navigation"
 import { buildStoredSectionHref, readStoredAppSection, saveStoredAppSection } from "./continuity"
 import { intentForFormat } from "@/lib/app-v3/maya/intent-router"
+import { PostSuccessReviewPrompt } from "@/components/testimonials/post-success-review-prompt"
 
 export interface AppV3ShellProps {
   firstName?: string | null
@@ -281,6 +282,7 @@ function ShellInner({
 
       {!limited && <MayaConcierge hasTrainedModel={hasTrainedModel} analyticsCohort={cohort} />}
       {!limited && <MayaFloatingLauncher />}
+      <PostSuccessReviewPrompt />
 
       {/* Bottom product navigation (text-only, on-brand, thumb-friendly for a phone-first audience) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 w-full max-w-[100dvw] overscroll-x-none border-t border-[#C5C6C8]/50 bg-[#F8FAFA]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur [overflow-x:clip]">
