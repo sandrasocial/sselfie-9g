@@ -241,7 +241,7 @@ export default async function AdminPage({
               </p>
             )}
             <Link href="/admin/content-brief" className="mt-6 inline-block text-xs uppercase tracking-[0.14em] underline underline-offset-4">
-              Open content brief
+              Open content
             </Link>
           </div>
         </section>

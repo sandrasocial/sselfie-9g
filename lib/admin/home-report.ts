@@ -204,10 +204,8 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
         summary
       FROM admin_cron_runs
       WHERE job_name IN (
-        'product-qa-daily',
         'cron-health-check',
         'daily-sandra-briefing',
-        'content-brief-jobs',
         'payment-reconciliation'
       )
       ORDER BY job_name, started_at DESC
@@ -330,10 +328,10 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
     team: {
       employees: [
         employeeFor(
-          "product-qa-daily",
-          "Product QA Reporter",
-          "Finds bug, reliability, and stuck-system risks before the daily briefing.",
-          "analytics_reports.product_qa_daily + Daily Sandra Briefing",
+          "payment-reconciliation",
+          "Payment Reconciliation",
+          "Confirms Stripe payments are recorded and flags fulfillment drift.",
+          "/admin/webhook-review",
         ),
         employeeFor(
           "cron-health-check",
@@ -347,12 +345,6 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
           "Sends the one daily money, member, needs-me, and content email.",
           "email to Sandra",
         ),
-        employeeFor(
-          "content-brief-jobs",
-          "Content Brief Worker",
-          "Processes queued weekly brief phases and story generation jobs.",
-          "/admin/content-brief",
-        ),
         {
           name: "Diagnostics APIs",
           role: "Expose cron status and admin errors for the Team panel.",
@@ -362,22 +354,6 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
           destination: "/api/admin/diagnostics/cron-status + /api/admin/diagnostics/errors",
           source: "admin_email_errors",
         },
-        ...[
-          "reindex-codebase",
-          "refresh-segments",
-          "sync-audience-segments",
-          "backfill-resend-audience",
-          "referral-bonus-notifications",
-          "maya-instagram-trends-weekly",
-        ].map((name) => ({
-          name,
-          role: "Dormant-by-choice automation. Visible here so it cannot disappear silently.",
-          status: "paused" as const,
-          lastRun: null,
-          lastResult: "Paused by EMPLOYEE-01. Do not schedule in this task.",
-          destination: "none",
-          source: "docs/AUTOMATION_ROSTER.md",
-        })),
       ],
       diagnostics: {
         errors24h: Number((diagnosticsRows as any[])[0]?.errors_24h || 0),

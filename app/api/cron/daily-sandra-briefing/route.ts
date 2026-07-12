@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import {
   buildDailySandraBriefing,
-  buildSystemHealthFromProductQa,
   generateDailySandraBriefingEmail,
 } from "@/lib/admin/daily-sandra-briefing"
 import { getGrowthIntelligenceReport } from "@/lib/admin/growth-intelligence"
@@ -32,10 +31,9 @@ export async function GET(request: NextRequest) {
     }
 
     const report = await getGrowthIntelligenceReport(7)
-    const { getLatestAnalyticsReports } = await import("@/lib/analytics/reports")
 
     // Money header from stripe_payments, the only allowed money source.
-    const [moneyRows, productQaRows, approvalActions] = await Promise.all([
+    const [moneyRows, approvalActions] = await Promise.all([
       sql`
         SELECT
           COUNT(*) FILTER (WHERE payment_date > NOW() - INTERVAL '1 day')::int AS yesterday_payments,
@@ -47,7 +45,6 @@ export async function GET(request: NextRequest) {
           AND (is_test_mode = FALSE OR is_test_mode IS NULL)
           AND payment_date > NOW() - INTERVAL '30 days'
       ` as unknown as Promise<any[]>,
-      getLatestAnalyticsReports({ reportType: "product_qa_daily", limit: 1 }).catch(() => []),
       syncApprovalActions().catch((error) => {
         console.error("[daily-sandra-briefing] approval sync failed:", error)
         return []
@@ -63,7 +60,6 @@ export async function GET(request: NextRequest) {
     }
     const briefing = buildDailySandraBriefing(report, {
       money: moneyInput,
-      systemHealth: buildSystemHealthFromProductQa(productQaRows[0]?.payload),
       approvalActions,
     })
 

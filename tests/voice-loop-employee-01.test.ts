@@ -46,25 +46,25 @@ describe("VOICE-LOOP-01 apprentice loop", () => {
 })
 
 describe("EMPLOYEE-01 roster and dormant cron visibility", () => {
-  it("keeps Product QA off the Vercel schedule while preserving existing report consumption", () => {
+  it("removes the retired Product QA report from both scheduling and the daily briefing", () => {
     const vercel = JSON.parse(read("vercel.json")) as { crons: Array<{ path: string; schedule: string }> }
     const dailyRoute = read("app/api/cron/daily-sandra-briefing/route.ts")
-    const dailyBuilder = read("lib/admin/daily-sandra-briefing.ts")
 
     expect(vercel.crons.map((cron) => cron.path)).not.toContain("/api/cron/product-qa-daily")
-    expect(dailyRoute).toContain('reportType: "product_qa_daily"')
-    expect(dailyRoute).toContain("buildSystemHealthFromProductQa")
-    expect(dailyBuilder).toContain("System health")
+    expect(dailyRoute).not.toContain('reportType: "product_qa_daily"')
+    expect(dailyRoute).not.toContain("buildSystemHealthFromProductQa")
   })
 
-  it("surfaces a Team panel with live and paused employees", () => {
+  it("surfaces only live protection systems in the Team panel", () => {
     const report = read("lib/admin/home-report.ts")
     const adminPage = read("app/admin/page.tsx")
 
-    expect(report).toContain("Product QA Reporter")
+    expect(report).not.toContain("Product QA Reporter")
+    expect(report).not.toContain("Content Brief Worker")
+    expect(report).not.toContain("Dormant-by-choice automation")
     expect(report).toContain("Cron Health Watchdog")
+    expect(report).toContain("Payment Reconciliation")
     expect(report).toContain("daily-sandra-briefing")
-    expect(report).toContain("Dormant-by-choice automation")
     expect(adminPage).toContain("Team")
     expect(adminPage).not.toContain("DM bridge truth")
   })
