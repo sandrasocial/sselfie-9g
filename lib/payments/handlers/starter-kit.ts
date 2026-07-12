@@ -12,6 +12,7 @@ import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { updateContactTags as updateTags } from "@/lib/resend/manage-contact"
 import { generatePasswordSetupLinkForPurchase } from "../shared"
+import { activatePaidBuyerSuiteTrial } from "../paid-buyer-suite-trial"
 import type { CheckoutFulfillmentContext } from "../types"
 
 async function upsertStarterKitSubscriber(email: string, name?: string | null) {
@@ -270,42 +271,27 @@ export async function handleStarterKitCheckout(ctx: CheckoutFulfillmentContext):
         console.error(`[v0] Error sending Starter Kit delivery email:`, emailError.message)
       }
 
-      // BRIDGE-01 Phase D: 7-day SUITE trial unlock, sent after delivery (livemode only —
-      // test checkouts must never email real buyers). Idempotent via email_logs.
-      if (event.livemode) {
-        try {
-          const alreadySent = await sql`
-            SELECT 1 FROM email_logs
-            WHERE user_email = ${customerEmail!}
-              AND email_type = 'suite_trial_unlock'
-              AND status IN ('sent', 'delivered')
-            LIMIT 1
-          `
-          if (alreadySent.length === 0) {
+      // Paid buyers with an account start their included trial immediately. Email-token
+      // fulfillment stays in place for guests. The shared helper is live-only and one-ever.
+      try {
+        await activatePaidBuyerSuiteTrial({
+          livemode: event.livemode,
+          userId,
+          customerEmail,
+          customerName: session.customer_details?.name,
+          productType: "starter_kit",
+          stripeSessionId: session.id,
+          getClaimUrl: async () => {
             const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-            const subscriberForTrial = await upsertStarterKitSubscriber(
+            const subscriber = await upsertStarterKitSubscriber(
               customerEmail!,
-              session.customer_details?.name
+              session.customer_details?.name,
             )
-            const { generateTrialUnlockEmail } = await import("@/lib/email/templates/suite-trial")
-            const trialEmail = generateTrialUnlockEmail({
-              customerName: session.customer_details?.name,
-              customerEmail: customerEmail!,
-              productLabel: "Starter Kit",
-              claimUrl: `${productionUrl}/claim/${subscriberForTrial.accessToken}`,
-            })
-            await sendEmail({
-              to: customerEmail!,
-              subject: trialEmail.subject,
-              html: trialEmail.html,
-              text: trialEmail.text,
-              emailType: "suite_trial_unlock",
-              tags: ["suite-trial", "unlock", "starter-kit"],
-            })
-          }
-        } catch (trialEmailError: any) {
-          console.error(`[v0] Error sending SUITE trial unlock email:`, trialEmailError.message)
-        }
+            return `${productionUrl}/claim/${subscriber.accessToken}`
+          },
+        })
+      } catch (trialError: any) {
+        console.error(`[v0] Error activating included SUITE trial:`, trialError.message)
       }
 
       await updateTags(customerEmail!, {
