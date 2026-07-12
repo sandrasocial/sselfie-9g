@@ -82,11 +82,28 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 
 ---
 
-## Current Priorities (June 2026)
+## Current Priorities (July 2026)
 
-### Forward Revenue Plan (locked 2026-07-01)
+### Growth Machine (locked 2026-07-12)
 
-Current operating plan: `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`.
+The current operating contract is
+`docs/business/SSELFIE_GROWTH_MACHINE_2026-07-12.md`. It supersedes older funnel sequencing where
+they conflict.
+
+- `PROMPT` → $37 Prompt Vault → paid-buyer SUITE activation.
+- `SELFIE` → $37 Starter Kit → paid-buyer SUITE activation.
+- `WORK` → attended application pipeline → private €2,000 checkout.
+- SUITE → first useful image → download → repeat creation → €97/month continuation.
+- Presets remain a fulfilled secondary sale, not another primary front door.
+- Selfie To Brand Shoot is historical-access-only; public sales and checkout are retired while paid
+  buyer access and fulfillment remain protected.
+- One commercial experiment at a time. AI measures, prioritizes, drafts, and monitors; it does not
+  create parallel funnels or send attended high-value offers automatically.
+
+### Forward Revenue Plan (superseded where it conflicts, 2026-07-01)
+
+Historical foundation: `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`. Use the newer
+Growth Machine contract for current routing.
 
 Do not treat the whole audience as one buyer.
 
@@ -94,7 +111,8 @@ Do not treat the whole audience as one buyer.
 - **Warm audience:** wants the deeper path. Build the immediate **Visibility To Paid Sprint** around women who already have skills, a story, a service, expertise, or an idea, but do not know what to post, what to say, or what they can sell first.
 - **Prompt Vault:** stays the proven low-ticket buyer bridge. Do not expect it to carry the whole business alone.
 - **SUITE / Studio:** stays the recurring core and monthly creation system.
-- **Selfie To Brand Shoot:** use as a bonus, onboarding path, or guided support asset until live sales/proof justify making it a primary public push again.
+- **Selfie To Brand Shoot:** historical buyer access only. Do not restore public promotion without a
+  new measured decision.
 
 Operating rule:
 
@@ -115,7 +133,10 @@ Operating rule:
 | VOICE-01 copy cleanup batches 1-4a + check:voice guard | ✅ Live 2026-06-11 |
 | ADMIN-01/02/03 truth-only admin rebuild | ✅ Live 2026-06-11 |
 | Repo-hosted Instagram/ManyChat reply agent | **RETIRED AND REMOVED 2026-07-12** — Sandra chose to remove the inbox, inbound bridge, AI drafting, reply approvals, senders, reports, and unattended DM jobs because they created more confusion than value. ManyChat keyword marketing flows remain live. Inbox review is attended and on demand in the signed-in ManyChat inbox only. Historical customer-message tables remain for now and have no active runtime consumers. |
-| Activation + Work With Me measurement | ✅ Built 2026-07-12 — `/admin/activation-funnel` reports the seven real app/trial activation and retention steps by source with honest measurement limits. First live 30-day read: 45 trials, 35 opened, 19 generated, 13 downloaded, 4/13 mature users returned within seven days, and 0/11 created again in week two. Repeat creation is the clearest measured constraint. `/work-with-me` now records landing views, form starts, submitted applications, and failures without changing the page or form. |
+| Activation + Work With Me revenue lane | ✅ Built 2026-07-12 — `/admin/activation-funnel` reports the seven real app/trial activation and retention steps by source with honest measurement limits. `/admin/work-with-me` is the attended pipeline for applications, stages, notes, and private €2,000 checkout links; successful Stripe payment closes the matching application as won. Stored checkout links are verified with Stripe before copying and expired links are replaced idempotently. |
+| Paid-buyer SUITE activation | ✅ Built 2026-07-12 — live Prompt Vault, Starter Kit, and AI Photos Kit purchases automatically start the buyer's one-ever included SUITE trial when her account is already known. Guest buyers keep the claim-token path. Test checkouts and duplicate webhooks cannot grant or email another trial. |
+| Post-value review capture | ✅ Built 2026-07-12 — after a signed-in customer records her third SUITE download, App v3 may show one dismissible review request. Identity is server-derived, consent is explicit, submissions are unpublished until admin moderation, and the unsafe legacy feedback widget/routes are removed. Contract: `docs/product/SUITE_REVIEW_CAPTURE_2026-07-12.md`. |
+| Payment + credential hardening | ✅ Completed 2026-07-12 — the new $39 Presets Bundle checkout was manually recovered and guest fulfillment now has regression coverage. Unresolved webhook reviews returned to zero. Publicly exposed Neon and Stripe webhook credentials were rotated/revoked, removed from tracked files, and protected by a secret-scan regression. |
 | DESIGN-01 convergence to Cool Editorial (audit done, build pending) | Planned — docs/audits/DESIGN_AUDIT_2026-06-10.md |
 | Maya UX fixes (UX-01/02), Academy (ACADEMY-01/02) | Background — see tasks/ |
 
@@ -127,7 +148,8 @@ Operating rule:
 - **Buyer psychology doctrine (LOCKED): `docs/funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` governs ALL copy, captions, UI text, emails, and Maya language.** Her fear: "people will think I'm fake" -> promise: "look elevated without feeling fake". Never imply viewers are fooled ("no one will know", "look rich", "fake photoshoot", "perfect face", "flawless skin"). Always: AI-assisted, realistic, recognizable, true-to-you, "still you". Signature: "AI should not erase you. It should frame you."
 - Demand signal for next reel = prompt view/copy frequency (see /admin/content-brief).
 - Ladder/source docs: `docs/funnel/AI_PROMPT_FUNNEL_RESEARCH_AND_LADDER_2026-05-26.md`, segment rule `docs/funnel/AI_PHOTOSHOOT_AUDIENCE_SEGMENT_RULE_2026-05-27.md` (code: `lib/audience/ai-photoshoot-segment.ts`), membership reposition `docs/funnel/PROMPT_VAULT_MEMBERSHIP_REPOSITION_PLAN_2026-05-27.md` (do not build Vault Club until its gates pass), collections SOP `docs/PROMPT_VAULT_ADD_COLLECTION_SOP.md`.
-- Recovery crons: prompt-vault + starter-kit + selfie-to-brand-shoot checkout recovery (env-gated). Nurture: `PROMPT_VAULT_NURTURE_ENABLED`.
+- Recovery crons: Prompt Vault + Starter Kit + membership only. Selfie To Brand Shoot recovery is
+  retired. Nurture: `PROMPT_VAULT_NURTURE_ENABLED`.
 - Legacy education ladder (Free Guide -> Starter Kit -> Masterclass -> SUITE) stays fulfilled for buyers but is NOT the growth funnel. History + details: `docs/CLAUDE_ARCHIVE_2026-06-11.md`.
 
 ---

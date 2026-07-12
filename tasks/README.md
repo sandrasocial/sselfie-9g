@@ -16,7 +16,10 @@ superseded, obsolete, and completed code specs are archived under `tasks/archive
 
 There is no active Codex build in the root task queue.
 
-## Held, not active
+## Safety boundaries — not open tasks
+
+Sandra does not need to act on this section. These are explicit stop signs for future agents, not an
+unfinished founder to-do list.
 
 - **Work With Me form redesign:** held until `WORK-WITH-ME-INSTRUMENTATION-01` has 1-2 weeks of real
   page-view/form-start/submit data — don't redesign an already-decent form on a guess.
@@ -27,7 +30,9 @@ There is no active Codex build in the root task queue.
 - **Trial engine redesign:** `grantSuiteTrial` (`lib/trial/suite-trial.ts`) creates a pure DB row —
   no card, no Stripe subscription, no default outcome at expiry. Plausibly the root cause behind the
   trial's 0/50 lifetime conversion (found 2026-07-11/12). Whether to require a card upfront (standard
-  SaaS auto-convert pattern) is a real product/pricing decision, not a quick fix — held for Sandra.
+  SaaS auto-convert pattern) is a real product/pricing decision, not a quick fix. Known paid buyers
+  now start their included trial automatically; guests keep the claim-token fallback. Card-upfront
+  stays intentionally unbuilt until the paid-buyer cohort is measured.
   Trial users have never opened the Academy/course content, so there is no active course-library
   leakage to fix before making that decision.
 - **Phase 2B content-engine deletion:** wait until `weekly-content-brief-draft` completes its first
@@ -44,11 +49,6 @@ There is no active Codex build in the root task queue.
   a separate hand-maintained source from the DB `vault_collections`/`vault_prompts` Shoot Studio writes
   to. Collapsing that one touches revenue/checkout-adjacent pages and thousands of lines of curated
   copy — needs a dedicated design pass, not a quick spec. Not ready for Codex yet.
-- **`sselfie-content-engine` plugin — full unregistration:** content risk is neutralized (all 9
-  skill/command files overwritten with refusal stubs, 2026-07-11), but the plugin's actual
-  registration couldn't be found in any Claude Code config this session could reach (`claude plugin
-  list` doesn't show it; only usage-tracking data exists in `~/.claude.json`, no source entry).
-  Sandra needs to remove it herself via the Cowork app's own plugin/skill settings.
 
 ## Verified shipped before this cleanup
 
@@ -91,6 +91,22 @@ are archived under `tasks/archive/2026-07-12/` with focused regressions.
 - The repo-hosted Instagram/ManyChat reply system was removed on 2026-07-12. The ManyChat Default
   Reply bridge and AI Replies are stopped, DM schedules are retired, and old reply approvals are
   invalid. Marketing keyword flows, including the verified WORK flow, remain live.
+- The active sales machine is consolidated to PROMPT → $37 Prompt Vault, SELFIE → $37 Starter Kit,
+  WORK → attended €2,000 offer, and activated buyers → €97/month SUITE. Selfie To Brand Shoot public
+  sales are retired while historical access remains protected.
+- `/admin/work-with-me` now owns the complete attended application-to-payment pipeline. Stripe closes
+  the exact application as won without double-counting cash. The copy action verifies the Stripe
+  session and replaces expired links without creating duplicate attempts.
+- Known Prompt Vault, Starter Kit, and AI Photos Kit buyers receive their included SUITE trial at
+  payment; guest buyers retain the claim link.
+- The authenticated SUITE review prompt appears only after the third download and stores unpublished
+  proof for moderation. The generic feedback widget and unsafe public feedback/review routes are gone.
+- Seven retired Vercel schedules, all Codex business automations, and four obsolete Cowork task
+  directories are removed. The running baseline is 21 repo schedules and three Cowork draft tasks.
+- Presets guest fulfillment is repaired; the July 12 $39 order was reprocessed successfully and the
+  webhook review queue returned to zero.
+- Publicly exposed database and Stripe webhook credentials were rotated and removed from the current
+  tree. A repository-wide secret regression test now blocks recurrence.
 
 ## GitHub baseline
 

@@ -1,6 +1,6 @@
 # SSELFIE Documentation Index
 
-Last verified: 2026-07-09
+Last verified: 2026-07-12
 
 This index separates current operating truth from research, audits, implementation history, and
 archives. A document being detailed does not make it current.
@@ -22,7 +22,11 @@ Use this order:
   and drift prevention.
 - `business/SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md` — daily CEO focus and offer
   routing.
-- `business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md` — current revenue direction.
+- `business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md` — historical foundation for the current
+  revenue direction.
+- `business/SSELFIE_GROWTH_MACHINE_2026-07-12.md` — the current four-lane revenue machine,
+  operating rhythm, measurement order, and future-development gate. It supersedes older funnel
+  sequencing where they conflict.
 - `funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` — recognizable, still-you AI doctrine.
 
 The supporting brand source files live in `brand/source/2026-06-27/`.
@@ -31,6 +35,8 @@ The supporting brand source files live in `brand/source/2026-06-27/`.
 
 - `SSELFIE_DESIGN_SYSTEM.md` — product, public-page, and email design authority.
 - `product/SUITE_MAYA_SINGLE_OWNER_UX_2026-07-06.md` — Maya-owned creation workflow.
+- `product/SUITE_REVIEW_CAPTURE_2026-07-12.md` — post-value, authenticated review capture and
+  moderation contract.
 - `AUTOMATION_ROSTER.md` — the only cross-layer automation map.
 - `PROMPT_VAULT_ADD_COLLECTION_SOP.md` — collection publishing procedure.
 - `MAYA_RELIABILITY_PROGRAM_2026-03-11.md` — legacy Maya compatibility guardrails only; `/app`

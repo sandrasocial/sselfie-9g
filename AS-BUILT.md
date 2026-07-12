@@ -2,7 +2,7 @@
 
 **Purpose:** Ground truth for this repo. **Do not trust unverified numbers in other markdown files.**
 
-**Verified:** 2026-04-09 · **Commit:** `aa2e5274` (run `git rev-parse --short HEAD` to refresh)
+**Verified:** 2026-07-12 · **Release:** growth-machine hardening
 
 | Field | Value |
 |--------|--------|
@@ -30,10 +30,20 @@ node scripts/verify-repo-invariants.mjs
 
 ## Branches
 
-GitHub has only `main`. Local task branches are short-lived and must be deleted after merge. The only
-allowed long-lived local exception is the checked-out branch/worktree used by the repo's active Codex
-lint-cleanup automation; it is not pushed to GitHub.
+GitHub has only `main`. Local task branches are short-lived and must be deleted after merge. Codex
+hosts no business automations and no long-lived automation worktree is required.
 
 ## Business metrics
 
 Refresh live metrics from **Stripe / dashboard / `CLAUDE.md`** — do not use numbers from this file unless you re-verify them yourself.
+
+## Security baseline (verified 2026-07-12)
+
+- The active Neon database password was rotated and propagated to Vercel production/preview.
+- A legacy Neon source credential found in public Git history was rotated; intentional local access
+  now uses the untracked `SOURCE_DATABASE_URL` environment variable.
+- The exposed Stripe webhook signing secret was replaced with a new production endpoint; the old
+  endpoint is disabled.
+- Current tracked files are guarded by `tests/no-hardcoded-secrets.test.ts`.
+- Public Git history still contains the revoked values. They are no longer valid; rewriting public
+  history is not required for runtime safety and must not be attempted as a routine cleanup.

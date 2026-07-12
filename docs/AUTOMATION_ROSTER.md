@@ -49,7 +49,7 @@ automation.
 | `suite-trial-expiry` | 08:45 | Trial lifecycle + expiry |
 | `win-back-sequence` | 10:00 | Cancelled + dormant-member win-back |
 | `subscriber-winback` | 09:40 | Dormant email-subscriber win-back |
-| `ai-photoshoot-nurture` | 09:30 | AI-prompts + Vault buyer nurture. Narrowed 2026-07-12: free AI Prompts leads stop after the paid Vault/Kit offer sequence and no longer receive the failed no-card SUITE trial. Paid product handlers still own the included buyer-trial unlock. |
+| `ai-photoshoot-nurture` | 09:30 | AI-prompts + Vault buyer nurture. Narrowed 2026-07-12: free AI Prompts leads stop after the paid Vault/Kit offer sequence and no longer receive the failed no-card SUITE trial. At payment, known Prompt Vault, Starter Kit, and AI Photos Kit buyers now start their one-ever included trial automatically; guests keep the claim-token email fallback. |
 | `nurture-sequence` | 10:00 | Legacy multi-product nurture (mostly double-gated off) |
 | `membership / prompt-vault / starter-kit checkout-recovery` | hourly (staggered) | Abandoned checkout recovery for the three active revenue paths. Membership recovery returns identified abandoners directly to a prefilled paid checkout; it does not grant a trial. |
 
@@ -115,12 +115,11 @@ routes listed above. Admin diagnostics APIs
 |---|---|---|---|
 | `daily-email-draft` | 06:34 daily | ✅ ACTIVE (re-grounded 2026-07-08) | Drafts ONE story-first broadcast + preview to Sandra. NEVER sends. |
 | `daily-story-sequence-draft` | 07:01 daily | ✅ ACTIVE (new 2026-07-10, reconciled 2026-07-11) | Reads that morning's already-drafted broadcast via `scripts/daily-story-sequence-prep.ts` and repurposes it into a 7-slide Instagram Story sequence (hook → emotional recognition → belief shift → personal mirror → stuck point → offer bridge → CTA), TEXT ONLY, ready to copy. Also pulls that weekday's planned theme from the latest `weekly-content-brief-draft` row (if any) as a continuity steer — the two tasks were briefly duplicating "today's Story" (2026-07-11 content-system audit finding); reconciled by making this the sole owner of daily slide text while the weekly brief owns only the week-level theme. Now reads the full voice-doc set (was thinner than its siblings at launch). Stores to `analytics_reports` (`report_type='story_sequence_daily'`) and emails Sandra the slides. NEVER posts. Does not replace `sselfie-stories` (the on-demand skill for full photo-based sequences with background/overlay rendering) — this is the lightweight daily companion. |
-| `manychat-agent-watch` | — | ❌ RETIRED 2026-07-12 | Removed with the reply agent. No unattended inbox monitor remains. |
 | `weekly-content-brief-draft` | Mon 06:05 | ✅ ACTIVE (new 2026-07-09, scope narrowed 2026-07-11) | Replaces the retired `content-brief-weekly` repo cron. Real data via `scripts/weekly-brief-prep.ts` (server-only modules can't be imported into a CLI script, so this queries the same tables directly) + live research + live writing, stores into `analytics_reports` (same shape/table so nothing downstream needs to change) and emails Sandra a preview. NEVER posts. Its `dailyStories` output is now a per-weekday THEME only (day/theme/conversationType/offerMention) — `daily-story-sequence-draft` writes the actual daily slide text each morning; this task stopped writing full frames the same day to avoid duplicating that work. |
-| `ig-dm-drafter` | — | ❌ RETIRED 2026-07-12 | Scheduled task and repo drafting script removed. |
-| `funnel-health-daily` | — | ❌ RETIRED 2026-07-08 | Superseded by repo `cron-health-check` + `payment-reconciliation`. |
-| `claude-codex-loop` | — | ❌ RETIRED 2026-07-08 | Old 15-min loop protocol; superseded by direct Cowork sessions. |
-| `weekly-content-trends` (Claude copy) | — | ❌ RETIRED 2026-07-08 | Duplicate of the repo cron of the same name. |
+
+Retired task directories were physically removed on 2026-07-12. This includes
+`claude-codex-loop`, `daily-photo-export`, `funnel-health-daily`, and the duplicate
+`weekly-content-trends`. Only the three active draft tasks above remain on disk.
 
 **`sselfie-community-manager` skill** — on demand and attended only. It opens the signed-in
 ManyChat inbox in the browser, reads the real customer message and history, and can suggest a
@@ -140,31 +139,16 @@ duplicated a stronger custom skill above, and two commands (`daily-post`, `weekl
 locked 2026-06-30 funnel doctrine. All 9 skill/command files were overwritten with retirement
 stubs that refuse to generate content and redirect to the correct current skill. The plugin's
 registration itself (a `.claude-plugin/plugin.json` manifest in that folder) could not be found in
-any of the standard Claude Code registries checked (`~/.claude/plugins/*`, `~/.claude.json`) — full
-removal from wherever Cowork actually discovered it needs Sandra's action via the app's own
-plugin settings UI, which this session can't reach.
+any active Claude Code registry checked (`~/.claude/plugins/*`, `~/.claude.json`). There is no active
+runtime or scheduling path, so this is closed and requires no founder action. If it ever reappears in
+Cowork, delete that visible registration instead of reviving its files.
 
-## Layer 3 — Codex app (`~/.codex/automations`) — being emptied per lane rule 3
+## Layer 3 — Codex app (`~/.codex/automations`) — EMPTY by design
 
-12 automations found 2026-07-08. 10 already PAUSED, several pointing at the OLD repo path
-(`/Users/MD760HA/sselfie-9g`) and the RETIRED Voice Bible doc — do not re-enable any of them.
-
-| Automation | Status 2026-07-08 | Verdict |
-|---|---|---|
-| `sselfie-lint-warning-cleanup` | ACTIVE | Allowed to stay (code-hygiene only, worktree-isolated) |
-| `weekly-cohort-report` ("Growth Intelligence Engine") | ACTIVE | RETIRE — duplicates repo growth intelligence + daily briefing |
-| `daily-billing-audit`, `daily-funnel-health`, `hourly-ops-triage` | PAUSED | RETIRE — repo watchdogs own this |
-| `email-marketing-specialist`, `email-revenue-operator`, `monitor-launch-email-analytics` | PAUSED | RETIRE — daily briefing + daily-email-draft own this |
-| `nightly-brand-consistency`, `nightly-maya-quality`, `weekly-cleanup-radar` | PAUSED | RETIRE — stale paths/docs; re-spec fresh in repo if ever needed |
-| `process-queued-weekly-brief-jobs` | PAUSED | RETIRE — repo `content-brief-jobs` cron owns this |
-
-Sandra archives these in the Codex app UI (or asks Claude to do it in an attended session).
-
-**Re-verified 2026-07-11 (content-system audit):** all 11 RETIRE-verdict items above are confirmed
-gone — `~/.codex/automations/` now contains only `sselfie-lint-warning-cleanup`, no archive folder
-exists (archiving via the Codex UI deletes the directory outright). That one survivor's live status
-is `PAUSED` (ran once 2026-07-09, then paused), not the `ACTIVE` shown in the 2026-07-08 snapshot
-above — a stale label, not a content risk since it's code-hygiene only.
+All SSELFIE Codex automations are removed as of 2026-07-12. The final paused lint-cleanup task was
+deleted because its commands no longer matched the repo and it did not serve customer, money, or
+active implementation work. Codex remains attended implementation only; it hosts no business
+automation.
 
 ## Layer 4 — External SaaS
 
@@ -175,3 +159,8 @@ above — a stale label, not a content risk since it's code-hygiene only.
 | Stripe | Payments, subscriptions, webhooks → repo | Money truth source per Admin Data Contract. |
 | Vercel | Deploys from `main`, runs all Layer-1 crons, holds prod env flags | Env booleans being hardened in EMPLOYEE-01. |
 | Sentry (`sselfie/javascript-nextjs`) | Production error monitoring | Connected to Claude via MCP 2026-07-08. |
+
+Security note (2026-07-12): the production Stripe webhook signing secret was rotated after an old
+value was found in public Git history. The replacement endpoint is enabled and the exposed endpoint
+is disabled. Neon live and legacy-source credentials were also rotated. Do not restore credentials
+from Git history, archived docs, or old scripts.

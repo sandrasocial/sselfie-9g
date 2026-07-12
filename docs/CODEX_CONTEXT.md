@@ -1,6 +1,6 @@
 # CODEX_CONTEXT
 
-Last verified: 2026-07-09
+Last verified: 2026-07-12
 
 ## Purpose
 
@@ -28,7 +28,7 @@ Current contracts:
 - Daily CEO focus and offer routing:
   `docs/business/SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md`
 - Revenue direction:
-  `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`
+  `docs/business/SSELFIE_GROWTH_MACHINE_2026-07-12.md`
 - Product UI and visual system:
   `docs/SSELFIE_DESIGN_SYSTEM.md`
 - SUITE creation ownership:
@@ -91,10 +91,13 @@ not revenue truth.
 
 ### Product and funnel separation
 
-- `KIT` / Starter Kit is the iPhone and selfie-education path.
-- `PROMPT` / AI Prompts is the AI-photo path and bridges to Prompt Vault or the AI Photos Kit.
-- Warm trust bridges to Visibility To Paid / Work With Me.
+- `SELFIE` / Starter Kit is the source-photo path and sells the $37 Starter Kit.
+- `PROMPT` / AI Prompts is the AI-photo path and sells the proven $37 Prompt Vault control.
+- `WORK` is the attended warm path: application, conversation, then a private €2,000 checkout.
 - SUITE is the recurring monthly creation system.
+- Selfie To Brand Shoot is historical-access-only. Preserve buyer fulfillment and entitlements, but
+  do not restore its public sale or checkout as another active path.
+- Presets are a secondary content-led sale, not another primary funnel front door.
 
 Do not reuse the Starter Kit checkout or entitlement for the AI Photos Kit.
 
@@ -113,6 +116,9 @@ Read `docs/AUTOMATION_ROSTER.md` before changing any scheduled or event-driven w
 The old weekly content-brief repo pipeline is disabled, not yet deleted. Its Phase 2B deletion stays
 held until the replacement Cowork weekly task completes a real Monday run and is verified.
 
+The live automation baseline is 21 Vercel cron registrations, three Cowork draft-only tasks, and no
+Codex business automations. The exact list is always `vercel.json` plus `docs/AUTOMATION_ROSTER.md`.
+
 ## Safety Rules
 
 1. Live users exist. Inspect before editing and minimize blast radius.
@@ -124,6 +130,8 @@ held until the replacement Cowork weekly task completes a real Monday run and is
 7. Never print secrets. Report only presence, scope, and whether identifiers resolve.
 8. GitHub Actions workflows are intentionally disabled to avoid paid-run charges. Run required
    checks locally and do not re-enable workflows without Sandra's approval.
+9. The repository is public. `tests/no-hardcoded-secrets.test.ts` must stay green. Never recover a
+   credential from Git history; all historical values found on 2026-07-12 are revoked.
 
 ## File Map
 
