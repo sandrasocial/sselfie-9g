@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState, useTransition, type ReactNode } from "react"
+import { useEffect, useRef, useState, useTransition, type ReactNode } from "react"
 import Link from "next/link"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { appendReferralParam, buildReferralLoginHref } from "@/lib/referrals/routing"
 import { PromptVaultCheckoutLink } from "@/components/prompt-vault/prompt-vault-checkout-link"
 
@@ -1370,6 +1371,7 @@ export function InquiryForm() {
   const [error,        setError]        = useState("")
   const [success,      setSuccess]      = useState(false)
   const [pending,      startTransition] = useTransition()
+  const applicationStartedRef = useRef(false)
 
   const inputStyle: React.CSSProperties = {
     width:      "100%",
@@ -1388,6 +1390,20 @@ export function InquiryForm() {
   }
   const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     e.target.style.borderColor = C.divDark
+  }
+  const trackApplicationStart = () => {
+    if (applicationStartedRef.current) return
+    applicationStartedRef.current = true
+    void trackAnalyticsEvent({
+      event: "work_with_me_application_started",
+      properties: { source: "work_with_me_form" },
+    })
+  }
+  const handleFormFocus = (event: React.FocusEvent<HTMLFormElement>) => {
+    const tagName = (event.target as HTMLElement).tagName
+    if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") {
+      trackApplicationStart()
+    }
   }
 
   const handleSubmit = (ev: React.FormEvent<HTMLFormElement>) => {
@@ -1411,10 +1427,25 @@ export function InquiryForm() {
           }),
         })
         const payload = (await res.json().catch(() => null)) as { error?: string } | null
-        if (!res.ok) { setError(payload?.error ?? "Something went wrong. Please try again."); return }
+        if (!res.ok) {
+          void trackAnalyticsEvent({
+            event: "work_with_me_application_failed",
+            properties: { source: "work_with_me_form" },
+          })
+          setError(payload?.error ?? "Something went wrong. Please try again.")
+          return
+        }
+        void trackAnalyticsEvent({
+          event: "work_with_me_application_submitted",
+          properties: { source: "work_with_me_form" },
+        })
         setSuccess(true)
         setName(""); setEmail(""); setInstagram(""); setCurrentBlock(""); setGoal(""); setCurrentOffer(""); setHelpFocus(""); setInvestmentReadiness("")
       } catch {
+        void trackAnalyticsEvent({
+          event: "work_with_me_application_failed",
+          properties: { source: "work_with_me_form" },
+        })
         setError("Something went wrong. Please try again.")
       }
     })
@@ -1431,7 +1462,11 @@ export function InquiryForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ ...cardSx(true), display: "grid", gap: "18px" }}>
+    <form
+      onSubmit={handleSubmit}
+      onFocusCapture={handleFormFocus}
+      style={{ ...cardSx(true), display: "grid", gap: "18px" }}
+    >
       {[
         { label: "Name",             value: name,      set: setName,      type: "text",  required: true  },
         { label: "Email",            value: email,     set: setEmail,     type: "email", required: true  },
