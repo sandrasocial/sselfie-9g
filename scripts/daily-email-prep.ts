@@ -63,7 +63,7 @@ function listUnusedPhotos(): { filename: string; mtimeMs: number }[] {
 // ------------------------------------------------------------- door rotation
 const DOORS = [
   { key: "vault", match: ["vault", "bathroom"], label: "Prompt Vault $37", url: "https://sselfie.ai/prompt-vault", temp: "cold" },
-  { key: "suite", match: ["suite membership", "trial"], label: "SUITE membership €97/mo", url: "https://sselfie.ai/join/studio", temp: "activation" },
+  { key: "suite", match: ["suite membership", "trial"], label: "PAUSED 2026-07-11 (0/50 trials ever converted, see SKILL.md) — SUITE membership €97/mo free-trial signup", url: "https://sselfie.ai/join/studio", temp: "activation" },
   { key: "annual", match: ["annual", "founding"], label: "SUITE Annual (standard price — founding €697/first-25 window CLOSED 2026-07-05, do not reuse that scarcity)", url: "https://sselfie.ai/join/studio", temp: "activation" },
   { key: "masterclass", match: ["masterclass"], label: "Masterclass $147", url: "https://sselfie.ai/masterclass", temp: "warm" },
   { key: "presets", match: ["preset"], label: "Presets $19 single / $39 bundle", url: "https://sselfie.ai/presets", temp: "cold" },

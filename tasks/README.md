@@ -16,10 +16,16 @@ superseded, obsolete, and completed code specs are archived under `tasks/archive
 
 | Order | Task | What remains | Owner |
 |---:|---|---|---|
-| 1 | `DM-LAUNCH-01-live-qa.md` | Send one non-keyword test DM after the 2026-07-11 bridge repair, reply from admin, and confirm it arrives. Native replies are already proven; historical backlog import stays paused. | Sandra + Codex |
+| 1 | `CHECKOUT-EMAIL-PASSTHROUGH-01.md` | Trial lifecycle emails don't pass the recipient's email into the checkout link, so already-identified people hit a redundant email-capture screen at peak intent (93% drop measured). Small, precise fix — ready now. | Codex |
+| 2 | `MEMBERSHIP-RECOVERY-NO-DOWNGRADE-01.md` | €97 checkout abandoners (highest-intent leads) currently get downgraded into a free trial claim that has never once converted. Route them back to checkout instead — Sandra-approved copy included in the spec. Ready now. | Codex |
+| 3 | `DM-LAUNCH-01-live-qa.md` | Send one non-keyword test DM after the 2026-07-11 bridge repair, reply from admin, and confirm it arrives. Native replies are already proven; historical backlog import stays paused. | Sandra + Codex |
 
 ## Held, not active
 
+- **Trial engine redesign:** `grantSuiteTrial` (`lib/trial/suite-trial.ts`) creates a pure DB row —
+  no card, no Stripe subscription, no default outcome at expiry. Plausibly the root cause behind the
+  trial's 0/50 lifetime conversion (found 2026-07-11/12). Whether to require a card upfront (standard
+  SaaS auto-convert pattern) is a real product/pricing decision, not a quick fix — held for Sandra.
 - **Phase 2B content-engine deletion:** wait until `weekly-content-brief-draft` completes its first
   real Monday run on 2026-07-13 and the replacement IG drafting task has proven a real run. The old
   repo cron is disabled, so deleting the fallback early has no upside. **Bundle in:** deleting
