@@ -54,22 +54,41 @@ async function section(label: string, fn: () => Promise<void>) {
 }
 
 async function pullData() {
-  await section("TODAY'S DRAFT EMAIL (the source material)", async () => {
+  await section("TODAY'S EMAIL (the source material)", async () => {
     const r = await resend.broadcasts.list()
     const items = ((r.data as any)?.data || []).sort((a: any, b: any) =>
       String(b.created_at).localeCompare(String(a.created_at))
     )
-    const draft = items.find((b: any) => b.status === "draft")
-    if (!draft) {
-      console.log("  no draft broadcast found — daily-email-draft may not have run yet today. STOP and say so.")
+    // Source = TODAY's daily email, matched by date — NOT "the newest draft".
+    // Two reasons the old "newest draft" logic was wrong:
+    //   1. The daily email often gets SENT before this task runs (status flips
+    //      draft -> sent), so it disappears from a draft-only search.
+    //   2. Emails Sandra never sends linger as drafts forever, so "newest draft"
+    //      silently reaches back days and hands us a stale, abandoned email
+    //      (and we'd unknowingly repurpose it a second time). Match by date and
+    //      accept draft OR sent, so we always get the genuine email for today.
+    const todayStr = new Date().toISOString().slice(0, 10) // UTC YYYY-MM-DD
+    const source = items.find(
+      (b: any) => String(b.created_at).slice(0, 10) === todayStr
+    )
+    if (!source) {
+      const newest = items[0]
+      console.log(
+        `  no broadcast was created today (${todayStr}) — daily-email-draft has not produced today's email yet.`
+      )
+      console.log(
+        `  STOP and report that plainly. Do NOT fall back to an older email` +
+          (newest ? ` (newest on file is ${String(newest.created_at).slice(0, 10)} "${newest.name || newest.subject || newest.id}").` : ".")
+      )
       return
     }
-    const full = await resend.broadcasts.get(draft.id)
+    const full = await resend.broadcasts.get(source.id)
     const data = full.data as any
-    console.log(`  broadcast id: ${draft.id}`)
-    console.log(`  name: ${draft.name || "(unnamed)"}`)
+    console.log(`  broadcast id: ${source.id}`)
+    console.log(`  status: ${source.status}${source.status === "sent" ? " (already sent — normal; still today's source)" : ""}`)
+    console.log(`  name: ${source.name || "(unnamed)"}`)
     console.log(`  subject: ${data?.subject || "?"}`)
-    console.log(`  created: ${String(draft.created_at).slice(0, 16)}`)
+    console.log(`  created: ${String(source.created_at).slice(0, 16)}`)
     console.log(`\n  FULL BODY TEXT:`)
     console.log(`  ${(data?.text || "").replace(/\s+/g, " ").trim()}`)
   })
