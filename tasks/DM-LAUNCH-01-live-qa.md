@@ -8,6 +8,7 @@
 - Native Instagram is already proven in production: seven Sandra-approved replies are recorded sent/delivered, most recently 2026-07-10. There have been zero automated agent sends in the last 30 days.
 - The repaired Default Reply is now proven with real traffic: five post-repair ManyChat-origin conversations reached the SSELFIE inbox on 2026-07-12. Four have an AI draft waiting; none has been sent automatically.
 - The live WORK automation was checked in Sandra's signed-in ManyChat account on 2026-07-12 and renamed `WORK — Sprint Application`. Both the comment and DM keyword triggers are live, the first-name field is mapped correctly in the editor, and the final button points to `/work-with-me` with the expected WORK/ManyChat tracking parameters.
+- Sandra found that the founder approval card showed the suggested reply twice and omitted the customer message. The approval flow now binds every new action to the exact inbound message, shows `They wrote` above `Suggested reply`, supports older signed links, and disables Send if the original message cannot be verified.
 - Remaining: Sandra approves one prepared reply, then confirms that it arrived in Instagram. This is an approval step, not unfinished code.
 
 OWNER: sandra
@@ -36,16 +37,18 @@ work later.
 ## QA Steps
 
 1. Open one of the four prepared ManyChat-origin replies in `/admin/ig-inbox`.
-2. Review and approve the wording.
-3. Click `Send reply`.
-4. Confirm the reply arrives inside Instagram.
-5. Confirm the conversation status becomes `sandra_replied`.
-6. If it fails, capture the visible error in the admin UI and the conversation id.
+2. Confirm the approval view shows the customer message under `They wrote` and the editable answer under `Suggested reply`.
+3. Review and approve the wording.
+4. Click `Send reply`.
+5. Confirm the reply arrives inside Instagram.
+6. Confirm the conversation status becomes `sandra_replied`.
+7. If it fails, capture the visible error in the admin UI and the conversation id.
 
 ## Acceptance
 
 - A ManyChat-originated conversation can be replied to from admin and arrives in Instagram.
 - A native Instagram conversation can be replied to from admin and arrives in Instagram.
+- A founder never has to approve a reply without seeing the exact customer message it answers.
 - Automated agent sends remain blocked while `IG_AGENT_AUTO_SEND_ENABLED` is not `true`.
 - Failures are visible and do not clear Sandra's typed reply.
 

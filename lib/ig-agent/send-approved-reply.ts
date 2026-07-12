@@ -8,6 +8,7 @@ export async function sendApprovedInstagramReply(input: {
   conversationId: number
   message: string
   expectedDraft?: string | null
+  expectedInboundMessageId?: number | null
 }) {
   const message = input.message.trim()
   if (!Number.isSafeInteger(input.conversationId) || input.conversationId <= 0 || !message) {
@@ -15,18 +16,39 @@ export async function sendApprovedInstagramReply(input: {
   }
 
   const rows = await sql`
-    SELECT ig_user_id, draft_response
-    FROM ig_conversations
-    WHERE id = ${input.conversationId}
+    SELECT
+      c.ig_user_id,
+      c.draft_response,
+      latest_contact.id AS latest_inbound_message_id
+    FROM ig_conversations c
+    LEFT JOIN LATERAL (
+      SELECT m.id
+      FROM ig_messages m
+      WHERE m.conversation_id = c.id
+        AND m.from_type = 'contact'
+      ORDER BY m.created_at DESC, m.id DESC
+      LIMIT 1
+    ) latest_contact ON TRUE
+    WHERE c.id = ${input.conversationId}
     LIMIT 1
   `
-  const conversation = rows[0] as { ig_user_id?: string; draft_response?: string | null } | undefined
+  const conversation = rows[0] as {
+    ig_user_id?: string
+    draft_response?: string | null
+    latest_inbound_message_id?: number | string | null
+  } | undefined
   const igUserId = conversation?.ig_user_id
   if (!igUserId) throw new Error("Conversation not found")
 
   const currentDraft = String(conversation?.draft_response || "").trim()
   if (input.expectedDraft != null && currentDraft !== input.expectedDraft.trim()) {
     throw new Error("This reply changed after the approval email was created. Review the newest draft instead.")
+  }
+  if (
+    input.expectedInboundMessageId != null &&
+    Number(conversation?.latest_inbound_message_id || 0) !== input.expectedInboundMessageId
+  ) {
+    throw new Error("The customer sent a newer message. Review the full conversation before replying.")
   }
 
   const result = igUserId.startsWith("mc:")
@@ -55,4 +77,3 @@ export async function sendApprovedInstagramReply(input: {
   if (!result.sent) throw new Error(result.reason || "Instagram reply failed")
   return result
 }
-

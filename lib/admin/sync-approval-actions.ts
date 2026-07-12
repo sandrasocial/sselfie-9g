@@ -16,6 +16,8 @@ type FlaggedConversation = {
   ig_user_id: string
   draft_response: string
   updated_at: Date | string
+  inbound_message_id: number
+  customer_message: string
 }
 
 function short(value: string, max = 240): string {
@@ -56,9 +58,24 @@ async function syncDmActions(): Promise<ApprovalActionSummary[]> {
   `
 
   const conversations = (await sql`
-    SELECT c.id, c.ig_user_id, c.draft_response, c.updated_at, ct.username
+    SELECT
+      c.id,
+      c.ig_user_id,
+      c.draft_response,
+      c.updated_at,
+      ct.username,
+      latest_contact.id AS inbound_message_id,
+      latest_contact.content AS customer_message
     FROM ig_conversations c
     JOIN ig_contacts ct ON ct.ig_user_id = c.ig_user_id
+    JOIN LATERAL (
+      SELECT m.id, m.content
+      FROM ig_messages m
+      WHERE m.conversation_id = c.id
+        AND m.from_type = 'contact'
+      ORDER BY m.created_at DESC, m.id DESC
+      LIMIT 1
+    ) latest_contact ON TRUE
     WHERE c.status = 'flagged'
       AND c.channel = 'dm'
       AND NULLIF(TRIM(c.draft_response), '') IS NOT NULL
@@ -72,12 +89,14 @@ async function syncDmActions(): Promise<ApprovalActionSummary[]> {
       const action = await queueAdminAction({
         kind: "send_ig_reply",
         title: `Reply to @${conversation.username || conversation.ig_user_id}`,
-        summary: short(draft),
+        summary: `They wrote: ${short(conversation.customer_message)}`,
         source: "ig_conversations",
-        idempotencyKey: `ig-reply/${conversation.id}/${digest(draft)}`,
+        idempotencyKey: `ig-reply/${conversation.id}/${conversation.inbound_message_id}/${digest(draft)}`,
         payload: {
           conversationId: conversation.id,
           draft,
+          inboundMessageId: conversation.inbound_message_id,
+          customerMessage: conversation.customer_message,
         },
       })
       await sql`

@@ -74,6 +74,9 @@ automation.
 - A review-page GET is read-only. Send/dismiss is POST-only, and the database atomically claims
   each action before execution so retries and double taps cannot send twice.
 - Sandra may edit a DM on the review page. The approved edit is saved as a voice-learning note.
+- DM review pages show the exact incoming customer message above the suggested reply. Each new
+  approval is bound to the inbound message id; legacy signed links resolve their earlier context.
+  If that message cannot be verified, Send is disabled and only Dismiss remains available.
 - Failed actions stay visible with their error for review; they do not silently retry a customer send.
 - Payment, support, and system-health items remain direct admin links rather than executable email
   actions. GitHub PR approval is intentionally excluded: Sandra's standing direction is direct-to-main,

@@ -1,4 +1,5 @@
 import { getAdminActionByToken } from "@/lib/admin/action-queue"
+import { getDmApprovalContext } from "@/lib/admin/dm-approval-context"
 import { requireResendClient } from "@/lib/resend/client"
 
 export const dynamic = "force-dynamic"
@@ -54,6 +55,10 @@ export default async function ApproveActionPage({
   }
 
   const draft = action?.kind === "send_ig_reply" ? String(action.payload.draft || "") : ""
+  const dmContext =
+    action?.kind === "send_ig_reply" && action.status === "pending"
+      ? await getDmApprovalContext(action).catch(() => null)
+      : null
   const broadcastPreview =
     action?.kind === "send_resend_broadcast" && action.status === "pending"
       ? await getBroadcastPreview(String(action.payload.broadcastId || "")).catch(() => null)
@@ -79,7 +84,29 @@ export default async function ApproveActionPage({
             <div className="rounded-2xl border border-stone-200 bg-white p-6">
               <p className="text-xs uppercase tracking-wide text-stone-500">{action.source}</p>
               <h2 className="mt-2 font-serif text-2xl">{action.title}</h2>
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-stone-700">{action.summary}</p>
+
+              {action.kind === "send_ig_reply" ? (
+                dmContext ? (
+                  <div className="mt-5 rounded-xl border border-stone-300 bg-stone-50 p-4">
+                    <p className="text-xs uppercase tracking-wide text-stone-500">They wrote</p>
+                    <p className="mt-2 text-sm font-medium text-stone-950">@{dmContext.username}</p>
+                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-stone-700">
+                      {dmContext.customerMessage}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4">
+                    <p className="text-sm leading-6 text-amber-900">
+                      The original customer message could not be loaded. Sending is disabled until the
+                      full context is available.
+                    </p>
+                  </div>
+                )
+              ) : (
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-stone-700">
+                  {action.summary}
+                </p>
+              )}
 
               {action.kind === "send_resend_broadcast" && (
                 <div className="mt-5 rounded-xl border border-stone-200 bg-stone-50 p-4">
@@ -106,7 +133,7 @@ export default async function ApproveActionPage({
               <form action={`/api/admin-actions/${encodeURIComponent(token)}`} method="post" className="mt-6">
                 {action.kind === "send_ig_reply" && (
                   <label className="block">
-                    <span className="text-xs uppercase tracking-wide text-stone-500">Reply</span>
+                    <span className="text-xs uppercase tracking-wide text-stone-500">Suggested reply</span>
                     <textarea
                       name="message"
                       defaultValue={draft}
@@ -121,7 +148,10 @@ export default async function ApproveActionPage({
                     type="submit"
                     name="decision"
                     value="approve"
-                    disabled={action.kind === "send_resend_broadcast" && !broadcastPreview}
+                    disabled={
+                      (action.kind === "send_ig_reply" && !dmContext) ||
+                      (action.kind === "send_resend_broadcast" && !broadcastPreview)
+                    }
                     className="rounded-full bg-stone-950 px-6 py-3 text-sm text-white disabled:cursor-not-allowed disabled:bg-stone-300"
                   >
                     {action.kind === "send_ig_reply" ? "Send this reply" : "Send this email"}

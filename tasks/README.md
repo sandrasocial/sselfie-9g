@@ -16,7 +16,7 @@ superseded, obsolete, and completed code specs are archived under `tasks/archive
 
 | Order | Task | What remains | Owner |
 |---:|---|---|---|
-| 1 | `DM-LAUNCH-01-live-qa.md` | Inbound is proven with five real post-repair ManyChat conversations. Review and approve one prepared reply, then confirm it arrives in Instagram. No code remains. | Sandra |
+| 1 | `DM-LAUNCH-01-live-qa.md` | Inbound is proven. The approval screen now shows the exact customer message above the suggested reply and fails closed without context. Approve one prepared reply, then confirm it arrives in Instagram. | Sandra |
 
 ## Held, not active
 

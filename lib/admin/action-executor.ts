@@ -9,6 +9,7 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
 
 async function executeInstagramReply(action: AdminActionRow, editedMessage?: string | null) {
   const conversationId = Number(action.payload.conversationId)
+  const expectedInboundMessageId = Number(action.payload.inboundMessageId) || null
   const expectedDraft = String(action.payload.draft || "").trim()
   const message = String(editedMessage || expectedDraft).trim()
   if (!conversationId || !expectedDraft || !message) throw new Error("Approval is missing its DM reply")
@@ -25,7 +26,12 @@ async function executeInstagramReply(action: AdminActionRow, editedMessage?: str
     }).catch((error) => console.error("[admin-action] failed to store voice memory:", error))
   }
 
-  return sendApprovedInstagramReply({ conversationId, message, expectedDraft })
+  return sendApprovedInstagramReply({
+    conversationId,
+    message,
+    expectedDraft,
+    expectedInboundMessageId,
+  })
 }
 
 async function executeResendBroadcast(action: AdminActionRow) {
@@ -61,4 +67,3 @@ export async function executeAdminAction(
   }
   throw new Error(`Unsupported admin action: ${action.kind}`)
 }
-
