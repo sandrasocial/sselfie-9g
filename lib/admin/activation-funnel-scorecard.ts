@@ -39,6 +39,14 @@ export type ActivationCohort = {
   steps: ActivationStep[]
 }
 
+export type ActivationFocusSummary = {
+  status: "constraint" | "on_track" | "awaiting_data"
+  stepKey: ActivationStepKey | null
+  title: string
+  evidence: string
+  action: string
+}
+
 export type TrialSourceAttribution = {
   exactClaimSubscriber: number
   emailFallback: number
@@ -54,6 +62,7 @@ export type ActivationFunnelScorecard = {
   sessionMeasurementAvailable: false
   appCohorts: ActivationCohort[]
   trialOverall: ActivationCohort
+  focusThisWeek: ActivationFocusSummary
   trialSources: ActivationCohort[]
   trialSourceAttribution: TrialSourceAttribution
   measurementNotes: string[]
@@ -108,6 +117,88 @@ function step(input: Omit<ActivationStep, "ratePct">): ActivationStep {
   return {
     ...input,
     ratePct: percentage(input.count, input.eligible),
+  }
+}
+
+const FOCUS_RULES: Array<{
+  key: ActivationStepKey
+  defaultWeakBelowPct: number
+  title: string
+  evidenceLabel: string
+  action: string
+}> = [
+  {
+    key: "created_again_days_8_14",
+    defaultWeakBelowPct: 25,
+    title: "Bring activated trials back in week two",
+    evidenceLabel: "generated or downloaded again in days 8 to 14",
+    action:
+      "Make the next experiment one focused week-two return path, then watch this rate before widening traffic.",
+  },
+  {
+    key: "returned_within_7d",
+    defaultWeakBelowPct: 25,
+    title: "Give activated trials a reason to return",
+    evidenceLabel: "completed another qualifying action within seven days",
+    action:
+      "Make the next experiment one focused day-one-to-seven return path, then measure whether more people come back.",
+  },
+  {
+    key: "first_image_downloaded",
+    defaultWeakBelowPct: 35,
+    title: "Help more trials save their first result",
+    evidenceLabel: "downloaded an image",
+    action:
+      "Make the next experiment the path from a generated result to a clear, easy first download.",
+  },
+  {
+    key: "first_image_generated",
+    defaultWeakBelowPct: 50,
+    title: "Help more trials create their first image",
+    evidenceLabel: "generated an image",
+    action:
+      "Make the next experiment the shortest clear path from opening the app to first creation.",
+  },
+]
+
+export function buildActivationFocus(cohort: ActivationCohort): ActivationFocusSummary {
+  const steps = new Map(cohort.steps.map(item => [item.key, item]))
+
+  for (const rule of FOCUS_RULES) {
+    const candidate = steps.get(rule.key)
+    if (!candidate || candidate.eligible === 0) continue
+    const focusSignalPct = candidate.targetPct ?? rule.defaultWeakBelowPct
+    if (candidate.ratePct >= focusSignalPct) continue
+
+    const people = candidate.eligible === 1 ? "person" : "people"
+    return {
+      status: "constraint",
+      stepKey: rule.key,
+      title: rule.title,
+      evidence: `${candidate.count} of ${candidate.eligible} eligible ${people} ${rule.evidenceLabel} (${candidate.ratePct}%). This is below the ${focusSignalPct}% weekly focus signal.`,
+      action: rule.action,
+    }
+  }
+
+  const hasMeasuredPriority = FOCUS_RULES.some(rule => (steps.get(rule.key)?.eligible ?? 0) > 0)
+  if (!hasMeasuredPriority) {
+    return {
+      status: "awaiting_data",
+      stepKey: null,
+      title: "Let the activation cohort mature",
+      evidence: "There are not yet enough eligible people to judge the priority activation rates.",
+      action:
+        "Keep the current path stable and review this card when the observation windows mature.",
+    }
+  }
+
+  return {
+    status: "on_track",
+    stepKey: null,
+    title: "Protect the current activation path",
+    evidence: "No measured priority rate is below its weekly focus signal right now.",
+    action:
+      "Keep the path stable, gather more observations, and watch for the next measured constraint.",
   }
 }
 
@@ -252,6 +343,13 @@ export function buildActivationFunnelScorecardFromFacts(input: {
     sourceGroups.set(key, rows)
   }
 
+  const trialOverall = buildActivationCohort({
+    key: "all_trials",
+    label: "All trials claimed",
+    facts: input.trialFacts,
+    now,
+  })
+
   return {
     generatedAt: now.toISOString(),
     windowDays: input.windowDays,
@@ -270,12 +368,8 @@ export function buildActivationFunnelScorecardFromFacts(input: {
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, facts]) => buildActivationCohort({ key, label: cohortLabel(key), facts, now })),
     ],
-    trialOverall: buildActivationCohort({
-      key: "all_trials",
-      label: "All trials claimed",
-      facts: input.trialFacts,
-      now,
-    }),
+    trialOverall,
+    focusThisWeek: buildActivationFocus(trialOverall),
     trialSources: Array.from(sourceGroups.entries())
       .sort(([aKey, a], [bKey, b]) => b.length - a.length || aKey.localeCompare(bKey))
       .map(([key, facts]) =>

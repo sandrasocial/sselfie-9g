@@ -177,6 +177,19 @@ export default async function ActivationFunnelPage({
           </div>
         </header>
 
+        <section className="mt-7 border border-stone-950 bg-stone-950 p-5 text-stone-50 sm:p-6">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-stone-300">Focus this week</p>
+          <h2 className="mt-3 max-w-3xl font-serif text-3xl font-light sm:text-4xl">
+            {report.focusThisWeek.title}
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-stone-200">
+            {report.focusThisWeek.evidence}
+          </p>
+          <p className="mt-4 max-w-3xl border-t border-stone-700 pt-4 text-sm leading-6 text-stone-50">
+            {report.focusThisWeek.action}
+          </p>
+        </section>
+
         <section className="mt-7 border border-amber-300 bg-amber-50 p-5 sm:p-6">
           <p className="text-[10px] uppercase tracking-[0.18em] text-amber-800">
             Measurement limits

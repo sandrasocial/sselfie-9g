@@ -10,6 +10,7 @@ vi.mock("server-only", () => ({}))
 import {
   LOOK_CHOICE_ACTIONS,
   buildActivationCohort,
+  buildActivationFocus,
   buildActivationFunnelScorecardFromFacts,
   type ActivationStepKey,
   type ActivationUserFact,
@@ -145,5 +146,60 @@ describe("activation funnel scorecard", () => {
     expect(reportSource).toContain("LEFT JOIN freebie_subscribers exact_subscriber")
     expect(reportSource).toContain("LOWER(fs.email) = LOWER(u.email)")
     expect(toolsPage).toContain('href: "/admin/activation-funnel"')
+  })
+
+  it("focuses on weak mature week-two creation before earlier activation steps", () => {
+    const focus = buildActivationFocus(
+      buildActivationCohort({
+        key: "trial",
+        label: "Trials",
+        now: NOW,
+        facts: [
+          fact({ createdAgainDays8To14: false }),
+          fact({
+            userId: "user-2",
+            downloadedAt: null,
+            generatedAt: null,
+            returnedWithin7d: false,
+            createdAgainDays8To14: false,
+          }),
+        ],
+      })
+    )
+
+    expect(focus).toMatchObject({
+      status: "constraint",
+      stepKey: "created_again_days_8_14",
+      title: "Bring activated trials back in week two",
+    })
+    expect(focus.evidence).toBe(
+      "0 of 2 eligible people generated or downloaded again in days 8 to 14 (0%). This is below the 25% weekly focus signal."
+    )
+  })
+
+  it("skips an immature week-two window and selects the next measured constraint", () => {
+    const focus = buildActivationFocus(
+      buildActivationCohort({
+        key: "trial",
+        label: "Trials",
+        now: NOW,
+        facts: [
+          fact({
+            entryAt: "2026-07-02T12:00:00.000Z",
+            firstQualifyingAt: "2026-07-02T12:02:00.000Z",
+            downloadedAt: null,
+            returnedWithin7d: false,
+            createdAgainDays8To14: false,
+          }),
+        ],
+      })
+    )
+
+    expect(focus).toMatchObject({
+      status: "constraint",
+      stepKey: "returned_within_7d",
+      title: "Give activated trials a reason to return",
+    })
+    expect(focus.evidence).toContain("0 of 1 eligible person")
   })
 })
