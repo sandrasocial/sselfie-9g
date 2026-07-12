@@ -51,19 +51,30 @@ automation.
 | `subscriber-winback` | 09:40 | Dormant email-subscriber win-back |
 | `ai-photoshoot-nurture` | 09:30 | AI-prompts + Vault buyer nurture. Narrowed 2026-07-12: free AI Prompts leads stop after the paid Vault/Kit offer sequence and no longer receive the failed no-card SUITE trial. Paid product handlers still own the included buyer-trial unlock. |
 | `nurture-sequence` | 10:00 | Legacy multi-product nurture (mostly double-gated off) |
-| `membership / prompt-vault / starter-kit / selfie-to-brand-shoot checkout-recovery` | hourly (staggered) | Abandoned checkout recovery. Membership recovery returns identified abandoners directly to a prefilled paid checkout; it does not grant a trial. |
-| `send-scheduled-newsletters` | */30 min | Sends Sandra-approved broadcasts only |
+| `membership / prompt-vault / starter-kit checkout-recovery` | hourly (staggered) | Abandoned checkout recovery for the three active revenue paths. Membership recovery returns identified abandoners directly to a prefilled paid checkout; it does not grant a trial. |
 
 ### Sandra-facing intelligence (LIVE)
 | Cron | Schedule | Job |
 |---|---|---|
 | `daily-sandra-briefing` | 06:15 | Trimmed to a ~15-second read: money, growth/revenue truth, one compact "today's move" line, customer threads only if any, and recent `Story ·` Resend drafts awaiting approval. The repo DM inbox and DM approvals were removed 2026-07-12. |
-| ~~`content-brief-weekly` (3 phases) + `content-brief-jobs`~~ | — | RETIRED FROM SERVICE 2026-07-09 (had been failing since 2026-07-02 on an Anthropic credit-balance error) — replaced by the `weekly-content-brief-draft` Cowork task below. Disabled via `CONTENT_BRIEF_ENABLED=false` in Vercel prod (flip back to re-enable) to avoid colliding with the new task on the same stored report row. Actual code/cron-entry deletion is scoped into the Phase 2 Codex cleanup (`tasks/README.md`). |
+| ~~`content-brief-weekly` (3 phases) + `content-brief-jobs`~~ | — | UNSCHEDULED 2026-07-12. Replaced by the `weekly-content-brief-draft` Cowork task below. All four Vercel registrations are removed, so the retired repo engine cannot collide with its replacement or create five-minute no-op traffic. Routes and the local worker remain temporarily for a dependency-audited code-deletion pass; `CONTENT_BRIEF_ENABLED=false` remains defense in depth. |
 | `ig-insights-sync` | 05:50 | Nightly IG post snapshots |
 | `weekly-content-trends` | Mon 05:00 | Trend digest pre-warm |
 | `feed-plan-monthly-draft` | 1st, 06:00 | Maya drafts member feed calendars |
 | `cron-health-check` | hourly | Watchdog: stale crons, failures, AI-credit canary → alerts |
-| `product-qa-daily` | 05:55 | Bug/reliability reporter (deterministic, no LLM) → feeds briefing "System health" |
+
+### Retired schedules with route code temporarily held (UNSCHEDULED 2026-07-12)
+
+These jobs are not in `vercel.json` and therefore do not run automatically. Their route files are
+kept temporarily so removal can happen in a separate dependency-audited pass without risking live
+customer access, fulfillment, or the active approval queue.
+
+| Route | Why the schedule is off | Replacement / safe state |
+|---|---|---|
+| `content-brief-weekly` (3 phases) + `content-brief-jobs` | Retired content engine duplicated the replacement Cowork workflow and generated five-minute no-op traffic while disabled. | `weekly-content-brief-draft` owns the weekly draft; `CONTENT_BRIEF_ENABLED=false` remains defense in depth. |
+| `send-scheduled-newsletters` | Legacy scheduled-broadcast poller is not part of the founder approval queue. | Sandra-approved Resend actions use the durable `admin_action_queue`; the legacy route is manual-only until deleted. |
+| `product-qa-daily` | Duplicate deterministic reporter added another report and “employee” instead of one operational truth loop. | `cron-health-check`, payment reconciliation, Sentry, and the Daily Sandra Briefing remain live. Existing stored QA reports remain readable. |
+| `selfie-to-brand-shoot-checkout-recovery` | Selfie To Brand Shoot is no longer an active sales path and its recovery lane had no completed sales. | Prompt Vault, Starter Kit, and membership recovery remain scheduled. Existing Brand Shoot buyer access and fulfillment are unchanged. |
 
 ### Founder approval queue (LIVE 2026-07-10)
 
@@ -79,7 +90,8 @@ automation.
 
 ### Built but NOT scheduled (dormant)
 `reindex-codebase`, `refresh-segments`, `sync-audience-segments`, `backfill-resend-audience`,
-`referral-bonus-notifications`, `maya-instagram-trends-weekly`. Admin diagnostics APIs
+`referral-bonus-notifications`, `maya-instagram-trends-weekly`, plus the explicitly retired/held
+routes listed above. Admin diagnostics APIs
 (`cron-status`, `errors`) are now wired into the /admin home Team panel (EMPLOYEE-01, shipped
 2026-07-08, commit fcf207ef).
 

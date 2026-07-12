@@ -45,10 +45,6 @@
       "schedule": "30 * * * *"
     },
     {
-      "path": "/api/cron/selfie-to-brand-shoot-checkout-recovery",
-      "schedule": "15 * * * *"
-    },
-    {
       "path": "/api/cron/onboarding-sequence",
       "schedule": "5 10 * * *"
     },
@@ -59,22 +55,6 @@
     {
       "path": "/api/cron/suite-habit-emails",
       "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/content-brief-weekly?phase=research",
-      "schedule": "0 6 * * 1"
-    },
-    {
-      "path": "/api/cron/content-brief-weekly",
-      "schedule": "30 6 * * 1"
-    },
-    {
-      "path": "/api/cron/content-brief-weekly?phase=stories",
-      "schedule": "0 7 * * 1"
-    },
-    {
-      "path": "/api/cron/content-brief-jobs",
-      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/suite-trial-expiry",
@@ -93,16 +73,8 @@
       "schedule": "50 5 * * *"
     },
     {
-      "path": "/api/cron/product-qa-daily",
-      "schedule": "55 5 * * *"
-    },
-    {
       "path": "/api/cron/payment-reconciliation",
       "schedule": "45 5 * * *"
-    },
-    {
-      "path": "/api/cron/send-scheduled-newsletters",
-      "schedule": "*/30 * * * *"
     },
     {
       "path": "/api/cron/feed-plan-monthly-draft",

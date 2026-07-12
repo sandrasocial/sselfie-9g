@@ -46,15 +46,12 @@ describe("VOICE-LOOP-01 apprentice loop", () => {
 })
 
 describe("EMPLOYEE-01 roster and dormant cron visibility", () => {
-  it("adds Product QA to Vercel cron and the daily briefing system health block", () => {
+  it("keeps Product QA off the Vercel schedule while preserving existing report consumption", () => {
     const vercel = JSON.parse(read("vercel.json")) as { crons: Array<{ path: string; schedule: string }> }
     const dailyRoute = read("app/api/cron/daily-sandra-briefing/route.ts")
     const dailyBuilder = read("lib/admin/daily-sandra-briefing.ts")
 
-    expect(vercel.crons).toContainEqual({
-      path: "/api/cron/product-qa-daily",
-      schedule: "55 5 * * *",
-    })
+    expect(vercel.crons.map((cron) => cron.path)).not.toContain("/api/cron/product-qa-daily")
     expect(dailyRoute).toContain('reportType: "product_qa_daily"')
     expect(dailyRoute).toContain("buildSystemHealthFromProductQa")
     expect(dailyBuilder).toContain("System health")

@@ -127,9 +127,9 @@ export const CRON_ROUTE_OWNERSHIP: readonly CronRouteOwnership[] = [
   {
     path: "/api/cron/send-scheduled-newsletters",
     bundle: "lifecycle_email",
-    lifecycle: "scheduled",
+    lifecycle: "manual",
     classification: "internal/admin",
-    purpose: "Process scheduled newsletter sends.",
+    purpose: "Legacy newsletter processor retained but not scheduled in vercel.json.",
   },
   {
     path: "/api/cron/sync-audience-segments",

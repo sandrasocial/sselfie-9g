@@ -196,11 +196,10 @@ describe("weekly content brief: surfaces", () => {
     expect(toolCallHelper).not.toContain(".messages.create({")
   })
 
-  it("drains a queued admin brief job automatically, without a manual worker command", () => {
-    // 2026-07-04: the job queue (content_brief_jobs) fixed the admin "Queue this week's
-    // brief" button timing out, but nothing served the queue in production except a local
-    // `pnpm content-brief:worker` command Sandra would never run. A cron tick must exist
-    // that drains it on its own, mirroring the Monday research/build/stories cron split.
+  it("keeps the retired queue handler available without scheduling the old content engine", () => {
+    // The Cowork weekly-content-brief-draft task now owns this workflow. Keep the route
+    // implementation for a separate deletion pass, but never register the retired worker
+    // in Vercel alongside its replacement.
     const tick = read("app/api/cron/content-brief-jobs/route.ts")
     expect(tick).toContain("claimNextContentBriefJob")
     expect(tick).toContain("markContentBriefJobPhase")
@@ -210,9 +209,10 @@ describe("weekly content brief: surfaces", () => {
     expect(tick).toContain("generateDailyStoriesForBrief")
 
     const vercelConfig = read("vercel.json")
-    expect(vercelConfig).toContain('"path": "/api/cron/content-brief-jobs"')
+    expect(vercelConfig).not.toContain('"path": "/api/cron/content-brief-jobs"')
+    expect(vercelConfig).not.toContain('"path": "/api/cron/content-brief-weekly')
 
-    // The queue has no live UI producer now; Phase 2B owns eventual cron/pipeline deletion.
+    // The queue has no live UI producer; a later dependency-audited pass owns route deletion.
     expect(fs.existsSync(path.join(root, "components/admin/content-brief-client.tsx"))).toBe(false)
   })
 })
