@@ -33,14 +33,9 @@ const TOOLS = [
     href: "/admin/activation-funnel",
   },
   {
-    title: "Brand Shoot monitor",
-    description: "Check Selfie to Brand Shoot access and progress.",
-    href: "/admin/selfie-to-brand-shoot",
-  },
-  {
-    title: "Brand Shoot QA mirror",
-    description: "Open the admin preview of the customer experience.",
-    href: "/admin/preview/selfie-to-brand-shoot",
+    title: "Work With Me",
+    description: "Review qualified applications and move each person through the sales pipeline.",
+    href: "/admin/work-with-me",
   },
 ] as const
 

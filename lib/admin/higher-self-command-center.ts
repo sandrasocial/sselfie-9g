@@ -122,7 +122,7 @@ function buildMoneyMove(input: HigherSelfCommandCenterInput): HigherSelfCommandM
       action: `Follow up the ${warmCount} warm Work With Me lead${warmCount === 1 ? "" : "s"} before building anything new.`,
       reason: "Financial freedom comes fastest from warm trust into the higher-value offer, not more low-ticket tinkering.",
       source: "brand_engine_applications",
-      link: { label: "Open Work With Me", href: "/work-with-me" },
+      link: { label: "Open Work With Me", href: "/admin/work-with-me" },
     }
   }
 
@@ -155,7 +155,7 @@ function buildMoneyMove(input: HigherSelfCommandCenterInput): HigherSelfCommandM
     action: "Connect today's content to the right next step: cold gets the Kit or Vault, warm gets Visibility To Paid.",
     reason: "The business grows when attention is routed to the correct offer temperature every day.",
     source: "purpose lock",
-    link: { label: "Open content brief", href: "/admin/content-brief" },
+    link: { label: "Open content", href: "/admin/content-brief" },
   }
 }
 
@@ -193,7 +193,7 @@ function buildOfferBridge(input: HigherSelfCommandCenterInput): HigherSelfComman
       : "Cold feed reach can go to the Kit or Vault. Warm Stories, DMs, and email should point to Visibility To Paid / Work With Me.",
     reason: "Low-ticket offers are bridges. Warm trust is where the deeper paid transformation lives.",
     source: "purpose lock",
-    link: { label: "Open Work With Me", href: "/work-with-me" },
+    link: { label: "Open Work With Me", href: "/admin/work-with-me" },
   }
 }
 
@@ -227,7 +227,7 @@ function buildSystemMove(input: HigherSelfCommandCenterInput): HigherSelfCommand
       action: "Generate the weekly brief so today has a data-backed content direction.",
       reason: "The system needs one current brief before it can make clean daily decisions.",
       source: "content_brief_weekly",
-      link: { label: "Open content brief", href: "/admin/content-brief" },
+      link: { label: "Open content", href: "/admin/content-brief" },
     }
   }
 
@@ -260,7 +260,7 @@ function buildSystemMove(input: HigherSelfCommandCenterInput): HigherSelfCommand
     action: "After posting, note which frame created replies so tomorrow's story is sharper.",
     reason: "The system learns when Sandra captures the exact story that moved people.",
     source: "manual Sandra signal",
-    link: { label: "Open content brief", href: "/admin/content-brief" },
+    link: { label: "Open content", href: "/admin/content-brief" },
   }
 }
 

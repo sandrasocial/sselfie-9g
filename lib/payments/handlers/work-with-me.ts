@@ -4,7 +4,9 @@ import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { updateContactTags as updateTags } from "@/lib/resend/manage-contact"
+import { sql } from "@/lib/db/client"
 import { ensurePaidSelfieToBrandShootSubscriber } from "@/lib/freebie/selfie-to-brand-shoot-access"
+import { closeWorkWithMeApplicationForPayment } from "@/lib/work-with-me/pipeline"
 import { generatePasswordSetupLinkForPurchase } from "../shared"
 import type { CheckoutFulfillmentContext } from "../types"
 
@@ -16,6 +18,19 @@ export async function handleWorkWithMeCheckout(ctx: CheckoutFulfillmentContext):
       `[v0] ⚠️ Work With Me checkout completed but payment not confirmed (status: '${session.payment_status}').`
     )
     return
+  }
+
+  const applicationId = Number.parseInt(
+    String(session.metadata?.brand_engine_application_id || ""),
+    10,
+  )
+  const applicationClosure = await closeWorkWithMeApplicationForPayment(sql, {
+    applicationId,
+    amountCents: session.amount_total || 0,
+    checkoutSessionId: session.id,
+  })
+  if (Number.isFinite(applicationId) && applicationId > 0 && !applicationClosure.updated) {
+    console.warn(`[v0] Work With Me application ${applicationId} was not found during fulfillment`)
   }
 
   if (!customerEmail) {
