@@ -18,7 +18,7 @@ const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
 
 export const metadata: Metadata = {
-  title: "Selfie to Brand Shoot · SSELFIE",
+  title: "Free AI Photo Prompts · SSELFIE",
   description:
     "Free AI photoshoot prompts for turning one selfie into editorial personal brand images that still look like you.",
 }
@@ -91,8 +91,8 @@ const FUNNEL_STEPS = [
   },
   {
     label: "03",
-    title: "The System",
-    body: "Use the guided Selfie to Brand Shoot path to choose, create, edit, and post the images.",
+    title: "Create",
+    body: "Paste a prompt into your AI tool of choice with your selfie, and your first shoot is ready.",
   },
 ]
 
@@ -129,10 +129,10 @@ export default async function AiPromptsOptInPage() {
         <div className="opt-hero-content">
           <div className="opt-container">
             <p className="opt-eyebrow">FREE DOWNLOAD</p>
-            <h1 className={`opt-headline ${cormorant.className}`}>Selfie to Brand Shoot.</h1>
+            <h1 className={`opt-headline ${cormorant.className}`}>One Selfie. Unlimited Photoshoots.</h1>
             <p className="opt-sub">
-              Get the free photoshoot prompts to turn your own selfie into cinematic, editorial
-              personal brand images. No studio, no photographer, no perfect setup.
+              Get the free AI photo prompts to turn your own selfie into cinematic, editorial
+              images. No studio, no photographer, no perfect setup.
             </p>
 
             <div className="opt-proof-strip" aria-label="Photoshoot prompt examples">
@@ -167,9 +167,9 @@ export default async function AiPromptsOptInPage() {
               Your first step into the SSELFIE visual world.
             </h2>
             <p className="opt-value-body">
-              Upload your selfie, choose the look, and start creating editorial brand-style images
-              that still look like you. The prompts are the first step. The full path is Selfie to
-              Brand Shoot.
+              Upload your selfie, choose the look, and start creating editorial images that still
+              look like you. These five prompts are the free preview. The Prompt Vault is the full
+              library, every collection, every new drop.
             </p>
           </div>
           <div className="opt-value-list">
@@ -189,7 +189,7 @@ export default async function AiPromptsOptInPage() {
           <div>
             <p className="opt-value-label">THE SSELFIE PATH</p>
             <h2 className={`opt-value-title ${cormorant.className}`}>
-              Free preview today. Full brand shoot when you are ready.
+              Free preview today. The full Vault when you are ready.
             </h2>
           </div>
           <div className="opt-path-list">

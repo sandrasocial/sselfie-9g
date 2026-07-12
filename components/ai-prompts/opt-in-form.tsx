@@ -116,7 +116,7 @@ export function OptInForm() {
         </div>
       </div>
       <button type="submit" className="opt-submit" disabled={status === "loading"}>
-        {status === "loading" ? "Sending..." : "Start my first brand shoot"}
+        {status === "loading" ? "Sending..." : "Send me the free prompts"}
       </button>
       {status === "error" && (
         <p className="opt-error">
