@@ -77,6 +77,7 @@ Sandra x`)
     expect(route).toContain('campaign: "membership_recovery"')
     expect(route).toContain("s.product_type = 'sselfie_studio_membership' AND s.status = 'active'")
     expect(route).not.toContain("OR s.product_type = 'suite_trial'")
+    expect(route).not.toContain("'suite_trial_unlock'")
 
     // Unrelated safety and delivery behavior stays pinned.
     expect(route).toContain("MEMBERSHIP_CHECKOUT_RECOVERY_DISABLED")

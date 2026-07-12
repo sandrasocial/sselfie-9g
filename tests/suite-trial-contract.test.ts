@@ -81,4 +81,18 @@ describe("suite_trial never counts as membership (Admin Data Contract)", () => {
     expect(src).not.toContain("event_type")
     expect(src).not.toContain("anonymous_id")
   })
+
+  it("revenue truth scorecard scopes trial downloads to trial users", () => {
+    const src = readFileSync(path.join(process.cwd(), "lib/admin/revenue-truth-scorecard.ts"), "utf8")
+    const eventQueryStart = src.indexOf("const eventCounts")
+    const eventQuery = src.slice(eventQueryStart, src.indexOf("const events", eventQueryStart))
+
+    expect(eventQuery).toContain("event_name = 'suite_image_downloaded'")
+    expect(eventQuery).toContain("EXISTS (")
+    expect(eventQuery).toContain("download_trial.user_id::text = analytics_events.user_id")
+    expect(eventQuery).toContain("download_trial.product_type = 'suite_trial'")
+    expect(eventQuery).toContain(
+      "(download_trial.is_test_mode = FALSE OR download_trial.is_test_mode IS NULL)",
+    )
+  })
 })

@@ -217,7 +217,15 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
   const eventCounts = await sql`
     SELECT
       COUNT(*) FILTER (WHERE event_name = 'trial_first_generation')::int AS trial_first_generation_30d,
-      COUNT(*) FILTER (WHERE event_name = 'suite_image_downloaded')::int AS downloads_30d,
+      COUNT(*) FILTER (
+        WHERE event_name = 'suite_image_downloaded'
+          AND EXISTS (
+            SELECT 1 FROM subscriptions download_trial
+            WHERE download_trial.user_id::text = analytics_events.user_id
+              AND download_trial.product_type = 'suite_trial'
+              AND (download_trial.is_test_mode = FALSE OR download_trial.is_test_mode IS NULL)
+          )
+      )::int AS downloads_30d,
       COUNT(*) FILTER (WHERE event_name = 'studio_membership_payment_form_rendered')::int AS payment_form_rendered_30d
     FROM analytics_events
     WHERE created_at >= NOW() - INTERVAL '30 days'

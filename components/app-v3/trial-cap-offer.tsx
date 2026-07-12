@@ -11,7 +11,7 @@ import { useEffect, useState } from "react"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
 export const TRIAL_CAP_CHECKOUT_URL =
-  "/checkout/membership?checkout_source=trial_cap&utm_source=app&utm_medium=in_app&utm_campaign=trial_cap_upgrade"
+  "/checkout/membership?interval=month&checkout_source=trial_cap&utm_source=app&utm_medium=in_app&utm_campaign=trial_cap_upgrade"
 
 interface TrialCapOfferProps {
   open: boolean

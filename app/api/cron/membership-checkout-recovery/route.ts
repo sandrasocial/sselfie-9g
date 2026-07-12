@@ -102,7 +102,7 @@ async function getCandidates(): Promise<Candidate[]> {
         AND NOT EXISTS (
           SELECT 1 FROM email_logs el
           WHERE LOWER(BTRIM(el.user_email)) = LOWER(BTRIM(checkout_attribution.user_email))
-            AND el.email_type IN (${MEMBERSHIP_CHECKOUT_RECOVERY_EMAIL_TYPE}, 'suite_trial_unlock')
+            AND el.email_type = ${MEMBERSHIP_CHECKOUT_RECOVERY_EMAIL_TYPE}
             AND el.status IN ('sent', 'delivered', 'suppressed')
         )
     )

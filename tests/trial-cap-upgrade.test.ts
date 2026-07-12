@@ -109,7 +109,7 @@ describe("in-app trial-cap offer (App v3)", () => {
 
   it("CTA carries the trial_cap attribution", () => {
     expect(offer).toContain(
-      "/checkout/membership?checkout_source=trial_cap&utm_source=app&utm_medium=in_app&utm_campaign=trial_cap_upgrade"
+      "/checkout/membership?interval=month&checkout_source=trial_cap&utm_source=app&utm_medium=in_app&utm_campaign=trial_cap_upgrade"
     )
   })
 
