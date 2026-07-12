@@ -1,7 +1,9 @@
 const { neon } = await import("@neondatabase/serverless")
 
-const prodConnectionString =
-  "postgresql://neondb_owner:npg_4JbrOoe0YugU@ep-dawn-mountain-adwrqtdk-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
+const prodConnectionString = process.env.DATABASE_URL
+if (!prodConnectionString) {
+  throw new Error("DATABASE_URL is required")
+}
 
 const prodDb = neon(prodConnectionString)
 

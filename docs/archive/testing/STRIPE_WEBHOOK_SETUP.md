@@ -6,7 +6,7 @@ You have `STRIPE_WEBHOOK_SECRET` set in `.env.local`, but webhooks aren't being 
 
 ## The Problem
 
-- **Production webhook secret**: `whsec_aJ7W49CBp7hC7rfhsZRjlXZji6jcvGvV` (for production URL)
+- **Production webhook secret**: `STRIPE_WEBHOOK_SECRET` in the deployment environment
 - **Development**: Stripe can't send webhooks to `localhost:3000`
 - **Solution**: Use Stripe CLI to forward webhooks to localhost
 
@@ -34,7 +34,7 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 **Important**: The CLI will output a NEW webhook signing secret that looks like:
 ```
-> Ready! Your webhook signing secret is whsec_xxxxxxxxxxxxx (^C to quit)
+> Ready! Your webhook signing secret is <copy this value> (^C to quit)
 ```
 
 ### Step 4: Update `.env.local`
@@ -42,7 +42,7 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 Copy the NEW webhook secret from Stripe CLI and update `.env.local`:
 
 ```bash
-STRIPE_WEBHOOK_SECRET="whsec_xxxxxxxxxxxxx"  # Use the secret from Stripe CLI
+STRIPE_WEBHOOK_SECRET="<copy from Stripe CLI>"  # Use the secret from Stripe CLI
 ```
 
 **Note**: You'll need to switch between:
@@ -78,8 +78,8 @@ const webhookSecret = process.env.NODE_ENV === 'development'
 
 Then in `.env.local`:
 ```bash
-STRIPE_WEBHOOK_SECRET="whsec_aJ7W49CBp7hC7rfhsZRjlXZji6jcvGvV"  # Production
-STRIPE_WEBHOOK_SECRET_LOCAL="whsec_xxxxxxxxxxxxx"  # From Stripe CLI
+STRIPE_WEBHOOK_SECRET="<stored only in deployment environment>"  # Production
+STRIPE_WEBHOOK_SECRET_LOCAL="<copy from Stripe CLI>"  # From Stripe CLI
 ```
 
 ## Quick Test
@@ -98,7 +98,7 @@ You should see the webhook received in your dev server logs.
 
 ## Production
 
-In production, the webhook secret `whsec_aJ7W49CBp7hC7rfhsZRjlXZji6jcvGvV` should work fine because:
+In production, the `STRIPE_WEBHOOK_SECRET` stored in the deployment environment should work fine because:
 - Stripe can reach `https://sselfie.ai/api/webhooks/stripe`
 - The webhook is configured in Stripe Dashboard
 - The secret matches the production webhook endpoint

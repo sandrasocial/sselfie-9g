@@ -1,12 +1,19 @@
 import { neon } from "@neondatabase/serverless"
 
 // Production database (source)
-const prodDb = neon(
-  "postgresql://neondb_owner:npg_4JbrOoe0YugU@ep-dawn-mountain-adwrqtdk-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require",
-)
+const sourceDatabaseUrl = process.env.SOURCE_DATABASE_URL
+if (!sourceDatabaseUrl) {
+  throw new Error("SOURCE_DATABASE_URL is required")
+}
 
 // New Supabase database (destination)
-const newDb = neon(process.env.SUPABASE_POSTGRES_URL || process.env.DATABASE_URL)
+const destinationDatabaseUrl = process.env.SUPABASE_POSTGRES_URL || process.env.DATABASE_URL
+if (!destinationDatabaseUrl) {
+  throw new Error("SUPABASE_POSTGRES_URL or DATABASE_URL is required")
+}
+
+const prodDb = neon(sourceDatabaseUrl)
+const newDb = neon(destinationDatabaseUrl)
 
 async function migrateData() {
   console.log("[v0] Starting data migration from production to new database...\n")

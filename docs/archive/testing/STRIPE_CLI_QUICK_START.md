@@ -27,7 +27,7 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 **Important**: The CLI will output a webhook signing secret that looks like:
 ```
-> Ready! Your webhook signing secret is whsec_xxxxxxxxxxxxx (^C to quit)
+> Ready! Your webhook signing secret is <copy this value> (^C to quit)
 ```
 
 ### Step 3: Update `.env.local`
@@ -36,10 +36,10 @@ Copy the webhook secret from the CLI output and update `.env.local`:
 
 ```bash
 # For development (from Stripe CLI)
-STRIPE_WEBHOOK_SECRET="whsec_xxxxxxxxxxxxx"
+STRIPE_WEBHOOK_SECRET="<copy from Stripe CLI>"
 
 # Keep your production secret commented or in a separate file
-# STRIPE_WEBHOOK_SECRET="whsec_aJ7W49CBp7hC7rfhsZRjlXZji6jcvGvV"  # Production
+# STRIPE_WEBHOOK_SECRET="<stored only in deployment environment>"  # Production
 ```
 
 ### Step 4: Restart Dev Server
@@ -90,7 +90,7 @@ You should see the webhook received in your dev server logs.
 - Keep Stripe CLI running
 
 **For Production:**
-- Use the production secret: `whsec_aJ7W49CBp7hC7rfhsZRjlXZji6jcvGvV`
+- Use the production `STRIPE_WEBHOOK_SECRET` stored in the deployment environment
 - Webhooks work automatically (no CLI needed)
 
 ## Troubleshooting

@@ -1,9 +1,11 @@
 import { neon } from "@neondatabase/serverless"
 
-// Using your production database connection string
-const sql = neon(
-  "postgresql://neondb_owner:npg_4JbrOoe0YugU@ep-dawn-mountain-adwrqtdk-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require",
-)
+const databaseUrl = process.env.DATABASE_URL
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required")
+}
+
+const sql = neon(databaseUrl)
 
 async function analyzeProductionDatabase() {
   try {

@@ -4,10 +4,12 @@ async function queryViaRest() {
   try {
     console.log("[v0] Connecting to Neon via REST API...")
 
-    // Using the connection string to create a client that uses HTTP
-    const sql = neon(
-      "postgresql://neondb_owner:npg_4JbrOoe0YugU@ep-dawn-mountain-adwrqtdk-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
-    )
+    const databaseUrl = process.env.DATABASE_URL
+    if (!databaseUrl) {
+      throw new Error("DATABASE_URL is required")
+    }
+
+    const sql = neon(databaseUrl)
 
     console.log("[v0] Querying tables...")
 

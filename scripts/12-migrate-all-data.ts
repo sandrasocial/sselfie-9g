@@ -1,17 +1,20 @@
 import { neon } from "@neondatabase/serverless"
 
-const prodConnectionString =
-  "postgresql://neondb_owner:npg_4JbrOoe0YugU@ep-dawn-mountain-adwrqtdk-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
+const prodConnectionString = process.env.SOURCE_DATABASE_URL
 
 const newConnectionString =
   process.env.SUPABASE_POSTGRES_URL_NON_POOLING || process.env.SUPABASE_POSTGRES_URL || process.env.DATABASE_URL
 
-console.log("[v0] Production DB: Connected")
-console.log("[v0] Destination DB:", newConnectionString ? "Connected" : "ERROR: No connection string found")
+if (!prodConnectionString) {
+  throw new Error("SOURCE_DATABASE_URL is required")
+}
 
 if (!newConnectionString) {
   throw new Error("No Supabase connection string found. Please check environment variables.")
 }
+
+console.log("[v0] Production DB: Connected")
+console.log("[v0] Destination DB: Connected")
 
 const prodDb = neon(prodConnectionString)
 const newDb = neon(newConnectionString)

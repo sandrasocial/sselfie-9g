@@ -1,8 +1,11 @@
 import { neon } from "@neondatabase/serverless"
 
-const prodDb = neon(
-  "postgresql://neondb_owner:npg_4JbrOoe0YugU@ep-dawn-mountain-adwrqtdk-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require",
-)
+const databaseUrl = process.env.DATABASE_URL
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required")
+}
+
+const prodDb = neon(databaseUrl)
 
 async function exportToSQL() {
   console.log("[v0] Starting SQL export from production database...\n")
