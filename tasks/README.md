@@ -1,6 +1,6 @@
 # Current Task Board
 
-Last cleaned: 2026-07-11
+Last cleaned: 2026-07-12
 
 This root contains only work that still needs a real-world decision, asset, or verification. Shipped,
 superseded, obsolete, and completed code specs are archived under `tasks/archive/`.
@@ -16,22 +16,22 @@ superseded, obsolete, and completed code specs are archived under `tasks/archive
 
 | Order | Task | What remains | Owner |
 |---:|---|---|---|
-| 1 | `ACTIVATION-FUNNEL-SCORECARD-01.md` | Build the 7-step activation scorecard admin view from events that already exist — reporting, not new instrumentation. Ready now. | Codex |
-| 2 | `WORK-WITH-ME-INSTRUMENTATION-01.md` | Zero analytics on the Work With Me page/form — instrument before redesigning anything. Ready now. | Codex |
-| 3 | `DM-LAUNCH-01-live-qa.md` | Send one non-keyword test DM after the 2026-07-11 bridge repair, reply from admin, and confirm it arrives. Native replies are already proven; historical backlog import stays paused. | Sandra + Codex |
+| 1 | `DM-LAUNCH-01-live-qa.md` | Inbound is proven with five real post-repair ManyChat conversations. Review and approve one prepared reply, then confirm it arrives in Instagram. No code remains. | Sandra |
 
 ## Held, not active
 
 - **Work With Me form redesign:** held until `WORK-WITH-ME-INSTRUMENTATION-01` has 1-2 weeks of real
   page-view/form-start/submit data — don't redesign an already-decent form on a guess.
-- **ManyChat flow content/link verification:** the public API only returns the flow list (name +
-  namespace), not flow content or destination URLs — confirmed 2026-07-12 (`getFlow` 404s on every
-  namespace tried). One flow worth a look: "Untitled," created 2026-07-10, no name. Full link/URL
-  verification needs an attended browser session with Sandra's ManyChat login.
+- **Broader ManyChat flow hygiene:** the live WORK automation was verified in Sandra's signed-in
+  account and renamed `WORK — Sprint Application` on 2026-07-12. Its triggers, first-name mapping,
+  destination, and tracking parameters are correct. Older non-WORK flows can be audited separately;
+  they do not block the active revenue path.
 - **Trial engine redesign:** `grantSuiteTrial` (`lib/trial/suite-trial.ts`) creates a pure DB row —
   no card, no Stripe subscription, no default outcome at expiry. Plausibly the root cause behind the
   trial's 0/50 lifetime conversion (found 2026-07-11/12). Whether to require a card upfront (standard
   SaaS auto-convert pattern) is a real product/pricing decision, not a quick fix — held for Sandra.
+  Trial users have never opened the Academy/course content, so there is no active course-library
+  leakage to fix before making that decision.
 - **Phase 2B content-engine deletion:** wait until `weekly-content-brief-draft` completes its first
   real Monday run on 2026-07-13 and the replacement IG drafting task has proven a real run. The old
   repo cron is disabled, so deleting the fallback early has no upside. **Bundle in:** deleting
@@ -76,6 +76,20 @@ held.
 email already recognized. `MEMBERSHIP-RECOVERY-NO-DOWNGRADE-01` removes the trial-claim downgrade
 from membership checkout recovery and returns abandoners to the prefilled paid checkout. Both specs
 are archived under `tasks/archive/2026-07-12/` with focused regressions.
+
+## Shipped from the 2026-07-12 growth-engine completion
+
+- `ACTIVATION-FUNNEL-SCORECARD-01` is complete: `/admin/activation-funnel` now shows the seven real
+  activation and retention steps, trials by source, mature 7/14-day denominators, and honest
+  measurement limits. Its query was run successfully against production aggregate data.
+- `WORK-WITH-ME-INSTRUMENTATION-01` is complete: landing views, application starts, successful
+  applications, and failures are now measurable without changing the page or form.
+- Membership checkout recovery no longer suppresses a paid-checkout reminder merely because the
+  same person previously received a trial email. The in-app trial upgrade explicitly selects the
+  monthly plan, and trial downloads in the revenue scorecard are limited to actual trial users.
+- The ManyChat Default Reply bridge has received five real post-repair conversations. The live WORK
+  automation is verified and clearly named. Automated sending remains off; one Sandra-approved
+  reply is the only remaining live proof.
 
 ## GitHub baseline
 

@@ -1,5 +1,5 @@
 # SSELFIE Operational Memory
-*Last updated: 2026-06-29 — Read this at the start of every session*
+*Last updated: 2026-07-12 — Read this at the start of every session*
 
 ---
 
@@ -114,7 +114,8 @@ Operating rule:
 | CONTENT-01 weekly brief + /admin/content-brief | ✅ Live 2026-06-10 |
 | VOICE-01 copy cleanup batches 1-4a + check:voice guard | ✅ Live 2026-06-11 |
 | ADMIN-01/02/03 truth-only admin rebuild | ✅ Live 2026-06-11 |
-| DM-RELIEF-01 ManyChat DM bridge + ig-inbox triage | ✅ Live 2026-06-10 |
+| DM-RELIEF-01 ManyChat DM bridge + ig-inbox triage | ✅ Inbound proven 2026-07-12 — five real post-repair ManyChat conversations reached the repo inbox; four have prepared drafts and none was auto-sent. One Sandra-approved reply + arrival confirmation remains as live QA, not code work. The verified WORK flow is named `WORK — Sprint Application`. |
+| Activation + Work With Me measurement | ✅ Built 2026-07-12 — `/admin/activation-funnel` reports the seven real app/trial activation and retention steps by source with honest measurement limits. First live 30-day read: 45 trials, 35 opened, 19 generated, 13 downloaded, 4/13 mature users returned within seven days, and 0/11 created again in week two. Repeat creation is the clearest measured constraint. `/work-with-me` now records landing views, form starts, submitted applications, and failures without changing the page or form. |
 | DESIGN-01 convergence to Cool Editorial (audit done, build pending) | Planned — docs/audits/DESIGN_AUDIT_2026-06-10.md |
 | Maya UX fixes (UX-01/02), Academy (ACADEMY-01/02) | Background — see tasks/ |
 

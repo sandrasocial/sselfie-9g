@@ -85,10 +85,11 @@ automation.
 (`cron-status`, `errors`) are now wired into the /admin home Team panel (EMPLOYEE-01, shipped
 2026-07-08, commit fcf207ef).
 
-### Broken wiring (known, visible, owned)
-- **ManyChat inbound bridge** (`/api/webhooks/manychat-inbound`): code live, ManyChat side never
-  configured — zero messages captured all-time. Fix = Sandra-attended ManyChat UI task; until
-  then the `manychat-agent-watch` Claude task covers the inbox every morning.
+### Wiring status (known, visible, owned)
+- **ManyChat inbound bridge** (`/api/webhooks/manychat-inbound`): repaired and proven live. Five
+  real post-repair ManyChat-origin conversations reached the SSELFIE inbox on 2026-07-12; four had
+  prepared drafts and none was sent automatically. The remaining proof is one Sandra-approved reply
+  plus arrival confirmation, not additional bridge code.
 - **Resend bounce webhook**: ✅ alerting LIVE (`maybeSendDeliverabilityAlert` in
   `app/api/webhooks/resend/route.ts`) — fires when bounces+complaints in `email_logs` cross
   `EMAIL_BOUNCE_ALERT_THRESHOLD` (default 10) in a rolling 24h, once/day. 2026-07-09: root-caused
@@ -167,7 +168,7 @@ above — a stale label, not a content risk since it's code-hygiene only.
 
 | System | What lives there | Notes |
 |---|---|---|
-| ManyChat (fb877156) | Keyword automations (PROMPT, SELFIE, KIT, SUITE, VAULT, PRESET, ANDROID; coming: WORK → `work-lead` tag id 91411765), conservative AI Replies, Live Chat inbox | Default Reply is wired to the repo bridge. Its missing `Last Text Input` field was repaired and published 2026-07-11. Production now uses the API key issued by account `877156`; human-approved outbound is enabled while automated agent sends remain off. The repo also rejects a token whose account prefix does not match `MANYCHAT_ACCOUNT_ID`. Several stale flows (archived selfie flow, Rebecca Adehill imports, "Private 1:1 May") remain ManyChat-side cleanup candidates. |
+| ManyChat (fb877156) | Keyword automations (PROMPT, SELFIE, KIT, SUITE, VAULT, PRESET, ANDROID, WORK), conservative AI Replies, Live Chat inbox | Default Reply is wired to the repo bridge. Its missing `Last Text Input` field was repaired and published 2026-07-11, then proven with five real inbound conversations on 2026-07-12. The live WORK path is named `WORK — Sprint Application`; both comment and DM triggers, the first-name mapping, `/work-with-me` destination, and tracking parameters were verified in Sandra's signed-in account. Production uses the API key issued by account `877156`; human-approved outbound is enabled while automated agent sends remain off. The repo also rejects a token whose account prefix does not match `MANYCHAT_ACCOUNT_ID`. Several stale flows (archived selfie flow, Rebecca Adehill imports, "Private 1:1 May") remain ManyChat-side cleanup candidates. |
 | Resend | Broadcast delivery, audiences/segments, ~60 mechanical "Sequence:" audiences | Sends only what repo crons or Sandra trigger. |
 | Stripe | Payments, subscriptions, webhooks → repo | Money truth source per Admin Data Contract. |
 | Vercel | Deploys from `main`, runs all Layer-1 crons, holds prod env flags | Env booleans being hardened in EMPLOYEE-01. |
