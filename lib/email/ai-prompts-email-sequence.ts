@@ -5,7 +5,6 @@ export type AiPromptsEmailType =
   | "ai-prompts-day7-prompt-vault-offer"
   | "ai-prompts-day9-prompt-vault-proof"
   | "ai-prompts-day11-prompt-vault-why-now"
-  | "ai-prompts-day10-suite-trial"
 
 export interface AiPromptsEmailTouchDefinition {
   days: number
@@ -23,11 +22,4 @@ export const AI_PROMPTS_EMAIL_TOUCHES: AiPromptsEmailTouchDefinition[] = [
   },
   { days: 9, emailType: "ai-prompts-day9-prompt-vault-proof" },
   { days: 11, emailType: "ai-prompts-day11-prompt-vault-why-now" },
-  // FUNNEL-EMAIL-01: keep the historical email type to avoid migrating email_logs, but
-  // move the SUITE trial after the Vault proof/why-now sequence.
-  {
-    days: 14,
-    emailType: "ai-prompts-day10-suite-trial",
-    suppressIfSentTypes: ["suite_trial_unlock"],
-  },
 ]

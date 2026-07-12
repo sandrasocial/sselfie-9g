@@ -49,7 +49,7 @@ automation.
 | `suite-trial-expiry` | 08:45 | Trial lifecycle + expiry |
 | `win-back-sequence` | 10:00 | Cancelled + dormant-member win-back |
 | `subscriber-winback` | 09:40 | Dormant email-subscriber win-back |
-| `ai-photoshoot-nurture` | 09:30 | AI-prompts + Vault buyer nurture |
+| `ai-photoshoot-nurture` | 09:30 | AI-prompts + Vault buyer nurture. Narrowed 2026-07-12: free AI Prompts leads stop after the paid Vault/Kit offer sequence and no longer receive the failed no-card SUITE trial. Paid product handlers still own the included buyer-trial unlock. |
 | `nurture-sequence` | 10:00 | Legacy multi-product nurture (mostly double-gated off) |
 | `membership / prompt-vault / starter-kit / selfie-to-brand-shoot checkout-recovery` | hourly (staggered) | Abandoned checkout recovery. Membership recovery returns identified abandoners directly to a prefilled paid checkout; it does not grant a trial. |
 | `send-scheduled-newsletters` | */30 min | Sends Sandra-approved broadcasts only |

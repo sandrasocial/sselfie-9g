@@ -75,17 +75,17 @@ describe("GET /api/cron/nurture-sequence", () => {
     expect(cronSuccessMock).toHaveBeenCalledTimes(1)
     expect(cronErrorMock).not.toHaveBeenCalled()
 
-    expect(queries).toHaveLength(20)
+    expect(queries).toHaveLength(19)
 
     for (const query of queries) {
       expect(query).not.toContain("u.name")
       expect(query).not.toContain("UNION")
     }
 
-    const freebieGuideQueries = queries.slice(0, 3)
-    const selfieGuideQueries = queries.slice(3, 8)
-    const starterKitQueries = queries.slice(8, 15)
-    const masterclassQueries = queries.slice(15, 20)
+    const freebieGuideQueries = queries.slice(0, 2)
+    const selfieGuideQueries = queries.slice(2, 7)
+    const starterKitQueries = queries.slice(7, 14)
+    const masterclassQueries = queries.slice(14, 19)
 
     for (const query of freebieGuideQueries) {
       expect(query).toContain("NULLIF(BTRIM(fs.name), '') AS name")
@@ -100,7 +100,7 @@ describe("GET /api/cron/nurture-sequence", () => {
       expect(query).toContain("s.product_type = 'masterclass'")
     }
 
-    expect(freebieGuideQueries).toHaveLength(3)
+    expect(freebieGuideQueries).toHaveLength(2)
     expect(selfieGuideQueries).toHaveLength(5)
     expect(starterKitQueries).toHaveLength(7)
     expect(masterclassQueries).toHaveLength(5)

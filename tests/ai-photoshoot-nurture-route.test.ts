@@ -88,12 +88,12 @@ describe("GET /api/cron/ai-photoshoot-nurture", () => {
     expect(body.totalSent).toBe(1)
 
     expect(sendEmailMock).toHaveBeenCalledTimes(1)
-    // Touches process deepest-first since the 2026-07-03 reorder (conversion-critical
-    // sends beat day-1 volume), so the first candidates query is the deepest touch.
+    // Touches process deepest-first, so the first candidates query is the deepest
+    // remaining paid-offer touch. Free leads no longer receive the failed no-card trial.
     expect(sendEmailMock).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "buyer@example.com",
-        emailType: "ai-prompts-day10-suite-trial",
+        emailType: "ai-prompts-day11-prompt-vault-why-now",
         marketing: true,
         tags: expect.arrayContaining(["ai-prompts", "ai-photoshoot-nurture"]),
       }),

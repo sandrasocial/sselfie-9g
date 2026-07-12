@@ -17,7 +17,6 @@ import { generateFreebieGuideDay1LightTipEmail } from "@/lib/email/templates/fre
 import { generateFreebieGuideDay3EditBridgeEmail } from "@/lib/email/templates/freebie-guide-day3-edit-bridge"
 import { generateFreebieGuideDay5StoryEmail } from "@/lib/email/templates/freebie-guide-day5-story"
 import { generateFreebieGuideDay8StarterKitDirectEmail } from "@/lib/email/templates/freebie-guide-day8-starter-kit-direct"
-import { generateFreebieGuideDay14MasterclassBridgeEmail } from "@/lib/email/templates/freebie-guide-day14-masterclass-bridge"
 import { generateSelfieGuideActivationDay0Email } from "@/lib/email/templates/selfie-guide-activation-day0"
 import { generateSelfieGuideDay3CheckinEmail } from "@/lib/email/templates/selfie-guide-day3-checkin"
 import { generateSelfieGuideDay7ChallengeEmail } from "@/lib/email/templates/selfie-guide-day7-challenge"
@@ -41,7 +40,6 @@ import { generateAiPromptsDay5EditMakesPostableEmail } from "@/lib/email/templat
 import { generateAiPromptsDay7PromptVaultOfferEmail } from "@/lib/email/templates/ai-prompts-day7-prompt-vault-offer"
 import { generateAiPromptsDay9PromptVaultProofEmail } from "@/lib/email/templates/ai-prompts-day9-prompt-vault-proof"
 import { generateAiPromptsDay11PromptVaultWhyNowEmail } from "@/lib/email/templates/ai-prompts-day11-prompt-vault-why-now"
-import { generateAiPromptsDay10SuiteTrialEmail } from "@/lib/email/templates/ai-prompts-day10-suite-trial"
 import {
   generatePromptVaultDay10NextShootEmail,
   generatePromptVaultDay2FirstResultEmail,
@@ -633,14 +631,6 @@ async function sendFreebieGuideTouchEmail(
         accessUrl,
       })
       break
-    case "freebie-guide-day14-masterclass-bridge":
-      email = generateFreebieGuideDay14MasterclassBridgeEmail({
-        firstName,
-        recipientEmail: candidate.email,
-        accessUrl,
-        claimUrl: suiteTrialClaimUrl(candidate),
-      })
-      break
     default:
       throw new Error(`Unknown freebie guide email type: ${emailType}`)
   }
@@ -699,14 +689,6 @@ async function sendAiPromptsTouchEmail(
         recipientEmail: candidate.email,
       })
       break
-    case "ai-prompts-day10-suite-trial": {
-      const claimUrl = suiteTrialClaimUrl(candidate)
-      if (!claimUrl) {
-        throw new Error("Missing suite trial claim token")
-      }
-      email = generateAiPromptsDay10SuiteTrialEmail({ firstName, claimUrl })
-      break
-    }
     default:
       throw new Error(`Unknown AI Prompts email type: ${emailType}`)
   }
@@ -1017,14 +999,12 @@ export async function GET(request: Request) {
       freebieGuideDay3: { found: 0, sent: 0, failed: 0 },
       freebieGuideDay5: { found: 0, sent: 0, failed: 0 },
       freebieGuideDay8: { found: 0, sent: 0, failed: 0 },
-      freebieGuideDay14: { found: 0, sent: 0, failed: 0 },
       aiPromptsDay1: { found: 0, sent: 0, failed: 0 },
       aiPromptsDay2: { found: 0, sent: 0, failed: 0 },
       aiPromptsDay5: { found: 0, sent: 0, failed: 0 },
       aiPromptsDay7: { found: 0, sent: 0, failed: 0 },
       aiPromptsDay9: { found: 0, sent: 0, failed: 0 },
       aiPromptsDay11: { found: 0, sent: 0, failed: 0 },
-      aiPromptsDay14: { found: 0, sent: 0, failed: 0 },
       promptVaultDay2: { found: 0, sent: 0, failed: 0 },
       promptVaultDay3: { found: 0, sent: 0, failed: 0 },
       promptVaultDay5: { found: 0, sent: 0, failed: 0 },
@@ -1059,7 +1039,6 @@ export async function GET(request: Request) {
     const freebieGuideTouchResultKeys = [
       "freebieGuideDay1",
       "freebieGuideDay5",
-      "freebieGuideDay14",
     ] as const
 
     for (const [index, touch] of FREEBIE_GUIDE_EMAIL_TOUCHES.entries()) {
@@ -1104,7 +1083,6 @@ export async function GET(request: Request) {
       "aiPromptsDay7",
       "aiPromptsDay9",
       "aiPromptsDay11",
-      "aiPromptsDay14",
     ] as const
 
     if (aiPromptsEnabled) {
@@ -1453,7 +1431,6 @@ export async function GET(request: Request) {
       results.freebieGuideDay3.sent +
       results.freebieGuideDay5.sent +
       results.freebieGuideDay8.sent +
-      results.freebieGuideDay14.sent +
       results.aiPromptsDay2.sent +
       results.aiPromptsDay5.sent +
       results.aiPromptsDay7.sent +
@@ -1490,7 +1467,6 @@ export async function GET(request: Request) {
       results.freebieGuideDay3.failed +
       results.freebieGuideDay5.failed +
       results.freebieGuideDay8.failed +
-      results.freebieGuideDay14.failed +
       results.aiPromptsDay2.failed +
       results.aiPromptsDay5.failed +
       results.aiPromptsDay7.failed +
@@ -1528,7 +1504,6 @@ export async function GET(request: Request) {
       freebieGuideDay3: results.freebieGuideDay3,
       freebieGuideDay5: results.freebieGuideDay5,
       freebieGuideDay8: results.freebieGuideDay8,
-      freebieGuideDay14: results.freebieGuideDay14,
       aiPromptsEnabled,
       aiPromptsStartDate,
       aiPromptsDay2: results.aiPromptsDay2,

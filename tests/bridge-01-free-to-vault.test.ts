@@ -8,7 +8,6 @@ import { generateAiPromptsDay1VaultBridgeEmail } from "@/lib/email/templates/ai-
 import { generateAiPromptsDay7PromptVaultOfferEmail } from "@/lib/email/templates/ai-prompts-day7-prompt-vault-offer"
 import { generateAiPromptsDay9PromptVaultProofEmail } from "@/lib/email/templates/ai-prompts-day9-prompt-vault-proof"
 import { generateAiPromptsDay11PromptVaultWhyNowEmail } from "@/lib/email/templates/ai-prompts-day11-prompt-vault-why-now"
-import { generateAiPromptsDay10SuiteTrialEmail } from "@/lib/email/templates/ai-prompts-day10-suite-trial"
 
 describe("BRIDGE-01 free prompts to Vault bridge", () => {
   it("starts the AI prompts nurture with the day 1 Vault bridge", () => {
@@ -18,9 +17,8 @@ describe("BRIDGE-01 free prompts to Vault bridge", () => {
       "ai-prompts-day7-prompt-vault-offer",
       "ai-prompts-day9-prompt-vault-proof",
       "ai-prompts-day11-prompt-vault-why-now",
-      "ai-prompts-day10-suite-trial",
     ])
-    expect(AI_PROMPTS_EMAIL_TOUCHES.map(touch => touch.days)).toEqual([1, 5, 7, 9, 11, 14])
+    expect(AI_PROMPTS_EMAIL_TOUCHES.map(touch => touch.days)).toEqual([1, 5, 7, 9, 11])
     expect(AI_PROMPTS_EMAIL_TOUCHES).toEqual([
       { days: 1, emailType: "ai-prompts-day1-vault-bridge" },
       { days: 5, emailType: "ai-prompts-day5-edit-makes-postable" },
@@ -31,11 +29,6 @@ describe("BRIDGE-01 free prompts to Vault bridge", () => {
       },
       { days: 9, emailType: "ai-prompts-day9-prompt-vault-proof" },
       { days: 11, emailType: "ai-prompts-day11-prompt-vault-why-now" },
-      {
-        days: 14,
-        emailType: "ai-prompts-day10-suite-trial",
-        suppressIfSentTypes: ["suite_trial_unlock"],
-      },
     ])
   })
 
@@ -45,10 +38,10 @@ describe("BRIDGE-01 free prompts to Vault bridge", () => {
     expect(activeGuideEmails).toEqual([
       "freebie-guide-day1-light-tip",
       "freebie-guide-day5-story",
-      "freebie-guide-day14-masterclass-bridge",
     ])
     expect(activeGuideEmails).not.toContain("freebie-guide-day3-edit-bridge")
     expect(activeGuideEmails).not.toContain("freebie-guide-day8-starter-kit-direct")
+    expect(activeGuideEmails).not.toContain("freebie-guide-day14-masterclass-bridge")
   })
 
   it("renders the day 1 bridge email routing cold leads to the AI Photos Kit with checkout attribution", () => {
@@ -98,17 +91,13 @@ describe("BRIDGE-01 free prompts to Vault bridge", () => {
     expect(`${day7.text}\n${day9.text}\n${day11.text}`).not.toContain("—")
   })
 
-  it("renders the rescheduled SUITE trial email as the day 14 follow-up", () => {
-    const email = generateAiPromptsDay10SuiteTrialEmail({
-      firstName: "Sandra",
-      claimUrl: "https://www.sselfie.ai/claim/test-token",
-    })
+  it("does not promote the failed no-card SUITE trial to free leads", () => {
+    const freeLeadTouches = [
+      ...AI_PROMPTS_EMAIL_TOUCHES.map(touch => touch.emailType),
+      ...FREEBIE_GUIDE_EMAIL_TOUCHES.map(touch => touch.emailType),
+    ]
 
-    expect(email.subject).toBe("loved making those? there's a faster way.")
-    expect(email.text).toContain("Doing it by hand with prompts works.")
-    expect(email.text).toContain("Try her free. 7 days in the SUITE, 20 photos on me.")
-    expect(email.text).toContain("Nothing turns into a charge. It just ends.")
-    expect(email.text).toContain("https://www.sselfie.ai/claim/test-token")
-    expect(email.text).not.toContain("—")
+    expect(freeLeadTouches).not.toContain("ai-prompts-day10-suite-trial")
+    expect(freeLeadTouches).not.toContain("freebie-guide-day14-masterclass-bridge")
   })
 })

@@ -87,6 +87,9 @@ are archived under `tasks/archive/2026-07-12/` with focused regressions.
 - Membership checkout recovery no longer suppresses a paid-checkout reminder merely because the
   same person previously received a trial email. The in-app trial upgrade explicitly selects the
   monthly plan, and trial downloads in the revenue scorecard are limited to actual trial users.
+- The failed no-card trial is no longer promoted to free AI Prompts or legacy free-guide leads.
+  Included trials for paid Kit/Vault buyers remain active, creating a cleaner high-intent cohort
+  without changing any customer's charge or taking away an already-claimed trial.
 - The ManyChat Default Reply bridge has received five real post-repair conversations. The live WORK
   automation is verified and clearly named. Automated sending remains off; one Sandra-approved
   reply is the only remaining live proof.

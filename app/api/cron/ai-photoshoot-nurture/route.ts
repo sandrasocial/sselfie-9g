@@ -19,7 +19,6 @@ import { generateAiPromptsDay5EditMakesPostableEmail } from "@/lib/email/templat
 import { generateAiPromptsDay7PromptVaultOfferEmail } from "@/lib/email/templates/ai-prompts-day7-prompt-vault-offer"
 import { generateAiPromptsDay9PromptVaultProofEmail } from "@/lib/email/templates/ai-prompts-day9-prompt-vault-proof"
 import { generateAiPromptsDay11PromptVaultWhyNowEmail } from "@/lib/email/templates/ai-prompts-day11-prompt-vault-why-now"
-import { generateAiPromptsDay10SuiteTrialEmail } from "@/lib/email/templates/ai-prompts-day10-suite-trial"
 import {
   generatePromptVaultDay10NextShootEmail,
   generatePromptVaultDay2FirstResultEmail,
@@ -266,14 +265,6 @@ function generateAiPromptsEmail(emailType: AiPromptsEmailType, candidate: AiProm
         firstName,
         recipientEmail: candidate.email,
       })
-    case "ai-prompts-day10-suite-trial": {
-      const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
-      if (!token) return null
-      return generateAiPromptsDay10SuiteTrialEmail({
-        firstName,
-        claimUrl: `${SITE_URL}/claim/${token}`,
-      })
-    }
     default:
       throw new Error(`Unknown AI prompts email type: ${emailType}`)
   }
@@ -414,9 +405,9 @@ export async function GET(request: Request) {
 
     // ── Ordering matters (email audit 2026-07-03): the send budget used to be consumed by
     // lead day-1 volume before anyone else got a turn, so PAYING Vault buyers received zero
-    // onboarding since Jun 11 and the day-14 SUITE trial offer never went out. Now:
+    // onboarding since Jun 11 and deeper paid-offer touches never went out. Now:
     // 1. Vault BUYERS first (few people, highest trust, they just paid).
-    // 2. Lead touches deepest-first (day 14 -> day 1): conversion-critical sends beat
+    // 2. Lead touches deepest-first (day 11 -> day 1): conversion-critical sends beat
     //    top-of-funnel mass. Later touches gate on PAST sends, so reverse order is safe. ──
     if (promptVaultEnabled || dryRun) {
       for (const touch of PROMPT_VAULT_EMAIL_TOUCHES) {
