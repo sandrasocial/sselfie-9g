@@ -93,7 +93,7 @@ const CHECKOUT_COPY: Record<
     heroTitle: "Get the full shoot and future drops",
     heroBody: "You tried the opening shot. Now get the full visual worlds, newest drops, and future SSELFIE photoshoots.",
     heading: "The AI Photo Prompt Vault",
-    blurb: "One $27 payment gives you full shoot sequences, example images, copy-paste prompts, newest drops, and future photoshoot collections.",
+    blurb: "One $37 payment gives you full shoot sequences, example images, copy-paste prompts, newest drops, and future photoshoot collections.",
     footer: "One-time payment. Instant access, yours to keep forever. Reply anytime if anything's off and I'll help.",
   },
   selfie_ai_photos_kit: {
@@ -156,7 +156,7 @@ const CHECKOUT_CONFIDENCE_POINTS: Record<string, string[]> = {
   ],
   prompt_vault: [
     "Instant Vault access after payment",
-    "One-time $27 purchase",
+    "One-time $37 purchase",
     "No subscription or credit plan",
     "Full visual worlds for your own selfie",
   ],

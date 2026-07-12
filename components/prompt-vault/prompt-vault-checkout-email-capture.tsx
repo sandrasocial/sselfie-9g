@@ -52,7 +52,7 @@ export function PromptVaultCheckoutEmailCapture({
   skipLabel = "Continue without email",
   productName = "Prompt Vault",
   productMeta = "AI brand shoot worlds you can repeat",
-  productPrice = "$27 one-time",
+  productPrice = "$37 one-time",
   orderLabel = "You are joining",
   reassurance = "Your receipt and access link go to this inbox.",
   visuals = DEFAULT_VISUALS,

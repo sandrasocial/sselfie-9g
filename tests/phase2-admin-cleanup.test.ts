@@ -65,10 +65,13 @@ describe("PHASE2-CLEANUP-01 admin simplification", () => {
       "/admin/testimonials",
       "/admin/webhook-review",
       "/admin/prompt-vault",
-      "/admin/selfie-to-brand-shoot",
-      "/admin/preview/selfie-to-brand-shoot",
+      "/admin/activation-funnel",
+      "/admin/work-with-me",
     ]) {
       expect(toolsPage).toContain(`href: "${href}"`)
     }
+
+    expect(toolsPage).not.toContain('href: "/admin/selfie-to-brand-shoot"')
+    expect(toolsPage).not.toContain('href: "/admin/preview/selfie-to-brand-shoot"')
   })
 })

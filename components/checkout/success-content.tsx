@@ -1054,7 +1054,7 @@ export function SuccessContent({
       selfie_guide: 17,
       selfie_guide_bundle: 27,
       starter_kit: 37,
-      prompt_vault: 27,
+      prompt_vault: 37,
       selfie_ai_photos_kit: 37,
       selfie_to_brand_shoot_system: 197,
       masterclass: 147,

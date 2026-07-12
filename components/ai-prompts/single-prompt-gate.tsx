@@ -317,7 +317,7 @@ export function SinglePromptGate({
           </p>
           <p>
             One selfie can become a full editorial shoot library you actually want to post.
-            {` ${vaultCount}`} prompts, $27, one time.
+            {` ${vaultCount}`} prompts, $37, one time.
           </p>
           <Link
             href={checkoutHrefWithIntent}

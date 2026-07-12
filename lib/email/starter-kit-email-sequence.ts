@@ -17,7 +17,5 @@ export const STARTER_KIT_EMAIL_TOUCHES: StarterKitEmailTouchDefinition[] = [
   { days: 1, emailType: "starter-kit-day1-quick-win" },
   { days: 3, emailType: "starter-kit-day3-story" },
   { days: 5, emailType: "starter-kit-day5-proof" },
-  { days: 7, emailType: "starter-kit-day7-soft-masterclass" },
-  { days: 10, emailType: "starter-kit-day10-masterclass-breakdown" },
   { days: 14, emailType: "starter-kit-day14-masterclass-offer" },
 ]

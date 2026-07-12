@@ -835,7 +835,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {[
             { title: "Free AI Prompts", price: "Free", body: "Editorial photoshoot prompts that turn one selfie into photos you'd actually post. Start here.", href: "/ai-prompts" },
-            { title: "Prompt Vault", price: "$27", body: "Every editorial collection, plus each new drop. Turn one selfie into unlimited photoshoots.", href: "/prompt-vault" },
+            { title: "Prompt Vault", price: "$37", body: "Every editorial collection, plus each new drop. Turn one selfie into unlimited photoshoots.", href: "/prompt-vault" },
             { title: "Starter Kit", price: "$37", body: "Presets, editing walkthroughs, posing guide, and 7 days of content from one session.", href: "/starter-kit" },
             { title: "SSELFIE SUITE", price: "€97/mo", body: "Maya builds your visual brand: photoshoots, carousels, reel covers, captions. Everything included.", href: "/join/studio" },
           ].map((p) => (
@@ -1283,7 +1283,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       <Section eyebrow="Everything included" title={<>Everything you need to keep creating.</>}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <FCard title="Maya" body="Your creative director, plus 200 photos a month." />
-          <FCard title="The Prompt Vault" eyebrow="$27 value" body="Visual worlds and prompt collections included." />
+          <FCard title="The Prompt Vault" eyebrow="$37 value" body="Visual worlds and prompt collections included." />
           <FCard title="The Starter Kit" eyebrow="$37 value" body="Presets, posing, captions, and source-photo help included." />
           <FCard title="The Masterclass" eyebrow="$147 value" body="The deeper brand and content method included." />
           <FCard title="Every new drop" body="New collections and products land in your library as they are released." />

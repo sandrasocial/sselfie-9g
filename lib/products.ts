@@ -264,7 +264,7 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     displayName: "The Prompt Vault",
     description:
       "Repeatable AI brand shoot worlds for turning one clear selfie into images that feel connected and still look like you.",
-    priceInCents: 2700, // $27 one-time
+    priceInCents: 3700, // $37 one-time
     type: "prompt_vault",
     tag: "bought_prompt_vault",
     features: [
@@ -316,6 +316,7 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
       "A guided first-shoot path for turning one clear selfie into brand images you can actually use, with Vault access included.",
     priceInCents: 19700, // $197 one-time
     type: "selfie_to_brand_shoot_system",
+    lifecycleStatus: "legacy_access_only",
     tag: "bought_selfie_to_brand_shoot_system",
     features: [
       "Guided Selfie to Brand Shoot workflow",
@@ -508,8 +509,8 @@ export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath>
     lifecycleEmailEntryPoint: "presets_delivery",
   },
   selfie_to_brand_shoot_system: {
-    lifecycleStatus: "live",
-    checkoutPath: "/checkout/selfie-to-brand-shoot",
+    lifecycleStatus: "legacy_access_only",
+    checkoutPath: "legacy:existing-buyer-access-only",
     fulfillmentRule: "stripe_webhook.checkout.session.completed:selfie_to_brand_shoot_system",
     successNextAction: "/access/selfie-to-brand-shoot/[token]",
     lifecycleEmailEntryPoint: "selfie_to_brand_shoot_delivery",

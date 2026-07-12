@@ -11,7 +11,6 @@
  */
 
 import { stripe } from "@/lib/stripe"
-import { PRICING_PRODUCTS } from "@/lib/products"
 
 interface PriceConfigValidation {
   envVarName: string
@@ -95,14 +94,14 @@ const EXPECTED_CONFIGS: ExpectedStripeConfig[] = [
   },
   {
     envVarName: "STRIPE_PRICE_PROMPT_VAULT",
-    productType: "prompt_vault",
-    expectedAmount: 2700, // $27
+    productType: "prompt_vault_legacy_price",
+    expectedAmount: 2700, // historical $27 price kept for old Stripe records
     expectedRecurring: false,
   },
   {
     envVarName: "STRIPE_PRICE_PROMPT_VAULT_AFTER_FLASH",
-    productType: "prompt_vault_after_flash",
-    expectedAmount: 3700, // $37
+    productType: "prompt_vault",
+    expectedAmount: 3700, // current $37 price
     expectedRecurring: false,
   },
   {
@@ -294,7 +293,8 @@ export async function assertStripePricingConfig(): Promise<void> {
       "  STRIPE_PRICE_BRAND_STRATEGY_PACK = Active price for $19 one-time payment",
       "  STRIPE_PRICE_SELFIE_GUIDE_BUNDLE = Active price for $27 one-time payment",
       "  STRIPE_PRICE_SELFIE_GUIDE = Active price for $17 one-time payment",
-      "  STRIPE_PRICE_PROMPT_VAULT = Active price for $27 one-time payment",
+      "  STRIPE_PRICE_PROMPT_VAULT = Historical $27 one-time price kept for old records",
+      "  STRIPE_PRICE_PROMPT_VAULT_AFTER_FLASH = Active price for $37 one-time payment",
       "  STRIPE_PRICE_PRESETS_SINGLE = Active price for $19 one-time payment",
       "  STRIPE_PRICE_PRESETS_BUNDLE = Active price for $39 one-time payment",
       "  STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM = Active price for $197 one-time payment",

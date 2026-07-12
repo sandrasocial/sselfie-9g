@@ -273,7 +273,7 @@ export default async function AiPromptsAccessPage({
           </div>
         )}
         <div className="ap-hero-content">
-          <p className="ap-hero-eyebrow">SSELFIE · SELFIE TO BRAND SHOOT</p>
+          <p className="ap-hero-eyebrow">SSELFIE · AI PROMPTS</p>
           <h1 className={`ap-hero-title ${cormorant.className}`}>
             Your free shoot preview.
           </h1>

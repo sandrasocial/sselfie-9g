@@ -1,12 +1,5 @@
-"use client"
+import { redirect } from "next/navigation"
 
-import dynamic from "next/dynamic"
-
-const EditorialGeneratorClient = dynamic(
-  () => import("@/components/editorial/EditorialGeneratorClient"),
-  { ssr: false },
-)
-
-export default function EditorialGeneratorPage() {
-  return <EditorialGeneratorClient />
+export default function RetiredEditorialGeneratorPage() {
+  redirect("/work-with-me")
 }

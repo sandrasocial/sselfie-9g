@@ -124,7 +124,7 @@ export default function BioPage() {
                 <span className="bio-shop-title">Unlock the Prompt Vault</span>
                 <span className="bio-shop-desc">Every editorial shoot, copy-paste ready</span>
               </span>
-              <span className="bio-shop-price">$27</span>
+              <span className="bio-shop-price">$37</span>
             </Link>
 
             <Link href="/starter-kit" className="bio-shop-card">

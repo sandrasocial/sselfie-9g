@@ -37,29 +37,6 @@ function upperName(name: string | undefined | null) {
   return value.length > 0 ? value.toUpperCase() : "FRIEND"
 }
 
-function buildSystemUpgradeHref(token: string, email?: string | null) {
-  const params = new URLSearchParams({
-    source: "starter_kit_access",
-    utm_source: "owned",
-    utm_medium: "starter_kit_access",
-    utm_campaign: "starter_kit_to_selfie_to_brand_shoot_system",
-    utm_content: "starter_kit_access_upgrade_block",
-    checkout_source: "starter_kit_buyer_upgrade_credit",
-    cta_keyword: "STARTER_KIT",
-    buyer_stage: "micro",
-    starter_kit_credit: "1",
-    upgrade_credit: "3700",
-    freebie_token: token,
-  })
-
-  const cleanEmail = email?.trim().toLowerCase()
-  if (cleanEmail) {
-    params.set("checkout_email", cleanEmail)
-  }
-
-  return `/checkout/selfie-to-brand-shoot?${params.toString()}`
-}
-
 async function getStarterKitRecord(token: string): Promise<{
   status: "ok" | "not_found" | "error"
   data?: StarterKitRecord
@@ -193,7 +170,6 @@ export default async function StarterKitAccessPage({
 
   const desktopPresetDownloadUrl = process.env.STARTER_KIT_PRESET_DOWNLOAD_URL || null
   const guideAccessUrl = `/selfie-guide/access/${token}`
-  const systemUpgradeHref = buildSystemUpgradeHref(token, result.data.email)
 
   // Log access event (fire-and-forget - do not block render)
   logAnalyticsEvent({
@@ -211,26 +187,6 @@ export default async function StarterKitAccessPage({
           Your Starter Kit is ready. Start with one cleaner selfie, download your presets, and use
           the 7-day starter to turn that photo into content.
         </p>
-      </section>
-
-      <section className="system-upgrade">
-        <div className="system-upgrade-copy">
-          <p className="eyebrow">YOUR $37 IS A CREDIT</p>
-          <h2 className={cormorant.className}>Ready for the full thing? Your $37 comes off.</h2>
-          <p>
-            The Selfie to Brand Shoot System is the complete guided path. Choose your look, build
-            a full shoot from one selfie, and turn it into content. Your Starter Kit credit is
-            already applied, so it&apos;s $160 instead of $197. No code needed.
-          </p>
-        </div>
-        <div className="system-upgrade-card">
-          <span>$37 credit applied</span>
-          <strong className={cormorant.className}>The Selfie to Brand Shoot System</strong>
-          <p>Your Starter Kit helps create the source photo. The System shows you what to do with it.</p>
-          <Link href={systemUpgradeHref} className="primary-cta">
-            See the System · $160
-          </Link>
-        </div>
       </section>
 
       <section className="grid">
@@ -356,46 +312,6 @@ export default async function StarterKitAccessPage({
           grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
         }
 
-        .system-upgrade {
-          max-width: 1100px;
-          margin: 24px auto 0;
-          display: grid;
-          grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
-          gap: 20px;
-          border: 1px solid rgba(244, 240, 230, 0.14);
-          background: rgba(244, 240, 230, 0.04);
-          padding: 28px;
-          border-radius: 20px;
-        }
-
-        .system-upgrade-copy p {
-          max-width: 640px;
-        }
-
-        .system-upgrade-card {
-          border: 1px solid rgba(244, 240, 230, 0.16);
-          background: rgba(15, 13, 11, 0.42);
-          padding: 24px;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          justify-content: center;
-        }
-
-        .system-upgrade-card span {
-          font-size: 10px;
-          letter-spacing: 0.24em;
-          text-transform: uppercase;
-          color: rgba(244, 240, 230, 0.58);
-        }
-
-        .system-upgrade-card strong {
-          margin-top: 10px;
-          font-size: 2rem;
-          font-weight: 300;
-          line-height: 1;
-        }
-
         .card {
           border: 1px solid rgba(244, 240, 230, 0.12);
           background: rgba(255, 255, 255, 0.03);
@@ -485,11 +401,6 @@ export default async function StarterKitAccessPage({
           color: rgba(244, 240, 230, 0.58) !important;
         }
 
-        @media (max-width: 760px) {
-          .system-upgrade {
-            grid-template-columns: 1fr;
-          }
-        }
       `}</style>
     </main>
   )

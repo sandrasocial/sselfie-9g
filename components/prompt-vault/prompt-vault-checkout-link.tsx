@@ -52,7 +52,7 @@ function buildCheckoutHref(searchParams: { get(name: string): string | null }): 
 }
 
 export function PromptVaultCheckoutLink({
-  label = "Get the Vault · $27",
+  label = "Get the Vault · $37",
   surface = "dark",
 }: {
   label?: string
