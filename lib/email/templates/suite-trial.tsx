@@ -1,4 +1,5 @@
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
+import { buildRevenueEmailLink } from "./revenue-links"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
 
 // BRIDGE-01 Phase D - SUITE trial lifecycle emails.
@@ -230,7 +231,11 @@ export function generateTrialDay5Email(params: TrialReminderParams): {
   const { customerName, customerEmail, endsOn } = params
   const name = getFirstNameForEmail({ fullName: customerName, email: customerEmail })
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-  const joinUrl = `${siteUrl}/checkout/membership?interval=month&source=trial_day5`
+  const joinUrl = buildRevenueEmailLink(`${siteUrl}/checkout/membership?interval=month`, {
+    checkoutEmail: customerEmail,
+    source: "trial_day5",
+    campaign: "trial_day5",
+  })
   const subject = "2 days left with Maya"
 
   const bodyHtml = `
@@ -277,7 +282,12 @@ export function generateTrialCapUpgradeEmail(params: {
   const { customerName, customerEmail } = params
   const name = getFirstNameForEmail({ fullName: customerName, email: customerEmail })
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-  const joinUrl = `${siteUrl}/checkout/membership?interval=month&source=trial_cap_email&utm_source=email&utm_medium=email&utm_campaign=trial_cap_upgrade`
+  const joinUrl = buildRevenueEmailLink(`${siteUrl}/checkout/membership?interval=month`, {
+    checkoutEmail: customerEmail,
+    source: "trial_cap_email",
+    medium: "email",
+    campaign: "trial_cap_upgrade",
+  })
   const galleryUrl = `${siteUrl}/app`
   const subject = "You used all 20. I love that"
 
@@ -327,7 +337,11 @@ export function generateTrialEndedEmail(params: {
   const { customerName, customerEmail } = params
   const name = getFirstNameForEmail({ fullName: customerName, email: customerEmail })
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-  const joinUrl = `${siteUrl}/checkout/membership?interval=month&source=trial_ended`
+  const joinUrl = buildRevenueEmailLink(`${siteUrl}/checkout/membership?interval=month`, {
+    checkoutEmail: customerEmail,
+    source: "trial_ended",
+    campaign: "trial_ended",
+  })
   const subject = "Your trial ended. Your photos didn't"
 
   const bodyHtml = `

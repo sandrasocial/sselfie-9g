@@ -1,16 +1,14 @@
-// FUNNEL-2026-06-11 - membership checkout abandonment → 7-day trial offer.
+// FUNNEL-2026-06-11 - membership checkout abandonment recovery.
 //
 // Someone who reached the €97 checkout and walked away is the highest-intent lead in the
 // funnel; before this cron they got silence. Mirrors prompt-vault-checkout-recovery:
 // hydrate emails from Stripe sessions (membership starts land with no email captured),
-// then send ONE trial-offer email per address. The claim page enforces one trial per
-// person ever, so the offer can't be farmed.
+// then send ONE return-to-checkout email per address.
 //
 // Enabled by default (kill switch: MEMBERSHIP_CHECKOUT_RECOVERY_DISABLED=true).
 // Idempotent via checkout_attribution.recovery_email_sent_at + email_logs.
 
 import { NextResponse } from "next/server"
-import { randomUUID } from "crypto"
 
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { createCronLogger } from "@/lib/cron-logger"
@@ -22,6 +20,7 @@ import {
   generateMembershipCheckoutRecoveryEmail,
   MEMBERSHIP_CHECKOUT_RECOVERY_EMAIL_TYPE,
 } from "@/lib/email/templates/membership-checkout-recovery"
+import { buildRevenueEmailLink } from "@/lib/email/templates/revenue-links"
 import { ensureRevenueEngineSchema } from "@/lib/revenue-engine/checkout-attribution"
 
 export const dynamic = "force-dynamic"
@@ -93,15 +92,12 @@ async function getCandidates(): Promise<Candidate[]> {
         AND recovery_email_sent_at IS NULL
         AND created_at <= NOW() - INTERVAL '1 hour'
         AND created_at > NOW() - INTERVAL '7 days'
-        -- never offer the trial to members, past trial users, or anyone already invited
+        -- never send checkout recovery to an active member
         AND NOT EXISTS (
           SELECT 1 FROM users u
           JOIN subscriptions s ON s.user_id = u.id
           WHERE LOWER(u.email) = LOWER(BTRIM(checkout_attribution.user_email))
-            AND (
-              (s.product_type = 'sselfie_studio_membership' AND s.status = 'active')
-              OR s.product_type = 'suite_trial'
-            )
+            AND s.product_type = 'sselfie_studio_membership' AND s.status = 'active'
         )
         AND NOT EXISTS (
           SELECT 1 FROM email_logs el
@@ -115,30 +111,6 @@ async function getCandidates(): Promise<Candidate[]> {
     ORDER BY created_at ASC
     LIMIT 25
   `) as Candidate[]
-}
-
-/** Mint (or reuse) a claim token so the trial offer links straight into /claim/[token]. */
-async function ensureClaimToken(email: string): Promise<{ token: string; name: string | null }> {
-  const existing = await sql`
-    SELECT access_token, name FROM freebie_subscribers
-    WHERE LOWER(email) = LOWER(${email}) LIMIT 1
-  `
-  const row = existing[0] as { access_token?: string | null; name?: string | null } | undefined
-  if (row?.access_token?.trim()) return { token: row.access_token.trim(), name: row.name ?? null }
-
-  const token = randomUUID()
-  if (row) {
-    await sql`
-      UPDATE freebie_subscribers SET access_token = ${token}, updated_at = NOW()
-      WHERE LOWER(email) = LOWER(${email})
-    `
-    return { token, name: row.name ?? null }
-  }
-  await sql`
-    INSERT INTO freebie_subscribers (email, name, source, access_token, created_at, updated_at)
-    VALUES (${email}, ${email.split("@")[0]}, 'membership-abandon', ${token}, NOW(), NOW())
-  `
-  return { token, name: null }
 }
 
 export async function GET(request: Request) {
@@ -168,11 +140,19 @@ export async function GET(request: Request) {
 
     for (const candidate of candidates) {
       try {
-        const { token, name } = await ensureClaimToken(candidate.user_email)
-        const firstName = getFirstNameForEmail({ fullName: name, email: candidate.user_email })
+        const firstName = getFirstNameForEmail({ email: candidate.user_email })
+        const checkoutUrl = buildRevenueEmailLink(
+          `${SITE_URL}/checkout/membership?interval=month`,
+          {
+            checkoutEmail: candidate.user_email,
+            source: "membership_recovery",
+            medium: "email",
+            campaign: "membership_recovery",
+          },
+        )
         const email = generateMembershipCheckoutRecoveryEmail({
           firstName,
-          claimUrl: `${SITE_URL}/claim/${token}`,
+          checkoutUrl,
         })
         const result = await sendEmail({
           to: candidate.user_email,
@@ -182,7 +162,7 @@ export async function GET(request: Request) {
           html: email.html,
           text: email.text,
           emailType: MEMBERSHIP_CHECKOUT_RECOVERY_EMAIL_TYPE,
-          tags: ["membership", "checkout-recovery", "trial-offer"],
+          tags: ["membership", "checkout-recovery"],
           marketing: true,
         })
         await sql`

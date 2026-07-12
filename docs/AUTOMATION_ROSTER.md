@@ -51,7 +51,7 @@ automation.
 | `subscriber-winback` | 09:40 | Dormant email-subscriber win-back |
 | `ai-photoshoot-nurture` | 09:30 | AI-prompts + Vault buyer nurture |
 | `nurture-sequence` | 10:00 | Legacy multi-product nurture (mostly double-gated off) |
-| `membership / prompt-vault / starter-kit / selfie-to-brand-shoot checkout-recovery` | hourly (staggered) | Abandoned checkout recovery |
+| `membership / prompt-vault / starter-kit / selfie-to-brand-shoot checkout-recovery` | hourly (staggered) | Abandoned checkout recovery. Membership recovery returns identified abandoners directly to a prefilled paid checkout; it does not grant a trial. |
 | `send-scheduled-newsletters` | */30 min | Sends Sandra-approved broadcasts only |
 
 ### Sandra-facing intelligence (LIVE)

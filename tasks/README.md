@@ -16,9 +16,7 @@ superseded, obsolete, and completed code specs are archived under `tasks/archive
 
 | Order | Task | What remains | Owner |
 |---:|---|---|---|
-| 1 | `CHECKOUT-EMAIL-PASSTHROUGH-01.md` | Trial lifecycle emails don't pass the recipient's email into the checkout link, so already-identified people hit a redundant email-capture screen at peak intent (93% drop measured). Small, precise fix — ready now. | Codex |
-| 2 | `MEMBERSHIP-RECOVERY-NO-DOWNGRADE-01.md` | €97 checkout abandoners (highest-intent leads) currently get downgraded into a free trial claim that has never once converted. Route them back to checkout instead — Sandra-approved copy included in the spec. Ready now. | Codex |
-| 3 | `DM-LAUNCH-01-live-qa.md` | Send one non-keyword test DM after the 2026-07-11 bridge repair, reply from admin, and confirm it arrives. Native replies are already proven; historical backlog import stays paused. | Sandra + Codex |
+| 1 | `DM-LAUNCH-01-live-qa.md` | Send one non-keyword test DM after the 2026-07-11 bridge repair, reply from admin, and confirm it arrives. Native replies are already proven; historical backlog import stays paused. | Sandra + Codex |
 
 ## Held, not active
 
@@ -63,6 +61,13 @@ All three specs from that audit's Codex queue are live in production, in `tasks/
 audit flagged was backfilled the same day (`scripts/backfill-vault-library-drops.ts`) — 0 gaps
 remain. See `content-system-audit-2026-07` in Claude's memory for the full audit and what's still
 held.
+
+## Shipped from the 2026-07-12 checkout diagnosis
+
+`CHECKOUT-EMAIL-PASSTHROUGH-01` now carries each trial recipient into membership checkout with her
+email already recognized. `MEMBERSHIP-RECOVERY-NO-DOWNGRADE-01` removes the trial-claim downgrade
+from membership checkout recovery and returns abandoners to the prefilled paid checkout. Both specs
+are archived under `tasks/archive/2026-07-12/` with focused regressions.
 
 ## GitHub baseline
 
