@@ -16,10 +16,18 @@ superseded, obsolete, and completed code specs are archived under `tasks/archive
 
 | Order | Task | What remains | Owner |
 |---:|---|---|---|
-| 1 | `DM-LAUNCH-01-live-qa.md` | Send one non-keyword test DM after the 2026-07-11 bridge repair, reply from admin, and confirm it arrives. Native replies are already proven; historical backlog import stays paused. | Sandra + Codex |
+| 1 | `ACTIVATION-FUNNEL-SCORECARD-01.md` | Build the 7-step activation scorecard admin view from events that already exist — reporting, not new instrumentation. Ready now. | Codex |
+| 2 | `WORK-WITH-ME-INSTRUMENTATION-01.md` | Zero analytics on the Work With Me page/form — instrument before redesigning anything. Ready now. | Codex |
+| 3 | `DM-LAUNCH-01-live-qa.md` | Send one non-keyword test DM after the 2026-07-11 bridge repair, reply from admin, and confirm it arrives. Native replies are already proven; historical backlog import stays paused. | Sandra + Codex |
 
 ## Held, not active
 
+- **Work With Me form redesign:** held until `WORK-WITH-ME-INSTRUMENTATION-01` has 1-2 weeks of real
+  page-view/form-start/submit data — don't redesign an already-decent form on a guess.
+- **ManyChat flow content/link verification:** the public API only returns the flow list (name +
+  namespace), not flow content or destination URLs — confirmed 2026-07-12 (`getFlow` 404s on every
+  namespace tried). One flow worth a look: "Untitled," created 2026-07-10, no name. Full link/URL
+  verification needs an attended browser session with Sandra's ManyChat login.
 - **Trial engine redesign:** `grantSuiteTrial` (`lib/trial/suite-trial.ts`) creates a pure DB row —
   no card, no Stripe subscription, no default outcome at expiry. Plausibly the root cause behind the
   trial's 0/50 lifetime conversion (found 2026-07-11/12). Whether to require a card upfront (standard
