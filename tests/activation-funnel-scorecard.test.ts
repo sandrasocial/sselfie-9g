@@ -170,7 +170,7 @@ describe("activation funnel scorecard", () => {
     expect(focus).toMatchObject({
       status: "constraint",
       stepKey: "created_again_days_8_14",
-      title: "Bring activated trials back in week two",
+      title: "Turn activated trials into a paid second week",
     })
     expect(focus.evidence).toBe(
       "0 of 2 eligible people generated or downloaded again in days 8 to 14 (0%). This is below the 25% weekly focus signal."

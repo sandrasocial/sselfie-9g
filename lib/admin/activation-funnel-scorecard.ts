@@ -130,10 +130,10 @@ const FOCUS_RULES: Array<{
   {
     key: "created_again_days_8_14",
     defaultWeakBelowPct: 25,
-    title: "Bring activated trials back in week two",
+    title: "Turn activated trials into a paid second week",
     evidenceLabel: "generated or downloaded again in days 8 to 14",
     action:
-      "Make the next experiment one focused week-two return path, then watch this rate before widening traffic.",
+      "Make the next experiment the upgrade bridge before expiry, so women who got a result have one clear way to keep creating in week two.",
   },
   {
     key: "returned_within_7d",
@@ -396,6 +396,7 @@ export function buildActivationFunnelScorecardFromFacts(input: {
       "Trial source uses the exact subscriber_id stored on trial_claimed when available, then a case-insensitive email fallback, then Direct / unknown. Exact means the subscriber match is exact; the displayed source is that subscriber record's current acquisition source because trials have no source column.",
       "Milestones are independently observed. A legacy or typed creation path can generate without a tracked look choice, so the rows are not forced to decrease at every step.",
       "Seven-day and days-8-to-14 rates include only users whose first qualifying action is old enough to have completed the observation window.",
+      "The trial lasts seven days. Trial creation in days 8 to 14 therefore measures whether an activated woman crossed into paid or another valid continued-access path.",
     ],
   }
 }
