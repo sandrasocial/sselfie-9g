@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const subject = String(payload?.subject || "").trim()
     const body = String(payload?.body || "").trim()
 
-    if (!["content_draft", "offer_email", "dm_response"].includes(type)) {
+    if (!["content_draft", "offer_email"].includes(type)) {
       return NextResponse.json({ error: "Invalid queue item type." }, { status: 400 })
     }
     if (!subject || !body) {
@@ -70,4 +70,3 @@ export async function POST(req: NextRequest) {
     )
   }
 }
-

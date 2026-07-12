@@ -44,17 +44,12 @@ export async function POST(
     return resultRedirect(request, token, latest?.status || "invalid")
   }
 
-  const rawMessage = String(form.get("message") || "").trim()
-  const editedMessage = rawMessage ? rawMessage.slice(0, 2000) : null
   try {
-    await executeAdminAction(claimed, { editedMessage })
-    const original = String(claimed.payload.draft || "").trim()
-    const reviewNote = editedMessage && editedMessage !== original ? "Sandra edited the reply before sending." : null
-    await completeAdminAction(claimed.id, reviewNote)
+    await executeAdminAction(claimed)
+    await completeAdminAction(claimed.id)
     return resultRedirect(request, token, "completed")
   } catch (error) {
     await failAdminAction(claimed.id, error)
     return resultRedirect(request, token, "failed")
   }
 }
-

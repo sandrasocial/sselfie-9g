@@ -46,7 +46,7 @@ Rules we should use for SSELFIE:
 | PRESET DM | Live | 17 | DM keyword -> delivery | Separate from comments; likely OK but should share the same tracked destination as PRESET comments. |
 | Prompt Vault | Live | 17 | Older file builder | Small volume. Should become a secondary CTA from PROMPT rather than a standalone cold keyword flow. |
 | Visibility suite | Live | 65 | Older file builder | Product/positioning may be stale versus the current Prompt Vault/SUITE funnel. Do not edit until the offer is confirmed. |
-| Instagram Default Reply | Live | 1 | External request bridge | Points to `/api/webhooks/manychat-inbound`; keep as support/admin bridge. |
+| Instagram Default Reply | Retired 2026-07-12 | 1 historical run | Removed | Stopped and moved to ManyChat trash when the repo reply agent was deleted. Do not restore it. |
 | Private 1:1 May | Stopped | 0 | Off | Safe to leave stopped. |
 
 ## Key findings

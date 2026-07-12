@@ -14,9 +14,7 @@ superseded, obsolete, and completed code specs are archived under `tasks/archive
 
 ## Active queue
 
-| Order | Task | What remains | Owner |
-|---:|---|---|---|
-| 1 | `DM-LAUNCH-01-live-qa.md` | Inbound is proven. The approval screen now shows the exact customer message above the suggested reply and fails closed without context. Approve one prepared reply, then confirm it arrives in Instagram. | Sandra |
+There is no active Codex build in the root task queue.
 
 ## Held, not active
 
@@ -33,7 +31,7 @@ superseded, obsolete, and completed code specs are archived under `tasks/archive
   Trial users have never opened the Academy/course content, so there is no active course-library
   leakage to fix before making that decision.
 - **Phase 2B content-engine deletion:** wait until `weekly-content-brief-draft` completes its first
-  real Monday run on 2026-07-13 and the replacement IG drafting task has proven a real run. The old
+  real Monday run on 2026-07-13. The old
   repo cron is disabled, so deleting the fallback early has no upside. **Bundle in:** deleting
   `lib/admin/daily-briefing-intelligence.ts` (confirmed zero callers, 2026-07-11 audit) in the same
   pass — same reasoning, same window.
@@ -90,9 +88,9 @@ are archived under `tasks/archive/2026-07-12/` with focused regressions.
 - The failed no-card trial is no longer promoted to free AI Prompts or legacy free-guide leads.
   Included trials for paid Kit/Vault buyers remain active, creating a cleaner high-intent cohort
   without changing any customer's charge or taking away an already-claimed trial.
-- The ManyChat Default Reply bridge has received five real post-repair conversations. The live WORK
-  automation is verified and clearly named. Automated sending remains off; one Sandra-approved
-  reply is the only remaining live proof.
+- The repo-hosted Instagram/ManyChat reply system was removed on 2026-07-12. The ManyChat Default
+  Reply bridge and AI Replies are stopped, DM schedules are retired, and old reply approvals are
+  invalid. Marketing keyword flows, including the verified WORK flow, remain live.
 
 ## GitHub baseline
 

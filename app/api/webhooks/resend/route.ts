@@ -552,7 +552,7 @@ async function maybeSendDeliverabilityAlert(eventType: string) {
   `
   if (existing.length > 0) return
 
-  const to = process.env.IG_AGENT_ADMIN_EMAIL || process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
+  const to = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
   const subject = "SSELFIE alert: email deliverability needs review"
   const html = `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.6;color:#111;">

@@ -25,7 +25,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { addContactToSegment, addOrUpdateResendContact } from "@/lib/resend/manage-contact"
 import { normalizeFreebieEmail } from "@/lib/freebie/subscribe-utils"
-import { getManychatInboundBridgeSecret } from "@/lib/ig-agent/manychat-inbound"
 import { hasResendApiKey } from "@/lib/resend/api-key"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import {
@@ -76,16 +75,25 @@ async function addToAiPhotoshootSegment(email: string) {
 }
 
 export async function POST(request: NextRequest) {
-  // --- Shared secret (same mechanism + env as /api/webhooks/manychat-inbound) ---
+  // --- Shared secret for the acquisition endpoints ---
   const secret = process.env.MANYCHAT_BRIDGE_SECRET?.trim()
   if (!secret) {
-    // Ships dark until the env is set - same kill-switch pattern as the inbound bridge.
+    // This acquisition endpoint stays disabled until its dedicated shared secret is configured.
     return NextResponse.json({ error: "Bridge not enabled" }, { status: 503 })
   }
 
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
   const provided =
-    request.headers.get("x-bridge-secret")?.trim() || getManychatInboundBridgeSecret(body)
+    request.headers.get("x-bridge-secret")?.trim() ||
+    (body
+      ? pickString(body, [
+          "bridge_secret",
+          "bridgeSecret",
+          "secret",
+          "manychat_bridge_secret",
+          "manychatBridgeSecret",
+        ])
+      : null)
   if (!provided || !timingSafeEqual(provided, secret)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 401 })
   }

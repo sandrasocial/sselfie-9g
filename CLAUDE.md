@@ -47,7 +47,7 @@ Core lock:
 3b. **MRR is always NET of discounts.** Most current members hold a lifetime "BETA 50%" coupon (forever 50% off), so list-price math overstates MRR (e.g. $689 gross vs $393 net as of 2026-06-11). Discounts are documented in `subscriptions.discount_percent` / `discount_coupon` (synced by the Stripe webhook). Stripe API note: on apiVersion 2026-01-28.clover the coupon lives at `subscription.discounts[].source.coupon` and must be expanded (`expand: ["data.discounts.source.coupon"]`) — reading the legacy `subscription.discount` silently returns gross.
 4. `analytics_events` is for **behavior only** (views, clicks, copies, opens). `checkout_attribution` is for **where buyers came from**, never how much they paid.
 5. No new admin page, metric card, or admin email without removing or merging an existing one.
-6. Admin layout: `/admin` home answers money → members → needs-me → next content move (data layer: `lib/admin/home-report.ts`). Nav is Home · Inbox · Content · Support · Tools. The one daily email is the Daily Sandra Briefing; the weekly is the Content Brief; everything else is alert-only.
+6. Admin layout: `/admin` home answers money → members → needs-me → next content move (data layer: `lib/admin/home-report.ts`). Nav is Home · Content · Support · Tools. The one daily email is the Daily Sandra Briefing; the weekly is the Content Brief; everything else is alert-only.
 7. Full reasoning: `docs/audits/ADMIN_AUDIT_2026-06-11.md`.
 
 ---
@@ -114,7 +114,7 @@ Operating rule:
 | CONTENT-01 weekly brief + /admin/content-brief | ✅ Live 2026-06-10 |
 | VOICE-01 copy cleanup batches 1-4a + check:voice guard | ✅ Live 2026-06-11 |
 | ADMIN-01/02/03 truth-only admin rebuild | ✅ Live 2026-06-11 |
-| DM-RELIEF-01 ManyChat DM bridge + ig-inbox triage | ✅ Inbound proven 2026-07-12 — five real post-repair ManyChat conversations reached the repo inbox and none was auto-sent. Founder approval now shows the exact incoming customer message above the editable suggested reply and disables Send when context cannot be verified. One Sandra-approved reply + arrival confirmation remains as live QA. The verified WORK flow is named `WORK — Sprint Application`. |
+| Repo-hosted Instagram/ManyChat reply agent | **RETIRED AND REMOVED 2026-07-12** — Sandra chose to remove the inbox, inbound bridge, AI drafting, reply approvals, senders, reports, and unattended DM jobs because they created more confusion than value. ManyChat keyword marketing flows remain live. Inbox review is attended and on demand in the signed-in ManyChat inbox only. Historical customer-message tables remain for now and have no active runtime consumers. |
 | Activation + Work With Me measurement | ✅ Built 2026-07-12 — `/admin/activation-funnel` reports the seven real app/trial activation and retention steps by source with honest measurement limits. First live 30-day read: 45 trials, 35 opened, 19 generated, 13 downloaded, 4/13 mature users returned within seven days, and 0/11 created again in week two. Repeat creation is the clearest measured constraint. `/work-with-me` now records landing views, form starts, submitted applications, and failures without changing the page or form. |
 | DESIGN-01 convergence to Cool Editorial (audit done, build pending) | Planned — docs/audits/DESIGN_AUDIT_2026-06-10.md |
 | Maya UX fixes (UX-01/02), Academy (ACADEMY-01/02) | Background — see tasks/ |

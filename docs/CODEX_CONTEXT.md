@@ -81,7 +81,6 @@ spec. Feed Planner is still live and is not the same thing as the retired Maya F
 The admin navigation is:
 
 - Home
-- Inbox
 - Content
 - Support
 - Tools
@@ -105,6 +104,8 @@ Read `docs/AUTOMATION_ROSTER.md` before changing any scheduled or event-driven w
 
 - Customer, payment, fulfillment, and lifecycle automations live in the repo and run on Vercel.
 - Claude Cowork may draft and monitor, but it does not send customer messages automatically.
+- Instagram/ManyChat inbox review is on demand in the signed-in ManyChat inbox. There is no repo
+  DM ingestion, drafting, approval, or sending system.
 - Codex hosts no business automations. Code-hygiene automation is the only allowed Codex lane.
 - ManyChat, Resend, Stripe, and similar services provide delivery mechanics; business logic remains
   in the repo or in an attended Sandra workflow.

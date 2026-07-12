@@ -41,7 +41,7 @@ Supporting repo sources:
 - `docs/brand/VOICE_BIBLE.md`
 - `docs/funnel/SSELFIE-2026-OFFER-MAP.md`
 - `docs/funnel/SSELFIE-2026-DELIVERABLE-JOURNEYS.md`
-- `content-templates/instagram/STORY-AUDIT-APRIL-2026.md`
+- `docs/archive/2026-07-12-ig-reply-retired/STORY-AUDIT-APRIL-2026.md`
 - `content-templates/instagram/MARIA-WENDT-STORY-SYNTHESIS.md`
 
 External strategy signal:

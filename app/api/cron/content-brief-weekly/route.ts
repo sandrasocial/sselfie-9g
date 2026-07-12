@@ -13,7 +13,7 @@ import { envFlag } from "@/lib/env-flags"
 export const dynamic = "force-dynamic"
 export const maxDuration = 300
 
-const ADMIN_EMAIL = process.env.IG_AGENT_ADMIN_EMAIL || "ssa@ssasocial.com"
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
 
 // The full pipeline (web research + three generation passes) outruns the 300s function cap,
 // so vercel.json fires this route three times on Mondays: ?phase=research at 06:00 stores

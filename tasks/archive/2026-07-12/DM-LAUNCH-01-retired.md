@@ -1,4 +1,8 @@
-# DM-LAUNCH-01 - Instagram DM Live QA
+# DM-LAUNCH-01 - RETIRED 2026-07-12
+
+> Historical record only. Sandra retired and removed the repo-hosted DM ingestion, drafting,
+> approval, and sending system before the final live-reply proof. Do not rebuild this path.
+> ManyChat keyword marketing flows remain separate and live.
 
 ## 2026-07-11 repair and current proof
 

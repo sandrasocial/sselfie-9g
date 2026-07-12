@@ -52,22 +52,6 @@ async function pullData() {
     }
   })
 
-  await section("AUDIENCE DEMAND — real DM/comment samples + intents (last 14d)", async () => {
-    const rows = await sql`
-      SELECT c.channel, c.flag_reason, latest.content AS message
-      FROM ig_conversations c
-      LEFT JOIN LATERAL (
-        SELECT content FROM ig_messages
-        WHERE conversation_id = c.id AND from_type != 'agent'
-        ORDER BY created_at DESC, id DESC LIMIT 1
-      ) latest ON TRUE
-      WHERE c.last_message_at > NOW() - INTERVAL '14 days' AND latest.content IS NOT NULL
-      ORDER BY c.last_message_at DESC
-      LIMIT 25
-    ` as any[]
-    for (const r of rows) console.log(`  [${r.channel}/${r.flag_reason || "-"}] ${(r.message || "").replace(/\s+/g, " ").slice(0, 140)}`)
-  })
-
   await section("TOP FREE PROMPT COPIES (last 14d)", async () => {
     const rows = await sql`
       SELECT COALESCE(NULLIF(properties->>'prompt_title', ''), NULLIF(properties->>'title', ''), 'Unknown prompt') AS title,

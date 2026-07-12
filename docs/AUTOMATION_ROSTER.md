@@ -8,7 +8,7 @@ Owner: Sandra + Claude (Cowork). Update this file the same day any automation is
 Automations were scattered across four layers (repo/Vercel, Claude Cowork on Sandra's Mac,
 the Codex app, and external SaaS) with no single map. Result: three funnel-health checkers in
 three apps, duplicate email operators, agents paused out of distrust, and systems dying
-silently (the DM bridge captured zero messages for a month and nothing noticed).
+silently (a now-retired DM bridge once captured zero messages for a month and nothing noticed).
 
 ## Lane rules (where new automations are ALLOWED to live)
 
@@ -57,27 +57,22 @@ automation.
 ### Sandra-facing intelligence (LIVE)
 | Cron | Schedule | Job |
 |---|---|---|
-| `daily-sandra-briefing` | 06:15 | Trimmed to a ~15-second read 2026-07-09: money, growth/revenue truth, one compact "today's move" line (reuses already-computed working/leaking signal), customer threads only if any. Since 2026-07-10 it also carries the one founder approval queue: up to five flagged DM drafts and recent `Story ·` Resend drafts. Each link opens a review page and never sends on GET; Sandra must confirm the POST action. No separate approval-alert email is sent. Retired its daily `lib/admin/daily-briefing-intelligence.ts` LLM call (same Anthropic-billing root cause as the weekly brief; degraded to generic filler on every failure). That file stays for now (its own tests still exercise it directly) until the Phase 2 Codex cleanup removes it. |
+| `daily-sandra-briefing` | 06:15 | Trimmed to a ~15-second read: money, growth/revenue truth, one compact "today's move" line, customer threads only if any, and recent `Story ·` Resend drafts awaiting approval. The repo DM inbox and DM approvals were removed 2026-07-12. |
 | ~~`content-brief-weekly` (3 phases) + `content-brief-jobs`~~ | — | RETIRED FROM SERVICE 2026-07-09 (had been failing since 2026-07-02 on an Anthropic credit-balance error) — replaced by the `weekly-content-brief-draft` Cowork task below. Disabled via `CONTENT_BRIEF_ENABLED=false` in Vercel prod (flip back to re-enable) to avoid colliding with the new task on the same stored report row. Actual code/cron-entry deletion is scoped into the Phase 2 Codex cleanup (`tasks/README.md`). |
 | `ig-insights-sync` | 05:50 | Nightly IG post snapshots |
 | `weekly-content-trends` | Mon 05:00 | Trend digest pre-warm |
 | `feed-plan-monthly-draft` | 1st, 06:00 | Maya drafts member feed calendars |
 | `cron-health-check` | hourly | Watchdog: stale crons, failures, AI-credit canary → alerts |
 | `product-qa-daily` | 05:55 | Bug/reliability reporter (deterministic, no LLM) → feeds briefing "System health" |
-| Instagram webhook → IG inbox | event-driven | Stores every real conversation; exact ManyChat automation keywords (`PROMPT`, `SELFIE`, `KIT`, `SUITE`, `VAULT`, `PRESET`, `ANDROID`) are marked `auto_handled` without an AI draft. `WORK` and real questions remain visible. Per-conversation alert emails are OFF by default (`IG_AGENT_EMAIL_ALERTS_ENABLED=false` unless explicitly enabled); Sandra uses the admin/community-manager queue and daily briefing instead. |
 
 ### Founder approval queue (LIVE 2026-07-10)
 
 - Durable state lives in `admin_action_queue`; signed links expire after seven days.
 - `ADMIN_ACTION_SECRET` signs approval links and must remain server-only.
-- Supported final actions are `send_ig_reply` and `send_resend_broadcast`.
+- The only supported final action is `send_resend_broadcast`.
 - A review-page GET is read-only. Send/dismiss is POST-only, and the database atomically claims
   each action before execution so retries and double taps cannot send twice.
-- Sandra may edit a DM on the review page. The approved edit is saved as a voice-learning note.
-- DM review pages show the exact incoming customer message above the suggested reply. Each new
-  approval is bound to the inbound message id; legacy signed links resolve their earlier context.
-  If that message cannot be verified, Send is disabled and only Dismiss remains available.
-- Failed actions stay visible with their error for review; they do not silently retry a customer send.
+- Failed email actions stay visible with their error for review; they do not silently retry.
 - Payment, support, and system-health items remain direct admin links rather than executable email
   actions. GitHub PR approval is intentionally excluded: Sandra's standing direction is direct-to-main,
   no-PR delivery for this repo.
@@ -89,10 +84,9 @@ automation.
 2026-07-08, commit fcf207ef).
 
 ### Wiring status (known, visible, owned)
-- **ManyChat inbound bridge** (`/api/webhooks/manychat-inbound`): repaired and proven live. Five
-  real post-repair ManyChat-origin conversations reached the SSELFIE inbox on 2026-07-12; four had
-  prepared drafts and none was sent automatically. The remaining proof is one Sandra-approved reply
-  plus arrival confirmation, not additional bridge code.
+- **Instagram/ManyChat reply bridge**: ❌ RETIRED 2026-07-12. The ManyChat Default Reply flow was
+  stopped and moved to trash, ManyChat AI Replies are deactivated, and the repo webhook, drafting,
+  approval, inbox, and send paths were removed. Marketing keyword flows remain live.
 - **Resend bounce webhook**: ✅ alerting LIVE (`maybeSendDeliverabilityAlert` in
   `app/api/webhooks/resend/route.ts`) — fires when bounces+complaints in `email_logs` cross
   `EMAIL_BOUNCE_ALERT_THRESHOLD` (default 10) in a rolling 24h, once/day. 2026-07-09: root-caused
@@ -109,24 +103,17 @@ automation.
 |---|---|---|---|
 | `daily-email-draft` | 06:34 daily | ✅ ACTIVE (re-grounded 2026-07-08) | Drafts ONE story-first broadcast + preview to Sandra. NEVER sends. |
 | `daily-story-sequence-draft` | 07:01 daily | ✅ ACTIVE (new 2026-07-10, reconciled 2026-07-11) | Reads that morning's already-drafted broadcast via `scripts/daily-story-sequence-prep.ts` and repurposes it into a 7-slide Instagram Story sequence (hook → emotional recognition → belief shift → personal mirror → stuck point → offer bridge → CTA), TEXT ONLY, ready to copy. Also pulls that weekday's planned theme from the latest `weekly-content-brief-draft` row (if any) as a continuity steer — the two tasks were briefly duplicating "today's Story" (2026-07-11 content-system audit finding); reconciled by making this the sole owner of daily slide text while the weekly brief owns only the week-level theme. Now reads the full voice-doc set (was thinner than its siblings at launch). Stores to `analytics_reports` (`report_type='story_sequence_daily'`) and emails Sandra the slides. NEVER posts. Does not replace `sselfie-stories` (the on-demand skill for full photo-based sequences with background/overlay rendering) — this is the lightweight daily companion. |
-| `manychat-agent-watch` | 09:03 daily | ✅ ACTIVE (upgraded 2026-07-09) | Checks ManyChat AI replies + config; hunts WORK leads first; now also watches the direct Instagram Graph DM channel (`npm run ig:graph-test`, token expiry, messaging_status) and judges replies against a customer-service facts block. Needs her Chrome logged in. |
+| `manychat-agent-watch` | — | ❌ RETIRED 2026-07-12 | Removed with the reply agent. No unattended inbox monitor remains. |
 | `weekly-content-brief-draft` | Mon 06:05 | ✅ ACTIVE (new 2026-07-09, scope narrowed 2026-07-11) | Replaces the retired `content-brief-weekly` repo cron. Real data via `scripts/weekly-brief-prep.ts` (server-only modules can't be imported into a CLI script, so this queries the same tables directly) + live research + live writing, stores into `analytics_reports` (same shape/table so nothing downstream needs to change) and emails Sandra a preview. NEVER posts. Its `dailyStories` output is now a per-weekday THEME only (day/theme/conversationType/offerMention) — `daily-story-sequence-draft` writes the actual daily slide text each morning; this task stopped writing full frames the same day to avoid duplicating that work. |
-| `ig-dm-drafter` | 10:08 + 16:xx daily | ✅ ACTIVE (new 2026-07-09) | The deliberate second pass on flagged DMs/comments via `scripts/ig-dm-draft-prep.ts` — repo's own instant first-pass draft (`lib/ig-agent/responder.ts`) still fires immediately per message; this reviews/improves flagged ones with real context twice a day. NEVER sends — writes to `draft_response` only, same as the repo path. |
+| `ig-dm-drafter` | — | ❌ RETIRED 2026-07-12 | Scheduled task and repo drafting script removed. |
 | `funnel-health-daily` | — | ❌ RETIRED 2026-07-08 | Superseded by repo `cron-health-check` + `payment-reconciliation`. |
 | `claude-codex-loop` | — | ❌ RETIRED 2026-07-08 | Old 15-min loop protocol; superseded by direct Cowork sessions. |
 | `weekly-content-trends` (Claude copy) | — | ❌ RETIRED 2026-07-08 | Duplicate of the repo cron of the same name. |
 
-**`sselfie-community-manager` skill** (new 2026-07-09, on-demand, no schedule) — replaces `/admin/ig-inbox`
-as Sandra's actual review surface; she never uses that web UI. Invoked by name in chat ("check my
-inbox", "what needs a reply") — pulls both ManyChat (browser/MCP) and the native pipeline
-(`scripts/ig-community-manager.ts triage`), tells her what's auto-handled by keyword automations
-vs what needs her, and can send an approved native reply (`scripts/ig-community-manager.ts send`,
-human-approved path only, never auto). Companion repo fix same day: `lib/ig-agent/triage.ts` now
-recognizes bare "Kit"/"Suite" keyword comments (previously unmatched, flooded `/admin/ig-inbox`
-as false-positive flags) and the webhook now drops Sandra's own account replying to comments
-(was looping back in as a fake customer message). Supersedes the broken `sselfie-email`/
-`sselfie-dm`/`sselfie-community` symlinks referenced in earlier docs (`.claude/skills/*` pointed
-at `.agents/skills/*` paths that were never actually created — dead, removed).
+**`sselfie-community-manager` skill** — on demand and attended only. It opens the signed-in
+ManyChat inbox in the browser, reads the real customer message and history, and can suggest a
+reply. It has no repo database, queue, API token, background schedule, or automated sender. A live
+browser send requires Sandra's approval of the exact recipient and text in the same conversation.
 
 Also in this layer: Cowork skills (`sselfie-brand`, `prompt-my-selfie`, `sselfie-stories`,
 `sselfie-tracker`, `sselfie-optimizer`, `sselfie-community-manager`) — attended routines Sandra
@@ -171,7 +158,7 @@ above — a stale label, not a content risk since it's code-hygiene only.
 
 | System | What lives there | Notes |
 |---|---|---|
-| ManyChat (fb877156) | Keyword automations (PROMPT, SELFIE, KIT, SUITE, VAULT, PRESET, ANDROID, WORK), conservative AI Replies, Live Chat inbox | Default Reply is wired to the repo bridge. Its missing `Last Text Input` field was repaired and published 2026-07-11, then proven with five real inbound conversations on 2026-07-12. The live WORK path is named `WORK — Sprint Application`; both comment and DM triggers, the first-name mapping, `/work-with-me` destination, and tracking parameters were verified in Sandra's signed-in account. Production uses the API key issued by account `877156`; human-approved outbound is enabled while automated agent sends remain off. The repo also rejects a token whose account prefix does not match `MANYCHAT_ACCOUNT_ID`. Several stale flows (archived selfie flow, Rebecca Adehill imports, "Private 1:1 May") remain ManyChat-side cleanup candidates. |
+| ManyChat (fb877156) | Keyword automations (PROMPT, SELFIE, KIT, SUITE, VAULT, PRESET, ANDROID, WORK) and Live Chat inbox | Keyword marketing flows remain live. The `Instagram Default Reply` bridge was stopped and moved to trash on 2026-07-12, and ManyChat AI is deactivated. The verified WORK path remains `WORK — Sprint Application`. Inbox review is attended and on demand only. |
 | Resend | Broadcast delivery, audiences/segments, ~60 mechanical "Sequence:" audiences | Sends only what repo crons or Sandra trigger. |
 | Stripe | Payments, subscriptions, webhooks → repo | Money truth source per Admin Data Contract. |
 | Vercel | Deploys from `main`, runs all Layer-1 crons, holds prod env flags | Env booleans being hardened in EMPLOYEE-01. |

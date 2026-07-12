@@ -1,5 +1,9 @@
 # Admin Daily/Content Brief Audit — 2026-06-26
 
+> Current-state correction — 2026-07-12: the automated Instagram reply system is retired.
+> The live content brief no longer reads stored DMs. Any DM references later in this audit are
+> historical context, not a current dependency or instruction.
+
 ## Scope
 
 Audited the admin content briefing path Sandra uses for content ideas:
@@ -22,7 +26,7 @@ It uses:
 
 - Instagram Graph API data from Sandra's own account via `collectInstagramPerformance()`
 - prompt-copy and Vault behavior from `analytics_events` via `collectAudienceSignals()`
-- recent IG DM samples from `ig_messages`
+- Sandra's canonical Story Bank and measured prompt/funnel behavior
 - Vault inventory from static prompt data + published Vault collections
 - SUITE product catalog from Academy entitlements
 - Anthropic web search for a generic current hook/content-strategy memo

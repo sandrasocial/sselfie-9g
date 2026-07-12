@@ -149,8 +149,7 @@ export async function GET(request: NextRequest) {
             page_name,
             page_access_token,
             token_expires_at,
-            account_type,
-            messaging_status
+            account_type
           )
           VALUES (
             ${userId},
@@ -161,8 +160,7 @@ export async function GET(request: NextRequest) {
             NULL,
             NULL,
             ${token.expiresAt.toISOString()},
-            ${"instagram_login"},
-            ${"needs_permission_test"}
+            ${"instagram_login"}
           )
           ON CONFLICT (user_id, instagram_username)
           DO UPDATE SET
@@ -173,8 +171,6 @@ export async function GET(request: NextRequest) {
             page_access_token = NULL,
             token_expires_at = ${token.expiresAt.toISOString()},
             account_type = ${"instagram_login"},
-            messaging_status = ${"needs_permission_test"},
-            messaging_test_error = NULL,
             is_active = true,
             updated_at = NOW()
         `
@@ -343,8 +339,6 @@ export async function GET(request: NextRequest) {
         page_access_token = ${selectedPage.access_token || null},
         token_expires_at = ${expiresAt.toISOString()},
         account_type = ${"business"},
-        messaging_status = ${"needs_permission_test"},
-        messaging_test_error = NULL,
         is_active = true,
         updated_at = NOW()
     `

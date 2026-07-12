@@ -6,7 +6,6 @@ import { useState } from 'react'
 
 const NAV_ITEMS = [
   { label: 'HOME', href: '/admin' },
-  { label: 'INBOX', href: '/admin/ig-inbox' },
   { label: 'CONTENT', href: '/admin/content-brief' },
   { label: 'SUPPORT', href: '/admin/customer-support' },
   { label: 'TOOLS', href: '/admin/tools' },

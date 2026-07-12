@@ -48,12 +48,6 @@ const baseReport = {
   buyerCounts: {
     buyers: 6,
   },
-  igCounts: {
-    inboundMessages: 3,
-    flagged: 1,
-    agentDrafts: 1,
-  },
-  topGrowthTags: [{ tag: "prompt_request", count: 4 }],
   topPromptSignals: [{ prompt_title: "Dark Balcony Reel Cover Hero", prompt_number: "03", mood: "cinematic", views: 10, copies: 8 }],
   freePromptSignals: [{ prompt_title: "Coastal White", prompt_number: "01", copies: 7 }],
   attributionRows: [{ source: "instagram_manychat", utm_campaign: "prompt_my_selfie", checkout_starts: 12, purchases: 3 }],
@@ -255,16 +249,6 @@ describe("daily Sandra briefing", () => {
     expect(email.html).toContain("Growth truth")
     expect(email.text).toContain("Email: 6,839 subscribed")
     expect(email.text).toContain("Sum of latest per-post reach snapshots")
-  })
-
-  it("turns problem tags into useful content instructions", () => {
-    const briefing = buildDailySandraBriefing({
-      ...baseReport,
-      topGrowthTags: [{ tag: "confused", count: 3 }],
-    })
-
-    expect(briefing.postToday.join(" ")).toContain("solve confusion")
-    expect(briefing.postToday.join(" ")).not.toContain('"confused"')
   })
 
   it("shows revenue truth separately from historical payments", () => {
@@ -493,7 +477,6 @@ describe("daily briefing snapshot storage", () => {
     expect(snapshot.metrics.followers).toBe(110830)
     expect(snapshot.metrics.activePaidMembers).toBe(8)
     expect(snapshot.metrics.trialsFirstGeneration30d).toBe(4)
-    expect(snapshot.metrics.flaggedDmCount).toBe(0)
     expect(snapshot.sections.todaysMove).toContain("Tuesday reel")
     expect(snapshot.sections.leaking.length).toBeGreaterThan(0)
   })

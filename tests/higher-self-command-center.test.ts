@@ -18,7 +18,6 @@ function input(overrides: Partial<HigherSelfCommandCenterInput> = {}): HigherSel
       month: { payments: 8, revenue: 900 },
     },
     needsMe: {
-      flaggedConversations: 0,
       webhookReviews: 0,
       newSupportThreads: 0,
     },
@@ -75,7 +74,6 @@ describe("Higher Self Command Center", () => {
           month: { payments: 8, revenue: 900 },
         },
         needsMe: {
-          flaggedConversations: 4,
           webhookReviews: 2,
           newSupportThreads: 0,
         },
@@ -84,7 +82,7 @@ describe("Higher Self Command Center", () => {
 
     expect(center.moneyMove.id).toBe("protect-payment-truth")
     expect(center.moneyMove.link.href).toBe("/admin/webhook-review")
-    expect(center.followUpMove.id).toBe("answer-flagged-dms")
+    expect(center.followUpMove.id).toBe("start-ten-conversations")
   })
 
   it("prioritizes warm Work With Me pipeline before building new things", () => {

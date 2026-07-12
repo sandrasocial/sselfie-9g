@@ -63,7 +63,6 @@ export type AdminHomeReport = {
     }
   }
   needsMe: {
-    flaggedConversations: number
     webhookReviews: number
     newSupportThreads: number
     approvalActions: Array<{
@@ -92,11 +91,6 @@ export type AdminHomeReport = {
       destination: string
       source: string
     }>
-    dmBridge: {
-      messages7d: number
-      conversationsAllTime: number
-      source: "ig_messages + ig_conversations"
-    }
     diagnostics: {
       errors24h: number
       source: "admin_email_errors"
@@ -137,7 +131,6 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
     foundingCount,
     cronRows,
     diagnosticsRows,
-    dmBridgeRows,
     actionRows,
   ] = await Promise.all([
     sql`
@@ -168,7 +161,6 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
     ` as unknown as Promise<ProductRow[]>,
     sql`
       SELECT
-        (SELECT COUNT(*)::int FROM ig_conversations WHERE status = 'flagged' AND channel = 'dm') AS flagged_conversations,
         (SELECT COUNT(*)::int FROM webhook_events_needs_review WHERE resolved = FALSE) AS webhook_reviews,
         (SELECT COUNT(*)::int FROM feedback WHERE status = 'new' AND created_at >= NOW() - INTERVAL '30 days') AS new_support_threads
     ` as unknown as Promise<any[]>,
@@ -225,11 +217,6 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
       FROM admin_email_errors
       WHERE created_at > NOW() - INTERVAL '24 hours'
     `.catch(() => []) as unknown as Promise<any[]>,
-    sql`
-      SELECT
-        (SELECT COUNT(*)::int FROM ig_messages WHERE sent_at > NOW() - INTERVAL '7 days') AS messages_7d,
-        (SELECT COUNT(*)::int FROM ig_conversations) AS conversations_all_time
-    `.catch(() => []) as unknown as Promise<any[]>,
     listOpenAdminActions(8).catch((error) => {
       console.error("[admin-home] approval action lookup failed:", error)
       return []
@@ -264,7 +251,6 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
     source: "stripe_payments" as const,
   }
   const needsMe = {
-    flaggedConversations: Number(needs.flagged_conversations || 0),
     webhookReviews: Number(needs.webhook_reviews || 0),
     newSupportThreads: Number(needs.new_support_threads || 0),
     approvalActions: actionRows.map((action) => ({
@@ -301,12 +287,6 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
       source: "admin_cron_runs",
     }
   }
-  const dmBridge = {
-    messages7d: Number((dmBridgeRows as any[])[0]?.messages_7d || 0),
-    conversationsAllTime: Number((dmBridgeRows as any[])[0]?.conversations_all_time || 0),
-    source: "ig_messages + ig_conversations" as const,
-  }
-
   return {
     money: moneyReport,
     members: {
@@ -374,15 +354,6 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
           "/admin/content-brief",
         ),
         {
-          name: "DM Bridge",
-          role: "ManyChat inbound bridge into ig_conversations and ig_messages.",
-          status: dmBridge.messages7d > 0 ? "live" : "needs-setup",
-          lastRun: null,
-          lastResult: `${dmBridge.messages7d} messages captured in the last 7 days; ${dmBridge.conversationsAllTime} conversations all-time.`,
-          destination: "/admin/ig-inbox",
-          source: dmBridge.source,
-        },
-        {
           name: "Diagnostics APIs",
           role: "Expose cron status and admin errors for the Team panel.",
           status: "watching",
@@ -408,7 +379,6 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
           source: "docs/AUTOMATION_ROSTER.md",
         })),
       ],
-      dmBridge,
       diagnostics: {
         errors24h: Number((diagnosticsRows as any[])[0]?.errors_24h || 0),
         source: "admin_email_errors",

@@ -85,16 +85,11 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      const scope = (
-        process.env.INSTAGRAM_LOGIN_SCOPES ||
-        [
-          'instagram_business_basic',
-          'instagram_business_manage_messages',
-          'instagram_business_manage_comments',
-          'instagram_business_manage_insights',
-          'instagram_business_content_publish',
-        ].join(',')
-      )
+      const scope = [
+        'instagram_business_basic',
+        'instagram_business_manage_insights',
+        'instagram_business_content_publish',
+      ].join(',')
 
       const authUrl = new URL('https://www.instagram.com/oauth/authorize')
       authUrl.searchParams.append('client_id', INSTAGRAM_LOGIN_APP_ID)
@@ -113,19 +108,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ authUrl: authUrl.toString(), provider: 'instagram_login' })
     }
 
-    // Every scope here must be enabled on the Meta app (use case: Instagram API,
-    // status "Ready for testing" or beyond) or the OAuth dialog rejects the WHOLE
-    // request with "Invalid Scopes". pages_manage_metadata and pages_messaging
-    // (Messenger) are NOT part of this app's use cases and were removed 2026-06-11
-    // and again 2026-07-09 for exactly that reason. DM sending runs through the
-    // Instagram Login path (graph.instagram.com), which needs no pages_* scopes.
+    // Analytics-only Facebook Page fallback. Reply and comment-management permissions were
+    // removed with the retired inbox agent.
     const scope = [
       'pages_show_list',
       'pages_read_engagement',
       'instagram_basic',
       'business_management',
-      'instagram_manage_messages',
-      'instagram_manage_comments',
       'instagram_manage_insights',
       'read_insights',
     ].join(',')

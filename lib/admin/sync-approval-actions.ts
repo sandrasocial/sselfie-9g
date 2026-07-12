@@ -1,33 +1,12 @@
 import "server-only"
 
-import { createHash } from "node:crypto"
 import {
   approvalUrlForAction,
   queueAdminAction,
   type AdminActionRow,
   type ApprovalActionSummary,
 } from "@/lib/admin/action-queue"
-import { sql } from "@/lib/db/client"
 import { requireResendClient } from "@/lib/resend/client"
-
-type FlaggedConversation = {
-  id: number
-  username: string | null
-  ig_user_id: string
-  draft_response: string
-  updated_at: Date | string
-  inbound_message_id: number
-  customer_message: string
-}
-
-function short(value: string, max = 240): string {
-  const clean = value.replace(/\s+/g, " ").trim()
-  return clean.length > max ? `${clean.slice(0, max - 3)}...` : clean
-}
-
-function digest(value: string): string {
-  return createHash("sha256").update(value).digest("hex").slice(0, 20)
-}
 
 function summaryFor(action: AdminActionRow): ApprovalActionSummary | null {
   if (action.status !== "pending" || new Date(action.expires_at).getTime() <= Date.now()) return null
@@ -38,79 +17,6 @@ function summaryFor(action: AdminActionRow): ApprovalActionSummary | null {
     approvalUrl: approvalUrlForAction(action),
     source: action.source,
   }
-}
-
-async function syncDmActions(): Promise<ApprovalActionSummary[]> {
-  await sql`
-    UPDATE admin_action_queue a
-    SET status = 'dismissed', acted_at = NOW(),
-        review_note = 'Conversation no longer needs a founder decision', updated_at = NOW()
-    WHERE a.kind = 'send_ig_reply'
-      AND a.status = 'pending'
-      AND NOT EXISTS (
-        SELECT 1
-        FROM ig_conversations c
-        WHERE c.id = NULLIF(a.payload->>'conversationId', '')::int
-          AND c.status = 'flagged'
-          AND c.channel = 'dm'
-          AND NULLIF(TRIM(c.draft_response), '') IS NOT NULL
-      )
-  `
-
-  const conversations = (await sql`
-    SELECT
-      c.id,
-      c.ig_user_id,
-      c.draft_response,
-      c.updated_at,
-      ct.username,
-      latest_contact.id AS inbound_message_id,
-      latest_contact.content AS customer_message
-    FROM ig_conversations c
-    JOIN ig_contacts ct ON ct.ig_user_id = c.ig_user_id
-    JOIN LATERAL (
-      SELECT m.id, m.content
-      FROM ig_messages m
-      WHERE m.conversation_id = c.id
-        AND m.from_type = 'contact'
-      ORDER BY m.created_at DESC, m.id DESC
-      LIMIT 1
-    ) latest_contact ON TRUE
-    WHERE c.status = 'flagged'
-      AND c.channel = 'dm'
-      AND NULLIF(TRIM(c.draft_response), '') IS NOT NULL
-    ORDER BY c.updated_at DESC
-    LIMIT 5
-  `) as FlaggedConversation[]
-
-  const actions = await Promise.all(
-    conversations.map(async (conversation) => {
-      const draft = conversation.draft_response.trim()
-      const action = await queueAdminAction({
-        kind: "send_ig_reply",
-        title: `Reply to @${conversation.username || conversation.ig_user_id}`,
-        summary: `They wrote: ${short(conversation.customer_message)}`,
-        source: "ig_conversations",
-        idempotencyKey: `ig-reply/${conversation.id}/${conversation.inbound_message_id}/${digest(draft)}`,
-        payload: {
-          conversationId: conversation.id,
-          draft,
-          inboundMessageId: conversation.inbound_message_id,
-          customerMessage: conversation.customer_message,
-        },
-      })
-      await sql`
-        UPDATE admin_action_queue
-        SET status = 'dismissed', acted_at = NOW(), updated_at = NOW()
-        WHERE kind = 'send_ig_reply'
-          AND status = 'pending'
-          AND id <> ${action.id}
-          AND payload->>'conversationId' = ${String(conversation.id)}
-      `
-      return summaryFor(action)
-    }),
-  )
-  return actions.filter((action): action is ApprovalActionSummary => Boolean(action))
 }
 
 async function syncBroadcastActions(): Promise<ApprovalActionSummary[]> {
@@ -149,16 +55,8 @@ async function syncBroadcastActions(): Promise<ApprovalActionSummary[]> {
 }
 
 export async function syncApprovalActions(): Promise<ApprovalActionSummary[]> {
-  const [dmActions, broadcastActions] = await Promise.all([
-    syncDmActions().catch((error) => {
-      console.error("[approval-actions] DM sync failed:", error)
-      return []
-    }),
-    syncBroadcastActions().catch((error) => {
-      console.error("[approval-actions] Resend sync failed:", error)
-      return []
-    }),
-  ])
-
-  return [...dmActions, ...broadcastActions].slice(0, 5)
+  return syncBroadcastActions().catch((error) => {
+    console.error("[approval-actions] Resend sync failed:", error)
+    return []
+  })
 }

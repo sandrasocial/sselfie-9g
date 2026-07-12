@@ -41,7 +41,6 @@ export type HigherSelfCommandCenterInput = {
     month: { payments: number; revenue: number }
   }
   needsMe: {
-    flaggedConversations: number
     webhookReviews: number
     newSupportThreads: number
   }
@@ -123,7 +122,7 @@ function buildMoneyMove(input: HigherSelfCommandCenterInput): HigherSelfCommandM
       action: `Follow up the ${warmCount} warm Work With Me lead${warmCount === 1 ? "" : "s"} before building anything new.`,
       reason: "Financial freedom comes fastest from warm trust into the higher-value offer, not more low-ticket tinkering.",
       source: "brand_engine_applications",
-      link: { label: "Open inbox", href: "/admin/ig-inbox" },
+      link: { label: "Open Work With Me", href: "/work-with-me" },
     }
   }
 
@@ -199,17 +198,6 @@ function buildOfferBridge(input: HigherSelfCommandCenterInput): HigherSelfComman
 }
 
 function buildFollowUpMove(input: HigherSelfCommandCenterInput): HigherSelfCommandMove {
-  if (input.needsMe.flaggedConversations > 0) {
-    return {
-      id: "answer-flagged-dms",
-      title: "Answer warm DMs",
-      action: `Reply to ${input.needsMe.flaggedConversations} flagged DM${input.needsMe.flaggedConversations === 1 ? "" : "s"} with one human next step.`,
-      reason: "Warm conversations are closer to money than another new asset.",
-      source: "ig_conversations",
-      link: { label: "Open IG inbox", href: "/admin/ig-inbox" },
-    }
-  }
-
   if (input.needsMe.newSupportThreads > 0) {
     return {
       id: "clear-support",
@@ -227,7 +215,7 @@ function buildFollowUpMove(input: HigherSelfCommandCenterInput): HigherSelfComma
     action: "After the Story goes up, reply manually to ten warm people: recent buyers, commenters, DM replies, or women asking how to start.",
     reason: "Financial freedom is built through repeatable conversations, not passive waiting.",
     source: "purpose lock",
-    link: { label: "Open IG inbox", href: "/admin/ig-inbox" },
+    link: { label: "Open support", href: "/admin/customer-support" },
   }
 }
 

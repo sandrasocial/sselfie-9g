@@ -41,11 +41,6 @@ type GrowthReportLike = {
   buyerCounts: {
     buyers: number
   }
-  igCounts: {
-    inboundMessages: number
-    flagged: number
-    agentDrafts: number
-  }
   supportCounts?: {
     total: number
     new: number
@@ -65,7 +60,6 @@ type GrowthReportLike = {
     replied_at?: string | null
     admin_reply?: string | null
   }>
-  topGrowthTags: ReportRow[]
   topPromptSignals: ReportRow[]
   freePromptSignals: ReportRow[]
   attributionRows: ReportRow[]
@@ -80,8 +74,6 @@ export type DailyBriefingExtras = {
     monthPayments: number
     monthRevenue: number
   }
-  inboxFlagged?: Array<{ username: string; message: string }>
-  inboxFlaggedCount?: number
   systemHealth?: DailyBriefingSystemHealth | null
   approvalActions?: ApprovalActionSummary[]
 }
@@ -124,8 +116,6 @@ export type DailySandraBriefing = {
   intelligenceNote: string | null
   truthSnapshot: GrowthTruthSnapshot | null
   revenueScorecard: RevenueTruthScorecard | null
-  inboxFlagged: Array<{ username: string; message: string }>
-  inboxFlaggedCount: number
   working: string[]
   leaking: string[]
   postToday: string[]
@@ -147,7 +137,6 @@ export type DailySandraBriefing = {
   links: {
     growthIntelligence: string
     promptVault: string
-    inbox: string
     customerSupport: string
   }
 }
@@ -187,31 +176,6 @@ function cleanLabel(value: unknown, fallback = "the strongest current visual ang
   if (typeof value !== "string") return fallback
   const trimmed = value.trim()
   return trimmed || fallback
-}
-
-function humanTag(value: unknown): string {
-  return cleanLabel(value, "AI photoshoot prompts").replace(/_/g, " ")
-}
-
-function contentInstructionForTag(value: unknown): string | null {
-  if (typeof value !== "string" || !value.trim()) return null
-  const tag = value.trim()
-  switch (tag) {
-    case "confused":
-      return "Make the hook solve confusion: show the selfie, the finished image, and the exact first step in plain language."
-    case "price_objection":
-      return "Make the hook prove value: show that one selfie can become a full shoot, not just one image."
-    case "how_to_use_chatgpt":
-      return "Make the hook beginner-friendly: show exactly where to paste the prompt and what to upload."
-    case "vault_interest":
-      return "Make the hook lead naturally into the Vault: one opening shot is free, the full shoot is inside."
-    case "prompt_request":
-      return "Use PROMPT as the comment or DM keyword and make the first visual result impossible to miss."
-    case "buyer_intent":
-      return "Use a direct story CTA today. The audience is already showing buying intent."
-    default:
-      return `Use the audience language "${humanTag(tag)}" in the hook, caption, or ManyChat reply.`
-  }
 }
 
 function previewText(value: unknown, fallback = "No message preview"): string {
@@ -271,7 +235,6 @@ export function buildDailySandraBriefing(
   const copiesPerBuyer = buyers ? report.eventCounts.vaultPromptCopies / buyers : 0
   const topPaidPrompt = report.topPromptSignals[0]
   const topFreePrompt = report.freePromptSignals[0]
-  const topGrowthTag = report.topGrowthTags[0]
   const topAttribution = report.attributionRows[0]
   const topVisual = cleanLabel(topPaidPrompt?.prompt_title || topFreePrompt?.prompt_title)
   const supportThreads = (report.recentSupportThreads || []).map((thread) => {
@@ -380,10 +343,6 @@ export function buildDailySandraBriefing(
     leaking.push(`Only ${accessRate}% of buyer records opened Vault access. Delivery/access clarity may be leaking activation.`)
   }
 
-  if (report.igCounts.inboundMessages <= 1) {
-    leaking.push("IG audience intelligence is still thin. Real DMs/comments should improve once Meta permissions and traffic are flowing.")
-  }
-
   if ((report.supportCounts?.new || 0) > 0) {
     leaking.push(`${report.supportCounts?.new} new customer support thread${report.supportCounts?.new === 1 ? "" : "s"} need review. Keep support inside the customer support inbox so issues do not get lost in email.`)
   }
@@ -398,17 +357,12 @@ export function buildDailySandraBriefing(
 
   postToday.push(`Post one Prompt My Selfie reel around ${topVisual}. Make the first second show the finished transformation, not the explanation.`)
 
-  const tagInstruction = contentInstructionForTag(topGrowthTag?.tag)
-  if (tagInstruction) {
-    postToday.push(tagInstruction)
-  } else {
-    postToday.push("Ask for replies: Which visual world should I build next? Use the answers as the next drop signal.")
-  }
+  postToday.push("Use PROMPT as the CTA when the post teaches AI-photo prompts, then judge it from measured clicks and copies.")
 
   postToday.push("Send story traffic directly to the free preview or Vault with clean UTM tracking.")
 
   sandraNext.push("Choose today's reel angle from the strongest visual signal above.")
-  sandraNext.push("Review /my-inbox and Customer Support for emotional wording, objections, bugs, and aesthetic requests.")
+  sandraNext.push("Review Customer Support for objections, bugs, and requests.")
   sandraNext.push("Keep posting transformation proof before teaching the prompt mechanics.")
 
   if ((report.supportCounts?.new || 0) > 0 || (report.supportCounts?.reviewing || 0) > 0) {
@@ -441,10 +395,8 @@ export function buildDailySandraBriefing(
     codexNext.push(`Audit the ${cleanLabel(topAttribution.utm_campaign || topAttribution.source, "top traffic source")} path because it starts checkout without purchases.`)
   } else if (buyers > 0 && accessRate < 70) {
     codexNext.push("Audit Prompt Vault delivery/access flow and recovery links.")
-  } else if (report.igCounts.inboundMessages <= 1) {
-    codexNext.push("Keep IG agent in draft-only mode and verify real comment/DM events as Meta permissions land.")
   } else {
-    codexNext.push("No urgent code fix. Monitor attribution, prompt copies, and IG tags before building another product layer.")
+    codexNext.push("No urgent code fix. Monitor attribution and prompt copies before building another product layer.")
   }
 
   codexNext.push("Pull the Growth Intelligence report again tomorrow and compare the same four sections.")
@@ -462,8 +414,6 @@ export function buildDailySandraBriefing(
     intelligenceNote: null,
     truthSnapshot: report.truthSnapshot || null,
     revenueScorecard: report.revenueScorecard || null,
-    inboxFlagged: (extras.inboxFlagged || []).slice(0, 5),
-    inboxFlaggedCount: extras.inboxFlaggedCount ?? (extras.inboxFlagged || []).length,
     working: working.slice(0, 4),
     leaking: leaking.slice(0, 4),
     postToday: postToday.slice(0, 3),
@@ -475,7 +425,6 @@ export function buildDailySandraBriefing(
     links: {
       growthIntelligence: `${SITE_URL}/admin`,
       promptVault: `${SITE_URL}/admin/prompt-vault`,
-      inbox: `${SITE_URL}/admin/ig-inbox`,
       customerSupport: `${SITE_URL}/admin/customer-support`,
     },
   }
@@ -645,7 +594,7 @@ function approvalActionsHtml(actions: ApprovalActionSummary[]): string {
               <div style="border-top:1px solid rgba(197,198,200,.55);padding:14px 0;">
                 <p style="margin:0 0 4px;font-size:15px;color:#0D0E10;"><strong>${escapeHtml(action.title)}</strong></p>
                 <p style="margin:0 0 10px;font-size:13px;color:#4F5052;line-height:1.6;">${escapeHtml(action.summary)}</p>
-                <a href="${action.approvalUrl}" style="display:inline-block;background:#0D0E10;color:#fff;text-decoration:none;padding:10px 14px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;">${action.kind === "send_ig_reply" ? "Review reply" : "Review email"}</a>
+                <a href="${action.approvalUrl}" style="display:inline-block;background:#0D0E10;color:#fff;text-decoration:none;padding:10px 14px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;">Review email</a>
                 <span style="margin-left:8px;font-size:11px;color:#9A9A9A;">source: ${escapeHtml(action.source)}</span>
               </div>`,
           )
@@ -675,12 +624,6 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
         <p style="margin:6px 0 0;font-size:16px;line-height:1.5;">${escapeHtml(briefing.moneyHeader)}</p>
       </div>` : ""}
       ${approvalActionsHtml(briefing.approvalActions)}
-      ${briefing.inboxFlaggedCount > 0 ? `
-      <div style="background:#fff;border:1px solid rgba(197,198,200,.45);padding:22px;margin:0 0 14px;">
-        <h2 style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 14px;">Inbox: ${briefing.inboxFlaggedCount} flagged DM${briefing.inboxFlaggedCount === 1 ? "" : "s"}</h2>
-        ${briefing.inboxFlagged.map((item) => `<p style="margin:0 0 10px;font-size:14px;color:#4F5052;line-height:1.6;"><strong style="color:#0D0E10;">@${escapeHtml(item.username)}</strong> · ${escapeHtml(item.message)}</p>`).join("")}
-        <a href="${briefing.links.inbox}" style="color:#0D0E10;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">Open inbox</a>
-      </div>` : ""}
       ${truthSnapshotHtml(briefing.truthSnapshot)}
       ${revenueScorecardHtml(briefing.revenueScorecard)}
       ${systemHealthHtml(briefing.systemHealth)}
@@ -695,21 +638,17 @@ export function generateDailySandraBriefingEmail(briefing: DailySandraBriefing) 
         <a href="${briefing.links.growthIntelligence}" style="display:inline-block;background:#0D0E10;color:#fff;text-decoration:none;padding:14px 18px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;">Open your admin</a>
       </p>
       <p style="margin:18px 0 0;color:#818283;font-size:12px;line-height:1.6;">
-        Also useful: <a href="${briefing.links.inbox}" style="color:#4F5052;">my inbox</a> · <a href="${briefing.links.customerSupport}" style="color:#4F5052;">customer support</a> · <a href="${briefing.links.promptVault}" style="color:#4F5052;">Prompt Vault monitor</a>
+        Also useful: <a href="${briefing.links.customerSupport}" style="color:#4F5052;">customer support</a> · <a href="${briefing.links.promptVault}" style="color:#4F5052;">Prompt Vault monitor</a>
       </p>
     </div>
   </body>
 </html>`
 
-  const inboxTextSection = briefing.inboxFlaggedCount > 0
-    ? `\n\nInbox: ${briefing.inboxFlaggedCount} flagged\n${briefing.inboxFlagged.map((item) => `- @${item.username}: ${item.message}`).join("\n")}`
-    : ""
-
   const customerThreadsText = briefing.supportThreads.length > 0
     ? `\n\nCustomer threads\n${supportThreadsText(briefing.supportThreads)}`
     : ""
 
-  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${approvalActionsText(briefing.approvalActions)}${inboxTextSection}${truthSnapshotText(briefing.truthSnapshot)}${revenueScorecardText(briefing.revenueScorecard)}${systemHealthText(briefing.systemHealth)}${todaysMoveText(briefing)}${customerThreadsText}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}\nMy Inbox: ${briefing.links.inbox}`
+  const text = `Daily Sandra Briefing\nLast ${briefing.windowDays} days${briefing.moneyHeader ? `\n\n${briefing.moneyHeader}` : ""}${approvalActionsText(briefing.approvalActions)}${truthSnapshotText(briefing.truthSnapshot)}${revenueScorecardText(briefing.revenueScorecard)}${systemHealthText(briefing.systemHealth)}${todaysMoveText(briefing)}${customerThreadsText}\n\nOpen Growth Intelligence: ${briefing.links.growthIntelligence}\nCustomer Support: ${briefing.links.customerSupport}`
 
   return {
     subject: briefing.subject,

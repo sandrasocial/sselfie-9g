@@ -34,8 +34,6 @@ function minimalGrowthReport() {
     },
     paymentCounts: { purchases: 0, revenueCents: 0 },
     buyerCounts: { buyers: 0 },
-    igCounts: { inboundMessages: 0, flagged: 0, agentDrafts: 0 },
-    topGrowthTags: [],
     topPromptSignals: [],
     freePromptSignals: [],
     attributionRows: [],
@@ -86,11 +84,11 @@ describe("Daily Sandra Briefing approvals", () => {
     const briefing = buildDailySandraBriefing(minimalGrowthReport() as any, {
       approvalActions: [
         {
-          kind: "send_ig_reply",
-          title: "Reply to @anna",
-          summary: "I know you have something in you. What are you trying to build?",
+          kind: "send_resend_broadcast",
+          title: "Story · Sunday note",
+          summary: "Review the preview, then confirm the send to the broadcast audience.",
           approvalUrl: "https://sselfie.ai/approve/signed-token",
-          source: "ig_conversations",
+          source: "Resend broadcasts",
         },
       ],
     })
@@ -98,10 +96,10 @@ describe("Daily Sandra Briefing approvals", () => {
     const email = generateDailySandraBriefingEmail(briefing)
 
     expect(email.html).toContain("Waiting on you")
-    expect(email.html).toContain("Reply to @anna")
+    expect(email.html).toContain("Story · Sunday note")
     expect(email.html).toContain("https://sselfie.ai/approve/signed-token")
-    expect(email.html).toContain("Review reply")
-    expect(email.text).toContain("Reply to @anna")
+    expect(email.html).toContain("Review email")
+    expect(email.text).toContain("Story · Sunday note")
   })
 
   it("omits the approvals block when nothing is pending", () => {

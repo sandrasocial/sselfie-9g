@@ -78,7 +78,6 @@ export type DailyBriefingSnapshot = {
     trialsFirstGeneration30d: number | null
     emailSubscribed: number | null
     openSupportThreads: number | null
-    flaggedDmCount: number | null
   }
   sections: {
     todaysMove: string | null
@@ -87,7 +86,6 @@ export type DailyBriefingSnapshot = {
     working: string[]
     leaking: string[]
   }
-  flaggedDmUsernames: string[]
   supportSubjects: string[]
 }
 
@@ -158,7 +156,6 @@ export function buildDailyBriefingSnapshot(
       trialsFirstGeneration30d: scorecard?.trials.firstGeneration30d ?? null,
       emailSubscribed: truth?.email.subscribedContacts ?? null,
       openSupportThreads: briefing.supportThreads.filter((thread) => thread.status !== "resolved").length,
-      flaggedDmCount: briefing.inboxFlaggedCount,
     },
     sections: {
       todaysMove: briefing.intelligence?.todaysMove ?? null,
@@ -167,7 +164,6 @@ export function buildDailyBriefingSnapshot(
       working: briefing.working,
       leaking: briefing.leaking,
     },
-    flaggedDmUsernames: briefing.inboxFlagged.map((item) => item.username),
     supportSubjects: briefing.supportThreads.map((thread) => thread.subject),
   }
 }
@@ -255,7 +251,7 @@ Ground rules, non-negotiable:
 
 todaysMove: ONE short line (max 2 sentences) introducing today's content post below - name the title and the one engagement action it is engineered for. The full ready-to-post script and story sequence are rendered separately from real stored data, not from you: do not restate the hook, caption, or on-screen text yourself, and never invent content. If todaysContentPost.feedPost in the input is null, say plainly that today has no matching piece in this week's brief and she should regenerate it from the admin content brief page.
 
-whatChanged: ONLY genuine changes since yesterday's snapshot in the input: a new payment, a new trial, a metric that actually moved, a new DM theme, a new support thread. Compare today's metrics against yesterday's metrics field by field. If nothing changed, one honest line saying nothing moved since yesterday. Never restate standing facts like total followers or member counts unless they changed. If there is no yesterday snapshot, say the day-over-day diff starts tomorrow and name today's single plainest fact.
+whatChanged: ONLY genuine changes since yesterday's snapshot in the input: a new payment, a new trial, a metric that actually moved, or a new support thread. Compare today's metrics against yesterday's metrics field by field. If nothing changed, one honest line saying nothing moved since yesterday. Never restate standing facts like total followers or member counts unless they changed. If there is no yesterday snapshot, say the day-over-day diff starts tomorrow and name today's single plainest fact.
 
 watchThis: the single most important leak or opportunity TODAY, and only if it is new or got worse compared to yesterday. If nothing is new or worse, say the watch list is unchanged and name the standing top leak in one short clause.`
 
@@ -300,7 +296,6 @@ export async function generateDailyBriefingIntelligence(
     revenueScorecard: input.briefing.revenueScorecard,
     working: input.briefing.working,
     leaking: input.briefing.leaking,
-    flaggedDms: input.briefing.inboxFlagged,
     supportThreads: input.briefing.supportThreads.map((thread) => ({
       subject: thread.subject,
       label: thread.label,

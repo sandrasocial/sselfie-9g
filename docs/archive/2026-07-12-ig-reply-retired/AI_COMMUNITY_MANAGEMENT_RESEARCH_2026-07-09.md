@@ -1,4 +1,7 @@
-# AI-Assisted Community Management — Research Findings (2026-07-09)
+# AI-Assisted Community Management — RETIRED 2026-07-12
+
+> Historical research only. Sandra removed the repo-hosted reply agent and unattended DM jobs.
+> Do not use this document to restore them.
 
 Deep research run (105 sub-agents, 22 sources fetched, adversarial verification) answering: how
 do successful brands/creators actually use Claude for community management and social DM/comment

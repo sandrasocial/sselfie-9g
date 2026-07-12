@@ -1017,7 +1017,7 @@ DAILY STORY RULES:
 - Deliver EXACTLY 7 story sequences, one per day, day-labeled Monday through Sunday, 3 to 6 frames each.
 - conversationType: rotate across my-story, my-clients, my-beliefs, my-life across the week for variety. Do not repeat the same type on consecutive days unless the my-clients real-data constraint below forces it.
 - Stories are DECOUPLED from that day's feed piece in dataPacket.weekPlan. Do not echo, explain, or continue the feed reel's topic - a feed reel teaching a fix for fake AI photos and that same day's Story being a completely unrelated real moment is correct, not a mistake. weekPlan is background awareness only, never the story's subject.
-- my-clients days: sourceStoryTheme must quote or closely paraphrase a REAL entry from dataPacket.audienceDemand.dmThemes or dataPacket.demandMap.audienceQuestions, with zero names or identifying detail. If no real client material exists this week, do NOT invent one - use a different conversationType that day instead.
+- my-clients days: sourceStoryTheme must come from a documented client outcome or canonical Story Bank entry, with zero names or identifying detail. If no verified client material exists this week, do NOT invent one - use a different conversationType that day instead.
 - my-story days: cite one named theme from the Story Bank above in sourceStoryTheme and use its real specific detail (the apartment, the bathroom studio, the viral selfie, the ADHD brain, the first sale), never a generic invented emotional beat.
 - my-beliefs days: sourceStoryTheme is the belief statement itself, from the beliefs list above.
 - my-life days: sourceStoryTheme is a short plausible label (e.g. "morning coffee, thinking about the week"); never invent a specific event, date, or fact not already established.
@@ -1042,7 +1042,7 @@ DAILY STORY RULES:
     toolDescription: "Deliver seven daily story sequences as structured data.",
     schema: DAILY_STORIES_SCHEMA,
     system: storiesSystem,
-    userContent: `Build the seven daily Story conversations. The feed plan below is background awareness ONLY - do not echo or repeat it. The audienceDemand.dmThemes and demandMap.audienceQuestions are the ONLY allowed source for my-clients days: real, quoted or closely paraphrased, no names.\n\n${JSON.stringify(
+    userContent: `Build the seven daily Story conversations. The feed plan below is background awareness ONLY - do not echo or repeat it. My-clients days must use documented client outcomes or canonical Story Bank material only, with no names or identifying details.\n\n${JSON.stringify(
       {
         weekPlan,
         demandMap: brief.demandMap,
@@ -1142,8 +1142,8 @@ STRATEGY PASS RULES:
 - This pass builds the strategy layer only: performanceRecap, audienceDemand, hookIntelligence, onScreenHookBank, and demandMap. A second pass turns it into the content plan, so make every entry specific enough to build on.
 - Do not start from "what should Sandra post?" Start from "what is her buyer trying to stop experiencing?"
 - demandMap must summarize the strongest audience behavior, the painful before, the desired after, the belief shift, the primary offer bridge, and what Sandra should not repeat this week.
-- Read audience.dmSamples and audience.dmIntents. Every dmThemes entry MUST quote or paraphrase a real DM.
-- demandMap.audienceQuestions: real questions her audience actually asked, pulled from audience.dmSamples and audience.dmIntents, verbatim or a close paraphrase. For each, name the content piece or reply format that answers it (a reel angle, a carousel, a story frame, a saved DM reply). Every question must trace to a real DM sample. If there are no real audience questions in this window, return exactly one entry saying plainly that no real audience questions came in this window; never invent questions.
+- Build audienceDemand.dmThemes from measured prompt-copy behavior, funnel behavior, top-post performance, and the canonical audience/Story Bank material. Never present the retired DM database as current audience research.
+- demandMap.audienceQuestions must be traceable to the canonical audience research or a measured behavior signal. If no evidenced question exists, return exactly one entry saying there is no fresh direct-question signal this window; never invent questions.
 - If dataPacket.growthTruth.leaks is present, demandMap must address the top leak before generic reach advice.
 - hookIntelligence entries from her own data win over research entries. Mark the source honestly.
 - onScreenHookBank: 10 to 15 proven on-screen text hooks Sandra can put as the LITERAL text overlay on the first frame of a reel, carousel cover, or story slide. This is what stops the scroll on screen, NOT the caption hook. Rules:
@@ -1172,9 +1172,9 @@ CONTENT PLAN RULES:
 - visualProof must describe what Sandra should show to prove the shift. It must not default to repeating her previous exact visual scene.
 - Exactly 7 pieces, day-labeled Monday through Sunday, one per day.
 - At least 2 reels, at least 1 carousel. No two consecutive days may share the same format AND the same STILL YOU Method step.
-- Each piece must connect to a real demand signal (a top-copied prompt, a DM theme, or a proven hook from her own winners). Name the signal in whyThisWorks.
+- Each piece must connect to a real demand signal (a top-copied prompt, a measured funnel behavior, or a proven hook from her own winners). Name the signal in whyThisWorks.
 - Tag every contentPlan piece with funnelStage per FUNNEL_SEGMENTATION_CONTEXT above: "cold" (feed reach -> correct first step: KIT for iPhone selfie education, PROMPT for AI photo/prompt content), "warm" (Story/DM/email -> Visibility To Paid Sprint), or "activation" (Vault buyers/trial members -> SUITE). Include at least 1 cold piece and at least 1 warm piece. A warm piece's offerBridge must point at the Visibility To Paid Sprint (apply / reply WORK), never at the Kit or Vault.
-- Anchor at least 2 content pieces to a specific pain point found in the pass-1 dmThemes or demandMap.audienceQuestions, and tag those pieces funnelStage "warm".
+- Anchor at least 2 content pieces to a specific evidenced pain point found in the pass-1 audience themes or demandMap.audienceQuestions, and tag those pieces funnelStage "warm".
 - Warm pieces must be built from one named Story Bank theme or one real audience question. They should feel like Sandra letting people into the real reason she knows this, not teaching a generic lesson. Use specific details when relevant: two-bedroom apartment, sleeping on the couch, bathroom studio, first messy posts, first money from her phone, ADHD simple systems, being judged, or the viral selfie.
 - Her own viral DNA and top posts win over the research memo for TOPIC, PILLAR, HOOK MECHANIC, and CTA. They do NOT win for repeating the exact same visual scene. If a top post worked, keep the demand signal and create a new execution.
 - Do not recommend simply reposting Sandra's existing top visual. Do not keep serving the same mirror selfie, dark cafe arrival, window half-light, or car selfie treatment unless the data includes a new specific reason.

@@ -1,6 +1,10 @@
 # SSELFIE INSTAGRAM STORY AUDIT
 ## April 2026 | Research-Backed Analysis
 
+> RETIRED — 2026-07-12. This is historical research only. Do not enable broad Story Reply
+> triggers or 24/7 automated replies. Current ManyChat automation is limited to deliberate
+> marketing keyword flows; ordinary messages and Story replies are handled manually on demand.
+
 ---
 
 ## RESEARCH SOURCES

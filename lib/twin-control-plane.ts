@@ -3,7 +3,7 @@ import type { NeonQueryFunction } from "@neondatabase/serverless"
 export type TwinLeadStatus = "new" | "qualified" | "offer_sent" | "booked" | "closed" | "rejected"
 
 export type TwinQueueStatus = "pending" | "approved" | "rejected"
-export type TwinQueueType = "content_draft" | "offer_email" | "dm_response"
+export type TwinQueueType = "content_draft" | "offer_email"
 
 export async function ensureTwinQueueSchema(sql: NeonQueryFunction<any, any>) {
   await sql`
@@ -99,4 +99,3 @@ export function toPipelineUpdate(status: TwinLeadStatus): {
       }
   }
 }
-

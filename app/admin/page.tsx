@@ -103,14 +103,10 @@ export default async function AdminPage({
   const systemsNeedingAttention = report.team.employees.filter(
     (employee) => employee.status === "needs-setup" || employee.lastResult === "failed",
   )
-  const dmApprovalCount = report.needsMe.approvalActions.filter(
-    (action) => action.source === "ig_conversations",
-  ).length
   const founderDecisionCount =
     report.needsMe.approvalActions.length +
     report.needsMe.webhookReviews +
-    report.needsMe.newSupportThreads +
-    Math.max(0, report.needsMe.flaggedConversations - dmApprovalCount)
+    report.needsMe.newSupportThreads
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-950">
@@ -165,7 +161,7 @@ export default async function AdminPage({
           <div className="bg-white p-5 sm:p-6">
             <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">Needs you</p>
             <p className="mt-4 font-serif text-4xl font-light">{founderDecisionCount}</p>
-            <p className="mt-2 text-sm text-stone-600">real decisions across replies, payments, and fresh support</p>
+            <p className="mt-2 text-sm text-stone-600">real decisions across payments, email, and fresh support</p>
           </div>
         </section>
 
@@ -199,12 +195,7 @@ export default async function AdminPage({
           )}
         </section>
 
-        <section className="mt-4 grid gap-4 md:grid-cols-3">
-          <Link href="/admin/ig-inbox" className="border border-stone-300 bg-white p-5 transition hover:border-stone-950">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Instagram</p>
-            <p className="mt-3 font-serif text-3xl font-light">{report.needsMe.flaggedConversations}</p>
-            <p className="mt-1 text-sm text-stone-600">DMs that may need a human reply</p>
-          </Link>
+        <section className="mt-4 grid gap-4 md:grid-cols-2">
           <Link href="/admin/webhook-review" className="border border-stone-300 bg-white p-5 transition hover:border-stone-950">
             <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Payments</p>
             <p className="mt-3 font-serif text-3xl font-light">{report.needsMe.webhookReviews}</p>
@@ -311,10 +302,6 @@ export default async function AdminPage({
                 {report.team.diagnostics.errors24h + systemsNeedingAttention.length === 0
                   ? "No system exception needs you."
                   : `${report.team.diagnostics.errors24h + systemsNeedingAttention.length} exception${report.team.diagnostics.errors24h + systemsNeedingAttention.length === 1 ? "" : "s"} to inspect.`}
-              </p>
-              <p className="mt-2 text-sm text-stone-600">
-                DM bridge truth: {report.team.dmBridge.messages7d} messages captured in the last 7 days ·{" "}
-                {report.team.dmBridge.conversationsAllTime} conversations all-time.
               </p>
             </div>
             <span className="text-sm text-stone-500">Technical detail stays collapsed</span>

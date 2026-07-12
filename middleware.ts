@@ -17,14 +17,6 @@ const PUBLIC_MIDDLEWARE_BYPASSES = [
     reason: "Cron routes keep route-level CRON_SECRET checks.",
   },
   {
-    prefix: "/api/webhooks/instagram",
-    reason: "Meta webhook verification requires no auth — route handles HMAC signature validation.",
-  },
-  {
-    prefix: "/api/webhooks/manychat-inbound",
-    reason: "ManyChat external request bridge — route validates the shared secret header itself.",
-  },
-  {
     prefix: "/.well-known/",
     reason:
       "Domain verification files (Apple Pay merchant validation for Stripe embedded checkout) must be served raw, with no session work or CSP headers.",

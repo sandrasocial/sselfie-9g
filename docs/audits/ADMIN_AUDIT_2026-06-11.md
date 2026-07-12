@@ -1,5 +1,9 @@
 # Admin System Audit — 2026-06-11
 
+> Historical snapshot. The Instagram inbox/reply agent described below was retired and removed on
+> 2026-07-12. Current admin navigation is Home · Content · Support · Tools. Do not use the old
+> `/admin/ig-inbox` recommendations as a build plan.
+
 *Read-only audit of `/admin`, `/api/admin`, admin emails, and every place admin numbers are computed. Includes live Neon queries run 2026-06-11 to prove where numbers disagree.*
 
 ---

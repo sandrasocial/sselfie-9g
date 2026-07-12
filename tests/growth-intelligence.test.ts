@@ -10,8 +10,6 @@ describe("growth intelligence evaluator", () => {
       purchases: 1,
       promptCopies: 0,
       buyers: 1,
-      flaggedIgConversations: 0,
-      igGrowthSignals: 0,
     })
 
     expect(priorities[0]).toMatchObject({
@@ -29,8 +27,6 @@ describe("growth intelligence evaluator", () => {
       purchases: 6,
       promptCopies: 18,
       buyers: 6,
-      flaggedIgConversations: 4,
-      igGrowthSignals: 5,
     })
 
     expect(priorities).toEqual(
@@ -38,7 +34,6 @@ describe("growth intelligence evaluator", () => {
         expect.objectContaining({ label: "Vault bridge", status: "good" }),
         expect.objectContaining({ label: "Checkout conversion", status: "good" }),
         expect.objectContaining({ label: "Product activation", status: "good" }),
-        expect.objectContaining({ label: "Audience intelligence", status: "good" }),
       ]),
     )
   })

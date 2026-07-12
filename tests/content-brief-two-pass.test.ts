@@ -76,13 +76,13 @@ describe("weekly content brief: two-pass generation", () => {
     expect(generator).toContain('.replace(/\\bsandra\\b/gi, "the woman")')
   })
 
-  it("adds audienceQuestions to the demand map schema and sanitizer, traced to real DMs", () => {
+  it("adds audienceQuestions to the demand map schema without inventing evidence", () => {
     expect(generator).toContain("export type AudienceQuestion")
     expect(generator).toContain("audienceQuestions")
     expect(generator).toContain("suggestedAnswerContent")
     expect(generator).toContain("audienceQuestions: asArray<AudienceQuestion>")
     // The instruction that keeps questions honest.
-    expect(generator).toContain("Every question must trace to a real DM sample")
+    expect(generator).toContain("must be traceable to the canonical audience research or a measured behavior signal")
     expect(generator).toContain("never invent questions")
   })
 
@@ -247,8 +247,8 @@ describe("Story Engine rebuild (2026-07-04): Stories are conversations, not less
     expect(generator).toContain("never the story's subject")
   })
 
-  it("requires my-clients days to use only real DM/audience-question data, never invented", () => {
-    expect(generator).toContain("my-clients days: sourceStoryTheme must quote or closely paraphrase a REAL entry")
+  it("requires my-clients days to use documented outcomes or Story Bank data, never invented", () => {
+    expect(generator).toContain("my-clients days: sourceStoryTheme must come from a documented client outcome")
     expect(generator).toContain("do NOT invent one - use a different conversationType that day instead")
   })
 

@@ -11,16 +11,14 @@ export type AudienceSignals = {
     promptCopies: number
     purchases: number
   }
-  dmIntents: Array<{ intent: string; count: number }>
-  dmSamples: string[]
 }
 
-type CountRow = { title?: string; intent?: string; event_name?: string; count: string | number }
+type CountRow = { title?: string; event_name?: string; count: string | number }
 
 export async function collectAudienceSignals(windowDays = 30): Promise<AudienceSignals> {
   const interval = `${Math.max(7, Math.min(windowDays, 90))} days`
 
-  const [promptRows, vaultRows, intentRows, sampleRows] = await Promise.all([
+  const [promptRows, vaultRows] = await Promise.all([
     sql`
       SELECT properties->>'prompt_title' AS title, COUNT(*) AS count
       FROM analytics_events
@@ -43,25 +41,6 @@ export async function collectAudienceSignals(windowDays = 30): Promise<AudienceS
         AND created_at > NOW() - ${interval}::interval
       GROUP BY 1
     ` as unknown as Promise<CountRow[]>,
-    sql`
-      SELECT COALESCE(NULLIF(TRIM(ai_intent), ''), 'unclassified') AS intent, COUNT(*) AS count
-      FROM ig_messages
-      WHERE from_type = 'contact'
-        AND created_at > NOW() - ${interval}::interval
-      GROUP BY 1
-      ORDER BY 2 DESC
-      LIMIT 10
-    ` as unknown as Promise<CountRow[]>,
-    sql`
-      SELECT content
-      FROM ig_messages
-      WHERE from_type = 'contact'
-        AND content IS NOT NULL
-        AND LENGTH(TRIM(content)) BETWEEN 12 AND 400
-        AND created_at > NOW() - ${interval}::interval
-      ORDER BY created_at DESC
-      LIMIT 60
-    ` as unknown as Promise<Array<{ content: string }>>,
   ])
 
   const vaultByEvent: Record<string, number> = {}
@@ -81,10 +60,5 @@ export async function collectAudienceSignals(windowDays = 30): Promise<AudienceS
       promptCopies: vaultByEvent["prompt_vault_prompt_copied"] || 0,
       purchases: vaultByEvent["prompt_vault_checkout_success"] || 0,
     },
-    dmIntents: intentRows.map((row) => ({
-      intent: String(row.intent || "unclassified"),
-      count: Number(row.count || 0),
-    })),
-    dmSamples: sampleRows.map((row) => String(row.content || "").slice(0, 400)),
   }
 }

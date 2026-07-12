@@ -11,8 +11,6 @@ export type GrowthIntelligenceInput = {
   purchases: number
   promptCopies: number
   buyers: number
-  flaggedIgConversations: number
-  igGrowthSignals: number
 }
 
 export function percent(numerator: number, denominator: number): number {
@@ -81,14 +79,6 @@ export function evaluateGrowthPriorities(input: GrowthIntelligenceInput): Growth
       label: "Product activation",
       status: "good",
       message: "Buyers are using the product. Use copy frequency to choose the next reel and next aesthetic drop.",
-    })
-  }
-
-  if (input.igGrowthSignals > 0 || input.flaggedIgConversations > 0) {
-    priorities.push({
-      label: "Audience intelligence",
-      status: "good",
-      message: "The IG agent is collecting demand language. Review tags before deciding the next Prompt My Selfie angle.",
     })
   }
 

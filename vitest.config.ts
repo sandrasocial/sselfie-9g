@@ -16,7 +16,6 @@ const quarantinedSuites = [
   "tests/funnel-cleanup-candidates.test.ts",
   "tests/funnel-final-leaks-regression.test.ts",
   "tests/funnel-ladder-regression.test.ts",
-  "tests/instagram-login-routing.test.ts",
   "tests/maya-auto-select-mode.test.ts",
   "tests/maya-generate-image-confirmation.test.tsx",
   "tests/maya-inline-feed-chat-route.test.ts",

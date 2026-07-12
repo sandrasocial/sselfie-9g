@@ -57,25 +57,16 @@ export async function GET(request: NextRequest) {
   const facebookScope = [
     'pages_show_list',
     'pages_read_engagement',
-    'pages_manage_metadata',
-    'pages_messaging',
     'instagram_basic',
     'business_management',
-    'instagram_manage_messages',
-    'instagram_manage_comments',
     'instagram_manage_insights',
     'read_insights',
   ]
-  const instagramLoginScope = (
-    process.env.INSTAGRAM_LOGIN_SCOPES ||
-    [
-      'instagram_business_basic',
-      'instagram_business_manage_messages',
-      'instagram_business_manage_comments',
-      'instagram_business_manage_insights',
-      'instagram_business_content_publish',
-    ].join(', ')
-  )
+  const instagramLoginScope = [
+    'instagram_business_basic',
+    'instagram_business_manage_insights',
+    'instagram_business_content_publish',
+  ].join(', ')
   checks.requested_scope = {
     status: 'ok',
     detail: `Instagram Login: ${instagramLoginScope}. Facebook Page fallback: ${facebookScope.join(', ')}`,

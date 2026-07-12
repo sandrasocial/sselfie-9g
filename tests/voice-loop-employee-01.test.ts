@@ -7,15 +7,6 @@ const ROOT = process.cwd()
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8")
 
 describe("VOICE-LOOP-01 apprentice loop", () => {
-  it("captures Sandra's edited IG replies as admin memory", () => {
-    const route = read("app/api/admin/ig-inbox/[conversationId]/reply/route.ts")
-
-    expect(route).toContain("addAdminMemoryNote")
-    expect(route).toContain("draft_response")
-    expect(route).toContain("Sandra edited a DM reply")
-    expect(route).toContain('kind: "voice"')
-  })
-
   it("injects learned admin memory into all admin content generators", () => {
     const generators = [
       "lib/content-engine/brief-generator.ts",
@@ -69,17 +60,16 @@ describe("EMPLOYEE-01 roster and dormant cron visibility", () => {
     expect(dailyBuilder).toContain("System health")
   })
 
-  it("surfaces a Team panel with live employees, paused employees, and DM bridge truth", () => {
+  it("surfaces a Team panel with live and paused employees", () => {
     const report = read("lib/admin/home-report.ts")
     const adminPage = read("app/admin/page.tsx")
 
     expect(report).toContain("Product QA Reporter")
     expect(report).toContain("Cron Health Watchdog")
     expect(report).toContain("daily-sandra-briefing")
-    expect(report).toContain("sent_at > NOW() - INTERVAL '7 days'")
     expect(report).toContain("Dormant-by-choice automation")
     expect(adminPage).toContain("Team")
-    expect(adminPage).toContain("DM bridge truth")
+    expect(adminPage).not.toContain("DM bridge truth")
   })
 
   it("alerts once when bounces or complaints cross the configured threshold", () => {

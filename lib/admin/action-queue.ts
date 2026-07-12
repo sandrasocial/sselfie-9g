@@ -3,7 +3,7 @@ import "server-only"
 import { sql } from "@/lib/db/client"
 import { signAdminActionToken, verifyAdminActionToken } from "@/lib/admin/action-token"
 
-export type AdminActionKind = "send_ig_reply" | "send_resend_broadcast"
+export type AdminActionKind = "send_resend_broadcast"
 export type AdminActionStatus = "pending" | "executing" | "completed" | "dismissed" | "failed"
 
 export type AdminActionRow = {
@@ -79,6 +79,7 @@ export async function getAdminActionByToken(token: string): Promise<AdminActionR
     FROM admin_action_queue
     WHERE id = ${actionId}
       AND expires_at = ${expiresAt}
+      AND kind = 'send_resend_broadcast'
     LIMIT 1
   `
   return (rows[0] as AdminActionRow | undefined) || null
@@ -91,6 +92,7 @@ export async function claimAdminAction(actionId: number): Promise<AdminActionRow
     WHERE id = ${actionId}
       AND status = 'pending'
       AND expires_at > NOW()
+      AND kind = 'send_resend_broadcast'
     RETURNING *
   `
   return (rows[0] as AdminActionRow | undefined) || null
@@ -132,9 +134,9 @@ export async function listOpenAdminActions(limit = 10): Promise<AdminActionRow[]
     FROM admin_action_queue
     WHERE status IN ('pending', 'failed')
       AND expires_at > NOW()
+      AND kind = 'send_resend_broadcast'
     ORDER BY CASE WHEN status = 'failed' THEN 0 ELSE 1 END, created_at ASC
     LIMIT ${safeLimit}
   `
   return rows as AdminActionRow[]
 }
-

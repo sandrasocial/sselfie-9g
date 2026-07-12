@@ -95,29 +95,6 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
       )
   `
 
-  const [igCountsRow] = await sql`
-    SELECT
-      COUNT(DISTINCT c.id)::int AS conversations,
-      COUNT(DISTINCT c.id) FILTER (WHERE c.status = 'flagged')::int AS flagged,
-      COUNT(DISTINCT c.id) FILTER (WHERE c.channel = 'dm')::int AS dm_conversations,
-      COUNT(DISTINCT c.id) FILTER (WHERE c.channel = 'comment')::int AS comment_conversations,
-      COUNT(m.id) FILTER (WHERE m.from_type = 'contact')::int AS inbound_messages,
-      COUNT(m.id) FILTER (WHERE m.from_type = 'agent' AND m.send_status = 'draft')::int AS agent_drafts
-    FROM ig_conversations c
-    LEFT JOIN ig_messages m ON m.conversation_id = c.id
-    WHERE c.created_at > NOW() - (${interval}::interval)
-  `
-
-  const topGrowthTags = await sql`
-    SELECT tag, COUNT(*)::int AS count
-    FROM ig_messages,
-    LATERAL UNNEST(COALESCE(growth_tags, ARRAY[]::text[])) AS tag
-    WHERE created_at > NOW() - (${interval}::interval)
-    GROUP BY tag
-    ORDER BY count DESC, tag ASC
-    LIMIT 12
-  `
-
   const topPromptSignals = await sql`
     WITH prompt_events AS (
       SELECT
@@ -179,29 +156,6 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
     GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
     ORDER BY purchases DESC, checkout_starts DESC
     LIMIT 12
-  `
-
-  const recentIgSignals = await sql`
-    SELECT
-      c.id,
-      c.channel,
-      c.status,
-      c.flag_reason,
-      COALESCE(ct.username, c.ig_user_id) AS username,
-      latest.content AS latest_message,
-      latest.growth_tags
-    FROM ig_conversations c
-    JOIN ig_contacts ct ON ct.ig_user_id = c.ig_user_id
-    LEFT JOIN LATERAL (
-      SELECT content, growth_tags
-      FROM ig_messages
-      WHERE conversation_id = c.id AND from_type = 'contact'
-      ORDER BY sent_at DESC, id DESC
-      LIMIT 1
-    ) latest ON TRUE
-    WHERE c.created_at > NOW() - (${interval}::interval)
-    ORDER BY c.last_message_at DESC NULLS LAST, c.id DESC
-    LIMIT 8
   `
 
   const [supportCountsRow] = await sql`
@@ -269,15 +223,6 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
     buyers: toInt(buyerCountsRow?.buyers),
   }
 
-  const igCounts = {
-    conversations: toInt(igCountsRow?.conversations),
-    flagged: toInt(igCountsRow?.flagged),
-    dmConversations: toInt(igCountsRow?.dm_conversations),
-    commentConversations: toInt(igCountsRow?.comment_conversations),
-    inboundMessages: toInt(igCountsRow?.inbound_messages),
-    agentDrafts: toInt(igCountsRow?.agent_drafts),
-  }
-
   const supportCounts = {
     total: toInt(supportCountsRow?.total),
     new: toInt(supportCountsRow?.new_count),
@@ -293,8 +238,6 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
     purchases: paymentCounts.purchases || eventCounts.checkoutSuccesses,
     promptCopies: eventCounts.vaultPromptCopies,
     buyers: buyerCounts.buyers || paymentCounts.purchases,
-    flaggedIgConversations: igCounts.flagged,
-    igGrowthSignals: topGrowthTags.length,
   })
 
   return {
@@ -305,13 +248,10 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
     eventCounts,
     paymentCounts,
     buyerCounts,
-    igCounts,
     priorities,
-    topGrowthTags,
     topPromptSignals,
     freePromptSignals,
     attributionRows,
-    recentIgSignals,
     supportCounts,
     recentSupportThreads,
   }

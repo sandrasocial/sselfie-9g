@@ -13,7 +13,7 @@ import { syncApprovalActions } from "@/lib/admin/sync-approval-actions"
 
 export const dynamic = "force-dynamic"
 
-const ADMIN_EMAIL = process.env.DAILY_SANDRA_BRIEFING_EMAIL || process.env.IG_AGENT_ADMIN_EMAIL || "ssa@ssasocial.com"
+const ADMIN_EMAIL = process.env.DAILY_SANDRA_BRIEFING_EMAIL || process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
 
 export async function GET(request: NextRequest) {
   const logger = createCronLogger("daily-sandra-briefing")
@@ -34,9 +34,8 @@ export async function GET(request: NextRequest) {
     const report = await getGrowthIntelligenceReport(7)
     const { getLatestAnalyticsReports } = await import("@/lib/analytics/reports")
 
-    // Money header from stripe_payments (the only allowed money source) and the
-    // flagged-DM list this briefing absorbed from the old IG morning briefing.
-    const [moneyRows, flaggedRows, productQaRows, approvalActions] = await Promise.all([
+    // Money header from stripe_payments, the only allowed money source.
+    const [moneyRows, productQaRows, approvalActions] = await Promise.all([
       sql`
         SELECT
           COUNT(*) FILTER (WHERE payment_date > NOW() - INTERVAL '1 day')::int AS yesterday_payments,
@@ -47,19 +46,6 @@ export async function GET(request: NextRequest) {
         WHERE status IN ('succeeded', 'paid')
           AND (is_test_mode = FALSE OR is_test_mode IS NULL)
           AND payment_date > NOW() - INTERVAL '30 days'
-      ` as unknown as Promise<any[]>,
-      sql`
-        SELECT COALESCE(ct.username, c.ig_user_id) AS username, latest.content AS message
-        FROM ig_conversations c
-        JOIN ig_contacts ct ON ct.ig_user_id = c.ig_user_id
-        LEFT JOIN LATERAL (
-          SELECT content FROM ig_messages
-          WHERE conversation_id = c.id AND from_type = 'contact'
-          ORDER BY sent_at DESC, id DESC LIMIT 1
-        ) latest ON TRUE
-        WHERE c.status = 'flagged'
-        ORDER BY c.updated_at DESC
-        LIMIT 5
       ` as unknown as Promise<any[]>,
       getLatestAnalyticsReports({ reportType: "product_qa_daily", limit: 1 }).catch(() => []),
       syncApprovalActions().catch((error) => {
@@ -77,11 +63,6 @@ export async function GET(request: NextRequest) {
     }
     const briefing = buildDailySandraBriefing(report, {
       money: moneyInput,
-      inboxFlagged: flaggedRows.map((row) => ({
-        username: String(row.username || "unknown"),
-        message: String(row.message || "").slice(0, 180),
-      })),
-      inboxFlaggedCount: flaggedRows.length,
       systemHealth: buildSystemHealthFromProductQa(productQaRows[0]?.payload),
       approvalActions,
     })
