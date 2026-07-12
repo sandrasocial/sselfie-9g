@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   requireAdmin: vi.fn(),
   sql: vi.fn(),
   createSession: vi.fn(),
+  retrieveSession: vi.fn(),
 }))
 
 vi.mock("@/lib/admin-feature-flags", () => ({
@@ -23,12 +24,13 @@ vi.mock("@/lib/stripe", () => ({
     checkout: {
       sessions: {
         create: mocks.createSession,
+        retrieve: mocks.retrieveSession,
       },
     },
   },
 }))
 
-import { PATCH } from "@/app/api/admin/work-with-me/route"
+import { PATCH, POST } from "@/app/api/admin/work-with-me/route"
 import { createWorkWithMeCheckoutLink } from "@/lib/work-with-me/checkout"
 import { closeWorkWithMeApplicationForPayment } from "@/lib/work-with-me/pipeline"
 
@@ -120,6 +122,100 @@ describe("Work With Me admin pipeline", () => {
     })
   })
 
+  it("reuses only an open, unexpired attended checkout session", async () => {
+    mocks.requireAdmin.mockResolvedValue({ isAdmin: true, userId: 1 })
+    mocks.sql.mockImplementation(async (strings: TemplateStringsArray) => {
+      const statement = strings.join("?")
+      if (statement.includes("SELECT id, name, email")) {
+        return [{
+          id: 42,
+          name: "Ada Founder",
+          email: "ada@example.com",
+          pipeline_stage: "offer_sent",
+          checkout_session_id: "cs_open_42",
+          checkout_url: "https://checkout.stripe.com/c/pay/cs_open_42",
+        }]
+      }
+      return []
+    })
+    mocks.retrieveSession.mockResolvedValue({
+      id: "cs_open_42",
+      status: "open",
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      url: "https://checkout.stripe.com/c/pay/cs_open_42",
+    })
+
+    const response = await POST(
+      new NextRequest("http://localhost/api/admin/work-with-me", {
+        method: "POST",
+        body: JSON.stringify({ applicationId: 42, action: "create_checkout" }),
+        headers: { "Content-Type": "application/json" },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      checkoutUrl: "https://checkout.stripe.com/c/pay/cs_open_42",
+      sessionId: "cs_open_42",
+      reused: true,
+    })
+    expect(mocks.retrieveSession).toHaveBeenCalledWith("cs_open_42")
+    expect(mocks.createSession).not.toHaveBeenCalled()
+  })
+
+  it("replaces an expired checkout with a stable retry-safe attempt", async () => {
+    mocks.requireAdmin.mockResolvedValue({ isAdmin: true, userId: 1 })
+    mocks.sql.mockImplementation(async (strings: TemplateStringsArray) => {
+      const statement = strings.join("?")
+      if (statement.includes("SELECT id, name, email")) {
+        return [{
+          id: 42,
+          name: "Ada Founder",
+          email: "ada@example.com",
+          pipeline_stage: "offer_sent",
+          checkout_session_id: "cs_expired_42",
+          checkout_url: "https://checkout.stripe.com/c/pay/cs_expired_42",
+        }]
+      }
+      if (statement.includes("UPDATE brand_engine_applications")) return [{ id: 42 }]
+      return []
+    })
+    mocks.retrieveSession.mockResolvedValue({
+      id: "cs_expired_42",
+      status: "expired",
+      expires_at: Math.floor(Date.now() / 1000) - 60,
+      url: null,
+    })
+    mocks.createSession.mockResolvedValue({
+      id: "cs_replacement_42",
+      url: "https://checkout.stripe.com/c/pay/cs_replacement_42",
+    })
+
+    const request = () => POST(
+      new NextRequest("http://localhost/api/admin/work-with-me", {
+        method: "POST",
+        body: JSON.stringify({ applicationId: 42, action: "create_checkout" }),
+        headers: { "Content-Type": "application/json" },
+      }),
+    )
+
+    const first = await request()
+    const retry = await request()
+
+    expect(first.status).toBe(200)
+    expect(retry.status).toBe(200)
+    expect(mocks.createSession).toHaveBeenCalledTimes(2)
+    expect(mocks.createSession.mock.calls.map((call) => call[1])).toEqual([
+      { idempotencyKey: "work_with_me_application_42_after_cs_expired_42" },
+      { idempotencyKey: "work_with_me_application_42_after_cs_expired_42" },
+    ])
+    await expect(first.json()).resolves.toMatchObject({
+      checkoutUrl: "https://checkout.stripe.com/c/pay/cs_replacement_42",
+      sessionId: "cs_replacement_42",
+      reused: false,
+    })
+  })
+
   it("closes the matching Work With Me application without double-counting cash", async () => {
     mocks.sql.mockResolvedValue([{ id: 42 }])
 
@@ -160,9 +256,13 @@ describe("Work With Me admin pipeline", () => {
 
   it("keeps checkout creation attended and does not send the link automatically", () => {
     const route = readFileSync("app/api/admin/work-with-me/route.ts", "utf8")
+    const pipeline = readFileSync("components/admin/work-with-me-pipeline.tsx", "utf8")
 
     expect(route).not.toContain("sendEmail")
     expect(route).toContain("checkoutUrl")
     expect(route).toContain('body.action !== "create_checkout"')
+    expect(pipeline).toContain("onClick={() => createCheckout(application.id)}")
+    expect(pipeline).not.toContain("copyExisting")
+    expect(pipeline).not.toContain("value={application.checkout_url}")
   })
 })

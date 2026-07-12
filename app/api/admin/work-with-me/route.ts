@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { requireAdmin } from "@/lib/admin-feature-flags"
 import { sql } from "@/lib/db/client"
-import { createWorkWithMeCheckoutLink } from "@/lib/work-with-me/checkout"
+import {
+  createWorkWithMeCheckoutLink,
+  getReusableWorkWithMeCheckout,
+} from "@/lib/work-with-me/checkout"
 import {
   ensureWorkWithMePipelineSchema,
   isWorkWithMeAdminAction,
@@ -222,19 +225,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (application.checkout_url && application.checkout_session_id) {
-      return NextResponse.json({
-        ok: true,
-        checkoutUrl: application.checkout_url,
-        sessionId: application.checkout_session_id,
-        reused: true,
-      })
+    const previousSessionId = application.checkout_session_id
+      ? String(application.checkout_session_id)
+      : null
+    if (previousSessionId) {
+      const reusableCheckout = await getReusableWorkWithMeCheckout(previousSessionId)
+      if (reusableCheckout) {
+        return NextResponse.json({
+          ok: true,
+          ...reusableCheckout,
+          reused: true,
+        })
+      }
     }
 
     const checkout = await createWorkWithMeCheckoutLink({
       applicationId,
       name: String(application.name || ""),
       email: String(application.email || ""),
+      previousSessionId,
     })
 
     const updatedRows = await sql`
@@ -249,7 +258,7 @@ export async function POST(request: NextRequest) {
         checkout_mode_reason = 'admin_attended_offer',
         checkout_session_id = ${checkout.sessionId},
         checkout_url = ${checkout.checkoutUrl},
-        checkout_created_at = COALESCE(checkout_created_at, NOW()),
+        checkout_created_at = NOW(),
         updated_at = NOW()
       WHERE id = ${applicationId}
         AND (
@@ -258,6 +267,10 @@ export async function POST(request: NextRequest) {
           OR lead_tags ? 'work-with-me'
         )
         AND pipeline_stage IN ('contacted', 'call_booked', 'call_completed', 'offer_sent')
+        AND (
+          checkout_session_id IS NOT DISTINCT FROM ${previousSessionId}
+          OR checkout_session_id = ${checkout.sessionId}
+        )
       RETURNING id
     `
 

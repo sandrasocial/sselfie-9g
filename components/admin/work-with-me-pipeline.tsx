@@ -156,22 +156,12 @@ export function WorkWithMePipeline() {
         await copyText(data.checkoutUrl)
         showCopied(applicationId)
       } catch {
-        setError("The payment link was created. Select and copy the link shown below.")
+        setError("The payment link was checked, but your browser could not copy it. Try the copy button again.")
       }
     } catch (checkoutError) {
       setError(checkoutError instanceof Error ? checkoutError.message : "Could not create the payment link.")
     } finally {
       setBusyId(null)
-    }
-  }
-
-  async function copyExisting(application: WorkWithMeApplication) {
-    if (!application.checkout_url) return
-    try {
-      await copyText(application.checkout_url)
-      showCopied(application.id)
-    } catch {
-      setError("Select and copy the payment link shown below.")
     }
   }
 
@@ -315,7 +305,7 @@ export function WorkWithMePipeline() {
                     <button
                       type="button"
                       disabled={isBusy}
-                      onClick={() => application.checkout_url ? copyExisting(application) : createCheckout(application.id)}
+                      onClick={() => createCheckout(application.id)}
                       className="rounded-full bg-stone-950 px-4 py-2 text-xs font-medium text-white hover:bg-stone-800 disabled:opacity-40"
                     >
                       {copiedId === application.id
@@ -340,15 +330,8 @@ export function WorkWithMePipeline() {
                 {application.checkout_url ? (
                   <div className="mt-3">
                     <p className="text-xs text-stone-500">
-                      Payment link created {dateLabel(application.checkout_created_at)}. Use the copy button to send it personally.
+                      Payment link created {dateLabel(application.checkout_created_at)}. The copy button checks that it is still active before copying it.
                     </p>
-                    <input
-                      aria-label={`Payment link for ${application.name}`}
-                      readOnly
-                      value={application.checkout_url}
-                      onFocus={event => event.currentTarget.select()}
-                      className="mt-2 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-600"
-                    />
                   </div>
                 ) : null}
               </article>

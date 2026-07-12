@@ -8,6 +8,7 @@ type WorkWithMeCheckoutInput = {
   name: string
   email: string
   baseUrl?: string
+  previousSessionId?: string | null
 }
 
 export type WorkWithMeCheckoutResult = {
@@ -21,6 +22,32 @@ function getBaseUrl(baseUrl?: string) {
   return String(
     baseUrl || process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai",
   ).replace(/\/+$/, "")
+}
+
+function checkoutIdempotencyKey(applicationId: number, previousSessionId?: string | null) {
+  const base = `work_with_me_application_${applicationId}`
+  if (!previousSessionId) return base
+
+  return `${base}_after_${previousSessionId}`.slice(0, 255)
+}
+
+export async function getReusableWorkWithMeCheckout(sessionId: string) {
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId)
+    const isUnexpired =
+      typeof session.expires_at === "number" && session.expires_at > Math.floor(Date.now() / 1000)
+
+    if (session.status !== "open" || !isUnexpired || !session.url) return null
+
+    return {
+      checkoutUrl: session.url,
+      sessionId: session.id,
+    }
+  } catch (error) {
+    const stripeError = error as { code?: string; statusCode?: number }
+    if (stripeError.code === "resource_missing" || stripeError.statusCode === 404) return null
+    throw error
+  }
 }
 
 export async function createWorkWithMeCheckoutLink(
@@ -48,7 +75,7 @@ export async function createWorkWithMeCheckoutLink(
       },
       allow_promotion_codes: false,
     },
-    { idempotencyKey: `work_with_me_application_${input.applicationId}` },
+    { idempotencyKey: checkoutIdempotencyKey(input.applicationId, input.previousSessionId) },
   )
 
   if (!session.url) {
