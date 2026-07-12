@@ -9,6 +9,7 @@ const checkWebhookRateLimitMock = vi.fn()
 const markEventFailedMock = vi.fn()
 const markEventProcessedMock = vi.fn()
 const handlePromptVaultCheckoutMock = vi.fn()
+const handlePresetsCheckoutMock = vi.fn()
 
 vi.mock("server-only", () => ({}))
 
@@ -50,6 +51,10 @@ vi.mock("@/lib/email/send-email", () => ({
 
 vi.mock("@/lib/payments/handlers/prompt-vault", () => ({
   handlePromptVaultCheckout: handlePromptVaultCheckoutMock,
+}))
+
+vi.mock("@/lib/payments/handlers/presets", () => ({
+  handlePresetsCheckout: handlePresetsCheckoutMock,
 }))
 
 vi.mock("@/lib/credits", () => ({
@@ -112,6 +117,7 @@ describe("stripe checkout payment recording", () => {
     markEventProcessedMock.mockResolvedValue(undefined)
     markEventFailedMock.mockResolvedValue(undefined)
     handlePromptVaultCheckoutMock.mockResolvedValue(undefined)
+    handlePresetsCheckoutMock.mockResolvedValue(undefined)
     retrievePaymentIntentMock.mockResolvedValue({
       id: "pi_guest_prompt_vault_123",
       amount: 2700,
@@ -199,4 +205,85 @@ describe("stripe checkout payment recording", () => {
 
     expect(reviewInsert).toBe(false)
   })
+
+  it.each([
+    {
+      productType: "presets_single",
+      amount: 1900,
+      eventId: "evt_guest_presets_single_1",
+      sessionId: "cs_guest_presets_single_1",
+      paymentIntentId: "pi_guest_presets_single_1",
+    },
+    {
+      productType: "presets_bundle",
+      amount: 3900,
+      eventId: "evt_guest_presets_bundle_1",
+      sessionId: "cs_guest_presets_bundle_1",
+      paymentIntentId: "pi_guest_presets_bundle_1",
+    },
+  ])(
+    "records and fulfills $productType by email token when no user can be resolved",
+    async ({ productType, amount, eventId, sessionId, paymentIntentId }) => {
+      retrievePaymentIntentMock.mockResolvedValue({
+        id: paymentIntentId,
+        amount,
+        currency: "usd",
+        customer: `cus_${productType}`,
+      })
+      constructEventMock.mockReturnValue({
+        id: eventId,
+        type: "checkout.session.completed",
+        livemode: true,
+        data: {
+          object: {
+            id: sessionId,
+            object: "checkout.session",
+            mode: "payment",
+            payment_status: "paid",
+            amount_total: amount,
+            currency: "usd",
+            payment_intent: paymentIntentId,
+            customer: `cus_${productType}`,
+            customer_details: {
+              email: "guest-presets@example.com",
+              name: "Guest Presets",
+            },
+            customer_email: "guest-presets@example.com",
+            metadata: {
+              product_type: productType,
+              source: "presets_landing",
+            },
+          },
+        },
+      })
+
+      const { POST } = await import("@/app/api/webhooks/stripe/route")
+      const response = await POST(
+        new Request("http://localhost/api/webhooks/stripe", {
+          method: "POST",
+          headers: { "stripe-signature": "sig_test" },
+          body: "{}",
+        }) as any
+      )
+
+      expect(response.status).toBe(200)
+      expect(markEventFailedMock).not.toHaveBeenCalled()
+      expect(handlePresetsCheckoutMock).toHaveBeenCalledTimes(1)
+      expect(handlePresetsCheckoutMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customerEmail: "guest-presets@example.com",
+          userId: null,
+          source: "presets_landing",
+          isPaymentPaid: true,
+        })
+      )
+      expect(markEventProcessedMock).toHaveBeenCalledWith("stripe", eventId)
+
+      const reviewInsert = sqlMock.mock.calls.some(([strings]) => {
+        const query = Array.isArray(strings) ? strings.join(" ") : String(strings)
+        return query.includes("INSERT INTO webhook_events_needs_review")
+      })
+      expect(reviewInsert).toBe(false)
+    }
+  )
 })

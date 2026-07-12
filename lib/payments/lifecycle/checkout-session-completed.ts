@@ -167,9 +167,14 @@ function getSessionCustomerId(session: any, paymentIntent?: any | null): string 
 }
 
 function canFulfillCheckoutWithoutUser(productType?: string | null): boolean {
-  // Prompt Vault grants access by email + access token. A buyer should not need an
-  // existing app user row before the product handler can deliver their purchase.
-  return productType === "prompt_vault" || productType === "selfie_ai_photos_kit"
+  // These products grant access by email + access token. A buyer should not need
+  // an existing app user row before the product handler can deliver her purchase.
+  return (
+    productType === "prompt_vault" ||
+    productType === "selfie_ai_photos_kit" ||
+    productType === "presets_single" ||
+    productType === "presets_bundle"
+  )
 }
 
 async function recordCheckoutSessionRevenue(params: {
@@ -1331,6 +1336,16 @@ export async function handleCheckoutSessionCompleted(
         })
       } else if (productType === "selfie_ai_photos_kit") {
         await handleSelfieAiPhotosKitCheckout({
+          event,
+          session,
+          isPaymentPaid,
+          customerEmail,
+          userId: userId ?? null,
+          referralPurchaseUserId: referralPurchaseUserId ?? null,
+          source,
+        })
+      } else if (productType === "presets_single" || productType === "presets_bundle") {
+        await handlePresetsCheckout({
           event,
           session,
           isPaymentPaid,
