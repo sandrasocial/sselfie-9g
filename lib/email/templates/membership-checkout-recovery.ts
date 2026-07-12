@@ -25,7 +25,7 @@ export function generateMembershipCheckoutRecoveryEmail({
     subject: "Still thinking about it?",
     html: renderStoneShell({
       eyebrow: "SSELFIE SUITE",
-      title: "Try it before you decide.",
+      title: "Still thinking about it?",
       bodyHtml,
       footerLead: "",
       footerSignoff: "",
