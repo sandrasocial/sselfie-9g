@@ -3,6 +3,7 @@ import type Stripe from "stripe"
 import { stripe } from "@/lib/stripe"
 import { sql } from "@/lib/db/client"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { findAuthUserByEmail } from "@/lib/supabase/find-auth-user-by-email"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
@@ -24,6 +25,8 @@ import { handleMasterclassCheckout } from "@/lib/payments/handlers/masterclass"
 import { handleSelfieGuideCheckout } from "@/lib/payments/handlers/selfie-guide"
 import { handleOneTimeSessionCheckout } from "@/lib/payments/handlers/one-time-session"
 import { handleWorkWithMeCheckout } from "@/lib/payments/handlers/work-with-me"
+import { handleSelfieVisibilityBundleCheckout } from "@/lib/payments/handlers/selfie-visibility-bundle"
+import { ensureExistingNeonPublicCheckoutAuth } from "@/lib/payments/public-checkout-account"
 import { handleTransformCheckout, isTransformProductType } from "@/lib/payments/handlers/transform"
 import { handleAcademyProductCheckout } from "@/lib/payments/handlers/academy-products"
 import { handleStudioMembershipSubscriptionCheckout } from "@/lib/payments/handlers/studio-membership"
@@ -50,6 +53,7 @@ import {
   resolveCheckoutProductType,
   resolveCheckoutSource,
 } from "@/lib/payments/checkout-metadata"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 
 async function sendTransformPurchaseEmail(params: {
   customerEmail: string
@@ -457,6 +461,8 @@ export async function handleCheckoutSessionCompleted(
         productTag = "visibility-suite"
       } else if (productType === "work_with_me") {
         productTag = "work-with-me"
+      } else if (productType === "selfie_visibility_bundle") {
+        productTag = "selfie-visibility-bundle"
       }
 
       // Track conversion attribution if campaign_id is present
@@ -605,7 +611,9 @@ export async function handleCheckoutSessionCompleted(
       source === "selfie_ai_photos_kit_paid" ||
       source === "ai_prompts_access" ||
       source === "selfie_to_brand_shoot_paid" ||
-      source === "work_with_me_paid"
+      source === "work_with_me_paid" ||
+      source === "one_selfie_launch" ||
+      productType === "selfie_visibility_bundle"
 
     if (!customerEmail) {
       console.error(
@@ -851,13 +859,35 @@ export async function handleCheckoutSessionCompleted(
       console.log(`[v0] No user_id in metadata, looking up user by email: ${customerEmail}`)
 
       const users = await sql`
-              SELECT id FROM users WHERE email = ${customerEmail} LIMIT 1
+              SELECT id, supabase_user_id, password_setup_complete
+              FROM users
+              WHERE LOWER(email) = LOWER(${customerEmail})
+              LIMIT 1
             `
 
       if (users.length > 0) {
         userId = users[0].id
         referralPurchaseUserId = userId
         console.log(`[v0] Found existing user ${userId} for email ${customerEmail}`)
+
+        if (isPublicPaidCheckoutSource) {
+          const account = await ensureExistingNeonPublicCheckoutAuth({
+            neonUserId: String(userId),
+            currentSupabaseUserId: users[0].supabase_user_id || null,
+            passwordSetupComplete: users[0].password_setup_complete ?? null,
+            email: customerEmail,
+            sessionId: session.id,
+            stripeCustomerId: getStripeObjectId(session.customer),
+            productType: productType || null,
+            productId: session.metadata?.product_id || null,
+            productionUrl: process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai",
+          })
+
+          if (account.shouldUseSetupLink) {
+            isNewUserForEmail = true
+            purchasePasswordSetupLink = account.passwordSetupLink
+          }
+        }
 
         if (isTransformProductType(productType) && isPaymentPaid && customerEmail) {
           console.log(`[v0] Sending Transform purchase confirmation email to ${customerEmail}`)
@@ -928,6 +958,7 @@ export async function handleCheckoutSessionCompleted(
           productType !== "selfie_ai_photos_kit" &&
           productType !== "presets_single" &&
           productType !== "presets_bundle" &&
+          productType !== "selfie_visibility_bundle" &&
           productType !== "selfie_to_brand_shoot_system" &&
           productType !== "visibility_suite" &&
           productType !== "work_with_me" &&
@@ -996,16 +1027,12 @@ export async function handleCheckoutSessionCompleted(
           const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
           const supabaseAdmin = createAdminClient()
 
-          console.log(`[v0] Step 1: Checking if user already exists in Supabase auth...`)
+          console.log(`[v0] Step 1: Checking every Supabase auth page for an existing account...`)
 
-          const { data: existingUsers, error: listError } =
-            await supabaseAdmin.auth.admin.listUsers()
-
-          if (listError) {
-            console.error(`[v0] Error listing users:`, listError)
-          }
-
-          const existingUser = existingUsers?.users?.find(u => u.email === customerEmail)
+          const existingUser = await findAuthUserByEmail({
+            email: customerEmail,
+            listUsers: params => supabaseAdmin.auth.admin.listUsers(params),
+          })
 
           if (existingUser) {
             console.log(`[v0] User already exists in Supabase auth: ${existingUser.id}`)
@@ -1026,8 +1053,12 @@ export async function handleCheckoutSessionCompleted(
                   stripe_customer_id: session.customer,
                   product_type: productType,
                 },
+                app_metadata: {
+                  account_setup_checkout_session_id: session.id,
+                },
               })
 
+            let authUserId = createData.user?.id || null
             if (createError) {
               console.error(`[v0] Supabase create user error details:`, {
                 message: createError.message,
@@ -1035,16 +1066,32 @@ export async function handleCheckoutSessionCompleted(
                 name: createError.name,
                 code: (createError as any).code,
               })
-              throw createError
+
+              // Another checkout or webhook can create the same auth user between
+              // our paginated lookup and createUser call. Recover that user rather
+              // than failing a paid fulfillment on the harmless race.
+              const recoveredUser = await findAuthUserByEmail({
+                email: customerEmail,
+                listUsers: params => supabaseAdmin.auth.admin.listUsers(params),
+              })
+
+              if (!recoveredUser) {
+                throw createError
+              }
+
+              authUserId = recoveredUser.id
+              console.log(
+                `[v0] Recovered Supabase auth user ${recoveredUser.id} after create conflict`,
+              )
             }
 
-            if (!createData.user) {
+            if (!authUserId) {
               console.error(`[v0] No user data returned from create`)
               throw new Error("No user data returned from Supabase create")
             }
 
             console.log(
-              `[v0] Step 3: Created Supabase auth user ${createData.user.id} for ${customerEmail}`
+              `[v0] Step 3: Resolved Supabase auth user ${authUserId} for ${customerEmail}`
             )
 
             console.log(`[v0] Step 4: Generating password reset link...`)
@@ -1060,6 +1107,8 @@ export async function handleCheckoutSessionCompleted(
             const productSetupNext =
               productType === "visibility_suite"
                 ? "/academy/access/visibility-suite"
+                : productType === "selfie_visibility_bundle"
+                  ? "/academy/access/one-selfie"
                 : academyMiniProductSlug
                   ? `/academy/access/${academyMiniProductSlug}`
                   : productType === "starter_kit"
@@ -1097,7 +1146,7 @@ export async function handleCheckoutSessionCompleted(
             }
 
             console.log(`[v0] Step 5: Creating Neon user record...`)
-            const neonUser = await getOrCreateNeonUser(createData.user.id, customerEmail, null)
+            const neonUser = await getOrCreateNeonUser(authUserId, customerEmail, null)
             userId = neonUser.id
             referralPurchaseUserId = userId
             console.log(`[v0] Step 6: Created Neon user ${userId} for ${customerEmail}`)
@@ -1141,6 +1190,7 @@ export async function handleCheckoutSessionCompleted(
               productType === "selfie_ai_photos_kit" ||
               productType === "presets_single" ||
               productType === "presets_bundle" ||
+              productType === "selfie_visibility_bundle" ||
               productType === "selfie_to_brand_shoot_system" ||
               productType === "work_with_me" ||
               productType === "visibility_suite"
@@ -1545,6 +1595,37 @@ export async function handleCheckoutSessionCompleted(
         referralPurchaseUserId,
         source,
       })
+    } else if (productType === "selfie_visibility_bundle") {
+      await handleSelfieVisibilityBundleCheckout({
+        event,
+        session,
+        isPaymentPaid,
+        customerEmail,
+        userId,
+        referralPurchaseUserId,
+        source,
+        isNewUserForEmail,
+        purchasePasswordSetupLink,
+      })
+
+      await logAnalyticsEvent({
+        eventName: "selfie_visibility_bundle_checkout_completed",
+        userId: String(userId),
+        path: "/checkout/one-selfie",
+        utm: {
+          source: checkoutMetadataString(metadata, "utm_source"),
+          medium: checkoutMetadataString(metadata, "utm_medium"),
+          campaign: checkoutMetadataString(metadata, "utm_campaign"),
+          content: checkoutMetadataString(metadata, "utm_content"),
+        },
+        properties: {
+          stripe_session_id: session.id,
+          source,
+          checkout_source: checkoutMetadataString(metadata, "checkout_source"),
+          cta_keyword: checkoutMetadataString(metadata, "cta_keyword"),
+          product_type: productType,
+        },
+      })
     } else if (productType === "selfie_to_brand_shoot_system") {
       await handleSelfieToBrandShootCheckout({
         event,
@@ -1658,6 +1739,26 @@ export async function handleCheckoutSessionCompleted(
       source: session.metadata?.source || null,
       maybeTrackCheckoutReferralSignup,
     })
+
+    if (isPaymentPaid && session.metadata?.source === "one_selfie_bundle_upsell") {
+      await logAnalyticsEvent({
+        eventName: "selfie_visibility_bundle_annual_upsell_completed",
+        userId: session.metadata?.user_id || null,
+        path: "/checkout/membership",
+        utm: {
+          source: checkoutMetadataString(metadata, "utm_source"),
+          medium: checkoutMetadataString(metadata, "utm_medium"),
+          campaign: checkoutMetadataString(metadata, "utm_campaign"),
+          content: checkoutMetadataString(metadata, "utm_content"),
+        },
+        properties: {
+          stripe_session_id: session.id,
+          source: session.metadata.source,
+          checkout_source: checkoutMetadataString(metadata, "checkout_source"),
+          product_type: session.metadata?.product_type || "sselfie_studio_membership_annual",
+        },
+      })
+    }
   }
 
   // Set pending_welcome_modal so the app can show a post-purchase modal on next load.
@@ -1668,6 +1769,7 @@ export async function handleCheckoutSessionCompleted(
     customerEmail &&
     pendingWelcomeProduct &&
     pendingWelcomeProduct !== "credit_topup" &&
+    pendingWelcomeProduct !== "selfie_visibility_bundle" &&
     event.livemode
   ) {
     try {

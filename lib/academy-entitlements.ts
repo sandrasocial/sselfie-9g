@@ -721,12 +721,15 @@ export async function upsertPurchaseEntitlement({
   sourceRef,
   source = "purchase",
   metadata,
+  throwOnError = false,
 }: {
   userId: string
   productId: string
   sourceRef?: string | null
   source?: AcademyEntitlementSource
   metadata?: Record<string, unknown>
+  /** Paid bundle fulfillment uses strict mode so Stripe retries instead of emailing partial access. */
+  throwOnError?: boolean
 }) {
   try {
     const normalizedSourceRef = sourceRef ?? ""
@@ -760,5 +763,6 @@ export async function upsertPurchaseEntitlement({
     `
   } catch (error) {
     console.error("[academy-entitlements] Failed to upsert entitlement:", error)
+    if (throwOnError) throw error
   }
 }

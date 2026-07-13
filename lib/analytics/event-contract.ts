@@ -132,6 +132,13 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "presets_access_failed",
   "presets_access_opened",
   "presets_download_clicked",
+  // One Selfie Visibility Bundle: paid-event behavior only. Revenue remains Stripe truth.
+  "selfie_visibility_bundle_checkout_completed",
+  "selfie_visibility_bundle_access_opened",
+  "selfie_visibility_bundle_asset_opened",
+  "selfie_visibility_bundle_annual_upsell_viewed",
+  "selfie_visibility_bundle_annual_upsell_clicked",
+  "selfie_visibility_bundle_annual_upsell_completed",
   "selfie_to_brand_shoot_landing_view",
   "selfie_to_brand_shoot_checkout_start",
   "selfie_to_brand_shoot_checkout_success",

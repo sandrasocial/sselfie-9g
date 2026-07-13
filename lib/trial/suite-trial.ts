@@ -65,6 +65,10 @@ export async function grantSuiteTrial(
 /**
  * Resolve what the /app shell and generation APIs should allow for this Neon user.
  * "none" lets the app gate distinguish new free accounts from one-time owners.
+ *
+ * The paid One Selfie bundle pass intentionally resolves as member-level access while its fixed
+ * 30-day window is active. This gives the buyer the full SUITE experience without presenting a
+ * misleading free-trial badge or creating a recurring Stripe subscription.
  */
 export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
   const rows = await sql`
@@ -75,12 +79,21 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
       AND (
         (product_type = 'sselfie_studio_membership' AND status = 'active')
         OR product_type = 'suite_trial'
+        OR product_type = 'selfie_visibility_bundle_pass'
         OR (product_type IN ('starter_kit', 'selfie_guide', 'brand_strategy_pack', 'paid_blueprint') AND status IN ('active', 'completed'))
       )
   `
 
   if (rows.some((r) => r.product_type === "sselfie_studio_membership")) {
     return { level: "member", trialEndsAt: null, trialDaysLeft: null }
+  }
+
+  const bundlePass = rows.find((r) => r.product_type === "selfie_visibility_bundle_pass")
+  if (bundlePass?.trial_ends_at) {
+    const endsAt = new Date(bundlePass.trial_ends_at)
+    if (bundlePass.status === "active" && endsAt.getTime() > Date.now()) {
+      return { level: "member", trialEndsAt: null, trialDaysLeft: null }
+    }
   }
 
   const trial = rows.find((r) => r.product_type === "suite_trial")

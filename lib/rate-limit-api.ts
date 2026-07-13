@@ -45,6 +45,7 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
   FEED_GENERATION: { interval: 300, limit: 5 }, // 5 feed generations per 5 minutes
   ANALYTICS: { interval: 60, limit: 120 }, // 120 events per minute (fail-open if Redis not configured)
   REVIEW_SUBMISSION: { interval: 3600, limit: 5 }, // authenticated review attempts per hour
+  ACCOUNT_SETUP: { interval: 3600, limit: 5 }, // paid checkout-bound account setup attempts per hour
 }
 
 export async function checkRateLimit(

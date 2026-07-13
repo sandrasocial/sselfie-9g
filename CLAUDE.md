@@ -101,6 +101,21 @@ they conflict.
 - One commercial experiment at a time. AI measures, prioritizes, drafts, and monitors; it does not
   create parallel funnels or send attended high-value offers automatically.
 
+### Attended cash event (July 13–15, 2026)
+
+The only active commercial experiment is the **One Selfie Visibility Bundle** at `/one-selfie`:
+$97 once for five lifetime learning tools plus a fixed 30-day SUITE pass with 200 credits and no
+renewal. It opens July 13 at 18:00 CEST and closes July 15 at 18:00 CEST. The server owns the fixed
+deadline; an already-open Stripe checkout receives only the final 30-minute completion grace.
+
+`BUNDLE` is the attended ManyChat keyword Sandra configures. Three Resend broadcasts exist as
+drafts and require Sandra's approval. Checkout, account setup, fulfillment, delivery, buyer home,
+fixed-pass expiry, attribution, and the optional normal-price annual SUITE continuation are owned by
+the repo. The operating runbook and honest revenue bands are in
+`docs/business/ONE_SELFIE_VISIBILITY_REVENUE_EVENT_2026-07-13.md`.
+Account and billing UI must keep recurring membership, fixed pass, and lifetime ownership distinct.
+Membership writes are exact-Stripe-subscription scoped; never update all subscription rows by user.
+
 ### Forward Revenue Plan (superseded where it conflicts, 2026-07-01)
 
 Historical foundation: `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`. Use the newer

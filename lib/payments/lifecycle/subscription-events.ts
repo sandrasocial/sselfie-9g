@@ -11,6 +11,7 @@ import { generatePaymentFailedEmail } from "@/lib/email/templates/payment-failed
 import { getSubscriptionCoupon } from "@/lib/revenue/subscription-amount"
 import { getSubscriptionPeriod } from "@/lib/payments/shared"
 import { getSubscriptionPlanFromMetadata } from "@/lib/launch/cash-launch-pricing"
+import { upsertStudioMembershipSubscription } from "@/lib/payments/lifecycle/upsert-studio-membership"
 
 /**
  * Resolve a subscription's coupon for DB documentation (e.g. lifetime BETA 50%).
@@ -121,10 +122,6 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
     `[v0] Subscription record created. Credits will be granted when payment is confirmed via invoice.payment_succeeded`
   )
 
-  const existingSubscription = await sql`
-    SELECT id FROM subscriptions WHERE user_id = ${userId} LIMIT 1
-  `
-
   // Persist coupon state so the DB documents what each member actually pays
   // (e.g. lifetime BETA 50%).
   const resolvedDiscount =
@@ -134,55 +131,28 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
   const discountCoupon = resolvedDiscount.coupon
 
   const createdPeriod = getSubscriptionPeriod(subscription)
-
-  if (existingSubscription.length > 0) {
-    console.log(`[v0] Updating existing subscription for user ${userId}`)
-    await sql`
-      UPDATE subscriptions SET
-        product_type = ${productType},
-        plan = ${subscriptionPlan},
-        status = ${subscription.status},
-        stripe_subscription_id = ${subscription.id},
-        stripe_customer_id = ${subscription.customer},
-        current_period_start = to_timestamp(${createdPeriod.start}),
-        current_period_end = to_timestamp(${createdPeriod.end}),
-        is_test_mode = ${!event.livemode},
-        discount_percent = ${discountPercent},
-        discount_coupon = ${discountCoupon},
-        updated_at = NOW()
-      WHERE user_id = ${userId}
-    `
-  } else {
-    console.log(`[v0] Inserting new subscription for user ${userId}`)
-    await sql`
-      INSERT INTO subscriptions (
-        user_id,
-        product_type,
-        plan,
-        status,
-        stripe_subscription_id,
-        stripe_customer_id,
-        current_period_start,
-        current_period_end,
-        is_test_mode,
-        discount_percent,
-        discount_coupon
-      )
-      VALUES (
-        ${userId},
-        ${subscriptionPlan},
-        ${productType},
-        ${subscription.status},
-        ${subscription.id},
-        ${subscription.customer},
-        to_timestamp(${createdPeriod.start}),
-        to_timestamp(${createdPeriod.end}),
-        ${!event.livemode},
-        ${discountPercent},
-        ${discountCoupon}
-      )
-    `
+  const stripeCustomerId =
+    typeof subscription.customer === "string"
+      ? subscription.customer
+      : subscription.customer?.id
+  if (!stripeCustomerId) {
+    throw new Error(`Subscription ${subscription.id} has no Stripe customer`)
   }
+
+  await upsertStudioMembershipSubscription({
+    userId,
+    plan: subscriptionPlan,
+    status: subscription.status,
+    stripeSubscriptionId: subscription.id,
+    stripeCustomerId,
+    periodStart: createdPeriod.start,
+    periodEnd: createdPeriod.end,
+    isTestMode: !event.livemode,
+    discount: {
+      percent: discountPercent,
+      coupon: discountCoupon,
+    },
+  })
 
   return
 }

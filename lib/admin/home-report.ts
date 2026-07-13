@@ -104,6 +104,7 @@ const PRODUCT_LABELS: Record<string, string> = {
   sselfie_studio_membership: "SSELFIE SUITE",
   prompt_vault: "Prompt Vault",
   starter_kit: "Starter Kit",
+  selfie_visibility_bundle: "One Selfie Bundle",
   selfie_guide: "Selfie Guide",
   masterclass: "Masterclass",
   paid_blueprint: "Feed Planner",

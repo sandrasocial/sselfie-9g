@@ -108,5 +108,12 @@ export function resolveMembershipPriceId(input: {
 }
 
 export function getSubscriptionPlanFromMetadata(metadata?: Record<string, unknown> | null, fallback = "sselfie_studio_membership") {
-  return metadata?.plan === FOUNDING_ANNUAL_PLAN ? FOUNDING_ANNUAL_PLAN : fallback
+  if (metadata?.plan === FOUNDING_ANNUAL_PLAN) return FOUNDING_ANNUAL_PLAN
+  if (
+    metadata?.plan === "annual" ||
+    metadata?.product_id === "sselfie_studio_membership_annual"
+  ) {
+    return "annual"
+  }
+  return fallback
 }

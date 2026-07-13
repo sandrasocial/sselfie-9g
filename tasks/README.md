@@ -56,6 +56,12 @@ Admin-Maya, and text-overlay plans.
 
 ## Shipped from the 2026-07-13 machine continuation
 
+- The **One Selfie Visibility Bundle** is the one attended July 13–15 commercial experiment: $97
+  once, five lifetime tools, and a fixed 30-day/200-credit SUITE pass with no renewal. Its landing,
+  fixed deadline, Stripe checkout, idempotent fulfillment, secure checkout-bound account setup,
+  buyer home, expiry, attribution, annual continuation, three approval-only email drafts, and exact
+  ManyChat/social runbook ship together. No unattended flash-sale schedule was added. Release record:
+  `tasks/archive/2026-07-13/codex-one-selfie-visibility-bundle.md`.
 - The **Start with one selfie** handoff now commits photo + Maya decides before opening the selfie
   manager. Continue goes directly to one recommended concept; the pre-result drawer no longer shows
   the format/style/shot-director/source/extra-angle/composer maze, and stale inspiration no longer

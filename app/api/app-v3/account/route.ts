@@ -22,6 +22,14 @@ function planLabel(raw: unknown): string | null {
   return key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
 }
 
+function toIso(value: unknown): string | null {
+  if (!(value instanceof Date) && (typeof value !== "string" || value.length === 0)) {
+    return null
+  }
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date.toISOString()
+}
+
 export async function GET() {
   const { user, error: authError } = await getAuthenticatedUser()
   if (authError || !user) {
@@ -33,6 +41,8 @@ export async function GET() {
     plan: null,
     status: null,
     renewsAt: null,
+    accessEndsAt: null,
+    billingKind: null,
     credits: null,
     creditsUnlimited,
     email: user.email ?? null,
@@ -46,30 +56,78 @@ export async function GET() {
     const [credits, subs] = await Promise.all([
       getUserCredits(String(neonUserId)).catch(() => null),
       sql`
-        SELECT plan, product_type, status, current_period_end
+        SELECT plan, product_type, status, current_period_end, trial_ends_at
         FROM subscriptions
         WHERE user_id = ${String(neonUserId)}
-          AND status = 'active'
+          AND product_type IN (
+            'sselfie_studio_membership',
+            'selfie_visibility_bundle_pass',
+            'selfie_visibility_bundle'
+          )
           AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
         ORDER BY created_at DESC
-        LIMIT 1
       `.catch(() => [] as Record<string, unknown>[]),
     ])
 
-    const sub = (subs as Record<string, unknown>[])[0] ?? null
-    const periodEnd = sub?.current_period_end
+    const subscriptionRows = subs as Record<string, unknown>[]
+    const recurringMembership = subscriptionRows.find(
+      row => row.product_type === "sselfie_studio_membership" && row.status === "active",
+    )
+    const bundlePass = subscriptionRows.find(
+      row => row.product_type === "selfie_visibility_bundle_pass",
+    )
+    const ownsBundle = subscriptionRows.some(
+      row => row.product_type === "selfie_visibility_bundle",
+    )
+    const passEndsAt = toIso(bundlePass?.trial_ends_at)
+    const passIsActive =
+      bundlePass?.status === "active" &&
+      passEndsAt !== null &&
+      new Date(passEndsAt).getTime() > Date.now()
+
+    if (recurringMembership) {
+      return NextResponse.json({
+        plan: planLabel(recurringMembership.plan ?? recurringMembership.product_type),
+        status: "active",
+        renewsAt: toIso(recurringMembership.current_period_end),
+        accessEndsAt: null,
+        billingKind: "recurring",
+        credits,
+        creditsUnlimited,
+        email: user.email ?? null,
+      })
+    }
+
+    if (passIsActive) {
+      return NextResponse.json({
+        plan: "One Selfie Visibility Bundle",
+        status: "active",
+        renewsAt: null,
+        accessEndsAt: passEndsAt,
+        billingKind: "fixed_pass",
+        credits,
+        creditsUnlimited,
+        email: user.email ?? null,
+      })
+    }
+
+    if (ownsBundle) {
+      return NextResponse.json({
+        plan: "One Selfie Visibility Bundle",
+        status: "owned",
+        renewsAt: null,
+        accessEndsAt: passEndsAt,
+        billingKind: "one_time",
+        credits,
+        creditsUnlimited,
+        email: user.email ?? null,
+      })
+    }
+
     return NextResponse.json({
-      plan: planLabel(sub?.plan ?? sub?.product_type ?? null),
-      status: typeof sub?.status === "string" ? sub.status : null,
-      renewsAt:
-        periodEnd instanceof Date
-          ? periodEnd.toISOString()
-          : typeof periodEnd === "string" && periodEnd.length > 0
-            ? new Date(periodEnd).toISOString()
-            : null,
+      ...empty,
       credits,
       creditsUnlimited,
-      email: user.email ?? null,
     })
   } catch (e) {
     console.error("[app-v3 account] load failed:", e)

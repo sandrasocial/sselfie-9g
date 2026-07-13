@@ -89,6 +89,12 @@ describe("cash launch pricing", () => {
     expect(getSubscriptionPlanFromMetadata({ plan: FOUNDING_ANNUAL_PLAN }, "sselfie_studio_membership")).toBe(
       FOUNDING_ANNUAL_PLAN,
     )
+    expect(
+      getSubscriptionPlanFromMetadata(
+        { product_id: "sselfie_studio_membership_annual" },
+        "sselfie_studio_membership",
+      ),
+    ).toBe("annual")
     expect(getSubscriptionPlanFromMetadata({}, "sselfie_studio_membership")).toBe("sselfie_studio_membership")
   })
 })

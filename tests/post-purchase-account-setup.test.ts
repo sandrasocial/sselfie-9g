@@ -104,14 +104,18 @@ describe("post-purchase account setup flow", () => {
     expect(courseLibrary).toContain("getUserByAuthId")
   })
 
-  it("complete-account API sets password via Supabase admin and marks password_setup_complete", () => {
+  it("complete-account API verifies the paid Stripe session before first-time setup", () => {
     const completeAccount = readFileSync("app/api/complete-account/route.ts", "utf8")
 
-    // Must set password via admin API — not client-side, not a plain DB update
+    expect(completeAccount).toContain("stripe.checkout.sessions.retrieve")
+    expect(completeAccount).toContain('session.payment_status !== "paid"')
+    expect(completeAccount).toContain("password_setup_complete === true")
+    expect(completeAccount).toContain("account_setup_checkout_session_id !== sessionId")
+    expect(completeAccount).toContain("getUserById")
     expect(completeAccount).toContain("admin.updateUserById")
     expect(completeAccount).toContain("password_setup_complete = TRUE")
-    // Must confirm email so buyer can log in immediately
     expect(completeAccount).toContain("email_confirm: true")
+    expect(completeAccount).not.toContain("const { email, password, name }")
   })
 
   it("success page account creation is gated on userInfo.hasAccount being false", () => {

@@ -28,6 +28,10 @@ import {
 import { TRIAL_CREDITS } from "@/lib/trial/suite-trial"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { EMAIL_CONFIG } from "@/lib/email/config"
+import {
+  expireSelfieVisibilityBundlePass,
+  SELFIE_VISIBILITY_BUNDLE_PASS_PRODUCT_TYPE,
+} from "@/lib/trial/selfie-visibility-bundle-pass"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 120
@@ -69,6 +73,7 @@ export async function GET(request: Request) {
       day5: { sent: 0, failed: 0, skipped: 0 },
       trialCap: { enabled: false, sent: 0, failed: 0, skipped: 0 },
       expired: { flipped: 0, creditsZeroed: 0, emailed: 0, failed: 0 },
+      bundlePass: { expired: 0, creditsRemoved: 0, failed: 0 },
     }
 
     // ── Day 1.5-2 activation nudge: active trials that have not made their first image ──
@@ -81,6 +86,15 @@ export async function GET(request: Request) {
         AND s.created_at <= NOW() - INTERVAL '36 hours'
         AND s.trial_ends_at > NOW() + INTERVAL '2 days'
         AND u.email IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1
+          FROM subscriptions bundle_pass
+          WHERE bundle_pass.user_id = s.user_id
+            AND bundle_pass.product_type = 'selfie_visibility_bundle_pass'
+            AND bundle_pass.status = 'active'
+            AND bundle_pass.trial_ends_at > NOW()
+            AND (bundle_pass.is_test_mode = FALSE OR bundle_pass.is_test_mode IS NULL)
+        )
         AND NOT EXISTS (
           SELECT 1
           FROM analytics_events ae
@@ -133,6 +147,15 @@ export async function GET(request: Request) {
         AND s.created_at <= NOW() - INTERVAL '3 days'
         AND s.trial_ends_at > NOW() + INTERVAL '2 days'
         AND u.email IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1
+          FROM subscriptions bundle_pass
+          WHERE bundle_pass.user_id = s.user_id
+            AND bundle_pass.product_type = 'selfie_visibility_bundle_pass'
+            AND bundle_pass.status = 'active'
+            AND bundle_pass.trial_ends_at > NOW()
+            AND (bundle_pass.is_test_mode = FALSE OR bundle_pass.is_test_mode IS NULL)
+        )
         AND EXISTS (
           SELECT 1
           FROM analytics_events ae
@@ -182,6 +205,15 @@ export async function GET(request: Request) {
         AND s.trial_ends_at > NOW()
         AND s.trial_ends_at <= NOW() + INTERVAL '2 days'
         AND u.email IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1
+          FROM subscriptions bundle_pass
+          WHERE bundle_pass.user_id = s.user_id
+            AND bundle_pass.product_type = 'selfie_visibility_bundle_pass'
+            AND bundle_pass.status = 'active'
+            AND bundle_pass.trial_ends_at > NOW()
+            AND (bundle_pass.is_test_mode = FALSE OR bundle_pass.is_test_mode IS NULL)
+        )
     `
 
     for (const trial of endingSoon) {
@@ -240,6 +272,15 @@ export async function GET(request: Request) {
           AND u.email IS NOT NULL
           AND u.email NOT ILIKE '%@sselfie.ai'
           AND COALESCE(u.display_name, '') <> 'Smoke User'
+          AND NOT EXISTS (
+            SELECT 1
+            FROM subscriptions bundle_pass
+            WHERE bundle_pass.user_id = s.user_id
+              AND bundle_pass.product_type = 'selfie_visibility_bundle_pass'
+              AND bundle_pass.status = 'active'
+              AND bundle_pass.trial_ends_at > NOW()
+              AND (bundle_pass.is_test_mode = FALSE OR bundle_pass.is_test_mode IS NULL)
+          )
           AND NOT EXISTS (
             SELECT 1 FROM subscriptions m
             WHERE m.user_id = s.user_id
@@ -361,7 +402,22 @@ export async function GET(request: Request) {
           properties: { source: "suite-trial-expiry-cron" },
         }).catch(() => {})
 
-        if (trial.email && !(await alreadyEmailed(trial.email, "suite_trial_ended"))) {
+        const activeBundlePass = await sql`
+          SELECT 1
+          FROM subscriptions
+          WHERE user_id = ${userId}
+            AND product_type = 'selfie_visibility_bundle_pass'
+            AND status = 'active'
+            AND trial_ends_at > NOW()
+            AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+          LIMIT 1
+        `
+
+        if (
+          trial.email &&
+          activeBundlePass.length === 0 &&
+          !(await alreadyEmailed(trial.email, "suite_trial_ended"))
+        ) {
           const email = generateTrialEndedEmail({
             customerName: trial.display_name,
             customerEmail: trial.email,
@@ -384,6 +440,36 @@ export async function GET(request: Request) {
       } catch (e) {
         console.error(`[suite-trial-expiry] expiry handling failed for user ${userId}:`, e)
         results.expired.failed++
+      }
+    }
+
+    // ── One Selfie Visibility Bundle: fixed 30-day pass expiry ─────────────
+    // This is paid access, not a free trial. It receives no trial lifecycle emails and never
+    // renews. The helper atomically expires the row and removes only the unused portion of the
+    // pass's own 200-credit grant; purchased/top-up credits are excluded from its usage math.
+    const overdueBundlePasses = await sql`
+      SELECT id, user_id, COALESCE(is_test_mode, FALSE) AS is_test_mode
+      FROM subscriptions
+      WHERE product_type = ${SELFIE_VISIBILITY_BUNDLE_PASS_PRODUCT_TYPE}
+        AND status = 'active'
+        AND trial_ends_at <= NOW()
+    `
+
+    for (const pass of overdueBundlePasses) {
+      try {
+        const outcome = await expireSelfieVisibilityBundlePass({
+          passId: pass.id,
+          userId: String(pass.user_id),
+          isTestMode: pass.is_test_mode === true,
+        })
+        if (outcome.expired) results.bundlePass.expired++
+        results.bundlePass.creditsRemoved += outcome.creditsRemoved
+      } catch (error) {
+        console.error(
+          `[suite-trial-expiry] fixed bundle pass expiry failed for user ${String(pass.user_id)}:`,
+          error,
+        )
+        results.bundlePass.failed++
       }
     }
 

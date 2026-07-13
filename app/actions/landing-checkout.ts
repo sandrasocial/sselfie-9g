@@ -15,6 +15,12 @@ import {
   resolvePromptVaultPriceId,
 } from "@/lib/launch/cash-launch-pricing"
 import {
+  SELFIE_VISIBILITY_BUNDLE_CLOSES_AT,
+  SELFIE_VISIBILITY_BUNDLE_OPENS_AT,
+  getSelfieVisibilityBundleCheckoutExpiresAt,
+  getSelfieVisibilityBundleOfferStatus,
+} from "@/lib/launch/selfie-visibility-bundle"
+import {
   buildCheckoutAttributionMetadata,
   normalizeCheckoutAttribution,
   type CheckoutAttributionInput,
@@ -51,6 +57,24 @@ export async function createLandingCheckoutSession(
     throw new Error(`Product with id "${productId}" not found`)
   }
 
+  const isSelfieVisibilityBundle = product.type === "selfie_visibility_bundle"
+  if (isSelfieVisibilityBundle && promoCode?.trim()) {
+    throw new Error("The One Selfie Visibility Bundle has one fixed $97 price.")
+  }
+  const selfieVisibilityBundleOfferStatus = isSelfieVisibilityBundle
+    ? getSelfieVisibilityBundleOfferStatus()
+    : null
+  if (selfieVisibilityBundleOfferStatus && !selfieVisibilityBundleOfferStatus.isOpen) {
+    throw new Error(
+      selfieVisibilityBundleOfferStatus.phase === "upcoming"
+        ? "The One Selfie Visibility Bundle checkout is not open yet."
+        : "The One Selfie Visibility Bundle checkout is closed.",
+    )
+  }
+  const selfieVisibilityBundleCheckoutExpiresAt = isSelfieVisibilityBundle
+    ? getSelfieVisibilityBundleCheckoutExpiresAt()
+    : null
+
   const isSubscription = product.type === "sselfie_studio_membership" || product.type === "sselfie_studio_membership_annual"
   const checkoutProductType =
     product.type === "sselfie_studio_membership_annual"
@@ -62,7 +86,8 @@ export async function createLandingCheckoutSession(
     product.type !== "starter_kit" &&
     product.type !== "selfie_ai_photos_kit" &&
     product.type !== "presets_single" &&
-    product.type !== "presets_bundle"
+    product.type !== "presets_bundle" &&
+    product.type !== "selfie_visibility_bundle"
   const checkoutSource = options?.source?.trim() || "landing_page"
   const normalizedCustomerEmail = normalizeStripeCustomerEmail(customerEmail)
   const bonusCredits =
@@ -136,6 +161,7 @@ export async function createLandingCheckoutSession(
     prompt_vault: "STRIPE_PRICE_PROMPT_VAULT",
     presets_single: "STRIPE_PRICE_PRESETS_SINGLE",
     presets_bundle: "STRIPE_PRICE_PRESETS_BUNDLE",
+    selfie_visibility_bundle: "STRIPE_PRICE_SELFIE_VISIBILITY_BUNDLE",
     selfie_to_brand_shoot_system: "STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM",
   }
   const envVarName = envVarByProductType[product.type] || "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
@@ -166,6 +192,8 @@ export async function createLandingCheckoutSession(
     stripePriceId = process.env.STRIPE_PRICE_PRESETS_SINGLE
   } else if (product.type === "presets_bundle") {
     stripePriceId = process.env.STRIPE_PRICE_PRESETS_BUNDLE
+  } else if (product.type === "selfie_visibility_bundle") {
+    stripePriceId = process.env.STRIPE_PRICE_SELFIE_VISIBILITY_BUNDLE
   } else if (product.type === "selfie_to_brand_shoot_system") {
     stripePriceId = process.env.STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM
   }
@@ -217,6 +245,9 @@ export async function createLandingCheckoutSession(
     ui_mode: "embedded",
     mode: isSubscription ? "subscription" : "payment",
     redirect_on_completion: "never",
+    ...(selfieVisibilityBundleCheckoutExpiresAt && {
+      expires_at: selfieVisibilityBundleCheckoutExpiresAt,
+    }),
     ...(normalizedCustomerEmail && { customer_email: normalizedCustomerEmail }),
     // NOTE: `automatic_payment_methods` is a PaymentIntent param, NOT a Checkout Session param.
     // The Stripe API version 2026-01-28.clover rejects it ("Received unknown parameter:
@@ -267,6 +298,10 @@ export async function createLandingCheckoutSession(
       ...(options?.presetCollectionSlug ? { preset_collection_slug: options.presetCollectionSlug } : {}),
       ...(normalizedCustomerEmail && { customer_email: normalizedCustomerEmail }),
       ...(promoCode && { promo_code: promoCode }),
+      ...(isSelfieVisibilityBundle && {
+        offer_opens_at: SELFIE_VISIBILITY_BUNDLE_OPENS_AT,
+        offer_closes_at: SELFIE_VISIBILITY_BUNDLE_CLOSES_AT,
+      }),
     },
   }
 

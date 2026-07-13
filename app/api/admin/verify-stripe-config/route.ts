@@ -42,6 +42,7 @@ interface ExpectedPriceConfiguration {
   envVar: string
   expectedAmount: number
   expectedAmountFormatted: string
+  expectedCurrency?: string
   expectedRecurring: boolean
 }
 
@@ -87,6 +88,7 @@ export async function GET() {
       "STRIPE_PRICE_PROMPT_VAULT_AFTER_FLASH",
       "STRIPE_PRICE_PRESETS_SINGLE",
       "STRIPE_PRICE_PRESETS_BUNDLE",
+      "STRIPE_PRICE_SELFIE_VISIBILITY_BUNDLE",
       "STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM",
     ]
     
@@ -203,6 +205,13 @@ export async function GET() {
         expectedAmountFormatted: "$39.00",
         expectedRecurring: false,
       },
+      selfie_visibility_bundle: {
+        envVar: "STRIPE_PRICE_SELFIE_VISIBILITY_BUNDLE",
+        expectedAmount: 9700,
+        expectedAmountFormatted: "$97.00",
+        expectedCurrency: "usd",
+        expectedRecurring: false,
+      },
       selfie_to_brand_shoot_system: {
         envVar: "STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM",
         expectedAmount: 19700,
@@ -226,6 +235,10 @@ export async function GET() {
       } else if (verification.amount !== expected.expectedAmount) {
         validationIssues.push(
           `${verification.envVar}: Amount mismatch (expected ${expected.expectedAmountFormatted}, got ${verification.amountFormatted})`
+        )
+      } else if (expected.expectedCurrency && verification.currency !== expected.expectedCurrency) {
+        validationIssues.push(
+          `${verification.envVar}: Currency mismatch (expected ${expected.expectedCurrency.toUpperCase()}, got ${verification.currency?.toUpperCase() || "unknown"})`,
         )
       } else if (expected.expectedRecurring && !verification.recurring) {
         validationIssues.push(`${verification.envVar}: Expected subscription but price is one-time`)

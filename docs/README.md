@@ -27,6 +27,9 @@ Use this order:
 - `business/SSELFIE_GROWTH_MACHINE_2026-07-12.md` — the current four-lane revenue machine,
   operating rhythm, measurement order, and future-development gate. It supersedes older funnel
   sequencing where they conflict.
+- `business/ONE_SELFIE_VISIBILITY_REVENUE_EVENT_2026-07-13.md` — exact attended July 13–15 cash
+  event: offer, ManyChat copy, social kit, email approvals, fulfillment, measurement, monthly
+  learning loop, and ads gate.
 - `funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` — recognizable, still-you AI doctrine.
 
 The supporting brand source files live in `brand/source/2026-06-27/`.

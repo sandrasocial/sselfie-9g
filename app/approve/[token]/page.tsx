@@ -120,7 +120,7 @@ export default async function ApproveActionPage({
                     value="dismiss"
                     className="rounded-full border border-stone-300 px-6 py-3 text-sm text-stone-700"
                   >
-                    Dismiss — don&apos;t send
+                    Dismiss, don&apos;t send
                   </button>
                 </div>
               </form>

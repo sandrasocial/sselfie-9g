@@ -30,6 +30,7 @@ export type PricingProductId =
   | "prompt_vault"
   | "presets_single"
   | "presets_bundle"
+  | "selfie_visibility_bundle"
   | "selfie_to_brand_shoot_system"
 
 export type ProductLifecycleStatus = "live" | "archived" | "legacy_access_only"
@@ -57,6 +58,7 @@ export interface PricingProduct {
     | "prompt_vault"
     | "presets_single"
     | "presets_bundle"
+    | "selfie_visibility_bundle"
     | "selfie_to_brand_shoot_system"
   lifecycleStatus?: ProductLifecycleStatus
   features?: string[]
@@ -309,6 +311,25 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     ],
   },
   {
+    id: "selfie_visibility_bundle",
+    name: "One Selfie Visibility Bundle",
+    displayName: "One Selfie Visibility Bundle",
+    description:
+      "The complete one-selfie path for creating photos, building a visible brand, and continuing with Maya for 30 days.",
+    priceInCents: 9700,
+    type: "selfie_visibility_bundle",
+    lifecycleStatus: "live",
+    tag: "bought_selfie_visibility_bundle",
+    features: [
+      "Selfie Starter Kit",
+      "Full SSELFIE Presets Collection",
+      "Editing Masterclass",
+      "Branded by SSELFIE",
+      "Prompt Vault",
+      "30 days of SUITE with 200 credits",
+    ],
+  },
+  {
     id: "selfie_to_brand_shoot_system",
     name: "The Selfie to Brand Shoot System",
     displayName: "The Selfie to Brand Shoot System",
@@ -507,6 +528,13 @@ export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath>
     fulfillmentRule: "stripe_webhook.checkout.session.completed:presets_bundle",
     successNextAction: "/access/presets/[token]",
     lifecycleEmailEntryPoint: "presets_delivery",
+  },
+  selfie_visibility_bundle: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/one-selfie",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:selfie_visibility_bundle",
+    successNextAction: "/academy/access/one-selfie",
+    lifecycleEmailEntryPoint: "selfie_visibility_bundle_delivery",
   },
   selfie_to_brand_shoot_system: {
     lifecycleStatus: "legacy_access_only",

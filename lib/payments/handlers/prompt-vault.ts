@@ -29,7 +29,7 @@ function metadataValue(
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
 }
 
-async function upsertPromptVaultSubscriber(email: string, name?: string | null) {
+export async function upsertPromptVaultSubscriber(email: string, name?: string | null) {
   const resolvedName = (name || email.split("@")[0] || "Prompt Vault buyer").trim()
   const existingSubscriber = await sql`
     SELECT id, access_token, email_tags

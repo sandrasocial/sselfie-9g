@@ -17,6 +17,7 @@ interface PriceConfigValidation {
   priceId: string | undefined
   productType: string
   expectedAmount: number
+  expectedCurrency?: string
   expectedRecurring: boolean
   isValid: boolean
   errors: string[]
@@ -26,6 +27,7 @@ interface ExpectedStripeConfig {
   envVarName: string
   productType: string
   expectedAmount: number
+  expectedCurrency?: string
   expectedRecurring: boolean
 }
 
@@ -117,6 +119,13 @@ const EXPECTED_CONFIGS: ExpectedStripeConfig[] = [
     expectedRecurring: false,
   },
   {
+    envVarName: "STRIPE_PRICE_SELFIE_VISIBILITY_BUNDLE",
+    productType: "selfie_visibility_bundle",
+    expectedAmount: 9700,
+    expectedCurrency: "usd",
+    expectedRecurring: false,
+  },
+  {
     envVarName: "STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM",
     productType: "selfie_to_brand_shoot_system",
     expectedAmount: 19700, // $197
@@ -154,6 +163,13 @@ export async function assertStripePriceConfigForProduct(productType: string): Pr
     )
   }
 
+  if (config.expectedCurrency && priceObj.currency.toLowerCase() !== config.expectedCurrency) {
+    throw new Error(
+      `Price currency mismatch for ${productType}: expected ${config.expectedCurrency.toUpperCase()}, ` +
+      `got ${priceObj.currency.toUpperCase()}.`,
+    )
+  }
+
   const isRecurring = !!priceObj.recurring
   if (isRecurring !== config.expectedRecurring) {
     const expectedType = config.expectedRecurring ? "subscription" : "one-time"
@@ -187,6 +203,7 @@ export async function assertStripePricingConfig(): Promise<void> {
       priceId: process.env[config.envVarName],
       productType: config.productType,
       expectedAmount: config.expectedAmount,
+      expectedCurrency: config.expectedCurrency,
       expectedRecurring: config.expectedRecurring,
       isValid: true,
       errors: [],
@@ -230,6 +247,17 @@ export async function assertStripePricingConfig(): Promise<void> {
         criticalErrors.push(
           `❌ ${config.envVarName} amount mismatch: ` +
           `expected $${(expected / 100).toFixed(2)}, got $${(actual / 100).toFixed(2)}`
+        )
+      }
+      if (config.expectedCurrency && priceObj.currency.toLowerCase() !== config.expectedCurrency) {
+        validation.isValid = false
+        validation.errors.push(
+          `Price currency mismatch: expected ${config.expectedCurrency.toUpperCase()}, ` +
+          `got ${priceObj.currency.toUpperCase()}`,
+        )
+        criticalErrors.push(
+          `❌ ${config.envVarName} currency mismatch: expected ${config.expectedCurrency.toUpperCase()}, ` +
+          `got ${priceObj.currency.toUpperCase()}`,
         )
       }
       
@@ -297,6 +325,7 @@ export async function assertStripePricingConfig(): Promise<void> {
       "  STRIPE_PRICE_PROMPT_VAULT_AFTER_FLASH = Active price for $37 one-time payment",
       "  STRIPE_PRICE_PRESETS_SINGLE = Active price for $19 one-time payment",
       "  STRIPE_PRICE_PRESETS_BUNDLE = Active price for $39 one-time payment",
+      "  STRIPE_PRICE_SELFIE_VISIBILITY_BUNDLE = Active USD price for $97 one-time payment",
       "  STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM = Active price for $197 one-time payment",
       "",
       "=" .repeat(80),

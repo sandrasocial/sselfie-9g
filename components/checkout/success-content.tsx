@@ -57,6 +57,8 @@ function getProductLabel(productType: string | undefined) {
       return "SSELFIE Presets · Single Collection"
     case "presets_bundle":
       return "SSELFIE Presets · Full Collection"
+    case "selfie_visibility_bundle":
+      return "One Selfie Visibility Bundle"
     case "selfie_to_brand_shoot_system":
       return "Selfie to Brand Shoot System"
     case "masterclass":
@@ -120,6 +122,12 @@ const PRESETS_INCLUDES = [
   "Quick setup guide",
   "Tokenized access page",
 ]
+const SELFIE_VISIBILITY_BUNDLE_INCLUDES = [
+  "Selfie Starter Kit + full Presets Collection",
+  "Prompt Vault",
+  "Editing Masterclass + Branded by SSELFIE",
+  "30 days of SUITE · 200 credits · no renewal",
+]
 const SELFIE_TO_BRAND_SHOOT_INCLUDES = [
   "Guided Selfie to Brand Shoot workflow",
   "Source selfie and angle guidance",
@@ -147,6 +155,17 @@ function getSuccessActionConfig(productType: string | undefined): SuccessActionC
       helper:
         "Your Lightroom presets, Selfie Guide, and 7-day content starter are ready. Open the kit to download your presets first.",
       secondaryHref: "mailto:support@sselfie.ai?subject=Starter%20Kit%20access",
+      secondaryLabel: "Need help? Email support",
+    }
+  }
+
+  if (productType === "selfie_visibility_bundle") {
+    return {
+      href: "/academy/access/one-selfie",
+      label: "Open your bundle",
+      helper:
+        "Everything is ready in one simple path. Start with your selfie, then move through photos, your visible brand, and Maya.",
+      secondaryHref: "mailto:support@sselfie.ai?subject=One%20Selfie%20Bundle%20access",
       secondaryLabel: "Need help? Email support",
     }
   }
@@ -1056,6 +1075,7 @@ export function SuccessContent({
       starter_kit: 37,
       prompt_vault: 37,
       selfie_ai_photos_kit: 37,
+      selfie_visibility_bundle: 97,
       selfie_to_brand_shoot_system: 197,
       masterclass: 147,
       visibility_suite: 97,
@@ -1078,6 +1098,8 @@ export function SuccessContent({
       transaction_id: sessionId,
       value,
       currency: [
+        "sselfie_studio_membership",
+        "sselfie_studio_membership_annual",
         "visibility_suite",
         "what_to_say",
         "show_up",
@@ -1529,11 +1551,17 @@ export function SuccessContent({
     setIsSubmitting(true)
 
     try {
+      if (!sessionId) {
+        setError("Your checkout session is missing. Please reopen the link from your receipt.")
+        setIsSubmitting(false)
+        return
+      }
+
       const response = await fetch("/api/complete-account", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: userInfo.email || initialEmail,
+          session_id: sessionId,
           password,
           name,
         }),
@@ -1680,6 +1708,8 @@ export function SuccessContent({
             <p className="text-sm sm:text-base text-brand-pearl font-light leading-relaxed max-w-xl mx-auto px-4">
               {resolvedProductType === "visibility_suite"
                 ? "Your purchase is ready. Create your password so you can access your legacy academy purchase anytime."
+                : resolvedProductType === "selfie_visibility_bundle"
+                  ? "Your bundle is ready. Create your password once, then everything opens from one simple start page."
                 : "Add your password so you can open everything inside SSELFIE. This takes less than a minute."}
             </p>
           </div>
@@ -1773,6 +1803,8 @@ export function SuccessContent({
                   ? "SETTING UP..."
                   : resolvedProductType === "visibility_suite"
                     ? "CREATE PASSWORD AND OPEN MY SUITE"
+                    : resolvedProductType === "selfie_visibility_bundle"
+                      ? "CREATE PASSWORD AND OPEN MY BUNDLE"
                     : "LET'S GO"}
               </button>
 
@@ -1971,6 +2003,22 @@ export function SuccessContent({
                       ))}
                     </div>
                   </div>
+                )}
+                {resolvedProductType === "selfie_visibility_bundle" && (
+                  <>
+                    <div className="flex justify-between items-start pb-4 border-b border-[color:var(--div-dark)]">
+                      <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
+                      <div className="text-right space-y-1">
+                        {SELFIE_VISIBILITY_BUNDLE_INCLUDES.map(item => (
+                          <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center pb-4 border-b border-[color:var(--div-dark)]">
+                      <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Paid</span>
+                      <span className="text-sm sm:text-base text-brand-porcelain font-light">$97 one-time</span>
+                    </div>
+                  </>
                 )}
                 {resolvedProductType === "prompt_vault" && (
                   <div className="flex justify-between items-start pb-4 border-b border-[color:var(--div-dark)]">

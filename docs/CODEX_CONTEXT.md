@@ -29,6 +29,8 @@ Current contracts:
   `docs/business/SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md`
 - Revenue direction:
   `docs/business/SSELFIE_GROWTH_MACHINE_2026-07-12.md`
+- Current attended revenue event:
+  `docs/business/ONE_SELFIE_VISIBILITY_REVENUE_EVENT_2026-07-13.md`
 - Product UI and visual system:
   `docs/SSELFIE_DESIGN_SYSTEM.md`
 - SUITE creation ownership:
@@ -111,6 +113,13 @@ not revenue truth.
 - Selfie To Brand Shoot is historical-access-only. Preserve buyer fulfillment and entitlements, but
   do not restore its public sale or checkout as another active path.
 - Presets are a secondary content-led sale, not another primary funnel front door.
+
+The temporary July 13–15 attended experiment is `/one-selfie`: one $97 one-time bundle, one fixed
+deadline, and one `selfie_visibility_bundle` fulfillment path. It grants five lifetime learning
+tools plus one fixed 30-day/200-credit SUITE pass with no renewal. Do not turn it into a permanent
+storefront, rolling countdown, subscription, unattended monthly flash-sale job, or second active
+offer. The buyer home is `/academy/access/one-selfie`; the optional annual continuation uses the
+normal annual SUITE checkout.
 
 Do not reuse the Starter Kit checkout or entitlement for the AI Photos Kit.
 

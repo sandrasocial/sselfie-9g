@@ -15,7 +15,7 @@ import { generatePasswordSetupLinkForPurchase } from "../shared"
 import { activatePaidBuyerSuiteTrial } from "../paid-buyer-suite-trial"
 import type { CheckoutFulfillmentContext } from "../types"
 
-async function upsertStarterKitSubscriber(email: string, name?: string | null) {
+export async function upsertStarterKitSubscriber(email: string, name?: string | null) {
   const resolvedName = (name || email.split("@")[0] || "Starter Kit buyer").trim()
   const existingSubscriber = await sql`
     SELECT id, access_token, email_tags

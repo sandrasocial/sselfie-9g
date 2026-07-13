@@ -119,6 +119,10 @@ vi.mock("@/lib/payments/handlers/presets", () => ({
   handlePresetsCheckout: vi.fn(),
 }))
 
+vi.mock("@/lib/payments/handlers/selfie-visibility-bundle", () => ({
+  handleSelfieVisibilityBundleCheckout: vi.fn(),
+}))
+
 vi.mock("@/lib/academy-entitlements", () => ({
   upsertPurchaseEntitlement: vi.fn(),
 }))

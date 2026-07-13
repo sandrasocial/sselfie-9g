@@ -27,7 +27,7 @@ async function syncBroadcastActions(): Promise<ApprovalActionSummary[]> {
   const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000
   const broadcasts = (((data as any)?.data || []) as Array<Record<string, unknown>>)
     .filter((broadcast) => String(broadcast.status || "").toLowerCase() === "draft")
-    .filter((broadcast) => String(broadcast.name || "").startsWith("Story ·"))
+    .filter((broadcast) => isFounderApprovalBroadcastName(String(broadcast.name || "")))
     .filter((broadcast) => {
       const createdAt = new Date(String(broadcast.created_at || 0)).getTime()
       return Number.isFinite(createdAt) && createdAt >= cutoff
@@ -52,6 +52,10 @@ async function syncBroadcastActions(): Promise<ApprovalActionSummary[]> {
     }),
   )
   return actions.filter((action): action is ApprovalActionSummary => Boolean(action))
+}
+
+export function isFounderApprovalBroadcastName(name: string): boolean {
+  return name.startsWith("Story ·") || name.startsWith("Launch · One Selfie ·")
 }
 
 export async function syncApprovalActions(): Promise<ApprovalActionSummary[]> {

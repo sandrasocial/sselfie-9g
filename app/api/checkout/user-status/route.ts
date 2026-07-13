@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server"
 
 import { sql } from "@/lib/db/client"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { stripe } from "@/lib/stripe"
 
 type UserStatusRow = {
   email: string
+  supabase_user_id: string | null
   password_setup_complete: boolean | null
 }
 
@@ -33,7 +35,7 @@ export async function GET(request: Request) {
     }
 
     const rows = (await sql`
-      SELECT email, password_setup_complete
+      SELECT email, supabase_user_id, password_setup_complete
       FROM users
       WHERE LOWER(email) = ${email}
       LIMIT 1
@@ -44,10 +46,44 @@ export async function GET(request: Request) {
       return NextResponse.json({ userInfo: null }, { status: 202 })
     }
 
+    if (user.password_setup_complete === true) {
+      return NextResponse.json({
+        userInfo: {
+          email: user.email || email,
+          hasAccount: true,
+        },
+      })
+    }
+
+    // The webhook provisions or repairs Auth before the success page can offer
+    // inline password creation. Keep polling while that mapping is incomplete.
+    if (!user.supabase_user_id) {
+      return NextResponse.json({ userInfo: null }, { status: 202 })
+    }
+
+    const supabaseAdmin = createAdminClient()
+    const { data: authData, error: authLookupError } =
+      await supabaseAdmin.auth.admin.getUserById(user.supabase_user_id)
+    const authUser = authData?.user || null
+
+    if (authLookupError || !authUser) {
+      return NextResponse.json({ userInfo: null }, { status: 202 })
+    }
+
+    const appMetadata =
+      authUser.app_metadata && typeof authUser.app_metadata === "object"
+        ? authUser.app_metadata
+        : {}
+    const canCreatePasswordInline =
+      !authUser.last_sign_in_at &&
+      appMetadata.account_setup_checkout_session_id === sessionId
+
     return NextResponse.json({
       userInfo: {
         email: user.email || email,
-        hasAccount: user.password_setup_complete === true,
+        // Existing Auth users receive an emailed recovery link. Treat them as
+        // account holders so the success page never shows an impossible form.
+        hasAccount: !canCreatePasswordInline,
       },
     })
   } catch (error) {

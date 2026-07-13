@@ -14,6 +14,8 @@ interface AccountData {
   plan: string | null
   status: string | null
   renewsAt: string | null
+  accessEndsAt: string | null
+  billingKind: "recurring" | "fixed_pass" | "one_time" | null
   credits: number | null
   creditsUnlimited?: boolean
   email: string | null
@@ -130,6 +132,10 @@ export function AccountView({
     }
   }
 
+  const isRecurringMembership = data?.billingKind === "recurring"
+  const isFixedBundlePass = data?.billingKind === "fixed_pass"
+  const isOwnedBundle = data?.billingKind === "one_time"
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-5 sm:py-8">
       <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Account</p>
@@ -163,36 +169,72 @@ export function AccountView({
               </div>
             </>
           ) : (
-            <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <p className="font-serif text-[22px] font-light text-[#0D0E10]">
-                {data?.plan ?? "SSELFIE SUITE"}
-              </p>
-              {data?.status === "active" && (
-                <span className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052]">
-                  Active
-                </span>
+            <>
+              <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <p className="font-serif text-[22px] font-light text-[#0D0E10]">
+                  {data?.plan ?? "No active membership"}
+                </p>
+                {(isRecurringMembership || isFixedBundlePass) && data?.status === "active" && (
+                  <span className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052]">
+                    {isFixedBundlePass ? "30-day access" : "Active"}
+                  </span>
+                )}
+                {isOwnedBundle && (
+                  <span className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052]">
+                    Owned
+                  </span>
+                )}
+              </div>
+              {isFixedBundlePass && data?.accessEndsAt && (
+                <p className="mt-1 text-[13px] text-[#818283]">
+                  SUITE access ends {formatDate(data.accessEndsAt)}. This does not renew. Your
+                  lifetime bundle stays yours.
+                </p>
               )}
-            </div>
+              {isOwnedBundle && (
+                <p className="mt-1 text-[13px] text-[#818283]">
+                  {data?.accessEndsAt
+                    ? `Your 30-day SUITE access ended ${formatDate(data.accessEndsAt)}. Your lifetime bundle stays yours.`
+                    : "Your lifetime bundle stays yours. It does not renew."}
+                </p>
+              )}
+            </>
           )}
           {typeof trialDaysLeft !== "number" && (
             <>
-              {data?.renewsAt && (
+              {isRecurringMembership && data?.renewsAt && (
                 <p className="mt-1 text-[13px] text-[#818283]">
                   Renews {formatDate(data.renewsAt)}
                 </p>
               )}
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={openBilling}
-                  disabled={billingBusy}
-                  className={primaryBtn}
-                >
-                  {billingBusy ? "Opening…" : "Manage billing"}
-                </button>
-                <span className="text-[12px] text-[#818283]">Payment method, invoices, plan.</span>
-              </div>
-              {billingError && <p className="mt-2 text-[12px] text-[#282728]">{billingError}</p>}
+              {isRecurringMembership ? (
+                <>
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={openBilling}
+                      disabled={billingBusy}
+                      className={primaryBtn}
+                    >
+                      {billingBusy ? "Opening…" : "Manage billing"}
+                    </button>
+                    <span className="text-[12px] text-[#818283]">Payment method, invoices, plan.</span>
+                  </div>
+                  {billingError && <p className="mt-2 text-[12px] text-[#282728]">{billingError}</p>}
+                </>
+              ) : isFixedBundlePass || isOwnedBundle ? (
+                <div className="mt-4">
+                  <a href="/academy/access/one-selfie" className={primaryBtn}>
+                    Open my bundle
+                  </a>
+                </div>
+              ) : (
+                <div className="mt-4">
+                  <a href="/checkout/membership?interval=month&source=account" className={primaryBtn}>
+                    Explore SUITE
+                  </a>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -208,13 +250,23 @@ export function AccountView({
                 : "Credit balance unavailable"}
           </p>
           <p className="mt-1 text-[13px] text-[#818283]">
-            Each image is one credit. Your plan refills monthly.
+            {typeof trialDaysLeft === "number"
+              ? "Each image is one credit. Trial credits do not refill."
+              : isRecurringMembership
+                ? "Each image is one credit. Your plan refills monthly."
+                : isFixedBundlePass
+                  ? "Each image is one credit. Your bundle included 200 credits. It does not refill or renew."
+                  : isOwnedBundle
+                    ? "Your bundle credits do not refill. Your lifetime products stay yours."
+                    : "Each image is one credit. Top-ups do not renew automatically."}
           </p>
-          <div className="mt-4">
-            <a href="/checkout/credits" className={primaryBtn}>
-              Top up credits
-            </a>
-          </div>
+          {(typeof trialDaysLeft === "number" || isRecurringMembership || isFixedBundlePass) && (
+            <div className="mt-4">
+              <a href="/checkout/credits" className={primaryBtn}>
+                Top up credits
+              </a>
+            </div>
+          )}
         </div>
 
         {/* Your SSELFIE - pointer into the Learn tab (BRIDGE-01 Phase C, renamed 2026-07-07) */}

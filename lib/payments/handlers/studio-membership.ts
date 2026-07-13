@@ -15,6 +15,47 @@ import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { getSubscriptionPeriod } from "../shared"
 import type { CheckoutFulfillmentContext } from "../types"
 import { getSubscriptionPlanFromMetadata } from "@/lib/launch/cash-launch-pricing"
+import { upsertStudioMembershipSubscription } from "@/lib/payments/lifecycle/upsert-studio-membership"
+
+async function persistCheckoutMembership({
+  session,
+  userId,
+  plan,
+  isTestMode,
+}: {
+  session: CheckoutFulfillmentContext["session"]
+  userId: string
+  plan: string
+  isTestMode: boolean
+}): Promise<void> {
+  const subscriptionId =
+    typeof session.subscription === "string"
+      ? session.subscription
+      : session.subscription?.id
+  if (!subscriptionId) return
+
+  const subscriptionData = (await stripe.subscriptions.retrieve(subscriptionId)) as any
+  const subscriptionPeriod = getSubscriptionPeriod(subscriptionData)
+  const stripeCustomerId =
+    typeof subscriptionData.customer === "string"
+      ? subscriptionData.customer
+      : subscriptionData.customer?.id
+
+  if (!stripeCustomerId) {
+    throw new Error(`Membership ${subscriptionId} has no Stripe customer`)
+  }
+
+  await upsertStudioMembershipSubscription({
+    userId,
+    plan,
+    status: subscriptionData.status,
+    stripeSubscriptionId: subscriptionData.id,
+    stripeCustomerId,
+    periodStart: subscriptionPeriod.start,
+    periodEnd: subscriptionPeriod.end,
+    isTestMode,
+  })
+}
 
 export async function handleStudioMembershipSubscriptionCheckout(
   ctx: CheckoutFulfillmentContext,
@@ -81,63 +122,14 @@ export async function handleStudioMembershipSubscriptionCheckout(
           )
         }
 
-        if (session.subscription) {
-          const subscriptionData = (await stripe.subscriptions.retrieve(
-            session.subscription as string
-          )) as any
-          const subscriptionPeriod = getSubscriptionPeriod(subscriptionData)
+        await persistCheckoutMembership({
+          session,
+          userId,
+          plan: subscriptionPlan,
+          isTestMode: !event.livemode,
+        })
 
-          console.log(`[v0] Creating subscription record for existing user ${userId}`)
-
-          const existingSubscription = await sql`
-            SELECT id FROM subscriptions WHERE user_id = ${userId} LIMIT 1
-          `
-
-          if (existingSubscription.length > 0) {
-            console.log(`[v0] Updating existing subscription for user ${userId}`)
-            await sql`
-              UPDATE subscriptions SET
-                product_type = ${productType},
-                plan = ${subscriptionPlan},
-                status = ${subscriptionData.status},
-                stripe_subscription_id = ${subscriptionData.id},
-                stripe_customer_id = ${subscriptionData.customer},
-                current_period_start = to_timestamp(${subscriptionPeriod.start}),
-                current_period_end = to_timestamp(${subscriptionPeriod.end}),
-                is_test_mode = ${!event.livemode},
-                updated_at = NOW()
-              WHERE user_id = ${userId}
-            `
-          } else {
-            console.log(`[v0] Inserting new subscription for user ${userId}`)
-            await sql`
-              INSERT INTO subscriptions (
-                user_id, 
-                product_type,
-                plan,
-                status, 
-                stripe_subscription_id,
-                stripe_customer_id,
-                current_period_start,
-                current_period_end,
-                is_test_mode
-              )
-              VALUES (
-                ${userId},
-                ${productType},
-                ${subscriptionPlan},
-                ${subscriptionData.status},
-                ${subscriptionData.id},
-                ${subscriptionData.customer},
-                to_timestamp(${subscriptionPeriod.start}),
-                to_timestamp(${subscriptionPeriod.end}),
-                ${!event.livemode}
-              )
-            `
-          }
-
-          console.log(`[v0] ✅ Subscription record created for existing user ${userId}`)
-        }
+        console.log(`[v0] ✅ Membership record stored for existing user ${userId}`)
       } else {
         console.log(`[v0] Step 2: Creating new user in Supabase auth (no email sent)...`)
 
@@ -349,62 +341,15 @@ export async function handleStudioMembershipSubscriptionCheckout(
 
         console.log(`[v0] Account created successfully for ${customerEmail}`)
 
-        if (userId && session.subscription) {
-          const subscriptionData = (await stripe.subscriptions.retrieve(
-            session.subscription as string
-          )) as any
-          const subscriptionPeriod = getSubscriptionPeriod(subscriptionData)
+        if (userId) {
+          await persistCheckoutMembership({
+            session,
+            userId,
+            plan: subscriptionPlan,
+            isTestMode: !event.livemode,
+          })
 
-          console.log(`[v0] Creating subscription record in database for user ${userId}`)
-
-          const existingSubscription = await sql`
-            SELECT id FROM subscriptions WHERE user_id = ${userId} LIMIT 1
-          `
-
-          if (existingSubscription.length > 0) {
-            console.log(`[v0] Updating existing subscription for user ${userId}`)
-            await sql`
-              UPDATE subscriptions SET
-                product_type = ${productType},
-                plan = ${subscriptionPlan},
-                status = ${subscriptionData.status},
-                stripe_subscription_id = ${subscriptionData.id},
-                stripe_customer_id = ${subscriptionData.customer},
-                current_period_start = to_timestamp(${subscriptionPeriod.start}),
-                current_period_end = to_timestamp(${subscriptionPeriod.end}),
-                is_test_mode = ${!event.livemode},
-                updated_at = NOW()
-              WHERE user_id = ${userId}
-            `
-          } else {
-            console.log(`[v0] Inserting new subscription for user ${userId}`)
-            await sql`
-              INSERT INTO subscriptions (
-                user_id, 
-                product_type,
-                plan,
-                status, 
-                stripe_subscription_id,
-                stripe_customer_id,
-                current_period_start,
-                current_period_end,
-                is_test_mode
-              )
-              VALUES (
-                ${userId},
-                ${productType},
-                ${subscriptionPlan},
-                ${subscriptionData.status},
-                ${subscriptionData.id},
-                ${subscriptionData.customer},
-                to_timestamp(${subscriptionPeriod.start}),
-                to_timestamp(${subscriptionPeriod.end}),
-                ${!event.livemode}
-              )
-            `
-          }
-
-          console.log(`[v0] Subscription record created successfully for user ${userId}`)
+          console.log(`[v0] Membership record stored successfully for user ${userId}`)
         }
       }
     } catch (error: any) {
@@ -416,6 +361,13 @@ export async function handleStudioMembershipSubscriptionCheckout(
     }
   } else {
     console.log("[v0] Subscription checkout completed for existing user")
+
+    await persistCheckoutMembership({
+      session,
+      userId,
+      plan: subscriptionPlan,
+      isTestMode: !event.livemode,
+    })
 
     // ⚠️ IMPORTANT: Do NOT grant subscription credits here!
     // Subscription credits should ONLY be granted via invoice.payment_succeeded
@@ -483,68 +435,6 @@ export async function handleStudioMembershipSubscriptionCheckout(
       console.log(
         `[v0] ⚠️ Skipping credit grant - payment not confirmed (status: '${session.payment_status}').`
       )
-
-      if (session.subscription) {
-        const subscriptionData = (await stripe.subscriptions.retrieve(
-          session.subscription as string
-        )) as any
-        const subscriptionPeriod = getSubscriptionPeriod(subscriptionData)
-
-        console.log(
-          `[v0] Creating subscription record in database for existing user ${userId}`
-        )
-
-        const existingSubscription = await sql`
-          SELECT id FROM subscriptions WHERE user_id = ${userId} LIMIT 1
-        `
-
-        if (existingSubscription.length > 0) {
-          console.log(`[v0] Updating existing subscription for user ${userId}`)
-          await sql`
-            UPDATE subscriptions SET
-              product_type = ${productType},
-              plan = ${subscriptionPlan},
-              status = ${subscriptionData.status},
-              stripe_subscription_id = ${subscriptionData.id},
-              stripe_customer_id = ${subscriptionData.customer},
-              current_period_start = to_timestamp(${subscriptionPeriod.start}),
-              current_period_end = to_timestamp(${subscriptionPeriod.end}),
-              is_test_mode = ${!event.livemode},
-              updated_at = NOW()
-            WHERE user_id = ${userId}
-          `
-        } else {
-          console.log(`[v0] Inserting new subscription for user ${userId}`)
-          await sql`
-            INSERT INTO subscriptions (
-              user_id, 
-              product_type,
-              plan,
-              status, 
-              stripe_subscription_id,
-              stripe_customer_id,
-              current_period_start,
-              current_period_end,
-              is_test_mode
-            )
-            VALUES (
-              ${userId},
-              ${productType},
-                ${subscriptionPlan},
-              ${subscriptionData.status},
-              ${subscriptionData.id},
-              ${subscriptionData.customer},
-              to_timestamp(${subscriptionPeriod.start}),
-              to_timestamp(${subscriptionPeriod.end}),
-              ${!event.livemode}
-            )
-          `
-        }
-
-        console.log(
-          `[v0] Subscription record created successfully for existing user ${userId}`
-        )
-      }
     }
   }
   try {
