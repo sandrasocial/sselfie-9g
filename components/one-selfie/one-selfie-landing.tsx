@@ -460,8 +460,8 @@ export function OneSelfieLanding({
           <div className="mx-auto grid max-w-[1440px] lg:grid-cols-[0.88fr_1.12fr]">
             <div className="relative min-h-[420px] overflow-hidden border-b border-[var(--ss-silver)] lg:min-h-[720px] lg:border-b-0 lg:border-r">
               <Image
-                src="/images/starter-kit/mockup-2.png"
-                alt="The SSELFIE Starter Kit, editing lessons, presets, guides, and content tools included in the bundle"
+                src="/images/one-selfie/bundle-products-mockup-v1.webp"
+                alt="The One Selfie Visibility Bundle with five lifetime SSELFIE tools and a 30-day SSELFIE SUITE pass with 200 credits"
                 fill
                 sizes="(min-width: 1024px) 44vw, 100vw"
                 className="object-cover"

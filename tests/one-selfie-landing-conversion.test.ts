@@ -37,6 +37,11 @@ describe("One Selfie campaign decision page", () => {
     expect(landing).toContain("A standard image uses one credit")
   })
 
+  it("uses the bundle-specific product mockup instead of the Starter Kit visual", () => {
+    expect(landing).toContain('/images/one-selfie/bundle-products-mockup-v1.webp')
+    expect(landing).not.toContain('/images/starter-kit/mockup-2.png')
+  })
+
   it("shows a dedicated honest page after close instead of mixing two offers", () => {
     const html = renderToStaticMarkup(
       createElement(OneSelfieLanding, {

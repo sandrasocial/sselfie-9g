@@ -26,8 +26,8 @@ const IMG = {
   presetDark:  `${BLOB}/darkandmoody.png`,
   // Starter Kit local assets
   skHero:          "/images/starter-kit/hero.png",
-  skMockup:        "/images/starter-kit/mockup-2.png",
-  skPresetColl:    "/images/starter-kit/preset-collection.png",
+  skMockup:        "/images/starter-kit/starter-kit-product-mockup-v2.webp",
+  skPresetColl:    "/images/starter-kit/preset-collection-vertical-v2.webp",
   skLifestyle:     "/images/starter-kit/lifestyle.png",
   skBaLightDreamy: "/images/starter-kit/ba-light-dreamy.png",
   skBaNordicDeep:  "/images/starter-kit/ba-nordic-deep.png",
@@ -968,7 +968,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         body={
           <div>
             {[
-              { label: "16 Lightroom Presets",         note: "A clean starting point for selfies, AI input photos, and everyday brand visuals." },
+              { label: "SSELFIE Lightroom Presets",    note: "A clean starting point for selfies, AI input photos, and everyday brand visuals." },
               { label: "Selfie Guide",                 note: "Light, angles, phone setup, and simple rules for photos that look stronger before editing." },
               { label: "Posing And Editing Guidance",  note: "Mirror poses, full body, profile, phone edits, Hypic, CapCut, and Lightroom Mobile." },
               { label: "Caption Templates",            note: "30 ready-to-edit captions for women who have the photo but do not know what to say." },
@@ -987,6 +987,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
           </div>
         }
         imgSrc={IMG.skMockup}
+        imgAlt="The Selfie Starter Kit with SSELFIE presets, selfie and posing guides, caption templates, storytelling guide, and seven-day content starter"
         imgFirst
         dark
         cta={<Btn href={starterKitCheckoutHref} surface="dark">Get the Starter Kit · $37</Btn>}
@@ -1050,6 +1051,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
           </div>
         }
         imgSrc={IMG.skPresetColl}
+        imgAlt="The three SSELFIE preset families with a before-and-after preview"
         imgFirst
         dark={false}
       />

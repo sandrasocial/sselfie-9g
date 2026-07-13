@@ -273,12 +273,27 @@ delivery email and not purchase again.
 
 The internal founder briefing is sent once to Sandra only. It contains the exact Story sequence,
 the three attended email-approval times, campaign precedence (`BUNDLE` only), and the checkout
-recovery copy that remains approval-gated.
+recovery copy. Sandra approved that recovery copy on July 13.
 
 One abandoned-checkout reminder is prepared for eligible event checkouts after three hours. It
 contains no discount, checks Stripe immediately before sending, excludes completed buyers and
-active SUITE members, and cannot send after the fixed close. The customer-facing copy remains
-disabled until Sandra approves its exact wording.
+active SUITE members, and cannot send after the fixed close. The production flag is enabled. The
+shared hourly Starter Kit job owns this reminder; there is no extra schedule or second follow-up.
+
+## Campaign visual assets
+
+The public pages now use separate, truthful visuals rather than reusing one old Starter Kit image
+for two different offers:
+
+- `/images/starter-kit/starter-kit-product-mockup-v2.webp` — Starter Kit only
+- `/images/starter-kit/preset-collection-vertical-v2.webp` — the three Starter Kit preset families
+- `/images/one-selfie/bundle-products-mockup-v1.webp` — the five lifetime bundle tools plus the
+  fixed 30-day SUITE pass with 200 credits
+- `/images/one-selfie/og-bundle-v1.webp` — 1200×630 social-sharing preview for `/one-selfie`
+
+The original shared founder portraits remain untouched. The old `starter-kit/mockup-2.png` is no
+longer used on either public sales page, but stays in the repository until a separate safe asset
+cleanup confirms no historical access surface needs it.
 
 ## Attribution links
 

@@ -125,9 +125,12 @@ Membership writes are exact-Stripe-subscription scoped; never update all subscri
 
 During this event, `BUNDLE` owns the selling message. Routine `PROMPT`, `SELFIE`, and `WORK` drafts
 must not compete with it. The customer checkout-recovery copy is implemented behind
-`ONE_SELFIE_BUNDLE_CHECKOUT_RECOVERY_ENABLED` and remains off until Sandra explicitly approves
-the exact copy. The three launch broadcasts remain drafts and must be approved at their attended
-send times.
+`ONE_SELFIE_BUNDLE_CHECKOUT_RECOVERY_ENABLED`. Sandra approved the exact copy on July 13 and the
+production flag is on. The shared Starter Kit recovery cron may send one deduplicated reminder
+about three hours after an identified bundle checkout starts, only while the offer is open. It
+rechecks Stripe immediately before sending and suppresses completed buyers and active SUITE
+members. The three launch broadcasts remain drafts and must be approved at their attended send
+times.
 
 For any timed launch, flash offer, sales-page audit, checkout review, email sequence, ManyChat flow,
 or paid-ads decision, use the local read-only Claude agent

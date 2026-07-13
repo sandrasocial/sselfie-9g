@@ -27,7 +27,21 @@ export const metadata: Metadata = {
     title: "One Selfie Visibility Bundle · SSELFIE",
     description:
       "One selfie. Five lifetime SSELFIE products. 30 days of SUITE. One $97 payment with no renewal.",
-    images: ["/images/starter-kit/hero.png"],
+    images: [
+      {
+        url: "/images/one-selfie/og-bundle-v1.webp",
+        width: 1200,
+        height: 630,
+        alt: "One Selfie Visibility Bundle · five lifetime tools plus 30 days of SSELFIE SUITE",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "One Selfie Visibility Bundle · SSELFIE",
+    description:
+      "One selfie. Five lifetime SSELFIE products. 30 days of SUITE. One $97 payment with no renewal.",
+    images: ["/images/one-selfie/og-bundle-v1.webp"],
   },
 }
 
