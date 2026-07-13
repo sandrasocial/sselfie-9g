@@ -335,19 +335,22 @@ export function OneSelfieLanding({
           data-testid="one-selfie-campaign-hero"
           className="relative min-h-[100svh] overflow-hidden bg-[var(--ss-night)] text-white"
         >
-          <Image
-            src="/academy/visibility-suite/sandra-hero.png"
-            alt="Sandra, the founder of SSELFIE, sitting with her phone and a cup"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-[50%_22%]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/90" />
+          <div className="absolute inset-x-0 top-0 h-[34svh] lg:inset-0 lg:h-auto">
+            <Image
+              src="/images/work-with-me/sandra-founder-new.webp"
+              alt="Sandra working on her laptop at home"
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-[64%_18%] lg:object-[64%_20%]"
+            />
+            <div className="absolute inset-0 bg-black/45 lg:bg-black/20" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/35 to-[var(--ss-night)] lg:[background:linear-gradient(90deg,rgba(0,0,0,0.94)_0%,rgba(0,0,0,0.78)_44%,rgba(0,0,0,0.28)_75%,rgba(0,0,0,0.5)_100%)]" />
+          </div>
 
-          <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl items-end justify-center px-5 pb-14 pt-28 text-center sm:px-8 sm:pb-20">
-            <div className="w-full max-w-3xl">
-              <div className="flex flex-col items-center justify-center gap-2 border-b border-white/20 pb-5 sm:flex-row sm:gap-5">
+          <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl items-end justify-center px-5 pb-14 pt-[calc(34svh+2rem)] text-center sm:px-8 sm:pb-20 lg:items-center lg:justify-start lg:pb-16 lg:pt-24 lg:text-left">
+            <div className="w-full max-w-3xl lg:max-w-[620px]">
+              <div className="flex flex-col items-center justify-center gap-2 border-b border-white/20 pb-5 sm:flex-row sm:gap-5 lg:items-start lg:justify-start">
                 <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-white/55">
                   48-hour offer
                 </p>
@@ -362,15 +365,15 @@ export function OneSelfieLanding({
               <p className="mt-7 text-[10px] font-medium uppercase tracking-[0.5em] text-white/60">
                 One Selfie Visibility Bundle
               </p>
-              <h1 className="mx-auto mt-5 max-w-3xl font-[family-name:var(--font-display)] text-[clamp(36px,7vw,70px)] font-light leading-[1.03] tracking-[-0.02em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.8)]">
+              <h1 className="mx-auto mt-5 max-w-3xl font-[family-name:var(--font-display)] text-[clamp(36px,7vw,70px)] font-light leading-[1.03] tracking-[-0.02em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.8)] lg:mx-0">
                 One selfie.
                 <span className="block">Photos and content you can finally use.</span>
               </h1>
-              <p className="mx-auto mt-6 max-w-[520px] text-[15px] font-normal leading-[1.78] text-white/80">
+              <p className="mx-auto mt-6 max-w-[520px] text-[15px] font-normal leading-[1.78] text-white/80 lg:mx-0">
                 Take it better. Edit it. Turn it into realistic AI photos. Then know what to post next.
               </p>
 
-              <div className="mx-auto mt-7 flex max-w-2xl flex-col items-center justify-center gap-4 border-y border-white/20 py-5 sm:flex-row sm:gap-8">
+              <div className="mx-auto mt-7 flex max-w-2xl flex-col items-center justify-center gap-4 border-y border-white/20 py-5 sm:flex-row sm:gap-8 lg:mx-0 lg:justify-start">
                 <div>
                   <p className="font-[family-name:var(--font-display)] text-[42px] font-light leading-none tracking-[-0.03em]">
                     $97
@@ -393,7 +396,7 @@ export function OneSelfieLanding({
                   source={source}
                   surface="dark"
                 />
-                <p className="mx-auto mt-4 max-w-[520px] text-[12px] leading-5 text-white/60">
+                <p className="mx-auto mt-4 max-w-[520px] text-[12px] leading-5 text-white/60 lg:mx-0">
                   $260 in lifetime tools, plus 30 days with Maya and 200 credits. Nothing renews.
                 </p>
               </div>
