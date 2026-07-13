@@ -56,6 +56,11 @@ Admin-Maya, and text-overlay plans.
 
 ## Shipped from the 2026-07-13 machine continuation
 
+- Maya's first-result path now leads with one personalized recommendation, chooses one strongest
+  Vault world by default, shows one concept before alternatives, records value only after a real
+  download, and recommends one useful next move. Exact active work resumes, while in-flight renders
+  cannot spill into another chat. The shipped spec is archived at
+  `tasks/archive/2026-07-13/codex-maya-invisible-ai-first-result.md`.
 - The replacement weekly Cowork brief completed its first real Monday run. Its payload contract is
   now validated before storage/email, this week's row is canonical, and Content/Shoot Studio readers
   no longer depend on the retired generator.

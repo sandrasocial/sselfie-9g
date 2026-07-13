@@ -139,6 +139,7 @@ Operating rule:
 | Post-value review capture | ✅ Built 2026-07-12 — after a signed-in customer records her third SUITE download, App v3 may show one dismissible review request. Identity is server-derived, consent is explicit, submissions are unpublished until admin moderation, and the unsafe legacy feedback widget/routes are removed. Contract: `docs/product/SUITE_REVIEW_CAPTURE_2026-07-12.md`. |
 | Payment + credential hardening | ✅ Completed 2026-07-12 — the new $39 Presets Bundle checkout was manually recovered and guest fulfillment now has regression coverage. Unresolved webhook reviews returned to zero. Publicly exposed Neon and Stripe webhook credentials were rotated/revoked, removed from tracked files, and protected by a secret-scan regression. |
 | Behavioral growth-machine hardening | ✅ Completed 2026-07-13 — paid-buyer trials are a distinct Activation Funnel source; App v3 generation/download behavior carries stable persisted asset IDs; the approved Day-7 member reset targets one-day creators who stalled; the obsolete weekly engine, daily intelligence layer, Product QA reporter, newsletter poller, Brand Shoot recovery, North/OpenClaw notifier, and Telegram shell are deleted after dependency checks. |
+| Maya Invisible AI first-result experience | ✅ Completed 2026-07-13 — returning Create leads with one personalized recommendation and a text escape hatch; Maya chooses one strongest Vault world by default; one recommended concept leads; successful browser download records value; one contextual next action continues the workflow; exact workspace state resumes; generation cannot spill into another chat. Contract: `docs/product/MAYA_INVISIBLE_AI_FIRST_RESULT_2026-07-13.md`. |
 | DESIGN-01 convergence to Cool Editorial (audit done, build pending) | Planned — docs/audits/DESIGN_AUDIT_2026-06-10.md |
 | Maya UX fixes (UX-01/02), Academy (ACADEMY-01/02) | Background — see tasks/ |
 
@@ -163,6 +164,7 @@ Operating rule:
 - Code: `app/app/` (route) · `components/app-v3/` (UI: maya-concierge, visual front door, concept cards, edit mode, gallery, reference library, account) · `lib/app-v3/` (persona, prompt compiler, ingredients) · `app/api/app-v3/` (maya/generate, maya/edit, upload-selfie, gallery, reference-library, account).
 - **Image generation flagship: `gpt-image-2` (OpenAI API)** — `openai.images.edit` with the member's reference selfie attached; model switchable via `OPENAI_IMAGE_MODEL` env. **No training. No Replicate/Flux. No Nano Banana in v3.** Those belong to legacy `/studio` only.
 - **Creation UX lock (2026-07-06):** Maya is the single owner of creation setup. The Create tab starts Maya only; it must not become a second studio with selfie, style, shot, text/font, trained-model, or manual format controls. Contract: `docs/product/SUITE_MAYA_SINGLE_OWNER_UX_2026-07-06.md`.
+- **First-result lock (2026-07-13):** returning Create shows one personalized recommendation and one direct text escape hatch. Maya chooses the default visual world, leads with one concept, records value only after a real download, and offers one contextual next action. Naming and brand questions stay out of the pre-value path. Contract: `docs/product/MAYA_INVISIBLE_AI_FIRST_RESULT_2026-07-13.md`.
 - Stack questions: code wins over docs — check `app/api/app-v3/maya/generate/route.ts` first. Model landscape research: `docs/audits/SUITE_VALUE_AND_HOME_RESEARCH_2026-06-11.md`.
 
 ## Maya UX — Locked State (LEGACY `/studio` only — superseded by App v3 for members)
@@ -190,12 +192,12 @@ Source of truth: `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`
 
 Users never navigate. They just talk to their agent — and their agent surfaces everything they need, right there in the conversation.
 
-### Interaction model refinement (Locked 2026-06-09 — supersedes "chat-first" for /app)
-Maya stays the face and creative director, but the happy path is **Maya-guided and tap-first, optimized for completion, not conversation.** The customer is buying "give me amazing brand photos without having to think," which is a workflow problem, not a conversation problem. Like a high-end stylist: "I pulled three looks for you. Which feels most like you?"
-- Primary interaction is **selection-based and visual**: look → format → concept → generate → use. Zero typing required to reach the core outcome.
+### Interaction model refinement (Locked 2026-07-13 — supersedes "chat-first" for `/app`)
+Maya stays the face and creative director, but the happy path is **Maya-guided and tap-first, optimized for completion, not conversation.** The customer is buying a useful brand result without having to learn prompts, formats, or workflows. Like a decisive creative director: "I chose this direction for what you need today."
+- Primary interaction is **recommendation-led and visual**: one useful intent → Maya's chosen world → one concept → generate → download/use → one next visibility action. Zero typing is required to reach the core outcome.
 - Chat is **refinement only**: "Want something different? Ask Maya." It must never be required to get value.
-- Distinction: ❌ chat-first ("talk to Maya to figure out what to create") vs ✅ Maya-guided ("Maya already pulled options, I just pick what I like"). The second is closer to luxury.
-- This refines, does not abandon, the North Star: Maya is still everywhere and still the relationship. She just leads with curated taps instead of a blank prompt.
+- Optional style, inspiration, shot, and trained-model controls remain available, but they do not block the default first result.
+- This refines, does not abandon, the North Star: Maya is still the relationship. She uses memory and judgment before asking the member to navigate.
 
 ### The Experience
 ```
@@ -224,14 +226,15 @@ No navigation. No "go to settings, click generate, find the upload button." The 
 3. **Cross-session memory** — "This doesn't sound like me" persists forever. Brand profile fed into every session from `agent_profiles` table. What they've rejected. What they've loved.
 
 ### Named Agent (Personalisation)
-First open: Maya asks "What do you want to call me?" → user names their AI (e.g. Aria).
-That name is stored in `agent_profiles`, injected every session. This creates **ownership** — people don't cancel relationships.
+Naming is available in Memory. It must not interrupt the first-result path. The optional short brand
+interview may appear only after the member has used or downloaded a result. The name is stored in
+`agent_profiles` and injected into later sessions.
 
 ### Build Order
-1. Fix Maya UX bugs (active — see tasks/UX-01, UX-02)
-2. Expand tool registry: `show_gallery` + `save_to_gallery` first (tests dispatcher pattern cheaply)
-3. Named agent + richer onboarding conversation (replaces wizard with Maya interviewing the user)
-4. Phase C: collapse 5-tab navigation into Maya tools (tabs become what Maya surfaces, not separate screens)
+The historical UX-first build order is superseded by the live App v3 contracts. Work from the
+largest measured post-value constraint, preserve the one-recommendation first-result path, and do
+not add a new tool, tab, or onboarding interruption without evidence that it improves visible,
+trusted, or paid customer outcomes.
 
 ### The 5-Tab Rebuild: Intermediate Step, NOT the Destination
 The 5-tab shell (Maya, Gallery, Feed Planner, Academy, Account) is **Phase B scaffolding.** Phase C collapses it — Gallery IS a Maya tool, Feed Planner IS a Maya tool. No tab router. One screen.

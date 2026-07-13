@@ -159,6 +159,10 @@ export type AppV3AnalyticsCohort = "member" | "trial" | "limited" | "admin"
 export interface ConciergeContextValue {
   session: ConciergeSession | null
   isOpen: boolean
+  /** True while Maya is streaming, generating, or refining the active workspace. */
+  workspaceBusy: boolean
+  /** Keeps every Maya entry point from replacing a workspace that still has work in flight. */
+  setWorkspaceBusy: (busy: boolean) => void
   /** True when a saved active session exists and can be continued intentionally. */
   hasSavedSession: boolean
   /** Reopen the current conversation, or start a blank general Maya session if none exists. */
@@ -171,6 +175,8 @@ export interface ConciergeContextValue {
   historyRequestId: number
   /** Open the concierge with a chosen aesthetic preloaded (the Handoff). */
   openWithAesthetic: (aesthetic: Aesthetic, opts?: OpenConciergeOptions) => void
+  /** Change the active visual world without starting a new chat or changing startedAt. */
+  updateCurrentSession: (aesthetic: Aesthetic, opts?: OpenConciergeOptions) => void
   /** Start a clean thread while keeping the active reference image available. */
   resetCurrentSession: () => void
   /** Pass null to return to the uncommitted state (no format chosen, no auto-pull). */

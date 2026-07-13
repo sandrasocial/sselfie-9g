@@ -46,31 +46,65 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
   const restoredSavedAtRef = useRef<number | null>(null)
   const [session, setSession] = useState<ConciergeSession | null>(null)
   const [isOpen, setIsOpen] = useState(false)
+  const [workspaceBusy, setWorkspaceBusy] = useState(false)
   const hasSavedSession = Boolean(session)
 
-  const openWithAesthetic = useCallback((aesthetic: Aesthetic, opts?: OpenConciergeOptions) => {
-    // Stamp now (cheap, urgent), but mark the heavy concierge mount as a non-urgent transition
-    // so the tap paints immediately instead of blocking the main thread (fixes the INP stall).
-    const startedAt = Date.now()
-    startTransition(() => {
-      setSession({
-        aesthetic,
-        outputFormat: opts?.format ?? null,
-        referenceSelfieUrl: opts?.referenceSelfieUrl ?? null,
-        videoSourceUrl: opts?.videoSourceUrl ?? null,
-        graphicText: null,
-        seedPrompt: opts?.seed ?? null,
-        creationIntent:
-          opts?.creationIntent ??
-          (opts?.format ? { format: opts.format, source: "manual", confidence: "high" } : null),
-        shotDirector: opts?.shotDirector ?? null,
-        generationSource: opts?.generationSource ?? null,
-        initialSetupAction: opts?.initialSetupAction ?? null,
-        creationIdea: opts?.creationIdea ?? null,
-        startedAt,
+  const openWithAesthetic = useCallback(
+    (aesthetic: Aesthetic, opts?: OpenConciergeOptions) => {
+      if (workspaceBusy) {
+        setIsOpen(true)
+        return
+      }
+      // Stamp now (cheap, urgent), but mark the heavy concierge mount as a non-urgent transition
+      // so the tap paints immediately instead of blocking the main thread (fixes the INP stall).
+      const startedAt = Date.now()
+      startTransition(() => {
+        setSession({
+          aesthetic,
+          outputFormat: opts?.format ?? null,
+          referenceSelfieUrl: opts?.referenceSelfieUrl ?? null,
+          videoSourceUrl: opts?.videoSourceUrl ?? null,
+          graphicText: null,
+          seedPrompt: opts?.seed ?? null,
+          creationIntent:
+            opts?.creationIntent ??
+            (opts?.format ? { format: opts.format, source: "manual", confidence: "high" } : null),
+          shotDirector: opts?.shotDirector ?? null,
+          generationSource: opts?.generationSource ?? null,
+          initialSetupAction: opts?.initialSetupAction ?? null,
+          creationIdea: opts?.creationIdea ?? null,
+          startedAt,
+        })
+        setIsOpen(true)
       })
-      setIsOpen(true)
+    },
+    [workspaceBusy]
+  )
+
+  const updateCurrentSession = useCallback((aesthetic: Aesthetic, opts?: OpenConciergeOptions) => {
+    setSession(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        aesthetic,
+        outputFormat: opts?.format ?? prev.outputFormat,
+        referenceSelfieUrl:
+          opts?.referenceSelfieUrl !== undefined
+            ? opts.referenceSelfieUrl
+            : prev.referenceSelfieUrl,
+        videoSourceUrl:
+          opts?.videoSourceUrl !== undefined ? opts.videoSourceUrl : prev.videoSourceUrl,
+        seedPrompt: opts?.seed ?? prev.seedPrompt,
+        creationIntent: opts?.creationIntent ?? prev.creationIntent,
+        shotDirector: opts?.shotDirector ?? prev.shotDirector,
+        generationSource: opts?.generationSource ?? prev.generationSource,
+        creationIdea: opts?.creationIdea ?? prev.creationIdea,
+        // Keep the same workspace identity. Normal style/shot choices must never wipe the
+        // visible conversation or generated cards.
+        startedAt: prev.startedAt,
+      }
     })
+    setIsOpen(true)
   }, [])
 
   const setOutputFormat = useCallback((format: OutputFormat | null) => {
@@ -86,6 +120,10 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const resetCurrentSession = useCallback(() => {
+    if (workspaceBusy) {
+      setIsOpen(true)
+      return
+    }
     setSession(prev =>
       prev
         ? {
@@ -103,7 +141,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
         : prev
     )
     setIsOpen(true)
-  }, [])
+  }, [workspaceBusy])
 
   const setGraphicText = useCallback((spec: GraphicTextSpec) => {
     setSession(prev => (prev ? { ...prev, graphicText: spec } : prev))
@@ -133,6 +171,10 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const openFresh = useCallback(() => {
+    if (workspaceBusy) {
+      setIsOpen(true)
+      return
+    }
     const startedAt = Date.now()
     clearMayaDraft()
     // Also outranks any in-flight server-draft GET: a draft saved before this moment must
@@ -156,7 +198,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
       })
       setIsOpen(true)
     })
-  }, [])
+  }, [workspaceBusy])
 
   const close = useCallback(() => setIsOpen(false), [])
 
@@ -219,12 +261,15 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
     () => ({
       session,
       isOpen,
+      workspaceBusy,
+      setWorkspaceBusy,
       hasSavedSession,
       open,
       openFresh,
       openHistory,
       historyRequestId,
       openWithAesthetic,
+      updateCurrentSession,
       resetCurrentSession,
       setOutputFormat,
       setReferenceSelfieUrl,
@@ -235,12 +280,14 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
     [
       session,
       isOpen,
+      workspaceBusy,
       hasSavedSession,
       open,
       openFresh,
       openHistory,
       historyRequestId,
       openWithAesthetic,
+      updateCurrentSession,
       resetCurrentSession,
       setOutputFormat,
       setReferenceSelfieUrl,

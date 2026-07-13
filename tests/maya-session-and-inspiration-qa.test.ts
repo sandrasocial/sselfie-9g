@@ -112,12 +112,13 @@ describe("QA open-list build (2026-07-06)", () => {
     expect(concierge).toContain("setHistoryOpen(true)")
   })
 
-  it("Maya suggests looks as taps BEFORE planning anything", () => {
+  it("Maya chooses one strongest look before planning anything", () => {
     const route = read("app/api/app-v3/maya/chat/route.ts")
-    expect(route).toContain("MAYA SUGGESTS LOOKS")
+    expect(route).toContain("MAYA CHOOSES THE LOOK")
     expect(route).toContain('body?.aestheticId === "maya-decides"')
+    expect(route).toContain("Do not ask her to choose a style")
     const inline = read("components/app-v3/maya-inline-components.tsx")
-    expect(inline).toContain("You choose before anything is")
+    expect(inline).toContain("Not sure? Let Maya choose")
   })
 
   it("legacy members are told their trained model came with them", () => {
@@ -130,8 +131,8 @@ describe("QA open-list build (2026-07-06)", () => {
     // AUDIT-01 fix (2026-07-09): no more split screen for someone without a selfie - the
     // typed start / chips column must not render at all until she has one saved.
     expect(frontDoor).toContain("{!hasSelfie ? (")
-    expect(frontDoor).not.toContain("{!hasSelfie && (")
-    expect(frontDoor).not.toContain("{hasSelfie && (")
+    expect(frontDoor).toContain("Maya recommends today")
+    expect(frontDoor).toContain("Tell Maya what you need instead")
   })
 })
 

@@ -14,7 +14,7 @@ import { useConcierge } from "./concierge-context"
 const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
 
 export function MayaFloatingLauncher() {
-  const { isOpen, openFresh, openHistory, hasSavedSession } = useConcierge()
+  const { isOpen, open, openFresh, openHistory, hasSavedSession, workspaceBusy } = useConcierge()
   const [choiceOpen, setChoiceOpen] = useState(false)
 
   if (isOpen) return null
@@ -32,16 +32,29 @@ export function MayaFloatingLauncher() {
           <div className="relative z-10 mb-3 w-64 rounded-[8px] border border-[#C5C6C8]/70 bg-white p-3 shadow-[0_18px_46px_rgba(13,14,16,0.18)] animate-in fade-in slide-in-from-bottom-2 duration-200 motion-reduce:animate-none">
             <p className="text-[10px] uppercase tracking-[0.2em] text-[#818283]">Maya</p>
             <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
-              Start clean, or continue the conversation you already had.
+              {workspaceBusy
+                ? "Maya is finishing your creation. Resume current to see it complete."
+                : "Pick up where you left off, start clean, or open a past conversation."}
             </p>
             <div className="mt-3 grid gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setChoiceOpen(false)
-                  openFresh()
+                  open()
                 }}
                 className="min-h-11 rounded-[4px] bg-[#0D0E10] px-3 text-[11px] uppercase tracking-[0.14em] text-white"
+              >
+                Resume current
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setChoiceOpen(false)
+                  openFresh()
+                }}
+                disabled={workspaceBusy}
+                className="min-h-11 rounded-[4px] border border-[#C5C6C8]/70 bg-white px-3 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Start new
               </button>
@@ -49,13 +62,12 @@ export function MayaFloatingLauncher() {
                 type="button"
                 onClick={() => {
                   setChoiceOpen(false)
-                  // Opens the drawer WITH the chat list: continuing means picking a real
-                  // past conversation, not re-showing whatever was left in memory.
                   openHistory()
                 }}
-                className="min-h-11 rounded-[4px] border border-[#C5C6C8]/70 bg-white px-3 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:border-[#0D0E10]/40"
+                disabled={workspaceBusy}
+                className="min-h-11 rounded-[4px] border border-[#C5C6C8]/70 bg-white px-3 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Continue history
+                View past chats
               </button>
             </div>
           </div>

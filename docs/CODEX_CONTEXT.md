@@ -33,6 +33,8 @@ Current contracts:
   `docs/SSELFIE_DESIGN_SYSTEM.md`
 - SUITE creation ownership:
   `docs/product/SUITE_MAYA_SINGLE_OWNER_UX_2026-07-06.md`
+- Maya first-result and return contract:
+  `docs/product/MAYA_INVISIBLE_AI_FIRST_RESULT_2026-07-13.md`
 - Automation ownership:
   `docs/AUTOMATION_ROSTER.md`
 
@@ -66,6 +68,12 @@ Primary locations:
 
 Maya owns creation setup inside the chat drawer. The Create tab may start Maya, but it must not
 become a parallel studio with separate selfie, style, shot, text, or model controls.
+
+The returning Create surface leads with one personalized recommendation and one text escape hatch.
+Maya chooses one strongest Vault world by default, shows one recommended concept before
+alternatives, and leads each completed result into one contextual next action. Real browser
+download is the value-use event. Naming and brand questions stay out of the pre-value path. Preserve
+the exact active draft, and never allow an in-flight render to switch workspaces.
 
 ### Legacy app
 

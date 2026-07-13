@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
-import { AESTHETICS } from "./aesthetics"
+import { AESTHETICS, MAYA_DECIDES_AESTHETIC } from "./aesthetics"
 import { useConcierge } from "./concierge-context"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { detectCreationIntent, intentForFormat } from "@/lib/app-v3/maya/intent-router"
@@ -21,6 +21,42 @@ const MAYA_BLANK: Aesthetic = {
   shotCount: 0,
   intent:
     "A blank SSELFIE creation session. Ask what she wants to make, then guide her with simple choices.",
+}
+
+interface MayaRecommendation {
+  title: string
+  rationale: string
+  format: OutputFormat
+  imageUrl?: string | null
+  imageReason?: string | null
+}
+
+const FALLBACK_RECOMMENDATION: MayaRecommendation = {
+  title: "Create one brand photo you can use today",
+  rationale: "Start with one clear image, then Maya will help you turn it into your next post.",
+  format: "photo",
+}
+
+const FORMAT_LABEL: Record<OutputFormat, string> = {
+  photo: "Photo",
+  photoshoot: "Full shoot",
+  "reel-cover": "Reel cover",
+  carousel: "Carousel",
+  "story-slide": "Story slide",
+  "story-sequence": "Stories",
+  video: "Video",
+}
+
+function isOutputFormat(value: unknown): value is OutputFormat {
+  return (
+    value === "photo" ||
+    value === "photoshoot" ||
+    value === "reel-cover" ||
+    value === "carousel" ||
+    value === "story-slide" ||
+    value === "story-sequence" ||
+    value === "video"
+  )
 }
 
 const STARTER_CHIPS: { format: OutputFormat; label: string; prompt: string }[] = [
@@ -66,7 +102,7 @@ function markFirstRunSeen() {
 const CARD_COPY = {
   eyebrow: "Fastest path",
   title: "Start with one selfie.",
-  body: "Maya keeps your real face, then helps you choose the format, style, and next step.",
+  body: "Maya keeps your real face, chooses the strongest direction, and guides your next step.",
   action: "Add one selfie",
 }
 
@@ -137,12 +173,19 @@ export function VisualFrontDoor({
   const firstRunTrackedRef = useRef(false)
   const [aesthetics, setAesthetics] = useState<Aesthetic[]>(AESTHETICS)
   const [weeklyLook, setWeeklyLook] = useState<{ aestheticId: string; name: string } | null>(null)
+  const [recommendations, setRecommendations] = useState<MayaRecommendation[]>([])
+  const [recommendationStatus, setRecommendationStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle")
+  const [recommendationReload, setRecommendationReload] = useState(0)
   const [firstRunAlreadySeen] = useState(readFirstRunSeen)
   const [startText, setStartText] = useState("")
 
   const shouldShowTrialFirstRun = showTrialFirstRunStep && !hasSelfie && !firstRunAlreadySeen
-  const heroImage = aesthetics[0]?.coverImage || AESTHETICS[0]?.coverImage || ""
-  const selfieImage = aesthetics[1]?.coverImage || heroImage
+  const fallbackImage = aesthetics[0]?.coverImage || AESTHETICS[0]?.coverImage || ""
+  const selfieImage = aesthetics[1]?.coverImage || fallbackImage
+  const recommendation = recommendations[0] ?? FALLBACK_RECOMMENDATION
+  const recommendationImage = recommendation.imageUrl || fallbackImage
 
   useEffect(() => {
     let alive = true
@@ -165,6 +208,49 @@ export function VisualFrontDoor({
       alive = false
     }
   }, [])
+
+  useEffect(() => {
+    if (!hasSelfie) {
+      setRecommendationStatus("idle")
+      return
+    }
+
+    let alive = true
+    setRecommendationStatus("loading")
+    fetch("/api/app-v3/maya/recommendations")
+      .then(response => {
+        if (!response.ok) throw new Error("Recommendation request failed")
+        return response.json()
+      })
+      .then(data => {
+        if (!alive) return
+        const next = Array.isArray(data?.recommendations)
+          ? data.recommendations
+              .filter((item: unknown): item is MayaRecommendation => {
+                if (!item || typeof item !== "object") return false
+                const candidate = item as Record<string, unknown>
+                return (
+                  typeof candidate.title === "string" &&
+                  typeof candidate.rationale === "string" &&
+                  isOutputFormat(candidate.format)
+                )
+              })
+              .slice(0, 1)
+          : []
+
+        setRecommendations(next)
+        setRecommendationStatus(next.length > 0 ? "ready" : "error")
+      })
+      .catch(() => {
+        if (!alive) return
+        setRecommendations([])
+        setRecommendationStatus("error")
+      })
+
+    return () => {
+      alive = false
+    }
+  }, [hasSelfie, recommendationReload])
 
   useEffect(() => {
     if (homeTrackedRef.current) return
@@ -209,9 +295,10 @@ export function VisualFrontDoor({
     const intent = detectCreationIntent(seed, "typed")
     trackFirstAction("maya_text_start")
     trackInlineStart("typed_start", intent.format, intent.confidence)
-    openWithAesthetic(MAYA_BLANK, {
+    openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
       format: intent.format ?? undefined,
       seed,
+      creationIdea: seed,
       creationIntent: intent,
     })
   }
@@ -220,9 +307,23 @@ export function VisualFrontDoor({
     const intent = intentForFormat(item.format, "starter_chip")
     trackFirstAction(`starter_${item.format}`)
     trackInlineStart("starter_chip", intent.format, intent.confidence)
-    openWithAesthetic(MAYA_BLANK, {
+    openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
       format: item.format,
       seed: item.prompt,
+      creationIdea: item.prompt,
+      creationIntent: intent,
+    })
+  }
+
+  function openRecommendation() {
+    const intent = intentForFormat(recommendation.format, "content_card")
+    const seed = `Let's create this: ${recommendation.title}. ${recommendation.rationale}`
+    trackFirstAction("maya_recommendation")
+    trackInlineStart("maya_recommendation", intent.format, intent.confidence)
+    openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
+      format: recommendation.format,
+      seed,
+      creationIdea: `${recommendation.title}. ${recommendation.rationale}`,
       creationIntent: intent,
     })
   }
@@ -261,15 +362,18 @@ export function VisualFrontDoor({
           SSELFIE Studio
         </p>
         <h1 className="mt-3 font-serif text-[32px] font-light leading-[1.05] text-[color:var(--ss-night)] sm:text-[46px]">
-          Start with one clear next step.
+          {hasSelfie ? "What needs to move forward today?" : "Start with one clear next step."}
         </h1>
         <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[color:var(--ss-davy)]">
-          Tell Maya what you want to make. She will ask only what she needs, then guide the rest
-          inside the chat.
+          {hasSelfie
+            ? "Maya looks at what you are building and puts one useful next move in front of you."
+            : "Add one clear selfie. Maya will ask only what she needs, then guide the rest."}
         </p>
-        <p className="mt-4 max-w-xl text-[12px] leading-relaxed text-[color:var(--ss-gray)]">
-          Included in SSELFIE SUITE: monthly credits · brand photos · content help · your gallery
-        </p>
+        {!hasSelfie && (
+          <p className="mt-4 max-w-xl text-[12px] leading-relaxed text-[color:var(--ss-gray)]">
+            Included in SSELFIE SUITE: monthly credits · brand photos · content help · your gallery
+          </p>
+        )}
       </header>
 
       {/* No selfie yet: the selfie upload is the ONLY action on screen - no competing text
@@ -296,84 +400,142 @@ export function VisualFrontDoor({
           />
         </div>
       ) : (
-          <div className="mb-9 overflow-hidden rounded-[10px] border border-[color:var(--ss-silver)]/60 bg-white">
-            <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
-              <div className="min-w-0 p-5 sm:p-7">
+        <div className="mb-9 space-y-5">
+          <section
+            aria-labelledby="maya-recommendation-heading"
+            className="overflow-hidden rounded-[10px] border border-[color:var(--ss-silver)]/60 bg-white"
+          >
+            <div className="grid min-h-[300px] grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.72fr)]">
+              <div className="flex min-w-0 flex-col p-5 sm:p-7">
                 <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ss-gray)]">
-                  Start with Maya
+                  Maya recommends today
                 </p>
-                <h2 className="mt-3 font-serif text-[30px] font-light leading-[1.04] text-[color:var(--ss-night)] sm:text-[42px]">
-                  What do you want to make today?
+                <p
+                  aria-live="polite"
+                  className="mt-3 min-h-5 text-[12px] leading-relaxed text-[color:var(--ss-gray)]"
+                >
+                  {recommendationStatus === "loading"
+                    ? "Maya is looking at your week. You can start now if you are ready."
+                    : recommendationStatus === "error"
+                      ? "Maya could not read your week just now. Her best starting point is ready below."
+                      : recommendation.imageReason || "One useful move for your brand today."}
+                </p>
+                <span className="mt-5 self-start rounded-full border border-[color:var(--ss-silver)]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] text-[color:var(--ss-gray)]">
+                  {FORMAT_LABEL[recommendation.format]}
+                </span>
+                <h2
+                  id="maya-recommendation-heading"
+                  className="mt-3 max-w-xl font-serif text-[30px] font-light leading-[1.04] text-[color:var(--ss-night)] sm:text-[40px]"
+                >
+                  {recommendation.title}
                 </h2>
                 <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-[color:var(--ss-davy)]">
-                  Tell Maya in your own words. She will choose the path, ask only what she needs,
-                  and keep the next step in front of you.
+                  {recommendation.rationale}
                 </p>
-
-                <form
-                  className="mt-5 space-y-3"
-                  onSubmit={event => {
-                    event.preventDefault()
-                    startFromText()
-                  }}
-                >
-                  <label className="block">
-                    <span className="sr-only">Tell Maya what you want to make</span>
-                    <textarea
-                      value={startText}
-                      onChange={event => setStartText(event.target.value)}
-                      rows={3}
-                      placeholder="Example: I need a reel cover for my new offer"
-                      className="min-h-[112px] w-full resize-none rounded-[7px] border border-[color:var(--ss-silver)]/70 bg-[color:var(--ss-seasalt)] px-4 py-3 text-[15px] leading-relaxed text-[color:var(--ss-night)] outline-none transition-colors placeholder:text-[color:var(--ss-gray)] focus:border-[color:var(--ss-night)]"
-                    />
-                  </label>
+                <div className="mt-auto flex flex-wrap items-center gap-3 pt-6">
                   <button
-                    type="submit"
-                    className="min-h-12 w-full rounded-[5px] bg-[color:var(--ss-night)] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-white transition-opacity hover:opacity-90 sm:w-auto"
+                    type="button"
+                    onClick={openRecommendation}
+                    className="min-h-12 rounded-[5px] bg-[color:var(--ss-night)] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-white transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2"
                   >
-                    Ask Maya
+                    Continue with Maya
                   </button>
-                </form>
-
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {weeklyLook && aesthetics.some(a => a.id === weeklyLook.aestheticId) && (
+                  {recommendationStatus === "error" && (
                     <button
                       type="button"
-                      onClick={openWeeklyLook}
-                      className="min-h-10 rounded-full border border-[color:var(--ss-night)]/50 bg-white px-3.5 py-2 text-[12px] text-[color:var(--ss-night)] transition-colors hover:border-[color:var(--ss-night)]"
+                      onClick={() => setRecommendationReload(value => value + 1)}
+                      className="min-h-11 px-2 text-[12px] text-[color:var(--ss-davy)] underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]"
                     >
-                      New this week: {weeklyLook.name}
+                      Try my personal suggestion again
                     </button>
                   )}
-                  {STARTER_CHIPS.filter(item => videoEnabled || item.format !== "video").map(
-                    item => (
-                      <button
-                        key={item.format}
-                        type="button"
-                        onClick={() => openStarterChip(item)}
-                        className="min-h-10 rounded-full border border-[color:var(--ss-silver)]/70 bg-white px-3.5 py-2 text-[12px] text-[color:var(--ss-davy)] transition-colors hover:border-[color:var(--ss-night)] hover:text-[color:var(--ss-night)]"
-                      >
-                        {item.label}
-                      </button>
-                    )
-                  )}
                 </div>
-
-                <p className="mt-5 max-w-lg text-[12px] leading-relaxed text-[color:var(--ss-gray)]">
-                  Style, inspiration, shot choice, text on image, and selfie details happen with
-                  Maya after you start. One flow, no second setup screen.
-                </p>
               </div>
-              <LookbookAction
-                image={heroImage}
-                eyebrow={CARD_COPY.eyebrow}
-                title={CARD_COPY.title}
-                body={CARD_COPY.body}
-                action={CARD_COPY.action}
-                onClick={openSelfieManagerInMaya}
-              />
+
+              {recommendationImage && (
+                <div className="relative min-h-[220px] overflow-hidden bg-[color:var(--ss-seasalt)] sm:min-h-full">
+                  <Image
+                    src={recommendationImage}
+                    alt=""
+                    fill
+                    sizes="(max-width: 640px) 100vw, 38vw"
+                    className="object-cover"
+                    priority
+                  />
+                </div>
+              )}
             </div>
-          </div>
+          </section>
+
+          <section className="rounded-[10px] border border-[color:var(--ss-silver)]/60 bg-white p-5 sm:p-7">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ss-gray)]">
+              Tell Maya what you need instead
+            </p>
+            <form
+              className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end"
+              onSubmit={event => {
+                event.preventDefault()
+                startFromText()
+              }}
+            >
+              <label className="block min-w-0 flex-1">
+                <span className="sr-only">What do you want to make today?</span>
+                <textarea
+                  value={startText}
+                  onChange={event => setStartText(event.target.value)}
+                  rows={2}
+                  placeholder="Example: I need a reel cover for my new offer"
+                  className="min-h-[88px] w-full resize-none rounded-[7px] border border-[color:var(--ss-silver)]/70 bg-[color:var(--ss-seasalt)] px-4 py-3 text-[15px] leading-relaxed text-[color:var(--ss-night)] outline-none transition-colors placeholder:text-[color:var(--ss-gray)] focus:border-[color:var(--ss-night)] focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]/20"
+                />
+              </label>
+              <button
+                type="submit"
+                className="min-h-12 w-full rounded-[5px] border border-[color:var(--ss-night)] bg-white px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ss-night)] transition-colors hover:bg-[color:var(--ss-seasalt)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2 sm:w-auto"
+              >
+                Ask Maya
+              </button>
+            </form>
+          </section>
+
+          <details className="group rounded-[10px] border border-[color:var(--ss-silver)]/60 bg-white">
+            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between px-5 text-[12px] uppercase tracking-[0.16em] text-[color:var(--ss-davy)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ss-night)] sm:px-7 [&::-webkit-details-marker]:hidden">
+              <span>More ways to create</span>
+              <span
+                aria-hidden="true"
+                className="text-lg font-light transition-transform group-open:rotate-45"
+              >
+                +
+              </span>
+            </summary>
+            <div className="border-t border-[color:var(--ss-silver)]/50 px-5 py-5 sm:px-7">
+              <div className="flex flex-wrap gap-2">
+                {weeklyLook && aesthetics.some(a => a.id === weeklyLook.aestheticId) && (
+                  <button
+                    type="button"
+                    onClick={openWeeklyLook}
+                    className="min-h-10 rounded-full border border-[color:var(--ss-night)]/50 bg-white px-3.5 py-2 text-[12px] text-[color:var(--ss-night)] transition-colors hover:border-[color:var(--ss-night)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2"
+                  >
+                    New this week: {weeklyLook.name}
+                  </button>
+                )}
+                {STARTER_CHIPS.filter(item => videoEnabled || item.format !== "video").map(item => (
+                  <button
+                    key={item.format}
+                    type="button"
+                    onClick={() => openStarterChip(item)}
+                    className="min-h-10 rounded-full border border-[color:var(--ss-silver)]/70 bg-white px-3.5 py-2 text-[12px] text-[color:var(--ss-davy)] transition-colors hover:border-[color:var(--ss-night)] hover:text-[color:var(--ss-night)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-4 max-w-lg text-[12px] leading-relaxed text-[color:var(--ss-gray)]">
+                Maya can still help with a specific format or the weekly look when you want more
+                control.
+              </p>
+            </div>
+          </details>
+        </div>
       )}
     </section>
   )

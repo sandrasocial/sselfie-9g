@@ -536,7 +536,7 @@ describe("retired Text Studio surface (Sandra's 2026-07-05 direction)", () => {
     expect(card).toContain("navigator.clipboard?.writeText(suggestedText)")
     // A baked render wins the card view and the download; the clean base stays kept.
     expect(card).toContain("firstBaked ?? images[0]")
-    expect(card).toContain('window.open(firstBaked ?? images[0], "_blank", "noreferrer")')
+    expect(card).toContain("const started = await initiateAssetDownload(")
   })
 
   it("keeps the lightbox free of CSS overlay fallback and exposes suggested words", () => {

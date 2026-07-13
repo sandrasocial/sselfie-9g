@@ -180,11 +180,10 @@ export function InlineVibePicker({
               className="min-h-16 rounded-[6px] border border-[color:var(--ss-night)]/30 bg-white px-3 py-3 text-left transition-colors hover:border-[color:var(--ss-night)] disabled:opacity-45"
             >
               <span className="block text-[12px] font-medium text-[color:var(--ss-night)]">
-                Not sure? Let Maya suggest looks
+                Not sure? Let Maya choose
               </span>
               <span className="mt-1 block text-[11px] leading-relaxed text-[color:var(--ss-davy)]">
-                She picks 2-3 looks from the SSELFIE Vault. You choose before anything is
-                created.
+                She chooses the strongest SSELFIE look for what you&apos;re making.
               </span>
             </button>
           )}
@@ -280,9 +279,8 @@ export function InlineShotDirectorCard({
   onBack: () => void
   onPick: (mode: ShotDirectorMode, requestedShotCount: 6 | 8 | 9) => void
 }) {
-  const [shootMode, setShootMode] = useState<Extract<ShotDirectorMode, "collection-shoot" | "new-shoot">>(
-    "collection-shoot"
-  )
+  const [shootMode, setShootMode] =
+    useState<Extract<ShotDirectorMode, "collection-shoot" | "new-shoot">>("collection-shoot")
   const [shotCount, setShotCount] = useState<6 | 8 | 9>(6)
   const counts: Array<6 | 8 | 9> = [6, 8, 9]
 
@@ -418,13 +416,59 @@ const NEXT_FORMAT_LABELS: Record<OutputFormat, string> = {
   video: "Motion",
 }
 
+const RECOMMENDED_NEXT: Record<
+  OutputFormat,
+  { format: OutputFormat; label: string; reason: string }
+> = {
+  photo: {
+    format: "reel-cover",
+    label: "Make a matching Reel cover",
+    reason: "Turn this visual world into something you can publish next.",
+  },
+  photoshoot: {
+    format: "reel-cover",
+    label: "Make the shoot's Reel cover",
+    reason: "Give the full shoot one clear entry point for your audience.",
+  },
+  "reel-cover": {
+    format: "story-sequence",
+    label: "Create the supporting Stories",
+    reason: "Carry the same message into a short sequence that builds trust.",
+  },
+  carousel: {
+    format: "story-sequence",
+    label: "Turn this into Stories",
+    reason: "Reuse the idea in a faster format without starting over.",
+  },
+  "story-slide": {
+    format: "reel-cover",
+    label: "Make the matching Reel cover",
+    reason: "Keep the same message visible in your main feed.",
+  },
+  "story-sequence": {
+    format: "reel-cover",
+    label: "Make the matching Reel cover",
+    reason: "Give the story one recognizable cover for your feed.",
+  },
+  video: {
+    format: "story-sequence",
+    label: "Create Stories for this video",
+    reason: "Add the context that helps your audience understand why it matters.",
+  },
+}
+
 export function InlineResultActions({
   format,
   onNextFormat,
 }: {
   format: OutputFormat
-  onNextFormat: (format: OutputFormat, kind: InlineActionKind) => void
+  onNextFormat: (
+    format: OutputFormat,
+    kind: InlineActionKind,
+    selection: "recommended" | "more"
+  ) => void
 }) {
+  const recommendation = RECOMMENDED_NEXT[format]
   const actions = SIMPLE_FORMAT_OPTIONS.map(option => ({
     format: option.format,
     label:
@@ -434,26 +478,42 @@ export function InlineResultActions({
   }))
 
   return (
-    <div className="rounded-[6px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
+    <div className="rounded-[8px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3.5">
       <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-gray)]">
-        Keep this style going
+        Maya recommends next
+      </p>
+      <p className="mt-1.5 font-serif text-[19px] font-light leading-tight text-[color:var(--ss-night)]">
+        {recommendation.label}
       </p>
       <p className="mt-1 text-[12px] leading-relaxed text-[color:var(--ss-davy)]">
-        Choose what to make next. Maya will use this result as the style reference and change the
-        pose, location, or angle so it does not feel repeated.
+        {recommendation.reason}
       </p>
-      <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1">
-        {actions.map(action => (
-          <button
-            key={action.format}
-            type="button"
-            onClick={() => onNextFormat(action.format, "next_action")}
-            className="min-h-10 shrink-0 rounded-[4px] border border-[#C5C6C8]/70 bg-white px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-[#4F5052] transition-colors hover:border-[#0D0E10] hover:text-[#0D0E10]"
-          >
-            {action.label}
-          </button>
-        ))}
-      </div>
+      <button
+        type="button"
+        onClick={() => onNextFormat(recommendation.format, "next_action", "recommended")}
+        className="mt-3 min-h-11 w-full rounded-[6px] bg-[color:var(--ss-night)] px-4 py-2.5 text-[11px] uppercase tracking-[0.14em] text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2"
+      >
+        {recommendation.label}
+      </button>
+      <details className="group mt-2">
+        <summary className="inline-flex min-h-10 cursor-pointer list-none items-center text-[11px] uppercase tracking-[0.13em] text-[color:var(--ss-davy)] underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]">
+          More things Maya can make
+        </summary>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {actions
+            .filter(action => action.format !== recommendation.format)
+            .map(action => (
+              <button
+                key={action.format}
+                type="button"
+                onClick={() => onNextFormat(action.format, "next_action", "more")}
+                className="min-h-10 rounded-[4px] border border-[#C5C6C8]/70 bg-white px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-[#4F5052] transition-colors hover:border-[#0D0E10] hover:text-[#0D0E10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10]"
+              >
+                {action.label}
+              </button>
+            ))}
+        </div>
+      </details>
     </div>
   )
 }

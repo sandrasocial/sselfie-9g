@@ -380,6 +380,12 @@ const askClarify = tool({
     "words. Ask only the single most important missing thing, never a list, never for a plain photo. " +
     "After she answers, call emit_concepts.",
   inputSchema: z.object({
+    kind: z
+      .enum(["format", "detail"])
+      .default("detail")
+      .describe(
+        "Use format only when no output format is committed and the choices are output formats. Use detail for topic, offer, style, audience, or any other answer."
+      ),
     question: z.string().describe("One short question, e.g. 'What's this reel about?'"),
     options: z
       .array(z.string())
@@ -681,7 +687,7 @@ export async function POST(req: Request) {
     })
 
     if (needsFormatClarification) {
-      system = `${system}\n\n## MAYA-FIRST ROUTING\nNo output format has been committed yet. Do not assume this is a photo request. Ask exactly one inline clarifying question with ask_clarify and short tappable choices such as \"A photo\", \"A full shoot\", \"A reel cover\", \"A carousel\", \"Stories\", or \"Motion\". Do not call emit_concepts until she chooses.`
+      system = `${system}\n\n## MAYA-FIRST ROUTING\nNo output format has been committed yet. Do not assume this is a photo request. Ask exactly one inline clarifying question with ask_clarify using kind: \"format\" and short tappable choices such as \"A photo\", \"A full shoot\", \"A reel cover\", \"A carousel\", \"Stories\", or \"Motion\". Do not call emit_concepts until she chooses.`
     } else if (creationIntent) {
       system = `${system}\n\n## MAYA-FIRST ROUTING\nCommitted format: ${format}. Intent source: ${creationIntent.source}. Intent confidence: ${creationIntent.confidence}. Treat this as the creation path unless the user clearly changes it.`
     }
@@ -698,10 +704,10 @@ export async function POST(req: Request) {
       system = `${system}\n\n## MAYA DIRECTOR MODE\n${directorLine}\nShot count is a real credit cost, so do not exceed it. If the mode is a full shoot, format must be photoshoot and the emitted concept count must match the requested shot count exactly.`
     }
 
-    // "Let Maya suggest looks" is a PREVIEW, never a blind commitment (UX audit 2026-07-06):
-    // she must see 2-3 named looks as taps before anything is planned or generated.
+    // Invisible AI: choosing Maya means delegating the visual decision, not opening another
+    // menu. She still explains the selected Vault world in one short line before the concept.
     if (body?.aestheticId === "maya-decides") {
-      system = `${system}\n\n## MAYA SUGGESTS LOOKS\nShe asked you to suggest looks instead of picking one herself. FIRST call ask_clarify with 2-3 named Vault looks as short tappable choices (name each look in a few words, grounded in the Vault style guide and anything you know about her). Do NOT call emit_concepts until she taps one. When she picks, treat that look as the committed style.`
+      system = `${system}\n\n## MAYA CHOOSES THE LOOK\nShe asked you to make the visual decision. Choose the single strongest SSELFIE Vault world using her request, brand profile, memory, recent activity, and content calendar. Do not ask her to choose a style. Briefly name why your choice fits, then emit one strongest concept unless she explicitly asked for options or a multi-shot format. Keep the concept inside that real Vault world and never drift into generic studio posing.`
     }
 
     // Structured session context (2026 UX contract): the idea travels with every request

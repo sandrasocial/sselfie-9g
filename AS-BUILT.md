@@ -2,7 +2,7 @@
 
 **Purpose:** Ground truth for this repo. **Do not trust unverified numbers in other markdown files.**
 
-**Verified:** 2026-07-13 · **Release:** behavioral growth-machine hardening
+**Verified:** 2026-07-13 · **Release:** Maya Invisible AI first-result experience
 
 | Field | Value |
 |--------|--------|
@@ -12,9 +12,16 @@
 | **Product** | SSELFIE Studio (mothership), live production |
 | **Architecture** | **`lib/maya/` is not compatible** with `agents-sselfie`. Do not copy Maya trees between repos. |
 
-## App v3 (verified 2026-06-11)
+## App v3 (verified 2026-07-13)
 
 Members use `/app` (Studio 3.0) since the APP-CUTOVER-01 Phase 2 cutover: `APP_V3_MEMBERS_ENABLED=true` set in Vercel production 2026-06-10 (verified via `vercel env ls`). Image generation flagship = **`gpt-image-2` via OpenAI API** (`app/api/app-v3/maya/generate/route.ts`). Legacy `/studio` (Replicate: Flux LoRA + Nano Banana Pro) is retired but still in the repo. Rollback = flip the env to `false`.
+
+The live Maya first-result path is governed by
+`docs/product/MAYA_INVISIBLE_AI_FIRST_RESULT_2026-07-13.md`: returning Create leads with one
+personalized recommendation, Maya chooses the default Vault world, the first concept leads, a real
+download records value, and one next recommendation continues the visibility workflow. Active Maya
+drafts restore their latest generation and creation choices. Workspace switching is blocked while a
+render or text refinement is in flight.
 
 ## Mechanical checks
 

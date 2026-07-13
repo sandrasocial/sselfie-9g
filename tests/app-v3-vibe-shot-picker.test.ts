@@ -33,7 +33,7 @@ describe("Suite vibe shot picker", () => {
     expect(frontDoor).not.toContain("compactAestheticForMaya")
 
     expect(concierge).toContain("setInlineShotPickerAesthetic(nextAesthetic)")
-    expect(concierge).toContain("openWithAesthetic(compactInlineAestheticForMaya")
+    expect(concierge).toContain("updateCurrentSession(compactInlineAestheticForMaya")
     expect(inline).toContain("export function InlineShotPicker")
     expect(inline).toContain("Choose the shot")
   })

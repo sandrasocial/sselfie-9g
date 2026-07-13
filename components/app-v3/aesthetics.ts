@@ -5,6 +5,22 @@
 import { VAULT_COLLECTION_META } from "@/lib/ai-prompts/prompt-data"
 import type { Aesthetic } from "./types"
 
+/**
+ * The quiet default for Maya-first creation. This is intentionally not a
+ * synthetic visual style: it tells the chat route to choose one real Vault
+ * direction from the member's request and saved brand context.
+ */
+export const MAYA_DECIDES_AESTHETIC: Aesthetic = {
+  id: "maya-decides",
+  name: "Maya decides",
+  blurb: "Maya chooses the strongest SSELFIE look for what you need today.",
+  coverImage: "",
+  thumbnails: [],
+  shotCount: 0,
+  intent:
+    "Choose the single strongest SSELFIE Vault world using her request, memory, brand profile, recent activity, and content calendar. Explain the choice simply, then keep the result inside that real Vault world.",
+}
+
 /** Turn a collection name like "Quiet Luxury London Editorial" into a stable id. */
 function toId(name: string): string {
   return name
@@ -60,8 +76,8 @@ export const AESTHETICS: Aesthetic[] = VAULT_COLLECTION_META.map((c): Aesthetic 
       INTENTS[id] ??
       `${toDisplayName(c.name)} editorial look: connected styling, refined light, brand-shoot quality.`,
   }
-}).filter((a) => a.coverImage.length > 0)
+}).filter(a => a.coverImage.length > 0)
 
 export function getAestheticById(id: string): Aesthetic | undefined {
-  return AESTHETICS.find((a) => a.id === id)
+  return AESTHETICS.find(a => a.id === id)
 }

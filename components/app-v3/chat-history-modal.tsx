@@ -70,6 +70,9 @@ export function ChatHistoryModal({
             <h3 className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]">
               Your chats
             </h3>
+            <p className="mt-2 max-w-xs text-[12px] leading-relaxed text-[#818283]">
+              Opening a past chat restores the conversation. Finished files stay in Photos.
+            </p>
           </div>
           <button
             type="button"

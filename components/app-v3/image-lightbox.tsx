@@ -5,9 +5,10 @@
 // stripped of gallery/feed/favorite coupling and kept icon-free to match /app's clean look.
 // Supports keyboard (Esc, arrows), prev/next for multi-image sets, and download.
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
+import { initiateAssetDownload } from "@/lib/app-v3/download-asset"
 
 interface ImageLightboxProps {
   images: string[]
@@ -21,6 +22,7 @@ interface ImageLightboxProps {
   /** Per-image baked text renders, index-aligned with images. */
   bakedImageUrls?: Array<string | null>
   startIndex?: number
+  onDownloaded?: () => void
   onClose: () => void
 }
 
@@ -32,22 +34,50 @@ export function ImageLightbox({
   textOverlaySpecs,
   bakedImageUrls,
   startIndex = 0,
+  onDownloaded,
   onClose,
 }: ImageLightboxProps) {
   const count = images.length
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
   const [index, setIndex] = useState(Math.min(Math.max(startIndex, 0), Math.max(count - 1, 0)))
   // SUITE-UX-02 mobile: swipe left/right navigates multi-image sets (carousel slides).
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
 
   useEffect(() => {
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const frame = window.requestAnimationFrame(() => closeButtonRef.current?.focus())
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose()
+      if (e.key === "Escape") onCloseRef.current()
       if (e.key === "ArrowLeft") setIndex(p => (p > 0 ? p - 1 : count - 1))
       if (e.key === "ArrowRight") setIndex(p => (p < count - 1 ? p + 1 : 0))
+      if (e.key !== "Tab") return
+      const focusable = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+        ) ?? []
+      ).filter(element => element.offsetParent !== null)
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [count, onClose])
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.removeEventListener("keydown", onKey)
+      if (previouslyFocused?.isConnected) previouslyFocused.focus()
+    }
+  }, [count])
 
   const url = images[index]
   const overlay = textOverlaySpecs?.[index] ?? null
@@ -60,9 +90,16 @@ export function ImageLightbox({
   return (
     // SUITE-UX-02 mobile: flex column with a min-h-0 image region (no fixed 80vh), safe-area
     // padding, full-height on the DYNAMIC viewport so phones never crop or letterbox oddly.
-    <div className="fixed inset-0 z-[60] flex h-[100dvh] flex-col bg-[#0D0E10]/95 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-[max(env(safe-area-inset-top),0.75rem)] backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:px-4">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Your finished creation"
+      className="fixed inset-0 z-[60] flex h-[100dvh] flex-col bg-[#0D0E10]/95 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-[max(env(safe-area-inset-top),0.75rem)] backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:px-4"
+    >
       <div className="flex shrink-0 justify-end">
         <button
+          ref={closeButtonRef}
           type="button"
           onClick={onClose}
           className="inline-flex min-h-11 items-center px-2 py-2 text-[11px] uppercase tracking-[0.18em] text-white/80 hover:text-white"
@@ -142,14 +179,18 @@ export function ImageLightbox({
           )}
           <button
             type="button"
-            onClick={() => {
-              // Member pulse: downloads = "she loved it" (SUITE-UX-02).
+            onClick={async () => {
+              const started = await initiateAssetDownload(
+                baked ?? url,
+                `sselfie-${baked ? (bakedAssetIds?.[index] ?? index + 1) : (assetIds?.[index] ?? index + 1)}.png`
+              )
+              if (!started) return
               void recordSuiteDownloadForReview({
                 source: "lightbox",
                 assetId: baked ? (bakedAssetIds?.[index] ?? null) : (assetIds?.[index] ?? null),
                 format: formats?.[index] ?? null,
               })
-              window.open(baked ?? url, "_blank", "noreferrer")
+              onDownloaded?.()
             }}
             className="inline-flex min-h-11 items-center rounded-full bg-white px-6 py-2.5 text-[11px] uppercase tracking-[0.18em] text-[#0D0E10] transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-95"
           >

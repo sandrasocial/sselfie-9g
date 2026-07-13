@@ -53,14 +53,17 @@ describe("Maya-first Suite creation UX", () => {
     const serverDraft = read("lib/app-v3/maya/draft-snapshot.ts")
     for (const source of [continuity, serverDraft]) {
       expect(source).toContain("initialSetupAction: null")
-      expect(source).not.toContain('initialSetupAction: session.initialSetupAction === "selfie_manager"')
+      expect(source).not.toContain(
+        'initialSetupAction: session.initialSetupAction === "selfie_manager"'
+      )
     }
   })
 
   it("routes clear typed requests before Maya replies", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
-    expect(concierge).toContain('commitDetectedIntent(text, "typed", { suppressAutoPull: true })')
+    expect(concierge).toContain('commitDetectedIntent(text, "typed", {')
+    expect(concierge).toContain("preserveCommittedFormat")
     expect(concierge).toContain("extrasRef.current = { ...extrasRef.current, format: intent.format")
     expect(concierge).toContain("creationIntent: activeCreationIntent")
     expect(concierge).toContain("InlineFormatChoice")
@@ -68,7 +71,7 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).toContain("InlineVibePicker")
     expect(concierge).toContain("InlineShotPicker")
     expect(concierge).toContain("InlineResultActions")
-    expect(concierge).toContain("onPick={sendInlineAnswer}")
+    expect(concierge).toContain("onPick={answer => sendInlineAnswer(answer, clarifyPart.kind)}")
   })
 
   it("waits for a style before pulling initial non-video directions", () => {
@@ -114,7 +117,7 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).toContain("inspiration_style_committed")
     expect(inline).toContain("Use my inspiration")
     expect(concierge).toContain("attachInputRef.current?.click()")
-    expect(concierge).toContain("openWithAesthetic(MAYA_DECIDES_AESTHETIC")
+    expect(concierge).toContain("updateCurrentSession(MAYA_DECIDES_AESTHETIC")
     expect(concierge).toContain("Use my inspiration image as the style direction")
     expect(concierge).toContain('handleInspirationReady(url, "manager")')
     expect(concierge).not.toContain(
@@ -209,7 +212,9 @@ describe("Maya-first Suite creation UX", () => {
     // thread under the new session (start-new resurrection bug, 2026-07-06).
     expect(concierge).toContain("setChatId(freshChatId)")
     expect(launcher).toContain("Start new")
-    expect(launcher).toContain("Continue history")
+    expect(launcher).toContain("Resume current")
+    expect(launcher).toContain("View past chats")
+    expect(launcher).toContain("open()")
     expect(launcher).toContain("openFresh()")
   })
 
@@ -220,7 +225,7 @@ describe("Maya-first Suite creation UX", () => {
 
     expect(types).toContain('export type GenerationSource = "selfie" | "trained-model"')
     expect(shell).toContain('generationSource: "trained-model"')
-    expect(concierge).toContain("useState<GenerationSource>(() =>")
+    expect(concierge).toContain("useState<GenerationSource>(")
     expect(concierge).toContain('"selfie"')
     expect(concierge).toContain('session.generationSource === "trained-model" && hasTrainedModel')
   })
@@ -235,7 +240,7 @@ describe("Maya-first Suite creation UX", () => {
     expect(commitEnd).toBeGreaterThan(commitStart)
     expect(commitBody).toContain("suppressAutoPull")
     expect(commitBody).toContain("lastPulledFormatRef.current = intent.format")
-    expect(concierge).toContain('commitDetectedIntent(text, "typed", { suppressAutoPull: true })')
+    expect(concierge).toContain('commitDetectedIntent(text, "typed", {')
   })
 
   it("guards generation actions against duplicate in-flight requests", () => {
@@ -271,13 +276,15 @@ describe("Maya-first Suite creation UX", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
     const inline = read("components/app-v3/maya-inline-components.tsx")
 
-    expect(inline).toContain("Keep this style going")
+    expect(inline).toContain("Maya recommends next")
+    expect(inline).toContain("RECOMMENDED_NEXT")
     expect(inline).toContain("SIMPLE_FORMAT_OPTIONS.map")
-    expect(inline).toContain("overflow-x-auto")
+    expect(inline).toContain("More things Maya can make")
     expect(concierge).toContain("styleReferenceUrl?: string | null")
     expect(concierge).toContain("setInspirationUrl(styleReferenceUrl)")
     expect(concierge).toContain("setVideoSourceUrl(styleReferenceUrl)")
     expect(concierge).toContain("const latestStyleReferenceUrl")
-    expect(concierge).toContain("handleNextFormat(nextFormat, kind, latestStyleReferenceUrl)")
+    expect(concierge).toContain("latestStyleReferenceUrl,")
+    expect(concierge).toContain("selection")
   })
 })

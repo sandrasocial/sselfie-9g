@@ -13,6 +13,7 @@ import { Spinner } from "./loading"
 import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 import { retryGeneratedImageOnce } from "./image-retry"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
+import { initiateAssetDownload } from "@/lib/app-v3/download-asset"
 
 export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
 
@@ -63,6 +64,10 @@ interface ConceptCardProps {
   resultActions?: ReactNode
   /** Admin-only prompt inspector asset id, e.g. ai_123. */
   promptAssetId?: string | null
+  /** Small editorial label above the concept title. */
+  eyebrow?: string
+  /** Fires only after a browser download has been initiated. */
+  onDownloaded?: () => void
   disabled?: boolean
 }
 
@@ -100,6 +105,8 @@ export function ConceptCard({
   idleAction,
   resultActions,
   promptAssetId,
+  eyebrow = "Maya's idea",
+  onDownloaded,
   disabled,
 }: ConceptCardProps) {
   const isGenerating = gen.status === "generating"
@@ -132,7 +139,9 @@ export function ConceptCard({
       }
       if (!result) throw new Error("no result")
       const date = new Date(`${result.scheduledAt}T00:00:00Z`)
-      setSavedDateLabel(date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }))
+      setSavedDateLabel(
+        date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+      )
       setCalendarStatus("saved")
     } catch {
       setCalendarStatus("error")
@@ -208,7 +217,7 @@ export function ConceptCard({
       {/* Copy + action */}
       <div className="min-w-0 space-y-3 p-4 sm:p-5">
         <div className="min-w-0 break-words [overflow-wrap:anywhere]">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">Maya&apos;s idea</p>
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">{eyebrow}</p>
           <h4 className="mt-1.5 font-serif text-[21px] font-light leading-tight text-[#0D0E10]">
             {concept.title}
           </h4>
@@ -226,12 +235,6 @@ export function ConceptCard({
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#818283]">
               {isVideoDone ? "Saved to your videos" : "Saved to your gallery"}
             </p>
-            {calendarAvailable && showCalendarOffer && !isCarousel && !isVideoDone && calendarStatus === "idle" && (
-              <p className="text-[13px] leading-relaxed text-[#4F5052]">
-                This would work well for your feed. Want me to save it to your calendar and get
-                the caption ready for you?
-              </p>
-            )}
             {bakeMissing && (
               <p className="rounded-[4px] bg-[#282728]/5 px-3 py-2 text-[12px] leading-relaxed text-[#4F5052]">
                 The clean image is ready. The text did not bake into this one, so Maya left the
@@ -263,22 +266,25 @@ export function ConceptCard({
             )}
             <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 min-[380px]:gap-3">
               {isVideoDone ? (
-                <a
-                  href={videoUrl}
-                  download
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => {
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const started = await initiateAssetDownload(
+                      videoUrl,
+                      `sselfie-${gen.videoAssetId ?? "video"}.mp4`
+                    )
+                    if (!started) return
                     void recordSuiteDownloadForReview({
                       source: "concept-card",
                       format: "video",
                       assetId: gen.videoAssetId ?? null,
                     })
+                    onDownloaded?.()
                   }}
                   className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
                 >
                   Download video
-                </a>
+                </button>
               ) : isCarousel ? (
                 <button
                   type="button"
@@ -290,69 +296,86 @@ export function ConceptCard({
               ) : (
                 <button
                   type="button"
-                  onClick={() => {
-                    // Member pulse: a download is the strongest "she loved it" signal (SUITE-UX-02).
+                  onClick={async () => {
+                    const started = await initiateAssetDownload(
+                      firstBaked ?? images[0],
+                      `sselfie-${firstDownloadAssetId ?? "photo"}.png`
+                    )
+                    if (!started) return
                     void recordSuiteDownloadForReview({
                       source: "concept-card",
                       format,
                       assetId: firstDownloadAssetId,
                     })
-                    window.open(firstBaked ?? images[0], "_blank", "noreferrer")
+                    onDownloaded?.()
                   }}
                   className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
                 >
                   Download
                 </button>
               )}
-              {onEdit && !isCarousel && !isVideoDone && (
-                <button
-                  type="button"
-                  onClick={onEdit}
-                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] border border-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] transition-[transform,background-color] duration-150 hover:bg-[#0D0E10]/[0.04] active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.18em]"
-                >
-                  Edit this photo
-                </button>
-              )}
-              {calendarAvailable && !isCarousel && !isVideoDone && (
-                calendarStatus === "saved" ? (
-                  <span className="inline-flex min-h-11 items-center justify-center rounded-[8px] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052]">
-                    Added · {savedDateLabel}
-                  </span>
-                ) : (
+            </div>
+            {resultActions}
+            <details className="group rounded-[8px] border border-[#C5C6C8]/55 bg-white">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3.5 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0D0E10]">
+                More
+                <span aria-hidden className="text-[16px] font-light group-open:rotate-45">
+                  +
+                </span>
+              </summary>
+              <div className="flex flex-wrap gap-2 border-t border-[#C5C6C8]/45 p-3">
+                {onEdit && !isCarousel && !isVideoDone && (
                   <button
                     type="button"
-                    onClick={handleAddToCalendar}
-                    disabled={calendarStatus === "saving"}
-                    className="inline-flex min-h-11 items-center justify-center rounded-[8px] border border-[#C5C6C8] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] transition-[transform,background-color] duration-150 hover:bg-[#0D0E10]/[0.04] active:scale-[0.98] disabled:opacity-50 min-[380px]:px-5 min-[380px]:tracking-[0.18em]"
+                    onClick={onEdit}
+                    className="inline-flex min-h-11 items-center rounded-[6px] border border-[#C5C6C8] px-3.5 text-[11px] uppercase tracking-[0.12em] text-[#4F5052] hover:border-[#0D0E10]"
                   >
-                    {calendarStatus === "saving"
-                      ? "Saving…"
-                      : calendarStatus === "error"
-                        ? "Try again"
-                        : "Add to calendar"}
+                    Edit photo
                   </button>
-                )
-              )}
-              {promptAssetId && !isVideoDone && (
-                <a
-                  href={`/api/admin/app-v3/generation-prompt?id=${encodeURIComponent(promptAssetId)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] border border-[#C5C6C8] px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] transition-[transform,background-color] duration-150 hover:bg-[#0D0E10]/[0.04] active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.18em]"
+                )}
+                {calendarAvailable &&
+                  !isCarousel &&
+                  !isVideoDone &&
+                  (calendarStatus === "saved" ? (
+                    <span className="inline-flex min-h-11 items-center px-3.5 text-[11px] uppercase tracking-[0.12em] text-[#4F5052]">
+                      Added · {savedDateLabel}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleAddToCalendar}
+                      disabled={calendarStatus === "saving"}
+                      className="inline-flex min-h-11 items-center rounded-[6px] border border-[#C5C6C8] px-3.5 text-[11px] uppercase tracking-[0.12em] text-[#4F5052] hover:border-[#0D0E10] disabled:opacity-50"
+                    >
+                      {calendarStatus === "saving"
+                        ? "Saving…"
+                        : calendarStatus === "error"
+                          ? "Try calendar again"
+                          : showCalendarOffer
+                            ? "Add to calendar"
+                            : "Save to calendar"}
+                    </button>
+                  ))}
+                <button
+                  type="button"
+                  onClick={onGenerate}
+                  disabled={disabled}
+                  className="inline-flex min-h-11 items-center rounded-[6px] border border-[#C5C6C8] px-3.5 text-[11px] uppercase tracking-[0.12em] text-[#4F5052] hover:border-[#0D0E10] disabled:opacity-40"
                 >
-                  View prompt
-                </a>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={onGenerate}
-              disabled={disabled}
-              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#818283] underline underline-offset-2 hover:text-[#4F5052] disabled:opacity-40"
-            >
-              Make another version
-            </button>
-            {resultActions}
+                  Make another version
+                </button>
+                {promptAssetId && !isVideoDone && (
+                  <a
+                    href={`/api/admin/app-v3/generation-prompt?id=${encodeURIComponent(promptAssetId)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-11 items-center rounded-[6px] border border-[#C5C6C8] px-3.5 text-[11px] uppercase tracking-[0.12em] text-[#4F5052] hover:border-[#0D0E10]"
+                  >
+                    View prompt
+                  </a>
+                )}
+              </div>
+            </details>
           </div>
         ) : idleAction ? (
           idleAction

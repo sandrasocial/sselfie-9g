@@ -1,6 +1,6 @@
 # SSELFIE Documentation Index
 
-Last verified: 2026-07-12
+Last verified: 2026-07-13
 
 This index separates current operating truth from research, audits, implementation history, and
 archives. A document being detailed does not make it current.
@@ -35,6 +35,8 @@ The supporting brand source files live in `brand/source/2026-06-27/`.
 
 - `SSELFIE_DESIGN_SYSTEM.md` — product, public-page, and email design authority.
 - `product/SUITE_MAYA_SINGLE_OWNER_UX_2026-07-06.md` — Maya-owned creation workflow.
+- `product/MAYA_INVISIBLE_AI_FIRST_RESULT_2026-07-13.md` — Maya's one-recommendation first-result,
+  real-download, next-action, and exact-resume contract.
 - `product/SUITE_REVIEW_CAPTURE_2026-07-12.md` — post-value, authenticated review capture and
   moderation contract.
 - `AUTOMATION_ROSTER.md` — the only cross-layer automation map.

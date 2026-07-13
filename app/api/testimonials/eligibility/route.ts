@@ -70,7 +70,9 @@ export async function POST(request: NextRequest) {
     const rows = await sql`
       SELECT
         (
-          SELECT COUNT(*)::int
+          SELECT COUNT(
+            DISTINCT COALESCE(NULLIF(properties->>'asset_id', ''), CONCAT('event:', id::text))
+          )::int
           FROM analytics_events
           WHERE user_id = ${userId}
             AND event_name = 'suite_image_downloaded'

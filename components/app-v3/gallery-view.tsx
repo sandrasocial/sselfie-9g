@@ -20,6 +20,7 @@ import { ImageLightbox } from "./image-lightbox"
 import type { AppV3GalleryAsset, AppV3GalleryCounts } from "@/lib/app-v3/gallery-assets"
 import { retryGeneratedImageOnce } from "./image-retry"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
+import { initiateAssetDownload } from "@/lib/app-v3/download-asset"
 
 type GalleryFilter =
   | "all"
@@ -86,20 +87,17 @@ function filterAssets(assets: AppV3GalleryAsset[], filter: GalleryFilter): AppV3
   }
 }
 
-function downloadAsset(asset: AppV3GalleryAsset) {
+async function downloadAsset(asset: AppV3GalleryAsset) {
+  const started = await initiateAssetDownload(
+    asset.url,
+    `sselfie-${asset.id}.${asset.kind === "video" ? "mp4" : "png"}`
+  )
+  if (!started) return
   void recordSuiteDownloadForReview({
     source: "gallery",
     format: asset.contentType,
     assetId: asset.id,
   })
-  const anchor = document.createElement("a")
-  anchor.href = asset.url
-  anchor.target = "_blank"
-  anchor.rel = "noreferrer"
-  anchor.download = `sselfie-${asset.id}.${asset.kind === "video" ? "mp4" : "png"}`
-  document.body.appendChild(anchor)
-  anchor.click()
-  anchor.remove()
 }
 
 function assetLabel(asset: AppV3GalleryAsset): string {

@@ -87,7 +87,7 @@ describe("SUITE post-success review capture", () => {
       jsonRequest("http://localhost/api/testimonials/eligibility", {
         action: "download",
         source: "concept-card",
-      }) as any,
+      }) as any
     )
 
     expect(response.status).toBe(401)
@@ -104,7 +104,7 @@ describe("SUITE post-success review capture", () => {
         testimonial: "This is a real result I loved.",
         rating: 5,
         consent: true,
-      }) as any,
+      }) as any
     )
 
     expect(response.status).toBe(401)
@@ -113,15 +113,14 @@ describe("SUITE post-success review capture", () => {
   })
 
   it("becomes eligible only after at least three SUITE downloads", async () => {
-    mocks.sql
-      .mockResolvedValueOnce([
-        {
-          download_count: 3,
-          prior_submission: false,
-          recent_dismissal: false,
-          recent_prompt: false,
-        },
-      ])
+    mocks.sql.mockResolvedValueOnce([
+      {
+        download_count: 3,
+        prior_submission: false,
+        recent_dismissal: false,
+        recent_prompt: false,
+      },
+    ])
 
     const { POST } = await import("@/app/api/testimonials/eligibility/route")
     const response = await POST(
@@ -129,19 +128,21 @@ describe("SUITE post-success review capture", () => {
         action: "download",
         source: "concept-card",
         format: "photo",
-      }) as any,
+      }) as any
     )
     const body = await response.json()
 
     expect(response.status).toBe(200)
     expect(body).toMatchObject({ eligible: true, downloadCount: 3 })
+    expect(queryText(mocks.sql.mock.calls[0])).toContain("DISTINCT COALESCE")
+    expect(queryText(mocks.sql.mock.calls[0])).toContain("properties->>'asset_id'")
     expect(mocks.logAnalyticsEvent).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ eventName: "suite_image_downloaded", userId: "neon-real" }),
+      expect.objectContaining({ eventName: "suite_image_downloaded", userId: "neon-real" })
     )
     expect(mocks.logAnalyticsEvent).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ eventName: "suite_review_prompt_shown", userId: "neon-real" }),
+      expect.objectContaining({ eventName: "suite_review_prompt_shown", userId: "neon-real" })
     )
   })
 
@@ -171,8 +172,14 @@ describe("SUITE post-success review capture", () => {
         source: "gallery",
       }) as any
 
-    expect(await (await POST(request())).json()).toMatchObject({ eligible: false, reason: "already_submitted" })
-    expect(await (await POST(request())).json()).toMatchObject({ eligible: false, reason: "recently_dismissed" })
+    expect(await (await POST(request())).json()).toMatchObject({
+      eligible: false,
+      reason: "already_submitted",
+    })
+    expect(await (await POST(request())).json()).toMatchObject({
+      eligible: false,
+      reason: "recently_dismissed",
+    })
   })
 
   it("requires explicit consent and strict rating/text limits", async () => {
@@ -183,21 +190,21 @@ describe("SUITE post-success review capture", () => {
         testimonial: "This is a real result I loved.",
         rating: 5,
         consent: false,
-      }) as any,
+      }) as any
     )
     const invalidRating = await POST(
       jsonRequest("http://localhost/api/testimonials/submit", {
         testimonial: "This is a real result I loved.",
         rating: 6,
         consent: true,
-      }) as any,
+      }) as any
     )
     const tooShort = await POST(
       jsonRequest("http://localhost/api/testimonials/submit", {
         testimonial: "Nice",
         rating: 5,
         consent: true,
-      }) as any,
+      }) as any
     )
 
     expect(noConsent.status).toBe(400)
@@ -215,11 +222,13 @@ describe("SUITE post-success review capture", () => {
         testimonial: "This is a real result I loved.",
         rating: 5,
         consent: true,
-      }) as any,
+      }) as any
     )
 
     expect(response.status).toBe(403)
-    expect(mocks.sql.mock.calls.some(call => queryText(call).includes("INSERT INTO admin_testimonials"))).toBe(false)
+    expect(
+      mocks.sql.mock.calls.some(call => queryText(call).includes("INSERT INTO admin_testimonials"))
+    ).toBe(false)
   })
 
   it("ignores public identity fields and stores only the authenticated customer", async () => {
@@ -236,21 +245,23 @@ describe("SUITE post-success review capture", () => {
         testimonial: "I downloaded the photos and finally had something I wanted to post.",
         rating: 5,
         consent: true,
-      }) as any,
+      }) as any
     )
     const body = await response.json()
 
     expect(response.status).toBe(200)
     expect(body).toMatchObject({ success: true, alreadySubmitted: false })
 
-    const insertCall = mocks.sql.mock.calls.find(call => queryText(call).includes("INSERT INTO admin_testimonials"))
+    const insertCall = mocks.sql.mock.calls.find(call =>
+      queryText(call).includes("INSERT INTO admin_testimonials")
+    )
     expect(insertCall).toBeTruthy()
     expect(insertCall).toContain("Real Customer")
     expect(insertCall).toContain("real@example.com")
     expect(insertCall).not.toContain("Spoofed Name")
     expect(insertCall).not.toContain("spoofed@example.com")
     expect(mocks.logAnalyticsEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventName: "suite_review_submitted", userId: "neon-real" }),
+      expect.objectContaining({ eventName: "suite_review_submitted", userId: "neon-real" })
     )
   })
 
@@ -263,13 +274,15 @@ describe("SUITE post-success review capture", () => {
         testimonial: "I downloaded the photos and finally had something I wanted to post.",
         rating: 5,
         consent: true,
-      }) as any,
+      }) as any
     )
     const body = await response.json()
 
     expect(response.status).toBe(200)
     expect(body).toMatchObject({ success: true, alreadySubmitted: true, testimonialId: 88 })
-    expect(mocks.sql.mock.calls.some(call => queryText(call).includes("INSERT INTO admin_testimonials"))).toBe(false)
+    expect(
+      mocks.sql.mock.calls.some(call => queryText(call).includes("INSERT INTO admin_testimonials"))
+    ).toBe(false)
     expect(mocks.sendEmail).not.toHaveBeenCalled()
   })
 
@@ -285,11 +298,13 @@ describe("SUITE post-success review capture", () => {
         rating: 5,
         source: "email",
         screenshot_url: null,
-      }) as any,
+      }) as any
     )
 
     expect(response.status).toBe(201)
     expect(mocks.requireAdmin).toHaveBeenCalled()
-    expect(mocks.sql.mock.calls.some(call => queryText(call).includes("INSERT INTO admin_testimonials"))).toBe(true)
+    expect(
+      mocks.sql.mock.calls.some(call => queryText(call).includes("INSERT INTO admin_testimonials"))
+    ).toBe(true)
   })
 })

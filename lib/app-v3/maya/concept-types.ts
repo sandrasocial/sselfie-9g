@@ -103,6 +103,8 @@ export interface ConceptGraphicSpec {
  * generating something generic. Rendered as tappable chips, not a chat prompt or a form.
  */
 export interface ClarifyPrompt {
+  /** Format is the only clarification allowed to change the active output format. */
+  kind?: "format" | "detail"
   /** One short question, e.g. "What's this reel about?" */
   question: string
   /** 2 to 5 short tappable options, drawn from the user's brand (not generic). */

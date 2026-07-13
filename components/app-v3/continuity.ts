@@ -10,12 +10,13 @@ import type {
   CreationIntent,
   CreationIntentSource,
   GenerationSource,
+  LastGenerationSnapshot,
   OutputFormat,
   ShotDirectorIntent,
   ShotDirectorMode,
 } from "./types"
 import type { ConceptGenState } from "./concept-card"
-import { sanitizeTextOverlaySpec } from "@/lib/app-v3/text-overlay"
+import { sanitizeTextOverlaySpec, type OverlayStyleId } from "@/lib/app-v3/text-overlay"
 
 export const APP_SECTION_STORAGE_KEY = "sselfie.appV3.section.v1"
 export const CONCIERGE_STORAGE_KEY = "sselfie.appV3.concierge.v1"
@@ -46,6 +47,15 @@ const VALID_SHOT_DIRECTOR_MODES: ShotDirectorMode[] = [
   "new-shoot",
 ]
 const VALID_GENERATION_SOURCES: GenerationSource[] = ["selfie", "trained-model"]
+const VALID_TEXT_OVERLAY_MODES = ["with-text", "without-text"] as const
+const VALID_TEXT_STYLE_CHOICES: OverlayStyleId[] = [
+  "editorial-serif-center",
+  "lower-third-accent",
+  "top-band-minimal",
+  "quote-statement",
+  "series-cover",
+  "cutout-editorial",
+]
 const MAX_SNAPSHOT_AGE_MS = 1000 * 60 * 60 * 24 * 14
 
 export type ConciergeSnapshot = {
@@ -62,6 +72,12 @@ export type MayaDraftSnapshot = {
   genState: Record<string, ConceptGenState>
   generatedOnce: boolean
   setupOpen: boolean
+  lastGeneration?: LastGenerationSnapshot | null
+  textOverlayMode?: "with-text" | "without-text" | null
+  textStyleChoice?: OverlayStyleId | null
+  textStyleAdjustments?: string | null
+  generationSource?: GenerationSource | null
+  valueUsed?: boolean
 }
 
 function nowish(value: unknown): value is number {
@@ -135,6 +151,53 @@ function sanitizeGenerationSource(value: unknown): GenerationSource | null {
   return VALID_GENERATION_SOURCES.includes(value as GenerationSource)
     ? (value as GenerationSource)
     : null
+}
+
+function sanitizeLastGeneration(value: unknown): LastGenerationSnapshot | null {
+  if (!value || typeof value !== "object") return null
+  const generation = value as Record<string, unknown>
+  if (!VALID_FORMATS.includes(generation.format as OutputFormat)) return null
+  if (
+    typeof generation.imageCount !== "number" ||
+    !Number.isInteger(generation.imageCount) ||
+    generation.imageCount < 1 ||
+    generation.imageCount > 12
+  ) {
+    return null
+  }
+
+  const boundedText = (candidate: unknown, max: number): string | null => {
+    if (typeof candidate !== "string") return null
+    const clean = candidate.replace(/\s+/g, " ").trim().slice(0, max)
+    return clean || null
+  }
+
+  return {
+    format: generation.format as OutputFormat,
+    imageCount: generation.imageCount,
+    styleName: boundedText(generation.styleName, 80),
+    conceptTitle: boundedText(generation.conceptTitle, 120),
+    usedInspiration: generation.usedInspiration === true,
+    usedTrainedModel: generation.usedTrainedModel === true,
+  }
+}
+
+function sanitizeTextOverlayMode(value: unknown): (typeof VALID_TEXT_OVERLAY_MODES)[number] | null {
+  return VALID_TEXT_OVERLAY_MODES.includes(value as (typeof VALID_TEXT_OVERLAY_MODES)[number])
+    ? (value as (typeof VALID_TEXT_OVERLAY_MODES)[number])
+    : null
+}
+
+function sanitizeTextStyleChoice(value: unknown): OverlayStyleId | null {
+  return VALID_TEXT_STYLE_CHOICES.includes(value as OverlayStyleId)
+    ? (value as OverlayStyleId)
+    : null
+}
+
+function sanitizeTextStyleAdjustments(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const clean = value.replace(/\s+/g, " ").trim().slice(0, 220)
+  return clean || null
 }
 
 export function coerceStoredAppSection(value: unknown, fallback: AppV3Section): AppV3Section {
@@ -313,6 +376,12 @@ export function sanitizeMayaDraftForSession(
     genState: sanitizeGenState(draft.genState),
     generatedOnce: draft.generatedOnce === true,
     setupOpen: draft.setupOpen === true,
+    lastGeneration: sanitizeLastGeneration(draft.lastGeneration),
+    textOverlayMode: sanitizeTextOverlayMode(draft.textOverlayMode),
+    textStyleChoice: sanitizeTextStyleChoice(draft.textStyleChoice),
+    textStyleAdjustments: sanitizeTextStyleAdjustments(draft.textStyleAdjustments),
+    generationSource: sanitizeGenerationSource(draft.generationSource),
+    valueUsed: draft.valueUsed === true,
   }
 }
 
@@ -347,6 +416,12 @@ export function cacheServerMayaDraftSnapshot(value: unknown): ServerMayaDraftSna
     genState: snapshot.genState as Record<string, ConceptGenState>,
     generatedOnce: snapshot.generatedOnce,
     setupOpen: snapshot.setupOpen,
+    lastGeneration: snapshot.lastGeneration,
+    textOverlayMode: snapshot.textOverlayMode,
+    textStyleChoice: snapshot.textStyleChoice,
+    textStyleAdjustments: snapshot.textStyleAdjustments,
+    generationSource: snapshot.generationSource,
+    valueUsed: snapshot.valueUsed,
   })
   return snapshot
 }

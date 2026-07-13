@@ -1,14 +1,19 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { readFileSync } from "node:fs"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { ImageLightbox } from "@/components/app-v3/image-lightbox"
 import { ConceptCard } from "@/components/app-v3/concept-card"
 import { sanitizeServerGenState } from "@/lib/app-v3/maya/draft-snapshot"
+import { initiateAssetDownload } from "@/lib/app-v3/download-asset"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 
 vi.mock("@/lib/testimonials/review-capture-client", () => ({
   recordSuiteDownloadForReview: vi.fn(),
+}))
+
+vi.mock("@/lib/app-v3/download-asset", () => ({
+  initiateAssetDownload: vi.fn(async () => true),
 }))
 
 function read(path: string): string {
@@ -32,10 +37,7 @@ describe("App v3 stable asset analytics lineage", () => {
     )
   })
 
-  it("sends the exact selected lightbox asset id and format without changing the download", () => {
-    const open = vi.fn()
-    vi.stubGlobal("open", open)
-
+  it("sends the exact selected lightbox asset id and format without changing the download", async () => {
     render(
       <ImageLightbox
         images={["https://example.com/one.png", "https://example.com/two.png"]}
@@ -48,34 +50,34 @@ describe("App v3 stable asset analytics lineage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Download" }))
 
-    expect(recordSuiteDownloadForReview).toHaveBeenCalledWith({
-      source: "lightbox",
-      assetId: "ai_202",
-      format: "carousel",
-    })
-    expect(open).toHaveBeenCalledWith("https://example.com/two.png", "_blank", "noreferrer")
+    await waitFor(() =>
+      expect(recordSuiteDownloadForReview).toHaveBeenCalledWith({
+        source: "lightbox",
+        assetId: "ai_202",
+        format: "carousel",
+      })
+    )
+    expect(initiateAssetDownload).toHaveBeenCalledWith(
+      "https://example.com/two.png",
+      expect.any(String)
+    )
   })
 
-  it("keeps lightbox downloads fail-open when lineage is unavailable", () => {
-    const open = vi.fn()
-    vi.stubGlobal("open", open)
-
+  it("keeps lightbox downloads fail-open when lineage is unavailable", async () => {
     render(<ImageLightbox images={["https://example.com/one.png"]} onClose={vi.fn()} />)
 
     fireEvent.click(screen.getByRole("button", { name: "Download" }))
 
-    expect(recordSuiteDownloadForReview).toHaveBeenCalledWith({
-      source: "lightbox",
-      assetId: null,
-      format: null,
-    })
-    expect(open).toHaveBeenCalledTimes(1)
+    await waitFor(() =>
+      expect(recordSuiteDownloadForReview).toHaveBeenCalledWith({
+        source: "lightbox",
+        assetId: null,
+        format: null,
+      })
+    )
   })
 
-  it("uses the baked variant id when the lightbox downloads a baked result", () => {
-    const open = vi.fn()
-    vi.stubGlobal("open", open)
-
+  it("uses the baked variant id when the lightbox downloads a baked result", async () => {
     render(
       <ImageLightbox
         images={["https://example.com/clean.png"]}
@@ -89,18 +91,20 @@ describe("App v3 stable asset analytics lineage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Download" }))
 
-    expect(recordSuiteDownloadForReview).toHaveBeenCalledWith({
-      source: "lightbox",
-      assetId: "ai_402",
-      format: "reel-cover",
-    })
-    expect(open).toHaveBeenCalledWith("https://example.com/baked.png", "_blank", "noreferrer")
+    await waitFor(() =>
+      expect(recordSuiteDownloadForReview).toHaveBeenCalledWith({
+        source: "lightbox",
+        assetId: "ai_402",
+        format: "reel-cover",
+      })
+    )
+    expect(initiateAssetDownload).toHaveBeenCalledWith(
+      "https://example.com/baked.png",
+      expect.any(String)
+    )
   })
 
-  it("sends the exact concept-card ai_images id on a direct result download", () => {
-    const open = vi.fn()
-    vi.stubGlobal("open", open)
-
+  it("sends the exact concept-card ai_images id on a direct result download", async () => {
     render(
       <ConceptCard
         concept={
@@ -124,18 +128,20 @@ describe("App v3 stable asset analytics lineage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Download" }))
 
-    expect(recordSuiteDownloadForReview).toHaveBeenCalledWith({
-      source: "concept-card",
-      assetId: 303,
-      format: "photo",
-    })
-    expect(open).toHaveBeenCalledWith("https://example.com/generated.png", "_blank", "noreferrer")
+    await waitFor(() =>
+      expect(recordSuiteDownloadForReview).toHaveBeenCalledWith({
+        source: "concept-card",
+        assetId: 303,
+        format: "photo",
+      })
+    )
+    expect(initiateAssetDownload).toHaveBeenCalledWith(
+      "https://example.com/generated.png",
+      expect.any(String)
+    )
   })
 
-  it("uses exact baked-image and video ids for direct concept-card downloads", () => {
-    const open = vi.fn()
-    vi.stubGlobal("open", open)
-
+  it("uses exact baked-image and video ids for direct concept-card downloads", async () => {
     const { rerender } = render(
       <ConceptCard
         concept={
@@ -160,11 +166,13 @@ describe("App v3 stable asset analytics lineage", () => {
     )
 
     fireEvent.click(screen.getByRole("button", { name: "Download" }))
-    expect(recordSuiteDownloadForReview).toHaveBeenLastCalledWith({
-      source: "concept-card",
-      assetId: 502,
-      format: "reel-cover",
-    })
+    await waitFor(() =>
+      expect(recordSuiteDownloadForReview).toHaveBeenLastCalledWith({
+        source: "concept-card",
+        assetId: 502,
+        format: "reel-cover",
+      })
+    )
 
     rerender(
       <ConceptCard
@@ -186,12 +194,14 @@ describe("App v3 stable asset analytics lineage", () => {
       />
     )
 
-    fireEvent.click(screen.getByRole("link", { name: "Download video" }))
-    expect(recordSuiteDownloadForReview).toHaveBeenLastCalledWith({
-      source: "concept-card",
-      assetId: "video_603",
-      format: "video",
-    })
+    fireEvent.click(screen.getByRole("button", { name: "Download video" }))
+    await waitFor(() =>
+      expect(recordSuiteDownloadForReview).toHaveBeenLastCalledWith({
+        source: "concept-card",
+        assetId: "video_603",
+        format: "video",
+      })
+    )
   })
 
   it("keeps Gallery and Maya lightboxes aligned with their per-image ids and formats", () => {
