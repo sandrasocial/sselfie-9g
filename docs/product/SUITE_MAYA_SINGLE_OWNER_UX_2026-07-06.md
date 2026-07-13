@@ -71,6 +71,11 @@ Style, inspiration, shot, and trained-model controls remain available as optiona
 They are not required before the first result. A normal topic, style, or brand answer must not
 silently change the committed format.
 
+The **Start with one selfie** card is a committed photo request, not an undecided blank session.
+It opens the selfie manager, then hands the confirmed selfie to **Maya decides**. Maya chooses one
+world and shows one recommended concept. The pre-result drawer does not expose format, style, shot,
+shoot-size, model-source, extra-angle, inspiration, Change, or composer controls.
+
 The member should not need to know which tab holds which setup tool before creating.
 
 ## Existing Tabs
@@ -115,6 +120,7 @@ Before shipping changes to this flow, verify:
 - Create page loads with one personalized recommendation and one direct text escape hatch.
 - Advanced starts remain collapsed behind **More ways to create**.
 - Tapping “Add one selfie” opens Maya and shows the reference manager there.
+- Continuing from that manager goes directly to one Maya-chosen photo concept without setup cards.
 - Maya chooses the default visual world without requiring style selection.
 - Optional style and shot picking happens inside Maya only.
 - Text-on-image decisions happen inside Maya only.

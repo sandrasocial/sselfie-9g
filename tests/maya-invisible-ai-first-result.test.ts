@@ -6,6 +6,55 @@ function read(path: string) {
 }
 
 describe("Maya Invisible AI: first result and return integrity", () => {
+  it("takes the first selfie directly into one Maya-chosen photo path", () => {
+    const frontDoor = read("components/app-v3/visual-front-door.tsx")
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    const start = frontDoor.indexOf("function openSelfieManagerInMaya")
+    const end = frontDoor.indexOf("\n  return (", start)
+    const firstSelfiePath = frontDoor.slice(start, end)
+
+    expect(start).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+    expect(firstSelfiePath).toContain("openWithAesthetic(MAYA_DECIDES_AESTHETIC")
+    expect(firstSelfiePath).toContain('format: "photo"')
+    expect(firstSelfiePath).toContain('initialSetupAction: "selfie_manager"')
+    expect(firstSelfiePath).toContain(
+      'creationIdea: "Create one strong brand photo I can use today."'
+    )
+    expect(firstSelfiePath).not.toContain("MAYA_BLANK")
+
+    expect(concierge).toContain("const guidedFirstPhoto =")
+    expect(concierge).toContain("if (selfieManagerOpen) return")
+    expect(concierge).toContain("{guidedFirstPhoto && (")
+    expect(concierge).toContain("Maya is choosing one strong direction")
+    expect(concierge).toContain('guidedFirstPhoto ? "hidden" : ""')
+    expect(concierge).toContain(
+      'const workspaceTitle = mayaChoosesVisualWorld ? "Create with Maya" : aesthetic.name'
+    )
+    expect(concierge).toContain("{workspaceTitle}")
+  })
+
+  it("does not silently carry an old inspiration image into a fresh first photo", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    const selfieManager = read("components/app-v3/selfie-reference-manager-modal.tsx")
+    const start = concierge.indexOf("// Identity persistence")
+    const end = concierge.indexOf("const retryAesthetics", start)
+    const referenceRestore = concierge.slice(start, end)
+
+    expect(start).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+    expect(referenceRestore).toContain("d?.extras?.threeQuarter")
+    expect(referenceRestore).toContain("d?.extras?.sideProfile")
+    expect(referenceRestore).toContain("d?.extras?.fullBody")
+    expect(referenceRestore).toContain("const isGuidedFirstPhotoSession =")
+    expect(referenceRestore).toContain("if (!isGuidedFirstPhotoSession)")
+    expect(referenceRestore).toContain("d?.extras?.inspiration")
+    expect(concierge).toContain("setSelfieManagerOpen(false)\n          setSetupOpen(false)")
+    expect(concierge).toContain("hideOptionalReferences={guidedFirstPhoto}")
+    expect(selfieManager).toContain("hideOptionalReferences = false")
+    expect(selfieManager).toContain("{!hideOptionalReferences && (")
+  })
+
   it("keeps topic and style clarification replies from changing the committed format", () => {
     const types = read("lib/app-v3/maya/concept-types.ts")
     const route = read("app/api/app-v3/maya/chat/route.ts")

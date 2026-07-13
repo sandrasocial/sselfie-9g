@@ -30,6 +30,20 @@ The product must therefore protect the working guided path and improve the hando
 
 If a member has no saved selfie, adding or choosing one remains the visible prerequisite. When a saved selfie exists, Create must not show a duplicate large selfie card.
 
+### First-selfie shortcut
+
+**Start with one selfie** is already an explicit photo decision. Its locked path is:
+
+1. Open Maya's selfie manager.
+2. Add or choose one selfie.
+3. On **Continue with Maya**, Maya chooses one strongest Vault world and prepares one recommended photo concept.
+4. The member chooses whether to spend one credit on that concept.
+
+This path must not ask for format, style, shot, shoot type, shot count, photo engine, inspiration,
+or extra identity angles before the first result. The refinement composer and **Change** setup strip
+also remain hidden until the first result. Advanced controls are preserved for intentional use
+after value. A previously saved inspiration image must not attach itself to a fresh session.
+
 ## Ownership rules
 
 ### Format
@@ -47,6 +61,7 @@ If a member has no saved selfie, adding or choosing one remains the visible prer
 - Maya chooses one strongest real Vault direction using the request, brand profile, memory, recent activity, and content calendar.
 - Maya must not ask the member to choose a style before showing value.
 - Style, inspiration, shot, and trained-model controls remain optional advanced tools.
+- The first-selfie shortcut keeps those advanced tools out of view until result one.
 - If live aesthetics fail, bundled aesthetics remain usable and the interface shows a retry path.
 
 Normal style, inspiration, and shot choices update the current session in place. They preserve the chat, generated cards, and `startedAt`; they must not open a different workspace or restart the member's session. Only **Start new** creates a new workspace.
@@ -139,6 +154,8 @@ Do not reintroduce:
 
 - Pre-value agent naming or brand interviews.
 - A required style grid before Maya can create.
+- Format, style, shot-director, model-source, or extra-angle controls in the first-selfie shortcut.
+- Silent reuse of an old inspiration image in a fresh creation.
 - Equal capability cards that make the member plan the workflow.
 - Multiple primary recommendations at the front door or after a result.
 - Fake downloads, preview-tab downloads counted as success, or repeated-click review inflation.

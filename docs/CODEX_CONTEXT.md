@@ -75,6 +75,11 @@ alternatives, and leads each completed result into one contextual next action. R
 download is the value-use event. Naming and brand questions stay out of the pre-value path. Preserve
 the exact active draft, and never allow an in-flight render to switch workspaces.
 
+The no-selfie front door is a one-step photo shortcut: selfie manager → **Maya decides** → one
+recommended concept. Do not put format, style, shot-director, engine, inspiration, extra-angle,
+Change, or composer controls between the selfie and the first result. Saved inspiration does not
+auto-attach to a fresh Maya session.
+
 ### Legacy app
 
 `/studio` and the large legacy Maya tree still exist for compatibility, but they are not the live

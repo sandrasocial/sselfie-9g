@@ -1078,11 +1078,19 @@ export function MayaConcierge({
         const angle = asUrl(d?.extras?.threeQuarter)
         const side = asUrl(d?.extras?.sideProfile)
         const body = asUrl(d?.extras?.fullBody)
-        const inspo = asUrl(d?.extras?.inspiration)
+        const inspiration = asUrl(d?.extras?.inspiration)
+        const isGuidedFirstPhotoSession =
+          session.aesthetic.id === "maya-decides" &&
+          session.outputFormat === "photo" &&
+          session.creationIntent?.source === "starter_chip"
         if (angle) setThreeQuarterUrl(prev => prev ?? angle)
         if (side) setSideProfileUrl(prev => prev ?? side)
         if (body) setFullBodyUrl(prev => prev ?? body)
-        if (inspo) setInspirationUrl(prev => prev ?? inspo)
+        // A fresh one-selfie start should not inherit an old creative direction. Other
+        // intentional/manual sessions keep the existing persisted-inspiration behavior.
+        if (!isGuidedFirstPhotoSession) {
+          if (inspiration) setInspirationUrl(prev => prev ?? inspiration)
+        }
       })
       .catch(() => {})
   }, [isOpen, session, setReferenceSelfieUrl])
@@ -1115,6 +1123,9 @@ export function MayaConcierge({
   // this same effect fires and pulls the committed format, so upload completes the flow.
   useEffect(() => {
     if (!isOpen || !session) return
+    // Uploading can update the active selfie before the member confirms it. Do not start
+    // Maya behind the reference manager; Continue is the explicit handoff into creation.
+    if (selfieManagerOpen) return
     const fmt = session.outputFormat
     if (!fmt || isThinking) return
     const pullIntent =
@@ -1159,6 +1170,7 @@ export function MayaConcierge({
     isOpen,
     localCreationIntent,
     messages.length,
+    selfieManagerOpen,
     session,
     isThinking,
     sendMessage,
@@ -1341,6 +1353,14 @@ export function MayaConcierge({
     localCreationIntent ??
     session.creationIntent ??
     (outputFormat ? intentForFormat(outputFormat, "manual") : needsClarificationIntent("manual"))
+  // First value is deliberately narrower than the rest of Maya. When the member chose
+  // "Start with one selfie", the format and delegation are already decided: one photo,
+  // with Maya choosing the strongest visual world. Advanced setup returns after result one.
+  const guidedFirstPhoto =
+    aesthetic.id === "maya-decides" &&
+    outputFormat === "photo" &&
+    activeCreationIntent.source === "starter_chip" &&
+    !generatedOnce
   const videoSourceUrl = session.videoSourceUrl
   const mayaChoosesVisualWorld = session.aesthetic.id === "maya-decides"
   const hasSpecificVisualWorld =
@@ -1358,6 +1378,7 @@ export function MayaConcierge({
   const activeGenerationSource: GenerationSource = customModelAvailable
     ? generationSource
     : "selfie"
+  const workspaceTitle = mayaChoosesVisualWorld ? "Create with Maya" : aesthetic.name
   const openerLine = outputFormat
     ? activeGenerationSource === "trained-model" && outputFormat === "photo"
       ? "Your trained model is ready. Hit create and pick the direction that feels most like you."
@@ -2528,7 +2549,7 @@ export function MayaConcierge({
               id="maya-workspace-title"
               className="mt-0.5 truncate font-serif text-[21px] font-light leading-tight text-[#0D0E10]"
             >
-              {aesthetic.name}
+              {workspaceTitle}
             </h2>
             {selectedShot && (
               <p className="mt-0.5 truncate text-[11px] leading-snug text-[#6D6E70]">
@@ -2604,7 +2625,7 @@ export function MayaConcierge({
         {/* Setup - full block before the conversation starts (the guided beginning), then it
             collapses to a one-line status strip so Maya's output owns the screen. "Change"
             re-opens it for a format switch or a selfie swap. */}
-        {hasStarted && !setupOpen && (
+        {hasStarted && !setupOpen && !guidedFirstPhoto && (
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-2.5 sm:px-6">
             <span className="flex min-w-0 items-center gap-2.5">
               {(format === "video" ? videoSourceUrl : referenceSelfieUrl) && (
@@ -2646,11 +2667,54 @@ export function MayaConcierge({
         )}
         {(!hasStarted || setupOpen) && (
           <div className="min-h-0 min-w-0 shrink space-y-3 overflow-y-auto overscroll-contain border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
-            {shouldShowFormatChoice && (
+            {guidedFirstPhoto && (
+              <div
+                className="rounded-[8px] border border-[#C5C6C8]/55 bg-[#F8FAFA] p-4"
+                aria-live="polite"
+              >
+                <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+                  Your first photo
+                </p>
+                <div className="mt-3 flex items-center gap-3">
+                  {referenceSelfieUrl && (
+                    <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50 bg-white">
+                      <Image
+                        src={referenceSelfieUrl}
+                        alt="Your selfie"
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                      />
+                    </span>
+                  )}
+                  <div className="min-w-0">
+                    <p className="font-serif text-[22px] font-light leading-tight text-[#0D0E10]">
+                      {referenceSelfieUrl ? "Selfie ready" : "One selfie is enough"}
+                    </p>
+                    <p className="mt-1 text-[13px] leading-relaxed text-[#6D6E70]">
+                      {referenceSelfieUrl
+                        ? "Maya is choosing one strong direction for you."
+                        : "Add one clear selfie. Maya will choose the strongest direction and guide the rest."}
+                    </p>
+                  </div>
+                </div>
+                {!referenceSelfieUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setSelfieManagerOpen(true)}
+                    className="mt-4 min-h-12 w-full rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.16em] text-white hover:bg-[#282728]"
+                  >
+                    Add my selfie
+                  </button>
+                )}
+              </div>
+            )}
+
+            {!guidedFirstPhoto && shouldShowFormatChoice && (
               <InlineFormatChoice disabled={isThinking} onPick={handlePickFormat} />
             )}
 
-            {shouldShowVibeChoice && (
+            {!guidedFirstPhoto && shouldShowVibeChoice && (
               <div className="space-y-2">
                 {inlineShotPickerAesthetic ? (
                   <>
@@ -2714,7 +2778,7 @@ export function MayaConcierge({
               </div>
             )}
 
-            {customModelAvailable && (
+            {!guidedFirstPhoto && customModelAvailable && (
               <div className="rounded-[6px] border border-[#C5C6C8]/60 bg-white p-2.5">
                 <p className="mb-2 px-1 text-[10px] uppercase tracking-[0.2em] text-[#818283]">
                   Photo source
@@ -2870,56 +2934,57 @@ export function MayaConcierge({
             )}
 
             {/* Front-face selfie: an action before upload, a calm status after. */}
-            {format !== "video" && referenceSelfieUrl ? (
-              <div className="rounded-[6px] border border-[#0D0E10]/15 bg-white px-3 py-2.5">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="flex min-w-0 items-center gap-2.5">
-                    <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50">
-                      <Image
-                        src={referenceSelfieUrl}
-                        alt="Your selfie"
-                        fill
-                        className="object-cover"
-                        sizes="32px"
-                      />
+            {!guidedFirstPhoto &&
+              (format !== "video" && referenceSelfieUrl ? (
+                <div className="rounded-[6px] border border-[#0D0E10]/15 bg-white px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50">
+                        <Image
+                          src={referenceSelfieUrl}
+                          alt="Your selfie"
+                          fill
+                          className="object-cover"
+                          sizes="32px"
+                        />
+                      </span>
+                      <span className="truncate text-[13px] font-medium text-[#0D0E10]">
+                        {selfieRestored ? "Using your saved selfie" : "Selfie added"}
+                      </span>
                     </span>
-                    <span className="truncate text-[13px] font-medium text-[#0D0E10]">
-                      {selfieRestored ? "Using your saved selfie" : "Selfie added"}
-                    </span>
-                  </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelfieManagerOpen(true)}
+                      disabled={uploadingSlot === "face"}
+                      className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10] disabled:opacity-60"
+                    >
+                      {uploadingSlot === "face" ? "Uploading…" : "Replace selfie"}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-[#818283]">
+                    Maya will keep your skin tone and natural features recognizable, so it&apos;s
+                    still you.
+                  </p>
+                </div>
+              ) : format !== "video" ? (
+                <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => setSelfieManagerOpen(true)}
                     disabled={uploadingSlot === "face"}
-                    className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10] disabled:opacity-60"
+                    className="flex min-h-11 items-center gap-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3.5 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
                   >
-                    {uploadingSlot === "face" ? "Uploading…" : "Replace selfie"}
+                    {uploadingSlot === "face" ? "Uploading…" : "Add your selfie"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelfieManagerOpen(true)}
+                    className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                  >
+                    Use a past selfie
                   </button>
                 </div>
-                <p className="mt-1 text-[11px] leading-relaxed text-[#818283]">
-                  Maya will keep your skin tone and natural features recognizable, so it&apos;s
-                  still you.
-                </p>
-              </div>
-            ) : format !== "video" ? (
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setSelfieManagerOpen(true)}
-                  disabled={uploadingSlot === "face"}
-                  className="flex min-h-11 items-center gap-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3.5 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
-                >
-                  {uploadingSlot === "face" ? "Uploading…" : "Add your selfie"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelfieManagerOpen(true)}
-                  className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
-                >
-                  Use a past selfie
-                </button>
-              </div>
-            ) : null}
+              ) : null)}
             <input
               ref={fileInput}
               type="file"
@@ -2935,7 +3000,7 @@ export function MayaConcierge({
             {/* Primary "go": before Maya has pulled directions, one obvious next action so the
               customer never has to type or guess. Reuses handlePickFormat (commits the format,
               which triggers the pull). Hidden once directions exist. */}
-            {!hasStarted && (
+            {!guidedFirstPhoto && !hasStarted && (
               <button
                 type="button"
                 onClick={() => {
@@ -2969,7 +3034,7 @@ export function MayaConcierge({
             )}
 
             {/* Optional extras - tucked away so a single selfie still just works */}
-            {format !== "video" && (
+            {!guidedFirstPhoto && format !== "video" && (
               <button
                 type="button"
                 onClick={() => setShowMore(v => !v)}
@@ -2979,7 +3044,7 @@ export function MayaConcierge({
               </button>
             )}
 
-            {format !== "video" && showMore && (
+            {!guidedFirstPhoto && format !== "video" && showMore && (
               <div className="space-y-2">
                 <p className="text-[11px] leading-relaxed text-[#818283]">
                   For stronger likeness, add 1-3 extra identity photos: a three-quarter face, side
@@ -3055,10 +3120,8 @@ export function MayaConcierge({
               </div>
             )}
 
-            {uploadError && <p className="text-[12px] text-[#282728]">{uploadError}</p>}
-
             {/* Mid-conversation, setup is an overlay moment: one tap returns to the thread. */}
-            {hasStarted && (
+            {!guidedFirstPhoto && hasStarted && (
               <button
                 type="button"
                 onClick={() => setSetupOpen(false)}
@@ -3067,6 +3130,8 @@ export function MayaConcierge({
                 Back to the conversation
               </button>
             )}
+
+            {uploadError && <p className="text-[12px] text-[#282728]">{uploadError}</p>}
           </div>
         )}
 
@@ -3675,7 +3740,9 @@ export function MayaConcierge({
         {/* Composer - secondary: refinement only, the happy path is the taps above. One clean
             row (the eyebrow label and the duplicate close button were eating thread space);
             bottom padding respects the iPhone home-indicator safe area. */}
-        <div className="min-w-0 shrink-0 border-t border-[#C5C6C8]/40 px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] [overflow-x:clip] sm:px-6">
+        <div
+          className={`min-w-0 shrink-0 border-t border-[#C5C6C8]/40 px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] [overflow-x:clip] sm:px-6 ${guidedFirstPhoto ? "hidden" : ""}`}
+        >
           {inspirationUrl && (
             <div className="mb-2 flex min-w-0 max-w-full items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -3773,6 +3840,7 @@ export function MayaConcierge({
       <SelfieReferenceManagerModal
         open={selfieManagerOpen}
         initialFaceUrl={referenceSelfieUrl}
+        hideOptionalReferences={guidedFirstPhoto}
         onClose={() => setSelfieManagerOpen(false)}
         onFaceReady={(url, source) => {
           setSelfieRestored(false) // she chose this one herself
@@ -3802,6 +3870,7 @@ export function MayaConcierge({
           setSelfieRestored(false)
           setReferenceSelfieUrl(url)
           setSelfieManagerOpen(false)
+          setSetupOpen(false)
         }}
       />
 

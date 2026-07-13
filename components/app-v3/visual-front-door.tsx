@@ -12,17 +12,6 @@ import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { detectCreationIntent, intentForFormat } from "@/lib/app-v3/maya/intent-router"
 import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
 
-const MAYA_BLANK: Aesthetic = {
-  id: "maya-blank",
-  name: "Maya",
-  blurb: "Start from your own idea.",
-  coverImage: "",
-  thumbnails: [],
-  shotCount: 0,
-  intent:
-    "A blank SSELFIE creation session. Ask what she wants to make, then guide her with simple choices.",
-}
-
 interface MayaRecommendation {
   title: string
   rationale: string
@@ -342,15 +331,16 @@ export function VisualFrontDoor({
   }
 
   function openSelfieManagerInMaya() {
+    const intent = intentForFormat("photo", "starter_chip")
     trackFirstAction("add_selfie")
-    trackInlineStart("selfie_manager", null, "needs_clarify")
-    // No fabricated seed and no preset format: the member hasn't said anything yet, so
-    // nothing may be sent into the chat on her behalf. Maya opens the reference manager,
-    // then asks the ONE next question (format) with her own inline card. Putting words in
-    // the member's mouth here is what made every later tap replay "I want to start with
-    // one clear selfie." into the thread.
-    openWithAesthetic(MAYA_BLANK, {
-      creationIntent: { format: null, source: "manual", confidence: "needs_clarify" },
+    trackInlineStart("selfie_manager", intent.format, intent.confidence)
+    // The card already promises a first photo, so that decision is complete. Maya owns the
+    // visual direction and the member only supplies her identity. The creation idea stays as
+    // structured context; it is never replayed as a sentence the member did not type.
+    openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
+      format: "photo",
+      creationIdea: "Create one strong brand photo I can use today.",
+      creationIntent: intent,
       initialSetupAction: "selfie_manager",
     })
   }

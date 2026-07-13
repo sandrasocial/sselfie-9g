@@ -38,14 +38,13 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).toContain('session.initialSetupAction === "selfie_manager"')
     expect(concierge).toContain("setSelfieManagerOpen(true)")
 
-    // The selfie entry must never speak for the member. A fabricated seed here gets
-    // replayed as HER message on the first format pull and forwarded by every style
-    // relay ("all chips send 'I want to start with one clear selfie'", 2026-07-06).
+    // The card itself promises a first photo, so format + delegation are already decided.
+    // The idea travels as structured context and is never replayed as HER visible message.
     expect(frontDoor).not.toContain("I want to start with one clear selfie.")
-    expect(frontDoor).toContain('trackInlineStart("selfie_manager", null, "needs_clarify")')
-    expect(frontDoor).toContain(
-      'creationIntent: { format: null, source: "manual", confidence: "needs_clarify" }'
-    )
+    expect(frontDoor).toContain('intentForFormat("photo", "starter_chip")')
+    expect(frontDoor).toContain("openWithAesthetic(MAYA_DECIDES_AESTHETIC")
+    expect(frontDoor).toContain('format: "photo"')
+    expect(frontDoor).toContain('creationIdea: "Create one strong brand photo I can use today."')
 
     // One-shot only: neither restore path may persist the launch instruction, or the
     // selfie manager would re-open on every reload of a saved draft.

@@ -33,6 +33,7 @@ export function SelfieReferenceManagerModal({
   onFaceReady,
   onExtraReady,
   onContinue,
+  hideOptionalReferences = false,
 }: {
   open: boolean
   initialFaceUrl?: string | null
@@ -40,6 +41,7 @@ export function SelfieReferenceManagerModal({
   onFaceReady?: (url: string, source: "upload" | "saved") => void
   onExtraReady?: (slot: Exclude<ReferenceSlot, "face">, url: string | null) => void
   onContinue: (url: string) => void
+  hideOptionalReferences?: boolean
 }) {
   const faceInputRef = useRef<HTMLInputElement>(null)
   const angleInputRef = useRef<HTMLInputElement>(null)
@@ -224,8 +226,9 @@ export function SelfieReferenceManagerModal({
               Start with one clear selfie.
             </h2>
             <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-[color:var(--ss-davy)]">
-              Choose the selfie Maya should protect. Add extra angles only if you have them.
-              Inspiration stays separate, so it never becomes your face.
+              {hideOptionalReferences
+                ? "Choose one selfie. Maya will guide everything else."
+                : "Choose the selfie Maya should protect. Add extra angles only if you have them. Inspiration stays separate, so it never becomes your face."}
             </p>
           </div>
           <button
@@ -337,87 +340,90 @@ export function SelfieReferenceManagerModal({
                 )}
               </div>
 
-              <details className="group rounded-[8px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)]">
-                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between px-4 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-davy)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ss-night)] [&::-webkit-details-marker]:hidden">
-                  Improve likeness with extra angles
-                  <span aria-hidden className="text-[18px] font-light group-open:rotate-45">
-                    +
-                  </span>
-                </summary>
-                <div className="border-t border-[color:var(--ss-silver)]/50 p-4">
-                  <p className="text-[13px] leading-relaxed text-[color:var(--ss-davy)]">
-                    One selfie is enough. These are optional if you want to add more context later.
-                  </p>
-                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {optionalSlots.map(item => (
-                      <div
-                        key={item.slot}
-                        className="rounded-[6px] border border-[color:var(--ss-silver)] bg-[color:var(--ss-seasalt)] p-3"
-                      >
-                        <div className="flex gap-3">
-                          <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-[4px] bg-[color:var(--ss-white)]">
-                            {item.value ? (
-                              <Image
-                                src={item.value}
-                                alt={item.label}
-                                fill
-                                className="object-cover"
-                                sizes="80px"
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center text-[18px] text-[color:var(--ss-gray)]">
-                                +
-                              </div>
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[13px] font-medium text-[color:var(--ss-night)]">
-                              {item.label}
-                            </p>
-                            <p className="mt-1 text-[11px] leading-relaxed text-[color:var(--ss-davy)]">
-                              {item.help}
-                            </p>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={() => item.inputRef.current?.click()}
-                                disabled={uploadingSlot === item.slot}
-                                className="min-h-9 rounded-[4px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)] px-3 text-[10px] uppercase tracking-[0.14em] text-[color:var(--ss-davy)] hover:border-[color:var(--ss-night)]/40 disabled:opacity-60"
-                              >
-                                {uploadingSlot === item.slot
-                                  ? "Uploading..."
-                                  : item.value
-                                    ? "Change"
-                                    : "Add"}
-                              </button>
-                              {item.value && (
-                                <button
-                                  type="button"
-                                  onClick={() => clearSlot(item.slot)}
-                                  className="min-h-9 rounded-[4px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)] px-3 text-[10px] uppercase tracking-[0.14em] text-[color:var(--ss-gray)] hover:border-[color:var(--ss-night)]/40 hover:text-[color:var(--ss-night)]"
-                                >
-                                  Remove
-                                </button>
+              {!hideOptionalReferences && (
+                <details className="group rounded-[8px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)]">
+                  <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between px-4 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-davy)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ss-night)] [&::-webkit-details-marker]:hidden">
+                    Improve likeness with extra angles
+                    <span aria-hidden className="text-[18px] font-light group-open:rotate-45">
+                      +
+                    </span>
+                  </summary>
+                  <div className="border-t border-[color:var(--ss-silver)]/50 p-4">
+                    <p className="text-[13px] leading-relaxed text-[color:var(--ss-davy)]">
+                      One selfie is enough. These are optional if you want to add more context
+                      later.
+                    </p>
+                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {optionalSlots.map(item => (
+                        <div
+                          key={item.slot}
+                          className="rounded-[6px] border border-[color:var(--ss-silver)] bg-[color:var(--ss-seasalt)] p-3"
+                        >
+                          <div className="flex gap-3">
+                            <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-[4px] bg-[color:var(--ss-white)]">
+                              {item.value ? (
+                                <Image
+                                  src={item.value}
+                                  alt={item.label}
+                                  fill
+                                  className="object-cover"
+                                  sizes="80px"
+                                />
+                              ) : (
+                                <div className="flex h-full items-center justify-center text-[18px] text-[color:var(--ss-gray)]">
+                                  +
+                                </div>
                               )}
                             </div>
-                            <input
-                              ref={item.inputRef}
-                              type="file"
-                              accept={IMAGE_UPLOAD_ACCEPT}
-                              className="hidden"
-                              onChange={event => {
-                                const file = event.target.files?.[0]
-                                if (file) void handleUpload(item.slot, file)
-                                if (item.inputRef.current) item.inputRef.current.value = ""
-                              }}
-                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[13px] font-medium text-[color:var(--ss-night)]">
+                                {item.label}
+                              </p>
+                              <p className="mt-1 text-[11px] leading-relaxed text-[color:var(--ss-davy)]">
+                                {item.help}
+                              </p>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => item.inputRef.current?.click()}
+                                  disabled={uploadingSlot === item.slot}
+                                  className="min-h-9 rounded-[4px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)] px-3 text-[10px] uppercase tracking-[0.14em] text-[color:var(--ss-davy)] hover:border-[color:var(--ss-night)]/40 disabled:opacity-60"
+                                >
+                                  {uploadingSlot === item.slot
+                                    ? "Uploading..."
+                                    : item.value
+                                      ? "Change"
+                                      : "Add"}
+                                </button>
+                                {item.value && (
+                                  <button
+                                    type="button"
+                                    onClick={() => clearSlot(item.slot)}
+                                    className="min-h-9 rounded-[4px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)] px-3 text-[10px] uppercase tracking-[0.14em] text-[color:var(--ss-gray)] hover:border-[color:var(--ss-night)]/40 hover:text-[color:var(--ss-night)]"
+                                  >
+                                    Remove
+                                  </button>
+                                )}
+                              </div>
+                              <input
+                                ref={item.inputRef}
+                                type="file"
+                                accept={IMAGE_UPLOAD_ACCEPT}
+                                className="hidden"
+                                onChange={event => {
+                                  const file = event.target.files?.[0]
+                                  if (file) void handleUpload(item.slot, file)
+                                  if (item.inputRef.current) item.inputRef.current.value = ""
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </details>
+                </details>
+              )}
 
               {error && (
                 <p

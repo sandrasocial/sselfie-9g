@@ -2,7 +2,7 @@
 
 **Purpose:** Ground truth for this repo. **Do not trust unverified numbers in other markdown files.**
 
-**Verified:** 2026-07-13 · **Release:** Maya Invisible AI first-result experience
+**Verified:** 2026-07-13 · **Release:** Maya one-step first-selfie experience
 
 | Field | Value |
 |--------|--------|
@@ -22,6 +22,10 @@ personalized recommendation, Maya chooses the default Vault world, the first con
 download records value, and one next recommendation continues the visibility workflow. Active Maya
 drafts restore their latest generation and creation choices. Workspace switching is blocked while a
 render or text refinement is in flight.
+
+The first-selfie handoff commits `photo + Maya decides` before Maya opens. After the customer
+confirms one selfie, Maya goes directly to one recommended concept. Pre-result format/style/shot,
+shoot-size, model-source, extra-angle, inspiration, Change, and composer controls are not shown.
 
 ## Mechanical checks
 

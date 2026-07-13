@@ -56,6 +56,10 @@ Admin-Maya, and text-overlay plans.
 
 ## Shipped from the 2026-07-13 machine continuation
 
+- The **Start with one selfie** handoff now commits photo + Maya decides before opening the selfie
+  manager. Continue goes directly to one recommended concept; the pre-result drawer no longer shows
+  the format/style/shot-director/source/extra-angle/composer maze, and stale inspiration no longer
+  auto-attaches. Release record: `tasks/archive/2026-07-13/codex-maya-one-step-first-photo.md`.
 - Maya's first-result path now leads with one personalized recommendation, chooses one strongest
   Vault world by default, shows one concept before alternatives, records value only after a real
   download, and recommends one useful next move. Exact active work resumes, while in-flight renders
