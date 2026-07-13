@@ -131,9 +131,12 @@ ManyChat inbox in the browser, reads the real customer message and history, and 
 reply. It has no repo database, queue, API token, background schedule, or automated sender. A live
 browser send requires Sandra's approval of the exact recipient and text in the same conversation.
 
-Also in this layer: Cowork skills (`sselfie-brand`, `prompt-my-selfie`, `sselfie-stories`,
-`sselfie-tracker`, `sselfie-optimizer`, `sselfie-community-manager`) — attended routines Sandra
-invokes by name, not schedulers. Repo-committed skills live in `.agents/skills/` (37, incl.
+Also in this layer: Cowork skills (`sselfie-brand`, `what-to-post`, `prompt-my-selfie`,
+`sselfie-stories`, `sselfie-tracker`, `sselfie-optimizer`, `sselfie-community-manager`) — attended
+routines Sandra invokes by name, not schedulers. `what-to-post` (added 2026-07-13) is the on-demand
+daily content director: answers "what should I post today" from live pulls only (her real IG data,
+named current trends, campaign state), one decisive post + repost + repurpose; it reads the weekly
+plan and serves it rather than competing with it; drafts only, never posts. Repo-committed skills live in `.agents/skills/` (37, incl.
 `vault-prompt-writer` and `sselfie-brand-guardian`).
 
 The repo-backed `sselfie-brand-guardian` skill is the preflight for copy, UX language, offers, and
