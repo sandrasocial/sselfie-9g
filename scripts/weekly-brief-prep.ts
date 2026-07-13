@@ -23,6 +23,7 @@ config({ path: resolve(__dirname, "..", ".env.local") })
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import { renderPersonalNote } from "../lib/email/templates/stone-email"
+import { resolveInstagramGraphBase } from "../lib/instagram/connection-mode"
 import { getStaticVaultInventory } from "../lib/ai-prompts/prompt-data"
 import { validateWeeklyBriefDraft } from "../lib/content/weekly-brief-contract"
 
@@ -38,12 +39,13 @@ async function section(label: string, fn: () => Promise<void>) {
 
 async function pullData() {
   await section("INSTAGRAM — account + top posts by engagement (last ~30)", async () => {
-    const conn = (await sql`SELECT instagram_username, instagram_user_id, access_token FROM instagram_connections WHERE is_active=true ORDER BY connected_at DESC LIMIT 1`)[0] as any
+    const conn = (await sql`SELECT instagram_username, instagram_user_id, access_token, page_access_token, account_type FROM instagram_connections WHERE is_active=true ORDER BY connected_at DESC LIMIT 1`)[0] as any
     if (!conn) { console.log("  no active instagram_connections row"); return }
     const token = conn.access_token
-    const prof = await (await fetch(`https://graph.facebook.com/v21.0/${conn.instagram_user_id}?fields=followers_count,media_count&access_token=${token}`)).json() as any
+    const graphBase = resolveInstagramGraphBase(conn)
+    const prof = await (await fetch(`${graphBase}/${conn.instagram_user_id}?fields=followers_count,media_count&access_token=${token}`)).json() as any
     console.log(`  @${conn.instagram_username} | followers: ${prof.followers_count ?? "?"} | media: ${prof.media_count ?? "?"}`)
-    const media = await (await fetch(`https://graph.facebook.com/v21.0/${conn.instagram_user_id}/media?fields=caption,media_type,media_product_type,timestamp,like_count,comments_count,permalink&limit=30&access_token=${token}`)).json() as any
+    const media = await (await fetch(`${graphBase}/${conn.instagram_user_id}/media?fields=caption,media_type,media_product_type,timestamp,like_count,comments_count,permalink&limit=30&access_token=${token}`)).json() as any
     const posts = (media.data || []).map((m: any) => ({ ...m, eng: (m.like_count || 0) + (m.comments_count || 0) })).sort((a: any, b: any) => b.eng - a.eng)
     for (const m of posts.slice(0, 10)) {
       const cap = (m.caption || "").replace(/\s+/g, " ").slice(0, 140)

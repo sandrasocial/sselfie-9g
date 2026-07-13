@@ -185,6 +185,18 @@ Before anything is approved, ask:
 
 If any answer is no, rewrite or remove it.
 
+## The Creative Bar
+
+Added at Sandra's direction on 2026-07-13. After the Sandra Test, every outward piece of content (post, reel, carousel, Story, email, caption, hook, page copy, ad) must also answer:
+
+1. Does this sound like everyone else in the niche? If yes, find the angle only Sandra can take.
+2. Would a reader sense AI wrote it instead of a human? Kill the tells: symmetric sentence rhythm, empty adjectives, tidy wrap-up endings, generic hooks, lists of three everywhere.
+3. Is there a braver, more creative angle we have not tried?
+4. Is this share-worthy? Would a stranger send it to a friend without being asked?
+5. Does it create demand and desire? Does she want the result today, not just nod along?
+
+If any answer fails, rewrite before it ships.
+
 ## Agent Contract
 
 Every AI agent working on SSELFIE must:
