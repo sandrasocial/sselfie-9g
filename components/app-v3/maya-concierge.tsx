@@ -637,11 +637,15 @@ export function MayaConcierge({
   // MAYA-GUIDED-TEXT-01: "remove text" is an instant clean-image swap. Keep the previous
   // baked render in memory so "put the text back" can restore it without another API call.
   const hiddenBakedTextRef = useRef<Record<string, Array<string | null>>>({})
+  const hiddenBakedImageIdsRef = useRef<Record<string, Array<number | null>>>({})
   // Fullscreen viewer: the set of image urls currently open (null = closed).
   const [lightbox, setLightbox] = useState<{
     key?: string
     format?: OutputFormat
     images: string[]
+    assetIds?: Array<string | number | null>
+    bakedAssetIds?: Array<string | number | null>
+    formats?: Array<string | null>
     textOverlaySpecs?: TextOverlaySpec[]
   } | null>(null)
   // True Edit Mode target: which generated image we're refining.
@@ -1401,7 +1405,14 @@ export function MayaConcierge({
         }
 
         const videoUrl = await pollVideoGeneration(startData.predictionId, startData.videoId)
-        setGenState(s => ({ ...s, [key]: { status: "done", videoUrl } }))
+        setGenState(s => ({
+          ...s,
+          [key]: {
+            status: "done",
+            videoUrl,
+            videoAssetId: `video_${startData.videoId}`,
+          },
+        }))
         recordCompletedRender("video", 1, concept.title)
         setGeneratedOnce(true)
         trackGenerationCompleted(targetFormat, "video")
@@ -1504,6 +1515,7 @@ export function MayaConcierge({
               imageUrls?: string[]
               textOverlaySpecs?: TextOverlaySpec[]
               bakedImageUrls?: Array<string | null>
+              bakedAiImageIds?: Array<number | null>
               textOverlayMode?: GraphicTextMode
               autoBakeSkipped?: string | null
               aiImageId?: number | null
@@ -1531,6 +1543,7 @@ export function MayaConcierge({
                   imageUrls: evt!.imageUrls,
                   textOverlaySpecs: evt!.textOverlaySpecs,
                   bakedImageUrls: evt!.bakedImageUrls,
+                  bakedAiImageIds: evt!.bakedAiImageIds,
                   textOverlayMode: evt!.textOverlayMode,
                   autoBakeSkipped: evt!.autoBakeSkipped,
                   aiImageId: evt!.aiImageId ?? null,
@@ -1564,6 +1577,7 @@ export function MayaConcierge({
         imageUrls?: string[]
         textOverlaySpecs?: TextOverlaySpec[]
         bakedImageUrls?: Array<string | null>
+        bakedAiImageIds?: Array<number | null>
         textOverlayMode?: GraphicTextMode
         autoBakeSkipped?: string | null
         aiImageId?: number | null
@@ -1599,6 +1613,7 @@ export function MayaConcierge({
           imageUrls: urls,
           textOverlaySpecs: data?.textOverlaySpecs,
           bakedImageUrls: data?.bakedImageUrls,
+          bakedAiImageIds: data?.bakedAiImageIds,
           textOverlayMode: data?.textOverlayMode,
           autoBakeSkipped: data?.autoBakeSkipped,
           aiImageId: data?.aiImageId ?? null,
@@ -2139,13 +2154,15 @@ export function MayaConcierge({
     if (refinement.kind === "remove-text") {
       const current = genState[target.key]
       hiddenBakedTextRef.current[target.key] = [...(current?.bakedImageUrls ?? [])]
-      updateBakedImage(target.key, target.index, target.cleanImageUrl)
+      hiddenBakedImageIdsRef.current[target.key] = [...(current?.bakedAiImageIds ?? [])]
+      updateBakedImage(target.key, target.index, target.cleanImageUrl, target.cleanImageId)
       return true
     }
 
     if (refinement.kind === "restore-text") {
       const cached = hiddenBakedTextRef.current[target.key]?.[target.index]
-      updateBakedImage(target.key, target.index, cached ?? null)
+      const cachedId = hiddenBakedImageIdsRef.current[target.key]?.[target.index] ?? null
+      updateBakedImage(target.key, target.index, cached ?? null, cachedId)
       return true
     }
 
@@ -2201,8 +2218,9 @@ export function MayaConcierge({
       if (!res.ok || !data?.bakedUrl) {
         throw new Error(data?.error || "Text update failed")
       }
-      updateBakedImage(target.key, target.index, data.bakedUrl)
+      updateBakedImage(target.key, target.index, data.bakedUrl, data.aiImageId ?? null)
       hiddenBakedTextRef.current[target.key] = []
+      hiddenBakedImageIdsRef.current[target.key] = []
       showTrialCapIfDepleted(data.newBalance)
       return true
     } catch (error) {
@@ -2233,12 +2251,15 @@ export function MayaConcierge({
       // so no surface shows stale text. The clean base is untouched; re-apply bakes fresh.
       const nextBaked = current.bakedImageUrls ? [...current.bakedImageUrls] : undefined
       if (nextBaked) nextBaked[index] = null
+      const nextBakedIds = current.bakedAiImageIds ? [...current.bakedAiImageIds] : undefined
+      if (nextBakedIds) nextBakedIds[index] = null
       return {
         ...state,
         [key]: {
           ...current,
           textOverlaySpecs: nextSpecs,
           ...(nextBaked ? { bakedImageUrls: nextBaked } : {}),
+          ...(nextBakedIds ? { bakedAiImageIds: nextBakedIds } : {}),
         },
       }
     })
@@ -2251,17 +2272,25 @@ export function MayaConcierge({
   }
 
   // TEXT-STUDIO-01: a bake landed; store it next to the clean base (index-aligned).
-  function updateBakedImage(key: string, index: number, bakedUrl: string | null) {
+  function updateBakedImage(
+    key: string,
+    index: number,
+    bakedUrl: string | null,
+    bakedAiImageId: number | null = null
+  ) {
     setGenState(state => {
       const current = state[key]
       if (!current || current.status !== "done" || !current.imageUrls?.length) return state
       const nextBaked = [...(current.bakedImageUrls ?? [])]
+      const nextBakedIds = [...(current.bakedAiImageIds ?? [])]
       nextBaked[index] = bakedUrl
+      nextBakedIds[index] = bakedAiImageId
       return {
         ...state,
         [key]: {
           ...current,
           bakedImageUrls: nextBaked,
+          bakedAiImageIds: nextBakedIds,
         },
       }
     })
@@ -3106,6 +3135,11 @@ export function MayaConcierge({
                                   key,
                                   format: "photoshoot",
                                   images: urls,
+                                  assetIds:
+                                    gen.aiImageIds ??
+                                    (gen.aiImageId != null ? [gen.aiImageId] : undefined),
+                                  bakedAssetIds: gen.bakedAiImageIds,
+                                  formats: urls.map(() => "photoshoot"),
                                   textOverlaySpecs: gen.textOverlaySpecs,
                                 })
                               }
@@ -3254,6 +3288,11 @@ export function MayaConcierge({
                               key,
                               format: conceptFormat,
                               images: urls,
+                              assetIds:
+                                gen.aiImageIds ??
+                                (gen.aiImageId != null ? [gen.aiImageId] : undefined),
+                              bakedAssetIds: gen.bakedAiImageIds,
+                              formats: urls.map(() => conceptFormat),
                               textOverlaySpecs: genState[key]?.textOverlaySpecs,
                             })
                           }
@@ -3514,6 +3553,9 @@ export function MayaConcierge({
       {lightbox && (
         <ImageLightbox
           images={lightbox.images}
+          assetIds={lightbox.assetIds}
+          bakedAssetIds={lightbox.bakedAssetIds}
+          formats={lightbox.formats}
           textOverlaySpecs={lightbox.textOverlaySpecs}
           bakedImageUrls={lightbox.key ? genState[lightbox.key]?.bakedImageUrls : undefined}
           onClose={() => setLightbox(null)}

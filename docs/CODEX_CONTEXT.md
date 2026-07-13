@@ -1,6 +1,6 @@
 # CODEX_CONTEXT
 
-Last verified: 2026-07-12
+Last verified: 2026-07-13
 
 ## Purpose
 
@@ -113,11 +113,16 @@ Read `docs/AUTOMATION_ROSTER.md` before changing any scheduled or event-driven w
 - ManyChat, Resend, Stripe, and similar services provide delivery mechanics; business logic remains
   in the repo or in an attended Sandra workflow.
 
-The old weekly content-brief repo pipeline is disabled, not yet deleted. Its Phase 2B deletion stays
-held until the replacement Cowork weekly task completes a real Monday run and is verified.
+The old weekly content-brief repo pipeline is deleted. The replacement Cowork task completed its
+first real Monday run on 2026-07-13. `scripts/weekly-brief-prep.ts` now validates one shared contract
+before any database write or preview email, and live Content/Shoot Studio readers use that neutral
+contract. Historical report and job rows remain readable.
 
 The live automation baseline is 21 Vercel cron registrations, three Cowork draft-only tasks, and no
 Codex business automations. The exact list is always `vercel.json` plus `docs/AUTOMATION_ROSTER.md`.
+
+The retired OpenClaw gateway is disabled locally and has zero jobs. No North, OpenClaw, Telegram,
+or repo-hosted Instagram-reply runtime remains in the application.
 
 ## Safety Rules
 

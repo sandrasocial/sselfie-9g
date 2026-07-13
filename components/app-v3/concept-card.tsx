@@ -27,10 +27,14 @@ export interface ConceptGenState {
    * customer results; if a bake is missing, she sees the clean image and the copyable words.
    */
   bakedImageUrls?: Array<string | null>
+  /** Persisted gallery ids for baked variants, index-aligned with bakedImageUrls. */
+  bakedAiImageIds?: Array<number | null>
   autoBakeSkipped?: string | null
   aiImageId?: number | null
   aiImageIds?: Array<number | null>
   videoUrl?: string
+  /** Canonical generated_videos asset id, e.g. video_123. */
+  videoAssetId?: string | null
   error?: string
   /** Progressive partial frame (data URL) while streaming - the photo "develops" in place. */
   previewUrl?: string
@@ -107,6 +111,8 @@ export function ConceptCard({
   const firstOverlay = gen.textOverlaySpecs?.[0] ?? null
   // A baked render (text in the pixels) wins the card; the clean base stays kept underneath.
   const firstBaked = gen.bakedImageUrls?.[0] ?? null
+  const firstCleanAssetId = gen.aiImageIds?.[0] ?? gen.aiImageId ?? null
+  const firstDownloadAssetId = firstBaked ? (gen.bakedAiImageIds?.[0] ?? null) : firstCleanAssetId
   const suggestedText = buildSuggestedTextCopy(gen.textOverlaySpecs)
   const [copiedText, setCopiedText] = useState(false)
   const [calendarStatus, setCalendarStatus] = useState<
@@ -266,7 +272,7 @@ export function ConceptCard({
                     void recordSuiteDownloadForReview({
                       source: "concept-card",
                       format: "video",
-                      assetId: gen.aiImageId,
+                      assetId: gen.videoAssetId ?? null,
                     })
                   }}
                   className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
@@ -289,7 +295,7 @@ export function ConceptCard({
                     void recordSuiteDownloadForReview({
                       source: "concept-card",
                       format,
-                      assetId: gen.aiImageId,
+                      assetId: firstDownloadAssetId,
                     })
                     window.open(firstBaked ?? images[0], "_blank", "noreferrer")
                   }}

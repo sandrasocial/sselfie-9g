@@ -11,6 +11,12 @@ import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-
 
 interface ImageLightboxProps {
   images: string[]
+  /** Per-image persisted asset ids, index-aligned with images. Missing values stay null. */
+  assetIds?: Array<string | number | null>
+  /** Persisted ids for baked variants, index-aligned with bakedImageUrls. */
+  bakedAssetIds?: Array<string | number | null>
+  /** Per-image output formats, index-aligned with images. */
+  formats?: Array<string | null>
   textOverlaySpecs?: TextOverlaySpec[]
   /** Per-image baked text renders, index-aligned with images. */
   bakedImageUrls?: Array<string | null>
@@ -20,6 +26,9 @@ interface ImageLightboxProps {
 
 export function ImageLightbox({
   images,
+  assetIds,
+  bakedAssetIds,
+  formats,
   textOverlaySpecs,
   bakedImageUrls,
   startIndex = 0,
@@ -135,7 +144,11 @@ export function ImageLightbox({
             type="button"
             onClick={() => {
               // Member pulse: downloads = "she loved it" (SUITE-UX-02).
-              void recordSuiteDownloadForReview({ source: "lightbox" })
+              void recordSuiteDownloadForReview({
+                source: "lightbox",
+                assetId: baked ? (bakedAssetIds?.[index] ?? null) : (assetIds?.[index] ?? null),
+                format: formats?.[index] ?? null,
+              })
               window.open(baked ?? url, "_blank", "noreferrer")
             }}
             className="inline-flex min-h-11 items-center rounded-full bg-white px-6 py-2.5 text-[11px] uppercase tracking-[0.18em] text-[#0D0E10] transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-95"

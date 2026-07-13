@@ -7,7 +7,6 @@ const sendEmailMock = vi.fn()
 const generatePaymentFailedEmailMock = vi.fn()
 const logWebhookErrorMock = vi.fn()
 const alertWebhookErrorMock = vi.fn()
-const notifyNorthMock = vi.fn()
 const retrieveCustomerMock = vi.fn()
 
 vi.mock("@/lib/db/client", () => ({
@@ -25,10 +24,6 @@ vi.mock("@/lib/email/templates/payment-failed", () => ({
 vi.mock("@/lib/webhook-monitoring", () => ({
   logWebhookError: logWebhookErrorMock,
   alertWebhookError: alertWebhookErrorMock,
-}))
-
-vi.mock("@/lib/north-notifier", () => ({
-  notifyNorth: notifyNorthMock,
 }))
 
 vi.mock("@/lib/stripe", () => ({
@@ -56,8 +51,6 @@ describe("invoice.payment_failed lifecycle", () => {
       email: "member@example.com",
       name: "Member Example",
     })
-    notifyNorthMock.mockResolvedValue(undefined)
-
     sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const query = strings.join(" ")
 
@@ -110,13 +103,6 @@ describe("invoice.payment_failed lifecycle", () => {
         tags: ["billing", "payment-failed"],
       })
     )
-    expect(notifyNorthMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        path: "stripe-payment-failed",
-        customerId: "cus_payment_failed_1",
-      })
-    )
-
     expect(logWebhookErrorMock).not.toHaveBeenCalled()
     expect(alertWebhookErrorMock).not.toHaveBeenCalled()
   })

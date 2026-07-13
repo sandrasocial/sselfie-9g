@@ -1,5 +1,10 @@
 # Selfie To Brand Shoot Final Launch Readiness
 
+> Superseded 2026-07-13. Selfie To Brand Shoot is historical-access-only under the current Growth
+> Machine contract. Its public sales path and checkout-recovery route/templates are removed.
+> Existing buyer access, entitlements, and Stripe webhook fulfillment remain protected. The details
+> below are retained as launch history and are not current implementation instructions.
+
 Date: 2026-06-05  
 Product: Selfie to Brand Shoot System  
 Verdict owner: Codex launch-readiness implementation pass
@@ -490,4 +495,3 @@ Reasoning:
 3. Enable `SELFIE_TO_BRAND_SHOOT_NURTURE_ENABLED` after Sandra approval.
 4. Send a warm email launch to the AI Photoshoot / Prompt Vault audience.
 5. Collect proof replies from Day 7 and DMs, then update sales page proof section before paid ads.
-

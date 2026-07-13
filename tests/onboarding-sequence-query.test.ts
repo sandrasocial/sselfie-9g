@@ -59,4 +59,27 @@ describe("onboarding sequence DISTINCT query safety", () => {
       expect(selectClause, `${queryMarker.name} should project u.created_at`).toContain("u.created_at")
     }
   })
+
+  it("sends Day 7 only to members who created once and then stalled", () => {
+    const routePath = path.join(ROOT, "app/api/cron/onboarding-sequence/route.ts")
+    const contents = fs.readFileSync(routePath, "utf8")
+    const query = extractQuery(contents, "const day7Users = await sql`")
+
+    expect(query).toContain("ae.event_name = 'suite_image_generated'")
+    expect(query).toMatch(
+      /COUNT\(DISTINCT \(ae\.created_at AT TIME ZONE 'UTC'\)::date\)[\s\S]*?\)\s*=\s*1/
+    )
+    expect(query).toContain("MIN(ae.created_at)")
+    expect(query).toContain("INTERVAL '24 hours'")
+  })
+
+  it("deep-links the approved Day 7 reset to Create with campaign tracking", () => {
+    const template = fs.readFileSync(
+      path.join(ROOT, "lib/email/templates/onboarding-day-7.tsx"),
+      "utf8"
+    )
+
+    expect(template).toContain("/app?view=create")
+    expect(template).toContain("utm_campaign=suite_day7_second_creation")
+  })
 })

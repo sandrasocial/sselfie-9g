@@ -9,10 +9,8 @@ const read = (path: string) => readFileSync(join(ROOT, path), "utf8")
 describe("VOICE-LOOP-01 apprentice loop", () => {
   it("injects learned admin memory into all admin content generators", () => {
     const generators = [
-      "lib/content-engine/brief-generator.ts",
       "lib/content-kit/carousel-generator.ts",
       "lib/content-kit/story-generator.ts",
-      "lib/admin/daily-briefing-intelligence.ts",
     ]
 
     for (const file of generators) {
@@ -42,6 +40,14 @@ describe("VOICE-LOOP-01 apprentice loop", () => {
     expect(script).toContain("docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md")
     expect(script).toContain("docs/brand/source/2026-06-27/SSELFIE_VOICE_STYLE_GUIDE.md")
     expect(grounding).toContain("synced from Sandra's canonical brand docs")
+  })
+
+  it("keeps the replacement weekly brief writer on the validated storage contract", () => {
+    const prep = read("scripts/weekly-brief-prep.ts")
+
+    expect(prep).toContain("validateWeeklyBriefDraft")
+    expect(prep).toContain("lib/content/weekly-brief-contract")
+    expect(prep).not.toContain("generateContentBrief")
   })
 })
 

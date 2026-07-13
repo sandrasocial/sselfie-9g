@@ -19,6 +19,10 @@ const credentialPatterns: CredentialPattern[] = [
   { type: "Vercel token", pattern: /\bvercel_[A-Za-z0-9_-]{20,}\b/g },
   { type: "Anthropic API key", pattern: /\bsk-ant-[A-Za-z0-9_-]{20,}\b/g },
   { type: "Replicate API token", pattern: /\br8_[A-Za-z0-9]{20,}\b/g },
+  {
+    type: "hardcoded OpenClaw gateway token",
+    pattern: /\b(?:OPENCLAW|GATEWAY)_TOKEN\s*=\s*["'][^"']{16,}["']/g,
+  },
   { type: "private key", pattern: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g },
 ]
 

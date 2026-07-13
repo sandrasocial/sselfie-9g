@@ -2,6 +2,7 @@
 
 Created: 2026-07-08 (from the full cross-layer audit that day)
 Owner: Sandra + Claude (Cowork). Update this file the same day any automation is added, retired, or moved.
+Last verified: 2026-07-13
 
 ## Why this exists
 
@@ -44,7 +45,7 @@ automation.
 ### Customer email lifecycle (all LIVE; env-gated flags verified ON 2026-07-08)
 | Cron | Schedule | Job |
 |---|---|---|
-| `onboarding-sequence` | 10:05 | New member onboarding |
+| `onboarding-sequence` | 10:05 | New member onboarding. Day 7 now reuses the approved reset email only for active members who generated on one calendar day and did not return on another day; it deep-links to Create. It is no longer an unconditional calendar send. |
 | `suite-habit-emails` | 09:00 | Member habit/activation |
 | `suite-trial-expiry` | 08:45 | Trial lifecycle + expiry |
 | `win-back-sequence` | 10:00 | Cancelled + dormant-member win-back |
@@ -57,24 +58,24 @@ automation.
 | Cron | Schedule | Job |
 |---|---|---|
 | `daily-sandra-briefing` | 06:15 | Trimmed to a ~15-second read: money, growth/revenue truth, one compact "today's move" line, customer threads only if any, and recent `Story ·` Resend drafts awaiting approval. The repo DM inbox and DM approvals were removed 2026-07-12. |
-| ~~`content-brief-weekly` (3 phases) + `content-brief-jobs`~~ | — | UNSCHEDULED 2026-07-12. Replaced by the `weekly-content-brief-draft` Cowork task below. All four Vercel registrations are removed, so the retired repo engine cannot collide with its replacement or create five-minute no-op traffic. Routes and the local worker remain temporarily for a dependency-audited code-deletion pass; `CONTENT_BRIEF_ENABLED=false` remains defense in depth. |
+| ~~`content-brief-weekly` (3 phases) + `content-brief-jobs`~~ | — | REMOVED 2026-07-13 after the replacement completed its real Monday run and live readers were migrated to the shared contract. All four Vercel registrations, route handlers, generator, support modules, local worker, runners, and engine-only tests are deleted. Historical report/job rows remain. |
 | `ig-insights-sync` | 05:50 | Nightly IG post snapshots |
 | `weekly-content-trends` | Mon 05:00 | Trend digest pre-warm |
 | `feed-plan-monthly-draft` | 1st, 06:00 | Maya drafts member feed calendars |
 | `cron-health-check` | hourly | Watchdog: stale crons, failures, AI-credit canary → alerts |
 
-### Retired schedules with route code temporarily held (UNSCHEDULED 2026-07-12)
+### Retired schedule code removed (2026-07-13)
 
-These jobs are not in `vercel.json` and therefore do not run automatically. Their route files are
-kept temporarily so removal can happen in a separate dependency-audited pass without risking live
-customer access, fulfillment, or the active approval queue.
+The dependency-audited deletion pass removed the route and route-only logic for the old content
+engine, legacy scheduled-newsletter poller, duplicate Product QA report, and retired Selfie To Brand
+Shoot checkout recovery. Historical report, campaign, checkout, purchase, and entitlement data stay
+in place and remain readable.
 
-| Route | Why the schedule is off | Replacement / safe state |
-|---|---|---|
-| `content-brief-weekly` (3 phases) + `content-brief-jobs` | Retired content engine duplicated the replacement Cowork workflow and generated five-minute no-op traffic while disabled. | `weekly-content-brief-draft` owns the weekly draft; `CONTENT_BRIEF_ENABLED=false` remains defense in depth. |
-| `send-scheduled-newsletters` | Legacy scheduled-broadcast poller is not part of the founder approval queue. | Sandra-approved Resend actions use the durable `admin_action_queue`; the legacy route is manual-only until deleted. |
-| `product-qa-daily` | Duplicate deterministic reporter added another report and “employee” instead of one operational truth loop. | `cron-health-check`, payment reconciliation, Sentry, and the Daily Sandra Briefing remain live. Existing stored QA reports remain readable. |
-| `selfie-to-brand-shoot-checkout-recovery` | Selfie To Brand Shoot is no longer an active sales path and its recovery lane had no completed sales. | Prompt Vault, Starter Kit, and membership recovery remain scheduled. Existing Brand Shoot buyer access and fulfillment are unchanged. |
+- Sandra-approved broadcasts continue through the durable `admin_action_queue`.
+- `cron-health-check`, payment reconciliation, Sentry, and the Daily Sandra Briefing remain the
+  operational truth loop.
+- Prompt Vault, Starter Kit, and membership checkout recovery remain scheduled.
+- Existing Selfie To Brand Shoot buyers retain access and webhook fulfillment.
 
 ### Founder approval queue (LIVE 2026-07-10)
 
@@ -90,8 +91,7 @@ customer access, fulfillment, or the active approval queue.
 
 ### Built but NOT scheduled (dormant)
 `reindex-codebase`, `refresh-segments`, `sync-audience-segments`, `backfill-resend-audience`,
-`referral-bonus-notifications`, `maya-instagram-trends-weekly`, plus the explicitly retired/held
-routes listed above. Admin diagnostics APIs
+`referral-bonus-notifications`, and `maya-instagram-trends-weekly`. Admin diagnostics APIs
 (`cron-status`, `errors`) are now wired into the /admin home Team panel (EMPLOYEE-01, shipped
 2026-07-08, commit fcf207ef).
 
@@ -115,7 +115,7 @@ routes listed above. Admin diagnostics APIs
 |---|---|---|---|
 | `daily-email-draft` | 06:34 daily | ✅ ACTIVE (re-grounded 2026-07-08) | Drafts ONE story-first broadcast + preview to Sandra. NEVER sends. |
 | `daily-story-sequence-draft` | 07:01 daily | ✅ ACTIVE (new 2026-07-10, reconciled 2026-07-11) | Reads that morning's already-drafted broadcast via `scripts/daily-story-sequence-prep.ts` and repurposes it into a 7-slide Instagram Story sequence (hook → emotional recognition → belief shift → personal mirror → stuck point → offer bridge → CTA), TEXT ONLY, ready to copy. Also pulls that weekday's planned theme from the latest `weekly-content-brief-draft` row (if any) as a continuity steer — the two tasks were briefly duplicating "today's Story" (2026-07-11 content-system audit finding); reconciled by making this the sole owner of daily slide text while the weekly brief owns only the week-level theme. Now reads the full voice-doc set (was thinner than its siblings at launch). Stores to `analytics_reports` (`report_type='story_sequence_daily'`) and emails Sandra the slides. NEVER posts. Does not replace `sselfie-stories` (the on-demand skill for full photo-based sequences with background/overlay rendering) — this is the lightweight daily companion. |
-| `weekly-content-brief-draft` | Mon 06:05 | ✅ ACTIVE (new 2026-07-09, scope narrowed 2026-07-11) | Replaces the retired `content-brief-weekly` repo cron. Real data via `scripts/weekly-brief-prep.ts` (server-only modules can't be imported into a CLI script, so this queries the same tables directly) + live research + live writing, stores into `analytics_reports` (same shape/table so nothing downstream needs to change) and emails Sandra a preview. NEVER posts. Its `dailyStories` output is now a per-weekday THEME only (day/theme/conversationType/offerMention) — `daily-story-sequence-draft` writes the actual daily slide text each morning; this task stopped writing full frames the same day to avoid duplicating that work. |
+| `weekly-content-brief-draft` | Mon 06:05 | ✅ ACTIVE (real Monday run verified 2026-07-13) | Replaces the deleted repo content engine. Real data via `scripts/weekly-brief-prep.ts` + live research + live writing, stores into `analytics_reports`, and emails Sandra a preview. NEVER posts. A shared canonical contract rejects incomplete demand maps, incompatible trend keys, unsafe buyer-facing vibe presets, fewer than five complete pieces, or anything other than seven weekday themes before any database write or email. This week's stored row was repaired and now has two usable Shoot Studio trend presets. `daily-story-sequence-draft` remains the sole owner of daily slide text. |
 
 Retired task directories were physically removed on 2026-07-12. This includes
 `claude-codex-loop`, `daily-photo-export`, `funnel-health-daily`, and the duplicate
@@ -143,6 +143,11 @@ any active Claude Code registry checked (`~/.claude/plugins/*`, `~/.claude.json`
 runtime or scheduling path, so this is closed and requires no founder action. If it ever reappears in
 Cowork, delete that visible registration instead of reviving its files.
 
+The retired local OpenClaw gateway launch agent was still running despite having zero jobs. It was
+stopped and disabled on 2026-07-13; its local data was preserved. The repo's final North/OpenClaw
+payment notifier, Telegram webhook shell, and hardcoded legacy gateway token were removed. Nothing
+customer-facing or payment-critical depends on that runtime.
+
 ## Layer 3 — Codex app (`~/.codex/automations`) — EMPTY by design
 
 All SSELFIE Codex automations are removed as of 2026-07-12. The final paused lint-cleanup task was
@@ -164,3 +169,7 @@ Security note (2026-07-12): the production Stripe webhook signing secret was rot
 value was found in public Git history. The replacement endpoint is enabled and the exposed endpoint
 is disabled. Neon live and legacy-source credentials were also rotated. Do not restore credentials
 from Git history, archived docs, or old scripts.
+
+Security follow-up (2026-07-13): the secret regression scan now also blocks hardcoded OpenClaw
+gateway tokens. The local gateway is disabled and no North/OpenClaw/Telegram runtime remains in the
+repo.

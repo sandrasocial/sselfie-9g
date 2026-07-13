@@ -3,7 +3,6 @@ import { spawn } from "node:child_process"
 const requiredChecks = [
   ["Repo invariants", ["pnpm", "verify:repo"]],
   ["Route inventory", ["pnpm", "routes:inventory"]],
-  ["Route classification", ["pnpm", "routes:classify"]],
   ["Integration health", ["pnpm", "audit:integration-health"]],
   ["User journey smoke", ["pnpm", "automation:journey-smoke"]],
   ["Maya quality", ["pnpm", "audit:maya-quality"]],

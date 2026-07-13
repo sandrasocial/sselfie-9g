@@ -234,9 +234,14 @@ function sanitizeGenState(value: unknown): Record<string, ConceptGenState> {
     if (!item || typeof item !== "object") continue
     const state = item as Record<string, unknown>
     if (state.status === "done" && typeof state.videoUrl === "string") {
+      const videoAssetId =
+        typeof state.videoAssetId === "string" && /^video_[1-9]\d*$/.test(state.videoAssetId)
+          ? state.videoAssetId
+          : null
       out[key] = {
         status: "done",
         videoUrl: state.videoUrl,
+        ...(videoAssetId ? { videoAssetId } : {}),
       }
     } else if (
       state.status === "done" &&
@@ -256,6 +261,11 @@ function sanitizeGenState(value: unknown): Record<string, ConceptGenState> {
             typeof url === "string" && url.startsWith("https://") ? url : null
           )
         : undefined
+      const bakedAiImageIds = Array.isArray(state.bakedAiImageIds)
+        ? state.bakedAiImageIds.map(id =>
+            typeof id === "number" && Number.isInteger(id) ? id : null
+          )
+        : undefined
       // Variant lineage survives reloads: gallery row ids stay with their URLs so a
       // bake/edit from a restored card still records variant_of.
       const aiImageIds = Array.isArray(state.aiImageIds)
@@ -270,6 +280,7 @@ function sanitizeGenState(value: unknown): Record<string, ConceptGenState> {
         imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),
         ...(textOverlaySpecs?.length ? { textOverlaySpecs } : {}),
         ...(bakedImageUrls?.some(Boolean) ? { bakedImageUrls } : {}),
+        ...(bakedAiImageIds?.some(id => id != null) ? { bakedAiImageIds } : {}),
         ...(aiImageId != null ? { aiImageId } : {}),
         ...(aiImageIds?.some(id => id != null) ? { aiImageIds } : {}),
       }

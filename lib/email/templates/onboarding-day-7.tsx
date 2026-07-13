@@ -14,7 +14,7 @@ export function generateOnboardingDay7Email(params: OnboardingDay7Params): {
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.sselfie.ai")
     .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
     .replace(/\/+$/, "")
-  const studioUrl = `${siteUrl}/app`
+  const studioUrl = `${siteUrl}/app?view=create&utm_source=email&utm_medium=lifecycle&utm_campaign=suite_day7_second_creation`
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${displayName},</p>

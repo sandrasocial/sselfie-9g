@@ -219,18 +219,24 @@ export default async function ActivationFunnelPage({
           <section className="border border-stone-300 bg-white p-5 sm:p-6">
             <h2 className="font-serif text-3xl font-light">Trial source confidence</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
-              Trials do not store a separate source. The report matches the exact claim subscriber
-              when possible and displays that subscriber record&apos;s current acquisition source.
-              Email fallback is used only when an older event lacks a subscriber ID.
+              Paid-buyer trials are matched to the exact purchase-triggered activation event first.
+              Older trials use the exact claim subscriber when possible and display that subscriber
+              record&apos;s current acquisition source. Email fallback is used only when an older event
+              lacks a subscriber ID.
             </p>
             <dl className="mt-5 grid gap-px bg-stone-200 sm:grid-cols-3">
               <div className="bg-stone-50 p-4">
                 <dt className="text-xs uppercase tracking-[0.14em] text-stone-500">
-                  Exact subscriber match
+                  Exact source match
                 </dt>
                 <dd className="mt-2 font-serif text-3xl font-light">
-                  {report.trialSourceAttribution.exactClaimSubscriber}
+                  {report.trialSourceAttribution.paidBuyerEvent +
+                    report.trialSourceAttribution.exactClaimSubscriber}
                 </dd>
+                <p className="mt-1 text-xs text-stone-500">
+                  {report.trialSourceAttribution.paidBuyerEvent} paid buyers ·{" "}
+                  {report.trialSourceAttribution.exactClaimSubscriber} claim subscribers
+                </p>
               </div>
               <div className="bg-stone-50 p-4">
                 <dt className="text-xs uppercase tracking-[0.14em] text-stone-500">

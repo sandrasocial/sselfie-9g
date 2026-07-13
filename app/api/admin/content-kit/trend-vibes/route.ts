@@ -1,7 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
-import type { ContentBrief, TrendRadarEntry } from "@/lib/content-engine/brief-generator"
+import {
+  isUsableWeeklyTrend,
+  type WeeklyContentBrief,
+  type WeeklyTrendRadarEntry,
+} from "@/lib/content/weekly-brief-contract"
 
 // SHOOT-TREND-PRESET-01: serves this week's live Trend Radar entries as selectable Shoot
 // Studio story-collection vibe presets (Sandra's ask, 2026-07-05: "a new preset that helps
@@ -31,14 +35,15 @@ export async function GET(request: NextRequest) {
   }
 
   const rows = await getLatestAnalyticsReports({ reportType: "content_brief_weekly", limit: 1 })
-  const row = rows[0] as { created_at?: string; payload?: ContentBrief } | undefined
+  const row = rows[0] as { created_at?: string; payload?: WeeklyContentBrief } | undefined
   const age = row?.created_at ? Date.now() - new Date(row.created_at).getTime() : Infinity
   if (!row?.payload || age > THIS_WEEK_MAX_AGE_MS) {
     return NextResponse.json({ trends: [] })
   }
 
   const trends = (Array.isArray(row.payload.trendRadar) ? row.payload.trendRadar : [])
-    .filter((entry): entry is TrendRadarEntry => Boolean(entry?.vibePreset?.trim()))
+    .filter(entry => Boolean(entry?.vibePreset?.trim()))
+    .filter((entry): entry is WeeklyTrendRadarEntry => isUsableWeeklyTrend(entry))
     .map(entry => ({ trend: entry.trend, vibePreset: entry.vibePreset }))
 
   return NextResponse.json({ trends })

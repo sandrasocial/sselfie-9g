@@ -97,10 +97,6 @@ vi.mock("@/lib/webhook-monitoring", () => ({
   isCriticalError: vi.fn().mockReturnValue(false),
 }))
 
-vi.mock("@/lib/north-notifier", () => ({
-  notifyNorth: vi.fn(),
-}))
-
 vi.mock("@/lib/resend/manage-contact", () => ({
   addOrUpdateResendContact: vi.fn().mockResolvedValue({ success: true, contactId: "contact_bonus_1" }),
   updateContactTags: vi.fn(),

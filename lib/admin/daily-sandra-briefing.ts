@@ -1,6 +1,5 @@
 import type { GrowthTruthSnapshot } from "@/lib/admin/growth-truth"
 import type { RevenueTruthScorecard } from "@/lib/admin/revenue-truth-scorecard"
-import type { ContentBriefPiece, DailyStory } from "@/lib/content-engine/brief-generator"
 import type { ApprovalActionSummary } from "@/lib/admin/action-queue"
 
 type ReportRow = {
@@ -77,32 +76,11 @@ export type DailyBriefingExtras = {
   approvalActions?: ApprovalActionSummary[]
 }
 
-export type TodaysContentPost = {
-  weekday: string
-  feedPost: ContentBriefPiece | null
-  storySequence: DailyStory | null
-}
-
-export type DailyBriefingIntelligenceSections = {
-  todaysMove: string
-  whatChanged: string
-  watchThis: string
-  todaysContentPost: TodaysContentPost | null
-}
-
 export type DailySandraBriefing = {
   generatedAt: string
   windowDays: number
   subject: string
   moneyHeader: string | null
-  /**
-   * Real intelligence sections (today's move from the weekly plan, genuine
-   * day-over-day changes, the one thing to watch). Null when the intelligence
-   * layer was unavailable; the email then falls back to the template sections
-   * below and says so via intelligenceNote.
-   */
-  intelligence: DailyBriefingIntelligenceSections | null
-  intelligenceNote: string | null
   truthSnapshot: GrowthTruthSnapshot | null
   revenueScorecard: RevenueTruthScorecard | null
   working: string[]
@@ -378,8 +356,6 @@ export function buildDailySandraBriefing(
     windowDays: report.windowDays,
     subject: "today's SSELFIE briefing",
     moneyHeader,
-    intelligence: null,
-    intelligenceNote: null,
     truthSnapshot: report.truthSnapshot || null,
     revenueScorecard: report.revenueScorecard || null,
     working: working.slice(0, 4),

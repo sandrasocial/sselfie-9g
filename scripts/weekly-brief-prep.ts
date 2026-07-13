@@ -4,12 +4,11 @@
  * dead since 2026-07-02 on an Anthropic credit-balance failure) with a Cowork skill that does
  * the actual research + writing live, using this script only for real data + storage.
  *
- * Most of the underlying analytics modules (growth-truth.ts, revenue-truth-scorecard.ts,
- * instagram-performance.ts, audience-signals.ts, member-pulse.ts, analytics/reports.ts) are
- * marked "server-only" and cannot be imported into a plain CLI script — this file queries the
- * same tables directly instead, mirroring the established pattern in daily-email-prep.ts.
+ * The app's analytics helpers are server-only and cannot be imported safely into a plain CLI
+ * process, so this file queries the same source tables directly. The retired weekly generator and
+ * its audience/Instagram support modules were deleted after this replacement was verified.
  *
- *   npx tsx scripts/weekly-brief-prep.ts data          # read-only: real IG/Vault/Suite/DM data
+ *   npx tsx scripts/weekly-brief-prep.ts data          # read-only: real IG/Vault/Suite data
  *   npx tsx scripts/weekly-brief-prep.ts draft <<'JSON'
  *     { ...week's content plan... }
  *   JSON
@@ -25,6 +24,7 @@ import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import { renderPersonalNote } from "../lib/email/templates/stone-email"
 import { getStaticVaultInventory } from "../lib/ai-prompts/prompt-data"
+import { validateWeeklyBriefDraft } from "../lib/content/weekly-brief-contract"
 
 const sql = neon(process.env.DATABASE_URL!)
 const resend = new Resend(process.env.RESEND_API_KEY!)
@@ -96,17 +96,6 @@ async function pullData() {
   })
 }
 
-// --------------------------------------------------------------- draft mode
-type DraftInput = {
-  researchNotes: string
-  demandMap?: Record<string, unknown>
-  trendRadar?: Array<Record<string, unknown>>
-  contentPlan: Array<Record<string, unknown>>
-  dailyStories?: Array<Record<string, unknown>>
-  /** Short plain-language summary for the preview email — 3-5 sentences, not the full JSON. */
-  emailSummary: string
-}
-
 function mondayOfThisWeek(now = new Date()): Date {
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
   const day = d.getUTCDay() // 0=Sun
@@ -124,11 +113,14 @@ async function readStdin(): Promise<string> {
 
 async function makeDraft() {
   const raw = await readStdin()
-  if (!raw.trim()) throw new Error("draft mode expects JSON on stdin (researchNotes, contentPlan[], emailSummary, optional demandMap/trendRadar/dailyStories)")
-  const input = JSON.parse(raw) as DraftInput
-  if (!input.researchNotes) throw new Error("missing field: researchNotes")
-  if (!Array.isArray(input.contentPlan) || !input.contentPlan.length) throw new Error("contentPlan[] required, at least one piece")
-  if (!input.emailSummary) throw new Error("missing field: emailSummary")
+  if (!raw.trim()) {
+    throw new Error(
+      "draft mode expects canonical JSON on stdin (researchNotes, demandMap, trendRadar, contentPlan, dailyStories, emailSummary)"
+    )
+  }
+  // This is intentionally the first operation after parsing. A malformed Cowork draft must never
+  // reach the analytics table or trigger Sandra's preview email.
+  const input = validateWeeklyBriefDraft(JSON.parse(raw))
 
   const periodStart = mondayOfThisWeek()
   const periodEnd = new Date(periodStart)
@@ -139,9 +131,9 @@ async function makeDraft() {
     periodStart: periodStart.toISOString(),
     periodEnd: periodEnd.toISOString(),
     contentPlan: input.contentPlan,
-    dailyStories: input.dailyStories || [],
-    demandMap: input.demandMap || null,
-    trendRadar: input.trendRadar || [],
+    dailyStories: input.dailyStories,
+    demandMap: input.demandMap,
+    trendRadar: input.trendRadar,
     researchNotes: input.researchNotes,
   }
 

@@ -560,6 +560,8 @@ export function GalleryView({
       {lightboxIndex !== null && lightboxImages.length > 0 && (
         <ImageLightbox
           images={lightboxImages}
+          assetIds={displayedImages.map(asset => asset.id)}
+          formats={displayedImages.map(asset => asset.contentType)}
           startIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
         />

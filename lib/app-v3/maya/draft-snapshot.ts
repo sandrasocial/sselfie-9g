@@ -71,11 +71,14 @@ export type ServerConceptGenState = {
   textOverlaySpecs?: TextOverlaySpec[]
   /** TEXT-STUDIO-01: per-image baked text renders, index-aligned with imageUrls. */
   bakedImageUrls?: Array<string | null>
+  /** Persisted gallery ids for baked text variants, index-aligned with bakedImageUrls. */
+  bakedAiImageIds?: Array<number | null>
   /** Gallery row ids, index-aligned with imageUrls. Without these, a bake/edit started
    * from a RESTORED card loses its variant_of lineage (parent id unknown after reload). */
   aiImageId?: number | null
   aiImageIds?: Array<number | null>
   videoUrl?: string
+  videoAssetId?: string | null
   error?: string
   previewUrl?: string
 }
@@ -236,9 +239,14 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
     if (!item || typeof item !== "object") continue
     const state = item as Record<string, unknown>
     if (state.status === "done" && typeof state.videoUrl === "string") {
+      const videoAssetId =
+        typeof state.videoAssetId === "string" && /^video_[1-9]\d*$/.test(state.videoAssetId)
+          ? state.videoAssetId
+          : null
       out[key] = {
         status: "done",
         videoUrl: state.videoUrl,
+        ...(videoAssetId ? { videoAssetId } : {}),
       }
     } else if (
       state.status === "done" &&
@@ -256,6 +264,11 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
             typeof url === "string" && url.startsWith("https://") ? url : null
           )
         : undefined
+      const bakedAiImageIds = Array.isArray(state.bakedAiImageIds)
+        ? state.bakedAiImageIds.map(id =>
+            typeof id === "number" && Number.isInteger(id) ? id : null
+          )
+        : undefined
       // Variant lineage survives reloads: keep gallery row ids alongside their URLs.
       const aiImageIds = Array.isArray(state.aiImageIds)
         ? state.aiImageIds.map(id => (typeof id === "number" && Number.isInteger(id) ? id : null))
@@ -269,6 +282,7 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
         imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),
         ...(textOverlaySpecs?.length ? { textOverlaySpecs } : {}),
         ...(bakedImageUrls?.some(Boolean) ? { bakedImageUrls } : {}),
+        ...(bakedAiImageIds?.some(id => id != null) ? { bakedAiImageIds } : {}),
         ...(aiImageId != null ? { aiImageId } : {}),
         ...(aiImageIds?.some(id => id != null) ? { aiImageIds } : {}),
       }

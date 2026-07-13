@@ -104,6 +104,10 @@ Payment hardening is part of this machine, not a separate project. Guest one-tim
 fulfill even when no account exists; webhook review alerts stay unresolved until access and delivery
 are verified. Public credentials are forbidden in the repo and enforced by an automated scan.
 
+The weekly content brief has one validated payload contract shared by its writer and live readers.
+Incomplete or unsafe drafts fail before storage or preview email. The retired repo generator and
+its duplicate reporting routes are deleted; historical rows remain.
+
 ## Measurement contract
 
 Money comes only from Stripe or qualifying `stripe_payments` rows. Behavior comes from analytics.
@@ -121,6 +125,12 @@ metric, minimum sample, and stop condition before traffic is split.
 The current trial model remains no-card. Card-upfront is a held commercial decision, not an implicit
 engineering change. Evaluate the newly cleaned paid-buyer cohort before changing how anyone is
 charged.
+
+Paid-buyer auto-activation is reported as its own exact source, separate from ordinary trial claims.
+Generation and download behavior carries the exact persisted image/video asset ID when available,
+so future retention analysis can connect a return or review to the result that created value. The
+existing Day-7 member reset is behavior-gated to women who generated on one calendar day and then
+stalled; it is not another unconditional email campaign.
 
 ## Review capture
 

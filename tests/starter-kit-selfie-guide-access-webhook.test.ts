@@ -86,10 +86,6 @@ vi.mock("@/lib/webhook-monitoring", () => ({
   isCriticalError: vi.fn().mockReturnValue(false),
 }))
 
-vi.mock("@/lib/north-notifier", () => ({
-  notifyNorth: vi.fn(),
-}))
-
 vi.mock("@/lib/subscription", () => ({
   hasStudioMembership: vi.fn(),
 }))

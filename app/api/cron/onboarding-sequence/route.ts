@@ -196,7 +196,9 @@ export async function GET(request: Request) {
       await new Promise((r) => setTimeout(r, 150))
     }
 
-    // Onboarding Email Sequence Automation - Day 7 emails: subscription created ~7 days ago (cap window to avoid very-late sends)
+    // Day 7 second-creation recovery: only active members who generated successfully on one
+    // calendar day, then did not return to generate on another day. Reuses the approved reset
+    // email and its existing idempotency key instead of adding another lifecycle campaign.
     const day7Users = await sql`
       SELECT DISTINCT 
         u.id,
@@ -216,6 +218,20 @@ export async function GET(request: Request) {
         AND s.is_test_mode = false
         AND s.created_at <= NOW() - INTERVAL '7 days'
         AND s.created_at > NOW() - INTERVAL '21 days'
+        AND (
+          SELECT COUNT(DISTINCT (ae.created_at AT TIME ZONE 'UTC')::date)
+          FROM analytics_events ae
+          WHERE ae.user_id = u.id::text
+            AND ae.event_name = 'suite_image_generated'
+            AND ae.created_at >= s.created_at
+        ) = 1
+        AND (
+          SELECT MIN(ae.created_at)
+          FROM analytics_events ae
+          WHERE ae.user_id = u.id::text
+            AND ae.event_name = 'suite_image_generated'
+            AND ae.created_at >= s.created_at
+        ) <= NOW() - INTERVAL '24 hours'
         AND u.email IS NOT NULL
         AND u.email != ''
         AND el.id IS NULL
@@ -223,7 +239,7 @@ export async function GET(request: Request) {
     `
 
     results.day7.found = day7Users.length
-    console.log(`[v0] [CRON] Found ${day7Users.length} users for Day 7 onboarding email`)
+    console.log(`[v0] [CRON] Found ${day7Users.length} stalled creators for Day 7 recovery`)
 
     for (const user of day7Users as any[]) {
       try {

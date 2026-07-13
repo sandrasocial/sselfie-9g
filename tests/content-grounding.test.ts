@@ -60,13 +60,10 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     expect(sanitizeGroundedText("one — two")).toBe("one : two")
   })
 
-  it("wires the former drift points to the shared grounding module", () => {
-    const brief = read("lib/content-engine/brief-generator.ts")
+  it("wires the live drift points to the shared grounding module", () => {
     const corePersonality = read("lib/maya/core-personality.ts")
     const contentKitLlm = read("lib/content-kit/llm.ts")
 
-    expect(brief).not.toContain("export const SANDRA_VOICE_RULES")
-    expect(brief).toContain("@/lib/content/grounding")
     expect(corePersonality).toContain("@/lib/content/grounding")
     expect(contentKitLlm).toContain("groundingSystemPrompt")
   })
@@ -75,8 +72,6 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     const carousel = read("lib/content-kit/carousel-generator.ts")
     const story = read("lib/content-kit/story-generator.ts")
     const shoot = read("lib/content-kit/shoot-generator.ts")
-    const brief = read("lib/content-engine/brief-generator.ts")
-    const dailyIntelligence = read("lib/admin/daily-briefing-intelligence.ts")
     const corePersonality = read("lib/maya/core-personality.ts")
 
     expect(carousel).toContain("purposeMessagingBlock()")
@@ -90,11 +85,6 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     expect(story).toContain("sandraContentIdentityBlock()")
     expect(shoot).toContain("AUDIENCE CONTEXT FOR whenToUse ONLY")
     expect(shoot).toContain("PROOF CONTEXT FOR SHOT UTILITY ONLY")
-    expect(brief).toContain("purposeMessagingBlock()")
-    expect(brief).toContain("sandraContentIdentityBlock()")
-    expect(brief).toContain("sandraStoryAnchor")
-    expect(dailyIntelligence).toContain("purposeMessagingBlock()")
-    expect(dailyIntelligence).toContain("sandraContentIdentityBlock()")
     expect(corePersonality).toContain("purposeMessagingBlock()")
   })
 

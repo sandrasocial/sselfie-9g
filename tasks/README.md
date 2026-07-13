@@ -1,6 +1,6 @@
 # Current Task Board
 
-Last cleaned: 2026-07-12
+Last cleaned: 2026-07-13
 
 This root contains only work that still needs a real-world decision, asset, or verification. Shipped,
 superseded, obsolete, and completed code specs are archived under `tasks/archive/`.
@@ -35,11 +35,6 @@ unfinished founder to-do list.
   stays intentionally unbuilt until the paid-buyer cohort is measured.
   Trial users have never opened the Academy/course content, so there is no active course-library
   leakage to fix before making that decision.
-- **Phase 2B content-engine deletion:** wait until `weekly-content-brief-draft` completes its first
-  real Monday run on 2026-07-13. The old
-  repo cron is disabled, so deleting the fallback early has no upside. **Bundle in:** deleting
-  `lib/admin/daily-briefing-intelligence.ts` (confirmed zero callers, 2026-07-11 audit) in the same
-  pass — same reasoning, same window.
 - **Legacy `/studio` deletion:** not a cleanup shortcut. It needs a dedicated dependency audit because
   live Feed Planner and shared generation code still cross legacy directories.
 - **Vault Club and broad redesigns:** remain gated by current funnel and operational proof.
@@ -58,6 +53,21 @@ Maya Style Director and overlay memory, floating Maya/Photos UI, Content Carouse
 Taxonomy, Customer Photoshoot 01-02, Story Overlay, Story Sequence, Vault Story Collections, presets
 order bump, Voice Loop, Employee roster, Needs-Me approval queue, and the superseded numbered-prompt,
 Admin-Maya, and text-overlay plans.
+
+## Shipped from the 2026-07-13 machine continuation
+
+- The replacement weekly Cowork brief completed its first real Monday run. Its payload contract is
+  now validated before storage/email, this week's row is canonical, and Content/Shoot Studio readers
+  no longer depend on the retired generator.
+- The old weekly content engine, daily briefing intelligence layer, duplicate Product QA reporter,
+  legacy scheduled-newsletter poller, and retired Brand Shoot checkout recovery are deleted after
+  dependency audits. Historical data and active replacements remain.
+- Paid-buyer trials are a distinct Activation Funnel source, and App v3 generation/download events
+  now carry stable saved-asset IDs so retention can be tied to the exact result.
+- The existing SUITE Day-7 email is behavior-gated to one-time creators who stalled, instead of being
+  sent to every member on a calendar. No new campaign or email copy was added.
+- The final North/OpenClaw/Telegram runtime was removed from the repo; the local zero-job OpenClaw
+  gateway was stopped and disabled, and the secret scan now protects its token pattern.
 
 ## Shipped from the 2026-07-11 content-system audit
 

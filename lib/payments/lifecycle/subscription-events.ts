@@ -5,7 +5,6 @@
 
 import type Stripe from "stripe"
 import { stripe } from "@/lib/stripe"
-import { notifyNorth } from "@/lib/north-notifier"
 import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { generatePaymentFailedEmail } from "@/lib/email/templates/payment-failed"
@@ -185,33 +184,6 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
     `
   }
 
-  // Credits for subscription creation are handled above (already checked livemode)
-  try {
-    const customerId =
-      typeof subscription.customer === "string"
-        ? subscription.customer
-        : subscription.customer?.id
-    if (customerId) {
-      const customer = await stripe.customers.retrieve(customerId)
-      if (customer && !customer.deleted) {
-        const item = subscription.items?.data?.[0]
-        const plan = item?.price?.nickname || item?.price?.id
-        const unitAmount = item?.price?.unit_amount
-        const amount = typeof unitAmount === "number" ? `€${unitAmount / 100}/mo` : undefined
-
-        void notifyNorth({
-          path: "stripe-new-member",
-          customerId: customer.id,
-          email: customer.email ?? undefined,
-          firstName: customer.name?.split(" ")[0] ?? undefined,
-          plan,
-          amount,
-        })
-      }
-    }
-  } catch (notifyError) {
-    console.error("[v0] Failed to notify North for subscription.created:", notifyError)
-  }
   return
 }
 
@@ -228,30 +200,6 @@ export async function handleSubscriptionDeleted(rawEvent: Stripe.Event): Promise
   `
 
   console.log(`[v0] ✅ Subscription ${subscription.id} marked as canceled`)
-
-  try {
-    const customerId =
-      typeof subscription.customer === "string"
-        ? subscription.customer
-        : subscription.customer?.id
-    if (customerId) {
-      const customer = await stripe.customers.retrieve(customerId)
-      if (customer && !customer.deleted) {
-        const item = subscription.items?.data?.[0]
-        const plan = item?.price?.nickname || item?.price?.id
-
-        void notifyNorth({
-          path: "stripe-cancellation",
-          customerId: customer.id,
-          email: customer.email ?? undefined,
-          firstName: customer.name?.split(" ")[0] ?? undefined,
-          plan,
-        })
-      }
-    }
-  } catch (notifyError) {
-    console.error("[v0] Failed to notify North for subscription.deleted:", notifyError)
-  }
 
   // WIN-BACK SEQUENCE: Handled automatically by the daily cron at
   // /api/cron/win-back-sequence (runs 10 AM UTC, see vercel.json).
@@ -340,27 +288,6 @@ export async function handleInvoicePaymentFailed(rawEvent: Stripe.Event): Promis
     console.error("[v0] ⚠️ Failed to send payment failed email:", emailError)
   }
 
-  try {
-    const customerId =
-      typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id
-    if (customerId) {
-      const customer = await stripe.customers.retrieve(customerId)
-      if (customer && !customer.deleted) {
-        const amount =
-          typeof invoice.amount_due === "number" ? `€${invoice.amount_due / 100}` : undefined
-
-        void notifyNorth({
-          path: "stripe-payment-failed",
-          customerId: customer.id,
-          email: customer.email ?? undefined,
-          firstName: customer.name?.split(" ")[0] ?? undefined,
-          amount,
-        })
-      }
-    }
-  } catch (notifyError) {
-    console.error("[v0] Failed to notify North for invoice.payment_failed:", notifyError)
-  }
   return
 }
 

@@ -1058,7 +1058,7 @@ export async function POST(request: NextRequest) {
     // SUITE-UX-02 member pulse: one behavior event per successful generation (fail-open).
     // rerun=true means "Make another version" on an already-finished card (friction signal).
     const isRerun = (body as { rerun?: boolean }).rerun === true
-    const logGenerated = (imageCount: number) => {
+    const logGenerated = (imageCount: number, aiImageIds: Array<number | null>) => {
       import("@/lib/analytics/events")
         .then(({ logAnalyticsEvent }) =>
           logAnalyticsEvent({
@@ -1073,6 +1073,8 @@ export async function POST(request: NextRequest) {
               conceptTitle:
                 typeof body.conceptTitle === "string" ? body.conceptTitle.slice(0, 120) : null,
               images: imageCount,
+              ai_image_id: aiImageIds[0] ?? null,
+              ai_image_ids: aiImageIds,
             },
           })
         )
@@ -1161,7 +1163,10 @@ export async function POST(request: NextRequest) {
             }
             if (!current) throw new Error("Job produced no image")
             const persisted = await persistBuffers([current])
-            logGenerated(1)
+            logGenerated(
+              1,
+              persisted.map(image => image.id)
+            )
             controller.enqueue(
               sse({
                 type: "done",
@@ -1364,7 +1369,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    logGenerated(imageUrls.length)
+    logGenerated(
+      imageUrls.length,
+      persisted.map(image => image.id)
+    )
     const textOverlaySpecs = graphicJobs
       .map(job => job.textOverlaySpec)
       .filter((spec): spec is TextOverlaySpec => Boolean(spec))

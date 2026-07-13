@@ -2,7 +2,7 @@
 
 **Purpose:** Ground truth for this repo. **Do not trust unverified numbers in other markdown files.**
 
-**Verified:** 2026-07-12 · **Release:** growth-machine hardening
+**Verified:** 2026-07-13 · **Release:** behavioral growth-machine hardening
 
 | Field | Value |
 |--------|--------|
@@ -45,5 +45,7 @@ Refresh live metrics from **Stripe / dashboard / `CLAUDE.md`** — do not use nu
 - The exposed Stripe webhook signing secret was replaced with a new production endpoint; the old
   endpoint is disabled.
 - Current tracked files are guarded by `tests/no-hardcoded-secrets.test.ts`.
+- The guard also blocks hardcoded OpenClaw gateway tokens. The retired North/OpenClaw/Telegram
+  runtime is absent from the repo, and the local zero-job OpenClaw gateway launch agent is disabled.
 - Public Git history still contains the revoked values. They are no longer valid; rewriting public
   history is not required for runtime safety and must not be attempted as a routine cleanup.

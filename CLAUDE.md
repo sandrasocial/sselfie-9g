@@ -1,5 +1,5 @@
 # SSELFIE Operational Memory
-*Last updated: 2026-07-12 — Read this at the start of every session*
+*Last updated: 2026-07-13 — Read this at the start of every session*
 
 ---
 
@@ -60,7 +60,8 @@ Core lock:
 | **Claude (Cowork)** | This app | Brain — memory, specs, plans, content, guidance |
 | **Codex / Cursor** | AI code agents | Code implementation — reads `tasks/`, writes `codex/` branches |
 
-**No OpenClaw. No North. No Stella. Those systems are retired.**
+**No OpenClaw. No North. No Stella. Those systems are retired.** The last repo notifier and
+Telegram shell are deleted, and the local zero-job OpenClaw gateway launch agent is disabled.
 
 Claude (Cowork) writes task specs → Codex reads and implements → commits `codex/` branch → Sandra merges to `main`.
 
@@ -127,7 +128,7 @@ Operating rule:
 | SHOOT-STUDIO-01 — inspiration-image photoshoots (the real engine; vault-anatomy prompt writer feeds it) | **Live, this is the core content engine** — shoots generate 6+ shots, publish to DB-backed Vault/freebie/Library/Maya surfaces automatically, and include drop-email preview/test/dry-run/send flow. Reads brand truth via the synced `lib/content/grounding.ts` snapshot. Spec: `tasks/SHOOT-STUDIO-01-admin-shoot-studio.md`. vault-prompt-writer skill recreated + COMMITTED at `.agents/skills/vault-prompt-writer/`. |
 | MEMBER-CHECKOUT-01 — membership checkout email capture + payment-moment fixes. Spec: `tasks/MEMBER-CHECKOUT-01-email-capture.md` | **Complete/stale** — email capture, recovery cron, analytics, and tests are implemented. Stripe products renamed to "SSELFIE SUITE"/"SSELFIE SUITE Annual"; monthly charges €97 EUR (`price_1ThYxHEVJvME7vkw32NBHPXB`); old USD price kept active for existing subs. |
 | ENTITLE-01 — audit access gates vs Stripe truth (subscriptions table has stale rows; 26 test-mode "active" membership rows found 2026-06-11) | **No active task spec found in `tasks/` during 2026-06-13 task audit** — create a fresh spec before assigning. |
-| Weekly newsletter drafted by Content Engine (Sandra approves) | Approved |
+| Weekly content brief drafted by Cowork (Sandra approves) | ✅ Real Monday run verified 2026-07-13; canonical payload validation now runs before storage/email. The retired repo content engine is deleted. |
 | Support backlog triage (~34 old threads) | Approved |
 | CONTENT-01 weekly brief + /admin/content-brief | ✅ Live 2026-06-10 |
 | VOICE-01 copy cleanup batches 1-4a + check:voice guard | ✅ Live 2026-06-11 |
@@ -137,6 +138,7 @@ Operating rule:
 | Paid-buyer SUITE activation | ✅ Built 2026-07-12 — live Prompt Vault, Starter Kit, and AI Photos Kit purchases automatically start the buyer's one-ever included SUITE trial when her account is already known. Guest buyers keep the claim-token path. Test checkouts and duplicate webhooks cannot grant or email another trial. |
 | Post-value review capture | ✅ Built 2026-07-12 — after a signed-in customer records her third SUITE download, App v3 may show one dismissible review request. Identity is server-derived, consent is explicit, submissions are unpublished until admin moderation, and the unsafe legacy feedback widget/routes are removed. Contract: `docs/product/SUITE_REVIEW_CAPTURE_2026-07-12.md`. |
 | Payment + credential hardening | ✅ Completed 2026-07-12 — the new $39 Presets Bundle checkout was manually recovered and guest fulfillment now has regression coverage. Unresolved webhook reviews returned to zero. Publicly exposed Neon and Stripe webhook credentials were rotated/revoked, removed from tracked files, and protected by a secret-scan regression. |
+| Behavioral growth-machine hardening | ✅ Completed 2026-07-13 — paid-buyer trials are a distinct Activation Funnel source; App v3 generation/download behavior carries stable persisted asset IDs; the approved Day-7 member reset targets one-day creators who stalled; the obsolete weekly engine, daily intelligence layer, Product QA reporter, newsletter poller, Brand Shoot recovery, North/OpenClaw notifier, and Telegram shell are deleted after dependency checks. |
 | DESIGN-01 convergence to Cool Editorial (audit done, build pending) | Planned — docs/audits/DESIGN_AUDIT_2026-06-10.md |
 | Maya UX fixes (UX-01/02), Academy (ACADEMY-01/02) | Background — see tasks/ |
 
@@ -251,9 +253,6 @@ Target: €197/month minimum. Not €97. Not €27.
 | `app/api/maya/feed/` | Only called by the disabled Maya Feed Tab |
 | `app/api/maya/feed-chat/` | Only called by the disabled Maya Feed Tab |
 | `app/api/maya/feed-progress/` | Only called by the disabled Maya Feed Tab |
-| ~~app/api/maya/generate-feed~~ | **NOT DEAD (corrected 2026-06-10):** called by `components/sselfie/maya-chat-screen.tsx` — keep |
-
-| `app/api/maya/generate-feed-prompt/` | Only called by the disabled Maya Feed Tab |
 | `app/api/maya/generate-all-feed-prompts/` | Only called by the disabled Maya Feed Tab |
 | `app/brand-engine/`, `app/apply/brand-engine/`, `app/brand-engine/vip/` | Brand Engine retired, no routes/redirects |
 | `app/freebie/` | Routes redirect to paid pages; page files themselves are dead |
@@ -262,6 +261,8 @@ Target: €197/month minimum. Not €97. Not €27.
 ### ⚠️ Looks dead but is NOT — do not delete
 | Item | Why it's actually live |
 |------|----------------------|
+| `app/api/maya/generate-feed/` | Called by `components/sselfie/maya-chat-screen.tsx` — keep |
+| `app/api/maya/generate-feed-prompt/` | Imported by the live Feed Planner single-post generation route — keep |
 | `app/api/feed/*` (11 routes) | Actively called by `components/feed-planner/*` — core Feed Planner data layer |
 | `lib/maya/feed-generation-handler.ts` | `FeedStrategy` type + `createFeedFromStrategyHandler` used by `lib/feed-planner/hooks/` |
 | `lib/feed-planner-v2/` | Used in 4 active feed routes via `use_feed_planner_v2` per-user flag |

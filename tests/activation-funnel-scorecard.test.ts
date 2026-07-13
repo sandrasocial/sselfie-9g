@@ -108,16 +108,23 @@ describe("activation funnel scorecard", () => {
         fact(),
         fact({ userId: "user-2", sourceKey: "starter-kit-paid", sourceMethod: "email_fallback" }),
         fact({ userId: "user-3", sourceKey: "direct", sourceMethod: "direct" }),
+        fact({
+          userId: "user-4",
+          sourceKey: "paid_buyer_starter_kit",
+          sourceMethod: "paid_buyer_event",
+        } as Partial<ActivationUserFact>),
       ],
     })
 
     expect(report.sessionMeasurementAvailable).toBe(false)
     expect(report.trialSources.map(cohort => cohort.key)).toEqual([
       "direct",
+      "paid_buyer_starter_kit",
       "prompt-vault-paid",
       "starter-kit-paid",
     ])
     expect(report.trialSourceAttribution).toEqual({
+      paidBuyerEvent: 1,
       exactClaimSubscriber: 1,
       emailFallback: 1,
       direct: 1,
@@ -143,6 +150,8 @@ describe("activation funnel scorecard", () => {
     expect(reportSource).toContain("JOIN trial_cohort c ON c.user_id = ae.user_id")
     expect(reportSource).toContain("e.event_name = 'suite_image_downloaded'")
     expect(reportSource).toContain("ae.properties->>'subscriber_id'")
+    expect(reportSource).toContain("paid_buyer_auto_activation")
+    expect(reportSource).toContain("paid_buyer_event")
     expect(reportSource).toContain("LEFT JOIN freebie_subscribers exact_subscriber")
     expect(reportSource).toContain("LOWER(fs.email) = LOWER(u.email)")
     expect(toolsPage).toContain('href: "/admin/activation-funnel"')

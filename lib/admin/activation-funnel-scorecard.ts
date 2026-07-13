@@ -48,6 +48,7 @@ export type ActivationFocusSummary = {
 }
 
 export type TrialSourceAttribution = {
+  paidBuyerEvent: number
   exactClaimSubscriber: number
   emailFallback: number
   direct: number
@@ -72,7 +73,7 @@ export type ActivationUserFact = {
   userId: string
   cohortKey: string
   sourceKey: string | null
-  sourceMethod: "claim_subscriber" | "email_fallback" | "direct" | null
+  sourceMethod: "paid_buyer_event" | "claim_subscriber" | "email_fallback" | "direct" | null
   entryAt: Date | string
   openedAt: Date | string | null
   selfieUploadedAt: Date | string | null
@@ -317,6 +318,12 @@ function cohortLabel(key: string): string {
 
 function sourceLabel(key: string): string {
   if (key === "direct") return "Direct / unknown"
+  if (key.startsWith("paid_buyer_")) {
+    const product = key.slice("paid_buyer_".length)
+    return `Paid buyer · ${product
+      .replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, character => character.toUpperCase())}`
+  }
   return key.replace(/[_-]+/g, " ").replace(/\b\w/g, character => character.toUpperCase())
 }
 
@@ -381,6 +388,9 @@ export function buildActivationFunnelScorecardFromFacts(input: {
         })
       ),
     trialSourceAttribution: {
+      paidBuyerEvent: input.trialFacts.filter(
+        fact => fact.sourceMethod === "paid_buyer_event"
+      ).length,
       exactClaimSubscriber: input.trialFacts.filter(
         fact => fact.sourceMethod === "claim_subscriber"
       ).length,
@@ -388,12 +398,12 @@ export function buildActivationFunnelScorecardFromFacts(input: {
       direct: input.trialFacts.filter(fact => fact.sourceMethod === "direct").length,
     },
     measurementNotes: [
-      "Behavior comes from analytics_events. Trial eligibility comes from live-mode subscriptions rows; source labels come from freebie_subscribers.",
+      "Behavior comes from analytics_events. Trial eligibility comes from live-mode subscriptions rows. Paid-buyer labels come from the exact trial_claimed event; older claim sources fall back to freebie_subscribers.",
       "New app visitor cohorts include users whose first-ever suite_home_viewed occurred inside the selected window.",
       "There is no session ID in analytics_events. First generation is measured after cohort entry, not claimed as first-session conversion.",
       "Existing-selfie selection has no event. The selfie step reports measured uploads only and is therefore a lower bound.",
       `Look choice uses suite_inline_choice_selected only for: ${LOOK_CHOICE_ACTIONS.join(", ")}. Typed messages, format choices, and post-generation next actions do not count as choosing a look.`,
-      "Trial source uses the exact subscriber_id stored on trial_claimed when available, then a case-insensitive email fallback, then Direct / unknown. Exact means the subscriber match is exact; the displayed source is that subscriber record's current acquisition source because trials have no source column.",
+      "Trial source first recognizes an exact paid-buyer auto-activation event and product, then uses the exact subscriber_id stored on trial_claimed, then a case-insensitive email fallback, then Direct / unknown. Subscriber-based labels display that subscriber record's current acquisition source because trials have no source column.",
       "Milestones are independently observed. A legacy or typed creation path can generate without a tracked look choice, so the rows are not forced to decrease at every step.",
       "Seven-day and days-8-to-14 rates include only users whose first qualifying action is old enough to have completed the observation window.",
       "The trial lasts seven days. Trial creation in days 8 to 14 therefore measures whether an activated woman crossed into paid or another valid continued-access path.",
@@ -408,6 +418,7 @@ function mapRow(row: ActivationUserRow): ActivationUserFact {
     cohortKey: String(row.cohort_key || "unknown"),
     sourceKey: row.source_key ? String(row.source_key) : null,
     sourceMethod:
+      sourceMethod === "paid_buyer_event" ||
       sourceMethod === "claim_subscriber" ||
       sourceMethod === "email_fallback" ||
       sourceMethod === "direct"
@@ -516,14 +527,35 @@ export async function getActivationFunnelScorecard(
         t.user_id::text AS user_id,
         t.created_at AS entry_at,
         'trial'::text AS cohort_key,
-        LOWER(COALESCE(NULLIF(exact_subscriber.source, ''), NULLIF(email_subscriber.source, ''), 'direct')) AS source_key,
         CASE
+          WHEN paid_buyer_event.product_type IS NOT NULL
+            THEN 'paid_buyer_' || LOWER(paid_buyer_event.product_type)
+          ELSE LOWER(COALESCE(NULLIF(exact_subscriber.source, ''), NULLIF(email_subscriber.source, ''), 'direct'))
+        END AS source_key,
+        CASE
+          WHEN paid_buyer_event.product_type IS NOT NULL THEN 'paid_buyer_event'
           WHEN exact_subscriber.id IS NOT NULL THEN 'claim_subscriber'
           WHEN email_subscriber.id IS NOT NULL THEN 'email_fallback'
           ELSE 'direct'
         END AS source_method
       FROM subscriptions t
       JOIN users u ON u.id::text = t.user_id::text
+      LEFT JOIN LATERAL (
+        SELECT ae.properties->>'product_type' AS product_type
+        FROM analytics_events ae
+        WHERE ae.user_id = t.user_id::text
+          AND ae.event_name = 'trial_claimed'
+          AND ae.properties->>'source' = 'paid_buyer_auto_activation'
+          AND ae.properties->>'product_type' IN (
+            'prompt_vault',
+            'starter_kit',
+            'selfie_ai_photos_kit'
+          )
+          AND ae.created_at >= t.created_at - INTERVAL '5 minutes'
+          AND ae.created_at <= t.created_at + INTERVAL '30 minutes'
+        ORDER BY ae.created_at ASC, ae.id ASC
+        LIMIT 1
+      ) paid_buyer_event ON TRUE
       LEFT JOIN LATERAL (
         SELECT (ae.properties->>'subscriber_id')::bigint AS subscriber_id
         FROM analytics_events ae
@@ -544,7 +576,7 @@ export async function getActivationFunnelScorecard(
           ABS(EXTRACT(EPOCH FROM (COALESCE(fs.updated_at, fs.created_at) - t.created_at))) ASC,
           fs.id DESC
         LIMIT 1
-      ) email_subscriber ON exact_subscriber.id IS NULL
+      ) email_subscriber ON paid_buyer_event.product_type IS NULL AND exact_subscriber.id IS NULL
       WHERE t.product_type = 'suite_trial'
         AND COALESCE(t.is_test_mode, false) = false
         AND t.created_at >= NOW() - (${interval}::interval)

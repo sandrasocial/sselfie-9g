@@ -48,7 +48,6 @@ describe("phase 7 dependency, script, and docs hygiene", () => {
     for (const command of [
       "verify:repo",
       "routes:inventory",
-      "routes:classify",
       "audit:integration-health",
       "automation:journey-smoke",
       "audit:maya-quality",

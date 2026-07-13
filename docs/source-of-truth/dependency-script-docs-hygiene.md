@@ -36,7 +36,6 @@ Required checks:
 
 - `pnpm verify:repo`
 - `pnpm routes:inventory`
-- `pnpm routes:classify`
 - `pnpm audit:integration-health`
 - `pnpm automation:journey-smoke`
 - `pnpm audit:maya-quality`

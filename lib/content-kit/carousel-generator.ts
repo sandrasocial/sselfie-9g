@@ -1,7 +1,7 @@
 import "server-only"
 
 import { sql } from "@/lib/db/client"
-import type { ContentBrief } from "@/lib/content-engine/brief-generator"
+import type { WeeklyContentBrief } from "@/lib/content/weekly-brief-contract"
 import { callContentKitLlm, extractJsonArray } from "@/lib/content-kit/llm"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { getShoot } from "@/lib/content-kit/shoot-generator"
@@ -507,7 +507,7 @@ export async function generateCarousels(input: GeneratorInput = {}): Promise<Car
   }
 
   const briefs = await getLatestAnalyticsReports({ reportType: "content_brief_weekly", limit: 1 })
-  const brief = (briefs[0]?.payload as ContentBrief | undefined) ?? null
+  const brief = (briefs[0]?.payload as WeeklyContentBrief | undefined) ?? null
   const briefPeriodStart: string | null = briefs[0]?.period_start
     ? new Date(briefs[0].period_start).toISOString().slice(0, 10)
     : null
@@ -536,7 +536,10 @@ export async function generateCarousels(input: GeneratorInput = {}): Promise<Car
 
   const carouselPieces = Array.isArray(brief?.contentPlan)
     ? brief.contentPlan
-        .filter((piece): piece is ContentBrief["contentPlan"][number] => piece.format === "carousel")
+        .filter(
+          (piece): piece is WeeklyContentBrief["contentPlan"][number] =>
+            piece.format === "carousel"
+        )
         .map(
           piece =>
             `- "${piece.title}" · hook: "${piece.hook}" · demand: "${piece.demandSignal || "not provided"}" · before: "${piece.painfulBefore || "not provided"}" · after: "${piece.desiredAfter || "not provided"}" · outline: ${(piece.carouselOutline || []).join(" / ")}`
