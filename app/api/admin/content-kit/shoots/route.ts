@@ -12,7 +12,10 @@ import {
   setShotStatus,
 } from "@/lib/content-kit/shoot-generator"
 import { publishShootToVault } from "@/lib/content-kit/shoot-publisher"
-import { listAdminSelfies } from "@/lib/content-kit/demo-generator"
+import {
+  areAdminIdentityReferences,
+  listAdminSelfies,
+} from "@/lib/content-kit/demo-generator"
 import { addAdminMemoryNote } from "@/lib/app-v3/maya/admin-memory-store"
 
 export const dynamic = "force-dynamic"
@@ -73,6 +76,12 @@ export async function POST(request: NextRequest) {
         : body.selfieUrl
           ? [String(body.selfieUrl)]
           : []
+      if (!(await areAdminIdentityReferences(selfieUrls))) {
+        return NextResponse.json(
+          { error: "Choose only Sandra's verified admin selfies" },
+          { status: 400 },
+        )
+      }
       // Plan + save the shoot only. Images are rendered by the CLIENT, one regenerate call per
       // shot: a 6-9 shot batch outruns maxDuration in ANY single invocation (sync or after()),
       // and the batch renderers only persist at the end, so a kill lost every image. Per-shot

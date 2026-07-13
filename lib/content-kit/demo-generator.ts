@@ -66,14 +66,32 @@ async function buildComposite(before: Buffer, after: Buffer): Promise<Buffer> {
 
 export async function listAdminSelfies(): Promise<string[]> {
   const rows = (await sql`
-    SELECT uai.image_url
+    SELECT uai.image_url, uai.image_type
     FROM user_avatar_images uai
     JOIN users u ON u.id = uai.user_id
-    WHERE u.email = ${ADMIN_EMAIL} AND uai.is_active = true
+    WHERE u.email = ${ADMIN_EMAIL}
+      AND uai.is_active = true
+      AND uai.image_type IN ('selfie', 'side-profile', 'three-quarter', 'full-body')
     ORDER BY uai.uploaded_at DESC
     LIMIT 24
-  `) as Array<{ image_url: string }>
-  return rows.map((row) => row.image_url).filter((url) => typeof url === "string" && url.length > 0)
+  `) as Array<{ image_url: string; image_type: string }>
+
+  // Defense in depth: the DB predicate protects the normal path, while this
+  // guard prevents an inspiration/style row from becoming an identity anchor
+  // if a mock, view, or future query change returns a broader result set.
+  const identityTypes = new Set(["selfie", "side-profile", "three-quarter", "full-body"])
+  return rows
+    .filter((row) => identityTypes.has(row.image_type))
+    .map((row) => row.image_url)
+    .filter((url) => typeof url === "string" && url.length > 0)
+}
+
+export async function areAdminIdentityReferences(urls: string[]): Promise<boolean> {
+  const requested = [...new Set(urls.map((url) => url.trim()).filter(Boolean))]
+  if (requested.length === 0) return false
+
+  const allowed = new Set(await listAdminSelfies())
+  return requested.every((url) => allowed.has(url))
 }
 
 export async function listDemoPairs(limit = 30): Promise<DemoPair[]> {

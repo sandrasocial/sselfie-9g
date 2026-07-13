@@ -38,7 +38,7 @@ describe("One Selfie campaign decision page", () => {
   })
 
   it("uses the bundle-specific product mockup instead of the Starter Kit visual", () => {
-    expect(landing).toContain('/images/one-selfie/bundle-products-mockup-v1.webp')
+    expect(landing).toContain('/images/one-selfie/bundle-products-mockup-v2.webp')
     expect(landing).not.toContain('/images/starter-kit/mockup-2.png')
   })
 

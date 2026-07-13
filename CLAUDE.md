@@ -423,7 +423,11 @@ DB↔Resend sync state (2026-06-11): DB union of email tables = 6,795 distinct; 
 - **Voice:** Text a close friend. Warm, honest, short sentences. Contractions always.
 - **Never say:** leverage, synergy, transform, game-changer, skyrocket, unlock your potential
 - **Never write:** m-dashes (—) in any copy, button labels, or eyebrows. Use a period, a colon, or a middle dot `·` for price separators instead.
-- **Images:** Always Sandra's own. Never stock photos. Ask Sandra for images.
+- **Images:** Always Sandra's own. Never stock photos or a generated substitute for Sandra.
+  Identity references may only use active admin images classified as `selfie`, `side-profile`,
+  `three-quarter`, or `full-body`. An `inspiration` image is style-only and must never be used as
+  Sandra's face. Product mockups must show the real product, tool, setting, workflow, or customer
+  outcome instead of generic gray packaging.
 - **Approvals:** Sandra must approve ALL copy before sending. No autonomous sends.
 
 → Skills in Cowork: `sselfie-voice`, `scandinavian-design`, `instagram-strategy`, `tiktok-strategy`

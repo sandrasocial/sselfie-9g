@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import {
+  areAdminIdentityReferences,
   deleteDemoPair,
   generateDemoPair,
   listAdminSelfies,
@@ -37,6 +38,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}))
     if (typeof body.selfieUrl !== "string" || typeof body.prompt !== "string") {
       return NextResponse.json({ error: "selfieUrl and prompt are required" }, { status: 400 })
+    }
+    if (!(await areAdminIdentityReferences([body.selfieUrl]))) {
+      return NextResponse.json(
+        { error: "Choose one of Sandra's verified admin selfies" },
+        { status: 400 },
+      )
     }
     const pair = await generateDemoPair({
       selfieUrl: body.selfieUrl,

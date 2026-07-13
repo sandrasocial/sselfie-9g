@@ -285,11 +285,18 @@ shared hourly Starter Kit job owns this reminder; there is no extra schedule or 
 The public pages now use separate, truthful visuals rather than reusing one old Starter Kit image
 for two different offers:
 
-- `/images/starter-kit/starter-kit-product-mockup-v2.webp` — Starter Kit only
-- `/images/starter-kit/preset-collection-vertical-v2.webp` — the three Starter Kit preset families
-- `/images/one-selfie/bundle-products-mockup-v1.webp` — the five lifetime bundle tools plus the
+- `/images/starter-kit/starter-kit-product-mockup-v3.webp` — Starter Kit outcomes using Sandra's
+  verified admin selfies, iPhone settings, pose guidance, Lightroom/CapCut, and Instagram content
+- `/images/starter-kit/preset-collection-vertical-v3.webp` — Sandra in the three Starter Kit preset
+  families, shown inside a Lightroom editing workflow
+- `/images/one-selfie/bundle-products-mockup-v2.webp` — the five lifetime bundle tools plus the
   fixed 30-day SUITE pass with 200 credits
-- `/images/one-selfie/og-bundle-v1.webp` — 1200×630 social-sharing preview for `/one-selfie`
+- `/images/one-selfie/og-bundle-v2.webp` — 1200×630 social-sharing preview for `/one-selfie`
+
+Every visible person in these campaign visuals is Sandra. Identity references may only come from
+active admin images classified as `selfie`, `side-profile`, `three-quarter`, or `full-body`.
+Images classified as `inspiration` are style references only and must never be used as Sandra's
+face or identity.
 
 The original shared founder portraits remain untouched. The old `starter-kit/mockup-2.png` is no
 longer used on either public sales page, but stays in the repository until a separate safe asset

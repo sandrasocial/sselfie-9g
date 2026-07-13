@@ -26,8 +26,8 @@ const IMG = {
   presetDark:  `${BLOB}/darkandmoody.png`,
   // Starter Kit local assets
   skHero:          "/images/starter-kit/hero.png",
-  skMockup:        "/images/starter-kit/starter-kit-product-mockup-v2.webp",
-  skPresetColl:    "/images/starter-kit/preset-collection-vertical-v2.webp",
+  skMockup:        "/images/starter-kit/starter-kit-product-mockup-v3.webp",
+  skPresetColl:    "/images/starter-kit/preset-collection-vertical-v3.webp",
   skLifestyle:     "/images/starter-kit/lifestyle.png",
   skBaLightDreamy: "/images/starter-kit/ba-light-dreamy.png",
   skBaNordicDeep:  "/images/starter-kit/ba-nordic-deep.png",
