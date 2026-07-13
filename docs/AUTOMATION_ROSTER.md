@@ -118,9 +118,9 @@ in place and remain readable.
 
 | Task | Schedule | Status | Job |
 |---|---|---|---|
-| `daily-email-draft` | 06:34 daily | ✅ ACTIVE (re-grounded 2026-07-08) | Drafts ONE story-first broadcast + preview to Sandra. NEVER sends. |
-| `daily-story-sequence-draft` | 07:01 daily | ✅ ACTIVE (new 2026-07-10, reconciled 2026-07-11) | Reads that morning's already-drafted broadcast via `scripts/daily-story-sequence-prep.ts` and repurposes it into a 7-slide Instagram Story sequence (hook → emotional recognition → belief shift → personal mirror → stuck point → offer bridge → CTA), TEXT ONLY, ready to copy. Also pulls that weekday's planned theme from the latest `weekly-content-brief-draft` row (if any) as a continuity steer — the two tasks were briefly duplicating "today's Story" (2026-07-11 content-system audit finding); reconciled by making this the sole owner of daily slide text while the weekly brief owns only the week-level theme. Now reads the full voice-doc set (was thinner than its siblings at launch). Stores to `analytics_reports` (`report_type='story_sequence_daily'`) and emails Sandra the slides. NEVER posts. Does not replace `sselfie-stories` (the on-demand skill for full photo-based sequences with background/overlay rendering) — this is the lightweight daily companion. |
-| `weekly-content-brief-draft` | Mon 06:05 | ✅ ACTIVE (real Monday run verified 2026-07-13) | Replaces the deleted repo content engine. Real data via `scripts/weekly-brief-prep.ts` + live research + live writing, stores into `analytics_reports`, and emails Sandra a preview. NEVER posts. A shared canonical contract rejects incomplete demand maps, incompatible trend keys, unsafe buyer-facing vibe presets, fewer than five complete pieces, or anything other than seven weekday themes before any database write or email. This week's stored row was repaired and now has two usable Shoot Studio trend presets. `daily-story-sequence-draft` remains the sole owner of daily slide text. |
+| `daily-email-draft` | 06:34 daily | ✅ ACTIVE (Constitution-first 2026-07-13) | Drafts ONE story-first broadcast + preview to Sandra. NEVER sends. Loads `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` first, honors attended-campaign precedence, and points at the live email code (`lib/email/templates/stone-email.ts` + `scripts/daily-email-prep.ts`) instead of the removed `sselfie-email` skill. |
+| `daily-story-sequence-draft` | 07:01 daily | ✅ ACTIVE (Constitution-first 2026-07-13) | Reads that morning's already-drafted broadcast via `scripts/daily-story-sequence-prep.ts` and repurposes it into a 7-slide Instagram Story sequence (hook → emotional recognition → belief shift → personal mirror → stuck point → offer bridge → CTA), TEXT ONLY, ready to copy. Also pulls that weekday's planned theme from the latest `weekly-content-brief-draft` row (if any) as a continuity steer — the two tasks were briefly duplicating "today's Story" (2026-07-11 content-system audit finding); reconciled by making this the sole owner of daily slide text while the weekly brief owns only the week-level theme. Now reads the full voice-doc set (was thinner than its siblings at launch). Stores to `analytics_reports` (`report_type='story_sequence_daily'`) and emails Sandra the slides. NEVER posts. Does not replace `sselfie-stories` (the on-demand skill for full photo-based sequences with background/overlay rendering) — this is the lightweight daily companion. |
+| `weekly-content-brief-draft` | Mon 06:05 | ✅ ACTIVE (real Monday run verified 2026-07-13; Constitution-first same day) | Replaces the deleted repo content engine. Real data via `scripts/weekly-brief-prep.ts` + live research + live writing, stores into `analytics_reports`, and emails Sandra a preview. NEVER posts. A shared canonical contract rejects incomplete demand maps, incompatible trend keys, unsafe buyer-facing vibe presets, fewer than five complete pieces, or anything other than seven weekday themes before any database write or email. This week's stored row was repaired and now has two usable Shoot Studio trend presets. `daily-story-sequence-draft` remains the sole owner of daily slide text. |
 
 Retired task directories were physically removed on 2026-07-12. This includes
 `claude-codex-loop`, `daily-photo-export`, `funnel-health-daily`, and the duplicate
@@ -140,9 +140,12 @@ The repo-backed `sselfie-brand-guardian` skill is the preflight for copy, UX lan
 campaigns. The local `.claude/agents/revenue-campaign-director.md` agent is a research-first,
 read-only campaign auditor. It prepares P0/P1/P2 findings and approval-ready copy but never sends,
 publishes, charges, deploys, or schedules. Neither is an automation. The one-time Claude Desktop
-alignment work is specified in
-`docs/operations/CLAUDE_DESKTOP_BRAND_ALIGNMENT_SPEC_2026-07-13.md`; it must update the three
-existing scheduled tasks without creating a fourth.
+alignment work specified in
+`docs/operations/CLAUDE_DESKTOP_BRAND_ALIGNMENT_SPEC_2026-07-13.md` was COMPLETED 2026-07-13: all
+three scheduled tasks load the Constitution first with attended-campaign precedence, `sselfie-brand`
+is a live pointer skill (no stored facts), the five content skills preflight the Constitution, three
+stale brand-authority memories were demoted to historical, and the scheduled-task count remains
+exactly three.
 
 **`sselfie-content-engine` plugin — RETIRED 2026-07-11 (content-system audit).** Lived outside
 this repo at `~/Desktop/SSELFIE Work/Business & Admin/SSELFIE/SSELFIE-Content-Engine/` (inside
