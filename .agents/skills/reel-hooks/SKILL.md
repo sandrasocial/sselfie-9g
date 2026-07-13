@@ -12,12 +12,13 @@ You are helping Sandra mid-edit. She wants 3-5 strong options fast, not a strate
 Read these repo docs at ask time. They are the current truth; anything you remember from
 training or old skills is stale by definition:
 
-1. `docs/brand/source/2026-06-27/SSELFIE_VOICE_STYLE_GUIDE.md` — her voice
-2. `docs/brand/source/2026-06-27/SSELFIE_TARGET_AUDIENCE_PERSONA.md` — who's watching (real data: 97% women, core 35-54, US-heavy)
-3. `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md` — what SSELFIE is and is not
-4. `docs/strategy/CONTENT_INTELLIGENCE_SYSTEM_2026-07.md` — current hook mechanics + trend radar rules
-5. `docs/funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` — the identity-safety doctrine
-6. If the ask relates to a story/emotional reel: `docs/brand/source/2026-06-27/SSELFIE_REWRITTEN_STORY_BANK.md`
+1. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` — brand law and North Star
+2. `docs/brand/source/2026-06-27/SSELFIE_VOICE_STYLE_GUIDE.md` — her voice
+3. `docs/brand/source/2026-06-27/SSELFIE_TARGET_AUDIENCE_PERSONA.md` — who's watching (real data: 97% women, core 35-54, US-heavy)
+4. `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md` — what SSELFIE is and is not
+5. `docs/strategy/CONTENT_INTELLIGENCE_SYSTEM_2026-07.md` — current hook mechanics + trend radar rules
+6. `docs/funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` — the identity-safety doctrine
+7. If the ask relates to a story/emotional reel: `docs/brand/source/2026-06-27/SSELFIE_REWRITTEN_STORY_BANK.md`
 
 If this week's Content Brief matters (topic fit, what's already planned), check
 `/admin/content-brief` data via the latest `content_brief_weekly` row in `analytics_reports`
@@ -47,5 +48,5 @@ Give her, tight and copy-pasteable:
 - Never: leverage, synergy, transform, game-changer, skyrocket, unlock your potential, elevated.
 - No em-dashes anywhere. No "same face" / "keeps your face" — say "still you", "recognizable".
 - Never imply viewers are fooled ("no one will know"). AI-assisted, realistic, still her.
-- The woman is the hero, not the AI. Selfie is the start; visibility is the point.
+- The woman is the hero, not the AI. Selfies are the start, visibility is the bridge, and freedom is the destination. Cold hooks still lead with the immediate result.
 - Numbers/claims: only ones Sandra gives you or the docs contain. Never invent results.

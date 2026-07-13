@@ -1,4 +1,7 @@
 # SSELFIE Story Bank
+
+Brand law: read `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` first. Use these stories to connect a simple first step to visibility, trust, choices, and freedom without turning Sandra's children, divorce, or financial pressure into purchase pressure.
+
 ## Rewritten in Sandra's voice
 
 ### Positioning note

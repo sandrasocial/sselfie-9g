@@ -8,9 +8,13 @@ Founder of SSELFIE Studio. Single mother, Iceland/Norway. **8 active Suite membe
 
 **For current MRR + exact paying counts — always pull from Stripe. Don't trust stale numbers in docs.**
 
-## Current Voice / Audience Source Of Truth (LOCKED 2026-06-27)
+## Current Brand / Voice / Audience Source Of Truth (LOCKED 2026-07-13)
 
 Before writing or editing any outward-facing copy, prompts, Studio.com blueprint text, landing-page copy, emails, DMs, product descriptions, Maya/persona language, or content-generation rules, read:
+
+**`docs/brand/SSELFIE_BRAND_CONSTITUTION.md`**
+
+This is the highest-level law: Freedom is the destination. Visibility is the bridge. Selfies are the starting tool. AI is the accelerator.
 
 **`docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`**
 
@@ -27,6 +31,9 @@ Its source files live in `docs/brand/source/2026-06-27/`.
 The former Voice Bible, former content grounding doc, and old Studio marketing drafts have been removed from active guidance. Do not recreate or reuse them unless Sandra explicitly asks for historical context.
 
 Core lock:
+- Destination: freedom. Bridge: visibility. Starting tool: selfies. Accelerator: AI.
+- The honest business path is photo -> visibility -> story -> trust -> offer -> income -> choices -> freedom.
+- Freedom means helping women build skills and choices. Never promise income or use family pressure to manipulate a sale.
 - SSELFIE is Sandra's category, not an AI photo tool: helping women stop hiding, become recognizable, know what to say, and build something of their own from their phone, their story, and AI.
 - This was never just about selfies. It was about becoming visible enough to build something of your own.
 - AI is not the hero. The woman is.
@@ -116,6 +123,18 @@ the repo. The operating runbook and honest revenue bands are in
 Account and billing UI must keep recurring membership, fixed pass, and lifetime ownership distinct.
 Membership writes are exact-Stripe-subscription scoped; never update all subscription rows by user.
 
+During this event, `BUNDLE` owns the selling message. Routine `PROMPT`, `SELFIE`, and `WORK` drafts
+must not compete with it. The customer checkout-recovery copy is implemented behind
+`ONE_SELFIE_BUNDLE_CHECKOUT_RECOVERY_ENABLED` and remains off until Sandra explicitly approves
+the exact copy. The three launch broadcasts remain drafts and must be approved at their attended
+send times.
+
+For any timed launch, flash offer, sales-page audit, checkout review, email sequence, ManyChat flow,
+or paid-ads decision, use the local read-only Claude agent
+`.claude/agents/revenue-campaign-director.md`. It must load the Brand Constitution, verify current
+internal evidence, research current primary or peer-reviewed sources, and return P0/P1/P2 guidance
+plus approval-ready drafts. It never sends, publishes, charges, deploys, or invents proof.
+
 ### Forward Revenue Plan (superseded where it conflicts, 2026-07-01)
 
 Historical foundation: `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`. Use the newer
@@ -160,7 +179,7 @@ Operating rule:
 
 ### Prompt Vault Funnel (active front door — locked May 26-27, 2026)
 
-- Front-door demand is AI photo prompts: free `/ai-prompts` -> **Prompt Vault $37** (`/prompt-vault` -> `/checkout/prompt-vault`; $27 until the 2026-06-26 flash flip — live price module: `lib/launch/cash-launch-pricing.ts`). Positioning: "turn one selfie into unlimited photoshoots", never "learn prompts".
+- Front-door demand is AI photo prompts: free `/ai-prompts` -> **Prompt Vault $37** (`/prompt-vault` -> `/checkout/prompt-vault`; live price module: `lib/launch/cash-launch-pricing.ts`). Positioning: "turn one selfie into unlimited photoshoots", never "learn prompts".
 - **ManyChat PROMPT lock (updated 2026-06-30):** do not use numbered prompt keywords as the operating model. The live/default flow is `PROMPT` -> `/ai-prompts`, where the free page shows the latest five SSELFIE shoot previews. The old numbered prompt task is superseded history. Do not tell Sandra to wire `n={{last_text_input}}`, create per-number ManyChat keywords, or use `/p/latest` as the default PROMPT destination.
 - **Do not drift back to the Starter Kit-first funnel.** Starter Kit is secondary support only.
 - **Buyer psychology doctrine (LOCKED): `docs/funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` governs ALL copy, captions, UI text, emails, and Maya language.** Her fear: "people will think I'm fake" -> promise: "look elevated without feeling fake". Never imply viewers are fooled ("no one will know", "look rich", "fake photoshoot", "perfect face", "flawless skin"). Always: AI-assisted, realistic, recognizable, true-to-you, "still you". Signature: "AI should not erase you. It should frame you."
@@ -366,9 +385,9 @@ DB↔Resend sync state (2026-06-11): DB union of email tables = 6,795 distinct; 
 | Product | Price | Status | Notes |
 |---------|-------|--------|-------|
 | AI Prompts | Free | ✅ Active front-door lead magnet | Prompt reels -> email capture -> `/ai-prompts/access/[token]` |
-| AI Photo Prompt Vault | $37 (was $27 until the 2026-06-26 flash flip) | ✅ Active low-ticket bridge | Proven buyer activation product. Do not expect it to carry the whole business alone. |
+| AI Photo Prompt Vault | $37 | ✅ Active low-ticket bridge | Proven buyer activation product. Do not expect it to carry the whole business alone. |
 | Selfie To AI Photos Kit | $37 | ✅ Active; production checkout verified 2026-07-11 | Dedicated product for viral selfie/AI traffic: one clear selfie -> AI photos that still look like her. Uses its own product key, checkout, access page, delivery email, and webhook handler. |
-| Selfie Guide | Free | ✅ Free lead magnet ONLY (paid tier killed 2026-06-11) | `/selfie-guide` opt-in → token access. Paid checkout redirects to free page; fulfillment for past €17/€27 buyers intact. ⚠️ Follower reported guide content outdated — content refresh pending. |
+| Selfie Guide | Free | ✅ Free lead magnet ONLY (paid tier killed 2026-06-11) | `/selfie-guide` opt-in → token access. Paid checkout redirects to the free page; fulfillment for past paid-guide buyers remains intact. ⚠️ Follower reported guide content outdated — content refresh pending. |
 | Starter Kit | $37 | ⚠️ Secondary/support only | Not the primary prompt-funnel upgrade. Keep fulfillment for buyers. |
 | Masterclass | $147 | ✅ Active, 14 published lessons | Lessons 15-17 (Offer Map, Content-To-Cash, 30-Day Sprint) to be built as interactive lessons — drafts pending Sandra approval. Bundles Brand Strategy tool. |
 | SUITE membership | €97/mo | ✅ Active | Cancel anytime. No landing page yet (BRIDGE-01 scope). **Includes ALL one-time products (D3, 2026-06-11)**: flags in `academy_products` DB table (DB wins) + `lib/academy-entitlements.ts` defaults. |
@@ -378,7 +397,7 @@ DB↔Resend sync state (2026-06-11): DB union of email tables = 6,795 distinct; 
 | Mini-products (4) | DEACTIVATED | ❌ | Prices set `active=false`. Become free workbooks in Academy |
 | Website Agent V1 | €27/mo | 🔒 Planned | Standalone, not bundled — on hold |
 
-**⚠️ NO FREEBIE PRODUCTS** — all entry points are paid. `/freebie/*` routes redirect to paid pages.
+**Free entry points are limited to AI Prompts and the Selfie Guide.** `/freebie/*` legacy routes are not current funnel authority; verify their current redirects in code before making a claim.
 
 **Mini-product price IDs (deactivated — do not reactivate):**
 - What To Say: `price_1T2xljEVJvME7vkwFcaN1GEw`

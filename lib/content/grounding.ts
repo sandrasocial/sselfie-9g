@@ -1,5 +1,40 @@
-// Machine-readable source synced from Sandra's canonical brand docs.
-// Edit docs first, run `pnpm sync:grounding`, commit docs and this file together.
+// BRAND_CONSTITUTION_GENERATED_START
+// Generated from docs/brand/SSELFIE_BRAND_CONSTITUTION.md by pnpm sync:grounding.
+// Do not edit this block by hand.
+export const BRAND_CONSTITUTION = {
+  "source": "docs/brand/SSELFIE_BRAND_CONSTITUTION.md",
+  "destination": "Freedom",
+  "bridge": "Visibility",
+  "startingTool": "Selfies",
+  "accelerator": "AI",
+  "coreMessage": "This was never about selfies. It was about becoming visible enough to build a business and a life you're proud of.",
+  "businessPath": [
+    "Photo",
+    "Visibility",
+    "Story",
+    "Trust",
+    "Offer",
+    "Income",
+    "Choices",
+    "Freedom"
+  ],
+  "freedomMeans": [
+    "earn her own money",
+    "have more choices",
+    "build work that can fit around her children",
+    "start over if life changes",
+    "build something that is hers"
+  ],
+  "guardrails": [
+    "No income guarantees.",
+    "No fake urgency, hidden subscriptions, or invented proof.",
+    "Never use children, divorce, fear, or financial pressure to manipulate a purchase.",
+    "AI supports the woman. It never replaces or erases her."
+  ],
+  "audienceTemperature": "Freedom is the strategic destination, not a required headline. Cold content leads with an immediate result she understands in three seconds. Warm content may connect that result to trust, income, choices, family, starting over, and freedom."
+} as const
+// BRAND_CONSTITUTION_GENERATED_END
+
 export const BANNED_WORDS = [
   "leverage",
   "synergy",
@@ -467,6 +502,23 @@ export function listBlock(title: string, items: readonly string[]): string {
   return `${title}\n${items.map(item => `- ${item}`).join("\n")}`
 }
 
+export function brandConstitutionBlock(): string {
+  return [
+    "SSELFIE BRAND CONSTITUTION (highest-level brand law):",
+    `Source: ${BRAND_CONSTITUTION.source}`,
+    `Destination: ${BRAND_CONSTITUTION.destination}`,
+    `Bridge: ${BRAND_CONSTITUTION.bridge}`,
+    `Starting tool: ${BRAND_CONSTITUTION.startingTool}`,
+    `Accelerator: ${BRAND_CONSTITUTION.accelerator}`,
+    `Core message: ${BRAND_CONSTITUTION.coreMessage}`,
+    `Honest business path: ${BRAND_CONSTITUTION.businessPath.join(" -> ")}`,
+    listBlock("Freedom can mean:", BRAND_CONSTITUTION.freedomMeans),
+    listBlock("Ethical guardrails:", BRAND_CONSTITUTION.guardrails),
+    BRAND_CONSTITUTION.audienceTemperature,
+    "Only Sandra may approve a change to the Constitution.",
+  ].join("\n")
+}
+
 export function expertiseBlock(): string {
   return [
     "EXPERTISE SOURCE: docs/brand/source/2026-06-27/SANDRA_EXPERTISE.md",
@@ -577,6 +629,7 @@ export function storyBankBlock(): string {
 export function sandraContentIdentityBlock(): string {
   return [
     "SANDRA CONTENT IDENTITY LOCK (use this before writing admin content, daily briefs, weekly briefs, carousels, and stories):",
+    `Brand law source: ${BRAND_CONSTITUTION.source}`,
     `Purpose source: ${PURPOSE_MESSAGING.source}`,
     `Core purpose: ${PURPOSE_MESSAGING.coreLock}`,
     "The output must not sound like a generic content strategist, a social media manager, a motivational coach, or ChatGPT giving creator tips.",
@@ -606,6 +659,7 @@ export function noFakeBlock(): string {
 export function groundingSystemPrompt(): string {
   return [
     "You write for Sandra and SSELFIE. Use the approved grounding below as binding system truth.",
+    brandConstitutionBlock(),
     purposeMessagingBlock(),
     voiceBlock(),
     sandraContentIdentityBlock(),

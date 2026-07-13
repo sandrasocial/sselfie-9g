@@ -1,3 +1,5 @@
+import { normalizeCheckoutEmail } from "@/lib/revenue-engine/checkout-email"
+
 export type OneSelfieLandingSearchParams = Record<
   string,
   string | string[] | undefined
@@ -31,6 +33,11 @@ function copyKnownAttribution(
     const value = firstValue(params[key])
     if (value) target.set(key, value)
   }
+
+  const checkoutEmail = normalizeCheckoutEmail(
+    firstValue(params.checkout_email) || firstValue(params.email),
+  )
+  if (checkoutEmail) target.set("checkout_email", checkoutEmail)
 }
 
 export function getOneSelfieLandingSource(

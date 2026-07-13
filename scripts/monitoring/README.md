@@ -202,7 +202,7 @@ Generated: 2026-03-01T07:00:00.000Z
 - Check Node.js version: `node --version` (requires v16+)
 
 ### "Can't find sselfie-9g"
-- Scripts expect `projectRoot = '/Users/MD760HA/sselfie-9g'`
+- Scripts expect `projectRoot = '/Users/MD760HA/ACTIVE/sselfie-9g'`
 - Update the `projectRoot` variable in scripts if cloned elsewhere
 
 ### Critical-Path times out

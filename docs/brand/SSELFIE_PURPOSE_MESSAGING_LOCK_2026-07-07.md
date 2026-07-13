@@ -2,9 +2,24 @@
 
 Last updated: 2026-07-09
 
-Status: Current controlling extension for SSELFIE purpose, category, founder-led messaging, content direction, and story systems.
+Status: Current execution contract for SSELFIE purpose, category, founder-led messaging, content direction, and story systems.
 
-If this document conflicts with older positioning, funnel, content, or prompt guidance, this document wins for purpose and messaging. Use it together with `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`.
+Highest-level brand law: `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`. Read it first. It locks the destination as freedom, the bridge as visibility, selfies as the starting tool, and AI as the accelerator. This document explains how that North Star routes through content, products, and offers.
+
+If this document conflicts with older positioning, funnel, content, or prompt guidance, this document wins for category execution. The Constitution wins for the North Star, message hierarchy, and ethical line. Use it together with `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`.
+
+## The Freedom Hierarchy
+
+- Destination: Freedom.
+- Bridge: Visibility.
+- Starting tool: Selfies.
+- Accelerator: AI.
+
+Freedom means more real choices through skills, visibility, trust, offers, and the ability to earn her own money. It is not an income guarantee or a vague dream-life promise.
+
+The full path is:
+
+Photo -> visibility -> story -> trust -> offer -> income -> choices -> freedom.
 
 ## The Category
 

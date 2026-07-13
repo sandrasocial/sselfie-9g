@@ -184,7 +184,8 @@ async function main() {
   lines.push("## Scope")
   lines.push(`- Files scanned: ${files.length}`)
   lines.push("- Surfaces: public paid routes, supporting public components, and live email templates")
-  lines.push("- Voice source: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md")
+  lines.push("- Brand law: docs/brand/SSELFIE_BRAND_CONSTITUTION.md")
+  lines.push("- Detailed voice: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md")
   lines.push("")
   lines.push("## Findings")
   if (findings.length === 0) {

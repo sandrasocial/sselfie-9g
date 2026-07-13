@@ -46,6 +46,20 @@ describe("One Selfie landing attribution", () => {
     expect(url.searchParams.get("cta_keyword")).toBe("BUNDLE")
   })
 
+  it("keeps a valid checkout email and drops malformed URL input", () => {
+    const valid = new URL(
+      buildOneSelfieCheckoutHref({ checkout_email: " Sandra@Example.com " }),
+      "https://sselfie.ai",
+    )
+    const malformed = new URL(
+      buildOneSelfieCheckoutHref({ checkout_email: "not-an-email" }),
+      "https://sselfie.ai",
+    )
+
+    expect(valid.searchParams.get("checkout_email")).toBe("sandra@example.com")
+    expect(malformed.searchParams.has("checkout_email")).toBe(false)
+  })
+
   it("routes a closed offer to the Starter Kit with explicit fallback attribution", () => {
     const href = buildOneSelfieExpiredFallbackHref({
       utm_source: "instagram",

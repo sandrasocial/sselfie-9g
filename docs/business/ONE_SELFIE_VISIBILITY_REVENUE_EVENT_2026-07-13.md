@@ -1,5 +1,7 @@
 # One Selfie Visibility Revenue Event
 
+Brand authority: [`docs/brand/SSELFIE_BRAND_CONSTITUTION.md`](../brand/SSELFIE_BRAND_CONSTITUTION.md). This event leads with the immediate result, then connects it honestly to visibility and building something of her own. Freedom is the destination, not a forced headline.
+
 Status: implementation and attended launch
 
 Campaign window: July 13, 2026 at 18:00 CEST through July 15, 2026 at 18:00 CEST
@@ -63,8 +65,9 @@ These are planning bands, not promises:
 
 | Result | Buyers | Bundle revenue |
 |---|---:|---:|
-| Conservative | 5 | $485 |
-| Evidence-weighted | 10–15 | $970–$1,455 |
+| Floor | 6 | $582 |
+| Evidence-weighted | 10–17 | $970–$1,649 |
+| Central planning case | 13 | $1,261 |
 | Strong | 20–25 | $1,940–$2,425 |
 
 Any standard annual SUITE purchase is reported separately in EUR. It is not included in the bundle revenue number.
@@ -82,17 +85,15 @@ Trigger applies to the opening Reel and any campaign post where the caption says
 
 ### Message 1
 
-> I made one simple bundle for the woman who has hundreds of photos on her phone but still doesn't know what to post.
+> One selfie. Photos and content you can finally use.
 >
-> It starts with one real selfie.
->
-> It's $97 once. Five tools stay yours for life, plus 30 days with Maya and 200 credits. There is no subscription hiding behind it.
+> It's $97 once. Five tools stay yours for life, plus 30 days with Maya and 200 credits. Nothing renews.
 >
 > It closes Wednesday at 6 PM Oslo time. 🤍
 
 Button label:
 
-> Show me the bundle
+> See the bundle · $97
 
 Button URL:
 
@@ -145,11 +146,15 @@ No link yet.
 On-screen text:
 
 ```text
-You have hundreds of photos.
-But still nothing to post.
+Hundreds of photos.
+Still nothing to post?
 
-So I put the whole path
-behind one real selfie.
+Start with this one.
+
+One selfie.
+Edit it.
+Turn it into more.
+Use it in content.
 
 Open for 48 hours.
 Comment BUNDLE.
@@ -184,13 +189,19 @@ Caption:
 4. Show a post, profile, or content example using the images.
    > Then actually use it so people start recognizing you.
 5. Speak to camera.
-   > I put the whole path together because the separate pieces were making it harder than it needed to be.
+   > This was never just about selfies. It was about becoming visible enough to build something of your own.
 6. Plain text.
    > $97 once. Five tools for life. 30 days with Maya. No subscription.
 7. CTA.
    > Comment BUNDLE. It closes Wednesday at 6 PM Oslo time.
 
-### July 14 — show the path
+### July 14 — proof, then show the path
+
+Lead with two verified SSELFIE member comments. These are product proof, not claims that they bought this new bundle:
+
+> “I just took the best photo of myself in years.”
+
+> “Best one so far. I love that it looks real, and me.”
 
 Create one Reel or carousel showing the same selfie moving through four frames:
 
@@ -220,9 +231,9 @@ Stories that evening answer only real questions received. Useful defaults:
 
 Morning Reel or talking Story:
 
-> A last reminder, without fake drama.
+> Just one last note.
 >
-> The One Selfie Bundle closes today at 6 PM Oslo time. I will not reset the clock tomorrow.
+> The One Selfie Bundle closes today at 6 PM Oslo time. No new checkout can start after 6 PM. I will not reset it tomorrow. If you already opened checkout before then, you get a short payment window to finish.
 >
 > If you want one clear path from the selfie on your phone to photos and content you can actually use, comment BUNDLE.
 
@@ -259,6 +270,15 @@ Recommended attended send times:
 The emails use the same exact price, access promise, deadline, and existing-member warning as the
 page. The Inside and Last call drafts also tell anyone who already bought the bundle to open her
 delivery email and not purchase again.
+
+The internal founder briefing is sent once to Sandra only. It contains the exact Story sequence,
+the three attended email-approval times, campaign precedence (`BUNDLE` only), and the checkout
+recovery copy that remains approval-gated.
+
+One abandoned-checkout reminder is prepared for eligible event checkouts after three hours. It
+contains no discount, checks Stripe immediately before sending, excludes completed buyers and
+active SUITE members, and cannot send after the fixed close. The customer-facing copy remains
+disabled until Sandra approves its exact wording.
 
 ## Attribution links
 
@@ -324,6 +344,11 @@ Launch scorecard:
 - first generation and first download during the 30-day pass
 - annual SUITE upsell views, clicks, and completed EUR payments
 
+Sandra sees the fixed July 13–15 flow inside the existing Admin home under Business details. It
+replaces the generic 30-day funnel block during this event and shows Views -> Checkout starts ->
+Paid buyers/revenue -> Buyer home -> Maya -> First image -> First download, plus traffic source.
+Money comes only from successful live `stripe_payments`; behavior remains clearly labeled.
+
 Read the results in this order:
 
 1. **Traffic:** Did enough qualified people see the offer?
@@ -363,7 +388,12 @@ Repeat this One Selfie event only if it produces:
 
 Do not send cold paid traffic to this first 48-hour event. Organic content and the existing email audience should prove the offer first.
 
-Retargeting can be considered after the event has several verified organic purchases, the Pixel/Conversions API records landing, checkout, and purchase correctly, and fulfillment is clean. Start with people who already engaged with Sandra or visited the offer.
+Current July 13 production check: the repo contains Meta Pixel code, but Production does not have
+`NEXT_PUBLIC_FACEBOOK_PIXEL_ID` configured and there is no deduplicated Conversions API Purchase
+implementation. Therefore this event is not ready for responsible Meta optimization or reliable
+paid-checkout attribution. Do not spend on ads during this event.
+
+Retargeting can be considered after the event has several verified organic purchases, the Pixel and Conversions API record landing, checkout, and Purchase correctly with deduplication, and fulfillment is clean. Start with people who already engaged with Sandra or visited the offer.
 
 Cold ads should wait until all of these are true:
 
@@ -374,6 +404,18 @@ Cold ads should wait until all of these are true:
 - a maximum initial customer-acquisition target around $25–$30, until SUITE continuation proves higher lifetime value
 
 Meta describes retargeting as reaching people who already know the business, and its Conversions API is designed to improve measurement between marketing data and Meta's systems. A new ad set also goes through a learning period, so frequent changes during a 48-hour event make the result less reliable.
+
+## Research and campaign review
+
+The read-only `revenue-campaign-director` agent must audit timed events before implementation. It
+checks the full path from content through fulfillment, distinguishes launch blockers from later
+experiments, researches current primary or peer-reviewed sources, and never sends, publishes,
+charges, deploys, or invents proof.
+
+This event's pre-launch review kept the offer and price stable. It strengthened checkout clarity,
+moved real proof closer to the decision, made the closing language factual, and added one
+approval-gated checkout reminder. It deliberately did not add a bump, downsell, second payment
+choice, cold ads, a new discount, or a louder off-brand design.
 
 Official references:
 

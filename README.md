@@ -19,10 +19,13 @@ Read these before making changes:
 3. `docs/CODEX_CONTEXT.md`
    Technical context, file map, automation notes, and operating procedure.
 
-4. `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
+4. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
+   Highest-level North Star, message hierarchy, ethical line, and agent contract.
+
+5. `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
    Current voice, audience, story, expertise, product positioning, and agent behavior source.
 
-5. `docs/SSELFIE_DESIGN_SYSTEM.md`
+6. `docs/SSELFIE_DESIGN_SYSTEM.md`
    Current visual and UI design authority.
 
 The older `VOICE_BIBLE`, old content grounding docs, and old Studio marketing drafts are no longer active guidance.
@@ -118,6 +121,7 @@ node scripts/verify-repo-invariants.mjs
 
 Before writing customer-facing copy, read:
 
+- `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
 - `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
 - `docs/brand/source/2026-06-27/SSELFIE_VOICE_STYLE_GUIDE.md`
 - `docs/brand/source/2026-06-27/SSELFIE_TARGET_AUDIENCE_PERSONA.md`
@@ -150,6 +154,7 @@ Historical docs should either live under an archive folder or clearly say they a
 
 Start here for docs:
 
+- `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
 - `docs/README.md`
 - `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
 - `docs/SSELFIE_DESIGN_SYSTEM.md`

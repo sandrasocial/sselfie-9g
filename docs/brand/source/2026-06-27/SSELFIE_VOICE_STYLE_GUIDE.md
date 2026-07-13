@@ -63,7 +63,7 @@ They are buying:
 
 Products are bridges.
 
-Identity is the destination.
+Selfies are where the work starts. Visibility is the bridge. Story and message build trust. A clear offer creates the opportunity to earn. Choices and freedom are the destination. AI helps her move faster without replacing her.
 
 ---
 

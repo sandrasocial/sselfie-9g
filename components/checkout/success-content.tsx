@@ -332,13 +332,19 @@ export function SuccessContent({
   const isSelfieAiPhotosKitPurchase = purchaseType === "selfie_ai_photos_kit"
   const isPresetsPurchase = purchaseType === "presets_single" || purchaseType === "presets_bundle"
   const isSelfieToBrandShootPurchase = purchaseType === "selfie_to_brand_shoot_system"
+  const isSelfieVisibilityBundlePurchase = purchaseType === "selfie_visibility_bundle"
   const isBrandEnginePurchase = String(purchaseType || "").startsWith("brand_engine_")
+  const supportEmailSubject = isSelfieVisibilityBundlePurchase
+    ? "One Selfie Bundle setup"
+    : "Purchase access support"
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [name, setName] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [userStatusTimedOut, setUserStatusTimedOut] = useState(false)
+  const [userStatusRetryKey, setUserStatusRetryKey] = useState(0)
   // Decision 2: Removed access token state - no longer needed for authenticated users
 
   useEffect(() => {
@@ -346,6 +352,7 @@ export function SuccessContent({
     // User info polling is only needed for unauthenticated users (account creation)
 
     if (sessionId && !isBrandEnginePurchase && !isSelfieGuidePurchase) {
+      setUserStatusTimedOut(false)
       let attempts = 0
       const MAX_ATTEMPTS = 40 // Increased to 80 seconds total
 
@@ -361,6 +368,7 @@ export function SuccessContent({
           if (response.status === 202) {
             if (attempts >= MAX_ATTEMPTS) {
               console.log("[v0] Max attempts reached while checkout user row is pending")
+              setUserStatusTimedOut(true)
               clearInterval(pollInterval)
             }
             return
@@ -380,12 +388,14 @@ export function SuccessContent({
             clearInterval(pollInterval)
           } else if (attempts >= MAX_ATTEMPTS) {
             console.log("[v0] Max attempts reached with no checkout user info")
+            setUserStatusTimedOut(true)
             clearInterval(pollInterval)
           }
         } catch (err) {
           console.error("[v0] Polling error:", err)
           if (attempts >= MAX_ATTEMPTS) {
             console.log("[v0] Max attempts reached after checkout user polling error")
+            setUserStatusTimedOut(true)
             clearInterval(pollInterval)
           }
         }
@@ -395,7 +405,7 @@ export function SuccessContent({
         clearInterval(pollInterval)
       }
     }
-  }, [isBrandEnginePurchase, isSelfieGuidePurchase, purchaseType, sessionId])
+  }, [isBrandEnginePurchase, isSelfieGuidePurchase, purchaseType, sessionId, userStatusRetryKey])
 
   // FIX 3: Poll access status before redirecting (wait for webhook to complete)
   const [isPollingAccess, setIsPollingAccess] = useState(false)
@@ -1644,6 +1654,41 @@ export function SuccessContent({
   // Fix #1: Paid blueprint now uses same flow as other products
   // Authenticated users auto-redirect (via checkAuth useEffect)
   // Unauthenticated users see account creation form below
+
+  if (userStatusTimedOut && !userInfo && sessionId) {
+    return (
+      <div className="min-h-screen bg-brand-obsidian flex items-center justify-center p-6">
+        <div className="w-full max-w-md border border-[color:var(--div-dark)] bg-[color:var(--glass-bg)] p-7 text-center sm:p-9">
+          <h1 className="font-['Cormorant_Garamond'] text-3xl font-light text-brand-porcelain">
+            {isSelfieVisibilityBundlePurchase ? "Your payment is confirmed" : "Your purchase is still syncing"}
+          </h1>
+          <p className="mt-4 text-sm font-light leading-6 text-brand-pearl">
+            {isSelfieVisibilityBundlePurchase
+              ? "Your bundle is still finishing its setup. Please try again. Your delivery email will also arrive as soon as everything is ready."
+              : "We are still finishing your access. Please try again, or check the delivery email sent after payment."}
+          </p>
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={() => {
+                setUserStatusTimedOut(false)
+                setUserStatusRetryKey((current) => current + 1)
+              }}
+              className="min-h-11 bg-brand-whisper px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-brand-obsidian"
+            >
+              Try Again
+            </button>
+            <a
+              href={`mailto:support@sselfie.ai?subject=${encodeURIComponent(supportEmailSubject)}`}
+              className="inline-flex min-h-11 items-center justify-center border border-[color:var(--div-dark)] px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-brand-porcelain"
+            >
+              Email Support
+            </a>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (!userInfo && sessionId) {
     return (

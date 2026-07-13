@@ -100,6 +100,11 @@ const faqs = [
       "You can start as a complete beginner. The first step is still your own selfie. Maya and the Prompt Vault help with what comes next.",
   },
   {
+    question: "What are the 200 credits?",
+    answer:
+      "A standard image uses one credit. Your bundle includes 200 credits for creating inside Maya during your 30-day pass.",
+  },
+  {
     question: "I already pay for SUITE. Should I buy this?",
     answer:
       "No. This bundle is designed to give non-members a 30-day introduction to Maya. You already have ongoing SUITE and Maya access, so keep using your membership. If you need one of the learning tools, contact support and we will help you find the right next step.",
@@ -130,14 +135,12 @@ function OfferAction({
   keyword,
   phase,
   source,
-  starterKitHref,
 }: {
   checkoutHref: string
   hasInboundKeyword: boolean
   keyword: string
   phase: OfferPhase
   source: string
-  starterKitHref: string
 }) {
   if (phase === "upcoming") {
     return (
@@ -150,11 +153,10 @@ function OfferAction({
     )
   }
 
-  const isOpen = phase === "open"
-  const href = isOpen ? checkoutHref : starterKitHref
-  const label = isOpen
-    ? "Get the One Selfie Bundle"
-    : "Start with the $37 Starter Kit"
+  if (phase === "closed") return null
+
+  const href = checkoutHref
+  const label = "Get the bundle · $97 once"
 
   return (
     <Link
@@ -162,12 +164,12 @@ function OfferAction({
       onClick={() => {
         trackOfferCtaClick({
           offerSlug: OFFER_SLUG,
-          productId: isOpen ? PRODUCT_ID : "starter_kit",
+          productId: PRODUCT_ID,
           ctaKeyword: keyword,
           source,
           href,
         })
-        if (isOpen && hasInboundKeyword) {
+        if (hasInboundKeyword) {
           trackPostKeywordAttributed({
             offerSlug: OFFER_SLUG,
             productId: PRODUCT_ID,
@@ -216,6 +218,66 @@ export function OneSelfieLanding({
       : phase === "open"
         ? `Closes in ${countdown}`
         : "This 48-hour bundle is now closed"
+
+  if (phase === "closed") {
+    return (
+      <div className="min-h-screen bg-[var(--ss-seasalt)] font-sans text-[var(--ss-night)]">
+        <PublicOfferTracker
+          offerSlug={OFFER_SLUG}
+          productId={PRODUCT_ID}
+          ctaKeyword={keyword}
+          source={source}
+        />
+        <header className="border-b border-[var(--ss-silver)] bg-[var(--ss-seasalt)]">
+          <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+            <Link
+              href="/"
+              className="font-[family-name:var(--font-display)] text-[19px] font-light uppercase tracking-[0.32em]"
+            >
+              SSELFIE
+            </Link>
+            <Link
+              href="/app"
+              className="text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--ss-davy)] underline decoration-[var(--ss-silver)] underline-offset-4"
+            >
+              Already in SUITE? Open it
+            </Link>
+          </div>
+        </header>
+        <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-[1440px] items-center justify-center border-x border-[var(--ss-silver)] bg-white px-6 py-20 text-center sm:px-10">
+          <div className="max-w-2xl">
+            <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-[var(--ss-gray)]">
+              48-hour offer closed
+            </p>
+            <h1 className="mt-6 font-[family-name:var(--font-display)] text-[clamp(3.4rem,8vw,6.8rem)] font-light leading-[0.88] tracking-[-0.045em]">
+              This bundle is now closed.
+            </h1>
+            <p className="mx-auto mt-7 max-w-xl text-[16px] font-light leading-7 text-[var(--ss-davy)]">
+              I will not reset the deadline. If you still want a simple place to begin, the separate Selfie Starter Kit is available for $37.
+            </p>
+            <p className="mx-auto mt-3 max-w-xl text-[13px] leading-6 text-[var(--ss-gray)]">
+              The Starter Kit does not include the bundle&apos;s extra courses, Prompt Vault, or 30-day SUITE pass.
+            </p>
+            <Link
+              href={starterKitHref}
+              onClick={() =>
+                trackOfferCtaClick({
+                  offerSlug: "starter-kit",
+                  productId: "starter_kit",
+                  ctaKeyword: keyword,
+                  source: "one_selfie_expired_fallback",
+                  href: starterKitHref,
+                })
+              }
+              className="mt-9 inline-flex min-h-12 items-center justify-center rounded-[4px] bg-[var(--ss-night)] px-7 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-white"
+            >
+              See the Starter Kit · $37
+            </Link>
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[var(--ss-seasalt)] pb-20 font-sans text-[var(--ss-night)] sm:pb-0">
@@ -286,10 +348,10 @@ export function OneSelfieLanding({
             </p>
             <h1 className="mt-5 max-w-[630px] font-[family-name:var(--font-display)] text-[clamp(3.2rem,7vw,6.7rem)] font-light leading-[0.87] tracking-[-0.045em] text-[var(--ss-night)]">
               One selfie.
-              <span className="mt-2 block pl-[12%] italic">Everything you need to use it.</span>
+              <span className="mt-2 block italic">Photos and content you can finally use.</span>
             </h1>
             <p className="mt-8 max-w-[540px] text-[16px] font-light leading-7 text-[var(--ss-davy)] sm:text-[17px]">
-              Take it better. Edit it. Turn it into realistic AI photos and content that still feels like you.
+              Take it better. Edit it. Turn it into realistic AI photos. Then know what to post next.
             </p>
 
             <div className="mt-9 flex flex-col gap-5 border-y border-[var(--ss-silver)] py-6 sm:flex-row sm:items-end sm:justify-between">
@@ -313,10 +375,9 @@ export function OneSelfieLanding({
                 keyword={keyword}
                 phase={phase}
                 source={source}
-                starterKitHref={starterKitHref}
               />
               <p className="mt-4 max-w-[480px] text-[12px] leading-5 text-[var(--ss-gray)]">
-                The lifetime products currently sell for $260 separately. Your 30 days of SUITE is included on top.
+                $260 in lifetime tools, plus 30 days with Maya and 200 credits. Nothing renews.
               </p>
             </div>
           </div>
@@ -333,6 +394,33 @@ export function OneSelfieLanding({
               </p>
             ))}
           </div>
+        </section>
+
+        <section className="mx-auto max-w-[1440px] border-x border-[var(--ss-silver)] bg-white px-6 py-14 sm:px-10 sm:py-16 lg:px-14">
+          <p className="text-[10px] font-medium uppercase tracking-[0.26em] text-[var(--ss-gray)]">
+            What SSELFIE members have said
+          </p>
+          <div className="mt-7 grid border-t border-[var(--ss-silver)] md:grid-cols-2 md:divide-x md:divide-[var(--ss-silver)]">
+            <blockquote className="border-b border-[var(--ss-silver)] py-8 md:border-b-0 md:pr-10">
+              <p className="font-[family-name:var(--font-display)] text-[32px] font-light leading-tight text-[var(--ss-raisin)] sm:text-[38px]">
+                “I just took the best photo of myself in years.”
+              </p>
+              <footer className="mt-5 text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--ss-gray)]">
+                A SSELFIE member
+              </footer>
+            </blockquote>
+            <blockquote className="py-8 md:pl-10">
+              <p className="font-[family-name:var(--font-display)] text-[32px] font-light leading-tight text-[var(--ss-raisin)] sm:text-[38px]">
+                “Best one so far. I love that it looks real, and me.”
+              </p>
+              <footer className="mt-5 text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--ss-gray)]">
+                A SSELFIE member · 50 and fabulous
+              </footer>
+            </blockquote>
+          </div>
+          <p className="mt-4 max-w-3xl text-[14px] font-light leading-6 text-[var(--ss-davy)]">
+            This was never just about selfies. It was about becoming visible enough to build something of your own.
+          </p>
         </section>
 
         <section className="mx-auto max-w-[1440px] border-x border-[var(--ss-silver)] px-6 py-20 sm:px-10 sm:py-24 lg:px-14">
@@ -488,7 +576,6 @@ export function OneSelfieLanding({
               keyword={keyword}
               phase={phase}
               source={source}
-              starterKitHref={starterKitHref}
             />
           </div>
           <p className="mx-auto mt-5 max-w-lg text-[12px] leading-5 text-[var(--ss-gray)]">
@@ -532,7 +619,6 @@ export function OneSelfieLanding({
           keyword={keyword}
           phase={phase}
           source={source}
-          starterKitHref={starterKitHref}
         />
       </div>
     </div>

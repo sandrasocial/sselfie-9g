@@ -4,9 +4,11 @@ Last updated: 2026-06-27
 
 Status: Current controlling source for SSELFIE voice, audience, story, expertise, product positioning, and agent behavior.
 
+Highest-level brand law: `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`. Read it first. It controls the North Star, freedom-first message hierarchy, ethical line, and agent contract. This document supplies the detailed voice, audience, story, and expertise underneath it.
+
 If this document conflicts with older docs, this document wins.
 
-Purpose and category extension: `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md` now controls the highest-level message, founder-led category, offer-temperature rules, and drift prevention. Use both docs together for copy, content, prompts, Maya/admin language, and product positioning.
+Purpose and category execution: `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md` controls the founder-led category, offer-temperature rules, and drift prevention underneath the Constitution. Use all three docs together for copy, content, prompts, Maya/admin language, and product positioning.
 
 ## Source Files
 
@@ -23,15 +25,17 @@ The design system is being rewritten by Sandra and will be added separately. Unt
 
 SSELFIE helps women stop hiding and start building online using their phone, their story, their selfies, their everyday life, and AI tools.
 
-The selfie is where the work starts.
+Selfies are where the work starts.
 
-Visibility is the transformation.
+Visibility is the bridge.
 
-Personal brand is the bridge.
+Story and message build trust.
 
-Income is the opportunity.
+A clear offer creates the opportunity to earn.
 
-AI is a tool.
+Choices and freedom are the destination.
+
+AI helps her move faster without replacing her.
 
 The woman is the point.
 
@@ -90,7 +94,7 @@ They are buying:
 
 Products are bridges.
 
-Identity is the destination.
+Freedom is the destination. Identity is what the work must protect.
 
 ## The Audience
 

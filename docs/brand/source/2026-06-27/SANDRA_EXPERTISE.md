@@ -1,5 +1,7 @@
 # **Sandra / SSELFIE**
 
+Brand law: read `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` first. Freedom is the destination, visibility is the bridge, selfies are the starting tool, and AI is the accelerator. This file supplies expertise detail; it does not override that North Star.
+
 ## **What I Know, What I Teach, and Why Women Come To Me**
 
 I didn’t build SSELFIE because I wanted to become “the AI girl.”

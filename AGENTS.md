@@ -9,7 +9,7 @@
 
 | Repo | Path | What it is |
 |------|------|-----------|
-| sselfie-9g ← YOU ARE HERE | `/Users/MD760HA/sselfie-9g` | SSELFIE Studio mothership. Live production. |
+| sselfie-9g ← YOU ARE HERE | `/Users/MD760HA/ACTIVE/sselfie-9g` | SSELFIE Studio mothership. Live production. The old `/Users/MD760HA/sselfie-9g` folder is retired and must not be edited. |
 | agents-sselfie | `/Users/MD760HA/agents-sselfie` | SSELFIE AGENTS — separate product. |
 | portfolio | `/Users/MD760HA/portfolio` | Sandra's personal portfolio site. |
 | soulresets | `/Users/MD760HA/soulresets` | Separate project. |
@@ -34,7 +34,7 @@ You are **Codex** — SSELFIE's code implementation agent (runs in Cursor or sim
 2. Read `docs/CODEX_CONTEXT.md` — tech stack, constraints, and file map
 3. Check `tasks/` for any new spec files (newest = highest priority unless told otherwise)
 
-For any copy, prompt, agent/persona, Studio.com blueprint, landing page, email, DM, or product-language work, also read `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`. It supersedes older voice docs and old Studio marketing drafts when they conflict.
+For any copy, prompt, agent/persona, Studio.com blueprint, landing page, email, DM, product-language, UX, campaign, or offer work, first read `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`, then `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md` and `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`. The Constitution controls the North Star and ethical line. The source-of-truth document controls detailed voice and audience. Both supersede older voice docs and old Studio marketing drafts when they conflict.
 
 ---
 
@@ -67,6 +67,7 @@ When you get a task:
 ## Email / Copy Rules
 
 For any outward-facing copy (email templates, landing pages, CTAs):
+- Load `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
 - Load `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
 - Keep copy in draft — Sandra approves before any send
 - Run QA against: voice match, clarity, emotional truth, action clarity, offer fit

@@ -5,7 +5,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="/Users/MD760HA/sselfie-9g"
+PROJECT_ROOT="/Users/MD760HA/ACTIVE/sselfie-9g"
 REPORT_DIR="$HOME/stella/reports/codebase-health"
 TIMESTAMP=$(date '+%Y-%m-%d')
 

@@ -17,7 +17,7 @@ const REPORT_DIR = path.resolve(
   'stella/reports/codebase-health'
 );
 const PROJECT_ROOT = path.resolve(
-  process.env.SSELFIE_ROOT || '/Users/MD760HA/sselfie-9g'
+  process.env.SSELFIE_ROOT || '/Users/MD760HA/ACTIVE/sselfie-9g'
 );
 const VERCEL_JSON = path.join(PROJECT_ROOT, 'vercel.json');
 const APP_CRON_DIR = path.join(PROJECT_ROOT, 'app/api/cron');

@@ -41,6 +41,37 @@ describe("One Selfie Visibility Bundle post-purchase path", () => {
     )
   })
 
+  it("does not expose the buyer-home button before full bundle fulfillment", () => {
+    const statusRoute = read("app/api/checkout/user-status/route.ts")
+
+    expect(statusRoute).toContain('productType === "selfie_visibility_bundle"')
+    expect(statusRoute).toContain("bundle_ready")
+    expect(statusRoute).toContain("selfie_visibility_bundle_pass")
+    expect(statusRoute).toContain("return NextResponse.json({ userInfo: null }, { status: 202 })")
+  })
+
+  it("turns a long fulfillment delay into a retryable support state", () => {
+    const success = read("components/checkout/success-content.tsx")
+
+    expect(success).toContain("userStatusTimedOut")
+    expect(success).toContain("setUserStatusTimedOut(true)")
+    expect(success).toContain("Your payment is confirmed")
+    expect(success).toContain("Your bundle is still finishing its setup")
+    expect(success).toContain("Try Again")
+    expect(success).toContain("One Selfie Bundle setup")
+    expect(success).toContain("Purchase access support")
+  })
+
+  it("accepts an expired pass marker when a fulfilled buyer returns later", () => {
+    const statusRoute = read("app/api/checkout/user-status/route.ts")
+    expect(statusRoute).toMatch(
+      /product_type = 'selfie_visibility_bundle_pass'\s+AND COALESCE\(is_test_mode, FALSE\) = FALSE/,
+    )
+    expect(statusRoute).not.toMatch(
+      /product_type = 'selfie_visibility_bundle_pass'\s+AND status = 'active'/,
+    )
+  })
+
   it("recovers safely when another checkout creates the same auth user first", () => {
     const dispatcher = read("lib/payments/lifecycle/checkout-session-completed.ts")
 

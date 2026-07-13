@@ -16,6 +16,8 @@ Use this order:
 
 ## Current Brand And Business Contracts
 
+- `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` — highest-level North Star, message hierarchy, ethical
+  line, and agent contract. Read this first for any brand, copy, campaign, product, or UX work.
 - `brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md` — voice, audience, story, expertise, and
   positioning.
 - `brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md` — purpose, category, founder-led message,

@@ -4,6 +4,10 @@ import { sql } from "@/lib/db/client"
 import { getSingleSourceRevenueMetrics } from "@/lib/revenue/single-source"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
 import { getRevenueTruthScorecard, type RevenueTruthScorecard } from "@/lib/admin/revenue-truth-scorecard"
+import {
+  getOneSelfieCampaignScorecard,
+  type OneSelfieCampaignScorecard,
+} from "@/lib/admin/one-selfie-campaign-scorecard"
 import { getStudioMemberHealthReport, type StudioMemberHealthReport } from "@/lib/admin/studio-member-health"
 import {
   buildHigherSelfCommandCenter,
@@ -42,6 +46,7 @@ export type AdminHomeReport = {
     source: "stripe_live" | "db_fallback"
   }
   scorecard: RevenueTruthScorecard | null
+  oneSelfieCampaign: OneSelfieCampaignScorecard | null
   studioHealth: StudioMemberHealthReport | null
   // BRIDGE-01: SUITE trials are NOT members and carry no money fields.
   // Counts come from subscriptions suite_trial rows; converted = trial users
@@ -126,6 +131,7 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
     needsMeRows,
     memberMetrics,
     scorecard,
+    oneSelfieCampaign,
     briefReports,
     trialRows,
     studioHealth,
@@ -168,6 +174,10 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
     getSingleSourceRevenueMetrics().catch(() => null),
     getRevenueTruthScorecard().catch((error) => {
       console.error("[admin-home] revenue truth scorecard failed:", error)
+      return null
+    }),
+    getOneSelfieCampaignScorecard().catch((error) => {
+      console.error("[admin-home] One Selfie campaign scorecard failed:", error)
       return null
     }),
     getLatestAnalyticsReports({ reportType: "content_brief_weekly", limit: 1 }).catch(() => []),
@@ -301,6 +311,7 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
       source: memberMetrics ? "stripe_live" : "db_fallback",
     },
     scorecard,
+    oneSelfieCampaign,
     studioHealth,
     trials: {
       active: Number((trialRows as any[])[0]?.active || 0),

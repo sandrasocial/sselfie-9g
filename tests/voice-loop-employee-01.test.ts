@@ -39,7 +39,10 @@ describe("VOICE-LOOP-01 apprentice loop", () => {
     expect(script).toContain("docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md")
     expect(script).toContain("docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md")
     expect(script).toContain("docs/brand/source/2026-06-27/SSELFIE_VOICE_STYLE_GUIDE.md")
-    expect(grounding).toContain("synced from Sandra's canonical brand docs")
+    expect(grounding).toContain(
+      "Generated from docs/brand/SSELFIE_BRAND_CONSTITUTION.md by pnpm sync:grounding",
+    )
+    expect(grounding).toContain("Do not edit this block by hand")
   })
 
   it("keeps the replacement weekly brief writer on the validated storage contract", () => {

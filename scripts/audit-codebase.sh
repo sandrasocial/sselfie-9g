@@ -4,7 +4,7 @@
 # Produces a clear map of what's alive, dead, and half-finished
 # Run from project root: bash scripts/audit-codebase.sh
 
-PROJECT="/Users/MD760HA/sselfie-9g"
+PROJECT="/Users/MD760HA/ACTIVE/sselfie-9g"
 OUTPUT="$PROJECT/CODEBASE_AUDIT_$(date +%Y-%m-%d).md"
 
 echo "# 🔍 SSELFIE CODEBASE AUDIT" > $OUTPUT

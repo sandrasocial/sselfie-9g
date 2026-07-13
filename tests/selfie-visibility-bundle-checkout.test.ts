@@ -114,4 +114,29 @@ describe("One Selfie Visibility Bundle checkout", () => {
     expect(route).toContain('redirect("/one-selfie?offer=upcoming")')
     expect(route).toContain('redirect("/one-selfie?offer=closed")')
   })
+
+  it("keeps the one-time bundle promise consistent at the payment step", () => {
+    const checkout = read("app/checkout/page.tsx")
+
+    expect(checkout).toMatch(
+      /selfie_visibility_bundle:\s*\{[\s\S]*?heroTitle:\s*"Complete your One Selfie Bundle order"[\s\S]*?blurb:\s*"One \$97 payment[\s\S]*?No subscription[\s\S]*?footer:\s*"Your bundle access is delivered right after payment\. Nothing renews\."/
+    )
+    expect(checkout).toMatch(
+      /selfie_visibility_bundle:\s*\[[\s\S]*?"One-time \$97 purchase"[\s\S]*?"No subscription or automatic renewal"[\s\S]*?"Five tools stay yours for life"[\s\S]*?"30 days of SUITE with 200 credits"/
+    )
+    expect(checkout).toContain(
+      'const isSelfieVisibilityBundle = productType === "selfie_visibility_bundle"'
+    )
+    expect(checkout).toContain(
+      'const isVisualIdentityOffer = isPromptVault || isSelfieAiPhotosKit || isSelfieToBrandShoot'
+    )
+    expect(checkout).toContain('isSelfieVisibilityBundle ? "h-[132px] sm:h-[150px]"')
+    expect(checkout).toContain("confidencePoints.length > 0 && !isSelfieVisibilityBundle")
+    expect(checkout).toMatch(
+      /<EmbeddedCheckout \/>[\s\S]*?isSelfieVisibilityBundle &&[\s\S]*?confidencePoints\.map/
+    )
+    expect(checkout).toContain(
+      "const fallbackType = productType ? `&type=${encodeURIComponent(productType)}` : \"\""
+    )
+  })
 })

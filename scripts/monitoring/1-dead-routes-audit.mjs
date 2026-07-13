@@ -16,7 +16,7 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = '/Users/MD760HA/sselfie-9g';
+const projectRoot = '/Users/MD760HA/ACTIVE/sselfie-9g';
 const vercelPath = path.join(projectRoot, 'vercel.json');
 const apiRoot = path.join(projectRoot, 'app/api');
 const reportDir = path.join(path.resolve(__dirname, '../..'), 'reports/codebase-health');

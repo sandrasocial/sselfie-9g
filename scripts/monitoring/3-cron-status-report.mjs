@@ -17,7 +17,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = '/Users/MD760HA/sselfie-9g';
+const projectRoot = '/Users/MD760HA/ACTIVE/sselfie-9g';
 const vercelPath = path.join(projectRoot, 'vercel.json');
 const cronRoot = path.join(projectRoot, 'app/api/cron');
 const reportDir = path.join(path.resolve(__dirname, '../..'), 'reports/codebase-health');

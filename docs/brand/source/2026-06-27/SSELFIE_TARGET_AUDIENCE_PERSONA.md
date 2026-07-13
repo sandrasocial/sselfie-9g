@@ -57,9 +57,9 @@ She wants to feel like:
 
 The selfie is the entry point.
 
-Visibility is the transformation.
+Selfies are where the work starts. Visibility is the bridge. Story and message build trust. A clear offer creates the opportunity to earn. Choices and freedom are the destination. AI helps her move faster without replacing her.
 
-Personal brand is the bridge.
+Her personal brand is the recognizable structure she builds as she becomes visible.
 
 Income is the opportunity.
 

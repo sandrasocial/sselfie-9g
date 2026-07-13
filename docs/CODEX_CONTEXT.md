@@ -21,6 +21,8 @@ wins for business state and operating decisions.
 
 Current contracts:
 
+- Brand North Star, message hierarchy, ethical line, and agent contract:
+  `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
 - Voice, audience, story, and positioning:
   `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
 - Purpose, category, and messaging:
@@ -153,7 +155,7 @@ or repo-hosted Instagram-reply runtime remains in the application.
 3. Use a clean `codex/` branch or isolated worktree for implementation.
 4. Bugfixes require a failing test or a documented reproduction before the patch.
 5. No broad code refactors without an explicit spec.
-6. Outward-facing copy stays draft-only until Sandra approves it.
+6. Outward-facing copy stays draft-only until Sandra approves it. Load `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` before creating or editing it.
 7. Never print secrets. Report only presence, scope, and whether identifiers resolve.
 8. GitHub Actions workflows are intentionally disabled to avoid paid-run charges. Run required
    checks locally and do not re-enable workflows without Sandra's approval.

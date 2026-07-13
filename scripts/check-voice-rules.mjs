@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Voice guard: fails when customer-facing copy breaks Sandra's locked language rules.
 // Scope: email templates + JSX/TSX string copy.
-// Current source: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md
+// Brand law: docs/brand/SSELFIE_BRAND_CONSTITUTION.md
+// Detailed voice: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md
 // Run: node scripts/check-voice-rules.mjs
 import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { join, relative } from "node:path"
@@ -101,7 +102,8 @@ function writeVoiceReport() {
     "",
     "## Scope",
     `- Directories: ${SCAN_DIRS.join(", ")}`,
-    "- Source: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md",
+    "- Brand law: docs/brand/SSELFIE_BRAND_CONSTITUTION.md",
+    "- Detailed voice: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md",
     "",
     "## Summary",
     `- Violations: ${violations.length}`,
@@ -152,7 +154,7 @@ if (violations.length > 0) {
   for (const v of violations) console.error("  " + v)
   console.error(`\nReport: ${reportPath}`)
   console.error(
-    "\nRules: no em-dashes in copy, no banned language. See docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md.",
+    "\nRules: no em-dashes in copy, no banned language. Start with docs/brand/SSELFIE_BRAND_CONSTITUTION.md.",
   )
   process.exit(1)
 }

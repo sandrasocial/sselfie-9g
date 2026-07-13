@@ -5,9 +5,14 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { stripe } from "@/lib/stripe"
 
 type UserStatusRow = {
+  id: string
   email: string
   supabase_user_id: string | null
   password_setup_complete: boolean | null
+}
+
+type BundleReadyRow = {
+  bundle_ready: boolean
 }
 
 export async function GET(request: Request) {
@@ -35,7 +40,7 @@ export async function GET(request: Request) {
     }
 
     const rows = (await sql`
-      SELECT email, supabase_user_id, password_setup_complete
+      SELECT id, email, supabase_user_id, password_setup_complete
       FROM users
       WHERE LOWER(email) = ${email}
       LIMIT 1
@@ -44,6 +49,36 @@ export async function GET(request: Request) {
     const user = rows[0]
     if (!user) {
       return NextResponse.json({ userInfo: null }, { status: 202 })
+    }
+
+    const productType = session.metadata?.product_type?.trim() || ""
+    if (productType === "selfie_visibility_bundle") {
+      // The owner row is created before the lifetime tools and the fixed SUITE pass.
+      // Release the buyer-home action only after the final pass marker exists so a
+      // fast Stripe redirect can never beat webhook fulfillment.
+      const bundleRows = (await sql`
+        SELECT (
+          EXISTS (
+            SELECT 1
+            FROM subscriptions
+            WHERE user_id = ${user.id}
+              AND product_type = 'selfie_visibility_bundle'
+              AND status = 'active'
+              AND COALESCE(is_test_mode, FALSE) = FALSE
+          )
+          AND EXISTS (
+            SELECT 1
+            FROM subscriptions
+            WHERE user_id = ${user.id}
+              AND product_type = 'selfie_visibility_bundle_pass'
+              AND COALESCE(is_test_mode, FALSE) = FALSE
+          )
+        ) AS bundle_ready
+      `) as BundleReadyRow[]
+
+      if (!bundleRows[0]?.bundle_ready) {
+        return NextResponse.json({ userInfo: null }, { status: 202 })
+      }
     }
 
     if (user.password_setup_complete === true) {

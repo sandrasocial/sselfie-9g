@@ -125,6 +125,14 @@ const CHECKOUT_COPY: Record<
     blurb: "You're getting the guided $197 path for turning one selfie into a small brand shoot, with the full Prompt Vault included.",
     footer: "Your System access link is delivered right after payment.",
   },
+  selfie_visibility_bundle: {
+    heroTitle: "Complete your One Selfie Bundle order",
+    heroBody: "Start with one real selfie and follow one clear path to photos and content you can use.",
+    heading: "One Selfie Visibility Bundle",
+    blurb:
+      "One $97 payment gives you five tools for life, plus 30 days of SUITE with Maya and 200 credits. No subscription.",
+    footer: "Your bundle access is delivered right after payment. Nothing renews.",
+  },
   sselfie_studio_membership: {
     heroTitle: "Join SSELFIE SUITE",
     heroBody: "Maya helps you turn your face, story, and ideas into photos, covers, captions, and posts.",
@@ -184,6 +192,12 @@ const CHECKOUT_CONFIDENCE_POINTS: Record<string, string[]> = {
     "Full Prompt Vault included",
     "One clear selfie into your first brand shoot",
   ],
+  selfie_visibility_bundle: [
+    "One-time $97 purchase",
+    "No subscription or automatic renewal",
+    "Five tools stay yours for life",
+    "30 days of SUITE with 200 credits",
+  ],
 }
 
 function CheckoutContent() {
@@ -196,6 +210,7 @@ function CheckoutContent() {
   const isSelfieAiPhotosKit = productType === "selfie_ai_photos_kit"
   const isPresets = productType === "presets_single" || productType === "presets_bundle"
   const isSelfieToBrandShoot = productType === "selfie_to_brand_shoot_system"
+  const isSelfieVisibilityBundle = productType === "selfie_visibility_bundle"
   const isStarterKit = productType === "starter_kit"
   const isMasterclass = productType === "masterclass"
   const isVisualIdentityOffer = isPromptVault || isSelfieAiPhotosKit || isSelfieToBrandShoot
@@ -344,7 +359,8 @@ function CheckoutContent() {
         const redirectUrl = `/checkout/success?session_id=${sessionId}${productTypeFromSession ? `&type=${encodeURIComponent(productTypeFromSession)}` : ""}${encodedReturnTo}${brandStrategyBumpParam}`
         router.push(redirectUrl)
       } catch {
-        const fallbackUrl = `/checkout/success?session_id=${sessionId}`
+        const fallbackType = productType ? `&type=${encodeURIComponent(productType)}` : ""
+        const fallbackUrl = `/checkout/success?session_id=${sessionId}${fallbackType}`
         router.push(fallbackUrl)
       }
     }
@@ -389,7 +405,7 @@ function CheckoutContent() {
       {/* Hero Image Section */}
       <div
         className={`relative overflow-hidden border-b border-[rgba(197,198,200,0.4)] ${
-          isVisualIdentityOffer ? "h-[20vh] sm:h-[26vh] md:h-[30vh]" : "h-[28vh] sm:h-[34vh] md:h-[38vh]"
+          isSelfieVisibilityBundle ? "h-[132px] sm:h-[150px]" : isVisualIdentityOffer ? "h-[20vh] sm:h-[26vh] md:h-[30vh]" : "h-[28vh] sm:h-[34vh] md:h-[38vh]"
         }`}
       >
         <Image
@@ -412,7 +428,7 @@ function CheckoutContent() {
       </div>
 
       {/* Checkout Form Section */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <div className={`max-w-3xl mx-auto px-4 sm:px-6 ${isSelfieVisibilityBundle ? "py-4 sm:py-6" : "py-8 sm:py-12"}`}>
         {isVisualIdentityOffer && (
           <div className="mb-6 border border-[rgba(197,198,200,0.45)] bg-white p-4 shadow-[0_18px_60px_rgba(13,14,16,0.06)] sm:p-5">
             <div className="mb-4 grid grid-cols-4 gap-2">
@@ -444,7 +460,7 @@ function CheckoutContent() {
                     ? "The guided path plus full Vault access for your first AI brand shoot."
                     : isSelfieAiPhotosKit
                       ? "The small kit for turning one clear selfie into realistic AI photos."
-                    : "The full shoot plus newest and future photoshoot drops."}
+                      : "The full shoot plus newest and future photoshoot drops."}
                 </h2>
               </div>
               <div className="text-left sm:text-right">
@@ -452,7 +468,7 @@ function CheckoutContent() {
                   {isSelfieToBrandShoot ? (hasVaultCredit ? "$160" : "$197") : "$37"}
                 </p>
                 <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[#818283]">
-                  {hasVaultCredit ? "$37 Vault credit applied" : "one-time access"}
+                  {hasVaultCredit ? "$37 Vault credit applied" : "one-time payment"}
                 </p>
               </div>
             </div>
@@ -461,12 +477,12 @@ function CheckoutContent() {
                 ? "Guided path · source selfie help · Vault included · posting plan"
                 : isSelfieAiPhotosKit
                   ? "Source selfie checklist · starter prompts · fix prompts · 3-image shoot path"
-                : "Remaining shots · newest and future drops · copy-paste prompts · example images"}
+                  : "Remaining shots · newest and future drops · copy-paste prompts · example images"}
             </p>
           </div>
         )}
 
-        <div className="text-center mb-6 sm:mb-8">
+        <div className={`text-center ${isSelfieVisibilityBundle ? "mb-4" : "mb-6 sm:mb-8"}`}>
           <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#818283] mb-3">Secure Checkout</p>
           <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl text-[#0D0E10] tracking-wide mb-3">
             {checkoutCopy.heading}
@@ -524,7 +540,7 @@ function CheckoutContent() {
               </p>
             </div>
           )}
-          {confidencePoints.length > 0 && (
+          {confidencePoints.length > 0 && !isSelfieVisibilityBundle && (
             <div className="mx-auto mt-4 grid max-w-xl gap-2 sm:grid-cols-2">
               {confidencePoints.map((point) => (
                 <div
@@ -549,6 +565,19 @@ function CheckoutContent() {
             <EmbeddedCheckout />
           </EmbeddedCheckoutProvider>
         </div>
+
+        {isSelfieVisibilityBundle && (
+          <div className="mx-auto mt-4 grid max-w-xl gap-2 sm:grid-cols-2">
+            {confidencePoints.map((point) => (
+              <div
+                key={point}
+                className="border border-[rgba(197,198,200,0.4)] bg-[#F8FAFA] px-3 py-2 text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#4F5052]"
+              >
+                {point}
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="mt-6 text-center">
           <p className="text-[10px] sm:text-xs text-[#818283] font-light leading-relaxed">

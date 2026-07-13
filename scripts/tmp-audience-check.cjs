@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '/Users/MD760HA/sselfie-9g/.env.local' })
+require('dotenv').config({ path: '/Users/MD760HA/ACTIVE/sselfie-9g/.env.local' })
 const { neon } = require('@neondatabase/serverless')
 const { Resend } = require('resend')
 

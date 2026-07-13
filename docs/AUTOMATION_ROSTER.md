@@ -29,6 +29,8 @@ silently (a now-retired DM bridge once captured zero messages for a month and no
 Session rule for all agents: read this file before creating, enabling, or debugging ANY
 automation.
 
+Brand rule for every layer: read `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` first. Scheduled tasks and external delivery tools may not carry a private or conflicting version of the brand.
+
 ---
 
 ## Layer 1 — The repo (Vercel, deployed from `main`) — THE business layer
@@ -52,7 +54,7 @@ automation.
 | `subscriber-winback` | 09:40 | Dormant email-subscriber win-back |
 | `ai-photoshoot-nurture` | 09:30 | AI-prompts + Vault buyer nurture. Narrowed 2026-07-12: free AI Prompts leads stop after the paid Vault/Kit offer sequence and no longer receive the failed no-card SUITE trial. At payment, known Prompt Vault, Starter Kit, and AI Photos Kit buyers now start their one-ever included trial automatically; guests keep the claim-token email fallback. |
 | `nurture-sequence` | 10:00 | Legacy multi-product nurture (mostly double-gated off) |
-| `membership / prompt-vault / starter-kit checkout-recovery` | hourly (staggered) | Abandoned checkout recovery for the three active revenue paths. Membership recovery returns identified abandoners directly to a prefilled paid checkout; it does not grant a trial. |
+| `membership / prompt-vault / starter-kit checkout-recovery` | hourly (staggered) | Abandoned checkout recovery for the three active revenue paths. Membership recovery returns identified abandoners directly to a prefilled paid checkout; it does not grant a trial. The existing Starter Kit job contains the fixed July 13–15 One Selfie recovery path, but customer sending is disabled by default behind `ONE_SELFIE_BUNDLE_CHECKOUT_RECOVERY_ENABLED` until Sandra approves the copy and the production flag is set. While disabled it may hydrate Stripe emails and report eligible rows, but it sends nothing. When enabled, it sends one deduplicated reminder about three hours after checkout starts and only while the offer is open; paid/completed buyers and active SUITE members are suppressed, with no discount, second follow-up, or new schedule. Bundle hydration and sending are each capped at eight rows per hourly run so the shared 60-second job retains safe headroom. |
 
 ### Sandra-facing intelligence (LIVE)
 | Cron | Schedule | Job |
@@ -131,8 +133,16 @@ browser send requires Sandra's approval of the exact recipient and text in the s
 
 Also in this layer: Cowork skills (`sselfie-brand`, `prompt-my-selfie`, `sselfie-stories`,
 `sselfie-tracker`, `sselfie-optimizer`, `sselfie-community-manager`) — attended routines Sandra
-invokes by name, not schedulers. Repo-committed skills live in `.agents/skills/` (34, incl.
-`vault-prompt-writer`).
+invokes by name, not schedulers. Repo-committed skills live in `.agents/skills/` (37, incl.
+`vault-prompt-writer` and `sselfie-brand-guardian`).
+
+The repo-backed `sselfie-brand-guardian` skill is the preflight for copy, UX language, offers, and
+campaigns. The local `.claude/agents/revenue-campaign-director.md` agent is a research-first,
+read-only campaign auditor. It prepares P0/P1/P2 findings and approval-ready copy but never sends,
+publishes, charges, deploys, or schedules. Neither is an automation. The one-time Claude Desktop
+alignment work is specified in
+`docs/operations/CLAUDE_DESKTOP_BRAND_ALIGNMENT_SPEC_2026-07-13.md`; it must update the three
+existing scheduled tasks without creating a fourth.
 
 **`sselfie-content-engine` plugin — RETIRED 2026-07-11 (content-system audit).** Lived outside
 this repo at `~/Desktop/SSELFIE Work/Business & Admin/SSELFIE/SSELFIE-Content-Engine/` (inside
