@@ -49,7 +49,7 @@ describe("buildCustomModelConceptPrompt", () => {
 
     expect(prompt).toContain("she turns slightly toward the window")
     expect(prompt).toContain("gentle camera push-in")
-    expect(prompt).toContain("preserve the same face and body")
+    expect(prompt).toContain("keep the face and body unchanged from the reference")
     expect(prompt).toContain("no subtitles or text overlays")
   })
 })

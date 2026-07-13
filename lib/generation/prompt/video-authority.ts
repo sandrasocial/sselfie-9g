@@ -17,7 +17,7 @@ export interface VideoAuthorityPromptResult {
 }
 
 const DEFAULT_MOTION_PROMPT =
-  "subtle natural breathing, tiny expression shift, gentle camera push-in, soft ambient movement, preserve the same face and body"
+  "subtle natural breathing, tiny expression shift, gentle camera push-in, soft ambient movement, keep the face and body unchanged"
 
 function normalizeLine(value: unknown): string {
   if (typeof value !== "string") return ""

@@ -709,7 +709,7 @@ export default async function PromptVaultAccessPage({
       <SuiteDoor
         eyebrow="Your next step"
         title="You've done it the manual way."
-        body="Maya already knows every look in this Vault. Inside SSELFIE SUITE, she works from your real selfies and creates your brand shoots for you. No more pasting prompts and hoping ChatGPT keeps your face. You pick the vibe, she does the rest, and it looks like you because it's made from you."
+        body="Maya already knows every look in this Vault. Inside SSELFIE SUITE, she works from your real selfies and creates your brand shoots for you. No more pasting prompts and hoping the result still looks like you. You pick the vibe, she does the rest, and it looks like you because it's made from you."
         ctaLabel="See SSELFIE SUITE"
         href="/join/studio?source=suite_door_vault_access&utm_source=prompt_vault&utm_medium=access_page&utm_campaign=suite_door&utm_content=vault_access_page"
         footnote="Monthly membership · cancel anytime"

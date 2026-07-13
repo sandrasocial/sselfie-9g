@@ -14,6 +14,8 @@ const OUTPUT_DIR = join(ROOT, "output", "automation")
 // Product/content files where em-dashes are AI-generation prompt text, not Sandra's copy.
 const ALLOWLIST = [
   "lib/ai-prompts/prompt-data.ts",
+  // User-intent detection regex (reads what MEMBERS type, never rendered as copy):
+  "app/api/maya/chat/route.ts",
   // Protected trees (separate cleanup later — see CLAUDE.md Dead Code Map):
   "app/feed-planner/",
   "app/api/feed-planner/",
@@ -22,6 +24,7 @@ const ALLOWLIST = [
 ]
 
 const BANNED_RULES = [
+  { label: "retired likeness phrase: face-comparison wording", pattern: /\bsame face\b|\bkeeps? your face\b|\bkeep my face\b/i },
   { label: "hype phrase: game changer", pattern: /game.changer/i },
   { label: "hype word: skyrocket", pattern: /skyrocket/i },
   { label: "corporate word: synergy", pattern: /\bsynergy\b/i },

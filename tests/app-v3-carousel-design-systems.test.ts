@@ -71,7 +71,7 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
         { heading: "Hook" },
         {
           heading: "The 3 rules",
-          body: "Keep your face. Keep your age. Keep your energy.",
+          body: "Still your face. Still your age. Still your energy.",
           purpose: "make the rule easy to save",
           visualConcept: "editorial note beside a mirror selfie",
           imagePrompt: "same woman, mirror, handwritten note, soft window light",
@@ -94,7 +94,7 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
       expect(p).toContain("same woman")
     }
     expect(textPrompt).toContain('"The 3 rules"')
-    expect(textPrompt).toContain("Keep your face. Keep your age. Keep your energy.")
+    expect(textPrompt).toContain("Still your face. Still your age. Still your energy.")
     expect(textPrompt).toContain("editorial note beside a mirror selfie")
     expect(actionPrompt).toContain("hands planning beside a phone")
   })

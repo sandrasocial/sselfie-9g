@@ -46,7 +46,7 @@ Give her, tight and copy-pasteable:
 ## Hard safety net (docs win if they ever conflict)
 
 - Never: leverage, synergy, transform, game-changer, skyrocket, unlock your potential, elevated.
-- No em-dashes anywhere. No "same face" / "keeps your face" — say "still you", "recognizable".
+- No em-dashes anywhere. For likeness reassurance say "still you" or "recognizable"; never face-comparison phrasing. Do not quote banned phrases in drafts or notes: quoting them is how they leak back into copy (check:voice enforces the list mechanically).
 - Never imply viewers are fooled ("no one will know"). AI-assisted, realistic, still her.
 - The woman is the hero, not the AI. Selfies are the start, visibility is the bridge, and freedom is the destination. Cold hooks still lead with the immediate result.
 - Numbers/claims: only ones Sandra gives you or the docs contain. Never invent results.

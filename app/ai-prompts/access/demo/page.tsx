@@ -37,7 +37,7 @@ const MAIN_LOOKS: PromptCard[] = [
       "Your selfie is good but looks casual. You want it to feel polished and shareable.",
     mood: "editorial · soft light · porcelain · iPhone quality",
     prompt:
-      "Use my uploaded selfie as the reference image. Keep my face, age, skin tone, facial features, hair length, jewelry, and expression exactly as they are. Turn this into a clean editorial portrait with soft window light, natural skin texture, minimal background in neutral tones, shallow depth of field, and subtle film grain. The result should look like a real iPhone photo, not AI art.",
+      "Use my uploaded selfie as the reference image. Keep my exact facial features, age, skin tone, facial features, hair length, jewelry, and expression exactly as they are. Turn this into a clean editorial portrait with soft window light, natural skin texture, minimal background in neutral tones, shallow depth of field, and subtle film grain. The result should look like a real iPhone photo, not AI art.",
   },
   {
     number: "02",
@@ -47,7 +47,7 @@ const MAIN_LOOKS: PromptCard[] = [
       "You want something dramatic for a black and white post. Strong and fashion-editorial.",
     mood: "contrast · 90s · fashion · monochrome",
     prompt:
-      "Use my uploaded selfie as the reference image. Keep my face, age, skin tone, freckles, nose, lips, eyes, hairline, and expression exactly as they are. Recreate this as a high-contrast black and white portrait in the style of a 90s fashion editorial. Strong cheekbone shadows, soft flash reflection in the eyes, natural skin texture, subtle film grain. Studio-gray background. Make it look photographic, not illustrated.",
+      "Use my uploaded selfie as the reference image. Keep my exact facial features, age, skin tone, freckles, nose, lips, eyes, hairline, and expression exactly as they are. Recreate this as a high-contrast black and white portrait in the style of a 90s fashion editorial. Strong cheekbone shadows, soft flash reflection in the eyes, natural skin texture, subtle film grain. Studio-gray background. Make it look photographic, not illustrated.",
   },
   {
     number: "03",
@@ -57,7 +57,7 @@ const MAIN_LOOKS: PromptCard[] = [
       "You want something cinematic and unexpected. One of the most distinctive looks in the pack.",
     mood: "cinematic · noir · editorial · shadow",
     prompt:
-      "Use my uploaded selfie as the reference image. Create a black and white portrait seen through a car side mirror. The mirror reflection shows my eyes, nose, lips, and one hand near the face. Keep my face, hair, jewelry, nails, and expression as close to the original as possible. Soft side light, deep shadows, rim light on the hair. Blurred car interior and mirror frame in the background. Fine film grain. This should look like an editorial photo, not an AI image.",
+      "Use my uploaded selfie as the reference image. Create a black and white portrait seen through a car side mirror. The mirror reflection shows my eyes, nose, lips, and one hand near the face. Keep my exact facial features, hair, jewelry, nails, and expression as close to the original as possible. Soft side light, deep shadows, rim light on the hair. Blurred car interior and mirror frame in the background. Fine film grain. This should look like an editorial photo, not an AI image.",
   },
   {
     number: "04",
@@ -67,7 +67,7 @@ const MAIN_LOOKS: PromptCard[] = [
       "You want a moody, high-contrast look. Works well for quotes and single-image posts.",
     mood: "dramatic · shadow · moody · sharp",
     prompt:
-      "Use my uploaded selfie as the reference image. Keep my face, skin, hair, and natural features exactly as they are. Create a close-up portrait where most of my face is in deep shadow, with one narrow band of light crossing my eyes and the bridge of my nose. Plain muted gray-blue background. High-contrast, cinematic lighting. Sharp focus on the eyes. Realistic photography with soft grain. Do not alter my face or skin.",
+      "Use my uploaded selfie as the reference image. Keep my exact facial features, skin, hair, and natural features exactly as they are. Create a close-up portrait where most of my face is in deep shadow, with one narrow band of light crossing my eyes and the bridge of my nose. Plain muted gray-blue background. High-contrast, cinematic lighting. Sharp focus on the eyes. Realistic photography with soft grain. Do not alter my face or skin.",
   },
   {
     number: "05",
@@ -77,7 +77,7 @@ const MAIN_LOOKS: PromptCard[] = [
       "You took a mirror selfie but the lighting or background isn't working. You want the same moment, just clearer and more polished.",
     mood: "clean · polished · natural · editorial",
     prompt:
-      "Use my uploaded mirror selfie as the reference image. Keep my face, body, hair, outfit, phone, and pose as close to the original as possible. Improve the lighting so it is soft and even, straighten the composition, clean up the background so it is minimal and neutral, and sharpen the iPhone detail. Keep the skin texture realistic. The final image should look like a polished editorial mirror selfie, not a heavily filtered one.",
+      "Use my uploaded mirror selfie as the reference image. Keep my exact facial features, body, hair, outfit, phone, and pose as close to the original as possible. Improve the lighting so it is soft and even, straighten the composition, clean up the background so it is minimal and neutral, and sharpen the iPhone detail. Keep the skin texture realistic. The final image should look like a polished editorial mirror selfie, not a heavily filtered one.",
   },
 ]
 
@@ -89,7 +89,7 @@ const BONUS_LOOKS: PromptCard[] = [
     whenToUse: "You want something fun and nostalgic. A lighter post, a throwback feel.",
     mood: "Y2K · flash · nostalgic · candid",
     prompt:
-      "Use my uploaded selfie as the reference image. Keep my face, age, facial features, hair, and body shape exactly as they are. Recreate this as an early-2000s compact digital camera selfie. Direct flash, glossy skin highlights, soft grain, warm indoor light, and a candid, casual feel. Keep the image photorealistic. Do not change my face, skin tone, or expression.",
+      "Use my uploaded selfie as the reference image. Keep my exact facial features, age, facial features, hair, and body shape exactly as they are. Recreate this as an early-2000s compact digital camera selfie. Direct flash, glossy skin highlights, soft grain, warm indoor light, and a candid, casual feel. Keep the image photorealistic. Do not change my face, skin tone, or expression.",
   },
   {
     number: "07",
@@ -99,7 +99,7 @@ const BONUS_LOOKS: PromptCard[] = [
       "You need a personal brand photo that looks natural, not corporate. Good for bios, press, and website use.",
     mood: "natural · personal brand · morning light · approachable",
     prompt:
-      "Use my uploaded selfie as the reference image. Keep my face, age, skin tone, hair, and expression exactly as they are. Create a personal brand portrait with soft morning window light, a clean neutral background, and a relaxed, confident expression. Realistic skin texture. The result should feel like a high-quality iPhone portrait with professional editing, not a corporate headshot or studio shot.",
+      "Use my uploaded selfie as the reference image. Keep my exact facial features, age, skin tone, hair, and expression exactly as they are. Create a personal brand portrait with soft morning window light, a clean neutral background, and a relaxed, confident expression. Realistic skin texture. The result should feel like a high-quality iPhone portrait with professional editing, not a corporate headshot or studio shot.",
   },
   {
     number: "08",
@@ -109,7 +109,7 @@ const BONUS_LOOKS: PromptCard[] = [
       "You have a bathroom selfie you like but it isn't quite there yet. Keep the moment, improve everything around it.",
     mood: "editorial · clean · polished · influencer quality",
     prompt:
-      "Use my uploaded bathroom selfie as the reference image. Keep my face, hair, outfit, phone, pose, and body shape as close to the original as possible. Improve the lighting so it is soft and even, straighten the lines, reduce background clutter, and give the photo clean neutral tones. The result should feel like a high-end editorial bathroom mirror photo. Do not change my face, body, or outfit.",
+      "Use my uploaded bathroom selfie as the reference image. Keep my exact facial features, hair, outfit, phone, pose, and body shape as close to the original as possible. Improve the lighting so it is soft and even, straighten the lines, reduce background clutter, and give the photo clean neutral tones. The result should feel like a high-end editorial bathroom mirror photo. Do not change my face, body, or outfit.",
   },
 ]
 

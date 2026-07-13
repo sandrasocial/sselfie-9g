@@ -112,7 +112,7 @@ export function bakeMarkedPhrase(text: string | undefined | null): string | null
 
 /** The No-Fake identity rule every bake prompt carries. Exported so tests pin the exact line. */
 export const BAKE_IDENTITY_RULE =
-  "Keep the photo itself exactly as it is: same person, same face, same body, same skin, same pose, " +
+  "Keep the photo itself exactly as it is: same person, unchanged facial features, same body, same skin, same pose, " +
   "same background, same light. Do not alter her face or body in any way. She stays completely " +
   "recognizable: still her."
 

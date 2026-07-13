@@ -855,7 +855,7 @@ export const LUXURY_PRIVATE_LOUNGE: PromptTemplate = {
     types: ["user_lora", "inspiration"],
   },
   promptStructure: (context: PromptContext): string => {
-    return `Reference image: photo sent. Face: maintain same face. Format 2:3.
+    return `Reference image: photo sent. Face: keep the exact facial features from the reference photo. Format 2:3.
 
 Illuminated brown hair, soft waves. Sharp face.
 

@@ -42,6 +42,18 @@ describe("One Selfie campaign decision page", () => {
     expect(landing).not.toContain('/images/starter-kit/mockup-2.png')
   })
 
+  it("uses the same focused cinematic design language as the SSELFIE homepage and SUITE", () => {
+    expect(landing).toContain('data-testid="one-selfie-campaign-header"')
+    expect(landing).toContain('data-testid="one-selfie-campaign-hero"')
+    expect(landing).toContain('data-testid="one-selfie-closing-cta"')
+    expect(landing).toContain('/academy/visibility-suite/sandra-hero.png')
+    expect(landing).toContain('text-[clamp(36px,7vw,70px)]')
+    expect(landing).toContain('max-w-6xl')
+    expect(landing).toContain('rounded-none')
+    expect(landing).not.toContain('max-w-[1440px]')
+    expect(landing).not.toContain('rounded-[4px]')
+  })
+
   it("shows a dedicated honest page after close instead of mixing two offers", () => {
     const html = renderToStaticMarkup(
       createElement(OneSelfieLanding, {

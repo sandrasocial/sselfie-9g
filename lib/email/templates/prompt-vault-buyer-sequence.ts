@@ -104,7 +104,7 @@ export function generatePromptVaultDay5FixBadResultEmail({
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If ChatGPT made your face too smooth, too sharp, or not quite you, try this before you change the whole prompt:</p>
     ${renderStonePanel(
       `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Use a clearer selfie with soft window light.</p>
-       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Keep your face visible. No heavy shadows, sunglasses, or extreme angles.</p>
+       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Make sure your face is easy to see. No heavy shadows, sunglasses, or extreme angles.</p>
        <p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">Add the anchor line before the prompt if the AI keeps drifting.</p>`,
       "The fix"
     )}
@@ -131,7 +131,7 @@ If ChatGPT made your face too smooth, too sharp, or not quite you, try this befo
 
 The fix:
 - Use a clearer selfie with soft window light.
-- Keep your face visible. No heavy shadows, sunglasses, or extreme angles.
+- Make sure your face is easy to see. No heavy shadows, sunglasses, or extreme angles.
 - Add the anchor line before the prompt if the AI keeps drifting.
 
 Open the Vault:

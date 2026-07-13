@@ -786,7 +786,7 @@ function LightingComparisonVisual() {
   return (
     <ProseVisualFrame
       label="LIGHTING COMPARISON"
-      caption="Same face, same phone, four totally different outcomes. Light changes everything."
+      caption="One woman, one phone, four totally different outcomes. Light changes everything."
     >
       <div className="lighting-visual-grid">
         {LIGHTING_COMPARISON_IMAGES.map(image => (

@@ -26,21 +26,21 @@ const STARTER_PROMPTS = [
     use: "Use this when you need one clear first-impression image for your profile, bio, or about page.",
     image: "/images/ai-prompts/clean-girl-morning-shot-10.jpg",
     prompt:
-      "Use my uploaded source selfie as the identity reference. Create a realistic editorial profile image that still looks like me. Keep my face shape, eyes, nose, mouth, skin tone, hair color, age, and natural expression recognizable. Use soft natural window light, clean neutral styling, simple makeup, and a calm personal-brand feeling. The image should feel polished but not fake, like a clear version of me on a good day. Vertical 4:5.",
+      "Use my uploaded source selfie as the identity reference. Create a realistic editorial profile image that still looks like me. Keep my exact facial features shape, eyes, nose, mouth, skin tone, hair color, age, and natural expression recognizable. Use soft natural window light, clean neutral styling, simple makeup, and a calm personal-brand feeling. The image should feel polished but not fake, like a clear version of me on a good day. Vertical 4:5.",
   },
   {
     title: "Editorial Reel Cover",
     use: "Use this when you want a stronger image for Reels, carousels, or a post that needs to stop the scroll.",
     image: "/images/ai-prompts/dark-feminine-cafe-shot-1.jpg",
     prompt:
-      "Use my uploaded source selfie as the identity reference. Create a realistic editorial reel cover image that still looks like me. Keep my face, age, hair, and natural features recognizable. Place me in a clean personal-brand scene with stronger composition, simple wardrobe, and enough negative space for text overlay. Make it polished and confident, but not overly perfect or AI-looking. Vertical 4:5, crop safe for Instagram.",
+      "Use my uploaded source selfie as the identity reference. Create a realistic editorial reel cover image that still looks like me. Keep my exact facial features, age, hair, and natural features recognizable. Place me in a clean personal-brand scene with stronger composition, simple wardrobe, and enough negative space for text overlay. Make it polished and confident, but not overly perfect or AI-looking. Vertical 4:5, crop safe for Instagram.",
   },
   {
     title: "Lifestyle Brand Image",
     use: "Use this when you want the image to feel more like a real moment for stories, soft selling, or daily content.",
     image: "/images/ai-prompts/clean-girl-morning-shot-9.jpg",
     prompt:
-      "Use my uploaded source selfie as the identity reference. Create a realistic lifestyle personal-brand image that still looks like me. Keep my face, body proportions, hair color, skin tone, and age believable. Show me in a natural everyday moment with coffee, laptop, phone, mirror, or a quiet work setting. The image should feel lived-in, simple, and useful for Instagram stories or a soft brand post. Vertical 4:5.",
+      "Use my uploaded source selfie as the identity reference. Create a realistic lifestyle personal-brand image that still looks like me. Keep my exact facial features, body proportions, hair color, skin tone, and age believable. Show me in a natural everyday moment with coffee, laptop, phone, mirror, or a quiet work setting. The image should feel lived-in, simple, and useful for Instagram stories or a soft brand post. Vertical 4:5.",
   },
 ]
 

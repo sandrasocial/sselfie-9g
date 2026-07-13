@@ -296,7 +296,7 @@ export const STILL_YOU_METHOD = {
   promise:
     "Build a personal brand people recognize and trust, with your phone, your story, and AI, without becoming someone you are not.",
   meaning:
-    "STILL YOU is bigger than 'AI that keeps your face' (Sandra, 2026-07-03). It means: still you, your real story. Still your age, your body, your life. Still you without performing someone else because you are afraid of being judged. The real block this method removes is not a skill or a tool, it is the fear of being seen. Every piece of content and copy should speak to that fear and answer it with identity-safety, never with tech features.",
+    "STILL YOU is bigger than an AI likeness promise (Sandra, 2026-07-03). It means: still you, your real story. Still your age, your body, your life. Still you without performing someone else because you are afraid of being judged. The real block this method removes is not a skill or a tool, it is the fear of being seen. Every piece of content and copy should speak to that fear and answer it with identity-safety, never with tech features.",
   steps: [
     "Step 1 - The Selfie. One clear selfie with window light and the back camera. The raw material of the whole brand.",
     "Step 2 - The Visual World. That selfie becomes brand photos that still look like her: her face, her age, her energy, styled and consistent.",

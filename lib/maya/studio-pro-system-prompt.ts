@@ -549,7 +549,7 @@ Every carousel prompt you generate MUST follow this complete structure. DO NOT c
 
 **For Cover Slide (Slide 1):**
 \`\`\`
-Character Consistency: Keep facial features EXACTLY identical to Image 1, 2 and 3 - same face shape, eyes, nose, hair color, and styling. This is critical.
+Character Consistency: Keep facial features EXACTLY identical to Image 1, 2 and 3 - matching face shape, eyes, nose, hair color, and styling. This is critical.
 
 Subject: [Describe person naturally - ONLY use age/hair color if explicitly in user's brand profile. NEVER assume. If not specified, use: "Confident female entrepreneur matching Image 1, 2 and 3 exactly"]
 
@@ -978,7 +978,7 @@ Copy slide 1 to your workbench, select your images, and generate! Then move on t
 When generating carousel slide prompts, you MUST include ALL of these sections in this exact order and format:
 
 1. **Character Consistency** (if user image exists):
-   "Keep the [person's] facial features EXACTLY identical to Image 1, 2 and 3 - same face shape, eyes, nose, hair color, and styling. This is critical."
+   "Keep the [person's] facial features EXACTLY identical to Image 1, 2 and 3 - matching face shape, eyes, nose, hair color, and styling. This is critical."
 
 2. **Subject Description:**
    "Confident (add your age: example 28-35 year old) [person type] (matching Image 1, 2 and 3 exactly) with (add your haircolor and length. example: long dark hair) length styled naturally, wearing an elevated [outfit description]. Reference in image 4"
@@ -1151,7 +1151,7 @@ When generating carousel slide prompts, you MUST include ALL of these sections i
 
 **Example carousel prompt format (EXACT structure to follow - NO ** markdown):**
 \`\`\`
-Keep the woman's facial features EXACTLY identical to Image 1, 2 and 3 - same face shape, eyes, nose, hair color, and styling. This is critical.
+Keep the woman's facial features EXACTLY identical to Image 1, 2 and 3 - matching face shape, eyes, nose, hair color, and styling. This is critical.
 
 Confident (add your age: example 28-35 year old) female entrepreneur (matching Image 1, 2 and 3 exactly) with (add your haircolor and length. example: long dark hair) length styled naturally, wearing an elevated [outfit]. Reference in image 4
 
@@ -1190,7 +1190,7 @@ Final Use: Instagram carousel Slide 1 of 10, personal brand storytelling content
 - **Follow the EXACT format:** Start with Character Consistency (no section header), then Subject, Action, Environment, then use plain text section headers (NO **) for Composition, Style, Lighting, Color Palette, Technical Details, Text Space, Text Rendering, Mood, Final Use
 - **CRITICAL - Prompts ONLY in cards:** Do NOT include the full prompt text in your response message. Only provide a brief introduction, then show the prompt cards. The complete prompts should ONLY appear in the suggestion cards.
 - Always include slide number: "Slide 1 of 10", "Slide 2 of 10", etc. in Final Use section
-- Always include character consistency: "Keep the [person's] facial features EXACTLY identical to Image 1, 2 and 3 - same face shape, eyes, nose, hair color, and styling. This is critical."
+- Always include character consistency: "Keep the [person's] facial features EXACTLY identical to Image 1, 2 and 3 - matching face shape, eyes, nose, hair color, and styling. This is critical."
 - Always include specific hex color codes in Color Palette section: "cream (#F5F0E8), beige (#D4C5B0), soft black text (#1A1A1A)"
 - Always include technical specs with specific values: "50mm lens at f/1.8", "2K resolution with slight film grain texture"
 - Always include Text Rendering section with exact text in quotes, sizes in pt, and hex colors

@@ -725,7 +725,7 @@ export const VENICE_CANAL_GONDOLA: PromptTemplate = {
     types: ["user_lora", "inspiration"],
   },
   promptStructure: (context: PromptContext): string => {
-    return `Reference image: photo sent. Maintain same face, original features and elegant closed smile. Vertical format 2:3, cinematographic style, 8K quality.
+    return `Reference image: photo sent. Keep the exact facial features from the reference photo and an elegant closed smile. Vertical format 2:3, cinematographic style, 8K quality.
 
 Scene: woman seated in gondola in Venice canal. In background, historic buildings, water reflections and stone bridge. Sun low creating golden reflections.
 
@@ -765,7 +765,7 @@ export const VENICE_CAFE: PromptTemplate = {
     types: ["user_lora", "inspiration"],
   },
   promptStructure: (context: PromptContext): string => {
-    return `Reference image: maintain same face. Vertical format 2:3, hyper realistic 8K, lifestyle editorial style.
+    return `Reference image: keep the exact facial features from the reference photo. Vertical format 2:3, hyper realistic 8K, lifestyle editorial style.
 
 Scene: woman seated in classic Venetian cafe, small table with marble top. She holds a cappuccino cup with art in the milk.
 
@@ -845,7 +845,7 @@ export const VENICE_MUSEUM: PromptTemplate = {
     types: ["user_lora", "inspiration"],
   },
   promptStructure: (context: PromptContext): string => {
-    return `Reference image: photo sent. Maintain same face, features and proportions original. Sharp face, hyper realistic, natural expression with elegant closed smile.
+    return `Reference image: photo sent. Keep the exact facial features and original proportions from the reference photo. Sharp face, hyper realistic, natural expression with elegant closed smile.
 
 Vertical format 2:3, 8K quality, travel editorial style.
 
@@ -887,7 +887,7 @@ export const VENICE_PIAZZA: PromptTemplate = {
     types: ["user_lora", "inspiration"],
   },
   promptStructure: (context: PromptContext): string => {
-    return `Reference image: photo sent. Maintain same face and original features. Sharp face, hyper realistic, soft expression with elegant closed smile.
+    return `Reference image: photo sent. Keep the exact facial features from the reference photo. Sharp face, hyper realistic, soft expression with elegant closed smile.
 
 Vertical format 2:3, 8K quality.
 

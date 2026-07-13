@@ -135,18 +135,24 @@ function OfferAction({
   keyword,
   phase,
   source,
+  surface = "light",
 }: {
   checkoutHref: string
   hasInboundKeyword: boolean
   keyword: string
   phase: OfferPhase
   source: string
+  surface?: "dark" | "light"
 }) {
   if (phase === "upcoming") {
     return (
       <span
         aria-disabled="true"
-        className="inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center rounded-[4px] border border-[var(--ss-silver)] bg-[var(--ss-white)] px-6 py-3 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-[var(--ss-gray)] sm:w-auto"
+        className={`inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center rounded-none border px-6 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.22em] sm:w-auto ${
+          surface === "dark"
+            ? "border-white/25 bg-white/10 text-white/60"
+            : "border-[var(--ss-silver)] bg-[var(--ss-white)] text-[var(--ss-gray)]"
+        }`}
       >
         Opens 13 July at 18:00 CEST
       </span>
@@ -179,7 +185,11 @@ function OfferAction({
           })
         }
       }}
-      className="inline-flex min-h-12 w-full items-center justify-center rounded-[4px] bg-[var(--ss-night)] px-7 py-3 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-white transition-colors hover:bg-[var(--ss-raisin)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--ss-night)] sm:w-auto"
+      className={`inline-flex min-h-12 w-full items-center justify-center rounded-none px-7 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.22em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 sm:w-auto ${
+        surface === "dark"
+          ? "bg-white text-[var(--ss-night)] hover:bg-[var(--ss-seasalt)] focus-visible:outline-white"
+          : "bg-[var(--ss-night)] text-white hover:bg-[var(--ss-raisin)] focus-visible:outline-[var(--ss-night)]"
+      }`}
     >
       {label}
     </Link>
@@ -228,28 +238,31 @@ export function OneSelfieLanding({
           ctaKeyword={keyword}
           source={source}
         />
-        <header className="border-b border-[var(--ss-silver)] bg-[var(--ss-seasalt)]">
-          <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+        <header
+          data-testid="one-selfie-campaign-header"
+          className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[var(--ss-night)]/90 text-white backdrop-blur-md"
+        >
+          <div className="mx-auto flex h-[58px] max-w-6xl items-center justify-between px-5 sm:px-8">
             <Link
               href="/"
-              className="font-[family-name:var(--font-display)] text-[19px] font-light uppercase tracking-[0.32em]"
+              className="font-[family-name:var(--font-display)] text-[18px] font-light uppercase tracking-[0.35em]"
             >
               SSELFIE
             </Link>
             <Link
               href="/app"
-              className="text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--ss-davy)] underline decoration-[var(--ss-silver)] underline-offset-4"
+              className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/60 underline decoration-white/30 underline-offset-4 hover:text-white"
             >
               Already in SUITE? Open it
             </Link>
           </div>
         </header>
-        <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-[1440px] items-center justify-center border-x border-[var(--ss-silver)] bg-white px-6 py-20 text-center sm:px-10">
+        <main className="mx-auto flex min-h-screen max-w-6xl items-center justify-center border-x border-[var(--ss-silver)] bg-white px-6 pb-20 pt-[118px] text-center sm:px-10">
           <div className="max-w-2xl">
             <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-[var(--ss-gray)]">
               48-hour offer closed
             </p>
-            <h1 className="mt-6 font-[family-name:var(--font-display)] text-[clamp(3.4rem,8vw,6.8rem)] font-light leading-[0.88] tracking-[-0.045em]">
+            <h1 className="mt-6 font-[family-name:var(--font-display)] text-[clamp(36px,7vw,70px)] font-light leading-[1.03] tracking-[-0.02em]">
               This bundle is now closed.
             </h1>
             <p className="mx-auto mt-7 max-w-xl text-[16px] font-light leading-7 text-[var(--ss-davy)]">
@@ -269,7 +282,7 @@ export function OneSelfieLanding({
                   href: starterKitHref,
                 })
               }
-              className="mt-9 inline-flex min-h-12 items-center justify-center rounded-[4px] bg-[var(--ss-night)] px-7 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-white"
+              className="mt-9 inline-flex min-h-12 items-center justify-center rounded-none bg-[var(--ss-night)] px-7 py-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-white"
             >
               See the Starter Kit · $37
             </Link>
@@ -288,17 +301,20 @@ export function OneSelfieLanding({
         source={source}
       />
 
-      <header className="border-b border-[var(--ss-silver)] bg-[var(--ss-seasalt)]">
-        <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+      <header
+        data-testid="one-selfie-campaign-header"
+        className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[var(--ss-night)]/90 text-white backdrop-blur-md"
+      >
+        <div className="mx-auto flex h-[58px] max-w-6xl items-center justify-between px-5 sm:px-8">
           <Link
             href="/"
-            className="font-[family-name:var(--font-display)] text-[19px] font-light uppercase tracking-[0.32em] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--ss-night)]"
+            className="font-[family-name:var(--font-display)] text-[18px] font-light uppercase tracking-[0.35em] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
           >
             SSELFIE
           </Link>
           <Link
             href="/app"
-            className="text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--ss-davy)] underline decoration-[var(--ss-silver)] underline-offset-4 hover:text-[var(--ss-night)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--ss-night)]"
+            className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/60 underline decoration-white/30 underline-offset-4 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
           >
             Already in SUITE? Open it
           </Link>
@@ -308,83 +324,85 @@ export function OneSelfieLanding({
       {checkoutFailed ? (
         <div
           role="alert"
-          className="border-b border-[var(--ss-silver)] bg-white px-5 py-3 text-center text-[13px] leading-6 text-[var(--ss-davy)]"
+          className="fixed inset-x-0 top-[58px] z-40 border-b border-[var(--ss-silver)] bg-white px-5 py-3 text-center text-[13px] leading-6 text-[var(--ss-davy)]"
         >
           Checkout did not open. Try again below. If it still does not open, email support@sselfie.ai.
         </div>
       ) : null}
 
       <main>
-        <section className="mx-auto grid max-w-[1440px] border-x border-[var(--ss-silver)] bg-white lg:min-h-[760px] lg:grid-cols-[minmax(0,1.04fr)_minmax(460px,0.96fr)]">
-          <div className="relative min-h-[46svh] overflow-hidden border-b border-[var(--ss-silver)] lg:min-h-full lg:border-b-0 lg:border-r">
-            <Image
-              src="/images/starter-kit/hero.png"
-              alt="Sandra in a close editorial portrait, showing the kind of recognizable photo this bundle helps you create"
-              fill
-              priority
-              sizes="(min-width: 1024px) 52vw, 100vw"
-              className="object-cover object-[50%_33%]"
-            />
-            <p className="absolute bottom-5 left-5 right-5 text-[10px] font-medium uppercase tracking-[0.24em] text-white sm:bottom-8 sm:left-8">
-              Start with one photo · Build from what you have
-            </p>
-          </div>
+        <section
+          data-testid="one-selfie-campaign-hero"
+          className="relative min-h-[100svh] overflow-hidden bg-[var(--ss-night)] text-white"
+        >
+          <Image
+            src="/academy/visibility-suite/sandra-hero.png"
+            alt="Sandra, the founder of SSELFIE, sitting with her phone and a cup"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-[50%_22%]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/90" />
 
-          <div className="flex flex-col justify-center px-6 py-12 sm:px-10 sm:py-16 lg:px-14 xl:px-20">
-            <div className="flex items-center justify-between gap-4 border-b border-[var(--ss-silver)] pb-4">
-              <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-[var(--ss-gray)]">
-                48-hour offer
-              </p>
-              <p
-                aria-live="polite"
-                className="text-right text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--ss-davy)]"
-              >
-                {timingLabel}
-              </p>
-            </div>
-
-            <p className="mt-8 text-[11px] font-medium uppercase tracking-[0.28em] text-[var(--ss-gray)]">
-              One Selfie Visibility Bundle
-            </p>
-            <h1 className="mt-5 max-w-[630px] font-[family-name:var(--font-display)] text-[clamp(3.2rem,7vw,6.7rem)] font-light leading-[0.87] tracking-[-0.045em] text-[var(--ss-night)]">
-              One selfie.
-              <span className="mt-2 block italic">Photos and content you can finally use.</span>
-            </h1>
-            <p className="mt-8 max-w-[540px] text-[16px] font-light leading-7 text-[var(--ss-davy)] sm:text-[17px]">
-              Take it better. Edit it. Turn it into realistic AI photos. Then know what to post next.
-            </p>
-
-            <div className="mt-9 flex flex-col gap-5 border-y border-[var(--ss-silver)] py-6 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="font-[family-name:var(--font-display)] text-[42px] font-light leading-none tracking-[-0.03em]">
-                  $97
+          <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl items-end justify-center px-5 pb-14 pt-28 text-center sm:px-8 sm:pb-20">
+            <div className="w-full max-w-3xl">
+              <div className="flex flex-col items-center justify-center gap-2 border-b border-white/20 pb-5 sm:flex-row sm:gap-5">
+                <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-white/55">
+                  48-hour offer
                 </p>
-                <p className="mt-2 text-[11px] uppercase tracking-[0.16em] text-[var(--ss-gray)]">
-                  One payment
+                <p
+                  aria-live="polite"
+                  className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/75"
+                >
+                  {timingLabel}
                 </p>
               </div>
-              <p className="max-w-[300px] text-[13px] leading-6 text-[var(--ss-davy)] sm:text-right">
-                Lifetime tools plus 30 days of SUITE with 200 credits. No subscription. No renewal.
-              </p>
-            </div>
 
-            <div className="mt-7">
-              <OfferAction
-                checkoutHref={checkoutHref}
-                hasInboundKeyword={hasInboundKeyword}
-                keyword={keyword}
-                phase={phase}
-                source={source}
-              />
-              <p className="mt-4 max-w-[480px] text-[12px] leading-5 text-[var(--ss-gray)]">
-                $260 in lifetime tools, plus 30 days with Maya and 200 credits. Nothing renews.
+              <p className="mt-7 text-[10px] font-medium uppercase tracking-[0.5em] text-white/60">
+                One Selfie Visibility Bundle
               </p>
+              <h1 className="mx-auto mt-5 max-w-3xl font-[family-name:var(--font-display)] text-[clamp(36px,7vw,70px)] font-light leading-[1.03] tracking-[-0.02em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.8)]">
+                One selfie.
+                <span className="block">Photos and content you can finally use.</span>
+              </h1>
+              <p className="mx-auto mt-6 max-w-[520px] text-[15px] font-normal leading-[1.78] text-white/80">
+                Take it better. Edit it. Turn it into realistic AI photos. Then know what to post next.
+              </p>
+
+              <div className="mx-auto mt-7 flex max-w-2xl flex-col items-center justify-center gap-4 border-y border-white/20 py-5 sm:flex-row sm:gap-8">
+                <div>
+                  <p className="font-[family-name:var(--font-display)] text-[42px] font-light leading-none tracking-[-0.03em]">
+                    $97
+                  </p>
+                  <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-white/55">
+                    One payment
+                  </p>
+                </div>
+                <p className="max-w-[330px] text-[13px] leading-6 text-white/70 sm:text-left">
+                  Lifetime tools plus 30 days of SUITE with 200 credits. No subscription. No renewal.
+                </p>
+              </div>
+
+              <div className="mt-7">
+                <OfferAction
+                  checkoutHref={checkoutHref}
+                  hasInboundKeyword={hasInboundKeyword}
+                  keyword={keyword}
+                  phase={phase}
+                  source={source}
+                  surface="dark"
+                />
+                <p className="mx-auto mt-4 max-w-[520px] text-[12px] leading-5 text-white/60">
+                  $260 in lifetime tools, plus 30 days with Maya and 200 credits. Nothing renews.
+                </p>
+              </div>
             </div>
           </div>
         </section>
 
         <section className="border-y border-[var(--ss-silver)] bg-[var(--ss-night)] text-white">
-          <div className="mx-auto grid max-w-[1440px] divide-y divide-white/20 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <div className="mx-auto grid max-w-6xl divide-y divide-white/20 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
             {["$97 once", "Five lifetime products", "30 days of Maya · 200 credits"].map((item) => (
               <p
                 key={item}
@@ -396,7 +414,7 @@ export function OneSelfieLanding({
           </div>
         </section>
 
-        <section className="mx-auto max-w-[1440px] border-x border-[var(--ss-silver)] bg-white px-6 py-14 sm:px-10 sm:py-16 lg:px-14">
+        <section className="mx-auto max-w-6xl border-x border-[var(--ss-silver)] bg-white px-6 py-14 sm:px-10 sm:py-16 lg:px-14">
           <p className="text-[10px] font-medium uppercase tracking-[0.26em] text-[var(--ss-gray)]">
             What SSELFIE members have said
           </p>
@@ -423,12 +441,12 @@ export function OneSelfieLanding({
           </p>
         </section>
 
-        <section className="mx-auto max-w-[1440px] border-x border-[var(--ss-silver)] px-6 py-20 sm:px-10 sm:py-24 lg:px-14">
+        <section className="mx-auto max-w-6xl border-x border-[var(--ss-silver)] px-6 py-20 sm:px-10 sm:py-24 lg:px-14">
           <div className="max-w-2xl">
             <p className="text-[10px] font-medium uppercase tracking-[0.26em] text-[var(--ss-gray)]">
               One clear path
             </p>
-            <h2 className="mt-4 font-[family-name:var(--font-display)] text-[clamp(2.6rem,5vw,5rem)] font-light leading-[0.94] tracking-[-0.035em]">
+            <h2 className="mt-4 font-[family-name:var(--font-display)] text-[clamp(28px,4.5vw,48px)] font-light leading-[1.07] tracking-[-0.015em]">
               The photo is the start. Visibility is where it leads.
             </h2>
           </div>
@@ -457,7 +475,7 @@ export function OneSelfieLanding({
         </section>
 
         <section className="border-y border-[var(--ss-silver)] bg-white">
-          <div className="mx-auto grid max-w-[1440px] lg:grid-cols-[0.88fr_1.12fr]">
+          <div className="mx-auto grid max-w-6xl lg:grid-cols-[0.88fr_1.12fr]">
             <div className="relative min-h-[420px] overflow-hidden border-b border-[var(--ss-silver)] lg:min-h-[720px] lg:border-b-0 lg:border-r">
               <Image
                 src="/images/one-selfie/bundle-products-mockup-v2.webp"
@@ -471,7 +489,7 @@ export function OneSelfieLanding({
               <p className="text-[10px] font-medium uppercase tracking-[0.26em] text-[var(--ss-gray)]">
                 What you get
               </p>
-              <h2 className="mt-4 font-[family-name:var(--font-display)] text-[clamp(2.8rem,5vw,5.1rem)] font-light leading-[0.92] tracking-[-0.04em]">
+              <h2 className="mt-4 font-[family-name:var(--font-display)] text-[clamp(28px,4.5vw,48px)] font-light leading-[1.07] tracking-[-0.015em]">
                 Not a library to finish. A path to follow.
               </h2>
               <p className="mt-6 max-w-xl text-[15px] font-light leading-7 text-[var(--ss-davy)]">
@@ -505,12 +523,12 @@ export function OneSelfieLanding({
           </div>
         </section>
 
-        <section className="mx-auto grid max-w-[1440px] border-x border-[var(--ss-silver)] bg-[var(--ss-seasalt)] lg:grid-cols-[1fr_0.9fr]">
+        <section className="mx-auto grid max-w-6xl border-x border-[var(--ss-silver)] bg-[var(--ss-seasalt)] lg:grid-cols-[1fr_0.9fr]">
           <div className="px-6 py-16 sm:px-10 sm:py-20 lg:px-14 lg:py-24">
             <p className="text-[10px] font-medium uppercase tracking-[0.26em] text-[var(--ss-gray)]">
               Why this is different
             </p>
-            <h2 className="mt-4 max-w-3xl font-[family-name:var(--font-display)] text-[clamp(2.7rem,5vw,5rem)] font-light leading-[0.94] tracking-[-0.035em]">
+            <h2 className="mt-4 max-w-3xl font-[family-name:var(--font-display)] text-[clamp(28px,4.5vw,48px)] font-light leading-[1.07] tracking-[-0.015em]">
               You do not need more things to learn. You need one small place to begin.
             </h2>
             <p className="mt-7 max-w-2xl text-[16px] font-light leading-7 text-[var(--ss-davy)]">
@@ -522,8 +540,8 @@ export function OneSelfieLanding({
           </div>
           <div className="relative min-h-[460px] overflow-hidden border-t border-[var(--ss-silver)] lg:min-h-full lg:border-l lg:border-t-0">
             <Image
-              src="/academy/visibility-suite/sandra-hero.png"
-              alt="Sandra sitting with her phone and a cup, showing the real founder behind SSELFIE"
+              src="/academy/visibility-suite/sandra-founder.webp"
+              alt="Sandra, the founder of SSELFIE, standing outside with her tablet"
               fill
               sizes="(min-width: 1024px) 45vw, 100vw"
               className="object-cover object-[52%_50%]"
@@ -532,12 +550,12 @@ export function OneSelfieLanding({
         </section>
 
         <section className="border-y border-[var(--ss-silver)] bg-white">
-          <div className="mx-auto grid max-w-[1440px] lg:grid-cols-[0.72fr_1.28fr]">
+          <div className="mx-auto grid max-w-6xl lg:grid-cols-[0.72fr_1.28fr]">
             <div className="border-b border-[var(--ss-silver)] px-6 py-14 sm:px-10 lg:border-b-0 lg:border-r lg:px-14 lg:py-20">
               <p className="text-[10px] font-medium uppercase tracking-[0.26em] text-[var(--ss-gray)]">
                 Questions
               </p>
-              <h2 className="mt-4 font-[family-name:var(--font-display)] text-[clamp(2.8rem,5vw,4.8rem)] font-light leading-[0.92] tracking-[-0.035em]">
+              <h2 className="mt-4 font-[family-name:var(--font-display)] text-[clamp(28px,4.5vw,48px)] font-light leading-[1.07] tracking-[-0.015em]">
                 Everything clear before you buy.
               </h2>
             </div>
@@ -559,28 +577,34 @@ export function OneSelfieLanding({
           </div>
         </section>
 
-        <section className="mx-auto max-w-[1440px] border-x border-[var(--ss-silver)] bg-[var(--ss-seasalt)] px-6 py-20 text-center sm:px-10 sm:py-28">
-          <p className="text-[10px] font-medium uppercase tracking-[0.26em] text-[var(--ss-gray)]">
-            One selfie · One clear next step
-          </p>
-          <h2 className="mx-auto mt-5 max-w-4xl font-[family-name:var(--font-display)] text-[clamp(3.2rem,7vw,6.8rem)] font-light leading-[0.88] tracking-[-0.045em]">
-            Start with the photo you already have.
-          </h2>
-          <p aria-live="polite" className="mt-6 text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--ss-davy)]">
-            {timingLabel}
-          </p>
-          <div className="mt-8 flex justify-center">
-            <OfferAction
-              checkoutHref={checkoutHref}
-              hasInboundKeyword={hasInboundKeyword}
-              keyword={keyword}
-              phase={phase}
-              source={source}
-            />
+        <section
+          data-testid="one-selfie-closing-cta"
+          className="border-y border-white/15 bg-[var(--ss-night)] text-white"
+        >
+          <div className="mx-auto max-w-6xl px-6 py-20 text-center sm:px-10 sm:py-24">
+            <p className="text-[10px] font-medium uppercase tracking-[0.26em] text-white/55">
+              One selfie · One clear next step
+            </p>
+            <h2 className="mx-auto mt-5 max-w-4xl font-[family-name:var(--font-display)] text-[clamp(28px,4.5vw,48px)] font-light leading-[1.07] tracking-[-0.015em]">
+              Start with the photo you already have.
+            </h2>
+            <p aria-live="polite" className="mt-6 text-[11px] font-medium uppercase tracking-[0.16em] text-white/70">
+              {timingLabel}
+            </p>
+            <div className="mt-8 flex justify-center">
+              <OfferAction
+                checkoutHref={checkoutHref}
+                hasInboundKeyword={hasInboundKeyword}
+                keyword={keyword}
+                phase={phase}
+                source={source}
+                surface="dark"
+              />
+            </div>
+            <p className="mx-auto mt-5 max-w-lg text-[12px] leading-5 text-white/55">
+              $97 one-time. Lifetime products. 30 days of SUITE. No renewal.
+            </p>
           </div>
-          <p className="mx-auto mt-5 max-w-lg text-[12px] leading-5 text-[var(--ss-gray)]">
-            $97 one-time. Lifetime products. 30 days of SUITE. No renewal.
-          </p>
         </section>
 
         <aside className="border-y border-[var(--ss-silver)] bg-[var(--ss-raisin)] px-6 py-9 text-center text-white">
@@ -600,7 +624,7 @@ export function OneSelfieLanding({
       </main>
 
       <footer className="bg-[var(--ss-night)] px-6 py-10 text-white">
-        <div className="mx-auto flex max-w-[1320px] flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-5xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-[family-name:var(--font-display)] text-[18px] font-light uppercase tracking-[0.32em]">
             SSELFIE
           </p>

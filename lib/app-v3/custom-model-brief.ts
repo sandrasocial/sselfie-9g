@@ -26,7 +26,7 @@ export function buildVideoMotionPrompt(brief: CreativeBrief): string {
     "gentle camera push-in",
     brief.mood,
     brief.lighting,
-    "preserve the same face and body",
+    "keep the face and body unchanged from the reference",
     "no subtitles or text overlays",
   ]
     .map(part => part?.trim())

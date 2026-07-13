@@ -89,7 +89,7 @@ vi.mock("@/lib/content-kit/llm", () => ({
             kind: "before-after",
             eyebrow: "Before / After",
             title: "From this to this",
-            body: "Same face. Better frame.",
+            body: "Still you. Better frame.",
           },
           {
             kind: "cta",

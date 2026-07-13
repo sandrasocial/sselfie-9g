@@ -41,10 +41,10 @@ never deploys.
 
 1. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` — North Star framing, message order, guardrails
    (no income guarantees, no fake urgency, no invented proof), the Sandra Test, the Creative Bar.
-2. Banned/retired language: the check:voice list, "same face"/"keeps your face" (copy only —
-   NEVER flag functional image-generation prompts, where the likeness lock is required), em-dashes,
-   retired products presented as current (Starter-Kit-first funnel, Brand Strategy Pack standalone,
-   founding €697 scarcity, numbered-prompt funnel).
+2. Banned/retired language: every pattern in `scripts/check-voice-rules.mjs` (the canonical list —
+   do not re-quote banned phrases in this spec, reports, or prompts; quoting them is how they leak
+   back into copy), em-dashes, and retired products presented as current (Starter-Kit-first funnel,
+   Brand Strategy Pack standalone, founding €697 scarcity, numbered-prompt funnel).
 3. Stale facts: prices vs `lib/launch/cash-launch-pricing.ts` and Stripe price IDs in CLAUDE.md;
    follower/member counts hardcoded anywhere (any hardcoded count is automatically ⚠).
 4. Offer-temperature routing per `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`
