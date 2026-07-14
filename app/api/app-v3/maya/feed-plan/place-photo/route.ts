@@ -41,7 +41,9 @@ export async function POST(req: Request) {
   try {
     // Same entitlement that gates the Calendar tab itself - a limited/free session must not
     // be able to create calendar rows it can't see. 403 tells the card to hide the action.
-    const access = await getFeedPlannerAccess(user.id)
+    // Must be the NEON users.id - subscriptions.user_id stores that, not the auth-provider id
+    // (for 905 of 906 users the two differ, so passing user.id 403'd every member silently).
+    const access = await getFeedPlannerAccess(String(neonUser.id))
     if (!access.isMembership && !access.isPaidBlueprint) {
       return NextResponse.json({ error: "Calendar not included in this plan" }, { status: 403 })
     }

@@ -133,11 +133,4 @@ export async function callContentKitVision(
   return block.text
 }
 
-export function extractJsonArray(text: string): any {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/)
-  const candidate = fenced ? fenced[1] : text
-  const start = candidate.indexOf("[")
-  const end = candidate.lastIndexOf("]")
-  if (start === -1 || end === -1) throw new Error("LLM response contained no JSON array")
-  return JSON.parse(candidate.slice(start, end + 1))
-}
+export { extractJsonArray, repairAndParseJson } from "@/lib/content-kit/json-repair"

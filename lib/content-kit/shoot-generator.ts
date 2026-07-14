@@ -5,6 +5,7 @@ import sharp from "sharp"
 import { put } from "@vercel/blob"
 import { sql } from "@/lib/db/client"
 import { callContentKitLlm, callContentKitVision } from "@/lib/content-kit/llm"
+import { repairAndParseJson } from "@/lib/content-kit/json-repair"
 import type { Shoot, ShootMessage, ShootShot, ShootShotRole } from "@/lib/content-kit/types"
 import {
   ensurePublishedVaultPromptNumbers,
@@ -356,7 +357,7 @@ STORY COLLECTION RULES (these override any "cohesive photoshoot" or "same outfit
 - Prompt N is a CLOSE RECONSTRUCTION of inspiration image N. Preserve its crop, composition, framing, subject scale, pose geometry, expression energy, camera distance, lens perspective, lighting, shadow pattern, visible wardrobe silhouette, visible props, background tone, color grade and mood.
 - Each prompt is its OWN world: its own scene, outfit, location, pose, crop, lighting and mood from its own inspiration image. Do NOT make the prompts match each other. This is a varied storytelling collection, not one shoot.
 - Describe only what is visible or structurally implied by that inspiration image. Do not invent props, outfits, or framing the image does not show.
-${opts.vibe ? `\nCOLLECTION VIBE for every prompt: ${opts.vibe}\nAdapt every section to this vibe. If the vibe is a casual iPhone / mirror selfie / photodump style, the "Camera + lens" line must describe an iPhone phone camera (NOT a Canon or editorial camera), "Image quality" must read as real phone-camera quality (natural, slightly imperfect, NOT studio editorial sharpness), and "Mood" must match the vibe (everyday camera-roll energy, not a posed studio shoot).\n` : ""}
+${opts.vibe ? `\nCOLLECTION VIBE for every prompt: ${opts.vibe}\nAdapt every section to this vibe. If the vibe is a casual iPhone / mirror selfie / photodump style, the 'Camera + lens' line must describe an iPhone phone camera (NOT a Canon or editorial camera), 'Image quality' must read as real phone-camera quality (natural, slightly imperfect, NOT studio editorial sharpness), and 'Mood' must match the vibe (everyday camera-roll energy, not a posed studio shoot). Never use double-quote characters inside any JSON string value.\n` : ""}
 ${notes ? `Sandra's direction for this collection: ${notes}\n\n` : ""}${buildVaultAnatomy(shotCount)}
 
 ${voiceBlock()}
@@ -405,7 +406,7 @@ function extractJsonObject(text: string): any {
   const start = candidate.indexOf("{")
   const end = candidate.lastIndexOf("}")
   if (start === -1 || end === -1) throw new Error("LLM response contained no JSON object")
-  return JSON.parse(candidate.slice(start, end + 1))
+  return repairAndParseJson(candidate.slice(start, end + 1))
 }
 
 function sanitizeShots(

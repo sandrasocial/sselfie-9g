@@ -70,7 +70,10 @@ export async function GET(request: NextRequest) {
       }
       try {
         // Entitlement re-check so a member who canceled since last month isn't drafted for.
-        const access = await getFeedPlannerAccess(authUserId)
+        // Must be the NEON users.id (subscriptions.user_id stores that, not the auth id) -
+        // passing authUserId here made the cron silently skip every member whose auth id
+        // differs from users.id, which is all but one account.
+        const access = await getFeedPlannerAccess(String(row.user_id))
         if (!access.isMembership && !access.isPaidBlueprint) {
           skipped += 1
           continue
