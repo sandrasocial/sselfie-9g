@@ -7,7 +7,14 @@ import { groundingSystemPrompt } from "@/lib/content/grounding"
 // Direct Anthropic is the fallback when OpenRouter is down.
 const OPENROUTER_MODEL = "anthropic/claude-sonnet-5"
 const ANTHROPIC_MODEL = "claude-sonnet-5"
-const MAX_TOKENS = 8000
+const MAX_TOKENS = 12000
+// Sonnet 5 runs ADAPTIVE THINKING when the thinking param is omitted (silent default change
+// from Sonnet 4.5/4.6 — the 2026-07-09 model bump broke this pipeline). Thinking spends the
+// max_tokens budget BEFORE any text, so big shoot prompts returned thinking-only responses
+// ("Anthropic returned no text") or mid-array truncation (the JSON parse failures). This is a
+// pure JSON pipeline: disable thinking explicitly on both providers.
+const ANTHROPIC_THINKING = { type: "disabled" as const }
+const OPENROUTER_REASONING = { enabled: false }
 
 export async function callContentKitLlm(
   prompt: string,
@@ -25,6 +32,7 @@ export async function callContentKitLlm(
         body: JSON.stringify({
           model: OPENROUTER_MODEL,
           max_tokens: MAX_TOKENS,
+          reasoning: OPENROUTER_REASONING,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: prompt },
@@ -50,11 +58,13 @@ export async function callContentKitLlm(
   const message = await client.messages.create({
     model: ANTHROPIC_MODEL,
     max_tokens: MAX_TOKENS,
+    thinking: ANTHROPIC_THINKING,
     system: systemPrompt,
     messages: [{ role: "user", content: prompt }],
   })
   const block = message.content.find(item => item.type === "text")
-  if (!block || block.type !== "text") throw new Error("Anthropic returned no text")
+  if (!block || block.type !== "text")
+    throw new Error(`Anthropic returned no text (stop_reason=${message.stop_reason}, blocks=${message.content.map(b => b.type).join(",") || "none"})`)
   return block.text
 }
 
@@ -79,6 +89,7 @@ export async function callContentKitVision(
         body: JSON.stringify({
           model: OPENROUTER_MODEL,
           max_tokens: MAX_TOKENS,
+          reasoning: OPENROUTER_REASONING,
           messages: [
             { role: "system", content: systemPrompt },
             {
@@ -114,6 +125,7 @@ export async function callContentKitVision(
   const message = await client.messages.create({
     model: ANTHROPIC_MODEL,
     max_tokens: MAX_TOKENS,
+    thinking: ANTHROPIC_THINKING,
     system: systemPrompt,
     messages: [
       {
@@ -129,7 +141,8 @@ export async function callContentKitVision(
     ],
   })
   const block = message.content.find(item => item.type === "text")
-  if (!block || block.type !== "text") throw new Error("Anthropic returned no text")
+  if (!block || block.type !== "text")
+    throw new Error(`Anthropic returned no text (stop_reason=${message.stop_reason}, blocks=${message.content.map(b => b.type).join(",") || "none"})`)
   return block.text
 }
 
