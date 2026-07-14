@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react"
 import useSWR from "swr"
+import { countCompletedFeedPosts, isFeedPostGenerating } from "./feed-generation-state"
 
 const fetcher = async (url: string) => {
   const res = await fetch(url)
@@ -42,8 +43,17 @@ export function useFeedPolling(feedId: number | null) {
   const [hasTimedOut, setHasTimedOut] = useState(false)
   // Track last known completed count to detect new completions
   const lastCompletedCountRef = useRef<number>(0)
+  const recoveryTimeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
   // Track if polling has taken longer than 3 minutes
   const [isTakingLonger, setIsTakingLonger] = useState(false)
+
+  useEffect(() => {
+    const recoveryTimeouts = recoveryTimeoutsRef.current
+    return () => {
+      recoveryTimeouts.forEach((timeoutId) => clearTimeout(timeoutId))
+      recoveryTimeouts.clear()
+    }
+  }, [])
   
   // Poll both feed data AND progress endpoint to update database
   const { data: feedData, error: feedError, mutate, isLoading, isValidating } = useSWR(
@@ -96,7 +106,8 @@ export function useFeedPolling(feedId: number | null) {
                     
                     // Only mark as failed if still no image after final check
                     // Wait a bit for mutate to complete, then check again
-                    setTimeout(() => {
+                    const recoveryTimeout = setTimeout(() => {
+                      recoveryTimeoutsRef.current.delete(recoveryTimeout)
                       // Re-check feed data after progress endpoint update
                       mutate().then(() => {
                         // Check if posts are still stuck by re-fetching feed data
@@ -134,6 +145,7 @@ export function useFeedPolling(feedId: number | null) {
                           })
                       })
                     }, 3000) // Wait 3 seconds for progress endpoint to update database
+                    recoveryTimeoutsRef.current.add(recoveryTimeout)
                   })
                   .catch(err => {
                     console.error('[useFeedPolling] ❌ Error in final progress check:', err)
@@ -169,25 +181,12 @@ export function useFeedPolling(feedId: number | null) {
         
         // Check if ANY post is generating (prediction_id but no image_url)
         // CRITICAL: Also check generation_status === 'generating' to catch posts marked as generating
-        const hasGeneratingPosts = data?.posts?.some(
-          (p: any) => {
-            // Post is generating if:
-            // 1. Has prediction_id but no image_url (classic case)
-            // 2. OR generation_status is 'generating' (even if image_url exists, status might not be updated)
-            const isGenerating = (p.prediction_id && !p.image_url) || p.generation_status === 'generating'
-            return isGenerating
-          }
-        )
+        const hasGeneratingPosts = data?.posts?.some(isFeedPostGenerating)
         
         // Check if feed is processing (Maya is setting up the feed)
         const isProcessing = data?.feed?.status === 'processing' || 
                             data?.feed?.status === 'queueing' ||
                             data?.feed?.status === 'generating'
-        
-        // Get detailed post status for debugging
-        const generatingPosts = data?.posts?.filter((p: any) => 
-          (p.prediction_id && !p.image_url) || p.generation_status === 'generating'
-        ) || []
         
         // CRITICAL FIX: For free blueprint (single post), check if the post has image_url
         // If it does, STOP polling immediately (don't wait for grace period)
@@ -319,21 +318,18 @@ export function useFeedPolling(feedId: number | null) {
         // Update last update time when data changes
         if (data?.posts) {
           const hasNewImages = data.posts.some((p: any) => p.image_url)
-          const generatingPosts = data.posts.filter((p: any) => 
-            (p.prediction_id && !p.image_url) || p.generation_status === 'generating'
-          )
-          const completedPosts = data.posts.filter((p: any) => p.image_url)
+          const completedCount = countCompletedFeedPosts(data.posts)
           
           // Initialize or update completed count ref to track progress
           // Only update if this is the first load or if count increased
-          if (lastCompletedCountRef.current === 0 || completedPosts.length > lastCompletedCountRef.current) {
-            lastCompletedCountRef.current = completedPosts.length
+          if (lastCompletedCountRef.current === 0 || completedCount > lastCompletedCountRef.current) {
+            lastCompletedCountRef.current = completedCount
           }
           
           // Reduced logging - only log when there are actual changes
           if (hasNewImages) {
             lastUpdateRef.current = Date.now()
-            console.log(`[useFeedPolling] ✅ ${completedPosts.length}/${data.posts.length} posts completed`)
+            console.log(`[useFeedPolling] ✅ ${completedCount}/${data.posts.length} posts completed`)
           }
         }
       },
@@ -365,4 +361,3 @@ export function useFeedPolling(feedId: number | null) {
     isTakingLonger,
   }
 }
-

@@ -35,4 +35,12 @@ describe("Calendar Phase A operational contracts", () => {
     expect(cron).toContain("paid_blueprint_purchased = TRUE")
     expect(cron).toContain("product_type IN")
   })
+
+  it("cleans up calendar animation and recovery timers", () => {
+    const confetti = read("components/feed-planner/hooks/use-feed-confetti.ts")
+    const polling = read("components/feed-planner/hooks/use-feed-polling.ts")
+    expect(confetti).toContain("timeoutIds.forEach")
+    expect(confetti).toContain("particles.forEach")
+    expect(polling).toContain("recoveryTimeouts.forEach")
+  })
 })

@@ -35,7 +35,7 @@ const getSafeDescription = (desc: string | null | undefined): string => {
   return desc
 }
 
-export function useFeedActions(params: UseFeedActionsParams) {
+export function useFeedPreviewActions(params: UseFeedActionsParams) {
   const router = useRouter()
 
   const handleViewFullFeed = () => {

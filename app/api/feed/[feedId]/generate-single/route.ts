@@ -1,38 +1,3 @@
-/**
- * FEED PLANNER GENERATION ROUTE
- * 
- * CANONICAL FEED PLANNER PIPELINE
- * 
- * This route handles Feed Planner image generation:
- * - Preview Feed (9 scenes → 1 prompt)
- * - Full Feed Planner (9 scenes → 9 prompts)
- * 
- * CANONICAL FLOW (LOCK THIS IN):
- * User → Blueprint / Feed Planner
- *    → scene-resolver.ts          (decides scenes)
- *    → scene-consistency.ts       (locks 9 scenes)
- *    → prompt-shaper.ts           (creates prompts ONCE)
- *    → replicate / nano banana
- *    → image saved
- *    → image rendered in UI
- * 
- * FEED PLANNER - DO NOT USE LEGACY PROMPT BUILDERS
- * 
- * DO NOT CALL:
- * - nano-banana-adapter
- * - template injectors
- * - visual composition expert
- * - build-single-image-prompt
- * - generateFeedSinglePromptViaAuthority (Maya system)
- * 
- * These are frozen by design.
- * 
- * Use ONLY:
- * - scene-resolver.ts
- * - scene-consistency.ts
- * - prompt-shaper.ts
- */
-
 import { NextRequest } from "next/server"
 import { getAuthenticatedUserWithRetry, clearAuthCache } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import useSWR from "swr"
 import type { FeedStrategy } from "@/lib/maya/feed-generation-handler"
 import type { FeedPost } from "@/components/feed-planner/feed-preview-types"
+import { countCompletedFeedPosts, isFeedPostGenerating } from "../feed-generation-state"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -38,7 +39,7 @@ interface UseFeedPollingParams {
   isSavedProp: boolean
 }
 
-export function useFeedPolling({
+export function useFeedPreviewPolling({
   feedIdProp,
   feedTitle,
   feedDescription,
@@ -53,7 +54,7 @@ export function useFeedPolling({
   const [displayDescription, setDisplayDescription] = useState<string>(getSafeDescription(feedDescription))
   const [feedStatus, setFeedStatus] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(
-    posts.some((p) => p.generation_status === "generating" || (p.prediction_id && !p.image_url)),
+    posts.some(isFeedPostGenerating),
   )
 
   const hasFetchedRef = useRef<string | false>(false)
@@ -64,9 +65,7 @@ export function useFeedPolling({
 
   const { mutate } = useSWR(feedId ? `/api/feed/${feedId}` : null, fetcher, {
     refreshInterval: (data) => {
-      const hasGeneratingPosts = data?.posts?.some(
-        (p: any) => (p.prediction_id && !p.image_url) || p.generation_status === "generating",
-      )
+      const hasGeneratingPosts = data?.posts?.some(isFeedPostGenerating)
       if (!hasGeneratingPosts || !feedId) return 0
       fetch(`/api/feed/${feedId}/progress`).finally(() => mutate())
       return 3000
@@ -78,7 +77,7 @@ export function useFeedPolling({
       setPostsData(data.posts)
       preserveStrategyPostsRef.current = false
       setIsGenerating(
-        data.posts.some((p: any) => (p.prediction_id && !p.image_url) || p.generation_status === "generating"),
+        data.posts.some(isFeedPostGenerating),
       )
       if (data.feed?.brand_name) {
         setDisplayTitle((prev) => (prev === data.feed.brand_name ? prev : data.feed.brand_name))
@@ -170,14 +169,12 @@ export function useFeedPolling({
 
   const sortedPosts = useMemo(() => [...effectivePosts].sort((a, b) => a.position - b.position), [effectivePosts])
 
-  const readyCount = effectivePosts.filter((p) => p.image_url).length
+  const readyCount = countCompletedFeedPosts(effectivePosts)
   const pendingCount = effectivePosts.filter(
     (p) => !p.image_url && p.generation_status !== "generating" && p.generation_status !== "failed",
   ).length
   const failedCount = effectivePosts.filter((p) => p.generation_status === "failed").length
-  const generatingCount = effectivePosts.filter(
-    (p) => p.generation_status === "generating" || (p.prediction_id && !p.image_url),
-  ).length
+  const generatingCount = effectivePosts.filter(isFeedPostGenerating).length
 
   const hasPendingPosts = pendingCount > 0
   const hasFailedPosts = failedCount > 0
