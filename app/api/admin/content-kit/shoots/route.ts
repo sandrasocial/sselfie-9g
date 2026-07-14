@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "regenerate") {
-      const quality = body.quality === "high" ? "high" : "medium"
+      const quality = body.quality === "medium" ? "medium" : "high"
       const shoot = await regenerateShot(Number(body.id), String(body.shotId || ""), quality)
       return NextResponse.json({ success: true, shoot })
     }

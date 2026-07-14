@@ -34,11 +34,19 @@ import { normalizeOpenAIImageSize } from "@/lib/app-v3/openai-image-size"
 // Same flagship pipeline as app-v3 (app/api/app-v3/maya/generate/route.ts).
 
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
-// True 9:16 at the highest non-experimental resolution gpt-image-2 supports in the edit endpoint:
-// 1440x2560 (both divisible by 16, 16:9 portrait, ~3.7MP). The previous 1024x1536 was 2:3, not
-// 9:16. Kept just under the >2560px "experimental" tier so renders stay reliable inside the route's
-// 300s budget. Own env var so this stays independent of suite Maya's APP_V3_PORTRAIT_SIZE.
-const PORTRAIT_SIZE = normalizeOpenAIImageSize(process.env.SHOOT_STUDIO_PORTRAIT_SIZE, "1440x2560")
+// SHOOT-PARITY (2026-07-14): render at the suite's proven native size. 1440x2560 sat in
+// gpt-image-2's stretch zone (2.3x the pixels at the same effort), which produced visibly softer
+// output than suite Maya's 1024x1536 — Sandra compared them directly. The suite measured this
+// class on 2026-06-10 (medium ~82s, high ~191s, both inside the 300s ceiling). Env override
+// stays for HD-export experiments, independent of suite Maya's APP_V3_PORTRAIT_SIZE.
+const PORTRAIT_SIZE = normalizeOpenAIImageSize(process.env.SHOOT_STUDIO_PORTRAIT_SIZE, "1024x1536")
+// Admin content renders HIGH by default: Sandra's 2026-06-22 quality lock reserved high for admin
+// content (the suite stays medium for member cost control), but admin was hardcoded to medium.
+// Safe here because admin renders one shot per request (fits the 300s ceiling; ~191s vs ~82s).
+const DEFAULT_RENDER_QUALITY: ImgQuality =
+  process.env.SHOOT_STUDIO_IMAGE_QUALITY === "medium" || process.env.SHOOT_STUDIO_IMAGE_QUALITY === "low"
+    ? (process.env.SHOOT_STUDIO_IMAGE_QUALITY as ImgQuality)
+    : "high"
 const DEFAULT_SHOTS_PER_SHOOT = 6
 const SHOT_ROLE_SEQUENCE: ShootShotRole[] = [
   "establishing-full-body",
@@ -909,7 +917,7 @@ ${REFINE_CONTRACT}`
           indices: changedIdx,
           selfieUrls: shoot.selfieUrls,
           inspirationUrls: shoot.inspirationUrls,
-          quality: "medium",
+          quality: DEFAULT_RENDER_QUALITY,
         })
       : { shots: nextShots, failures: [] }
   rendered.failures.forEach(({ index, reason }) => {
@@ -930,7 +938,7 @@ ${REFINE_CONTRACT}`
 export async function regenerateShot(
   id: number,
   shotId: string,
-  quality: ImgQuality = "medium"
+  quality: ImgQuality = DEFAULT_RENDER_QUALITY
 ): Promise<Shoot> {
   const shoot = await getShoot(id)
   if (!shoot) throw new Error("Shoot not found")
@@ -1018,7 +1026,7 @@ Exactly ${safeCount} new shots.`
     indices: newShots.map((_, index) => shoot.shots.length + index),
     selfieUrls: shoot.selfieUrls,
     inspirationUrls: shoot.inspirationUrls,
-    quality: "medium",
+    quality: DEFAULT_RENDER_QUALITY,
   })
   rendered.failures.forEach(({ index, reason }) => {
     console.error(
