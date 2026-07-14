@@ -48,13 +48,6 @@ export async function POST(request: NextRequest) {
   console.log("[v0] Body length:", body.length)
   const webhookSecret = getStripeWebhookSecret()
   console.log("[v0] Webhook secret configured:", webhookSecret.length > 0)
-  console.log("[v0] Webhook secret length:", webhookSecret.length)
-  if (webhookSecret) {
-    console.log(
-      "[v0] Webhook secret preview:",
-      `${webhookSecret.substring(0, 10)}...${webhookSecret.substring(webhookSecret.length - 4)}`
-    )
-  }
 
   if (!signature) {
     console.error("[v0] ❌ ERROR: No Stripe signature in request headers")

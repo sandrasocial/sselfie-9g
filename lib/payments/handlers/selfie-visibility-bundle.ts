@@ -21,8 +21,52 @@ const LIFETIME_ENTITLEMENTS = [
   "masterclass",
   "starter_kit",
   "prompt_vault",
-  "presets_bundle",
 ] as const
+
+async function ensureSelfieVisibilityBundleProductRegistry(): Promise<void> {
+  // This paid ownership marker is deliberately hidden from the Academy catalogue.
+  // Keeping the guard in the webhook makes fulfillment resilient when a new database
+  // environment has not applied the tracked registry migration yet.
+  await sql`
+    INSERT INTO academy_products (
+      id,
+      slug,
+      title,
+      type,
+      membership_included,
+      purchasable,
+      stripe_price_id,
+      active,
+      sort_order,
+      delivery_kind,
+      access_target
+    )
+    VALUES (
+      'selfie_visibility_bundle',
+      'one-selfie-visibility-bundle',
+      'One Selfie Visibility Bundle',
+      'bundle',
+      FALSE,
+      FALSE,
+      NULL,
+      FALSE,
+      69,
+      'direct_private',
+      'one-selfie'
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      slug = EXCLUDED.slug,
+      title = EXCLUDED.title,
+      type = EXCLUDED.type,
+      membership_included = EXCLUDED.membership_included,
+      purchasable = EXCLUDED.purchasable,
+      active = EXCLUDED.active,
+      sort_order = EXCLUDED.sort_order,
+      delivery_kind = EXCLUDED.delivery_kind,
+      access_target = EXCLUDED.access_target,
+      updated_at = NOW()
+  `
+}
 
 function stripeObjectId(value: unknown): string | null {
   if (typeof value === "string" && value.length > 0) return value
@@ -76,6 +120,8 @@ export async function handleSelfieVisibilityBundleCheckout(
   const isTestMode = !ctx.event.livemode
   const entitlementSourceRef = `${paymentId}:one-selfie-visibility-bundle`
 
+  await ensureSelfieVisibilityBundleProductRegistry()
+
   // The bundle owner row is a one-time purchase marker. It is not a Stripe subscription and
   // never counts as a SUITE member because its product_type is not a membership product type.
   await sql`
@@ -122,7 +168,8 @@ export async function handleSelfieVisibilityBundleCheckout(
   `
 
   // The masterclass entitlement expands to Branded by SSELFIE and Editing Masterclass through
-  // the academy alias contract. The remaining IDs are the exact lifetime assets in the offer.
+  // the Academy alias contract. Presets use their own preset_orders token registry below, so
+  // they must not be inserted through the Academy product foreign key.
   for (const productId of LIFETIME_ENTITLEMENTS) {
     await upsertPurchaseEntitlement({
       userId,

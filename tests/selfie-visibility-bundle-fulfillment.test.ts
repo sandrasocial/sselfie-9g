@@ -244,7 +244,6 @@ describe("One Selfie Visibility Bundle fulfillment orchestrator", () => {
       "masterclass",
       "starter_kit",
       "prompt_vault",
-      "presets_bundle",
     ]) {
       expect(upsertEntitlementMock).toHaveBeenCalledWith(
         expect.objectContaining({ userId: "user_1", productId }),

@@ -18,6 +18,7 @@ const DIRECT_ONE_TIME_ACADEMY_TYPES = [
   "prompt_vault",
   "presets_single",
   "presets_bundle",
+  "selfie_visibility_bundle",
   "selfie_to_brand_shoot_system",
 ] as const
 
