@@ -10,6 +10,7 @@ import { trackCTAClick } from "@/lib/analytics"
 import FreeModeUpsellModal from "./free-mode-upsell-modal"
 import { useFeedPostPolling } from "@/lib/hooks/use-feed-post-polling"
 import { Spinner } from "@/components/app-v3/loading"
+import { StopGenerationDialog } from "./stop-generation-dialog"
 
 interface FeedSinglePlaceholderProps {
   feedId: number
@@ -50,6 +51,7 @@ export default function FeedSinglePlaceholder({
     post?.prediction_id && !post?.image_url ? post.prediction_id : null
   )
   const [isStopping, setIsStopping] = useState(false)
+  const [showStopDialog, setShowStopDialog] = useState(false)
   const autoGenerateTriggeredRef = useRef(false)
   const activationQueryClearedRef = useRef(false)
 
@@ -287,9 +289,6 @@ export default function FeedSinglePlaceholder({
 
   const handleStopGeneration = async () => {
     if (!post?.id || !canStop || isStopping) return
-    const confirmed = confirm("Stop this generation? If it doesn't complete, we'll refund your credit.")
-    if (!confirmed) return
-
     setIsStopping(true)
     try {
       const response = await fetch(`/api/feed/post/${post.id}/cancel`, { method: "POST" })
@@ -318,6 +317,7 @@ export default function FeedSinglePlaceholder({
       })
     } finally {
       setIsStopping(false)
+      setShowStopDialog(false)
     }
   }
 
@@ -630,7 +630,7 @@ export default function FeedSinglePlaceholder({
                   <Button
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleStopGeneration()
+                      setShowStopDialog(true)
                     }}
                     disabled={!canStop || isStopping}
                     size="sm"
@@ -683,6 +683,12 @@ export default function FeedSinglePlaceholder({
         open={showUpsellModal}
         onOpenChange={setShowUpsellModal}
         feedId={feedId}
+      />
+      <StopGenerationDialog
+        open={showStopDialog}
+        isStopping={isStopping}
+        onOpenChange={setShowStopDialog}
+        onConfirm={() => void handleStopGeneration()}
       />
     </div>
   )

@@ -1569,7 +1569,7 @@ export default function SselfieApp({
                         requiresMembership={true}
                       />
                     ) : (
-                      <FeedPlannerClient userId={userId.toString()} userName={userName} />
+                      <FeedPlannerClient userName={userName} />
                     )
                   )}
                   {activeTab === "academy" && (

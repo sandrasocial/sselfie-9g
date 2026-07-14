@@ -1,7 +1,6 @@
-import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
-import { CREDIT_COSTS, checkCredits, deductCredits } from "@/lib/credits"
+import { CREDIT_COSTS, checkCredits, deductCredits, getUserCredits, refundCredits } from "@/lib/credits"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { generateWithNanoBanana } from "@/lib/nano-banana-client"
@@ -54,6 +53,22 @@ export async function queueAllImagesForFeed(
 
   console.log("[v0] Queueing images for feed layout:", feedLayoutId)
 
+  // A killed serverless function must not leave a post looking active forever. Recover
+  // abandoned claims first; the normal eligible-post query below may safely retry them.
+  const recoveredPosts = await sql`
+    UPDATE feed_posts
+    SET generation_status = 'failed',
+        prediction_id = NULL,
+        error = 'The previous generation timed out. It is ready to try again.',
+        updated_at = NOW()
+    WHERE feed_layout_id = ${feedLayoutId}
+      AND user_id = ${neonUser.id}
+      AND generation_status = 'generating'
+      AND image_url IS NULL
+      AND updated_at < NOW() - INTERVAL '10 minutes'
+    RETURNING id
+  `
+
   // Get all posts for this feed that need images (including Pro Mode info)
   // Note: description column doesn't exist - visual direction is in prompt field or strategy
   // CRITICAL: Include 'failed' status so users can retry failed images without being charged again
@@ -62,7 +77,7 @@ export async function queueAllImagesForFeed(
     FROM feed_posts
     WHERE feed_layout_id = ${feedLayoutId}
     AND user_id = ${neonUser.id}
-    AND (generation_status = 'pending' OR generation_status IS NULL OR generation_status = 'failed' OR (generation_status = 'generating' AND prediction_id IS NULL))
+    AND (generation_status = 'pending' OR generation_status IS NULL OR generation_status = 'failed')
     AND image_url IS NULL
     ORDER BY position ASC
   `
@@ -99,6 +114,7 @@ export async function queueAllImagesForFeed(
   if (!hasEnoughCredits) {
     throw new Error(`Insufficient credits. You need ${totalCreditsNeeded} credits (${proModePosts.length} Pro Mode × 2 + ${classicPosts.length} Classic × 1) to generate ${posts.length} images.`)
   }
+  const usesUnlimitedCreditBalance = (await getUserCredits(neonUser.id)) >= 999999
 
   // Only fetch model if we have Classic Mode posts (Pro Mode doesn't need custom model)
   let model: any = null
@@ -158,7 +174,45 @@ export async function queueAllImagesForFeed(
 
   for (let i = 0; i < posts.length; i++) {
     const post = posts[i]
+    const creditCost = post.generation_mode === 'pro' ? getStudioProCreditCost('2K') : CREDIT_COSTS.IMAGE
+    const creditReferenceId = `feed-${feedLayoutId}-post-${post.id}-${Date.now()}`
+    let creditCharged = false
     try {
+      // Atomic claim: only one request can move this eligible post into generation.
+      const claimed = await sql`
+        UPDATE feed_posts
+        SET generation_status = 'generating', error = NULL, updated_at = NOW()
+        WHERE id = ${post.id}
+          AND feed_layout_id = ${feedLayoutId}
+          AND user_id = ${neonUser.id}
+          AND image_url IS NULL
+          AND (generation_status = 'pending' OR generation_status IS NULL OR generation_status = 'failed')
+        RETURNING id
+      `
+      if (claimed.length === 0) {
+        results.push({
+          success: false,
+          postId: post.id,
+          position: post.position,
+          error: "Post was already claimed by another request",
+        })
+        continue
+      }
+
+      // Charge each post before provider work, then refund this exact reference if its
+      // provider call fails. This keeps credits and actual generation attempts aligned.
+      const deduction = await deductCredits(
+        neonUser.id,
+        creditCost,
+        'image',
+        `Feed Planner image (post ${post.position})`,
+        creditReferenceId,
+      )
+      if (!deduction.success) {
+        throw new Error(deduction.error || "Credit charge failed")
+      }
+      creditCharged = !usesUnlimitedCreditBalance
+
       console.log(`[v0] ==================== GENERATING POST ${post.position} (${i + 1}/${posts.length}) ====================`)
       console.log(`[v0] Post ID: ${post.id}, Position: ${post.position}, Mode: ${post.generation_mode || 'classic'}`)
 
@@ -272,8 +326,16 @@ export async function queueAllImagesForFeed(
             UPDATE feed_posts
             SET generation_status = 'generating',
                 prediction_id = ${generation.predictionId},
+                error = NULL,
                 updated_at = NOW()
-            WHERE id = ${post.id}
+            WHERE id = ${post.id} AND user_id = ${neonUser.id}
+          `
+          await sql`
+            UPDATE credit_transactions
+            SET reference_id = ${generation.predictionId}
+            WHERE user_id = ${neonUser.id}
+              AND reference_id = ${creditReferenceId}
+              AND transaction_type = 'image'
           `
           
           console.log(`[v0] ✅ Successfully created Pro Mode prediction for post ${post.position}:`, generation.predictionId)
@@ -295,14 +357,7 @@ export async function queueAllImagesForFeed(
             error: error instanceof Error ? error.message : String(error),
             stack: error instanceof Error ? error.stack : undefined,
           })
-          results.push({
-            success: false,
-            postId: post.id,
-            position: post.position,
-            error: error instanceof Error ? error.message : "Unknown error",
-          })
-          await new Promise((resolve) => setTimeout(resolve, 2000))
-          continue
+          throw error
         }
       }
 
@@ -450,8 +505,16 @@ export async function queueAllImagesForFeed(
         SET generation_status = 'generating', 
             prediction_id = ${prediction.id}, 
             prompt = ${finalPrompt}, 
+            error = NULL,
             updated_at = NOW()
-        WHERE id = ${post.id}
+        WHERE id = ${post.id} AND user_id = ${neonUser.id}
+      `
+      await sql`
+        UPDATE credit_transactions
+        SET reference_id = ${prediction.id}
+        WHERE user_id = ${neonUser.id}
+          AND reference_id = ${creditReferenceId}
+          AND transaction_type = 'image'
       `
 
       console.log(`[v0] ✅ Successfully created prediction for post ${post.position}:`, prediction.id)
@@ -467,57 +530,46 @@ export async function queueAllImagesForFeed(
         await new Promise((resolve) => setTimeout(resolve, 11000))
       }
     } catch (error: any) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
       console.error(`[v0] ❌ Error generating post ${post.position}:`, {
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
         stack: error instanceof Error ? error.stack : undefined,
       })
+
+      if (creditCharged) {
+        const refund = await refundCredits(
+          neonUser.id,
+          creditCost,
+          `Refund: Feed Planner post ${post.position} did not start`,
+          creditReferenceId,
+        )
+        if (!refund.success) {
+          console.error(`[v0] ❌ Credit refund failed for post ${post.id}:`, refund.error)
+        }
+      }
+
+      await sql`
+        UPDATE feed_posts
+        SET generation_status = 'failed',
+            prediction_id = NULL,
+            error = ${errorMessage.slice(0, 500)},
+            updated_at = NOW()
+        WHERE id = ${post.id}
+          AND feed_layout_id = ${feedLayoutId}
+          AND user_id = ${neonUser.id}
+          AND image_url IS NULL
+      `
       results.push({
         success: false,
         postId: post.id,
         position: post.position,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: errorMessage,
       })
       await new Promise((resolve) => setTimeout(resolve, 2000))
     }
   }
 
-  // Deduct credits once for all successful generations (pay on success, not attempt)
   const successful = results.filter((r) => r.success).length
-  const proModeSuccessful = results.filter((r) => {
-    const post = posts.find(p => p.id === r.postId)
-    return r.success && post?.generation_mode === 'pro'
-  }).length
-  const classicSuccessful = successful - proModeSuccessful
-  
-  if (successful > 0) {
-    // Calculate total credits for successful posts only
-    const proModeCredits = proModeSuccessful * getStudioProCreditCost('2K')
-    const classicCredits = classicSuccessful * CREDIT_COSTS.IMAGE
-    const totalCreditsToDeduct = proModeCredits + classicCredits
-    
-    console.log(`[v0] Generation complete: ${successful} successful (${classicSuccessful} Classic × ${CREDIT_COSTS.IMAGE} credit, ${proModeSuccessful} Pro Mode × ${getStudioProCreditCost('2K')} credits)`)
-    console.log(`[v0] Deducting ${totalCreditsToDeduct} credits for successful generations only...`)
-    
-    // Get prediction IDs for reference (use first successful prediction ID as reference)
-    const firstSuccessfulResult = results.find(r => r.success)
-    const referenceId = firstSuccessfulResult?.predictionId || `feed-${feedLayoutId}-${Date.now()}`
-    
-    const deductionResult = await deductCredits(
-      neonUser.id,
-      totalCreditsToDeduct,
-      'image',
-      `Feed Planner: ${successful} images (${classicSuccessful} Classic, ${proModeSuccessful} Pro)`,
-      referenceId
-    )
-    
-    if (!deductionResult.success) {
-      console.error(`[v0] ❌ Failed to deduct credits: ${deductionResult.error}`)
-      // Log error but don't throw - posts are already queued
-    } else {
-      console.log(`[v0] ✅ Credits deducted: ${totalCreditsToDeduct}, New balance: ${deductionResult.newBalance || "unknown"}`)
-    }
-  }
-
   const failed = results.length - successful
 
   console.log(`[v0] Queue complete: ${successful} successful, ${failed} failed`)
@@ -527,6 +579,8 @@ export async function queueAllImagesForFeed(
     queuedCount: successful,
     totalPosts: posts.length,
     failedCount: failed,
+    recoveredCount: recoveredPosts.length,
+    results,
     message: `Queued ${successful} of ${posts.length} images for generation`,
   }
 }

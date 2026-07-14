@@ -1,8 +1,6 @@
 // Feed Planner Phase 2c - monthly rollover. On the 1st, Maya drafts the new month for every
-// member who was actually using the calendar (had a plan last month) so the first thing they
-// see in a fresh month is a planned calendar, not an empty one. Members who never touched
-// Calendar aren't drafted for here - their first Calendar open still triggers the draft lazily
-// (app/feed-planner/feed-planner-client.tsx), same as before.
+// eligible calendar owner who does not yet have that month's plan. The per-user writer remains
+// idempotent, so a retry or a simultaneous first app open cannot create duplicate plans.
 //
 // Kill switch: FEED_PLAN_MONTHLY_DRAFT_DISABLED=true skips the whole run (matches the
 // established recovery-cron pattern, e.g. MEMBERSHIP_CHECKOUT_RECOVERY_DISABLED).
@@ -20,12 +18,6 @@ export const maxDuration = 300
 // hundreds of drafts in one run.
 const MAX_USERS_PER_RUN = 50
 
-function previousPeriodMonth(period: string): string {
-  const [year, month] = period.split("-").map(Number)
-  const d = new Date(Date.UTC(year, month - 2, 1))
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`
-}
-
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization")
   const cronSecret = process.env.CRON_SECRET
@@ -41,20 +33,38 @@ export async function GET(request: NextRequest) {
   }
 
   const thisMonth = currentPeriodMonth()
-  const lastMonth = previousPeriodMonth(thisMonth)
 
   try {
-    // Users who had an auto-drafted plan LAST month and nothing yet for THIS month. The
-    // per-user lock + guard inside draftMonthPlanForUser make re-runs and races harmless.
+    // Candidate selection follows current access, not last month's activity. This prevents a
+    // newly entitled member from being skipped forever because she had no previous plan.
     const candidates = await sql`
-      SELECT DISTINCT fl.user_id, u.supabase_user_id, u.stack_auth_id
-      FROM feed_layouts fl
-      JOIN users u ON u.id = fl.user_id
-      WHERE fl.period_month = ${lastMonth}
+      SELECT u.id AS user_id, u.supabase_user_id, u.stack_auth_id
+      FROM users u
+      WHERE (
+          u.role = 'admin'
+          OR EXISTS (
+            SELECT 1
+            FROM blueprint_subscribers bp
+            WHERE bp.user_id = u.id
+              AND bp.paid_blueprint_purchased = TRUE
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM subscriptions s
+            WHERE s.user_id = u.id
+              AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership', 'pro', 'one_time_session')
+              AND COALESCE(s.is_test_mode, FALSE) = FALSE
+              AND (
+                s.status IN ('active', 'trialing')
+                OR (s.status IN ('canceled', 'cancelled', 'past_due') AND s.current_period_end > NOW())
+              )
+          )
+        )
         AND NOT EXISTS (
           SELECT 1 FROM feed_layouts nxt
-          WHERE nxt.user_id = fl.user_id AND nxt.period_month = ${thisMonth}
+          WHERE nxt.user_id = u.id AND nxt.period_month = ${thisMonth}
         )
+      ORDER BY u.id
       LIMIT ${MAX_USERS_PER_RUN}
     `
 

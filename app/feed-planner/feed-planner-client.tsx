@@ -10,12 +10,12 @@ import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { getActivationChecklist, getActivationContinueHref, getFreeUserWizardDecision } from "@/lib/onboarding/activation"
+import { useFeedNav } from "@/components/feed-planner/feed-nav-context"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 interface FeedPlannerClientProps {
   access?: FeedPlannerAccess // Optional - will be fetched if not provided (for use in SselfieApp)
-  userId: string
   userName?: string | null
 }
 
@@ -29,6 +29,7 @@ interface FeedPlannerClientProps {
  */
 export default function FeedPlannerClient({ access: accessProp, userName }: FeedPlannerClientProps) {
   const router = useRouter()
+  const feedNav = useFeedNav()
   const [showWizard, setShowWizard] = useState(false)
   const [showWelcomeWizard, setShowWelcomeWizard] = useState(false)
   const [isCheckingWizard, setIsCheckingWizard] = useState(true)
@@ -518,9 +519,8 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
         isOpen={true}
         onComplete={handleWizardComplete}
         onDismiss={() => {
-          // Don't allow dismissing wizard - user must complete it
-          // But we can redirect to home if they really want to leave
-          window.location.href = "/feed-planner"
+          // Closing the wizard must never eject an embedded Calendar user from /app.
+          setShowWizard(false)
         }}
         userName={displayName}
         userEmail={userInfo?.email || null}

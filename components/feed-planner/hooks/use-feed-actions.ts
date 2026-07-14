@@ -10,7 +10,8 @@ export function useFeedActions(
   feedId: number,
   posts: any[],
   feedData: any,
-  onUpdate: () => void | Promise<void>
+  onUpdate: () => void | Promise<void>,
+  onNavigateToMaya?: () => void,
 ) {
   const [expandedCaptions, setExpandedCaptions] = useState<Set<number>>(new Set())
   const [copiedCaptions, setCopiedCaptions] = useState<Set<number>>(new Set())
@@ -189,9 +190,8 @@ export function useFeedActions(
 
   // Helper function to navigate to Maya Chat for image generation
   const navigateToMayaChat = () => {
-    if (typeof window !== "undefined") {
-      window.location.href = "/studio#maya/feed"
-    }
+    if (onNavigateToMaya) return onNavigateToMaya()
+    if (typeof window !== "undefined") window.location.assign("/app?view=create")
   }
 
   const handleDownloadBundle = async () => {
@@ -248,4 +248,3 @@ export function useFeedActions(
     handleDownloadBundle,
   }
 }
-

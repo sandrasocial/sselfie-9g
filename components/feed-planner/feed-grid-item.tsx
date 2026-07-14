@@ -6,6 +6,7 @@ import { Square } from "lucide-react"
 import { useFeedPostPolling } from "@/lib/hooks/use-feed-post-polling"
 import { toast } from "@/hooks/use-toast"
 import { Spinner } from "@/components/app-v3/loading"
+import { StopGenerationDialog } from "./stop-generation-dialog"
 
 interface FeedGridItemProps {
   post: any
@@ -71,7 +72,6 @@ const getIsGenerating = ({
     (post.prediction_id && !post.image_url))
 
 async function stopGeneration({
-  event,
   canStop,
   isStopping,
   postId,
@@ -79,7 +79,6 @@ async function stopGeneration({
   setPredictionId,
   setIsStopping,
 }: {
-  event: React.MouseEvent<HTMLButtonElement>
   canStop: boolean
   isStopping: boolean
   postId: number
@@ -87,13 +86,7 @@ async function stopGeneration({
   setPredictionId: (value: string | null) => void
   setIsStopping: (value: boolean) => void
 }) {
-  event.stopPropagation()
-
   if (!canStop || isStopping) {
-    return
-  }
-
-  if (!confirm("Stop this generation? If it doesn't complete, we'll refund your credit.")) {
     return
   }
 
@@ -321,6 +314,7 @@ export default function FeedGridItem({
 }: Readonly<FeedGridItemProps>) {
   const [predictionId, setPredictionId] = useState<string | null>(getInitialPredictionId(post))
   const [isStopping, setIsStopping] = useState(false)
+  const [showStopDialog, setShowStopDialog] = useState(false)
   const [isRegeneratingIdea, setIsRegeneratingIdea] = useState(false)
 
   const { status: pollingStatus, imageUrl: pollingImageUrl } = useFeedPostPolling({
@@ -367,8 +361,12 @@ export default function FeedGridItem({
   }
 
   const handleStopGeneration = (event: React.MouseEvent<HTMLButtonElement>) => {
-    void stopGeneration({
-      event,
+    event.stopPropagation()
+    if (canStop && !isStopping) setShowStopDialog(true)
+  }
+
+  const confirmStopGeneration = async () => {
+    await stopGeneration({
       canStop,
       isStopping,
       postId: post.id,
@@ -376,6 +374,7 @@ export default function FeedGridItem({
       setPredictionId,
       setIsStopping,
     })
+    setShowStopDialog(false)
   }
 
   const handleRegenerateIdeaClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -430,5 +429,15 @@ export default function FeedGridItem({
     )
   }
 
-  return <div className={`${baseClassName} ${isQuietPlaceholder ? "" : "cursor-pointer"}`}>{content}</div>
+  return (
+    <>
+      <div className={`${baseClassName} ${isQuietPlaceholder ? "" : "cursor-pointer"}`}>{content}</div>
+      <StopGenerationDialog
+        open={showStopDialog}
+        isStopping={isStopping}
+        onOpenChange={setShowStopDialog}
+        onConfirm={() => void confirmStopGeneration()}
+      />
+    </>
+  )
 }

@@ -20,6 +20,7 @@ import { ThisWeekStrip } from "./this-week-strip"
 import type { OutputFormat } from "./types"
 
 const ONBOARDING_KEY = "calendar:onboarding:v1"
+const SELECTED_FEED_KEY = "calendar:selected-feed:v1"
 
 function CalendarExplainer({ onDismiss }: { onDismiss: () => void }) {
   return (
@@ -70,7 +71,11 @@ export function FeedPlannerView({
   /** Starts Maya seeded with a THIS WEEK idea (the shell's creationIdea channel). */
   onCreateIdea?: (format: OutputFormat, title: string) => void
 } = {}) {
-  const [selectedFeedId, setSelectedFeedId] = useState<number | null>(null)
+  const [selectedFeedId, setSelectedFeedId] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null
+    const stored = Number(window.localStorage.getItem(SELECTED_FEED_KEY))
+    return Number.isInteger(stored) && stored > 0 ? stored : null
+  })
   const [showExplainer, setShowExplainer] = useState(false)
 
   useEffect(() => {
@@ -81,9 +86,24 @@ export function FeedPlannerView({
     }
   }, [])
 
+  useEffect(() => {
+    try {
+      if (selectedFeedId) window.localStorage.setItem(SELECTED_FEED_KEY, String(selectedFeedId))
+      else window.localStorage.removeItem(SELECTED_FEED_KEY)
+    } catch {
+      // best effort; the calendar still works when storage is unavailable
+    }
+  }, [selectedFeedId])
+
   const nav = useMemo(
-    () => ({ feedId: selectedFeedId, navigateToFeed: setSelectedFeedId }),
-    [selectedFeedId],
+    () => ({
+      feedId: selectedFeedId,
+      navigateToFeed: setSelectedFeedId,
+      navigateToMaya: onCreateIdea
+        ? () => onCreateIdea("photo", "Create a photo for my content calendar")
+        : undefined,
+    }),
+    [onCreateIdea, selectedFeedId],
   )
 
   const dismissExplainer = () => {
@@ -100,7 +120,7 @@ export function FeedPlannerView({
       <div className="min-h-[calc(100dvh-3.5rem)] bg-[#F8FAFA] pb-24">
         {showExplainer && <CalendarExplainer onDismiss={dismissExplainer} />}
         {onCreateIdea && <ThisWeekStrip onCreateIdea={onCreateIdea} />}
-        <FeedPlannerClient userId="" />
+        <FeedPlannerClient />
       </div>
     </FeedNavContext.Provider>
   )

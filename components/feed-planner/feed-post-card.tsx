@@ -18,7 +18,7 @@ interface FeedPostCardProps {
     prediction_id?: string | null
   }
   feedId: number
-  onUpdate?: () => void
+  onUpdate?: (updatedPost?: FeedPostCardProps["post"]) => void | Promise<void>
   onNavigateToMaya?: () => void // Navigate to Maya Chat for image generation
 }
 
@@ -54,7 +54,13 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
         title: "Photo removed",
         description: "The day is open again. The photo is still in your Gallery.",
       })
-      onUpdate?.()
+      await onUpdate?.({
+        ...post,
+        image_url: null,
+        preview_image_url: null,
+        prediction_id: null,
+        generation_status: "pending",
+      })
     } catch {
       toast({ title: "Couldn't remove the photo", description: "Please try again", variant: "destructive" })
     } finally {
@@ -85,7 +91,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
     if (onNavigateToMaya) {
       onNavigateToMaya()
     } else if (typeof window !== "undefined") {
-      window.location.href = "/studio#maya/feed"
+      window.location.assign("/app?view=create")
     }
   }
 
@@ -172,11 +178,10 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
       const data = await response.json()
       
       if (data.enhancedCaption) {
-        // Refresh the component by calling onUpdate to trigger a re-fetch
-        onUpdate?.()
+        await onUpdate?.({ ...post, caption: data.enhancedCaption })
         toast({
           title: "Caption enhanced!",
-          description: "Maya has improved your caption. Refresh to see the update.",
+          description: "Maya has improved your caption.",
         })
       } else {
         throw new Error("No enhanced caption returned")
@@ -211,8 +216,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
       const data = await response.json()
       
       if (data.caption) {
-        // Refresh the component by calling onUpdate to trigger a re-fetch
-        onUpdate?.()
+        await onUpdate?.({ ...post, caption: data.caption })
         toast({
           title: "Caption regenerated!",
           description: "Maya has created a new caption for this post.",
@@ -272,7 +276,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
         throw new Error(errorData.error || "Failed to update caption")
       }
 
-      onUpdate?.()
+      await onUpdate?.({ ...post, caption: editedCaption.trim() })
       setIsEditing(false)
       toast({
         title: "Caption updated!",

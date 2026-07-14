@@ -222,8 +222,13 @@ export default function FeedHeader({
         throw new Error(error.error || 'Failed to update feed style')
       }
 
-      // Refresh the feed data
-      router.refresh()
+      // Refresh only the planner caches. A route refresh remounts the Calendar shell and
+      // loses the member's open-plan state.
+      await Promise.all([
+        mutate(`/api/feed/${currentFeedId}`),
+        mutate("/api/feed/latest"),
+        mutate("/api/feed/list"),
+      ])
       
       toast({
         title: "Feed style updated",

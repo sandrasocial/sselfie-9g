@@ -39,7 +39,7 @@ export default function FeedModals({
     <>
       {selectedPost && typeof window !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-[#0D0E10]/95 p-4 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none"
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-[#0D0E10]/95 p-4 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none"
           onClick={onClosePost}
           style={{
             paddingTop: "calc(1rem + env(safe-area-inset-top))",
@@ -47,7 +47,7 @@ export default function FeedModals({
           }}
         >
           <div
-            className="relative my-8 w-full max-w-[470px] animate-in fade-in zoom-in-[0.98] duration-300 motion-reduce:animate-none"
+            className="relative my-8 flex max-h-[calc(100dvh-5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full max-w-[470px] flex-col animate-in fade-in zoom-in-[0.98] duration-300 motion-reduce:animate-none"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
@@ -86,15 +86,14 @@ export default function FeedModals({
             )}
 
             {/* Use FeedPostCard component for full Instagram post mockup */}
-            <FeedPostCard
-              post={selectedPost}
-              feedId={feedId}
-              onUpdate={async () => {
-                await onUpdate()
-                onClosePost()
-              }}
-              onNavigateToMaya={onNavigateToMaya}
-            />
+            <div className="min-h-0 overflow-y-auto overscroll-contain rounded-[14px]">
+              <FeedPostCard
+                post={selectedPost}
+                feedId={feedId}
+                onUpdate={onUpdate}
+                onNavigateToMaya={onNavigateToMaya}
+              />
+            </div>
           </div>
         </div>,
         document.body

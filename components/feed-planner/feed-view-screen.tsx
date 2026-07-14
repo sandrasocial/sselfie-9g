@@ -123,7 +123,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
 
   // Fetch feed data (handles both specific feed and latest feed)
   // Note: Polling is handled by InstagramFeedView's useFeedPolling hook, not here
-  const { data: feedData, error: feedError, isLoading } = useSWR(
+  const { data: feedData, error: feedError, isLoading, mutate: mutateFeed } = useSWR(
     swrKey,
     fetcher,
     {
@@ -200,22 +200,19 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
             const result = await response.json()
             console.log('[FEED EXPANSION] Created positions:', result.positionsCreated)
 
-            // Refresh feed data to show new posts
-            if (mutateFeedList) {
-              await mutateFeedList()
-            }
-            
-            // FIX: Use router.refresh() instead of window.location.reload() to prevent full page refresh
-            // This maintains React state and prevents welcome screen from reappearing
-            router.refresh()
-            
-            // Also trigger SWR revalidation for feed data
-            // The feed data will be refetched automatically via SWR when router.refresh() completes
+            await Promise.all([mutateFeed(), mutateFeedList?.()])
           } else {
-            console.error('[FEED EXPANSION] Failed to expand feed')
+            const data = await response.json().catch(() => ({}))
+            throw new Error(data.error || "Failed to expand feed")
           }
         } catch (error) {
           console.error('[FEED EXPANSION] Error:', error)
+          // DRAFT copy for Sandra approval before release.
+          toast({
+            title: "Could not prepare your full calendar",
+            description: error instanceof Error ? error.message : "Please try again.",
+            variant: "destructive",
+          })
         } finally {
           setIsExpandingFeed(false)
         }
@@ -226,27 +223,19 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     if (access && feedData && !isLoading) {
       expandFeedIfNeeded()
     }
-  }, [access, feedData, isLoading, isExpandingFeed, mutateFeedList, router])
+  }, [access, feedData, isLoading, isExpandingFeed, mutateFeed, mutateFeedList])
 
   // FREE FUNNEL RETIRED (Sandra, 2026-07-07): free users no longer get an auto-created
   // example feed - the Feed Planner is a paid product surface. The upsell render below
   // (early return) is the whole free experience now.
 
   const handleBackToMaya = () => {
-    // Route to Maya Feed tab using hash navigation
-    if (typeof window !== "undefined") {
-      // Navigate to studio with Maya feed tab
-      window.location.href = "/studio#maya/feed"
-    }
+    if (feedNav?.navigateToMaya) return feedNav.navigateToMaya()
+    router.push("/app?view=create")
   }
 
 
-  const handleCreateFeed = () => {
-    // Navigate to Maya Feed tab to create a feed
-    if (typeof window !== "undefined") {
-      window.location.href = "/studio#maya/feed"
-    }
-  }
+  const handleCreateFeed = handleBackToMaya
 
   const handleCreateManualFeedClick = () => {
     // Show feed style modal first

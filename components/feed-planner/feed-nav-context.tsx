@@ -14,6 +14,8 @@ export interface FeedNav {
   feedId: number | null
   /** Switch the embedded planner to another feed without leaving /app. */
   navigateToFeed: (feedId: number) => void
+  /** Open Maya from the embedded calendar without leaving the Suite shell. */
+  navigateToMaya?: () => void
 }
 
 export const FeedNavContext = createContext<FeedNav | null>(null)

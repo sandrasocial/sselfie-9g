@@ -292,7 +292,7 @@ export default function InstagramFeedView({
 
   // Use hooks for complex logic
   const dragDrop = useFeedDragDrop(posts, feedId, mutate)
-  const actions = useFeedActions(feedId, posts, feedData, mutate)
+  const actions = useFeedActions(feedId, posts, feedData, mutate, onBack)
   
   // Calculate ready posts for confetti
   const readyPosts = postStatuses.filter((p: any) => p.isComplete).length
@@ -714,6 +714,9 @@ export default function InstagramFeedView({
           console.log("[v0] onUpdate called with post:", updatedPost?.id, "has feedData:", !!feedData)
           
           if (updatedPost && feedData?.posts) {
+            setSelectedPost((current: any | null) =>
+              current?.id === updatedPost.id ? { ...current, ...updatedPost } : current,
+            )
             // Find the post index
             const postIndex = feedData.posts.findIndex((p: any) => p.id === updatedPost.id)
             console.log("[v0] Found post at index:", postIndex)
@@ -731,6 +734,7 @@ export default function InstagramFeedView({
               console.log("[v0] Applying optimistic update for post:", updatedPost.id)
               // Update cache optimistically (no revalidation, instant UI update)
               await mutate(optimisticData, { revalidate: false })
+              return
             }
           }
           

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import Image from "next/image"
 import type { GalleryImage } from "@/lib/data/images"
+import { toast } from "@/hooks/use-toast"
 
 interface FeedGallerySelectorProps {
   type: "post" | "profile"
@@ -23,6 +24,7 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
   const [hasMore, setHasMore] = useState(true)
   const [offset, setOffset] = useState(0)
   const [activeTab, setActiveTab] = useState<"upload" | "gallery">("upload")
+  const [loadError, setLoadError] = useState<string | null>(null)
   const limit = 50
 
   // Validate props
@@ -34,15 +36,17 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
     async function fetchImages() {
       try {
         setIsLoading(true)
+        setLoadError(null)
         const response = await fetch(`/api/images?limit=${limit}&offset=0`, { credentials: "include" })
-        if (response.ok) {
-          const data = await response.json()
-          setImages(data.images || [])
-          setHasMore(data.hasMore || false)
-          setOffset(data.images?.length || 0)
-        }
+        // DRAFT copy for Sandra approval before release.
+        if (!response.ok) throw new Error("Your gallery could not be loaded.")
+        const data = await response.json()
+        setImages(data.images || [])
+        setHasMore(data.hasMore || false)
+        setOffset(data.images?.length || 0)
       } catch (error) {
         console.error("[v0] Error fetching gallery images:", error)
+        setLoadError(error instanceof Error ? error.message : "Your gallery could not be loaded.")
       } finally {
         setIsLoading(false)
       }
@@ -57,14 +61,19 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
     setIsLoadingMore(true)
     try {
       const response = await fetch(`/api/images?limit=${limit}&offset=${offset}`, { credentials: "include" })
-      if (response.ok) {
-        const data = await response.json()
-        setImages((prev) => [...prev, ...(data.images || [])])
-        setHasMore(data.hasMore || false)
-        setOffset((prev) => prev + (data.images?.length || 0))
-      }
+      // DRAFT copy for Sandra approval before release.
+      if (!response.ok) throw new Error("More photos could not be loaded.")
+      const data = await response.json()
+      setImages((prev) => [...prev, ...(data.images || [])])
+      setHasMore(data.hasMore || false)
+      setOffset((prev) => prev + (data.images?.length || 0))
     } catch (error) {
       console.error("[v0] Error loading more images:", error)
+      toast({
+        title: "Could not load more photos",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsLoadingMore(false)
     }
@@ -102,7 +111,11 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
       setSelectedImageUrl(uploadedUrl)
     } catch (error) {
       console.error("[v0] Error uploading file:", error)
-      alert(error instanceof Error ? error.message : "Failed to upload image. Please try again.")
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsUploading(false)
     }
@@ -164,7 +177,7 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
       const errorMessage = type === "post"
         ? "Failed to update post image. Please try again."
         : "Failed to update profile image. Please try again."
-      alert(errorMessage)
+      toast({ title: "Image update failed", description: errorMessage, variant: "destructive" })
     } finally {
       setIsSaving(false)
     }
@@ -281,7 +294,11 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
                 </div>
               )}
             </div>
-          ) : images.length === 0 ? (
+              ) : loadError ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-6 text-center">
+                  <p className="text-sm text-red-700">{loadError}</p>
+                </div>
+              ) : images.length === 0 ? (
             <div className={isPost ? "text-center py-12" : "flex items-center justify-center py-12"}>
               {isPost ? (
                 <>

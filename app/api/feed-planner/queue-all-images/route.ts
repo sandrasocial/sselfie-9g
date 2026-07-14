@@ -5,6 +5,8 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateAndStoreFeedCaptions } from "@/lib/feed-planner/generate-feed-captions"
 import { sql } from "@/lib/db/client"
 
+export const maxDuration = 300
+
 /**
  * Queue all images for a feed layout automatically
  * This endpoint is called after strategy creation to start generating all 9 images
