@@ -25,6 +25,8 @@ import {
   SSELFIE_SELFIE_RESTYLE,
 } from "@/lib/app-v3/maya/visual-rules"
 import { AVOID_LIST } from "@/lib/app-v3/maya/ingredients"
+import { buildLikenessPromptBlock } from "@/lib/app-v3/likeness-memory"
+import { getMemory } from "@/lib/app-v3/maya/memory-store"
 import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
 import { normalizeOpenAIImageSize } from "@/lib/app-v3/openai-image-size"
 
@@ -47,6 +49,25 @@ const DEFAULT_RENDER_QUALITY: ImgQuality =
   process.env.SHOOT_STUDIO_IMAGE_QUALITY === "medium" || process.env.SHOOT_STUDIO_IMAGE_QUALITY === "low"
     ? (process.env.SHOOT_STUDIO_IMAGE_QUALITY as ImgQuality)
     : "high"
+
+// LIKENESS PARITY (2026-07-14): suite Maya appends the member's durable likeness corrections
+// (app_v3_memory.likeness_notes) to every render; admin shoots never did. Pull Sandra's own
+// notes from the same store so every correction she teaches Maya in the suite also anchors
+// admin renders. Fail-soft: any error renders without the block, never breaks a shoot.
+const ADMIN_LIKENESS_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
+async function getAdminLikenessBlock(): Promise<string> {
+  try {
+    const [row] = (await sql`
+      SELECT id FROM users WHERE email = ${ADMIN_LIKENESS_EMAIL} LIMIT 1
+    `) as Array<{ id: string }>
+    if (!row?.id) return ""
+    const memory = await getMemory(String(row.id))
+    return buildLikenessPromptBlock(memory.likenessNotes)
+  } catch (error) {
+    console.error("[shoot-studio] likeness notes skipped:", error)
+    return ""
+  }
+}
 const DEFAULT_SHOTS_PER_SHOOT = 6
 const SHOT_ROLE_SEQUENCE: ShootShotRole[] = [
   "establishing-full-body",
@@ -169,6 +190,10 @@ function buildShotRenderPrompt(input: {
           "one image of"
         ),
     `Use ${identityRange} as IDENTITY REFERENCES ONLY. Take from them only the person's facial structure, face shape, skin tone, natural skin texture, age, hair color, body proportions, and recognizable likeness. Do NOT copy the selfies' lighting, white balance, exposure, background, framing, head angle, pose, or expression. The identity references define the person; the scene, lighting, pose, and mood are defined below.`,
+    input.selfieCount > 1
+      ? "If the identity references differ from each other, input image 1 is the primary identity source: resolve any conflict in facial features toward input image 1."
+      : "",
+    `The person visible in the inspiration image is a DIFFERENT woman. Never blend, average, or borrow any facial features, face shape, eyes, nose, lips, jawline, skin, age, or body characteristics from the inspiration image. Her face and body come exclusively from ${identityRange}.`,
     `Use ${styleRange} as ORIGINAL INSPIRATION REFERENCES ONLY. Follow the inspiration image directly for wardrobe family, pose language, composition, camera distance, lighting direction, shadow pattern, location/set, color grade, editorial mood, and styling.`,
     continuityCount > 0
       ? `Use ${continuityRange} as GENERATED SET CONTINUITY REFERENCES ONLY. They show the already-approved visual world for this shoot: outfit family, hair/makeup finish, lighting, palette, image realism, location mood, and editorial treatment. Do not use them as the identity source. If a generated continuity image shows a face, ignore that face, facial structure, skin, hair, age, and body features.`
@@ -518,10 +543,12 @@ export async function generateShotImage(input: {
     shotRole: input.shotRole,
     closeRecreate: input.closeRecreate,
   })
+  const likenessBlock = await getAdminLikenessBlock()
+  const withLikeness = (text: string) => (likenessBlock ? `${text}\n\n${likenessBlock}` : text)
   const editInput: Record<string, unknown> = {
     model: OPENAI_IMAGE_MODEL,
     image: files.length === 1 ? files[0] : files,
-    prompt: fullPrompt,
+    prompt: withLikeness(fullPrompt),
     n: 1,
     size: PORTRAIT_SIZE,
     quality: input.quality,
@@ -547,7 +574,7 @@ export async function generateShotImage(input: {
       safetyRetry: true,
       closeRecreate: input.closeRecreate,
     })
-    response = await openai.images.edit({ ...editInput, prompt: retryPrompt } as any)
+    response = await openai.images.edit({ ...editInput, prompt: withLikeness(retryPrompt) } as any)
   }
   const b64 = response.data?.[0]?.b64_json
   if (!b64) throw new Error("No image data returned from OpenAI")
