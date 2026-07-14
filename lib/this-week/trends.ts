@@ -86,7 +86,10 @@ async function generateDigest(weekStart: string): Promise<TrendDigest> {
       const anthropic = new Anthropic({ apiKey })
       const response = await anthropic.messages.create({
         model: DIGEST_MODEL,
-        max_tokens: 3000,
+        max_tokens: 6000,
+        // Sonnet 5 defaults to adaptive thinking when the param is omitted; thinking would
+        // spend this small budget before any text (same failure as content-kit llm.ts).
+        thinking: { type: "disabled" },
         system: DIGEST_SYSTEM,
         tools: [WEB_SEARCH_TOOL],
         messages: [{ role: "user", content: userMsg }],
