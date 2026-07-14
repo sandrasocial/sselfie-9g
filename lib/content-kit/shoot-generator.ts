@@ -839,8 +839,8 @@ export async function createShootDraft(input: {
       buildCreatePrompt(retryNote, { story, vibe, shotCount }),
       inspirationUrls
     )
-    parsed = extractJsonObject(raw)
     try {
+      parsed = extractJsonObject(raw)
       drafts = sanitizeShots(parsed.shots, shotCount, { story })
       lastPlanError = null
       break
