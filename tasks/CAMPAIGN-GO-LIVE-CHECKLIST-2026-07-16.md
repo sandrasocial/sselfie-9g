@@ -75,6 +75,12 @@ launch moves to Friday only if a gate fails, never for polish.
    the queue's stable "Open buyer page" link is the attended workaround.
 3. Redaction pass on webhook logging (session metadata includes customer email;
    pre-existing, not campaign-introduced).
+4. Typo-domain guard at fulfillment (proven need 2026-07-15: a $134 buyer typed
+   `gmail.co` at Stripe checkout — Starter Kit + bundle deliveries bounced for 3 days
+   and her account/auth/token records were keyed to the phantom address; rescued
+   attended). When the checkout email's domain is a known typo of a major provider
+   (gmail.co/gmail.con/hotmail.co/outlok.com …), flag the order for admin review on
+   the queue instead of silently sending into a bounce.
 
 ## Standing rules
 
