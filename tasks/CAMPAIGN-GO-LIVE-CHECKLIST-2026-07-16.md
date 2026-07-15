@@ -35,6 +35,12 @@ launch moves to Friday only if a gate fails, never for polish.
 5. [Cl] Land on main LINEARLY (cherry-pick/rebase — main rejects merge commits), deploy,
    verify production healthy. Dunning + Smart Retries go live tonight with this merge —
    an unconditional win (31% of past cancellations were payment failures).
+   Author rule (fixed 2026-07-15): commits must be authored
+   `Sandra Sigurjonsdottir <ssa@ssasocial.com>` — Vercel warns it may refuse deploys it
+   cannot attribute (the old `north@sselfie.ai` identity is retired; global + repo git
+   config corrected). Cherry-pick PRESERVES original authorship, so after cherry-picking
+   run: `git rebase origin/main --exec 'git commit --amend --reset-author --no-edit'`
+   and confirm `git log --format="%ae" origin/main..HEAD` shows only ssa@ssasocial.com.
 6. [Cl] End-to-end TEST-MODE order in production: checkout → intake → generation → admin
    QA queue → delivery page + email → download → Day-7 links resolve. Proof screenshots
    or event-log excerpts saved for the morning.
