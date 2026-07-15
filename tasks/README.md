@@ -14,6 +14,18 @@ superseded, obsolete, and completed code specs are archived under `tasks/archive
 
 ## Active queue
 
+- `MAYA-PLAN-REPAIR-01-silent-plan-repair.md`: P0 member friction. Maya repairs her own
+  invalid shoot/story plans at emit time instead of erroring at the member (17x
+  thin_shoot_plan + daily plan_invalid in the last 14 days). Sandra approved the Stage-1
+  corrective loop 2026-07-15. Freeze snapshots must stay unchanged.
+- `MAYA-LEARNING-01-visible-memory.md`: make Maya's learning visible - acknowledge likeness
+  captures, offer to remember, show/delete "what I know about you" (baseline: 2 notes total).
+  Track B only; frozen classifier and prompt block untouched.
+- `STORY-SEQUENCE-01-triage.md`: weakest format (4 of 7 failed in 14 days). Policy-retry
+  parity + honest copy; measurement gate before any removal decision.
+- `MAYA-GOLDEN-01-regression-suite.md`: golden regression suite (Phase A deterministic for
+  Codex now; Phase B attended scored image runs with Sandra). Gate for ANY future creative
+  change per the freeze contract.
 - `CAMPAIGN-OUTCOME-01-your-next-campaign.md`: held pay-per-outcome product. Payment/intake/QA/
   delivery infrastructure exists on `codex/campaign-outcome-held`, but the three-post deliverable
   must be revised to the complete v3 campaign kit before release. Never merge before the current
