@@ -62,7 +62,10 @@ import {
   intentForFormat,
   needsClarificationIntent,
 } from "@/lib/app-v3/maya/intent-router"
-import { recommendedGraphicTextStyle } from "@/lib/app-v3/maya/next-action"
+import {
+  recommendedGraphicTextStyle,
+  shouldContinueCompletedFormatSwitch,
+} from "@/lib/app-v3/maya/next-action"
 import {
   OVERLAY_STYLE_PRESETS,
   resolveOverlayStyle,
@@ -1215,7 +1218,27 @@ export function MayaConcierge({
         latest = fmt
       }
     }
-    if (latest && session?.outputFormat !== latest) {
+    if (!latest) return
+
+    if (
+      shouldContinueCompletedFormatSwitch({
+        selectedFormat: session?.outputFormat ?? null,
+        switchedFormat: latest,
+        textMode: textOverlayMode,
+        textStyleSelected: Boolean(textStyleChoice),
+      })
+    ) {
+      const intent = intentForFormat(latest, "gallery_action")
+      setLocalCreationIntent(intent)
+      extrasRef.current = { ...extrasRef.current, format: latest, creationIntent: intent }
+      // The format and any required text choice are already committed. Mark this recovery pull
+      // as owned here so the general auto-pull effect cannot send a duplicate turn.
+      lastPulledFormatRef.current = latest
+      sendMessage({ text: "Continue with what we already created." })
+      return
+    }
+
+    if (session?.outputFormat !== latest) {
       setTextOverlayMode(null)
       setTextStyleChoice(null)
       setTextStyleAdjustments(null)
@@ -1225,7 +1248,15 @@ export function MayaConcierge({
       lastPulledFormatRef.current = null
       setOutputFormat(latest)
     }
-  }, [messages, isThinking, session, setOutputFormat])
+  }, [
+    messages,
+    isThinking,
+    sendMessage,
+    session,
+    setOutputFormat,
+    textOverlayMode,
+    textStyleChoice,
+  ])
 
   useEffect(() => {
     if (isThinking) return

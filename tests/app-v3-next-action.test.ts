@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest"
 
-import { recommendedGraphicTextStyle } from "@/lib/app-v3/maya/next-action"
+import {
+  recommendedGraphicTextStyle,
+  shouldContinueCompletedFormatSwitch,
+} from "@/lib/app-v3/maya/next-action"
 
 describe("Maya recommended next actions", () => {
   it("gives publishable graphic recommendations a text style automatically", () => {
@@ -20,5 +23,36 @@ describe("Maya recommended next actions", () => {
     expect(recommendedGraphicTextStyle("photo", null)).toBeNull()
     expect(recommendedGraphicTextStyle("photoshoot", null)).toBeNull()
     expect(recommendedGraphicTextStyle("video", null)).toBeNull()
+  })
+
+  it("continues a redundant set_format response after a recommended Stories handoff", () => {
+    expect(
+      shouldContinueCompletedFormatSwitch({
+        selectedFormat: "story-sequence",
+        switchedFormat: "story-sequence",
+        textMode: "with-text",
+        textStyleSelected: true,
+      })
+    ).toBe(true)
+  })
+
+  it("keeps real format changes and unfinished graphic choices on their visible gates", () => {
+    expect(
+      shouldContinueCompletedFormatSwitch({
+        selectedFormat: "reel-cover",
+        switchedFormat: "story-sequence",
+        textMode: "with-text",
+        textStyleSelected: true,
+      })
+    ).toBe(false)
+
+    expect(
+      shouldContinueCompletedFormatSwitch({
+        selectedFormat: "story-sequence",
+        switchedFormat: "story-sequence",
+        textMode: null,
+        textStyleSelected: false,
+      })
+    ).toBe(false)
   })
 })

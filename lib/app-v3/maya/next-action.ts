@@ -24,3 +24,34 @@ export function recommendedGraphicTextStyle(
     ? "cutout-editorial"
     : "editorial-serif-center"
 }
+
+/**
+ * Maya can occasionally call set_format after the client has already committed a recommended
+ * next format. That tool response is only an acknowledgement, so the client must continue the
+ * already-prepared workflow instead of waiting for the member to type a second instruction.
+ *
+ * A real format change still returns to its normal setup gate. Graphic formats also wait until
+ * their text choice is complete, which prevents a recovery turn from bypassing that decision.
+ */
+export function shouldContinueCompletedFormatSwitch({
+  selectedFormat,
+  switchedFormat,
+  textMode,
+  textStyleSelected,
+}: {
+  selectedFormat: OutputFormat | null
+  switchedFormat: OutputFormat
+  textMode: "with-text" | "without-text" | null
+  textStyleSelected: boolean
+}): boolean {
+  if (selectedFormat !== switchedFormat) return false
+
+  const graphicFormat =
+    switchedFormat === "reel-cover" ||
+    switchedFormat === "story-slide" ||
+    switchedFormat === "story-sequence" ||
+    switchedFormat === "carousel"
+  if (!graphicFormat) return true
+
+  return textMode === "without-text" || (textMode === "with-text" && textStyleSelected)
+}

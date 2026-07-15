@@ -60,6 +60,14 @@ describe("mid-thread format chip re-tap", () => {
     const effect = concierge.slice(start, concierge.indexOf("}, [messages", start))
     expect(effect).toContain("lastPulledFormatRef.current = null")
   })
+
+  it("automatically continues when Maya redundantly switches to the format already selected", () => {
+    const start = concierge.indexOf("Conversational format switching")
+    const effect = concierge.slice(start, concierge.indexOf("}, [messages", start))
+
+    expect(effect).toContain("shouldContinueCompletedFormatSwitch")
+    expect(effect).toContain('sendMessage({ text: "Continue with what we already created." })')
+  })
 })
 
 describe("gallery labels trust the stored format", () => {
