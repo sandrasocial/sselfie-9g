@@ -30,12 +30,18 @@ against a fixed golden set BEFORE it reaches members. No more "it felt off".
 2. A script (`scripts/maya-golden-run.ts`) that generates N=20+ images per brief through the
    REAL generate route against a QA account, saves outputs + compiled prompts + params to
    `output/golden/<date>/`, and prints a scoring sheet.
-3. Scoring: identity, lighting, composition, realism, prompt adherence, editorial feel,
-   emotional impact - 0-10 each, scored by Sandra (or the suite-ux auditor agent for a first
-   pass). Store scores as JSON next to the run.
+3. Scoring, two layers, 0-10 each, scored by Sandra (or the suite-ux auditor agent for a
+   first pass). Store scores as JSON next to the run.
+   - Technical: identity preservation, lighting realism, composition, realism, prompt
+     adherence.
+   - Brand (the real differentiator, weighted at least equally): looks like the same person,
+     looks editorial, feels premium, fits the member's brand, emotional impact, and the
+     decisive one: "would I actually post this?"
 4. Baseline: run once on the CURRENT frozen pipeline and commit the scores. Every proposed
    creative change reruns the suite and must match or beat baseline statistically (20+
-   generations, not one impression) before merge.
+   generations, not one impression) before merge. Rerun the baseline monthly even when the
+   repo is unchanged: hosted image models drift server-side, and the visual baseline is how
+   that drift gets caught instead of felt.
 5. Guardrails: QA account only (`orriaamodt@gmail.com`, excluded from analyses), never a real
    member; runs are attended; costs are visible in the script output before it starts.
 

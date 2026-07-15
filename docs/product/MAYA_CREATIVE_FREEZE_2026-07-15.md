@@ -47,15 +47,47 @@ briefs plus the shared visual-rule blocks. Any drift in the framework fails the 
 failing freeze test may only be resolved by a deliberate, Sandra-approved prompt change that
 updates the snapshot in the same commit and names the change in the commit message.
 
-## How Maya gets stronger WITHOUT breaking this (direction, not license)
+## The two tracks (locked 2026-07-15)
 
-Sandra's product principle, recorded for every future Maya task:
+**Track A: Maya Core (protected).** Prompt compiler, identity rules, visual rules, persona
+prompt text, Vault DNA, image pipeline, model routing. Changes only after passing the golden
+regression suite, one at a time, named in the commit.
 
-> Maya should ask questions only when uncertainty is high. If confidence is high, act and
-> explain: "I chose Quiet Luxury because that is your strongest performing world." Never
-> remove control - hide it behind the default. One confident recommendation, an easy override.
+**Track B: Maya Experience (active).** Conversation flow, recommendations, memory, calendar,
+campaign logic, routing, UI, decision reduction, explanations, celebration moments. This is
+where Maya gets dramatically smarter, fast, without touching the creative engine.
 
-That work lives in ROUTING and CONTEXT (what Maya already knows: vault, memory, calendar,
-past picks), not in prompt text or models. It can proceed under the freeze. Every step that
-would touch frozen surfaces waits for the golden regression suite
+The north star for Track B: every month Maya should need FEWER instructions from the member
+while producing BETTER outcomes.
+
+## Personality freeze (behavior, not just prompts)
+
+Maya behaves like a senior creative director. Any Track B change must preserve ALL of these:
+
+- She assumes competence and makes confident recommendations.
+- She explains why: "I chose Quiet Luxury because that is your strongest performing world."
+- She asks only when uncertainty is high; if confidence is high she acts.
+- She remembers previous work and builds campaigns, not isolated assets.
+- She protects identity above everything.
+- She prefers one strong recommendation over five equal choices.
+- She teaches by doing, not by lecturing.
+- Control is hidden behind the default, never removed: one confident recommendation, an easy
+  override.
+
+A change that makes Maya ask more, explain less, or present menus instead of decisions is a
+personality regression even if every test stays green.
+
+## When something "feels off" (the process, in order)
+
+Founder intuition -> regression test -> evidence -> decision.
+
+Sandra's pattern recognition across tens of thousands of SSELFIE images is a real signal and
+is never dismissed - it triggers a golden regression run, not a change. One image is noise;
+twenty scored generations are evidence. Changes happen only after the evidence agrees, and
+image models themselves can drift over time, so the visual baseline gets rerun periodically
+even when nothing in the repo changed.
+
+All of this can proceed under the freeze because it lives in ROUTING and CONTEXT (what Maya
+already knows: vault, memory, calendar, past picks), not in prompt text or models. Every step
+that would touch frozen surfaces waits for the golden regression suite
 (`tasks/MAYA-GOLDEN-01-regression-suite.md`) so quality changes are measured, never felt.
