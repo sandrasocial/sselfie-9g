@@ -9,12 +9,23 @@ describe("Calendar Phase A operational contracts", () => {
     expect(route).toContain("export const maxDuration = 300")
   })
 
-  it("claims, charges, refunds, and recovers bulk posts individually", () => {
+  it("charges bulk posts only after a prediction is stored, and recovers only abandoned claims", () => {
     const queue = read("lib/feed-planner/queue-images.ts")
+    // Atomic per-post claim.
     expect(queue).toContain("RETURNING id")
-    expect(queue).toContain("updated_at < NOW() - INTERVAL '10 minutes'")
+    // Money invariant: the charge is keyed to the STORED prediction id in both provider
+    // paths (charge-after-store), never before the provider call. This is what prevents
+    // taking a member's credits for an image that was never created.
     expect(queue).toContain("await deductCredits(")
-    expect(queue).toContain("await refundCredits(")
+    expect(queue).toContain("generation.predictionId,")
+    expect(queue).toContain("prediction.id,")
+    // Charge-after-store needs no refund path, and must not re-introduce a pre-charge.
+    expect(queue).not.toContain("refundCredits")
+    // Stuck-recovery resets only abandoned claims (no stored prediction) so a charged,
+    // in-flight prediction is never orphaned and double-charged on retry.
+    expect(queue).toContain("AND prediction_id IS NULL")
+    expect(queue).toContain("updated_at < NOW() - INTERVAL '10 minutes'")
+    // The old lump-sum end-of-loop deduction must not return.
     expect(queue).not.toContain("Deduct credits once for all successful generations")
   })
 

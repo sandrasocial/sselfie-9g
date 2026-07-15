@@ -1,6 +1,6 @@
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
-import { CREDIT_COSTS, checkCredits, deductCredits, getUserCredits, refundCredits } from "@/lib/credits"
+import { CREDIT_COSTS, checkCredits, deductCredits } from "@/lib/credits"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { generateWithNanoBanana } from "@/lib/nano-banana-client"
@@ -53,18 +53,22 @@ export async function queueAllImagesForFeed(
 
   console.log("[v0] Queueing images for feed layout:", feedLayoutId)
 
-  // A killed serverless function must not leave a post looking active forever. Recover
-  // abandoned claims first; the normal eligible-post query below may safely retry them.
+  // A killed serverless function must not leave a post looking active forever. Recover only
+  // ABANDONED CLAIMS: posts moved to 'generating' whose prediction was never stored (so the
+  // provider call never completed and - because credits are charged only after a prediction
+  // is stored - the member was never charged). Posts that DO hold a prediction_id are the
+  // polling route's responsibility; never reset them here, or a live/charged prediction would
+  // be orphaned and re-charged on retry.
   const recoveredPosts = await sql`
     UPDATE feed_posts
     SET generation_status = 'failed',
-        prediction_id = NULL,
         error = 'The previous generation timed out. It is ready to try again.',
         updated_at = NOW()
     WHERE feed_layout_id = ${feedLayoutId}
       AND user_id = ${neonUser.id}
       AND generation_status = 'generating'
       AND image_url IS NULL
+      AND prediction_id IS NULL
       AND updated_at < NOW() - INTERVAL '10 minutes'
     RETURNING id
   `
@@ -114,7 +118,6 @@ export async function queueAllImagesForFeed(
   if (!hasEnoughCredits) {
     throw new Error(`Insufficient credits. You need ${totalCreditsNeeded} credits (${proModePosts.length} Pro Mode × 2 + ${classicPosts.length} Classic × 1) to generate ${posts.length} images.`)
   }
-  const usesUnlimitedCreditBalance = (await getUserCredits(neonUser.id)) >= 999999
 
   // Only fetch model if we have Classic Mode posts (Pro Mode doesn't need custom model)
   let model: any = null
@@ -175,8 +178,6 @@ export async function queueAllImagesForFeed(
   for (let i = 0; i < posts.length; i++) {
     const post = posts[i]
     const creditCost = post.generation_mode === 'pro' ? getStudioProCreditCost('2K') : CREDIT_COSTS.IMAGE
-    const creditReferenceId = `feed-${feedLayoutId}-post-${post.id}-${Date.now()}`
-    let creditCharged = false
     try {
       // Atomic claim: only one request can move this eligible post into generation.
       const claimed = await sql`
@@ -199,19 +200,10 @@ export async function queueAllImagesForFeed(
         continue
       }
 
-      // Charge each post before provider work, then refund this exact reference if its
-      // provider call fails. This keeps credits and actual generation attempts aligned.
-      const deduction = await deductCredits(
-        neonUser.id,
-        creditCost,
-        'image',
-        `Feed Planner image (post ${post.position})`,
-        creditReferenceId,
-      )
-      if (!deduction.success) {
-        throw new Error(deduction.error || "Credit charge failed")
-      }
-      creditCharged = !usesUnlimitedCreditBalance
+      // Credits are charged AFTER the prediction is durably stored (each success path
+      // below), never before the provider call. A process death mid-post then leaves the
+      // member uncharged (the safe direction) instead of taking credits for an image that
+      // was never created, and a post that reaches the catch below was never charged.
 
       console.log(`[v0] ==================== GENERATING POST ${post.position} (${i + 1}/${posts.length}) ====================`)
       console.log(`[v0] Post ID: ${post.id}, Position: ${post.position}, Mode: ${post.generation_mode || 'classic'}`)
@@ -330,13 +322,22 @@ export async function queueAllImagesForFeed(
                 updated_at = NOW()
             WHERE id = ${post.id} AND user_id = ${neonUser.id}
           `
-          await sql`
-            UPDATE credit_transactions
-            SET reference_id = ${generation.predictionId}
-            WHERE user_id = ${neonUser.id}
-              AND reference_id = ${creditReferenceId}
-              AND transaction_type = 'image'
-          `
+          // Charge only now that the prediction is durably stored, keyed to the prediction
+          // itself. deductCredits no-ops for unlimited balances. If the charge fails we do
+          // NOT roll back a real prediction - the member keeps the image, the business
+          // absorbs the rare miss (the safe direction for member trust).
+          {
+            const proDeduction = await deductCredits(
+              neonUser.id,
+              creditCost,
+              'image',
+              `Feed Planner image (post ${post.position})`,
+              generation.predictionId,
+            )
+            if (!proDeduction.success) {
+              console.error(`[v0] ⚠️ Post ${post.position} generated but credit charge failed (delivery not blocked):`, proDeduction.error)
+            }
+          }
           
           console.log(`[v0] ✅ Successfully created Pro Mode prediction for post ${post.position}:`, generation.predictionId)
           results.push({
@@ -502,20 +503,27 @@ export async function queueAllImagesForFeed(
       // Update database with prediction ID
       await sql`
         UPDATE feed_posts
-        SET generation_status = 'generating', 
-            prediction_id = ${prediction.id}, 
-            prompt = ${finalPrompt}, 
+        SET generation_status = 'generating',
+            prediction_id = ${prediction.id},
+            prompt = ${finalPrompt},
             error = NULL,
             updated_at = NOW()
         WHERE id = ${post.id} AND user_id = ${neonUser.id}
       `
-      await sql`
-        UPDATE credit_transactions
-        SET reference_id = ${prediction.id}
-        WHERE user_id = ${neonUser.id}
-          AND reference_id = ${creditReferenceId}
-          AND transaction_type = 'image'
-      `
+      // Charge only now that the prediction is durably stored, keyed to the prediction
+      // itself (same safe ordering as the Pro path above).
+      {
+        const classicDeduction = await deductCredits(
+          neonUser.id,
+          creditCost,
+          'image',
+          `Feed Planner image (post ${post.position})`,
+          prediction.id,
+        )
+        if (!classicDeduction.success) {
+          console.error(`[v0] ⚠️ Post ${post.position} generated but credit charge failed (delivery not blocked):`, classicDeduction.error)
+        }
+      }
 
       console.log(`[v0] ✅ Successfully created prediction for post ${post.position}:`, prediction.id)
       results.push({
@@ -536,18 +544,9 @@ export async function queueAllImagesForFeed(
         stack: error instanceof Error ? error.stack : undefined,
       })
 
-      if (creditCharged) {
-        const refund = await refundCredits(
-          neonUser.id,
-          creditCost,
-          `Refund: Feed Planner post ${post.position} did not start`,
-          creditReferenceId,
-        )
-        if (!refund.success) {
-          console.error(`[v0] ❌ Credit refund failed for post ${post.id}:`, refund.error)
-        }
-      }
-
+      // No refund needed: credits are only charged after a prediction is durably stored,
+      // so any post that reaches this catch (provider call failed before store) was never
+      // charged.
       await sql`
         UPDATE feed_posts
         SET generation_status = 'failed',
