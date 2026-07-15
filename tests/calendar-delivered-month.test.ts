@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  deliveredMonthAdminOnly,
   deliveredMonthEnabled,
   parseCalendarPregenWeeklyCap,
   remainingWeeklyPregenAllowance,
@@ -12,6 +13,13 @@ describe("delivered month guardrails", () => {
     expect(deliveredMonthEnabled("false")).toBe(false)
     expect(deliveredMonthEnabled("TRUE")).toBe(false)
     expect(deliveredMonthEnabled("true")).toBe(true)
+  })
+
+  it("keeps the first activation limited to Sandra unless rollout is explicit", () => {
+    expect(deliveredMonthAdminOnly(undefined)).toBe(true)
+    expect(deliveredMonthAdminOnly("true")).toBe(true)
+    expect(deliveredMonthAdminOnly("TRUE")).toBe(true)
+    expect(deliveredMonthAdminOnly("false")).toBe(false)
   })
 
   it("defaults to ten and clamps unsafe weekly caps", () => {

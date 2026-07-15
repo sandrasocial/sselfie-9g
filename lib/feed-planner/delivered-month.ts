@@ -10,6 +10,13 @@ export function deliveredMonthEnabled(value?: string): boolean {
   return process.env.CALENDAR_DELIVERED_MONTH_ENABLED === "true"
 }
 
+export function deliveredMonthAdminOnly(
+  value = process.env.CALENDAR_DELIVERED_MONTH_ADMIN_ONLY,
+): boolean {
+  // First activation is Sandra-only. Wider rollout must be an explicit production decision.
+  return value !== "false"
+}
+
 export function parseCalendarPregenWeeklyCap(value = process.env.CALENDAR_PREGEN_WEEKLY_CAP): number {
   const parsed = Number.parseInt(value || "", 10)
   if (!Number.isFinite(parsed)) return DEFAULT_WEEKLY_CAP
@@ -35,6 +42,7 @@ type EligibleLayout = {
 }
 
 export async function hasDeliveredMonthAccess(userId: number | string): Promise<boolean> {
+  const memberRolloutEnabled = !deliveredMonthAdminOnly()
   const [row] = await sql`
     SELECT EXISTS (
       SELECT 1
@@ -42,7 +50,7 @@ export async function hasDeliveredMonthAccess(userId: number | string): Promise<
       WHERE u.id = ${userId}
         AND (
           u.role = 'admin'
-          OR EXISTS (
+          OR (${memberRolloutEnabled} AND EXISTS (
             SELECT 1
             FROM subscriptions s
             WHERE s.user_id = u.id
@@ -61,7 +69,7 @@ export async function hasDeliveredMonthAccess(userId: number | string): Promise<
                   AND s.trial_ends_at > NOW()
                 )
               )
-          )
+          ))
         )
     ) AS allowed
   `
@@ -85,10 +93,11 @@ export async function runDeliveredMonthTopUp(): Promise<{
 
   const periodMonth = currentPeriodMonth()
   const weeklyCap = parseCalendarPregenWeeklyCap()
+  const memberRolloutEnabled = !deliveredMonthAdminOnly()
   let remainingRunCapacity = parseRunCap()
 
-  // Admin is included so Sandra can validate the dark release on her own account. Everyone
-  // else must hold current membership access or the paid fixed 30-day bundle pass.
+  // Sandra can validate the dark release on her admin account first. Non-admin access stays
+  // closed until explicit rollout, then still requires membership or the fixed 30-day pass.
   const layouts = (await sql`
     SELECT
       fl.id AS feed_layout_id,
@@ -105,7 +114,7 @@ export async function runDeliveredMonthTopUp(): Promise<{
     WHERE fl.period_month = ${periodMonth}
       AND (
         u.role = 'admin'
-        OR EXISTS (
+        OR (${memberRolloutEnabled} AND EXISTS (
           SELECT 1
           FROM subscriptions s
           WHERE s.user_id = u.id
@@ -124,7 +133,7 @@ export async function runDeliveredMonthTopUp(): Promise<{
                 AND s.trial_ends_at > NOW()
               )
             )
-        )
+        ))
       )
       AND EXISTS (
         SELECT 1

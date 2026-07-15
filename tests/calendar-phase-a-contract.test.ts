@@ -76,6 +76,7 @@ describe("Calendar Phase A operational contracts", () => {
 
     expect(deliveredMonth).toContain('process.env.CALENDAR_DELIVERED_MONTH_ENABLED === "true"')
     expect(deliveredMonth).toContain("CALENDAR_PREGEN_WEEKLY_CAP")
+    expect(deliveredMonth).toContain("CALENDAR_DELIVERED_MONTH_ADMIN_ONLY")
     expect(deliveredMonth).toContain("DEFAULT_WEEKLY_CAP = 10")
     expect(cron).toContain("runDeliveredMonthTopUp")
   })
