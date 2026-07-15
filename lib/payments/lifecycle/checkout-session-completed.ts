@@ -616,6 +616,7 @@ export async function handleCheckoutSessionCompleted(
       source === "selfie_to_brand_shoot_paid" ||
       source === "work_with_me_paid" ||
       source === "one_selfie_launch" ||
+      source === "one_selfie_expired_fallback" ||
       productType === "selfie_visibility_bundle"
 
     if (!customerEmail) {
