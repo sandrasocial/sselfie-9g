@@ -779,11 +779,18 @@ export async function POST(request: NextRequest) {
       typeof body.conceptTitle === "string" && body.conceptTitle.trim()
         ? body.conceptTitle.trim().slice(0, 120)
         : String(label).trim().slice(0, 120) || `${format} concept`
+    // CREDIT-INTEGRITY-01: one requestRef ties this charge, every stored image, and any refund
+    // together (charge reference_id, ai_images prediction_id prefix, refund reference_id). The
+    // reconcile cron uses it to prove "charged but nothing reached her gallery" and return
+    // credits automatically, covering the paths no in-request catch can: Vercel killing the
+    // function at maxDuration, lost responses, and unexpected throws after the deduction.
+    const requestRef = `app-v3-gen-${neonUser.id}-${Date.now()}`
     const deduction = await deductCredits(
       neonUser.id,
       totalCost,
       "image",
-      `app-v3 ${format}: ${label}`
+      `app-v3 ${format}: ${label}`,
+      requestRef
     )
     if (!deduction.success) {
       return NextResponse.json(
@@ -795,13 +802,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const refundRef = `app-v3-fail-${neonUser.id}-${Date.now()}`
+    const refundRef = requestRef
+    // A swallowed refund failure keeps a member's money for nothing. Every refund goes through
+    // here so a failed refund is logged to the admin error log instead of vanishing.
+    const refundOrAlert = async (amount: number, reason: string, ref: string) => {
+      try {
+        const result = await refundCredits(neonUser.id, amount, reason, ref)
+        if (!result.success) throw new Error(result.error || "refund reported failure")
+      } catch (refundError) {
+        console.error("[app-v3 generate] refund failed:", reason, refundError)
+        void logAdminError({
+          toolName: "app-v3-generate-refund",
+          error: refundError,
+          context: { userId: neonUser.id, amount, reason, ref },
+        }).catch(() => {})
+      }
+    }
     const openaiApiKey = process.env.OPENAI_API_KEY
     if (!openaiApiKey) {
       console.error("[app-v3 generate] OPENAI_API_KEY is not set in this environment.")
-      await refundCredits(neonUser.id, totalCost, "OpenAI API key not configured", refundRef).catch(
-        () => {}
-      )
+      await refundOrAlert(totalCost, "OpenAI API key not configured", refundRef)
       return NextResponse.json(
         {
           error: "Image generation is temporarily unavailable. Please try again later.",
@@ -1029,7 +1049,7 @@ export async function POST(request: NextRequest) {
                 generation_status, source, category, created_at
               ) VALUES (
                 ${neonUser.id}, ${blob.url}, ${imageTitle}, ${null}, ${storedPrompt}, ${storedPrompt},
-                ${"app-v3-" + stamp + "-" + i}, 'completed', 'openai', ${format}, NOW()
+                ${requestRef + "-" + i}, 'completed', 'openai', ${format}, NOW()
               ) RETURNING id
             `
             return inserted[0]?.id ?? null
@@ -1181,12 +1201,7 @@ export async function POST(request: NextRequest) {
               })
             )
           } catch (err) {
-            await refundCredits(
-              neonUser.id,
-              totalCost,
-              "OpenAI generation failed",
-              refundRef
-            ).catch(() => {})
+            await refundOrAlert(totalCost, "OpenAI generation failed", refundRef)
             console.error("[app-v3 generate] Streaming generation failed:", err)
             import("@/lib/analytics/events")
               .then(({ logAnalyticsEvent }) =>
@@ -1307,9 +1322,7 @@ export async function POST(request: NextRequest) {
         buffers = await Promise.all(jobs.map(j => runJob(j)))
       }
     } catch (genError) {
-      await refundCredits(neonUser.id, totalCost, "OpenAI generation failed", refundRef).catch(
-        () => {}
-      )
+      await refundOrAlert(totalCost, "OpenAI generation failed", refundRef)
       // Failures were console-only before, so member-facing failure rates were invisible.
       const failureReason = isContentPolicyError(genError) ? "content_policy" : "generation_failed"
       import("@/lib/analytics/events")
@@ -1352,7 +1365,7 @@ export async function POST(request: NextRequest) {
     try {
       persisted = await persistBuffers(buffers)
     } catch (blobError) {
-      await refundCredits(neonUser.id, totalCost, "Blob upload failed", refundRef).catch(() => {})
+      await refundOrAlert(totalCost, "Blob upload failed", refundRef)
       console.error("[app-v3 generate] Blob upload failed:", blobError)
       return NextResponse.json(
         { error: "Failed to save image. Please try again." },
@@ -1362,10 +1375,22 @@ export async function POST(request: NextRequest) {
 
     const imageUrls = persisted.map(p => p.url)
     if (imageUrls.length === 0) {
-      await refundCredits(neonUser.id, totalCost, "No images saved", refundRef).catch(() => {})
+      await refundOrAlert(totalCost, "No images saved", refundRef)
       return NextResponse.json(
         { error: "Failed to save image. Please try again." },
         { status: 500 }
+      )
+    }
+
+    // CREDIT-INTEGRITY-01: an image whose gallery insert failed (id null) exists in Blob but is
+    // invisible to her once this response is gone. Return those credits right away instead of
+    // charging for value she cannot reach. The admin error log already has the insert failure.
+    const missingFromGallery = persisted.filter(p => p.id === null).length
+    if (missingFromGallery > 0) {
+      await refundOrAlert(
+        CREDIT_COSTS.IMAGE * missingFromGallery,
+        `${missingFromGallery} of ${imageCount} images never reached the gallery`,
+        `${refundRef}-partial`
       )
     }
 
@@ -1502,12 +1527,7 @@ export async function POST(request: NextRequest) {
           const failedBakes = bakedImageUrls.filter(url => url === null).length
           if (failedBakes > 0) {
             // Refund only the failed legs: those images fall back to clean + copy suggestions.
-            await refundCredits(
-              neonUser.id,
-              CREDIT_COSTS.IMAGE * failedBakes,
-              "Auto text bake failed",
-              bakeRefundRef
-            ).catch(() => {})
+            await refundOrAlert(CREDIT_COSTS.IMAGE * failedBakes, "Auto text bake failed", bakeRefundRef)
             import("@/lib/analytics/events")
               .then(({ logAnalyticsEvent }) =>
                 logAnalyticsEvent({

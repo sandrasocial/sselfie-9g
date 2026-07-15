@@ -1906,6 +1906,43 @@ export function MayaConcierge({
     }
   }
 
+  // CREDIT-INTEGRITY-01: a full shoot runs 2 to 4 minutes on the server. On mobile the
+  // connection often drops first, the server finishes anyway, and the photos land in her
+  // gallery while the old code told her "failed" and let her pay for retry after retry.
+  // After a lost response we watch the gallery for the set before ever claiming failure.
+  async function recoverPhotoshootFromGallery(
+    startedAtMs: number,
+    expectedCount: number
+  ): Promise<string[] | null> {
+    const needed = Math.min(6, expectedCount)
+    // small allowance for client/server clock skew
+    const cutoff = startedAtMs - 2 * 60 * 1000
+    for (let attempt = 0; attempt < 15; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 20_000))
+      try {
+        const res = await fetch("/api/app-v3/gallery", { cache: "no-store" })
+        if (!res.ok) continue
+        const data = (await res.json().catch(() => null)) as {
+          assets?: Array<{ kind?: string; contentType?: string; url?: string; createdAt?: string }>
+        } | null
+        const fresh = (data?.assets || []).filter(
+          asset =>
+            asset.kind === "image" &&
+            asset.contentType === "photoshoot" &&
+            typeof asset.url === "string" &&
+            asset.url &&
+            Date.parse(asset.createdAt || "") >= cutoff
+        )
+        if (fresh.length >= needed) {
+          return fresh.slice(0, Math.max(expectedCount, needed)).map(asset => asset.url as string)
+        }
+      } catch {
+        // offline or transient: keep waiting, the server may still be finishing the shoot
+      }
+    }
+    return null
+  }
+
   async function generatePhotoshootSet(key: string, concepts: ConceptCardData[]) {
     if (!referenceSelfieUrl) {
       trackRecoveryShown("photoshoot", "missing_selfie")
@@ -1927,6 +1964,9 @@ export function MayaConcierge({
     if (inFlightGenerationKeysRef.current.has(key)) return
     inFlightGenerationKeysRef.current.add(key)
     setGenState(s => ({ ...s, [key]: { status: "generating" } }))
+    const shootStartedAt = Date.now()
+    // true once we parsed a real server reply; false means the response was lost in transit
+    let gotServerVerdict = false
     try {
       const res = await fetch("/api/app-v3/maya/generate", {
         method: "POST",
@@ -1954,6 +1994,7 @@ export function MayaConcierge({
         current?: number
         newBalance?: number
       } | null
+      gotServerVerdict = data !== null
       if (res.status === 402 || data?.code === "insufficient_credits") {
         setGenState(s => ({ ...s, [key]: { status: "idle" } }))
         trackRecoveryShown("photoshoot", "insufficient_credits")
@@ -1987,6 +2028,31 @@ export function MayaConcierge({
       trackGenerationCompleted("photoshoot", "photoshoot_set")
       showTrialCapIfDepleted(data?.newBalance)
     } catch (e) {
+      if (!gotServerVerdict) {
+        // No server reply reached us. The shoot is usually still finishing: keep the card in
+        // its working state and watch the gallery for the set instead of claiming failure.
+        const recovered = await recoverPhotoshootFromGallery(shootStartedAt, shootConcepts.length)
+        if (recovered && recovered.length > 0) {
+          setGenState(s => ({
+            ...s,
+            [key]: { status: "done", imageUrls: recovered },
+          }))
+          setGeneratedOnce(true)
+          recordCompletedRender("photoshoot", recovered.length, "Full photoshoot")
+          trackGenerationCompleted("photoshoot", "photoshoot_set_recovered")
+          return
+        }
+        trackRecoveryShown("photoshoot", "lost_response")
+        setGenState(s => ({
+          ...s,
+          [key]: {
+            status: "error",
+            error:
+              "The connection dropped. If your photos finished, they are in your gallery. Any credits for photos that never arrived come back on their own within minutes.",
+          },
+        }))
+        return
+      }
       trackRecoveryShown("photoshoot", "exception")
       setGenState(s => ({
         ...s,

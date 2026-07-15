@@ -3,6 +3,7 @@ import { createCronLogger } from "@/lib/cron-logger"
 import { reconcileProPhotoshootGrids } from "@/lib/generation/reconcile-pro-photoshoot-grids"
 import { reconcileFeedPosts } from "@/lib/generation/reconcile-feed-posts"
 import { reconcileAiImages } from "@/lib/generation/reconcile-ai-images"
+import { reconcileAppV3GenerationCredits } from "@/lib/generation/reconcile-app-v3-credits"
 
 function parsePositiveInt(value: string | undefined, fallback: number): number {
   const parsed = Number.parseInt(value || "", 10)
@@ -43,6 +44,14 @@ export async function GET(request: Request) {
       minAgeMinutes: parsePositiveInt(process.env.RECONCILE_PRO_PHOTOSHOOT_MIN_AGE_MIN, 1),
     })
 
+    // CREDIT-INTEGRITY-01: every invocation, return credits for app-v3 generation charges
+    // whose images never reached the gallery (function killed at maxDuration, crash after
+    // deduction, failed refund write). Cheap: one ledger scan bounded by limit + age window.
+    const creditSummary = await reconcileAppV3GenerationCredits({
+      limit: parsePositiveInt(process.env.RECONCILE_APP_V3_CREDITS_LIMIT, 50),
+      minAgeMinutes: parsePositiveInt(process.env.RECONCILE_APP_V3_CREDITS_MIN_AGE_MIN, 15),
+    })
+
     let feedSummary: Awaited<ReturnType<typeof reconcileFeedPosts>> | null = null
     let aiSummary: Awaited<ReturnType<typeof reconcileAiImages>> | null = null
 
@@ -63,6 +72,7 @@ export async function GET(request: Request) {
       mode: shouldRunFeedAndAi ? "full" : "pro-only",
       minuteUtc: minute,
       proSummary,
+      creditSummary,
       feedSummary,
       aiSummary,
     }
