@@ -20,19 +20,29 @@ No-Fake psychology doctrine, design system.
    Redo limits live in policy/support, not on the sales page.
    (Sandra also approved the rest of this sheet as drafted the same day — items 2-12 may be
    implemented with the draft wording below; she may still refine exact words before flag-on.)
-2. **Hero copy — FINAL RECOMMENDED SET (2026-07-15 evening, post behavior analysis + swap
-   test; Sandra locks the words):**
-   - Eyebrow: **"For women building something of their own"** (qualifier slot — the
-     Constitution's phrase; emotion lives in the lines below, not the label).
-   - H1 stays: **"Give Maya one selfie. Leave with your next campaign."** (mechanism-first,
-     passes the swap test — no competitor can say it.)
-   - Subline (replaces "For women who already have something to sell…"): **"For the woman
-     who knows what she's building and still freezes when it's time to post. One selfie
-     becomes the reel, the posts, the photos, the Stories, and the plan."**
-   Rationale: qualifier = direction (the behavior data), emotion = the freeze moment (her
-   proven content territory), mechanism = one-selfie-in (ownable). Never use "promote" as
-   the selling verb in customer copy; the buyer wants to build, show up, be recognized.
-   Claims stay line-checkable: one campaign, never "months of content."
+2. **Hero copy — FINAL, copy iteration CLOSED 2026-07-15 night (round 3; further changes
+   only from live buyer data). Sandra locks the words:**
+   - Eyebrow: **"For women building something of their own"** — KEPT as a qualifier by
+     design. The eyebrow is a 10px label; the scroll-stopping happens in the reel/hooks
+     before she ever lands here, and the H1 carries the page. Its one job: "am I in the
+     right place?" Division of labor, not a missed emotion.
+   - H1 stays: **"Give Maya one selfie. Leave with your next campaign."**
+   - Subline v2 — destination first, freeze as recognition, itemization moved OUT (the
+     what-you-get panel below the fold carries it): **"For the woman who knows what she's
+     building and freezes when it's time to post. One selfie becomes the campaign that
+     finally makes you visible for it."**
+   Rules unchanged: never "promote" as the selling verb; claims line-checkable (one
+   campaign, never "months of content"); itemized list stays structurally on the page
+   (it is what separates $97 from template packs) — it just doesn't live in the subline.
+2b. **The "Sandra checks" panel goes first-person — the human layer is the premium.**
+   Replace the third panel's body with a signed line: **"I look at every image before it
+   reaches you. If you don't recognize yourself in a photo, I redo it. Your campaign lands
+   within 48 hours. · Sandra"** (Most AI tools are upload, generate, good luck. A named
+   human who checks the work is the reassurance buyers at $97 are actually paying for —
+   say it in her voice, not in feature language.)
+2c. **One emotional anchor line above the final CTA** (the transformation, Constitution-
+   true): **"This was never about creating more content. It's about finally becoming
+   visible for what you're building."**
 3. **"five-day order" → "five-day plan" everywhere.** "Order" collides with purchase-order.
    Appears: landing subline ("five-day order for one promotion"), delivery email ("the
    five-day order Maya prepared"), buyer page section header ("Your five-day order"). The
