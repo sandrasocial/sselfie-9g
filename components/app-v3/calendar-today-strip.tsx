@@ -49,7 +49,7 @@ export function CalendarTodayStrip() {
     return (
       <div className="mx-auto max-w-6xl px-3 pt-4 sm:px-6">
         <div className="rounded-[14px] border border-border/50 bg-card px-5 py-4 shadow-sm">
-          {/* DRAFT copy for Sandra approval before the flag is enabled. */}
+          {/* Sandra-approved copy, 2026-07-15. */}
           <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Today</p>
           <p className="mt-2 font-serif text-[20px] font-light text-foreground">Nothing ready today</p>
           <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
@@ -136,7 +136,7 @@ export function CalendarTodayStrip() {
             />
           </div>
           <div className="flex min-w-0 flex-col p-5 sm:p-7">
-            {/* DRAFT copy for Sandra approval before the flag is enabled. */}
+            {/* Sandra-approved copy, 2026-07-15. */}
             <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
               {post.isToday ? "Today" : "Next ready post"}
             </p>

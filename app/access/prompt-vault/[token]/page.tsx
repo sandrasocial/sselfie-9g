@@ -31,8 +31,8 @@ import { getPublishedVaultCollections, toAestheticId } from "@/lib/vault/publish
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
 
-// DRAFT copy for Sandra's exact-word approval before merge.
-const MEMBER_ACTION_DRAFT_COPY = {
+// Sandra-approved member action copy, 2026-07-15.
+const MEMBER_ACTION_COPY = {
   openInMaya: "Open in Maya",
   copyText: "Copy text",
   copyTextAria: "Copy prompt text to clipboard",
@@ -329,7 +329,7 @@ function PromptActions({
   return (
     <div className="pva-member-actions">
       <Link href={buildAppV3AestheticHref(aestheticId)} className="pva-member-open-maya">
-        {MEMBER_ACTION_DRAFT_COPY.openInMaya}
+        {MEMBER_ACTION_COPY.openInMaya}
       </Link>
       <div className="pva-member-copy">
         <CopyButton
@@ -338,8 +338,8 @@ function PromptActions({
           promptNumber={card.number}
           trackEvent="prompt_vault_prompt_copied"
           trackSource="prompt-vault"
-          label={MEMBER_ACTION_DRAFT_COPY.copyText}
-          ariaLabel={MEMBER_ACTION_DRAFT_COPY.copyTextAria}
+          label={MEMBER_ACTION_COPY.copyText}
+          ariaLabel={MEMBER_ACTION_COPY.copyTextAria}
         />
       </div>
     </div>
@@ -794,7 +794,7 @@ export default async function PromptVaultAccessPage({
         title="You've done it the manual way."
         body="Maya already knows every look in this Vault. Inside SSELFIE SUITE, she works from your real selfies and creates your brand shoots for you. No more pasting prompts and hoping the result still looks like you. You pick the vibe, she does the rest, and it looks like you because it's made from you."
         ctaLabel={
-          viewerAccess.isActiveMember ? MEMBER_ACTION_DRAFT_COPY.suiteDoor : "See SSELFIE SUITE"
+          viewerAccess.isActiveMember ? MEMBER_ACTION_COPY.suiteDoor : "See SSELFIE SUITE"
         }
         href={
           viewerAccess.isActiveMember

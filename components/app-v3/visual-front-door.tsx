@@ -37,8 +37,8 @@ const MAYA_GENERAL: Aesthetic = {
     "A general SSELFIE editorial brand session. Help her decide the look from her brand, then create.",
 }
 
-// DRAFT copy for Sandra's exact-word approval before merge.
-const MAYA_ARRIVAL_DRAFT_COPY = {
+// Sandra-approved arrival copy, 2026-07-15.
+const MAYA_ARRIVAL_COPY = {
   vaultPicker: "Pick from your Vault instead",
   preSelfieChat: "Have a question first? Ask Maya",
 } as const
@@ -436,7 +436,7 @@ export function VisualFrontDoor({
               onClick={openPreSelfieChat}
               className="mx-auto mt-4 flex min-h-11 items-center px-3 text-[12px] text-[color:var(--ss-davy)] underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]"
             >
-              {MAYA_ARRIVAL_DRAFT_COPY.preSelfieChat}
+              {MAYA_ARRIVAL_COPY.preSelfieChat}
             </button>
           )}
         </div>
@@ -542,7 +542,7 @@ export function VisualFrontDoor({
                 onClick={openVaultPicker}
                 className="mt-3 inline-flex min-h-11 items-center text-[12px] text-[color:var(--ss-davy)] underline underline-offset-4 transition-colors hover:text-[color:var(--ss-night)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]"
               >
-                {MAYA_ARRIVAL_DRAFT_COPY.vaultPicker}
+                {MAYA_ARRIVAL_COPY.vaultPicker}
               </button>
             )}
           </section>
