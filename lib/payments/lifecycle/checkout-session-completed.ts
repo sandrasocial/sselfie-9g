@@ -372,6 +372,9 @@ export async function handleCheckoutSessionCompleted(
 ): Promise<Response | void> {
   const session = event.data.object as Stripe.Checkout.Session
   const metadata = session.metadata ?? {}
+  const initialProductType = resolveCheckoutProductType(metadata)
+  const isCampaignOutcome = initialProductType === "campaign_outcome"
+  const isCampaignTestEvent = isCampaignOutcome && !event.livemode
   let expandedSession: any | null = null
   const getExpandedSession = async () => {
     if (expandedSession) {
@@ -409,7 +412,7 @@ export async function handleCheckoutSessionCompleted(
 
   const customerEmail =
     session.customer_details?.email || session.customer_email || session.metadata?.customer_email
-  if (customerEmail) {
+  if (customerEmail && !isCampaignTestEvent) {
     try {
       await persistCheckoutAttributionContact({
         sessionId: session.id,
@@ -425,7 +428,7 @@ export async function handleCheckoutSessionCompleted(
       )
     }
   }
-  if (customerEmail) {
+  if (customerEmail && !isCampaignOutcome) {
     try {
       const firstName = getFirstNameForEmail({
         fullName: session.customer_details?.name,
@@ -663,6 +666,70 @@ export async function handleCheckoutSessionCompleted(
       customerEmail,
       description: productType ? `Checkout payment - ${productType}` : "Checkout session payment",
     })
+
+    // CAMPAIGN-OUTCOME-01 is deliberately guest-safe and isolated from the legacy
+    // account, entitlement, credit, marketing, and referral pipeline. Stripe money
+    // must be recorded before its private order can be fulfilled.
+    if (productType === "campaign_outcome") {
+      if (!revenueRecord.recorded) {
+        await flagForReview({
+          stripeEventId: event.id,
+          eventType: event.type,
+          sessionId: session.id,
+          customerEmail,
+          productType,
+          amountCents: session.amount_total ?? null,
+          currency: session.currency ?? null,
+          reason: "processing_error",
+          rawMetadata: session.metadata as Record<string, unknown>,
+          notes: "Campaign payment could not be written to stripe_payments. Fulfillment was stopped so Stripe can retry.",
+        })
+        throw new Error(`Campaign revenue recording failed for ${session.id}`)
+      }
+
+      if (isPaymentPaid) {
+        const currency = String(session.currency || "").toLowerCase()
+        if (session.amount_total !== 9700 || currency !== "usd") {
+          await flagForReview({
+            stripeEventId: event.id,
+            eventType: event.type,
+            sessionId: session.id,
+            customerEmail,
+            productType,
+            amountCents: session.amount_total ?? null,
+            currency: session.currency ?? null,
+            reason: "processing_error",
+            rawMetadata: session.metadata as Record<string, unknown>,
+            notes: `Campaign checkout expected USD 9700 but received ${currency || "missing currency"} ${session.amount_total ?? "missing amount"}. Fulfillment was stopped.`,
+          })
+          throw new Error(`Unexpected campaign amount or currency for ${session.id}`)
+        }
+      }
+
+      // Load this isolated fulfillment path only for campaign purchases. This
+      // keeps unrelated checkout handlers independent of campaign-only modules.
+      const { handleCampaignOutcomeCheckout } =
+        await import("@/lib/payments/handlers/campaign-outcome")
+      await handleCampaignOutcomeCheckout({
+        event,
+        session,
+        isPaymentPaid,
+        customerEmail,
+        userId: null,
+        referralPurchaseUserId: null,
+        source,
+      })
+
+      await markEventProcessed("stripe", event.id).catch(statusError => {
+        console.error("[v0] Failed to mark Stripe webhook event processed:", statusError)
+      })
+      return NextResponse.json({
+        received: true,
+        recorded: true,
+        product_type: productType,
+        fulfilled_without_user: isPaymentPaid,
+      })
+    }
 
     if (!productType) {
       console.error(`[v0] ⚠️ WARNING: product_type is missing from session metadata!`)

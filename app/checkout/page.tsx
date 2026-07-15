@@ -47,6 +47,7 @@ function checkoutAttributionProperties(searchParams: URLSearchParams) {
 }
 
 function getPaymentEntryEvent(productType: string): string {
+  if (productType === "campaign_outcome") return "campaign_checkout_start"
   if (productType === "prompt_vault") return "prompt_vault_checkout_payment_entry_shown"
   if (productType === "starter_kit") return "starter_kit_checkout_payment_entry_shown"
   if (productType === "masterclass") return "masterclass_checkout_payment_entry_shown"
@@ -133,6 +134,15 @@ const CHECKOUT_COPY: Record<
       "One $97 payment gives you five tools for life, plus 30 days of SUITE with Maya and 200 credits. No subscription.",
     footer: "Your bundle access is delivered right after payment. Nothing renews.",
   },
+  // DRAFT COPY: Sandra must approve before CAMPAIGN_OUTCOME_DISABLED is opened.
+  campaign_outcome: {
+    heroTitle: "Your next campaign starts here",
+    heroBody: "One selfie and one thing to promote. Maya prepares the three posts for you.",
+    heading: "Your Next Campaign",
+    blurb:
+      "One $97 payment. You receive three coordinated posts with finished visuals, captions, calls to action, and the order to publish them.",
+    footer: "One-time payment. No subscription. Delivery within 48 hours after your intake is complete.",
+  },
   sselfie_studio_membership: {
     heroTitle: "Join SSELFIE SUITE",
     heroBody: "Maya helps you turn your face, story, and ideas into photos, covers, captions, and posts.",
@@ -197,6 +207,12 @@ const CHECKOUT_CONFIDENCE_POINTS: Record<string, string[]> = {
     "No subscription or automatic renewal",
     "Five tools stay yours for life",
     "30 days of SUITE with 200 credits",
+  ],
+  campaign_outcome: [
+    "One-time $97 purchase",
+    "Three finished posts: attention, trust, and offer",
+    "Still-you visuals with Sandra quality control",
+    "No subscription or AI to learn",
   ],
 }
 

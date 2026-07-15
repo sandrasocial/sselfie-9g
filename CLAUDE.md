@@ -1,5 +1,5 @@
 # SSELFIE Operational Memory
-*Last updated: 2026-07-13 — Read this at the start of every session*
+*Last updated: 2026-07-14 — Read this at the start of every session*
 
 ---
 
@@ -131,6 +131,19 @@ about three hours after an identified bundle checkout starts, only while the off
 rechecks Stripe immediately before sending and suppresses completed buyers and active SUITE
 members. The three launch broadcasts remain drafts and must be approved at their attended send
 times.
+
+### Held post-event product (do not deploy before July 15 at 18:05 CEST)
+
+`Your Next Campaign` is implemented on the held `codex/campaign-outcome-held` branch from the
+binding contract `docs/business/ONE_SELFIE_WEEK_OUTCOME_TEST_2026-07-16.md`. It is a $97 one-time,
+guest-safe outcome: one selfie plus what she sells and promotes becomes exactly three coordinated
+posts, then stops in Admin for Sandra's founding-batch quality check before delivery. It creates no
+account, credits, trial, Academy entitlement, or subscription. Paid repeat behavior is measured;
+no subscription is offered at delivery.
+
+The public feature fails closed unless `CAMPAIGN_OUTCOME_DISABLED=false`. Customer copy remains
+DRAFT until Sandra approves it. Exact release and ManyChat instructions:
+`docs/business/CAMPAIGN_OUTCOME_RUNBOOK_2026-07-15.md`.
 
 For any timed launch, flash offer, sales-page audit, checkout review, email sequence, ManyChat flow,
 or paid-ads decision, use the local read-only Claude agent

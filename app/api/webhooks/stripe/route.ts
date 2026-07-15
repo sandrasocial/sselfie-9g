@@ -112,7 +112,8 @@ export async function POST(request: NextRequest) {
 
   try {
     switch (event.type) {
-      case "checkout.session.completed": {
+      case "checkout.session.completed":
+      case "checkout.session.async_payment_succeeded": {
         const response = await handleCheckoutSessionCompleted(event)
         if (response) return response
         break

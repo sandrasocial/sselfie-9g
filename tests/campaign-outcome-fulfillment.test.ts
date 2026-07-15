@@ -1,0 +1,301 @@
+// @vitest-environment node
+
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+const sqlMock = vi.hoisted(() => vi.fn())
+const sendEmailMock = vi.hoisted(() => vi.fn())
+const updateContactTagsMock = vi.hoisted(() => vi.fn())
+const analyticsMock = vi.hoisted(() => vi.fn())
+const generateObjectMock = vi.hoisted(() => vi.fn())
+const generateImageMock = vi.hoisted(() => vi.fn())
+const putMock = vi.hoisted(() => vi.fn())
+
+vi.mock("server-only", () => ({}))
+vi.mock("@/lib/db/client", () => ({ sql: sqlMock }))
+vi.mock("@/lib/email/send-email", () => ({ sendEmail: sendEmailMock }))
+vi.mock("@/lib/resend/manage-contact", () => ({ updateContactTags: updateContactTagsMock }))
+vi.mock("@/lib/analytics/events", () => ({ logAnalyticsEvent: analyticsMock }))
+vi.mock("ai", () => ({ generateObject: generateObjectMock }))
+vi.mock("@/lib/feed-planner/openai-image", () => ({
+  generateFeedImageWithOpenAI: generateImageMock,
+}))
+vi.mock("@vercel/blob", () => ({ put: putMock }))
+vi.mock("@/lib/maya/openrouter", () => ({ createMayaOpenRouterModel: vi.fn(() => "mock-model") }))
+
+function queryText(call: unknown[]) {
+  const strings = call[0] as TemplateStringsArray
+  return Array.isArray(strings) ? strings.join(" ") : String(strings)
+}
+
+describe("campaign outcome payment fulfillment", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (query.includes("INSERT INTO campaign_orders"))
+        return [{ id: 41, access_token: "t".repeat(43) }]
+      return []
+    })
+    sendEmailMock.mockResolvedValue({ success: true, messageId: "email_1" })
+    updateContactTagsMock.mockResolvedValue({ success: true })
+    analyticsMock.mockResolvedValue({ ok: true })
+  })
+
+  it("creates one guest-safe private order and sends one intake email for a live paid session", async () => {
+    const { handleCampaignOutcomeCheckout } =
+      await import("@/lib/payments/handlers/campaign-outcome")
+    await handleCampaignOutcomeCheckout({
+      event: { livemode: true } as any,
+      session: {
+        id: "cs_campaign_1",
+        amount_total: 9700,
+        currency: "usd",
+        payment_intent: "pi_campaign_1",
+        customer: "cus_campaign_1",
+        customer_details: { email: "buyer@example.com", name: "Buyer Name" },
+        metadata: {},
+      } as any,
+      isPaymentPaid: true,
+      customerEmail: "buyer@example.com",
+      userId: null,
+      referralPurchaseUserId: null,
+      source: "campaign_outcome_paid",
+    })
+
+    const insert = sqlMock.mock.calls.find(call =>
+      queryText(call).includes("INSERT INTO campaign_orders")
+    )
+    expect(insert).toBeTruthy()
+    expect(queryText(insert!)).toContain("ON CONFLICT (stripe_session_id) DO NOTHING")
+    expect(sendEmailMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "buyer@example.com",
+        emailType: "campaign_outcome_intake",
+        idempotencyKey: "campaign-outcome-intake:cs_campaign_1",
+        text: expect.stringContaining("/campaign/order/"),
+      })
+    )
+    expect(analyticsMock).toHaveBeenCalledWith(
+      expect.objectContaining({ eventName: "campaign_purchase" })
+    )
+  })
+
+  it("keeps a Stripe test order for dry-run proof but sends no customer email", async () => {
+    const { handleCampaignOutcomeCheckout } =
+      await import("@/lib/payments/handlers/campaign-outcome")
+    await handleCampaignOutcomeCheckout({
+      event: { livemode: false } as any,
+      session: {
+        id: "cs_test_campaign",
+        amount_total: 9700,
+        currency: "usd",
+        payment_intent: "pi_test_campaign",
+        customer_details: { email: "qa@example.com" },
+        metadata: {},
+      } as any,
+      isPaymentPaid: true,
+      customerEmail: "qa@example.com",
+      userId: null,
+      referralPurchaseUserId: null,
+      source: "campaign_outcome_paid",
+    })
+
+    expect(
+      sqlMock.mock.calls.some(call => queryText(call).includes("INSERT INTO campaign_orders"))
+    ).toBe(true)
+    expect(sendEmailMock).not.toHaveBeenCalled()
+    expect(updateContactTagsMock).not.toHaveBeenCalled()
+  })
+
+  it("does nothing when payment is not confirmed", async () => {
+    const { handleCampaignOutcomeCheckout } =
+      await import("@/lib/payments/handlers/campaign-outcome")
+    await handleCampaignOutcomeCheckout({
+      event: { livemode: true } as any,
+      session: { id: "cs_unpaid" } as any,
+      isPaymentPaid: false,
+      customerEmail: "buyer@example.com",
+      userId: null,
+      referralPurchaseUserId: null,
+      source: "campaign_outcome_paid",
+    })
+    expect(sqlMock).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
+  })
+
+  it("rejects a paid session that is not exactly $97 USD", async () => {
+    const { handleCampaignOutcomeCheckout } = await import("@/lib/payments/handlers/campaign-outcome")
+    await expect(handleCampaignOutcomeCheckout({
+      event: { livemode: true } as any,
+      session: {
+        id: "cs_wrong_campaign_amount",
+        amount_total: 9600,
+        currency: "usd",
+        customer_details: { email: "buyer@example.com" },
+        metadata: {},
+      } as any,
+      isPaymentPaid: true,
+      customerEmail: "buyer@example.com",
+      userId: null,
+      referralPurchaseUserId: null,
+      source: "campaign_outcome_paid",
+    })).rejects.toThrow("expected USD 9700")
+    expect(sqlMock).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
+  })
+
+  it("retries the private intake email when Stripe retries after an earlier email failure", async () => {
+    sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (query.includes("INSERT INTO campaign_orders")) return []
+      if (query.includes("FROM campaign_orders") && query.includes("stripe_session_id")) {
+        return [
+          {
+            id: 42,
+            access_token: "r".repeat(43),
+            source_order_id: null,
+            intake_email_sent_at: null,
+          },
+        ]
+      }
+      return []
+    })
+
+    const { handleCampaignOutcomeCheckout } =
+      await import("@/lib/payments/handlers/campaign-outcome")
+    await handleCampaignOutcomeCheckout({
+      event: { livemode: true } as any,
+      session: {
+        id: "cs_campaign_retry",
+        amount_total: 9700,
+        currency: "usd",
+        payment_intent: "pi_campaign_retry",
+        customer_details: { email: "buyer@example.com", name: "Buyer Name" },
+        metadata: {},
+      } as any,
+      isPaymentPaid: true,
+      customerEmail: "buyer@example.com",
+      userId: null,
+      referralPurchaseUserId: null,
+      source: "campaign_outcome_paid",
+    })
+
+    expect(sendEmailMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyKey: "campaign-outcome-intake:cs_campaign_retry",
+        text: expect.stringContaining(`/campaign/order/${"r".repeat(43)}`),
+      })
+    )
+    expect(
+      sqlMock.mock.calls.some(call => queryText(call).includes("intake_email_sent_at = COALESCE"))
+    ).toBe(true)
+    expect(analyticsMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ eventName: "campaign_purchase" })
+    )
+  })
+})
+
+describe("campaign outcome Maya generation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (
+        query.includes("status = 'generating'") &&
+        query.includes("RETURNING id, customer_email")
+      ) {
+        return [
+          {
+            id: 51,
+            customer_email: "buyer@example.com",
+            selfie_url: "https://example.com/selfie.jpg",
+            what_she_sells: "A practical business course",
+            promotion: "The September group",
+            platform: "Instagram",
+          },
+        ]
+      }
+      if (query.includes("status = 'needs_qa'")) return [{ id: 51 }]
+      return []
+    })
+    generateObjectMock.mockResolvedValue({
+      object: {
+        visualDirection: "A clean editorial direction grounded in her real business.",
+        firstPostReason: "it introduces the problem before making the offer",
+        posts: ["attention", "trust", "offer"].map(role => ({
+          role,
+          headline: `${role} headline`,
+          caption: `A useful ${role} caption with enough simple words to publish today.`,
+          cta: "Use your real link or keyword here.",
+          visualPrompt: `A realistic editorial ${role} portrait. Use exact facial features from the reference image.`,
+          whyThisPost: `This ${role} post has one clear job in the campaign.`,
+        })),
+      },
+    })
+    generateImageMock.mockResolvedValue(Buffer.from("png"))
+    putMock
+      .mockResolvedValueOnce({ url: "https://blob/attention.png" })
+      .mockResolvedValueOnce({ url: "https://blob/trust.png" })
+      .mockResolvedValueOnce({ url: "https://blob/offer.png" })
+    analyticsMock.mockResolvedValue({ ok: true })
+  })
+
+  it("claims once, creates exactly three still-you visuals, and stops for QA", async () => {
+    const { generateCampaignOrder } = await import("@/lib/campaign-outcome/generator")
+    await expect(generateCampaignOrder(51)).resolves.toEqual({ generated: true })
+    expect(generateObjectMock).toHaveBeenCalledTimes(1)
+    expect(generateImageMock).toHaveBeenCalledTimes(3)
+    expect(generateImageMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        referenceUrls: ["https://example.com/selfie.jpg"],
+        size: "1024x1536",
+        prompt: expect.stringContaining("Use exact facial features from the reference image."),
+      })
+    )
+    const save = sqlMock.mock.calls.find(call => queryText(call).includes("status = 'needs_qa'"))
+    expect(save).toBeTruthy()
+    expect(queryText(save!)).toContain("campaign_data")
+    expect(analyticsMock).toHaveBeenCalledWith(
+      expect.objectContaining({ eventName: "campaign_generated" })
+    )
+  })
+})
+
+describe("campaign outcome QA delivery", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (query.includes("status = 'delivered'") && query.includes("RETURNING *")) {
+        return [
+          {
+            id: 61,
+            user_id: null,
+            customer_email: "qa@example.com",
+            customer_name: "QA Buyer",
+            access_token: "q".repeat(43),
+            stripe_session_id: "cs_test_qa_delivery",
+            status: "delivered",
+            is_test_mode: true,
+            delivery_email_sent_at: null,
+          },
+        ]
+      }
+      return []
+    })
+    analyticsMock.mockResolvedValue({ ok: true })
+  })
+
+  it("moves a test-mode generated order through QA to delivery without emailing a customer", async () => {
+    const { deliverCampaignOrder } = await import("@/lib/campaign-outcome/delivery")
+    await expect(deliverCampaignOrder(61)).resolves.toEqual({ delivered: true })
+    expect(sendEmailMock).not.toHaveBeenCalled()
+    expect(analyticsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "campaign_delivered",
+        properties: { order_id: 61, is_test_mode: true },
+      })
+    )
+  })
+})

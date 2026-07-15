@@ -3,6 +3,11 @@ import { AdminNav } from "@/components/admin/admin-nav"
 
 const TOOLS = [
   {
+    title: "Campaign orders",
+    description: "Review Maya's campaign work, approve delivery, or request a clean regeneration.",
+    href: "/admin/campaigns",
+  },
+  {
     title: "Academy",
     description: "Courses, lessons, products, and monthly drops.",
     href: "/admin/academy",

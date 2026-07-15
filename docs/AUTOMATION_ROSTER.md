@@ -38,7 +38,7 @@ Brand rule for every layer: read `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` firs
 ### Money & fulfillment (all LIVE)
 | Cron / hook | Schedule | Job |
 |---|---|---|
-| Stripe webhook → `lib/payments/handlers/*` | event-driven | All fulfillment + subscription lifecycle. `selfie_visibility_bundle` grants its five lifetime assets, one fixed 30-day/200-credit pass, and one delivery email idempotently. Held for post-event release: `invoice.payment_failed` keeps its one deduplicated email, but its button opens a signed exact-subscription recovery route that creates a fresh Stripe-hosted card-update session at click time; successful retries appear on Admin from paid `stripe_payments` rows. No new cron. |
+| Stripe webhook → `lib/payments/handlers/*` | event-driven | All fulfillment + subscription lifecycle. `selfie_visibility_bundle` grants its five lifetime assets, one fixed 30-day/200-credit pass, and one delivery email idempotently. Held for post-event release: paid `campaign_outcome` sessions create one private guest order and intake email, without accounts, credits, entitlements, or subscriptions. `invoice.payment_failed` keeps its one deduplicated email, but its button opens a signed exact-subscription recovery route that creates a fresh Stripe-hosted card-update session at click time; successful retries appear on Admin from paid `stripe_payments` rows. No new cron. |
 | `resolve-pending-payments` | */5 min | Grant pending credits, alert stuck webhook reviews |
 | `reconcile-credits` | 05:00 | Welcome/monthly credits truth |
 | `reconcile-subscriptions` / `reconcile-generations` / `reconcile-generation-assets` | 30m / 30m / 5m | Stripe↔DB↔provider truth |
@@ -47,7 +47,7 @@ Brand rule for every layer: read `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` firs
 ### Customer email lifecycle (all LIVE; env-gated flags verified ON 2026-07-08)
 | Cron | Schedule | Job |
 |---|---|---|
-| `onboarding-sequence` | 10:05 | New member onboarding. Day 7 now reuses the approved reset email only for active members who generated on one calendar day and did not return on another day; it deep-links to Create. It is no longer an unconditional calendar send. |
+| `onboarding-sequence` | 10:05 | New member onboarding. Day 7 now reuses the approved reset email only for active members who generated on one calendar day and did not return on another day; it deep-links to Create. It is no longer an unconditional calendar send. The held Campaign outcome reuses this cron for one Day-7 publish/repeat check after delivery; test orders are excluded. |
 | `suite-habit-emails` | 09:00 | Member habit/activation |
 | `suite-trial-expiry` | 08:45 | Trial lifecycle + expiry. It also closes fixed One Selfie passes without renewal and deducts only their remaining pass credits under one database lock. |
 | `win-back-sequence` | 10:00 | Cancelled + dormant-member win-back |
@@ -178,7 +178,7 @@ automation.
 
 | System | What lives there | Notes |
 |---|---|---|
-| ManyChat (fb877156) | Keyword automations (PROMPT, SELFIE, KIT, SUITE, VAULT, PRESET, ANDROID, WORK) and Live Chat inbox | Keyword marketing flows remain live. The `Instagram Default Reply` bridge was stopped and moved to trash on 2026-07-12, and ManyChat AI is deactivated. The verified WORK path remains `WORK — Sprint Application`. `BUNDLE` is an attended July 13–15 event flow Sandra must configure from the exact runbook; do not claim it is live until she confirms it. Inbox review is attended and on demand only. |
+| ManyChat (fb877156) | Keyword automations (PROMPT, SELFIE, KIT, SUITE, VAULT, PRESET, ANDROID, WORK) and Live Chat inbox | Keyword marketing flows remain live. The `Instagram Default Reply` bridge was stopped and moved to trash on 2026-07-12, and ManyChat AI is deactivated. The verified WORK path remains `WORK — Sprint Application`. `BUNDLE` is an attended July 13–15 event flow Sandra must configure from the exact runbook; do not claim it is live until she confirms it. `CAMPAIGN` is also not live until Sandra configures its exact held-release URL from `docs/business/CAMPAIGN_OUTCOME_RUNBOOK_2026-07-15.md`. Inbox review is attended and on demand only. |
 | Resend | Broadcast delivery, audiences/segments, ~60 mechanical "Sequence:" audiences | Sends only what repo crons or Sandra trigger. The three `Launch · One Selfie` broadcasts are drafts tied to founder approvals; no schedule or automatic send was added. |
 | Stripe | Payments, subscriptions, webhooks → repo | Money truth source per Admin Data Contract. |
 | Vercel | Deploys from `main`, runs all Layer-1 crons, holds prod env flags | Env booleans being hardened in EMPLOYEE-01. |

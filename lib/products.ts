@@ -31,6 +31,7 @@ export type PricingProductId =
   | "presets_single"
   | "presets_bundle"
   | "selfie_visibility_bundle"
+  | "campaign_outcome"
   | "selfie_to_brand_shoot_system"
 
 export type ProductLifecycleStatus = "live" | "archived" | "legacy_access_only"
@@ -59,6 +60,7 @@ export interface PricingProduct {
     | "presets_single"
     | "presets_bundle"
     | "selfie_visibility_bundle"
+    | "campaign_outcome"
     | "selfie_to_brand_shoot_system"
   lifecycleStatus?: ProductLifecycleStatus
   features?: string[]
@@ -311,6 +313,25 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     ],
   },
   {
+    id: "campaign_outcome",
+    name: "Your Next Campaign",
+    displayName: "Your Next Campaign",
+    description:
+      "Give Maya one selfie and what you are promoting. Receive three coordinated posts with finished visuals, captions, calls to action, and the order to publish them.",
+    priceInCents: 9700,
+    type: "campaign_outcome",
+    lifecycleStatus: "live",
+    tag: "bought_campaign_outcome",
+    features: [
+      "Three coordinated posts: attention, trust, and offer",
+      "Three finished still-you visuals",
+      "Captions and calls to action",
+      "Publishing order",
+      "Sandra quality check",
+      "Delivery within 48 hours",
+    ],
+  },
+  {
     id: "selfie_visibility_bundle",
     name: "One Selfie Visibility Bundle",
     displayName: "One Selfie Visibility Bundle",
@@ -535,6 +556,13 @@ export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath>
     fulfillmentRule: "stripe_webhook.checkout.session.completed:selfie_visibility_bundle",
     successNextAction: "/academy/access/one-selfie",
     lifecycleEmailEntryPoint: "selfie_visibility_bundle_delivery",
+  },
+  campaign_outcome: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/campaign",
+    fulfillmentRule: "stripe_webhook.checkout.session.completed:campaign_outcome",
+    successNextAction: "/campaign/order/[token]",
+    lifecycleEmailEntryPoint: "campaign_outcome_intake",
   },
   selfie_to_brand_shoot_system: {
     lifecycleStatus: "legacy_access_only",

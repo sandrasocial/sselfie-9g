@@ -14,8 +14,9 @@ dotenv.config()
 const CORRECT_PATH = "/api/webhooks/stripe"
 const PRODUCTION_HOSTS = new Set(["sselfie.ai", "www.sselfie.ai"])
 
-const ENABLED_EVENTS: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
+const REQUIRED_EVENTS: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
   "checkout.session.completed",
+  "checkout.session.async_payment_succeeded",
   "customer.subscription.created",
   "customer.subscription.updated",
   "customer.subscription.deleted",
@@ -76,6 +77,30 @@ async function main() {
 
   if (good) {
     console.log(`\nCorrect endpoint already exists: ${good.id} → ${good.url}`)
+    const currentEvents = new Set(good.enabled_events)
+    const missingEvents = currentEvents.has("*")
+      ? []
+      : REQUIRED_EVENTS.filter(event => !currentEvents.has(event))
+
+    if (missingEvents.length > 0) {
+      const enabledEvents = Array.from(
+        new Set([...good.enabled_events, ...REQUIRED_EVENTS])
+      ) as Stripe.WebhookEndpointUpdateParams.EnabledEvent[]
+      console.log(`Adding required events: ${missingEvents.join(", ")}`)
+      const updated = await stripe.webhookEndpoints.update(good.id, {
+        enabled_events: enabledEvents,
+      })
+      const updatedEvents = new Set(updated.enabled_events)
+      const stillMissing = updatedEvents.has("*")
+        ? []
+        : REQUIRED_EVENTS.filter(event => !updatedEvents.has(event))
+      if (stillMissing.length > 0) {
+        throw new Error(`Webhook endpoint is still missing: ${stillMissing.join(", ")}`)
+      }
+      console.log("Required event subscriptions verified.")
+    } else {
+      console.log("Required event subscriptions already verified.")
+    }
     console.log("No new signing secret required.")
     return
   }
@@ -88,7 +113,7 @@ async function main() {
 
   const created = await stripe.webhookEndpoints.create({
     url: "https://sselfie.ai/api/webhooks/stripe",
-    enabled_events: ENABLED_EVENTS,
+    enabled_events: REQUIRED_EVENTS,
     description: "SSELFIE production — app handler (codex fix)",
   })
 

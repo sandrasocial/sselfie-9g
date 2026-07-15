@@ -12,6 +12,7 @@ import { generateFreeUserDay5Email } from "@/lib/email/templates/free-user-day5"
 import { generateFreeUserDay10Email } from "@/lib/email/templates/free-user-day10"
 import { logAdminError } from "@/lib/admin-error-log"
 import { EMAIL_CONFIG } from "@/lib/email/config"
+import { sendCampaignDay7Followups } from "@/lib/campaign-outcome/day7"
 
 /**
  * Onboarding Sequence - direct per-member sends (BRIDGE-01, 2026-06-11)
@@ -66,6 +67,7 @@ export async function GET(request: Request) {
       freeWelcome: { found: 0, sent: 0, failed: 0 },
       freeDay5: { found: 0, sent: 0, failed: 0 },
       freeDay10: { found: 0, sent: 0, failed: 0 },
+      campaignDay7: { found: 0, sent: 0, failed: 0 },
       errors: [] as Array<{ email: string; day: number | string; error: string }>,
     }
 
@@ -621,8 +623,10 @@ export async function GET(request: Request) {
       await new Promise((r) => setTimeout(r, 150))
     }
 
-    const totalSent = results.day0.sent + results.day2.sent + results.day7.sent + results.firstGenNudge.sent + results.postActivation.sent + results.freeWelcome.sent + results.freeDay5.sent + results.freeDay10.sent
-    const totalFailed = results.day0.failed + results.day2.failed + results.day7.failed + results.firstGenNudge.failed + results.postActivation.failed + results.freeWelcome.failed + results.freeDay5.failed + results.freeDay10.failed
+    results.campaignDay7 = await sendCampaignDay7Followups()
+
+    const totalSent = results.day0.sent + results.day2.sent + results.day7.sent + results.firstGenNudge.sent + results.postActivation.sent + results.freeWelcome.sent + results.freeDay5.sent + results.freeDay10.sent + results.campaignDay7.sent
+    const totalFailed = results.day0.failed + results.day2.failed + results.day7.failed + results.firstGenNudge.failed + results.postActivation.failed + results.freeWelcome.failed + results.freeDay5.failed + results.freeDay10.failed + results.campaignDay7.failed
     const totalSkipped = results.day0.skipped + results.day2.skipped + results.day7.skipped
 
     console.log(
@@ -649,6 +653,8 @@ export async function GET(request: Request) {
       freeDay5Failed: results.freeDay5.failed,
       freeDay10Sent: results.freeDay10.sent,
       freeDay10Failed: results.freeDay10.failed,
+      campaignDay7Sent: results.campaignDay7.sent,
+      campaignDay7Failed: results.campaignDay7.failed,
       totalSent,
       totalFailed,
       totalSkipped,
@@ -664,6 +670,7 @@ export async function GET(request: Request) {
         firstGenNudge: results.firstGenNudge,
         postActivation: results.postActivation,
         freeWelcome: results.freeWelcome,
+        campaignDay7: results.campaignDay7,
         totalSent,
         totalFailed,
         totalSkipped,

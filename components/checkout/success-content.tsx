@@ -59,6 +59,8 @@ function getProductLabel(productType: string | undefined) {
       return "SSELFIE Presets · Full Collection"
     case "selfie_visibility_bundle":
       return "One Selfie Visibility Bundle"
+    case "campaign_outcome":
+      return "Your Next Campaign"
     case "selfie_to_brand_shoot_system":
       return "Selfie to Brand Shoot System"
     case "masterclass":
@@ -167,6 +169,16 @@ function getSuccessActionConfig(productType: string | undefined): SuccessActionC
         "Everything is ready in one simple path. Start with your selfie, then move through photos, your visible brand, and Maya.",
       secondaryHref: "mailto:support@sselfie.ai?subject=One%20Selfie%20Bundle%20access",
       secondaryLabel: "Need help? Email support",
+    }
+  }
+
+  if (productType === "campaign_outcome") {
+    return {
+      href: "/campaign",
+      label: "Return to the campaign page",
+      helper: "Your private intake link is being sent to the email used at checkout. No account or password is required.",
+      secondaryHref: "mailto:hello@sselfie.ai?subject=Campaign%20order%20help",
+      secondaryLabel: "Need help? Email Sandra",
     }
   }
 
@@ -333,6 +345,7 @@ export function SuccessContent({
   const isPresetsPurchase = purchaseType === "presets_single" || purchaseType === "presets_bundle"
   const isSelfieToBrandShootPurchase = purchaseType === "selfie_to_brand_shoot_system"
   const isSelfieVisibilityBundlePurchase = purchaseType === "selfie_visibility_bundle"
+  const isCampaignOutcomePurchase = purchaseType === "campaign_outcome"
   const isBrandEnginePurchase = String(purchaseType || "").startsWith("brand_engine_")
   const supportEmailSubject = isSelfieVisibilityBundlePurchase
     ? "One Selfie Bundle setup"
@@ -351,7 +364,7 @@ export function SuccessContent({
     // Decision 2: Paid blueprint now uses same flow as other products
     // User info polling is only needed for unauthenticated users (account creation)
 
-    if (sessionId && !isBrandEnginePurchase && !isSelfieGuidePurchase) {
+    if (sessionId && !isBrandEnginePurchase && !isSelfieGuidePurchase && !isCampaignOutcomePurchase) {
       setUserStatusTimedOut(false)
       let attempts = 0
       const MAX_ATTEMPTS = 40 // Increased to 80 seconds total
@@ -405,7 +418,7 @@ export function SuccessContent({
         clearInterval(pollInterval)
       }
     }
-  }, [isBrandEnginePurchase, isSelfieGuidePurchase, purchaseType, sessionId, userStatusRetryKey])
+  }, [isBrandEnginePurchase, isCampaignOutcomePurchase, isSelfieGuidePurchase, purchaseType, sessionId, userStatusRetryKey])
 
   // FIX 3: Poll access status before redirecting (wait for webhook to complete)
   const [isPollingAccess, setIsPollingAccess] = useState(false)
@@ -1086,6 +1099,7 @@ export function SuccessContent({
       prompt_vault: 37,
       selfie_ai_photos_kit: 37,
       selfie_visibility_bundle: 97,
+      campaign_outcome: 97,
       selfie_to_brand_shoot_system: 197,
       masterclass: 147,
       visibility_suite: 97,
@@ -1479,6 +1493,30 @@ export function SuccessContent({
           >
             <a href="mailto:support@sselfie.ai?subject=Selfie%20to%20Brand%20Shoot%20access%20help">Email Support</a>
           </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (isCampaignOutcomePurchase) {
+    // DRAFT COPY: Sandra must approve before CAMPAIGN_OUTCOME_DISABLED is opened.
+    return (
+      <div className="min-h-screen bg-[#f7f8f8] px-5 py-16 text-[#0d0e10] sm:px-8 sm:py-24">
+        <div className="mx-auto max-w-2xl border border-[#d8d9da] bg-white px-7 py-12 text-center sm:px-14 sm:py-16">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Payment confirmed</p>
+          <h1 className="mt-5 font-serif text-4xl leading-tight sm:text-5xl">Your campaign order is in.</h1>
+          <p className="mx-auto mt-6 max-w-lg text-base leading-8 text-[#606164]">
+            Check the email used at checkout. Your private link asks for one selfie, what you sell, and what you want to promote.
+          </p>
+          <div className="mt-8 border-y border-[#e9eaeb] py-6 text-sm leading-7 text-[#606164]">
+            <p>One $97 payment</p>
+            <p>No subscription</p>
+            <p>Delivery within 48 hours after intake</p>
+          </div>
+          <a href="/campaign" className="mt-8 inline-flex min-h-12 items-center bg-[#0d0e10] px-7 text-[10px] font-semibold uppercase tracking-[0.2em] text-white">
+            Return to campaign page
+          </a>
+          <p className="mt-5 text-xs text-[#818283]">No account or password is required.</p>
         </div>
       </div>
     )

@@ -1,0 +1,88 @@
+import { after, NextResponse } from "next/server"
+
+import { requireAdmin } from "@/lib/admin-feature-flags"
+import { deliverCampaignOrder } from "@/lib/campaign-outcome/delivery"
+import { generateCampaignOrder } from "@/lib/campaign-outcome/generator"
+import { ensureCampaignOutcomeSchema } from "@/lib/campaign-outcome/schema"
+import { sql } from "@/lib/db/client"
+
+export const dynamic = "force-dynamic"
+export const maxDuration = 300
+
+async function checkAdmin() {
+  const admin = await requireAdmin()
+  if (admin.isAdmin) return null
+  return NextResponse.json(
+    { error: admin.error || "Admin access required" },
+    { status: admin.error === "Not authenticated" ? 401 : 403 }
+  )
+}
+
+function orderIdFrom(value: unknown): number | null {
+  const id = Number.parseInt(String(value || ""), 10)
+  return Number.isInteger(id) && id > 0 ? id : null
+}
+
+export async function GET() {
+  const authError = await checkAdmin()
+  if (authError) return authError
+  await ensureCampaignOutcomeSchema()
+  const orders = await sql`
+    SELECT *
+    FROM campaign_orders
+    ORDER BY
+      CASE status
+        WHEN 'needs_qa' THEN 1
+        WHEN 'generation_failed' THEN 2
+        WHEN 'inputs_ready' THEN 3
+        WHEN 'generating' THEN 4
+        WHEN 'awaiting_intake' THEN 5
+        ELSE 6
+      END,
+      created_at DESC
+    LIMIT 100
+  `
+  return NextResponse.json({ orders })
+}
+
+export async function POST(request: Request) {
+  const authError = await checkAdmin()
+  if (authError) return authError
+
+  const body = await request.json().catch(() => null)
+  const orderId = orderIdFrom(body?.orderId)
+  const action = body?.action
+  if (!orderId || !["approve", "regenerate", "resend_delivery"].includes(action)) {
+    return NextResponse.json({ error: "A valid campaign action is required." }, { status: 400 })
+  }
+
+  await ensureCampaignOutcomeSchema()
+  if (action === "approve") {
+    const result = await deliverCampaignOrder(orderId)
+    return NextResponse.json(result, { status: result.delivered ? 200 : 409 })
+  }
+  if (action === "resend_delivery") {
+    const result = await deliverCampaignOrder(orderId, { forceEmail: true })
+    return NextResponse.json(result, { status: result.delivered ? 200 : 409 })
+  }
+
+  const rows = await sql`
+    UPDATE campaign_orders
+    SET status = 'inputs_ready', generation_error = NULL, updated_at = NOW()
+    WHERE id = ${orderId}
+      AND selfie_url IS NOT NULL
+      AND what_she_sells IS NOT NULL
+      AND promotion IS NOT NULL
+      AND status IN ('generation_failed', 'needs_qa', 'delivered')
+    RETURNING id
+  `
+  if (!rows[0])
+    return NextResponse.json(
+      { error: "This campaign is not ready to regenerate." },
+      { status: 409 }
+    )
+  after(async () => {
+    await generateCampaignOrder(orderId)
+  })
+  return NextResponse.json({ ok: true, status: "inputs_ready" })
+}

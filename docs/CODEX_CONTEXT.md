@@ -1,6 +1,6 @@
 # CODEX_CONTEXT
 
-Last verified: 2026-07-13
+Last verified: 2026-07-14
 
 ## Purpose
 
@@ -33,6 +33,8 @@ Current contracts:
   `docs/business/SSELFIE_GROWTH_MACHINE_2026-07-12.md`
 - Current attended revenue event:
   `docs/business/ONE_SELFIE_VISIBILITY_REVENUE_EVENT_2026-07-13.md`
+- Held post-event campaign outcome:
+  `docs/business/CAMPAIGN_OUTCOME_RUNBOOK_2026-07-15.md`
 - Product UI and visual system:
   `docs/SSELFIE_DESIGN_SYSTEM.md`
 - SUITE creation ownership:
@@ -102,6 +104,10 @@ The admin navigation is:
 - Support
 - Tools
 
+The held Campaign Outcome release adds `Campaigns` only because its human QA queue is a required
+fulfillment step. It is not a second analytics dashboard. It owns approve, regenerate, and resend
+delivery for paid campaign orders.
+
 Do not add a new admin page, metric card, or recurring admin email without consolidating an existing
 surface. Money comes only from Stripe or qualifying `stripe_payments` rows. Behavioral analytics are
 not revenue truth.
@@ -122,6 +128,12 @@ tools plus one fixed 30-day/200-credit SUITE pass with no renewal. Do not turn i
 storefront, rolling countdown, subscription, unattended monthly flash-sale job, or second active
 offer. The buyer home is `/academy/access/one-selfie`; the optional annual continuation uses the
 normal annual SUITE checkout.
+
+After that event closes, the held `/campaign` test may be released only from its runbook. It is a
+guest-safe $97 one-time result with exactly three posts and a private token page. It must not create
+an account, grant credits, start a trial, enroll a course, or offer SUITE at delivery. Its public
+landing and checkout fail closed unless `CAMPAIGN_OUTCOME_DISABLED=false`; private links for paid
+orders remain available when the public offer is closed.
 
 Do not reuse the Starter Kit checkout or entitlement for the AI Photos Kit.
 

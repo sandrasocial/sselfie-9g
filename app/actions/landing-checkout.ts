@@ -32,6 +32,7 @@ type LandingCheckoutOptions = {
   membershipPlan?: "founding" | null
   presetTier?: "single" | "bundle"
   presetCollectionSlug?: string | null
+  repeatOrderToken?: string | null
 } & CheckoutAttributionInput
 
 function normalizeStripeCustomerEmail(email?: string | null): string | null {
@@ -58,8 +59,16 @@ export async function createLandingCheckoutSession(
   }
 
   const isSelfieVisibilityBundle = product.type === "selfie_visibility_bundle"
-  if (isSelfieVisibilityBundle && promoCode?.trim()) {
-    throw new Error("The One Selfie Visibility Bundle has one fixed $97 price.")
+  const isCampaignOutcome = product.type === "campaign_outcome"
+  if ((isSelfieVisibilityBundle || isCampaignOutcome) && promoCode?.trim()) {
+    throw new Error(
+      isCampaignOutcome
+        ? "Your Next Campaign has one fixed $97 price."
+        : "The One Selfie Visibility Bundle has one fixed $97 price.",
+    )
+  }
+  if (isCampaignOutcome && process.env.CAMPAIGN_OUTCOME_DISABLED !== "false") {
+    throw new Error("Your Next Campaign is not open yet.")
   }
   const selfieVisibilityBundleOfferStatus = isSelfieVisibilityBundle
     ? getSelfieVisibilityBundleOfferStatus()
@@ -87,7 +96,8 @@ export async function createLandingCheckoutSession(
     product.type !== "selfie_ai_photos_kit" &&
     product.type !== "presets_single" &&
     product.type !== "presets_bundle" &&
-    product.type !== "selfie_visibility_bundle"
+    product.type !== "selfie_visibility_bundle" &&
+    product.type !== "campaign_outcome"
   const checkoutSource = options?.source?.trim() || "landing_page"
   const normalizedCustomerEmail = normalizeStripeCustomerEmail(customerEmail)
   const bonusCredits =
@@ -194,12 +204,16 @@ export async function createLandingCheckoutSession(
     stripePriceId = process.env.STRIPE_PRICE_PRESETS_BUNDLE
   } else if (product.type === "selfie_visibility_bundle") {
     stripePriceId = process.env.STRIPE_PRICE_SELFIE_VISIBILITY_BUNDLE
+  } else if (product.type === "campaign_outcome") {
+    // This experiment intentionally ignores any production price env. Inline
+    // pricing makes the one-time USD $97 contract exact and self-contained.
+    stripePriceId = undefined
   } else if (product.type === "selfie_to_brand_shoot_system") {
     stripePriceId = process.env.STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM
   }
   stripePriceId = stripePriceId?.trim()
 
-  if (!stripePriceId) {
+  if (!stripePriceId && !isCampaignOutcome) {
     console.error("[landing-checkout] ❌ CRITICAL: Missing Stripe Price ID for product:", productId)
     console.error("[landing-checkout] ❌ Required environment variable:", envVarName)
     console.error("[landing-checkout] ❌ This checkout cannot proceed without proper price configuration")
@@ -208,7 +222,8 @@ export async function createLandingCheckoutSession(
     )
   }
 
-  console.log("[landing-checkout] Using Stripe Price ID:", stripePriceId)
+  const checkoutPriceKey = stripePriceId || "inline-campaign-outcome-9700-usd"
+  console.log("[landing-checkout] Using Stripe price:", checkoutPriceKey)
 
   // Validate promo code if provided (consistent with startCreditCheckoutSession)
   let validatedCoupon: string | null = null
@@ -254,12 +269,22 @@ export async function createLandingCheckoutSession(
     // automatic_payment_methods"), which broke EVERY one-time checkout (vault/starter-kit/presets)
     // ~2026-06-11. Checkout Sessions get dynamic payment methods from the account's default
     // payment method configuration automatically, so no param is needed here.
-    line_items: [
-      {
-        price: stripePriceId,
-        quantity: 1,
-      },
-    ],
+    line_items: stripePriceId
+      ? [{ price: stripePriceId, quantity: 1 }]
+      : [
+          {
+            price_data: {
+              currency: "usd",
+              unit_amount: 9700,
+              product_data: {
+                name: product.displayName,
+                description: "Three coordinated posts with finished visuals, words, and calls to action.",
+                metadata: { product_type: "campaign_outcome" },
+              },
+            },
+            quantity: 1,
+          },
+        ],
     // NOTE: optional_items is NOT supported with ui_mode: "embedded" (Stripe restriction).
     // Brand Strategy order bump is delivered via post-purchase email in the Stripe webhook.
     // Apply validated coupon OR allow promotion codes (mutually exclusive per Stripe API)
@@ -302,6 +327,10 @@ export async function createLandingCheckoutSession(
         offer_opens_at: SELFIE_VISIBILITY_BUNDLE_OPENS_AT,
         offer_closes_at: SELFIE_VISIBILITY_BUNDLE_CLOSES_AT,
       }),
+      ...(isCampaignOutcome && {
+        campaign_contract: "campaign-outcome-v2",
+        repeat_order_token: options?.repeatOrderToken?.trim() || "",
+      }),
     },
   }
 
@@ -310,7 +339,7 @@ export async function createLandingCheckoutSession(
       ? null
       : buildCheckoutSessionIdempotencyKey({
           productType: product.type,
-          stripePriceId,
+          stripePriceId: checkoutPriceKey,
           customerEmail: normalizedCustomerEmail,
           promoCode,
           sessionScope: {
