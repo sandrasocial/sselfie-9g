@@ -751,6 +751,10 @@ export function MayaConcierge({
   const [selfieRestored, setSelfieRestored] = useState(false)
   const activeSelfieRef = useRef<string | null>(null)
   const restoreTriedRef = useRef<number | null>(null)
+  // True only when the active session came back with existing messages (draft restore or
+  // reopening an old chat). Gates the saved-inspiration restore below: creative direction
+  // may return to work-in-progress, but must never silently attach to a fresh creation.
+  const sessionResumedWithHistoryRef = useRef(false)
 
   // Optional uploads (front face lives in session). Kept simple: hidden until "Add more".
   const [showMore, setShowMore] = useState(false)
@@ -864,6 +868,7 @@ export function MayaConcierge({
     const draft = readMayaDraftForSession(session.startedAt)
     appliedDraftSessionRef.current = session.startedAt
     if (!draft) {
+      sessionResumedWithHistoryRef.current = false
       restoredDraftRef.current = null
       savedCountRef.current = 0
       lastPulledFormatRef.current = null
@@ -891,6 +896,7 @@ export function MayaConcierge({
     }
 
     restoredDraftRef.current = draft
+    sessionResumedWithHistoryRef.current = draft.messages.length > 0
     savedCountRef.current = draft.messages.length
     lastPulledFormatRef.current = draft.messages.length ? (session.outputFormat ?? null) : null
     seedRetiredRef.current = Boolean(draft.messages.length)
@@ -1079,16 +1085,15 @@ export function MayaConcierge({
         const side = asUrl(d?.extras?.sideProfile)
         const body = asUrl(d?.extras?.fullBody)
         const inspiration = asUrl(d?.extras?.inspiration)
-        const isGuidedFirstPhotoSession =
-          session.aesthetic.id === "maya-decides" &&
-          session.outputFormat === "photo" &&
-          session.creationIntent?.source === "starter_chip"
         if (angle) setThreeQuarterUrl(prev => prev ?? angle)
         if (side) setSideProfileUrl(prev => prev ?? side)
         if (body) setFullBodyUrl(prev => prev ?? body)
-        // A fresh one-selfie start should not inherit an old creative direction. Other
-        // intentional/manual sessions keep the existing persisted-inspiration behavior.
-        if (!isGuidedFirstPhotoSession) {
+        // Identity (face/angles) always restores; INSPIRATION is creative direction and
+        // restores only into a session that resumed with existing messages (refresh or
+        // reopening work-in-progress). A fresh creation never inherits an old inspiration
+        // image, whatever the entry point - it silently steered new requests toward an
+        // unrelated look (contract 2026-07-13, first-result non-regression rules).
+        if (sessionResumedWithHistoryRef.current) {
           if (inspiration) setInspirationUrl(prev => prev ?? inspiration)
         }
       })
@@ -1501,6 +1506,7 @@ export function MayaConcierge({
     setPendingShotDirector(null)
     setLocalCreationIntent(null)
     seedRetiredRef.current = true // a clean session never replays the old seeded idea
+    sessionResumedWithHistoryRef.current = false // a clean session never inherits old inspiration
     restoredDraftRef.current = null
     appliedDraftSessionRef.current = null
     formatSwitchAppliedRef.current.clear()
@@ -1540,6 +1546,7 @@ export function MayaConcierge({
       setChatId(id)
       setGenState({})
       setGeneratedOnce(false)
+      sessionResumedWithHistoryRef.current = loaded.length > 0
       setMessages(loaded as any)
       setHistoryOpen(false)
     } catch {

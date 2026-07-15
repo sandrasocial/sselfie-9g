@@ -46,9 +46,16 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(referenceRestore).toContain("d?.extras?.threeQuarter")
     expect(referenceRestore).toContain("d?.extras?.sideProfile")
     expect(referenceRestore).toContain("d?.extras?.fullBody")
-    expect(referenceRestore).toContain("const isGuidedFirstPhotoSession =")
-    expect(referenceRestore).toContain("if (!isGuidedFirstPhotoSession)")
+    // 2026-07-15 hardening: inspiration restores ONLY into a session resumed with existing
+    // messages - NO fresh creation inherits an old inspiration image, whatever the entry
+    // point (typed text, chips, recommendation, weekly look). The old guided-first-photo
+    // carve-out is gone because the broader rule covers it.
+    expect(referenceRestore).toContain("if (sessionResumedWithHistoryRef.current)")
+    expect(referenceRestore).not.toContain("isGuidedFirstPhotoSession")
     expect(referenceRestore).toContain("d?.extras?.inspiration")
+    const concierge2 = concierge
+    expect(concierge2).toContain("sessionResumedWithHistoryRef.current = draft.messages.length > 0")
+    expect(concierge2).toContain("sessionResumedWithHistoryRef.current = loaded.length > 0")
     expect(concierge).toContain("setSelfieManagerOpen(false)\n          setSetupOpen(false)")
     expect(concierge).toContain("hideOptionalReferences={guidedFirstPhoto}")
     expect(selfieManager).toContain("hideOptionalReferences = false")
