@@ -1,7 +1,12 @@
 import { describe, expect, it, beforeEach } from "vitest"
 import fs from "fs"
 import path from "path"
-import { buildAppV3ReturnTo, resolveAppV3InitialSection } from "@/lib/app-v3/navigation"
+import {
+  buildAppV3AestheticHref,
+  buildAppV3ReturnTo,
+  resolveAppV3InitialAestheticId,
+  resolveAppV3InitialSection,
+} from "@/lib/app-v3/navigation"
 import { generateCreditRenewalEmail } from "@/lib/email/templates/credit-renewal"
 import { generateDormantMemberReengagementEmail } from "@/lib/email/templates/dormant-member-reengagement"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
@@ -36,7 +41,7 @@ describe("APP-CUTOVER-01 readiness", () => {
       // lib/email/templates/archived/ on 2026-07-03 (zero live senders).
     ]
 
-    const combined = emails.map((email) => `${email.html}\n${email.text}`).join("\n\n")
+    const combined = emails.map(email => `${email.html}\n${email.text}`).join("\n\n")
 
     expect(combined).toContain("https://sselfie.ai/app")
     // The /app?view=account deep link lived in the retired payment-recovery template
@@ -55,6 +60,20 @@ describe("APP-CUTOVER-01 readiness", () => {
     expect(resolveAppV3InitialSection(undefined)).toBe("create")
     expect(buildAppV3ReturnTo("create")).toBe("/app")
     expect(buildAppV3ReturnTo("account")).toBe("/app?view=account")
+  })
+
+  it("preserves a valid Vault aesthetic through the authenticated /app handoff", () => {
+    expect(resolveAppV3InitialAestheticId(" Dark-Feminine-Cafe ")).toBe("dark-feminine-cafe")
+    expect(resolveAppV3InitialAestheticId(["clean-girl-founder-morning", "ignored"])).toBe(
+      "clean-girl-founder-morning"
+    )
+    expect(resolveAppV3InitialAestheticId("../account")).toBeNull()
+    expect(buildAppV3AestheticHref("dark-feminine-cafe")).toBe(
+      "/app?view=create&aesthetic=dark-feminine-cafe"
+    )
+    expect(buildAppV3ReturnTo("create", "dark-feminine-cafe")).toBe(
+      "/app?view=create&aesthetic=dark-feminine-cafe"
+    )
   })
 
   it("forwards normal legacy /studio visits into app v3 while the cutover flag is enabled", () => {

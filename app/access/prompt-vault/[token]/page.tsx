@@ -6,6 +6,9 @@ import { sql } from "@/lib/db/client"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
+import { getUserIdFromSupabase } from "@/lib/user-mapping"
+import { getSuiteAccess } from "@/lib/trial/suite-trial"
+import { buildAppV3AestheticHref } from "@/lib/app-v3/navigation"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
 import { PromptViewTracker } from "@/components/prompt-vault/prompt-view-tracker"
 import { SuiteDoor } from "@/components/marketing/suite-door"
@@ -23,10 +26,18 @@ import {
   VAULT_COLLECTION_META,
   type PromptCard,
 } from "@/lib/ai-prompts/prompt-data"
-import { getPublishedVaultCollections } from "@/lib/vault/published-collections"
+import { getPublishedVaultCollections, toAestheticId } from "@/lib/vault/published-collections"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
+
+// DRAFT copy for Sandra's exact-word approval before merge.
+const MEMBER_ACTION_DRAFT_COPY = {
+  openInMaya: "Open in Maya",
+  copyText: "Copy text",
+  copyTextAria: "Copy prompt text to clipboard",
+  suiteDoor: "Open this look in Maya",
+} as const
 
 // ── Collection data ─────────────────────────────────────────────────────────
 
@@ -202,6 +213,7 @@ const FIRST_RESULT_PATHS = [
     selfie: "Best source selfie: clear face, dark top or blazer, soft window light, no sunglasses.",
     fix: "If ChatGPT makes it too polished, rerun and add: keep my real facial features, natural skin texture, and normal expression.",
     collectionHref: "#dark-feminine-cafe",
+    aestheticId: toAestheticId("Dark Feminine Café Coffee-Run Editorial"),
     card: DARK_FEMININE_CAFE_SERIES[0],
   },
   {
@@ -213,6 +225,7 @@ const FIRST_RESULT_PATHS = [
       "Best source selfie: natural face, hair visible, neutral top, clean light from the front or side.",
     fix: "If the result looks too generic, tell ChatGPT: keep my age, facial structure, hair color, and realistic body proportions.",
     collectionHref: "#clean-girl-morning",
+    aestheticId: toAestheticId("Clean Girl Founder Morning Editorial"),
     card: CLEAN_GIRL_MORNING_SERIES[0],
   },
   {
@@ -224,6 +237,7 @@ const FIRST_RESULT_PATHS = [
       "Best source selfie: mirror selfie or full outfit photo with your body shape and outfit visible.",
     fix: "If the outfit changes too much, rerun and add: preserve my outfit silhouette, body proportions, and natural pose.",
     collectionHref: "#denim-street",
+    aestheticId: toAestheticId("Soft Blazer + Light Denim Street Editorial"),
     card: DENIM_STREET_SERIES[0],
   },
 ].filter(path => path.card)
@@ -263,14 +277,84 @@ async function validateToken(token: string): Promise<TokenResult> {
   }
 }
 
-async function isCurrentUserAdmin(): Promise<boolean> {
-  const { user } = await getAuthenticatedUser()
-  return isAdminEmail(user?.email)
+type ViewerAccess = {
+  isAdmin: boolean
+  isActiveMember: boolean
+}
+
+async function resolveViewerAccess(): Promise<ViewerAccess> {
+  try {
+    const { user } = await getAuthenticatedUser()
+    if (!user) return { isAdmin: false, isActiveMember: false }
+
+    const isAdmin = isAdminEmail(user.email)
+    if (isAdmin) return { isAdmin: true, isActiveMember: true }
+
+    const neonUserId = await getUserIdFromSupabase(user.id)
+    if (!neonUserId) return { isAdmin: false, isActiveMember: false }
+    const access = await getSuiteAccess(String(neonUserId))
+
+    // getSuiteAccess deliberately resolves both recurring SUITE and the active fixed bundle
+    // pass to "member". Trials and limited one-time ownership keep the existing Vault page.
+    return { isAdmin: false, isActiveMember: access.level === "member" }
+  } catch (error) {
+    console.error("[prompt-vault/access] member resolution failed:", error)
+    return { isAdmin: false, isActiveMember: false }
+  }
 }
 
 // ── Prompt card component ────────────────────────────────────────────────────
 
-function PromptCardEl({ card }: { card: PromptCard }) {
+function PromptActions({
+  card,
+  aestheticId,
+  isActiveMember,
+}: {
+  card: PromptCard
+  aestheticId: string
+  isActiveMember: boolean
+}) {
+  if (!isActiveMember) {
+    return (
+      <CopyButton
+        text={card.prompt}
+        promptTitle={card.title}
+        promptNumber={card.number}
+        trackEvent="prompt_vault_prompt_copied"
+        trackSource="prompt-vault"
+      />
+    )
+  }
+
+  return (
+    <div className="pva-member-actions">
+      <Link href={buildAppV3AestheticHref(aestheticId)} className="pva-member-open-maya">
+        {MEMBER_ACTION_DRAFT_COPY.openInMaya}
+      </Link>
+      <div className="pva-member-copy">
+        <CopyButton
+          text={card.prompt}
+          promptTitle={card.title}
+          promptNumber={card.number}
+          trackEvent="prompt_vault_prompt_copied"
+          trackSource="prompt-vault"
+          label={MEMBER_ACTION_DRAFT_COPY.copyText}
+          ariaLabel={MEMBER_ACTION_DRAFT_COPY.copyTextAria}
+        />
+      </div>
+    </div>
+  )
+}
+
+function PromptCardEl({
+  card,
+  aestheticId,
+  isActiveMember,
+}: {
+  card: PromptCard
+  aestheticId: string
+  isActiveMember: boolean
+}) {
   return (
     <article id={card.id} className="pva-card">
       <PromptViewTracker
@@ -305,13 +389,7 @@ function PromptCardEl({ card }: { card: PromptCard }) {
         <div className="pva-prompt-wrap">
           <p className="pva-prompt-text">{card.prompt}</p>
           <div className="pva-copy-row">
-            <CopyButton
-              text={card.prompt}
-              promptTitle={card.title}
-              promptNumber={card.number}
-              trackEvent="prompt_vault_prompt_copied"
-              trackSource="prompt-vault"
-            />
+            <PromptActions card={card} aestheticId={aestheticId} isActiveMember={isActiveMember} />
           </div>
         </div>
       </div>
@@ -328,40 +406,8 @@ export default async function PromptVaultAccessPage({
 }) {
   const { token } = await params
   const result = await validateToken(token)
-  const adminOverride = !result.valid ? await isCurrentUserAdmin() : false
-  const publishedCollections = await getPublishedVaultCollections()
-  const collectionOverview = [
-    ...publishedCollections.map((collection, index) => ({
-      eyebrow: `NEW COLLECTION ${publishedCollections.length - index}`,
-      title: collection.title.replace(/\s*Editorial\s*$/i, ""),
-      note: collection.moodLine,
-      image: collection.heroImage ?? collection.cards[0]?.exampleImage,
-      href: `#${collection.slug}`,
-    })),
-    ...COLLECTION_OVERVIEW,
-  ]
-  const vaultCollections = [
-    ...publishedCollections.map(collection => ({
-      id: collection.slug,
-      eyebrow: `PUBLISHED VAULT COLLECTION · ${collection.title.toUpperCase()}`,
-      title: collection.title,
-      note: collection.note,
-      heroImage: collection.heroImage ?? collection.cards[0]?.exampleImage,
-      cards: collection.cards,
-    })),
-    ...VAULT_COLLECTIONS,
-  ]
-  const vaultMeta = [
-    ...publishedCollections.map(collection => ({
-      previewCardId: collection.cards[0]?.id ?? collection.slug,
-      name: collection.title,
-      shotCount: collection.cards.length,
-      thumbnails: collection.cards
-        .map(card => card.exampleImage)
-        .filter((url): url is string => !!url),
-    })),
-    ...VAULT_COLLECTION_META,
-  ]
+  const viewerAccess = await resolveViewerAccess()
+  const adminOverride = !result.valid && viewerAccess.isAdmin
 
   if (!result.valid && !adminOverride) {
     return (
@@ -434,6 +480,40 @@ export default async function PromptVaultAccessPage({
       </main>
     )
   }
+
+  const publishedCollections = await getPublishedVaultCollections()
+  const collectionOverview = [
+    ...publishedCollections.map((collection, index) => ({
+      eyebrow: `NEW COLLECTION ${publishedCollections.length - index}`,
+      title: collection.title.replace(/\s*Editorial\s*$/i, ""),
+      note: collection.moodLine,
+      image: collection.heroImage ?? collection.cards[0]?.exampleImage,
+      href: `#${collection.slug}`,
+    })),
+    ...COLLECTION_OVERVIEW,
+  ]
+  const vaultCollections = [
+    ...publishedCollections.map(collection => ({
+      id: collection.slug,
+      eyebrow: `PUBLISHED VAULT COLLECTION · ${collection.title.toUpperCase()}`,
+      title: collection.title,
+      note: collection.note,
+      heroImage: collection.heroImage ?? collection.cards[0]?.exampleImage,
+      cards: collection.cards,
+    })),
+    ...VAULT_COLLECTIONS,
+  ]
+  const vaultMeta = [
+    ...publishedCollections.map(collection => ({
+      previewCardId: collection.cards[0]?.id ?? collection.slug,
+      name: collection.title,
+      shotCount: collection.cards.length,
+      thumbnails: collection.cards
+        .map(card => card.exampleImage)
+        .filter((url): url is string => !!url),
+    })),
+    ...VAULT_COLLECTION_META,
+  ]
 
   logAnalyticsEvent({
     eventName: "prompt_vault_access_opened",
@@ -547,12 +627,10 @@ export default async function PromptVaultAccessPage({
                     <p>{path.fix}</p>
                   </div>
                   <div className="pva-first-actions">
-                    <CopyButton
-                      text={path.card.prompt}
-                      promptTitle={path.card.title}
-                      promptNumber={path.card.number}
-                      trackEvent="prompt_vault_prompt_copied"
-                      trackSource="prompt-vault"
+                    <PromptActions
+                      card={path.card}
+                      aestheticId={path.aestheticId}
+                      isActiveMember={viewerAccess.isActiveMember}
                     />
                     <a href={path.collectionHref} className="pva-first-open">
                       Open full shoot
@@ -694,7 +772,12 @@ export default async function PromptVaultAccessPage({
                     {/* Prompt cards */}
                     <div className="pva-cards">
                       {collection.cards.map(card => (
-                        <PromptCardEl key={card.id} card={card} />
+                        <PromptCardEl
+                          key={card.id}
+                          card={card}
+                          aestheticId={toAestheticId(collection.title)}
+                          isActiveMember={viewerAccess.isActiveMember}
+                        />
                       ))}
                     </div>
                   </div>
@@ -710,10 +793,17 @@ export default async function PromptVaultAccessPage({
         eyebrow="Your next step"
         title="You've done it the manual way."
         body="Maya already knows every look in this Vault. Inside SSELFIE SUITE, she works from your real selfies and creates your brand shoots for you. No more pasting prompts and hoping the result still looks like you. You pick the vibe, she does the rest, and it looks like you because it's made from you."
-        ctaLabel="See SSELFIE SUITE"
-        href="/join/studio?source=suite_door_vault_access&utm_source=prompt_vault&utm_medium=access_page&utm_campaign=suite_door&utm_content=vault_access_page"
+        ctaLabel={
+          viewerAccess.isActiveMember ? MEMBER_ACTION_DRAFT_COPY.suiteDoor : "See SSELFIE SUITE"
+        }
+        href={
+          viewerAccess.isActiveMember
+            ? "/app"
+            : "/join/studio?source=suite_door_vault_access&utm_source=prompt_vault&utm_medium=access_page&utm_campaign=suite_door&utm_content=vault_access_page"
+        }
         footnote="Monthly membership · cancel anytime"
         placement="vault_access"
+        destination={viewerAccess.isActiveMember ? "app" : "join-studio"}
         serifClassName={cormorant.className}
       />
 
@@ -1043,6 +1133,49 @@ export default async function PromptVaultAccessPage({
           background: #0D0E10 !important;
           border-color: #0D0E10 !important;
           color: #FFFFFF !important;
+        }
+        .pva-member-actions {
+          display: grid;
+          gap: 8px;
+          width: 100%;
+        }
+        .pva-member-open-maya {
+          display: inline-flex;
+          min-height: 44px;
+          width: 100%;
+          align-items: center;
+          justify-content: center;
+          padding: 12px 16px;
+          background: #0D0E10;
+          color: #FFFFFF;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.2em;
+          text-align: center;
+          text-decoration: none;
+          text-transform: uppercase;
+        }
+        .pva-member-copy,
+        .pva-member-copy .copy-action {
+          display: flex;
+          justify-content: flex-start;
+          width: 100%;
+        }
+        .pva-member-copy .copy-btn,
+        .pva-first-actions .pva-member-copy .copy-btn {
+          min-height: 36px;
+          width: auto;
+          justify-content: flex-start;
+          padding: 4px 0;
+          background: transparent !important;
+          border: 0 !important;
+          color: #4F5052 !important;
+          font-size: 11px;
+          font-weight: 400;
+          letter-spacing: 0;
+          text-decoration: underline;
+          text-transform: none;
+          text-underline-offset: 4px;
         }
         .pva-first-open {
           border: 1px solid rgba(13,14,16,0.18);

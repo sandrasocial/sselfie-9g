@@ -26,6 +26,23 @@ const FALLBACK_RECOMMENDATION: MayaRecommendation = {
   format: "photo",
 }
 
+const MAYA_GENERAL: Aesthetic = {
+  id: "maya-general",
+  name: "SSELFIE",
+  blurb: "Let's make something that's truly you.",
+  coverImage: "",
+  thumbnails: [],
+  shotCount: 0,
+  intent:
+    "A general SSELFIE editorial brand session. Help her decide the look from her brand, then create.",
+}
+
+// DRAFT copy for Sandra's exact-word approval before merge.
+const MAYA_ARRIVAL_DRAFT_COPY = {
+  vaultPicker: "Pick from your Vault instead",
+  preSelfieChat: "Have a question first? Ask Maya",
+} as const
+
 const FORMAT_LABEL: Record<OutputFormat, string> = {
   photo: "Photo",
   photoshoot: "Full shoot",
@@ -149,11 +166,15 @@ export function VisualFrontDoor({
   showTrialFirstRunStep = false,
   cohort = "member",
   hasSelfie = false,
+  hasVaultAccess = false,
+  preSelfieChatEnabled = false,
   videoEnabled = true,
 }: {
   showTrialFirstRunStep?: boolean
   cohort?: AppV3AnalyticsCohort
   hasSelfie?: boolean
+  hasVaultAccess?: boolean
+  preSelfieChatEnabled?: boolean
   /** VIDEO reliability kill switch: false removes the Video starter tile. */
   videoEnabled?: boolean
 } = {}) {
@@ -345,6 +366,27 @@ export function VisualFrontDoor({
     })
   }
 
+  function openVaultPicker() {
+    const intent = intentForFormat("photo", "manual")
+    trackFirstAction("vault_picker")
+    trackInlineStart("vault_picker", intent.format, intent.confidence)
+    // This is the existing maya-general path. It opens the inline Vault picker without
+    // changing the default maya-decides recommendation or the guided first-selfie flow.
+    openWithAesthetic(MAYA_GENERAL, {
+      format: "photo",
+      creationIntent: intent,
+    })
+  }
+
+  function openPreSelfieChat() {
+    trackFirstAction("pre_selfie_chat")
+    trackInlineStart("pre_selfie_chat", null, "needs_clarify")
+    openWithAesthetic(MAYA_GENERAL, {
+      creationIntent: { format: null, source: "manual", confidence: "needs_clarify" },
+      initialSetupAction: "plain_chat",
+    })
+  }
+
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-8 sm:py-16">
       <header className="mb-7 sm:mb-10">
@@ -388,6 +430,15 @@ export function VisualFrontDoor({
             tall
             onClick={openSelfieManagerInMaya}
           />
+          {preSelfieChatEnabled && (
+            <button
+              type="button"
+              onClick={openPreSelfieChat}
+              className="mx-auto mt-4 flex min-h-11 items-center px-3 text-[12px] text-[color:var(--ss-davy)] underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]"
+            >
+              {MAYA_ARRIVAL_DRAFT_COPY.preSelfieChat}
+            </button>
+          )}
         </div>
       ) : (
         <div className="mb-9 space-y-5">
@@ -485,6 +536,15 @@ export function VisualFrontDoor({
                 Ask Maya
               </button>
             </form>
+            {hasVaultAccess && (
+              <button
+                type="button"
+                onClick={openVaultPicker}
+                className="mt-3 inline-flex min-h-11 items-center text-[12px] text-[color:var(--ss-davy)] underline underline-offset-4 transition-colors hover:text-[color:var(--ss-night)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]"
+              >
+                {MAYA_ARRIVAL_DRAFT_COPY.vaultPicker}
+              </button>
+            )}
           </section>
 
           <details className="group rounded-[10px] border border-[color:var(--ss-silver)]/60 bg-white">

@@ -27,6 +27,8 @@ function toId(name: string): string {
     .toLowerCase()
     .replace(/editorial$/i, "")
     .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
 }

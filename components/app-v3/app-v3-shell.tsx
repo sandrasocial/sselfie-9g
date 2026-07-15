@@ -13,9 +13,10 @@
 // member - this addition changes nothing about how that route works.
 // Isolated tree: imports only from components/app-v3/ + lib/. No components/sselfie/.
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ConciergeProvider, useConcierge } from "./concierge-context"
 import { VisualFrontDoor } from "./visual-front-door"
+import { AESTHETICS } from "./aesthetics"
 import { MayaConcierge } from "./maya-concierge"
 import { MayaFloatingLauncher } from "./maya-floating-launcher"
 import { GalleryView } from "./gallery-view"
@@ -39,6 +40,12 @@ export interface AppV3ShellProps {
   trialHasSavedSelfie?: boolean
   trialHasSeenFirstRunStep?: boolean
   initialSection?: AppV3Section
+  /** A sanitized Vault collection id supplied by an authenticated /app deep link. */
+  initialAestheticId?: string | null
+  /** True for recurring members, active passes, or active trials that own the Vault. */
+  hasVaultAccess?: boolean
+  /** Server-owned feature flag. Defaults false and never reads public client env. */
+  preSelfieChatEnabled?: boolean
   /** True when the member has a completed, non-test trained model (legacy /studio entry point). */
   hasTrainedModel?: boolean
   /** VIDEO reliability kill switch: false hides the Video tile + gallery motion entry. */
@@ -89,11 +96,15 @@ function ShellInner({
   trialHasSavedSelfie = false,
   trialHasSeenFirstRunStep = false,
   initialSection = "create",
+  initialAestheticId = null,
+  hasVaultAccess = false,
+  preSelfieChatEnabled = false,
   hasTrainedModel = false,
   videoEnabled = true,
 }: AppV3ShellProps) {
   const [section, setSection] = useState<AppV3Section>(initialSection)
   const { openWithAesthetic } = useConcierge()
+  const openedInitialAestheticRef = useRef<string | null>(null)
   const limited = accessLevel === "limited"
   const cohort: AppV3AnalyticsCohort =
     analyticsCohort ??
@@ -120,6 +131,44 @@ function ShellInner({
   useEffect(() => {
     saveStoredAppSection(section)
   }, [section])
+
+  useEffect(() => {
+    if (limited || initialSection !== "create" || !initialAestheticId) return
+    if (openedInitialAestheticRef.current === initialAestheticId) return
+    openedInitialAestheticRef.current = initialAestheticId
+
+    let alive = true
+    const openMatch = (aesthetics: Aesthetic[]) => {
+      if (!alive) return
+      const matched = aesthetics.find(aesthetic => aesthetic.id === initialAestheticId)
+      if (!matched) return
+      openWithAesthetic(matched, {
+        format: "photo",
+        creationIntent: intentForFormat("photo", "manual"),
+      })
+    }
+
+    // Static Vault collections are already bundled, so open those immediately. Published
+    // collections still resolve through the live endpoint below.
+    if (AESTHETICS.some(aesthetic => aesthetic.id === initialAestheticId)) {
+      openMatch(AESTHETICS)
+      return () => {
+        alive = false
+      }
+    }
+
+    fetch("/api/app-v3/aesthetics")
+      .then(response => (response.ok ? response.json() : null))
+      .then(data => {
+        const liveAesthetics = Array.isArray(data?.aesthetics) ? data.aesthetics : []
+        openMatch([...liveAesthetics, ...AESTHETICS])
+      })
+      .catch(() => openMatch(AESTHETICS))
+
+    return () => {
+      alive = false
+    }
+  }, [initialAestheticId, initialSection, limited, openWithAesthetic])
 
   // Maya woven in: open a general session preset to a format, so she begins on it.
   function createFormat(format: OutputFormat) {
@@ -227,6 +276,8 @@ function ShellInner({
             }
             cohort={cohort}
             hasSelfie={trialHasSavedSelfie}
+            hasVaultAccess={hasVaultAccess}
+            preSelfieChatEnabled={preSelfieChatEnabled}
             videoEnabled={videoEnabled}
           />
         ))}
@@ -255,8 +306,8 @@ function ShellInner({
                 Your Calendar is waiting.
               </h2>
               <p className="mt-1.5 text-[14px] leading-relaxed text-[#4F5052]">
-                Members plan a full month of posts, captions, and strategy from one selfie.
-                Cancel anytime.
+                Members plan a full month of posts, captions, and strategy from one selfie. Cancel
+                anytime.
               </p>
               <a
                 href="/checkout/membership?interval=month&source=app_limited_calendar"
@@ -317,11 +368,14 @@ export function AppV3Shell({
   trialHasSavedSelfie,
   trialHasSeenFirstRunStep,
   initialSection,
+  initialAestheticId,
+  hasVaultAccess,
+  preSelfieChatEnabled,
   hasTrainedModel,
   videoEnabled,
 }: AppV3ShellProps) {
   return (
-    <ConciergeProvider>
+    <ConciergeProvider suppressRestore={Boolean(initialAestheticId)}>
       <ShellInner
         firstName={firstName}
         accessLevel={accessLevel}
@@ -331,6 +385,9 @@ export function AppV3Shell({
         trialHasSavedSelfie={trialHasSavedSelfie}
         trialHasSeenFirstRunStep={trialHasSeenFirstRunStep}
         initialSection={initialSection}
+        initialAestheticId={initialAestheticId}
+        hasVaultAccess={hasVaultAccess}
+        preSelfieChatEnabled={preSelfieChatEnabled}
         hasTrainedModel={hasTrainedModel}
         videoEnabled={videoEnabled}
       />

@@ -42,7 +42,14 @@ const GENERAL_MAYA_AESTHETIC: Aesthetic = {
     "A general SSELFIE editorial brand session. Help her decide the look from her brand, then create.",
 }
 
-export function ConciergeProvider({ children }: { children: React.ReactNode }) {
+export function ConciergeProvider({
+  children,
+  suppressRestore = false,
+}: {
+  children: React.ReactNode
+  /** An explicit external creation handoff outranks a previously saved draft. */
+  suppressRestore?: boolean
+}) {
   const restoredSavedAtRef = useRef<number | null>(null)
   const [session, setSession] = useState<ConciergeSession | null>(null)
   const [isOpen, setIsOpen] = useState(false)
@@ -232,6 +239,8 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
   }, [isOpen, session])
 
   useEffect(() => {
+    if (suppressRestore) return
+
     const local = readConciergeSnapshot()
     if (local) {
       restoredSavedAtRef.current = local.savedAt
@@ -255,7 +264,7 @@ export function ConciergeProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [suppressRestore])
 
   const value = useMemo<ConciergeContextValue>(
     () => ({

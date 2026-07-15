@@ -158,6 +158,7 @@ Do not reintroduce:
 - Silent reuse of an old inspiration image in a fresh creation.
 - Equal capability cards that make the member plan the workflow.
 - Multiple primary recommendations at the front door or after a result.
+- A Vault grid that competes with the single front-door recommendation. Vault browsing stays a quiet, member-explicit escape into Maya's existing picker.
 - Fake downloads, preview-tab downloads counted as success, or repeated-click review inflation.
 - Format changes inferred from ordinary detail answers.
 - Style or shot choices that replace the active workspace.

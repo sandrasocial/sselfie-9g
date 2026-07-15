@@ -72,7 +72,7 @@ export type ServerConciergeSessionSnapshot = {
   creationIntent?: ServerCreationIntentSnapshot | null
   shotDirector?: ServerShotDirectorSnapshot | null
   generationSource?: ServerGenerationSourceSnapshot | null
-  initialSetupAction?: "selfie_manager" | null
+  initialSetupAction?: "selfie_manager" | "plain_chat" | null
   /** The member's carried idea (structured context, never a replayed message). */
   creationIdea?: string | null
   startedAt: number

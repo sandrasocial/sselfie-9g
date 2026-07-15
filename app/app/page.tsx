@@ -11,7 +11,11 @@ import { redirect } from "next/navigation"
 import { createServerClient } from "@/lib/supabase/server"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { AppV3Shell } from "@/components/app-v3/app-v3-shell"
-import { buildAppV3ReturnTo, resolveAppV3InitialSection } from "@/lib/app-v3/navigation"
+import {
+  buildAppV3ReturnTo,
+  resolveAppV3InitialAestheticId,
+  resolveAppV3InitialSection,
+} from "@/lib/app-v3/navigation"
 import { isVideoGenerationEnabled } from "@/lib/app-v3/video-flag"
 import type { AppV3AnalyticsCohort } from "@/components/app-v3/types"
 
@@ -25,11 +29,16 @@ export const dynamic = "force-dynamic"
 export default async function StudioV3Page({
   searchParams,
 }: {
-  searchParams?: Promise<{ view?: string | string[] }>
+  searchParams?: Promise<{
+    view?: string | string[]
+    aesthetic?: string | string[]
+  }>
 }) {
   const params = searchParams ? await searchParams : {}
   const initialSection = resolveAppV3InitialSection(params.view)
-  const returnTo = buildAppV3ReturnTo(initialSection)
+  const initialAestheticId = resolveAppV3InitialAestheticId(params.aesthetic)
+  const returnTo = buildAppV3ReturnTo(initialSection, initialAestheticId)
+  const preSelfieChatEnabled = process.env.MAYA_PRESELFIE_CHAT_ENABLED === "true"
 
   let supabase
   try {
@@ -57,11 +66,13 @@ export default async function StudioV3Page({
   let trialHasGeneratedImages = false
   let trialHasSavedSelfie = false
   let trialHasSeenFirstRunStep = false
+  let hasVaultAccess = true
   // Whether this member has a completed, non-test trained LoRA model. When true, App v3
   // surfaces a quiet "use my trained model" entry into legacy /studio?legacy=1. Never-trained
   // members never see it. Admins resolve this separately below.
   let hasTrainedModel = false
   if (!isAdminEmail(user.email)) {
+    hasVaultAccess = false
     let resolved: "full" | "trial" | "limited" | "none" = "none"
     if (process.env.APP_V3_MEMBERS_ENABLED === "true") {
       try {
@@ -70,10 +81,19 @@ export default async function StudioV3Page({
         if (neonUserId) {
           const { getSuiteAccess } = await import("@/lib/trial/suite-trial")
           const access = await getSuiteAccess(String(neonUserId))
-          if (access.level === "member") resolved = "full"
-          else if (access.level === "trial") {
+          if (access.level === "member") {
+            resolved = "full"
+            // Recurring members and fixed bundle-pass holders both receive the Vault.
+            hasVaultAccess = true
+          } else if (access.level === "trial") {
             resolved = "trial"
             trialDaysLeft = access.trialDaysLeft
+            try {
+              const { userHasAcademyProductAccess } = await import("@/lib/academy-entitlements")
+              hasVaultAccess = await userHasAcademyProductAccess(String(neonUserId), "prompt_vault")
+            } catch (vaultErr) {
+              console.error("[/app gate] Vault entitlement check failed:", vaultErr)
+            }
             try {
               const rows = await import("@/lib/db/client").then(
                 ({ sql }) => sql`
@@ -163,7 +183,10 @@ export default async function StudioV3Page({
       analyticsCohort={analyticsCohort}
       trialDaysLeft={trialDaysLeft}
       initialSection={initialSection}
+      initialAestheticId={initialAestheticId}
       hasTrainedModel={hasTrainedModel}
+      hasVaultAccess={hasVaultAccess}
+      preSelfieChatEnabled={preSelfieChatEnabled}
       trialHasGeneratedImages={trialHasGeneratedImages}
       trialHasSavedSelfie={trialHasSavedSelfie}
       trialHasSeenFirstRunStep={trialHasSeenFirstRunStep}

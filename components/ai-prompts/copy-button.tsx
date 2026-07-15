@@ -18,11 +18,16 @@ export function CopyButton({
   afterCopyViewEvent,
   afterCopyTrackEvent,
   afterCopyTrackProperties,
+  label = "Copy",
+  ariaLabel = "Copy prompt to clipboard",
 }: {
   text: string
   promptTitle?: string
   promptNumber?: string
-  trackEvent?: "ai_prompts_prompt_copied" | "prompt_vault_prompt_copied" | "selfie_ai_photos_kit_prompt_copied"
+  trackEvent?:
+    | "ai_prompts_prompt_copied"
+    | "prompt_vault_prompt_copied"
+    | "selfie_ai_photos_kit_prompt_copied"
   trackSource?: "ai-prompts" | "prompt-vault" | "selfie-ai-photos-kit"
   afterCopyHref?: string
   afterCopyTitle?: string
@@ -32,6 +37,8 @@ export function CopyButton({
   afterCopyViewEvent?: string
   afterCopyTrackEvent?: string
   afterCopyTrackProperties?: Record<string, string>
+  label?: string
+  ariaLabel?: string
 }) {
   const [copied, setCopied] = useState(false)
   const [showAfterCopyCta, setShowAfterCopyCta] = useState(false)
@@ -89,7 +96,7 @@ export function CopyButton({
         document.execCommand("copy")
         document.body.removeChild(el)
         markCopied()
-      },
+      }
     )
   }
 
@@ -108,8 +115,8 @@ export function CopyButton({
 
   return (
     <div className="copy-action">
-      <button onClick={handleCopy} className="copy-btn" aria-label="Copy prompt to clipboard">
-        {copied ? "Copied" : "Copy"}
+      <button onClick={handleCopy} className="copy-btn" aria-label={ariaLabel}>
+        {copied ? "Copied" : label}
       </button>
       {showAfterCopyCta && !ctaDismissed && afterCopyHref && (
         <div className="copy-after-cta">

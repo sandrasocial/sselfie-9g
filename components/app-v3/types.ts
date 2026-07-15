@@ -118,7 +118,7 @@ export interface ConciergeSession {
   /** Optional explicit engine choice. Normal sessions default to selfie; trained model is opt-in. */
   generationSource?: GenerationSource | null
   /** Optional one-shot setup action Maya should open after the drawer mounts. */
-  initialSetupAction?: "selfie_manager" | null
+  initialSetupAction?: "selfie_manager" | "plain_chat" | null
   startedAt: number
 }
 
@@ -149,7 +149,7 @@ export interface OpenConciergeOptions {
   /** Explicitly open the legacy trained-model path. Normal Maya opens default to selfie. */
   generationSource?: GenerationSource | null
   /** Optional one-shot setup action Maya should open after the drawer mounts. */
-  initialSetupAction?: "selfie_manager" | null
+  initialSetupAction?: "selfie_manager" | "plain_chat" | null
   /** Carry the member's idea into the new session as structured context (not a replayed message). */
   creationIdea?: string | null
 }

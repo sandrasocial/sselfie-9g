@@ -23,6 +23,8 @@ export interface SuiteDoorProps {
   placement: string
   /** Serif font className from the host page (Cormorant), so typography matches. */
   serifClassName?: string
+  /** Analytics destination. Defaults to the existing cold membership door. */
+  destination?: string
 }
 
 export function SuiteDoor({
@@ -35,6 +37,7 @@ export function SuiteDoor({
   footnote,
   placement,
   serifClassName,
+  destination = "join-studio",
 }: SuiteDoorProps) {
   const ref = useRef<HTMLElement | null>(null)
 
@@ -50,23 +53,23 @@ export function SuiteDoor({
         try {
           trackAnalyticsEvent({
             event: "studio_membership_door_view",
-            properties: { source: placement, placement, destination: "join-studio" },
+            properties: { source: placement, placement, destination },
           })
         } catch {
           // fire-and-forget
         }
       },
-      { threshold: 0.4 },
+      { threshold: 0.4 }
     )
     observer.observe(node)
     return () => observer.disconnect()
-  }, [placement])
+  }, [destination, placement])
 
   function handleClick() {
     try {
       trackAnalyticsEvent({
         event: "studio_membership_door_click",
-        properties: { source: placement, placement, destination: "join-studio" },
+        properties: { source: placement, placement, destination },
       })
     } catch {
       // never block navigation
@@ -81,7 +84,7 @@ export function SuiteDoor({
         <p className="suite-door-body">{body}</p>
         {bullets && bullets.length > 0 && (
           <ul className="suite-door-list">
-            {bullets.map((b) => (
+            {bullets.map(b => (
               <li key={b}>{b}</li>
             ))}
           </ul>

@@ -1365,6 +1365,8 @@ export function MayaConcierge({
     outputFormat === "photo" &&
     activeCreationIntent.source === "starter_chip" &&
     !generatedOnce
+  const plainPreSelfieChat =
+    session.initialSetupAction === "plain_chat" && !referenceSelfieUrl && !outputFormat
   const videoSourceUrl = session.videoSourceUrl
   const mayaChoosesVisualWorld = session.aesthetic.id === "maya-decides"
   const hasSpecificVisualWorld =
@@ -2631,7 +2633,7 @@ export function MayaConcierge({
         {/* Setup - full block before the conversation starts (the guided beginning), then it
             collapses to a one-line status strip so Maya's output owns the screen. "Change"
             re-opens it for a format switch or a selfie swap. */}
-        {hasStarted && !setupOpen && !guidedFirstPhoto && (
+        {hasStarted && !setupOpen && !guidedFirstPhoto && !plainPreSelfieChat && (
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-2.5 sm:px-6">
             <span className="flex min-w-0 items-center gap-2.5">
               {(format === "video" ? videoSourceUrl : referenceSelfieUrl) && (
@@ -2671,7 +2673,7 @@ export function MayaConcierge({
             </button>
           </div>
         )}
-        {(!hasStarted || setupOpen) && (
+        {(!hasStarted || setupOpen) && !plainPreSelfieChat && (
           <div className="min-h-0 min-w-0 shrink space-y-3 overflow-y-auto overscroll-contain border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
             {guidedFirstPhoto && (
               <div
@@ -3140,6 +3142,8 @@ export function MayaConcierge({
             {uploadError && <p className="text-[12px] text-[#282728]">{uploadError}</p>}
           </div>
         )}
+
+        {plainPreSelfieChat && !hasStarted && <div className="min-h-0 flex-1" aria-hidden />}
 
         {/* Thread - the ONLY scroll area. min-h-0 lets this flex child shrink so overflow-y
             actually scrolls (without it, content overflowed and the direction cards were
@@ -3781,16 +3785,18 @@ export function MayaConcierge({
                 if (attachInputRef.current) attachInputRef.current.value = ""
               }}
             />
-            <button
-              type="button"
-              aria-label="Attach an inspiration image"
-              title="Attach an inspiration image"
-              onClick={() => attachInputRef.current?.click()}
-              disabled={uploadingSlot === "inspiration"}
-              className="h-12 w-12 shrink-0 rounded-full border border-[#C5C6C8]/60 bg-white text-[20px] font-light leading-none text-[#4F5052] transition-[transform,border-color,color] duration-150 hover:border-[#0D0E10] hover:text-[#0D0E10] active:scale-95 disabled:opacity-40"
-            >
-              {uploadingSlot === "inspiration" ? "…" : "+"}
-            </button>
+            {!plainPreSelfieChat && (
+              <button
+                type="button"
+                aria-label="Attach an inspiration image"
+                title="Attach an inspiration image"
+                onClick={() => attachInputRef.current?.click()}
+                disabled={uploadingSlot === "inspiration"}
+                className="h-12 w-12 shrink-0 rounded-full border border-[#C5C6C8]/60 bg-white text-[20px] font-light leading-none text-[#4F5052] transition-[transform,border-color,color] duration-150 hover:border-[#0D0E10] hover:text-[#0D0E10] active:scale-95 disabled:opacity-40"
+              >
+                {uploadingSlot === "inspiration" ? "…" : "+"}
+              </button>
+            )}
             <input
               ref={composerRef}
               type="text"
