@@ -29,6 +29,10 @@ import {
   VANITY_DRIFT_PATTERN,
 } from "@/lib/app-v3/likeness-memory"
 import { addLikenessNote, getMemory } from "@/lib/app-v3/maya/memory-store"
+import {
+  buildLikenessAcknowledgement,
+  decideLikenessCapture,
+} from "@/lib/app-v3/maya/likeness-capture-ux"
 import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
 import { logAdminError } from "@/lib/admin-error-log"
 import type { OutputFormat } from "@/components/app-v3/types"
@@ -223,6 +227,10 @@ export async function POST(request: NextRequest) {
     // stored (the doctrine guard in buildEditPrompt handles it in-flight). Notes are read
     // BEFORE capture so the new note doesn't duplicate the instruction already in the prompt.
     let likenessBlock = ""
+    let likenessMemory:
+      | { status: "captured"; note: string; acknowledgement: string }
+      | { status: "offer"; note: string }
+      | null = null
     if (isLikenessMemoryEnabled()) {
       try {
         const memory = await getMemory(String(neonUser.id))
@@ -231,22 +239,32 @@ export async function POST(request: NextRequest) {
         }
         const classification = classifyLikenessCorrection(instruction)
         if (classification.isLikeness && classification.note) {
-          const saved = await addLikenessNote(String(neonUser.id), classification.note)
-          if (saved.added || saved.updated) {
-            import("@/lib/analytics/events")
-              .then(({ logAnalyticsEvent }) =>
-                logAnalyticsEvent({
-                  eventName: "suite_likeness_note_captured",
-                  userId: String(neonUser.id),
-                  properties: {
-                    source: "app-v3-edit",
-                    category: classification.category,
-                    updated: saved.updated,
-                    total_notes: saved.total,
-                  },
-                })
-              )
-              .catch(() => {})
+          const captureDecision = decideLikenessCapture(classification)
+          if (captureDecision === "offer") {
+            likenessMemory = { status: "offer", note: classification.note }
+          } else if (captureDecision === "capture") {
+            const saved = await addLikenessNote(String(neonUser.id), classification.note)
+            likenessMemory = {
+              status: "captured",
+              note: classification.note,
+              acknowledgement: buildLikenessAcknowledgement(classification.note),
+            }
+            if (saved.added || saved.updated) {
+              import("@/lib/analytics/events")
+                .then(({ logAnalyticsEvent }) =>
+                  logAnalyticsEvent({
+                    eventName: "suite_likeness_note_captured",
+                    userId: String(neonUser.id),
+                    properties: {
+                      source: "app-v3-edit",
+                      category: classification.category,
+                      updated: saved.updated,
+                      total_notes: saved.total,
+                    },
+                  })
+                )
+                .catch(() => {})
+            }
           }
         }
       } catch (likenessError) {
@@ -475,6 +493,7 @@ export async function POST(request: NextRequest) {
       aiImageId: insertedId,
       creditsDeducted: CREDIT_COSTS.IMAGE,
       newBalance: deduction.newBalance,
+      ...(likenessMemory ? { likenessMemory } : {}),
     })
   } catch (error) {
     console.error("[app-v3 edit] Unexpected error:", error)

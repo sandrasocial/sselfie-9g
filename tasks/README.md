@@ -14,15 +14,6 @@ superseded, obsolete, and completed code specs are archived under `tasks/archive
 
 ## Active queue
 
-- `MAYA-PLAN-REPAIR-01-silent-plan-repair.md`: P0 member friction. Maya repairs her own
-  invalid shoot/story plans at emit time instead of erroring at the member (17x
-  thin_shoot_plan + daily plan_invalid in the last 14 days). Sandra approved the Stage-1
-  corrective loop 2026-07-15. Freeze snapshots must stay unchanged.
-- `MAYA-LEARNING-01-visible-memory.md`: make Maya's learning visible - acknowledge likeness
-  captures, offer to remember, show/delete "what I know about you" (baseline: 2 notes total).
-  Track B only; frozen classifier and prompt block untouched.
-- `STORY-SEQUENCE-01-triage.md`: weakest format (4 of 7 failed in 14 days). Policy-retry
-  parity + honest copy; measurement gate before any removal decision.
 - `MAYA-GOLDEN-01-regression-suite.md`: golden regression suite (Phase A deterministic for
   Codex now; Phase B attended scored image runs with Sandra). Gate for ANY future creative
   change per the freeze contract.
@@ -70,6 +61,20 @@ Maya Style Director and overlay memory, floating Maya/Photos UI, Content Carouse
 Taxonomy, Customer Photoshoot 01-02, Story Overlay, Story Sequence, Vault Story Collections, presets
 order bump, Voice Loop, Employee roster, Needs-Me approval queue, and the superseded numbered-prompt,
 Admin-Maya, and text-overlay plans.
+
+## Shipped from the 2026-07-15 Suite vibe check
+
+- Maya now repairs semantically invalid full-shoot and story plans before the member sees them,
+  with a hard two-attempt ceiling and the existing graceful fallback.
+- Likeness learning is visible: captures are acknowledged, low-confidence feedback asks permission,
+  and Memory exposes learned likeness notes and preferred worlds with deletion controls.
+- The two story-sequence policy failures were confirmed as benign motherhood/business false
+  positives. The graphic path's existing one-retry safety parity and the durable credit-refund
+  contract are pinned by focused regressions. The format stays offered until its 2026-07-29
+  measurement gate.
+- Release records: `tasks/archive/2026-07-15/MAYA-PLAN-REPAIR-01-silent-plan-repair.md`,
+  `tasks/archive/2026-07-15/MAYA-LEARNING-01-visible-memory.md`, and
+  `tasks/archive/2026-07-15/STORY-SEQUENCE-01-triage.md`.
 
 ## Shipped from the 2026-07-13 machine continuation
 

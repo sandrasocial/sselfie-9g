@@ -55,6 +55,7 @@ import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/ima
 import { logAdminError } from "@/lib/admin-error-log"
 import type { CarouselSlide, ShootShotRole } from "@/lib/content-kit/types"
 import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
+import { validatePhotoshootBriefs } from "@/lib/app-v3/maya/semantic-plan-validation"
 import type { OutputFormat } from "@/components/app-v3/types"
 
 // gpt-image edit calls (1024x1536, medium quality, reference selfie attached) routinely
@@ -299,21 +300,6 @@ function normalizeShootBriefs(raw: unknown, fallback: CreativeBrief): CreativeBr
   const candidates = Array.isArray(raw) ? raw : []
   const briefs = candidates.map(normalizeBrief).filter((brief): brief is CreativeBrief => !!brief)
   return briefs.length > 0 ? briefs.slice(0, 9) : [fallback]
-}
-
-function validatePhotoshootBriefs(briefs: CreativeBrief[]): string[] {
-  const errors: string[] = []
-  if (briefs.length < 6) errors.push(`photoshoot needs at least 6 shots, got ${briefs.length}`)
-  const roles = briefs.map(brief => brief.shotRole).filter(Boolean)
-  if (roles.length !== briefs.length) errors.push("every photoshoot shot needs a shotRole")
-  if (new Set(roles).size < Math.min(4, briefs.length)) {
-    errors.push("photoshoot needs at least 4 distinct shot roles")
-  }
-  const detailCount = roles.filter(role => role === "true-detail").length
-  if (detailCount < 1 || detailCount > 2) {
-    errors.push(`photoshoot needs 1-2 true-detail shots, got ${detailCount}`)
-  }
-  return errors
 }
 
 function pickPhotoshootHeroJobIndex(jobs: PhotoshootJob[]): number {

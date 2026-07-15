@@ -1,6 +1,6 @@
 # MAYA-PLAN-REPAIR-01: Maya fixes her own plan before the member ever sees it
 
-Status: ready for Codex. Sandra approved 2026-07-15 (explicit yes on the Stage-1 corrective
+Status: shipped 2026-07-15. Sandra approved 2026-07-15 (explicit yes on the Stage-1 corrective
 loop under the creative freeze).
 Freeze compliance: read `docs/product/MAYA_CREATIVE_FREEZE_2026-07-15.md` first. This task
 adds ORCHESTRATION (validation feedback on a tool call), not prompt-framework changes.
@@ -56,3 +56,13 @@ silently and only ever present a valid one.
   plan renders as if nothing happened.
 - `thin_shoot_plan` and `plan_invalid` events trend to ~zero in the week after deploy.
 - Prompt-framework freeze snapshots unchanged. Full suite green before merge.
+
+## As built
+
+- `emit_concepts` now shares the same photoshoot and story-count validators used by the
+  generation backstops.
+- A semantic failure feeds its exact errors into Maya's concept-writing repair call, capped at
+  two attempts. A still-invalid result returns to the existing graceful fallback instead of
+  reaching the member.
+- Successful repairs emit `suite_plan_repaired` with format, attempt count, and fixed errors.
+- The frozen prompt/persona snapshots remained byte-unchanged.

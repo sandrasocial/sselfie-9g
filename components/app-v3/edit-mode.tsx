@@ -12,6 +12,8 @@
 import { useState } from "react"
 import type { OutputFormat } from "./types"
 import { Spinner } from "./loading"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import { buildLikenessAcknowledgement } from "@/lib/app-v3/maya/likeness-capture-ux"
 
 interface EditModeProps {
   imageUrl: string
@@ -83,6 +85,36 @@ export function EditMode({
   const [instruction, setInstruction] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [likenessMessage, setLikenessMessage] = useState<string | null>(null)
+  const [likenessOffer, setLikenessOffer] = useState<string | null>(null)
+  const [savingLikeness, setSavingLikeness] = useState(false)
+
+  async function rememberLikenessOffer() {
+    if (!likenessOffer || savingLikeness) return
+    setSavingLikeness(true)
+    try {
+      const res = await fetch("/api/app-v3/maya/memory", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ addLikenessNote: likenessOffer }),
+      })
+      if (!res.ok) throw new Error("Could not save that yet.")
+      setLikenessMessage(buildLikenessAcknowledgement(likenessOffer))
+      setLikenessOffer(null)
+    } catch (memoryError) {
+      setError(memoryError instanceof Error ? memoryError.message : "Could not save that yet.")
+    } finally {
+      setSavingLikeness(false)
+    }
+  }
+
+  function dismissLikenessOffer() {
+    void trackAnalyticsEvent({
+      event: "suite_likeness_offer_dismissed",
+      properties: { source: "app-v3-edit" },
+    })
+    setLikenessOffer(null)
+  }
 
   async function runEdit(text: string) {
     const change = text.trim()
@@ -107,6 +139,9 @@ export function EditMode({
         error?: string
         code?: string
         current?: number
+        likenessMemory?:
+          | { status: "captured"; note: string; acknowledgement: string }
+          | { status: "offer"; note: string }
       } | null
       if (
         onCreditBlock &&
@@ -120,6 +155,17 @@ export function EditMode({
       if (!res.ok || !data?.imageUrl) throw new Error(data?.error || "Couldn't make that change.")
       setCurrent(data.imageUrl)
       setInstruction("")
+      if (data.likenessMemory?.status === "captured") {
+        setLikenessMessage(data.likenessMemory.acknowledgement)
+        setLikenessOffer(null)
+      } else if (data.likenessMemory?.status === "offer") {
+        setLikenessMessage(null)
+        setLikenessOffer(data.likenessMemory.note)
+        void trackAnalyticsEvent({
+          event: "suite_likeness_offer_shown",
+          properties: { source: "app-v3-edit" },
+        })
+      }
       onResult(data.imageUrl, data.aiImageId ?? null)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't make that change.")
@@ -165,6 +211,38 @@ export function EditMode({
         {/* Edit panel - pinned right on desktop, below (scrollable) on mobile. Always reachable. */}
         <div className="max-h-[55dvh] shrink-0 space-y-4 overflow-y-auto border-t border-white/10 bg-[#0D0E10]/85 p-5 md:max-h-none md:w-[340px] md:border-l md:border-t-0">
           {error && <p className="text-[12px] text-white/80">{error}</p>}
+
+          {likenessMessage && (
+            <div className="rounded-[4px] border border-white/20 bg-white/10 px-3 py-2.5">
+              <p className="text-[13px] leading-relaxed text-white/90">{likenessMessage}</p>
+            </div>
+          )}
+
+          {likenessOffer && (
+            <div className="rounded-[4px] border border-white/20 bg-white/10 px-3 py-3">
+              <p className="text-[13px] leading-relaxed text-white/90">
+                Want me to remember that for every future photo?
+              </p>
+              <div className="mt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => void rememberLikenessOffer()}
+                  disabled={savingLikeness}
+                  className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-40"
+                >
+                  {savingLikeness ? "Saving…" : "Remember it"}
+                </button>
+                <button
+                  type="button"
+                  onClick={dismissLikenessOffer}
+                  disabled={savingLikeness}
+                  className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-white/60 hover:text-white disabled:opacity-40"
+                >
+                  Not now
+                </button>
+              </div>
+            </div>
+          )}
 
           <div>
             <p className="mb-2 text-[10px] uppercase tracking-[0.22em] text-white/50">

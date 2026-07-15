@@ -1,6 +1,6 @@
 # MAYA-LEARNING-01: make Maya's learning visible (the moat members can feel)
 
-Status: ready for Codex.
+Status: shipped 2026-07-15.
 Freeze compliance: read `docs/product/MAYA_CREATIVE_FREEZE_2026-07-15.md`. This is Track B
 (experience/routing/UI). The likeness prompt-injection block already exists and is frozen;
 this task changes CAPTURE and VISIBILITY only. Freeze snapshots must stay unchanged.
@@ -49,3 +49,13 @@ this task changes CAPTURE and VISIBILITY only. Freeze snapshots must stay unchan
 - Likeness-note count and members-with-notes climb week over week (baseline: 2 notes, 2
   members on 2026-07-15).
 - Freeze snapshots unchanged; full suite green before merge.
+
+## As built
+
+- Specific likeness corrections are acknowledged immediately after capture; vague likeness
+  feedback gets one dismissible, one-tap permission offer before it is saved.
+- Memory now surfaces the member's agent name, preferred world, and likeness corrections with
+  member-controlled removal.
+- Offer shown/accepted/dismissed and note-deleted events are in the analytics contract.
+- `APP_V3_LIKENESS_MEMORY_ENABLED` was confirmed enabled in the Vercel Production environment.
+- The frozen classifier and likeness prompt-injection block were not edited.

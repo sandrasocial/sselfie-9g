@@ -13,6 +13,7 @@ export interface Memory {
   preferences: string | null
   userAvatarUrl: string | null
   preferredOverlayStyle?: string | null
+  preferredFeedStyle?: string | null
   /** LIKENESS-MEMORY-01: accuracy notes Maya learned from her photo corrections. */
   likenessNotes?: string[]
 }
@@ -30,6 +31,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [likenessNotes, setLikenessNotes] = useState<string[]>([])
   const [overlayStyle, setOverlayStyle] = useState<string | null>(null)
+  const [preferredFeedStyle, setPreferredFeedStyle] = useState<string | null>(null)
   const [clearingStyle, setClearingStyle] = useState(false)
   const [removingNote, setRemovingNote] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -48,7 +50,12 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
         setPrefs(d?.preferences ?? "")
         setAvatarUrl(d?.userAvatarUrl ?? null)
         setLikenessNotes(Array.isArray(d?.likenessNotes) ? d.likenessNotes : [])
-        setOverlayStyle(typeof d?.preferredOverlayStyle === "string" ? d.preferredOverlayStyle : null)
+        setOverlayStyle(
+          typeof d?.preferredOverlayStyle === "string" ? d.preferredOverlayStyle : null
+        )
+        setPreferredFeedStyle(
+          typeof d?.preferredFeedStyle === "string" ? d.preferredFeedStyle : null
+        )
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -66,6 +73,19 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
       if (res.ok) setOverlayStyle(null)
     } finally {
       setClearingStyle(false)
+    }
+  }
+
+  async function clearFeedStyle() {
+    try {
+      const res = await fetch("/api/app-v3/maya/memory", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clearPreferredFeedStyle: true }),
+      })
+      if (res.ok) setPreferredFeedStyle(null)
+    } catch {
+      // Memory is fail-open. She can try again without losing the rest of the form.
     }
   }
 
@@ -119,6 +139,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
           preferences: d.preferences ?? null,
           userAvatarUrl: d.userAvatarUrl ?? null,
           preferredOverlayStyle: d.preferredOverlayStyle ?? null,
+          preferredFeedStyle: d.preferredFeedStyle ?? null,
           likenessNotes: Array.isArray(d.likenessNotes) ? d.likenessNotes : [],
         })
       }
@@ -232,7 +253,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
               knows nothing". These fill automatically as she creates. */}
           <div>
             <p className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">
-              What Maya learns as you create
+              What I know about you
             </p>
             <div className="mt-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5">
               <div className="flex items-center justify-between gap-3">
@@ -256,10 +277,30 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
                 )}
               </div>
             </div>
+            <div className="mt-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[12px] text-[#818283]">Your preferred world</p>
+                  <p className="mt-0.5 text-[13px] leading-snug text-[#282728]">
+                    {preferredFeedStyle ||
+                      "Not learned yet. Maya remembers it when you choose a clear direction."}
+                  </p>
+                </div>
+                {preferredFeedStyle && (
+                  <button
+                    type="button"
+                    onClick={() => void clearFeedStyle()}
+                    className="inline-flex min-h-11 shrink-0 items-center text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10]"
+                  >
+                    Forget
+                  </button>
+                )}
+              </div>
+            </div>
             {likenessNotes.length === 0 && (
               <p className="mt-2 text-[12px] leading-relaxed text-[#818283]">
-                Maya also keeps notes from your photo corrections ("hair: dark brown, not
-                black") so every new photo stays you. They will show up here as she learns.
+                Maya also keeps notes from your photo corrections (“hair: dark brown, not black”) so
+                every new photo stays you. They will show up here as she learns.
               </p>
             )}
           </div>
@@ -272,8 +313,8 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
                 What Maya keeps true about you
               </p>
               <p className="mt-1 text-[12px] leading-relaxed text-[#4F5052]">
-                Learned from your photo corrections, so every new photo stays you. Remove
-                anything that&apos;s off.
+                Learned from your photo corrections, so every new photo stays you. Remove anything
+                that&apos;s off.
               </p>
               <ul className="mt-2 space-y-1.5">
                 {likenessNotes.map(note => (

@@ -1977,7 +1977,10 @@ export function MayaConcierge({
       trackRecoveryShown("photoshoot", "thin_shoot_plan")
       setGenState(s => ({
         ...s,
-        [key]: { status: "error", error: "Ask Maya for a fuller shoot plan first." },
+        [key]: {
+          status: "error",
+          error: "Let me finish the full shoot plan first. Ask me again in a moment.",
+        },
       }))
       return
     }

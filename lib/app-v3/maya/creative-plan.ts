@@ -1,6 +1,8 @@
 // Shared Maya creative planning contract for customer-facing /app Maya.
 // Pure types and validation helpers. Customer carousel consumes this first; other modes wire in later.
 
+import { validateStorySequenceOutputCount } from "@/lib/app-v3/maya/semantic-plan-validation"
+
 export type CreativeMode = "photo" | "reel_cover" | "carousel" | "story_sequence" | "video"
 
 export type CreativeUseCase =
@@ -294,8 +296,8 @@ function validateModeSpecificPlan(plan: CreativePlan, errors: string[], warnings
     validateCarouselPlanRules(plan, errors)
   }
 
-  if (plan.mode === "story_sequence" && ![3, 5, 7].includes(plan.outputCount)) {
-    errors.push(`story_sequence outputCount must be 3, 5, or 7, got ${plan.outputCount}`)
+  if (plan.mode === "story_sequence") {
+    errors.push(...validateStorySequenceOutputCount(plan))
   }
 
   if (plan.mode === "photo" && plan.outputCount > 1 && plan.useCase !== "full_photoshoot") {

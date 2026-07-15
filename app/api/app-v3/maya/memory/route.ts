@@ -6,8 +6,18 @@
 import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
-import { getMemory, removeLikenessNote, saveMemory } from "@/lib/app-v3/maya/memory-store"
+import {
+  addLikenessNote,
+  getMemory,
+  removeLikenessNote,
+  saveMemory,
+} from "@/lib/app-v3/maya/memory-store"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
+import {
+  clearPreferredFeedStyle,
+  getPreferredFeedStyle,
+} from "@/lib/feed-planner/resolve-feed-style"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 
 export const dynamic = "force-dynamic"
 
@@ -17,8 +27,17 @@ const EMPTY = {
   preferences: null,
   userAvatarUrl: null,
   preferredOverlayStyle: null,
+  preferredFeedStyle: null,
   likenessNotes: [] as string[],
   hasBrandProfile: true,
+}
+
+async function readVisibleMemory(userId: string) {
+  const [memory, preferredFeedStyle] = await Promise.all([
+    getMemory(userId),
+    getPreferredFeedStyle(userId),
+  ])
+  return { ...memory, preferredFeedStyle }
 }
 
 export async function GET() {
@@ -29,7 +48,7 @@ export async function GET() {
   if (!neonUserId) return NextResponse.json(EMPTY)
 
   try {
-    const mem = await getMemory(String(neonUserId))
+    const mem = await readVisibleMemory(String(neonUserId))
     // Does she already have a real brand profile in the existing SSELFIE system? If so, we never
     // run progressive onboarding (Maya already knows her). Default to true on any doubt = don't nag.
     let hasBrandProfile = true
@@ -59,6 +78,10 @@ export async function PUT(request: Request) {
         preferredOverlayStyle?: string | null
         /** LIKENESS-MEMORY-01: delete one stored likeness note (a wrong note must be removable). */
         removeLikenessNote?: string
+        /** MAYA-LEARNING-01: one-tap acceptance of a low-confidence capture offer. */
+        addLikenessNote?: string
+        /** Remove only Maya's learned feed world. */
+        clearPreferredFeedStyle?: boolean
       }
     | null
   if (!body || typeof body !== "object") {
@@ -69,8 +92,31 @@ export async function PUT(request: Request) {
   if (!neonUserId) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
   try {
+    if (typeof body.addLikenessNote === "string" && body.addLikenessNote.trim()) {
+      const saved = await addLikenessNote(String(neonUserId), body.addLikenessNote)
+      await Promise.all([
+        logAnalyticsEvent({
+          eventName: "suite_likeness_offer_accepted",
+          userId: String(neonUserId),
+          properties: { source: "app-v3-memory", total_notes: saved.total },
+        }).catch(() => {}),
+        logAnalyticsEvent({
+          eventName: "suite_likeness_note_captured",
+          userId: String(neonUserId),
+          properties: { source: "app-v3-memory-offer", total_notes: saved.total },
+        }).catch(() => {}),
+      ])
+    }
     if (typeof body.removeLikenessNote === "string" && body.removeLikenessNote.trim()) {
       await removeLikenessNote(String(neonUserId), body.removeLikenessNote)
+      await logAnalyticsEvent({
+        eventName: "suite_likeness_note_deleted",
+        userId: String(neonUserId),
+        properties: { source: "app-v3-memory" },
+      }).catch(() => {})
+    }
+    if (body.clearPreferredFeedStyle === true) {
+      await clearPreferredFeedStyle(String(neonUserId))
     }
     if (
       body.agentName !== undefined ||
@@ -87,7 +133,7 @@ export async function PUT(request: Request) {
         preferredOverlayStyle: body.preferredOverlayStyle,
       })
     }
-    return NextResponse.json(await getMemory(String(neonUserId)))
+    return NextResponse.json(await readVisibleMemory(String(neonUserId)))
   } catch (e) {
     console.error("[app-v3 memory] save failed:", e)
     return NextResponse.json({ error: "Could not save" }, { status: 500 })

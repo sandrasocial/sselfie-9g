@@ -1,6 +1,6 @@
 # STORY-SEQUENCE-01: fix the weakest format or bench it
 
-Status: ready for Codex (investigation first, then the fix path below).
+Status: shipped/verified 2026-07-15 (measurement gate remains for 2026-07-29).
 Freeze compliance: read `docs/product/MAYA_CREATIVE_FREEZE_2026-07-15.md`. Retry
 orchestration and copy are Track B; any change to prompt TEXT stops and goes to Sandra.
 
@@ -39,3 +39,20 @@ Story-sequence is the weakest offered format: 7 generations, 4 failures (57%).
 - Story-sequence failure rate drops below 20% over the following 2 weeks (baseline 57%).
 - No dishonest copy: the "softened it" message only shows when a soften retry actually ran.
 - Freeze snapshots unchanged; full suite + check:voice green before merge.
+
+## Investigation and as-built result
+
+- Production telemetry confirmed both July 4-5 policy incidents were OpenAI false positives
+  labeled `safety_violations=[sexual]`. The member concepts were benign motherhood/business
+  stories: building a business with three children, and teaching children that their mother's
+  dreams matter too. No sexual request was present in either chat.
+- Graphic/story rendering already reached retry parity on 2026-07-05 in commit `1b013813`: the
+  first policy rejection is retried once with the shared safety sanitizer and `moderation: low`.
+  Only a second rejection reaches the copy that says Maya softened it. Focused regression tests
+  pin both the retry and the honest double-rejection detail.
+- Story output-count failures are now repaired by `MAYA-PLAN-REPAIR-01` before concept cards render.
+- The generation charge uses one durable request reference; immediate failures refund against
+  that reference, and the five-minute reconciliation path settles charged-but-undelivered assets.
+- Measurement remains `suite_image_generated` versus `suite_generation_failed`, filtered to
+  `format=story-sequence`. Re-evaluate the 20% gate on 2026-07-29; this release does not remove
+  the format.

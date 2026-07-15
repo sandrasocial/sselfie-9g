@@ -66,7 +66,9 @@ export function scoreFeedStyle(brandText: string): { style: CuratedFeedStyleName
 }
 
 /** The style the member expressed to Maya in conversation, if any. */
-async function getPreferredFeedStyle(userId: number | string | null | undefined): Promise<CuratedFeedStyleName | null> {
+export async function getPreferredFeedStyle(
+  userId: number | string | null | undefined
+): Promise<CuratedFeedStyleName | null> {
   if (userId == null) return null
   try {
     const [row] = await sql`
@@ -79,6 +81,17 @@ async function getPreferredFeedStyle(userId: number | string | null | undefined)
   } catch {
     return null
   }
+}
+
+/** Forget only the style Maya learned in conversation. Other personal memory stays intact. */
+export async function clearPreferredFeedStyle(userId: number | string): Promise<void> {
+  await sql`
+    UPDATE maya_personal_memory
+    SET
+      memory_data = COALESCE(memory_data, '{}'::jsonb) - 'preferred_feed_style',
+      updated_at = NOW()
+    WHERE user_id = ${String(userId)}
+  `
 }
 
 export interface ResolvedFeedStyle {

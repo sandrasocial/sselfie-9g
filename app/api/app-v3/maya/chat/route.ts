@@ -9,7 +9,7 @@
 //
 // Isolated /app endpoint. Reuses shared auth + the persona-injected system prompt only.
 
-import { streamText, tool, convertToModelMessages, type UIMessage } from "ai"
+import { generateText, streamText, tool, convertToModelMessages, type UIMessage } from "ai"
 import { z } from "zod"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
@@ -22,6 +22,8 @@ import { salvageConceptsPayload } from "@/lib/app-v3/concept-salvage"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
+import { validateEmittedConceptPlan } from "@/lib/app-v3/maya/semantic-plan-validation"
+import { repairSemanticPlan } from "@/lib/app-v3/maya/semantic-plan-repair"
 import type { CreationIntent, CreationIntentSource, OutputFormat } from "@/components/app-v3/types"
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
@@ -320,7 +322,7 @@ const OUTPUT_FORMAT_VALUES = [
 
 // Named so the emit_concepts repair path (experimental_repairToolCall) can re-validate its
 // repaired payload against the exact same schema before handing it back to the SDK.
-const emitConceptsInputSchema = z.object({
+const emitConceptsShapeSchema = z.object({
   format: z.enum(OUTPUT_FORMAT_VALUES).describe("The output format these concepts are for."),
   concepts: z
     .array(conceptSchema)
@@ -329,6 +331,12 @@ const emitConceptsInputSchema = z.object({
     .describe(
       "Size the set to her ask: 3 distinct directions by default; 1-2 when she described one specific photo; 6-9 cohesive shots when she asked for a full photoshoot/series."
     ),
+})
+
+const emitConceptsInputSchema = emitConceptsShapeSchema.superRefine((plan, context) => {
+  for (const error of validateEmittedConceptPlan(plan)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: error })
+  }
 })
 
 const emitConcepts = tool({
@@ -341,6 +349,16 @@ const emitConcepts = tool({
   inputSchema: emitConceptsInputSchema,
   // Echo the concepts as the tool output so the client renders them from part.output.concepts,
   // matching the app's existing tool-part convention. Default stop-after-step keeps this terminal.
+  execute: async ({ concepts, format }) => ({ concepts, format }),
+})
+
+// The corrective call uses the same payload shape without semantic refinement. That lets us
+// inspect another still-invalid attempt and feed its exact errors back once more, rather than
+// letting the SDK discard it before the two-attempt orchestration cap can do its job.
+const emitConceptsRepairTool = tool({
+  description:
+    "Correct the supplied concept plan using the exact validator errors. Return the complete emit_concepts payload and preserve every valid creative detail.",
+  inputSchema: emitConceptsShapeSchema,
   execute: async ({ concepts, format }) => ({ concepts, format }),
 })
 
@@ -1081,6 +1099,63 @@ export async function POST(req: Request) {
                 count: parsed.data.concepts.length,
               })
               return { ...toolCall, input: JSON.stringify(parsed.data) }
+            }
+          }
+
+          // MAYA-PLAN-REPAIR-01: schema-valid plans can still be unusable (five shoot
+          // shots, no detail shot, or an impossible story count). Feed the exact semantic
+          // validator errors back to Maya's concept-writing stage. Two attempts maximum;
+          // null preserves today's visible backstops instead of ever hanging the stream.
+          const semanticCandidate = candidates
+            .map(candidate => emitConceptsShapeSchema.safeParse(candidate))
+            .find(parsed => parsed.success)
+          if (semanticCandidate?.success) {
+            const initialErrors = validateEmittedConceptPlan(semanticCandidate.data)
+            if (initialErrors.length > 0) {
+              const repaired = await repairSemanticPlan({
+                initial: semanticCandidate.data,
+                validate: validateEmittedConceptPlan,
+                maxAttempts: 2,
+                requestRepair: async ({ candidate, errors, attempt }) => {
+                  const repairResult = await generateText({
+                    model: createMayaOpenRouterModel("chat_pro"),
+                    system,
+                    prompt: [
+                      "Your emit_concepts plan failed semantic validation.",
+                      `Repair attempt ${attempt} of 2.`,
+                      "Fix every validator error while preserving all valid creative details.",
+                      "Validator errors:",
+                      ...errors.map(message => `- ${message}`),
+                      "Previous emit_concepts payload:",
+                      JSON.stringify(candidate),
+                      "Return the corrected emit_concepts tool call only.",
+                    ].join("\n"),
+                    tools: { emit_concepts: emitConceptsRepairTool },
+                    toolChoice: { type: "tool", toolName: "emit_concepts" },
+                    temperature: 0.2,
+                    maxOutputTokens: APP_V3_MAX_OUTPUT_TOKENS,
+                  })
+                  const repairedCall = repairResult.toolCalls.find(
+                    call => call.toolName === "emit_concepts"
+                  )
+                  const parsed = emitConceptsShapeSchema.safeParse(repairedCall?.input)
+                  return parsed.success ? parsed.data : null
+                },
+              })
+              if (repaired) {
+                console.log(
+                  `[app-v3 maya chat] semantic plan repaired: format=${repaired.value.format} attempts=${repaired.attemptCount}`
+                )
+                logBehavior("suite_plan_repaired", {
+                  format: repaired.value.format,
+                  attempt_count: repaired.attemptCount,
+                  errors_fixed: repaired.errorsFixed,
+                })
+                return { ...toolCall, input: JSON.stringify(repaired.value) }
+              }
+              console.warn(
+                `[app-v3 maya chat] semantic plan repair exhausted: format=${semanticCandidate.data.format} errors=${initialErrors.join(" | ")}`
+              )
             }
           }
           return null

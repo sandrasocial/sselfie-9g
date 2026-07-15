@@ -206,6 +206,7 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   // STORY-GENERATION round 3 (2026-07-03): a malformed emit_concepts call was repaired
   // server-side / a chat stream died before finishing (behavior only).
   "suite_concepts_repaired",
+  "suite_plan_repaired",
   "suite_chat_aborted",
   "trial_cap_offer_shown",
   "trial_cap_offer_cta_click",
@@ -215,6 +216,10 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "suite_memory_note_saved",
   // LIKENESS-MEMORY-01 — a likeness correction became a durable memory note (behavior only).
   "suite_likeness_note_captured",
+  "suite_likeness_offer_shown",
+  "suite_likeness_offer_accepted",
+  "suite_likeness_offer_dismissed",
+  "suite_likeness_note_deleted",
   // CALENDAR-UPGRADE-01: behavioral outcome only. Revenue truth never lives here.
   "calendar_post_published",
   // TEXT-STUDIO-01 — hybrid text studio: she asked for a baked text render / the bake failed

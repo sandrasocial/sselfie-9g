@@ -70,7 +70,7 @@ describe("memory modal shows real knowledge", () => {
     expect(modal).toContain("preferredOverlayStyle")
     expect(modal).toContain("Your usual text style")
     expect(modal).toContain("clearOverlayStyle")
-    expect(modal).toContain("What Maya learns as you create")
+    expect(modal).toContain("What I know about you")
   })
 })
 
