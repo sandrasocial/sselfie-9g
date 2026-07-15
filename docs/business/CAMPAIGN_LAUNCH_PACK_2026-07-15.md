@@ -108,7 +108,7 @@ Comment CAMPAIGN and I'll send you the details.
 
 ## 3. Stories sequence (launch day, 7 slides)
 
-1. HOOK · "Be honest. You have something to sell and zero photos to post it with."
+1. HOOK · "Be honest. You're building something and you have zero photos to post about it."
    (Sandra to camera, real.)
 2. RECOGNITION · "You did the hard part. You built the offer. Then launch week comes and
    you've got nothing ready to post."

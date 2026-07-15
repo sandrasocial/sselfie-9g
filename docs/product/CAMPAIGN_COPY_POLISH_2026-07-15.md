@@ -61,6 +61,14 @@ No-Fake psychology doctrine, design system.
 12. Optional warmth nit, Day-7 email: add "No pressure either way, I just want to know if
     it helped." before the buttons.
 
+## A2. Supersede note (read before the held-branch spec/contract)
+
+The held branch's own copies of `tasks/CAMPAIGN-OUTCOME-01-your-next-campaign.md` and the
+contract's "Audience callout" line still say "for women who already sell something and need
+to promote it" — SUPERSEDED by item 2 above (2026-07-15 behavior analysis + swap test).
+Where the held-branch docs and this polish doc disagree, THIS DOC WINS. Update those two
+lines in the same PR so no future reader re-imports the stale callout.
+
 ## B. Implementation polish (Codex, on the held branch, before go-live)
 
 1. **Two side-stripe error boxes violate the design ban**: landing `checkoutFailed`
