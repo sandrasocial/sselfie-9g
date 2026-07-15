@@ -1,9 +1,11 @@
-# Your Next Campaign — the outcome pivot and its test (v2, merged)
+# Your Next Campaign — the outcome pivot and its test (v3)
 
-Status: DECISION CONTRACT v2, 2026-07-14 evening. Merges THREE independent audits (Claude
+Status: DECISION CONTRACT v3, 2026-07-14 late. v3 corrects the deliverable composition (Sandra's
+direction) and adds phase-2 operating benchmarks. v2 merged THREE independent audits (Claude
 2026-07-13 chat audit; Codex 2026-07-14 audit; Claude 2026-07-14 truth investigation
 `docs/audits/SSELFIE_TRUTH_INVESTIGATION_2026-07-14.md`; Codex 2026-07-14 second audit with Stripe
-cancellation evidence). Sandra approves before build. The Brand Constitution governs all copy.
+cancellation evidence). Sandra approved Codex taking over the incomplete v3 handoff on 2026-07-14.
+The Brand Constitution governs all copy, and customer-facing wording still requires approval.
 
 ## v2 changes (what the audit comparison settled)
 
@@ -34,6 +36,26 @@ cancellation evidence). Sandra approves before build. The Brand Constitution gov
    Sandra QAs minutes per order. The MODEL is automated; nothing depends on Sandra fulfilling
    low-priced orders at steady state.
 
+## v3 changes (2026-07-14 late — deliverable composition corrected)
+
+1. **The $97 deliverable is a complete campaign KIT, not three posts.** Three posts alone are a
+   weak value test at this price. Current one-time AI-headshot offers sell 30-70 images for
+   $29-$59, while current content tools sell far more output but still leave the customer to do
+   the work. SSELFIE should not compete on image count. It should complete the promotion. The
+   exact composition below gives the buyer a mini brand shoot, feed content, Stories, and a simple
+   publishing order for ONE thing she is selling. It is not a month of content, a library, a
+   course, or a broad strategy package.
+2. **Stories are part of the deliverable.** Feed is cold reach; Stories are where the warm sell
+   happens (SSELFIE's own event practice). A campaign without Story sequences omits the surface
+   where conversion actually occurs.
+3. **Phase 2 operating benchmarks added** (section below) from the 2026-07-14 external
+   growth-playbook review — convergent with the truth investigation except sequencing: the
+   subscription is still EARNED via the repeat gate, never launched on faith.
+4. Checkout-recovery cadence upgraded to three touches: `tasks/RECOVERY-CADENCE-01-three-touch.md`.
+5. Product decisions now run through the read-only `offer-architect` agent
+   (`.claude/agents/offer-architect.md`) before build — internal sales truth + current market
+   comparables + the five failure tests, so no offer ships on optimism again.
+
 ## The diagnosis both audits agree on
 
 A year of evidence, one sentence: SSELFIE sells access to a machine (subscription, courses,
@@ -63,27 +85,42 @@ Evidence (verified, sources in parentheses):
 
 ## The product to test (next commercial experiment after the event closes)
 
-**One Selfie, One Week of Content** — an automated, done-FOR-you outcome. One-time purchase.
+**Your Next Campaign** — an automated, done-FOR-you campaign kit for one promotion.
 
-Customer provides: one selfie, what she sells, what she wants to promote this week.
+Founding test price: **$97 once.** Do not test a price range. A single price gives the test one
+truthful denominator.
 
-She receives, DELIVERED (email + buyer page), within **48 hours**:
+Customer provides in a five-minute intake:
 
-1. A clear visual direction (her world, chosen by Maya).
-2. A finished set of brand photos (still-you guaranteed).
-3. Seven content ideas mapped to her offer.
-4. Captions/talking points and calls to action connected to what she sells.
-5. One recommended first post.
+1. One clear selfie.
+2. What she sells.
+3. What she is promoting now.
+4. Who it is for.
+5. Optional: her website, Instagram, or one sample caption so Maya can better match her voice.
 
-Price to test: **$97-129 once.** Not access. Not credits. Not "log in and create." The delivery
-must be complete enough that a non-technical buyer posts the first piece the day it arrives.
+She receives on one buyer page and by email within **48 hours**:
+
+1. **A six-photo mini brand shoot** built around the promotion. Three primary campaign images and
+   three usable alternates. Every image passes the still-you quality check.
+2. **Three finished feed posts** in a deliberate sequence: attention, trust, and offer. Each has
+   its selected image, final caption, hook, and one CTA connected to what she sells.
+3. **One finished seven-slide carousel** with the slide copy and 4:5 visuals ready to download.
+   It supports the same promotion; it does not introduce a second topic.
+4. **Two finished five-frame Story sequences** in 9:16 format: one warm-up/trust sequence and one
+   direct offer sequence. Ten Story slides total, ready to download in order.
+5. **One one-page five-day publish plan** showing exactly what to post first, what follows, and why.
+   This is the only strategy artifact. No workbook and no lesson library.
+
+This is a campaign kit, not a quantity bundle: 6 brand photos, 3 feed posts, 1 carousel, 2 Story
+sequences, and 1 publishing plan all sell ONE promotion. Do not add Reels, newsletters, lead
+magnets, a month of content, or unlimited revisions to make the number look larger.
 
 Hard product laws:
 
 - DONE-FOR-YOU IS THE LINE. If the buyer must learn or operate anything to get the deliverable,
   the test is invalid — that rebuilds the tool with a new label, which is the exact failure mode
-  this pivot exists to end. Human QA pass on every order at first (10 min/order, also trains the
-  likeness quality loop).
+  this pivot exists to end. Human QA pass on every order at first, with a maximum target of ten
+  minutes per order. If it takes longer, pause the batch and fix the automation or scope.
 - **48-hour delivery promise** and **still-you guarantee** ("it looks like you or I fix it") are
   part of the offer. These are the differentiators vs the $29-59 commodity and the synthetic wave.
 - SUITE is repositioned as the continuation for repeat buyers ("want this every month?"), offered
@@ -100,13 +137,13 @@ plan: hooks addressed to women who SELL something ("you have an offer and no pho
 the warm sell, feed staying cold-reach. Buyer-intent qualification question at checkout or delivery
 ("what do you sell?") — required for fulfillment anyway, doubles as segment truth.
 
-## Gates (v2 — merged, Codex's granular set adopted)
+## Gates (v3)
 
 Over the test window (do not judge before ~20 buyers on repeat behavior):
 
 - ≥200 qualified landing visitors → ≥20 checkout starts (10%).
 - Purchases: 6+ from the first 200 = strong; 4-5 = uncertain; ≤3 = promise/segment/price failed.
-- ≥70% of buyers complete the inputs and create; ≥60% download a finished campaign.
+- ≥70% of buyers complete the intake; ≥60% download at least one finished asset.
 - ≥40% confirm they published something within 7 days.
 - Refunds <5%; automatic redo/quality failures <10%.
 - **≥25% buy a SECOND campaign within 30-45 days** before treating this as a subscription job.
@@ -117,7 +154,33 @@ price/proof/trust. Pay but don't create → activation. Create but don't downloa
 Download but don't publish → outcome not useful enough. Publish but never rebuy → valuable
 episodic product (still a business). Rebuy → SUITE has earned its subscription.
 
-## Preconditions (Thursday 2026-07-16, before any build)
+## Phase 2 operating benchmarks (directional, not promises)
+
+These benchmarks govern what may happen only after the pay-per-campaign test. They are not launch
+claims and they do not justify a subscription before repeat purchase exists.
+
+1. **Earn recurrence first.** Do not launch a monthly plan until at least 25% of a meaningful buyer
+   cohort pays for campaign two within 30-45 days. Survey interest is not evidence.
+2. **Then test the efficient repeat option.** Start with three campaign credits at approximately
+   $249. Only after buyers use those credits should SUITE be tested as the place that remembers her
+   brand and delivers fresh campaign work.
+3. **If a monthly plan is earned, begin around $39-$54/month.** The relevant current comparison is
+   recurring content support, not a premium photo generator. Styled Stock Society currently lists
+   $45/month for a refreshed visual/template/caption library. Coffee & Contracts currently lists
+   $74/month for real-estate-specific monthly content, education, and community. SSELFIE must earn
+   its price through personalization and finished work, not a larger library.
+4. **Retention bar:** aim for voluntary monthly churn below 5% before increasing acquisition spend.
+   Treat this as an operating goal, not an industry guarantee. Report payment failures separately
+   from customer cancellations.
+5. **Activation bar:** intake should take under five minutes. The first usable finished campaign
+   must arrive within the promised 48 hours. Do not redefine activation as opening a dashboard.
+6. **Annual plans come later.** Test annual only after at least three monthly cohorts show stable
+   repeat use. Never use annual billing to hide weak monthly retention.
+7. **Dunning is independent of product strategy.** Verify Smart Retries and card-update recovery.
+   The existing evidence shows 11 of 35 cancellations were payment failures; that revenue should
+   not wait for the new offer.
+
+## Preconditions (Thursday 2026-07-16, before release)
 
 1. **Event postmortem** with final numbers (traffic by source, starts, sales, ManyChat BUNDLE
    volume, Stories link taps). One honest page; no quiet repeat without learning.
@@ -142,3 +205,21 @@ SSELFIE as an income system before income outcomes are measurable.
 Prompt Vault ($37 entry, proven). The "one selfie" starting point. Sandra's story, taste, and the
 No-Fake/still-you position (the moat). Maya — pointed at finished outcomes, not more capabilities.
 The Brand Constitution and honesty guardrails: real deadline, real proof, no income promises.
+
+## Current market references checked 2026-07-14
+
+- HeadshotPro, official pricing: $29 one-time for 30 headshots, $39 for 50, and $59 for 70:
+  https://www.headshotpro.com/
+- Photo AI, official pricing: $19-$99 monthly, with photo volume, models, editing, and quality tiers:
+  https://photoai.com/pricing
+- Predis.ai, official pricing/help: $32/month Core and $79/month Rise for ongoing content creation,
+  brand settings, and publishing workflows:
+  https://help.predis.ai/en/article/predisai-pricing-plans-1e9qpuq/
+- Styled Stock Society, official offer: $45/month with refreshed stock, Canva templates, videos,
+  and caption guides: https://www.styledstocksociety.com/intro-offer/
+- Coffee & Contracts, official pricing and help: $74/month for niche-specific recurring content,
+  Stories, Reels, newsletters, coaching, and community: https://coffeecontracts.com/ and
+  https://support.coffeecontracts.com/en/articles/10444461-do-you-have-masculine-templates
+
+These products prove comparison pressure and recurring workflow patterns. They do not prove demand
+for SSELFIE's exact campaign kit. Only the paid test can do that.

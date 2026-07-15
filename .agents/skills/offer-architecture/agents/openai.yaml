@@ -1,0 +1,4 @@
+interface:
+  display_name: "Offer Architecture"
+  short_description: "Validate offers before SSELFIE builds them"
+  default_prompt: "Use $offer-architecture to validate this SSELFIE offer before implementation."

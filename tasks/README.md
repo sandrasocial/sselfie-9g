@@ -14,7 +14,12 @@ superseded, obsolete, and completed code specs are archived under `tasks/archive
 
 ## Active queue
 
-There is no active Codex build in the root task queue.
+- `CAMPAIGN-OUTCOME-01-your-next-campaign.md`: held pay-per-outcome product. Payment/intake/QA/
+  delivery infrastructure exists on `codex/campaign-outcome-held`, but the three-post deliverable
+  must be revised to the complete v3 campaign kit before release. Never merge before the current
+  One Selfie event closes on 2026-07-15 at 18:05 CEST.
+- `RECOVERY-CADENCE-01-three-touch.md`: campaign-specific checkout recovery that ships only with the
+  approved campaign product. Copy remains draft and no recovery email may send before approval.
 
 ## Safety boundaries — not open tasks
 
