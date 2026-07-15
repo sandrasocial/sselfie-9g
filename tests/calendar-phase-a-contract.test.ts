@@ -79,6 +79,8 @@ describe("Calendar Phase A operational contracts", () => {
     expect(deliveredMonth).toContain("CALENDAR_DELIVERED_MONTH_ADMIN_ONLY")
     expect(deliveredMonth).toContain("DEFAULT_WEEKLY_CAP = 10")
     expect(cron).toContain("runDeliveredMonthTopUp")
+    expect(cron).toContain("adminOnlyPreview")
+    expect(cron).toContain("OR u.role = 'admin'")
   })
 
   it("limits unattended work to current person slots with real identity references", () => {

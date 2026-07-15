@@ -10,6 +10,7 @@ import { sql } from "@/lib/db/client"
 import { draftMonthPlanForUser } from "@/lib/feed-planner/auto-draft"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import {
+  deliveredMonthAdminOnly,
   deliveredMonthEnabled,
   hasDeliveredMonthAccess,
   runDeliveredMonthTopUp,
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
   }
 
   const deliveredMonthOn = deliveredMonthEnabled()
+  const adminOnlyPreview = deliveredMonthOn && deliveredMonthAdminOnly()
   // This route now runs daily so the dark delivered-month job can top up a rolling week.
   // With the flag off it preserves the former first-of-month behavior exactly.
   if (!deliveredMonthOn && new Date().getUTCDate() !== 1) {
@@ -52,7 +54,8 @@ export async function GET(request: NextRequest) {
     const candidates = await sql`
       SELECT u.id AS user_id, u.supabase_user_id, u.stack_auth_id
       FROM users u
-      WHERE (
+      WHERE (${!adminOnlyPreview} OR u.role = 'admin')
+        AND (
           u.role = 'admin'
           OR EXISTS (
             SELECT 1
