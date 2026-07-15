@@ -62,6 +62,7 @@ import {
   intentForFormat,
   needsClarificationIntent,
 } from "@/lib/app-v3/maya/intent-router"
+import { recommendedGraphicTextStyle } from "@/lib/app-v3/maya/next-action"
 import {
   OVERLAY_STYLE_PRESETS,
   resolveOverlayStyle,
@@ -1000,7 +1001,7 @@ export function MayaConcierge({
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
-  }, [messages, isThinking])
+  }, [messages, isThinking, session?.outputFormat, textOverlayMode, textStyleChoice])
 
   // When a new look (or a Content idea) opens Maya, allow its format to pull fresh directions.
   // Kept minimal on purpose: no message/chat mutation here, so it can't race the pull below.
@@ -2206,6 +2207,11 @@ export function MayaConcierge({
   ) {
     if (isThinking) return
     const intent = intentForFormat(nextFormat, "gallery_action")
+    const autoTextStyle =
+      selection === "recommended"
+        ? recommendedGraphicTextStyle(nextFormat, rememberedOverlayStyle)
+        : null
+    const needsGraphicTextChoice = isGraphicOutputFormat(nextFormat)
     setLocalCreationIntent(intent)
     extrasRef.current = { ...extrasRef.current, format: intent.format, creationIntent: intent }
     void trackAnalyticsEvent({
@@ -2226,15 +2232,15 @@ export function MayaConcierge({
         setInspirationUrl(styleReferenceUrl)
       }
     }
-    setTextOverlayMode(null)
-    setTextStyleChoice(null)
+    setTextOverlayMode(autoTextStyle ? "with-text" : null)
+    setTextStyleChoice(autoTextStyle)
     setTextStyleAdjustments(null)
     setStyleSwapOpen(false)
     setOutputFormat(nextFormat)
     setSetupOpen(false)
-    const needsGraphicTextChoice = isGraphicOutputFormat(nextFormat)
-    // Graphic formats must return to the explicit text/no-text gate. Marking the format as
-    // already pulled and sending here bypassed that gate, leaving stale text behavior.
+    // A manual graphic choice returns to the explicit text/no-text gate. Maya's recommended
+    // graphic action is already a clear promise, so it carries a sensible text style and pulls
+    // the finished direction immediately instead of revealing a hidden extra gate below the fold.
     lastPulledFormatRef.current = needsGraphicTextChoice ? null : nextFormat
     seedRetiredRef.current = true
     if (!needsGraphicTextChoice) sendMessage({ text: FORMAT_PHRASE[nextFormat] })
@@ -2350,6 +2356,60 @@ export function MayaConcierge({
       cleanImageId,
       spec,
       bakedUrl: gen.bakedImageUrls?.[index] ?? null,
+    }
+  }
+
+  async function retryMissingBakedText(key: string, conceptTitle: string): Promise<void> {
+    const current = genState[key]
+    if (!current || current.status !== "done") throw new Error("That result is not ready yet")
+    const specs = current.textOverlaySpecs ?? []
+    const cleanImages = current.imageUrls ?? []
+    const missingIndexes = specs
+      .map((_, index) => index)
+      .filter(index => cleanImages[index] && !current.bakedImageUrls?.[index])
+    if (missingIndexes.length === 0) return
+
+    setTextRefining(true)
+    try {
+      for (const index of missingIndexes) {
+        const cleanImageId =
+          current.aiImageIds?.[index] ?? (index === 0 ? (current.aiImageId ?? null) : null)
+        const res = await fetch("/api/app-v3/maya/bake-text", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cleanImageUrl: cleanImages[index],
+            cleanImageId: cleanImageId ?? undefined,
+            conceptTitle,
+            spec: specs[index],
+          }),
+        })
+        const data = (await res.json().catch(() => null)) as {
+          bakedUrl?: string
+          aiImageId?: number | null
+          error?: string
+          code?: string
+          current?: number
+          newBalance?: number
+        } | null
+
+        if (res.status === 402 || data?.code === "insufficient_credits") {
+          showCreditBlock(typeof data?.current === "number" ? data.current : null)
+          throw new Error(data?.error || "Not enough credits to add the text")
+        }
+        if (data?.code === "generation_locked" && cohort === "trial") {
+          setTrialCapOpen(true)
+          throw new Error(data?.error || "Photo-making is paused")
+        }
+        if (!res.ok || !data?.bakedUrl) {
+          throw new Error(data?.error || "The text did not go through")
+        }
+
+        updateBakedImage(key, index, data.bakedUrl, data.aiImageId ?? null)
+        showTrialCapIfDepleted(data.newBalance)
+      }
+    } finally {
+      setTextRefining(false)
     }
   }
 
@@ -3387,6 +3447,11 @@ export function MayaConcierge({
                           handleNextFormat(nextFormat, kind, latestStyleReferenceUrl, selection)
                         }
                       />
+                    }
+                    onRetryText={
+                      isGraphicOutputFormat(conceptFormat) && textOverlayMode === "with-text"
+                        ? () => retryMissingBakedText(key, concept.title)
+                        : undefined
                     }
                   />
                 )

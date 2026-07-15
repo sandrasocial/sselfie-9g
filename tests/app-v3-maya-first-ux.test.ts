@@ -197,6 +197,22 @@ describe("Maya-first Suite creation UX", () => {
     expect(lightbox).not.toContain("TextOverlayLayer")
   })
 
+  it("turns a recommended graphic next step into a publishable result without a hidden extra gate", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+
+    expect(concierge).toContain('selection === "recommended"')
+    expect(concierge).toContain('setTextOverlayMode(autoTextStyle ? "with-text" : null)')
+    expect(concierge).toContain("recommendedGraphicTextStyle(nextFormat, rememberedOverlayStyle)")
+  })
+
+  it("scrolls the newly revealed next step into view after a result action", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+
+    expect(concierge).toContain(
+      "[messages, isThinking, session?.outputFormat, textOverlayMode, textStyleChoice]",
+    )
+  })
+
   it("makes continuing old Maya sessions an explicit choice", () => {
     const context = read("components/app-v3/concierge-context.tsx")
     const launcher = read("components/app-v3/maya-floating-launcher.tsx")

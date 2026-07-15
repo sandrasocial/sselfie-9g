@@ -29,10 +29,24 @@ function getOrCreateDb(): SqlClient {
 }
 
 /** Canonical singleton DB client. Lazily resolves the real client on first query. */
-export const sql = (((...args: Parameters<SqlClient>) => {
+const lazySql = ((...args: Parameters<SqlClient>) => {
   const client = getOrCreateDb()
   return client(...args)
-}) as unknown) as SqlClient
+}) as unknown as SqlClient
+
+// A callable wrapper does not inherit the methods attached to Neon's query function. Academy
+// notes/progress and the Blueprint state route use parameterized `sql.query(...)`; forwarding the
+// full public surface keeps the singleton lazy without turning those valid calls into runtime 500s.
+lazySql.query = ((...args: any[]) =>
+  (getOrCreateDb().query as (...queryArgs: any[]) => unknown)(...args)) as SqlClient["query"]
+lazySql.unsafe = ((...args: any[]) =>
+  (getOrCreateDb().unsafe as (...unsafeArgs: any[]) => unknown)(...args)) as SqlClient["unsafe"]
+lazySql.transaction = ((...args: any[]) =>
+  (getOrCreateDb().transaction as (...transactionArgs: any[]) => unknown)(
+    ...args
+  )) as SqlClient["transaction"]
+
+export const sql = lazySql
 
 /** Alias for callers migrated from @/lib/db */
 export function getDb(): SqlClient {

@@ -62,6 +62,8 @@ interface ConceptCardProps {
   idleAction?: ReactNode
   /** Extra guided next steps after a result is created. */
   resultActions?: ReactNode
+  /** Retry a failed/missing baked-text pass from the clean result. */
+  onRetryText?: () => Promise<void>
   /** Admin-only prompt inspector asset id, e.g. ai_123. */
   promptAssetId?: string | null
   /** Small editorial label above the concept title. */
@@ -104,6 +106,7 @@ export function ConceptCard({
   showCalendarOffer = true,
   idleAction,
   resultActions,
+  onRetryText,
   promptAssetId,
   eyebrow = "Maya's idea",
   onDownloaded,
@@ -126,6 +129,18 @@ export function ConceptCard({
     "idle" | "saving" | "saved" | "error" | "unavailable"
   >("idle")
   const [savedDateLabel, setSavedDateLabel] = useState<string | null>(null)
+  const [textRetryStatus, setTextRetryStatus] = useState<"idle" | "retrying" | "error">("idle")
+
+  const handleRetryText = async () => {
+    if (!onRetryText || textRetryStatus === "retrying") return
+    setTextRetryStatus("retrying")
+    try {
+      await onRetryText()
+      setTextRetryStatus("idle")
+    } catch {
+      setTextRetryStatus("error")
+    }
+  }
 
   const handleAddToCalendar = async () => {
     if (!onAddToCalendar || calendarStatus === "saving" || calendarStatus === "saved") return
@@ -236,10 +251,27 @@ export function ConceptCard({
               {isVideoDone ? "Saved to your videos" : "Saved to your gallery"}
             </p>
             {bakeMissing && (
-              <p className="rounded-[4px] bg-[#282728]/5 px-3 py-2 text-[12px] leading-relaxed text-[#4F5052]">
-                The clean image is ready. The text did not bake into this one, so Maya left the
-                words below for you to copy or try again.
-              </p>
+              <div className="rounded-[4px] bg-[#282728]/5 px-3 py-2 text-[12px] leading-relaxed text-[#4F5052]">
+                <p>
+                  The clean image is ready. The text did not bake into this one, so Maya left the
+                  words below for you to copy or try again.
+                </p>
+                {onRetryText && (
+                  <button
+                    type="button"
+                    onClick={() => void handleRetryText()}
+                    disabled={textRetryStatus === "retrying"}
+                    className="mt-2 inline-flex min-h-10 items-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] underline underline-offset-2 disabled:opacity-50"
+                  >
+                    {textRetryStatus === "retrying" ? "Adding text…" : "Try text again"}
+                  </button>
+                )}
+                {textRetryStatus === "error" && (
+                  <p className="mt-1 text-[11px] text-[#4F5052]">
+                    The text still didn&apos;t go through. Your clean image is safe.
+                  </p>
+                )}
+              </div>
             )}
             {suggestedText && (
               <div className="rounded-[10px] border border-[#C5C6C8]/50 bg-[#F8FAFA] p-3">
