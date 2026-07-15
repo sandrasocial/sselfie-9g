@@ -459,15 +459,48 @@ const RECOMMENDED_NEXT: Record<
 
 export function InlineResultActions({
   format,
+  completedFormats = [],
   onNextFormat,
+  onOpenCalendar,
 }: {
   format: OutputFormat
+  completedFormats?: OutputFormat[]
   onNextFormat: (
     format: OutputFormat,
     kind: InlineActionKind,
     selection: "recommended" | "more"
   ) => void
+  onOpenCalendar?: () => void
 }) {
+  const campaignComplete =
+    format === "story-sequence" &&
+    completedFormats.includes("photo") &&
+    completedFormats.includes("reel-cover")
+
+  if (campaignComplete && onOpenCalendar) {
+    return (
+      <div className="rounded-[8px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3.5">
+        <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-gray)]">
+          Campaign complete
+        </p>
+        <p className="mt-1.5 font-serif text-[19px] font-light leading-tight text-[color:var(--ss-night)]">
+          Your photo, Reel cover, and Stories are ready.
+        </p>
+        <p className="mt-1 text-[12px] leading-relaxed text-[color:var(--ss-davy)]">
+          Everything works together. Open Calendar when you&apos;re ready to plan what goes out
+          next.
+        </p>
+        <button
+          type="button"
+          onClick={onOpenCalendar}
+          className="mt-3 min-h-11 w-full rounded-[6px] bg-[color:var(--ss-night)] px-4 py-2.5 text-[11px] uppercase tracking-[0.14em] text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2"
+        >
+          Open Calendar
+        </button>
+      </div>
+    )
+  }
+
   const recommendation = RECOMMENDED_NEXT[format]
   const actions = SIMPLE_FORMAT_OPTIONS.map(option => ({
     format: option.format,

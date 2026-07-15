@@ -332,7 +332,13 @@ function ShellInner({
         />
       )}
 
-      {!limited && <MayaConcierge hasTrainedModel={hasTrainedModel} analyticsCohort={cohort} />}
+      {!limited && (
+        <MayaConcierge
+          hasTrainedModel={hasTrainedModel}
+          analyticsCohort={cohort}
+          onOpenCalendar={() => goToSection("calendar")}
+        />
+      )}
       {!limited && <MayaFloatingLauncher />}
       <PostSuccessReviewPrompt />
 

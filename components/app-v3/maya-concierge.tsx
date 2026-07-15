@@ -557,9 +557,11 @@ async function pollVideoGeneration(predictionId: string, videoId: number): Promi
 export function MayaConcierge({
   hasTrainedModel = false,
   analyticsCohort,
+  onOpenCalendar,
 }: {
   hasTrainedModel?: boolean
   analyticsCohort?: AppV3AnalyticsCohort
+  onOpenCalendar?: () => void
 } = {}) {
   const cohort: AppV3AnalyticsCohort = analyticsCohort ?? "member"
   const {
@@ -3336,12 +3338,11 @@ export function MayaConcierge({
 
           {(() => {
             // Feed Planner Phase 2c: Maya's save-offer sentence appears under the FIRST
-            // finished photo only (the button stays on every eligible card) - three cards
-            // repeating the same line reads like a bug, not a concierge. Derived fresh each
-            // render, so it stays stable across reloads and streaming updates.
+            // finished photo only. The same pass records every completed format so the result
+            // actions can recognize a connected Photo -> Reel cover -> Stories campaign.
             let firstDonePhotoKey: string | null = null
+            const completedFormats = new Set<OutputFormat>()
             for (const m of messages as any[]) {
-              if (firstDonePhotoKey) break
               if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
               const msgConcepts = m.parts.map(extractConcepts).find(Boolean) as
                 | ConceptCardData[]
@@ -3350,13 +3351,14 @@ export function MayaConcierge({
               const msgFormat =
                 (m.parts.map(extractConceptFormat).find(Boolean) as OutputFormat | undefined) ??
                 format
-              if (msgFormat !== "photo") continue
               for (const c of msgConcepts) {
                 const k = `${m.id}:${c.id}`
-                if (genState[k]?.status === "done" && (genState[k]?.imageUrls?.length ?? 0) > 0) {
-                  firstDonePhotoKey = k
-                  break
-                }
+                const completed =
+                  genState[k]?.status === "done" &&
+                  ((genState[k]?.imageUrls?.length ?? 0) > 0 || Boolean(genState[k]?.videoUrl))
+                if (!completed) continue
+                completedFormats.add(msgFormat)
+                if (!firstDonePhotoKey && msgFormat === "photo") firstDonePhotoKey = k
               }
             }
             return messages.map((m: any) => {
@@ -3473,8 +3475,17 @@ export function MayaConcierge({
                     resultActions={
                       <InlineResultActions
                         format={conceptFormat}
+                        completedFormats={Array.from(completedFormats)}
                         onNextFormat={(nextFormat, kind, selection) =>
                           handleNextFormat(nextFormat, kind, latestStyleReferenceUrl, selection)
+                        }
+                        onOpenCalendar={
+                          onOpenCalendar
+                            ? () => {
+                                close()
+                                onOpenCalendar()
+                              }
+                            : undefined
                         }
                       />
                     }

@@ -256,7 +256,7 @@ const AssetTile = memo(function AssetTile({
               className="flex min-h-8 items-center gap-1 rounded-[4px] bg-[#0D0E10] px-2.5 text-[9px] uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#282728]"
             >
               <Film size={11} />
-              Move
+              Make video
             </button>
           )}
         </div>

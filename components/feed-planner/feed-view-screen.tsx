@@ -122,7 +122,13 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
 
   // Fetch feed data (handles both specific feed and latest feed)
   // Note: Polling is handled by InstagramFeedView's useFeedPolling hook, not here
-  const { data: feedData, error: feedError, isLoading, mutate: mutateFeed } = useSWR(
+  const {
+    data: feedData,
+    error: feedError,
+    isLoading,
+    isValidating: isFeedValidating,
+    mutate: mutateFeed,
+  } = useSWR(
     swrKey,
     fetcher,
     {
@@ -305,8 +311,19 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     return (
       <div className="app-light-panel-text flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
         <div className="flex min-h-[400px] items-center justify-center p-4">
-          <div className="text-center space-y-4">
-            <p className="text-sm text-[color:var(--app-text-secondary)]">Failed to load feed. Please try again.</p>
+          <div className="space-y-4 text-center">
+            <p className="text-sm text-[color:var(--app-text-secondary)]">
+              Failed to load feed. Please try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => void mutateFeed()}
+              disabled={isFeedValidating}
+              aria-busy={isFeedValidating}
+              className="min-h-11 rounded-[6px] bg-[color:var(--app-btn-primary-bg)] px-5 py-3 text-[11px] uppercase tracking-[0.16em] text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-60"
+            >
+              Try again
+            </button>
           </div>
         </div>
       </div>
