@@ -62,9 +62,8 @@ No-Fake psychology doctrine, design system.
    marked at the top of your page." (+ item 3's term fix in the same email.)
 8. **"Tell Maya what needs to be sold."** (buyer page pre-intake heading) — passive, odd.
    Draft: "Tell Maya what you're promoting."
-9. **"Sandra checks" panel mixes two clocks.** "A human quality check before the campaign
-   reaches you, within 48 hours." Draft: "Sandra looks at every image before it reaches
-   you. Your campaign lands within 48 hours."
+9. SUPERSEDED by 2b (the first-person signed panel includes the two-clocks fix) — do not
+   implement separately.
 10. **"CTA:" label on the buyer page** → spell it out: "Call to action:". (Audience is
     35-64; not all speak marketing.)
 11. **Published yes/no needs a visible thank-you** (see B3 for the mechanic). Drafts —
