@@ -54,4 +54,63 @@ describe("Calendar Phase A operational contracts", () => {
     expect(confetti).toContain("particles.forEach")
     expect(polling).toContain("recoveryTimeouts.forEach")
   })
+
+  it("keeps delivered-month pre-generation free while normal regeneration still charges", () => {
+    const queue = read("lib/feed-planner/queue-images.ts")
+    const deliveredMonth = read("lib/feed-planner/delivered-month.ts")
+
+    expect(queue).toContain("chargeCredits?: boolean")
+    expect(queue).toContain("if (chargeCredits)")
+    expect(queue).toContain("pregenerated_at = NOW()")
+    expect(queue).toContain("Keep the established manual path independent of the dark-release migration")
+    expect(deliveredMonth).toContain("chargeCredits: false")
+    expect(deliveredMonth).toContain("markPregenerated: true")
+    expect(deliveredMonth).toContain("forceProMode: true")
+    expect(deliveredMonth).toContain("useCuratedFeedStylePrompts: true")
+    expect(queue).toContain("selectPromptForPosition")
+  })
+
+  it("ships the delivered month dark and caps automatic spend", () => {
+    const deliveredMonth = read("lib/feed-planner/delivered-month.ts")
+    const cron = read("app/api/cron/feed-plan-monthly-draft/route.ts")
+
+    expect(deliveredMonth).toContain('process.env.CALENDAR_DELIVERED_MONTH_ENABLED === "true"')
+    expect(deliveredMonth).toContain("CALENDAR_PREGEN_WEEKLY_CAP")
+    expect(deliveredMonth).toContain("DEFAULT_WEEKLY_CAP = 10")
+    expect(cron).toContain("runDeliveredMonthTopUp")
+  })
+
+  it("limits unattended work to current person slots with real identity references", () => {
+    const deliveredMonth = read("lib/feed-planner/delivered-month.ts")
+    const migration = read("scripts/2026-07-15-calendar-delivered-month.sql")
+
+    expect(deliveredMonth).toContain("fl.period_month = ${periodMonth}")
+    expect(deliveredMonth).toContain("pending.post_type = 'selfie'")
+    expect(deliveredMonth).toContain("pending.scheduled_at::date < CURRENT_DATE + 7")
+    expect(deliveredMonth).toContain("uai.image_type IN ('selfie', 'side-profile', 'three-quarter', 'full-body')")
+    expect(deliveredMonth).toContain("selfie_visibility_bundle_pass")
+    expect(deliveredMonth).not.toContain("one_time_session")
+    expect(migration).toContain("ADD COLUMN IF NOT EXISTS pregenerated BOOLEAN")
+  })
+
+  it("keeps the compact Today outcome available only through the dark endpoint", () => {
+    const endpoint = read("app/api/feed-planner/today/route.ts")
+    const strip = read("components/app-v3/calendar-today-strip.tsx")
+    const view = read("components/app-v3/feed-planner-view.tsx")
+
+    expect(endpoint).toContain("if (!deliveredMonthEnabled())")
+    expect(endpoint).toContain("hasDeliveredMonthAccess")
+    expect(strip).toContain('"Download"')
+    expect(strip).toContain('"Copy caption"')
+    expect(strip).toContain('"Mark as posted"')
+    expect(view).toContain("<CalendarTodayStrip />")
+  })
+
+  it("records the real calendar outcome after an owned post is marked posted", () => {
+    const route = read("app/api/feed/[feedId]/mark-posted/route.ts")
+    const contract = read("lib/analytics/event-contract.ts")
+
+    expect(route).toContain('eventName: "calendar_post_published"')
+    expect(contract).toContain('"calendar_post_published"')
+  })
 })

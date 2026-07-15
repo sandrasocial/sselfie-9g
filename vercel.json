@@ -78,7 +78,7 @@
     },
     {
       "path": "/api/cron/feed-plan-monthly-draft",
-      "schedule": "0 6 1 * *"
+      "schedule": "0 6 * * *"
     },
     {
       "path": "/api/cron/weekly-content-trends",

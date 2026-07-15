@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server"
 import { sql } from "@/lib/db/client"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 
 export async function POST(
   req: NextRequest,
@@ -43,6 +44,16 @@ export async function POST(
 
     if (updated.length === 0) {
       return Response.json({ error: "Post not found" }, { status: 404 })
+    }
+
+    if (isPosted) {
+      // Fail-open by contract: analytics can never block the owned post update above.
+      await logAnalyticsEvent({
+        eventName: "calendar_post_published",
+        userId: String(neonUser.id),
+        path: "/app?view=calendar",
+        properties: { feedId: normalizedFeedId, postId: normalizedPostId },
+      })
     }
 
     return Response.json({ success: true, post: updated[0] })

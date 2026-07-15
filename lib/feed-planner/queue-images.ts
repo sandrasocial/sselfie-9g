@@ -6,6 +6,8 @@ import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { generateWithNanoBanana } from "@/lib/nano-banana-client"
 import { buildNanoBananaPrompt, type BrandKit } from "@/lib/maya/nano-banana-prompt-builder"
 import { getStudioProCreditCost } from "@/lib/nano-banana-client"
+import { getFeedStyleV2ByName } from "@/lib/feed-planner/feed-style-prompt-loader"
+import { selectPromptForPosition } from "@/lib/feed-planner/feed-style-generation"
 
 
 /**
@@ -17,6 +19,21 @@ interface ImageLibrary {
   people: string[]
   vibes: string[]
   intent: string
+}
+
+interface QueueImagesOptions {
+  /** Restrict this run to already-vetted posts. Existing callers omit this and keep all-post behavior. */
+  postIds?: number[]
+  /** Automatic delivered-month images are a business expense, never a silent member charge. */
+  chargeCredits?: boolean
+  /** Makes automatic image cost queryable without changing normal member generations. */
+  markPregenerated?: boolean
+  /** Auto-drafted rows have no mode yet; delivered-month person slots always use references. */
+  forceProMode?: boolean
+  /** Prevent style/inspiration uploads from becoming identity anchors in unattended runs. */
+  identityReferencesOnly?: boolean
+  /** Auto-drafted posts get their exact scene from the plan's curated style world. */
+  useCuratedFeedStylePrompts?: boolean
 }
 
 type AvatarImageRow = { image_url: string }
@@ -42,7 +59,8 @@ export async function queueAllImagesForFeed(
     realismStrength?: number
     extraLoraScale?: number
   },
-  imageLibrary?: ImageLibrary // CRITICAL: User's selected images from library wizard (Pro Mode only)
+  imageLibrary?: ImageLibrary, // CRITICAL: User's selected images from library wizard (Pro Mode only)
+  options: QueueImagesOptions = {},
 ) {
   console.log("[v0] ==================== QUEUE ALL IMAGES (DIRECT CALL) ====================")
 
@@ -76,7 +94,7 @@ export async function queueAllImagesForFeed(
   // Get all posts for this feed that need images (including Pro Mode info)
   // Note: description column doesn't exist - visual direction is in prompt field or strategy
   // CRITICAL: Include 'failed' status so users can retry failed images without being charged again
-  const posts = await sql`
+  const allPosts = await sql`
     SELECT id, position, prompt, post_type, caption, content_pillar, generation_status, prediction_id, image_url, generation_mode, pro_mode_type
     FROM feed_posts
     WHERE feed_layout_id = ${feedLayoutId}
@@ -85,6 +103,15 @@ export async function queueAllImagesForFeed(
     AND image_url IS NULL
     ORDER BY position ASC
   `
+
+  const requestedPostIds = options.postIds
+    ? new Set(options.postIds.filter((id) => Number.isInteger(id) && id > 0))
+    : null
+  const posts = allPosts
+    .filter((post) => !requestedPostIds || requestedPostIds.has(Number(post.id)))
+    .map((post) => (options.forceProMode ? { ...post, generation_mode: "pro" } : post))
+  const chargeCredits = options.chargeCredits !== false
+  const markPregenerated = options.markPregenerated === true
 
   if (posts.length === 0) {
     console.log("[v0] No posts found to generate")
@@ -101,7 +128,8 @@ export async function queueAllImagesForFeed(
 
   // Get user model and feed layout
   const [feedLayout] = await sql`
-    SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed 
+    SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed,
+           feed_style, feed_style_variation_id
     FROM feed_layouts 
     WHERE id = ${feedLayoutId} AND user_id = ${neonUser.id}
   `
@@ -114,9 +142,11 @@ export async function queueAllImagesForFeed(
   const proModePosts = posts.filter(p => p.generation_mode === 'pro')
   const classicPosts = posts.filter(p => !p.generation_mode || p.generation_mode === 'classic')
   const totalCreditsNeeded = (proModePosts.length * getStudioProCreditCost('2K')) + (classicPosts.length * CREDIT_COSTS.IMAGE)
-  const hasEnoughCredits = await checkCredits(neonUser.id, totalCreditsNeeded)
-  if (!hasEnoughCredits) {
-    throw new Error(`Insufficient credits. You need ${totalCreditsNeeded} credits (${proModePosts.length} Pro Mode × 2 + ${classicPosts.length} Classic × 1) to generate ${posts.length} images.`)
+  if (chargeCredits) {
+    const hasEnoughCredits = await checkCredits(neonUser.id, totalCreditsNeeded)
+    if (!hasEnoughCredits) {
+      throw new Error(`Insufficient credits. You need ${totalCreditsNeeded} credits (${proModePosts.length} Pro Mode × 2 + ${classicPosts.length} Classic × 1) to generate ${posts.length} images.`)
+    }
   }
 
   // Only fetch model if we have Classic Mode posts (Pro Mode doesn't need custom model)
@@ -156,6 +186,8 @@ export async function queueAllImagesForFeed(
           FROM user_avatar_images
           WHERE user_id = ${neonUser.id}
           AND is_active = true
+          AND (${options.identityReferencesOnly !== true}
+            OR image_type IN ('selfie', 'side-profile', 'three-quarter', 'full-body'))
           ORDER BY display_order ASC, uploaded_at ASC
           LIMIT 5
         `) as AvatarImageRow[]
@@ -182,7 +214,10 @@ export async function queueAllImagesForFeed(
       // Atomic claim: only one request can move this eligible post into generation.
       const claimed = await sql`
         UPDATE feed_posts
-        SET generation_status = 'generating', error = NULL, updated_at = NOW()
+        SET generation_status = 'generating',
+            generation_mode = ${options.forceProMode ? "pro" : post.generation_mode},
+            error = NULL,
+            updated_at = NOW()
         WHERE id = ${post.id}
           AND feed_layout_id = ${feedLayoutId}
           AND user_id = ${neonUser.id}
@@ -232,6 +267,8 @@ export async function queueAllImagesForFeed(
               FROM user_avatar_images
               WHERE user_id = ${neonUser.id}
               AND is_active = true
+              AND (${options.identityReferencesOnly !== true}
+                OR image_type IN ('selfie', 'side-profile', 'three-quarter', 'full-body'))
               ORDER BY display_order ASC, uploaded_at ASC
               LIMIT 5
             `) as AvatarImageRow[]
@@ -256,6 +293,25 @@ export async function queueAllImagesForFeed(
           // post.prompt contains the proper Nano Banana prompt generated by create-from-strategy
           // Only regenerate if prompt is missing (shouldn't happen, but safety check)
           let finalPrompt = post.prompt
+
+          if (options.useCuratedFeedStylePrompts) {
+            if (!feedLayout.feed_style) {
+              throw new Error("Current calendar is missing its feed style")
+            }
+            const style = await getFeedStyleV2ByName(feedLayout.feed_style)
+            if (!style?.enabled) throw new Error("Current calendar feed style is unavailable")
+            const selected = await selectPromptForPosition(
+              style.id,
+              Number(post.position),
+              feedLayout.feed_style_variation_id ?? null,
+            )
+            finalPrompt = selected.prompt_text
+            await sql`
+              UPDATE feed_posts
+              SET prompt = ${finalPrompt}, updated_at = NOW()
+              WHERE id = ${post.id} AND user_id = ${neonUser.id}
+            `
+          }
           
           if (!finalPrompt || finalPrompt.trim().length < 20 || finalPrompt.includes('Generating prompt')) {
             console.warn(`[v0] ⚠️ Post ${post.position} missing proper prompt (has: "${finalPrompt}"), regenerating with fallback logic...`)
@@ -314,19 +370,33 @@ export async function queueAllImagesForFeed(
           })
           
           // Update database with prediction ID
-          await sql`
-            UPDATE feed_posts
-            SET generation_status = 'generating',
-                prediction_id = ${generation.predictionId},
-                error = NULL,
-                updated_at = NOW()
-            WHERE id = ${post.id} AND user_id = ${neonUser.id}
-          `
+          if (markPregenerated) {
+            await sql`
+              UPDATE feed_posts
+              SET generation_status = 'generating',
+                  prediction_id = ${generation.predictionId},
+                  pregenerated = TRUE,
+                  pregenerated_at = NOW(),
+                  error = NULL,
+                  updated_at = NOW()
+              WHERE id = ${post.id} AND user_id = ${neonUser.id}
+            `
+          } else {
+            // Keep the established manual path independent of the dark-release migration.
+            await sql`
+              UPDATE feed_posts
+              SET generation_status = 'generating',
+                  prediction_id = ${generation.predictionId},
+                  error = NULL,
+                  updated_at = NOW()
+              WHERE id = ${post.id} AND user_id = ${neonUser.id}
+            `
+          }
           // Charge only now that the prediction is durably stored, keyed to the prediction
           // itself. deductCredits no-ops for unlimited balances. If the charge fails we do
           // NOT roll back a real prediction - the member keeps the image, the business
           // absorbs the rare miss (the safe direction for member trust).
-          {
+          if (chargeCredits) {
             const proDeduction = await deductCredits(
               neonUser.id,
               creditCost,
@@ -501,18 +571,33 @@ export async function queueAllImagesForFeed(
       }
 
       // Update database with prediction ID
-      await sql`
-        UPDATE feed_posts
-        SET generation_status = 'generating',
-            prediction_id = ${prediction.id},
-            prompt = ${finalPrompt},
-            error = NULL,
-            updated_at = NOW()
-        WHERE id = ${post.id} AND user_id = ${neonUser.id}
-      `
+      if (markPregenerated) {
+        await sql`
+          UPDATE feed_posts
+          SET generation_status = 'generating',
+              prediction_id = ${prediction.id},
+              prompt = ${finalPrompt},
+              pregenerated = TRUE,
+              pregenerated_at = NOW(),
+              error = NULL,
+              updated_at = NOW()
+          WHERE id = ${post.id} AND user_id = ${neonUser.id}
+        `
+      } else {
+        // Keep the established manual path independent of the dark-release migration.
+        await sql`
+          UPDATE feed_posts
+          SET generation_status = 'generating',
+              prediction_id = ${prediction.id},
+              prompt = ${finalPrompt},
+              error = NULL,
+              updated_at = NOW()
+          WHERE id = ${post.id} AND user_id = ${neonUser.id}
+        `
+      }
       // Charge only now that the prediction is durably stored, keyed to the prediction
       // itself (same safe ordering as the Pro path above).
-      {
+      if (chargeCredits) {
         const classicDeduction = await deductCredits(
           neonUser.id,
           creditCost,

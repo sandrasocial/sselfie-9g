@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
   getUserByAuthId: vi.fn(),
+  logAnalyticsEvent: vi.fn(),
   sql: vi.fn(),
 }))
 
@@ -17,6 +18,10 @@ vi.mock("@/lib/user-mapping", () => ({
 
 vi.mock("@/lib/db/client", () => ({
   sql: mocks.sql,
+}))
+
+vi.mock("@/lib/analytics/events", () => ({
+  logAnalyticsEvent: mocks.logAnalyticsEvent,
 }))
 
 vi.mock("@/components/feed-planner/feed-gallery-selector", () => ({
@@ -39,6 +44,7 @@ describe("Calendar Phase A trust repairs", () => {
     vi.clearAllMocks()
     mocks.auth.mockResolvedValue({ user: { id: "auth-7" }, error: null })
     mocks.getUserByAuthId.mockResolvedValue({ id: 77 })
+    mocks.logAnalyticsEvent.mockResolvedValue({ ok: true })
   })
 
   it("keeps the post overlay open and passes the updated post to its owner", async () => {
@@ -92,6 +98,12 @@ describe("Calendar Phase A trust repairs", () => {
     expect(queries[0]).toContain("user_id")
     expect(values[0].some((value) => value instanceof Date)).toBe(true)
     expect(values[0]).not.toContain("NOW()")
+    expect(mocks.logAnalyticsEvent).toHaveBeenCalledWith({
+      eventName: "calendar_post_published",
+      userId: "77",
+      path: "/app?view=calendar",
+      properties: { feedId: 12, postId: 9 },
+    })
   })
 
   it("does not report success when the owned post update matches nothing", async () => {

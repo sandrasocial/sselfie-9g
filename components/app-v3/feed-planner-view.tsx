@@ -17,6 +17,7 @@ import { useEffect, useMemo, useState } from "react"
 import FeedPlannerClient from "@/app/feed-planner/feed-planner-client"
 import { FeedNavContext } from "@/components/feed-planner/feed-nav-context"
 import { ThisWeekStrip } from "./this-week-strip"
+import { CalendarTodayStrip } from "./calendar-today-strip"
 import type { OutputFormat } from "./types"
 
 const ONBOARDING_KEY = "calendar:onboarding:v1"
@@ -52,7 +53,7 @@ function CalendarExplainer({ onDismiss }: { onDismiss: () => void }) {
           </li>
         </ol>
         <p className="mt-4 text-[13px] leading-relaxed text-[#818283]">
-          Want a different vibe? Just tell Maya. She switches your grid's world for you.
+          Want a different vibe? Just tell Maya. She switches your grid&apos;s world for you.
         </p>
         <button
           onClick={onDismiss}
@@ -119,6 +120,7 @@ export function FeedPlannerView({
     <FeedNavContext.Provider value={nav}>
       <div className="min-h-[calc(100dvh-3.5rem)] bg-[#F8FAFA] pb-24">
         {showExplainer && <CalendarExplainer onDismiss={dismissExplainer} />}
+        <CalendarTodayStrip />
         {onCreateIdea && <ThisWeekStrip onCreateIdea={onCreateIdea} />}
         <FeedPlannerClient />
       </div>

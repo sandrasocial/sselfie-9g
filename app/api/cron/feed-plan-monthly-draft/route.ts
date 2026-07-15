@@ -9,6 +9,11 @@ import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { draftMonthPlanForUser } from "@/lib/feed-planner/auto-draft"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
+import {
+  deliveredMonthEnabled,
+  hasDeliveredMonthAccess,
+  runDeliveredMonthTopUp,
+} from "@/lib/feed-planner/delivered-month"
 import { currentPeriodMonth } from "@/lib/feed-planner/write-auto-draft"
 
 export const dynamic = "force-dynamic"
@@ -32,6 +37,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ skipped: true, reason: "kill_switch" })
   }
 
+  const deliveredMonthOn = deliveredMonthEnabled()
+  // This route now runs daily so the dark delivered-month job can top up a rolling week.
+  // With the flag off it preserves the former first-of-month behavior exactly.
+  if (!deliveredMonthOn && new Date().getUTCDate() !== 1) {
+    return NextResponse.json({ skipped: true, reason: "monthly_window" })
+  }
+
   const thisMonth = currentPeriodMonth()
 
   try {
@@ -52,7 +64,7 @@ export async function GET(request: NextRequest) {
             SELECT 1
             FROM subscriptions s
             WHERE s.user_id = u.id
-              AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership', 'pro', 'one_time_session')
+              AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership', 'pro', 'one_time_session', 'selfie_visibility_bundle_pass')
               AND COALESCE(s.is_test_mode, FALSE) = FALSE
               AND (
                 s.status IN ('active', 'trialing')
@@ -84,7 +96,10 @@ export async function GET(request: NextRequest) {
         // passing authUserId here made the cron silently skip every member whose auth id
         // differs from users.id, which is all but one account.
         const access = await getFeedPlannerAccess(String(row.user_id))
-        if (!access.isMembership && !access.isPaidBlueprint) {
+        const deliveredAccess = deliveredMonthOn
+          ? await hasDeliveredMonthAccess(row.user_id)
+          : false
+        if (!access.isMembership && !access.isPaidBlueprint && !deliveredAccess) {
           skipped += 1
           continue
         }
@@ -100,7 +115,15 @@ export async function GET(request: NextRequest) {
     console.log(
       `[feed-plan monthly draft] month=${thisMonth} candidates=${candidates.length} drafted=${drafted} skipped=${skipped} failed=${failed}`,
     )
-    return NextResponse.json({ month: thisMonth, candidates: candidates.length, drafted, skipped, failed })
+    const deliveredMonth = await runDeliveredMonthTopUp()
+    return NextResponse.json({
+      month: thisMonth,
+      candidates: candidates.length,
+      drafted,
+      skipped,
+      failed,
+      deliveredMonth,
+    })
   } catch (error) {
     console.error("[feed-plan monthly draft] run failed:", error)
     return NextResponse.json({ error: "run_failed" }, { status: 500 })
