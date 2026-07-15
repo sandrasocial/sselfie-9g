@@ -95,6 +95,7 @@ export async function runDeliveredMonthTopUp(): Promise<{
   const weeklyCap = parseCalendarPregenWeeklyCap()
   const memberRolloutEnabled = !deliveredMonthAdminOnly()
   let remainingRunCapacity = parseRunCap()
+  const remainingWeeklyByUser = new Map<number, number>()
 
   // Sandra can validate the dark release on her admin account first. Non-admin access stays
   // closed until explicit rollout, then still requires membership or the fixed 30-day pass.
@@ -168,8 +169,12 @@ export async function runDeliveredMonthTopUp(): Promise<{
     const authUserId = layout.supabase_user_id || layout.stack_auth_id
     if (!authUserId) continue
 
+    const userId = Number(layout.user_id)
+    const memberWeeklyRemaining =
+      remainingWeeklyByUser.get(userId) ??
+      remainingWeeklyPregenAllowance(weeklyCap, Number(layout.weekly_used) || 0)
     const allowance = Math.min(
-      remainingWeeklyPregenAllowance(weeklyCap, Number(layout.weekly_used) || 0),
+      memberWeeklyRemaining,
       remainingRunCapacity,
     )
     if (allowance <= 0) continue
@@ -210,6 +215,10 @@ export async function runDeliveredMonthTopUp(): Promise<{
       )
       queued += Number(result.queuedCount) || 0
       failed += Number(result.failedCount) || 0
+      remainingWeeklyByUser.set(
+        userId,
+        Math.max(0, memberWeeklyRemaining - (Number(result.queuedCount) || 0)),
+      )
       remainingRunCapacity -= postIds.length
     } catch (error) {
       failed += postIds.length

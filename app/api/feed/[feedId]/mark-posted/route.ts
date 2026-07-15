@@ -48,12 +48,16 @@ export async function POST(
 
     if (isPosted) {
       // Fail-open by contract: analytics can never block the owned post update above.
-      await logAnalyticsEvent({
-        eventName: "calendar_post_published",
-        userId: String(neonUser.id),
-        path: "/app?view=calendar",
-        properties: { feedId: normalizedFeedId, postId: normalizedPostId },
-      })
+      try {
+        await logAnalyticsEvent({
+          eventName: "calendar_post_published",
+          userId: String(neonUser.id),
+          path: "/app?view=calendar",
+          properties: { feedId: normalizedFeedId, postId: normalizedPostId },
+        })
+      } catch (analyticsError) {
+        console.error("[calendar] Failed to record calendar_post_published:", analyticsError)
+      }
     }
 
     return Response.json({ success: true, post: updated[0] })

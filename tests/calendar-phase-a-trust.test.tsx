@@ -120,4 +120,24 @@ describe("Calendar Phase A trust repairs", () => {
 
     expect(response.status).toBe(404)
   })
+
+  it("keeps a successful posted action successful when analytics is unavailable", async () => {
+    mocks.sql.mockResolvedValue([
+      { id: 9, is_posted: true, posted_at: new Date("2026-07-14T08:00:00Z") },
+    ])
+    mocks.logAnalyticsEvent.mockRejectedValue(new Error("analytics unavailable"))
+
+    const { POST } = await import("@/app/api/feed/[feedId]/mark-posted/route")
+    const response = await POST(
+      new Request("http://localhost/api/feed/12/mark-posted", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ postId: 9, isPosted: true }),
+      }) as any,
+      { params: Promise.resolve({ feedId: "12" }) },
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({ success: true })
+  })
 })
