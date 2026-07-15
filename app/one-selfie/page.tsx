@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import { cookies, headers } from "next/headers"
+import { after } from "next/server"
 
 import {
   buildOneSelfieCheckoutHref,
@@ -9,6 +11,7 @@ import {
   type OneSelfieLandingSearchParams,
 } from "@/components/one-selfie/attribution"
 import { OneSelfieLanding } from "@/components/one-selfie/one-selfie-landing"
+import { trackOfferLandingRequest } from "@/lib/analytics/offer-request"
 import {
   SELFIE_VISIBILITY_BUNDLE_CLOSES_AT,
   SELFIE_VISIBILITY_BUNDLE_OPENS_AT,
@@ -51,6 +54,23 @@ export default async function OneSelfiePage({
   searchParams?: Promise<OneSelfieLandingSearchParams>
 }) {
   const params = searchParams ? await searchParams : {}
+  const requestHeaders = await headers()
+  const cookieStore = await cookies()
+  const keyword = getOneSelfieLandingKeyword(params)
+  const source = getOneSelfieLandingSource(params)
+
+  after(async () => {
+    await trackOfferLandingRequest({
+      anonId: cookieStore.get("sselfie_anon_id")?.value || null,
+      ctaKeyword: keyword,
+      headers: requestHeaders,
+      offerSlug: "one-selfie-visibility-bundle",
+      params,
+      path: "/one-selfie",
+      productId: "selfie_visibility_bundle",
+      source,
+    })
+  })
 
   return (
     <OneSelfieLanding
@@ -58,10 +78,10 @@ export default async function OneSelfiePage({
       checkoutFailed={params.checkout === "failed"}
       closesAt={SELFIE_VISIBILITY_BUNDLE_CLOSES_AT}
       hasInboundKeyword={hasInboundOneSelfieKeyword(params)}
-      keyword={getOneSelfieLandingKeyword(params)}
+      keyword={keyword}
       opensAt={SELFIE_VISIBILITY_BUNDLE_OPENS_AT}
       serverNow={new Date().toISOString()}
-      source={getOneSelfieLandingSource(params)}
+      source={source}
       starterKitHref={buildOneSelfieExpiredFallbackHref(params)}
     />
   )

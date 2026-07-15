@@ -75,6 +75,7 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "access_recovery_email_sent",
   "selfie_guide_chapter_completed",
   "selfie_guide_challenge_submitted",
+  "offer_landing_request",
   "offer_landing_view",
   "offer_cta_click",
   "quiz_started",
