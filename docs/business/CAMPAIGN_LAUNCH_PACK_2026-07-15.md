@@ -46,9 +46,11 @@ You give Maya one selfie, tell her what you sell and what you're promoting right
 That's the five-minute part. Then within 48 hours you get your whole promotion back, done
 for you:
 
-- Six brand photos built around the exact thing you're launching
+- A reel, ready to assemble: the hook, your b-roll clips made from your own photos, the
+  text overlays, and exactly what to film on your phone in one take
 - Three feed posts in order: one to get attention, one to build trust, one to make the
   offer, each with the caption written in your voice
+- Six brand photos built around the exact thing you're launching
 - A seven-slide carousel for the same promotion
 - Two Story sequences, because Stories are where people actually decide to buy
 - A one-page plan showing you what to post first, and why
@@ -94,8 +96,8 @@ Sandra x
 You built the offer. You just never built the photos to sell it.
 
 I made the thing I always wished existed. You give me one selfie and what you're
-promoting, and within 48 hours you get your whole next campaign back. Six photos, three
-posts, a carousel, Stories, and a plan for exactly what to post first.
+promoting, and within 48 hours you get your whole next campaign back. A reel, six photos,
+three posts, a carousel, Stories, and a plan for exactly what to post first.
 
 It still looks like you. Your age, your energy, finally photographed for the business
 you're running. $97 once. No subscription.
@@ -114,8 +116,8 @@ Comment CAMPAIGN and I'll send you the details.
    hand you the campaign."
 4. POLL · "When's your next thing to promote?" · "This week 🔥" / "Soon and I'm not ready"
 5. THE OFFER, ITEMIZED · "So I built Your Next Campaign. One selfie in. Within 48 hours
-   you get: 6 photos, 3 posts, a carousel, 2 Story sequences, and a plan for what to post
-   first. All for one promotion."
+   you get: a reel, 6 photos, 3 posts, a carousel, 2 Story sequences, and a plan for what
+   to post first. All for one promotion."
 6. STILL-YOU + PRICE · "And it still looks like you. If you don't recognize yourself in a
    photo, I redo it. $97 once. No subscription. I'm personally checking every early order
    myself."
@@ -130,7 +132,8 @@ Comment CAMPAIGN and I'll send you the details.
 
 **Reply copy:**
 > Yes! Here's how it works: you give Maya one selfie and tell her what you're promoting,
-> and within 48 hours you get the whole campaign back. Photos, posts, Stories, and a plan.
+> and within 48 hours you get the whole campaign back. A reel, photos, posts, Stories,
+> and a plan.
 > It still looks like you, $97 once, no subscription.
 > Here's everything: https://sselfie.ai/campaign?source=instagram&utm_source=instagram&utm_medium=manychat&utm_campaign=campaign_outcome_test&cta_keyword=CAMPAIGN
 
@@ -145,8 +148,10 @@ closed event. One selling keyword at a time; CAMPAIGN owns the message from Thur
 
 - Planned for exactly what you're promoting
 - Written in your voice
-- Six brand photos that still look like you
+- One reel, ready to assemble: hook, your b-roll from your own photos, overlays, and what
+  to film on your phone
 - Three feed posts in order: attention, trust, offer
+- Six brand photos that still look like you
 - A seven-slide carousel for the same promotion
 - Two Story sequences (the warm-up and the ask)
 - One simple plan for what to post first, and why
