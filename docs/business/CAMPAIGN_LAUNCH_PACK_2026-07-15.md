@@ -88,7 +88,7 @@ Sandra x
 | 0-3s | Sandra to camera, handheld | "You have an offer. And nothing to post." | Hook read out loud |
 | 3-8s | Sandra scrolling her own camera roll, unimpressed | "The last photo you like is from 2023." | "You know it's good. You just froze on the part where you promote it." |
 | 8-14s | Sandra holding up one selfie | "So here's what I built." | "You give me one selfie and tell me what you're selling." |
-| 14-20s | Screen-record of a REAL campaign buyer page with assets (RECORD AFTER order #1 exists Thursday morning) | "Photos. Posts. Stories. A plan. In 48 hours." | "And you get the whole campaign back. Done for you." |
+| 14-20s | Screen-record of a REAL campaign buyer page with assets (RECORD AFTER order #1 exists Thursday morning) | "A reel. Posts. Photos. Stories. A plan. In 48 hours." | "And you get the whole campaign back. Done for you." |
 | 20-25s | Sandra to camera, warm | "It still looks like you. $97, once." | "If you don't recognize yourself in a photo, I redo it. Comment CAMPAIGN." |
 
 **Caption:**
