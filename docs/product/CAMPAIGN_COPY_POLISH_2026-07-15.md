@@ -14,12 +14,12 @@ No-Fake psychology doctrine, design system.
 
 ## A. Copy changes for Sandra's exact words (ranked)
 
-1. **The guarantee line is the moat and it reads like fine print.** Landing, still-you
-   section: "If the face is clearly wrong, we fix the image once." — "clearly wrong" (who
-   decides?) and "once" read defensive at the exact moment her fear peaks. Options:
-   - (a) "If you don't recognize yourself in a photo, we redo it."
-   - (b) "If a photo doesn't look like you, tell me and I make it right."
-   Redo limits live in policy/support, not on the sales page. Sandra picks (a)/(b)/her own.
+1. **The guarantee line — SANDRA APPROVED 2026-07-15: use (a).**
+   Replace "If the face is clearly wrong, we fix the image once." with:
+   **"If you don't recognize yourself in a photo, we redo it."**
+   Redo limits live in policy/support, not on the sales page.
+   (Sandra also approved the rest of this sheet as drafted the same day — items 2-12 may be
+   implemented with the draft wording below; she may still refine exact words before flag-on.)
 2. **"A paid SSELFIE outcome" (hero eyebrow)** is internal strategy vocabulary. Replace with
    the audience qualifier the contract mandates: "For women who sell something" (then the
    subline no longer needs its "For women who already have something to sell" open — swap
