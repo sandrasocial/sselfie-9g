@@ -1,4 +1,4 @@
-# Launch content pack — "Your Next Campaign" (DRAFT, Sandra approves every word)
+# Launch content pack · "Your Next Campaign" (DRAFT, Sandra approves every word)
 
 Status: DRAFT 2026-07-15. Nothing here sends or posts until Sandra says so, per launch
 checklist `tasks/CAMPAIGN-GO-LIVE-CHECKLIST-2026-07-16.md`. Reviewed against the Brand
@@ -106,20 +106,20 @@ Comment CAMPAIGN and I'll send you the details.
 
 ## 3. Stories sequence (launch day, 7 slides)
 
-1. HOOK — "Be honest. You have something to sell and zero photos to post it with."
+1. HOOK · "Be honest. You have something to sell and zero photos to post it with."
    (Sandra to camera, real.)
-2. RECOGNITION — "You did the hard part. You built the offer. Then launch week comes and
+2. RECOGNITION · "You did the hard part. You built the offer. Then launch week comes and
    you've got nothing ready to post."
-3. THE SHIFT — "You don't need another course on making content. You need someone to just
+3. THE SHIFT · "You don't need another course on making content. You need someone to just
    hand you the campaign."
-4. POLL — "When's your next thing to promote?" · "This week 🔥" / "Soon and I'm not ready"
-5. THE OFFER, ITEMIZED — "So I built Your Next Campaign. One selfie in. Within 48 hours
+4. POLL · "When's your next thing to promote?" · "This week 🔥" / "Soon and I'm not ready"
+5. THE OFFER, ITEMIZED · "So I built Your Next Campaign. One selfie in. Within 48 hours
    you get: 6 photos, 3 posts, a carousel, 2 Story sequences, and a plan for what to post
    first. All for one promotion."
-6. STILL-YOU + PRICE — "And it still looks like you. If you don't recognize yourself in a
+6. STILL-YOU + PRICE · "And it still looks like you. If you don't recognize yourself in a
    photo, I redo it. $97 once. No subscription. I'm personally checking every early order
    myself."
-7. LINK — "Tap up. Give me one selfie and what you're selling." → link sticker:
+7. LINK · "Tap up. Give me one selfie and what you're selling." → link sticker:
    https://sselfie.ai/campaign?source=instagram_story&utm_source=instagram&utm_medium=story&utm_campaign=campaign_outcome_test&cta_keyword=CAMPAIGN
 
 ---
@@ -161,11 +161,11 @@ we redo it."
 
 ## Pre-flight notes
 
-- The reel's 14-20s beat needs the REAL buyer page — record it after Sandra's own order #1
+- The reel's 14-20s beat needs the REAL buyer page · record it after Sandra's own order #1
   Thursday morning. Everything else can be recorded today.
 - Verify in tonight's end-to-end test that `source=instagram_story` lands correctly in
   checkout_attribution (email + ManyChat sources match the spec's mandated UTMs exactly).
 - Copy assumes the polished landing page (itemized list, "For women who sell something"
-  eyebrow) — Codex is landing those from the polish doc before flag-on.
+  eyebrow) · Codex is landing those from the polish doc before flag-on.
 - Banned-phrase review done: one face-comparison phrase caught in draft and rewritten to
   still-you language. Do not reintroduce it in edits.
