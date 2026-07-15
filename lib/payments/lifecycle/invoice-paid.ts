@@ -24,16 +24,14 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
   // invoice.parent.subscription_details.subscription. Read both shapes or every renewal
   // gets skipped (this silently dropped all subscription revenue rows from 2026-05-20
   // until the 2026-06-12 fix).
-  const rawSubscription =
-    invoice.subscription ?? invoice.parent?.subscription_details?.subscription
+  const rawSubscription = invoice.subscription ?? invoice.parent?.subscription_details?.subscription
 
   if (!rawSubscription) {
     console.log("[v0] Invoice payment succeeded but no subscription - skipping")
     return
   }
 
-  const subscriptionId =
-    typeof rawSubscription === "string" ? rawSubscription : rawSubscription?.id
+  const subscriptionId = typeof rawSubscription === "string" ? rawSubscription : rawSubscription?.id
 
   if (!subscriptionId) {
     console.log("[v0] Invoice has no subscription ID - skipping")
@@ -73,13 +71,15 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
 
         if (users.length > 0) {
           const userId = users[0].id
-          const rawProductType =
-            subscription.metadata.product_type || "sselfie_studio_membership"
+          const rawProductType = subscription.metadata.product_type || "sselfie_studio_membership"
           const productType =
             rawProductType === "sselfie_studio_membership_annual"
               ? "sselfie_studio_membership"
               : rawProductType
-          const subscriptionPlan = getSubscriptionPlanFromMetadata(subscription.metadata, productType)
+          const subscriptionPlan = getSubscriptionPlanFromMetadata(
+            subscription.metadata,
+            productType
+          )
 
           // Billing period on Stripe API 2025-03+ lives at items.data[].current_period_*.
           const periodStart =
@@ -120,9 +120,7 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
             WHERE stripe_subscription_id = ${subscriptionId}
           `
           sub = result[0] || null
-          console.log(
-            `[v0] ✅ Created subscription record from Stripe data for user ${userId}`
-          )
+          console.log(`[v0] ✅ Created subscription record from Stripe data for user ${userId}`)
         }
       }
     } catch (error: any) {
@@ -217,6 +215,19 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
         DO UPDATE SET
           status = ${invoice.status || "succeeded"},
           amount_cents = ${invoice.amount_paid},
+          metadata = CASE
+            WHEN COALESCE(stripe_payments.metadata, '{}'::jsonb) ? 'payment_recovery'
+              THEN jsonb_set(
+                COALESCE(stripe_payments.metadata, '{}'::jsonb) || EXCLUDED.metadata,
+                '{payment_recovery,recovered_at}',
+                COALESCE(
+                  stripe_payments.metadata #> '{payment_recovery,recovered_at}',
+                  to_jsonb(NOW())
+                ),
+                TRUE
+              )
+            ELSE COALESCE(stripe_payments.metadata, '{}'::jsonb) || EXCLUDED.metadata
+          END,
           updated_at = NOW()
       `
       console.log(
@@ -237,7 +248,10 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
             stripe_payment_id: paymentId,
             stripe_invoice_id: invoice.id,
             stripe_subscription_id: subscriptionId,
-            offer_slug: sub?.product_type === "sselfie_studio_membership" ? "sselfie-studio-membership" : null,
+            offer_slug:
+              sub?.product_type === "sselfie_studio_membership"
+                ? "sselfie-studio-membership"
+                : null,
             funnel_stage: "studio_membership",
             is_test_mode: isTestMode,
           },
@@ -256,9 +270,7 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
 
   // ⚠️ CRITICAL: Only grant credits if invoice payment was actually successful
   if (invoice.status !== "paid") {
-    console.log(
-      `[v0] ⚠️ Invoice status is '${invoice.status}', not 'paid'. Skipping credit grant.`
-    )
+    console.log(`[v0] ⚠️ Invoice status is '${invoice.status}', not 'paid'. Skipping credit grant.`)
     return
   }
 
@@ -276,7 +288,8 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
       stripeSubscriptionId: subscriptionId,
       userId: sub?.user_id ? String(sub.user_id) : null,
       userEmail: sub?.email || null,
-      stripeCustomerId: typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id || null,
+      stripeCustomerId:
+        typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id || null,
       stripePaymentId: paymentId,
       stripeInvoiceId: invoice.id,
       purchaseValueCents: invoice.amount_paid ?? null,
@@ -324,9 +337,7 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
       // FIX B5: Payment-level idempotency using invoice ID
       // Check if we've already granted credits for THIS SPECIFIC INVOICE
       const invoiceId = invoice.id
-      const invoicePeriodStart = invoice.period_start
-        ? new Date(invoice.period_start * 1000)
-        : null
+      const invoicePeriodStart = invoice.period_start ? new Date(invoice.period_start * 1000) : null
       const invoicePeriodEnd = invoice.period_end ? new Date(invoice.period_end * 1000) : null
 
       let shouldGrant = true
@@ -372,9 +383,7 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
             `[v0] Granting monthly credits for ${sub.product_type} to user ${sub.user_id}`
           )
           console.log(`[v0] Invoice billing_reason: ${invoice.billing_reason || "N/A"}`)
-          console.log(
-            `[v0] Invoice period_start: ${invoicePeriodStart?.toISOString() || "N/A"}`
-          )
+          console.log(`[v0] Invoice period_start: ${invoicePeriodStart?.toISOString() || "N/A"}`)
 
           const result = await grantMonthlyCredits(
             sub.user_id,
@@ -401,9 +410,7 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
                 FROM recent_credit_grant
                 WHERE ct.id = recent_credit_grant.id
               `
-              console.log(
-                `[v0] ✅ Updated credit transaction with invoice ID for idempotency`
-              )
+              console.log(`[v0] ✅ Updated credit transaction with invoice ID for idempotency`)
             } catch (updateError: any) {
               console.warn(
                 `[v0] ⚠️ Failed to update credit transaction with invoice ID:`,
@@ -421,7 +428,9 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
             // Only grant on the first paid invoice for a new subscription.
             if (invoice.billing_reason === "subscription_create") {
               try {
-                const stripeSubscription = (await stripe.subscriptions.retrieve(subscriptionId)) as any
+                const stripeSubscription = (await stripe.subscriptions.retrieve(
+                  subscriptionId
+                )) as any
                 const bonusCredits = Number.parseInt(
                   String(stripeSubscription?.metadata?.bonus_credits || "0"),
                   10
@@ -496,9 +505,7 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
                 if (emailResult.success) {
                   console.log(`[v0] ✅ Credit renewal email sent to ${userRecord[0].email}`)
                 } else {
-                  console.error(
-                    `[v0] ⚠️ Failed to send credit renewal email: ${emailResult.error}`
-                  )
+                  console.error(`[v0] ⚠️ Failed to send credit renewal email: ${emailResult.error}`)
                 }
               }
             } catch (emailError: any) {
@@ -533,13 +540,9 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
   // subscription.items.data[].current_period_* (top-level fields are gone).
   const subscription = (await stripe.subscriptions.retrieve(subscriptionId)) as any
   const renewedPeriodStart =
-    subscription.current_period_start ??
-    subscription.items?.data?.[0]?.current_period_start ??
-    null
+    subscription.current_period_start ?? subscription.items?.data?.[0]?.current_period_start ?? null
   const renewedPeriodEnd =
-    subscription.current_period_end ??
-    subscription.items?.data?.[0]?.current_period_end ??
-    null
+    subscription.current_period_end ?? subscription.items?.data?.[0]?.current_period_end ?? null
   await sql`
     UPDATE subscriptions
     SET

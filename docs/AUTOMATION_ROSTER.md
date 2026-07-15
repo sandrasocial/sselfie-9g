@@ -38,7 +38,7 @@ Brand rule for every layer: read `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` firs
 ### Money & fulfillment (all LIVE)
 | Cron / hook | Schedule | Job |
 |---|---|---|
-| Stripe webhook → `lib/payments/handlers/*` | event-driven | All fulfillment + subscription lifecycle. `selfie_visibility_bundle` grants its five lifetime assets, one fixed 30-day/200-credit pass, and one delivery email idempotently. |
+| Stripe webhook → `lib/payments/handlers/*` | event-driven | All fulfillment + subscription lifecycle. `selfie_visibility_bundle` grants its five lifetime assets, one fixed 30-day/200-credit pass, and one delivery email idempotently. Held for post-event release: `invoice.payment_failed` keeps its one deduplicated email, but its button opens a signed exact-subscription recovery route that creates a fresh Stripe-hosted card-update session at click time; successful retries appear on Admin from paid `stripe_payments` rows. No new cron. |
 | `resolve-pending-payments` | */5 min | Grant pending credits, alert stuck webhook reviews |
 | `reconcile-credits` | 05:00 | Welcome/monthly credits truth |
 | `reconcile-subscriptions` / `reconcile-generations` / `reconcile-generation-assets` | 30m / 30m / 5m | Stripe↔DB↔provider truth |

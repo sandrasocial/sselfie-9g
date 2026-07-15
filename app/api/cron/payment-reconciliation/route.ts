@@ -57,7 +57,8 @@ async function findMissingInvoices(cutoffSec: number, graceSec: number): Promise
       // may also key stripe_payment_id by the invoice id itself.
       const rows = await sql`
         SELECT id FROM stripe_payments
-        WHERE stripe_invoice_id = ${inv.id} OR stripe_payment_id = ${inv.id}
+        WHERE status IN ('paid', 'succeeded')
+          AND (stripe_invoice_id = ${inv.id} OR stripe_payment_id = ${inv.id})
         LIMIT 1
       `
       if (rows.length === 0) {
@@ -78,7 +79,10 @@ async function findMissingInvoices(cutoffSec: number, graceSec: number): Promise
   return missing
 }
 
-async function findMissingCheckouts(cutoffSec: number, graceSec: number): Promise<MissingPayment[]> {
+async function findMissingCheckouts(
+  cutoffSec: number,
+  graceSec: number
+): Promise<MissingPayment[]> {
   const missing: MissingPayment[] = []
   let starting_after: string | undefined
   for (let page = 0; page < 10; page++) {
@@ -104,9 +108,10 @@ async function findMissingCheckouts(cutoffSec: number, graceSec: number): Promis
       // and (where present) checkout_session_id = session.id.
       const rows = await sql`
         SELECT id FROM stripe_payments
-        WHERE stripe_payment_id = ${session.id}
+        WHERE status IN ('paid', 'succeeded')
+          AND (stripe_payment_id = ${session.id}
            OR checkout_session_id = ${session.id}
-           OR (${paymentIntentId}::text IS NOT NULL AND stripe_payment_id = ${paymentIntentId})
+           OR (${paymentIntentId}::text IS NOT NULL AND stripe_payment_id = ${paymentIntentId}))
         LIMIT 1
       `
       if (rows.length === 0) {
@@ -133,20 +138,24 @@ function formatAmount(amountCents: number, currency: string): string {
   return `${(amountCents / 100).toFixed(2)} ${currency.toUpperCase()}`
 }
 
-function buildAlertEmail(missing: MissingPayment[]): { subject: string; html: string; text: string } {
+function buildAlertEmail(missing: MissingPayment[]): {
+  subject: string
+  html: string
+  text: string
+} {
   const total = missing.reduce((sum, m) => sum + m.amountCents, 0)
   const subject = `🚨 ${missing.length} Stripe payment${missing.length === 1 ? "" : "s"} missing from the database`
 
   const rowsHtml = missing
     .map(
-      (m) => `
+      m => `
         <tr>
           <td style="padding:6px 12px;border-bottom:1px solid #E5E5E5;">${m.kind === "subscription_invoice" ? "Subscription renewal" : "One-time purchase"}</td>
           <td style="padding:6px 12px;border-bottom:1px solid #E5E5E5;">${m.email || "unknown"}</td>
           <td style="padding:6px 12px;border-bottom:1px solid #E5E5E5;">${formatAmount(m.amountCents, m.currency)}</td>
           <td style="padding:6px 12px;border-bottom:1px solid #E5E5E5;">${m.paidAt.toISOString().slice(0, 16).replace("T", " ")} UTC</td>
           <td style="padding:6px 12px;border-bottom:1px solid #E5E5E5;"><a href="${m.dashboardUrl}">open in Stripe</a></td>
-        </tr>`,
+        </tr>`
     )
     .join("")
 
@@ -181,8 +190,8 @@ function buildAlertEmail(missing: MissingPayment[]): { subject: string; html: st
     `${missing.length} paid payment(s) in the last ${WINDOW_HOURS}h with no stripe_payments row (source: live Stripe API vs stripe_payments):`,
     ``,
     ...missing.map(
-      (m) =>
-        `- ${m.kind === "subscription_invoice" ? "Subscription renewal" : "One-time purchase"} | ${m.email || "unknown"} | ${formatAmount(m.amountCents, m.currency)} | ${m.paidAt.toISOString()} | ${m.dashboardUrl}`,
+      m =>
+        `- ${m.kind === "subscription_invoice" ? "Subscription renewal" : "One-time purchase"} | ${m.email || "unknown"} | ${formatAmount(m.amountCents, m.currency)} | ${m.paidAt.toISOString()} | ${m.dashboardUrl}`
     ),
     ``,
     `Likely cause: the Stripe webhook is dropping events. Check Vercel logs for /api/webhooks/stripe, then backfill.`,
@@ -199,7 +208,9 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get("authorization")
     const cronSecret = (process.env.CRON_SECRET || "").trim()
     if (!cronSecret) {
-      await cronLogger.error(new Error("CRON_SECRET not configured"), { reason: "Missing CRON_SECRET" })
+      await cronLogger.error(new Error("CRON_SECRET not configured"), {
+        reason: "Missing CRON_SECRET",
+      })
       return NextResponse.json({ error: "Cron secret not configured" }, { status: 500 })
     }
     if (authHeader !== `Bearer ${cronSecret}`) {
@@ -213,7 +224,9 @@ export async function GET(request: NextRequest) {
     }
 
     if (!process.env.STRIPE_SECRET_KEY) {
-      await cronLogger.error(new Error("STRIPE_SECRET_KEY missing"), { reason: "Missing STRIPE_SECRET_KEY" })
+      await cronLogger.error(new Error("STRIPE_SECRET_KEY missing"), {
+        reason: "Missing STRIPE_SECRET_KEY",
+      })
       return NextResponse.json({ error: "Stripe not configured" }, { status: 500 })
     }
 
@@ -253,13 +266,16 @@ export async function GET(request: NextRequest) {
       checkedWindowHours: WINDOW_HOURS,
       missing: missing.length,
       missingTotalCents: missing.reduce((sum, m) => sum + m.amountCents, 0),
-      missingIds: missing.map((m) => m.stripeId),
+      missingIds: missing.map(m => m.stripeId),
       alertEmailSent: emailResult.success,
     }
 
     // Missing money is an error state even though the cron itself ran fine -
     // log it loudly so it shows up in cron health checks too.
-    await cronLogger.error(new Error(`${missing.length} Stripe payment(s) missing from stripe_payments`), summary)
+    await cronLogger.error(
+      new Error(`${missing.length} Stripe payment(s) missing from stripe_payments`),
+      summary
+    )
 
     return NextResponse.json({ ok: false, ...summary })
   } catch (error: any) {

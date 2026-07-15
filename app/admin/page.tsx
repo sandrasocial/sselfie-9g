@@ -17,7 +17,9 @@ function money(value: number) {
 function currencyMoney(value: number, currency: string) {
   const normalized = currency.toUpperCase()
   const symbol = normalized === "EUR" ? "€" : normalized === "USD" ? "$" : `${normalized} `
-  return symbol + value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return (
+    symbol + value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  )
 }
 
 function currencyBreakdown(values: Record<string, number>) {
@@ -65,7 +67,7 @@ export default async function AdminPage({
       neonUser = await getOrCreateNeonUser(
         user.id,
         user.email,
-        user.user_metadata?.name || user.user_metadata?.display_name,
+        user.user_metadata?.name || user.user_metadata?.display_name
       )
     }
   } catch (error) {
@@ -94,7 +96,7 @@ export default async function AdminPage({
 
   const igTokenExpiresSoon = Boolean(
     igConnection?.token_expires_at &&
-      new Date(igConnection.token_expires_at).getTime() - Date.now() < 14 * 24 * 60 * 60 * 1000,
+    new Date(igConnection.token_expires_at).getTime() - Date.now() < 14 * 24 * 60 * 60 * 1000
   )
   const scorecard = report.scorecard
   const oneSelfieCampaign = report.oneSelfieCampaign
@@ -102,7 +104,7 @@ export default async function AdminPage({
   const applications30d = scorecard?.workWithMe.applications30d || 0
   const contentIsFresh = freshWithin(report.content.briefGeneratedAt, 8)
   const systemsNeedingAttention = report.team.employees.filter(
-    (employee) => employee.status === "needs-setup" || employee.lastResult === "failed",
+    employee => employee.status === "needs-setup" || employee.lastResult === "failed"
   )
   const founderDecisionCount =
     report.needsMe.approvalActions.length +
@@ -147,9 +149,16 @@ export default async function AdminPage({
         <section className="mt-7 grid gap-px overflow-hidden border border-stone-300 bg-stone-300 md:grid-cols-3">
           <div className="bg-white p-5 sm:p-6">
             <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">Money</p>
-            <p className="mt-4 font-serif text-4xl font-light">{money(report.money.last48h.revenue)}</p>
+            <p className="mt-4 font-serif text-4xl font-light">
+              {money(report.money.last48h.revenue)}
+            </p>
             <p className="mt-2 text-sm text-stone-600">
-              {report.money.last48h.payments} payments in 48h · {money(report.money.week.revenue)} this week
+              {report.money.last48h.payments} payments in 48h · {money(report.money.week.revenue)}{" "}
+              this week
+            </p>
+            <p className="mt-2 text-xs text-stone-500">
+              Recovered payments: {money(report.money.recovered30d.revenue)} from{" "}
+              {report.money.recovered30d.payments} renewals this month
             </p>
           </div>
           <div className="bg-white p-5 sm:p-6">
@@ -162,29 +171,44 @@ export default async function AdminPage({
           <div className="bg-white p-5 sm:p-6">
             <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">Needs you</p>
             <p className="mt-4 font-serif text-4xl font-light">{founderDecisionCount}</p>
-            <p className="mt-2 text-sm text-stone-600">real decisions across payments, email, and fresh support</p>
+            <p className="mt-2 text-sm text-stone-600">
+              real decisions across payments, email, and fresh support
+            </p>
           </div>
         </section>
 
         <section className="mt-8 border border-stone-950 bg-white">
           <div className="flex flex-col gap-3 border-b border-stone-200 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">Founder approvals</p>
-              <h2 className="mt-2 font-serif text-3xl font-light">Only actions waiting for your yes.</h2>
-              <p className="mt-2 text-sm text-stone-600">Nothing sends until you review and confirm it.</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
+                Founder approvals
+              </p>
+              <h2 className="mt-2 font-serif text-3xl font-light">
+                Only actions waiting for your yes.
+              </h2>
+              <p className="mt-2 text-sm text-stone-600">
+                Nothing sends until you review and confirm it.
+              </p>
             </div>
-            <span className="text-sm text-stone-500">{report.needsMe.approvalActions.length} waiting</span>
+            <span className="text-sm text-stone-500">
+              {report.needsMe.approvalActions.length} waiting
+            </span>
           </div>
 
           {report.needsMe.approvalActions.length > 0 ? (
             <div className="divide-y divide-stone-200">
-              {report.needsMe.approvalActions.map((action) => (
-                <article key={action.id} className="grid gap-4 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
+              {report.needsMe.approvalActions.map(action => (
+                <article
+                  key={action.id}
+                  className="grid gap-4 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6"
+                >
                   <div className="min-w-0">
                     <p className="font-serif text-xl leading-tight">{action.title}</p>
                     <p className="mt-2 text-sm leading-6 text-stone-600">{action.summary}</p>
                     {action.status === "failed" ? (
-                      <p className="mt-2 text-xs font-medium text-red-700">This action failed and needs a fresh review.</p>
+                      <p className="mt-2 text-xs font-medium text-red-700">
+                        This action failed and needs a fresh review.
+                      </p>
                     ) : null}
                   </div>
                   <ActionLink href={action.link}>Review</ActionLink>
@@ -197,24 +221,40 @@ export default async function AdminPage({
         </section>
 
         <section className="mt-4 grid gap-4 md:grid-cols-2">
-          <Link href="/admin/webhook-review" className="border border-stone-300 bg-white p-5 transition hover:border-stone-950">
+          <Link
+            href="/admin/webhook-review"
+            className="border border-stone-300 bg-white p-5 transition hover:border-stone-950"
+          >
             <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Payments</p>
             <p className="mt-3 font-serif text-3xl font-light">{report.needsMe.webhookReviews}</p>
             <p className="mt-1 text-sm text-stone-600">payment events needing review</p>
           </Link>
-          <Link href="/admin/customer-support" className="border border-stone-300 bg-white p-5 transition hover:border-stone-950">
+          <Link
+            href="/admin/customer-support"
+            className="border border-stone-300 bg-white p-5 transition hover:border-stone-950"
+          >
             <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Support</p>
-            <p className="mt-3 font-serif text-3xl font-light">{report.needsMe.newSupportThreads}</p>
+            <p className="mt-3 font-serif text-3xl font-light">
+              {report.needsMe.newSupportThreads}
+            </p>
             <p className="mt-1 text-sm text-stone-600">new threads from the last 30 days</p>
           </Link>
         </section>
 
         <section className="mt-8 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="bg-stone-950 p-6 text-white sm:p-8">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-stone-400">Higher Self Command Center</p>
-            <h2 className="mt-4 font-serif text-3xl font-light">{report.commandCenter.moneyMove.title}</h2>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-stone-200">{report.commandCenter.moneyMove.action}</p>
-            <p className="mt-3 max-w-xl text-xs leading-5 text-stone-400">{report.commandCenter.moneyMove.reason}</p>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-stone-400">
+              Higher Self Command Center
+            </p>
+            <h2 className="mt-4 font-serif text-3xl font-light">
+              {report.commandCenter.moneyMove.title}
+            </h2>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-stone-200">
+              {report.commandCenter.moneyMove.action}
+            </p>
+            <p className="mt-3 max-w-xl text-xs leading-5 text-stone-400">
+              {report.commandCenter.moneyMove.reason}
+            </p>
             <div className="mt-6">
               <Link
                 href={report.commandCenter.moneyMove.link.href}
@@ -231,17 +271,24 @@ export default async function AdminPage({
             <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">Content today</p>
             {contentIsFresh && report.content.nextPostHook ? (
               <>
-                <p className="mt-4 font-serif text-2xl leading-tight">“{report.content.nextPostHook}”</p>
+                <p className="mt-4 font-serif text-2xl leading-tight">
+                  “{report.content.nextPostHook}”
+                </p>
                 <p className="mt-4 text-sm leading-6 text-stone-600">
-                  Use this only if it supports today’s money move. You do not need another content system.
+                  Use this only if it supports today’s money move. You do not need another content
+                  system.
                 </p>
               </>
             ) : (
               <p className="mt-4 text-sm leading-6 text-stone-600">
-                No fresh brief is being presented as today’s truth. Open the content brief when you are ready to create.
+                No fresh brief is being presented as today’s truth. Open the content brief when you
+                are ready to create.
               </p>
             )}
-            <Link href="/admin/content-brief" className="mt-6 inline-block text-xs uppercase tracking-[0.14em] underline underline-offset-4">
+            <Link
+              href="/admin/content-brief"
+              className="mt-6 inline-block text-xs uppercase tracking-[0.14em] underline underline-offset-4"
+            >
               Open content
             </Link>
           </div>
@@ -251,8 +298,12 @@ export default async function AdminPage({
           <summary className="cursor-pointer list-none p-5 sm:p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">Business details</p>
-                <p className="mt-2 font-serif text-2xl font-light">Revenue, members, and funnel truth</p>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
+                  Business details
+                </p>
+                <p className="mt-2 font-serif text-2xl font-light">
+                  Revenue, members, and funnel truth
+                </p>
               </div>
               <span className="text-sm text-stone-500">Open</span>
             </div>
@@ -260,13 +311,19 @@ export default async function AdminPage({
           <div className="grid gap-px border-t border-stone-200 bg-stone-200 md:grid-cols-2">
             <div className="bg-white p-5 sm:p-6">
               <p className="text-xs uppercase tracking-[0.16em] text-stone-500">Revenue</p>
-              <p className="mt-3 font-serif text-3xl font-light">{money(report.money.month.revenue)}</p>
-              <p className="mt-1 text-sm text-stone-600">{report.money.month.payments} payments in 30 days</p>
+              <p className="mt-3 font-serif text-3xl font-light">
+                {money(report.money.month.revenue)}
+              </p>
+              <p className="mt-1 text-sm text-stone-600">
+                {report.money.month.payments} payments in 30 days
+              </p>
               <ul className="mt-5 space-y-2 text-sm">
-                {report.money.byProduct.slice(0, 6).map((row) => (
+                {report.money.byProduct.slice(0, 6).map(row => (
                   <li key={row.product} className="flex justify-between gap-4">
                     <span>{row.product}</span>
-                    <span className="text-stone-500">{row.payments} · {money(row.revenue)}</span>
+                    <span className="text-stone-500">
+                      {row.payments} · {money(row.revenue)}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -274,9 +331,12 @@ export default async function AdminPage({
             <div className="bg-white p-5 sm:p-6">
               <p className="text-xs uppercase tracking-[0.16em] text-stone-500">Paying members</p>
               <p className="mt-3 font-serif text-3xl font-light">{report.members.active}</p>
-              <p className="mt-1 text-sm text-stone-600">{currencyBreakdown(report.members.mrrByCurrency)} net MRR</p>
+              <p className="mt-1 text-sm text-stone-600">
+                {currencyBreakdown(report.members.mrrByCurrency)} net MRR
+              </p>
               <p className="mt-5 text-sm leading-6 text-stone-600">
-                {report.members.new30d} new · {report.members.canceled30d} canceled in 30 days · {report.trials.active} active trials
+                {report.members.new30d} new · {report.members.canceled30d} canceled in 30 days ·{" "}
+                {report.trials.active} active trials
               </p>
             </div>
             {oneSelfieCampaign ? (
@@ -295,54 +355,76 @@ export default async function AdminPage({
 
                 <div className="mt-5 grid gap-px border border-stone-200 bg-stone-200 sm:grid-cols-2 lg:grid-cols-4">
                   <div className="bg-stone-50 p-4">
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">Page views</p>
-                    <p className="mt-2 font-serif text-3xl font-light">{oneSelfieCampaign.traffic.views}</p>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Page views
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {oneSelfieCampaign.traffic.views}
+                    </p>
                     <p className="mt-1 text-xs text-stone-500">
                       {oneSelfieCampaign.traffic.ctaClicks} primary CTA clicks
                     </p>
                   </div>
                   <div className="bg-stone-50 p-4">
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">Checkout starts</p>
-                    <p className="mt-2 font-serif text-3xl font-light">{oneSelfieCampaign.checkout.starts}</p>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Checkout starts
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {oneSelfieCampaign.checkout.starts}
+                    </p>
                     <p className="mt-1 text-xs text-stone-500">
                       {oneSelfieCampaign.checkout.pageToCheckoutPct}% of page views
                     </p>
                   </div>
                   <div className="bg-stone-50 p-4">
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">Paid buyers</p>
-                    <p className="mt-2 font-serif text-3xl font-light">{oneSelfieCampaign.checkout.paidBuyers}</p>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Paid buyers
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {oneSelfieCampaign.checkout.paidBuyers}
+                    </p>
                     <p className="mt-1 text-xs text-stone-500">
                       {oneSelfieCampaign.checkout.checkoutToPaidPct}% of checkout starts
                     </p>
                   </div>
                   <div className="bg-stone-50 p-4">
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">Bundle revenue</p>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Bundle revenue
+                    </p>
                     <p className="mt-2 font-serif text-3xl font-light">
                       {money(oneSelfieCampaign.checkout.grossUsd)}
                     </p>
                     <p className="mt-1 text-xs text-stone-500">Stripe · USD gross</p>
                   </div>
                   <div className="bg-white p-4">
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">Buyer home</p>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Buyer home
+                    </p>
                     <p className="mt-2 font-serif text-3xl font-light">
                       {oneSelfieCampaign.activation.buyerHomeOpened}
                     </p>
                   </div>
                   <div className="bg-white p-4">
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">Maya opened</p>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Maya opened
+                    </p>
                     <p className="mt-2 font-serif text-3xl font-light">
                       {oneSelfieCampaign.activation.mayaOpened}
                     </p>
                   </div>
                   <div className="bg-white p-4">
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">First image</p>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      First image
+                    </p>
                     <p className="mt-2 font-serif text-3xl font-light">
                       {oneSelfieCampaign.activation.generated}
                     </p>
                     <p className="mt-1 text-xs text-stone-500">buyers who generated</p>
                   </div>
                   <div className="bg-white p-4">
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">First download</p>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      First download
+                    </p>
                     <p className="mt-2 font-serif text-3xl font-light">
                       {oneSelfieCampaign.activation.downloaded}
                     </p>
@@ -361,7 +443,9 @@ export default async function AdminPage({
                           key={`${row.source}-${row.medium}`}
                           className="flex items-center justify-between gap-4 border-t border-stone-200 pt-2 text-sm"
                         >
-                          <span>{row.source} · {row.medium}</span>
+                          <span>
+                            {row.source} · {row.medium}
+                          </span>
                           <span className="text-stone-500">
                             {row.views} views · {row.ctaClicks} clicks
                           </span>
@@ -380,12 +464,16 @@ export default async function AdminPage({
             ) : null}
             {scorecard ? (
               <div className="bg-white p-5 sm:col-span-2 sm:p-6">
-                <p className="text-xs uppercase tracking-[0.16em] text-stone-500">Funnels, last 30 days</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-stone-500">
+                  Funnels, last 30 days
+                </p>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  {scorecard.funnels30d.slice(0, 6).map((row) => (
+                  {scorecard.funnels30d.slice(0, 6).map(row => (
                     <div key={row.productType} className="border-t border-stone-200 pt-3 text-sm">
                       <p>{row.productType}</p>
-                      <p className="mt-1 text-stone-500">{row.starts} starts · {row.purchases} purchases · {money(row.revenue)}</p>
+                      <p className="mt-1 text-stone-500">
+                        {row.starts} starts · {row.purchases} purchases · {money(row.revenue)}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -407,10 +495,15 @@ export default async function AdminPage({
             <span className="text-sm text-stone-500">Technical detail stays collapsed</span>
           </div>
           <details className="border-t border-stone-200">
-            <summary className="cursor-pointer px-5 py-4 text-sm text-stone-600 sm:px-6">View system details</summary>
+            <summary className="cursor-pointer px-5 py-4 text-sm text-stone-600 sm:px-6">
+              View system details
+            </summary>
             <div className="divide-y divide-stone-200 border-t border-stone-200">
-              {report.team.employees.map((employee) => (
-                <div key={`${employee.name}-${employee.destination}`} className="grid gap-2 px-5 py-4 text-sm sm:grid-cols-[180px_90px_1fr] sm:px-6">
+              {report.team.employees.map(employee => (
+                <div
+                  key={`${employee.name}-${employee.destination}`}
+                  className="grid gap-2 px-5 py-4 text-sm sm:grid-cols-[180px_90px_1fr] sm:px-6"
+                >
                   <p>{employee.name}</p>
                   <p className="uppercase tracking-[0.12em] text-stone-500">{employee.status}</p>
                   <p className="text-stone-600">{employee.lastResult}</p>

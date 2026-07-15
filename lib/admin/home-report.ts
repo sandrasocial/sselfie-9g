@@ -3,12 +3,18 @@ import "server-only"
 import { sql } from "@/lib/db/client"
 import { getSingleSourceRevenueMetrics } from "@/lib/revenue/single-source"
 import { getLatestAnalyticsReports } from "@/lib/analytics/reports"
-import { getRevenueTruthScorecard, type RevenueTruthScorecard } from "@/lib/admin/revenue-truth-scorecard"
+import {
+  getRevenueTruthScorecard,
+  type RevenueTruthScorecard,
+} from "@/lib/admin/revenue-truth-scorecard"
 import {
   getOneSelfieCampaignScorecard,
   type OneSelfieCampaignScorecard,
 } from "@/lib/admin/one-selfie-campaign-scorecard"
-import { getStudioMemberHealthReport, type StudioMemberHealthReport } from "@/lib/admin/studio-member-health"
+import {
+  getStudioMemberHealthReport,
+  type StudioMemberHealthReport,
+} from "@/lib/admin/studio-member-health"
 import {
   buildHigherSelfCommandCenter,
   type HigherSelfCommandCenter,
@@ -30,6 +36,7 @@ export type AdminHomeReport = {
     last48h: { payments: number; revenue: number }
     week: { payments: number; revenue: number }
     month: { payments: number; revenue: number }
+    recovered30d: { payments: number; revenue: number }
     byProduct: Array<{ product: string; payments: number; revenue: number }>
     source: "stripe_payments"
   }
@@ -148,6 +155,12 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
         COALESCE(SUM(amount_cents) FILTER (WHERE payment_date > NOW() - INTERVAL '7 days'), 0)::bigint AS week_cents,
         COUNT(*) FILTER (WHERE payment_date > NOW() - INTERVAL '30 days')::int AS month_payments,
         COALESCE(SUM(amount_cents) FILTER (WHERE payment_date > NOW() - INTERVAL '30 days'), 0)::bigint AS month_cents
+        ,COUNT(*) FILTER (
+          WHERE (metadata #>> '{payment_recovery,recovered_at}')::timestamptz > NOW() - INTERVAL '30 days'
+        )::int AS recovered_30d_payments
+        ,COALESCE(SUM(amount_cents) FILTER (
+          WHERE (metadata #>> '{payment_recovery,recovered_at}')::timestamptz > NOW() - INTERVAL '30 days'
+        ), 0)::bigint AS recovered_30d_cents
       FROM stripe_payments
       WHERE status IN ('succeeded', 'paid')
         AND (is_test_mode = FALSE OR is_test_mode IS NULL)
@@ -172,11 +185,11 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
         (SELECT COUNT(*)::int FROM feedback WHERE status = 'new' AND created_at >= NOW() - INTERVAL '30 days') AS new_support_threads
     ` as unknown as Promise<any[]>,
     getSingleSourceRevenueMetrics().catch(() => null),
-    getRevenueTruthScorecard().catch((error) => {
+    getRevenueTruthScorecard().catch(error => {
       console.error("[admin-home] revenue truth scorecard failed:", error)
       return null
     }),
-    getOneSelfieCampaignScorecard().catch((error) => {
+    getOneSelfieCampaignScorecard().catch(error => {
       console.error("[admin-home] One Selfie campaign scorecard failed:", error)
       return null
     }),
@@ -198,11 +211,11 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
       WHERE t.product_type = 'suite_trial'
         AND (t.is_test_mode = FALSE OR t.is_test_mode IS NULL)
     `.catch(() => []) as unknown as Promise<any[]>,
-    getStudioMemberHealthReport().catch((error) => {
+    getStudioMemberHealthReport().catch(error => {
       console.error("[admin-home] studio member health failed:", error)
       return null
     }),
-    getFoundingAnnualPurchaseCount().catch((error) => {
+    getFoundingAnnualPurchaseCount().catch(error => {
       console.error("[admin-home] founding annual count failed:", error)
       return 0
     }),
@@ -226,7 +239,7 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
       FROM admin_email_errors
       WHERE created_at > NOW() - INTERVAL '24 hours'
     `.catch(() => []) as unknown as Promise<any[]>,
-    listOpenAdminActions(8).catch((error) => {
+    listOpenAdminActions(8).catch(error => {
       console.error("[admin-home] approval action lookup failed:", error)
       return []
     }),
@@ -252,7 +265,11 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
       payments: Number(money.month_payments || 0),
       revenue: Number(money.month_cents || 0) / 100,
     },
-    byProduct: (productRows || []).map((row) => ({
+    recovered30d: {
+      payments: Number(money.recovered_30d_payments || 0),
+      revenue: Number(money.recovered_30d_cents || 0) / 100,
+    },
+    byProduct: (productRows || []).map(row => ({
       product: labelProduct(row.product),
       payments: Number(row.payments || 0),
       revenue: Number(row.revenue_cents || 0) / 100,
@@ -262,7 +279,7 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
   const needsMe = {
     webhookReviews: Number(needs.webhook_reviews || 0),
     newSupportThreads: Number(needs.new_support_threads || 0),
-    approvalActions: actionRows.map((action) => ({
+    approvalActions: actionRows.map(action => ({
       id: Number(action.id),
       title: action.title,
       summary: action.summary,
@@ -279,12 +296,7 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
   }
   const cronByJob = new Map<string, any>()
   for (const row of cronRows as any[]) cronByJob.set(String(row.job_name), row)
-  const employeeFor = (
-    jobName: string,
-    name: string,
-    role: string,
-    destination: string,
-  ) => {
+  const employeeFor = (jobName: string, name: string, role: string, destination: string) => {
     const row = cronByJob.get(jobName)
     return {
       name,
@@ -343,19 +355,19 @@ export async function getAdminHomeReport(): Promise<AdminHomeReport> {
           "payment-reconciliation",
           "Payment Reconciliation",
           "Confirms Stripe payments are recorded and flags fulfillment drift.",
-          "/admin/webhook-review",
+          "/admin/webhook-review"
         ),
         employeeFor(
           "cron-health-check",
           "Cron Health Watchdog",
           "Watches stale crons, failures, and AI-credit canaries.",
-          "admin alert email",
+          "admin alert email"
         ),
         employeeFor(
           "daily-sandra-briefing",
           "Daily Sandra Briefing",
           "Sends the one daily money, member, needs-me, and content email.",
-          "email to Sandra",
+          "email to Sandra"
         ),
         {
           name: "Diagnostics APIs",

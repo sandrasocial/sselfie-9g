@@ -12,6 +12,7 @@ import { getSubscriptionCoupon } from "@/lib/revenue/subscription-amount"
 import { getSubscriptionPeriod } from "@/lib/payments/shared"
 import { getSubscriptionPlanFromMetadata } from "@/lib/launch/cash-launch-pricing"
 import { upsertStudioMembershipSubscription } from "@/lib/payments/lifecycle/upsert-studio-membership"
+import { signBillingRecoveryToken } from "@/lib/payments/billing-recovery-token"
 
 /**
  * Resolve a subscription's coupon for DB documentation (e.g. lifetime BETA 50%).
@@ -20,7 +21,7 @@ import { upsertStudioMembershipSubscription } from "@/lib/payments/lifecycle/ups
  * never write null over a real discount just because the payload was thin.
  */
 async function resolveSubscriptionDiscount(
-  sub: any,
+  sub: any
 ): Promise<{ percent: number | null; coupon: string | null } | null> {
   const toResult = (coupon: any) =>
     coupon
@@ -57,7 +58,7 @@ async function resolveSubscriptionDiscount(
 
 /** Current documented discount for a subscription row (fallback when Stripe is unreachable). */
 async function currentDocumentedDiscount(
-  stripeSubscriptionId: string,
+  stripeSubscriptionId: string
 ): Promise<{ percent: number | null; coupon: string | null }> {
   const [row] = await sql`
     SELECT discount_percent, discount_coupon
@@ -132,9 +133,7 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
 
   const createdPeriod = getSubscriptionPeriod(subscription)
   const stripeCustomerId =
-    typeof subscription.customer === "string"
-      ? subscription.customer
-      : subscription.customer?.id
+    typeof subscription.customer === "string" ? subscription.customer : subscription.customer?.id
   if (!stripeCustomerId) {
     throw new Error(`Subscription ${subscription.id} has no Stripe customer`)
   }
@@ -188,28 +187,150 @@ export async function handleInvoicePaymentFailed(rawEvent: Stripe.Event): Promis
   const invoice = event.data.object
 
   // Stripe API 2025-03+ removed invoice.subscription — read both shapes (see invoice-paid.ts).
-  const rawSubscription =
-    invoice.subscription ?? invoice.parent?.subscription_details?.subscription
+  const rawSubscription = invoice.subscription ?? invoice.parent?.subscription_details?.subscription
   if (!rawSubscription) return
 
-  const subscriptionId =
-    typeof rawSubscription === "string" ? rawSubscription : rawSubscription?.id
+  const subscriptionId = typeof rawSubscription === "string" ? rawSubscription : rawSubscription?.id
+
+  if (!subscriptionId || !invoice.id) return
+
+  // Webhooks can be delayed or delivered out of order. Re-read the exact invoice and
+  // subscription before changing access so a stale failure can never overwrite a later
+  // successful payment.
+  const currentInvoice = (await stripe.invoices.retrieve(invoice.id)) as any
+  const currentSubscription = (await stripe.subscriptions.retrieve(subscriptionId)) as any
+  const currentRawSubscription =
+    currentInvoice.subscription ?? currentInvoice.parent?.subscription_details?.subscription
+  const currentInvoiceSubscriptionId =
+    typeof currentRawSubscription === "string" ? currentRawSubscription : currentRawSubscription?.id
+  if (currentInvoiceSubscriptionId !== subscriptionId) {
+    throw new Error(`Invoice ${invoice.id} does not belong to subscription ${subscriptionId}`)
+  }
 
   await sql`
     UPDATE subscriptions
-    SET status = 'past_due'
+    SET status = ${currentSubscription.status}, updated_at = NOW()
     WHERE stripe_subscription_id = ${subscriptionId}
   `
 
+  if (currentInvoice.status === "paid") {
+    console.log(`[v0] ⏭️ Ignoring stale payment failure for recovered invoice ${invoice.id}`)
+    return
+  }
+
+  if (!["past_due", "unpaid", "incomplete"].includes(currentSubscription.status)) {
+    console.log(
+      `[v0] ⏭️ Ignoring payment failure for subscription ${subscriptionId} with current Stripe status ${currentSubscription.status}`
+    )
+    return
+  }
+
   console.log(
-    `[v0] ⚠️ Payment failed for subscription ${subscriptionId} - marked as past_due`
+    `[v0] ⚠️ Payment failed for subscription ${subscriptionId} - current Stripe status ${currentSubscription.status}`
   )
 
   try {
     const [subRecord] = await sql`
-      SELECT user_id FROM subscriptions WHERE stripe_subscription_id = ${subscriptionId} LIMIT 1
+      SELECT user_id, product_type, stripe_customer_id
+      FROM subscriptions
+      WHERE stripe_subscription_id = ${subscriptionId}
+      LIMIT 1
     `
     if (!subRecord?.user_id) return
+
+    const stripeCustomerId =
+      typeof currentInvoice.customer === "string"
+        ? currentInvoice.customer
+        : currentInvoice.customer?.id || subRecord.stripe_customer_id || null
+    const failedAt = new Date(
+      Number(currentInvoice.created || invoice.created || Math.floor(Date.now() / 1000)) * 1000
+    ).toISOString()
+    const recoveryMetadata = {
+      ...(currentInvoice.metadata || invoice.metadata || {}),
+      payment_recovery: {
+        first_failed_at: failedAt,
+        last_failed_at: failedAt,
+        attempt_count: Number(currentInvoice.attempt_count || invoice.attempt_count || 1),
+        failure_event_id: event.id,
+      },
+    }
+
+    // This is behavior/measurement, not revenue. The row becomes money only when the exact
+    // same Stripe invoice later succeeds and invoice-paid.ts changes its status to paid.
+    if (invoice.id && stripeCustomerId) {
+      try {
+        await sql`
+          INSERT INTO stripe_payments (
+            stripe_payment_id,
+            stripe_invoice_id,
+            stripe_subscription_id,
+            stripe_customer_id,
+            user_id,
+            amount_cents,
+            currency,
+            status,
+            payment_type,
+            product_type,
+            description,
+            metadata,
+            payment_date,
+            is_test_mode,
+            created_at,
+            updated_at
+          )
+          VALUES (
+            ${invoice.id},
+            ${invoice.id},
+            ${subscriptionId},
+            ${stripeCustomerId},
+            ${subRecord.user_id},
+            ${Number(currentInvoice.amount_due || invoice.amount_due || 0)},
+            ${currentInvoice.currency || invoice.currency || "usd"},
+            'failed',
+            'subscription',
+            ${subRecord.product_type || "sselfie_studio_membership"},
+            ${currentInvoice.description || invoice.description || "Subscription renewal payment failed"},
+            ${JSON.stringify(recoveryMetadata)},
+            to_timestamp(${Number(currentInvoice.created || invoice.created || Math.floor(Date.now() / 1000))}),
+            ${!event.livemode},
+            NOW(),
+            NOW()
+          )
+          ON CONFLICT (stripe_payment_id)
+          DO UPDATE SET
+            status = CASE
+              WHEN stripe_payments.status IN ('paid', 'succeeded') THEN stripe_payments.status
+              ELSE 'failed'
+            END,
+            amount_cents = EXCLUDED.amount_cents,
+            metadata = CASE
+              WHEN stripe_payments.status IN ('paid', 'succeeded') THEN stripe_payments.metadata
+              ELSE jsonb_set(
+                COALESCE(stripe_payments.metadata, '{}'::jsonb)
+                  || (EXCLUDED.metadata - 'payment_recovery'),
+                '{payment_recovery}',
+                COALESCE(stripe_payments.metadata -> 'payment_recovery', '{}'::jsonb)
+                  || jsonb_build_object(
+                    'first_failed_at', COALESCE(
+                      stripe_payments.metadata #>> '{payment_recovery,first_failed_at}',
+                      EXCLUDED.metadata #>> '{payment_recovery,first_failed_at}'
+                    ),
+                    'last_failed_at', EXCLUDED.metadata #>> '{payment_recovery,last_failed_at}',
+                    'attempt_count', COALESCE(
+                      (EXCLUDED.metadata #>> '{payment_recovery,attempt_count}')::int,
+                      1
+                    ),
+                    'failure_event_id', EXCLUDED.metadata #>> '{payment_recovery,failure_event_id}'
+                  ),
+                TRUE
+              )
+            END,
+            updated_at = NOW()
+        `
+      } catch (measurementError) {
+        console.error("[v0] Failed to record payment recovery marker:", measurementError)
+      }
+    }
 
     const [userRecord] = await sql`
       SELECT email, display_name FROM users WHERE id = ${subRecord.user_id} LIMIT 1
@@ -226,12 +347,20 @@ export async function handleInvoicePaymentFailed(rawEvent: Stripe.Event): Promis
     if (recentSend.length > 0) return
 
     const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      "https://sselfie.ai"
-    const manageBillingUrl = `${siteUrl}/app`
-    const retryDate = invoice.next_payment_attempt
-      ? new Date(invoice.next_payment_attempt * 1000).toLocaleDateString("en-US", {
+      process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
+    let manageBillingUrl = currentInvoice.hosted_invoice_url || `${siteUrl}/app`
+    try {
+      const token = signBillingRecoveryToken({
+        stripeSubscriptionId: subscriptionId,
+        stripeInvoiceId: invoice.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      })
+      manageBillingUrl = `${siteUrl}/api/stripe/recover-payment?token=${encodeURIComponent(token)}`
+    } catch (tokenError) {
+      console.error("[v0] Failed to create secure billing recovery link:", tokenError)
+    }
+    const retryDate = currentInvoice.next_payment_attempt
+      ? new Date(currentInvoice.next_payment_attempt * 1000).toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
           year: "numeric",
