@@ -2,7 +2,7 @@
 
 Created: 2026-07-08 (from the full cross-layer audit that day)
 Owner: Sandra + Claude (Cowork). Update this file the same day any automation is added, retired, or moved.
-Last verified: 2026-07-13
+Last verified: 2026-07-15
 
 ## Why this exists
 
@@ -63,7 +63,7 @@ Brand rule for every layer: read `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` firs
 | ~~`content-brief-weekly` (3 phases) + `content-brief-jobs`~~ | — | REMOVED 2026-07-13 after the replacement completed its real Monday run and live readers were migrated to the shared contract. All four Vercel registrations, route handlers, generator, support modules, local worker, runners, and engine-only tests are deleted. Historical report/job rows remain. |
 | `ig-insights-sync` | 05:50 | Nightly IG post snapshots |
 | `weekly-content-trends` | Mon 05:00 | Trend digest pre-warm |
-| `feed-plan-monthly-draft` | 06:00 daily | First-of-month calendar drafting remains unchanged while `CALENDAR_DELIVERED_MONTH_ENABLED` is off. The first dark-release activation is admin-only by default; member/pass rollout also requires `CALENDAR_DELIVERED_MONTH_ADMIN_ONLY=false`. Pre-generation never charges member credits; weekly cap defaults to 10. |
+| `feed-plan-monthly-draft` | 06:00 daily | Sandra-only delivered-calendar preview is live with `CALENDAR_DELIVERED_MONTH_ENABLED=true` and `CALENDAR_DELIVERED_MONTH_ADMIN_ONLY=true`. The job keeps the next seven days ready only for admin accounts; member/pass rollout still requires an explicit `CALENDAR_DELIVERED_MONTH_ADMIN_ONLY=false` decision. Pre-generation never charges member credits; weekly cap defaults to 10. The Production `CRON_SECRET` was rotated on 2026-07-15 and remains a sensitive Vercel value. |
 | `cron-health-check` | hourly | Watchdog: stale crons, failures, AI-credit canary → alerts |
 
 ### Retired schedule code removed (2026-07-13)
