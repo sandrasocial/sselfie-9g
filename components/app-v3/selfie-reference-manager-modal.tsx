@@ -140,11 +140,13 @@ export function SelfieReferenceManagerModal({
         error?: string
       } | null
       if (!response.ok || !data?.url) throw new Error(data?.error || "Upload failed")
+      // capture the narrowed string: property narrowing does not survive into the setState closure
+      const uploadedUrl = data.url
 
       if (slot === "face") {
-        setFaceUrl(data.url)
-        setPastSelfies(current => [data.url, ...(current ?? []).filter(url => url !== data.url)])
-        onFaceReady?.(data.url, "upload")
+        setFaceUrl(uploadedUrl)
+        setPastSelfies(current => [uploadedUrl, ...(current ?? []).filter(url => url !== uploadedUrl)])
+        onFaceReady?.(uploadedUrl, "upload")
       } else if (slot === "angle") {
         setThreeQuarterUrl(data.url)
         onExtraReady?.("angle", data.url)

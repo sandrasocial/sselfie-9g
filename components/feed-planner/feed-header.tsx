@@ -710,7 +710,6 @@ export default function FeedHeader({
         onOpenChange={(open) => {
           setShowFeedStyleModal(open)
           if (!open) {
-            setIsPreviewFeedModal(false)
             setIsCreatingNewFeed(false) // Reset flag when modal closes
           }
         }}
