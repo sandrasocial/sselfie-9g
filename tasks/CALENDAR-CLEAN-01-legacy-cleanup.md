@@ -1,9 +1,11 @@
 # CALENDAR-CLEAN-01 — legacy Feed Planner cleanup (no behavior change)
 
-Status: READY for Codex 2026-07-15. Runs AFTER CALENDAR-FIX-01 Phase A is merged to main and
-has soaked ~48h, and BEHIND CAMPAIGN-OUTCOME-01 in priority (the campaign product is the
-revenue build; this is hygiene). Evidence source for every item:
-`docs/audits/SUITE_CALENDAR_AUDIT_2026-07-14.md` (route inventory + hygiene sections).
+Status: READY for Codex — START NOW (Sandra reprioritized 2026-07-15 morning: calendar work
+runs in parallel with CAMPAIGN-OUTCOME-01, not behind it). Phase A is merged to main and
+deployed (2026-07-15 ~08:00 CEST) — PULL MAIN FIRST. Build on a `codex/` branch;
+zero-behavior-change means it may merge as soon as all gates are green. Note: main enforces
+LINEAR history (no merge commits) — land via cherry-pick/rebase. Evidence source for every
+item: `docs/audits/SUITE_CALENDAR_AUDIT_2026-07-14.md` (route inventory + hygiene sections).
 
 Goal: shrink and de-trap the ~8,300-line legacy Feed Planner surface WITHOUT changing any
 member-visible behavior, so the later Phase B product upgrade (delivered month) builds on a
