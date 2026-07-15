@@ -16,7 +16,7 @@
 import { useEffect, useRef, useState } from "react"
 import { ConciergeProvider, useConcierge } from "./concierge-context"
 import { VisualFrontDoor } from "./visual-front-door"
-import { AESTHETICS } from "./aesthetics"
+import { AESTHETICS, MAYA_DECIDES_AESTHETIC } from "./aesthetics"
 import { MayaConcierge } from "./maya-concierge"
 import { MayaFloatingLauncher } from "./maya-floating-launcher"
 import { GalleryView } from "./gallery-view"
@@ -180,9 +180,10 @@ function ShellInner({
 
   // From a Content recommendation: open Maya seeded with that exact idea.
   function createIdea(format: OutputFormat, title: string) {
-    openWithAesthetic(MAYA_GENERAL, {
+    openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
       format,
       seed: `Let's create a ${FORMAT_LABEL[format]} about: ${title}.`,
+      creationIdea: title,
       creationIntent: intentForFormat(format, "content_card"),
     })
   }
