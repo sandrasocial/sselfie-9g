@@ -362,7 +362,7 @@ const FORMAT_OPENER: Record<OutputFormat, string> = {
 }
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
   photo:
-    "Your selfie's in, and it's still you. Hit create and pick the idea that feels most like you.",
+    "Your selfie's in, and it's still you. I chose a clear starting direction below. You decide before I create it.",
   photoshoot:
     "Your selfie's in, and it's still you. Hit create and I'll build the full shoot plan.",
   "reel-cover":
@@ -1370,8 +1370,7 @@ export function MayaConcierge({
     session.initialSetupAction === "plain_chat" && !referenceSelfieUrl && !outputFormat
   const videoSourceUrl = session.videoSourceUrl
   const mayaChoosesVisualWorld = session.aesthetic.id === "maya-decides"
-  const hasSpecificVisualWorld =
-    mayaChoosesVisualWorld || aesthetic.id !== "maya-general"
+  const hasSpecificVisualWorld = mayaChoosesVisualWorld || aesthetic.id !== "maya-general"
   const needsInitialVisualWorld =
     Boolean(outputFormat) && outputFormat !== "video" && !hasStarted && !hasSpecificVisualWorld
   const shouldShowFormatChoice = !outputFormat || (hasStarted && setupOpen)
@@ -3596,11 +3595,8 @@ export function MayaConcierge({
 
                   {conceptPart && conceptPart.length > 0 && conceptFormat !== "photoshoot" && (
                     <div className="min-w-0 max-w-full space-y-3 [overflow-x:clip]">
-                      <div className="flex min-w-0 items-center justify-between gap-2">
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-[#818283]">
-                          Start here
-                        </p>
-                        {isGraphicOutputFormat(conceptFormat) && textOverlayMode && (
+                      {isGraphicOutputFormat(conceptFormat) && textOverlayMode && (
+                        <div className="flex min-w-0 items-center justify-end">
                           <button
                             type="button"
                             onClick={() => {
@@ -3617,8 +3613,8 @@ export function MayaConcierge({
                               : "No text"}{" "}
                             · change
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      )}
                       {isGraphicOutputFormat(conceptFormat) &&
                         textOverlayMode === "with-text" &&
                         styleSwapOpen && (

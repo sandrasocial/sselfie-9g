@@ -83,6 +83,16 @@ const FRAME_ASPECT: Record<OutputFormat, string> = {
   video: "aspect-[9/16]",
 }
 
+const CREATING_LABEL: Record<OutputFormat, string> = {
+  photo: "Maya is creating your photo…",
+  photoshoot: "Maya is creating your shoot…",
+  "reel-cover": "Maya is creating your Reel cover…",
+  carousel: "Maya is creating your carousel…",
+  "story-slide": "Maya is creating your Story…",
+  "story-sequence": "Maya is creating your Stories…",
+  video: "Maya is creating your motion…",
+}
+
 function buildSuggestedTextCopy(specs: TextOverlaySpec[] | undefined): string {
   if (!specs?.length) return ""
   return specs
@@ -221,9 +231,15 @@ export function ConceptCard({
               </span>
             </div>
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+            <div
+              role="status"
+              aria-live="polite"
+              className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-5 text-center"
+            >
               <Spinner className="h-7 w-7" />
-              <p className="text-[11px] uppercase tracking-[0.22em] text-[#818283]">Creating…</p>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">
+                {CREATING_LABEL[format]}
+              </p>
             </div>
           )}
         </div>

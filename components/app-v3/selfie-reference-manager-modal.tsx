@@ -227,7 +227,7 @@ export function SelfieReferenceManagerModal({
             </h2>
             <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-[color:var(--ss-davy)]">
               {hideOptionalReferences
-                ? "Choose one selfie. Maya will guide everything else."
+                ? "Choose one selfie. Maya will keep your real face and create one brand photo you can use today."
                 : "Choose the selfie Maya should protect. Add extra angles only if you have them. Inspiration stays separate, so it never becomes your face."}
             </p>
           </div>
@@ -245,7 +245,7 @@ export function SelfieReferenceManagerModal({
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="rounded-[8px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)] p-4">
               <p className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--ss-gray)]">
-                Main selfie
+                Selected selfie
               </p>
               <div className="mt-3 overflow-hidden rounded-[7px] border border-[color:var(--ss-silver)] bg-[color:var(--ss-seasalt)]">
                 <div className="relative aspect-[4/5] w-full">
@@ -258,37 +258,43 @@ export function SelfieReferenceManagerModal({
                       sizes="420px"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center px-6 text-center text-[13px] leading-relaxed text-[color:var(--ss-gray)]">
-                      Add one clear selfie to start.
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => faceInputRef.current?.click()}
+                      disabled={uploadingSlot === "face"}
+                      className="flex h-full w-full flex-col items-center justify-center px-6 text-center transition-colors hover:bg-[color:var(--ss-white)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ss-night)] disabled:opacity-60"
+                    >
+                      <span className="font-serif text-[23px] font-light text-[color:var(--ss-night)]">
+                        {uploadingSlot === "face" ? "Uploading your selfie…" : "Upload your selfie"}
+                      </span>
+                      <span className="mt-2 text-[12px] leading-relaxed text-[color:var(--ss-davy)]">
+                        Choose a clear photo from your phone
+                      </span>
+                    </button>
                   )}
                 </div>
               </div>
-              <div className="mt-3 flex flex-wrap gap-2">
+              {faceUrl && (
                 <button
                   type="button"
                   onClick={() => faceInputRef.current?.click()}
                   disabled={uploadingSlot === "face"}
-                  className="min-h-11 rounded-[4px] bg-[color:var(--ss-night)] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-60"
+                  className="mt-3 min-h-11 rounded-[4px] bg-[color:var(--ss-night)] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-60"
                 >
-                  {uploadingSlot === "face"
-                    ? "Uploading..."
-                    : faceUrl
-                      ? "Change selfie"
-                      : "Upload selfie"}
+                  {uploadingSlot === "face" ? "Uploading..." : "Change selfie"}
                 </button>
-                <input
-                  ref={faceInputRef}
-                  type="file"
-                  accept={IMAGE_UPLOAD_ACCEPT}
-                  className="hidden"
-                  onChange={event => {
-                    const file = event.target.files?.[0]
-                    if (file) void handleUpload("face", file)
-                    if (faceInputRef.current) faceInputRef.current.value = ""
-                  }}
-                />
-              </div>
+              )}
+              <input
+                ref={faceInputRef}
+                type="file"
+                accept={IMAGE_UPLOAD_ACCEPT}
+                className="hidden"
+                onChange={event => {
+                  const file = event.target.files?.[0]
+                  if (file) void handleUpload("face", file)
+                  if (faceInputRef.current) faceInputRef.current.value = ""
+                }}
+              />
               <p className="mt-3 text-[12px] leading-relaxed text-[color:var(--ss-davy)]">
                 Use a clear photo where your face is visible. It does not need to be perfect.
               </p>
@@ -453,7 +459,7 @@ export function SelfieReferenceManagerModal({
             }}
             className="min-h-11 rounded-[4px] bg-[color:var(--ss-night)] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:cursor-not-allowed disabled:opacity-45"
           >
-            Continue with Maya
+            {faceUrl ? "Continue with Maya" : "Upload a selfie to continue"}
           </button>
         </div>
       </div>

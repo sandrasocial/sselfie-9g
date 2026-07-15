@@ -106,9 +106,9 @@ function markFirstRunSeen() {
 }
 
 const CARD_COPY = {
-  eyebrow: "Fastest path",
+  eyebrow: "Recommended",
   title: "Start with one selfie.",
-  body: "Maya keeps your real face, chooses the strongest direction, and guides your next step.",
+  body: "Maya keeps your real face and turns it into one brand photo you can use today.",
   action: "Add one selfie",
 }
 
@@ -394,18 +394,13 @@ export function VisualFrontDoor({
           SSELFIE Studio
         </p>
         <h1 className="mt-3 font-serif text-[32px] font-light leading-[1.05] text-[color:var(--ss-night)] sm:text-[46px]">
-          {hasSelfie ? "What needs to move forward today?" : "Start with one clear next step."}
+          {hasSelfie ? "What needs to move forward today?" : "Your first brand photo starts here."}
         </h1>
         <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[color:var(--ss-davy)]">
           {hasSelfie
             ? "Maya looks at what you are building and puts one useful next move in front of you."
-            : "Add one clear selfie. Maya will ask only what she needs, then guide the rest."}
+            : "Add one clear selfie. Maya keeps your real face, chooses one strong direction, and guides the rest."}
         </p>
-        {!hasSelfie && (
-          <p className="mt-4 max-w-xl text-[12px] leading-relaxed text-[color:var(--ss-gray)]">
-            Included in SSELFIE SUITE: monthly credits · brand photos · content help · your gallery
-          </p>
-        )}
       </header>
 
       {/* No selfie yet: the selfie upload is the ONLY action on screen - no competing text
