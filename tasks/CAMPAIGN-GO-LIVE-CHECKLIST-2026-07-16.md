@@ -60,6 +60,16 @@ launch moves to Friday only if a gate fails, never for polish.
    with Sandra QA per order; if orders run past the cap, the honest lever is stated
    delivery time, never fake scarcity.
 
+## Fast-follows (next week; reviewed, explicitly NOT launch blockers)
+
+1. Regenerate should reuse already-finished assets instead of re-running all photos +
+   clips per click (business-cost hygiene; attended-only so it cannot loop, per re-review).
+2. One-click "Resend intake email" admin action + add campaign_outcome to
+   /api/access-recovery so a buyer who loses the intake email can self-serve. Until then:
+   the queue's stable "Open buyer page" link is the attended workaround.
+3. Redaction pass on webhook logging (session metadata includes customer email;
+   pre-existing, not campaign-introduced).
+
 ## Standing rules
 
 The 48h delivery clock and the still-you guarantee are load-bearing promises — nothing
