@@ -80,6 +80,36 @@ line-item list, it sits correctly between the $42 photo pack and the $99/mo serv
    (Sandra's call, not urgent): one monthly Sandra-led live "post with me" session for
    members — small, human, unfakeable. Decide after the delivered month ships.
 
+## 3b. Behavior addendum (added later 2026-07-15 — the layer job titles can't give)
+
+Joining declared business type × generation behavior × subscriptions × real payments
+(n small — 12 typed payers total — treat as strong directional signal, not proof):
+
+| Segment (self-declared) | n | ever generated | avg images | real payers |
+|---|---|---|---|---|
+| unknown (left it empty) | 130 | 6 (5%) | 2.0 | 1 |
+| "other" (wrote something SPECIFIC in her own words) | 101 | 47 (47%) | 82.3 | 8 |
+| coach | 47 | 37 (79%) | 58.7 | 2 |
+| creator (self-labeled) | 54 | 9 (17%) | 9.8 | 1 |
+| service pro | 8 | 3 | 39.6 | 0 |
+
+**The commercial signal is SPECIFICITY, not category.** Women who can articulate what they
+are building — whatever words they use — engage 5-40x more and account for 8 of 12 typed
+payers. Coaches are the strongest NAMED segment (79% ever generated). Self-labeled
+"content creators" barely engage (17%) — the label correlates with browsing, not building.
+The 130 empties are commercially inert today (1 payer): whatever they are, they are not a
+segment to target; they are a nurture pool. This corrects the earlier read that "creators
+are the plurality → creators are the segment."
+
+Positioning consequence (adopted): brand-level — "For women building a personal brand who
+want to show up consistently, with content that still looks and feels like them." Campaign
+sharpening — "Everything you need to promote what you're building, starting with one
+selfie." The qualifier word is BUILDING: it selects for direction and specificity without
+requiring an existing offer, matches the Constitution ("build something of your own"), and
+matches who actually engages and pays. Instrumentation gap found: `suite_intent_detected`
+events carry no intent label (360 events, all unlabeled) — small Codex fix so "what
+members ask Maya for" becomes queryable.
+
 ## 4. What stays true from the earlier audits (not everything moved)
 
 Pull-before-push stands: repeat purchase is still the honest test of recurring need, and

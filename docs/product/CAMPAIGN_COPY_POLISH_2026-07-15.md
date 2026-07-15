@@ -21,9 +21,10 @@ No-Fake psychology doctrine, design system.
    (Sandra also approved the rest of this sheet as drafted the same day — items 2-12 may be
    implemented with the draft wording below; she may still refine exact words before flag-on.)
 2. **"A paid SSELFIE outcome" (hero eyebrow)** is internal strategy vocabulary. Replace with
-   the audience qualifier the contract mandates: "For women who sell something" (then the
-   subline no longer needs its "For women who already have something to sell" open — swap
-   that line to what she GETS).
+   the audience qualifier — UPDATED 2026-07-15 after the behavior analysis (see market-intel
+   memo 3b): **"For women building something"**. Full campaign frame: "Everything you need
+   to promote what you're building, starting with one selfie." The subline then says what
+   she GETS (reel, posts, photos, carousel, Stories, plan).
 3. **"five-day order" → "five-day plan" everywhere.** "Order" collides with purchase-order.
    Appears: landing subline ("five-day order for one promotion"), delivery email ("the
    five-day order Maya prepared"), buyer page section header ("Your five-day order"). The
