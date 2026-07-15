@@ -13,7 +13,6 @@ import FeedHeader from "./feed-header"
 import FeedTabs, { type FeedTab } from "./feed-tabs"
 import FeedWeekView from "./feed-week-view"
 import FeedGrid from "./feed-grid"
-import FeedPostsList from "./feed-posts-list"
 import FeedStrategy from "./feed-strategy"
 import FeedCaptionTemplates from "./feed-caption-templates"
 import FeedContentCalendar from "./feed-content-calendar"
@@ -655,26 +654,9 @@ export default function InstagramFeedView({
           </>
         )}
 
-        {/* For free users: Show Captions tab, for paid/membership: Show Posts tab */}
+        {/* Free users can still view the legacy caption templates. */}
         {activeTab === "captions" && access?.isFree && (
           <FeedCaptionTemplates businessType={businessType} />
-        )}
-        
-        {activeTab === "posts" && !access?.isFree && (
-          <FeedPostsList
-            posts={posts}
-            expandedCaptions={actions.expandedCaptions}
-            copiedCaptions={actions.copiedCaptions}
-            enhancingCaptions={actions.enhancingCaptions}
-            isManualFeed={isManualFeed}
-            feedId={feedId}
-            onToggleCaption={actions.toggleCaption}
-            onCopyCaption={actions.copyCaptionToClipboard}
-            onEnhanceCaption={actions.handleEnhanceCaption}
-            onAddImage={setShowGallery}
-            onRefresh={mutate}
-            access={access} // Phase 4.2: Pass access control instead of mode
-          />
         )}
 
         {/* Strategy tab: Show Content Calendar for free users, FeedStrategy for paid/membership */}

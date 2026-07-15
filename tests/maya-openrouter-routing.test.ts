@@ -13,16 +13,12 @@ import {
 const ROOT = process.cwd()
 const OPENROUTER_MIGRATED_FILES = [
   "app/api/feed-planner/enhance-goal/route.ts",
-  "app/api/feed/[feedId]/add-highlight-overlay/route.ts",
-  "app/api/feed/[feedId]/add-row/route.ts",
   "app/api/feed/[feedId]/enhance-caption/route.ts",
   "app/api/feed/[feedId]/generate-highlights/route.ts",
-  "app/api/feed/[feedId]/generate-profile/route.ts",
   "app/api/feed/[feedId]/generate-strategy/route.ts",
   "app/api/maya/chat/route.ts",
   "app/api/maya/instagram-tips/route.ts",
   "lib/feed-planner/caption-writer.ts",
-  "lib/feed-planner/instagram-strategy-agent.ts",
 ]
 
 function read(relPath: string): string {

@@ -23,10 +23,9 @@ interface FeedViewScreenProps {
 }
 
 /**
- * Feed View Screen - View Only
+ * Feed View Screen
  * 
- * This screen displays a feed in view-only mode.
- * Feed creation is handled in Maya Chat (Feed tab).
+ * Displays a feed and opens creation through the current App v3 or standalone flow.
  * 
  * Accepts feedId as:
  * - Prop (from parent)
@@ -133,9 +132,8 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     }
   )
 
-  // Handle redirect from preview feed (paid users accessing preview feeds)
+  // Normalize a legacy redirected response to its full feed.
   useEffect(() => {
-    // Preview feeds retired (2026-07-07): the redirect-from-preview handling is gone with them.
     if (feedData?.redirectedFromPreview && feedData?.feed?.id) {
       const newFeedId = feedData.feed.id
       if (feedNav) feedNav.navigateToFeed(newFeedId)
@@ -225,10 +223,6 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     }
   }, [access, feedData, isLoading, isExpandingFeed, mutateFeed, mutateFeedList])
 
-  // FREE FUNNEL RETIRED (Sandra, 2026-07-07): free users no longer get an auto-created
-  // example feed - the Feed Planner is a paid product surface. The upsell render below
-  // (early return) is the whole free experience now.
-
   const handleBackToMaya = () => {
     if (feedNav?.navigateToMaya) return feedNav.navigateToMaya()
     router.push("/app?view=create")
@@ -306,33 +300,6 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     )
   }
 
-  // FREE FUNNEL RETIRED (Sandra, 2026-07-07): the Feed Planner is a paid product surface.
-  // Free accounts see one honest card instead of an example feed.
-  if (access?.isFree) {
-    return (
-      <div className="app-light-panel-text flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
-        <div className="flex min-h-[400px] items-center justify-center p-4 sm:p-6">
-          <div className="w-full max-w-md space-y-4 rounded-[14px] border border-[#C5C6C8]/50 bg-white p-6 text-center shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)]">
-            <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">Feed Planner</p>
-            <h2 className="font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
-              Plan a month of posts from one selfie
-            </h2>
-            <p className="text-[14px] leading-relaxed text-[#4F5052]">
-              The Feed Planner is part of the paid Blueprint: a full planned grid, captions, and
-              strategy, styled to your brand.
-            </p>
-            <a
-              href="/checkout/blueprint"
-              className="inline-block rounded-[4px] bg-[#0D0E10] px-5 py-3 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728]"
-            >
-              Get the Blueprint
-            </a>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   // Error state (actual errors, not "no feed exists")
   if (feedError || (feedData?.error && feedData.exists !== false)) {
     return (
@@ -347,8 +314,6 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   }
 
   // Placeholder state: No feed exists (exists: false from /api/feed/latest)
-  // For free users, we auto-create the feed (handled in useEffect above)
-  // For paid users, show the create feed options
   if (!feedExists || (!feedIdFromQuery && feedData?.exists === false)) {
     return (
       <div className="app-light-panel-text flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">

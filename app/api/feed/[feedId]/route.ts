@@ -306,23 +306,17 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ f
     `
     console.log("[v0] Deleted feed posts")
 
-    await new Promise((resolve) => setTimeout(resolve, 100))
-
     await sql`
       DELETE FROM instagram_highlights
       WHERE feed_layout_id = ${feedId}
     `
     console.log("[v0] Deleted highlights")
 
-    await new Promise((resolve) => setTimeout(resolve, 100))
-
     await sql`
       DELETE FROM instagram_bios
       WHERE feed_layout_id = ${feedId}
     `
     console.log("[v0] Deleted bio")
-
-    await new Promise((resolve) => setTimeout(resolve, 100))
 
     await sql`
       DELETE FROM feed_layouts

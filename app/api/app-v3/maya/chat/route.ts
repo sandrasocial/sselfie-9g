@@ -1,6 +1,6 @@
 // SSELFIE Studio 3.0 - app-v3 Maya chat (the spine, MAYA-REBUILD-03).
 //
-// Stage 1 of the two-stage pipeline: Maya (Claude Sonnet 4.5) holds an in-character
+// Stage 1 of the two-stage pipeline: Maya (Claude Sonnet 5 through OpenRouter) holds an in-character
 // conversation and, once she understands the request, calls the emit_concepts tool with
 // production-grade concept briefs sized to the ask (default 3; 1-2 for one specific photo;
 // 6-9 for a full photoshoot). The client renders her streamed prose plus the concept cards;
@@ -55,7 +55,7 @@ const SHOOT_SHOT_ROLES = [
 // 2026-07-03 (STORY-GENERATION fix): 8192 was still not enough for the heaviest concept turns.
 // A story-sequence batch is 3 concepts x (full brief + creativePlan with 5-7 outputs), and live
 // story-slide/carousel emit_concepts calls were getting CUT mid-JSON (suite_concepts_emitted
-// logged count: null; every card vanished; generation was never reached). Claude Sonnet 4.5
+// logged count: null; every card vanished; generation was never reached). Claude Sonnet 5
 // supports far larger outputs, so give concept turns real headroom.
 const APP_V3_MAX_OUTPUT_TOKENS = 16384
 
@@ -1012,7 +1012,7 @@ export async function POST(req: Request) {
     }
 
     const result = streamText({
-      model: createMayaOpenRouterModel("chat_pro"), // Claude Sonnet 4.5
+      model: createMayaOpenRouterModel("chat_pro"), // Claude Sonnet 5
       system,
       messages: modelMessages,
       tools,

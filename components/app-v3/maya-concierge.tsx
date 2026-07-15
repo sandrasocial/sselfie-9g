@@ -3,7 +3,7 @@
 // SSELFIE Studio 3.0 - Maya Concierge (MAYA-REBUILD-03: conversational rebuild).
 //
 // This is the missing layer Sandra felt. Instead of a form with one Generate button, Maya
-// now holds a real streaming conversation (Claude Sonnet 4.5 via /api/app-v3/maya/chat),
+// now holds a real streaming conversation (Claude Sonnet 5 via /api/app-v3/maya/chat),
 // proposes concept directions inline as cards, and the user clicks one to fire the
 // synchronous OpenAI generation (/api/app-v3/maya/generate). "Tweak" is just another message.
 //
@@ -1135,8 +1135,7 @@ export function MayaConcierge({
     if (!fmt || isThinking) return
     const pullIntent =
       localCreationIntent ?? session.creationIntent ?? intentForFormat(fmt, "manual")
-    const hasSpecificSessionWorld =
-      session.aesthetic.id !== "maya-blank" && session.aesthetic.id !== "maya-general"
+    const hasSpecificSessionWorld = session.aesthetic.id !== "maya-general"
     const needsInitialVisualWorld =
       messages.length === 0 &&
       fmt !== "video" &&
@@ -1369,7 +1368,7 @@ export function MayaConcierge({
   const videoSourceUrl = session.videoSourceUrl
   const mayaChoosesVisualWorld = session.aesthetic.id === "maya-decides"
   const hasSpecificVisualWorld =
-    mayaChoosesVisualWorld || (aesthetic.id !== "maya-blank" && aesthetic.id !== "maya-general")
+    mayaChoosesVisualWorld || aesthetic.id !== "maya-general"
   const needsInitialVisualWorld =
     Boolean(outputFormat) && outputFormat !== "video" && !hasStarted && !hasSpecificVisualWorld
   const shouldShowFormatChoice = !outputFormat || (hasStarted && setupOpen)

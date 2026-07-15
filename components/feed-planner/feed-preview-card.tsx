@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import type { FeedPost, FeedPreviewCardProps } from "./feed-preview-types"
-import { useFeedPreviewPolling } from "./hooks/feed/use-feed-polling"
-import { useFeedPreviewActions } from "./hooks/feed/use-feed-actions"
+import { useFeedPreviewPolling } from "./hooks/use-feed-polling"
+import { useFeedPreviewActions } from "./hooks/use-feed-actions"
 import FeedPreviewImageModal from "./feed-preview-image-modal"
 import FeedPreviewPromptsModal from "./feed-preview-prompts-modal"
 

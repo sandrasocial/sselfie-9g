@@ -1,10 +1,10 @@
 /**
  * Blueprint Pro Photoshoot Prompt Templates
  *
- * 🧊 FROZEN: Legacy template library. Will be replaced with scene-as-data.
+ * 🧊 FROZEN: Legacy template library.
  * 
- * PHASE 6: This file is frozen. Feed Planner now uses scene-resolver.ts for scene intent.
- * These hardcoded templates are style-first (not activity-first) and will be replaced.
+ * Active Feed Planner generation resolves prompts from the selected style and post position.
+ * These hardcoded templates are retained only for their remaining legacy consumers.
  *
  * User will provide exact prompts for each category + mood combination.
  * Each prompt should be a complete Pro Photoshoot prompt that:

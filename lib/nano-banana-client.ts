@@ -71,17 +71,7 @@ export async function generateWithNanoBanana(
 
   try {
     // ❄️ FROZEN — DO NOT MODIFY PROMPTS HERE
-    // Feed Planner prompts come from prompt-shaper.ts (THE AUTHORITY)
-    // This file may pass data to Replicate, but may NOT modify Feed Planner prompts
-    // 
-    // NOTE: Feed Planner prompts from prompt-shaper.ts now ALWAYS include identity anchors
-    // This fallback is only for legacy non-Feed-Planner paths (if any exist)
-    // 
-    // Nano Banana Pro expects plain natural language with identity anchor
-    // 🔴 PROMPT AUTHORITY LOCK-IN: Phase 2 - Identity anchor injection REMOVED
-    // All Feed Planner prompts from prompt-shaper.ts already include identity anchors
-    // No mutation of prompts after canonical builder - prompts pass through unchanged
-    // NO instruction phrases like "Generate an image of" or "Shows the subject"
+    // Callers provide the final prompt; this transport trims and validates it only.
     const finalPrompt = input.prompt.trim()
     
     // 🔴 PROMPT AUTHORITY LOCK-IN: Phase 7 - Transmission validation before sending to Replicate

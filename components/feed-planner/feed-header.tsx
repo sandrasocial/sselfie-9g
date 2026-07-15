@@ -83,7 +83,7 @@ export default function FeedHeader({
 
   // Preview feed creation removed with the free blueprint funnel (Sandra, 2026-07-07).
 
-  // Feed Planner Phase 2b: ported from the retired Posts tab (feed-posts-list.tsx) - bulk
+  // Feed Planner Phase 2b: ported from the retired Posts tab - bulk
   // caption generation for a legacy/manual plan where no post has a caption yet. A Maya
   // auto-drafted plan always writes a caption per post at creation time, so this only ever
   // shows for older plans - per-post caption edit/enhance/copy already lives in the post

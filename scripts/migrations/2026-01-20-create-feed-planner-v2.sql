@@ -44,6 +44,3 @@ CREATE TABLE IF NOT EXISTS user_feed_generations_v2 (
 
 CREATE INDEX IF NOT EXISTS user_feed_generations_v2_user_date_idx
   ON user_feed_generations_v2 (user_id, generation_date DESC);
-
-ALTER TABLE users
-  ADD COLUMN IF NOT EXISTS use_feed_planner_v2 BOOLEAN NOT NULL DEFAULT false;

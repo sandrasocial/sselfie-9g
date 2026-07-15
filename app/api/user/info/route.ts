@@ -61,8 +61,7 @@ export async function GET() {
         profession as bio,
         created_at,
         gender,
-        ethnicity,
-        use_feed_planner_v2
+        ethnicity
       FROM users 
       WHERE id = ${neonUser.id}
       LIMIT 1
@@ -110,7 +109,6 @@ export async function GET() {
       memberSince: user.created_at,
       gender: user.gender,
       ethnicity: user.ethnicity,
-      use_feed_planner_v2: user.use_feed_planner_v2,
       physical_preferences: physicalPreferences,
       stripe_customer_id: stripeCustomerId,
       subscription: subscription

@@ -7,7 +7,6 @@ export { default as FeedPlannerClient } from '../../app/feed-planner/feed-planne
 export { default as FeedHeader } from './feed-header'
 export { default as FeedTabs } from './feed-tabs'
 export { default as FeedGrid } from './feed-grid'
-export { default as FeedPostsList } from './feed-posts-list'
 export { default as FeedStrategy } from './feed-strategy'
 export { default as FeedModals } from './feed-modals'
 export { default as FeedLoadingOverlay } from './feed-loading-overlay'

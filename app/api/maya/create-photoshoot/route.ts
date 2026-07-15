@@ -26,7 +26,7 @@ async function generatePhotoshootPoseVariations({
   ethnicity?: string | null
   physicalPreferences?: string | null
 }) {
-  console.log("[v0] 📸 Generating authentic lifestyle variations with Claude Sonnet 4.5...")
+  console.log("[v0] 📸 Generating authentic lifestyle variations with Claude Sonnet 5...")
   console.log("[v0] Base prompt:", basePrompt)
   console.log("[v0] Base seed:", baseSeed)
   console.log("[v0] User gender:", userGender)

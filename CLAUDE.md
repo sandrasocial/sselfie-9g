@@ -297,24 +297,25 @@ Target: €197/month minimum. Not €97. Not €27.
 | `app/brand-engine/`, `app/apply/brand-engine/`, `app/brand-engine/vip/` | Brand Engine retired, no routes/redirects |
 | `app/freebie/` | Routes redirect to paid pages; page files themselves are dead |
 | `lib/feed-chat/history.ts` | No callers found anywhere in codebase |
+| `app/api/feed/{clear,auto-generate}` | 410-stubbed 2026-07 (audit-verified dead) |
+| `app/api/feed/[feedId]/{add-hashtags,add-highlight-overlay,add-row,check-highlight,check-profile,generate-profile,highlight-image,profile-image,regenerate-post,save-highlight-image,status,upload-profile-image}` | 410-stubbed 2026-07 (audit-verified dead) |
+| `app/api/feed-planner/{delete-strategy,generate-all-images,generate-batch,quick-start-complete}` | 410-stubbed 2026-07 (audit-verified dead) |
+| `lib/feed-planner/{scene-resolver,prompt-shaper,style-coherence-resolver,user-selection-mapper,instagram-strategy-agent,maya-prompts-v2,generation-helpers,database-loader}.ts` | Deleted 2026-07 after fresh importer checks confirmed no live callers |
 
 ### ⚠️ Looks dead but is NOT — do not delete
 | Item | Why it's actually live |
 |------|----------------------|
 | `app/api/maya/generate-feed/` | Called by `components/sselfie/maya-chat-screen.tsx` — keep |
 | `app/api/maya/generate-feed-prompt/` | Imported by the live Feed Planner single-post generation route — keep |
-| `app/api/feed/*` (11 routes) | Actively called by `components/feed-planner/*` — core Feed Planner data layer |
-| `lib/maya/feed-generation-handler.ts` | `FeedStrategy` type + `createFeedFromStrategyHandler` used by `lib/feed-planner/hooks/` |
-| `lib/feed-planner-v2/` | Used in 4 active feed routes via `use_feed_planner_v2` per-user flag |
+| Remaining non-stubbed `app/api/feed/*` routes | Actively called by `components/feed-planner/*` — core Feed Planner data layer |
+| `lib/maya/feed-generation-handler.ts` | `FeedStrategy` type + `createFeedFromStrategyHandler` used by `components/feed-planner/hooks/` |
+| `lib/feed-planner-v2/` | Imported directly by active feed routes |
 | `app/feed-planner/` entire directory | LIVE product — paying Blueprint users depend on this |
-| `app/api/feed-planner/*` (12 routes) | Both systems active — feed-planner routes handle higher-level logic |
+| Remaining non-stubbed `app/api/feed-planner/*` routes | Both systems active — these routes handle higher-level logic |
 
 ### 🔒 Never delete — business-critical
 - `app/feed-planner/` — entire directory
-- `app/api/feed-planner/` — entire directory
-- `app/api/feed/` — entire directory
-- `lib/feed-planner/` — entire directory
-- `components/feed-planner/` — entire directory
+- Remaining live code in `app/api/feed-planner/`, `app/api/feed/`, `lib/feed-planner/`, and `components/feed-planner/`
 - `lib/maya/feed-generation-handler.ts` — until Feed Planner refactor is done
 
 ---

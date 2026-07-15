@@ -450,41 +450,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         LIMIT 1
       `
       
-      // FREE FUNNEL RETIRED (Sandra, 2026-07-07): preview feeds can no longer be created and
-      // existing rows are pruned - generation against a leftover preview layout is refused.
-      const isPreviewFeed = feedLayout?.layout_type === 'preview'
-      if (isPreviewFeed) {
-        return Response.json(
-          { error: "PREVIEW_RETIRED", details: "Preview feeds are no longer available." },
-          { status: 410 },
-        )
-      }
-      let chosenPromptSource:
-        | "v2_preview_prompt"
-        | "v2_scene_prompt"
-        | "canonical_preview_pipeline_fallback"
-        | null = null
+      let chosenPromptSource: "v2_scene_prompt" | null = null
       
       // For paid blueprint users: Each position should already have its extracted scene prompt
       // If not, extract it from the template using the current feed's feed_style
       // The full template is NOT stored in position 1 for paid blueprint - each position has its own scene
-      // EXCEPTION: Preview feeds ALWAYS use full template - ignore any stored prompts
       let finalPrompt: string | null = null
       
-      // 🔴 PROMPT AUTHORITY LOCK-IN: Phase 1 - Database prompt reuse REMOVED
-      // All prompts MUST be generated via canonical builder (prompt-shaper.ts)
-      // Database prompts are stored for logging/debugging only, never reused
-      // This ensures all prompts match Nano Banana Pro spec requirements
-      finalPrompt = null  // Always force regeneration via canonical builder
-      // 🔴 FIX: Removed redundant Path A (paid user scene extraction)
-      // Paid users now go through Path B (Maya generation) which uses template injection
+      // Always resolve the prompt from the active feed style and post position.
       
       const isPromptUsable = (prompt: string | null): prompt is string =>
         typeof prompt === "string" && prompt.trim().length >= 20
 
-      // If scene extraction failed or not applicable, continue with original logic
-      // For preview feeds, always generate full template (same for free and paid users)
-      // For full feeds, generate based on user type
       try {
         if (!isPromptUsable(finalPrompt)) {
           console.log(
@@ -510,7 +487,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             }
 
             const feedVariationId = feedLayout?.feed_style_variation_id ?? null
-            console.log(`[v0] [GENERATE-SINGLE] Loading prompt for feed: feedId=${feedIdInt}, styleId=${style.id}, feedStyle=${feedLayout?.feed_style}, variationId=${feedVariationId}, isPreviewFeed=${isPreviewFeed}, position=${post.position}`)
+            console.log(`[v0] [GENERATE-SINGLE] Loading prompt for feed: feedId=${feedIdInt}, styleId=${style.id}, feedStyle=${feedLayout?.feed_style}, variationId=${feedVariationId}, position=${post.position}`)
 
             // Validate variation_id is a valid number if provided
             if (feedVariationId !== null && feedVariationId !== undefined) {
@@ -552,7 +529,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         }
       } catch (promptError) {
         console.error(`[v0] [GENERATE-SINGLE] Error generating prompt:`, promptError)
-        if (access.isPaidBlueprint && !isPreviewFeed) {
+        if (access.isPaidBlueprint) {
           return Response.json(
             {
               error: "TEMPLATE_INJECTION_REQUIRED",
@@ -601,13 +578,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         )
       }
       
-      // 🔴 PROMPT AUTHORITY LOCK-IN: Removed db_prompt fallback
-      // All prompts now come from canonical builder, so chosenPromptSource is always set explicitly
-      // This fallback was misleading and suggested database prompts might still be reused
       console.log("[v0] [GENERATE-SINGLE] PROVENANCE", {
         feedId: feedIdInt,
         postId,
-        isPreviewFeed,
         layout_type: feedLayout?.layout_type || null,
         accessFlags: {
           isPaidBlueprint: access.isPaidBlueprint,
@@ -617,13 +590,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         generationMode,
         chosenPromptSource: chosenPromptSource || "unknown",
       })
-      const aspectRatio = isPreviewFeed ? '9:16' : (access.isFree ? '9:16' : '4:5')
+      const aspectRatio = access.isFree ? '9:16' : '4:5'
       
-      // ❄️ FROZEN - DO NOT MODIFY PROMPTS HERE
-      // Prompt is already final from prompt-shaper.ts (THE AUTHORITY)
-      // cleanBlueprintPrompt is legacy and should not mutate Feed Planner prompts
-      // Feed Planner prompts from prompt-shaper.ts are already correct
-      const cleanedPrompt = finalPrompt // Use prompt as-is from authority
+      // The selected style-position prompt is already final and must remain unchanged.
+      const cleanedPrompt = finalPrompt
       
       // Deduct credits BEFORE calling NanoBanana - once generation starts, API cost is incurred
       const deduction = await deductCredits(
