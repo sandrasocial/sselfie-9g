@@ -75,9 +75,7 @@ describe("Maya-first Suite creation UX", () => {
 
   it("waits for a style before pulling initial non-video directions", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
-    const renderHasStarted = concierge.indexOf(
-      "const hasStarted = messages.length > 0\n  const activeCreationIntent"
-    )
+    const renderHasStarted = concierge.indexOf("const hasStarted = messages.length > 0")
     const renderNeedsVisualWorld = concierge.indexOf(
       'const needsInitialVisualWorld =\n    Boolean(outputFormat) && outputFormat !== "video"'
     )
@@ -90,7 +88,7 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).toContain("!hasSpecificSessionWorld")
     expect(concierge).toContain("if (needsInitialVisualWorld) return")
     expect(concierge).toContain(
-      "const shouldShowFormatChoice = !outputFormat || (hasStarted && setupOpen)"
+      "const shouldShowFormatChoice = !outputFormat || (threadVisible && setupOpen)"
     )
     expect(concierge).toContain("shouldShowFormatChoice &&")
     expect(concierge).toContain("shouldShowVibeChoice &&")
@@ -208,9 +206,8 @@ describe("Maya-first Suite creation UX", () => {
   it("scrolls the newly revealed next step into view after a result action", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
-    expect(concierge).toContain(
-      "[messages, isThinking, session?.outputFormat, textOverlayMode, textStyleChoice]",
-    )
+    expect(concierge).toContain("preMessageThreadOpen")
+    expect(concierge).toContain("threadEndRef.current?.scrollIntoView")
   })
 
   it("makes continuing old Maya sessions an explicit choice", () => {

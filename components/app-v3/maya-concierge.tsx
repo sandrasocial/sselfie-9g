@@ -705,6 +705,9 @@ export function MayaConcierge({
   // Once the conversation starts, the setup block collapses to a one-line strip so the thread
   // owns the screen (the stacked chips/selfie/CTA were hiding Maya's output on phones).
   const [setupOpen, setSetupOpen] = useState(() => restoredDraft?.setupOpen ?? false)
+  // A graphic CTA can reveal its required text choice before the first chat message exists.
+  // Relying only on messages.length left setup mounted, so "Show me carousel ideas" looked inert.
+  const [preMessageThreadOpen, setPreMessageThreadOpen] = useState(false)
   // Cross-session memory (Phase E): what Maya already knows + the name she was given.
   const [memory, setMemory] = useState<Memory | null>(null)
   const [memoryOpen, setMemoryOpen] = useState(false)
@@ -897,6 +900,7 @@ export function MayaConcierge({
       )
       setValueUsed(false)
       setSetupOpen(false)
+      setPreMessageThreadOpen(false)
       setLocalCreationIntent(session.creationIntent ?? null)
       return
     }
@@ -928,6 +932,7 @@ export function MayaConcierge({
     )
     setValueUsed(draft.valueUsed === true)
     setSetupOpen(draft.setupOpen)
+    setPreMessageThreadOpen(false)
     setLocalCreationIntent(session.creationIntent ?? null)
   }, [hasTrainedModel, session, setMessages])
 
@@ -1006,7 +1011,18 @@ export function MayaConcierge({
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
-  }, [messages, isThinking, session?.outputFormat, textOverlayMode, textStyleChoice])
+  }, [
+    messages,
+    isThinking,
+    preMessageThreadOpen,
+    session?.outputFormat,
+    textOverlayMode,
+    textStyleChoice,
+  ])
+
+  useEffect(() => {
+    if (messages.length > 0 && preMessageThreadOpen) setPreMessageThreadOpen(false)
+  }, [messages.length, preMessageThreadOpen])
 
   // When a new look (or a Content idea) opens Maya, allow its format to pull fresh directions.
   // Kept minimal on purpose: no message/chat mutation here, so it can't race the pull below.
@@ -1024,6 +1040,7 @@ export function MayaConcierge({
     setInlineShotPickerAesthetic(null)
     setPendingShotDirector(null)
     setLastGeneration(null) // a new session has no completed render yet
+    setPreMessageThreadOpen(false)
     setLocalCreationIntent(session.creationIntent ?? null)
     setGenerationSource(
       session.generationSource === "trained-model" && hasTrainedModel ? "trained-model" : "selfie"
@@ -1387,6 +1404,7 @@ export function MayaConcierge({
   const selectedShot = aesthetic.selectedShot ?? null
   const format: OutputFormat = outputFormat ?? "photo"
   const hasStarted = messages.length > 0
+  const threadVisible = hasStarted || preMessageThreadOpen
   const activeCreationIntent =
     localCreationIntent ??
     session.creationIntent ??
@@ -1406,7 +1424,7 @@ export function MayaConcierge({
   const hasSpecificVisualWorld = mayaChoosesVisualWorld || aesthetic.id !== "maya-general"
   const needsInitialVisualWorld =
     Boolean(outputFormat) && outputFormat !== "video" && !hasStarted && !hasSpecificVisualWorld
-  const shouldShowFormatChoice = !outputFormat || (hasStarted && setupOpen)
+  const shouldShowFormatChoice = !outputFormat || (threadVisible && setupOpen)
   const shouldShowVibeChoice =
     Boolean(outputFormat) &&
     outputFormat !== "video" &&
@@ -1550,6 +1568,7 @@ export function MayaConcierge({
     setLastGeneration(null)
     setValueUsed(false)
     setInput("")
+    setPreMessageThreadOpen(false)
     sessionChatIdRef.current = nextChatId
     setChatId(nextChatId)
     setHistoryOpen(false)
@@ -2022,6 +2041,7 @@ export function MayaConcierge({
     setOutputFormat(id) // the auto-pull effect sends the request for the chosen format
     const keepSetupForVibe = id !== "video" && !hasStarted && !hasSpecificVisualWorld
     if (!keepSetupForVibe) {
+      setPreMessageThreadOpen(true)
       setSetupOpen(false) // a committed pick collapses setup so the directions are visible
     }
   }
@@ -2725,7 +2745,7 @@ export function MayaConcierge({
         {/* Setup - full block before the conversation starts (the guided beginning), then it
             collapses to a one-line status strip so Maya's output owns the screen. "Change"
             re-opens it for a format switch or a selfie swap. */}
-        {hasStarted && !setupOpen && !guidedFirstPhoto && !plainPreSelfieChat && (
+        {threadVisible && !setupOpen && !guidedFirstPhoto && !plainPreSelfieChat && (
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-2.5 sm:px-6">
             <span className="flex min-w-0 items-center gap-2.5">
               {(format === "video" ? videoSourceUrl : referenceSelfieUrl) && (
@@ -2765,7 +2785,7 @@ export function MayaConcierge({
             </button>
           </div>
         )}
-        {(!hasStarted || setupOpen) && !plainPreSelfieChat && (
+        {(!threadVisible || setupOpen) && !plainPreSelfieChat && (
           <div className="min-h-0 min-w-0 shrink space-y-3 overflow-y-auto overscroll-contain border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
             {guidedFirstPhoto && (
               <div
@@ -3221,7 +3241,7 @@ export function MayaConcierge({
             )}
 
             {/* Mid-conversation, setup is an overlay moment: one tap returns to the thread. */}
-            {!guidedFirstPhoto && hasStarted && (
+            {!guidedFirstPhoto && threadVisible && (
               <button
                 type="button"
                 onClick={() => setSetupOpen(false)}
@@ -3241,9 +3261,9 @@ export function MayaConcierge({
             actually scrolls (without it, content overflowed and the direction cards were
             unreachable below the fold). */}
         <div
-          aria-hidden={!hasStarted || setupOpen}
+          aria-hidden={!threadVisible || setupOpen}
           className={`min-h-0 min-w-0 flex-1 max-w-full space-y-5 overscroll-x-none px-4 py-5 [overflow-x:clip] sm:px-6 sm:py-6 ${
-            !hasStarted || setupOpen ? "hidden" : "overflow-y-auto"
+            !threadVisible || setupOpen ? "hidden" : "overflow-y-auto"
           }`}
         >
           {/* Static opener */}
