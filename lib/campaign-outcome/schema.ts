@@ -26,6 +26,8 @@ export async function ensureCampaignOutcomeSchema(): Promise<void> {
       selfie_url TEXT,
       what_she_sells TEXT,
       promotion TEXT,
+      target_audience TEXT,
+      voice_reference TEXT,
       platform TEXT,
       campaign_data JSONB NOT NULL DEFAULT '{}'::jsonb,
       generation_attempts INTEGER NOT NULL DEFAULT 0,
@@ -57,6 +59,14 @@ export async function ensureCampaignOutcomeSchema(): Promise<void> {
   await sql`
     ALTER TABLE campaign_orders
     ADD COLUMN IF NOT EXISTS repeat_attribution_recorded_at TIMESTAMPTZ
+  `
+  await sql`
+    ALTER TABLE campaign_orders
+    ADD COLUMN IF NOT EXISTS target_audience TEXT
+  `
+  await sql`
+    ALTER TABLE campaign_orders
+    ADD COLUMN IF NOT EXISTS voice_reference TEXT
   `
   await sql`
     CREATE INDEX IF NOT EXISTS idx_campaign_orders_status_created

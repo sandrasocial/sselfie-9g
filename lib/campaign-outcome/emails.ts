@@ -19,7 +19,7 @@ export function campaignIntakeEmail(input: {
   const bodyHtml = `
     <p style="margin:0 0 18px;">Hi ${name},</p>
     <p style="margin:0 0 18px;">Your campaign order is in.</p>
-    <p style="margin:0 0 18px;">Add one clear selfie, what you sell, and what you want to promote. Maya will use that to prepare your attention, trust, and offer posts.</p>
+    <p style="margin:0 0 18px;">Add one clear selfie, what you sell, what you want to promote, and who it is for. Maya will use that to prepare the complete campaign.</p>
     <p style="margin:0 0 18px;">${renderPersonalLink("Add my campaign details", input.intakeUrl)}</p>
     <p style="margin:0;">Once your details are in, your campaign will be ready within 48 hours.</p>
   `
@@ -30,7 +30,7 @@ export function campaignIntakeEmail(input: {
       `Hi ${input.firstName || "there"},`,
       "",
       "Your campaign order is in.",
-      "Add one clear selfie, what you sell, and what you want to promote.",
+      "Add one clear selfie, what you sell, what you want to promote, and who it is for.",
       "",
       input.intakeUrl,
       "",
@@ -50,7 +50,7 @@ export function campaignDeliveryEmail(input: {
   const bodyHtml = `
     <p style="margin:0 0 18px;">Hi ${name},</p>
     <p style="margin:0 0 18px;">Your campaign is ready.</p>
-    <p style="margin:0 0 18px;">I checked the three posts and the order Maya prepared for you. Start with the first post, then move through trust and offer.</p>
+    <p style="margin:0 0 18px;">I checked the photos, feed posts, carousel, Stories, and the five-day order Maya prepared for you.</p>
     <p style="margin:0 0 18px;">${renderPersonalLink("Open my campaign", input.deliveryUrl)}</p>
     <p style="margin:0;">Everything is on one page so you can copy the words and save the visuals.</p>
   `
@@ -61,7 +61,7 @@ export function campaignDeliveryEmail(input: {
       `Hi ${input.firstName || "there"},`,
       "",
       "Your campaign is ready.",
-      "I checked the three posts and the order Maya prepared for you.",
+      "I checked the complete campaign kit Maya prepared for you.",
       "",
       input.deliveryUrl,
       "",

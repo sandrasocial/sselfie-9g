@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS campaign_orders (
   selfie_url TEXT,
   what_she_sells TEXT,
   promotion TEXT,
+  target_audience TEXT,
+  voice_reference TEXT,
   platform TEXT,
   campaign_data JSONB NOT NULL DEFAULT '{}'::jsonb,
   generation_attempts INTEGER NOT NULL DEFAULT 0,

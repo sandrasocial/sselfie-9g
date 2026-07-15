@@ -37,6 +37,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   const file = form.get("selfie")
   const whatSheSells = safeText(form.get("whatSheSells"), 1200)
   const promotion = safeText(form.get("promotion"), 1200)
+  const targetAudience = safeText(form.get("targetAudience"), 800)
+  const voiceReference = safeText(form.get("voiceReference"), 1200)
   const platform = safeText(form.get("platform"), 50) || "Instagram"
 
   if (!(file instanceof File))
@@ -48,9 +50,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
       { error: "The selfie is too large. Maximum size is 12MB." },
       { status: 400 }
     )
-  if (whatSheSells.length < 10 || promotion.length < 10) {
+  if (whatSheSells.length < 10 || promotion.length < 10 || targetAudience.length < 5) {
     return NextResponse.json(
-      { error: "Tell Maya a little more about what you sell and what you want to promote." },
+      {
+        error:
+          "Tell Maya a little more about what you sell, what you want to promote, and who it is for.",
+      },
       { status: 400 }
     )
   }
@@ -87,6 +92,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
       selfie_url = ${blob.url},
       what_she_sells = ${whatSheSells},
       promotion = ${promotion},
+      target_audience = ${targetAudience},
+      voice_reference = ${voiceReference || null},
       platform = ${platform},
       status = 'inputs_ready',
       inputs_completed_at = NOW(),

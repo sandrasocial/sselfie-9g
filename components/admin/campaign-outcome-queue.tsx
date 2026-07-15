@@ -119,6 +119,11 @@ export function CampaignOutcomeQueue() {
                       <strong>Promoting:</strong> {order.promotion}
                     </p>
                   ) : null}
+                  {order.target_audience ? (
+                    <p className="mt-2 max-w-3xl text-sm leading-6">
+                      <strong>For:</strong> {order.target_audience}
+                    </p>
+                  ) : null}
                   {order.generation_error ? (
                     <p className="mt-4 max-w-3xl bg-red-50 p-3 text-xs leading-5 text-red-800">
                       {order.generation_error}
@@ -136,27 +141,84 @@ export function CampaignOutcomeQueue() {
               </div>
 
               {data ? (
-                <div className="mt-7 grid gap-4 md:grid-cols-3">
-                  {data.posts.map(post => (
-                    <div key={post.role} className="border border-stone-200">
-                      <div className="relative aspect-[2/3] bg-stone-100">
-                        <Image
-                          src={post.visualUrl}
-                          alt={`${post.role} preview`}
-                          fill
-                          className="object-cover"
-                          sizes="33vw"
-                          unoptimized
-                        />
-                      </div>
-                      <div className="p-4">
-                        <p className="text-[9px] uppercase tracking-[0.2em] text-stone-500">
-                          {post.role}
-                        </p>
-                        <p className="mt-2 font-serif text-xl">{post.headline}</p>
-                        <p className="mt-3 line-clamp-5 whitespace-pre-wrap text-xs leading-5 text-stone-600">
-                          {post.caption}
-                        </p>
+                <div className="mt-7 space-y-8">
+                  <div>
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-stone-500">
+                      Six-photo mini shoot
+                    </p>
+                    <div className="mt-3 grid grid-cols-3 gap-2 md:grid-cols-6">
+                      {data.photos.map(photo => (
+                        <div key={photo.id} className="relative aspect-[2/3] bg-stone-100">
+                          <Image
+                            src={photo.visualUrl}
+                            alt={photo.label}
+                            fill
+                            className="object-cover"
+                            sizes="16vw"
+                            unoptimized
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-stone-500">
+                      Feed copy
+                    </p>
+                    <div className="mt-3 grid gap-4 md:grid-cols-3">
+                      {data.posts.map(post => (
+                        <div key={post.role} className="border border-stone-200 p-4">
+                          <p className="text-[9px] uppercase tracking-[0.2em] text-stone-500">
+                            {post.role}
+                          </p>
+                          <p className="mt-2 font-serif text-xl">{post.headline}</p>
+                          <p className="mt-3 line-clamp-5 whitespace-pre-wrap text-xs leading-5 text-stone-600">
+                            {post.caption}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-stone-500">
+                      Seven-slide carousel
+                    </p>
+                    <div className="mt-3 grid grid-cols-4 gap-2 md:grid-cols-7">
+                      {data.carousel.slides.map(slide => (
+                        <div key={slide.index} className="relative aspect-[4/5] bg-stone-100">
+                          <Image
+                            src={slide.visualUrl}
+                            alt={`Carousel ${slide.index}`}
+                            fill
+                            className="object-cover"
+                            sizes="14vw"
+                            unoptimized
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {data.storySequences.map(sequence => (
+                    <div key={sequence.role}>
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-stone-500">
+                        {sequence.title}
+                      </p>
+                      <div className="mt-3 grid grid-cols-5 gap-2">
+                        {sequence.slides.map(slide => (
+                          <div key={slide.index} className="relative aspect-[9/16] bg-stone-100">
+                            <Image
+                              src={slide.visualUrl}
+                              alt={`${sequence.role} Story ${slide.index}`}
+                              fill
+                              className="object-cover"
+                              sizes="20vw"
+                              unoptimized
+                            />
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}

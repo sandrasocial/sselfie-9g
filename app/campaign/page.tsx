@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic"
 export const metadata: Metadata = {
   title: "Your Next Campaign | SSELFIE",
   description:
-    "Give Maya one selfie and what you are promoting. Get three coordinated posts ready to use.",
+    "Give Maya one selfie and what you are promoting. Get a complete campaign ready to post within 48 hours.",
   alternates: { canonical: "/campaign" },
 }
 

@@ -14,6 +14,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
 
   const body = await request.json().catch(() => null)
   const action = body?.action as OrderAction | undefined
+  const assetType =
+    typeof body?.assetType === "string" ? body.assetType.trim().slice(0, 80) || null : null
   if (!action || !["downloaded", "published_yes", "published_no"].includes(action)) {
     return NextResponse.json({ error: "Unknown action" }, { status: 400 })
   }
@@ -24,7 +26,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
       eventName: "campaign_downloaded",
       userId: order.user_id,
       path: `/campaign/order/${token}`,
-      properties: { order_id: order.id },
+      properties: { order_id: order.id, asset_type: assetType },
     })
   } else {
     const answer = action === "published_yes"

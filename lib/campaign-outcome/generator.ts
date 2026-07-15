@@ -5,11 +5,24 @@ import { generateObject } from "ai"
 import { z } from "zod"
 
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { renderCampaignSlide } from "@/lib/campaign-outcome/slide-renderer"
+import { ensureCampaignOutcomeSchema } from "@/lib/campaign-outcome/schema"
+import type {
+  CampaignData,
+  CampaignPhoto,
+  CampaignPost,
+  CampaignPostRole,
+  CampaignStoryRole,
+  CampaignStorySequence,
+} from "@/lib/campaign-outcome/types"
 import { sql } from "@/lib/db/client"
 import { generateFeedImageWithOpenAI } from "@/lib/feed-planner/openai-image"
 import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
-import { ensureCampaignOutcomeSchema } from "@/lib/campaign-outcome/schema"
-import type { CampaignData, CampaignPost, CampaignPostRole } from "@/lib/campaign-outcome/types"
+
+const shortSlideSchema = z.object({
+  headline: z.string().min(2).max(80),
+  body: z.string().min(2).max(240),
+})
 
 const planSchema = z.object({
   visualDirection: z.string().min(20).max(500),
@@ -26,6 +39,43 @@ const planSchema = z.object({
       })
     )
     .length(3),
+  alternatePhotos: z
+    .array(
+      z.object({
+        label: z.string().min(2).max(80),
+        visualPrompt: z.string().min(40).max(1800),
+        whyThisPhoto: z.string().min(10).max(300),
+      })
+    )
+    .length(3),
+  carousel: z.object({
+    title: z.string().min(3).max(100),
+    slides: z.array(shortSlideSchema).length(7),
+  }),
+  storySequences: z
+    .array(
+      z.object({
+        role: z.enum(["warmup", "offer"]),
+        title: z.string().min(3).max(100),
+        slides: z.array(shortSlideSchema).length(5),
+      })
+    )
+    .length(2),
+  publishPlan: z
+    .array(
+      z.object({
+        day: z.number().int().min(1).max(5),
+        asset: z.enum([
+          "attention_post",
+          "warmup_stories",
+          "carousel",
+          "trust_post",
+          "offer_post",
+        ]),
+        instruction: z.string().min(5).max(300),
+      })
+    )
+    .length(5),
 })
 
 type ClaimedCampaignOrder = {
@@ -34,6 +84,8 @@ type ClaimedCampaignOrder = {
   selfie_url: string
   what_she_sells: string
   promotion: string
+  target_audience: string
+  voice_reference: string | null
   platform: string | null
 }
 
@@ -42,6 +94,22 @@ function orderedPosts<T extends { role: CampaignPostRole }>(posts: T[]): T[] {
   return order
     .map(role => posts.find(post => post.role === role))
     .filter((post): post is T => Boolean(post))
+}
+
+function orderedStorySequences<T extends { role: CampaignStoryRole }>(sequences: T[]): T[] {
+  const order: CampaignStoryRole[] = ["warmup", "offer"]
+  return order
+    .map(role => sequences.find(sequence => sequence.role === role))
+    .filter((sequence): sequence is T => Boolean(sequence))
+}
+
+async function savePng(path: string, buffer: Buffer): Promise<string> {
+  const blob = await put(path, buffer, {
+    access: "public",
+    contentType: "image/png",
+    addRandomSuffix: true,
+  })
+  return blob.url
 }
 
 async function claimCampaignOrder(orderId: number): Promise<ClaimedCampaignOrder | null> {
@@ -59,7 +127,9 @@ async function claimCampaignOrder(orderId: number): Promise<ClaimedCampaignOrder
       AND selfie_url IS NOT NULL
       AND what_she_sells IS NOT NULL
       AND promotion IS NOT NULL
-    RETURNING id, customer_email, selfie_url, what_she_sells, promotion, platform
+      AND target_audience IS NOT NULL
+    RETURNING id, customer_email, selfie_url, what_she_sells, promotion,
+      target_audience, voice_reference, platform
   `
   return (rows[0] as ClaimedCampaignOrder | undefined) || null
 }
@@ -76,10 +146,7 @@ export async function generateCampaignOrder(
       schema: planSchema,
       prompt: `You are Maya, Sandra's practical personal-brand creative director.
 
-Create exactly three coordinated social posts for one small campaign in this exact order:
-1. attention
-2. trust
-3. offer
+Complete one coherent campaign for one promotion. Return every field in the schema.
 
 What she sells:
 ${order.what_she_sells}
@@ -87,55 +154,129 @@ ${order.what_she_sells}
 What she is promoting now:
 ${order.promotion}
 
+Who it is for:
+${order.target_audience}
+
+Voice or brand reference, if supplied:
+${order.voice_reference || "None supplied. Keep the copy clear and editable."}
+
 Primary platform:
 ${order.platform || "Instagram"}
 
+Build exactly:
+- Three feed posts in this order: attention, trust, offer.
+- Three alternate photo directions that belong to the same visual world.
+- One seven-slide carousel for the same promotion.
+- Two five-frame Story sequences. The warmup sequence builds relevance and trust. The offer sequence makes one clear invitation.
+- One five-day publishing plan using the exact allowed asset labels.
+
 Rules:
-- Use simple, everyday human language. Short sentences. No coach-speak, hype, fake urgency, or fluffy claims.
-- Never invent a personal story, customer result, price, deadline, guarantee, credential, or product detail.
+- Use simple, everyday human language. Short sentences. No coach-speak, hype, fake urgency, em dashes, or fluffy claims.
+- Never invent a personal story, customer result, price, deadline, guarantee, credential, link, keyword, or product detail.
 - If a claim is not present in the input, keep it general and editable.
-- Each post must have a clear job: attention, trust, or offer.
 - Each CTA must connect to what she is promoting without inventing a keyword or link.
-- Make all three posts feel like one campaign, not three random ideas.
+- Make every asset feel like one campaign, not a pile of unrelated content.
+- Keep carousel and Story text short enough to read on a phone. One idea per slide.
 - The first post should be the easiest useful thing to publish first.
-- Every visual prompt must describe a realistic editorial personal-brand photo using the same woman from the supplied reference selfie.
-- Every visual prompt must include the exact sentence: "Use exact facial features from the reference image."
+- Every photo prompt must describe a realistic editorial personal-brand photo using the same woman from the supplied reference selfie.
+- Every photo prompt must include the exact sentence: "Use exact facial features from the reference image."
 - Preserve her age, skin texture, face shape, hair, body proportions, and natural identity. Avoid plastic skin and visible AI tells.
-- Do not put text, logos, or interface elements inside the generated image.
+- Do not put text, logos, or interface elements inside the generated photos. SSELFIE adds exact text afterward.
 `,
     })
 
     const planPosts = orderedPosts(object.posts)
     if (planPosts.length !== 3) throw new Error("Maya did not return all three campaign roles")
+    const storyPlans = orderedStorySequences(object.storySequences)
+    if (storyPlans.length !== 2) throw new Error("Maya did not return both Story sequences")
 
-    const imageUrls = await Promise.all(
-      planPosts.map(async (post, index) => {
+    const photoPlans = [
+      ...planPosts.map(post => ({
+        id: post.role,
+        kind: "primary" as const,
+        label: `${post.role} campaign image`,
+        visualPrompt: post.visualPrompt,
+        whyThisPhoto: post.whyThisPost,
+      })),
+      ...object.alternatePhotos.map((photo, index) => ({
+        id: `alternate-${index + 1}`,
+        kind: "alternate" as const,
+        ...photo,
+      })),
+    ]
+
+    const generatedPhotos = await Promise.all(
+      photoPlans.map(async (photo, index) => {
         const buffer = await generateFeedImageWithOpenAI({
-          prompt: `${post.visualPrompt}\n\nUse exact facial features from the reference image. Create natural, high-end editorial photography with believable hands, skin texture, light, and proportions. No words or logos in the image.`,
+          prompt: `${photo.visualPrompt}\n\nUse exact facial features from the reference image. Create natural, high-end editorial photography with believable hands, skin texture, light, and proportions. No words or logos in the image.`,
           referenceUrls: [order.selfie_url],
           size: "1024x1536",
         })
-        const blob = await put(
-          `campaign-outcomes/${order.id}/${index + 1}-${post.role}.png`,
-          buffer,
-          {
-            access: "public",
-            contentType: "image/png",
-            addRandomSuffix: true,
-          }
+        const visualUrl = await savePng(
+          `campaign-outcomes/${order.id}/photos/${index + 1}-${photo.id}.png`,
+          buffer
         )
-        return blob.url
+        return { ...photo, buffer, visualUrl }
       })
     )
 
+    const photos: CampaignPhoto[] = generatedPhotos.map(({ buffer: _buffer, ...photo }) => photo)
     const posts: CampaignPost[] = planPosts.map((post, index) => ({
       ...post,
-      visualUrl: imageUrls[index],
+      visualUrl: generatedPhotos[index].visualUrl,
     }))
+
+    const carouselSlides = await Promise.all(
+      object.carousel.slides.map(async (slide, index) => {
+        const buffer = await renderCampaignSlide({
+          background: generatedPhotos[index % generatedPhotos.length].buffer,
+          format: "carousel",
+          eyebrow: object.carousel.title,
+          headline: slide.headline,
+          body: slide.body,
+          sequenceLabel: `${index + 1} / 7`,
+        })
+        const visualUrl = await savePng(
+          `campaign-outcomes/${order.id}/carousel/${index + 1}.png`,
+          buffer
+        )
+        return { index: index + 1, ...slide, visualUrl }
+      })
+    )
+
+    const storySequences: CampaignStorySequence[] = await Promise.all(
+      storyPlans.map(async (sequence, sequenceIndex) => ({
+        role: sequence.role,
+        title: sequence.title,
+        slides: await Promise.all(
+          sequence.slides.map(async (slide, slideIndex) => {
+            const photoIndex = (sequenceIndex * 3 + slideIndex) % generatedPhotos.length
+            const buffer = await renderCampaignSlide({
+              background: generatedPhotos[photoIndex].buffer,
+              format: "story",
+              eyebrow: sequence.title,
+              headline: slide.headline,
+              body: slide.body,
+              sequenceLabel: `${slideIndex + 1} / 5`,
+            })
+            const visualUrl = await savePng(
+              `campaign-outcomes/${order.id}/stories/${sequence.role}-${slideIndex + 1}.png`,
+              buffer
+            )
+            return { index: slideIndex + 1, ...slide, visualUrl }
+          })
+        ),
+      }))
+    )
+
     const campaignData: CampaignData = {
       visualDirection: object.visualDirection,
       firstPostReason: object.firstPostReason,
+      photos,
       posts,
+      carousel: { title: object.carousel.title, slides: carouselSlides },
+      storySequences,
+      publishPlan: [...object.publishPlan].sort((a, b) => a.day - b.day),
     }
 
     const updated = await sql`
@@ -154,7 +295,13 @@ Rules:
     await logAnalyticsEvent({
       eventName: "campaign_generated",
       path: "/campaign/order",
-      properties: { order_id: order.id, post_count: 3 },
+      properties: {
+        order_id: order.id,
+        photo_count: 6,
+        post_count: 3,
+        carousel_slide_count: 7,
+        story_slide_count: 10,
+      },
     })
     return { generated: true }
   } catch (error) {

@@ -143,6 +143,7 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   // CAMPAIGN-OUTCOME-01: one paid outcome, measured gate by gate. Money remains Stripe truth.
   "campaign_landing_view",
   "campaign_checkout_start",
+  "campaign_checkout_recovery_sent",
   "campaign_purchase",
   "campaign_inputs_completed",
   "campaign_generated",

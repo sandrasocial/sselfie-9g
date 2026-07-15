@@ -66,12 +66,21 @@ describe("Your Next Campaign product contract", () => {
     expect(admin).toContain("requireAdmin")
   })
 
-  it("keeps the output narrow and records every decision gate", () => {
+  it("keeps one promotion complete and records every decision gate", () => {
     const generator = read("lib/campaign-outcome/generator.ts")
     expect(generator).toContain('z.enum(["attention", "trust", "offer"])')
-    expect(generator).toContain(".length(3)")
+    expect(generator).toContain("alternatePhotos")
+    expect(generator).toContain(".length(7)")
+    expect(generator).toContain('z.enum(["warmup", "offer"])')
+    expect(generator).toContain(".length(5)")
     expect(generator).toContain("Use exact facial features from the reference image.")
     expect(generator).toContain("Never invent a personal story")
+
+    const types = read("lib/campaign-outcome/types.ts")
+    expect(types).toContain("photos: CampaignPhoto[]")
+    expect(types).toContain("carousel: CampaignCarousel")
+    expect(types).toContain("storySequences: CampaignStorySequence[]")
+    expect(types).toContain("publishPlan: CampaignPublishDay[]")
 
     for (const event of [
       "campaign_landing_view",

@@ -17,15 +17,20 @@ The buyer gives Maya:
 1. One clear selfie.
 2. What she sells.
 3. What she wants to promote now.
-4. Her main platform, if she wants to add it.
+4. Who it is for.
+5. Her voice/brand reference and main platform, if she wants to add them.
 
-Maya creates exactly three connected posts:
+Maya creates one complete campaign kit:
 
-1. Attention.
-2. Trust.
-3. Offer.
+1. Six identity-safe brand photos.
+2. Three feed posts: attention, trust, and offer.
+3. One finished seven-slide carousel.
+4. Two finished five-frame Story sequences.
+5. One five-day publishing plan.
 
-Each post contains one identity-referenced visual, a caption, a call to action, and its place in the publishing order. Sandra checks the founding-batch output in Admin before delivery.
+Every asset serves the same promotion. The slide renderer uses the six generated photos as the
+visual world and adds exact readable text after image generation. Sandra checks the founding-batch
+output in Admin before delivery.
 
 This product does not create an account, grant credits, enroll anyone in a course, start a trial, or sell a subscription.
 
@@ -37,10 +42,10 @@ This product does not create an account, grant credits, enroll anyone in a cours
 4. Private intake email
 5. `/campaign/order/[token]`
 6. Selfie and offer intake
-7. Maya text and image generation
+7. Maya campaign planning, six-photo generation, and deterministic carousel/Story rendering
 8. Admin quality check
 9. Delivery email and private buyer page
-10. Download or copy
+10. Download individual assets or the complete ZIP, and copy feed captions
 11. Day-7 published yes/no question
 12. Optional repeat purchase for another $97 campaign
 
@@ -79,9 +84,10 @@ Admin > Campaigns
 For each order:
 
 1. Check that the woman still looks like herself.
-2. Check that the words match what she actually sells and promotes.
-3. Choose **Approve and deliver**.
-4. If the face, words, or campaign direction is wrong, choose **Regenerate** instead.
+2. Check the feed copy, all seven carousel slides, and both Story sequences.
+3. Check that every asset matches what she actually sells and promotes.
+4. Choose **Approve and deliver**.
+5. If the face, words, or campaign direction is wrong, choose **Regenerate** instead.
 
 The delivery email sends only after approval. Test-mode orders never email customers.
 

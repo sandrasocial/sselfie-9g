@@ -73,6 +73,7 @@ export async function POST(request: Request) {
       AND selfie_url IS NOT NULL
       AND what_she_sells IS NOT NULL
       AND promotion IS NOT NULL
+      AND target_audience IS NOT NULL
       AND status IN ('generation_failed', 'needs_qa', 'delivered')
     RETURNING id
   `

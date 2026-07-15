@@ -8,6 +8,7 @@ const updateContactTagsMock = vi.hoisted(() => vi.fn())
 const analyticsMock = vi.hoisted(() => vi.fn())
 const generateObjectMock = vi.hoisted(() => vi.fn())
 const generateImageMock = vi.hoisted(() => vi.fn())
+const renderSlideMock = vi.hoisted(() => vi.fn())
 const putMock = vi.hoisted(() => vi.fn())
 
 vi.mock("server-only", () => ({}))
@@ -18,6 +19,9 @@ vi.mock("@/lib/analytics/events", () => ({ logAnalyticsEvent: analyticsMock }))
 vi.mock("ai", () => ({ generateObject: generateObjectMock }))
 vi.mock("@/lib/feed-planner/openai-image", () => ({
   generateFeedImageWithOpenAI: generateImageMock,
+}))
+vi.mock("@/lib/campaign-outcome/slide-renderer", () => ({
+  renderCampaignSlide: renderSlideMock,
 }))
 vi.mock("@vercel/blob", () => ({ put: putMock }))
 vi.mock("@/lib/maya/openrouter", () => ({ createMayaOpenRouterModel: vi.fn(() => "mock-model") }))
@@ -211,6 +215,8 @@ describe("campaign outcome Maya generation", () => {
             selfie_url: "https://example.com/selfie.jpg",
             what_she_sells: "A practical business course",
             promotion: "The September group",
+            target_audience: "Women building a service business",
+            voice_reference: "https://example.com/brand",
             platform: "Instagram",
           },
         ]
@@ -230,21 +236,48 @@ describe("campaign outcome Maya generation", () => {
           visualPrompt: `A realistic editorial ${role} portrait. Use exact facial features from the reference image.`,
           whyThisPost: `This ${role} post has one clear job in the campaign.`,
         })),
+        alternatePhotos: [1, 2, 3].map(index => ({
+          label: `Alternate ${index}`,
+          visualPrompt: `A realistic editorial alternate ${index} portrait. Use exact facial features from the reference image.`,
+          whyThisPhoto: "This gives the campaign one more useful angle.",
+        })),
+        carousel: {
+          title: "Seven useful slides",
+          slides: Array.from({ length: 7 }, (_, index) => ({
+            headline: `Carousel ${index + 1}`,
+            body: `Short supporting copy for carousel slide ${index + 1}.`,
+          })),
+        },
+        storySequences: ["warmup", "offer"].map(role => ({
+          role,
+          title: role === "warmup" ? "Warm up" : "Make the offer",
+          slides: Array.from({ length: 5 }, (_, index) => ({
+            headline: `${role} story ${index + 1}`,
+            body: `Short supporting copy for ${role} story ${index + 1}.`,
+          })),
+        })),
+        publishPlan: Array.from({ length: 5 }, (_, index) => ({
+          day: index + 1,
+          asset: ["attention_post", "warmup_stories", "carousel", "trust_post", "offer_post"][index],
+          instruction: `Publish step ${index + 1}.`,
+        })),
       },
     })
     generateImageMock.mockResolvedValue(Buffer.from("png"))
-    putMock
-      .mockResolvedValueOnce({ url: "https://blob/attention.png" })
-      .mockResolvedValueOnce({ url: "https://blob/trust.png" })
-      .mockResolvedValueOnce({ url: "https://blob/offer.png" })
+    renderSlideMock.mockResolvedValue(Buffer.from("slide-png"))
+    putMock.mockImplementation(async (_path: string) => ({
+      url: `https://blob/${putMock.mock.calls.length}.png`,
+    }))
     analyticsMock.mockResolvedValue({ ok: true })
   })
 
-  it("claims once, creates exactly three still-you visuals, and stops for QA", async () => {
+  it("claims once, creates the complete campaign kit, and stops for QA", async () => {
     const { generateCampaignOrder } = await import("@/lib/campaign-outcome/generator")
     await expect(generateCampaignOrder(51)).resolves.toEqual({ generated: true })
     expect(generateObjectMock).toHaveBeenCalledTimes(1)
-    expect(generateImageMock).toHaveBeenCalledTimes(3)
+    expect(generateImageMock).toHaveBeenCalledTimes(6)
+    expect(renderSlideMock).toHaveBeenCalledTimes(17)
+    expect(putMock).toHaveBeenCalledTimes(23)
     expect(generateImageMock).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
@@ -256,6 +289,11 @@ describe("campaign outcome Maya generation", () => {
     const save = sqlMock.mock.calls.find(call => queryText(call).includes("status = 'needs_qa'"))
     expect(save).toBeTruthy()
     expect(queryText(save!)).toContain("campaign_data")
+    const savedJson = String(save?.find(value => typeof value === "string" && value.includes("visualDirection")))
+    expect(savedJson).toContain('"photos"')
+    expect(savedJson).toContain('"carousel"')
+    expect(savedJson).toContain('"storySequences"')
+    expect(savedJson).toContain('"publishPlan"')
     expect(analyticsMock).toHaveBeenCalledWith(
       expect.objectContaining({ eventName: "campaign_generated" })
     )

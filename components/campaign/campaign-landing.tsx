@@ -85,8 +85,8 @@ export function CampaignLanding({
               Give Maya one selfie. Leave with your next campaign.
             </h1>
             <p className="mt-7 max-w-lg text-lg leading-8 text-white/82">
-              For women who already have something to sell. Maya prepares three coordinated posts
-              with the visuals, words, calls to action, and order to publish them.
+              For women who already have something to sell. Maya prepares the photos, feed posts,
+              carousel, Stories, and five-day order for one promotion.
             </p>
             <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
               <Link
@@ -118,13 +118,13 @@ export function CampaignLanding({
             </h2>
             <p className="mt-6 max-w-md text-base leading-8 text-[color:var(--app-text-secondary)]">
               Tell Maya what you sell and what needs attention now. She turns it into one small
-              campaign you can actually finish.
+              campaign that arrives ready to use.
             </p>
           </div>
 
           <div className="grid gap-px bg-[color:var(--app-border)] sm:grid-cols-3">
             {CAMPAIGN_IMAGES.map((src, index) => {
-              const roles = ["01 · Attention", "02 · Trust", "03 · Offer"]
+              const roles = ["01 · Mini shoot", "02 · Feed + carousel", "03 · Stories + plan"]
               return (
                 <article key={src} className="bg-white">
                   <div className="relative aspect-[4/5] overflow-hidden">
@@ -154,7 +154,7 @@ export function CampaignLanding({
             ["You add", "One clear selfie, what you sell, and what you want to promote."],
             [
               "Maya prepares",
-              "Three connected posts with realistic visuals, captions, and calls to action.",
+              "Six brand photos, three feed posts, one carousel, two Story sequences, and a five-day plan.",
             ],
             [
               "Sandra checks",

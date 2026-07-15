@@ -41,6 +41,10 @@
       "schedule": "0 * * * *"
     },
     {
+      "path": "/api/cron/campaign-checkout-recovery",
+      "schedule": "10 * * * *"
+    },
+    {
       "path": "/api/cron/starter-kit-checkout-recovery",
       "schedule": "30 * * * *"
     },

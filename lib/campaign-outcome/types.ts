@@ -8,6 +8,16 @@ export type CampaignOrderStatus =
   | "refunded"
 
 export type CampaignPostRole = "attention" | "trust" | "offer"
+export type CampaignStoryRole = "warmup" | "offer"
+
+export type CampaignPhoto = {
+  id: string
+  kind: "primary" | "alternate"
+  label: string
+  visualPrompt: string
+  whyThisPhoto: string
+  visualUrl: string
+}
 
 export type CampaignPost = {
   role: CampaignPostRole
@@ -19,10 +29,38 @@ export type CampaignPost = {
   whyThisPost: string
 }
 
+export type CampaignSlide = {
+  index: number
+  headline: string
+  body: string
+  visualUrl: string
+}
+
+export type CampaignCarousel = {
+  title: string
+  slides: CampaignSlide[]
+}
+
+export type CampaignStorySequence = {
+  role: CampaignStoryRole
+  title: string
+  slides: CampaignSlide[]
+}
+
+export type CampaignPublishDay = {
+  day: number
+  asset: string
+  instruction: string
+}
+
 export type CampaignData = {
   visualDirection: string
   firstPostReason: string
+  photos: CampaignPhoto[]
   posts: CampaignPost[]
+  carousel: CampaignCarousel
+  storySequences: CampaignStorySequence[]
+  publishPlan: CampaignPublishDay[]
 }
 
 export type CampaignOrder = {
@@ -39,6 +77,8 @@ export type CampaignOrder = {
   selfie_url: string | null
   what_she_sells: string | null
   promotion: string | null
+  target_audience: string | null
+  voice_reference: string | null
   platform: string | null
   campaign_data: CampaignData | Record<string, never>
   generation_attempts: number
@@ -64,23 +104,67 @@ export type CampaignOrder = {
 
 export type CampaignBuyerOrder = Pick<CampaignOrder, "status" | "campaign_data">
 
+function isSlide(value: unknown): value is CampaignSlide {
+  if (!value || typeof value !== "object") return false
+  const slide = value as Partial<CampaignSlide>
+  return (
+    typeof slide.index === "number" &&
+    typeof slide.headline === "string" &&
+    typeof slide.body === "string" &&
+    typeof slide.visualUrl === "string"
+  )
+}
+
 export function isCampaignData(value: unknown): value is CampaignData {
   if (!value || typeof value !== "object") return false
   const data = value as Partial<CampaignData>
   return (
     typeof data.visualDirection === "string" &&
     typeof data.firstPostReason === "string" &&
+    Array.isArray(data.photos) &&
+    data.photos.length === 6 &&
+    data.photos.every(
+      photo =>
+        photo &&
+        typeof photo.id === "string" &&
+        (photo.kind === "primary" || photo.kind === "alternate") &&
+        typeof photo.visualPrompt === "string" &&
+        typeof photo.visualUrl === "string"
+    ) &&
     Array.isArray(data.posts) &&
     data.posts.length === 3 &&
     data.posts.every(
       post =>
         post &&
-        typeof post.role === "string" &&
+        (post.role === "attention" || post.role === "trust" || post.role === "offer") &&
         typeof post.headline === "string" &&
         typeof post.caption === "string" &&
         typeof post.cta === "string" &&
         typeof post.visualPrompt === "string" &&
         typeof post.visualUrl === "string"
+    ) &&
+    Boolean(data.carousel) &&
+    typeof data.carousel?.title === "string" &&
+    Array.isArray(data.carousel?.slides) &&
+    data.carousel.slides.length === 7 &&
+    data.carousel.slides.every(isSlide) &&
+    Array.isArray(data.storySequences) &&
+    data.storySequences.length === 2 &&
+    data.storySequences.every(
+      sequence =>
+        (sequence.role === "warmup" || sequence.role === "offer") &&
+        typeof sequence.title === "string" &&
+        Array.isArray(sequence.slides) &&
+        sequence.slides.length === 5 &&
+        sequence.slides.every(isSlide)
+    ) &&
+    Array.isArray(data.publishPlan) &&
+    data.publishPlan.length === 5 &&
+    data.publishPlan.every(
+      day =>
+        typeof day.day === "number" &&
+        typeof day.asset === "string" &&
+        typeof day.instruction === "string"
     )
   )
 }
