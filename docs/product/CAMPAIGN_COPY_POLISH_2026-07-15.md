@@ -76,6 +76,22 @@ No-Fake psychology doctrine, design system.
    review of the `app/one-selfie/page.tsx` tracking addition (measurement-only, but it
    edits the live event page — merge only after the event closes).
 
+## B2. Evidence-driven additions (market intel 2026-07-15 — see
+`docs/business/MARKET_INTEL_OFFER_AND_MEMBERSHIP_2026-07-15.md`)
+
+1. **Itemized deliverable list on landing + buyer page**, line by line in service-tier
+   format (the market's $99/mo DFY tier justifies its price with a line-item list; a count
+   of posts reads as an $8-25 template pack). Lead every list with the strategy + human
+   layer, never the asset count.
+2. **Generator grounding**: campaign hooks/structures generated FROM Sandra's proven
+   corpus (viral-DNA reel analysis, hook patterns) with a per-campaign traceability note,
+   so "built from patterns proven in this niche" is a true, checkable claim on the page.
+3. **Track redo/refund-request rate from order one** vs the industry ~1-in-3
+   identity-drift baseline — this single metric decides whether $97 holds (and later
+   whether $149+ is earned). Surface it in the admin QA queue.
+4. Do not lead with the redo guarantee as THE differentiator — it is table stakes at the
+   $18-75 tier; pair it with the human-check + strategy proof points.
+
 ## C. Explicitly fine (reviewed, do not churn)
 
 Intake field examples (excellent), numbered steps, single CTA "Start my campaign",
