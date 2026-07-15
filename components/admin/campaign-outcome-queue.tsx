@@ -325,13 +325,15 @@ export function CampaignOutcomeQueue() {
                     Approve and deliver
                   </button>
                 ) : null}
-                {["generation_failed", "needs_qa", "delivered"].includes(order.status) ? (
+                {["generation_failed", "needs_qa", "delivered", "inputs_ready", "generating"].includes(
+                  order.status
+                ) ? (
                   <button
                     disabled={isBusy}
                     onClick={() => void act(order.id, "regenerate")}
                     className="border border-stone-950 px-5 py-3 text-[10px] uppercase tracking-[0.18em] disabled:opacity-50"
                   >
-                    Regenerate
+                    {order.status === "generating" ? "Restart stuck generation" : "Regenerate"}
                   </button>
                 ) : null}
                 {order.status === "delivered" ? (

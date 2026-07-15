@@ -180,4 +180,19 @@ describe("Your Next Campaign product contract", () => {
     expect(adminApi).toContain("record_redo_request")
     expect(adminApi).toContain("record_refund_request")
   })
+
+  it("keeps every PAID order recoverable from the admin queue (money review P0)", () => {
+    const adminApi = read("app/api/admin/campaigns/route.ts")
+    const admin = read("components/admin/campaign-outcome-queue.tsx")
+
+    // A killed serverless run can strand a paid order in 'inputs_ready' (after() never
+    // fired) or 'generating' (function died mid-run). Regenerate must accept both -
+    // 'generating' only when STALE, so a live run can never be clobbered.
+    expect(adminApi).toContain("'generation_failed', 'needs_qa', 'delivered', 'inputs_ready'")
+    expect(adminApi).toContain("status = 'generating'")
+    expect(adminApi).toContain("INTERVAL '10 minutes'")
+    expect(adminApi).toContain("still generating. Try again in a few minutes.")
+    expect(admin).toContain('"inputs_ready", "generating"')
+    expect(admin).toContain("Restart stuck generation")
+  })
 })

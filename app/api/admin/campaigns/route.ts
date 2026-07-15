@@ -107,6 +107,11 @@ export async function POST(request: Request) {
     return NextResponse.json(result, { status: result.delivered ? 200 : 409 })
   }
 
+  // Recovery contract (money review P0, 2026-07-15): a PAID order must never be
+  // unrecoverable. Regenerate therefore also accepts the two stuck states a killed
+  // serverless run can leave behind: 'inputs_ready' whose after() never fired, and a
+  // STALE 'generating' (generation_started_at older than 10 minutes - safely past the
+  // 300s function ceiling, so it can never clobber a live run).
   const rows = await sql`
     UPDATE campaign_orders
     SET status = 'inputs_ready', generation_error = NULL, updated_at = NOW()
@@ -115,14 +120,30 @@ export async function POST(request: Request) {
       AND what_she_sells IS NOT NULL
       AND promotion IS NOT NULL
       AND target_audience IS NOT NULL
-      AND status IN ('generation_failed', 'needs_qa', 'delivered')
+      AND (
+        status IN ('generation_failed', 'needs_qa', 'delivered', 'inputs_ready')
+        OR (
+          status = 'generating'
+          AND COALESCE(generation_started_at, updated_at) < NOW() - INTERVAL '10 minutes'
+        )
+      )
     RETURNING id
   `
-  if (!rows[0])
+  if (!rows[0]) {
+    const [current] = await sql`
+      SELECT status FROM campaign_orders WHERE id = ${orderId} LIMIT 1
+    `
+    if (current?.status === "generating") {
+      return NextResponse.json(
+        { error: "This campaign is still generating. Try again in a few minutes." },
+        { status: 409 }
+      )
+    }
     return NextResponse.json(
       { error: "This campaign is not ready to regenerate." },
       { status: 409 }
     )
+  }
   after(async () => {
     await generateCampaignOrder(orderId)
   })
