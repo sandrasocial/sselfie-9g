@@ -509,6 +509,13 @@ function wait(ms: number): Promise<void> {
   return new Promise(resolve => window.setTimeout(resolve, ms))
 }
 
+function newGenerationRequestId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID()
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
+}
+
 async function pollCustomModelGeneration(
   predictionId: string,
   generationId: number
@@ -1911,36 +1918,49 @@ export function MayaConcierge({
   // gallery while the old code told her "failed" and let her pay for retry after retry.
   // After a lost response we watch the gallery for the set before ever claiming failure.
   async function recoverPhotoshootFromGallery(
+    clientRequestId: string,
     startedAtMs: number,
-    expectedCount: number
+    expectedCount: number,
+    maxAttempts = 15
   ): Promise<string[] | null> {
-    const needed = Math.min(6, expectedCount)
+    const needed = expectedCount
     // small allowance for client/server clock skew
     const cutoff = startedAtMs - 2 * 60 * 1000
-    for (let attempt = 0; attempt < 15; attempt++) {
+    let latestFresh: string[] = []
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
       await new Promise(resolve => setTimeout(resolve, 20_000))
       try {
         const res = await fetch("/api/app-v3/gallery", { cache: "no-store" })
         if (!res.ok) continue
         const data = (await res.json().catch(() => null)) as {
-          assets?: Array<{ kind?: string; contentType?: string; url?: string; createdAt?: string }>
+          assets?: Array<{
+            kind?: string
+            contentType?: string
+            url?: string
+            createdAt?: string
+            generationRef?: string | null
+          }>
         } | null
         const fresh = (data?.assets || []).filter(
           asset =>
             asset.kind === "image" &&
             asset.contentType === "photoshoot" &&
+            asset.generationRef?.includes(clientRequestId) &&
             typeof asset.url === "string" &&
             asset.url &&
             Date.parse(asset.createdAt || "") >= cutoff
         )
+        latestFresh = fresh.map(asset => asset.url as string)
         if (fresh.length >= needed) {
-          return fresh.slice(0, Math.max(expectedCount, needed)).map(asset => asset.url as string)
+          return latestFresh.slice(0, expectedCount)
         }
       } catch {
         // offline or transient: keep waiting, the server may still be finishing the shoot
       }
     }
-    return null
+    // A partial set is still delivered value. The reconciliation job returns credits for
+    // missing legs; never hide the images that did finish behind a generic error.
+    return latestFresh.length > 0 ? latestFresh : null
   }
 
   async function generatePhotoshootSet(key: string, concepts: ConceptCardData[]) {
@@ -1964,9 +1984,11 @@ export function MayaConcierge({
     if (inFlightGenerationKeysRef.current.has(key)) return
     inFlightGenerationKeysRef.current.add(key)
     setGenState(s => ({ ...s, [key]: { status: "generating" } }))
+    const clientRequestId = newGenerationRequestId()
     const shootStartedAt = Date.now()
     // true once we parsed a real server reply; false means the response was lost in transit
     let gotServerVerdict = false
+    let responseStatus: number | null = null
     try {
       const res = await fetch("/api/app-v3/maya/generate", {
         method: "POST",
@@ -1980,9 +2002,11 @@ export function MayaConcierge({
           inspirationImageUrl: inspirationUrl,
           aestheticId: aesthetic.id,
           conceptTitle: "Full photoshoot",
+          clientRequestId,
           stream: false,
         }),
       })
+      responseStatus = res.status
       const data = (await res.json().catch(() => null)) as {
         imageUrl?: string
         imageUrls?: string[]
@@ -2028,10 +2052,19 @@ export function MayaConcierge({
       trackGenerationCompleted("photoshoot", "photoshoot_set")
       showTrialCapIfDepleted(data?.newBalance)
     } catch (e) {
-      if (!gotServerVerdict) {
+      const shouldAttemptRecovery =
+        !gotServerVerdict || (responseStatus !== null && responseStatus >= 500)
+      if (shouldAttemptRecovery) {
         // No server reply reached us. The shoot is usually still finishing: keep the card in
         // its working state and watch the gallery for the set instead of claiming failure.
-        const recovered = await recoverPhotoshootFromGallery(shootStartedAt, shootConcepts.length)
+        // A parsed 5xx gets three checks (the server already stopped); a dropped connection
+        // gets the full five-minute window because the server may still be rendering.
+        const recovered = await recoverPhotoshootFromGallery(
+          clientRequestId,
+          shootStartedAt,
+          shootConcepts.length,
+          gotServerVerdict ? 3 : 15
+        )
         if (recovered && recovered.length > 0) {
           setGenState(s => ({
             ...s,

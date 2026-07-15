@@ -152,6 +152,8 @@ export interface MayaChatRequestExtras {
 
 /** Request body posted to /api/app-v3/maya/generate when a concept card is generated. */
 export interface MayaGenerateConceptRequest {
+  /** Client-generated id used to recover this exact request after a dropped mobile response. */
+  clientRequestId?: string
   /** Single-image jobs only: stream progressive partial previews over SSE. */
   stream?: boolean
   brief: CreativeBrief

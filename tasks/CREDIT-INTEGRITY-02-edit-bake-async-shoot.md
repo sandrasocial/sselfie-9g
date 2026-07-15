@@ -1,21 +1,21 @@
 # CREDIT-INTEGRITY-02: finish the credit-integrity net + async photoshoot
 
-Status: ready for Codex
+Status: Phase A complete and verified 2026-07-15; Phase B superseded by exact-request recovery
 Owner: Codex
 Background: `docs/audits/MAYA_PIPELINE_CREDIT_INTEGRITY_2026-07-15.md` (read first).
 CREDIT-INTEGRITY-01 shipped the requestRef contract, the reconcile cron, lost-response
-recovery, and partial-delivery refunds for `app/api/app-v3/maya/generate`. Two gaps remain.
+recovery, and partial-delivery refunds for `app/api/app-v3/maya/generate`.
 
 ## Phase A: bring edit, bake-text, and the auto-bake leg into the reconcile net
 
 Same pattern as the generate route (copy it, do not invent a new one):
 
 1. `app/api/app-v3/maya/edit/route.ts` and `app/api/app-v3/maya/bake-text/route.ts`:
-   - Create `const requestRef = \`app-v3-gen-${neonUser.id}-${Date.now()}\`` before the
-     deduction and pass it as the fifth argument to `deductCredits`.
+   - Create a unique `app-v3-gen-<userId>-<requestId>` request reference before the deduction and
+     pass it as the fifth argument to `deductCredits`.
    - Stamp the resulting `ai_images.prediction_id` as `` `${requestRef}-0` ``.
-   - Route refunds through a `refundOrAlert` helper (see generate route) with `refundRef =
-     requestRef`; no `refundCredits(...).catch(() => {})` may remain.
+   - Route refunds through a `refundOrAlert` helper (see generate route) with
+     `refundRef = requestRef`; no `refundCredits(...).catch(() => {})` may remain.
 2. The auto-bake leg inside `app/api/app-v3/maya/generate/route.ts`: give the bake deduction
    its own `app-v3-gen-...` ref, stamp the baked `ai_images` rows with `<ref>-<index>`
    (replacing the `app-v3-auto-bake-<stamp>-<index>` format), and keep the existing
@@ -29,7 +29,7 @@ stamped with the same ref prefix, or the cron will wrongly refund a delivered ch
 15 minutes. That is the one way to break money with this task. Verify by generating in
 preview and checking `credit_transactions` vs `ai_images` before merging.
 
-## Phase B: async full photoshoot (kills the lost-response class)
+## Phase B: async full photoshoot (future architectural hardening)
 
 A full shoot holds one HTTP request open 2-4 minutes; mobile drops it routinely. Replace with:
 
@@ -43,5 +43,7 @@ A full shoot holds one HTTP request open 2-4 minutes; mobile drops it routinely.
 4. Keep the reconcile cron unchanged as the safety net.
 5. Voice: all member-facing copy short, warm, no m-dashes, no banned likeness phrases.
 
-Do Phase A first; it is small and pure risk-reduction. Phase B changes UX flow: full-suite
-run + preview verification before merge, per standing rules.
+The live fix now sends a client request id, stamps it onto charge and gallery rows, and recovers
+that exact shoot after both lost responses and parsed 5xx responses. The reconcile cron refunds
+any missing legs. This closes the customer blocker without changing the generation architecture.
+The async design below remains optional future work and still requires a full-suite preview.

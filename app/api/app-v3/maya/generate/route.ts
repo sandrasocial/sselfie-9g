@@ -784,7 +784,11 @@ export async function POST(request: NextRequest) {
     // reconcile cron uses it to prove "charged but nothing reached her gallery" and return
     // credits automatically, covering the paths no in-request catch can: Vercel killing the
     // function at maxDuration, lost responses, and unexpected throws after the deduction.
-    const requestRef = `app-v3-gen-${neonUser.id}-${Date.now()}`
+    const clientRequestId =
+      typeof body.clientRequestId === "string" && /^[a-zA-Z0-9-]{8,80}$/.test(body.clientRequestId)
+        ? body.clientRequestId
+        : String(Date.now())
+    const requestRef = `app-v3-gen-${neonUser.id}-${clientRequestId}`
     const deduction = await deductCredits(
       neonUser.id,
       totalCost,
@@ -1451,15 +1455,17 @@ export async function POST(request: NextRequest) {
       const bakeCost = CREDIT_COSTS.IMAGE * buffers.length
       const canBake = await checkCredits(neonUser.id, bakeCost).catch(() => false)
       if (canBake) {
+        const bakeRequestRef = `app-v3-gen-${neonUser.id}-${Date.now()}`
         const bakeDeduction = await deductCredits(
           neonUser.id,
           bakeCost,
           "image",
-          `app-v3 ${format} auto bake: ${label}`
+          `app-v3 ${format} auto bake: ${label}`,
+          bakeRequestRef
         )
         if (bakeDeduction.success) {
           responseBalance = bakeDeduction.newBalance
-          const bakeRefundRef = `app-v3-auto-bake-fail-${neonUser.id}-${Date.now()}`
+          const bakeRefundRef = bakeRequestRef
           const bakeStamp = Date.now()
           bakedAiImageIds = new Array<number | null>(buffers.length).fill(null)
           bakedImageUrls = await Promise.all(
@@ -1503,7 +1509,7 @@ export async function POST(request: NextRequest) {
                       prediction_id, generation_status, source, category, created_at
                     ) VALUES (
                       ${neonUser.id}, ${blob.url}, ${imageTitle}, ${variantOf}, ${spec.headline},
-                      ${bakePrompt.slice(0, 2000)}, ${"app-v3-auto-bake-" + bakeStamp + "-" + index},
+                      ${bakePrompt.slice(0, 2000)}, ${bakeRequestRef + "-" + index},
                       'completed', 'openai', ${format}, NOW()
                     )
                     RETURNING id
@@ -1527,7 +1533,11 @@ export async function POST(request: NextRequest) {
           const failedBakes = bakedImageUrls.filter(url => url === null).length
           if (failedBakes > 0) {
             // Refund only the failed legs: those images fall back to clean + copy suggestions.
-            await refundOrAlert(CREDIT_COSTS.IMAGE * failedBakes, "Auto text bake failed", bakeRefundRef)
+            await refundOrAlert(
+              CREDIT_COSTS.IMAGE * failedBakes,
+              "Auto text bake failed",
+              bakeRefundRef
+            )
             import("@/lib/analytics/events")
               .then(({ logAnalyticsEvent }) =>
                 logAnalyticsEvent({

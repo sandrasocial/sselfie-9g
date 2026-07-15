@@ -1,6 +1,13 @@
-import { randomInt } from "crypto"
+import { randomInt, randomUUID } from "crypto"
 import { put } from "@vercel/blob"
-import { checkCredits, CREDIT_COSTS, deductCredits, getUserCredits } from "@/lib/credits"
+import {
+  checkCredits,
+  CREDIT_COSTS,
+  deductCredits,
+  getUserCredits,
+  refundCredits,
+} from "@/lib/credits"
+import { logAdminError } from "@/lib/admin-error-log"
 import { getDbClient } from "@/lib/db/client"
 import { logTtfiCompletionOnFirstGallerySave } from "@/lib/analytics/ttfi"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
@@ -86,7 +93,7 @@ function buildFinalPrompt(
     ethnicity: string | null
     isHighlight: boolean
     enhancedAuthenticity: boolean
-  },
+  }
 ): string {
   let prompt = conceptPrompt.trim()
   prompt = ensureTriggerWordPrefix(prompt, opts.triggerWord)
@@ -115,12 +122,18 @@ function buildFinalPrompt(
   return prompt
 }
 
-function readNumberSetting(settings: Record<string, unknown> | undefined, key: string): number | undefined {
+function readNumberSetting(
+  settings: Record<string, unknown> | undefined,
+  key: string
+): number | undefined {
   const value = settings?.[key]
   return typeof value === "number" ? value : undefined
 }
 
-function readStringSetting(settings: Record<string, unknown> | undefined, key: string): string | undefined {
+function readStringSetting(
+  settings: Record<string, unknown> | undefined,
+  key: string
+): string | undefined {
   const value = settings?.[key]
   return typeof value === "string" ? value : undefined
 }
@@ -128,7 +141,7 @@ function readStringSetting(settings: Record<string, unknown> | undefined, key: s
 function resolveLoraDecision(
   customSettings: Record<string, unknown> | undefined,
   enhancedAuthenticity: boolean,
-  finalPrompt: string,
+  finalPrompt: string
 ): LoraDecision {
   const manualExtraLoraScale =
     customSettings?.extraLoraScale === undefined
@@ -137,7 +150,7 @@ function resolveLoraDecision(
   const hasUserSetRealism = manualExtraLoraScale !== undefined
   const hasAuthenticKeywords =
     /authentic\s+iphone|amateur\s+cellphone|raw\s+iphone|candid\s+photo|film\s+grain|muted\s+colors/i.test(
-      finalPrompt,
+      finalPrompt
     )
   const shouldDisableExtraLora =
     !hasUserSetRealism && (enhancedAuthenticity || hasAuthenticKeywords)
@@ -149,12 +162,14 @@ function buildQualitySettings(
   presetSettings: QualitySettings,
   customSettings: Record<string, unknown> | undefined,
   userLoraScale: number | null,
-  lora: LoraDecision,
+  lora: LoraDecision
 ) {
   const loraScale =
     customSettings?.styleStrength === undefined
       ? (userLoraScale ?? presetSettings.lora_scale)
-      : (readNumberSetting(customSettings, "styleStrength") ?? userLoraScale ?? presetSettings.lora_scale)
+      : (readNumberSetting(customSettings, "styleStrength") ??
+        userLoraScale ??
+        presetSettings.lora_scale)
   const baseExtraLoraScale = lora.hasUserSetRealism
     ? lora.manualExtraLoraScale
     : presetSettings.extra_lora_scale
@@ -164,7 +179,8 @@ function buildQualitySettings(
     ...presetSettings,
     aspect_ratio: readStringSetting(customSettings, "aspectRatio") ?? presetSettings.aspect_ratio,
     lora_scale: loraScale,
-    guidance_scale: readNumberSetting(customSettings, "promptAccuracy") ?? presetSettings.guidance_scale,
+    guidance_scale:
+      readNumberSetting(customSettings, "promptAccuracy") ?? presetSettings.guidance_scale,
     extra_lora: readStringSetting(customSettings, "extraLora") ?? presetSettings.extra_lora,
     extra_lora_scale: extraLoraScale,
     num_inference_steps: presetSettings.num_inference_steps,
@@ -230,8 +246,47 @@ function getPredictionOutputUrl(output: unknown): string | null {
   return typeof output === "string" ? output : null
 }
 
+type GenerationMetadata = {
+  prediction_id?: string
+  status?: string
+  credit_reference_id?: string
+}
+
+function parseGenerationMetadata(value: unknown): GenerationMetadata | null {
+  if (typeof value !== "string" || !value.trim().startsWith("{")) return null
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === "object" ? (parsed as GenerationMetadata) : null
+  } catch {
+    return null
+  }
+}
+
+async function refundCustomModelCredit(input: {
+  userId: string
+  reason: string
+  referenceId: string
+}): Promise<void> {
+  try {
+    const result = await refundCredits(
+      input.userId,
+      CREDIT_COSTS.IMAGE,
+      input.reason,
+      input.referenceId
+    )
+    if (!result.success) throw new Error(result.error || "refund reported failure")
+  } catch (error) {
+    console.error("[app-v3-custom-model] credit refund failed:", error)
+    await logAdminError({
+      toolName: "app-v3-custom-model-refund",
+      error,
+      context: input,
+    }).catch(() => {})
+  }
+}
+
 export async function startTrainedModelGeneration(
-  input: TrainedModelGenerationInput,
+  input: TrainedModelGenerationInput
 ): Promise<TrainedModelGenerationResult> {
   const userId = String(input.userId)
   const conceptTitle = input.conceptTitle || "Maya custom model image"
@@ -290,13 +345,19 @@ export async function startTrainedModelGeneration(
     MAYA_QUALITY_PRESETS[input.category as keyof typeof MAYA_QUALITY_PRESETS] ||
     MAYA_QUALITY_PRESETS.default
   const presetSettings =
-    input.source === "app-v3-custom-model" ? appV3TrainedModelPreset(rawPresetSettings) : rawPresetSettings
-  const lora = resolveLoraDecision(input.customSettings, input.enhancedAuthenticity === true, finalPrompt)
+    input.source === "app-v3-custom-model"
+      ? appV3TrainedModelPreset(rawPresetSettings)
+      : rawPresetSettings
+  const lora = resolveLoraDecision(
+    input.customSettings,
+    input.enhancedAuthenticity === true,
+    finalPrompt
+  )
   const qualitySettings = buildQualitySettings(
     presetSettings,
     input.customSettings,
     model.userLoraScale,
-    lora,
+    lora
   )
   const predictionInput = buildClassicModeReplicateInput({
     prompt: finalPrompt,
@@ -308,11 +369,13 @@ export async function startTrainedModelGeneration(
     extraLoraDisabled: lora.shouldDisableExtraLora,
   })
 
+  const requestRef = `app-v3-custom-model-${userId}-${randomUUID()}`
   const deductionResult = await deductCredits(
     userId,
     CREDIT_COSTS.IMAGE,
     "image",
     `Generated: ${conceptTitle}`,
+    requestRef
   )
   if (!deductionResult.success) {
     throw new TrainedModelGenerationError("Could not deduct credits", 402, {
@@ -330,41 +393,58 @@ export async function startTrainedModelGeneration(
       input: predictionInput,
     })
   } catch (error) {
+    await refundCustomModelCredit({
+      userId,
+      reason: "Custom model generation failed to start",
+      referenceId: requestRef,
+    })
     const message = error instanceof Error ? error.message : String(error)
     throw new TrainedModelGenerationError("Failed to create Replicate prediction", 500, {
-      error: message.includes("401") || message.includes("Unauthenticated")
-        ? "Replicate authentication failed"
-        : "Failed to generate image",
+      error:
+        message.includes("401") || message.includes("Unauthenticated")
+          ? "Replicate authentication failed"
+          : "Failed to generate image",
       details: message,
     })
   }
 
   const sql = getDbClient()
-  const insertResult = await sql`
-    INSERT INTO generated_images (
-      user_id,
-      prompt,
-      description,
-      category,
-      subcategory,
-      image_urls,
-      created_at
-    ) VALUES (
-      ${input.userId},
-      ${finalPrompt},
-      ${input.conceptDescription || ""},
-      ${input.category || "concept"},
-      ${conceptTitle},
-      ${JSON.stringify({
-        prediction_id: prediction.id,
-        status: "processing",
-        text_overlay: input.addTextOverlay ? input.textOverlayConfig : null,
-        source: input.source || "app-v3-custom-model",
-      })},
-      NOW()
-    )
-    RETURNING id
-  `
+  let insertResult
+  try {
+    insertResult = await sql`
+      INSERT INTO generated_images (
+        user_id,
+        prompt,
+        description,
+        category,
+        subcategory,
+        image_urls,
+        created_at
+      ) VALUES (
+        ${input.userId},
+        ${finalPrompt},
+        ${input.conceptDescription || ""},
+        ${input.category || "concept"},
+        ${conceptTitle},
+        ${JSON.stringify({
+          prediction_id: prediction.id,
+          status: "processing",
+          credit_reference_id: requestRef,
+          text_overlay: input.addTextOverlay ? input.textOverlayConfig : null,
+          source: input.source || "app-v3-custom-model",
+        })},
+        NOW()
+      )
+      RETURNING id
+    `
+  } catch (error) {
+    await refundCustomModelCredit({
+      userId,
+      reason: "Custom model generation could not be saved",
+      referenceId: requestRef,
+    })
+    throw error
+  }
 
   return {
     generationId: Number(insertResult[0].id),
@@ -382,63 +462,142 @@ export async function checkTrainedModelGeneration(input: {
   source?: string
 }): Promise<TrainedModelGenerationCheckResult> {
   const generationId = normalizeGenerationId(input.generationId)
-  const prediction = await getReplicateClient().predictions.get(input.predictionId)
+  const userId = String(input.userId)
+  const sql = getDbClient()
+  const [ownedGeneration] = await sql`
+    SELECT user_id, image_urls, selected_url, prompt, description, category, subcategory
+    FROM generated_images
+    WHERE id = ${generationId}
+      AND user_id = ${input.userId}
+  `
 
-  if (prediction.status === "failed") {
+  if (!ownedGeneration) {
+    throw new TrainedModelGenerationError("Generation not found", 404, {
+      error: "Generation not found",
+    })
+  }
+
+  const metadata = parseGenerationMetadata(ownedGeneration.image_urls)
+  if (
+    !metadata &&
+    typeof ownedGeneration.selected_url === "string" &&
+    ownedGeneration.selected_url
+  ) {
+    const [existing] = await sql`
+      SELECT id FROM ai_images
+      WHERE user_id = ${input.userId}
+        AND image_url = ${ownedGeneration.selected_url}
+      LIMIT 1
+    `
     return {
-      status: "failed",
-      error: typeof prediction.error === "string" ? prediction.error : "Generation failed",
+      status: "succeeded",
+      imageUrl: ownedGeneration.selected_url,
+      aiImageId: existing ? Number(existing.id) : null,
     }
   }
 
-  if (prediction.status !== "succeeded" || !prediction.output) {
+  if (!metadata || metadata.prediction_id !== input.predictionId) {
+    throw new TrainedModelGenerationError("Generation not found", 404, {
+      error: "Generation not found",
+    })
+  }
+
+  if (metadata.status === "failed") {
+    if (metadata.credit_reference_id) {
+      await refundCustomModelCredit({
+        userId,
+        reason: "Custom model generation failed",
+        referenceId: metadata.credit_reference_id,
+      })
+    }
+    return { status: "failed", error: "Generation failed" }
+  }
+
+  const prediction = await getReplicateClient().predictions.get(input.predictionId)
+
+  if (prediction.status === "failed") {
+    const failureMessage =
+      typeof prediction.error === "string" ? prediction.error : "Generation failed"
+    if (metadata.credit_reference_id) {
+      await refundCustomModelCredit({
+        userId,
+        reason: "Custom model generation failed",
+        referenceId: metadata.credit_reference_id,
+      })
+    }
+    await sql`
+      UPDATE generated_images
+      SET image_urls = ${JSON.stringify({ ...metadata, status: "failed" })}
+      WHERE id = ${generationId}
+        AND user_id = ${input.userId}
+    `
+    return {
+      status: "failed",
+      error: failureMessage,
+    }
+  }
+
+  if (prediction.status !== "succeeded") {
     return { status: prediction.status }
   }
 
   const outputUrl = getPredictionOutputUrl(prediction.output)
   if (!outputUrl) {
+    if (metadata.credit_reference_id) {
+      await refundCustomModelCredit({
+        userId,
+        reason: "Custom model image could not be delivered",
+        referenceId: metadata.credit_reference_id,
+      })
+    }
     throw new TrainedModelGenerationError("Generation completed without an image URL", 500, {
       error: "Generation completed without an image URL",
     })
   }
 
-  const imageResponse = await fetch(outputUrl)
-  if (!imageResponse.ok) {
-    throw new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`)
+  let blob
+  try {
+    const imageResponse = await fetch(outputUrl)
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`)
+    }
+    const imageBlob = await imageResponse.blob()
+
+    if (imageBlob.size === 0) {
+      throw new Error("Image blob is empty (0 bytes) - Replicate image may not be ready yet")
+    }
+
+    if (imageBlob.size < 1024) {
+      console.warn("[app-v3-custom-model] Image blob is very small:", imageBlob.size, "bytes")
+    }
+
+    blob = await put(`maya-generations/${generationId}.png`, imageBlob, {
+      access: "public",
+      contentType: "image/png",
+      addRandomSuffix: true,
+    })
+
+    await sql`
+      UPDATE generated_images
+      SET
+        image_urls = ${blob.url},
+        selected_url = ${blob.url},
+        saved = false
+      WHERE id = ${generationId}
+        AND user_id = ${input.userId}
+    `
+  } catch (error) {
+    if (metadata.credit_reference_id) {
+      await refundCustomModelCredit({
+        userId,
+        reason: "Custom model image could not be delivered",
+        referenceId: metadata.credit_reference_id,
+      })
+    }
+    throw error
   }
-  const imageBlob = await imageResponse.blob()
 
-  if (imageBlob.size === 0) {
-    throw new Error("Image blob is empty (0 bytes) - Replicate image may not be ready yet")
-  }
-
-  if (imageBlob.size < 1024) {
-    console.warn("[app-v3-custom-model] Image blob is very small:", imageBlob.size, "bytes")
-  }
-
-  const blob = await put(`maya-generations/${generationId}.png`, imageBlob, {
-    access: "public",
-    contentType: "image/png",
-    addRandomSuffix: true,
-  })
-
-  const sql = getDbClient()
-  await sql`
-    UPDATE generated_images
-    SET
-      image_urls = ${blob.url},
-      selected_url = ${blob.url},
-      saved = false
-    WHERE id = ${generationId}
-      AND user_id = ${input.userId}
-  `
-
-  const [generation] = await sql`
-    SELECT user_id, prompt, description, category, subcategory
-    FROM generated_images
-    WHERE id = ${generationId}
-      AND user_id = ${input.userId}
-  `
+  const generation = ownedGeneration
 
   let aiImageId: number | null = null
   if (generation) {
@@ -449,7 +608,8 @@ export async function checkTrainedModelGeneration(input: {
         AND generation_status = 'completed'
     `
     const [existing] = await sql`
-      SELECT id FROM ai_images WHERE prediction_id = ${input.predictionId}
+      SELECT id FROM ai_images
+      WHERE prediction_id = ${metadata.credit_reference_id || input.predictionId}
     `
 
     if (!existing) {
@@ -469,7 +629,7 @@ export async function checkTrainedModelGeneration(input: {
           ${blob.url},
           ${generation.description || generation.subcategory || ""},
           ${generation.prompt || ""},
-          ${input.predictionId},
+          ${metadata.credit_reference_id || input.predictionId},
           'completed',
           ${input.source || "app_v3_custom_model"},
           ${generation.category || "concept"},

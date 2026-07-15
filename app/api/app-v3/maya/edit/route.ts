@@ -30,6 +30,7 @@ import {
 } from "@/lib/app-v3/likeness-memory"
 import { addLikenessNote, getMemory } from "@/lib/app-v3/maya/memory-store"
 import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
+import { logAdminError } from "@/lib/admin-error-log"
 import type { OutputFormat } from "@/components/app-v3/types"
 
 export const maxDuration = 300
@@ -267,11 +268,13 @@ export async function POST(request: NextRequest) {
         { status: 402 }
       )
     }
+    const requestRef = `app-v3-gen-${neonUser.id}-${Date.now()}`
     const deduction = await deductCredits(
       neonUser.id,
       CREDIT_COSTS.IMAGE,
       "image",
-      `app-v3 edit: ${instruction.slice(0, 50)}`
+      `app-v3 edit: ${instruction.slice(0, 50)}`,
+      requestRef
     )
     if (!deduction.success) {
       return NextResponse.json(
@@ -280,16 +283,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const refundRef = `app-v3-edit-fail-${neonUser.id}-${Date.now()}`
+    const refundRef = requestRef
+    const refundOrAlert = async (amount: number, reason: string, ref: string) => {
+      try {
+        const result = await refundCredits(neonUser.id, amount, reason, ref)
+        if (!result.success) throw new Error(result.error || "refund reported failure")
+      } catch (refundError) {
+        console.error("[app-v3 edit] refund failed:", reason, refundError)
+        await logAdminError({
+          toolName: "app-v3-edit-refund",
+          error: refundError,
+          context: { userId: neonUser.id, amount, reason, ref },
+        }).catch(() => {})
+      }
+    }
     const openaiApiKey = process.env.OPENAI_API_KEY
     if (!openaiApiKey) {
       console.error("[app-v3 edit] OPENAI_API_KEY is not set in this environment.")
-      await refundCredits(
-        neonUser.id,
-        CREDIT_COSTS.IMAGE,
-        "OpenAI API key not configured",
-        refundRef
-      ).catch(() => {})
+      await refundOrAlert(CREDIT_COSTS.IMAGE, "OpenAI API key not configured", refundRef)
       return NextResponse.json(
         {
           error: "Editing is temporarily unavailable. Please try again later.",
@@ -370,12 +381,7 @@ export async function POST(request: NextRequest) {
             buildEditPrompt(instruction, true, hasIdentityReference, likenessBlock)
           )
         } catch (retryError) {
-          await refundCredits(
-            neonUser.id,
-            CREDIT_COSTS.IMAGE,
-            "OpenAI content policy",
-            refundRef
-          ).catch(() => {})
+          await refundOrAlert(CREDIT_COSTS.IMAGE, "OpenAI content policy", refundRef)
           if (isContentPolicyError(retryError)) {
             await logEditFailure("content_policy", retryError)
             return NextResponse.json(
@@ -394,9 +400,7 @@ export async function POST(request: NextRequest) {
           )
         }
       } else {
-        await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "OpenAI edit failed", refundRef).catch(
-          () => {}
-        )
+        await refundOrAlert(CREDIT_COSTS.IMAGE, "OpenAI edit failed", refundRef)
         console.error("[app-v3 edit] edit failed:", firstError)
         await logEditFailure("edit_failed", firstError)
         return NextResponse.json(
@@ -413,9 +417,7 @@ export async function POST(request: NextRequest) {
         contentType: "image/png",
       })
     } catch (blobError) {
-      await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "Blob upload failed", refundRef).catch(
-        () => {}
-      )
+      await refundOrAlert(CREDIT_COSTS.IMAGE, "Blob upload failed", refundRef)
       console.error("[app-v3 edit] blob upload failed:", blobError)
       return NextResponse.json(
         { error: "Failed to save the edit. Please try again." },
@@ -436,13 +438,23 @@ export async function POST(request: NextRequest) {
           ${neonUser.id}, ${blob.url}, ${imageTitle},
           (SELECT id FROM ai_images WHERE id = ${sourceImageId} AND user_id = ${neonUser.id}),
           ${instruction}, ${instruction},
-          ${"app-v3-edit-" + Date.now()}, 'completed', 'openai', ${format}, NOW()
+          ${requestRef + "-0"}, 'completed', 'openai', ${format}, NOW()
         )
         RETURNING id
       `
       insertedId = inserted[0]?.id ?? null
     } catch (dbError) {
       console.error("[app-v3 edit] DB insert failed (image saved to Blob):", dbError)
+      await logAdminError({
+        toolName: "app-v3-edit-gallery-insert",
+        error: dbError,
+        context: { userId: neonUser.id, format, requestRef },
+      }).catch(() => {})
+      await refundOrAlert(
+        CREDIT_COSTS.IMAGE,
+        "Edited image never reached the gallery",
+        `${refundRef}-partial`
+      )
     }
 
     // SUITE-UX-02 member pulse: edits are a strong engagement signal; the instruction text

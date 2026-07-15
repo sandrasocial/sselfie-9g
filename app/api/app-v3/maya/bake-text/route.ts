@@ -22,6 +22,7 @@ import {
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
+import { logAdminError } from "@/lib/admin-error-log"
 import { conceptRequestSize } from "@/lib/app-v3/prompt-compiler"
 import { sanitizeTextOverlaySpec } from "@/lib/app-v3/text-overlay"
 import { buildBakePrompt, sanitizeBakeStyleAdjustments } from "@/lib/app-v3/text-bake"
@@ -189,11 +190,13 @@ export async function POST(request: NextRequest) {
         { status: 402 }
       )
     }
+    const requestRef = `app-v3-gen-${neonUser.id}-${Date.now()}`
     const deduction = await deductCredits(
       neonUser.id,
       CREDIT_COSTS.IMAGE,
       "image",
-      `app-v3 text bake: ${spec.headline.slice(0, 50)}`
+      `app-v3 text bake: ${spec.headline.slice(0, 50)}`,
+      requestRef
     )
     if (!deduction.success) {
       return NextResponse.json(
@@ -202,16 +205,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const refundRef = `app-v3-bake-text-fail-${neonUser.id}-${Date.now()}`
+    const refundRef = requestRef
+    const refundOrAlert = async (amount: number, reason: string, ref: string) => {
+      try {
+        const result = await refundCredits(neonUser.id, amount, reason, ref)
+        if (!result.success) throw new Error(result.error || "refund reported failure")
+      } catch (refundError) {
+        console.error("[app-v3 bake-text] refund failed:", reason, refundError)
+        await logAdminError({
+          toolName: "app-v3-bake-text-refund",
+          error: refundError,
+          context: { userId: neonUser.id, amount, reason, ref },
+        }).catch(() => {})
+      }
+    }
     const openaiApiKey = process.env.OPENAI_API_KEY
     if (!openaiApiKey) {
       console.error("[app-v3 bake-text] OPENAI_API_KEY is not set in this environment.")
-      await refundCredits(
-        neonUser.id,
-        CREDIT_COSTS.IMAGE,
-        "OpenAI API key not configured",
-        refundRef
-      ).catch(() => {})
+      await refundOrAlert(CREDIT_COSTS.IMAGE, "OpenAI API key not configured", refundRef)
       await logBakeFailure("openai_not_configured", "missing key")
       return NextResponse.json(
         {
@@ -249,9 +260,7 @@ export async function POST(request: NextRequest) {
       if (!b64) throw new Error("No image data returned from OpenAI")
       imageBuffer = Buffer.from(b64, "base64")
     } catch (bakeError) {
-      await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "Text bake failed", refundRef).catch(
-        () => {}
-      )
+      await refundOrAlert(CREDIT_COSTS.IMAGE, "Text bake failed", refundRef)
       console.error("[app-v3 bake-text] bake failed:", bakeError)
       await logBakeFailure("bake_failed", bakeError)
       return NextResponse.json(
@@ -270,9 +279,7 @@ export async function POST(request: NextRequest) {
         contentType: "image/png",
       })
     } catch (blobError) {
-      await refundCredits(neonUser.id, CREDIT_COSTS.IMAGE, "Blob upload failed", refundRef).catch(
-        () => {}
-      )
+      await refundOrAlert(CREDIT_COSTS.IMAGE, "Blob upload failed", refundRef)
       console.error("[app-v3 bake-text] blob upload failed:", blobError)
       await logBakeFailure("blob_upload_failed", blobError)
       return NextResponse.json(
@@ -294,13 +301,23 @@ export async function POST(request: NextRequest) {
           ${neonUser.id}, ${blob.url}, ${imageTitle},
           (SELECT id FROM ai_images WHERE id = ${cleanImageId} AND user_id = ${neonUser.id}),
           ${spec.headline}, ${prompt.slice(0, 2000)},
-          ${"app-v3-bake-" + Date.now()}, 'completed', 'openai', ${spec.format || "text-bake"}, NOW()
+          ${requestRef + "-0"}, 'completed', 'openai', ${spec.format || "text-bake"}, NOW()
         )
         RETURNING id
       `
       insertedId = inserted[0]?.id ?? null
     } catch (dbError) {
       console.error("[app-v3 bake-text] DB insert failed (image saved to Blob):", dbError)
+      await logAdminError({
+        toolName: "app-v3-bake-text-gallery-insert",
+        error: dbError,
+        context: { userId: neonUser.id, format: spec.format, requestRef },
+      }).catch(() => {})
+      await refundOrAlert(
+        CREDIT_COSTS.IMAGE,
+        "Text image never reached the gallery",
+        `${refundRef}-partial`
+      )
     }
 
     return NextResponse.json({

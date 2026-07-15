@@ -40,6 +40,7 @@ export interface GalleryImage {
   style?: string
   is_favorite?: boolean
   variant_of?: number
+  prediction_id?: string
   created_at: string
   source: "ai_images" | "generated_images" | "feed"
   feed_layout_id?: number
@@ -79,6 +80,7 @@ export async function getUserImages(
         variant_of,
         is_favorite,
         source,
+        prediction_id,
         created_at
       FROM ai_images
       WHERE user_id = ${userId}
@@ -99,6 +101,7 @@ export async function getUserImages(
       style: img.style,
       is_favorite: img.is_favorite || false,
       variant_of: img.variant_of ? Number(img.variant_of) : undefined,
+      prediction_id: img.prediction_id || undefined,
       created_at: img.created_at,
       source: "ai_images" as const,
     }))
@@ -129,6 +132,7 @@ export async function getAllUserImages(userId: string): Promise<GalleryImage[]> 
         variant_of,
         is_favorite,
         source,
+        prediction_id,
         created_at
       FROM ai_images
       WHERE user_id = ${userId}
@@ -170,6 +174,7 @@ export async function getAllUserImages(userId: string): Promise<GalleryImage[]> 
         style: img.style,
         is_favorite: img.is_favorite || false,
         variant_of: img.variant_of ? Number(img.variant_of) : undefined,
+        prediction_id: img.prediction_id || undefined,
         created_at: img.created_at,
         source: "ai_images" as const,
       })),

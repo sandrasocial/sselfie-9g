@@ -23,6 +23,8 @@ export type AppV3GalleryAsset = {
   prompt?: string | null
   motionPrompt?: string | null
   status?: string | null
+  /** Internal generation correlation key used for exact lost-response recovery. */
+  generationRef?: string | null
   canFavorite: boolean
   canDelete: boolean
   canDownload: boolean
@@ -139,6 +141,7 @@ export function imageToGalleryAsset(image: GalleryImage): AppV3GalleryAsset | nu
     prompt: image.prompt || null,
     motionPrompt: null,
     status: null,
+    generationRef: cleanString(image.prediction_id) || null,
     canFavorite: image.id.startsWith("ai_") || image.id.startsWith("gen_"),
     canDelete: image.id.startsWith("ai_") || image.id.startsWith("gen_"),
     canDownload: true,

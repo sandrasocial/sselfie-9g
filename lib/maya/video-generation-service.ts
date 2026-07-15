@@ -1,12 +1,13 @@
+import { randomUUID } from "crypto"
 import { put } from "@vercel/blob"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { isVideoGenerationEnabled } from "@/lib/app-v3/video-flag"
 import {
-  addCredits,
   checkCredits,
   CREDIT_COSTS,
   deductCredits,
   getUserCredits,
+  refundCredits,
 } from "@/lib/credits"
 import { getDbClient } from "@/lib/db/client"
 import { generatePrompt } from "@/lib/generation/prompt"
@@ -102,22 +103,32 @@ async function logVideoGenerationFailure(input: {
  */
 async function refundVideoCredits(
   userId: string,
-  description: string
+  description: string,
+  referenceId: string
 ): Promise<{ refunded: boolean; refundError?: string }> {
   try {
-    const refund = await addCredits(userId, CREDIT_COSTS.ANIMATION, "refund", description)
+    const refund = await refundCredits(userId, CREDIT_COSTS.ANIMATION, description, referenceId)
     if (!refund.success) {
       console.error("[app-v3-video] Credit refund FAILED:", {
         userId,
         description,
+        referenceId,
         error: refund.error,
       })
-      return { refunded: false, refundError: refund.error ?? "addCredits returned success=false" }
+      return {
+        refunded: false,
+        refundError: refund.error ?? "refundCredits returned success=false",
+      }
     }
     return { refunded: true }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    console.error("[app-v3-video] Credit refund THREW:", { userId, description, error: message })
+    console.error("[app-v3-video] Credit refund THREW:", {
+      userId,
+      description,
+      referenceId,
+      error: message,
+    })
     return { refunded: false, refundError: message }
   }
 }
@@ -361,6 +372,7 @@ export async function startVideoGeneration(
 
   const userId = String(input.userId)
   const imageUrl = validateImageUrl(input.imageUrl)
+  const requestRef = `app-v3-video-${userId}-${randomUUID()}`
 
   let newBalance = 0
   if (!businessFunded) {
@@ -378,7 +390,13 @@ export async function startVideoGeneration(
     }
 
     const label = input.imageId ? `Animated image: ${input.imageId}` : "Animated image"
-    const deduction = await deductCredits(userId, CREDIT_COSTS.ANIMATION, "animation", label)
+    const deduction = await deductCredits(
+      userId,
+      CREDIT_COSTS.ANIMATION,
+      "animation",
+      label,
+      requestRef
+    )
     if (!deduction.success) {
       throw new VideoGenerationError("Could not deduct credits", 402, {
         error: "Could not deduct credits",
@@ -412,10 +430,7 @@ export async function startVideoGeneration(
     const message = error instanceof Error ? error.message : String(error)
     const refund: { refunded: boolean; refundError?: string } = businessFunded
       ? { refunded: false }
-      : await refundVideoCredits(
-          userId,
-          `Refund for failed app-v3 video generation: ${input.imageId || "image"}`
-        )
+      : await refundVideoCredits(userId, "Video generation failed to start", requestRef)
     await logVideoGenerationFailure({
       userId,
       stage: "create_prediction",
@@ -439,6 +454,7 @@ export async function startVideoGeneration(
         image_id,
         image_source,
         motion_prompt,
+        credit_reference_id,
         job_id,
         status,
         progress,
@@ -450,6 +466,7 @@ export async function startVideoGeneration(
         ${normalizeOptionalImageId(input.imageId)},
         ${imageUrl},
         ${finalMotionPrompt},
+        ${requestRef},
         ${prediction.id},
         'processing',
         0,
@@ -463,10 +480,7 @@ export async function startVideoGeneration(
     const message = error instanceof Error ? error.message : String(error)
     const refund: { refunded: boolean; refundError?: string } = businessFunded
       ? { refunded: false }
-      : await refundVideoCredits(
-          userId,
-          `Refund for unsaved app-v3 video generation: ${input.imageId || "image"}`
-        )
+      : await refundVideoCredits(userId, "Video generation could not be saved", requestRef)
     await logVideoGenerationFailure({
       userId,
       stage: "create_prediction",
@@ -501,7 +515,7 @@ export async function checkVideoGeneration(input: {
   const sql = getDbClient()
 
   const ownedRows = await sql`
-    SELECT id, status, error_message, billing_mode
+    SELECT id, status, video_url, error_message, billing_mode, credit_reference_id
     FROM generated_videos
     WHERE id = ${videoId}
       AND user_id = ${input.userId}
@@ -511,7 +525,31 @@ export async function checkVideoGeneration(input: {
   if (ownedRows.length === 0) {
     throw new VideoGenerationError("Video not found", 404, { error: "Video not found" })
   }
+  const persistedCreditReferenceId =
+    typeof ownedRows[0]?.credit_reference_id === "string" && ownedRows[0].credit_reference_id
+      ? ownedRows[0].credit_reference_id
+      : null
+  const creditReferenceId = persistedCreditReferenceId || `app-v3-video-failed-${videoId}`
+  const businessFunded = ownedRows[0]?.billing_mode === "business"
+  const refundIfMember = async (description: string) =>
+    businessFunded
+      ? { refunded: false }
+      : refundVideoCredits(String(input.userId), description, creditReferenceId)
+  if (
+    ownedRows[0]?.status === "completed" &&
+    typeof ownedRows[0]?.video_url === "string" &&
+    ownedRows[0].video_url
+  ) {
+    return {
+      status: "succeeded",
+      videoUrl: ownedRows[0].video_url,
+      progress: 100,
+    }
+  }
   if (ownedRows[0]?.status === "failed") {
+    // New rows retain the deduction reference, so a failed refund can safely retry.
+    // Legacy failed rows do not: the old flow may already have refunded them via addCredits.
+    if (persistedCreditReferenceId) await refundIfMember("Video generation failed")
     return {
       status: "failed",
       error:
@@ -545,14 +583,8 @@ export async function checkVideoGeneration(input: {
         AND status IS DISTINCT FROM 'failed'
       RETURNING id
     `
-    if (claimed.length > 0) {
-      const businessFunded = ownedRows[0]?.billing_mode === "business"
-      const refund: { refunded: boolean; refundError?: string } = businessFunded
-        ? { refunded: false }
-        : await refundVideoCredits(
-            String(input.userId),
-            `Refund for failed app-v3 video prediction: ${videoId}`
-          )
+    const refund = await refundIfMember("Video generation failed")
+    if (claimed.length > 0 || !refund.refunded) {
       await logVideoGenerationFailure({
         userId: String(input.userId),
         stage: "prediction_failed",
@@ -566,7 +598,7 @@ export async function checkVideoGeneration(input: {
     return { status: "failed", error: errorMessage }
   }
 
-  if (prediction.status !== "succeeded" || !prediction.output) {
+  if (prediction.status !== "succeeded") {
     const progress =
       prediction.status === "starting" ? 10 : prediction.status === "processing" ? 50 : 0
     await sql`
@@ -578,25 +610,83 @@ export async function checkVideoGeneration(input: {
     return { status: prediction.status, progress }
   }
 
+  if (!prediction.output) {
+    const errorMessage = "Video completed without a URL"
+    await sql`
+      UPDATE generated_videos
+      SET status = 'failed', error_message = ${errorMessage}, updated_at = NOW()
+      WHERE id = ${videoId}
+        AND user_id = ${input.userId}
+    `
+    const refund = await refundIfMember("Video could not be delivered")
+    await logVideoGenerationFailure({
+      userId: String(input.userId),
+      stage: "prediction_failed",
+      errorMessage,
+      videoId,
+      predictionId: input.predictionId,
+      refunded: refund.refunded,
+      refundError: refund.refundError,
+    })
+    return { status: "failed", error: errorMessage }
+  }
+
   const outputUrl = predictionOutputUrl(prediction.output)
   if (!outputUrl) {
-    throw new VideoGenerationError("Video completed without a URL", 500, {
-      error: "Video completed without a URL",
+    const errorMessage = "Video completed without a URL"
+    await sql`
+      UPDATE generated_videos
+      SET status = 'failed', error_message = ${errorMessage}, updated_at = NOW()
+      WHERE id = ${videoId}
+        AND user_id = ${input.userId}
+    `
+    const refund = await refundIfMember("Video could not be delivered")
+    await logVideoGenerationFailure({
+      userId: String(input.userId),
+      stage: "prediction_failed",
+      errorMessage,
+      videoId,
+      predictionId: input.predictionId,
+      refunded: refund.refunded,
+      refundError: refund.refundError,
     })
+    return { status: "failed", error: errorMessage }
   }
 
-  const videoResponse = await fetch(outputUrl)
-  if (!videoResponse.ok) {
-    throw new Error(`Failed to fetch video: ${videoResponse.status} ${videoResponse.statusText}`)
-  }
-  const videoBlob = await videoResponse.blob()
-  if (videoBlob.size === 0) throw new Error("Video blob is empty")
+  let blob
+  try {
+    const videoResponse = await fetch(outputUrl)
+    if (!videoResponse.ok) {
+      throw new Error(`Failed to fetch video: ${videoResponse.status} ${videoResponse.statusText}`)
+    }
+    const videoBlob = await videoResponse.blob()
+    if (videoBlob.size === 0) throw new Error("Video blob is empty")
 
-  const blob = await put(`maya-videos/${videoId}.mp4`, videoBlob, {
-    access: "public",
-    contentType: "video/mp4",
-    addRandomSuffix: true,
-  })
+    blob = await put(`maya-videos/${videoId}.mp4`, videoBlob, {
+      access: "public",
+      contentType: "video/mp4",
+      addRandomSuffix: true,
+    })
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    await sql`
+      UPDATE generated_videos
+      SET status = 'failed', error_message = ${errorMessage}, updated_at = NOW()
+      WHERE id = ${videoId}
+        AND user_id = ${input.userId}
+    `
+    const refund = await refundIfMember("Video could not be delivered")
+    await logVideoGenerationFailure({
+      userId: String(input.userId),
+      stage: "prediction_failed",
+      errorMessage,
+      videoId,
+      predictionId: input.predictionId,
+      refunded: refund.refunded,
+      refundError: refund.refundError,
+    })
+    return { status: "failed", error: "Video could not be saved. Your credits were returned." }
+  }
 
   await sql`
     UPDATE generated_videos

@@ -9,7 +9,7 @@ Companion doc for her earlier complaints: `docs/audits/MAYA_PROMPT_HANDOFF_AUDIT
 - Three "app-v3 photoshoot: Full photoshoot" charges of 8 credits at 12:21:38, 12:22:56 and
   12:23:36 UTC (`credit_transactions` 12470-12472).
 - All three shoots FINISHED on the server. 24 images, all with URLs, `generation_status
-  'completed'`, landed in `ai_images` at 12:24:33, 12:26:05 and 12:26:46 UTC. They are in her
+'completed'`, landed in `ai_images` at 12:24:33, 12:26:05 and 12:26:46 UTC. They are in her
   gallery. She was never told.
 - Her client showed the failure ~106 seconds into the first request
   (`suite_maya_recovery_shown reason=exception` at 12:23:27): the mobile connection dropped the
@@ -37,10 +37,12 @@ Companion doc for her earlier complaints: `docs/audits/MAYA_PROMPT_HANDOFF_AUDIT
 4. **Partial delivery kept full charge.** An image that reached Blob but failed its gallery
    insert (id null) was invisible to the member with no credit back.
 
-## Fixes shipped (branch `fix/maya-generation-credit-integrity`)
+## Fixes verified
+
+Branches: `fix/maya-generation-credit-integrity` and `codex/maya-credit-integrity-e2e`.
 
 - `app/api/app-v3/maya/generate/route.ts`
-  - One `requestRef` (`app-v3-gen-<userId>-<ts>`) now ties the charge
+  - One `requestRef` (`app-v3-gen-<userId>-<clientRequestId>`) now ties the charge
     (`credit_transactions.reference_id`), every stored image (`ai_images.prediction_id` =
     `<ref>-<i>`), and every refund (same ref or `<ref>-partial`) together.
   - `refundOrAlert` wrapper: a failed refund is logged to the admin error log, never swallowed.
@@ -51,22 +53,43 @@ Companion doc for her earlier complaints: `docs/audits/MAYA_PROMPT_HANDOFF_AUDIT
   shortfall idempotently (`<ref>-reconcile`). This closes every no-catch-possible path: Vercel
   timeout, crash after charge, failed refund write, lost response with retry.
 - `components/app-v3/maya-concierge.tsx`
-  - On a lost response (no parseable server reply), the card stays in its working state and the
-    client polls the gallery for up to 5 minutes; when the set lands it flips to done with the
-    real photos (`photoshoot_set_recovered`). Retap stays blocked while recovery runs.
+  - Every full shoot sends a client request id that is stamped onto the credit charge and all
+    gallery rows. Recovery now polls for that exact shoot, never a different recent shoot.
+  - On a lost response or parsed 5xx, the card stays in its working state and checks the gallery;
+    when the set lands it flips to done with the real photos (`photoshoot_set_recovered`). Retap
+    stays blocked while recovery runs. Partial delivered sets remain visible while missing legs
+    are refunded.
   - If nothing lands, the honest message: photos that finished are in the gallery, credits for
     photos that never arrived come back on their own.
   - A real server error (content policy etc., already refunded in-request) still shows
     immediately as before.
 - `tests/app-v3-credit-integrity.test.ts` pins the whole contract.
 
-## Known remaining gaps (follow-up spec for Codex)
+### Full pipeline follow-through
 
-- Edit (`app/api/app-v3/maya/edit`), bake (`bake-text`) and the in-generate auto-bake leg still
-  charge without a `reference_id`, so the reconcile net does not cover them. Exposure is 1
-  credit per ~60s request (vs 6-9 per 3-4 min). Give them the same requestRef pattern.
-- The structural fix for 3-4 minute requests on mobile is an async job: return a shoot id
-  immediately, client polls status. That removes the lost-response class entirely and should be
-  specced as its own task rather than patched further.
+- Edit, standalone text bake, and auto-bake now use the same request-reference, gallery-delivery,
+  partial-refund, and admin-alert contract.
+- Custom trained-model images now refund idempotently when Replicate cannot start, reports a
+  terminal failure, succeeds without an output, or the output cannot reach Blob. Ownership is
+  checked before Replicate is queried. Successful gallery rows retain the charge reference for
+  reconciliation.
+- Motion now uses `refundCredits` instead of `addCredits`, so refunds reduce `total_used` and do
+  not inflate `total_purchased`. Failed refunds retry idempotently on later status checks. Missing
+  provider output and Blob-delivery failures refund automatically.
+- `generated_videos.credit_reference_id` and its partial index were added in production and in the
+  repository migration. The five-minute reconcile job now covers regular images, edits, bakes,
+  custom-model images, and Motion. A completed Motion is valued at the full 10-credit animation
+  charge, preventing the safety net from issuing a false nine-credit refund.
+- Completed Motion status checks return the already-delivered video immediately. A repeated poll
+  cannot re-fetch the provider output, overwrite the row, or turn a completed video into a failure.
+- Reconciliation filters unresolved charges before its row limit. Settled high-volume traffic can
+  no longer starve older unresolved charges.
+
+## Remaining architectural hardening
+
+- Full photoshoots still execute within one server function. Exact request-correlated gallery
+  recovery removes the customer dead end, and ledger reconciliation prevents retained charges,
+  but an async durable job would reduce function-runtime pressure further. It is an architecture
+  improvement, not an unresolved credit-loss path.
 - Historical charges (before this deploy) have no reference_id and are invisible to the
   reconcile job by design; anything older is support-audited manually (done for July).

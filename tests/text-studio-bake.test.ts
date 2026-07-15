@@ -187,7 +187,11 @@ describe("bake route wiring (app/api/app-v3/maya/bake-text)", () => {
     expect(route).toContain('code: "insufficient_credits"')
     expect(route).toMatch(/deductCredits\(\s*neonUser\.id,\s*CREDIT_COSTS\.IMAGE,\s*"image"/)
     // Refunds on: missing key, bake failure, blob failure.
-    expect(route.match(/refundCredits\(/g)?.length).toBeGreaterThanOrEqual(3)
+    expect(route).toContain("const refundOrAlert = async (")
+    expect(route.match(/await refundOrAlert\(/g)?.length).toBeGreaterThanOrEqual(3)
+    expect(route).not.toMatch(
+      /refundCredits\([^)]*\)[\s\S]{0,40}?\.catch\(\s*\(\)\s*=>\s*\{\}\s*\)/
+    )
     expect(route).toContain("newBalance: deduction.newBalance")
   })
 

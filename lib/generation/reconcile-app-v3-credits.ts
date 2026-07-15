@@ -1,7 +1,7 @@
 import "server-only"
 
 import { getDb } from "@/lib/db/client"
-import { refundCredits } from "@/lib/credits"
+import { CREDIT_COSTS, refundCredits } from "@/lib/credits"
 import { acquireKvLock, releaseKvLock } from "@/lib/cache"
 
 /**
@@ -53,34 +53,89 @@ export async function reconcileAppV3GenerationCredits(input?: {
 
   try {
     const openCharges = (await sql`
-      SELECT
-        ct.user_id,
-        ct.reference_id,
-        (-ct.amount)::int AS charged,
-        (
-          SELECT COUNT(*)::int
-          FROM ai_images ai
-          WHERE ai.user_id = ct.user_id
-            AND ai.prediction_id LIKE ct.reference_id || '-%'
-        ) AS delivered,
-        COALESCE(
+      WITH generation_charges AS (
+        SELECT
+          ct.user_id,
+          ct.reference_id,
+          ct.created_at,
+          (-ct.amount)::int AS charged,
           (
-            SELECT SUM(r.amount)::int
-            FROM credit_transactions r
-            WHERE r.user_id = ct.user_id
-              AND r.transaction_type = 'refund'
-              AND (r.reference_id = ct.reference_id OR r.reference_id LIKE ct.reference_id || '-%')
-          ),
-          0
-        ) AS refunded
-      FROM credit_transactions ct
-      WHERE ct.transaction_type = 'image'
-        AND ct.reference_id LIKE 'app-v3-gen-%'
-        AND ct.created_at < NOW() - (${minAgeMinutes} * INTERVAL '1 minute')
-        AND ct.created_at > NOW() - (${maxAgeHours} * INTERVAL '1 hour')
-      ORDER BY ct.created_at DESC
+            SELECT COUNT(*)::int
+            FROM ai_images ai
+            WHERE ai.user_id = ct.user_id
+              AND (
+                ai.prediction_id LIKE ct.reference_id || '-%'
+                OR ai.prediction_id = ct.reference_id
+              )
+          ) AS delivered,
+          COALESCE(
+            (
+              SELECT SUM(r.amount)::int
+              FROM credit_transactions r
+              WHERE r.user_id = ct.user_id
+                AND r.transaction_type = 'refund'
+                AND (
+                  r.reference_id = ct.reference_id
+                  OR r.reference_id LIKE ct.reference_id || '-%'
+                )
+            ),
+            0
+          ) AS refunded
+        FROM credit_transactions ct
+        WHERE ct.transaction_type = 'image'
+          AND (
+            ct.reference_id LIKE 'app-v3-gen-%'
+            OR ct.reference_id LIKE 'app-v3-custom-model-%'
+          )
+          AND ct.created_at < NOW() - (${minAgeMinutes} * INTERVAL '1 minute')
+          AND ct.created_at > NOW() - (${maxAgeHours} * INTERVAL '1 hour')
+
+        UNION ALL
+
+        SELECT
+          ct.user_id,
+          ct.reference_id,
+          ct.created_at,
+          (-ct.amount)::int AS charged,
+          (
+            SELECT COUNT(*)::int * ${CREDIT_COSTS.ANIMATION}
+            FROM generated_videos v
+            WHERE v.user_id = ct.user_id
+              AND v.credit_reference_id = ct.reference_id
+              AND v.status = 'completed'
+              AND v.video_url IS NOT NULL
+          ) AS delivered,
+          COALESCE(
+            (
+              SELECT SUM(r.amount)::int
+              FROM credit_transactions r
+              WHERE r.user_id = ct.user_id
+                AND r.transaction_type = 'refund'
+                AND (
+                  r.reference_id = ct.reference_id
+                  OR r.reference_id LIKE ct.reference_id || '-%'
+                )
+            ),
+            0
+          ) AS refunded
+        FROM credit_transactions ct
+        WHERE ct.transaction_type = 'animation'
+          AND ct.reference_id LIKE 'app-v3-video-%'
+          AND ct.created_at < NOW() - (${minAgeMinutes} * INTERVAL '1 minute')
+          AND ct.created_at > NOW() - (${maxAgeHours} * INTERVAL '1 hour')
+      )
+      SELECT user_id, reference_id, charged, delivered, refunded
+      FROM generation_charges
+      WHERE charged > delivered + refunded
+      ORDER BY created_at ASC
       LIMIT ${limit}
-    `) as Array<{ user_id: string; reference_id: string; charged: number; delivered: number; refunded: number }>
+    `) as Array<{
+      user_id: string
+      reference_id: string
+      charged: number
+      delivered: number
+      refunded: number
+    }>
 
     scanned = openCharges.length
 

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const mockCheckCredits = vi.fn()
 const mockDeductCredits = vi.fn()
 const mockGetUserCredits = vi.fn()
-const mockAddCredits = vi.fn()
+const mockRefundCredits = vi.fn()
 const mockGetDbClient = vi.fn()
 const mockSql = vi.fn()
 const mockGeneratePrompt = vi.fn()
@@ -24,7 +24,7 @@ vi.mock("@/lib/credits", () => ({
   checkCredits: mockCheckCredits,
   deductCredits: mockDeductCredits,
   getUserCredits: mockGetUserCredits,
-  addCredits: mockAddCredits,
+  refundCredits: mockRefundCredits,
   CREDIT_COSTS: {
     ANIMATION: 10,
   },
@@ -82,7 +82,7 @@ describe("app-v3 video generation service", () => {
     mockCheckCredits.mockResolvedValue(true)
     mockDeductCredits.mockResolvedValue({ success: true, newBalance: 17 })
     mockGetUserCredits.mockResolvedValue(17)
-    mockAddCredits.mockResolvedValue({ success: true, newBalance: 20 })
+    mockRefundCredits.mockResolvedValue({ success: true, newBalance: 20, refunded: true })
     mockGetDbClient.mockReturnValue(mockSql)
     mockSql.mockResolvedValue([{ id: 77 }])
     delete process.env.APP_V3_VIDEO_MODEL
@@ -131,7 +131,13 @@ describe("app-v3 video generation service", () => {
         newBalance: 17,
       })
     )
-    expect(mockDeductCredits).toHaveBeenCalledWith("user-1", 10, "animation", "Animated image")
+    expect(mockDeductCredits).toHaveBeenCalledWith(
+      "user-1",
+      10,
+      "animation",
+      "Animated image",
+      expect.stringMatching(/^app-v3-video-user-1-/)
+    )
     expect(mockReplicateCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         model: "kwaivgi/kling-v3-omni-video",
@@ -174,7 +180,7 @@ describe("app-v3 video generation service", () => {
     expect(result).toMatchObject({ creditsDeducted: 0, newBalance: 0 })
     expect(mockCheckCredits).not.toHaveBeenCalled()
     expect(mockDeductCredits).not.toHaveBeenCalled()
-    expect(mockAddCredits).not.toHaveBeenCalled()
+    expect(mockRefundCredits).not.toHaveBeenCalled()
     const insertSql = (mockSql.mock.calls[0][0] as TemplateStringsArray).join(" ")
     expect(insertSql).toContain("billing_mode")
     expect(insertSql).toContain("source_context")
@@ -447,6 +453,34 @@ describe("app-v3 video generation service", () => {
     expect(updateSql).toContain("AND user_id =")
   })
 
+  it("returns an already delivered video without re-fetching or risking a later refund", async () => {
+    mockSql.mockResolvedValueOnce([
+      {
+        id: 77,
+        status: "completed",
+        video_url: "https://blob.example.com/existing.mp4",
+        credit_reference_id: "app-v3-video-user-1-request",
+      },
+    ])
+
+    const { checkVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    await expect(
+      checkVideoGeneration({
+        userId: "user-1",
+        predictionId: "pred_video_123",
+        videoId: 77,
+      })
+    ).resolves.toEqual({
+      status: "succeeded",
+      videoUrl: "https://blob.example.com/existing.mp4",
+      progress: 100,
+    })
+    expect(mockReplicateGet).not.toHaveBeenCalled()
+    expect(mockPut).not.toHaveBeenCalled()
+    expect(mockRefundCredits).not.toHaveBeenCalled()
+  })
+
   it("refunds credits once when Replicate marks the prediction failed", async () => {
     mockReplicateGet.mockResolvedValue({
       status: "failed",
@@ -454,7 +488,13 @@ describe("app-v3 video generation service", () => {
     })
     // Owner select, then the atomic failed-claim UPDATE returning the claimed row.
     mockSql
-      .mockResolvedValueOnce([{ id: 77, status: "processing" }])
+      .mockResolvedValueOnce([
+        {
+          id: 77,
+          status: "processing",
+          credit_reference_id: "app-v3-video-user-1-request",
+        },
+      ])
       .mockResolvedValueOnce([{ id: 77 }])
 
     const { checkVideoGeneration } = await import("@/lib/maya/video-generation-service")
@@ -469,12 +509,12 @@ describe("app-v3 video generation service", () => {
       status: "failed",
       error: "An error occurred while processing your request (E002)",
     })
-    expect(mockAddCredits).toHaveBeenCalledTimes(1)
-    expect(mockAddCredits).toHaveBeenCalledWith(
+    expect(mockRefundCredits).toHaveBeenCalledTimes(1)
+    expect(mockRefundCredits).toHaveBeenCalledWith(
       "user-1",
       10,
-      "refund",
-      "Refund for failed app-v3 video prediction: 77"
+      "Video generation failed",
+      "app-v3-video-user-1-request"
     )
     const updateSql = (mockSql.mock.calls[1][0] as TemplateStringsArray).join(" ")
     expect(updateSql).toContain("SET status = 'failed'")
@@ -494,7 +534,7 @@ describe("app-v3 video generation service", () => {
     )
   })
 
-  it("does not refund when a concurrent poll already claimed the failed transition", async () => {
+  it("uses an idempotent refund when a concurrent poll already claimed the failed transition", async () => {
     mockReplicateGet.mockResolvedValue({
       status: "failed",
       error: "An error occurred while processing your request (E002)",
@@ -514,7 +554,12 @@ describe("app-v3 video generation service", () => {
       status: "failed",
       error: "An error occurred while processing your request (E002)",
     })
-    expect(mockAddCredits).not.toHaveBeenCalled()
+    expect(mockRefundCredits).toHaveBeenCalledWith(
+      "user-1",
+      10,
+      "Video generation failed",
+      "app-v3-video-failed-77"
+    )
     expect(mockLogAnalyticsEvent).not.toHaveBeenCalled()
   })
 
@@ -532,7 +577,7 @@ describe("app-v3 video generation service", () => {
     })
 
     expect(result).toEqual({ status: "failed", error: "provider failed" })
-    expect(mockAddCredits).not.toHaveBeenCalled()
+    expect(mockRefundCredits).not.toHaveBeenCalled()
   })
 
   it("refunds and logs a persistent failure event when creating the prediction fails", async () => {
@@ -551,11 +596,11 @@ describe("app-v3 video generation service", () => {
       payload: expect.objectContaining({ error: "Failed to generate video" }),
     })
 
-    expect(mockAddCredits).toHaveBeenCalledWith(
+    expect(mockRefundCredits).toHaveBeenCalledWith(
       "user-1",
       10,
-      "refund",
-      expect.stringContaining("Refund for failed app-v3 video generation")
+      "Video generation failed to start",
+      expect.stringMatching(/^app-v3-video-user-1-/)
     )
     expect(mockLogAnalyticsEvent).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -579,7 +624,12 @@ describe("app-v3 video generation service", () => {
     mockSql
       .mockResolvedValueOnce([{ id: 77, status: "processing" }])
       .mockResolvedValueOnce([{ id: 77 }])
-    mockAddCredits.mockResolvedValue({ success: false, newBalance: 0, error: "db down" })
+    mockRefundCredits.mockResolvedValue({
+      success: false,
+      newBalance: 0,
+      refunded: false,
+      error: "db down",
+    })
 
     const { checkVideoGeneration } = await import("@/lib/maya/video-generation-service")
 
@@ -620,12 +670,13 @@ describe("app-v3 video generation service", () => {
     expect(mockReplicateCreate).not.toHaveBeenCalled()
   })
 
-  it("does not refund a video row already marked failed", async () => {
+  it("retries the idempotent refund for a video row already marked failed", async () => {
     mockSql.mockResolvedValueOnce([
       {
         id: 77,
         status: "failed",
         error_message: "An error occurred while processing your request (E002)",
+        credit_reference_id: "app-v3-video-user-1-request",
       },
     ])
 
@@ -642,6 +693,91 @@ describe("app-v3 video generation service", () => {
       error: "An error occurred while processing your request (E002)",
     })
     expect(mockReplicateGet).not.toHaveBeenCalled()
-    expect(mockAddCredits).not.toHaveBeenCalled()
+    expect(mockRefundCredits).toHaveBeenCalledWith(
+      "user-1",
+      10,
+      "Video generation failed",
+      "app-v3-video-user-1-request"
+    )
+  })
+
+  it("does not double-refund a legacy failed video that has no credit reference", async () => {
+    mockSql.mockResolvedValueOnce([
+      {
+        id: 77,
+        status: "failed",
+        error_message: "Legacy generation failed",
+        credit_reference_id: null,
+      },
+    ])
+
+    const { checkVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    await expect(
+      checkVideoGeneration({
+        userId: "user-1",
+        predictionId: "pred_video_123",
+        videoId: 77,
+      })
+    ).resolves.toEqual({ status: "failed", error: "Legacy generation failed" })
+    expect(mockReplicateGet).not.toHaveBeenCalled()
+    expect(mockRefundCredits).not.toHaveBeenCalled()
+  })
+
+  it("refunds when a completed prediction cannot be delivered to Blob", async () => {
+    mockReplicateGet.mockResolvedValue({
+      status: "succeeded",
+      output: "https://replicate.example.com/video.mp4",
+    })
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        blob: async () => new Blob([new ArrayBuffer(2048)], { type: "video/mp4" }),
+      })
+    )
+    mockPut.mockRejectedValueOnce(new Error("Blob unavailable"))
+    mockSql
+      .mockResolvedValueOnce([{ id: 77, status: "processing" }])
+      .mockResolvedValueOnce([{ id: 77 }])
+
+    const { checkVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    await expect(
+      checkVideoGeneration({
+        userId: "user-1",
+        predictionId: "pred_video_123",
+        videoId: 77,
+      })
+    ).resolves.toMatchObject({ status: "failed" })
+    expect(mockRefundCredits).toHaveBeenCalledWith(
+      "user-1",
+      10,
+      "Video could not be delivered",
+      "app-v3-video-failed-77"
+    )
+  })
+
+  it("refunds a succeeded video prediction with no output", async () => {
+    mockReplicateGet.mockResolvedValue({ status: "succeeded", output: null })
+    mockSql
+      .mockResolvedValueOnce([{ id: 77, status: "processing" }])
+      .mockResolvedValueOnce([{ id: 77 }])
+
+    const { checkVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    await expect(
+      checkVideoGeneration({
+        userId: "user-1",
+        predictionId: "pred_video_123",
+        videoId: 77,
+      })
+    ).resolves.toMatchObject({ status: "failed" })
+    expect(mockRefundCredits).toHaveBeenCalledWith(
+      "user-1",
+      10,
+      "Video could not be delivered",
+      "app-v3-video-failed-77"
+    )
   })
 })
