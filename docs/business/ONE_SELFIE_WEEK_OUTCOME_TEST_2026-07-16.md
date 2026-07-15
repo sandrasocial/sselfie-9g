@@ -1,9 +1,38 @@
-# One Selfie, One Week of Content — the outcome pivot and its test
+# Your Next Campaign — the outcome pivot and its test (v2, merged)
 
-Status: DECISION CONTRACT. Drafted 2026-07-14 during the One Selfie event, from two independent
-audits (Claude 2026-07-13, Codex 2026-07-14) that converged on the same diagnosis. Sandra approves
-before build. Supersedes leak-patching as the operating focus. The Brand Constitution still governs
-all copy and ethics.
+Status: DECISION CONTRACT v2, 2026-07-14 evening. Merges THREE independent audits (Claude
+2026-07-13 chat audit; Codex 2026-07-14 audit; Claude 2026-07-14 truth investigation
+`docs/audits/SSELFIE_TRUTH_INVESTIGATION_2026-07-14.md`; Codex 2026-07-14 second audit with Stripe
+cancellation evidence). Sandra approves before build. The Brand Constitution governs all copy.
+
+## v2 changes (what the audit comparison settled)
+
+1. **Scope tightened from "one week of content" to ONE CAMPAIGN** (Codex's correction, adopted):
+   one selfie + what she's promoting → THREE coordinated posts (attention / trust / offer), each
+   with its visual, words, CTA, and publishing order. "The next thing you need to promote is
+   ready" — not "30 days of content" (which reads as homework). Price test: **$97** (a real $97
+   event buyer exists as of 2026-07-14 09:23, verified in stripe_payments).
+2. **Pull before push** (the one real strategic disagreement, resolved): do NOT lead with the
+   Monthly Drop subscription offer at delivery. Measure PAID repeat instead: "Create my next
+   campaign — $97" → after a first repeat, offer **3 campaign credits ≈ $249** → offer SUITE only
+   after 2+ campaigns, framed as an efficiency decision ("you use this regularly — keep Maya, your
+   brand memory, campaigns, and monthly creation in one place"). The Monthly Brand Drop (truth
+   investigation Part 6) becomes what the earned SUITE DELIVERS monthly, not the first
+   recurring ask. Stripe's own cancellation words decide this: "I dont need them every month."
+3. **Keyword: CAMPAIGN.** Audience callout: "for women who already sell something and need to
+   promote it." Qualified-traffic content plan remains mandatory (unchanged from v1).
+4. **Multi-cause churn acknowledged** (Codex evidence, Stripe cancellation records n=35):
+   11 payment failures (31% involuntary!), 8 "unused", 4 "too expensive", 10 other; verbatim:
+   "The photos just never looked exactly like me", "I could see it's AI. Even my friends saw it
+   immediately". Packaging alone does not fix likeness quality, visible-AI tells, reliability, or
+   dunning. Therefore: **immediate action independent of the pivot — verify/enable Stripe failed-
+   payment recovery (dunning + Smart Retries)**; and the still-you guarantee stays load-bearing.
+5. **Caveat honored:** all canceled cohorts experienced pre-July-13 Maya; the simplified
+   first-result flow has no mature cohort yet. Quality conclusions are about the OLD experience.
+6. **Existing members grandfathered.** No forced commercial change on current customers.
+7. Manual fulfillment: the founding batch (≤10 orders) is a validation concierge — Maya produces,
+   Sandra QAs minutes per order. The MODEL is automated; nothing depends on Sandra fulfilling
+   low-priced orders at steady state.
 
 ## The diagnosis both audits agree on
 
@@ -71,19 +100,22 @@ plan: hooks addressed to women who SELL something ("you have an offer and no pho
 the warm sell, feed staying cold-reach. Buyer-intent qualification question at checkout or delivery
 ("what do you sell?") — required for fulfillment anyway, doubles as segment truth.
 
-## Gates (Codex's, adopted — they separate marketing problems from product problems)
+## Gates (v2 — merged, Codex's granular set adopted)
 
-Over a 14-day test window:
+Over the test window (do not judge before ~20 buyers on repeat behavior):
 
-- ≥200 qualified landing visitors (tracked, post-fix — see below).
-- ≥10% checkout start.
-- ≥2-3% purchase (4-6+ buyers minimum signal; interpret small samples with humility).
-- ≥50% open/download their delivery; ≥25% buy or request a second week within days 8-14.
-- Refunds <5%.
+- ≥200 qualified landing visitors → ≥20 checkout starts (10%).
+- Purchases: 6+ from the first 200 = strong; 4-5 = uncertain; ≤3 = promise/segment/price failed.
+- ≥70% of buyers complete the inputs and create; ≥60% download a finished campaign.
+- ≥40% confirm they published something within 7 days.
+- Refunds <5%; automatic redo/quality failures <10%.
+- **≥25% buy a SECOND campaign within 30-45 days** before treating this as a subscription job.
+  Never ask "would you subscribe" — measure whether they pay for the job again.
 
-Readings: fewer than ~4 buyers from 200 qualified visitors → change promise or segment. Buyers who
-don't return → change the product. Buyers who return → scale it, then earn the right to make it
-recurring.
+Failure decode: qualified visitors don't start checkout → offer mismatch. Start but don't pay →
+price/proof/trust. Pay but don't create → activation. Create but don't download → quality.
+Download but don't publish → outcome not useful enough. Publish but never rebuy → valuable
+episodic product (still a business). Rebuy → SUITE has earned its subscription.
 
 ## Preconditions (Thursday 2026-07-16, before any build)
 
