@@ -30,14 +30,16 @@ No-Fake psychology doctrine, design system.
    - Subline v2 — destination first, freeze as recognition, itemization moved OUT (the
      what-you-get panel below the fold carries it): **"For the woman who knows what she's
      building and freezes when it's time to post. One selfie becomes the campaign that
-     finally makes you visible for it."**
+     finally shows people what you're building."**
    Rules unchanged: never "promote" as the selling verb; claims line-checkable (one
    campaign, never "months of content"); itemized list stays structurally on the page
    (it is what separates $97 from template packs) — it just doesn't live in the subline.
 2b. **The "Sandra checks" panel goes first-person — the human layer is the premium.**
    Replace the third panel's body with a signed line: **"I look at every image before it
-   reaches you. If you don't recognize yourself in a photo, I redo it. Your campaign lands
-   within 48 hours. · Sandra"** (Most AI tools are upload, generate, good luck. A named
+   reaches you. If you don't recognize yourself in a photo, I'll redo it. Your campaign
+   lands within 48 hours. · Sandra"**
+   (First-person note says "I'll redo it" — warmer; the neutral site-wide guarantee line
+   stays exactly as Sandra approved it: "we redo it". Both are correct in their voice.) (Most AI tools are upload, generate, good luck. A named
    human who checks the work is the reassurance buyers at $97 are actually paying for —
    say it in her voice, not in feature language.)
 2c. **One emotional anchor line above the final CTA** (the transformation, Constitution-

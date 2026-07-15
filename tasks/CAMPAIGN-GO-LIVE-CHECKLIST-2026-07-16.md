@@ -53,7 +53,10 @@ launch moves to Friday only if a gate fails, never for polish.
 6. [S] Send the launch email (your approved draft, attended send) · post the reel · run
    the launch Stories · turn on the ManyChat CAMPAIGN keyword (setup card provided).
 7. [Cl] Live monitoring: checkout starts, orders, generation health, redo requests (the
-   price-holding metric from order one), QA queue depth. Founding batch stays ≤10 orders
+   price-holding metric from order one), QA queue depth. Also: per-asset download ranking
+   (which deliverable excites buyers most — reel vs photos vs carousel is queryable from
+   the asset-type events) and Sandra collects buyer DM quotes VERBATIM (their words become
+   the next copy iteration; ours are done). Founding batch stays ≤10 orders
    with Sandra QA per order; if orders run past the cap, the honest lever is stated
    delivery time, never fake scarcity.
 
