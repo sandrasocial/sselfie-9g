@@ -67,7 +67,7 @@ It's $97 once. No subscription, nothing recurring, no catch.
 Right now I'm personally checking every single order before it reaches you, because these
 are the first ones and I want them right.
 
-If you're building something and you've got nothing ready to post, this is for you.
+If you're building something of your own and freeze every time it's time to post, this is for you.
 
 [Create my campaign]
 (https://sselfie.ai/campaign?source=email&utm_source=email&utm_medium=broadcast&utm_campaign=campaign_outcome_test&cta_keyword=CAMPAIGN)

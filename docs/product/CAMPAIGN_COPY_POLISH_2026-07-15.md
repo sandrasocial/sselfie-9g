@@ -20,11 +20,19 @@ No-Fake psychology doctrine, design system.
    Redo limits live in policy/support, not on the sales page.
    (Sandra also approved the rest of this sheet as drafted the same day — items 2-12 may be
    implemented with the draft wording below; she may still refine exact words before flag-on.)
-2. **"A paid SSELFIE outcome" (hero eyebrow)** is internal strategy vocabulary. Replace with
-   the audience qualifier — UPDATED 2026-07-15 after the behavior analysis (see market-intel
-   memo 3b): **"For women building something"**. Full campaign frame: "Everything you need
-   to promote what you're building, starting with one selfie." The subline then says what
-   she GETS (reel, posts, photos, carousel, Stories, plan).
+2. **Hero copy — FINAL RECOMMENDED SET (2026-07-15 evening, post behavior analysis + swap
+   test; Sandra locks the words):**
+   - Eyebrow: **"For women building something of their own"** (qualifier slot — the
+     Constitution's phrase; emotion lives in the lines below, not the label).
+   - H1 stays: **"Give Maya one selfie. Leave with your next campaign."** (mechanism-first,
+     passes the swap test — no competitor can say it.)
+   - Subline (replaces "For women who already have something to sell…"): **"For the woman
+     who knows what she's building and still freezes when it's time to post. One selfie
+     becomes the reel, the posts, the photos, the Stories, and the plan."**
+   Rationale: qualifier = direction (the behavior data), emotion = the freeze moment (her
+   proven content territory), mechanism = one-selfie-in (ownable). Never use "promote" as
+   the selling verb in customer copy; the buyer wants to build, show up, be recognized.
+   Claims stay line-checkable: one campaign, never "months of content."
 3. **"five-day order" → "five-day plan" everywhere.** "Order" collides with purchase-order.
    Appears: landing subline ("five-day order for one promotion"), delivery email ("the
    five-day order Maya prepared"), buyer page section header ("Your five-day order"). The

@@ -101,10 +101,13 @@ The 130 empties are commercially inert today (1 payer): whatever they are, they 
 segment to target; they are a nurture pool. This corrects the earlier read that "creators
 are the plurality → creators are the segment."
 
-Positioning consequence (adopted): brand-level — "For women building a personal brand who
-want to show up consistently, with content that still looks and feels like them." Campaign
-sharpening — "Everything you need to promote what you're building, starting with one
-selfie." The qualifier word is BUILDING: it selects for direction and specificity without
+Positioning consequence (REFINED same evening after swap-test critique): brand level is
+already owned and locked in the Constitution — "This was never just about selfies. It was
+about becoming visible enough to build something of your own." Product level: eyebrow
+"For women building something of their own"; H1 unchanged ("Give Maya one selfie. Leave
+with your next campaign."); subline carries the MOMENT — "For the woman who knows what
+she's building and still freezes when it's time to post." Never sell with the verb
+"promote". The qualifier word is BUILDING: it selects for direction and specificity without
 requiring an existing offer, matches the Constitution ("build something of your own"), and
 matches who actually engages and pays. Instrumentation gap found: `suite_intent_detected`
 events carry no intent label (360 events, all unlabeled) — small Codex fix so "what
