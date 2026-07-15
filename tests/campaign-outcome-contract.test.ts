@@ -62,7 +62,9 @@ describe("Your Next Campaign product contract", () => {
     expect(intake).toContain("MIN_SHORT_SIDE = 512")
     expect(intake).toContain("after(async () =>")
     const admin = read("app/api/admin/campaigns/route.ts")
-    expect(admin).toContain('"approve", "regenerate", "resend_delivery"')
+    expect(admin).toContain('"approve"')
+    expect(admin).toContain('"regenerate"')
+    expect(admin).toContain('"resend_delivery"')
     expect(admin).toContain("requireAdmin")
   })
 
@@ -81,6 +83,8 @@ describe("Your Next Campaign product contract", () => {
     expect(types).toContain("carousel: CampaignCarousel")
     expect(types).toContain("storySequences: CampaignStorySequence[]")
     expect(types).toContain("publishPlan: CampaignPublishDay[]")
+    expect(types).toContain("reel: CampaignReel")
+    expect(types).toContain("traceability: CampaignTraceability")
 
     for (const event of [
       "campaign_landing_view",
@@ -99,7 +103,9 @@ describe("Your Next Campaign product contract", () => {
     const campaignCheckout = read("app/checkout/campaign/page.tsx")
     const sharedCheckout = read("app/checkout/page.tsx")
     expect(campaignCheckout).not.toContain('eventName: "campaign_checkout_start"')
-    expect(sharedCheckout).toContain('if (productType === "campaign_outcome") return "campaign_checkout_start"')
+    expect(sharedCheckout).toContain(
+      'if (productType === "campaign_outcome") return "campaign_checkout_start"'
+    )
   })
 
   it("never creates an account or grants credits for the guest-safe campaign", () => {
@@ -113,7 +119,9 @@ describe("Your Next Campaign product contract", () => {
     expect(lifecycle).toContain('productType === "campaign_outcome"')
     expect(lifecycle).toContain("handleCampaignOutcomeCheckout")
     expect(lifecycle).toContain("Campaign revenue recording failed")
-    expect(read("app/api/webhooks/stripe/route.ts")).toContain('case "checkout.session.async_payment_succeeded"')
+    expect(read("app/api/webhooks/stripe/route.ts")).toContain(
+      'case "checkout.session.async_payment_succeeded"'
+    )
     const endpointSetup = read("scripts/stripe/fix-webhook-endpoints.ts")
     expect(endpointSetup).toContain('"checkout.session.async_payment_succeeded"')
     expect(endpointSetup).toContain("stripe.webhookEndpoints.update")
@@ -125,5 +133,51 @@ describe("Your Next Campaign product contract", () => {
     expect(`${landing}\n${order}`).not.toMatch(/join suite|monthly membership|course access/i)
     expect(landing).toContain("One payment. No subscription.")
     expect(order).toContain("Another one-time purchase. No subscription.")
+  })
+
+  it("uses Sandra-approved campaign copy and removes internal wording", () => {
+    const landing = read("components/campaign/campaign-landing.tsx")
+    const order = read("components/campaign/campaign-order-experience.tsx")
+    const emails = read("lib/campaign-outcome/emails.ts")
+    const recovery = read("lib/campaign-outcome/recovery-emails.ts")
+    const allCopy = `${landing}\n${order}\n${emails}\n${recovery}`
+
+    expect(landing).toContain("For women building something of their own")
+    expect(landing).toContain(
+      "For the woman who knows what she's building and freezes when it's time to post."
+    )
+    expect(landing).toContain("If you don't recognize yourself in a photo, we redo it.")
+    expect(landing).toContain("One reel, ready to assemble")
+    expect(order).toContain("Tell Maya what you're promoting.")
+    expect(order).toContain("Posted. That is exactly what this was for.")
+    expect(order).toContain("No stress. Day one is the smallest step, start there.")
+    expect(order).toContain("Call to action:")
+    expect(emails).toContain("Start with post one today. It is marked at the top of your page.")
+    expect(emails).toContain("No pressure either way, I just want to know if it helped.")
+    expect(allCopy).not.toContain("five-day order")
+    expect(allCopy).not.toContain("identity reference")
+    expect(allCopy).not.toContain("admin queue")
+    expect(order).not.toContain("window.location.reload()")
+    expect(landing).not.toContain("border-l-2")
+    expect(order).not.toContain("border-l-2")
+  })
+
+  it("keeps the campaign and its reel grounded and reviewable", () => {
+    const generator = read("lib/campaign-outcome/generator.ts")
+    const admin = read("components/admin/campaign-outcome-queue.tsx")
+    const adminApi = read("app/api/admin/campaigns/route.ts")
+
+    expect(generator).toContain("loadCampaignPatternCorpus")
+    expect(generator).toContain("validateCampaignReelPlan")
+    expect(generator).toContain("generateCampaignReelClips")
+    expect(generator).toContain("overlayPlacements")
+    expect(read("components/campaign/campaign-order-experience.tsx")).toContain(
+      "Put each line here"
+    )
+    expect(admin).toContain("Reel traceability")
+    expect(admin).toContain("Redo request rate")
+    expect(admin).toContain("Refund request rate")
+    expect(adminApi).toContain("record_redo_request")
+    expect(adminApi).toContain("record_refund_request")
   })
 })

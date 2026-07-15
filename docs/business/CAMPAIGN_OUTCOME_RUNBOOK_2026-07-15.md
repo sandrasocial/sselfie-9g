@@ -1,6 +1,6 @@
 # Your Next Campaign: held release and founder runbook
 
-Status: BUILT ON HELD BRANCH. NOT LIVE. Customer copy is DRAFT until Sandra approves it.
+Status: BUILT ON HELD BRANCH. NOT LIVE. Campaign copy approved by Sandra 2026-07-15.
 
 Branch: `codex/campaign-outcome-held`
 
@@ -10,7 +10,7 @@ Binding strategy contract: `docs/business/ONE_SELFIE_WEEK_OUTCOME_TEST_2026-07-1
 
 ## What was built
 
-Your Next Campaign is a $97 one-time product for women who already sell something.
+Your Next Campaign is a $97 one-time product for women building something of their own.
 
 The buyer gives Maya:
 
@@ -27,6 +27,8 @@ Maya creates one complete campaign kit:
 3. One finished seven-slide carousel.
 4. Two finished five-frame Story sequences.
 5. One five-day publishing plan.
+6. One reel ready to assemble: specific hook and script, one buyer-filmed direction, up to three
+   animated b-roll clips, overlays, assembly order, caption, and call to action.
 
 Every asset serves the same promotion. The slide renderer uses the six generated photos as the
 visual world and adds exact readable text after image generation. Sandra checks the founding-batch
@@ -42,7 +44,8 @@ This product does not create an account, grant credits, enroll anyone in a cours
 4. Private intake email
 5. `/campaign/order/[token]`
 6. Selfie and offer intake
-7. Maya campaign planning, six-photo generation, and deterministic carousel/Story rendering
+7. Maya campaign planning, six-photo generation, deterministic carousel/Story rendering, and the
+   business-funded reel clip path
 8. Admin quality check
 9. Delivery email and private buyer page
 10. Download individual assets or the complete ZIP, and copy feed captions
@@ -84,16 +87,18 @@ Admin > Campaigns
 For each order:
 
 1. Check that the woman still looks like herself.
-2. Check the feed copy, all seven carousel slides, and both Story sequences.
+2. Check the feed copy, reel traceability, b-roll clips, all seven carousel slides, and both Story
+   sequences.
 3. Check that every asset matches what she actually sells and promotes.
 4. Choose **Approve and deliver**.
 5. If the face, words, or campaign direction is wrong, choose **Regenerate** instead.
 
 The delivery email sends only after approval. Test-mode orders never email customers.
 
-## Draft copy approval
+## Copy approval
 
-The following copy is deliberately marked DRAFT in code and requires Sandra's approval before the feature flag opens:
+Sandra approved the campaign copy in `docs/product/CAMPAIGN_COPY_POLISH_2026-07-15.md`. Recheck
+these surfaces before any future flag decision:
 
 - `/campaign` landing page
 - Campaign payment-page copy

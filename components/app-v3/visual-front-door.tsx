@@ -295,7 +295,13 @@ export function VisualFrontDoor({
     })
     void trackAnalyticsEvent({
       event: "suite_intent_detected",
-      properties: { cohort, action, format, confidence },
+      properties: {
+        cohort,
+        action,
+        intent_label: format ?? "needs_clarify",
+        format,
+        confidence,
+      },
     })
   }
 

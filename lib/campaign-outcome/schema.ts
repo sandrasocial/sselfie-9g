@@ -33,6 +33,8 @@ export async function ensureCampaignOutcomeSchema(): Promise<void> {
       generation_attempts INTEGER NOT NULL DEFAULT 0,
       generation_error TEXT,
       admin_notes TEXT,
+      redo_requested_at TIMESTAMPTZ,
+      refund_requested_at TIMESTAMPTZ,
       is_test_mode BOOLEAN NOT NULL DEFAULT FALSE,
       purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       intake_email_sent_at TIMESTAMPTZ,
@@ -67,6 +69,22 @@ export async function ensureCampaignOutcomeSchema(): Promise<void> {
   await sql`
     ALTER TABLE campaign_orders
     ADD COLUMN IF NOT EXISTS voice_reference TEXT
+  `
+  await sql`
+    ALTER TABLE campaign_orders
+    ADD COLUMN IF NOT EXISTS redo_requested_at TIMESTAMPTZ
+  `
+  await sql`
+    ALTER TABLE campaign_orders
+    ADD COLUMN IF NOT EXISTS refund_requested_at TIMESTAMPTZ
+  `
+  await sql`
+    ALTER TABLE generated_videos
+    ADD COLUMN IF NOT EXISTS billing_mode TEXT NOT NULL DEFAULT 'member_credits'
+  `
+  await sql`
+    ALTER TABLE generated_videos
+    ADD COLUMN IF NOT EXISTS source_context TEXT
   `
   await sql`
     CREATE INDEX IF NOT EXISTS idx_campaign_orders_status_created

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
 import {
@@ -99,5 +100,16 @@ describe("analytics event contract", () => {
     expect(isAllowedAnalyticsEventName("first_action_selected")).toBe(true)
     expect(isAllowedAnalyticsEventName("suite_maya_inline_started")).toBe(true)
     expect(isAllowedAnalyticsEventName("suite_generation_path_completed")).toBe(true)
+  })
+
+  it("labels every suite intent event so intent is queryable", () => {
+    const concierge = readFileSync("components/app-v3/maya-concierge.tsx", "utf8")
+    const frontDoor = readFileSync("components/app-v3/visual-front-door.tsx", "utf8")
+    const events = readFileSync("lib/analytics/events.ts", "utf8")
+    const schema = readFileSync("lib/analytics/schema.ts", "utf8")
+    expect(concierge).toContain('intent_label: intent.format ?? "needs_clarify"')
+    expect(frontDoor).toContain('intent_label: format ?? "needs_clarify"')
+    expect(events).toContain('eventName === "suite_intent_detected"')
+    expect(schema).toContain("NOT (properties ? 'intent_label')")
   })
 })

@@ -7,6 +7,13 @@ import { z } from "zod"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { renderCampaignSlide } from "@/lib/campaign-outcome/slide-renderer"
 import { ensureCampaignOutcomeSchema } from "@/lib/campaign-outcome/schema"
+import {
+  buildCampaignTraceability,
+  generateCampaignReelClips,
+  loadCampaignPatternCorpus,
+  resolveCampaignVideoOwnerUserId,
+  validateCampaignReelPlan,
+} from "@/lib/campaign-outcome/reel"
 import type {
   CampaignData,
   CampaignPhoto,
@@ -65,21 +72,49 @@ const planSchema = z.object({
     .array(
       z.object({
         day: z.number().int().min(1).max(5),
-        asset: z.enum([
-          "attention_post",
-          "warmup_stories",
-          "carousel",
-          "trust_post",
-          "offer_post",
-        ]),
+        asset: z.enum(["attention_post", "warmup_stories", "carousel", "trust_post", "offer_post"]),
         instruction: z.string().min(5).max(300),
       })
     )
     .length(5),
+  reel: z.object({
+    hook: z.string().min(12).max(180),
+    script: z.string().min(40).max(900),
+    selfFilmedClipInstruction: z.string().min(20).max(300),
+    brollClips: z
+      .array(
+        z.object({
+          id: z.enum(["clip-1", "clip-2", "clip-3"]),
+          sourcePhotoId: z.enum(["attention", "trust", "offer"]),
+          motionPrompt: z.string().min(20).max(500),
+        })
+      )
+      .length(3),
+    overlayLines: z.array(z.string().min(2).max(100)).min(2).max(6),
+    assembly: z.object({
+      clipOrder: z.array(z.string().min(2).max(50)).min(2).max(6),
+      overlayPlacements: z
+        .array(
+          z.object({
+            overlayLine: z.string().min(2).max(100),
+            overClipId: z.enum(["clip-1", "clip-2", "clip-3", "self_filmed"]),
+          })
+        )
+        .min(2)
+        .max(6),
+      targetLengthSeconds: z.number().int().min(15).max(30),
+      audioType: z.string().min(5).max(100),
+    }),
+    caption: z.string().min(40).max(1800),
+    cta: z.string().min(2).max(220),
+    corpusPatternId: z.string().min(3).max(100),
+  }),
 })
 
 type ClaimedCampaignOrder = {
   id: number
+  user_id: string | null
+  is_test_mode: boolean
   customer_email: string
   selfie_url: string
   what_she_sells: string
@@ -128,7 +163,7 @@ async function claimCampaignOrder(orderId: number): Promise<ClaimedCampaignOrder
       AND what_she_sells IS NOT NULL
       AND promotion IS NOT NULL
       AND target_audience IS NOT NULL
-    RETURNING id, customer_email, selfie_url, what_she_sells, promotion,
+    RETURNING id, user_id, is_test_mode, customer_email, selfie_url, what_she_sells, promotion,
       target_audience, voice_reference, platform
   `
   return (rows[0] as ClaimedCampaignOrder | undefined) || null
@@ -141,6 +176,13 @@ export async function generateCampaignOrder(
   if (!order) return { generated: false, reason: "not_ready_or_already_claimed" }
 
   try {
+    const patternCorpus = await loadCampaignPatternCorpus()
+    const patternPrompt = patternCorpus
+      .map(
+        pattern =>
+          `${pattern.id}: ${pattern.hookLine}${pattern.views ? ` (${pattern.views} views)` : ""}`
+      )
+      .join("\n")
     const { object } = await generateObject({
       model: createMayaOpenRouterModel("feed_planner"),
       schema: planSchema,
@@ -169,6 +211,13 @@ Build exactly:
 - One seven-slide carousel for the same promotion.
 - Two five-frame Story sequences. The warmup sequence builds relevance and trust. The offer sequence makes one clear invitation.
 - One five-day publishing plan using the exact allowed asset labels.
+- One 15-30 second reel, ready to assemble: a specific hook and script, one concrete one-take phone clip for her to film, three image-to-video b-roll plans, exact overlay lines, clip order, audio type, caption, and call to action.
+
+Sandra's proven pattern corpus. Choose exactly one ID and return it as reel.corpusPatternId:
+${patternPrompt}
+
+Use that same selected pattern to shape the opening attention post and the reel. Adapt the
+structure to this buyer's real brief. Do not copy an unrelated hook word for word.
 
 Rules:
 - Use simple, everyday human language. Short sentences. No coach-speak, hype, fake urgency, em dashes, or fluffy claims.
@@ -178,6 +227,11 @@ Rules:
 - Make every asset feel like one campaign, not a pile of unrelated content.
 - Keep carousel and Story text short enough to read on a phone. One idea per slide.
 - The first post should be the easiest useful thing to publish first.
+- The reel hook must name her exact promotion or her buyer's specific situation. If it could work unchanged for another business, it fails.
+- Never use "did you know", "stop scrolling", "3 tips", generic motivational voiceover, or an unrelated trend.
+- The self-filmed instruction must start with "Film", name one concrete physical action, and give a length in seconds. It must be filmable in one take on a phone.
+- Reel b-roll can only animate the supplied campaign photos. Motion prompts may add a subtle blink, breathing, fabric or hair movement, parallax, or camera movement. Never invent walking, speaking, holding a new object, a new person, or a different scene.
+- Reel overlayLines are the exact on-screen words in display order. assembly.clipOrder uses clip-1, clip-2, clip-3, and self_filmed only. assembly.overlayPlacements maps every overlay line to the exact clip where it appears, using the same words as overlayLines. Audio is a type, never a named or licensed track.
 - Every photo prompt must describe a realistic editorial personal-brand photo using the same woman from the supplied reference selfie.
 - Every photo prompt must include the exact sentence: "Use exact facial features from the reference image."
 - Preserve her age, skin texture, face shape, hair, body proportions, and natural identity. Avoid plastic skin and visible AI tells.
@@ -189,6 +243,15 @@ Rules:
     if (planPosts.length !== 3) throw new Error("Maya did not return all three campaign roles")
     const storyPlans = orderedStorySequences(object.storySequences)
     if (storyPlans.length !== 2) throw new Error("Maya did not return both Story sequences")
+    const reelPlan = validateCampaignReelPlan(object.reel, {
+      whatSheSells: order.what_she_sells,
+      promotion: order.promotion,
+      targetAudience: order.target_audience,
+      allowedPatternIds: patternCorpus.map(pattern => pattern.id),
+    })
+    const selectedPattern = patternCorpus.find(pattern => pattern.id === reelPlan.corpusPatternId)
+    if (!selectedPattern) throw new Error("Campaign reel corpus pattern could not be traced")
+    const traceability = buildCampaignTraceability(selectedPattern, Boolean(order.voice_reference))
 
     const photoPlans = [
       ...planPosts.map(post => ({
@@ -269,6 +332,14 @@ Rules:
       }))
     )
 
+    const businessVideoUserId = await resolveCampaignVideoOwnerUserId(order.user_id)
+    const reelClips = await generateCampaignReelClips({
+      orderId: order.id,
+      businessVideoUserId,
+      clipPlans: reelPlan.brollClips,
+      photoUrls: Object.fromEntries(photos.map(photo => [photo.id, photo.visualUrl])),
+    })
+
     const campaignData: CampaignData = {
       visualDirection: object.visualDirection,
       firstPostReason: object.firstPostReason,
@@ -277,6 +348,18 @@ Rules:
       carousel: { title: object.carousel.title, slides: carouselSlides },
       storySequences,
       publishPlan: [...object.publishPlan].sort((a, b) => a.day - b.day),
+      reel: {
+        hook: reelPlan.hook,
+        script: reelPlan.script,
+        selfFilmedClipInstruction: reelPlan.selfFilmedClipInstruction,
+        brollClips: reelClips,
+        overlayLines: reelPlan.overlayLines,
+        assembly: reelPlan.assembly,
+        caption: reelPlan.caption,
+        cta: reelPlan.cta,
+        traceability,
+      },
+      traceability,
     }
 
     const updated = await sql`
@@ -301,6 +384,9 @@ Rules:
         post_count: 3,
         carousel_slide_count: 7,
         story_slide_count: 10,
+        reel_clip_count: reelClips.filter(clip => clip.status === "ready").length,
+        reel_pattern_id: selectedPattern.id,
+        is_test_mode: order.is_test_mode,
       },
     })
     return { generated: true }

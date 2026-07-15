@@ -2080,7 +2080,13 @@ export function MayaConcierge({
     })
     void trackAnalyticsEvent({
       event: "suite_intent_detected",
-      properties: { cohort, action, ...intent, ...properties },
+      properties: {
+        cohort,
+        action,
+        intent_label: intent.format ?? "needs_clarify",
+        ...intent,
+        ...properties,
+      },
     })
   }
 

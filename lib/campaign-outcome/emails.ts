@@ -10,7 +10,6 @@ type CampaignEmail = {
   text: string
 }
 
-// DRAFT COPY: Sandra must approve these customer-facing emails before the feature flag opens.
 export function campaignIntakeEmail(input: {
   firstName: string
   intakeUrl: string
@@ -41,7 +40,6 @@ export function campaignIntakeEmail(input: {
   }
 }
 
-// DRAFT COPY: Sandra must approve before release.
 export function campaignDeliveryEmail(input: {
   firstName: string
   deliveryUrl: string
@@ -50,8 +48,9 @@ export function campaignDeliveryEmail(input: {
   const bodyHtml = `
     <p style="margin:0 0 18px;">Hi ${name},</p>
     <p style="margin:0 0 18px;">Your campaign is ready.</p>
-    <p style="margin:0 0 18px;">I checked the photos, feed posts, carousel, Stories, and the five-day order Maya prepared for you.</p>
+    <p style="margin:0 0 18px;">I checked your photos, your reel scripted and ready to assemble, the feed posts, carousel, Stories, and the five-day plan Maya prepared for you.</p>
     <p style="margin:0 0 18px;">${renderPersonalLink("Open my campaign", input.deliveryUrl)}</p>
+    <p style="margin:0 0 18px;">Start with post one today. It is marked at the top of your page.</p>
     <p style="margin:0;">Everything is on one page so you can copy the words and save the visuals.</p>
   `
   return {
@@ -65,6 +64,8 @@ export function campaignDeliveryEmail(input: {
       "",
       input.deliveryUrl,
       "",
+      "Start with post one today. It is marked at the top of your page.",
+      "",
       "Everything is on one page so you can copy the words and save the visuals.",
       "",
       "Sandra x",
@@ -72,7 +73,6 @@ export function campaignDeliveryEmail(input: {
   }
 }
 
-// DRAFT COPY: Sandra must approve before release.
 export function campaignDay7Email(input: {
   firstName: string
   yesUrl: string
@@ -84,6 +84,7 @@ export function campaignDay7Email(input: {
     <p style="margin:0 0 18px;">Hi ${name},</p>
     <p style="margin:0 0 18px;">A quick question about the campaign Maya made for you.</p>
     <p style="margin:0 0 18px;">Did you publish any of it?</p>
+    <p style="margin:0 0 18px;">No pressure either way, I just want to know if it helped.</p>
     <p style="margin:0 0 10px;">${renderPersonalLink("Yes, I posted", input.yesUrl)}</p>
     <p style="margin:0 0 22px;">${renderPersonalLink("Not yet", input.noUrl)}</p>
     <p style="margin:0 0 18px;">If you have something new to promote, ${renderPersonalLink("Maya can prepare the next campaign here", input.repeatUrl)}.</p>
@@ -95,6 +96,7 @@ export function campaignDay7Email(input: {
       `Hi ${input.firstName || "there"},`,
       "",
       "Did you publish any of the campaign Maya made for you?",
+      "No pressure either way, I just want to know if it helped.",
       `Yes: ${input.yesUrl}`,
       `Not yet: ${input.noUrl}`,
       "",

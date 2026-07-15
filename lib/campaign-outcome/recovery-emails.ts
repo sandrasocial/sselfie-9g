@@ -45,7 +45,7 @@ export function campaignRecoveryEmail(input: {
     const bodyHtml = `
       <p style="margin:0 0 18px;">Hi ${input.firstName},</p>
       <p style="margin:0 0 18px;">One quick note about what Maya prepares for you.</p>
-      <p style="margin:0 0 18px;">You add one selfie and a short brief. Maya prepares six brand photos, three feed posts, a seven-slide carousel, two Story sequences, and the five-day order for one promotion.</p>
+      <p style="margin:0 0 18px;">You add one selfie and a short brief. Maya prepares a reel ready to assemble, six brand photos, three feed posts, a seven-slide carousel, two Story sequences, and a five-day plan for one campaign.</p>
       <p style="margin:0 0 18px;">Sandra checks the founding-batch work before delivery. You do not need to learn a new tool.</p>
       <p style="margin:0;">${renderPersonalLink("Finish my campaign order", link)}</p>
     `
@@ -53,7 +53,7 @@ export function campaignRecoveryEmail(input: {
       emailType: CAMPAIGN_RECOVERY_EMAIL_TYPES.dayOne,
       subject: "what Maya prepares for you",
       html: renderPersonalNote({ title: "What Maya prepares", bodyHtml }),
-      text: `Hi ${input.firstName},\n\nYou add one selfie and a short brief. Maya prepares six brand photos, three feed posts, a seven-slide carousel, two Story sequences, and the five-day order for one promotion.\n\nSandra checks the founding-batch work before delivery.\n\n${link}\n\nSandra x`,
+      text: `Hi ${input.firstName},\n\nYou add one selfie and a short brief. Maya prepares a reel ready to assemble, six brand photos, three feed posts, a seven-slide carousel, two Story sequences, and a five-day plan for one campaign.\n\nSandra checks the founding-batch work before delivery.\n\n${link}\n\nSandra x`,
     }
   }
 

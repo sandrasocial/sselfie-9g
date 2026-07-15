@@ -30,6 +30,8 @@ export type VideoGenerationInput = {
   imageDescription?: string | null
   category?: string | null
   source?: string
+  billingMode?: "member_credits" | "business"
+  billingReference?: string | null
 }
 
 export type VideoGenerationResult = {
@@ -105,7 +107,11 @@ async function refundVideoCredits(
   try {
     const refund = await addCredits(userId, CREDIT_COSTS.ANIMATION, "refund", description)
     if (!refund.success) {
-      console.error("[app-v3-video] Credit refund FAILED:", { userId, description, error: refund.error })
+      console.error("[app-v3-video] Credit refund FAILED:", {
+        userId,
+        description,
+        error: refund.error,
+      })
       return { refunded: false, refundError: refund.error ?? "addCredits returned success=false" }
     }
     return { refunded: true }
@@ -270,6 +276,9 @@ function normalizeOptionalImageId(value: string | number | null | undefined): nu
 }
 
 async function buildMotionPrompt(input: VideoGenerationInput): Promise<string> {
+  if (input.billingMode === "business" && input.motionPrompt?.trim()) {
+    return cleanGeneratedMotionPrompt(input.motionPrompt)
+  }
   const snapshot = await getMayaUserSnapshot(input.userId)
   const effectiveScene = resolveFluxPromptForMotion({
     fluxPrompt: input.motionPrompt,
@@ -336,6 +345,13 @@ async function buildMotionPrompt(input: VideoGenerationInput): Promise<string> {
 export async function startVideoGeneration(
   input: VideoGenerationInput
 ): Promise<VideoGenerationResult> {
+  const businessFunded = input.billingMode === "business"
+  if (businessFunded && input.source !== "campaign-outcome") {
+    throw new VideoGenerationError("Business-funded video requires campaign context", 400, {
+      error: "Business-funded video requires campaign context",
+      code: "invalid_business_video_context",
+    })
+  }
   if (!isVideoGenerationEnabled()) {
     throw new VideoGenerationError("Video generation is disabled", 503, {
       error: "Video creation is paused right now. Photos still work.",
@@ -346,27 +362,31 @@ export async function startVideoGeneration(
   const userId = String(input.userId)
   const imageUrl = validateImageUrl(input.imageUrl)
 
-  const hasEnoughCredits = await checkCredits(userId, CREDIT_COSTS.ANIMATION)
-  if (!hasEnoughCredits) {
-    const currentBalance = await getUserCredits(userId)
-    throw new VideoGenerationError("Insufficient credits", 402, {
-      error: "Insufficient credits",
-      code: "insufficient_credits",
-      action: "open_credits_topup",
-      required: CREDIT_COSTS.ANIMATION,
-      current: currentBalance,
-      message: `Video generation requires ${CREDIT_COSTS.ANIMATION} credits.`,
-    })
-  }
+  let newBalance = 0
+  if (!businessFunded) {
+    const hasEnoughCredits = await checkCredits(userId, CREDIT_COSTS.ANIMATION)
+    if (!hasEnoughCredits) {
+      const currentBalance = await getUserCredits(userId)
+      throw new VideoGenerationError("Insufficient credits", 402, {
+        error: "Insufficient credits",
+        code: "insufficient_credits",
+        action: "open_credits_topup",
+        required: CREDIT_COSTS.ANIMATION,
+        current: currentBalance,
+        message: `Video generation requires ${CREDIT_COSTS.ANIMATION} credits.`,
+      })
+    }
 
-  const label = input.imageId ? `Animated image: ${input.imageId}` : "Animated image"
-  const deduction = await deductCredits(userId, CREDIT_COSTS.ANIMATION, "animation", label)
-  if (!deduction.success) {
-    throw new VideoGenerationError("Could not deduct credits", 402, {
-      error: "Could not deduct credits",
-      code: "credit_deduction_failed",
-      message: deduction.error ?? "Credit deduction failed. Please try again.",
-    })
+    const label = input.imageId ? `Animated image: ${input.imageId}` : "Animated image"
+    const deduction = await deductCredits(userId, CREDIT_COSTS.ANIMATION, "animation", label)
+    if (!deduction.success) {
+      throw new VideoGenerationError("Could not deduct credits", 402, {
+        error: "Could not deduct credits",
+        code: "credit_deduction_failed",
+        message: deduction.error ?? "Credit deduction failed. Please try again.",
+      })
+    }
+    newBalance = deduction.newBalance
   }
 
   let finalMotionPrompt: string
@@ -390,10 +410,12 @@ export async function startVideoGeneration(
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const refund = await refundVideoCredits(
-      userId,
-      `Refund for failed app-v3 video generation: ${input.imageId || "image"}`
-    )
+    const refund: { refunded: boolean; refundError?: string } = businessFunded
+      ? { refunded: false }
+      : await refundVideoCredits(
+          userId,
+          `Refund for failed app-v3 video generation: ${input.imageId || "image"}`
+        )
     await logVideoGenerationFailure({
       userId,
       stage: "create_prediction",
@@ -420,6 +442,8 @@ export async function startVideoGeneration(
         job_id,
         status,
         progress,
+        billing_mode,
+        source_context,
         created_at
       ) VALUES (
         ${input.userId},
@@ -429,16 +453,20 @@ export async function startVideoGeneration(
         ${prediction.id},
         'processing',
         0,
+        ${businessFunded ? "business" : "member_credits"},
+        ${input.billingReference || input.source || null},
         NOW()
       )
       RETURNING id
     `
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const refund = await refundVideoCredits(
-      userId,
-      `Refund for unsaved app-v3 video generation: ${input.imageId || "image"}`
-    )
+    const refund: { refunded: boolean; refundError?: string } = businessFunded
+      ? { refunded: false }
+      : await refundVideoCredits(
+          userId,
+          `Refund for unsaved app-v3 video generation: ${input.imageId || "image"}`
+        )
     await logVideoGenerationFailure({
       userId,
       stage: "create_prediction",
@@ -458,8 +486,8 @@ export async function startVideoGeneration(
     videoId: Number(inserted[0].id),
     predictionId: prediction.id,
     status: "processing",
-    creditsDeducted: CREDIT_COSTS.ANIMATION,
-    newBalance: deduction.newBalance,
+    creditsDeducted: businessFunded ? 0 : CREDIT_COSTS.ANIMATION,
+    newBalance,
     motionPrompt: finalMotionPrompt,
   }
 }
@@ -473,7 +501,7 @@ export async function checkVideoGeneration(input: {
   const sql = getDbClient()
 
   const ownedRows = await sql`
-    SELECT id, status, error_message
+    SELECT id, status, error_message, billing_mode
     FROM generated_videos
     WHERE id = ${videoId}
       AND user_id = ${input.userId}
@@ -518,10 +546,13 @@ export async function checkVideoGeneration(input: {
       RETURNING id
     `
     if (claimed.length > 0) {
-      const refund = await refundVideoCredits(
-        String(input.userId),
-        `Refund for failed app-v3 video prediction: ${videoId}`
-      )
+      const businessFunded = ownedRows[0]?.billing_mode === "business"
+      const refund: { refunded: boolean; refundError?: string } = businessFunded
+        ? { refunded: false }
+        : await refundVideoCredits(
+            String(input.userId),
+            `Refund for failed app-v3 video prediction: ${videoId}`
+          )
       await logVideoGenerationFailure({
         userId: String(input.userId),
         stage: "prediction_failed",

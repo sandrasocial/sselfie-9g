@@ -10,6 +10,9 @@ const generateObjectMock = vi.hoisted(() => vi.fn())
 const generateImageMock = vi.hoisted(() => vi.fn())
 const renderSlideMock = vi.hoisted(() => vi.fn())
 const putMock = vi.hoisted(() => vi.fn())
+const startVideoMock = vi.hoisted(() => vi.fn())
+const checkVideoMock = vi.hoisted(() => vi.fn())
+const pollPredictionMock = vi.hoisted(() => vi.fn())
 
 vi.mock("server-only", () => ({}))
 vi.mock("@/lib/db/client", () => ({ sql: sqlMock }))
@@ -25,6 +28,11 @@ vi.mock("@/lib/campaign-outcome/slide-renderer", () => ({
 }))
 vi.mock("@vercel/blob", () => ({ put: putMock }))
 vi.mock("@/lib/maya/openrouter", () => ({ createMayaOpenRouterModel: vi.fn(() => "mock-model") }))
+vi.mock("@/lib/maya/video-generation-service", () => ({
+  startVideoGeneration: startVideoMock,
+  checkVideoGeneration: checkVideoMock,
+}))
+vi.mock("@/lib/replicate-polling", () => ({ pollPrediction: pollPredictionMock }))
 
 function queryText(call: unknown[]) {
   const strings = call[0] as TemplateStringsArray
@@ -128,22 +136,25 @@ describe("campaign outcome payment fulfillment", () => {
   })
 
   it("rejects a paid session that is not exactly $97 USD", async () => {
-    const { handleCampaignOutcomeCheckout } = await import("@/lib/payments/handlers/campaign-outcome")
-    await expect(handleCampaignOutcomeCheckout({
-      event: { livemode: true } as any,
-      session: {
-        id: "cs_wrong_campaign_amount",
-        amount_total: 9600,
-        currency: "usd",
-        customer_details: { email: "buyer@example.com" },
-        metadata: {},
-      } as any,
-      isPaymentPaid: true,
-      customerEmail: "buyer@example.com",
-      userId: null,
-      referralPurchaseUserId: null,
-      source: "campaign_outcome_paid",
-    })).rejects.toThrow("expected USD 9700")
+    const { handleCampaignOutcomeCheckout } =
+      await import("@/lib/payments/handlers/campaign-outcome")
+    await expect(
+      handleCampaignOutcomeCheckout({
+        event: { livemode: true } as any,
+        session: {
+          id: "cs_wrong_campaign_amount",
+          amount_total: 9600,
+          currency: "usd",
+          customer_details: { email: "buyer@example.com" },
+          metadata: {},
+        } as any,
+        isPaymentPaid: true,
+        customerEmail: "buyer@example.com",
+        userId: null,
+        referralPurchaseUserId: null,
+        source: "campaign_outcome_paid",
+      })
+    ).rejects.toThrow("expected USD 9700")
     expect(sqlMock).not.toHaveBeenCalled()
     expect(sendEmailMock).not.toHaveBeenCalled()
   })
@@ -202,15 +213,31 @@ describe("campaign outcome payment fulfillment", () => {
 describe("campaign outcome Maya generation", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    startVideoMock.mockResolvedValue({
+      videoId: 88,
+      predictionId: "pred-campaign-reel",
+      status: "processing",
+      creditsDeducted: 0,
+      newBalance: 0,
+      motionPrompt: "gentle push-in",
+    })
+    pollPredictionMock.mockResolvedValue({ status: "succeeded" })
+    checkVideoMock.mockResolvedValue({
+      status: "succeeded",
+      videoUrl: "https://blob/reel-clip.mp4",
+      progress: 100,
+    })
     sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const query = strings.join(" ")
       if (
         query.includes("status = 'generating'") &&
-        query.includes("RETURNING id, customer_email")
+        query.includes("RETURNING id, user_id, is_test_mode, customer_email")
       ) {
         return [
           {
             id: 51,
+            user_id: "campaign-video-owner",
+            is_test_mode: true,
             customer_email: "buyer@example.com",
             selfie_url: "https://example.com/selfie.jpg",
             what_she_sells: "A practical business course",
@@ -258,9 +285,39 @@ describe("campaign outcome Maya generation", () => {
         })),
         publishPlan: Array.from({ length: 5 }, (_, index) => ({
           day: index + 1,
-          asset: ["attention_post", "warmup_stories", "carousel", "trust_post", "offer_post"][index],
+          asset: ["attention_post", "warmup_stories", "carousel", "trust_post", "offer_post"][
+            index
+          ],
           instruction: `Publish step ${index + 1}.`,
         })),
+        reel: {
+          hook: "The September group needs more than another quiet launch.",
+          script:
+            "The September group is for women building a service business who want one practical place to begin. Here is what the program helps them do and where they can take the next step.",
+          selfFilmedClipInstruction:
+            "Film yourself closing your laptop, then look at the camera for 5 seconds.",
+          brollClips: ["attention", "trust", "offer"].map((sourcePhotoId, index) => ({
+            id: `clip-${index + 1}`,
+            sourcePhotoId,
+            motionPrompt:
+              "Use a gentle camera push-in, natural blink, and soft ambient movement only.",
+          })),
+          overlayLines: ["The September group", "One practical place to begin", "Join us"],
+          assembly: {
+            clipOrder: ["clip-1", "self_filmed", "clip-2", "clip-3"],
+            overlayPlacements: [
+              { overlayLine: "The September group", overClipId: "clip-1" },
+              { overlayLine: "One practical place to begin", overClipId: "self_filmed" },
+              { overlayLine: "Join us", overClipId: "clip-3" },
+            ],
+            targetLengthSeconds: 22,
+            audioType: "calm confident instrumental audio",
+          },
+          caption:
+            "The September group gives women building a service business one practical place to begin.",
+          cta: "Use your real link or keyword here.",
+          corpusPatternId: "viral-dna:visible-transformation",
+        },
       },
     })
     generateImageMock.mockResolvedValue(Buffer.from("png"))
@@ -271,12 +328,19 @@ describe("campaign outcome Maya generation", () => {
     analyticsMock.mockResolvedValue({ ok: true })
   })
 
-  it("claims once, creates the complete campaign kit, and stops for QA", async () => {
+  it("dry-runs a test-mode order through the complete campaign and reel path, then stops for QA", async () => {
     const { generateCampaignOrder } = await import("@/lib/campaign-outcome/generator")
     await expect(generateCampaignOrder(51)).resolves.toEqual({ generated: true })
     expect(generateObjectMock).toHaveBeenCalledTimes(1)
     expect(generateImageMock).toHaveBeenCalledTimes(6)
     expect(renderSlideMock).toHaveBeenCalledTimes(17)
+    expect(startVideoMock).toHaveBeenCalledTimes(3)
+    expect(startVideoMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "campaign-outcome",
+        billingMode: "business",
+      })
+    )
     expect(putMock).toHaveBeenCalledTimes(23)
     expect(generateImageMock).toHaveBeenNthCalledWith(
       1,
@@ -289,11 +353,17 @@ describe("campaign outcome Maya generation", () => {
     const save = sqlMock.mock.calls.find(call => queryText(call).includes("status = 'needs_qa'"))
     expect(save).toBeTruthy()
     expect(queryText(save!)).toContain("campaign_data")
-    const savedJson = String(save?.find(value => typeof value === "string" && value.includes("visualDirection")))
+    const savedJson = String(
+      save?.find(value => typeof value === "string" && value.includes("visualDirection"))
+    )
     expect(savedJson).toContain('"photos"')
     expect(savedJson).toContain('"carousel"')
     expect(savedJson).toContain('"storySequences"')
     expect(savedJson).toContain('"publishPlan"')
+    expect(savedJson).toContain('"reel"')
+    expect(savedJson).toContain('"traceability"')
+    const { isCampaignData } = await import("@/lib/campaign-outcome/types")
+    expect(isCampaignData(JSON.parse(JSON.stringify(JSON.parse(savedJson))))).toBe(true)
     expect(analyticsMock).toHaveBeenCalledWith(
       expect.objectContaining({ eventName: "campaign_generated" })
     )

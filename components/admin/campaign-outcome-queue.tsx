@@ -17,6 +17,7 @@ function dateLabel(value: string | Date) {
 
 export function CampaignOutcomeQueue() {
   const [orders, setOrders] = useState<CampaignOrder[]>([])
+  const [summary, setSummary] = useState({ liveOrders: 0, redoRequests: 0, refundRequests: 0 })
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<number | null>(null)
   const [error, setError] = useState("")
@@ -28,6 +29,7 @@ export function CampaignOutcomeQueue() {
       const data = await readAdminJson(response)
       if (!response.ok) throw new Error(data.error || "Could not load campaigns.")
       setOrders(data.orders || [])
+      setSummary(data.summary || { liveOrders: 0, redoRequests: 0, refundRequests: 0 })
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load campaigns.")
     } finally {
@@ -39,7 +41,15 @@ export function CampaignOutcomeQueue() {
     void load()
   }, [load])
 
-  async function act(orderId: number, action: "approve" | "regenerate" | "resend_delivery") {
+  async function act(
+    orderId: number,
+    action:
+      | "approve"
+      | "regenerate"
+      | "resend_delivery"
+      | "record_redo_request"
+      | "record_refund_request"
+  ) {
     setBusy(orderId)
     setError("")
     try {
@@ -73,6 +83,34 @@ export function CampaignOutcomeQueue() {
         </p>
       </div>
 
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        {[
+          ["Live orders", summary.liveOrders, "Paid, non-test orders"],
+          [
+            "Redo request rate",
+            summary.liveOrders
+              ? `${Math.round((summary.redoRequests / summary.liveOrders) * 100)}%`
+              : "0%",
+            `${summary.redoRequests} request${summary.redoRequests === 1 ? "" : "s"}`,
+          ],
+          [
+            "Refund request rate",
+            summary.liveOrders
+              ? `${Math.round((summary.refundRequests / summary.liveOrders) * 100)}%`
+              : "0%",
+            `${summary.refundRequests} request${summary.refundRequests === 1 ? "" : "s"}`,
+          ],
+        ].map(([label, value, note]) => (
+          <div key={label} className="border border-stone-200 bg-white p-4">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-stone-500">
+              {label}
+            </p>
+            <p className="mt-2 font-serif text-3xl">{value}</p>
+            <p className="mt-1 text-xs text-stone-500">{note}</p>
+          </div>
+        ))}
+      </div>
+
       {error ? (
         <p className="mt-6 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {error}
@@ -103,6 +141,16 @@ export function CampaignOutcomeQueue() {
                     {order.is_test_mode ? (
                       <span className="bg-blue-50 px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] text-blue-700">
                         Test
+                      </span>
+                    ) : null}
+                    {order.redo_requested_at ? (
+                      <span className="bg-amber-50 px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] text-amber-800">
+                        Redo requested
+                      </span>
+                    ) : null}
+                    {order.refund_requested_at ? (
+                      <span className="bg-red-50 px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] text-red-800">
+                        Refund requested
                       </span>
                     ) : null}
                   </div>
@@ -159,6 +207,48 @@ export function CampaignOutcomeQueue() {
                           />
                         </div>
                       ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-stone-500">
+                      Reel traceability
+                    </p>
+                    <div className="mt-3 border border-stone-200 p-4">
+                      <p className="text-sm leading-6">
+                        <strong>Hook:</strong> {data.reel.hook}
+                      </p>
+                      <p className="mt-2 text-xs leading-5 text-stone-600">
+                        <strong>Intake used:</strong>{" "}
+                        {data.reel.traceability.intakeFields.join(", ")}
+                      </p>
+                      <p className="mt-2 text-xs leading-5 text-stone-600">
+                        <strong>Pattern:</strong> {data.reel.traceability.corpusPattern.id} ·{" "}
+                        {data.reel.traceability.corpusPattern.hookLine}
+                      </p>
+                      <p className="mt-2 text-xs leading-5 text-stone-600">
+                        <strong>Film:</strong> {data.reel.selfFilmedClipInstruction}
+                      </p>
+                      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                        {data.reel.brollClips.map(clip => (
+                          <div key={clip.id} className="border border-stone-200 p-3 text-xs">
+                            <p className="font-semibold">
+                              {clip.id} · {clip.status}
+                            </p>
+                            <p className="mt-1 line-clamp-3 text-stone-600">{clip.motionPrompt}</p>
+                            {clip.videoUrl ? (
+                              <a
+                                href={clip.videoUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-2 inline-block underline"
+                              >
+                                Open clip
+                              </a>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
@@ -251,6 +341,24 @@ export function CampaignOutcomeQueue() {
                     className="border border-stone-300 px-5 py-3 text-[10px] uppercase tracking-[0.18em] disabled:opacity-50"
                   >
                     Resend delivery email
+                  </button>
+                ) : null}
+                {!order.redo_requested_at ? (
+                  <button
+                    disabled={isBusy}
+                    onClick={() => void act(order.id, "record_redo_request")}
+                    className="border border-amber-300 px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-amber-900 disabled:opacity-50"
+                  >
+                    Record redo request
+                  </button>
+                ) : null}
+                {!order.refund_requested_at ? (
+                  <button
+                    disabled={isBusy}
+                    onClick={() => void act(order.id, "record_refund_request")}
+                    className="border border-red-300 px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-red-900 disabled:opacity-50"
+                  >
+                    Record refund request
                   </button>
                 ) : null}
               </div>

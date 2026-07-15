@@ -29,7 +29,13 @@ async function recordOrderEvent(
   }).catch(() => {})
 }
 
-function IntakeForm({ token }: { token: string }) {
+function IntakeForm({
+  token,
+  onSubmitted,
+}: {
+  token: string
+  onSubmitted: (status: CampaignOrder["status"]) => void
+}) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -48,7 +54,9 @@ function IntakeForm({ token }: { token: string }) {
       setSubmitting(false)
       return
     }
-    window.location.reload()
+    onSubmitted(
+      data.status === "already_submitted" ? "inputs_ready" : data.status || "inputs_ready"
+    )
   }
 
   return (
@@ -147,9 +155,7 @@ function IntakeForm({ token }: { token: string }) {
       </label>
 
       {error ? (
-        <p className="border-l-2 border-red-700 bg-red-50 px-4 py-3 text-sm text-red-900">
-          {error}
-        </p>
+        <p className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{error}</p>
       ) : null}
 
       <button
@@ -175,8 +181,8 @@ function WaitingState({ status }: { status: CampaignOrder["status"] }) {
       </h2>
       <p className="mt-4 max-w-xl text-base leading-8 text-[color:var(--app-text-secondary)]">
         {failed
-          ? "You do not need to start over. Sandra can see the order and will restart it from the admin queue."
-          : "Your mini shoot, feed posts, carousel, Stories, and publishing plan will move to Sandra for a quality check before delivery. You will receive an email when everything is ready."}
+          ? "You do not need to do anything. Sandra can see your order and will restart it for you. Nothing is lost."
+          : "Your photos, reel, feed posts, carousel, Stories, and five-day plan will move to Sandra for a quality check. Everything lands in your inbox within 48 hours of your details arriving."}
       </p>
     </div>
   )
@@ -186,13 +192,18 @@ function campaignCopyText(data: CampaignData): string {
   const postCopy = data.posts
     .map(
       (post, index) =>
-        `${index + 1}. ${ROLE_LABELS[post.role]}\n${post.headline}\n\n${post.caption}\n\nCTA: ${post.cta}`
+        `${index + 1}. ${ROLE_LABELS[post.role]}\n${post.headline}\n\n${post.caption}\n\nCall to action: ${post.cta}`
     )
     .join("\n\n---\n\n")
-  const plan = data.publishPlan
-    .map(day => `Day ${day.day}: ${day.instruction}`)
+  const plan = data.publishPlan.map(day => `Day ${day.day}: ${day.instruction}`).join("\n")
+  const assembly = data.reel.assembly.clipOrder
+    .map((clip, index) => `${index + 1}. ${clip}`)
     .join("\n")
-  return `YOUR NEXT CAMPAIGN\n\nVISUAL DIRECTION\n${data.visualDirection}\n\nFEED POSTS\n${postCopy}\n\nFIVE-DAY PLAN\n${plan}\n`
+  const overlayPlacements = data.reel.assembly.overlayPlacements
+    .map(placement => `${placement.overlayLine} on ${placement.overClipId}`)
+    .join("\n")
+  const reel = `HOOK\n${data.reel.hook}\n\nSCRIPT\n${data.reel.script}\n\nFILM THIS\n${data.reel.selfFilmedClipInstruction}\n\nASSEMBLY\n${assembly}\n\nOVERLAYS\n${overlayPlacements}\n\nAUDIO\n${data.reel.assembly.audioType}\n\nREEL CAPTION\n${data.reel.caption}\n\nCall to action: ${data.reel.cta}`
+  return `YOUR NEXT CAMPAIGN\n\nVISUAL DIRECTION\n${data.visualDirection}\n\nYOUR REEL\n${reel}\n\nFEED POSTS\n${postCopy}\n\nFIVE-DAY PLAN\n${plan}\n`
 }
 
 function allDownloadAssets(data: CampaignData) {
@@ -211,6 +222,12 @@ function allDownloadAssets(data: CampaignData) {
         url: slide.visualUrl,
       }))
     ),
+    ...data.reel.brollClips
+      .filter(clip => clip.status === "ready" && clip.videoUrl)
+      .map((clip, index) => ({
+        name: `04-reel/${String(index + 1).padStart(2, "0")}-${clip.id}.mp4`,
+        url: clip.videoUrl as string,
+      })),
   ]
 }
 
@@ -280,7 +297,9 @@ function DeliveredCampaign({ order, token }: { order: CampaignBuyerOrder; token:
       URL.revokeObjectURL(href)
       await recordOrderEvent(token, "downloaded", "complete_campaign_zip")
     } catch {
-      setDownloadError("The full download did not finish. You can still download each section below.")
+      setDownloadError(
+        "The full download did not finish. You can still download each section below."
+      )
     } finally {
       setDownloadingAll(false)
     }
@@ -310,11 +329,14 @@ function DeliveredCampaign({ order, token }: { order: CampaignBuyerOrder; token:
           </button>
         </div>
         {downloadError ? <p className="mt-4 text-sm text-red-800">{downloadError}</p> : null}
+        <p className="mt-5 max-w-3xl text-xs leading-6 text-[color:var(--ss-gray)]">
+          {data.traceability.note}
+        </p>
       </div>
 
       <section className="mt-14">
         <p className="text-[10px] uppercase tracking-[0.25em] text-[color:var(--ss-gray)]">
-          Your five-day order
+          Your five-day plan
         </p>
         <div className="mt-5 grid gap-px bg-[color:var(--app-border)] sm:grid-cols-5">
           {data.publishPlan.map(day => (
@@ -325,6 +347,135 @@ function DeliveredCampaign({ order, token }: { order: CampaignBuyerOrder; token:
               <p className="mt-3 text-sm leading-6">{day.instruction}</p>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="mt-20">
+        <p className="text-[10px] uppercase tracking-[0.25em] text-[color:var(--ss-gray)]">
+          Your reel
+        </p>
+        <h2 className="mt-4 font-serif text-4xl">One reel, ready to assemble.</h2>
+        <p className="mt-4 max-w-2xl text-sm leading-7 text-[color:var(--app-text-secondary)]">
+          Maya built this from your campaign brief and a proven pattern. Film one simple clip, place
+          the pieces in order, and use the exact words below.
+        </p>
+
+        <div className="mt-8 grid gap-px bg-[color:var(--app-border)] lg:grid-cols-2">
+          <article className="bg-white p-6 sm:p-8">
+            <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ss-gray)]">
+              Hook
+            </p>
+            <p className="mt-4 font-serif text-3xl leading-tight">{data.reel.hook}</p>
+            <p className="mt-8 text-[9px] uppercase tracking-[0.2em] text-[color:var(--ss-gray)]">
+              Script
+            </p>
+            <p className="mt-4 whitespace-pre-wrap text-base leading-8">{data.reel.script}</p>
+            <button
+              type="button"
+              onClick={() => void copy("reel-script", `${data.reel.hook}\n\n${data.reel.script}`)}
+              className="mt-6 border-b border-[color:var(--ss-night)] pb-1 text-[10px] uppercase tracking-[0.2em]"
+            >
+              {copied === "reel-script" ? "Copied" : "Copy hook and script"}
+            </button>
+          </article>
+          <article className="bg-white p-6 sm:p-8">
+            <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ss-gray)]">
+              Film this one clip
+            </p>
+            <p className="mt-4 text-base leading-8">{data.reel.selfFilmedClipInstruction}</p>
+            <p className="mt-8 text-[9px] uppercase tracking-[0.2em] text-[color:var(--ss-gray)]">
+              Assembly
+            </p>
+            <ol className="mt-4 space-y-2 text-sm leading-7">
+              {data.reel.assembly.clipOrder.map((clip, index) => (
+                <li key={`${clip}-${index}`}>
+                  {index + 1}. {clip.replaceAll("_", " ")}
+                </li>
+              ))}
+            </ol>
+            <div className="mt-6 border-t border-[color:var(--color-whisper)] pt-5">
+              <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ss-gray)]">
+                Put each line here
+              </p>
+              <ol className="mt-3 space-y-2 text-sm leading-7">
+                {data.reel.assembly.overlayPlacements.map((placement, index) => (
+                  <li key={`${placement.overlayLine}-${placement.overClipId}-${index}`}>
+                    “{placement.overlayLine}” over {placement.overClipId.replaceAll("_", " ")}
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <p className="mt-5 text-sm leading-7">
+              Target length: {data.reel.assembly.targetLengthSeconds} seconds
+              <br />
+              Audio: {data.reel.assembly.audioType}
+            </p>
+          </article>
+        </div>
+
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {data.reel.brollClips.map((clip, index) => (
+            <article key={clip.id} className="border border-[color:var(--app-border)] bg-white p-4">
+              {clip.status === "ready" && clip.videoUrl ? (
+                <video
+                  src={clip.videoUrl}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="aspect-[9/16] w-full bg-black object-cover"
+                />
+              ) : (
+                <div className="flex aspect-[9/16] items-center justify-center bg-[color:var(--ss-seasalt)] p-6 text-center text-sm leading-6 text-[color:var(--app-text-secondary)]">
+                  {clip.note}
+                </div>
+              )}
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <p className="text-[9px] uppercase tracking-[0.18em] text-[color:var(--ss-gray)]">
+                  B-roll {index + 1}
+                </p>
+                {clip.status === "ready" && clip.videoUrl ? (
+                  <AssetDownload
+                    href={clip.videoUrl}
+                    filename={`sselfie-reel-broll-${index + 1}.mp4`}
+                    token={token}
+                    assetType={`reel_broll_${index + 1}`}
+                    label="Download clip"
+                  />
+                ) : null}
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-8 grid gap-px bg-[color:var(--app-border)] lg:grid-cols-2">
+          <article className="bg-white p-6 sm:p-8">
+            <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ss-gray)]">
+              Text overlays, in order
+            </p>
+            <ol className="mt-4 space-y-3 text-base leading-7">
+              {data.reel.overlayLines.map((line, index) => (
+                <li key={`${line}-${index}`}>
+                  {index + 1}. {line}
+                </li>
+              ))}
+            </ol>
+          </article>
+          <article className="bg-white p-6 sm:p-8">
+            <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ss-gray)]">
+              Reel caption
+            </p>
+            <p className="mt-4 whitespace-pre-wrap text-base leading-8">{data.reel.caption}</p>
+            <p className="mt-5 border-t border-[color:var(--color-whisper)] pt-5 text-sm font-medium leading-7">
+              Call to action: {data.reel.cta}
+            </p>
+            <button
+              type="button"
+              onClick={() => void copy("reel-caption", `${data.reel.caption}\n\n${data.reel.cta}`)}
+              className="mt-6 border-b border-[color:var(--ss-night)] pb-1 text-[10px] uppercase tracking-[0.2em]"
+            >
+              {copied === "reel-caption" ? "Copied" : "Copy caption and call to action"}
+            </button>
+          </article>
         </div>
       </section>
 
@@ -367,7 +518,7 @@ function DeliveredCampaign({ order, token }: { order: CampaignBuyerOrder; token:
           Your feed posts
         </p>
         <p className="mt-4 max-w-2xl text-sm leading-7 text-[color:var(--app-text-secondary)]">
-          Start with post one because {data.firstPostReason}
+          Start with post one. {data.firstPostReason}
         </p>
         <div className="mt-10 space-y-16">
           {data.posts.map((post, index) => {
@@ -411,13 +562,13 @@ function DeliveredCampaign({ order, token }: { order: CampaignBuyerOrder; token:
                       {post.caption}
                     </p>
                     <p className="mt-5 border-t border-[color:var(--color-whisper)] pt-5 text-sm font-medium leading-7">
-                      CTA: {post.cta}
+                      Call to action: {post.cta}
                     </p>
                     <button
                       onClick={() => void copy(captionKey, `${post.caption}\n\n${post.cta}`)}
                       className="mt-6 border-b border-[color:var(--ss-night)] pb-1 text-[10px] uppercase tracking-[0.2em]"
                     >
-                      {copied === captionKey ? "Copied" : "Copy caption and CTA"}
+                      {copied === captionKey ? "Copied" : "Copy caption and call to action"}
                     </button>
                   </div>
                 </div>
@@ -434,7 +585,10 @@ function DeliveredCampaign({ order, token }: { order: CampaignBuyerOrder; token:
         <h2 className="mt-4 font-serif text-4xl">{data.carousel.title}</h2>
         <div className="mt-8 flex snap-x gap-4 overflow-x-auto pb-5">
           {data.carousel.slides.map(slide => (
-            <article key={slide.index} className="w-[78%] shrink-0 snap-start sm:w-[42%] lg:w-[28%]">
+            <article
+              key={slide.index}
+              className="w-[78%] shrink-0 snap-start sm:w-[42%] lg:w-[28%]"
+            >
               <div className="relative aspect-[4/5] overflow-hidden bg-[color:var(--color-whisper)]">
                 <Image
                   src={slide.visualUrl}
@@ -469,7 +623,10 @@ function DeliveredCampaign({ order, token }: { order: CampaignBuyerOrder; token:
               <h2 className="font-serif text-3xl">{sequence.title}</h2>
               <div className="mt-6 flex snap-x gap-4 overflow-x-auto pb-5">
                 {sequence.slides.map(slide => (
-                  <div key={slide.index} className="w-[66%] shrink-0 snap-start sm:w-[34%] lg:w-[22%]">
+                  <div
+                    key={slide.index}
+                    className="w-[66%] shrink-0 snap-start sm:w-[34%] lg:w-[22%]"
+                  >
                     <div className="relative aspect-[9/16] overflow-hidden bg-[color:var(--color-whisper)]">
                       <Image
                         src={slide.visualUrl}
@@ -516,7 +673,6 @@ function DeliveredCampaign({ order, token }: { order: CampaignBuyerOrder; token:
   )
 }
 
-// DRAFT COPY: Sandra must approve this buyer experience before the feature flag opens.
 export function CampaignOrderExperience({
   initialOrder,
   token,
@@ -524,20 +680,32 @@ export function CampaignOrderExperience({
   initialOrder: CampaignBuyerOrder
   token: string
 }) {
-  const status = initialOrder.status
+  const [status, setStatus] = useState<CampaignOrder["status"]>(initialOrder.status)
+  const [publishedMessage, setPublishedMessage] = useState("")
   const hasIntake = status !== "awaiting_intake"
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const published = params.get("published")
-    if (published === "yes") void recordOrderEvent(token, "published_yes")
-    if (published === "no") void recordOrderEvent(token, "published_no")
+    if (published === "yes") {
+      setPublishedMessage("Posted. That is exactly what this was for.")
+      void recordOrderEvent(token, "published_yes")
+    }
+    if (published === "no") {
+      setPublishedMessage("No stress. Day one is the smallest step, start there.")
+      void recordOrderEvent(token, "published_no")
+    }
+    if (published === "yes" || published === "no") {
+      const url = new URL(window.location.href)
+      url.searchParams.delete("published")
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`)
+    }
   }, [token])
 
   const heading = useMemo(() => {
     if (status === "delivered") return "Your campaign is ready."
     if (hasIntake) return "Your campaign is in progress."
-    return "Tell Maya what needs to be sold."
+    return "Tell Maya what you're promoting."
   }, [hasIntake, status])
 
   return (
@@ -555,6 +723,12 @@ export function CampaignOrderExperience({
           </p>
         </header>
 
+        {publishedMessage ? (
+          <div className="mt-6 border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm leading-7 text-emerald-950">
+            {publishedMessage}
+          </div>
+        ) : null}
+
         <section className="pt-12 sm:pt-16">
           <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">
             One selfie · One promotion · One complete campaign
@@ -565,12 +739,40 @@ export function CampaignOrderExperience({
           {!hasIntake ? (
             <p className="mt-5 max-w-2xl text-base leading-8 text-[color:var(--app-text-secondary)]">
               Add four simple details. Maya prepares your mini shoot, feed posts, carousel, Story
-              sequences, and five-day posting order. Sandra checks the work before you receive it.
+              sequences, reel, and five-day plan. Sandra checks the work before you receive it.
             </p>
           ) : null}
         </section>
 
-        {status === "awaiting_intake" ? <IntakeForm token={token} /> : null}
+        {status === "awaiting_intake" ? (
+          <>
+            <section className="mt-10 border-y border-[color:var(--app-border)] bg-white">
+              <p className="px-6 pt-7 text-[10px] uppercase tracking-[0.25em] text-[color:var(--ss-gray)] sm:px-8">
+                What Maya prepares
+              </p>
+              <ul className="mt-4 divide-y divide-[color:var(--app-border)] px-6 pb-3 sm:px-8">
+                {[
+                  "Planned for exactly what you're promoting",
+                  "Written in your voice",
+                  "Built from patterns proven in this niche",
+                  "One reel, ready to assemble: hook, your b-roll from your own photos, overlays, and what to film on your phone",
+                  "Three feed posts in order: attention, trust, offer",
+                  "Six brand photos that still look like you",
+                  "A seven-slide carousel for the same promotion",
+                  "Two Story sequences: the warm-up and the ask",
+                  "One simple plan for what to post first, and why",
+                  "Sandra checks everything before it reaches you",
+                  "Delivered within 48 hours",
+                ].map(item => (
+                  <li key={item} className="py-4 text-sm leading-7">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <IntakeForm token={token} onSubmitted={setStatus} />
+          </>
+        ) : null}
         {status !== "awaiting_intake" && status !== "delivered" ? (
           <WaitingState status={status} />
         ) : null}

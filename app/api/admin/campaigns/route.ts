@@ -42,7 +42,21 @@ export async function GET() {
       created_at DESC
     LIMIT 100
   `
-  return NextResponse.json({ orders })
+  const [summary] = await sql`
+    SELECT
+      COUNT(*) FILTER (WHERE is_test_mode = FALSE) AS live_orders,
+      COUNT(*) FILTER (WHERE is_test_mode = FALSE AND redo_requested_at IS NOT NULL) AS redo_requests,
+      COUNT(*) FILTER (WHERE is_test_mode = FALSE AND refund_requested_at IS NOT NULL) AS refund_requests
+    FROM campaign_orders
+  `
+  return NextResponse.json({
+    orders,
+    summary: {
+      liveOrders: Number(summary?.live_orders || 0),
+      redoRequests: Number(summary?.redo_requests || 0),
+      refundRequests: Number(summary?.refund_requests || 0),
+    },
+  })
 }
 
 export async function POST(request: Request) {
@@ -52,11 +66,38 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   const orderId = orderIdFrom(body?.orderId)
   const action = body?.action
-  if (!orderId || !["approve", "regenerate", "resend_delivery"].includes(action)) {
+  if (
+    !orderId ||
+    ![
+      "approve",
+      "regenerate",
+      "resend_delivery",
+      "record_redo_request",
+      "record_refund_request",
+    ].includes(action)
+  ) {
     return NextResponse.json({ error: "A valid campaign action is required." }, { status: 400 })
   }
 
   await ensureCampaignOutcomeSchema()
+  if (action === "record_redo_request" || action === "record_refund_request") {
+    const rows =
+      action === "record_redo_request"
+        ? await sql`
+            UPDATE campaign_orders
+            SET redo_requested_at = COALESCE(redo_requested_at, NOW()), updated_at = NOW()
+            WHERE id = ${orderId}
+            RETURNING id, redo_requested_at
+          `
+        : await sql`
+            UPDATE campaign_orders
+            SET refund_requested_at = COALESCE(refund_requested_at, NOW()), updated_at = NOW()
+            WHERE id = ${orderId}
+            RETURNING id, refund_requested_at
+          `
+    if (!rows[0]) return NextResponse.json({ error: "Campaign not found." }, { status: 404 })
+    return NextResponse.json({ ok: true })
+  }
   if (action === "approve") {
     const result = await deliverCampaignOrder(orderId)
     return NextResponse.json(result, { status: result.delivered ? 200 : 409 })

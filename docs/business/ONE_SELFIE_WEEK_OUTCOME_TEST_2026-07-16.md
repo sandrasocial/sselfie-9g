@@ -5,7 +5,8 @@ direction) and adds phase-2 operating benchmarks. v2 merged THREE independent au
 2026-07-13 chat audit; Codex 2026-07-14 audit; Claude 2026-07-14 truth investigation
 `docs/audits/SSELFIE_TRUTH_INVESTIGATION_2026-07-14.md`; Codex 2026-07-14 second audit with Stripe
 cancellation evidence). Sandra approved Codex taking over the incomplete v3 handoff on 2026-07-14.
-The Brand Constitution governs all copy, and customer-facing wording still requires approval.
+The Brand Constitution governs all copy. The campaign wording was approved by Sandra in
+`docs/product/CAMPAIGN_COPY_POLISH_2026-07-15.md`; release still requires a separate go-live call.
 
 ## v2 changes (what the audit comparison settled)
 
@@ -21,8 +22,10 @@ The Brand Constitution governs all copy, and customer-facing wording still requi
    brand memory, campaigns, and monthly creation in one place"). The Monthly Brand Drop (truth
    investigation Part 6) becomes what the earned SUITE DELIVERS monthly, not the first
    recurring ask. Stripe's own cancellation words decide this: "I dont need them every month."
-3. **Keyword: CAMPAIGN.** Audience callout: "for women who already sell something and need to
-   promote it." Qualified-traffic content plan remains mandatory (unchanged from v1).
+3. **Keyword: CAMPAIGN.** Audience callout: eyebrow "For women building something of their own";
+   H1 "Give Maya one selfie. Leave with your next campaign."; subline "For the woman who knows
+   what she's building and freezes when it's time to post. One selfie becomes the campaign that
+   finally shows people what you're building." Qualified-traffic content remains mandatory.
 4. **Multi-cause churn acknowledged** (Codex evidence, Stripe cancellation records n=35):
    11 payment failures (31% involuntary!), 8 "unused", 4 "too expensive", 10 other; verbatim:
    "The photos just never looked exactly like me", "I could see it's AI. Even my friends saw it
@@ -110,10 +113,15 @@ She receives on one buyer page and by email within **48 hours**:
    direct offer sequence. Ten Story slides total, ready to download in order.
 5. **One one-page five-day publish plan** showing exactly what to post first, what follows, and why.
    This is the only strategy artifact. No workbook and no lesson library.
+6. **One reel ready to assemble** with a specific hook and 15-30 second script, one concrete
+   self-filmed phone clip, 2-3 b-roll clips animated from her own campaign photos, exact overlay
+   words, assembly order, audio type, caption, and call to action. The reel is governed by
+   `tasks/CAMPAIGN-REEL-LAYER-01.md`; generic hooks fail QA.
 
 This is a campaign kit, not a quantity bundle: 6 brand photos, 3 feed posts, 1 carousel, 2 Story
-sequences, and 1 publishing plan all sell ONE promotion. Do not add Reels, newsletters, lead
-magnets, a month of content, or unlimited revisions to make the number look larger.
+sequences, 1 publishing plan, and 1 reel all serve ONE campaign. The reel requirement above
+supersedes the earlier no-Reels rule. Do not add newsletters, lead magnets, a month of content, or
+unlimited revisions to make the number look larger.
 
 Hard product laws:
 
@@ -132,7 +140,8 @@ Hard product laws:
 
 The current content engine recruits free-prompt collectors. Running the test on that traffic
 measures the wrong audience and will produce a false negative. The test ships with its own content
-plan: hooks addressed to women who SELL something ("you have an offer and no photos of yourself",
+plan: hooks addressed to women building something ("you know what you're building and freeze when
+it's time to post",
 "your website still has no picture of you", "she posted once and got a client"), Stories carrying
 the warm sell, feed staying cold-reach. Buyer-intent qualification question at checkout or delivery
 ("what do you sell?") — required for fulfillment anyway, doubles as segment truth.

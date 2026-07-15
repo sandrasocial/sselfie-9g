@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS generated_videos (
   job_id TEXT NOT NULL,
   status VARCHAR(50) DEFAULT 'processing',
   progress INTEGER DEFAULT 0,
+  billing_mode TEXT NOT NULL DEFAULT 'member_credits',
+  source_context TEXT,
   error_message TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   completed_at TIMESTAMPTZ,

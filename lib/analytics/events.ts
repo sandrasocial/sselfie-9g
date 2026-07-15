@@ -57,6 +57,12 @@ export async function logAnalyticsEvent(input: {
 
     await ensureAnalyticsSchema()
     const sql = getDb()
+    const properties = safeJson(input.properties ?? {})
+    if (eventName === "suite_intent_detected" && typeof properties.intent_label !== "string") {
+      properties.intent_label =
+        safeString(properties.format, 80) ||
+        (properties.confidence === "needs_clarify" ? "needs_clarify" : "unclassified")
+    }
 
     await sql`
       INSERT INTO analytics_events (
@@ -82,7 +88,7 @@ export async function logAnalyticsEvent(input: {
         ${safeString(input.utm?.campaign ?? null, 150)},
         ${safeString(input.utm?.content ?? null, 150)},
         ${safeString(input.utm?.term ?? null, 150)},
-        ${safeJson(input.properties ?? {})}
+        ${properties}
       )
     `
 

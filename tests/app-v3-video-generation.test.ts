@@ -159,6 +159,43 @@ describe("app-v3 video generation service", () => {
     expect(insertSql).not.toContain("user_models")
   })
 
+  it("funds campaign clips as a business cost without checking, deducting, or refunding member credits", async () => {
+    const { startVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    const result = await startVideoGeneration({
+      userId: "campaign-video-owner",
+      imageUrl: "https://cdn.example.com/campaign-photo.png",
+      motionPrompt: "gentle camera push-in, natural blink, preserve the original scene",
+      source: "campaign-outcome",
+      billingMode: "business",
+      billingReference: "campaign-order-51:clip-1",
+    })
+
+    expect(result).toMatchObject({ creditsDeducted: 0, newBalance: 0 })
+    expect(mockCheckCredits).not.toHaveBeenCalled()
+    expect(mockDeductCredits).not.toHaveBeenCalled()
+    expect(mockAddCredits).not.toHaveBeenCalled()
+    const insertSql = (mockSql.mock.calls[0][0] as TemplateStringsArray).join(" ")
+    expect(insertSql).toContain("billing_mode")
+    expect(insertSql).toContain("source_context")
+  })
+
+  it("refuses business-funded video generation outside the campaign outcome source", async () => {
+    const { startVideoGeneration } = await import("@/lib/maya/video-generation-service")
+
+    await expect(
+      startVideoGeneration({
+        userId: "campaign-video-owner",
+        imageUrl: "https://cdn.example.com/campaign-photo.png",
+        billingMode: "business",
+        source: "gallery",
+      })
+    ).rejects.toMatchObject({ status: 400 })
+    expect(mockCheckCredits).not.toHaveBeenCalled()
+    expect(mockDeductCredits).not.toHaveBeenCalled()
+    expect(mockReplicateCreate).not.toHaveBeenCalled()
+  })
+
   it("LIKENESS-MEMORY-01 (video, 2026-07-06): threads her stored corrections into the motion prompt input", async () => {
     mockIsLikenessMemoryEnabled.mockReturnValue(true)
     mockGetMemory.mockResolvedValue({
@@ -305,9 +342,7 @@ describe("app-v3 video generation service", () => {
       })
     )
     expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("negative_prompt")
-    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty(
-      "enable_prompt_expansion"
-    )
+    expect(mockReplicateCreate.mock.calls[0][0].input).not.toHaveProperty("enable_prompt_expansion")
   })
 
   it("uses the Kling V3 Omni input shape behind an explicit model override", async () => {
@@ -418,7 +453,9 @@ describe("app-v3 video generation service", () => {
       error: "An error occurred while processing your request (E002)",
     })
     // Owner select, then the atomic failed-claim UPDATE returning the claimed row.
-    mockSql.mockResolvedValueOnce([{ id: 77, status: "processing" }]).mockResolvedValueOnce([{ id: 77 }])
+    mockSql
+      .mockResolvedValueOnce([{ id: 77, status: "processing" }])
+      .mockResolvedValueOnce([{ id: 77 }])
 
     const { checkVideoGeneration } = await import("@/lib/maya/video-generation-service")
 
@@ -481,6 +518,23 @@ describe("app-v3 video generation service", () => {
     expect(mockLogAnalyticsEvent).not.toHaveBeenCalled()
   })
 
+  it("does not issue a credit refund when a business-funded campaign clip fails", async () => {
+    mockReplicateGet.mockResolvedValue({ status: "failed", error: "provider failed" })
+    mockSql
+      .mockResolvedValueOnce([{ id: 77, status: "processing", billing_mode: "business" }])
+      .mockResolvedValueOnce([{ id: 77 }])
+
+    const { checkVideoGeneration } = await import("@/lib/maya/video-generation-service")
+    const result = await checkVideoGeneration({
+      userId: "campaign-video-owner",
+      predictionId: "pred_video_123",
+      videoId: 77,
+    })
+
+    expect(result).toEqual({ status: "failed", error: "provider failed" })
+    expect(mockAddCredits).not.toHaveBeenCalled()
+  })
+
   it("refunds and logs a persistent failure event when creating the prediction fails", async () => {
     mockReplicateCreate.mockRejectedValue(new Error("model gone"))
 
@@ -522,7 +576,9 @@ describe("app-v3 video generation service", () => {
       status: "failed",
       error: "An error occurred while processing your request (E002)",
     })
-    mockSql.mockResolvedValueOnce([{ id: 77, status: "processing" }]).mockResolvedValueOnce([{ id: 77 }])
+    mockSql
+      .mockResolvedValueOnce([{ id: 77, status: "processing" }])
+      .mockResolvedValueOnce([{ id: 77 }])
     mockAddCredits.mockResolvedValue({ success: false, newBalance: 0, error: "db down" })
 
     const { checkVideoGeneration } = await import("@/lib/maya/video-generation-service")

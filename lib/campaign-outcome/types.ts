@@ -53,6 +53,52 @@ export type CampaignPublishDay = {
   instruction: string
 }
 
+export type CampaignPatternReference = {
+  id: string
+  hookLine: string
+  views: number | null
+  source: "reel-corpus" | "viral-dna"
+}
+
+export type CampaignTraceability = {
+  note: string
+  intakeFields: Array<"what_she_sells" | "promotion" | "target_audience" | "voice_reference">
+  corpusPattern: CampaignPatternReference
+}
+
+export type CampaignReelClipPlan = {
+  id: string
+  sourcePhotoId: string
+  motionPrompt: string
+}
+
+export type CampaignReelClip = CampaignReelClipPlan & {
+  sourcePhotoUrl: string
+  status: "ready" | "unavailable"
+  videoUrl: string | null
+  note: string | null
+}
+
+export type CampaignReel = {
+  hook: string
+  script: string
+  selfFilmedClipInstruction: string
+  brollClips: CampaignReelClip[]
+  overlayLines: string[]
+  assembly: {
+    clipOrder: string[]
+    overlayPlacements: Array<{
+      overlayLine: string
+      overClipId: string
+    }>
+    targetLengthSeconds: number
+    audioType: string
+  }
+  caption: string
+  cta: string
+  traceability: CampaignTraceability
+}
+
 export type CampaignData = {
   visualDirection: string
   firstPostReason: string
@@ -61,6 +107,8 @@ export type CampaignData = {
   carousel: CampaignCarousel
   storySequences: CampaignStorySequence[]
   publishPlan: CampaignPublishDay[]
+  reel: CampaignReel
+  traceability: CampaignTraceability
 }
 
 export type CampaignOrder = {
@@ -84,6 +132,8 @@ export type CampaignOrder = {
   generation_attempts: number
   generation_error: string | null
   admin_notes: string | null
+  redo_requested_at: string | Date | null
+  refund_requested_at: string | Date | null
   is_test_mode: boolean
   purchased_at: string | Date
   intake_email_sent_at: string | Date | null
@@ -112,6 +162,54 @@ function isSlide(value: unknown): value is CampaignSlide {
     typeof slide.headline === "string" &&
     typeof slide.body === "string" &&
     typeof slide.visualUrl === "string"
+  )
+}
+
+function isTraceability(value: unknown): value is CampaignTraceability {
+  if (!value || typeof value !== "object") return false
+  const trace = value as Partial<CampaignTraceability>
+  return (
+    typeof trace.note === "string" &&
+    Array.isArray(trace.intakeFields) &&
+    Boolean(trace.corpusPattern) &&
+    typeof trace.corpusPattern?.id === "string" &&
+    typeof trace.corpusPattern?.hookLine === "string"
+  )
+}
+
+function isReel(value: unknown): value is CampaignReel {
+  if (!value || typeof value !== "object") return false
+  const reel = value as Partial<CampaignReel>
+  return (
+    typeof reel.hook === "string" &&
+    typeof reel.script === "string" &&
+    typeof reel.selfFilmedClipInstruction === "string" &&
+    Array.isArray(reel.brollClips) &&
+    reel.brollClips.length <= 3 &&
+    reel.brollClips.every(
+      clip =>
+        clip &&
+        typeof clip.id === "string" &&
+        typeof clip.sourcePhotoId === "string" &&
+        typeof clip.sourcePhotoUrl === "string" &&
+        (clip.status === "ready" || clip.status === "unavailable") &&
+        (clip.videoUrl === null || typeof clip.videoUrl === "string")
+    ) &&
+    Array.isArray(reel.overlayLines) &&
+    reel.overlayLines.length >= 2 &&
+    Boolean(reel.assembly) &&
+    Array.isArray(reel.assembly?.clipOrder) &&
+    Array.isArray(reel.assembly?.overlayPlacements) &&
+    reel.assembly.overlayPlacements.length === reel.overlayLines.length &&
+    reel.assembly.overlayPlacements.every(
+      placement =>
+        typeof placement.overlayLine === "string" && typeof placement.overClipId === "string"
+    ) &&
+    typeof reel.assembly?.targetLengthSeconds === "number" &&
+    typeof reel.assembly?.audioType === "string" &&
+    typeof reel.caption === "string" &&
+    typeof reel.cta === "string" &&
+    isTraceability(reel.traceability)
   )
 }
 
@@ -165,6 +263,8 @@ export function isCampaignData(value: unknown): value is CampaignData {
         typeof day.day === "number" &&
         typeof day.asset === "string" &&
         typeof day.instruction === "string"
-    )
+    ) &&
+    isReel(data.reel) &&
+    isTraceability(data.traceability)
   )
 }
