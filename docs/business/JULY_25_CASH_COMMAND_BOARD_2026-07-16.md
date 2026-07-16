@@ -123,6 +123,8 @@ Meta Creator Fast Track is excluded because the current program is not available
 - No low-ticket pivot, funnel rebuild, new SaaS feature, or new membership launch before this cash window closes.
 - A no, silence, or low budget is commercial evidence. It is not automatically a website or code bug.
 
+The buyer-reply language, decision-call agenda, procurement checklist, and order-form generator live in `docs/business/JULY_25_DEAL_CLOSE_KIT_2026-07-16.md`. Everything in that kit remains draft-only until Sandra approves the specific outward action.
+
 ## Human and agent split
 
 Sandra owns:
