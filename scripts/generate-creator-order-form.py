@@ -54,73 +54,28 @@ class Offer:
 
 
 OFFERS = {
-    "creator-ad-sprint": Offer(
-        key="creator-ad-sprint",
-        title="Creator Ad Sprint",
+    "tutorial-partnership": Offer(
+        key="tutorial-partnership",
+        title="SSELFIE Tutorial Partnership",
         fee=3000,
-        usage="30 consecutive days of paid use from brand-owned Meta and TikTok accounts. Start date confirmed in writing.",
+        usage="Published on one agreed primary platform and kept live for at least 30 days unless platform, legal, safety, or brand-compliance requirements require removal. Includes 30 consecutive days of paid amplification for that live post; start date and authorization method are confirmed in writing.",
         delivery="Within 10 business days after cleared payment, approved brief, and product access.",
         deliverables=(
-            "Three product-specific creative concepts",
-            "Two hooks per concept: six finished vertical ads",
-            "Captions and calls to action",
-            "One consolidated revision round",
+            "One original 30-60 second vertical tutorial built around a problem the product genuinely helps solve",
+            "Concept, script, filming, edit, and caption or on-screen call to action",
+            "Publication on one agreed primary platform: Sandra's Instagram Reel or TikTok",
+            "One consolidated revision round and a seven-day platform performance snapshot",
         ),
-        not_included="Exclusivity, raw footage, extended usage, additional revisions, and any distribution not named above.",
+        not_included="Cross-platform reposting, extra versions, raw footage, exclusivity, extended amplification, additional revisions, and any distribution not named above.",
         terms=(
-            "The buyer supplies the approved brief, product access, required brand claims, and compliance guidance before production begins.",
-            "Feedback is returned as one consolidated revision round. New concepts or a changed brief are additional scope.",
-            "The buyer receives only the usage license written in this order form. All other rights remain with the creator.",
+            "The buyer supplies the approved brief, product access, claims, platform, amplification requirements, and compliance guidance before production begins.",
+            "The product must have a truthful role inside the tutorial. Sandra retains final editorial judgment and will not publish unsupported claims.",
+            "One consolidated factual or edit revision is included. A new concept, extra version, or changed brief is additional scope.",
+            "The buyer receives only the publication and amplification rights written here. All other rights remain with the creator.",
             "No audience, advertising, sales, reach, or return-on-investment result is promised.",
-            "Payments are non-refundable after production begins. If the buyer delays inputs or approval, the delivery date moves accordingly.",
+            "Payments are non-refundable after production begins. Buyer delays move the delivery date accordingly.",
             "Taxes are added only when legally required and will be shown on the invoice.",
             "Changes to scope, usage, timing, or payment must be agreed in writing by both parties.",
-        ),
-    ),
-    "campaign-batch": Offer(
-        key="campaign-batch",
-        title="Campaign Batch",
-        fee=6000,
-        usage="60 consecutive days of paid use from brand-owned accounts. Start date confirmed in writing.",
-        delivery="Within 10 business days after cleared payment, approved brief, and product access.",
-        deliverables=(
-            "Twelve finished vertical video variations",
-            "One organic Instagram tutorial plus Stories",
-            "Captions and calls to action",
-            "One consolidated revision round",
-        ),
-        not_included="Exclusivity, raw footage, extended usage, additional revisions, and any distribution not named above.",
-        terms=(
-            "The buyer supplies the approved brief, product access, required brand claims, and compliance guidance before production begins.",
-            "Feedback is returned as one consolidated revision round. New concepts or a changed brief are additional scope.",
-            "The buyer receives only the usage license written in this order form. All other rights remain with the creator.",
-            "No audience, advertising, sales, reach, or return-on-investment result is promised.",
-            "Payments are non-refundable after production begins. If the buyer delays inputs or approval, the delivery date moves accordingly.",
-            "Taxes are added only when legally required and will be shown on the invoice.",
-            "Changes to scope, usage, timing, or payment must be agreed in writing by both parties.",
-        ),
-    ),
-    "visibility-workshop": Offer(
-        key="visibility-workshop",
-        title="Visible Without Becoming Someone Else Workshop",
-        fee=3000,
-        usage="One live delivery plus a 30-day replay license for the buyer's participant community.",
-        delivery="One 90-minute virtual workshop on the mutually confirmed date.",
-        deliverables=(
-            "Ninety-minute virtual workshop",
-            "One-photo, one-story, AI-assisted visibility workflow",
-            "Participant workbook",
-            "Live Q&A and 30-day replay access",
-        ),
-        not_included="Additional sessions, custom participant consulting, resale, or replay distribution beyond the named participant community and 30-day term.",
-        terms=(
-            "The buyer supplies the approved participant context, session brief, workshop platform, and access or replay logistics before preparation begins.",
-            "The buyer may provide the replay only to its named participant community for 30 days. Wider distribution, resale, or sublicensing is not included.",
-            "Sandra retains ownership of the workshop method, teaching material, and workbook. The buyer receives only the delivery and replay license written here.",
-            "No financial, audience, advertising, sales, reach, or other participant result is promised.",
-            "Payments are non-refundable after workshop preparation begins. Scheduling changes must be agreed in writing.",
-            "Taxes are added only when legally required and will be shown on the invoice.",
-            "Changes to scope, replay use, timing, or payment must be agreed in writing by both parties.",
         ),
     ),
 }
@@ -180,16 +135,16 @@ def build_pdf(args: argparse.Namespace) -> None:
         "Body",
         parent=styles["BodyText"],
         fontName=regular_font,
-        fontSize=8.6,
-        leading=12,
+        fontSize=8.1,
+        leading=10.4,
         textColor=BLACK,
         spaceAfter=3,
     )
     small = ParagraphStyle(
         "Small",
         parent=body,
-        fontSize=7.5,
-        leading=10.2,
+        fontSize=7.1,
+        leading=8.8,
         textColor=SMOKE,
     )
     label = ParagraphStyle(
@@ -208,15 +163,15 @@ def build_pdf(args: argparse.Namespace) -> None:
         fontName=bold_font,
         fontSize=11,
         leading=14,
-        spaceBefore=8,
-        spaceAfter=5,
+        spaceBefore=5,
+        spaceAfter=3,
     )
     title = ParagraphStyle(
         "Title",
         parent=body,
         fontName="Times-Bold",
-        fontSize=24,
-        leading=26,
+        fontSize=21,
+        leading=22,
         textColor=BLACK,
         spaceAfter=5,
     )
@@ -269,8 +224,8 @@ def build_pdf(args: argparse.Namespace) -> None:
         pagesize=A4,
         leftMargin=18 * mm,
         rightMargin=18 * mm,
-        topMargin=18 * mm,
-        bottomMargin=17 * mm,
+        topMargin=14 * mm,
+        bottomMargin=14 * mm,
         title=f"{offer.title} Order Form",
         author="Sandra Social",
         subject="Draft creator partnership order form",
@@ -299,7 +254,7 @@ def build_pdf(args: argparse.Namespace) -> None:
     story.append(Paragraph("DRAFT - SANDRA APPROVAL REQUIRED", label))
     story.append(Paragraph(f"{offer.title}<br/>Order Form", title))
     story.append(Paragraph("One clear scope. One clear decision.", small))
-    story.append(Spacer(1, 5 * mm))
+    story.append(Spacer(1, 3 * mm))
 
     party_data = [
         [Paragraph("SELLER", label), Paragraph("BUYER", label)],
@@ -322,7 +277,7 @@ def build_pdf(args: argparse.Namespace) -> None:
         ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
     ]))
     story.append(parties)
-    story.append(Spacer(1, 4 * mm))
+    story.append(Spacer(1, 2.5 * mm))
 
     commercial = Table([
         [Paragraph("INVESTMENT", label), Paragraph("PAYMENT", label), Paragraph("VALID UNTIL", label)],
@@ -342,7 +297,7 @@ def build_pdf(args: argparse.Namespace) -> None:
     story.append(Paragraph("Scope", section))
     for item in offer.deliverables:
         story.append(Paragraph(f"• {item}", body))
-    story.append(Spacer(1, 2 * mm))
+    story.append(Spacer(1, 1 * mm))
     story.append(Paragraph(f"<b>Delivery:</b> {offer.delivery}", body))
     story.append(Paragraph(f"<b>Usage:</b> {offer.usage}", body))
     story.append(Paragraph(f"<b>Not included:</b> {offer.not_included}", body))
@@ -351,9 +306,9 @@ def build_pdf(args: argparse.Namespace) -> None:
     for term in offer.terms:
         story.append(Paragraph(f"• {term}", small))
 
-    story.append(Spacer(1, 3 * mm))
+    story.append(Spacer(1, 2 * mm))
     story.append(Rule(doc.width, BLACK, 0.8))
-    story.append(Spacer(1, 3 * mm))
+    story.append(Spacer(1, 2 * mm))
     approval = Table([
         [Paragraph("BUYER APPROVAL", label), Paragraph("CREATOR APPROVAL", label)],
         [Paragraph(value_or_placeholder(args.buyer_signatory, "BUYER NAME AND TITLE"), body), Paragraph("Sandra Sigurjonsdottir Aamodt", body)],
@@ -364,11 +319,11 @@ def build_pdf(args: argparse.Namespace) -> None:
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("LEFTPADDING", (0, 0), (-1, -1), 0),
         ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-        ("TOPPADDING", (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 2.5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2.5),
     ]))
     story.append(KeepTogether([approval]))
-    story.append(Spacer(1, 4 * mm))
+    story.append(Spacer(1, 2 * mm))
     story.append(Paragraph(
         "This is a commercial order-form template, not legal advice. Sandra must verify seller details and approve the final buyer-ready version before use.",
         centered,
@@ -380,7 +335,7 @@ def build_pdf(args: argparse.Namespace) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--offer", choices=sorted(OFFERS), default="creator-ad-sprint")
+    parser.add_argument("--offer", choices=sorted(OFFERS), default="tutorial-partnership")
     parser.add_argument("--payment", choices=("full", "split"), default="full")
     parser.add_argument("--buyer-legal-name")
     parser.add_argument("--buyer-address")

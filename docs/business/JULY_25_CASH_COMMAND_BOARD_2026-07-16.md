@@ -8,7 +8,7 @@ Status: ACTIVE
 ## Cash objective
 
 - Floor: **EUR 15,000 in new cleared campaign cash by 2026-07-25**.
-- Warm-deal stretch: **EUR 18,000** in specific offers already matched to existing relationships.
+- Warm-offer face value: **EUR 15,000** across five existing relationships. This is proposed pricing, not buyer-confirmed budget.
 - Coverage ambition: **EUR 60,000 face value**, but only verified priced opportunities may be called qualified pipeline.
 - A signed agreement, verbal yes, invoice, checkout start, or promised payment is not cash received.
 - The existing USD 644.61 Stripe payout expected on 2026-07-20 is tracked separately and does not count as new campaign cash.
@@ -17,40 +17,49 @@ Stripe is configured for daily payouts with a three-day delay. For card revenue 
 
 This is a goal, not a forecast or guarantee. The plan is designed to maximize a real chance of reaching it without inventing demand, promising ad performance, or creating another product.
 
-## What SSELFIE sells now
+## Paid validation offer
 
-### Creator Ad Sprint — EUR 3,000
+### SSELFIE Tutorial Partnership — EUR 3,000
 
-- Three product-specific concepts.
-- Two hooks per concept: six finished vertical ads.
-- Captions and calls to action.
-- One revision round.
-- Delivery within ten business days after the approved brief and product access.
-- Thirty days of paid use from brand-owned Meta and TikTok accounts.
-- No exclusivity and no required organic post.
+- One original 30-60 second vertical tutorial built around a problem the product genuinely helps solve.
+- Concept, script, filming, edit, caption or on-screen call to action, and one consolidated revision round.
+- Published on one agreed primary platform: Sandra's Instagram Reel or TikTok.
+- Thirty days of paid amplification for the live post on the agreed platform through a Partnership Ad or Spark Ad authorization where technically available.
+- A seven-day platform performance snapshot. No reach, sales, advertising, or return-on-investment result is promised.
+- Delivery within ten business days after cleared payment, approved brief, product access, approved claims, and platform confirmation.
 - Paid in full to reserve production. A 50% + 50% split is available when procurement requires it.
-- Organic distribution, raw footage, extended usage, and exclusivity are separate.
+- Cross-platform reposting, extra versions, raw footage, extended usage, and exclusivity are separate.
 
-### Campaign Batch — EUR 6,000
+The product must have a useful role inside the lesson. Generic awareness placements, pure UGC production, free samples, and products without a natural teaching fit are excluded.
 
-- Twelve vertical variants.
-- Sixty days of paid use from brand-owned accounts.
-- One Sandra organic tutorial plus Stories.
-- One revision round.
-- Delivery within ten business days after the approved brief and product access.
-- No exclusivity. Extended usage is separate.
+### Evidence status
+
+- **Fact:** Syntx asked for paid Instagram integrations in one-, three-, or five-piece options.
+- **Fact:** Replit asked for one dedicated 30-60 second TikTok.
+- **Fact:** ShiftCam called Sandra's phone-photo tutorial concept creative and aligned with its brand and community.
+- **Fact:** Sandra's strongest first-party content proof is tutorial behavior: 45.4K saves and 13.7K shares on one tutorial.
+- **Fact:** Sandra's earlier rate card led with "Your product in a tutorial they actually save" and priced a sponsored tutorial at EUR 2,500; UGC was a separate EUR 750 production service.
+- **Inference:** The strongest common commercial job is a published, product-specific tutorial, not a batch of generic ad assets.
+- **Hypothesis:** EUR 3,000 is acceptable for one published tutorial plus a 30-day amplification license. No buyer has validated this exact contract or price yet.
+
+### Paid validation gate
+
+- Pass: at least two buyer-confirmed brief-and-budget conversations and one cleared EUR 3,000 booking from the five warm contacts.
+- Caution: one qualified conversation but no cleared booking.
+- Fail: no qualified replies, repeated rejection of the core tutorial format, or repeated price rejection from buyers with a live campaign.
+- Do not redesign the offer from silence alone. Record the reason when a buyer says no: no live campaign, no budget, wrong platform, wrong scope, or price.
 
 ## Warm-deal target arithmetic
 
 | Priority | Buyer | Offer | Ask | Current state |
 | --- | --- | --- | ---: | --- |
-| 1 | Syntx AI | Campaign Batch | EUR 6,000 | Prior paid-collaboration inbound; the team acknowledged the earlier rate card, but no current budget is confirmed |
-| 2 | Replit | Creator Ad Sprint | EUR 3,000 | Paid-collaboration inbound from March; no current brief, reply, or budget is confirmed |
-| 3 | Hailuo AI | Creator Ad Sprint | EUR 3,000 | Compensated-partnership inbound from May; no brief or budget has been shared |
-| 4 | ShiftCam | Creator Ad Sprint | EUR 3,000 | Application acknowledged and a named follow-up contact was provided; no paid budget is confirmed |
-| 5 | SANDMARC | Creator Ad Sprint | EUR 3,000 | Application acknowledged; no direct buyer or paid budget is confirmed |
+| 1 | Syntx AI | Tutorial Partnership | EUR 3,000 | Prior paid-collaboration inbound for Instagram integrations; the team acknowledged the earlier rate card, but no current brief or budget is confirmed |
+| 2 | Replit | Tutorial Partnership | EUR 3,000 | Asked for one dedicated 30-60 second TikTok; no current brief, reply, or budget is confirmed |
+| 3 | Hailuo AI | Tutorial Partnership | EUR 3,000 | Compensated-partnership inbound from May; no brief or budget has been shared |
+| 4 | ShiftCam | Tutorial Partnership | EUR 3,000 | Called Sandra's tutorial concept aligned and provided an application route; no paid budget is confirmed |
+| 5 | SANDMARC | Tutorial Partnership | EUR 3,000 | Application acknowledged; no direct buyer or paid budget is confirmed |
 
-Total warm asks: **EUR 18,000**. This is Sandra's proposed pricing, not buyer-confirmed budget, qualified pipeline, or expected revenue. Buyer-confirmed fixed-fee budget across these five opportunities is currently **EUR 0**.
+Total warm offer face value: **EUR 15,000**. This is Sandra's proposed pricing, not buyer-confirmed budget, qualified pipeline, or expected revenue. Buyer-confirmed fixed-fee budget across these five opportunities is currently **EUR 0**.
 
 **Hard exclusion:** Unlocked Foundation is excluded from outreach. Sandra already delivered a keynote collaboration for the nonprofit in 2025. Do not draft, send, or follow up with a commercial pitch.
 
@@ -78,8 +87,8 @@ Meta Creator Fast Track is excluded because the current program is not available
 ### July 16
 
 - Put the five remaining warm replies into Gmail as unsent drafts.
-- Replace the public rate-card menu with the single EUR 3,000 sprint.
-- Finish the one-page Creator Ad Sprint PDF.
+- Replace the public rate-card menu with the single EUR 3,000 Tutorial Partnership.
+- Finish the one-page Tutorial Partnership PDF.
 - Repair the broken root-domain DNS after account authentication.
 - Lock the funnel incident gate so commercial weakness cannot create endless redesign work.
 
@@ -111,7 +120,7 @@ Meta Creator Fast Track is excluded because the current program is not available
 
 - One offer, one price, one next step. Never send a rate-card menu.
 - Lead with a product-specific campaign idea, not Sandra's follower count.
-- Separate production from audience distribution and usage rights.
+- Keep organic publication at the center; separate extra production, cross-platform distribution, and extended usage rights.
 - Never promise virality, return on ad spend, audience growth, or sales.
 - No unpaid sample production. Concepts may be described; finished work begins after payment.
 - No low-ticket pivot, funnel rebuild, new SaaS feature, or new membership launch before this cash window closes.
@@ -140,7 +149,7 @@ Agents own:
 | Metric | Current |
 | --- | ---: |
 | New cash received toward floor | EUR 0 |
-| Warm asks ready | EUR 18,000 across five unsent drafts |
+| Warm offer face value | EUR 15,000 across five unsent drafts |
 | Buyer-confirmed fixed-fee budget | EUR 0 |
 | Additional qualified fixed-fee face value | EUR 0 |
 | Coverage ambition | EUR 60,000 |
