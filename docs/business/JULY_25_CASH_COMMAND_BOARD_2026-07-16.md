@@ -9,7 +9,7 @@ Status: ACTIVE
 
 - Floor: **EUR 15,000 in new cleared campaign cash by 2026-07-25**.
 - Warm-deal stretch: **EUR 21,000** in specific offers already matched to existing relationships.
-- Qualified pipeline target: **EUR 60,000 face value** so the result does not depend on one buyer.
+- Coverage ambition: **EUR 60,000 face value**, but only verified priced opportunities may be called qualified pipeline.
 - A signed agreement, verbal yes, invoice, checkout start, or promised payment is not cash received.
 - The existing USD 644.61 Stripe payout expected on 2026-07-20 is tracked separately and does not count as new campaign cash.
 
@@ -55,27 +55,27 @@ This is a goal, not a forecast or guarantee. The plan is designed to maximize a 
 | 2 | Replit | Creator Ad Sprint | EUR 3,000 | Unsent Gmail draft ready in the existing thread |
 | 3 | Hailuo AI | Creator Ad Sprint | EUR 3,000 | Unsent Gmail draft ready; qualify budget before concepts |
 | 4 | Unlocked Foundation | Visibility workshop | EUR 3,000 | Unsent Gmail draft ready in the existing relationship thread |
-| 5 | ShiftCam | Creator Ad Sprint | EUR 3,000 | Secondary warm opportunity |
-| 6 | SANDMARC | Creator Ad Sprint | EUR 3,000 | Secondary warm opportunity |
+| 5 | ShiftCam | Creator Ad Sprint | EUR 3,000 | Unsent Gmail draft ready for the named direct contact |
+| 6 | SANDMARC | Creator Ad Sprint | EUR 3,000 | Unsent Gmail reply draft ready in the application thread |
 
 Total warm asks: **EUR 21,000**. This is target arithmetic, not expected revenue.
 
-Do not spend July time on the prior JellyOtter low offers, SmallRig without a live campaign, prior Canva declines, Collabstr low/no-budget listings, or generic cold beauty and fashion outreach.
+Do not spend July time on the prior JellyOtter low offers, SmallRig without a live campaign, prior Canva declines, Collabstr listings without visible budget and payout terms, affiliate-only programs, suspicious or unverifiable inbound requests, or generic cold beauty and fashion outreach.
 
-## Current-buyer coverage
+## Current-buyer research lane
 
-The second lane is limited to companies with a current launch, creator program, creator payout evidence, or documented growth investment. Public evidence does not prove Sandra has an approved budget.
+The second lane contains research or application routes only. **EUR 0 is counted as qualified fixed-fee face value** until there is a reachable buyer, a confirmed budget, and payment timing that can plausibly support the July 25 cash deadline.
 
-| Wave | Buyer | Offer | Ask | Commercial signal |
-| --- | --- | --- | ---: | --- |
-| 1 | Higgsfield | Campaign Batch | EUR 6,000 | Active Creator Partner and Earn programs |
-| 1 | Picsart | Campaign Batch | EUR 6,000 | Active creator Earn and AI partner programs |
-| 1 | OpenArt | Creator Ad Sprint | EUR 3,000 | Recent Director launch and Creative Partner Program |
-| 2 | Captions / Mirage | Campaign Batch | EUR 6,000 | Recent growth financing and business creative releases |
-| 2 | Facetune / Lightricks | Campaign Batch | EUR 6,000 | Established creator campaign infrastructure |
-| 2 | Runway | Campaign Batch | EUR 6,000 | Recent Agent 2.0 launch and Creative Partners Program |
-| 2 | BetterPic | Creator Ad Sprint | EUR 3,000 | Direct partner-manager route and creator collaboration evidence |
-| 2 | YouCam | Creator Ad Sprint | EUR 3,000 | Active creator acquisition and frequent AI feature releases |
+| Candidate | Evidence found | July cash verdict |
+| --- | --- | --- |
+| OpenArt | Its official Creative Partner Program says paid collaboration invitations may be offered and provides a current application route | Apply if capacity allows, but count EUR 0 until a buyer and budget are confirmed |
+| Higgsfield | Its current Earn program is performance-based, requires publishing, finalizes earnings after day seven, and caps lifetime earnings per video | Secondary channel only; do not forecast fixed-fee or cleared July 25 cash |
+| Picsart | Its AI Partner Program is unpaid; its Earn route is performance-based rather than a fixed campaign fee | Do not count toward the EUR 15,000 deadline |
+| 6ix via Collabstr | A direct invitation exists for one TikTok due July 21, but the email discloses no budget or payout timing | Budget unknown; do not count unless the portal proves acceptable pay and timing |
+| Verdent inbound | The sender and claimed launch details could not be reconciled with official company information | Suppress; no reply or asset sharing |
+| JellyOtter TikTok | Negotiated ceiling was USD 160 with payment after delivery | Suppress for this cash window |
+
+Captions / Mirage, Lightricks, Runway, BetterPic, and YouCam remain possible future account research, not qualified July pipeline. A public creator program, funding announcement, or product launch is not evidence of an approved budget for Sandra.
 
 Meta Creator Fast Track is excluded because the current program is not available to Norway. TikTok One is uncounted until Sandra's account shows access to an actual paid project.
 
@@ -91,9 +91,9 @@ Meta Creator Fast Track is excluded because the current program is not available
 
 ### July 17
 
-- Send the four approved warm messages before the buyers' local workday ends.
-- Prepare and send the ShiftCam and SANDMARC secondary warm messages.
-- Contact the first current-buyer wave with one company-specific concept each.
+- Send all six approved warm messages before the buyers' local workday ends.
+- Qualify every new opportunity for budget, buyer authority, and payment timing before doing concept work.
+- Submit only credible current-program applications that do not distract from warm follow-up and closing.
 
 ### July 18-19
 
@@ -144,9 +144,10 @@ Agents own:
 | Metric | Current |
 | --- | ---: |
 | New cash received toward floor | EUR 0 |
-| Warm asks ready | EUR 15,000 across four unsent drafts |
-| Total warm face value | EUR 21,000 |
-| Total qualified face value | EUR 60,000 |
+| Warm asks ready | EUR 21,000 across six unsent drafts |
+| Verified fixed-fee warm face value | EUR 21,000 |
+| Additional qualified fixed-fee face value | EUR 0 |
+| Coverage ambition | EUR 60,000 |
 | Paid scopes | 0 |
 | Production commitments | 0 |
 
