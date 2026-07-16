@@ -37,7 +37,7 @@ function validDraft() {
       visualHook: "Show the finished result in the first frame.",
       onScreenText: ["One clear line"],
       caption: "A short grounded caption.",
-      ctaKeyword: index === 4 ? "WORK" : "PROMPT",
+      ctaKeyword: index === 4 ? "none" : "PROMPT",
       whyThisWorks: "It follows a measured audience signal.",
     })),
     dailyStories: DAYS.map((day, index) => ({
@@ -68,6 +68,15 @@ describe("weekly content brief draft contract", () => {
     missingSunday.dailyStories = missingSunday.dailyStories.slice(0, 6)
     expect(() => validateWeeklyBriefDraft(missingSunday)).toThrow(
       "dailyStories must contain exactly 7 weekday themes"
+    )
+  })
+
+  it("rejects the retired public WORK route", () => {
+    const retiredRoute = validDraft() as Record<string, any>
+    retiredRoute.contentPlan[0].ctaKeyword = "WORK"
+
+    expect(() => validateWeeklyBriefDraft(retiredRoute)).toThrow(
+      "ctaKeyword must be one of: PROMPT, SELFIE, KIT, none"
     )
   })
 

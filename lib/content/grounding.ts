@@ -154,7 +154,8 @@ export const PURPOSE_MESSAGING = {
     "Low-ticket offers are bridges, not the empire.",
     "Cold content earns attention with a simple visible result: a better selfie, a realistic AI photo, a prompt that works, or one small action she can do today.",
     "Warm content builds trust through Sandra's real story, beliefs, proof, audience questions, and the money/confidence/time desire already showing up in the data.",
-    "Visibility To Paid / Work With Me is the warm offer for women who already have a skill, service, story, expertise, or idea, but do not know what to post, what to say, or what they can sell first.",
+    "Warm public content builds trust but does not automatically pitch a private service.",
+    "Public customers may move to a useful commerce or SUITE step. Media, institutional, and founding-partner offers use private buyer-specific channels.",
     "SUITE is the recurring monthly creation system: the place where the method becomes repeatable.",
   ],
   transformation: [
@@ -172,7 +173,7 @@ export const PURPOSE_MESSAGING = {
     "Does it connect photo to visibility, story, trust, offer, or income?",
     "Is there a real Sandra anchor?",
     "Could only Sandra say this in this way?",
-    "Is the offer bridge right for the audience temperature?",
+    "Is this the correct public or private buyer channel for the offer?",
   ],
   bannedDrift: [
     "AI photo tool",
@@ -261,7 +262,7 @@ export const PROOF = {
 
 export const FUNNEL = {
   ladder:
-    "Free Selfie Guide, free AI Prompts, Selfie Starter Kit, Lightroom Presets, Selfie Branding Masterclass, What To Say, Show Up, Get Paid, Visibility To Paid, The Vault, and SSELFIE Studio.",
+    "Public discovery starts with free selfie and AI-prompt education. Prompt Vault, Starter Kit, presets, and SSELFIE SUITE are public product bridges. Media, institutional, and founding-partner offers are private.",
   keywords: "SELFIE -> selfie guide. PROMPT -> /ai-prompts. ANDROID -> Android guide.",
   conversionInstruction:
     "Do not reduce the business to prompts or AI photos. Show the bridge from one photo to visibility, content, trust, offers, and income.",
@@ -309,7 +310,7 @@ export const STILL_YOU_METHOD = {
     "Selfie To AI Photos Kit and Prompt Vault ($37) = step 2 done properly.",
     "SSELFIE SUITE (EUR 97/month) = steps 1 to 4 running every month with Maya.",
     "The Studio coaching app = the method coached daily by Sandra.",
-    "Visibility To Paid / Work With Me = steps 3 to 5 done with her.",
+    "Visibility Partner is a private, bounded founding hypothesis; media and institutional buyers receive separate private proposals.",
   ],
   contentRule:
     "Content teaches the METHOD, never a tool. A selfie tutorial is Step 1, a prompt reel is Step 2. Never say 'buy my prompts'; say which step this door opens.",
@@ -634,7 +635,7 @@ export function sandraContentIdentityBlock(): string {
     `Core purpose: ${PURPOSE_MESSAGING.coreLock}`,
     "The output must not sound like a generic content strategist, a social media manager, a motivational coach, or ChatGPT giving creator tips.",
     "Every content idea needs a visible Sandra anchor: a named Story Bank theme, a real audience question, a real buyer fear, a real top-post signal, or a real SSELFIE belief.",
-    "For warm, selling, Story, email, and Work With Me content, start from Sandra's actual life and beliefs: the two-bedroom apartment, sleeping on the couch, the bathroom studio, the quiet weeks, the first messy posts, the viral selfie, the first money from her phone, ADHD and simple systems, being judged, or becoming visible by becoming herself again.",
+    "For warm public Story and email content, start from Sandra's actual life and beliefs: the two-bedroom apartment, sleeping on the couch, the bathroom studio, the quiet weeks, the first messy posts, the viral selfie, the first money from her phone, ADHD and simple systems, being judged, or becoming visible by becoming herself again.",
     "For cold tutorial content, start from the audience's real first step: a phone, a face she does not fully trust yet, one photo, one clear action, one small proof.",
     "Sandra sells by connecting the dots, not by performing urgency: The photo gets attention. The story builds connection. The message builds trust. The offer creates income.",
     "Write from observation before advice: I noticed, I used to think, The funny thing is, And honestly, It took me years to realize.",

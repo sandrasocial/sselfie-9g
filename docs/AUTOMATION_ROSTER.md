@@ -13,12 +13,16 @@ silently (a now-retired DM bridge once captured zero messages for a month and no
 
 ## Lane rules (where new automations are ALLOWED to live)
 
+Company authority: `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`. An automation may not
+activate a historical offer, campaign, CTA, or private high-value lane.
+
 1. **Touches customers or money → the repo. No exceptions.** Deployed via Vercel cron/webhook,
    versioned on GitHub, watched by `cron-health-check`, visible in the admin Team panel
    (EMPLOYEE-01). Emails to the list, checkout recovery, fulfillment, member lifecycle: repo.
 2. **Drafts for Sandra, or needs her logged-in browser → Claude Cowork scheduled task.**
    These never send anything. Registered here the day they're created.
-3. **Codex hosts NO business automations.** Codex is the code implementer. The only automation
+3. **Codex hosts NO unattended business automations.** Codex is the builder and revenue-operations
+   implementation seat. The only automation
    allowed in the Codex app is code-hygiene that touches nothing but code (e.g. the lint
    ratchet). Everything else in `~/.codex/automations` is retired.
 4. **External tools (ManyChat, Resend) hold delivery mechanics only, never brains.** Copy and
@@ -55,7 +59,7 @@ Brand rule for every layer: read `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` firs
 | `ai-photoshoot-nurture` | 09:30 | AI-prompts + Vault buyer nurture. Narrowed 2026-07-12: free AI Prompts leads stop after the paid Vault/Kit offer sequence and no longer receive the failed no-card SUITE trial. At payment, known Prompt Vault, Starter Kit, and AI Photos Kit buyers now start their one-ever included trial automatically; guests keep the claim-token email fallback. |
 | `nurture-sequence` | 10:00 | Legacy multi-product nurture (mostly double-gated off) |
 | `membership / prompt-vault / starter-kit checkout-recovery` | hourly (staggered) | Abandoned checkout recovery for the three active revenue paths. Membership recovery returns identified abandoners directly to a prefilled paid checkout; it does not grant a trial. Sandra approved the fixed July 13–15 One Selfie recovery copy on July 13 and `ONE_SELFIE_BUNDLE_CHECKOUT_RECOVERY_ENABLED=true` is live in Production. The shared Starter Kit job sends at most one deduplicated reminder about three hours after an identified bundle checkout starts and only while the offer is open; it rechecks Stripe immediately before sending and suppresses paid/completed buyers and active SUITE members. There is no discount, second follow-up, or new schedule. Bundle hydration and sending are each capped at four rows per run and share a 38-second / 16-operation budget so the 60-second job retains safe headroom. |
-| `campaign-checkout-recovery`                                | hourly at :10      | HELD with Your Next Campaign. Three draft touches at 1h, +24h, and +72h. Every stage has a hard `stripe_payments` buyer guard, and the job remains disabled unless both campaign and recovery flags are explicitly opened after copy approval. No discount and no live-event dependency.                                                                                                                                                                                                                                                                                                                                                         |
+| `campaign-checkout-recovery` | hourly at :10 | DORMANT internal capability. The Company Kernel does not authorize a public Your Next Campaign offer. It remains fail-closed and must not send. |
 
 ### Sandra-facing intelligence (LIVE)
 | Cron | Schedule | Job |
@@ -139,9 +143,9 @@ makes one bounded fix, and requires an independent verification pass before the 
 
 | Task | Schedule | Status | Job |
 |---|---|---|---|
-| `daily-email-draft` | 06:34 daily | ✅ ACTIVE (Constitution-first 2026-07-13) | Drafts ONE story-first broadcast + preview to Sandra. NEVER sends. Loads `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` first, honors attended-campaign precedence, and points at the live email code (`lib/email/templates/stone-email.ts` + `scripts/daily-email-prep.ts`) instead of the removed `sselfie-email` skill. |
-| `daily-story-sequence-draft` | 07:01 daily | ✅ ACTIVE (Constitution-first 2026-07-13) | Reads that morning's already-drafted broadcast via `scripts/daily-story-sequence-prep.ts` and repurposes it into a 7-slide Instagram Story sequence (hook → emotional recognition → belief shift → personal mirror → stuck point → offer bridge → CTA), TEXT ONLY, ready to copy. Also pulls that weekday's planned theme from the latest `weekly-content-brief-draft` row (if any) as a continuity steer — the two tasks were briefly duplicating "today's Story" (2026-07-11 content-system audit finding); reconciled by making this the sole owner of daily slide text while the weekly brief owns only the week-level theme. Now reads the full voice-doc set (was thinner than its siblings at launch). Stores to `analytics_reports` (`report_type='story_sequence_daily'`) and emails Sandra the slides. NEVER posts. Does not replace `sselfie-stories` (the on-demand skill for full photo-based sequences with background/overlay rendering) — this is the lightweight daily companion. |
-| `weekly-content-brief-draft` | Mon 06:05 | ✅ ACTIVE (real Monday run verified 2026-07-13; Constitution-first same day) | Replaces the deleted repo content engine. Real data via `scripts/weekly-brief-prep.ts` + live research + live writing, stores into `analytics_reports`, and emails Sandra a preview. NEVER posts. A shared canonical contract rejects incomplete demand maps, incompatible trend keys, unsafe buyer-facing vibe presets, fewer than five complete pieces, or anything other than seven weekday themes before any database write or email. This week's stored row was repaired and now has two usable Shoot Studio trend presets. `daily-story-sequence-draft` remains the sole owner of daily slide text. |
+| `daily-email-draft` | 06:34 daily | ✅ ACTIVE (Kernel-aligned 2026-07-16) | Drafts one public story-first broadcast and preview. NEVER sends. Public bridges are commerce/SUITE or no ask; private high-value offers are forbidden. |
+| `daily-story-sequence-draft` | 07:01 daily | ✅ ACTIVE (Kernel-aligned 2026-07-16) | Mirrors the morning draft into seven text-only Story slides. NEVER posts or adds a different offer. |
+| `weekly-content-brief-draft` | Mon 06:05 | ✅ ACTIVE (Kernel-aligned 2026-07-16) | Uses real data and current research for five public pieces and seven Story themes. NEVER posts and cannot use the retired public WORK CTA. |
 
 Retired task directories were physically removed on 2026-07-12. This includes
 `claude-codex-loop`, `daily-photo-export`, `funnel-health-daily`, and the duplicate
@@ -199,7 +203,7 @@ automation.
 
 | System | What lives there | Notes |
 |---|---|---|
-| ManyChat (fb877156) | Keyword automations (PROMPT, SELFIE, KIT, SUITE, VAULT, PRESET, ANDROID, WORK) and Live Chat inbox | Keyword marketing flows remain live. The `Instagram Default Reply` bridge was stopped and moved to trash on 2026-07-12, and ManyChat AI is deactivated. The verified WORK path remains `WORK — Sprint Application`. `BUNDLE` is an attended July 13–15 event flow Sandra must configure from the exact runbook; do not claim it is live until she confirms it. `CAMPAIGN` is also not live until Sandra configures its exact held-release URL from `docs/business/CAMPAIGN_OUTCOME_RUNBOOK_2026-07-15.md`. Inbox review is attended and on demand only. |
+| ManyChat (fb877156) | Public keyword automations and Live Chat inbox | PROMPT, SELFIE, KIT, SUITE, VAULT, PRESET, and ANDROID may remain as verified public mechanics. WORK is legacy and must not be promoted by scheduled content; BUNDLE is closed; CAMPAIGN must remain inactive. Inbox review is attended and on demand only. |
 | Resend | Broadcast delivery, audiences/segments, ~60 mechanical "Sequence:" audiences | Sends only what repo crons or Sandra trigger. The three `Launch · One Selfie` broadcasts are drafts tied to founder approvals; no schedule or automatic send was added. |
 | Stripe | Payments, subscriptions, webhooks → repo | Money truth source per Admin Data Contract. |
 | Vercel | Deploys from `main`, runs all Layer-1 crons, holds prod env flags | Env booleans being hardened in EMPLOYEE-01. |

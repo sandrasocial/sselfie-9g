@@ -13,19 +13,22 @@ Read these before making changes:
 1. `AS-BUILT.md`
    Verified repo facts, deployment target, current app reality, and safety notes.
 
-2. `CLAUDE.md`
+2. `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`
+   Controlling company model, offer status, buyer channels, AI-team roles, and business decisions.
+
+3. `CLAUDE.md`
    Live business context, admin data contract, current priorities, and product guardrails.
 
-3. `docs/CODEX_CONTEXT.md`
+4. `docs/CODEX_CONTEXT.md`
    Technical context, file map, automation notes, and operating procedure.
 
-4. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
+5. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
    Highest-level North Star, message hierarchy, ethical line, and agent contract.
 
-5. `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
+6. `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
    Current voice, audience, story, expertise, product positioning, and agent behavior source.
 
-6. `docs/SSELFIE_DESIGN_SYSTEM.md`
+7. `docs/SSELFIE_DESIGN_SYSTEM.md`
    Current visual and UI design authority.
 
 The older `VOICE_BIBLE`, old content grounding docs, and old Studio marketing drafts are no longer active guidance.

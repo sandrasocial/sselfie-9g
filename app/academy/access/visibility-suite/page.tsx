@@ -534,57 +534,6 @@ export default async function VisibilitySuitePage() {
         )}
       </section>
 
-      {/* ─── Sprint upsell ────────────────────────────────────────────────── */}
-      <section className="grid lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)]">
-        <div className="relative hidden overflow-hidden lg:block" style={{ minHeight: 480 }}>
-          <Image
-            src="/academy/visibility-suite/sprint.png"
-            alt="Laptop and straw hat by the water"
-            fill
-            sizes="(min-width: 1024px) 36vw, 0vw"
-            className="object-cover"
-          />
-        </div>
-
-        <div
-          className="px-6 py-14 md:px-16 md:py-20"
-          style={{ background: C.ink, color: C.creamWarm }}
-        >
-          <p
-            className="text-[10px] uppercase tracking-[0.5em]"
-            style={{ color: C.stone, fontWeight: 600 }}
-          >
-            Your Next Move
-          </p>
-          <h2
-            className={`${cormorant.className} mt-6 uppercase`}
-            style={{
-              fontWeight: 300,
-              fontSize: "clamp(34px, 6vw, 64px)",
-              lineHeight: 1.0,
-              letterSpacing: "-0.015em",
-            }}
-          >
-            Want help turning this into
-            <br />
-            a real business foundation?
-          </h2>
-          <p
-            className="mt-6 max-w-md text-[15px] leading-[1.78]"
-            style={{ color: "rgba(244,240,230,0.72)", fontWeight: 400 }}
-          >
-            Apply for the 4-week private sprint, where we build your message, offer, content
-            direction, and first sales path together.
-          </p>
-          <Link
-            href="/work-with-me"
-            className="mt-9 inline-flex px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90"
-            style={{ background: C.creamWarm, color: C.ink, fontWeight: 600 }}
-          >
-            Apply Now
-          </Link>
-        </div>
-      </section>
     </main>
   )
 }

@@ -167,10 +167,6 @@ export default function BioPage() {
               Selfie Masterclass
               <span className="bio-price">$147</span>
             </Link>
-            <Link href="/work-with-me" className="bio-tertiary-link">
-              Work With Me
-              <span className="bio-arrow">&#8599;</span>
-            </Link>
           </div>
         </div>
       </div>

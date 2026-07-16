@@ -244,7 +244,7 @@ describe("daily Sandra briefing", () => {
     expect(briefing.working.join(" ")).toContain("8 active Suite members")
     expect(briefing.working.join(" ")).toContain("€97 + $393 net MRR")
     expect(briefing.leaking.join(" ")).toContain("Suite trial activation is weak")
-    expect(briefing.leaking.join(" ")).toContain("Work With Me application")
+    expect(briefing.leaking.join(" ")).toContain("legacy attended application")
     expect(email.html).toContain("Revenue truth")
     expect(email.html).toContain("Payments are charge rows")
     expect(email.text).toContain("Members: 8 active · €97 + $393 net MRR")

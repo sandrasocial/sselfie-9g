@@ -60,14 +60,12 @@ function listUnusedPhotos(): { filename: string; mtimeMs: number }[] {
     .sort((a, b) => a.mtimeMs - b.mtimeMs)
 }
 
-// ------------------------------------------------------------- door rotation
+// ------------------------------------------- approved public bridge history
 const DOORS = [
   { key: "vault", match: ["vault", "bathroom"], label: "Prompt Vault $37", url: "https://sselfie.ai/prompt-vault", temp: "cold" },
-  { key: "suite", match: ["suite membership", "trial"], label: "PAUSED 2026-07-11 (0/50 trials ever converted, see SKILL.md) — SUITE membership €97/mo free-trial signup", url: "https://sselfie.ai/join/studio", temp: "activation" },
-  { key: "annual", match: ["annual", "founding"], label: "SUITE Annual (standard price — founding €697/first-25 window CLOSED 2026-07-05, do not reuse that scarcity)", url: "https://sselfie.ai/join/studio", temp: "activation" },
-  { key: "masterclass", match: ["masterclass"], label: "Masterclass $147", url: "https://sselfie.ai/masterclass", temp: "warm" },
+  { key: "starter", match: ["starter", "selfie"], label: "Starter Kit $37", url: "https://sselfie.ai/selfie-to-ai-photos", temp: "cold" },
+  { key: "suite", match: ["suite membership", "suite monthly"], label: "SSELFIE SUITE €97/month", url: "https://sselfie.ai/join/studio", temp: "activation" },
   { key: "presets", match: ["preset"], label: "Presets $19 single / $39 bundle", url: "https://sselfie.ai/presets", temp: "cold" },
-  { key: "workwithme", match: ["work with me", "reply work"], label: "Work With Me €2,000 (reply WORK)", url: "https://sselfie.ai/work-with-me", temp: "warm" },
   { key: "story", match: [], label: "Pure story / no product ask", url: null, temp: "warm" },
 ] as const
 
@@ -228,7 +226,7 @@ async function pullData() {
     console.log(`  new free opt-ins (7d): ${optins.n}`)
   })
 
-  await section("DOOR ROTATION (don't repeat the last 2 sent doors)", async () => {
+  await section("PUBLIC BRIDGE HISTORY (don't repeat the last 2 paid asks)", async () => {
     const r = await resend.broadcasts.list()
     const sent = ((r.data as any)?.data || []).filter((b: any) => b.sent_at).sort((a: any, b: any) => String(b.sent_at).localeCompare(String(a.sent_at)))
     const recentDoors = sent.slice(0, 4).map((b: any) => {
@@ -236,7 +234,7 @@ async function pullData() {
       const hit = DOORS.find((d) => d.match.some((m) => name.includes(m)))
       return hit?.key || "story/unclear"
     })
-    console.log(`  last sent doors (most recent first): ${recentDoors.join(", ") || "none yet"}`)
+    console.log(`  last public bridges (most recent first): ${recentDoors.join(", ") || "none yet"}`)
     console.log(`  don't repeat: ${recentDoors.slice(0, 2).join(", ") || "n/a"}`)
     for (const d of DOORS) console.log(`  - ${d.key} [${d.temp}]: ${d.label}${d.url ? " -> " + d.url : ""}`)
   })

@@ -318,7 +318,7 @@ export default function MayaMoment({ token }: MayaMomentProps) {
               Want help turning this into real brand content?
             </p>
             <Link
-              href="/work-with-me"
+              href="/join/studio"
               style={{
                 display: "inline-block",
                 padding: "12px 22px",

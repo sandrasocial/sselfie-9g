@@ -306,10 +306,9 @@ function getSuccessActionConfig(productType: string | undefined): SuccessActionC
 
   if (productType === "one_time_session") {
     return {
-      href: "/work-with-me",
-      label: "Explore Private Support",
-      helper:
-        "Your photoshoot is confirmed. If you want Sandra's eyes on the full picture, private support is the high-touch next step.",
+      href: "/app",
+      label: "Open SSELFIE",
+      helper: "Your photoshoot is confirmed. Open SSELFIE when you are ready to keep creating.",
       eventName: "one_time_session_studio_click",
     }
   }

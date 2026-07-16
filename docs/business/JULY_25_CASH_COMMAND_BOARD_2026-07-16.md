@@ -5,6 +5,9 @@ Started: 2026-07-16
 Deadline: 2026-07-25
 Status: ACTIVE
 
+Controlling authority: `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`. This board operates the
+media cash lane; it does not replace the software, IP, or commerce decisions in the Kernel.
+
 ## Cash objective
 
 - Floor: **EUR 15,000 in new cleared campaign cash by 2026-07-25**.
@@ -53,11 +56,11 @@ The product must have a useful role inside the lesson. Generic awareness placeme
 
 | Priority | Buyer | Offer | Ask | Current state |
 | --- | --- | --- | ---: | --- |
-| 1 | Syntx AI | Tutorial Partnership | EUR 3,000 | Prior paid-collaboration inbound for Instagram integrations; the team acknowledged the earlier rate card, but no current brief or budget is confirmed |
-| 2 | Replit | Tutorial Partnership | EUR 3,000 | Asked for one dedicated 30-60 second TikTok; no current brief, reply, or budget is confirmed |
-| 3 | Hailuo AI | Tutorial Partnership | EUR 3,000 | Compensated-partnership inbound from May; no brief or budget has been shared |
-| 4 | ShiftCam | Tutorial Partnership | EUR 3,000 | Called Sandra's tutorial concept aligned and provided an application route; no paid budget is confirmed |
-| 5 | SANDMARC | Tutorial Partnership | EUR 3,000 | Application acknowledged; no direct buyer or paid budget is confirmed |
+| 1 | Syntx AI | Tutorial Partnership | EUR 3,000 | Send attempted 2026-07-16; no buyer-confirmed brief or budget yet |
+| 2 | Replit | Tutorial Partnership | EUR 3,000 | Send attempted 2026-07-16; no buyer-confirmed brief or budget yet |
+| 3 | Hailuo AI | Tutorial Partnership | EUR 3,000 | Send attempted 2026-07-16; no buyer-confirmed brief or budget yet |
+| 4 | ShiftCam | Tutorial Partnership | EUR 3,000 | Send attempted 2026-07-16; no paid budget confirmed yet |
+| 5 | SANDMARC | Tutorial Partnership | EUR 3,000 | Send attempted 2026-07-16; no direct buyer or paid budget confirmed yet |
 
 Total warm offer face value: **EUR 15,000**. This is Sandra's proposed pricing, not buyer-confirmed budget, qualified pipeline, or expected revenue. Buyer-confirmed fixed-fee budget across these five opportunities is currently **EUR 0**.
 
@@ -86,7 +89,9 @@ Meta Creator Fast Track is excluded because the current program is not available
 
 ### July 16
 
-- Put the five remaining warm replies into Gmail as unsent drafts.
+- Five warm send attempts completed by Sandra. One produced a delivery-failure notice; identify and
+  repair that recipient before counting it as reached. The other four have no buyer reply recorded
+  on this board yet.
 - Replace the public rate-card menu with the single EUR 3,000 Tutorial Partnership.
 - Finish the one-page Tutorial Partnership PDF.
 - Repair the broken root-domain DNS after account authentication.
@@ -149,7 +154,8 @@ Agents own:
 | Metric | Current |
 | --- | ---: |
 | New cash received toward floor | EUR 0 |
-| Warm offer face value | EUR 15,000 across five unsent drafts |
+| Warm offer face value | EUR 15,000 across five send attempts |
+| Delivery state | 1 failure notice; 4 without a recorded failure notice; delivery/reply not yet verified |
 | Buyer-confirmed fixed-fee budget | EUR 0 |
 | Additional qualified fixed-fee face value | EUR 0 |
 | Coverage ambition | EUR 60,000 |

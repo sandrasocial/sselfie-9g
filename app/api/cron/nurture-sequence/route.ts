@@ -32,8 +32,6 @@ import { generateStarterKitDay14MasterclassOfferEmail } from "@/lib/email/templa
 import { generateMasterclassDay0DeliveryEmail } from "@/lib/email/templates/masterclass-day0-delivery"
 import { generateMasterclassDay2CheckinEmail } from "@/lib/email/templates/masterclass-day2-checkin"
 import { generateMasterclassDay5DeepenEmail } from "@/lib/email/templates/masterclass-day5-deepen"
-import { generateMasterclassDay7SoftWorkWithMeEmail } from "@/lib/email/templates/masterclass-day7-soft-work-with-me"
-import { generateMasterclassDay10DirectInviteEmail } from "@/lib/email/templates/masterclass-day10-direct-invite"
 import { generateAiPromptsDay1VaultBridgeEmail } from "@/lib/email/templates/ai-prompts-day1-vault-bridge"
 import { generateAiPromptsDay2TryFirstPromptEmail } from "@/lib/email/templates/ai-prompts-day2-try-first-prompt"
 import { generateAiPromptsDay5EditMakesPostableEmail } from "@/lib/email/templates/ai-prompts-day5-edit-makes-postable"
@@ -924,12 +922,6 @@ async function sendMasterclassTouchEmail(
       break
     case "masterclass-day5-deepen":
       email = generateMasterclassDay5DeepenEmail({ firstName, accessUrl })
-      break
-    case "masterclass-day7-soft-work-with-me":
-      email = generateMasterclassDay7SoftWorkWithMeEmail({ firstName })
-      break
-    case "masterclass-day10-direct-invite":
-      email = generateMasterclassDay10DirectInviteEmail({ firstName })
       break
     default:
       throw new Error(`Unknown masterclass email type: ${emailType}`)

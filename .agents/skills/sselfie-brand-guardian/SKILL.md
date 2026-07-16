@@ -7,7 +7,9 @@ description: Must be used before any SSELFIE copy, content, campaign, email, pro
 
 Do not copy the Constitution into another file.
 
-Read `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` first. Then read the detailed source named there, `CLAUDE.md`, and the current campaign or product contract for the work in front of you.
+Read `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` first. Then read
+`docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`, the detailed brand source named in the
+Constitution, `CLAUDE.md`, and a campaign or product contract only when the Kernel marks it current.
 
 Before approving an output, verify:
 

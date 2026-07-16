@@ -442,7 +442,6 @@ export function PublicNav({ loginHref = "/auth/login" }: { loginHref?: string })
           { href: "/selfie-guide",  label: "Free Guide"     },
           { href: "/masterclass",   label: "Masterclass"    },
           { href: "/join/studio",   label: "SSELFIE SUITE"  },
-          { href: "/work-with-me",  label: "Work With Me" },
         ].map((l) => (
           <Link key={l.href} href={l.href}
             style={{ ...ty("eyebrow", true), textDecoration: "none" }}>
@@ -473,7 +472,6 @@ export function PublicFooter() {
             "/starter-kit:Starter Kit",
             "/masterclass:Masterclass",
             "/join/studio:SSELFIE SUITE",
-            "/work-with-me:Work With Me",
           ].map((s) => {
             const [href, label] = s.split(":")
             return (

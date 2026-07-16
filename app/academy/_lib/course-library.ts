@@ -374,16 +374,7 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
 
   let nextStep: AcademyHomeState["nextStep"] = null
 
-  if (membershipActive) {
-    nextStep = {
-      eyebrow: "Next Step",
-      title: "Work with Sandra",
-      description:
-        "If you want hands-on support beyond the app, the private offer is the next move.",
-      href: "/work-with-me",
-      ctaLabel: "See 1:1",
-    }
-  } else if (hasMasterclass) {
+  if (!membershipActive && hasMasterclass) {
     nextStep = {
       eyebrow: "Next Step",
       title: "Activate the SUITE",

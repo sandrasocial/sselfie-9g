@@ -53,7 +53,7 @@ export type WeeklyContentPiece = {
   visualHook: string
   onScreenText: string[]
   caption: string
-  ctaKeyword: "PROMPT" | "SELFIE" | "KIT" | "WORK" | "none"
+  ctaKeyword: "PROMPT" | "SELFIE" | "KIT" | "none"
   whyThisWorks: string
   demandSignal?: string
   painfulBefore?: string
@@ -97,14 +97,14 @@ export type WeeklyBriefDraftInput = {
 const CONTENT_FORMATS = ["reel", "carousel", "feed"] as const
 const FUNNEL_STAGES = ["cold", "warm", "activation"] as const
 const ENGAGEMENT_GOALS = ["save", "share", "comment", "follow"] as const
-const CTA_KEYWORDS = ["PROMPT", "SELFIE", "KIT", "WORK", "none"] as const
+const CTA_KEYWORDS = ["PROMPT", "SELFIE", "KIT", "none"] as const
 const CONVERSATION_TYPES = ["my-story", "my-clients", "my-beliefs", "my-life"] as const
 
 // The preset is a visual-world instruction, never marketing strategy. Keep this list narrow and
 // explicit so photographic language such as "studio light" or "selfie" remains valid.
 const UNSAFE_VIBE_LANGUAGE =
   /\b(?:sandra(?:'s)?|sselfie|maya|suite|vault|starter\s+kit|ai\s+photos?\s+kit|visibility\s+to\s+paid|work\s+with\s+me|manychat|instagram|tiktok|youtube|reels?|carousels?|stories?|feed|posts?|newsletters?|e-?mails?|cta|call\s+to\s+action|comments?|dms?)\b/i
-const CTA_KEYWORD_LANGUAGE = /\b(?:PROMPT|SELFIE|KIT|WORK)\b/
+const CTA_KEYWORD_LANGUAGE = /\b(?:PROMPT|SELFIE|KIT)\b/
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value))

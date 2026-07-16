@@ -1,12 +1,12 @@
 # SSELFIE Purpose Messaging Lock
 
-Last updated: 2026-07-09
+Last updated: 2026-07-16
 
 Status: Current execution contract for SSELFIE purpose, category, founder-led messaging, content direction, and story systems.
 
 Highest-level brand law: `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`. Read it first. It locks the destination as freedom, the bridge as visibility, selfies as the starting tool, and AI as the accelerator. This document explains how that North Star routes through content, products, and offers.
 
-If this document conflicts with older positioning, funnel, content, or prompt guidance, this document wins for category execution. The Constitution wins for the North Star, message hierarchy, and ethical line. Use it together with `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`.
+If this document conflicts with older positioning, funnel, content, or prompt guidance, this document wins for category execution. The Constitution wins for the North Star, message hierarchy, and ethical line. `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md` controls current offers, buyer channels, revenue engines, and AI-team roles. Use these together with `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`.
 
 ## The Freedom Hierarchy
 
@@ -45,7 +45,12 @@ Cold content earns attention with a simple visible result: a better selfie, a re
 
 Warm content builds trust through Sandra's real story, beliefs, proof, audience questions, and the money/confidence/time desire already showing up in the data.
 
-The warm offer is Visibility To Paid / Work With Me: for women who already have a skill, service, story, expertise, or idea, but do not know what to post, what to say, or what they can sell first.
+Warm public content continues building trust. It does not automatically pitch a private service.
+
+The company has distinct buyer channels: public customers may move into a useful commerce-base or
+SUITE step; media buyers receive Tutorial Partnership proposals privately; institutions receive
+keynote, AI Visibility Lab, or license proposals privately; qualified founding customers may be
+invited privately to Visibility Partner.
 
 SUITE is the recurring monthly creation system: the place where the method becomes repeatable.
 
@@ -97,7 +102,8 @@ Warm trust:
 
 - Lead with Sandra's real story, a belief, a client/audience question, or a real life moment.
 - Connect photo to visibility, visibility to story, story to trust, trust to offer, and offer to income.
-- Bridge naturally to Visibility To Paid / Work With Me when the woman needs help turning visibility into a clear offer and message.
+- Use a verified Prompt Vault, Starter Kit, presets, SUITE, or no-ask bridge when it genuinely fits.
+- Never insert private high-value offers into scheduled public content.
 
 Paid activation:
 
@@ -113,7 +119,7 @@ The correction is always the same:
 
 Identity and clarity work leads. Content production, research, planning, design, and sales support are the delivery mechanism that keeps that clarity alive day to day. They are never the point of the offer themselves.
 
-A woman does not come to Sandra because she needs a social media manager. She comes because she does not know who she is yet online, what she stands for, or what she could sell. Any offer (Work With Me, Visibility To Paid, SUITE, a future product) must lead with that transformation first, and name the tactical/production support as how she keeps living it after the identity is clear. If a page, a brief, or a roadmap starts to read like a list of services with identity-clarity as one bullet among several, that is the drift. Narrow it back.
+A woman does not come to Sandra because she needs a social media manager. She comes because she does not know who she is yet online, what she stands for, or what she could sell. A customer offer such as SUITE or Visibility Partner must lead with the relevant transformation first and name tactical support as the delivery mechanism. A media or institutional proposal must instead lead with the buyer's real objective, Sandra's relevant teaching value, and a bounded scope. If a page, brief, or roadmap becomes a generic list of services, narrow it back.
 
 ## The Mandatory Questions
 
@@ -124,7 +130,7 @@ Before shipping copy, content, prompts, brief output, or Maya/admin language, as
 - Does it connect photo to visibility, story, trust, offer, or income?
 - Is there a real Sandra anchor?
 - Could only Sandra say this in this way?
-- Is the offer bridge right for the audience temperature?
+- Is this the correct public or private buyer channel for the offer?
 - Does identity/clarity lead, with content and production support named as the delivery mechanism, not the point?
 
 If the answer is no, rewrite.

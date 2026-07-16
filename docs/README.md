@@ -1,6 +1,6 @@
 # SSELFIE Documentation Index
 
-Last verified: 2026-07-13
+Last verified: 2026-07-16
 
 This index separates current operating truth from research, audits, implementation history, and
 archives. A document being detailed does not make it current.
@@ -10,28 +10,29 @@ archives. A document being detailed does not make it current.
 Use this order:
 
 1. `../AS-BUILT.md` — repository, hosting, and live-stack facts.
-2. `../CLAUDE.md` — business state, admin data contract, and priorities.
-3. `CODEX_CONTEXT.md` — compact technical context and file map.
-4. `../tasks/README.md` — active, completed, and held implementation work.
+2. `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md` — current company portfolio, offer status,
+   channel separation, AI-team roles, and business decision rules.
+3. `../CLAUDE.md` — business state, admin data contract, and priorities.
+4. `CODEX_CONTEXT.md` — compact technical context and file map.
+5. `../tasks/README.md` — active, completed, and held implementation work.
 
 ## Current Brand And Business Contracts
 
 - `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` — highest-level North Star, message hierarchy, ethical
   line, and agent contract. Read this first for any brand, copy, campaign, product, or UX work.
+- `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md` — controlling business authority for company
+  model, offers, channels, AI-team roles, and decisions.
 - `brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md` — voice, audience, story, expertise, and
   positioning.
 - `brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md` — purpose, category, founder-led message,
   and drift prevention.
-- `business/SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md` — daily CEO focus and offer
-  routing.
+- `business/SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md` — historical daily routing; the
+  admin component remains, but its current decisions come from the Company Kernel.
 - `business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md` — historical foundation for the current
   revenue direction.
-- `business/SSELFIE_GROWTH_MACHINE_2026-07-12.md` — the current four-lane revenue machine,
-  operating rhythm, measurement order, and future-development gate. It supersedes older funnel
-  sequencing where they conflict.
-- `business/ONE_SELFIE_VISIBILITY_REVENUE_EVENT_2026-07-13.md` — exact attended July 13–15 cash
-  event: offer, ManyChat copy, social kit, email approvals, fulfillment, measurement, monthly
-  learning loop, and ads gate.
+- `business/SSELFIE_GROWTH_MACHINE_2026-07-12.md` — superseded July 12 operating history.
+- `business/ONE_SELFIE_VISIBILITY_REVENUE_EVENT_2026-07-13.md` — closed July 13–15 event record;
+  buyer access and outcome evidence remain protected.
 - `funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` — recognizable, still-you AI doctrine.
 
 The supporting brand source files live in `brand/source/2026-06-27/`.

@@ -1,6 +1,13 @@
 # Your Next Campaign — the outcome pivot and its test (v3)
 
-Status: DECISION CONTRACT v3, 2026-07-14 late. v3 corrects the deliverable composition (Sandra's
+Status: **DORMANT INTERNAL DELIVERY CAPABILITY — DO NOT LAUNCH OR PROMOTE.**
+
+Current authority: `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`. The implementation remains
+fail-closed and may be reused inside a future validated delivery model. It is not the current public
+offer and no campaign email, recovery message, ManyChat flow, or checkout may be enabled from this
+historical contract.
+
+Historical v3 status: DECISION CONTRACT v3, 2026-07-14 late. v3 corrects the deliverable composition (Sandra's
 direction) and adds phase-2 operating benchmarks. v2 merged THREE independent audits (Claude
 2026-07-13 chat audit; Codex 2026-07-14 audit; Claude 2026-07-14 truth investigation
 `docs/audits/SSELFIE_TRUTH_INVESTIGATION_2026-07-14.md`; Codex 2026-07-14 second audit with Stripe

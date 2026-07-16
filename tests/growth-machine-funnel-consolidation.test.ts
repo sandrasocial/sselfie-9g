@@ -30,9 +30,9 @@ describe("growth machine funnel consolidation", () => {
     expect(existsSync("lib/payments/handlers/selfie-to-brand-shoot.ts")).toBe(true)
   })
 
-  it("redirects duplicate and orphaned public routes into the active warm path", () => {
-    expect(read("app/visibility-to-paid/page.tsx")).toContain('redirect("/work-with-me")')
-    expect(read("app/editorial-generator/page.tsx")).toContain('redirect("/work-with-me")')
+  it("redirects duplicate and orphaned public routes into the active software path", () => {
+    expect(read("app/visibility-to-paid/page.tsx")).toContain('redirect("/join/studio")')
+    expect(read("app/editorial-generator/page.tsx")).toContain('redirect("/join/studio")')
   })
 
   it("shows the current $37 Prompt Vault price across live runtime surfaces", () => {

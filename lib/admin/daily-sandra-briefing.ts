@@ -264,7 +264,7 @@ export function buildDailySandraBriefing(
   if (report.revenueScorecard && report.revenueScorecard.workWithMe.applications30d > 0) {
     if (report.revenueScorecard.workWithMe.bookedCalls === 0 && report.revenueScorecard.workWithMe.won === 0) {
       leaking.push(
-        `${report.revenueScorecard.workWithMe.applications30d} Work With Me application(s) came in, but none are marked booked or won. Follow-up process is the leak.`,
+        `${report.revenueScorecard.workWithMe.applications30d} legacy attended application(s) came in, but none are marked booked or won. Complete those existing inquiries without restoring the path as a public offer.`,
       )
     }
   }
@@ -324,7 +324,7 @@ export function buildDailySandraBriefing(
     report.revenueScorecard.workWithMe.applications30d > 0 &&
     report.revenueScorecard.workWithMe.bookedCalls === 0
   ) {
-    codexNext.push("Move Work With Me from passive payment-link follow-up to tracked fit-call pipeline.")
+    codexNext.push("Protect the existing attended inquiries and keep their status accurate. Do not rebuild or publicly promote the legacy path.")
   } else if (
     report.truthSnapshot &&
     report.truthSnapshot.manychat.captures >= 100 &&
@@ -446,7 +446,7 @@ function revenueScorecardHtml(scorecard: RevenueTruthScorecard | null): string {
   const rows = [
     ["Members", `${compactNumber(scorecard.members.active)} active · ${currencyBreakdown(scorecard.members.netMrrByCurrency)} net MRR · ${compactNumber(scorecard.members.discountedMembers)} discounted`, scorecard.sources.activeMembersAndMrr],
     ["Trials", `${compactNumber(scorecard.trials.claimed30d)} claimed · ${compactNumber(scorecard.trials.firstGeneration30d)} first generations · ${compactNumber(scorecard.trials.downloads30d)} downloads`, scorecard.sources.audienceBehavior],
-    ["Work With Me", `${compactNumber(scorecard.workWithMe.applications30d)} applications · ${compactNumber(scorecard.workWithMe.qualifiedOpen)} qualified/open · ${compactNumber(scorecard.workWithMe.bookedCalls)} booked · ${compactNumber(scorecard.workWithMe.won)} won`, scorecard.sources.workWithMePipeline],
+    ["Legacy attended inquiries", `${compactNumber(scorecard.workWithMe.applications30d)} applications · ${compactNumber(scorecard.workWithMe.qualifiedOpen)} qualified/open · ${compactNumber(scorecard.workWithMe.bookedCalls)} booked · ${compactNumber(scorecard.workWithMe.won)} won`, scorecard.sources.workWithMePipeline],
     [
       "Best email",
       topEmail
@@ -477,7 +477,7 @@ function revenueScorecardText(scorecard: RevenueTruthScorecard | null): string {
   if (!scorecard) return ""
   const topEmail = scorecard.demandSignals.topEmailConverters[0]
   const topPrompt = scorecard.demandSignals.topFreePromptCopies[0]
-  return `\n\nRevenue truth\n- Members: ${compactNumber(scorecard.members.active)} active · ${currencyBreakdown(scorecard.members.netMrrByCurrency)} net MRR · ${compactNumber(scorecard.members.discountedMembers)} discounted (${scorecard.sources.activeMembersAndMrr})\n- Trials: ${compactNumber(scorecard.trials.claimed30d)} claimed · ${compactNumber(scorecard.trials.firstGeneration30d)} first generations · ${compactNumber(scorecard.trials.downloads30d)} downloads (${scorecard.sources.audienceBehavior})\n- Work With Me: ${compactNumber(scorecard.workWithMe.applications30d)} applications · ${compactNumber(scorecard.workWithMe.qualifiedOpen)} qualified/open · ${compactNumber(scorecard.workWithMe.bookedCalls)} booked · ${compactNumber(scorecard.workWithMe.won)} won (${scorecard.sources.workWithMePipeline})\n- Best email: ${topEmail ? `${topEmail.emailType} · ${compactNumber(topEmail.clicks)} clicks · ${compactNumber(topEmail.conversions)} conversions` : "no converting email signal yet"}\n- Best free prompt: ${topPrompt ? `${topPrompt.title} · ${compactNumber(topPrompt.copies)} copies` : "no prompt-copy signal yet"}\n- Labels: payments are charge rows; members are active Stripe subscriptions; MRR is net of discounts.`
+  return `\n\nRevenue truth\n- Members: ${compactNumber(scorecard.members.active)} active · ${currencyBreakdown(scorecard.members.netMrrByCurrency)} net MRR · ${compactNumber(scorecard.members.discountedMembers)} discounted (${scorecard.sources.activeMembersAndMrr})\n- Trials: ${compactNumber(scorecard.trials.claimed30d)} claimed · ${compactNumber(scorecard.trials.firstGeneration30d)} first generations · ${compactNumber(scorecard.trials.downloads30d)} downloads (${scorecard.sources.audienceBehavior})\n- Legacy attended inquiries: ${compactNumber(scorecard.workWithMe.applications30d)} applications · ${compactNumber(scorecard.workWithMe.qualifiedOpen)} qualified/open · ${compactNumber(scorecard.workWithMe.bookedCalls)} booked · ${compactNumber(scorecard.workWithMe.won)} won (${scorecard.sources.workWithMePipeline})\n- Best email: ${topEmail ? `${topEmail.emailType} · ${compactNumber(topEmail.clicks)} clicks · ${compactNumber(topEmail.conversions)} conversions` : "no converting email signal yet"}\n- Best free prompt: ${topPrompt ? `${topPrompt.title} · ${compactNumber(topPrompt.copies)} copies` : "no prompt-copy signal yet"}\n- Labels: payments are charge rows; members are active Stripe subscriptions; MRR is net of discounts.`
 }
 
 /** Compact "today's move" line — reuses the top already-computed working/leaking signal

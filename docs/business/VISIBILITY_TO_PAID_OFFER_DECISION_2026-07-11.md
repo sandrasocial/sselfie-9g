@@ -1,8 +1,12 @@
-# Visibility To Paid Sprint — Locked Offer Decision
+# Visibility To Paid Sprint — Historical Offer Decision
 
 Date: 2026-07-11  
 Owner: Sandra  
-Status: Locked from the live Work With Me implementation; no new implementation spec is needed.
+Status: **HISTORICAL / LEGACY ATTENDED FULFILLMENT ONLY as of 2026-07-16.**
+
+Current authority: `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`. Do not promote this offer
+automatically or treat it as the current growth engine. Complete existing commitments and respond to
+qualified inbound honestly.
 
 ## The offer
 

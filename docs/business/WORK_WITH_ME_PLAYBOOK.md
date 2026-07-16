@@ -1,6 +1,14 @@
-# Work With Me — Playbook (private 4-week sprint, €2,000)
+# Work With Me — HISTORICAL Playbook (private 4-week sprint, €2,000)
 
-Reusable system for every Work With Me client. Built 2026-06-23 (first client: Harmony Steingrebe, luxury real estate, Tahoe/Reno). Rebuilt 2026-07-09 after a zero-conversion audit (see [[work-with-me-system]] memory) — the offer was too broad, and the WOW moment was missing. This version is built entirely from verified, real capabilities (see "The 2-week prep window" below) — nothing here is aspirational.
+Status: **HISTORICAL / LEGACY ATTENDED FULFILLMENT ONLY as of 2026-07-16.**
+
+Current authority: `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`. Preserve this playbook for
+an existing commitment or explicitly accepted qualified inbound. Do not use it as an automatic
+public CTA, default warm-audience offer, or reason to restart the old funnel.
+
+Reusable historical delivery system. Built 2026-06-23 for the first private client and rebuilt
+2026-07-09 after a zero-conversion audit. The customer name, location, and private business details
+are intentionally omitted from this public repository.
 
 **The locked purpose** (per `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`): identity and clarity work leads. Content production, research, planning, design, and sales support are the delivery mechanism that keeps that clarity alive — never the point of the offer itself. She is not paying for a content calendar. She is paying to stop being invisible and unclear about who she is, what she's worth, and what to sell — and to leave with a system that keeps that clarity alive without her.
 

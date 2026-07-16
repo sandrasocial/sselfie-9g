@@ -1,6 +1,12 @@
 # SSELFIE Growth Machine
 
-Status: **current operating contract**
+Status: **SUPERSEDED 2026-07-16 — HISTORICAL EVIDENCE ONLY**
+
+Controlling authority: `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`
+
+Do not use the four-lane model, automatic Work With Me routing, or one-commercial-experiment rule
+below as current instructions. Existing customer access and fulfillment described here remain
+protected.
 
 Locked: 2026-07-12
 

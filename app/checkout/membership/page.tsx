@@ -247,21 +247,6 @@ export default async function MembershipCheckoutPage({
           >
             Start With Masterclass
           </Link>
-          <Link
-            href="/work-with-me"
-            style={{
-              display: "inline-flex",
-              padding: "16px 24px",
-              border: "1px solid rgba(229,229,229,0.22)",
-              color: "rgba(229,229,229,0.86)",
-              textDecoration: "none",
-              textTransform: "uppercase",
-              letterSpacing: "0.2em",
-              fontSize: 12,
-            }}
-          >
-            Private Support
-          </Link>
         </div>
       </div>
     </main>

@@ -1,3 +1,8 @@
+import {
+  SSELFIE_COMPANY_KERNEL_PATH,
+  SSELFIE_REVENUE_PORTFOLIO,
+} from "@/lib/business/company-kernel"
+
 export type HigherSelfCommandLink = {
   label: string
   href: string
@@ -117,23 +122,23 @@ function buildMoneyMove(input: HigherSelfCommandCenterInput): HigherSelfCommandM
   const warmCount = warmPipelineCount(input)
   if (warmCount > 0) {
     return {
-      id: "work-with-me-follow-up",
-      title: "Move warm Work With Me leads",
-      action: `Follow up the ${warmCount} warm Work With Me lead${warmCount === 1 ? "" : "s"} before building anything new.`,
-      reason: "Financial freedom comes fastest from warm trust into the higher-value offer, not more low-ticket tinkering.",
+      id: "legacy-attended-follow-up",
+      title: "Protect existing attended inquiries",
+      action: `Follow up the ${warmCount} existing attended inquir${warmCount === 1 ? "y" : "ies"} already in the pipeline. Do not turn this legacy path back into the public growth engine.`,
+      reason: "Existing relationships deserve a complete answer even when the company changes its acquisition model.",
       source: "brand_engine_applications",
-      link: { label: "Open Work With Me", href: "/admin/work-with-me" },
+      link: { label: "Open attended pipeline", href: "/admin/work-with-me" },
     }
   }
 
   if (moneyQuiet(input)) {
     return {
-      id: "create-warm-sales-conversation",
-      title: "Create one warm sales conversation",
-      action: "Post the real Story sequence, invite replies with WORK, then personally answer every warm response.",
-      reason: "With 0 payments in the last 48 hours, the highest-leverage move is trust plus direct conversation.",
-      source: "stripe_payments + purpose lock",
-      link: { label: "Open content tools", href: "/admin/content-brief" },
+      id: "move-private-revenue-pipeline",
+      title: "Move the private revenue pipeline",
+      action: `Move the active ${SSELFIE_REVENUE_PORTFOLIO.media.currentOffer} and ${SSELFIE_REVENUE_PORTFOLIO.ip.currentOffer} pipeline: follow up approved buyers, prepare the next buyer-specific proposals, and record replies. Do not turn public content into a brand pitch.`,
+      reason: "With 0 payments in the last 48 hours, the fastest credible cash path is the approved private media and IP pipeline—not another low-ticket build.",
+      source: `stripe_payments + ${SSELFIE_COMPANY_KERNEL_PATH}`,
+      link: { label: "Stay in the command center", href: "/admin" },
     }
   }
 
@@ -151,10 +156,10 @@ function buildMoneyMove(input: HigherSelfCommandCenterInput): HigherSelfCommandM
 
   return {
     id: "visible-offer-bridge",
-    title: "Make one visible offer bridge",
-    action: "Connect today's content to the right next step: cold gets the Kit or Vault, warm gets Visibility To Paid.",
-    reason: "The business grows when attention is routed to the correct offer temperature every day.",
-    source: "purpose lock",
+    title: "Keep the public bridge clear",
+    action: "Connect today's public content only to the useful commerce-base or SUITE next step. Keep media, institutional, and founding-partner sales in private buyer channels.",
+    reason: "One public next step protects audience trust while distinct private buyers receive distinct offers.",
+    source: SSELFIE_COMPANY_KERNEL_PATH,
     link: { label: "Open content", href: "/admin/content-brief" },
   }
 }
@@ -178,22 +183,21 @@ function buildStoryMove(input: HigherSelfCommandCenterInput): HigherSelfStoryMov
       "The photo gets attention. The story builds connection. The message builds trust. The offer creates income.",
       "That is what I help women build now: a visible life and business from their phone, their story, and AI.",
     ],
-    bridge: "If you already have a skill, service, story, or idea but you do not know what to post, what to say, or what to sell first: reply WORK.",
-    source: `${promptSignal} Story anchor source: purpose lock + Story Bank.`,
+    bridge: "If you want to try this with your own selfie, reply PROMPT and I will send you the starting point.",
+    source: `${promptSignal} Story anchor source: purpose lock + Story Bank + Company Kernel.`,
   }
 }
 
 function buildOfferBridge(input: HigherSelfCommandCenterInput): HigherSelfCommandMove {
-  const quiet = moneyQuiet(input)
   return {
-    id: quiet ? "visibility-to-paid-bridge" : "right-temperature-bridge",
-    title: quiet ? "Bridge to Visibility To Paid" : "Use the right offer temperature",
-    action: quiet
-      ? "Do not point warm Story viewers to another low-ticket product today. Invite WORK replies for Visibility To Paid / Work With Me."
-      : "Cold feed reach can go to the Kit or Vault. Warm Stories, DMs, and email should point to Visibility To Paid / Work With Me.",
-    reason: "Low-ticket offers are bridges. Warm trust is where the deeper paid transformation lives.",
-    source: "purpose lock",
-    link: { label: "Open Work With Me", href: "/admin/work-with-me" },
+    id: "private-offer-boundary",
+    title: "Keep private offers private",
+    action: moneyQuiet(input)
+      ? "Public content stays useful and recognizable today. Move Tutorial Partnerships and AI Visibility Lab through researched, approved buyer conversations."
+      : "Use one relevant public commerce or SUITE bridge. Do not auto-pitch partnerships, licenses, or Visibility Partner to followers.",
+    reason: "The public audience and private institutional buyers have different jobs, proof needs, and buying moments.",
+    source: SSELFIE_COMPANY_KERNEL_PATH,
+    link: { label: "Open content", href: "/admin/content-brief" },
   }
 }
 
@@ -210,12 +214,12 @@ function buildFollowUpMove(input: HigherSelfCommandCenterInput): HigherSelfComma
   }
 
   return {
-    id: "start-ten-conversations",
-    title: "Start ten warm conversations",
-    action: "After the Story goes up, reply manually to ten warm people: recent buyers, commenters, DM replies, or women asking how to start.",
-    reason: "Financial freedom is built through repeatable conversations, not passive waiting.",
-    source: "purpose lock",
-    link: { label: "Open support", href: "/admin/customer-support" },
+    id: "move-approved-buyer-follow-ups",
+    title: "Complete approved buyer follow-ups",
+    action: "Answer every active partnership or institutional reply and prepare the next approved follow-up. Do not manufacture ten generic conversations for activity's sake.",
+    reason: "Cash moves when a relevant buyer receives a complete, buyer-specific next step.",
+    source: SSELFIE_COMPANY_KERNEL_PATH,
+    link: { label: "Open admin home", href: "/admin" },
   }
 }
 
@@ -273,11 +277,11 @@ export function buildHigherSelfCommandCenter(
     categoryLock: CATEGORY_LOCK,
     coreLock: CORE_LOCK,
     headline: quiet
-      ? "Today is not a building day. Today is a trust-to-money day."
+      ? "Today is a private-revenue and customer-trust day."
       : "Today is a focused money-and-message day.",
     truth: quiet
-      ? "When sales are quiet, the system should move Sandra toward story, warm replies, and the higher-value offer before more product work."
-      : "Keep the business pointed at the correct next step: money truth, warm trust, offer bridge, retention.",
+      ? "When sales are quiet, move the approved private media and IP pipeline while public content keeps building expertise and trust."
+      : "Keep each revenue engine pointed at its own buyer: money truth, private pipeline, public expertise, and customer retention.",
     moneyMove: buildMoneyMove(input),
     storyMove: buildStoryMove(input),
     offerBridge: buildOfferBridge(input),

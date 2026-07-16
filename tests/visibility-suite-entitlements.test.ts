@@ -66,10 +66,10 @@ describe("visibility suite entitlements and routing", () => {
     expect(contents).toContain("visibility_suite_access_opened")
   })
 
-  it("suite page includes sprint upsell linking to /work-with-me", () => {
+  it("suite page does not auto-promote the legacy private sprint", () => {
     const contents = read("app/academy/access/visibility-suite/page.tsx")
-    expect(contents).toContain("/work-with-me")
-    expect(contents).toContain("Want help turning this into")
+    expect(contents).not.toContain("/work-with-me")
+    expect(contents).not.toContain("Apply for the 4-week private sprint")
   })
 
   it("Maya component contains simplified journey quick prompts", () => {

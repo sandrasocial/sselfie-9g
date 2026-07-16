@@ -11,9 +11,9 @@ Before doing any funnel work, read:
 
 1. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
 2. `.claude/skills/funnel-expert/SKILL.md`
-3. `CLAUDE.md`
-4. `docs/CODEX_CONTEXT.md`
-5. `docs/business/SSELFIE_GROWTH_MACHINE_2026-07-12.md`
+3. `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`
+4. `CLAUDE.md`
+5. `docs/CODEX_CONTEXT.md`
 6. `docs/AUTOMATION_ROSTER.md`
 7. The current campaign contract, current implementation, verified Stripe truth, analytics contract, and relevant tests.
 

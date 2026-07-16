@@ -46,7 +46,7 @@ function input(overrides: Partial<HigherSelfCommandCenterInput> = {}): HigherSel
 }
 
 describe("Higher Self Command Center", () => {
-  it("turns a quiet 48h sales window into a warm story and Visibility To Paid move", () => {
+  it("turns a quiet 48h sales window into a private partnership move without changing public content", () => {
     const center = buildHigherSelfCommandCenter(
       input({
         money: {
@@ -57,11 +57,12 @@ describe("Higher Self Command Center", () => {
       })
     )
 
-    expect(center.headline).toContain("trust-to-money")
-    expect(center.moneyMove.id).toBe("create-warm-sales-conversation")
-    expect(center.moneyMove.action).toContain("replies with WORK")
-    expect(center.offerBridge.title).toBe("Bridge to Visibility To Paid")
-    expect(center.storyMove.bridge).toContain("reply WORK")
+    expect(center.headline).toContain("private-revenue")
+    expect(center.moneyMove.id).toBe("move-private-revenue-pipeline")
+    expect(center.moneyMove.action).toContain("Tutorial Partnership")
+    expect(center.offerBridge.title).toBe("Keep private offers private")
+    expect(center.storyMove.bridge).toContain("reply PROMPT")
+    expect(center.storyMove.bridge).not.toContain("WORK")
     expect(center.coreLock).toContain("This was never just about selfies")
   })
 
@@ -82,10 +83,10 @@ describe("Higher Self Command Center", () => {
 
     expect(center.moneyMove.id).toBe("protect-payment-truth")
     expect(center.moneyMove.link.href).toBe("/admin/webhook-review")
-    expect(center.followUpMove.id).toBe("start-ten-conversations")
+    expect(center.followUpMove.id).toBe("move-approved-buyer-follow-ups")
   })
 
-  it("prioritizes warm Work With Me pipeline before building new things", () => {
+  it("protects existing attended inquiries without restoring Work With Me as the growth engine", () => {
     const center = buildHigherSelfCommandCenter(
       input({
         scorecard: {
@@ -106,8 +107,9 @@ describe("Higher Self Command Center", () => {
       })
     )
 
-    expect(center.moneyMove.id).toBe("work-with-me-follow-up")
-    expect(center.moneyMove.action).toContain("3 warm Work With Me leads")
+    expect(center.moneyMove.id).toBe("legacy-attended-follow-up")
+    expect(center.moneyMove.action).toContain("3 existing attended inquiries")
+    expect(center.moneyMove.action).not.toContain("before building anything new")
     expect(center.ceoRule).toContain("Do the money move")
   })
 

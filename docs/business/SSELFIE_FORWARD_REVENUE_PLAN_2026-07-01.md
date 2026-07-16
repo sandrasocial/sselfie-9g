@@ -1,7 +1,8 @@
 # SSELFIE Forward Revenue Plan
 
 Date: 2026-07-01  
-Status: Current operating plan going forward  
+Status: **SUPERSEDED 2026-07-16 — HISTORICAL EVIDENCE ONLY**
+Current authority: `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`
 Source docs: `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`, `docs/business/SSELFIE_REVENUE_TRUTH_GROWTH_AUDIT_2026-07-01.md`, `docs/business/SSELFIE_DEMAND_MESSAGE_AUDIT_2026-06-26.md`
 
 ## Executive Decision

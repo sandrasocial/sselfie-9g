@@ -1,6 +1,9 @@
 # Current Task Board
 
-Last cleaned: 2026-07-13
+Last cleaned: 2026-07-16
+
+Business authority: `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`. A task may not revive an
+old offer, public CTA, single-experiment rule, or campaign launch that conflicts with the Kernel.
 
 This root contains only work that still needs a real-world decision, asset, or verification. Shipped,
 superseded, obsolete, and completed code specs are archived under `tasks/archive/`.
@@ -17,20 +20,20 @@ superseded, obsolete, and completed code specs are archived under `tasks/archive
 - `MAYA-GOLDEN-01-regression-suite.md`: golden regression suite (Phase A deterministic for
   Codex now; Phase B attended scored image runs with Sandra). Gate for ANY future creative
   change per the freeze contract.
-- `CAMPAIGN-OUTCOME-01-your-next-campaign.md`: held pay-per-outcome product. Payment/intake/QA/
-  delivery infrastructure exists on `codex/campaign-outcome-held`, but the three-post deliverable
-  must be revised to the complete v3 campaign kit before release. Never merge before the current
-  One Selfie event closes on 2026-07-15 at 18:05 CEST.
-- `RECOVERY-CADENCE-01-three-touch.md`: campaign-specific checkout recovery that ships only with the
-  approved campaign product. Copy remains draft and no recovery email may send before approval.
+
+The July `Your Next Campaign` launch, reel, recovery, go-live, and campaign-to-memory specs are
+archived under `tasks/archive/2026-07-16/company-kernel-superseded/`. The underlying code remains a
+dormant internal delivery capability and stays fail-closed. None of those specs is an active build
+or launch instruction.
 
 ## Safety boundaries — not open tasks
 
 Sandra does not need to act on this section. These are explicit stop signs for future agents, not an
 unfinished founder to-do list.
 
-- **Work With Me form redesign:** held until `WORK-WITH-ME-INSTRUMENTATION-01` has 1-2 weeks of real
-  page-view/form-start/submit data — don't redesign an already-decent form on a guess.
+- **Work With Me:** legacy attended fulfillment and qualified inbound only. Do not redesign, promote,
+  or automatically route public content to it. Existing commitments and pipeline records remain
+  protected.
 - **Broader ManyChat flow hygiene:** the live WORK automation was verified in Sandra's signed-in
   account and renamed `WORK — Sprint Application` on 2026-07-12. Its triggers, first-name mapping,
   destination, and tracking parameters are correct. Older non-WORK flows can be audited separately;
@@ -138,9 +141,8 @@ are archived under `tasks/archive/2026-07-12/` with focused regressions.
 - The repo-hosted Instagram/ManyChat reply system was removed on 2026-07-12. The ManyChat Default
   Reply bridge and AI Replies are stopped, DM schedules are retired, and old reply approvals are
   invalid. Marketing keyword flows, including the verified WORK flow, remain live.
-- The active sales machine is consolidated to PROMPT → $37 Prompt Vault, SELFIE → $37 Starter Kit,
-  WORK → attended €2,000 offer, and activated buyers → €97/month SUITE. Selfie To Brand Shoot public
-  sales are retired while historical access remains protected.
+- Historical note: the July 12 sales machine used PROMPT, SELFIE, WORK, and SUITE. It was superseded
+  on 2026-07-16 by the media + software + IP Company Kernel. Customer fulfillment remains protected.
 - `/admin/work-with-me` now owns the complete attended application-to-payment pipeline. Stripe closes
   the exact application as won without double-counting cash. The copy action verifies the Stripe
   session and replaces expired links without creating duplicate attempts.

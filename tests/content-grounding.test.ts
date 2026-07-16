@@ -42,7 +42,8 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     expect(block).toContain("stop hiding")
     expect(block).toContain("build something of their own")
     expect(block).toContain("Low-ticket offers are bridges")
-    expect(block).toContain("Visibility To Paid / Work With Me")
+    expect(block).toContain("private buyer-specific channels")
+    expect(block).toContain("does not automatically pitch a private service")
     expect(groundingSystemPrompt()).toContain("PURPOSE MESSAGING LOCK SOURCE")
   })
 

@@ -1,6 +1,13 @@
 # CODEX_CONTEXT
 
-Last verified: 2026-07-14
+Last verified: 2026-07-16
+
+## Controlling company authority
+
+Before business, offer, automation, admin-decision, campaign, or revenue work, read
+`docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`. It supersedes old Growth Machine, Work With
+Me, and single-experiment routing when they conflict. Codex is the builder and revenue-operations
+seat; no model is the company brain.
 
 ## Purpose
 
@@ -8,8 +15,8 @@ This is the compact technical handoff for SSELFIE Studio. It records the current
 ownership boundaries, protected surfaces, and verification rules. It is not a business roadmap or
 historical project log.
 
-When this file conflicts with code, code wins. When it conflicts with `CLAUDE.md`, `CLAUDE.md`
-wins for business state and operating decisions.
+When this file conflicts with code on implementation facts, code wins. When business state,
+offers, channels, or operating decisions conflict, the Company Kernel wins.
 
 ## Read Order
 
@@ -112,28 +119,17 @@ Do not add a new admin page, metric card, or recurring admin email without conso
 surface. Money comes only from Stripe or qualifying `stripe_payments` rows. Behavioral analytics are
 not revenue truth.
 
-### Product and funnel separation
+### Product and revenue separation
 
-- `SELFIE` / Starter Kit is the source-photo path and sells the $37 Starter Kit.
-- `PROMPT` / AI Prompts is the AI-photo path and sells the proven $37 Prompt Vault control.
-- `WORK` is the attended warm path: application, conversation, then a private €2,000 checkout.
-- SUITE is the recurring monthly creation system.
-- Selfie To Brand Shoot is historical-access-only. Preserve buyer fulfillment and entitlements, but
-  do not restore its public sale or checkout as another active path.
-- Presets are a secondary content-led sale, not another primary funnel front door.
-
-The temporary July 13–15 attended experiment is `/one-selfie`: one $97 one-time bundle, one fixed
-deadline, and one `selfie_visibility_bundle` fulfillment path. It grants five lifetime learning
-tools plus one fixed 30-day/200-credit SUITE pass with no renewal. Do not turn it into a permanent
-storefront, rolling countdown, subscription, unattended monthly flash-sale job, or second active
-offer. The buyer home is `/academy/access/one-selfie`; the optional annual continuation uses the
-normal annual SUITE checkout.
-
-After that event closes, the held `/campaign` test may be released only from its runbook. It is a
-guest-safe $97 one-time result with exactly three posts and a private token page. It must not create
-an account, grant credits, start a trial, enroll a course, or offer SUITE at delivery. Its public
-landing and checkout fail closed unless `CAMPAIGN_OUTCOME_DISABLED=false`; private links for paid
-orders remain available when the public offer is closed.
+- Public discovery remains AI-selfie, prompt, tutorial, visibility, and story-led.
+- Prompt Vault, Starter Kit, presets, and SUITE are the approved public commerce/product bridges.
+- Tutorial Partnerships, Visibility Partner, AI Visibility Lab, keynotes, and licenses are private
+  buyer-specific lanes. Scheduled public content may not pitch them.
+- Work With Me is legacy attended fulfillment/inbound only.
+- The One Selfie event is closed; preserve buyer entitlements and the fixed-pass contract.
+- `/campaign` is dormant internal delivery capability. Its public landing and checkout stay
+  fail-closed; private paid-order access remains protected.
+- Selfie To Brand Shoot is historical-access-only. Preserve buyer fulfillment and entitlements.
 
 Do not reuse the Starter Kit checkout or entitlement for the AI Photos Kit.
 

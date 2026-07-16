@@ -16,7 +16,7 @@ describe("One Selfie Visibility Bundle post-purchase path", () => {
     expect(dispatcher).toContain("SELECT id, supabase_user_id, password_setup_complete")
     expect(dispatcher).toContain('source === "one_selfie_launch"')
     expect(dispatcher).toMatch(
-      /const isPublicPaidCheckoutSource =[\s\S]*?source === "one_selfie_launch" \|\|\s*productType === "selfie_visibility_bundle"/,
+      /const isPublicPaidCheckoutSource =[\s\S]*?source === "one_selfie_launch"[\s\S]*?productType === "selfie_visibility_bundle"/,
     )
     expect(dispatcher).toContain('productType !== "selfie_visibility_bundle"')
     expect(dispatcher).toContain('"/academy/access/one-selfie"')

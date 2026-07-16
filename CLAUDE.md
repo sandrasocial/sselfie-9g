@@ -1,12 +1,21 @@
 # SSELFIE Operational Memory
-*Last updated: 2026-07-14 — Read this at the start of every session*
+*Last updated: 2026-07-16 — Read this at the start of every session*
+
+## Controlling company authority
+
+Read **`docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`** immediately after the Brand
+Constitution. It controls the revenue portfolio, offer status, channel separation, AI-team roles,
+and decision rules. Older growth-machine, Work With Me, campaign, and higher-self routing documents
+are historical unless the Company Kernel explicitly keeps a capability active.
 
 ---
 
 ## Me — Sandra (The Selfie Queen)
-Founder of SSELFIE Studio. Single mother, Iceland/Norway. **8 active Suite members** (35 canceled, 14 active trials), **110,835 Instagram followers** (verified live 2026-06-29 via Graph API), 6,839 subscribed email contacts. Building AI-powered personal branding platform. Live at **sselfie.ai**.
+Founder of SSELFIE Studio. Single mother, Iceland/Norway. Building an AI-powered media, software,
+and IP company. Live at **sselfie.ai**.
 
-**For current MRR + exact paying counts — always pull from Stripe. Don't trust stale numbers in docs.**
+**For current MRR, paying counts, audience metrics, and email counts: pull the live source and attach
+the verification date. Do not turn a dated number in this file into current truth.**
 
 ## Current Brand / Voice / Audience Source Of Truth (LOCKED 2026-07-13)
 
@@ -38,8 +47,10 @@ Core lock:
 - This was never just about selfies. It was about becoming visible enough to build something of your own.
 - AI is not the hero. The woman is.
 - The selfie is where we start. Visibility is where it leads.
-- Low-ticket offers are bridges. Warm trust gets Visibility To Paid / Work With Me. SUITE is the monthly creation system.
-- Daily operating rule: do the money move before opening a new build thread. One story, one offer bridge, one follow-up loop, one system improvement.
+- Public content keeps teaching AI selfies, prompts, visibility, story, and freedom. Private media,
+  institutional, and founding-partner offers use buyer-specific channels.
+- Daily operating rule: protect customers and money, move the active private cash pipeline, then
+  create public expertise content. Do not invent another product because sales are quiet.
 - Sandra writes like a real woman texting another woman: simple, warm, direct, human.
 - Do not drift into generic AI/photo-tool, corporate personal-brand, or motivational-coach language.
 - Do not use old Studio marketing drafts as current copy.
@@ -59,18 +70,22 @@ Core lock:
 
 ---
 
-## How This Repo Is Run
+## How This Company Team Is Run
 
 | Role | Tool | Responsibilities |
 |------|------|-----------------|
-| **Sandra** | Claude (Cowork) | Strategy, direction, approvals |
-| **Claude (Cowork)** | This app | Brain — memory, specs, plans, content, guidance |
-| **Codex / Cursor** | AI code agents | Code implementation — reads `tasks/`, writes `codex/` branches |
+| **Sandra** | Founder | CEO, public voice, relationships, judgment, video, final outward approval |
+| **ChatGPT** | Chief of staff | Routes work, reconciles decisions, exposes blockers, maintains the operating queue |
+| **Claude** | Strategy + production desk | Challenges decisions, researches, drafts, and prepares work using the Company Kernel |
+| **Codex** | Builder + revenue operations | Implements, tests, validates, documents, and finishes authorized system work |
+| **Maya** | Customer delivery intelligence | Delivers the in-product creation experience within product and privacy rules |
 
 **No OpenClaw. No North. No Stella. Those systems are retired.** The last repo notifier and
 Telegram shell are deleted, and the local zero-job OpenClaw gateway launch agent is disabled.
 
-Claude (Cowork) writes task specs → Codex reads and implements → commits `codex/` branch → Sandra merges to `main`.
+No model is the company brain. The Company Kernel is the shared authority. Agent roles stay stable
+when model versions change. Sandra should receive only decisions and actions that genuinely require
+her judgment, relationship, public voice, or approval.
 
 **App codebase path:** Sandra's selected folder in Cowork (mounted). Verify path with `pwd` when in doubt.
 
@@ -80,9 +95,10 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 
 1. Read `AS-BUILT.md` (repo facts, verified remotes)
 2. Read this file (`CLAUDE.md`) for business context
-3. Read `docs/CODEX_CONTEXT.md` for tech stack + file map
-4. Check `tasks/` for active specs
-5. Before creating, enabling, or debugging ANY automation: read `docs/AUTOMATION_ROSTER.md` —
+3. Read `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`
+4. Read `docs/CODEX_CONTEXT.md` for tech stack + file map
+5. Check `tasks/` for active specs
+6. Before creating, enabling, or debugging ANY automation: read `docs/AUTOMATION_ROSTER.md` —
    the single map of every automation across all layers (repo/Vercel, Claude Cowork, Codex app,
    ManyChat/Resend/Stripe) plus the lane rules for where new automations may live. Update it the
    same day anything changes. Core lane rule: customer/money automations live in the repo ONLY;
@@ -92,58 +108,40 @@ Claude (Cowork) writes task specs → Codex reads and implements → commits `co
 
 ## Current Priorities (July 2026)
 
-### Growth Machine (locked 2026-07-12)
+### Current company portfolio (locked 2026-07-16)
 
-The current operating contract is
-`docs/business/SSELFIE_GROWTH_MACHINE_2026-07-12.md`. It supersedes older funnel sequencing where
-they conflict.
+The controlling contract is `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`.
 
-- `PROMPT` → $37 Prompt Vault → paid-buyer SUITE activation.
-- `SELFIE` → $37 Starter Kit → paid-buyer SUITE activation.
-- `WORK` → attended application pipeline → private €2,000 checkout.
-- SUITE → first useful image → download → repeat creation → €97/month continuation.
-- Presets remain a fulfilled secondary sale, not another primary front door.
-- Selfie To Brand Shoot is historical-access-only; public sales and checkout are retired while paid
-  buyer access and fulfillment remain protected.
-- One commercial experiment at a time. AI measures, prioritizes, drafts, and monitors; it does not
-  create parallel funnels or send attended high-value offers automatically.
+- **Media engine:** EUR 3,000 Tutorial Partnership pilots; current private cash lane.
+- **Software engine:** EUR 97/month SUITE plus a bounded, invitation-only USD 497/month Visibility
+  Partner founding hypothesis.
+- **IP engine:** paid keynote, AI Visibility Lab, and scoped annual education/license proposals.
+- **Commerce base:** Prompt Vault, Starter Kit, presets, existing paid assets, and carefully chosen
+  affiliates.
+- Public content remains AI-selfie/tutorial/visibility-led. High-value offers are not rotated into
+  unattended public content.
+- The ambitious immediate target is EUR 15,000 cleared by 2026-07-25. It is a goal, not a promise.
 
-### Attended cash event (July 13–15, 2026)
+### Historical Growth Machine (SUPERSEDED 2026-07-16)
 
-The only active commercial experiment is the **One Selfie Visibility Bundle** at `/one-selfie`:
-$97 once for five lifetime learning tools plus a fixed 30-day SUITE pass with 200 credits and no
-renewal. It opens July 13 at 18:00 CEST and closes July 15 at 18:00 CEST. The server owns the fixed
-deadline; an already-open Stripe checkout receives only the final 30-minute completion grace.
+The following July 12 model is preserved as history. It does not control current routing; use
+`docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`.
 
-`BUNDLE` is the attended ManyChat keyword Sandra configures. Three Resend broadcasts exist as
-drafts and require Sandra's approval. Checkout, account setup, fulfillment, delivery, buyer home,
-fixed-pass expiry, attribution, and the optional normal-price annual SUITE continuation are owned by
-the repo. The operating runbook and honest revenue bands are in
-`docs/business/ONE_SELFIE_VISIBILITY_REVENUE_EVENT_2026-07-13.md`.
-Account and billing UI must keep recurring membership, fixed pass, and lifetime ownership distinct.
-Membership writes are exact-Stripe-subscription scoped; never update all subscription rows by user.
+Historical details live in `docs/business/SSELFIE_GROWTH_MACHINE_2026-07-12.md`. Do not copy its
+offer routing or single-experiment rule into current work. Preserve customer access and the payment,
+fulfillment, activation, and retention safeguards it documents.
 
-During this event, `BUNDLE` owns the selling message. Routine `PROMPT`, `SELFIE`, and `WORK` drafts
-must not compete with it. The customer checkout-recovery copy is implemented behind
-`ONE_SELFIE_BUNDLE_CHECKOUT_RECOVERY_ENABLED`. Sandra approved the exact copy on July 13 and the
-production flag is on. The shared Starter Kit recovery cron may send one deduplicated reminder
-about three hours after an identified bundle checkout starts, only while the offer is open. It
-rechecks Stripe immediately before sending and suppresses completed buyers and active SUITE
-members. The three launch broadcasts remain drafts and must be approved at their attended send
-times.
+### Historical attended cash event (CLOSED July 15, 2026)
 
-### Held post-event product (do not deploy before July 15 at 18:05 CEST)
+The One Selfie Visibility Bundle is closed. Preserve lifetime assets, the fixed-pass contract,
+buyer access, attribution, and billing distinctions. Do not reuse its keyword, deadline, drafts, or
+selling message. The record is `docs/business/ONE_SELFIE_VISIBILITY_REVENUE_EVENT_2026-07-13.md`.
 
-`Your Next Campaign` is implemented on the held `codex/campaign-outcome-held` branch from the
-binding contract `docs/business/ONE_SELFIE_WEEK_OUTCOME_TEST_2026-07-16.md`. It is a $97 one-time,
-guest-safe outcome: one selfie plus what she sells and promotes becomes exactly three coordinated
-posts, then stops in Admin for Sandra's founding-batch quality check before delivery. It creates no
-account, credits, trial, Academy entitlement, or subscription. Paid repeat behavior is measured;
-no subscription is offered at delivery.
+### Dormant post-event capability (DO NOT PUBLICLY RELEASE)
 
-The public feature fails closed unless `CAMPAIGN_OUTCOME_DISABLED=false`. Customer copy remains
-DRAFT until Sandra approves it. Exact release and ManyChat instructions:
-`docs/business/CAMPAIGN_OUTCOME_RUNBOOK_2026-07-15.md`.
+`Your Next Campaign` is a dormant internal delivery capability. Its public feature must stay
+fail-closed. Do not use its historical release or ManyChat instructions. Private paid-order access
+and reusable implementation evidence remain protected.
 
 For any timed launch, flash offer, sales-page audit, checkout review, email sequence, ManyChat flow,
 or paid-ads decision, use the local read-only Claude agent
@@ -151,23 +149,10 @@ or paid-ads decision, use the local read-only Claude agent
 internal evidence, research current primary or peer-reviewed sources, and return P0/P1/P2 guidance
 plus approval-ready drafts. It never sends, publishes, charges, deploys, or invents proof.
 
-### Forward Revenue Plan (superseded where it conflicts, 2026-07-01)
+### Forward Revenue Plan (HISTORICAL; superseded 2026-07-16)
 
-Historical foundation: `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`. Use the newer
-Growth Machine contract for current routing.
-
-Do not treat the whole audience as one buyer.
-
-- **Cold top-of-funnel audience:** wants a simple selfie/AI-photo result. Sell the dedicated **Selfie To AI Photos Kit** as the obvious paid next step from viral selfie tutorials, AI reels, and ManyChat traffic. Code path and Production env exist; launch requires Claude/Sandra voice QA, merge/deploy, and a live checkout smoke.
-- **Warm audience:** wants the deeper path. Build the immediate **Visibility To Paid Sprint** around women who already have skills, a story, a service, expertise, or an idea, but do not know what to post, what to say, or what they can sell first.
-- **Prompt Vault:** stays the proven low-ticket buyer bridge. Do not expect it to carry the whole business alone.
-- **SUITE / Studio:** stays the recurring core and monthly creation system.
-- **Selfie To Brand Shoot:** historical buyer access only. Do not restore public promotion without a
-  new measured decision.
-
-Operating rule:
-
-> Cold attention gets the Kit. Warm trust gets Visibility To Paid. Paid activation gets SUITE.
+Historical foundation: `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`. It is evidence,
+not routing. Use the Company Kernel for current buyers, offers, and channels.
 
 | Workstream | Status |
 |------------|--------|

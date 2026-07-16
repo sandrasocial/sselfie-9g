@@ -15,6 +15,7 @@ type Finding = {
 const SOURCE_OF_TRUTH = "docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md"
 const BRAND_CONSTITUTION = "docs/brand/SSELFIE_BRAND_CONSTITUTION.md"
 const PURPOSE_MESSAGING_LOCK = "docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md"
+const COMPANY_KERNEL = "docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md"
 
 const REQUIRED_POINTER_FILES = [
   "CLAUDE.md",
@@ -30,6 +31,28 @@ const REQUIRED_POINTER_FILES = [
   ".agents/claude-templates/skills/funnel-expert/SKILL.md",
   ".agents/claude-templates/skills/funnel-expert.md",
   ".agents/claude-templates/skills/resend-broadcast/SKILL.md",
+  ".agents/claude-templates/skills/sselfie-community-manager/SKILL.md",
+  ".agents/claude-templates/scheduled-tasks/daily-email-draft/SKILL.md",
+  ".agents/claude-templates/scheduled-tasks/daily-story-sequence-draft/SKILL.md",
+  ".agents/claude-templates/scheduled-tasks/weekly-content-brief-draft/SKILL.md",
+]
+
+const REQUIRED_COMPANY_POINTER_FILES = [
+  "CLAUDE.md",
+  "docs/CODEX_CONTEXT.md",
+  "AGENTS.md",
+  "docs/README.md",
+  "tasks/README.md",
+  ".agents/product-marketing-context.md",
+  ".agents/skills/sselfie-brand-guardian/SKILL.md",
+  ".agents/claude-templates/README.md",
+  ".agents/claude-templates/agents/revenue-campaign-director.md",
+  ".agents/claude-templates/skills/funnel-expert/SKILL.md",
+  ".agents/claude-templates/skills/funnel-expert.md",
+  ".agents/claude-templates/skills/sselfie-community-manager/SKILL.md",
+  ".agents/claude-templates/scheduled-tasks/daily-email-draft/SKILL.md",
+  ".agents/claude-templates/scheduled-tasks/daily-story-sequence-draft/SKILL.md",
+  ".agents/claude-templates/scheduled-tasks/weekly-content-brief-draft/SKILL.md",
 ]
 
 const OPTIONAL_AGENT_CONTEXT_FILES = [
@@ -68,6 +91,22 @@ const CLAUDE_TEMPLATE_MIRRORS = [
   {
     template: ".agents/claude-templates/skills/resend-broadcast/SKILL.md",
     local: ".claude/skills/resend-broadcast/SKILL.md",
+  },
+  {
+    template: ".agents/claude-templates/skills/sselfie-community-manager/SKILL.md",
+    local: "/Users/MD760HA/.claude/skills/sselfie-community-manager/SKILL.md",
+  },
+  {
+    template: ".agents/claude-templates/scheduled-tasks/daily-email-draft/SKILL.md",
+    local: "/Users/MD760HA/.claude/scheduled-tasks/daily-email-draft/SKILL.md",
+  },
+  {
+    template: ".agents/claude-templates/scheduled-tasks/daily-story-sequence-draft/SKILL.md",
+    local: "/Users/MD760HA/.claude/scheduled-tasks/daily-story-sequence-draft/SKILL.md",
+  },
+  {
+    template: ".agents/claude-templates/scheduled-tasks/weekly-content-brief-draft/SKILL.md",
+    local: "/Users/MD760HA/.claude/scheduled-tasks/weekly-content-brief-draft/SKILL.md",
   },
 ]
 
@@ -148,6 +187,7 @@ async function collectFiles(): Promise<string[]> {
   }
   files.add(path.join(REPO_ROOT, BRAND_CONSTITUTION))
   files.add(path.join(REPO_ROOT, SOURCE_OF_TRUTH))
+  files.add(path.join(REPO_ROOT, COMPANY_KERNEL))
 
   for (const dir of REPO_SCAN_DIRS) {
     const abs = path.join(REPO_ROOT, dir)
@@ -185,6 +225,16 @@ function scanFile(file: string, content: string): Finding[] {
       line: 1,
       rule: "missing_constitution_pointer",
       detail: `Must point agents to ${BRAND_CONSTITUTION}`,
+    })
+  }
+
+  if (REQUIRED_COMPANY_POINTER_FILES.includes(display) && !content.includes(COMPANY_KERNEL)) {
+    findings.push({
+      severity: "P0",
+      file: display,
+      line: 1,
+      rule: "missing_company_kernel_pointer",
+      detail: `Must point agents to ${COMPANY_KERNEL}`,
     })
   }
 
@@ -234,6 +284,8 @@ async function main() {
   const constitutionExists = await exists(constitutionPath)
   const sourcePath = path.join(REPO_ROOT, SOURCE_OF_TRUTH)
   const sourceExists = await exists(sourcePath)
+  const kernelPath = path.join(REPO_ROOT, COMPANY_KERNEL)
+  const kernelExists = await exists(kernelPath)
   const findings: Finding[] = []
 
   if (!constitutionExists) {
@@ -253,6 +305,16 @@ async function main() {
       line: 1,
       rule: "missing_source_of_truth",
       detail: "Current SSELFIE source-of-truth doc is missing.",
+    })
+  }
+
+  if (!kernelExists) {
+    findings.push({
+      severity: "P0",
+      file: COMPANY_KERNEL,
+      line: 1,
+      rule: "missing_company_kernel",
+      detail: "The controlling SSELFIE company contract is missing.",
     })
   }
 
@@ -277,7 +339,9 @@ async function main() {
 
   for (const mirror of CLAUDE_TEMPLATE_MIRRORS) {
     const templatePath = path.join(REPO_ROOT, mirror.template)
-    const localPath = path.join(REPO_ROOT, mirror.local)
+    const localPath = path.isAbsolute(mirror.local)
+      ? mirror.local
+      : path.join(REPO_ROOT, mirror.local)
     if (!(await exists(localPath))) continue
     const [template, local] = await Promise.all([
       readFile(templatePath, "utf8"),
@@ -309,6 +373,7 @@ async function main() {
   lines.push(`- Files scanned: ${files.length}`)
   lines.push(`- Brand Constitution: ${BRAND_CONSTITUTION}`)
   lines.push(`- Source of truth: ${SOURCE_OF_TRUTH}`)
+  lines.push(`- Company Kernel: ${COMPANY_KERNEL}`)
   lines.push(`- Desktop Studio folder: ${DESKTOP_STUDIO_FOLDER}`)
   lines.push("")
   lines.push("## Summary")

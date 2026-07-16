@@ -75,8 +75,8 @@ describe("GET /api/cron/nurture-sequence", () => {
     expect(cronSuccessMock).toHaveBeenCalledTimes(1)
     expect(cronErrorMock).not.toHaveBeenCalled()
 
-    // Two retired Starter Kit touches promoted the retired Selfie To Brand Shoot sale.
-    expect(queries).toHaveLength(17)
+    // Retired upgrade touches are absent, including the two Masterclass-to-private-service emails.
+    expect(queries).toHaveLength(15)
 
     for (const query of queries) {
       expect(query).not.toContain("u.name")
@@ -86,7 +86,7 @@ describe("GET /api/cron/nurture-sequence", () => {
     const freebieGuideQueries = queries.slice(0, 2)
     const selfieGuideQueries = queries.slice(2, 7)
     const starterKitQueries = queries.slice(7, 12)
-    const masterclassQueries = queries.slice(12, 17)
+    const masterclassQueries = queries.slice(12, 15)
 
     for (const query of freebieGuideQueries) {
       expect(query).toContain("NULLIF(BTRIM(fs.name), '') AS name")
@@ -104,6 +104,6 @@ describe("GET /api/cron/nurture-sequence", () => {
     expect(freebieGuideQueries).toHaveLength(2)
     expect(selfieGuideQueries).toHaveLength(5)
     expect(starterKitQueries).toHaveLength(5)
-    expect(masterclassQueries).toHaveLength(5)
+    expect(masterclassQueries).toHaveLength(3)
   })
 })

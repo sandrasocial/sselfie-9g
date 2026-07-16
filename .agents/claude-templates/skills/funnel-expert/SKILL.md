@@ -10,9 +10,9 @@ This skill intentionally contains no mutable funnel facts.
 ## Read first
 
 1. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
-2. `CLAUDE.md`
-3. `docs/CODEX_CONTEXT.md`
-4. `docs/business/SSELFIE_GROWTH_MACHINE_2026-07-12.md`
+2. `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`
+3. `CLAUDE.md`
+4. `docs/CODEX_CONTEXT.md`
 5. `docs/AUTOMATION_ROSTER.md`
 6. The current campaign contract and runbook, when a campaign is active.
 7. Current routes, product definitions, checkout code, payment lifecycle, fulfillment code, analytics contracts, and focused tests.
@@ -25,6 +25,8 @@ If any stored instruction conflicts with those sources, the current sources win.
 - Use `stripe_payments` and verified Stripe data for money. Use analytics events for behavior only.
 - Never assume a price, offer, audience size, MRR, customer count, credit grant, route, keyword, or automation is still current.
 - Separate a measured leak from a hypothesis.
+- Low sales are not proof of a broken funnel. Reproduce a technical defect before opening a repair.
+- Never restore a historical public offer or private high-value route from an old funnel document.
 - Preserve access already promised to existing buyers.
 - Never invent proof, urgency, scarcity, conversion rates, or revenue impact.
 - Keep the path simple. Do not add an upsell, downsell, bump, automation, or agent unless the evidence supports it.

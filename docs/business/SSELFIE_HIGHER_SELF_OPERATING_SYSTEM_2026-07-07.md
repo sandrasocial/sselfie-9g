@@ -2,13 +2,18 @@
 
 Last updated: 2026-07-07
 
-Status: Current operating system for Sandra's daily CEO focus, content-to-cash rhythm, and admin Command Center.
+Status: **SUPERSEDED ROUTING CONTRACT 2026-07-16 — HISTORICAL EVIDENCE ONLY**
+
+The Admin Command Center remains active, but its current money, content, and offer decisions are
+controlled by `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`. Do not restore automatic public
+Work With Me routing from the history below.
 
 Use with:
 
 - `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`
 - `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
 - `docs/business/SSELFIE_FORWARD_REVENUE_PLAN_2026-07-01.md`
+- `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md` (current authority)
 
 ## Purpose
 
