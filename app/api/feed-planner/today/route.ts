@@ -17,17 +17,18 @@ export async function GET() {
     return NextResponse.json({ enabled: false })
   }
 
-  const { user: authUser, error } = await getAuthenticatedUser()
-  if (error || !authUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    const { user: authUser, error } = await getAuthenticatedUser()
+    if (error || !authUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const user = await getUserByAuthId(authUser.id)
-  if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
-  if (!(await hasDeliveredMonthAccess(user.id))) {
-    return NextResponse.json({ enabled: false })
-  }
+    const user = await getUserByAuthId(authUser.id)
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
+    if (!(await hasDeliveredMonthAccess(user.id))) {
+      return NextResponse.json({ enabled: false })
+    }
 
-  const periodMonth = currentPeriodMonth()
-  const [post] = await sql`
+    const periodMonth = currentPeriodMonth()
+    const [post] = await sql`
     SELECT
       fp.id,
       fp.feed_layout_id,
@@ -48,20 +49,26 @@ export async function GET() {
       fp.scheduled_at ASC,
       fp.position ASC
     LIMIT 1
-  `
+    `
 
-  if (!post) return NextResponse.json({ enabled: true, post: null })
+    if (!post) return NextResponse.json({ enabled: true, post: null })
 
-  return NextResponse.json({
-    enabled: true,
-    post: {
-      id: Number(post.id),
-      feedId: Number(post.feed_layout_id),
-      caption: typeof post.caption === "string" ? post.caption : "",
-      contentPillar: typeof post.content_pillar === "string" ? post.content_pillar : null,
-      imageUrl: post.image_url,
-      scheduledAt: new Date(post.scheduled_at).toISOString(),
-      isToday: post.is_today === true,
-    },
-  })
+    return NextResponse.json({
+      enabled: true,
+      post: {
+        id: Number(post.id),
+        feedId: Number(post.feed_layout_id),
+        caption: typeof post.caption === "string" ? post.caption : "",
+        contentPillar: typeof post.content_pillar === "string" ? post.content_pillar : null,
+        imageUrl: post.image_url,
+        scheduledAt: new Date(post.scheduled_at).toISOString(),
+        isToday: post.is_today === true,
+      },
+    })
+  } catch (error) {
+    // Today is an optional enhancement. A production schema or data drift must never create a
+    // failed Calendar request or make the rest of the planner feel broken.
+    console.error("[feed-planner/today] Optional Today strip unavailable:", error)
+    return NextResponse.json({ enabled: false, error: "today_unavailable" })
+  }
 }

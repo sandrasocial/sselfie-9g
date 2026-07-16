@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
 import {
@@ -35,5 +36,10 @@ describe("delivered month guardrails", () => {
     expect(remainingWeeklyPregenAllowance(10, 4)).toBe(6)
     expect(remainingWeeklyPregenAllowance(10, 10)).toBe(0)
     expect(remainingWeeklyPregenAllowance(10, 12)).toBe(0)
+  })
+
+  it("fails soft when the optional Today enhancement cannot query production data", () => {
+    const route = readFileSync("app/api/feed-planner/today/route.ts", "utf8")
+    expect(route).toContain('return NextResponse.json({ enabled: false, error: "today_unavailable" })')
   })
 })
