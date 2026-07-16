@@ -325,7 +325,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
   return (
     <div className="mx-auto max-w-[470px] overflow-hidden rounded-[14px] border border-[#C5C6C8]/35 bg-white shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)]">
       {/* Instagram Header */}
-      <div className="flex items-center justify-between border-b border-[#C5C6C8]/35 px-4 py-3">
+      <div className="flex items-center border-b border-[#C5C6C8]/35 px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0D0E10]">
             <span className="text-xs font-bold text-white">S</span>
@@ -337,9 +337,6 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
             )}
           </div>
         </div>
-        <button className="rounded-full p-2 transition-colors hover:bg-[#F8FAFA]">
-          <span className="text-[10px] uppercase tracking-[0.16em] text-[#0D0E10]">Menu</span>
-        </button>
       </div>
 
       {/* Instagram Image */}
@@ -362,7 +359,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
               type="button"
               onClick={() => void handleRemoveImage()}
               disabled={isRemovingImage}
-              className={`absolute right-2 top-2 rounded-full px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] backdrop-blur-sm transition-colors ${
+              className={`absolute right-2 top-2 min-h-11 rounded-full px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] backdrop-blur-sm transition-colors ${
                 confirmRemove
                   ? "bg-[#0D0E10] text-white"
                   : "bg-white/85 text-[#4F5052] hover:bg-white hover:text-[#0D0E10]"
@@ -430,25 +427,8 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
         })()}
       </div>
 
-      {/* Instagram Action Bar */}
+      {/* Real post actions only. Decorative Instagram controls created broken expectations. */}
       <div className="space-y-3 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button className="transition-opacity hover:opacity-60">
-              <span className="text-[10px] uppercase tracking-[0.16em] text-[#0D0E10]">Like</span>
-            </button>
-            <button className="transition-opacity hover:opacity-60">
-              <span className="text-[10px] uppercase tracking-[0.16em] text-[#0D0E10]">Reply</span>
-            </button>
-            <button className="transition-opacity hover:opacity-60">
-              <span className="text-[10px] uppercase tracking-[0.16em] text-[#0D0E10]">Send</span>
-            </button>
-          </div>
-          <button className="transition-opacity hover:opacity-60">
-            <span className="text-[10px] uppercase tracking-[0.16em] text-[#0D0E10]">Save</span>
-          </button>
-        </div>
-
         {/* Caption */}
         {isRegenerating ? (
           <div className="space-y-2 rounded-[10px] border border-[#C5C6C8]/50 bg-[#F8FAFA] px-4 py-3">
@@ -482,15 +462,14 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                 <button
                   onClick={handleCancelEdit}
                   disabled={isSaving}
-                  className="flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-xs font-medium text-[#4F5052] transition-colors hover:bg-[#F8FAFA] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-11 items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-xs font-medium text-[#4F5052] transition-colors hover:bg-[#F8FAFA] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <span className="text-[10px] uppercase tracking-[0.16em]">Cancel</span>
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveEdit}
                   disabled={isSaving || editedCaption.trim() === caption}
-                  className="flex items-center gap-1.5 rounded-[8px] bg-[#0D0E10] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-11 items-center gap-1.5 rounded-[8px] bg-[#0D0E10] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSaving ? (
                     <>
@@ -498,10 +477,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                       Saving...
                     </>
                   ) : (
-                    <>
-                      <span className="text-[10px] uppercase tracking-[0.16em]">Save</span>
-                      Save
-                    </>
+                    "Save"
                   )}
                 </button>
               </div>
@@ -527,7 +503,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
             <div className="flex flex-wrap items-center gap-1.5">
               <button
                 onClick={copyCaptionToClipboard}
-                className="rounded-[8px] border border-[#C5C6C8]/50 p-2 transition-colors hover:border-[#C5C6C8] hover:bg-[#F8FAFA]"
+                className="min-h-11 rounded-[8px] border border-[#C5C6C8]/50 px-3 py-2 transition-colors hover:border-[#C5C6C8] hover:bg-[#F8FAFA]"
                 title="Copy caption"
               >
                 {copiedCaption ? (
@@ -539,7 +515,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
               {hashtags && (
                 <button
                   onClick={handleCopyHashtags}
-                  className="rounded-[8px] border border-[#C5C6C8]/50 p-2 transition-colors hover:border-[#C5C6C8] hover:bg-[#F8FAFA]"
+                  className="min-h-11 rounded-[8px] border border-[#C5C6C8]/50 px-3 py-2 transition-colors hover:border-[#C5C6C8] hover:bg-[#F8FAFA]"
                   title="Copy hashtags"
                 >
                   {copiedHashtags ? (
@@ -552,7 +528,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
               <button
                 onClick={handleStartEdit}
                 disabled={isRegenerating || isEnhancing}
-                className="rounded-[8px] border border-[#C5C6C8]/50 p-2 transition-colors hover:border-[#C5C6C8] hover:bg-[#F8FAFA] disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-11 rounded-[8px] border border-[#C5C6C8]/50 px-3 py-2 transition-colors hover:border-[#C5C6C8] hover:bg-[#F8FAFA] disabled:cursor-not-allowed disabled:opacity-50"
                 title="Edit caption"
               >
                 <span className="text-[10px] uppercase tracking-[0.16em] text-[#4F5052]">Edit</span>

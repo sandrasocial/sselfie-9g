@@ -13,7 +13,7 @@ interface FeedHeaderProps {
   feedData: any
   currentFeedId: number
   onBack?: () => void
-  onProfileImageClick: () => void
+  onProfileImageClick?: () => void
   onWriteBio: () => void
   onCreateHighlights?: () => void
   onOpenWizard?: () => void // Callback to open wizard
@@ -26,10 +26,10 @@ interface FeedHeaderProps {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 const feedHeaderCompactChipClass =
-  "min-h-[34px] rounded-[8px] border border-[#C5C6C8] bg-white px-3 text-[9px] uppercase tracking-[0.16em] text-[#4F5052] transition-colors hover:border-[#0D0E10]/40 hover:text-[#0D0E10] sm:min-h-[36px]"
+  "min-h-11 rounded-[8px] border border-[#C5C6C8] bg-white px-3 text-[9px] uppercase tracking-[0.16em] text-[#4F5052] transition-colors hover:border-[#0D0E10]/40 hover:text-[#0D0E10]"
 
 const feedHeaderChipClass =
-  "min-h-[34px] rounded-[8px] border border-[#C5C6C8] bg-white px-3 text-[10px] uppercase tracking-[0.16em] text-[#4F5052] transition-colors hover:border-[#0D0E10]/40 hover:text-[#0D0E10] sm:min-h-[36px] sm:px-4 sm:text-[11px]"
+  "min-h-11 rounded-[8px] border border-[#C5C6C8] bg-white px-3 text-[10px] uppercase tracking-[0.16em] text-[#4F5052] transition-colors hover:border-[#0D0E10]/40 hover:text-[#0D0E10] sm:px-4 sm:text-[11px]"
 
 const feedHeaderStatClass = "rounded-[8px] border border-[#C5C6C8]/60 bg-white px-2 py-1.5 text-center"
 
@@ -64,6 +64,8 @@ export default function FeedHeader({
       ? feedData.feed.posts
       : []
   const needsCaptions = feedPosts.length > 0 && feedPosts.every((p) => !p?.caption)
+  const readyPosts = feedPosts.filter((post) => Boolean(post?.image_url && post?.caption)).length
+  const postedPosts = feedPosts.filter((post) => Boolean(post?.is_posted)).length
   
   // Fetch user's last feed style from personal brand
   const { data: personalBrandData } = useSWR(
@@ -439,8 +441,9 @@ export default function FeedHeader({
       goToFeed(responseData.feedId)
       
       toast({
-        title: "Feed created",
-        description: "Your new feed is ready. Start adding images!",
+        // DRAFT UX copy for Sandra approval before release.
+        title: "Grid created",
+        description: "Your new grid is ready.",
       })
     } catch (error) {
       console.error("[v0] Error creating feed:", error)
@@ -462,9 +465,6 @@ export default function FeedHeader({
     feedData?.feed?.brand_name || 
     `Feed ${currentFeedId}` ||
     "My Feed"
-
-  // Get feed color for checkmark (default to blue if not set)
-  const feedColor = feedData?.feed?.display_color || "#3b82f6" // Default blue
 
   return (
     <div className="overflow-hidden rounded-[14px] border border-[#C5C6C8]/35 bg-[#F8FAFA] shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)]">
@@ -490,9 +490,6 @@ export default function FeedHeader({
               />
             )}
             <span className="truncate font-serif text-[17px] font-light leading-tight text-[#0D0E10] sm:text-[19px]">{feedName}</span>
-            <span className="shrink-0 text-[9px] uppercase tracking-[0.16em]" style={{ color: feedColor }}>
-              Live
-            </span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             {access?.isMembership && onToggleGenerationMode && (
@@ -501,6 +498,7 @@ export default function FeedHeader({
                   currentMode={generationMode}
                   onToggle={onToggleGenerationMode}
                   variant="compact"
+                  surface="light"
                   showModeHint={false}
                 />
               </div>
@@ -536,7 +534,9 @@ export default function FeedHeader({
         <div className="flex flex-col md:flex-row md:items-start md:gap-8 mb-3">
           <button
             onClick={onProfileImageClick}
-            className="relative group mb-3 h-[72px] w-[72px] shrink-0 rounded-full border border-[#C5C6C8]/50 bg-white p-[2px] transition-opacity hover:opacity-90 sm:h-20 sm:w-20 md:mb-0 md:h-28 md:w-28"
+            disabled={!onProfileImageClick}
+            aria-label={onProfileImageClick ? (hasProfileImage ? "Change profile image" : "Add profile image") : "Profile image"}
+            className="relative group mb-3 h-[72px] w-[72px] shrink-0 rounded-full border border-[#C5C6C8]/50 bg-white p-[2px] transition-opacity enabled:hover:opacity-90 disabled:cursor-default sm:h-20 sm:w-20 md:mb-0 md:h-28 md:w-28"
           >
             <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-[#C5C6C8]/40 bg-[#0D0E10]">
               {hasProfileImage ? (
@@ -552,12 +552,12 @@ export default function FeedHeader({
                 <span className="relative z-10 text-2xl font-bold md:text-4xl text-white">S</span>
               )}
             </div>
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-[#0D0E10]/0 transition-all group-hover:bg-[#0D0E10]/50">
+            {onProfileImageClick && <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-[#0D0E10]/0 transition-all group-hover:bg-[#0D0E10]/50">
               <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity font-medium text-center px-2 text-white">
                 {hasProfileImage ? "Change" : "Add photo"}
               </span>
-            </div>
-            {!hasProfileImage && (
+            </div>}
+            {onProfileImageClick && !hasProfileImage && (
               <div className="pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[4px] border border-[#C5C6C8]/50 bg-white px-2 py-0.5 text-[10px] text-[#0D0E10] opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
                 Click to add profile picture
               </div>
@@ -567,16 +567,16 @@ export default function FeedHeader({
           <div className="flex-1 space-y-3">
             <div className="grid grid-cols-3 gap-2 max-w-sm">
               <div className={feedHeaderStatClass}>
-                <div className="text-sm font-semibold text-[#0D0E10]">9</div>
+                <div className="text-sm font-semibold text-[#0D0E10]">{feedPosts.length}</div>
                 <div className="text-[11px] text-[#4F5052]">posts</div>
               </div>
               <div className={feedHeaderStatClass}>
-                <div className="text-sm font-semibold text-[#0D0E10]">1.2K</div>
-                <div className="text-[11px] text-[#4F5052]">followers</div>
+                <div className="text-sm font-semibold text-[#0D0E10]">{readyPosts}</div>
+                <div className="text-[11px] text-[#4F5052]">ready</div>
               </div>
               <div className={feedHeaderStatClass}>
-                <div className="text-sm font-semibold text-[#0D0E10]">342</div>
-                <div className="text-[11px] text-[#4F5052]">following</div>
+                <div className="text-sm font-semibold text-[#0D0E10]">{postedPosts}</div>
+                <div className="text-[11px] text-[#4F5052]">posted</div>
               </div>
             </div>
 
@@ -603,7 +603,7 @@ export default function FeedHeader({
                     </>
                   ) : (
                     <>
-                      <span>New Feed</span>
+                      <span>New Grid</span>
                     </>
                   )}
                 </button>

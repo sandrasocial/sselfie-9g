@@ -244,14 +244,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
 
   const handleFeedStyleConfirm = async (modalData: FeedStyleModalData) => {
     setShowFeedStyleModal(false)
-    
-    // If called from welcome wizard, just notify parent and return
-    if (onFeedStyleSelected) {
-      onFeedStyleSelected(modalData.feedStyle)
-      return
-    }
-    
-    // Otherwise, create a new feed (normal flow)
+
     setIsCreatingManual(true)
     
     try {
@@ -281,9 +274,12 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       if (feedNav) feedNav.navigateToFeed(data.feedId)
       else router.push(`/feed-planner?feedId=${data.feedId}`)
 
+      onFeedStyleSelected?.(modalData.feedStyle)
+
       toast({
-        title: "Feed created",
-        description: "Your new feed is ready. Start adding images!",
+        // DRAFT UX copy for Sandra approval before release.
+        title: "Grid created",
+        description: "Your new grid is ready.",
       })
     } catch (error) {
       console.error("[v0] Error creating manual feed:", error)
@@ -296,6 +292,19 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       setIsCreatingManual(false)
     }
   }
+
+  const feedStyleModal = (
+    <FeedStyleModal
+      open={showFeedStyleModal}
+      onOpenChange={(open) => {
+        setShowFeedStyleModal(open)
+        onFeedStyleModalChange?.(open)
+      }}
+      onConfirm={handleFeedStyleConfirm}
+      defaultFeedStyle={lastFeedStyle}
+      isLoading={isCreatingManual}
+    />
+  )
 
   // Loading state - show unified loader during initial load
   if (isLoading) {
@@ -333,13 +342,14 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   // Placeholder state: No feed exists (exists: false from /api/feed/latest)
   if (!feedExists || (!feedIdFromQuery && feedData?.exists === false)) {
     return (
+      <>
       <div className="app-light-panel-text flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
         {/* Placeholder State - paid blueprint: inline "Set up in 30 seconds" card (A-02) */}
         <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-4 sm:p-6 md:p-12">
           <div className="w-full max-w-md space-y-6 rounded-[20px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.74)] p-6 text-center shadow-[0_24px_70px_rgba(61,56,48,0.10)] backdrop-blur-[18px]">
             {/* Icon */}
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] sm:h-20 sm:w-20">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">Feed</span>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">Grid</span>
             </div>
 
             {/* Heading - paid blueprint: "Set up in 30 seconds" per §1.4 */}
@@ -348,7 +358,8 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
                 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)] sm:text-2xl"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
-                {access?.isPaidBlueprint ? "Set up your first posts" : "Plan Your First Posts"}
+                {/* DRAFT UX copy for Sandra approval before release. */}
+                Create your first grid
               </h2>
               <p className="text-sm font-light text-[color:var(--app-text-secondary)] sm:text-base">
                 {access?.isPaidBlueprint
@@ -365,7 +376,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
                 className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[6px] border border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] px-6 py-4 text-sm font-medium uppercase tracking-[0.2em] text-[color:var(--app-btn-primary-text)] transition-opacity duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
-                {isCreatingManual ? "Creating..." : "Start my plan ->"}
+                {isCreatingManual ? "Creating..." : "Create my grid"}
               </button>
               {!access?.isPaidBlueprint && (
                 <button
@@ -380,7 +391,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
             {/* Placeholder Grid Preview (Visual Guide) */}
             <div className="border-t border-[color:var(--app-glass-border)] pt-8">
               <p className="mb-4 text-xs uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
-                Your Feed Preview
+                Your Grid Preview
               </p>
               <div className="mx-auto grid max-w-[300px] grid-cols-3 gap-0 border border-[color:var(--app-glass-border)]">
                 {Array.from({ length: 9 }).map((_, i) => (
@@ -396,6 +407,8 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
           </div>
         </div>
       </div>
+      {feedStyleModal}
+      </>
     )
   }
 
@@ -435,17 +448,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
         />
       </div>
 
-      {/* Feed Style Selection Modal */}
-      <FeedStyleModal
-        open={showFeedStyleModal}
-        onOpenChange={(open) => {
-          setShowFeedStyleModal(open)
-          onFeedStyleModalChange?.(open)
-        }}
-        onConfirm={handleFeedStyleConfirm}
-        defaultFeedStyle={lastFeedStyle}
-        isLoading={isCreatingManual}
-      />
+      {feedStyleModal}
     </div>
   )
 }

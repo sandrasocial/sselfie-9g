@@ -59,8 +59,8 @@ export default function FeedWeekView({ posts, onPostClick }: FeedWeekViewProps) 
       <button
         key={post.id}
         onClick={() => onPostClick(post)}
-        className={`flex w-full items-center gap-3 rounded-[10px] border bg-white p-2.5 text-left transition-colors hover:border-[#0D0E10]/40 ${
-          isPast ? "border-[#C5C6C8]/40 opacity-60" : "border-[#C5C6C8]/60"
+        className={`flex min-h-11 w-full items-center gap-3 rounded-[10px] border bg-white p-2.5 text-left transition-colors hover:border-[#0D0E10]/40 ${
+          isPast ? "border-[#C5C6C8]/40 bg-[#F8FAFA]" : "border-[#C5C6C8]/60"
         }`}
       >
         <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[6px] bg-[#EDEEEF]">
@@ -75,14 +75,14 @@ export default function FeedWeekView({ posts, onPostClick }: FeedWeekViewProps) 
         </div>
         <div className="min-w-0 flex-1">
           {dateLabel && (
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[#818283]">{dateLabel}</p>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#4F5052]">{dateLabel}</p>
           )}
           {post.content_pillar && (
             <p className="mt-0.5 truncate text-[13px] font-medium text-[#0D0E10]">
               {post.content_pillar}
             </p>
           )}
-          <p className="mt-0.5 truncate text-[12px] text-[#818283]">
+          <p className="mt-0.5 truncate text-[12px] text-[#4F5052]">
             {post.caption ? post.caption : "Caption coming with the photo"}
           </p>
         </div>
@@ -102,7 +102,7 @@ export default function FeedWeekView({ posts, onPostClick }: FeedWeekViewProps) 
           <div className="mb-2 flex items-baseline gap-2 px-1">
             <h3 className="text-[11px] uppercase tracking-[0.2em] text-[#4F5052]">{fmtWeek(key)}</h3>
             {key === currentWeekKey && (
-              <span className="text-[10px] uppercase tracking-[0.14em] text-[#818283]">This week</span>
+              <span className="text-[10px] uppercase tracking-[0.14em] text-[#4F5052]">This week</span>
             )}
           </div>
           <div className="space-y-2">

@@ -4,6 +4,7 @@ interface MayaModeToggleProps {
   currentMode: "classic" | "pro"
   onToggle: () => void
   variant?: "button" | "compact"
+  surface?: "dark" | "light"
   className?: string
   /** When false, hides the one-line legend under the compact control (e.g. Feed Planner header). Default true. */
   showModeHint?: boolean
@@ -18,6 +19,7 @@ export default function MayaModeToggle({
   currentMode,
   onToggle,
   variant = "button",
+  surface = "dark",
   className = "",
   showModeHint = true,
 }: MayaModeToggleProps) {
@@ -37,10 +39,15 @@ export default function MayaModeToggle({
 
     const myModelActive = !isProMode
     const selfieActive = isProMode
+    const isLightSurface = surface === "light"
 
     const control = (
       <div
-        className={`inline-flex max-w-full rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-0.5 ${className}`}
+        className={`inline-flex max-w-full rounded-lg border p-0.5 ${
+          isLightSurface
+            ? "border-[#C5C6C8] bg-white"
+            : "border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)]"
+        } ${className}`}
       >
         <button
           type="button"
@@ -49,10 +56,14 @@ export default function MayaModeToggle({
               onToggle()
             }
           }}
-          className={`px-2 sm:px-3 py-1.5 rounded-md transition-all touch-manipulation active:scale-95 min-h-[36px] sm:min-h-[40px] flex flex-col items-center justify-center gap-0 ${
+          className={`flex min-h-11 flex-col items-center justify-center gap-0 rounded-md px-2 py-1.5 transition-all touch-manipulation active:scale-95 sm:px-3 ${
             isProMode
-              ? "bg-transparent text-[#8a8780] hover:bg-[rgba(175,170,162,0.10)] cursor-pointer"
-              : "bg-[rgba(175,170,162,0.25)] text-[#f0ede8] cursor-default"
+              ? isLightSurface
+                ? "cursor-pointer bg-transparent text-[#4F5052] hover:bg-[#F1F2F2]"
+                : "cursor-pointer bg-transparent text-[#8a8780] hover:bg-[rgba(175,170,162,0.10)]"
+              : isLightSurface
+                ? "cursor-default bg-[#0D0E10] text-white"
+                : "cursor-default bg-[rgba(175,170,162,0.25)] text-[#f0ede8]"
           }`}
           aria-pressed={myModelActive}
           aria-label={
@@ -75,10 +86,14 @@ export default function MayaModeToggle({
               onToggle()
             }
           }}
-          className={`px-2 sm:px-3 py-1.5 rounded-md transition-all touch-manipulation active:scale-95 min-h-[36px] sm:min-h-[40px] flex flex-col items-center justify-center gap-0 ${
+          className={`flex min-h-11 flex-col items-center justify-center gap-0 rounded-md px-2 py-1.5 transition-all touch-manipulation active:scale-95 sm:px-3 ${
             isProMode
-              ? "bg-[rgba(175,170,162,0.25)] text-[#f0ede8] cursor-default"
-              : "bg-transparent text-[#8a8780] hover:bg-[rgba(175,170,162,0.10)] cursor-pointer"
+              ? isLightSurface
+                ? "cursor-default bg-[#0D0E10] text-white"
+                : "cursor-default bg-[rgba(175,170,162,0.25)] text-[#f0ede8]"
+              : isLightSurface
+                ? "cursor-pointer bg-transparent text-[#4F5052] hover:bg-[#F1F2F2]"
+                : "cursor-pointer bg-transparent text-[#8a8780] hover:bg-[rgba(175,170,162,0.10)]"
           }`}
           aria-pressed={selfieActive}
           aria-label={

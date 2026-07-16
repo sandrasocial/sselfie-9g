@@ -18,6 +18,7 @@ interface WelcomeWizardProps {
   open: boolean
   onComplete: () => void
   onDismiss?: () => void
+  onCreateFeed?: () => void
   onUsePreviewStyle?: () => void // Callback when user chooses to use preview style
   onChooseNewStyle?: () => void // Callback when user chooses to select new style
 }
@@ -36,6 +37,7 @@ export default function WelcomeWizard({
   open, 
   onComplete, 
   onDismiss,
+  onCreateFeed,
   onUsePreviewStyle,
   onChooseNewStyle,
 }: WelcomeWizardProps) {
@@ -65,6 +67,14 @@ export default function WelcomeWizard({
       handleComplete()
     }
   }
+
+  const handleCreateFeed = useCallback(() => {
+    if (onCreateFeed) {
+      onCreateFeed()
+      return
+    }
+    handleComplete()
+  }, [handleComplete, onCreateFeed])
 
   // Dynamic first step content based on whether user has preview feed
   // Use useMemo to prevent recreation on every render
@@ -112,8 +122,9 @@ export default function WelcomeWizard({
               onClick={() => {
                 if (onUsePreviewStyle) {
                   onUsePreviewStyle()
+                } else {
+                  handleCreateFeed()
                 }
-                handleComplete()
               }}
               className="flex-1 rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-white transition-all duration-200 hover:scale-105 hover:bg-white/15 active:scale-95 shadow-lg"
             >
@@ -123,8 +134,9 @@ export default function WelcomeWizard({
               onClick={() => {
                 if (onChooseNewStyle) {
                   onChooseNewStyle()
+                } else {
+                  handleCreateFeed()
                 }
-                handleComplete()
               }}
               variant="outline"
               className="flex-1 border-white/25 bg-white/[0.04] px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-white/75 transition-all duration-200 hover:border-white/45 hover:bg-white/10 hover:text-white"
@@ -146,7 +158,7 @@ export default function WelcomeWizard({
           Create a complete 9-post feed in minutes. Let&apos;s walk through how it works.
         </p>
         <Button
-          onClick={handleComplete}
+          onClick={handleCreateFeed}
           className="flex w-full items-center justify-center gap-2 rounded-full bg-white/90 py-5 text-sm font-medium uppercase tracking-[0.2em] text-black shadow-lg transition-colors hover:bg-white"
         >
           Generate my first feed now →
@@ -154,7 +166,7 @@ export default function WelcomeWizard({
         <p className="text-center text-xs text-white/35">Or continue the walkthrough below</p>
       </div>
     )
-  }, [isLoadingPreview, hasPreviewFeed, previewImageUrl, onUsePreviewStyle, onChooseNewStyle, handleComplete])
+  }, [isLoadingPreview, hasPreviewFeed, previewImageUrl, onUsePreviewStyle, onChooseNewStyle, handleCreateFeed])
 
   // Max 3 steps (A-02 / §1.4): Welcome → How it works → You're ready
   const steps = useMemo(() => {
@@ -212,23 +224,23 @@ export default function WelcomeWizard({
             Your first 60 credits are ready - create your first feed below.
           </p>
           <Button
-            onClick={handleComplete}
+            onClick={handleCreateFeed}
             className="flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 py-6 text-base font-medium uppercase tracking-[0.2em] text-white shadow-lg transition-colors hover:bg-white/15"
           >
-            Create my first feed
+            Create my first grid
           </Button>
         </div>
       ),
     })
 
     return stepList
-  }, [handleComplete, hasPreviewFeed, previewImageUrl, firstStepContent])
+  }, [handleCreateFeed, hasPreviewFeed, previewImageUrl, firstStepContent])
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1)
     } else {
-      handleComplete()
+      handleCreateFeed()
     }
   }
 

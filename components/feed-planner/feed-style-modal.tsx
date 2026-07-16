@@ -62,7 +62,11 @@ export default function FeedStyleModal({
   const [selectedVariationId, setSelectedVariationId] = useState<number | null>(defaultFeedStyleVariationId ?? null)
 
   // Fetch user's current personal brand data
-  const { data: personalBrandData, mutate: mutatePersonalBrand } = useSWR(
+  const {
+    data: personalBrandData,
+    isLoading: isLoadingPersonalBrand,
+    mutate: mutatePersonalBrand,
+  } = useSWR(
     open ? "/api/profile/personal-brand" : null,
     fetcher,
     {
@@ -112,6 +116,10 @@ export default function FeedStyleModal({
       return // Already initialized, don't override user's selections
     }
 
+    // When no explicit default was supplied, wait for the saved preference instead of
+    // freezing the temporary Dark & Moody fallback before SWR resolves.
+    if (!defaultFeedStyle && isLoadingPersonalBrand) return
+
     hasInitializedRef.current = true
     previousStyleRef.current = selectedStyle
 
@@ -153,7 +161,15 @@ export default function FeedStyleModal({
       }
     }
     // If no variation found, wait for variationData to load and set default
-  }, [open]) // ONLY run when modal opens/closes
+  }, [
+    defaultFeedStyle,
+    defaultFeedStyleVariationId,
+    isLoadingPersonalBrand,
+    mutatePersonalBrand,
+    open,
+    personalBrandData,
+    selectedStyle,
+  ])
 
   // Set default variation when variationData loads (only if no variation is set yet)
   useEffect(() => {
@@ -246,12 +262,15 @@ export default function FeedStyleModal({
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}
           >
             <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="feed-style-modal-title"
               className={`relative flex flex-col w-full max-w-4xl max-h-[calc(100dvh-8rem)] sm:max-h-[90vh] overflow-hidden rounded-2xl border border-white/15 bg-[rgba(13,15,19,0.94)] text-white shadow-2xl backdrop-blur-2xl`}
             >
               {/* Close Button - matching unified wizard */}
               <button
                 onClick={() => onOpenChange(false)}
-                className="absolute top-4 right-4 z-10 flex h-8 px-3 items-center justify-center rounded-lg text-white/65 transition-colors hover:bg-white/10 hover:text-white border border-white/15"
+                className="absolute right-4 top-4 z-10 flex min-h-11 items-center justify-center rounded-lg border border-white/15 px-3 text-white/65 transition-colors hover:bg-white/10 hover:text-white"
                 aria-label="Close"
               >
                 <span className="text-[10px] uppercase tracking-[0.18em]">Close</span>
@@ -263,6 +282,7 @@ export default function FeedStyleModal({
                   {/* Title - matching unified wizard typography */}
                   <div>
                     <h2
+                      id="feed-style-modal-title"
                       style={{ fontFamily: "'Cormorant Garamond', serif" }}
                       className="mb-3 text-2xl font-light uppercase tracking-[0.15em] text-white sm:text-3xl md:text-4xl"
                     >
@@ -286,10 +306,12 @@ export default function FeedStyleModal({
                           const isDefault = defaultFeedStyle === feedStyle
 
                           return (
-                            <div
+                            <button
+                              type="button"
                               key={key}
                               onClick={() => setSelectedStyle(feedStyle)}
-                              className={`cursor-pointer transition-all duration-300 ${
+                              aria-pressed={isSelected}
+                              className={`cursor-pointer text-left transition-all duration-300 ${
                                 isSelected ? "scale-105" : "hover:scale-102"
                               }`}
                             >
@@ -335,7 +357,7 @@ export default function FeedStyleModal({
                                 </div>
 
                                 {/* Selection Button */}
-                                <button
+                                <div
                                   className={`w-full border py-3 text-xs uppercase tracking-[0.2em] transition-all duration-200 sm:tracking-[0.3em] ${
                                     isSelected
                                       ? "border-white/35 bg-white/20 text-white"
@@ -343,7 +365,7 @@ export default function FeedStyleModal({
                                   }`}
                                 >
                                   {isSelected ? "SELECTED" : "SELECT"}
-                                </button>
+                                </div>
 
                                 {/* Default Badge */}
                                 {isDefault && !isSelected && (
@@ -352,7 +374,7 @@ export default function FeedStyleModal({
                                   </p>
                                 )}
                               </div>
-                            </div>
+                            </button>
                           )
                         })}
                       </div>

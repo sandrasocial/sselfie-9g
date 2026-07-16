@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { toast } from "@/hooks/use-toast"
 import FeedPostCard from "./feed-post-card"
@@ -35,6 +36,28 @@ export default function FeedModals({
   onNavigateToMaya,
   onUpdate,
 }: FeedModalsProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const onClosePostRef = useRef(onClosePost)
+
+  useEffect(() => {
+    onClosePostRef.current = onClosePost
+  }, [onClosePost])
+
+  useEffect(() => {
+    if (!selectedPost) return
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const focusTimer = window.setTimeout(() => dialogRef.current?.focus(), 0)
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClosePostRef.current()
+    }
+    document.addEventListener("keydown", handleKeyDown)
+    return () => {
+      window.clearTimeout(focusTimer)
+      document.removeEventListener("keydown", handleKeyDown)
+      previousFocus?.focus()
+    }
+  }, [selectedPost])
+
   return (
     <>
       {selectedPost && typeof window !== 'undefined' && createPortal(
@@ -47,6 +70,11 @@ export default function FeedModals({
           }}
         >
           <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Edit calendar post"
+            tabIndex={-1}
             className="relative my-8 flex max-h-[calc(100dvh-5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full max-w-[470px] flex-col animate-in fade-in zoom-in-[0.98] duration-300 motion-reduce:animate-none"
             onClick={(e) => e.stopPropagation()}
           >
@@ -59,7 +87,7 @@ export default function FeedModals({
             </button>
 
             {/* Action buttons - shown when image exists */}
-            {selectedPost.image_url && (
+            {selectedPost.image_url && access?.hasGalleryAccess && (
               <div className="absolute -top-12 left-0 z-10 flex items-center gap-2">
                 {onNavigateToMaya && (
                   <button

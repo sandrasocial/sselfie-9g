@@ -22,10 +22,10 @@ describe("feed planner layout hygiene", () => {
     expect(header).not.toContain("Menu</button>")
   })
 
-  it("uses compact action chips in feed header instead of large heavy buttons", () => {
+  it("uses compact but touch-safe action chips in the feed header", () => {
     const header = read("components/feed-planner/feed-header.tsx")
-    expect(header).toContain("min-h-[34px]")
-    expect(header).toContain("sm:min-h-[36px]")
+    expect(header).toContain("min-h-11")
+    expect(header).not.toContain("min-h-[34px]")
     expect(header).not.toContain("stone-chip rounded-full px-3 py-1.5")
     expect(header).not.toContain("rounded-full border border-white/15 bg-white/[0.05]")
   })

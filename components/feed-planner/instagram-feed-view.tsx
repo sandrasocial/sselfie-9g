@@ -552,7 +552,7 @@ export default function InstagramFeedView({
         feedData={feedData}
         currentFeedId={feedId}
         onBack={onBack}
-        onProfileImageClick={() => setShowProfileGallery(true)}
+        onProfileImageClick={access?.hasGalleryAccess ? () => setShowProfileGallery(true) : undefined}
         onWriteBio={handleWriteBio}
         onCreateHighlights={() => setShowHighlightsModal(true)}
         onOpenWizard={onOpenWizard}
@@ -607,7 +607,8 @@ export default function InstagramFeedView({
                         <button
                           key={lens}
                           onClick={() => setCalendarLens(lens)}
-                          className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.14em] transition-colors ${
+                          aria-pressed={calendarLens === lens}
+                          className={`min-h-11 rounded-full px-4 py-2 text-[10px] uppercase tracking-[0.14em] transition-colors ${
                             calendarLens === lens
                               ? "bg-[#0D0E10] text-white"
                               : "text-[#4F5052] hover:text-[#0D0E10]"

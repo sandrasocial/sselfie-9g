@@ -565,10 +565,10 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
   }
 
   // Handle "Use Preview Style" - create feed with existing data
-  const handleUsePreviewStyle = async () => {
+  const handleUsePreviewStyle = () => {
     console.log("[Welcome Wizard] User chose to use preview style")
-    // The existing onboarding data will be used when creating the feed
-    // Continue with tutorial (skip style selection step)
+    setShowWelcomeWizard(false)
+    setShowFeedStyleModal(true)
   }
 
   // Handle "Choose New Style" - open feed style picker modal (not full wizard)
@@ -583,10 +583,7 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
   const handleFeedStyleSelected = async (feedStyle: string) => {
     console.log("[Welcome Wizard] Feed style selected:", feedStyle)
     setShowFeedStyleModal(false)
-    // After style selection, continue with tutorial (skip style selection step)
-    // The style is already saved to personal brand via FeedStyleModal
-    // Reopen welcome wizard to continue tutorial
-    setShowWelcomeWizard(true)
+    await handleWelcomeWizardComplete()
   }
 
   const shouldShowActivationChecklist = Boolean(
@@ -676,6 +673,7 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
           open={showWelcomeWizard}
           onComplete={handleWelcomeWizardComplete}
           onDismiss={handleWelcomeWizardComplete}
+          onCreateFeed={handleChooseNewStyle}
           onUsePreviewStyle={handleUsePreviewStyle}
           onChooseNewStyle={handleChooseNewStyle}
         />
