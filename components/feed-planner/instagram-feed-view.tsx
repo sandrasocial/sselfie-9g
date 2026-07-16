@@ -34,8 +34,8 @@ import {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 const feedPlannerShellClass = "mx-auto w-full max-w-none md:max-w-[935px]"
-const feedPlannerCanvasClass = `${feedPlannerShellClass} app-light-panel-text overflow-hidden rounded-[20px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.72)] shadow-[0_24px_70px_rgba(61,56,48,0.10)] backdrop-blur-[20px]`
-const feedPlannerStateClass = `${feedPlannerShellClass} app-light-panel-text flex min-h-[60vh] items-center justify-center rounded-[20px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.72)] p-4 shadow-[0_24px_70px_rgba(61,56,48,0.10)] backdrop-blur-[20px]`
+const feedPlannerCanvasClass = `${feedPlannerShellClass} app-light-panel-text overflow-hidden rounded-none border-y border-[color:var(--app-glass-border)] bg-white shadow-none sm:rounded-[20px] sm:border sm:bg-[rgba(255,255,255,0.72)] sm:shadow-[0_24px_70px_rgba(61,56,48,0.10)] sm:backdrop-blur-[20px]`
+const feedPlannerStateClass = `${feedPlannerShellClass} app-light-panel-text flex min-h-[60vh] items-center justify-center rounded-none border-y border-[color:var(--app-glass-border)] bg-white p-4 shadow-none sm:rounded-[20px] sm:border sm:bg-[rgba(255,255,255,0.72)] sm:shadow-[0_24px_70px_rgba(61,56,48,0.10)] sm:backdrop-blur-[20px]`
 
 interface InstagramFeedViewProps {
   feedId: number
@@ -601,14 +601,21 @@ export default function InstagramFeedView({
                     grids, leaving "nowhere to switch". Week view handles undated posts via
                     its Anytime section, so the toggle is safe everywhere). */}
                 {!access?.isFree && (
-                  <div className="mx-auto mb-3 flex max-w-3xl justify-end px-3">
-                    <div className="flex gap-1 rounded-full border border-[#C5C6C8]/60 bg-white p-1">
+                  <div className="mx-auto mb-3 flex max-w-3xl items-center justify-between gap-3 px-3">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#4F5052]">
+                      Choose a view
+                    </p>
+                    <div
+                      role="group"
+                      aria-label="Choose a calendar view"
+                      className="flex min-w-[176px] gap-1 rounded-full border border-[#C5C6C8]/60 bg-white p-1"
+                    >
                       {(["grid", "week"] as const).map((lens) => (
                         <button
                           key={lens}
                           onClick={() => setCalendarLens(lens)}
                           aria-pressed={calendarLens === lens}
-                          className={`min-h-11 rounded-full px-4 py-2 text-[10px] uppercase tracking-[0.14em] transition-colors ${
+                          className={`min-h-11 flex-1 rounded-full px-4 py-2 text-[10px] uppercase tracking-[0.14em] transition-colors ${
                             calendarLens === lens
                               ? "bg-[#0D0E10] text-white"
                               : "text-[#4F5052] hover:text-[#0D0E10]"
@@ -644,9 +651,10 @@ export default function InstagramFeedView({
                 )}
                 {/* Helpful hint for empty posts (grid lens only - week cards carry their own state) */}
                 {calendarLens !== "week" && displayPosts.some((p: any) => !p.image_url) && (
-        <div className="mt-6 px-4 text-center">
+                  <div className="mt-5 px-4 text-center">
                     <p className="text-xs font-light text-[color:var(--app-text-secondary)]">
-                      Click any empty post to upload an image or select from your gallery
+                      {/* DRAFT UX copy for Sandra approval before release. */}
+                      Tap an empty post to add a photo.
                     </p>
                   </div>
                 )}

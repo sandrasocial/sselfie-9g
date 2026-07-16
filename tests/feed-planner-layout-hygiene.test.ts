@@ -12,7 +12,7 @@ function read(relPath: string): string {
 describe("feed planner layout hygiene", () => {
   it("keeps feed tabs visually lightweight", () => {
     const tabs = read("components/feed-planner/feed-tabs.tsx")
-    expect(tabs).toContain("min-h-9 shrink-0")
+    expect(tabs).toContain("min-h-11 shrink-0")
     expect(tabs).toContain("tracking-[0.14em]")
     expect(tabs).not.toContain("rounded-full border border-white/15 bg-white/[0.04] p-1")
   })

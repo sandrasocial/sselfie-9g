@@ -25,7 +25,8 @@ export default function FeedMonthSummary({ themeSummary, schedulingRationale, pi
       <button
         type="button"
         onClick={() => setExpanded(v => !v)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        aria-expanded={expanded}
+        className="flex min-h-11 w-full items-center justify-between px-4 py-3 text-left"
       >
         <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#4F5052]">
           About this month

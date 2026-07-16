@@ -52,7 +52,7 @@ export default function FeedWeekView({ posts, onPostClick }: FeedWeekViewProps) 
   todayStart.setHours(0, 0, 0, 0)
   const currentWeekKey = weekStart(todayStart)
 
-  const renderCard = (post: WeekViewPost, dateLabel: string | null) => {
+  const renderCard = (post: WeekViewPost, dateLabel: string) => {
     const isPast =
       post.scheduled_at != null && new Date(post.scheduled_at).getTime() < todayStart.getTime()
     return (
@@ -74,9 +74,7 @@ export default function FeedWeekView({ posts, onPostClick }: FeedWeekViewProps) 
           )}
         </div>
         <div className="min-w-0 flex-1">
-          {dateLabel && (
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[#4F5052]">{dateLabel}</p>
-          )}
+          <p className="text-[10px] uppercase tracking-[0.18em] text-[#4F5052]">{dateLabel}</p>
           {post.content_pillar && (
             <p className="mt-0.5 truncate text-[13px] font-medium text-[#0D0E10]">
               {post.content_pillar}
@@ -112,8 +110,13 @@ export default function FeedWeekView({ posts, onPostClick }: FeedWeekViewProps) 
       ))}
       {undated.length > 0 && (
         <section>
-          <h3 className="mb-2 px-1 text-[11px] uppercase tracking-[0.2em] text-[#4F5052]">Anytime</h3>
-          <div className="space-y-2">{undated.map((post) => renderCard(post, null))}</div>
+          <div className="mb-2 px-1">
+            <h3 className="text-[11px] uppercase tracking-[0.2em] text-[#4F5052]">Not scheduled</h3>
+            <p className="mt-1 text-[12px] text-[#4F5052]">These posts are still part of your grid.</p>
+          </div>
+          <div className="space-y-2">
+            {undated.map((post) => renderCard(post, `Post ${post.position}`))}
+          </div>
         </section>
       )}
     </div>

@@ -26,10 +26,13 @@ interface FeedHeaderProps {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 const feedHeaderCompactChipClass =
-  "min-h-11 rounded-[8px] border border-[#C5C6C8] bg-white px-3 text-[9px] uppercase tracking-[0.16em] text-[#4F5052] transition-colors hover:border-[#0D0E10]/40 hover:text-[#0D0E10]"
+  "min-h-11 rounded-[8px] border border-[#C5C6C8] bg-white px-3 text-[10px] uppercase tracking-[0.14em] text-[#4F5052] transition-colors hover:border-[#0D0E10]/40 hover:text-[#0D0E10]"
 
 const feedHeaderChipClass =
   "min-h-11 rounded-[8px] border border-[#C5C6C8] bg-white px-3 text-[10px] uppercase tracking-[0.16em] text-[#4F5052] transition-colors hover:border-[#0D0E10]/40 hover:text-[#0D0E10] sm:px-4 sm:text-[11px]"
+
+const feedHeaderPrimaryChipClass =
+  "min-h-11 rounded-[8px] border border-[#0D0E10] bg-[#0D0E10] px-4 text-[10px] uppercase tracking-[0.16em] text-white transition-opacity hover:opacity-90 sm:text-[11px]"
 
 const feedHeaderStatClass = "rounded-[8px] border border-[#C5C6C8]/60 bg-white px-2 py-1.5 text-center"
 
@@ -512,9 +515,10 @@ export default function FeedHeader({
               <button
                 onClick={onOpenWizard}
                 className={feedHeaderCompactChipClass}
-                title="Edit wizard answers"
+                title="Edit your grid setup"
               >
-                Wizard
+                {/* DRAFT UX copy for Sandra approval before release. */}
+                Plan settings
               </button>
             )}
             {onOpenWelcomeWizard && access?.isPaidBlueprint && (
@@ -523,7 +527,7 @@ export default function FeedHeader({
                 className={feedHeaderCompactChipClass}
                 title="View welcome guide"
               >
-                Guide
+                Quick guide
               </button>
             )}
           </div>
@@ -531,12 +535,12 @@ export default function FeedHeader({
       </div>
 
       <div className="px-3 sm:px-4 md:px-8 py-3 sm:py-4">
-        <div className="flex flex-col md:flex-row md:items-start md:gap-8 mb-3">
+        <div className="mb-3 flex items-start gap-4 md:gap-8">
           <button
             onClick={onProfileImageClick}
             disabled={!onProfileImageClick}
             aria-label={onProfileImageClick ? (hasProfileImage ? "Change profile image" : "Add profile image") : "Profile image"}
-            className="relative group mb-3 h-[72px] w-[72px] shrink-0 rounded-full border border-[#C5C6C8]/50 bg-white p-[2px] transition-opacity enabled:hover:opacity-90 disabled:cursor-default sm:h-20 sm:w-20 md:mb-0 md:h-28 md:w-28"
+            className="group relative h-[72px] w-[72px] shrink-0 rounded-full border border-[#C5C6C8]/50 bg-white p-[2px] transition-opacity enabled:hover:opacity-90 disabled:cursor-default sm:h-20 sm:w-20 md:h-28 md:w-28"
           >
             <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-[#C5C6C8]/40 bg-[#0D0E10]">
               {hasProfileImage ? (
@@ -595,7 +599,7 @@ export default function FeedHeader({
                 <button
                   onClick={handleCreateNewFeedClick}
                   disabled={isCreatingFeed}
-                  className={`${feedHeaderChipClass} disabled:cursor-not-allowed disabled:opacity-50`}
+                  className={`${feedHeaderPrimaryChipClass} disabled:cursor-not-allowed disabled:opacity-50`}
                 >
                   {isCreatingFeed ? (
                     <>

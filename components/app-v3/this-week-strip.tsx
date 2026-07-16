@@ -100,7 +100,7 @@ export function ThisWeekStrip({
         <button
           type="button"
           onClick={reopen}
-          className="rounded-full border border-[#C5C6C8]/60 bg-white px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-[#4F5052] transition-colors hover:border-[#0D0E10]/40 hover:text-[#0D0E10]"
+          className="min-h-11 rounded-full border border-[#C5C6C8]/60 bg-white px-4 text-[10px] uppercase tracking-[0.16em] text-[#4F5052] transition-colors hover:border-[#0D0E10]/40 hover:text-[#0D0E10]"
         >
           This week on Instagram
         </button>
@@ -109,13 +109,13 @@ export function ThisWeekStrip({
   }
 
   return (
-    <div className="mx-auto mb-4 max-w-3xl px-3 pt-4">
+    <div className="mx-auto mb-3 max-w-3xl px-3 pt-3">
       <div className="rounded-[14px] border border-[#C5C6C8]/50 bg-white p-4 shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)] sm:p-5">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-start justify-between gap-3 sm:items-center">
           <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">
             This week on Instagram
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-2 sm:items-center sm:gap-3">
             {weekStart && (
               <p className="text-[10px] uppercase tracking-[0.14em] text-[#A2A3A5]">
                 Week of {fmtWeek(weekStart)}
@@ -125,7 +125,7 @@ export function ThisWeekStrip({
               type="button"
               onClick={dismiss}
               aria-label="Close for this week"
-              className="-m-1.5 rounded-full p-1.5 text-[#A2A3A5] transition-colors hover:text-[#0D0E10]"
+              className="-mr-2 -mt-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-[#4F5052] transition-colors hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                 <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -135,28 +135,30 @@ export function ThisWeekStrip({
         </div>
 
         {!ideas ? (
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 flex gap-2 overflow-hidden sm:grid sm:grid-cols-3">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-14 animate-pulse rounded-[10px] bg-[#F1F2F2]" />
+              <div key={i} className="h-32 w-[82vw] max-w-[300px] shrink-0 animate-pulse rounded-[10px] bg-[#F1F2F2] sm:w-auto" />
             ))}
           </div>
         ) : (
-          <div className="mt-3 space-y-2">
+          <div className="-mx-1 mt-3 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
             {ideas.map((idea, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => onCreateIdea(idea.format, `${idea.title}. Open with this hook: "${idea.hook}"`)}
-                className="group flex w-full items-start justify-between gap-3 rounded-[10px] border border-[#C5C6C8]/60 bg-white p-3 text-left transition-colors hover:border-[#0D0E10]/40"
+                className="group flex min-h-11 w-[82vw] max-w-[300px] shrink-0 snap-start flex-col rounded-[10px] border border-[#C5C6C8]/60 bg-white p-3 text-left transition-colors hover:border-[#0D0E10]/40 sm:w-auto sm:max-w-none"
               >
-                <div className="min-w-0">
-                  <p className="text-[13px] font-medium leading-snug text-[#0D0E10]">{idea.title}</p>
-                  <p className="mt-1 text-[12px] leading-relaxed text-[#4F5052]">"{idea.hook}"</p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-[#818283]">{idea.whyNow}</p>
+                <div className="flex w-full items-start justify-between gap-2">
+                  <p className="min-w-0 text-[13px] font-medium leading-snug text-[#0D0E10]">{idea.title}</p>
+                  <span className="shrink-0 rounded-full border border-[#C5C6C8] px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] text-[#4F5052] transition-colors group-hover:border-[#0D0E10]/40">
+                    {FORMAT_LABEL[idea.format]}
+                  </span>
                 </div>
-                <span className="mt-0.5 shrink-0 rounded-full border border-[#C5C6C8] px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] text-[#4F5052] transition-colors group-hover:border-[#0D0E10]/40">
-                  {FORMAT_LABEL[idea.format]}
-                </span>
+                <p className="mt-2 line-clamp-3 text-[12px] leading-relaxed text-[#4F5052]">
+                  &ldquo;{idea.hook}&rdquo;
+                </p>
+                <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#818283]">{idea.whyNow}</p>
               </button>
             ))}
           </div>

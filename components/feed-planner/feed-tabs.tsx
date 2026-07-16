@@ -86,7 +86,7 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
   }, [isFreeUser, activeTab, onTabChange])
 
   const pillClass = (selected: boolean) =>
-    `min-h-9 shrink-0 rounded-full border px-3 text-[10px] uppercase tracking-[0.14em] transition-colors ${
+    `min-h-11 shrink-0 rounded-full border px-4 text-[10px] uppercase tracking-[0.14em] transition-colors ${
       selected
         ? "border-[#0D0E10] bg-[#0D0E10] text-white"
         : "border-[#C5C6C8] bg-white text-[#4F5052] hover:border-[#0D0E10]/40"
@@ -96,11 +96,18 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
     // One plan = nothing to switch between; keep the row out of the way entirely.
     if (plans.length < 2) return null
     return (
-      <div className="mb-3 overflow-x-auto px-3 [scrollbar-width:none]">
-        <div className="flex min-w-max gap-2">
+      <div className="mb-3 px-3">
+        <p className="mb-2 px-1 text-[10px] uppercase tracking-[0.18em] text-[#4F5052]">Your grids</p>
+        <div
+          role="group"
+          aria-label="Choose a grid"
+          className="flex min-w-0 gap-2 overflow-x-auto pb-1 [scrollbar-width:none]"
+        >
           {plans.map((plan) => (
             <button
+              type="button"
               key={plan.id}
+              aria-pressed={plan.id === currentFeedId}
               onClick={() => {
                 if (plan.id === currentFeedId) return
                 if (feedNav) feedNav.navigateToFeed(plan.id)
@@ -119,13 +126,15 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
   return (
     <div className="mb-3 overflow-x-auto px-3 [scrollbar-width:none]">
       <div className="flex min-w-max gap-2">
-        <button onClick={() => onTabChange("grid")} className={pillClass(activeTab === "grid")}>
+        <button type="button" aria-pressed={activeTab === "grid"} onClick={() => onTabChange("grid")} className={pillClass(activeTab === "grid")}>
           Grid
         </button>
 
         {/* Free users only: Captions tab. Paid/membership: Posts folded into the grid + the
             month strip, so no second tab for it. */}
         <button
+          type="button"
+          aria-pressed={activeTab === "captions"}
           onClick={() => onTabChange("captions")}
           className={pillClass(activeTab === "captions")}
         >
@@ -134,6 +143,8 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
 
         {showStrategyTab && (
           <button
+            type="button"
+            aria-pressed={activeTab === "strategy"}
             onClick={() => onTabChange("strategy")}
             className={pillClass(activeTab === "strategy")}
           >
@@ -144,6 +155,8 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
         {/* Brand Pillars tab - free users only. Paid/membership: pillars fold into the month
             strip + per-tile pillar tags Maya already writes when she auto-drafts the month. */}
         <button
+          type="button"
+          aria-pressed={activeTab === "pillars"}
           onClick={() => onTabChange("pillars")}
           className={pillClass(activeTab === "pillars")}
         >
