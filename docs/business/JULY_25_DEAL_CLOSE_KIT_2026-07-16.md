@@ -24,15 +24,17 @@ Do not add a discovery workshop, custom strategy deck, free sample, rate-card me
 
 | Buyer | Offer | Decision asset |
 | --- | --- | --- |
-| Syntx AI | EUR 6,000 Campaign Batch | `output/pdf/Sandra-Syntx-Campaign-Batch.pdf` |
-| Replit | EUR 3,000 Creator Ad Sprint | `output/pdf/Sandra-Creator-Ad-Sprint.pdf` |
-| Hailuo AI | EUR 3,000 Creator Ad Sprint | `output/pdf/Sandra-Creator-Ad-Sprint.pdf` |
-| ShiftCam | EUR 3,000 Creator Ad Sprint | `output/pdf/Sandra-Creator-Ad-Sprint.pdf` |
-| SANDMARC | EUR 3,000 Creator Ad Sprint | `output/pdf/Sandra-Creator-Ad-Sprint.pdf` |
+| Syntx AI | EUR 3,000 Tutorial Partnership | Public one-page PDF below, after Sandra approves and portfolio PR #3 is merged |
+| Replit | EUR 3,000 Tutorial Partnership | Public one-page PDF below, after Sandra approves and portfolio PR #3 is merged |
+| Hailuo AI | EUR 3,000 Tutorial Partnership | Public one-page PDF below, after Sandra approves and portfolio PR #3 is merged |
+| ShiftCam | EUR 3,000 Tutorial Partnership | Public one-page PDF below, after Sandra approves and portfolio PR #3 is merged |
+| SANDMARC | EUR 3,000 Tutorial Partnership | Public one-page PDF below, after Sandra approves and portfolio PR #3 is merged |
 
-Public Creator Ad Sprint scope: `https://www.ssasocial.com/selfie-partnerships`
+Public Tutorial Partnership scope: `https://www.ssasocial.com/selfie-partnerships`
 
-Public one-page PDF: `https://www.ssasocial.com/partnerships/Sandra-Creator-Ad-Sprint.pdf`
+Public one-page PDF after Sandra approves and the portfolio branch is merged: `https://www.ssasocial.com/partnerships/Sandra-Tutorial-Partnership.pdf`
+
+Do not send the URL before the portfolio deployment is live. Before any approved send, verify that the URL returns the Tutorial Partnership PDF rather than a 404 or the retired Creator Ad Sprint.
 
 ## Reply: interested or send details
 
@@ -46,7 +48,7 @@ Here is the one-page scope: [DECISION ASSET LINK OR ATTACHMENT]
 
 Before I reserve production, can you confirm two things?
 
-1. The [EUR 3,000 / EUR 6,000] fee is within the approved campaign budget.
+1. The EUR 3,000 fee is within the approved campaign budget.
 2. You are the person approving scope and payment, or you can copy that person here.
 
 Once that is confirmed, send the legal company name, billing address, VAT or tax number, and invoice contact. I can return the order form and payment request today.
@@ -59,7 +61,7 @@ Sandra
 
 Hi [Name],
 
-Perfect. The attached order form reflects the [EUR 3,000 / EUR 6,000] scope.
+Perfect. The attached order form reflects the EUR 3,000 Tutorial Partnership scope.
 
 Paid in full is the default and reserves production. If your procurement process requires split billing, I can do 50% to reserve production and 50% before final delivery.
 
@@ -77,7 +79,7 @@ Hi [Name],
 
 Thank you for being clear.
 
-I cannot discount the same scope because the useful part is giving your team several finished variations to test, not one isolated post.
+I cannot discount the same scope because the useful part is the complete lesson: concept, script, filming, edit, publication to my audience, and the amplification license.
 
 If timing is the issue rather than the total budget, I can split the payment 50% to reserve production and 50% before final delivery.
 
@@ -87,17 +89,17 @@ Sandra
 
 Do not invent a smaller package in the reply. A reduced scope needs a separate Sandra decision before it is offered.
 
-## Reply: the brand wants an organic post
+## Reply: the brand wants extra assets or another platform
 
 **DRAFT - SANDRA APPROVAL REQUIRED**
 
 Hi [Name],
 
-Yes, organic distribution is possible, but it is separate from the EUR 3,000 Creator Ad Sprint.
+The EUR 3,000 Tutorial Partnership includes one live tutorial on one agreed primary platform.
 
-The EUR 6,000 Campaign Batch includes twelve vertical variations, one organic Instagram tutorial, Stories, sixty days of paid use from the brand's accounts, and one revision round.
+Cross-platform reposting, extra versions, raw footage, longer usage, and exclusivity are separate scope because each changes the production or rights.
 
-If that is the result you need, I can replace the sprint scope with the Campaign Batch order form.
+Tell me exactly which extra platform, asset, or right your campaign needs. I will confirm the added scope before quoting it.
 
 Sandra
 
@@ -111,7 +113,7 @@ Happy to complete vendor setup.
 
 Please send the legal company name, billing address, VAT or tax number, purchase-order requirement, invoice contact, and any vendor form your team needs.
 
-The agreed fee is [EUR 3,000 / EUR 6,000]. Paid in full reserves production. If your procurement policy requires it, split billing is 50% to reserve and 50% before final delivery.
+The agreed fee is EUR 3,000. Paid in full reserves production. If your procurement policy requires it, split billing is 50% to reserve and 50% before final delivery.
 
 I will return the completed details and order form as soon as I receive the requirements.
 
@@ -133,8 +135,8 @@ Sandra
 
 1. **Two minutes:** What campaign or product needs creative now?
 2. **Three minutes:** Which audience, platform, and action matter?
-3. **Three minutes:** Is the brand buying production only, organic distribution, or both?
-4. **Three minutes:** Confirm paid-usage platform, duration, region, and start date.
+3. **Three minutes:** Which problem can the product naturally solve inside Sandra's tutorial format?
+4. **Three minutes:** Confirm the primary publishing platform, amplification duration, region, and start date.
 5. **Two minutes:** Confirm budget owner, legal or procurement requirements, and payment timing.
 6. **Two minutes:** Close with one next step: order form and payment request, or a clear no.
 
@@ -150,8 +152,8 @@ Collect only what is needed:
 - signatory name and title;
 - invoice email;
 - purchase-order number, if required;
-- selected offer;
-- paid-usage platform, region, and thirty- or sixty-day term;
+- primary publishing platform;
+- amplification platform, region, and thirty-day term;
 - payment option: paid in full or approved 50% + 50%;
 - approved brief and product-access date.
 
@@ -169,9 +171,9 @@ python3 -m venv .venv-pdf
   --buyer-signatory "[NAME, TITLE]" \
   --invoice-email "[INVOICE EMAIL]" \
   --seller-legal-name "Sandra Sigurjonsdottir Aamodt" \
-  --offer creator-ad-sprint \
+  --offer tutorial-partnership \
   --payment full \
-  --output output/pdf/DRAFT-[BUYER]-Creator-Ad-Sprint-Order-Form.pdf
+  --output output/pdf/DRAFT-[BUYER]-Tutorial-Partnership-Order-Form.pdf
 ```
 
 Seller identity was verified from the live Stripe Account on 2026-07-16: account type `individual`, legal individual name `Sandra Sigurjonsdottir Aamodt`, and business profile name `SSELFIE AI`. Use the legal name in the seller field and keep the brand name separate. Reverify against Stripe if the account identity changes.
