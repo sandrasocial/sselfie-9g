@@ -1,0 +1,6 @@
+interface:
+  display_name: "Sandra Voice OS"
+  short_description: "Write in Sandra's real channel-specific voice"
+  default_prompt: "Use $sandra-writing-style to write one evidence-grounded draft, run the voice-critic pass, and release it only if it scores at least 9/10 with no zero."
+policy:
+  allow_implicit_invocation: true

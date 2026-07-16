@@ -38,7 +38,7 @@ is `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`.
 3. Read `docs/CODEX_CONTEXT.md` — tech stack, constraints, and file map
 4. Check `tasks/` for any new spec files (newest = highest priority unless told otherwise)
 
-For any copy, prompt, agent/persona, Studio.com blueprint, landing page, email, DM, product-language, UX, campaign, or offer work, first read `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`, then `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md` and `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`. The Constitution controls the North Star and ethical line. The source-of-truth document controls detailed voice and audience. Both supersede older voice docs and old Studio marketing drafts when they conflict.
+For any copy, prompt, agent/persona, Studio.com blueprint, landing page, email, DM, product-language, UX, campaign, or offer work, first read `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`, then `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`, `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`, and `docs/brand/SANDRA_VOICE_OS_2026-07-16.md`. Invoke the project skill `.agents/skills/sandra-writing-style/`. The Constitution controls the North Star and ethical line. The source-of-truth document controls detailed brand and audience. The Voice OS controls channel-specific execution and its 9/10 release gate. These supersede older voice docs and old Studio marketing drafts when they conflict.
 
 ---
 
@@ -73,8 +73,10 @@ When you get a task:
 For any outward-facing copy (email templates, landing pages, CTAs):
 - Load `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
 - Load `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
+- Load `docs/brand/SANDRA_VOICE_OS_2026-07-16.md` and invoke `.agents/skills/sandra-writing-style/`
 - Keep copy in draft — Sandra approves before any send
-- Run QA against: voice match, clarity, emotional truth, action clarity, offer fit
+- Run the separate truth and voice passes; copy must score at least 9/10 with no zero before it may
+  reach Gmail or an outward-facing artifact
 
 ---
 

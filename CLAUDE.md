@@ -31,6 +31,15 @@ Also read the purpose/category lock:
 
 **`docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`**
 
+Then read the operational writing contract:
+
+**`docs/brand/SANDRA_VOICE_OS_2026-07-16.md`**
+
+For anything written in Sandra's name, invoke `.agents/skills/sandra-writing-style/`. It selects the
+channel contract, separates evidence from drafting, runs a voice-critic rewrite, and blocks the copy
+from Gmail or an outward-facing artifact until it scores at least 9/10 with no zero. ChatGPT memory
+may support the work, but memory never replaces this explicit contract or current thread evidence.
+
 For daily CEO focus, money moves, offer-temperature routing, and the admin Command Center, read:
 
 **`docs/business/SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md`**

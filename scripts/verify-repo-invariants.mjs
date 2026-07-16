@@ -30,4 +30,21 @@ if (!fs.existsSync(path.join(root, "lib", "maya"))) {
   failed = true;
 }
 
+const voiceOsPath = "docs/brand/SANDRA_VOICE_OS_2026-07-16.md";
+const voiceSkillPath = ".agents/skills/sandra-writing-style/SKILL.md";
+
+for (const requiredPath of [voiceOsPath, voiceSkillPath]) {
+  if (!fs.existsSync(path.join(root, requiredPath))) {
+    console.error(`FAIL: expected ${requiredPath} to exist`);
+    failed = true;
+  }
+}
+
+for (const authorityPath of ["AGENTS.md", "CLAUDE.md"]) {
+  if (!read(authorityPath).includes("SANDRA_VOICE_OS_2026-07-16.md")) {
+    console.error(`FAIL: expected ${authorityPath} to load the Sandra Voice OS`);
+    failed = true;
+  }
+}
+
 process.exit(failed ? 1 : 0);
