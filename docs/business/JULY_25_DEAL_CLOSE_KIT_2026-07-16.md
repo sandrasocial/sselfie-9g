@@ -24,15 +24,17 @@ Do not add a discovery workshop, custom strategy deck, free sample, rate-card me
 
 | Buyer | Offer | Decision asset |
 | --- | --- | --- |
-| Syntx AI | EUR 3,000 Tutorial Partnership | `output/pdf/Sandra-Tutorial-Partnership.pdf` |
-| Replit | EUR 3,000 Tutorial Partnership | `output/pdf/Sandra-Tutorial-Partnership.pdf` |
-| Hailuo AI | EUR 3,000 Tutorial Partnership | `output/pdf/Sandra-Tutorial-Partnership.pdf` |
-| ShiftCam | EUR 3,000 Tutorial Partnership | `output/pdf/Sandra-Tutorial-Partnership.pdf` |
-| SANDMARC | EUR 3,000 Tutorial Partnership | `output/pdf/Sandra-Tutorial-Partnership.pdf` |
+| Syntx AI | EUR 3,000 Tutorial Partnership | Public one-page PDF below, after Sandra approves and portfolio PR #3 is merged |
+| Replit | EUR 3,000 Tutorial Partnership | Public one-page PDF below, after Sandra approves and portfolio PR #3 is merged |
+| Hailuo AI | EUR 3,000 Tutorial Partnership | Public one-page PDF below, after Sandra approves and portfolio PR #3 is merged |
+| ShiftCam | EUR 3,000 Tutorial Partnership | Public one-page PDF below, after Sandra approves and portfolio PR #3 is merged |
+| SANDMARC | EUR 3,000 Tutorial Partnership | Public one-page PDF below, after Sandra approves and portfolio PR #3 is merged |
 
 Public Tutorial Partnership scope: `https://www.ssasocial.com/selfie-partnerships`
 
 Public one-page PDF after Sandra approves and the portfolio branch is merged: `https://www.ssasocial.com/partnerships/Sandra-Tutorial-Partnership.pdf`
+
+Do not send the URL before the portfolio deployment is live. Before any approved send, verify that the URL returns the Tutorial Partnership PDF rather than a 404 or the retired Creator Ad Sprint.
 
 ## Reply: interested or send details
 
