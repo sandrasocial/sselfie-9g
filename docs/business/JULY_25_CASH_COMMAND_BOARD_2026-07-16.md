@@ -44,13 +44,13 @@ This is a goal, not a forecast or guarantee. The plan is designed to maximize a 
 
 | Priority | Buyer | Offer | Ask | Current state |
 | --- | --- | --- | ---: | --- |
-| 1 | Syntx AI | Campaign Batch | EUR 6,000 | Unsent Gmail draft ready in the existing thread |
-| 2 | Replit | Creator Ad Sprint | EUR 3,000 | Unsent Gmail draft ready in the existing thread |
-| 3 | Hailuo AI | Creator Ad Sprint | EUR 3,000 | Unsent Gmail draft ready; qualify budget before concepts |
-| 4 | ShiftCam | Creator Ad Sprint | EUR 3,000 | Unsent Gmail draft ready for the named direct contact |
-| 5 | SANDMARC | Creator Ad Sprint | EUR 3,000 | Unsent Gmail reply draft ready in the application thread |
+| 1 | Syntx AI | Campaign Batch | EUR 6,000 | Prior paid-collaboration inbound; the team acknowledged the earlier rate card, but no current budget is confirmed |
+| 2 | Replit | Creator Ad Sprint | EUR 3,000 | Paid-collaboration inbound from March; no current brief, reply, or budget is confirmed |
+| 3 | Hailuo AI | Creator Ad Sprint | EUR 3,000 | Compensated-partnership inbound from May; no brief or budget has been shared |
+| 4 | ShiftCam | Creator Ad Sprint | EUR 3,000 | Application acknowledged and a named follow-up contact was provided; no paid budget is confirmed |
+| 5 | SANDMARC | Creator Ad Sprint | EUR 3,000 | Application acknowledged; no direct buyer or paid budget is confirmed |
 
-Total warm asks: **EUR 18,000**. This is target arithmetic, not expected revenue.
+Total warm asks: **EUR 18,000**. This is Sandra's proposed pricing, not buyer-confirmed budget, qualified pipeline, or expected revenue. Buyer-confirmed fixed-fee budget across these five opportunities is currently **EUR 0**.
 
 **Hard exclusion:** Unlocked Foundation is excluded from outreach. Sandra already delivered a keynote collaboration for the nonprofit in 2025. Do not draft, send, or follow up with a commercial pitch.
 
@@ -141,7 +141,7 @@ Agents own:
 | --- | ---: |
 | New cash received toward floor | EUR 0 |
 | Warm asks ready | EUR 18,000 across five unsent drafts |
-| Verified fixed-fee warm face value | EUR 18,000 |
+| Buyer-confirmed fixed-fee budget | EUR 0 |
 | Additional qualified fixed-fee face value | EUR 0 |
 | Coverage ambition | EUR 60,000 |
 | Paid scopes | 0 |
