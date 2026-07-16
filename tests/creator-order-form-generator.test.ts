@@ -26,5 +26,7 @@ describe("creator order form generator", () => {
     expect(commandBoard).not.toContain("| Unlocked Foundation |")
     expect(closeKit).not.toContain("| Unlocked Foundation |")
     expect(commandBoard).toContain("EUR 18,000 across five unsent drafts")
+    expect(commandBoard).toContain("Buyer-confirmed fixed-fee budget | EUR 0")
+    expect(commandBoard).not.toContain("Verified fixed-fee warm face value")
   })
 })
