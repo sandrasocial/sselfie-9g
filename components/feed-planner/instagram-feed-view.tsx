@@ -166,14 +166,17 @@ export default function InstagramFeedView({
     }
   }, [showBioModal, feedData?.bio?.bio_text])
 
-  const handleWriteBio = async () => {
+  const handleOpenBio = () => {
     if (!feedId) return
-    
-    setIsSavingBio(true)
+    setBioText(feedData?.bio?.bio_text || "")
     setShowBioModal(true)
-    // Clear existing bio text when starting generation
-    setBioText("")
-    
+  }
+
+  const handleGenerateBio = async () => {
+    if (!feedId) return
+
+    setIsSavingBio(true)
+
     try {
       // Generate bio using AI
       const response = await fetch(`/api/feed/${feedId}/generate-bio`, {
@@ -553,7 +556,7 @@ export default function InstagramFeedView({
         currentFeedId={feedId}
         onBack={onBack}
         onProfileImageClick={access?.hasGalleryAccess ? () => setShowProfileGallery(true) : undefined}
-        onWriteBio={handleWriteBio}
+        onWriteBio={handleOpenBio}
         onCreateHighlights={() => setShowHighlightsModal(true)}
         onOpenWizard={onOpenWizard}
         onOpenWelcomeWizard={onOpenWelcomeWizard}
@@ -751,9 +754,9 @@ export default function InstagramFeedView({
             className="relative z-[1] m-0 w-full max-w-md space-y-4 rounded-[20px] border border-[color:var(--app-glass-border)] bg-white p-6 text-[color:var(--app-text-primary)] shadow-[0_24px_70px_rgba(61,56,48,0.16)]"
           >
             <h2 className="text-lg font-light uppercase tracking-[0.12em]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-              {isSavingBio && !bioText ? "Creating Your Bio" : "Edit Bio"}
+              {isSavingBio ? "Creating Your Bio" : bioText ? "Edit Bio" : "Create Bio"}
             </h2>
-            {isSavingBio && !bioText ? (
+            {isSavingBio ? (
               <div className="flex flex-col items-center justify-center py-8 space-y-4">
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-[color:var(--app-glass-border)] border-t-[color:var(--app-text-primary)]" />
                 <div className="text-center space-y-2">
@@ -763,10 +766,14 @@ export default function InstagramFeedView({
               </div>
             ) : (
               <>
+                <p className="text-sm leading-relaxed text-[color:var(--app-text-secondary)]">
+                  {/* DRAFT UX copy for Sandra approval before release. */}
+                  Maya can write and save a bio for this grid. You can edit it afterward.
+                </p>
                 <textarea
                   value={bioText}
                   onChange={(e) => setBioText(e.target.value)}
-                  placeholder="Your AI-generated bio will appear here..."
+                  placeholder="Write your Instagram bio here..."
                   className="h-32 w-full resize-none rounded-[8px] border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] p-3 text-sm text-[color:var(--app-text-primary)] placeholder:text-[color:var(--app-text-muted)] focus:outline-none focus:ring-1 focus:ring-[color:var(--app-focus-ring)]"
                   maxLength={150}
                   disabled={isSavingBio}
@@ -776,19 +783,30 @@ export default function InstagramFeedView({
                 </div>
               </>
             )}
-            <div className="flex gap-2 justify-end">
+            <div className="flex flex-wrap justify-end gap-2">
               <button
+                type="button"
                 onClick={() => setShowBioModal(false)}
                 disabled={isSavingBio}
-                className="px-4 py-2 text-sm text-[color:var(--app-text-secondary)] transition-colors hover:text-[color:var(--app-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-11 rounded-[8px] px-4 text-sm text-[color:var(--app-text-secondary)] transition-colors hover:text-[color:var(--app-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
+              {!isSavingBio && (
+                <button
+                  type="button"
+                  onClick={handleGenerateBio}
+                  className="min-h-11 rounded-[8px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-4 text-sm text-[color:var(--app-text-primary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)]"
+                >
+                  {bioText ? "Regenerate with Maya" : "Generate with Maya"}
+                </button>
+              )}
               {!isSavingBio && bioText && (
                 <button
+                  type="button"
                   onClick={handleSaveBio}
                   disabled={!bioText.trim()}
-                  className="rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-4 py-2 text-sm uppercase tracking-[0.2em] text-[color:var(--app-text-primary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="min-h-11 rounded-[8px] bg-[color:var(--app-text-primary)] px-4 text-sm uppercase tracking-[0.16em] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Save
                 </button>
