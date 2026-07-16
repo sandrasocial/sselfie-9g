@@ -37,6 +37,7 @@ next-env.d.ts
 
 # Local scratch
 /.tmp/
+/.venv-pdf/
 
 # macOS / local agent tooling
 .DS_Store
