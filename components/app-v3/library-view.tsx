@@ -138,14 +138,22 @@ export function LibraryView() {
   const [data, setData] = useState<LibraryData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  function loadLibrary() {
+    setError(null)
     fetch("/api/app-v3/library")
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`Library returned ${r.status}`)
+        return r.json()
+      })
       .then(d => {
         if (d && Array.isArray(d.ownedProducts)) setData(d as LibraryData)
         else setError("Couldn't load your library. Try again.")
       })
       .catch(() => setError("Couldn't load your library. Try again."))
+  }
+
+  useEffect(() => {
+    loadLibrary()
   }, [])
 
   // Courses already shown with progress are hidden from the flat product tiles to avoid
@@ -165,7 +173,12 @@ export function LibraryView() {
         <p className="mt-1.5 text-[14px] text-[#4F5052]">Everything you own lives here.</p>
       </header>
 
-      {error && <p className="text-[14px] text-[#4F5052]">{error}</p>}
+      {error && (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4">
+          <p className="text-[14px] text-[#4F5052]">{error}</p>
+          <button type="button" onClick={loadLibrary} className="min-h-11 px-2 text-[10px] uppercase tracking-[0.14em] text-[#0D0E10] underline underline-offset-2">Retry</button>
+        </div>
+      )}
       {!data && !error && <p className="text-[14px] text-[#818283]">Opening your library…</p>}
 
       {data && (
@@ -196,7 +209,14 @@ export function LibraryView() {
                         {c.description}
                       </p>
                     )}
-                    <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-[#F1F2F2]">
+                    <div
+                      role="progressbar"
+                      aria-label={`${c.title} progress`}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={Math.min(100, Math.max(0, c.progressPercentage))}
+                      className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-[#F1F2F2]"
+                    >
                       <div
                         className="h-full bg-[#0D0E10] transition-[width]"
                         style={{ width: `${Math.min(100, Math.max(0, c.progressPercentage))}%` }}

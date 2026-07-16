@@ -8,6 +8,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { MemoryModal } from "./memory-modal"
 
 interface AccountData {
@@ -48,6 +49,7 @@ export function AccountView({
   onUseTrainedModel,
   trialDaysLeft,
   hasTrainedModel = false,
+  accessLevel = "full",
 }: {
   firstName?: string | null
   onOpenLibrary?: () => void
@@ -56,6 +58,7 @@ export function AccountView({
   trialDaysLeft?: number | null
   /** True when the member has a completed, non-test trained model. Gates the legacy entry. */
   hasTrainedModel?: boolean
+  accessLevel?: "full" | "trial" | "limited"
 }) {
   const [data, setData] = useState<AccountData | null>(null)
   const [selfies, setSelfies] = useState<string[] | null>(null)
@@ -65,17 +68,33 @@ export function AccountView({
   const [loggingOut, setLoggingOut] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [logoutError, setLogoutError] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
+  async function loadAccount() {
+    setLoadError(null)
+    try {
+      const [accountResponse, selfieResponse] = await Promise.all([
+        fetch("/api/app-v3/account"),
+        fetch("/api/app-v3/reference-library"),
+      ])
+      if (!accountResponse.ok) throw new Error(`Account returned ${accountResponse.status}`)
+      const account = await accountResponse.json()
+      setData(account && typeof account === "object" ? account : null)
+      if (selfieResponse.ok) {
+        const selfieData = await selfieResponse.json()
+        setSelfies(Array.isArray(selfieData?.images) ? selfieData.images : [])
+      } else {
+        setSelfies(null)
+      }
+    } catch {
+      setLoadError("Couldn't load your account details. Please try again.")
+    }
+  }
+
   useEffect(() => {
-    fetch("/api/app-v3/account")
-      .then(r => r.json())
-      .then(d => setData(d && typeof d === "object" ? d : null))
-      .catch(() => setData(null))
-    fetch("/api/app-v3/reference-library")
-      .then(r => r.json())
-      .then(d => setSelfies(Array.isArray(d?.images) ? d.images : []))
-      .catch(() => setSelfies([]))
+    void loadAccount()
   }, [])
 
   async function openBilling() {
@@ -103,6 +122,7 @@ export function AccountView({
   async function handleLogout() {
     if (loggingOut) return
     setLoggingOut(true)
+    setLogoutError(null)
     try {
       const res = await fetch("/api/auth/logout", { method: "POST", credentials: "include" })
       if (res.ok) {
@@ -113,6 +133,7 @@ export function AccountView({
       /* fall through to reset */
     }
     setLoggingOut(false)
+    setLogoutError("Couldn't log you out. Please try again.")
   }
 
   async function handleAddSelfie(file: File) {
@@ -129,12 +150,17 @@ export function AccountView({
       setUploadError(e instanceof Error ? e.message : "Upload failed")
     } finally {
       setUploading(false)
+      if (fileInput.current) fileInput.current.value = ""
     }
   }
 
   const isRecurringMembership = data?.billingKind === "recurring"
   const isFixedBundlePass = data?.billingKind === "fixed_pass"
   const isOwnedBundle = data?.billingKind === "one_time"
+  const hasSuiteAccess = accessLevel === "full" || accessLevel === "trial"
+  const membershipLabel = data?.creditsUnlimited
+    ? "Admin access"
+    : data?.plan ?? (hasSuiteAccess ? "SSELFIE SUITE" : "No active membership")
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-5 sm:py-8">
@@ -142,7 +168,14 @@ export function AccountView({
       <h1 className="mt-2 font-serif text-[30px] font-light leading-tight text-[#0D0E10]">
         {firstName ? `Hi ${firstName}` : "Your account"}
       </h1>
-      {data?.email && <p className="mt-1 text-[13px] text-[#818283]">{data.email}</p>}
+      {data?.email && <p className="mt-1 break-all text-[13px] text-[#4F5052]">{data.email}</p>}
+
+      {loadError && (
+        <div role="alert" className="mt-5 flex items-center justify-between gap-3 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4">
+          <p className="text-[13px] text-[#282728]">{loadError}</p>
+          <button type="button" onClick={() => void loadAccount()} className={quietBtn}>Retry</button>
+        </div>
+      )}
 
       <div className="mt-6 space-y-3">
         {/* Membership */}
@@ -172,7 +205,7 @@ export function AccountView({
             <>
               <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <p className="font-serif text-[22px] font-light text-[#0D0E10]">
-                  {data?.plan ?? "No active membership"}
+                  {data === null && !loadError ? "Loading membership…" : membershipLabel}
                 </p>
                 {(isRecurringMembership || isFixedBundlePass) && data?.status === "active" && (
                   <span className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052]">
@@ -224,17 +257,17 @@ export function AccountView({
                 </>
               ) : isFixedBundlePass || isOwnedBundle ? (
                 <div className="mt-4">
-                  <a href="/academy/access/one-selfie" className={primaryBtn}>
+                  <Link href="/academy/access/one-selfie" className={primaryBtn}>
                     Open my bundle
-                  </a>
+                  </Link>
                 </div>
-              ) : (
+              ) : data !== null && !hasSuiteAccess ? (
                 <div className="mt-4">
                   <a href="/checkout/membership?interval=month&source=account" className={primaryBtn}>
                     Explore SUITE
                   </a>
                 </div>
-              )}
+              ) : null}
             </>
           )}
         </div>
@@ -243,10 +276,10 @@ export function AccountView({
         <div className={card}>
           <p className={cardTitle}>Credits</p>
           <p className="mt-2 font-serif text-[22px] font-light text-[#0D0E10]">
-            {typeof data?.credits === "number"
-              ? `${data.credits} credits`
-              : data?.creditsUnlimited
-                ? "Unlimited"
+            {data?.creditsUnlimited
+              ? "Unlimited"
+              : typeof data?.credits === "number"
+                ? `${new Intl.NumberFormat().format(data.credits)} credits`
                 : "Credit balance unavailable"}
           </p>
           <p className="mt-1 text-[13px] text-[#818283]">
@@ -337,6 +370,7 @@ export function AccountView({
             onChange={e => {
               const f = e.target.files?.[0]
               if (f) void handleAddSelfie(f)
+              else e.currentTarget.value = ""
             }}
           />
         </div>
@@ -378,6 +412,7 @@ export function AccountView({
           <button type="button" onClick={handleLogout} disabled={loggingOut} className={quietBtn}>
             {loggingOut ? "Logging out…" : "Log out"}
           </button>
+          {logoutError && <p role="alert" className="text-[12px] text-[#282728]">{logoutError}</p>}
         </div>
       </div>
 

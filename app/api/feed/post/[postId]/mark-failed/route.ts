@@ -33,39 +33,34 @@ export async function POST(
 
     const sql = getDb()
 
-    // Verify post belongs to user
-    const [post] = await sql`
-      SELECT id, user_id, generation_status, prediction_id
-      FROM feed_posts
+    // Completion and timeout callbacks can race. Make the ownership check and state transition
+    // one atomic update so a delayed timeout can never overwrite a completed image.
+    const updated = await sql`
+      UPDATE feed_posts
+      SET
+        generation_status = 'failed',
+        updated_at = NOW()
       WHERE id = ${postId}
-      LIMIT 1
-    ` as any[]
+        AND user_id = ${neonUser.id}
+        AND image_url IS NULL
+        AND (
+          generation_status = 'generating'
+          OR (
+            prediction_id IS NOT NULL
+            AND (generation_status IS NULL OR generation_status NOT IN ('failed', 'cancelled', 'completed', 'complete', 'succeeded'))
+          )
+        )
+      RETURNING id
+    ` as Array<{ id: number }>
 
-    if (!post) {
-      return NextResponse.json({ error: 'Post not found' }, { status: 404 })
-    }
-
-    if (post.user_id !== neonUser.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
-    }
-
-    // Only mark as failed if still in generating state
-    if (post.generation_status === 'generating' || (post.prediction_id && !post.image_url)) {
-      await sql`
-        UPDATE feed_posts
-        SET 
-          generation_status = 'failed',
-          updated_at = NOW()
-        WHERE id = ${postId}
-      `
-
+    if (updated.length > 0) {
       console.log(`[MARK FAILED] ✅ Post ${postId} marked as failed (polling timeout)`)
       return NextResponse.json({ success: true })
-    } else {
-      // Post already has a final status, no need to update
-      console.log(`[MARK FAILED] ⚠️ Post ${postId} already has status: ${post.generation_status}`)
-      return NextResponse.json({ success: true, message: 'Post already has final status' })
     }
+
+    // Do not reveal whether another user's post exists. A missing, completed, or already-terminal
+    // row is a safe idempotent no-op for the polling client.
+    return NextResponse.json({ success: true, message: 'Post already has a final status' })
   } catch (error) {
     console.error('[MARK FAILED] ❌ Error:', error)
     return NextResponse.json({ error: 'Failed to update post' }, { status: 500 })

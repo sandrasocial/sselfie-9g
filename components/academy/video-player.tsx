@@ -330,12 +330,7 @@ export default function VideoPlayer({
     }
   }
 
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const percentage = x / rect.width
-    const newTime = percentage * duration
-
+  const seekTo = (newTime: number) => {
     if (isVimeo && iframeRef.current) {
       iframeRef.current.contentWindow?.postMessage(
         JSON.stringify({ method: "setCurrentTime", value: newTime }),
@@ -467,8 +462,6 @@ export default function VideoPlayer({
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
-  const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0
-
   if (isInvalidVideoUrl) {
     console.warn("[v0] VideoPlayer: Invalid or missing video URL", { videoUrl, lessonId })
     return (
@@ -526,6 +519,7 @@ export default function VideoPlayer({
             frameBorder="0"
             allow="autoplay; fullscreen; picture-in-picture"
             allowFullScreen
+            title="YouTube lesson video"
           />
         ) : (
           <video
@@ -620,12 +614,19 @@ export default function VideoPlayer({
       {/* Controls */}
       <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-sm p-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Progress Bar */}
-        <div onClick={handleSeek} className="w-full h-1.5 sm:h-2 bg-[rgba(175,170,162,0.20)] rounded-full cursor-pointer group">
-          <div
-            className="h-full bg-[#c8c4bb] rounded-full transition-all duration-100 group-hover:bg-[#f0ede8]"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
+        <label className="sr-only" htmlFor={`video-progress-${lessonId}`}>Video progress</label>
+        <input
+          id={`video-progress-${lessonId}`}
+          type="range"
+          min={0}
+          max={Math.max(duration, 0)}
+          step={1}
+          value={Math.min(currentTime, Math.max(duration, 0))}
+          disabled={duration <= 0 || isYouTube}
+          onChange={event => seekTo(Number(event.target.value))}
+          aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
+          className="h-11 w-full cursor-pointer accent-[#c8c4bb] disabled:cursor-not-allowed disabled:opacity-50"
+        />
 
         {/* Time Display */}
         <div className="flex items-center justify-between font-['Inter'] text-[#8a8780] text-xs sm:text-sm">

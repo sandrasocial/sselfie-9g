@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
+import { useAccessibleModal } from "./use-accessible-modal"
 
 export interface Memory {
   agentName: string | null
@@ -38,12 +39,18 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const { dialogRef, initialFocusRef } = useAccessibleModal(open, onClose)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
     setLoading(true)
+    setError(null)
     fetch("/api/app-v3/maya/memory")
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`Memory returned ${r.status}`)
+        return r.json()
+      })
       .then(d => {
         setName(d?.agentName ?? "")
         setBrand(d?.brandNotes ?? "")
@@ -57,7 +64,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
           typeof d?.preferredFeedStyle === "string" ? d.preferredFeedStyle : null
         )
       })
-      .catch(() => {})
+      .catch(() => setError("Couldn't load Maya's memory. Try closing and opening it again."))
       .finally(() => setLoading(false))
   }, [open])
 
@@ -120,6 +127,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
 
   async function save() {
     setSaving(true)
+    setError(null)
     try {
       const res = await fetch("/api/app-v3/maya/memory", {
         method: "PUT",
@@ -142,8 +150,12 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
           preferredFeedStyle: d.preferredFeedStyle ?? null,
           likenessNotes: Array.isArray(d.likenessNotes) ? d.likenessNotes : [],
         })
+        onClose()
+      } else {
+        setError("Couldn't save your changes. Nothing was lost. Please try again.")
       }
-      onClose()
+    } catch {
+      setError("Couldn't save your changes. Nothing was lost. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -153,15 +165,22 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:p-6">
-      <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-[10px] bg-[#F8FAFA] p-4 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none sm:max-h-[88vh] sm:p-6">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="memory-modal-title"
+        className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-[10px] bg-[#F8FAFA] p-4 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none sm:max-h-[88vh] sm:p-6"
+      >
         <div className="flex items-start justify-between">
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Memory</p>
-            <h3 className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]">
+            <h3 id="memory-modal-title" className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]">
               What Maya remembers
             </h3>
           </div>
           <button
+            ref={initialFocusRef}
             type="button"
             onClick={onClose}
             className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10]"
@@ -171,6 +190,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
         </div>
 
         <div className="mt-5 space-y-4">
+          {error && <p role="alert" className="rounded-[4px] bg-white px-3 py-2 text-[13px] text-[#282728]">{error}</p>}
           {/* Your photo */}
           <div className="flex items-center gap-3">
             <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/60 bg-white">

@@ -5,6 +5,11 @@ type FeedGenerationPost = {
 }
 
 export function isFeedPostGenerating(post: FeedGenerationPost): boolean {
+  const status = post?.generation_status?.toLowerCase()
+  if (["failed", "cancelled", "completed", "complete", "succeeded"].includes(status ?? "")) {
+    return false
+  }
+
   return Boolean((post?.prediction_id && !post?.image_url) || post?.generation_status === "generating")
 }
 

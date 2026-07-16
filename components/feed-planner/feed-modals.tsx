@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { toast } from "@/hooks/use-toast"
 import FeedPostCard from "./feed-post-card"
 import { FeedGallerySelector } from "./feed-gallery-selector"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
+import { useAccessibleModal } from "@/components/app-v3/use-accessible-modal"
 
 interface FeedModalsProps {
   selectedPost: any | null
@@ -36,27 +36,7 @@ export default function FeedModals({
   onNavigateToMaya,
   onUpdate,
 }: FeedModalsProps) {
-  const dialogRef = useRef<HTMLDivElement>(null)
-  const onClosePostRef = useRef(onClosePost)
-
-  useEffect(() => {
-    onClosePostRef.current = onClosePost
-  }, [onClosePost])
-
-  useEffect(() => {
-    if (!selectedPost) return
-    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    const focusTimer = window.setTimeout(() => dialogRef.current?.focus(), 0)
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClosePostRef.current()
-    }
-    document.addEventListener("keydown", handleKeyDown)
-    return () => {
-      window.clearTimeout(focusTimer)
-      document.removeEventListener("keydown", handleKeyDown)
-      previousFocus?.focus()
-    }
-  }, [selectedPost])
+  const { dialogRef, initialFocusRef } = useAccessibleModal(Boolean(selectedPost), onClosePost)
 
   return (
     <>
@@ -75,29 +55,22 @@ export default function FeedModals({
             aria-modal="true"
             aria-label="Edit calendar post"
             tabIndex={-1}
-            className="relative my-8 flex max-h-[calc(100dvh-5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full max-w-[470px] flex-col animate-in fade-in zoom-in-[0.98] duration-300 motion-reduce:animate-none"
+            className="relative flex max-h-[calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full max-w-[470px] flex-col animate-in fade-in zoom-in-[0.98] duration-300 motion-reduce:animate-none"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button */}
-            <button
-              onClick={onClosePost}
-              className="absolute -top-12 right-0 z-10 inline-flex min-h-11 items-center rounded-full px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              Close
-            </button>
-
-            {/* Action buttons - shown when image exists */}
-            {selectedPost.image_url && access?.hasGalleryAccess && (
-              <div className="absolute -top-12 left-0 z-10 flex items-center gap-2">
+            <div className="mb-2 flex min-h-11 flex-wrap items-center justify-between gap-1.5">
+              {/* Action buttons - shown when image exists */}
+              {selectedPost.image_url && access?.hasGalleryAccess ? (
+                <div className="flex flex-wrap items-center gap-1">
                 {onNavigateToMaya && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
                       onNavigateToMaya()
                     }}
-                    className="inline-flex min-h-11 items-center rounded-full px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                    className="inline-flex min-h-11 items-center rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.12em] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
                   >
-                    Regenerate in Maya
+                    Regenerate
                   </button>
                 )}
                 <button
@@ -106,12 +79,20 @@ export default function FeedModals({
                     onShowGallery(selectedPost.id)
                     onClosePost()
                   }}
-                  className="inline-flex min-h-11 items-center rounded-full px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                  className="inline-flex min-h-11 items-center rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.12em] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
                 >
-                  Choose from Gallery
+                  Gallery
                 </button>
-              </div>
-            )}
+                </div>
+              ) : <span />}
+              <button
+                ref={initialFocusRef}
+                onClick={onClosePost}
+                className="inline-flex min-h-11 items-center rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                Close
+              </button>
+            </div>
 
             {/* Use FeedPostCard component for full Instagram post mockup */}
             <div className="min-h-0 overflow-y-auto overscroll-contain rounded-[14px]">

@@ -10,8 +10,14 @@ import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { getActivationChecklist, getActivationContinueHref, getFreeUserWizardDecision } from "@/lib/onboarding/activation"
+import type { FeedStyle } from "@/components/feed-planner/feed-style-modal"
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+const fetcher = async (url: string) => {
+  const response = await fetch(url)
+  const data = await response.json().catch(() => null)
+  if (!response.ok) throw new Error(data?.error || `Request failed with ${response.status}`)
+  return data
+}
 
 interface FeedPlannerClientProps {
   access?: FeedPlannerAccess // Optional - will be fetched if not provided (for use in SselfieApp)
@@ -35,6 +41,8 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
   // State to track if we should open wizard at step 4 (visual style selection)
   const [wizardInitialStep, setWizardInitialStep] = useState<number | undefined>(undefined)
   const [showFeedStyleModal, setShowFeedStyleModal] = useState(false)
+  const [welcomeFeedStyle, setWelcomeFeedStyle] = useState<FeedStyle | null>(null)
+  const [welcomeVariationId, setWelcomeVariationId] = useState<number | null>(null)
   const { mutate } = useSWRConfig()
   
   // 🔴 CRITICAL: Track if welcome wizard has been auto-shown in this session
@@ -55,7 +63,7 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
   }
 
   // Fetch access control if not provided (for use in SselfieApp)
-  const { data: accessData, isLoading: isLoadingAccess } = useSWR<FeedPlannerAccess>(
+  const { data: accessData, error: accessError, isLoading: isLoadingAccess } = useSWR<FeedPlannerAccess>(
     accessProp ? null : "/api/feed-planner/access",
     fetcher,
     {
@@ -504,6 +512,23 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
   }, [personalBrandData?.exists, personalBrandData?.data])
 
   // Show loading while checking wizard status
+  if (!accessProp && accessError) {
+    return (
+      <div className="flex min-h-[320px] items-center justify-center p-5 text-center">
+        <div>
+          <p role="alert" className="text-[14px] text-[#282728]">Calendar access couldn&apos;t be checked.</p>
+          <button
+            type="button"
+            onClick={() => void mutate("/api/feed-planner/access")}
+            className="mt-3 min-h-11 rounded-[6px] bg-[#0D0E10] px-5 text-[11px] uppercase tracking-[0.16em] text-white"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (isCheckingWizard) {
     return <UnifiedLoading message="Loading Feed Planner..." />
   }
@@ -565,9 +590,11 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
   }
 
   // Handle "Use Preview Style" - create feed with existing data
-  const handleUsePreviewStyle = () => {
+  const handleUsePreviewStyle = (feedStyle?: string | null, variationId?: number | null) => {
     console.log("[Welcome Wizard] User chose to use preview style")
     setShowWelcomeWizard(false)
+    setWelcomeFeedStyle((feedStyle as FeedStyle | null) ?? null)
+    setWelcomeVariationId(variationId ?? null)
     setShowFeedStyleModal(true)
   }
 
@@ -576,6 +603,8 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
     console.log("[Welcome Wizard] User chose to select new style - opening feed style picker modal")
     // Close welcome wizard and open feed style modal
     setShowWelcomeWizard(false)
+    setWelcomeFeedStyle(null)
+    setWelcomeVariationId(null)
     setShowFeedStyleModal(true)
   }
 
@@ -583,6 +612,8 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
   const handleFeedStyleSelected = async (feedStyle: string) => {
     console.log("[Welcome Wizard] Feed style selected:", feedStyle)
     setShowFeedStyleModal(false)
+    setWelcomeFeedStyle(null)
+    setWelcomeVariationId(null)
     await handleWelcomeWizardComplete()
   }
 
@@ -667,6 +698,8 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
         controlledFeedStyleModal={showFeedStyleModal}
         onFeedStyleModalChange={setShowFeedStyleModal}
         onFeedStyleSelected={handleFeedStyleSelected}
+        initialFeedStyle={welcomeFeedStyle}
+        initialFeedStyleVariationId={welcomeVariationId}
       />
       {showWelcomeWizard && (
         <WelcomeWizard

@@ -143,7 +143,7 @@ function LookbookAction({
           alt=""
           fill
           sizes="(max-width: 1024px) 100vw, 50vw"
-          className="object-cover opacity-90 transition-transform duration-700 ease-out group-hover:scale-[1.025]"
+          className="object-cover object-[center_24%] opacity-90 transition-transform duration-700 ease-out group-hover:scale-[1.025]"
           priority
         />
       )}

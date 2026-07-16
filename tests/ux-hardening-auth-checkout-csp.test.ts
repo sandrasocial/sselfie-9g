@@ -40,4 +40,10 @@ describe("post-phase4 ux hardening", () => {
     expect(middleware).toContain("https://blob.vercel-storage.com")
     expect(middleware).toContain("https://*.blob.vercel-storage.com")
   })
+
+  it("allows Sentry Replay to start its compression worker", () => {
+    const middleware = readFile("middleware.ts")
+
+    expect(middleware).toContain("worker-src 'self' blob:")
+  })
 })

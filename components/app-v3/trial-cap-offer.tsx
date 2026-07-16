@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from "react"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import { useAccessibleModal } from "./use-accessible-modal"
 
 export const TRIAL_CAP_CHECKOUT_URL =
   "/checkout/membership?interval=month&checkout_source=trial_cap&utm_source=app&utm_medium=in_app&utm_campaign=trial_cap_upgrade"
@@ -21,6 +22,7 @@ interface TrialCapOfferProps {
 export function TrialCapOffer({ open, onClose }: TrialCapOfferProps) {
   // Her most recent generated photos: the proof the offer stands on.
   const [images, setImages] = useState<string[]>([])
+  const { dialogRef, initialFocusRef } = useAccessibleModal(open, onClose)
 
   useEffect(() => {
     if (!open) return
@@ -41,9 +43,15 @@ export function TrialCapOffer({ open, onClose }: TrialCapOfferProps) {
   if (!open) return null
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:p-6">
-      <div className="w-full max-w-sm rounded-[10px] bg-[#F8FAFA] p-5 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none sm:p-7">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="trial-cap-title"
+        className="w-full max-w-sm rounded-[10px] bg-[#F8FAFA] p-5 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none sm:p-7"
+      >
         <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">SSELFIE Suite</p>
-        <h3 className="mt-3 font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
+        <h3 id="trial-cap-title" className="mt-3 font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
           Look what you made this week
         </h3>
         {images.length > 0 && (
@@ -78,6 +86,7 @@ export function TrialCapOffer({ open, onClose }: TrialCapOfferProps) {
             Keep creating with Maya
           </a>
           <button
+            ref={initialFocusRef}
             type="button"
             onClick={onClose}
             className="min-h-11 px-5 py-2 text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10]"

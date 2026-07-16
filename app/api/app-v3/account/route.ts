@@ -50,7 +50,9 @@ export async function GET() {
 
   try {
     const neonUserId = await getUserIdFromSupabase(user.id)
-    if (!neonUserId) return NextResponse.json(empty)
+    if (!neonUserId) {
+      return NextResponse.json({ error: "Account record not found" }, { status: 404 })
+    }
 
     const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
     const [credits, subs] = await Promise.all([
@@ -131,7 +133,8 @@ export async function GET() {
     })
   } catch (e) {
     console.error("[app-v3 account] load failed:", e)
-    // Never hard-fail the Account tab; render what we can.
-    return NextResponse.json(empty)
+    // A successful-looking empty account creates a false upsell state. Let the client show
+    // a retryable error instead of telling an active customer she has no membership.
+    return NextResponse.json({ error: "Account details are temporarily unavailable" }, { status: 503 })
   }
 }

@@ -26,7 +26,7 @@ export async function GET() {
 
     // Get user's preview feed (layout_type: 'preview')
     const previewFeeds = await sql`
-      SELECT id, created_at, layout_type
+      SELECT id, created_at, layout_type, feed_style, feed_style_variation_id
       FROM feed_layouts
       WHERE user_id = ${user.id}
         AND layout_type = 'preview'
@@ -60,6 +60,8 @@ export async function GET() {
       hasPreviewFeed: true,
       previewImageUrl,
       previewFeedId: previewFeed.id,
+      feedStyle: previewFeed.feed_style ?? null,
+      feedStyleVariationId: previewFeed.feed_style_variation_id ?? null,
       createdAt: previewFeed.created_at,
     })
   } catch (error: any) {

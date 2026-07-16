@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import useSWR from "swr"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
@@ -55,6 +55,7 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
 
   const router = useRouter()
   const feedNav = useFeedNav()
+  const [showAllPlans, setShowAllPlans] = useState(false)
 
   // Plan list for the switcher (paid/membership only; previews are style tests, not plans).
   const { data: feedListData } = useSWR(!isFreeUser ? "/api/feed/list" : null, fetcher, {
@@ -64,9 +65,10 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
   // Cap the row at the 8 most recent plans: accounts with a long test history (dozens of
   // abandoned grids) would otherwise get an endless pill row. Older feeds stay in the DB and
   // on the standalone route; the switcher is for the plans she's actually working with.
-  const plans: FeedListEntry[] = Array.isArray(feedListData?.feeds)
-    ? feedListData.feeds.filter((f: FeedListEntry) => f.layout_type !== "preview").slice(0, 8)
+  const allPlans: FeedListEntry[] = Array.isArray(feedListData?.feeds)
+    ? feedListData.feeds.filter((f: FeedListEntry) => f.layout_type !== "preview")
     : []
+  const plans = showAllPlans ? allPlans : allPlans.slice(0, 8)
 
   // Phase 4.3: If strategy tab is hidden and activeTab is strategy, switch to grid
   useEffect(() => {
@@ -118,6 +120,16 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
               {planLabel(plan)}
             </button>
           ))}
+          {allPlans.length > 8 && (
+            <button
+              type="button"
+              onClick={() => setShowAllPlans(value => !value)}
+              aria-expanded={showAllPlans}
+              className={pillClass(false)}
+            >
+              {showAllPlans ? "Recent only" : `View all (${allPlans.length})`}
+            </button>
+          )}
         </div>
       </div>
     )

@@ -10,7 +10,6 @@ interface FeedGridProps {
   postStatuses: any[]
   draggedIndex: number | null
   isSavingOrder: boolean
-  isManualFeed?: boolean // Flag to identify manual feeds
   feedId: number // Feed ID for image generation
   access?: FeedPlannerAccess // Phase 5.1: Access control for image generation
   generationMode?: "classic" | "pro"
@@ -22,6 +21,7 @@ interface FeedGridProps {
   onDragStart: (index: number) => void
   onDragOver: (e: React.DragEvent<HTMLElement>, index: number) => void
   onDragEnd: () => void
+  onMovePost: (index: number, direction: -1 | 1) => void
 }
 
 export default function FeedGrid({
@@ -29,7 +29,6 @@ export default function FeedGrid({
   postStatuses: _postStatuses,
   draggedIndex,
   isSavingOrder,
-  isManualFeed = false,
   feedId,
   access,
   generationMode = "pro",
@@ -41,6 +40,7 @@ export default function FeedGrid({
   onDragStart,
   onDragOver,
   onDragEnd,
+  onMovePost,
 }: Readonly<FeedGridProps>) {
   // Phase 5.1: Handle direct image generation for paid users
   const handleGenerateImage = async (postId: number) => {
@@ -177,7 +177,6 @@ export default function FeedGrid({
           key={post.id}
           post={post}
           feedId={feedId}
-          isManualFeed={isManualFeed}
           isDragging={draggedIndex === index}
           isSavingOrder={isSavingOrder}
           showGenerateButton={showGenerateButton}
@@ -187,6 +186,8 @@ export default function FeedGrid({
           onDragStart={() => onDragStart(index)}
           onDragOver={(e) => onDragOver(e, index)}
           onDragEnd={onDragEnd}
+          onMoveLeft={() => onMovePost(index, -1)}
+          onMoveRight={() => onMovePost(index, 1)}
           onGenerate={handleGenerateImage}
           onRegenerateIdea={handleRegenerateIdea}
           isMembership={access?.isMembership}

@@ -638,7 +638,6 @@ export default function InstagramFeedView({
                   postStatuses={postStatuses}
                   draggedIndex={dragDrop.draggedIndex}
                   isSavingOrder={dragDrop.isSavingOrder}
-                  isManualFeed={isManualFeed}
                   feedId={feedId}
                   access={access} // Phase 5.1: Pass access control for image generation
                   onPostClick={setSelectedPost}
@@ -649,6 +648,7 @@ export default function InstagramFeedView({
                   onDragStart={dragDrop.handleDragStart}
                   onDragOver={dragDrop.handleDragOver}
                   onDragEnd={dragDrop.handleDragEnd}
+                  onMovePost={dragDrop.movePost}
                   generationMode={generationMode}
                 />
                 )}

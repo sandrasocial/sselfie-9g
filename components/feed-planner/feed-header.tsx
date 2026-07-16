@@ -106,7 +106,10 @@ export default function FeedHeader({
         const errorData = await response.json().catch(() => ({ error: "Failed to generate captions" }))
         throw new Error(errorData.error || "Failed to generate captions")
       }
-      await mutate("/api/feed/latest")
+      await Promise.all([
+        mutate(`/api/feed/${currentFeedId}`),
+        mutate("/api/feed/latest"),
+      ])
       toast({ title: "Captions created", description: "Maya wrote captions for this month's posts." })
     } catch (error) {
       toast({

@@ -528,6 +528,7 @@ export function LessonViewerClient({
         </p>
       ) : null}
       <textarea
+        aria-label="Your reflection"
         value={reflection}
         onChange={(event) => setReflection(event.target.value)}
         onBlur={handleReflectionBlur}
@@ -562,6 +563,7 @@ export function LessonViewerClient({
             </p>
           ) : null}
           <textarea
+            aria-label="Answer to save to your Maya profile"
             value={profileAnswer}
             onChange={(event) => {
               setProfileAnswer(event.target.value)
@@ -699,6 +701,7 @@ export function LessonViewerClient({
                   frameBorder="0"
                   allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media"
                   allowFullScreen
+                  title={`${lesson.title} video`}
                 />
               ) : (
                 <div

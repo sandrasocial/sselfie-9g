@@ -21,6 +21,11 @@ import type { AppV3GalleryAsset, AppV3GalleryCounts } from "@/lib/app-v3/gallery
 import { retryGeneratedImageOnce } from "./image-retry"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 import { initiateAssetDownload } from "@/lib/app-v3/download-asset"
+import { useAccessibleModal } from "./use-accessible-modal"
+
+// The project intentionally serves generated assets without Next's image optimizer.
+// Keep each page modest so opening Photos does not compete for dozens of full-resolution files.
+const GALLERY_PAGE_SIZE = 24
 
 type GalleryFilter =
   | "all"
@@ -109,6 +114,14 @@ function assetLabel(asset: AppV3GalleryAsset): string {
   return "Photo"
 }
 
+function safeAssetTitle(asset: AppV3GalleryAsset): string {
+  const title = asset.title?.trim() ?? ""
+  const looksInternal =
+    title.length > 100 ||
+    /use attached|identity reference|fill the frame|reference image|do not change/i.test(title)
+  return title && !looksInternal ? title : `${assetLabel(asset)} made with Maya`
+}
+
 const AssetTile = memo(function AssetTile({
   asset,
   index,
@@ -135,7 +148,7 @@ const AssetTile = memo(function AssetTile({
   onMakeMotion?: (url: string) => void
 }) {
   const isVideo = asset.kind === "video"
-  const title = asset.title?.trim()
+  const title = safeAssetTitle(asset)
   return (
     <div
       className={`group relative overflow-hidden rounded-[6px] border bg-[#F1F2F2] transition-shadow ${
@@ -154,6 +167,7 @@ const AssetTile = memo(function AssetTile({
                 src={asset.thumbnailUrl}
                 alt=""
                 fill
+                priority={index < 4}
                 className="object-cover opacity-90"
                 sizes="(max-width:640px) 45vw, 240px"
               />
@@ -171,8 +185,9 @@ const AssetTile = memo(function AssetTile({
         ) : (
           <Image
             src={asset.url}
-            alt={title || asset.prompt || `Gallery image ${index + 1}`}
+            alt={`${title}, item ${index + 1}`}
             fill
+            priority={index < 4}
             onError={retryGeneratedImageOnce}
             className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             sizes="(max-width:640px) 45vw, 240px"
@@ -196,7 +211,7 @@ const AssetTile = memo(function AssetTile({
           Variant
         </span>
       )}
-      {title && (
+      {asset.title?.trim() && title === asset.title.trim() && (
         <span className="pointer-events-none absolute inset-x-2 bottom-12 line-clamp-2 rounded-[3px] bg-[color:var(--ss-night)]/45 px-2 py-1 text-[10px] leading-snug text-white backdrop-blur-sm">
           {title}
         </span>
@@ -219,7 +234,7 @@ const AssetTile = memo(function AssetTile({
             type="button"
             onClick={() => onFavorite(asset)}
             aria-label={asset.isFavorite ? "Remove favorite" : "Favorite"}
-            className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-[#0D0E10]/35 text-white backdrop-blur-sm transition-colors hover:bg-[#0D0E10]/55"
+            className="absolute right-1 top-1 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#0D0E10]/35 text-white backdrop-blur-sm transition-colors hover:bg-[#0D0E10]/55"
           >
             <Heart size={15} className={asset.isFavorite ? "fill-white text-white" : ""} />
           </button>
@@ -234,7 +249,7 @@ const AssetTile = memo(function AssetTile({
               type="button"
               onClick={() => onDownload(asset)}
               aria-label="Download"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-[#4F5052] hover:bg-[#F1F2F2]"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-[#4F5052] hover:bg-[#F1F2F2]"
             >
               <Download size={15} />
             </button>
@@ -243,7 +258,7 @@ const AssetTile = memo(function AssetTile({
                 type="button"
                 onClick={() => onDelete(asset)}
                 aria-label="Delete"
-                className="flex h-8 w-8 items-center justify-center rounded-full text-[#4F5052] hover:bg-[#F1F2F2]"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-[#4F5052] hover:bg-[#F1F2F2]"
               >
                 <Trash2 size={15} />
               </button>
@@ -253,7 +268,7 @@ const AssetTile = memo(function AssetTile({
             <button
               type="button"
               onClick={() => onMakeMotion(asset.url)}
-              className="flex min-h-8 items-center gap-1 rounded-[4px] bg-[#0D0E10] px-2.5 text-[9px] uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#282728]"
+              className="flex min-h-11 items-center gap-1 rounded-[4px] bg-[#0D0E10] px-2.5 text-[9px] uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#282728]"
             >
               <Film size={11} />
               Make video
@@ -285,8 +300,22 @@ export function GalleryView({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [previewVideo, setPreviewVideo] = useState<AppV3GalleryAsset | null>(null)
   const [busy, setBusy] = useState(false)
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null)
+  const [visibleAssetCount, setVisibleAssetCount] = useState(GALLERY_PAGE_SIZE)
+  const { dialogRef: deleteDialogRef, initialFocusRef: cancelDeleteRef } = useAccessibleModal(
+    pendingDeleteIds !== null,
+    () => setPendingDeleteIds(null),
+  )
+  const { dialogRef: videoDialogRef, initialFocusRef: closeVideoRef } = useAccessibleModal(
+    previewVideo !== null,
+    () => setPreviewVideo(null),
+  )
 
-  const displayedAssets = useMemo(() => filterAssets(assets ?? [], filter), [assets, filter])
+  const filteredAssets = useMemo(() => filterAssets(assets ?? [], filter), [assets, filter])
+  const displayedAssets = useMemo(
+    () => filteredAssets.slice(0, visibleAssetCount),
+    [filteredAssets, visibleAssetCount],
+  )
   const displayedImages = useMemo(
     () => displayedAssets.filter(asset => asset.kind === "image"),
     [displayedAssets]
@@ -294,8 +323,12 @@ export function GalleryView({
   const lightboxImages = useMemo(() => displayedImages.map(asset => asset.url), [displayedImages])
 
   const loadGallery = useCallback(() => {
+    setError(null)
     fetch("/api/app-v3/gallery")
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`Gallery returned ${r.status}`)
+        return r.json()
+      })
       .then((d: GalleryResponse) => {
         const typedAssets = Array.isArray(d?.assets) ? d.assets : []
         setAssets(typedAssets)
@@ -307,6 +340,10 @@ export function GalleryView({
   useEffect(() => {
     loadGallery()
   }, [loadGallery])
+
+  useEffect(() => {
+    setVisibleAssetCount(GALLERY_PAGE_SIZE)
+  }, [filter])
 
   const openAsset = useCallback(
     (asset: AppV3GalleryAsset) => {
@@ -362,11 +399,8 @@ export function GalleryView({
 
   async function deleteAssets(ids: string[]) {
     if (ids.length === 0) return
-    const confirmed = window.confirm(
-      ids.length === 1 ? "Delete this asset?" : `Delete ${ids.length} selected assets?`
-    )
-    if (!confirmed) return
     setBusy(true)
+    setError(null)
     try {
       const res = await fetch("/api/app-v3/gallery/assets", {
         method: "DELETE",
@@ -376,6 +410,7 @@ export function GalleryView({
       if (!res.ok) throw new Error("Delete failed")
       setAssets(prev => prev?.filter(asset => !ids.includes(asset.id)) ?? prev)
       clearSelection()
+      setPendingDeleteIds(null)
       loadGallery()
     } catch {
       setError("Couldn't delete the selected assets. Try again.")
@@ -385,7 +420,7 @@ export function GalleryView({
   }
 
   function bulkDownload() {
-    const selected = displayedAssets.filter(asset => selectedIds.has(asset.id))
+    const selected = filteredAssets.filter(asset => selectedIds.has(asset.id))
     selected.forEach((asset, index) => {
       window.setTimeout(() => downloadAsset(asset), index * 180)
     })
@@ -393,7 +428,7 @@ export function GalleryView({
   }
 
   function selectAllVisible() {
-    setSelectedIds(new Set(displayedAssets.map(asset => asset.id)))
+    setSelectedIds(new Set(filteredAssets.map(asset => asset.id)))
   }
 
   const hasAssets = Boolean(assets && assets.length > 0)
@@ -403,7 +438,7 @@ export function GalleryView({
     return (countForFilter(option.id, counts) ?? 0) > 0
   })
   const allVisibleSelected =
-    displayedAssets.length > 0 && selectedIds.size >= displayedAssets.length
+    filteredAssets.length > 0 && selectedIds.size >= filteredAssets.length
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-5 sm:py-8">
@@ -421,7 +456,7 @@ export function GalleryView({
               setSelectionMode(mode => !mode)
               setSelectedIds(new Set())
             }}
-            className="min-h-10 rounded-[4px] border border-[#C5C6C8] bg-white px-3 text-[10px] uppercase tracking-[0.16em] text-[#4F5052]"
+            className="min-h-11 rounded-[4px] border border-[#C5C6C8] bg-white px-3 text-[10px] uppercase tracking-[0.16em] text-[#4F5052]"
           >
             {selectionMode ? "Done" : "Select"}
           </button>
@@ -441,7 +476,8 @@ export function GalleryView({
                   setFilter(option.id)
                   clearSelection()
                 }}
-                className={`min-h-9 rounded-full border px-3 text-[10px] uppercase tracking-[0.14em] transition-colors ${
+                aria-pressed={active}
+                className={`min-h-11 rounded-full border px-4 text-[10px] uppercase tracking-[0.14em] transition-colors ${
                   active
                     ? "border-[#0D0E10] bg-[#0D0E10] text-white"
                     : "border-[#C5C6C8] bg-white text-[#4F5052] hover:border-[#0D0E10]/40"
@@ -468,7 +504,7 @@ export function GalleryView({
             <button
               type="button"
               onClick={allVisibleSelected ? () => setSelectedIds(new Set()) : selectAllVisible}
-              className="text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+              className="min-h-11 text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
             >
               {allVisibleSelected ? "Clear" : "Select all"}
             </button>
@@ -485,7 +521,7 @@ export function GalleryView({
             </button>
             <button
               type="button"
-              onClick={() => deleteAssets(Array.from(selectedIds))}
+              onClick={() => setPendingDeleteIds(Array.from(selectedIds))}
               disabled={selectedIds.size === 0 || busy}
               className="flex h-9 w-9 items-center justify-center rounded-full text-[#4F5052] disabled:opacity-40"
               aria-label="Delete selected"
@@ -507,7 +543,12 @@ export function GalleryView({
       {assets === null && !error && (
         <p className="text-[13px] text-[#818283]">Loading your gallery...</p>
       )}
-      {error && <p className="mb-4 text-[13px] text-[#282728]">{error}</p>}
+      {error && (
+        <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-[6px] border border-[#C5C6C8] bg-white px-3 py-2">
+          <p className="text-[13px] text-[#282728]">{error}</p>
+          <button type="button" onClick={loadGallery} className="min-h-11 shrink-0 px-2 text-[10px] uppercase tracking-[0.14em] text-[#0D0E10] underline underline-offset-2">Retry</button>
+        </div>
+      )}
       {assets && assets.length === 0 && (
         <div className="rounded-[8px] border border-dashed border-[#C5C6C8] bg-white px-6 py-12 text-center">
           <ImageIcon size={24} className="mx-auto mb-3 text-[#818283]" />
@@ -547,12 +588,22 @@ export function GalleryView({
               onOpen={openAsset}
               onToggleSelect={toggleSelected}
               onFavorite={toggleFavorite}
-              onDelete={asset => deleteAssets([asset.id])}
+              onDelete={asset => setPendingDeleteIds([asset.id])}
               onDownload={downloadAsset}
               onMakeMotion={onMakeMotion}
             />
           ))}
         </div>
+      )}
+
+      {filteredAssets.length > displayedAssets.length && (
+        <button
+          type="button"
+          onClick={() => setVisibleAssetCount(count => count + GALLERY_PAGE_SIZE)}
+          className="mx-auto mt-6 flex min-h-11 items-center rounded-full border border-[#C5C6C8] bg-white px-6 text-[10px] uppercase tracking-[0.16em] text-[#282728]"
+        >
+          Load more
+        </button>
       )}
 
       {lightboxIndex !== null && lightboxImages.length > 0 && (
@@ -567,7 +618,13 @@ export function GalleryView({
 
       {previewVideo && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4">
-          <div className="w-full max-w-sm overflow-hidden rounded-[8px] bg-white">
+          <div
+            ref={videoDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Video preview"
+            className="w-full max-w-sm overflow-hidden rounded-[8px] bg-white"
+          >
             <video
               src={previewVideo.url}
               controls
@@ -579,18 +636,57 @@ export function GalleryView({
               <button
                 type="button"
                 onClick={() => downloadAsset(previewVideo)}
-                className="flex min-h-10 items-center gap-2 rounded-[4px] bg-[#0D0E10] px-3 text-[10px] uppercase tracking-[0.14em] text-white"
+                className="flex min-h-11 items-center gap-2 rounded-[4px] bg-[#0D0E10] px-3 text-[10px] uppercase tracking-[0.14em] text-white"
               >
                 <Download size={14} />
                 Download
               </button>
               <button
+                ref={closeVideoRef}
                 type="button"
                 onClick={() => setPreviewVideo(null)}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-[#4F5052]"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-[#4F5052]"
                 aria-label="Close video"
               >
                 <X size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingDeleteIds && (
+        <div className="fixed inset-0 z-[75] flex items-center justify-center bg-[#0D0E10]/45 p-4 backdrop-blur-sm">
+          <div
+            ref={deleteDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-assets-title"
+            className="w-full max-w-sm rounded-[10px] bg-[#F8FAFA] p-5 shadow-xl"
+          >
+            <h2 id="delete-assets-title" className="font-serif text-[23px] font-light text-[#0D0E10]">
+              {pendingDeleteIds.length === 1 ? "Delete this photo?" : `Delete ${pendingDeleteIds.length} items?`}
+            </h2>
+            <p className="mt-2 text-[13px] leading-relaxed text-[#4F5052]">
+              This removes it from your Photos and can&apos;t be undone.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void deleteAssets(pendingDeleteIds)}
+                className="min-h-12 rounded-[4px] bg-[#0D0E10] px-4 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-50"
+              >
+                {busy ? "Deleting…" : "Delete"}
+              </button>
+              <button
+                ref={cancelDeleteRef}
+                type="button"
+                disabled={busy}
+                onClick={() => setPendingDeleteIds(null)}
+                className="min-h-11 px-4 text-[11px] uppercase tracking-[0.16em] text-[#4F5052]"
+              >
+                Keep it
               </button>
             </div>
           </div>

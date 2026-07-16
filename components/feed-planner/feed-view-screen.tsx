@@ -20,6 +20,8 @@ interface FeedViewScreenProps {
   controlledFeedStyleModal?: boolean // Controlled modal state (for welcome wizard)
   onFeedStyleModalChange?: (open: boolean) => void // Callback when modal state changes (for welcome wizard)
   onFeedStyleSelected?: (feedStyle: string) => void // Callback when feed style is selected (for welcome wizard)
+  initialFeedStyle?: FeedStyle | null
+  initialFeedStyleVariationId?: number | null
 }
 
 /**
@@ -34,7 +36,7 @@ interface FeedViewScreenProps {
  * When no feedId is provided, automatically fetches the latest feed.
  * Shows placeholder state if no feed exists.
  */
-export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp, onOpenWizard, onOpenWelcomeWizard, controlledFeedStyleModal, onFeedStyleModalChange, onFeedStyleSelected }: FeedViewScreenProps = {}) {
+export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp, onOpenWizard, onOpenWelcomeWizard, controlledFeedStyleModal, onFeedStyleModalChange, onFeedStyleSelected, initialFeedStyle, initialFeedStyleVariationId }: FeedViewScreenProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isCreatingManual, setIsCreatingManual] = useState(false)
@@ -146,6 +148,14 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       else router.replace(`/feed-planner?feedId=${newFeedId}`, { scroll: false })
     }
   }, [feedData?.redirectedFromPreview, feedData?.feed?.id, router, feedNav])
+
+  // A deleted or no-longer-owned grid may remain in localStorage. Recover to the latest grid
+  // instead of trapping the member on a permanent error screen.
+  useEffect(() => {
+    if (feedIdFromQuery && feedData?.error === "Feed not found" && feedNav) {
+      feedNav.navigateToFeed(null)
+    }
+  }, [feedData?.error, feedIdFromQuery, feedNav])
 
   // Extract effective feedId from response
   // If using latest endpoint, extract feedId from response
@@ -301,7 +311,8 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
         onFeedStyleModalChange?.(open)
       }}
       onConfirm={handleFeedStyleConfirm}
-      defaultFeedStyle={lastFeedStyle}
+      defaultFeedStyle={initialFeedStyle || lastFeedStyle}
+      defaultFeedStyleVariationId={initialFeedStyleVariationId ?? undefined}
       isLoading={isCreatingManual}
     />
   )

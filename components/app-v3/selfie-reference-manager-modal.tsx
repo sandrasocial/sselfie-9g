@@ -167,13 +167,19 @@ export function SelfieReferenceManagerModal({
     }
   }
 
-  function clearSlot(slot: Exclude<ReferenceSlot, "face">) {
-    if (slot === "angle") setThreeQuarterUrl(null)
-    else if (slot === "side") setSideProfileUrl(null)
-    else if (slot === "body") setFullBodyUrl(null)
-    else setInspirationUrl(null)
-    onExtraReady?.(slot, null)
-    void fetch(`/api/app-v3/upload-selfie?slot=${slot}`, { method: "DELETE" }).catch(() => {})
+  async function clearSlot(slot: Exclude<ReferenceSlot, "face">) {
+    setError(null)
+    try {
+      const response = await fetch(`/api/app-v3/upload-selfie?slot=${slot}`, { method: "DELETE" })
+      if (!response.ok) throw new Error("Couldn't remove that photo. Please try again.")
+      if (slot === "angle") setThreeQuarterUrl(null)
+      else if (slot === "side") setSideProfileUrl(null)
+      else if (slot === "body") setFullBodyUrl(null)
+      else setInspirationUrl(null)
+      onExtraReady?.(slot, null)
+    } catch (removeError) {
+      setError(removeError instanceof Error ? removeError.message : "Couldn't remove that photo.")
+    }
   }
 
   const optionalSlots: ManagedSlot[] = [
@@ -406,7 +412,7 @@ export function SelfieReferenceManagerModal({
                                 {item.value && (
                                   <button
                                     type="button"
-                                    onClick={() => clearSlot(item.slot)}
+                                    onClick={() => void clearSlot(item.slot)}
                                     className="min-h-9 rounded-[4px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)] px-3 text-[10px] uppercase tracking-[0.14em] text-[color:var(--ss-gray)] hover:border-[color:var(--ss-night)]/40 hover:text-[color:var(--ss-night)]"
                                   >
                                     Remove

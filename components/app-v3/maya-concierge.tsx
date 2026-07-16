@@ -709,6 +709,7 @@ export function MayaConcierge({
   const [selfieManagerOpen, setSelfieManagerOpen] = useState(false)
   // Header overflow menu (New chat / History / Memory live here, not as stacked buttons).
   const [menuOpen, setMenuOpen] = useState(false)
+  const [newChatConfirming, setNewChatConfirming] = useState(false)
   // Once the conversation starts, the setup block collapses to a one-line strip so the thread
   // owns the screen (the stacked chips/selfie/CTA were hiding Maya's output on phones).
   const [setupOpen, setSetupOpen] = useState(() => restoredDraft?.setupOpen ?? false)
@@ -1549,6 +1550,11 @@ export function MayaConcierge({
 
   function handleNewChat() {
     if (workspaceBusy) return
+    if (messages.length > 0 && !newChatConfirming) {
+      setNewChatConfirming(true)
+      return
+    }
+    setNewChatConfirming(false)
     clearMayaDraft()
     void fetch("/api/app-v3/maya/draft", { method: "DELETE" }).catch(() => {})
     const nextChatId = newChatId()
@@ -2793,7 +2799,13 @@ export function MayaConcierge({
           <div className="relative flex shrink-0 items-center gap-4">
             <button
               type="button"
-              onClick={() => setMenuOpen(v => !v)}
+              onClick={() => {
+                if (menuOpen) setNewChatConfirming(false)
+                setMenuOpen(v => !v)
+              }}
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              aria-controls="maya-workspace-menu"
               className="inline-flex min-h-11 items-center py-1 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
             >
               Menu
@@ -2811,22 +2823,38 @@ export function MayaConcierge({
                 <button
                   type="button"
                   aria-label="Close menu"
-                  onClick={() => setMenuOpen(false)}
+                  onClick={() => {
+                    setMenuOpen(false)
+                    setNewChatConfirming(false)
+                  }}
                   className="fixed inset-0 z-10 cursor-default"
                 />
-                <div className="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white py-1 shadow-sm">
+                <div id="maya-workspace-menu" role="menu" className="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white py-1 shadow-sm">
                   <button
                     type="button"
+                    role="menuitem"
                     onClick={handleNewChat}
                     disabled={workspaceBusy}
                     className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10] disabled:opacity-40"
                   >
-                    New chat
+                    {newChatConfirming ? "Confirm new chat" : "New chat"}
                   </button>
+                  {newChatConfirming && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => setNewChatConfirming(false)}
+                      className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
+                    >
+                      Keep this chat
+                    </button>
+                  )}
                   <button
                     type="button"
+                    role="menuitem"
                     onClick={() => {
                       setMenuOpen(false)
+                      setNewChatConfirming(false)
                       setHistoryOpen(true)
                     }}
                     disabled={workspaceBusy}
@@ -2836,8 +2864,10 @@ export function MayaConcierge({
                   </button>
                   <button
                     type="button"
+                    role="menuitem"
                     onClick={() => {
                       setMenuOpen(false)
+                      setNewChatConfirming(false)
                       setMemoryOpen(true)
                     }}
                     className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
@@ -3369,6 +3399,10 @@ export function MayaConcierge({
             actually scrolls (without it, content overflowed and the direction cards were
             unreachable below the fold). */}
         <div
+          role="log"
+          aria-live="polite"
+          aria-relevant="additions text"
+          aria-label="Conversation with Maya"
           aria-hidden={!threadVisible || setupOpen}
           className={`min-h-0 min-w-0 flex-1 max-w-full space-y-5 overscroll-x-none px-4 py-5 [overflow-x:clip] sm:px-6 sm:py-6 ${
             !threadVisible || setupOpen ? "hidden" : "overflow-y-auto"
@@ -3950,7 +3984,7 @@ export function MayaConcierge({
           )}
 
           {isThinking && (
-            <div className="flex min-w-0 max-w-full items-center gap-3">
+            <div role="status" className="flex min-w-0 max-w-full items-center gap-3">
               <TypingDots />
               {!hasConcepts && (
                 <span className="min-w-0 break-words text-[13px] text-[#818283] [overflow-wrap:anywhere]">
@@ -3961,13 +3995,25 @@ export function MayaConcierge({
           )}
 
           {error && !isThinking && (
-            <div className="min-w-0 max-w-full rounded-[6px] bg-[#282728]/5 px-4 py-3 [overflow-x:clip]">
+            <div role="alert" className="min-w-0 max-w-full rounded-[6px] bg-[#282728]/5 px-4 py-3 [overflow-x:clip]">
               <p className="text-[13px] text-[#282728]">
                 Maya hit a snag creating your directions.
               </p>
               <button
                 type="button"
-                onClick={() => sendMessage({ text: FORMAT_PHRASE[format] })}
+                onClick={() => {
+                  const lastUserMessage = [...messages]
+                    .reverse()
+                    .find((message: any) => message?.role === "user")
+                  const retryText = Array.isArray(lastUserMessage?.parts)
+                    ? lastUserMessage.parts
+                        .filter((part: any) => part?.type === "text" && typeof part.text === "string")
+                        .map((part: any) => part.text)
+                        .join("")
+                        .trim()
+                    : ""
+                  sendMessage({ text: retryText || FORMAT_PHRASE[format] })
+                }}
                 className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] underline underline-offset-2 hover:opacity-70"
               >
                 Try again
@@ -4031,6 +4077,7 @@ export function MayaConcierge({
             <input
               ref={composerRef}
               type="text"
+              aria-label="Message Maya"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => {

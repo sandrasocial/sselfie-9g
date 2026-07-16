@@ -5,6 +5,7 @@ import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 const mockHasPaidBlueprint = vi.fn()
 const mockHasFullAccess = vi.fn()
 const mockGetUserCredits = vi.fn()
+const mockGetSuiteAccess = vi.fn()
 
 vi.mock("@/lib/subscription", () => ({
   hasPaidBlueprint: (...args: unknown[]) => mockHasPaidBlueprint(...args),
@@ -15,9 +16,14 @@ vi.mock("@/lib/credits", () => ({
   getUserCredits: (...args: unknown[]) => mockGetUserCredits(...args),
 }))
 
+vi.mock("@/lib/trial/suite-trial", () => ({
+  getSuiteAccess: (...args: unknown[]) => mockGetSuiteAccess(...args),
+}))
+
 describe("getFeedPlannerAccess", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockGetSuiteAccess.mockResolvedValue({ level: "none" })
   })
 
   it("keeps free users without credits in restricted mode", async () => {
@@ -59,4 +65,23 @@ describe("getFeedPlannerAccess", () => {
     expect(access.maxFeedPlanners).toBe(3)
     expect(access.placeholderType).toBe("grid")
   })
+
+  it.each(["member", "trial"])(
+    "keeps Suite %s users on the full Calendar experience",
+    async level => {
+      mockHasPaidBlueprint.mockResolvedValue(false)
+      mockHasFullAccess.mockResolvedValue(false)
+      mockGetUserCredits.mockResolvedValue(20)
+      mockGetSuiteAccess.mockResolvedValue({ level })
+
+      const access = await getFeedPlannerAccess(`u_${level}`)
+
+      expect(access.isFree).toBe(false)
+      expect(access.isMembership).toBe(true)
+      expect(access.hasGalleryAccess).toBe(true)
+      expect(access.canGenerateCaptions).toBe(true)
+      expect(access.canGenerateStrategy).toBe(true)
+      expect(access.placeholderType).toBe("grid")
+    },
+  )
 })

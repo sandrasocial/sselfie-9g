@@ -7,6 +7,7 @@
 
 import { hasPaidBlueprint, hasFullAccess } from "@/lib/subscription"
 import { getUserCredits } from "@/lib/credits"
+import { getSuiteAccess } from "@/lib/trial/suite-trial"
 
 export interface FeedPlannerAccess {
   isFree: boolean
@@ -42,16 +43,23 @@ export async function getFeedPlannerAccess(userId: string): Promise<FeedPlannerA
     console.log(`[Feed Planner Access] Checking access for user: ${userId}`)
 
     // Check subscription types
-    const hasPaid = await hasPaidBlueprint(userId)
-    const hasMembership = await hasFullAccess(userId)
-    const credits = await getUserCredits(userId)
+    const [hasPaid, hasMembership, suiteAccess, credits] = await Promise.all([
+      hasPaidBlueprint(userId),
+      hasFullAccess(userId),
+      getSuiteAccess(userId),
+      getUserCredits(userId),
+    ])
+
+    // `/app` admits both active members and active Suite trials through getSuiteAccess.
+    // Calendar must use the same gate or an admitted customer is silently downgraded.
+    const hasCurrentSuiteAccess = suiteAccess.level === "member" || suiteAccess.level === "trial"
 
     // Determine access level (order matters: membership > paid blueprint > free)
     // Note: Free users get 2 credits for testing feed planner, but are still "free" users
     // One-time sessions are deprecated - we only have free, paid blueprint, and membership now
-    const isMembership = hasMembership
-    const isPaidBlueprint = hasPaid && !hasMembership
-    const isFree = !hasMembership && !hasPaid
+    const isMembership = hasMembership || hasCurrentSuiteAccess
+    const isPaidBlueprint = hasPaid && !isMembership
+    const isFree = !isMembership && !hasPaid
     // One-time is deprecated - treat as free
     const isOneTime = false
 

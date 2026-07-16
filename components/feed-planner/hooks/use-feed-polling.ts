@@ -11,9 +11,8 @@ const fetcher = async (url: string) => {
   const data = await res.json()
   
   // If the response has an error and is not a 200 status, throw to let SWR handle it
-  if (!res.ok && data.error) {
-    // Return the error data so SWR can handle it properly
-    return data
+  if (!res.ok) {
+    throw new Error(data?.error || `Feed request failed with ${res.status}`)
   }
   
   // Validate response structure
@@ -88,7 +87,7 @@ export function useFeedPolling(feedId: number | null) {
             console.log(`[useFeedPolling] 🔍 Checking for stuck posts and attempting final recovery...`)
             
             // Check Replicate status one more time before marking as failed
-            const stuckPosts = data?.posts?.filter((p: any) => p.prediction_id && !p.image_url) || []
+            const stuckPosts = data?.posts?.filter(isFeedPostGenerating) || []
             if (stuckPosts.length > 0) {
               console.warn(`[useFeedPolling] ⚠️ ${stuckPosts.length} post(s) still generating after timeout:`, stuckPosts.map((p: any) => ({
                 id: p.id,
@@ -116,8 +115,8 @@ export function useFeedPolling(feedId: number | null) {
                         fetch(`/api/feed/${feedId}`)
                           .then(res => res.json())
                           .then(updatedData => {
-                            const stillStuck = updatedData?.posts?.filter((p: any) => 
-                              stuckPostIds.includes(p.id) && p.prediction_id && !p.image_url
+                            const stillStuck = updatedData?.posts?.filter((p: any) =>
+                              stuckPostIds.includes(p.id) && isFeedPostGenerating(p)
                             ) || []
                             
                             if (stillStuck.length > 0) {
@@ -258,7 +257,7 @@ export function useFeedPolling(feedId: number | null) {
                 console.error('[useFeedPolling] ❌ Error calling progress endpoint:', err)
                 // Don't fail polling if progress endpoint fails - just log and continue
               })
-          } else if (feedId && !isPreviewFeed && singlePost && singlePost.prediction_id && !singlePost.image_url) {
+          } else if (feedId && !isPreviewFeed && singlePost && isFeedPostGenerating(singlePost)) {
             // CRITICAL FIX: For single posts, also call progress endpoint even if hasGeneratingPosts is false
             // This handles edge cases where the post has prediction_id but polling condition didn't catch it
             fetch(`/api/feed/${feedId}/progress`)
@@ -337,21 +336,6 @@ export function useFeedPolling(feedId: number | null) {
       },
     }
   )
-
-  // Force revalidation if we detect completed posts that might be stuck in cache
-  useEffect(() => {
-    if (feedData?.posts) {
-      const postsWithPredictionButNoImage = feedData.posts.filter(
-        (p: any) => p.prediction_id && !p.image_url && p.generation_status !== 'generating'
-      )
-      
-      // If we have posts that should be completed but aren't showing image_url, force revalidation
-      if (postsWithPredictionButNoImage.length > 0) {
-        console.log('[useFeedPolling] 🔄 Detected posts that might be completed but missing image_url, forcing revalidation...')
-        mutate() // Force SWR to revalidate
-      }
-    }
-  }, [feedData?.posts, mutate])
 
   return {
     feedData,

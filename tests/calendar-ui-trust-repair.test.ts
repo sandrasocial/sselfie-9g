@@ -30,7 +30,7 @@ describe("Calendar UI trust repairs", () => {
 
     expect(modals).toContain('role="dialog"')
     expect(modals).toContain('aria-modal="true"')
-    expect(modals).toContain('event.key === "Escape"')
+    expect(modals).toContain("useAccessibleModal(Boolean(selectedPost), onClosePost)")
   })
 
   it("uses touch-sized Calendar lens controls with explicit selected state", () => {

@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { createPortal } from "react-dom"
 import Image from "next/image"
 import type { GalleryImage } from "@/lib/data/images"
 import { toast } from "@/hooks/use-toast"
+import { useAccessibleModal } from "@/components/app-v3/use-accessible-modal"
 
 interface FeedGallerySelectorProps {
   type: "post" | "profile"
@@ -25,6 +26,9 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
   const [offset, setOffset] = useState(0)
   const [activeTab, setActiveTab] = useState<"upload" | "gallery">("upload")
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [portalTarget, setPortalTarget] = useState<Element | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { dialogRef, initialFocusRef } = useAccessibleModal(portalTarget !== null, onClose)
   const limit = 50
 
   // Validate props
@@ -32,28 +36,27 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
     console.error("[v0] FeedGallerySelector: postId is required when type is 'post'")
   }
 
-  useEffect(() => {
-    async function fetchImages() {
-      try {
-        setIsLoading(true)
-        setLoadError(null)
-        const response = await fetch(`/api/images?limit=${limit}&offset=0`, { credentials: "include" })
-        // DRAFT copy for Sandra approval before release.
-        if (!response.ok) throw new Error("Your gallery could not be loaded.")
-        const data = await response.json()
-        setImages(data.images || [])
-        setHasMore(data.hasMore || false)
-        setOffset(data.images?.length || 0)
-      } catch (error) {
-        console.error("[v0] Error fetching gallery images:", error)
-        setLoadError(error instanceof Error ? error.message : "Your gallery could not be loaded.")
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchImages = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setLoadError(null)
+      const response = await fetch(`/api/images?limit=${limit}&offset=0`, { credentials: "include" })
+      if (!response.ok) throw new Error("Your gallery could not be loaded.")
+      const data = await response.json()
+      setImages(data.images || [])
+      setHasMore(data.hasMore || false)
+      setOffset(data.images?.length || 0)
+    } catch (error) {
+      console.error("[v0] Error fetching gallery images:", error)
+      setLoadError(error instanceof Error ? error.message : "Your gallery could not be loaded.")
+    } finally {
+      setIsLoading(false)
     }
-
-    fetchImages()
   }, [])
+
+  useEffect(() => {
+    void fetchImages()
+  }, [fetchImages])
 
   const handleLoadMore = async () => {
     if (isLoadingMore || !hasMore) return
@@ -79,10 +82,7 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
     }
   }
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
+  const uploadFile = async (file: File) => {
     setIsUploading(true)
     try {
       // Upload file to /api/upload
@@ -118,7 +118,13 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
       })
     } finally {
       setIsUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
     }
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) void uploadFile(file)
   }
 
   const handleSelect = async () => {
@@ -183,7 +189,6 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
     }
   }
 
-  const [portalTarget, setPortalTarget] = useState<Element | null>(null)
   useEffect(() => { setPortalTarget(document.body) }, [])
 
   const isPost = type === "post"
@@ -193,18 +198,25 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
 
   return createPortal(
     <div className="fixed inset-0 z-[100] bg-stone-950/95 backdrop-blur-xl flex items-center justify-center p-4 pb-24 sm:pb-4">
-      <div className="bg-white rounded-3xl max-w-5xl w-full max-h-[75vh] sm:max-h-[85vh] overflow-hidden flex flex-col">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="feed-gallery-title"
+        className="bg-white rounded-3xl max-w-5xl w-full max-h-[75vh] sm:max-h-[85vh] overflow-hidden flex flex-col"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-stone-200 flex-shrink-0">
           {isPost ? (
             <div className="flex-1">
-              <h2 className="text-lg sm:text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase">
+              <h2 id="feed-gallery-title" className="text-lg sm:text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase">
                 Add Image to Post
               </h2>
               {/* Tabs - only for posts */}
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={() => setActiveTab("upload")}
+                  aria-pressed={activeTab === "upload"}
                   className={`px-4 py-1.5 text-xs sm:text-sm uppercase tracking-wider transition-colors rounded-lg ${
                     activeTab === "upload"
                       ? "bg-stone-900 text-white font-medium"
@@ -215,6 +227,7 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
                 </button>
                 <button
                   onClick={() => setActiveTab("gallery")}
+                  aria-pressed={activeTab === "gallery"}
                   className={`px-4 py-1.5 text-xs sm:text-sm uppercase tracking-wider transition-colors rounded-lg ${
                     activeTab === "gallery"
                       ? "bg-stone-900 text-white font-medium"
@@ -226,9 +239,9 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
               </div>
             </div>
           ) : (
-            <h2 className="text-lg font-semibold text-stone-900">Choose Profile Image</h2>
+            <h2 id="feed-gallery-title" className="text-lg font-semibold text-stone-900">Choose Profile Image</h2>
           )}
-          <button onClick={onClose} className="rounded-full border border-stone-300 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-700 hover:bg-stone-100 transition-colors">
+          <button ref={initialFocusRef} onClick={onClose} className="min-h-11 rounded-full border border-stone-300 px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-stone-700 hover:bg-stone-100 transition-colors">
             Close
           </button>
         </div>
@@ -239,7 +252,15 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
           {isPost && activeTab === "upload" && (
             <div className="flex flex-col items-center justify-center min-h-[400px]">
               <div className="w-full max-w-md space-y-6">
-                <label className="flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed border-stone-300 rounded-2xl hover:border-stone-400 hover:bg-stone-50 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                <label
+                  className="flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed border-stone-300 rounded-2xl hover:border-stone-400 hover:bg-stone-50 transition-all cursor-pointer"
+                  onDragOver={event => event.preventDefault()}
+                  onDrop={event => {
+                    event.preventDefault()
+                    const file = event.dataTransfer.files?.[0]
+                    if (file && file.type.startsWith("image/")) void uploadFile(file)
+                  }}
+                >
                   {isUploading ? (
                     <div className="text-center">
                       <span className="text-sm font-light text-stone-600">Uploading...</span>
@@ -254,6 +275,7 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
                     </>
                   )}
                   <input 
+                    ref={fileInputRef}
                     type="file" 
                     accept="image/*" 
                     onChange={handleFileUpload} 
@@ -297,6 +319,7 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
               ) : loadError ? (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-6 text-center">
                   <p className="text-sm text-red-700">{loadError}</p>
+                  <button type="button" onClick={() => void fetchImages()} className="mt-3 min-h-11 px-4 text-xs uppercase tracking-wider text-red-800 underline underline-offset-2">Try again</button>
                 </div>
               ) : images.length === 0 ? (
             <div className={isPost ? "text-center py-12" : "flex items-center justify-center py-12"}>

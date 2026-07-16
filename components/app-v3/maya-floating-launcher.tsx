@@ -29,7 +29,7 @@ export function MayaFloatingLauncher() {
             onClick={() => setChoiceOpen(false)}
             className="fixed inset-0 z-0 cursor-default"
           />
-          <div className="relative z-10 mb-3 w-64 rounded-[8px] border border-[#C5C6C8]/70 bg-white p-3 shadow-[0_18px_46px_rgba(13,14,16,0.18)] animate-in fade-in slide-in-from-bottom-2 duration-200 motion-reduce:animate-none">
+          <div id="maya-launcher-choices" role="menu" className="relative z-10 mb-3 w-64 rounded-[8px] border border-[#C5C6C8]/70 bg-white p-3 shadow-[0_18px_46px_rgba(13,14,16,0.18)] animate-in fade-in slide-in-from-bottom-2 duration-200 motion-reduce:animate-none">
             <p className="text-[10px] uppercase tracking-[0.2em] text-[#818283]">Maya</p>
             <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
               {workspaceBusy
@@ -39,6 +39,7 @@ export function MayaFloatingLauncher() {
             <div className="mt-3 grid gap-2">
               <button
                 type="button"
+                role="menuitem"
                 onClick={() => {
                   setChoiceOpen(false)
                   open()
@@ -49,6 +50,7 @@ export function MayaFloatingLauncher() {
               </button>
               <button
                 type="button"
+                role="menuitem"
                 onClick={() => {
                   setChoiceOpen(false)
                   openFresh()
@@ -60,6 +62,7 @@ export function MayaFloatingLauncher() {
               </button>
               <button
                 type="button"
+                role="menuitem"
                 onClick={() => {
                   setChoiceOpen(false)
                   openHistory()
@@ -83,6 +86,9 @@ export function MayaFloatingLauncher() {
           openFresh()
         }}
         aria-label="Open Maya"
+        aria-expanded={hasSavedSession ? choiceOpen : undefined}
+        aria-haspopup={hasSavedSession ? "menu" : undefined}
+        aria-controls={hasSavedSession ? "maya-launcher-choices" : undefined}
         className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-[#0D0E10] p-[3px] shadow-[0_10px_30px_rgba(13,14,16,0.28)] transition-transform duration-200 hover:scale-[1.04] focus:outline-none focus:ring-2 focus:ring-[#0D0E10] focus:ring-offset-2 focus:ring-offset-[#F8FAFA] animate-in fade-in zoom-in-90 duration-300 motion-reduce:animate-none"
       >
         <span className="relative block h-full w-full overflow-hidden rounded-full">

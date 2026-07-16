@@ -19,7 +19,7 @@ interface WelcomeWizardProps {
   onComplete: () => void
   onDismiss?: () => void
   onCreateFeed?: () => void
-  onUsePreviewStyle?: () => void // Callback when user chooses to use preview style
+  onUsePreviewStyle?: (feedStyle?: string | null, variationId?: number | null) => void
   onChooseNewStyle?: () => void // Callback when user chooses to select new style
 }
 
@@ -55,6 +55,8 @@ export default function WelcomeWizard({
   
   const hasPreviewFeed = previewFeedData?.hasPreviewFeed === true
   const previewImageUrl = previewFeedData?.previewImageUrl || null
+  const previewFeedStyle = previewFeedData?.feedStyle || null
+  const previewVariationId = previewFeedData?.feedStyleVariationId ?? null
 
   const handleComplete = useCallback(() => {
     onComplete()
@@ -121,7 +123,7 @@ export default function WelcomeWizard({
             <Button
               onClick={() => {
                 if (onUsePreviewStyle) {
-                  onUsePreviewStyle()
+                  onUsePreviewStyle(previewFeedStyle, previewVariationId)
                 } else {
                   handleCreateFeed()
                 }
@@ -166,7 +168,7 @@ export default function WelcomeWizard({
         <p className="text-center text-xs text-white/35">Or continue the walkthrough below</p>
       </div>
     )
-  }, [isLoadingPreview, hasPreviewFeed, previewImageUrl, onUsePreviewStyle, onChooseNewStyle, handleCreateFeed])
+  }, [isLoadingPreview, hasPreviewFeed, previewImageUrl, previewFeedStyle, previewVariationId, onUsePreviewStyle, onChooseNewStyle, handleCreateFeed])
 
   // Max 3 steps (A-02 / §1.4): Welcome → How it works → You're ready
   const steps = useMemo(() => {

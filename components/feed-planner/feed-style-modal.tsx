@@ -103,6 +103,7 @@ export default function FeedStyleModal({
   useEffect(() => {
     if (!open) {
       // Reset everything when modal closes
+      setSelectedStyle(defaultFeedStyle || "Dark & Moody")
       setSelectedVariationId(null)
       userExplicitlySelectedVariationRef.current = false
       previousStyleRef.current = null
@@ -121,7 +122,9 @@ export default function FeedStyleModal({
     if (!defaultFeedStyle && isLoadingPersonalBrand) return
 
     hasInitializedRef.current = true
-    previousStyleRef.current = selectedStyle
+    const initialStyle = defaultFeedStyle || selectedStyle
+    setSelectedStyle(initialStyle)
+    previousStyleRef.current = initialStyle
 
     // Load feed style from personal brand (if no defaultFeedStyle provided)
     if (!defaultFeedStyle && personalBrandData?.data?.settingsPreference) {

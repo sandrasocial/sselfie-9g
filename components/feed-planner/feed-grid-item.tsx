@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { Square } from "lucide-react"
 import { useFeedPostPolling } from "@/lib/hooks/use-feed-post-polling"
@@ -11,7 +11,6 @@ import { StopGenerationDialog } from "./stop-generation-dialog"
 interface FeedGridItemProps {
   post: any
   feedId: number
-  isManualFeed: boolean
   isDragging: boolean
   isSavingOrder: boolean
   showGenerateButton: boolean
@@ -25,6 +24,8 @@ interface FeedGridItemProps {
   onDragStart: () => void
   onDragOver: (e: React.DragEvent<HTMLElement>) => void
   onDragEnd: () => void
+  onMoveLeft: () => void
+  onMoveRight: () => void
   onGenerate: (postId: number) => Promise<any>
   /** Feed Planner Phase 2b: "Different idea" for a post Maya auto-drafted, before generation.
    *  Paid-blueprint-only path only as of Phase 2c - see isMembership above. */
@@ -52,19 +53,16 @@ const syncPredictionId = (
 }
 
 const getIsGenerating = ({
-  isManualFeed,
   displayImageUrl,
   pollingStatus,
   predictionId,
   post,
 }: {
-  isManualFeed: boolean
   displayImageUrl: string | null
   pollingStatus: string
   predictionId: string | null
   post: any
 }) =>
-  !isManualFeed &&
   !displayImageUrl &&
   (pollingStatus === "generating" ||
     !!predictionId ||
@@ -254,7 +252,7 @@ function renderContent({
           {isMayaDraft && (
             <>
               <span className="rounded-full bg-[#0D0E10]/[0.06] px-2 py-0.5 text-[8px] font-medium uppercase tracking-[0.18em] text-[#4F5052]">
-                Maya's idea
+                Maya&apos;s idea
               </span>
               <span className="line-clamp-2 px-1 text-[11px] leading-snug text-[#0D0E10]">
                 {post.content_pillar}
@@ -298,7 +296,6 @@ function renderContent({
 export default function FeedGridItem({
   post,
   feedId,
-  isManualFeed,
   isDragging,
   isSavingOrder,
   showGenerateButton,
@@ -309,6 +306,8 @@ export default function FeedGridItem({
   onDragStart,
   onDragOver,
   onDragEnd,
+  onMoveLeft,
+  onMoveRight,
   onGenerate,
   onRegenerateIdea,
 }: Readonly<FeedGridItemProps>) {
@@ -316,6 +315,8 @@ export default function FeedGridItem({
   const [isStopping, setIsStopping] = useState(false)
   const [showStopDialog, setShowStopDialog] = useState(false)
   const [isRegeneratingIdea, setIsRegeneratingIdea] = useState(false)
+  const touchStartXRef = useRef<number | null>(null)
+  const didSwipeRef = useRef(false)
 
   const { status: pollingStatus, imageUrl: pollingImageUrl } = useFeedPostPolling({
     feedId,
@@ -341,7 +342,6 @@ export default function FeedGridItem({
 
   const displayImageUrl = pollingImageUrl || post.image_url || null
   const isGenerating = getIsGenerating({
-    isManualFeed,
     displayImageUrl,
     pollingStatus,
     predictionId,
@@ -420,8 +420,37 @@ export default function FeedGridItem({
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}
-        onClick={() => onPostClick(post)}
-        aria-label={`Open post ${post.position}`}
+        onTouchStart={event => {
+          touchStartXRef.current = event.touches[0]?.clientX ?? null
+          didSwipeRef.current = false
+        }}
+        onTouchEnd={event => {
+          if (touchStartXRef.current === null) return
+          const delta = (event.changedTouches[0]?.clientX ?? touchStartXRef.current) - touchStartXRef.current
+          touchStartXRef.current = null
+          if (Math.abs(delta) < 44) return
+          didSwipeRef.current = true
+          if (delta < 0) onMoveRight()
+          else onMoveLeft()
+        }}
+        onKeyDown={event => {
+          if (event.key === "ArrowLeft") {
+            event.preventDefault()
+            onMoveLeft()
+          }
+          if (event.key === "ArrowRight") {
+            event.preventDefault()
+            onMoveRight()
+          }
+        }}
+        onClick={() => {
+          if (didSwipeRef.current) {
+            didSwipeRef.current = false
+            return
+          }
+          onPostClick(post)
+        }}
+        aria-label={`Open post ${post.position}. Swipe or use left and right arrow keys to move it.`}
         className={`${baseClassName} ${completeInteractionClassName}`}
       >
         {content}

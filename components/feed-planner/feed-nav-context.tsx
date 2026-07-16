@@ -13,7 +13,7 @@ export interface FeedNav {
   /** The feed currently selected inside the embedded planner (null = latest). */
   feedId: number | null
   /** Switch the embedded planner to another feed without leaving /app. */
-  navigateToFeed: (feedId: number) => void
+  navigateToFeed: (feedId: number | null) => void
   /** Open Maya from the embedded calendar without leaving the Suite shell. */
   navigateToMaya?: () => void
 }

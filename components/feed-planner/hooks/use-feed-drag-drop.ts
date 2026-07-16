@@ -19,11 +19,11 @@ export function useFeedDragDrop(
   // Include image_url so we detect generated images, and content_pillar/caption so we detect
   // Maya's-idea edits (Feed Planner Phase 2b: "Different idea", caption enhance/regenerate) -
   // without this, reorderedPosts goes stale after those actions even though the SWR cache
-  // behind `posts` already has the fresh row. Caption participates by LENGTH only: full
-  // captions run ~700 chars each and this key rebuilds every render.
+  // behind `posts` already has the fresh row. Include the caption value too: two edits can
+  // have the same length and must still refresh the rendered post.
   const prevPostsRef = useRef<string>('')
   const postsKey = posts
-    .map((p: any) => `${p.id}-${p.position}-${p.image_url || ''}-${p.content_pillar || ''}-${p.caption?.length || 0}`)
+    .map((p: any) => `${p.id}-${p.position}-${p.image_url || ''}-${p.content_pillar || ''}-${p.caption || ''}`)
     .join(',')
 
   // Initialize reorderedPosts when posts change (only if not currently dragging)
@@ -130,6 +130,46 @@ export function useFeedDragDrop(
     }
   }
 
+  const movePost = async (index: number, direction: -1 | 1) => {
+    if (isSavingOrder) return
+    const targetIndex = index + direction
+    if (targetIndex < 0 || targetIndex >= displayPosts.length) return
+    const post = displayPosts[index]
+    if (!post?.image_url) return
+
+    const nextPosts = [...displayPosts]
+    ;[nextPosts[index], nextPosts[targetIndex]] = [nextPosts[targetIndex], nextPosts[index]]
+    setReorderedPosts(nextPosts)
+    setIsSavingOrder(true)
+    try {
+      const response = await fetch(`/api/feed/${feedId}/reorder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postOrders: nextPosts.map((item, nextIndex) => ({
+            postId: item.id,
+            newPosition: nextIndex + 1,
+          })),
+        }),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: "Failed to save order" }))
+        throw new Error(error.error || "Failed to save order")
+      }
+      await onReorderComplete()
+      toast({ title: "Grid updated", description: "The photo moved to its new position." })
+    } catch (error) {
+      setReorderedPosts(posts)
+      toast({
+        title: "Couldn't move photo",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSavingOrder(false)
+    }
+  }
+
   return {
     draggedIndex,
     reorderedPosts: displayPosts,
@@ -137,5 +177,6 @@ export function useFeedDragDrop(
     handleDragStart,
     handleDragOver,
     handleDragEnd,
+    movePost,
   }
 }

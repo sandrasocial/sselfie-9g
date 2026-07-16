@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
+import { useAccessibleModal } from "./use-accessible-modal"
 
 interface ReferenceLibraryModalProps {
   open: boolean
@@ -16,13 +17,17 @@ interface ReferenceLibraryModalProps {
 export function ReferenceLibraryModal({ open, onClose, onPick }: ReferenceLibraryModalProps) {
   const [images, setImages] = useState<string[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const { dialogRef, initialFocusRef } = useAccessibleModal(open, onClose)
 
   useEffect(() => {
     if (!open) return
     setImages(null)
     setError(null)
     fetch("/api/app-v3/reference-library")
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`Reference library returned ${r.status}`)
+        return r.json()
+      })
       .then(d => setImages(Array.isArray(d?.images) ? d.images : []))
       .catch(() => setError("Couldn't load your photos. Try again."))
   }, [open])
@@ -31,15 +36,22 @@ export function ReferenceLibraryModal({ open, onClose, onPick }: ReferenceLibrar
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:p-6">
-      <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden rounded-[10px] bg-[#F8FAFA] p-4 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none sm:p-6">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reference-library-title"
+        className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden rounded-[10px] bg-[#F8FAFA] p-4 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none sm:p-6"
+      >
         <div className="flex items-start justify-between">
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Your selfies</p>
-            <h3 className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]">
+            <h3 id="reference-library-title" className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]">
               Use a past selfie
             </h3>
           </div>
           <button
+            ref={initialFocusRef}
             type="button"
             onClick={onClose}
             className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:text-[#0D0E10]"

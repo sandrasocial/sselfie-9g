@@ -29,6 +29,7 @@ import type { AppV3Section } from "@/lib/app-v3/navigation"
 import { buildStoredSectionHref, readStoredAppSection, saveStoredAppSection } from "./continuity"
 import { intentForFormat } from "@/lib/app-v3/maya/intent-router"
 import { PostSuccessReviewPrompt } from "@/components/testimonials/post-success-review-prompt"
+import { CalendarDays, Images, PlusCircle, UserRound, LibraryBig, type LucideIcon } from "lucide-react"
 
 export interface AppV3ShellProps {
   firstName?: string | null
@@ -57,12 +58,12 @@ export interface AppV3ShellProps {
 // chips both live there). Internal section ids are unchanged; the "content" section renderer
 // stays so any stale saved state degrades gracefully. The freed slot is reserved for a
 // member-facing weekly content-trends surface (direction pending Sandra's pick).
-const NAV: { id: AppV3Section; label: string }[] = [
-  { id: "create", label: "Create" },
-  { id: "photos", label: "Gallery" },
-  { id: "calendar", label: "Calendar" },
-  { id: "library", label: "Learn" },
-  { id: "account", label: "Account" },
+const NAV: { id: AppV3Section; label: string; icon: LucideIcon }[] = [
+  { id: "create", label: "Create", icon: PlusCircle },
+  { id: "photos", label: "Gallery", icon: Images },
+  { id: "calendar", label: "Calendar", icon: CalendarDays },
+  { id: "library", label: "Learn", icon: LibraryBig },
+  { id: "account", label: "Account", icon: UserRound },
 ]
 
 // A general session so Maya can start from a content idea (not a specific look) and still guide.
@@ -329,6 +330,7 @@ function ShellInner({
           onUseTrainedModel={createWithTrainedModel}
           trialDaysLeft={accessLevel === "trial" ? trialDaysLeft : null}
           hasTrainedModel={hasTrainedModel}
+          accessLevel={accessLevel}
         />
       )}
 
@@ -347,16 +349,20 @@ function ShellInner({
         <div className="mx-auto flex max-w-3xl items-stretch justify-around px-2">
           {NAV.map(n => {
             const active = n.id === section
+            const Icon = n.icon
             return (
               <button
                 key={n.id}
                 type="button"
                 onClick={() => goToSection(n.id)}
-                className={`min-h-[56px] flex-1 px-0.5 py-2 text-[9px] uppercase tracking-[0.08em] transition-colors sm:text-[11px] sm:tracking-[0.16em] ${
-                  active ? "text-[#0D0E10]" : "text-[#818283] hover:text-[#4F5052]"
+                aria-current={active ? "page" : undefined}
+                aria-label={n.label}
+                className={`flex min-h-[60px] flex-1 flex-col items-center justify-center gap-1 px-0.5 py-1.5 text-[10px] font-medium transition-colors ${
+                  active ? "text-[#0D0E10]" : "text-[#4F5052] hover:text-[#282728]"
                 }`}
               >
-                <span className={active ? "border-b border-[#0D0E10] pb-1" : ""}>{n.label}</span>
+                <Icon size={21} strokeWidth={active ? 2.2 : 1.7} aria-hidden="true" />
+                <span>{n.label}</span>
               </button>
             )
           })}
