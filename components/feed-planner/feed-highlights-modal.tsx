@@ -150,6 +150,17 @@ export default function FeedHighlightsModal({
   const [portalTarget, setPortalTarget] = useState<Element | null>(null)
   useEffect(() => { setPortalTarget(document.body) }, [])
 
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isSaving) onClose()
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [isOpen, isSaving, onClose])
+
   if (!isOpen || !portalTarget) return null
 
   return createPortal(
@@ -158,15 +169,21 @@ export default function FeedHighlightsModal({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="feed-highlights-title"
+        aria-busy={isGenerating || isSaving}
+        tabIndex={-1}
+        autoFocus
         className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-stone-200 px-6 py-4 flex items-center justify-between z-10">
-          <h2 className="text-xl font-semibold text-stone-900">Create Highlights</h2>
+          <h2 id="feed-highlights-title" className="text-xl font-semibold text-stone-900">Create Highlights</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-stone-100 rounded-full transition-colors"
+            className="min-h-11 min-w-11 p-2 hover:bg-stone-100 rounded-full transition-colors"
             disabled={isSaving}
           >
             <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Close</span>
@@ -183,7 +200,7 @@ export default function FeedHighlightsModal({
               <button
                 onClick={handleGenerate}
                 disabled={isGenerating}
-                className="px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="min-h-11 px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isGenerating ? (
                   <>
@@ -236,7 +253,7 @@ export default function FeedHighlightsModal({
                 <button
                   onClick={handleGenerate}
                   disabled={isGenerating || isSaving}
-                className="px-4 py-2 text-sm text-stone-600 hover:text-stone-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="min-h-11 px-4 py-2 text-sm text-stone-600 hover:text-stone-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isGenerating ? (
                   <>
@@ -258,14 +275,14 @@ export default function FeedHighlightsModal({
             <button
               onClick={onClose}
               disabled={isSaving}
-              className="px-4 py-2 text-sm text-stone-600 hover:text-stone-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="min-h-11 px-4 py-2 text-sm text-stone-600 hover:text-stone-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="px-4 py-2 bg-stone-900 text-white text-sm font-semibold rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="min-h-11 px-4 py-2 bg-stone-900 text-white text-sm font-semibold rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSaving ? (
                 <>
