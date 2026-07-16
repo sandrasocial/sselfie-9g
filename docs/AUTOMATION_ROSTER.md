@@ -2,7 +2,7 @@
 
 Created: 2026-07-08 (from the full cross-layer audit that day)
 Owner: Sandra + Claude (Cowork). Update this file the same day any automation is added, retired, or moved.
-Last verified: 2026-07-15
+Last verified: 2026-07-16
 
 ## Why this exists
 
@@ -79,6 +79,26 @@ in place and remain readable.
   operational truth loop.
 - Prompt Vault, Starter Kit, and membership checkout recovery remain scheduled.
 - Existing Selfie To Brand Shoot buyers retain access and webhook fulfillment.
+
+### Funnel integrity incident gate (LOCKED 2026-07-16)
+
+The existing Stripe webhook, reconciliation jobs, `cron-health-check`, Sentry, and Daily Sandra
+Briefing are the background funnel sentinel. Low sales, weak engagement, or a small conversion
+denominator is commercial evidence, not proof of a technical defect, and must not open an
+autonomous redesign or code task.
+
+A technical repair may start only when one of these evidence gates is met:
+
+- **P0:** one verified paid customer is missing access or fulfillment; a customer was charged the
+  wrong amount; a duplicate charge/send occurred; or a recovery message was sent after payment.
+- **P1:** a route or checkout failure is deterministically reproducible, or a cross-system mismatch
+  affects at least 5% of at least 20 eligible events in two consecutive checks.
+
+Investigation is read-only until the defect is reproduced. Stripe and Resend reads, database
+`SELECT`, logs, and source inspection are allowed. Production writes, real checkout creation,
+customer contact, pricing/copy changes, flags, environment changes, deploys, and autonomous rollback
+are not. One incident branch may be active at a time. The builder writes a failing regression first,
+makes one bounded fix, and requires an independent verification pass before the normal release gate.
 
 ### Founder approval queue (LIVE 2026-07-10)
 

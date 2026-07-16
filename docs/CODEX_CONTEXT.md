@@ -154,7 +154,7 @@ first real Monday run on 2026-07-13. `scripts/weekly-brief-prep.ts` now validate
 before any database write or preview email, and live Content/Shoot Studio readers use that neutral
 contract. Historical report and job rows remain readable.
 
-The live automation baseline is 21 Vercel cron registrations, three Cowork draft-only tasks, and no
+The live automation baseline is 22 Vercel cron registrations, three Cowork draft-only tasks, and no
 Codex business automations. The exact list is always `vercel.json` plus `docs/AUTOMATION_ROSTER.md`.
 
 The retired OpenClaw gateway is disabled locally and has zero jobs. No North, OpenClaw, Telegram,

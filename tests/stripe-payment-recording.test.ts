@@ -14,6 +14,7 @@ const handlePresetsCheckoutMock = vi.fn()
 vi.mock("server-only", () => ({}))
 
 vi.mock("@/lib/db/client", () => ({
+  getDb: () => sqlMock,
   sql: sqlMock,
 }))
 
@@ -193,6 +194,19 @@ describe("stripe checkout payment recording", () => {
     })
 
     expect(stripePaymentInsert).toBeTruthy()
+
+    const attributionContactUpdate = sqlMock.mock.calls.find(([strings, ...values]) => {
+      const query = Array.isArray(strings) ? strings.join(" ") : String(strings)
+      return (
+        query.includes("UPDATE checkout_attribution") &&
+        query.includes("user_email = COALESCE(user_email") &&
+        query.includes("stripe_customer_id = COALESCE(stripe_customer_id") &&
+        values.includes("cs_guest_prompt_vault_1") &&
+        values.includes("guest-vault@example.com")
+      )
+    })
+
+    expect(attributionContactUpdate).toBeTruthy()
 
     const reviewInsert = sqlMock.mock.calls.some(([strings]) => {
       const query = Array.isArray(strings) ? strings.join(" ") : String(strings)
