@@ -11,7 +11,8 @@ media cash lane; it does not replace the software, IP, or commerce decisions in 
 ## Cash objective
 
 - Floor: **EUR 15,000 in new cleared campaign cash by 2026-07-25**.
-- Warm-offer face value: **EUR 15,000** across five existing relationships. This is proposed pricing, not buyer-confirmed budget.
+- Current viable warm-offer face value: **EUR 12,000** across four pending relationships. Hailuo's
+  intermediary confirmed only USD 160 and is no longer counted at the EUR 3,000 floor.
 - Coverage ambition: **EUR 60,000 face value**, but only verified priced opportunities may be called qualified pipeline.
 - A signed agreement, verbal yes, invoice, checkout start, or promised payment is not cash received.
 - The existing USD 644.61 Stripe payout expected on 2026-07-20 is tracked separately and does not count as new campaign cash.
@@ -56,13 +57,17 @@ The product must have a useful role inside the lesson. Generic awareness placeme
 
 | Priority | Buyer | Offer | Ask | Current state |
 | --- | --- | --- | ---: | --- |
-| 1 | Syntx AI | Tutorial Partnership | EUR 3,000 | Send attempted 2026-07-16; no buyer-confirmed brief or budget yet |
-| 2 | Replit | Tutorial Partnership | EUR 3,000 | Send attempted 2026-07-16; no buyer-confirmed brief or budget yet |
-| 3 | Hailuo AI | Tutorial Partnership | EUR 3,000 | Send attempted 2026-07-16; no buyer-confirmed brief or budget yet |
-| 4 | ShiftCam | Tutorial Partnership | EUR 3,000 | Send attempted 2026-07-16; no paid budget confirmed yet |
-| 5 | SANDMARC | Tutorial Partnership | EUR 3,000 | Send attempted 2026-07-16; no direct buyer or paid budget confirmed yet |
+| 1 | Syntx AI | Tutorial Partnership | EUR 3,000 | Sent 2026-07-16; no reply, brief, or buyer-confirmed budget; one follow-up draft saved for the 48-hour point |
+| 2 | Replit | Tutorial Partnership | EUR 3,000 | Sent 2026-07-16; no reply, current brief, or buyer-confirmed budget; one follow-up draft saved for the 48-hour point |
+| 3 | ShiftCam | Tutorial Partnership | EUR 3,000 | Direct contact failed; support supplied a replacement partnership contact; corrected message is drafted but unsent |
+| 4 | SANDMARC | Tutorial Partnership | EUR 3,000 | Sent 2026-07-16 to general support; no direct buyer or budget; one routing follow-up draft saved for the 48-hour point |
+| Disqualified | Hailuo AI via JellyOtter | Low-fee Reel package | USD 160 buyer offer | Requires a dedicated Reel, 12-month live period, seven-day bio link, pinned comment, and 30-day ad use; decline draft saved |
 
-Total warm offer face value: **EUR 15,000**. This is Sandra's proposed pricing, not buyer-confirmed budget, qualified pipeline, or expected revenue. Buyer-confirmed fixed-fee budget across these five opportunities is currently **EUR 0**.
+Current viable warm offer face value: **EUR 12,000**. This is Sandra's proposed pricing, not
+buyer-confirmed budget, qualified pipeline, or expected revenue. The only buyer-confirmed fixed-fee
+offer is Hailuo's USD 160 package, which is below the commercial floor and excluded from qualified
+pipeline. A fifth EUR 3,000 opportunity is still required to restore EUR 15,000 of viable ask
+coverage; it may not be invented or counted before a reachable buyer and current budget exist.
 
 **Hard exclusion:** Unlocked Foundation is excluded from outreach. Sandra already delivered a keynote collaboration for the nonprofit in 2025. Do not draft, send, or follow up with a commercial pitch.
 
@@ -89,9 +94,13 @@ Meta Creator Fast Track is excluded because the current program is not available
 
 ### July 16
 
-- Five warm send attempts completed by Sandra. One produced a delivery-failure notice; identify and
-  repair that recipient before counting it as reached. The other four have no buyer reply recorded
-  on this board yet.
+- Gmail review verified Syntx, Replit, Hailuo, ShiftCam, and SANDMARC thread history.
+- Hailuo replied with a USD 160 package. It is disqualified from the EUR 3,000 cash lane; a concise
+  decline is saved as a Gmail draft.
+- ShiftCam's direct message failed. Support supplied a new current partnership contact; the corrected
+  EUR 3,000 message is saved as a Gmail draft and has not been sent.
+- Syntx, Replit, and SANDMARC have no reply after the July 16 message. One short follow-up for each is
+  saved as a Gmail draft for use after roughly 48 hours.
 - Replace the public rate-card menu with the single EUR 3,000 Tutorial Partnership.
 - Finish the one-page Tutorial Partnership PDF.
 - Repair the broken root-domain DNS after account authentication.
@@ -99,7 +108,9 @@ Meta Creator Fast Track is excluded because the current program is not available
 
 ### July 17
 
-- Send all five approved warm messages before the buyers' local workday ends.
+- After Sandra's exact-message approval, send the corrected ShiftCam message and the Hailuo decline.
+- Do not send the Syntx, Replit, or SANDMARC follow-ups early; keep them for the 48-hour point unless
+  the buyer replies first.
 - Qualify every new opportunity for budget, buyer authority, and payment timing before doing concept work.
 - Submit only credible current-program applications that do not distract from warm follow-up and closing.
 
@@ -154,9 +165,9 @@ Agents own:
 | Metric | Current |
 | --- | ---: |
 | New cash received toward floor | EUR 0 |
-| Warm offer face value | EUR 15,000 across five send attempts |
-| Delivery state | 1 failure notice; 4 without a recorded failure notice; delivery/reply not yet verified |
-| Buyer-confirmed fixed-fee budget | EUR 0 |
+| Viable warm offer face value | EUR 12,000 across four pending relationships |
+| Delivery state | Hailuo replied; ShiftCam direct failed and replacement draft is unsent; Syntx, Replit, and SANDMARC have no failure notice or reply |
+| Buyer-confirmed fixed-fee offer | USD 160 from Hailuo via JellyOtter; disqualified below commercial floor |
 | Additional qualified fixed-fee face value | EUR 0 |
 | Coverage ambition | EUR 60,000 |
 | Paid scopes | 0 |
