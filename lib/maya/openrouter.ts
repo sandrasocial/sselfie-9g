@@ -67,12 +67,54 @@ const TASK_MAX_TOKENS_MAP: Record<MayaRoutingTask, number> = {
   instagram_tips: 1200,
 }
 
+export const MAYA_REASONING_DISABLED = {
+  openrouter: { enabled: false },
+  anthropic: { type: "disabled" },
+} as const
+
+type MayaReasoningProvider = keyof typeof MAYA_REASONING_DISABLED
+
+/**
+ * Sonnet 5 may default to adaptive thinking when the setting is omitted. Maya's tool-heavy
+ * chat contract needs the full output budget for visible text and structured tool calls, so
+ * every provider request disables thinking explicitly. Kept pure for the golden regression.
+ */
+export function applyMayaReasoningDisabled(
+  body: unknown,
+  provider: MayaReasoningProvider
+): unknown {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return body
+  return provider === "openrouter"
+    ? { ...body, reasoning: MAYA_REASONING_DISABLED.openrouter }
+    : { ...body, thinking: MAYA_REASONING_DISABLED.anthropic }
+}
+
+function createMayaReasoningDisabledFetch(provider: MayaReasoningProvider): typeof fetch {
+  return (async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (typeof init?.body !== "string") return fetch(input, init)
+    try {
+      const body = applyMayaReasoningDisabled(JSON.parse(init.body), provider)
+      return fetch(input, { ...init, body: JSON.stringify(body) })
+    } catch {
+      return fetch(input, init)
+    }
+  }) as typeof fetch
+}
+
 export function getMayaModelForTask(task: MayaRoutingTask): string {
   return TASK_MODEL_MAP[task]
 }
 
 export function getMayaMaxTokensForTask(task: MayaRoutingTask): number {
   return TASK_MAX_TOKENS_MAP[task]
+}
+
+export function getMayaRoutingSnapshot() {
+  return {
+    modelByTask: { ...TASK_MODEL_MAP },
+    maxOutputTokensByTask: { ...TASK_MAX_TOKENS_MAP },
+    reasoningDisabled: MAYA_REASONING_DISABLED,
+  }
 }
 
 function isTruthy(value?: string | null): boolean {
@@ -122,8 +164,12 @@ export function createMayaOpenRouterProvider() {
   return createOpenAI({
     apiKey,
     baseURL: process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1",
+    fetch: createMayaReasoningDisabledFetch("openrouter"),
     headers: {
-      "HTTP-Referer": process.env.OPENROUTER_HTTP_REFERER || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai",
+      "HTTP-Referer":
+        process.env.OPENROUTER_HTTP_REFERER ||
+        process.env.NEXT_PUBLIC_APP_URL ||
+        "https://sselfie.ai",
       "X-Title": process.env.OPENROUTER_APP_NAME || "SSELFIE Maya",
     },
   })
@@ -143,8 +189,12 @@ export function createMayaAnthropicModel(task: MayaRoutingTask) {
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) return null
     const openRouterModelId = getMayaModelForTask(task)
-    const anthropicModelId = OPENROUTER_TO_ANTHROPIC_ID[openRouterModelId] ?? "claude-haiku-4-5-20251001"
-    return createAnthropic({ apiKey })(anthropicModelId)
+    const anthropicModelId =
+      OPENROUTER_TO_ANTHROPIC_ID[openRouterModelId] ?? "claude-haiku-4-5-20251001"
+    return createAnthropic({
+      apiKey,
+      fetch: createMayaReasoningDisabledFetch("anthropic"),
+    })(anthropicModelId)
   } catch {
     return null
   }
