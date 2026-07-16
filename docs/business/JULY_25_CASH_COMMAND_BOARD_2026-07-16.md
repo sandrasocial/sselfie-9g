@@ -8,7 +8,7 @@ Status: ACTIVE
 ## Cash objective
 
 - Floor: **EUR 15,000 in new cleared campaign cash by 2026-07-25**.
-- Warm-deal stretch: **EUR 21,000** in specific offers already matched to existing relationships.
+- Warm-deal stretch: **EUR 18,000** in specific offers already matched to existing relationships.
 - Coverage ambition: **EUR 60,000 face value**, but only verified priced opportunities may be called qualified pipeline.
 - A signed agreement, verbal yes, invoice, checkout start, or promised payment is not cash received.
 - The existing USD 644.61 Stripe payout expected on 2026-07-20 is tracked separately and does not count as new campaign cash.
@@ -40,13 +40,6 @@ This is a goal, not a forecast or guarantee. The plan is designed to maximize a 
 - Delivery within ten business days after the approved brief and product access.
 - No exclusivity. Extended usage is separate.
 
-### Unlocked visibility workshop — EUR 3,000
-
-- Ninety-minute virtual workshop.
-- One-photo, one-story, AI-assisted visibility workflow.
-- Simple workbook, live Q&A, and thirty-day replay license.
-- No promise of financial, audience, or campaign performance.
-
 ## Warm-deal target arithmetic
 
 | Priority | Buyer | Offer | Ask | Current state |
@@ -54,11 +47,12 @@ This is a goal, not a forecast or guarantee. The plan is designed to maximize a 
 | 1 | Syntx AI | Campaign Batch | EUR 6,000 | Unsent Gmail draft ready in the existing thread |
 | 2 | Replit | Creator Ad Sprint | EUR 3,000 | Unsent Gmail draft ready in the existing thread |
 | 3 | Hailuo AI | Creator Ad Sprint | EUR 3,000 | Unsent Gmail draft ready; qualify budget before concepts |
-| 4 | Unlocked Foundation | Visibility workshop | EUR 3,000 | Unsent Gmail draft ready in the existing relationship thread |
-| 5 | ShiftCam | Creator Ad Sprint | EUR 3,000 | Unsent Gmail draft ready for the named direct contact |
-| 6 | SANDMARC | Creator Ad Sprint | EUR 3,000 | Unsent Gmail reply draft ready in the application thread |
+| 4 | ShiftCam | Creator Ad Sprint | EUR 3,000 | Unsent Gmail draft ready for the named direct contact |
+| 5 | SANDMARC | Creator Ad Sprint | EUR 3,000 | Unsent Gmail reply draft ready in the application thread |
 
-Total warm asks: **EUR 21,000**. This is target arithmetic, not expected revenue.
+Total warm asks: **EUR 18,000**. This is target arithmetic, not expected revenue.
+
+**Hard exclusion:** Unlocked Foundation is excluded from outreach. Sandra already delivered a keynote collaboration for the nonprofit in 2025. Do not draft, send, or follow up with a commercial pitch.
 
 Do not spend July time on the prior JellyOtter low offers, SmallRig without a live campaign, prior Canva declines, Collabstr listings without visible budget and payout terms, affiliate-only programs, suspicious or unverifiable inbound requests, or generic cold beauty and fashion outreach.
 
@@ -83,7 +77,7 @@ Meta Creator Fast Track is excluded because the current program is not available
 
 ### July 16
 
-- Put the four highest-value warm replies into Gmail as unsent drafts.
+- Put the five remaining warm replies into Gmail as unsent drafts.
 - Replace the public rate-card menu with the single EUR 3,000 sprint.
 - Finish the one-page Creator Ad Sprint PDF.
 - Repair the broken root-domain DNS after account authentication.
@@ -91,7 +85,7 @@ Meta Creator Fast Track is excluded because the current program is not available
 
 ### July 17
 
-- Send all six approved warm messages before the buyers' local workday ends.
+- Send all five approved warm messages before the buyers' local workday ends.
 - Qualify every new opportunity for budget, buyer authority, and payment timing before doing concept work.
 - Submit only credible current-program applications that do not distract from warm follow-up and closing.
 
@@ -146,8 +140,8 @@ Agents own:
 | Metric | Current |
 | --- | ---: |
 | New cash received toward floor | EUR 0 |
-| Warm asks ready | EUR 21,000 across six unsent drafts |
-| Verified fixed-fee warm face value | EUR 21,000 |
+| Warm asks ready | EUR 18,000 across five unsent drafts |
+| Verified fixed-fee warm face value | EUR 18,000 |
 | Additional qualified fixed-fee face value | EUR 0 |
 | Coverage ambition | EUR 60,000 |
 | Paid scopes | 0 |

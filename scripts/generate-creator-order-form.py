@@ -367,7 +367,7 @@ def build_pdf(args: argparse.Namespace) -> None:
         ("TOPPADDING", (0, 0), (-1, -1), 4),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
     ]))
-    story.append(KeepTogether(approval))
+    story.append(KeepTogether([approval]))
     story.append(Spacer(1, 4 * mm))
     story.append(Paragraph(
         "This is a commercial order-form template, not legal advice. Sandra must verify seller details and approve the final buyer-ready version before use.",

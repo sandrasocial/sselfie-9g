@@ -4,7 +4,9 @@ Status: **DRAFT - SANDRA APPROVAL REQUIRED**
 
 Owner: Sandra + Codex
 
-Use only for the six warm B2B opportunities on the July 25 Cash Command Board. This kit does not authorize sending, discounting, signing, invoicing, or changing the approved offer.
+Use only for the five warm B2B opportunities on the July 25 Cash Command Board. This kit does not authorize sending, discounting, signing, invoicing, or changing the approved offer.
+
+**Hard exclusion:** Unlocked Foundation is excluded from outreach. Sandra already delivered a keynote collaboration for the nonprofit in 2025. Do not draft, send, or follow up with a commercial pitch.
 
 ## The closing rule
 
@@ -25,7 +27,6 @@ Do not add a discovery workshop, custom strategy deck, free sample, rate-card me
 | Syntx AI | EUR 6,000 Campaign Batch | `output/pdf/Sandra-Syntx-Campaign-Batch.pdf` |
 | Replit | EUR 3,000 Creator Ad Sprint | `output/pdf/Sandra-Creator-Ad-Sprint.pdf` |
 | Hailuo AI | EUR 3,000 Creator Ad Sprint | `output/pdf/Sandra-Creator-Ad-Sprint.pdf` |
-| Unlocked Foundation | EUR 3,000 visibility workshop | `output/pdf/Sandra-Unlocked-Visibility-Workshop.pdf` |
 | ShiftCam | EUR 3,000 Creator Ad Sprint | `output/pdf/Sandra-Creator-Ad-Sprint.pdf` |
 | SANDMARC | EUR 3,000 Creator Ad Sprint | `output/pdf/Sandra-Creator-Ad-Sprint.pdf` |
 
@@ -157,7 +158,11 @@ Collect only what is needed:
 Generate the draft order form with:
 
 ```bash
-python3 scripts/generate-creator-order-form.py \
+python3 -m venv .venv-pdf
+.venv-pdf/bin/python -m pip install --upgrade pip
+.venv-pdf/bin/python -m pip install -r requirements-pdf.txt
+
+.venv-pdf/bin/python scripts/generate-creator-order-form.py \
   --buyer-legal-name "[BUYER LEGAL NAME]" \
   --buyer-address "[BUYER BILLING ADDRESS]" \
   --buyer-tax-id "[BUYER VAT OR TAX NUMBER]" \
