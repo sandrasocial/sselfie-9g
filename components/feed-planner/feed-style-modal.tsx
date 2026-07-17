@@ -25,6 +25,7 @@ interface FeedStyleModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onConfirm: (data: FeedStyleModalData) => void
+  mode?: "first" | "new" | "style"
   defaultFeedStyle?: FeedStyle | null
   defaultFeedStyleVariationId?: number | null // Current feed's variation_id (for existing feeds)
   isLoading?: boolean
@@ -46,6 +47,7 @@ export default function FeedStyleModal({
   open,
   onOpenChange,
   onConfirm,
+  mode = "first",
   defaultFeedStyle,
   defaultFeedStyleVariationId,
   isLoading = false,
@@ -234,6 +236,14 @@ export default function FeedStyleModal({
     })
   }
 
+  const eyebrow =
+    mode === "first" ? "Your first grid" : mode === "new" ? "New grid" : "Your visual style"
+  const title = mode === "new" ? "Choose its visual world." : "Choose your visual world."
+  const description =
+    mode === "style"
+      ? "Pick the one that feels most like you. Maya will use it for this grid and remember it for what you create next."
+      : "Pick the one that feels most like you. Maya will use it to keep this grid visually connected. You can change it later."
+
   // Portal target - avoids stacking-context traps from Framer Motion wrappers
   // (motion.div with will-change creates a new stacking context that traps fixed children)
   const [portalTarget, setPortalTarget] = useState<Element | null>(null)
@@ -278,16 +288,15 @@ export default function FeedStyleModal({
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-7 pt-8 sm:px-7">
                 <div className="space-y-7">
                   <div className="pr-20">
-                    <p className="text-[10px] uppercase tracking-[0.24em] text-[#818283]">Your first grid</p>
+                    <p className="text-[10px] uppercase tracking-[0.24em] text-[#818283]">{eyebrow}</p>
                     <h2
                       id="feed-style-modal-title"
                       className="mt-2 font-serif text-[32px] font-light leading-[1.02] text-[#0D0E10] sm:text-[42px]"
                     >
-                      Choose your visual world.
+                      {title}
                     </h2>
                     <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-[#4F5052]">
-                      Pick the one that feels most like you. Maya will use it to keep this grid
-                      visually connected. You can change it later.
+                      {description}
                     </p>
                   </div>
 
@@ -456,11 +465,13 @@ export default function FeedStyleModal({
                   {isLoading
                     ? isPreviewFeed
                       ? "Creating preview…"
-                      : "Creating your grid…"
+                      : mode === "style"
+                        ? "Saving your style…"
+                        : "Creating your grid…"
                     : isPreviewFeed
                       ? "Create preview"
                       : selectedStyle
-                        ? "Create my grid"
+                        ? mode === "style" ? "Save my style" : "Create my grid"
                         : "Choose a style"}
                 </Button>
               </div>

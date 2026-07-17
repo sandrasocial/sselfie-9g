@@ -71,8 +71,8 @@ export default function FeedHeader({
   const postedPosts = feedPosts.filter((post) => Boolean(post?.is_posted)).length
   
   // Fetch user's last feed style from personal brand
-  const { data: personalBrandData } = useSWR(
-    showFeedStyleModal ? "/api/profile/personal-brand" : null,
+  const { data: personalBrandData, isLoading: isLoadingPersonalBrand } = useSWR(
+    "/api/profile/personal-brand",
     fetcher,
     {
       revalidateOnFocus: false,
@@ -85,6 +85,8 @@ export default function FeedHeader({
   
   // Extract last feed style from settings_preference[0]
   const lastFeedStyle: FeedStyle | null = personalBrandData?.data?.settingsPreference?.[0] || null
+  const needsFirstStyleChoice =
+    !isLoadingPersonalBrand && !lastFeedStyle && feedPosts.every((post) => !post?.image_url)
 
   // Preview feed creation removed with the free blueprint funnel (Sandra, 2026-07-07).
 
@@ -125,6 +127,11 @@ export default function FeedHeader({
   const handleCreateNewFeedClick = () => {
     // Show feed style modal first
     setIsCreatingNewFeed(true) // Explicitly mark as "create new" (not update)
+    setShowFeedStyleModal(true)
+  }
+
+  const handleChooseLookClick = () => {
+    setIsCreatingNewFeed(false)
     setShowFeedStyleModal(true)
   }
 
@@ -598,7 +605,16 @@ export default function FeedHeader({
 
             <div className="flex gap-1.5 flex-wrap">
               {/* Preview feed retired with the free blueprint funnel (Sandra, 2026-07-07). */}
-              {!access?.isFree && (access?.isPaidBlueprint || access?.isMembership) && (
+              {!access?.isFree && (access?.isPaidBlueprint || access?.isMembership) && needsFirstStyleChoice && (
+                <button
+                  onClick={handleChooseLookClick}
+                  disabled={isCreatingFeed}
+                  className={`${feedHeaderPrimaryChipClass} disabled:cursor-not-allowed disabled:opacity-50`}
+                >
+                  Choose your look
+                </button>
+              )}
+              {!access?.isFree && (access?.isPaidBlueprint || access?.isMembership) && !needsFirstStyleChoice && !isLoadingPersonalBrand && (
                 <button
                   onClick={handleCreateNewFeedClick}
                   disabled={isCreatingFeed}
@@ -721,8 +737,9 @@ export default function FeedHeader({
           }
         }}
         onConfirm={handleFeedStyleConfirm}
-        defaultFeedStyle={feedData?.feed?.feed_style || lastFeedStyle}
-        defaultFeedStyleVariationId={feedData?.feed?.feed_style_variation_id ?? undefined}
+        mode={isCreatingNewFeed ? "new" : "style"}
+        defaultFeedStyle={lastFeedStyle}
+        defaultFeedStyleVariationId={lastFeedStyle ? (feedData?.feed?.feed_style_variation_id ?? undefined) : undefined}
         isLoading={isCreatingFeed}
       />
     </div>
