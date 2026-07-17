@@ -7,10 +7,15 @@ import {
   getFeedStyleVariationById,
   getDefaultVariationId,
 } from "@/lib/feed-planner/feed-style-prompt-loader"
+import {
+  normalizeInspirationImageUrl,
+  normalizeVisualDirectionBrief,
+  normalizeVisualDirectionMode,
+} from "@/lib/feed-planner/visual-direction"
 
 /**
  * Update Feed Style and Variation
- * 
+ *
  * Updates an existing feed's feed_style and feed_style_variation_id
  */
 async function handleUpdateFeedStyle(
@@ -21,7 +26,7 @@ async function handleUpdateFeedStyle(
     request: Request | NextRequest
     user: { id: string | number }
   },
-  { params }: { params: Promise<{ feedId: string }> | { feedId: string } },
+  { params }: { params: Promise<{ feedId: string }> | { feedId: string } }
 ) {
   try {
     const resolvedParams = await Promise.resolve(params)
@@ -33,28 +38,77 @@ async function handleUpdateFeedStyle(
     }
 
     const body = await req.json().catch(() => ({}))
-    const { feedStyle, feedStyleVariationId } = body
+    let { feedStyle, feedStyleVariationId } = body
+    const directionMode = normalizeVisualDirectionMode(
+      body.directionMode ?? (feedStyle ? "curated" : "maya")
+    )
+    const visualDirectionBrief = normalizeVisualDirectionBrief(body.visualDirectionBrief)
+    const inspirationImageUrl = normalizeInspirationImageUrl(body.inspirationImageUrl)
 
-    if (!feedStyle) {
+    if (directionMode === "curated" && !feedStyle) {
       return NextResponse.json(
         { error: "FEED_STYLE_REQUIRED", details: "Feed style is required." },
         { status: 422 }
       )
     }
+    if (directionMode === "custom" && !visualDirectionBrief) {
+      return NextResponse.json(
+        {
+          error: "VISUAL_DIRECTION_REQUIRED",
+          details: "Describe the visual direction in a little more detail.",
+        },
+        { status: 422 }
+      )
+    }
+    if (directionMode === "inspiration" && !inspirationImageUrl) {
+      return NextResponse.json(
+        { error: "INSPIRATION_REQUIRED", details: "Upload an inspiration image first." },
+        { status: 422 }
+      )
+    }
+    if (directionMode !== "curated") feedStyle = null
 
     const sql = getDb()
 
     // Verify feed ownership
     const [feed] = await sql`
-      SELECT id, user_id, feed_style, feed_style_variation_id
-      FROM feed_layouts
-      WHERE id = ${feedIdInt}
-      AND user_id = ${user.id}
+      SELECT
+        fl.id,
+        fl.user_id,
+        fl.feed_style,
+        fl.feed_style_variation_id,
+        upb.settings_preference,
+        upb.visual_aesthetic,
+        upb.fashion_style,
+        upb.brand_vibe,
+        upb.color_mood,
+        upb.color_theme
+      FROM feed_layouts fl
+      LEFT JOIN LATERAL (
+        SELECT settings_preference, visual_aesthetic, fashion_style, brand_vibe, color_mood, color_theme
+        FROM user_personal_brand
+        WHERE user_id = ${user.id}
+        ORDER BY updated_at DESC
+        LIMIT 1
+      ) upb ON TRUE
+      WHERE fl.id = ${feedIdInt}
+      AND fl.user_id = ${user.id}
       LIMIT 1
     `
 
     if (!feed) {
       return NextResponse.json({ error: "Feed not found or unauthorized" }, { status: 404 })
+    }
+
+    if (directionMode === "custom" && visualDirectionBrief) {
+      const { scoreFeedStyle } = await import("@/lib/feed-planner/resolve-feed-style")
+      feedStyle = scoreFeedStyle(visualDirectionBrief)?.style ?? null
+    }
+    if (!feedStyle) {
+      const { resolveFeedStyleForUser } = await import("@/lib/feed-planner/resolve-feed-style")
+      const resolved = await resolveFeedStyleForUser(feed as Record<string, unknown>, user.id)
+      feedStyle = resolved.feedStyle
+      if (feedStyleVariationId === undefined) feedStyleVariationId = resolved.variationId
     }
 
     // Validate and resolve variation_id
@@ -71,7 +125,10 @@ async function handleUpdateFeedStyle(
       const variation = await getFeedStyleVariationById(Number(feedStyleVariationId))
       if (!variation || !variation.enabled || variation.feed_style_id !== style.id) {
         return NextResponse.json(
-          { error: "FEED_STYLE_VARIATION_INVALID", details: "Selected variation is not valid for this style." },
+          {
+            error: "FEED_STYLE_VARIATION_INVALID",
+            details: "Selected variation is not valid for this style.",
+          },
           { status: 422 }
         )
       }
@@ -86,12 +143,17 @@ async function handleUpdateFeedStyle(
       SET
         feed_style = ${feedStyle},
         feed_style_variation_id = ${feedStyleVariationIdToStore},
+        visual_direction_mode = ${directionMode},
+        visual_direction_brief = ${visualDirectionBrief},
+        inspiration_image_url = ${inspirationImageUrl},
         updated_at = NOW()
       WHERE id = ${feedIdInt}
       AND user_id = ${user.id}
     `
 
-    console.log(`[v0] Updated feed ${feedIdInt} style: ${feedStyle}, variation_id: ${feedStyleVariationIdToStore}`)
+    console.log(
+      `[v0] Updated feed ${feedIdInt} style: ${feedStyle}, variation_id: ${feedStyleVariationIdToStore}`
+    )
 
     // Keep Maya in sync with the picker: her chat context, scene templates, and next month's
     // auto-draft all follow preferred_feed_style - a modal pick and a "Maya, warmer vibes"
@@ -108,6 +170,9 @@ async function handleUpdateFeedStyle(
       success: true,
       feedStyle,
       feedStyleVariationId: feedStyleVariationIdToStore,
+      directionMode,
+      visualDirectionBrief,
+      inspirationImageUrl,
     })
   } catch (error: any) {
     console.error("[v0] Error updating feed style:", {

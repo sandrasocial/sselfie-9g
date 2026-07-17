@@ -66,20 +66,17 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
 
   const router = useRouter()
   const feedNav = useFeedNav()
-  const [showAllPlans, setShowAllPlans] = useState(false)
+  const [planMenuOpen, setPlanMenuOpen] = useState(false)
 
   // Plan list for the switcher (paid/membership only; previews are style tests, not plans).
   const { data: feedListData } = useSWR(!isFreeUser ? "/api/feed/list" : null, fetcher, {
     revalidateOnFocus: true,
     dedupingInterval: 30_000,
   })
-  // Cap the row at the 8 most recent plans: accounts with a long test history (dozens of
-  // abandoned grids) would otherwise get an endless pill row. Older feeds stay in the DB and
-  // on the standalone route; the switcher is for the plans she's actually working with.
   const allPlans: FeedListEntry[] = Array.isArray(feedListData?.feeds)
     ? feedListData.feeds.filter((f: FeedListEntry) => f.layout_type !== "preview")
     : []
-  const plans = showAllPlans ? allPlans : allPlans.slice(0, 8)
+  const currentPlan = allPlans.find(plan => plan.id === currentFeedId) ?? allPlans[0]
 
   // Phase 4.3: If strategy tab is hidden and activeTab is strategy, switch to grid
   useEffect(() => {
@@ -107,90 +104,94 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
 
   if (!isFreeUser) {
     return (
-      <div className="space-y-3 border-b border-[color:var(--app-glass-border)] px-3 py-3 sm:px-4">
-        <div
-          className="flex items-center justify-end gap-1"
-          role="group"
-          aria-label="Calendar view options"
-        >
-          <button
-            type="button"
-            aria-label="Grid view"
-            aria-pressed={activeTab === "grid"}
-            onClick={() => {
-              onTabChange("grid")
-              void trackAnalyticsEvent({
-                event: "calendar_workspace_opened",
-                properties: { workspace: "grid", feedId: currentFeedId ?? null },
-              })
-            }}
-            className={`flex min-h-11 min-w-11 items-center justify-center rounded-[8px] border transition-colors active:scale-[0.98] ${
-              activeTab === "grid"
-                ? "border-[#0D0E10] bg-[#0D0E10] text-white"
-                : "border-[#C5C6C8] bg-white text-[#4F5052] hover:border-[#818283]"
-            }`}
-          >
-            <Grid3X3 size={18} strokeWidth={1.8} aria-hidden />
-          </button>
-          <button
-            type="button"
-            aria-label="Calendar view"
-            aria-pressed={activeTab === "plan"}
-            onClick={() => {
-              onTabChange("plan")
-              void trackAnalyticsEvent({
-                event: "calendar_workspace_opened",
-                properties: { workspace: "plan", feedId: currentFeedId ?? null },
-              })
-            }}
-            className={`flex min-h-11 min-w-11 items-center justify-center rounded-[8px] border transition-colors active:scale-[0.98] ${
-              activeTab === "plan"
-                ? "border-[#0D0E10] bg-[#0D0E10] text-white"
-                : "border-[#C5C6C8] bg-white text-[#4F5052] hover:border-[#818283]"
-            }`}
-          >
-            <CalendarDays size={18} strokeWidth={1.8} aria-hidden />
-          </button>
-        </div>
-
-        {plans.length >= 2 && (
-          <div>
-            <p className="mb-2 px-1 text-[10px] uppercase tracking-[0.18em] text-[color:var(--app-text-secondary)]">
-              Your grids
-            </p>
-            <div
-              role="group"
-              aria-label="Choose a grid"
-              className="flex min-w-0 gap-2 overflow-x-auto pb-1 [scrollbar-width:none]"
-            >
-              {plans.map(plan => (
-                <button
-                  type="button"
-                  key={plan.id}
-                  aria-pressed={plan.id === currentFeedId}
-                  onClick={() => {
-                    if (plan.id === currentFeedId) return
-                    if (feedNav) feedNav.navigateToFeed(plan.id)
-                    else router.push(`/feed-planner?feedId=${plan.id}`)
-                  }}
-                  className={pillClass(plan.id === currentFeedId)}
-                >
-                  {planLabel(plan)}
-                </button>
-              ))}
-              {allPlans.length > 8 && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllPlans(value => !value)}
-                  aria-expanded={showAllPlans}
-                  className={pillClass(false)}
-                >
-                  {showAllPlans ? "Recent only" : `View all (${allPlans.length})`}
-                </button>
-              )}
+      <div className="border-b border-[color:var(--app-glass-border)] px-3 py-3 sm:px-4">
+        <div className="flex items-center justify-between gap-3" aria-label="Calendar view options">
+          {allPlans.length >= 2 ? (
+            <div className="relative min-w-0" role="group" aria-label="Choose a grid">
+              <span className="sr-only">Your grids</span>
+              <button
+                type="button"
+                aria-label="Choose a grid"
+                aria-expanded={planMenuOpen}
+                onClick={() => setPlanMenuOpen(open => !open)}
+                className="flex min-h-11 max-w-[14rem] items-center gap-2 rounded-[8px] border border-[#C5C6C8] bg-white px-3 text-left text-[11px] text-[#0D0E10]"
+              >
+                <span className="truncate">
+                  {currentPlan ? planLabel(currentPlan) : "Current grid"}
+                </span>
+                <span aria-hidden className="text-[#6D6E70]">
+                  ⌄
+                </span>
+              </button>
+              {planMenuOpen ? (
+                <div className="absolute left-0 top-full z-20 mt-1 max-h-72 w-56 overflow-y-auto rounded-[10px] border border-[#C5C6C8] bg-white p-1 shadow-[0_16px_40px_rgba(13,14,16,0.14)]">
+                  {allPlans.map(plan => (
+                    <button
+                      type="button"
+                      key={plan.id}
+                      aria-pressed={plan.id === currentFeedId}
+                      onClick={() => {
+                        setPlanMenuOpen(false)
+                        if (plan.id === currentFeedId) return
+                        if (feedNav) feedNav.navigateToFeed(plan.id)
+                        else router.push(`/feed-planner?feedId=${plan.id}`)
+                      }}
+                      className={`min-h-11 w-full rounded-[7px] px-3 text-left text-[11px] ${
+                        plan.id === currentFeedId
+                          ? "bg-[#0D0E10] text-white"
+                          : "text-[#4F5052] hover:bg-[#F8FAFA]"
+                      }`}
+                    >
+                      {planLabel(plan)}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
+          ) : (
+            <div />
+          )}
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              aria-label="Grid view"
+              aria-pressed={activeTab === "grid"}
+              onClick={() => {
+                onTabChange("grid")
+                void trackAnalyticsEvent({
+                  event: "calendar_workspace_opened",
+                  properties: { workspace: "grid", feedId: currentFeedId ?? null },
+                })
+              }}
+              className={`flex min-h-11 min-w-11 items-center justify-center rounded-[8px] border transition-colors active:scale-[0.98] ${
+                activeTab === "grid"
+                  ? "border-[#0D0E10] bg-[#0D0E10] text-white"
+                  : "border-[#C5C6C8] bg-white text-[#4F5052] hover:border-[#818283]"
+              }`}
+            >
+              <Grid3X3 size={18} strokeWidth={1.8} aria-hidden />
+            </button>
+            <button
+              type="button"
+              aria-label="Calendar view"
+              aria-pressed={activeTab === "plan"}
+              onClick={() => {
+                onTabChange("plan")
+                void trackAnalyticsEvent({
+                  event: "calendar_workspace_opened",
+                  properties: { workspace: "plan", feedId: currentFeedId ?? null },
+                })
+              }}
+              className={`flex min-h-11 min-w-11 items-center justify-center rounded-[8px] border transition-colors active:scale-[0.98] ${
+                activeTab === "plan"
+                  ? "border-[#0D0E10] bg-[#0D0E10] text-white"
+                  : "border-[#C5C6C8] bg-white text-[#4F5052] hover:border-[#818283]"
+              }`}
+            >
+              <CalendarDays size={18} strokeWidth={1.8} aria-hidden />
+            </button>
           </div>
-        )}
+        </div>
       </div>
     )
   }

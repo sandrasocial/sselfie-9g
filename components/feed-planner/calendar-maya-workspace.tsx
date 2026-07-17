@@ -11,6 +11,7 @@ import { CalendarTextStudio } from "./calendar-text-studio"
 import type { CalendarAgentProposal, CalendarAgentResult } from "@/lib/feed-planner/calendar-agent"
 import type { ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
 import type { CalendarPlanSettings } from "@/lib/feed-planner/calendar-plan-settings"
+import type { FeedVisualDirectionMode } from "./feed-style-modal"
 
 const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
 
@@ -55,19 +56,41 @@ interface CalendarMayaWorkspaceProps {
   onClearSelectedPost?: () => void
   onOpenPhotoPicker?: (postId: number) => void
   onCreateNewGrid?: () => void
+  onChooseVisualDirection?: (mode: FeedVisualDirectionMode) => void
+  hasVisualDirection?: boolean
+  hasContentContext?: boolean
+  onOpenContentContext?: () => void
   onPostUpdated?: (updatedPost?: unknown) => void | Promise<void>
   displayMode?: "sidebar" | "embedded"
 }
 
 const storageKey = (feedId: number | null) => `calendar:maya-thread:v1:${feedId ?? "new"}`
 
-function initialMessage(feedId: number | null): CalendarMessage {
+function isUntouchedFeed(feedSummary: CalendarFeedSummary | null): boolean {
+  return Boolean(
+    feedSummary?.posts.length &&
+    feedSummary.posts.every(post => !post.hasImage && !post.caption?.trim())
+  )
+}
+
+function initialMessage(
+  feedId: number | null,
+  untouchedGrid = false,
+  hasVisualDirection = false,
+  hasContentContext = false
+): CalendarMessage {
   return {
     id: "maya-welcome",
     role: "assistant",
     content: feedId
-      ? "I’ve got your month open. Tap any post and I’ll help you shape it right here."
-      : "Let’s map your first month together. I’ll use what you’ve shared, and I’ll ask before I fill any gaps.",
+      ? untouchedGrid
+        ? !hasVisualDirection
+          ? "Your grid is empty, so let’s start with the visual direction. Choose the easiest way to show me what you like. Then I’ll shape each post with you, one image at a time, without making up your story."
+          : !hasContentContext
+            ? "Your visual direction is saved. Before I write anything, tell me what you do, who you help and what this month needs to do. That gives me enough real context to help without inventing your story."
+            : "Your direction and real content context are ready. Let’s create your first post together, or you can create images and captions in bulk."
+        : "I’ve got your month open. Tap any post and I’ll help you shape it right here."
+      : "Let’s start with how you want your grid to feel. Choose what is easiest: I can decide, use one of Sandra’s favourites, follow your own description, or learn from an inspiration image. Then I’ll ask for any real business context I still need before I write your posts.",
   }
 }
 
@@ -158,12 +181,29 @@ export function CalendarMayaWorkspace({
   onClearSelectedPost,
   onOpenPhotoPicker,
   onCreateNewGrid,
+  onChooseVisualDirection,
+  hasVisualDirection = false,
+  hasContentContext = false,
+  onOpenContentContext,
   onPostUpdated,
   displayMode = "sidebar",
 }: CalendarMayaWorkspaceProps) {
+  const untouchedGrid = isUntouchedFeed(feedSummary)
+  const needsVisualDirection = feedId === null || (untouchedGrid && !hasVisualDirection)
+  const needsContentContext = Boolean(
+    feedId !== null && untouchedGrid && hasVisualDirection && !hasContentContext
+  )
+  const readyToCreate = Boolean(
+    feedId !== null && untouchedGrid && hasVisualDirection && hasContentContext
+  )
+  const firstPost = feedSummary?.posts
+    .slice()
+    .sort((left, right) => left.position - right.position)[0]
   const [expanded, setExpanded] = useState(displayMode === "embedded" || (busy && feedId === null))
   const [input, setInput] = useState("")
-  const [messages, setMessages] = useState<CalendarMessage[]>(() => [initialMessage(feedId)])
+  const [messages, setMessages] = useState<CalendarMessage[]>(() => [
+    initialMessage(feedId, untouchedGrid, hasVisualDirection, hasContentContext),
+  ])
   const [status, setStatus] = useState<"idle" | "thinking" | "applying" | "syncing" | "error">(
     "idle"
   )
@@ -177,6 +217,15 @@ export function CalendarMayaWorkspace({
   const scrollRegionRef = useRef<HTMLDivElement>(null)
   const skipNextPersistenceRef = useRef(true)
   const onClearPreviewRef = useRef(onClearPreview)
+  const initialMessageRef = useRef(
+    initialMessage(feedId, untouchedGrid, hasVisualDirection, hasContentContext)
+  )
+  initialMessageRef.current = initialMessage(
+    feedId,
+    untouchedGrid,
+    hasVisualDirection,
+    hasContentContext
+  )
 
   useEffect(() => {
     onClearPreviewRef.current = onClearPreview
@@ -187,14 +236,14 @@ export function CalendarMayaWorkspace({
     try {
       const saved = window.localStorage.getItem(storageKey(feedId))
       if (!saved) {
-        setMessages([initialMessage(feedId)])
+        setMessages([initialMessageRef.current])
         return
       }
       const parsed = JSON.parse(saved)
       const restored = savedMessages(parsed)
-      setMessages(restored.length > 0 ? restored : [initialMessage(feedId)])
+      setMessages(restored.length > 0 ? restored : [initialMessageRef.current])
     } catch {
-      setMessages([initialMessage(feedId)])
+      setMessages([initialMessageRef.current])
     }
     setInput("")
     setError(null)
@@ -206,6 +255,15 @@ export function CalendarMayaWorkspace({
     if (displayMode === "sidebar") setExpanded(false)
     onClearPreviewRef.current?.()
   }, [displayMode, feedId])
+
+  useEffect(() => {
+    if (!feedId || !untouchedGrid) return
+    setMessages(current => {
+      if (current.length !== 1 || current[0]?.id !== "maya-welcome") return current
+      const welcome = initialMessage(feedId, true, hasVisualDirection, hasContentContext)
+      return current[0].content === welcome.content ? current : [welcome]
+    })
+  }, [feedId, hasContentContext, hasVisualDirection, untouchedGrid])
 
   useEffect(() => {
     if (displayMode === "embedded") setExpanded(true)
@@ -355,7 +413,7 @@ export function CalendarMayaWorkspace({
     } catch {
       // A fresh in-memory thread still works when storage is unavailable.
     }
-    setMessages([initialMessage(feedId)])
+    setMessages([initialMessage(feedId, untouchedGrid, hasVisualDirection, hasContentContext)])
     setInput("")
     setError(null)
     setStatus("idle")
@@ -498,7 +556,7 @@ export function CalendarMayaWorkspace({
                   alt=""
                   fill
                   sizes="48px"
-                  className="object-cover object-top"
+                  className="object-cover object-[center_20%]"
                 />
               ) : (
                 selectedPost.position
@@ -660,7 +718,88 @@ export function CalendarMayaWorkspace({
           )
         })}
 
-        {!isBusy ? (
+        {!isBusy && needsVisualDirection && !selectedPost ? (
+          <section
+            aria-label="Choose the visual direction"
+            className="rounded-[14px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-bg)] p-3"
+          >
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)]">
+              Start here
+            </p>
+            <p className="mt-2 text-[12px] leading-relaxed text-[color:var(--app-text-primary)]">
+              Show me how you want this grid to feel. You can change the direction later.
+            </p>
+            <div className="mt-3 grid gap-2">
+              {(
+                [
+                  ["maya", "Let Maya decide"],
+                  ["curated", "Use Sandra’s favourites"],
+                  ["inspiration", "Upload inspiration"],
+                  ["custom", "Describe the look I want"],
+                ] as const
+              ).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => onChooseVisualDirection?.(mode)}
+                  className="min-h-11 rounded-[9px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-surface)] px-3 text-left text-[12px] font-medium text-[color:var(--app-text-primary)] transition-colors hover:border-[color:var(--app-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-text-primary)]"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <a
+              href="https://www.pinterest.com/search/pins/?q=instagram%20grid%20inspiration"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex min-h-11 items-center text-[11px] text-[color:var(--app-text-secondary)] underline underline-offset-4"
+            >
+              Find grid inspiration on Pinterest
+            </a>
+          </section>
+        ) : !isBusy && needsContentContext && !selectedPost ? (
+          <section
+            aria-label="Add truthful content context"
+            className="rounded-[14px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-bg)] p-3"
+          >
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)]">
+              Visual direction saved
+            </p>
+            <p className="mt-2 text-[12px] leading-relaxed text-[color:var(--app-text-primary)]">
+              Add your business, audience and current focus so I can plan useful posts without
+              inventing your story.
+            </p>
+            <button
+              type="button"
+              onClick={onOpenContentContext}
+              className="mt-3 min-h-11 w-full rounded-[9px] bg-[color:var(--app-btn-primary-bg)] px-3 text-left text-[12px] font-medium text-[color:var(--app-btn-primary-text)]"
+            >
+              Add my content context
+            </button>
+          </section>
+        ) : !isBusy && readyToCreate && !selectedPost ? (
+          <section
+            aria-label="Create the first post"
+            className="rounded-[14px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-bg)] p-3"
+          >
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--app-text-secondary)]">
+              Ready to create
+            </p>
+            <p className="mt-2 text-[12px] leading-relaxed text-[color:var(--app-text-primary)]">
+              Your direction and real context are ready. We can shape post 1 together, or you can
+              create images and captions in bulk above the grid.
+            </p>
+            {firstPost && onOpenPostDetails ? (
+              <button
+                type="button"
+                onClick={() => onOpenPostDetails(firstPost.id)}
+                className="mt-3 min-h-11 w-full rounded-[9px] bg-[color:var(--app-btn-primary-bg)] px-3 text-left text-[12px] font-medium text-[color:var(--app-btn-primary-text)]"
+              >
+                Open post 1
+              </button>
+            ) : null}
+          </section>
+        ) : !isBusy ? (
           <ClarifyCard
             clarify={suggestionsFor(selectedPost, feedId !== null)}
             onPick={answer => void sendMessage(answer)}

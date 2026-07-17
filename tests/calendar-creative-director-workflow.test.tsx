@@ -83,7 +83,7 @@ describe("Calendar creative-director workflow", () => {
 
     expect(screen.getByText("Personal brand photography")).toBeInTheDocument()
     expect(screen.getByText("Women building a visible business")).toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: "Use this plan" }))
+    fireEvent.click(screen.getByRole("button", { name: "Use this context" }))
     expect(onConfirm).toHaveBeenCalledTimes(1)
   })
 
@@ -104,18 +104,46 @@ describe("Calendar creative-director workflow", () => {
     fireEvent.change(screen.getByLabelText("Current offer or focus"), {
       target: { value: "A six week confidence programme" },
     })
-    fireEvent.click(screen.getByRole("button", { name: "Light & Minimalistic" }))
-    fireEvent.click(screen.getByRole("button", { name: "Save plan settings" }))
+    expect(screen.queryByRole("group", { name: "Visual direction" })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Save content context" }))
 
     await waitFor(() =>
       expect(onSave).toHaveBeenCalledWith(
         expect.objectContaining({
           idealAudience: "Women rebuilding their confidence",
           currentSituation: "A six week confidence programme",
-          feedStyle: "Light & Minimalistic",
         })
       )
     )
+  })
+
+  it("does not erase typed context when the profile rerenders with the same values", () => {
+    const baseSettings = {
+      businessType: "",
+      idealAudience: "",
+      currentSituation: "",
+      feedStyle: "",
+    }
+    const { rerender } = render(
+      <CalendarPlanSettingsCard
+        settings={baseSettings}
+        onSave={vi.fn()}
+        onConfirm={vi.fn()}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText("What you do"), {
+      target: { value: "Personal brand photographer" },
+    })
+    rerender(
+      <CalendarPlanSettingsCard
+        settings={{ ...baseSettings }}
+        onSave={vi.fn()}
+        onConfirm={vi.fn()}
+      />
+    )
+
+    expect(screen.getByLabelText("What you do")).toHaveValue("Personal brand photographer")
   })
 
   it("summarizes only real work and recommends one next post", () => {
@@ -154,5 +182,77 @@ describe("Calendar creative-director workflow", () => {
       screen.getByText((_, node) => node?.textContent === "Maya is creating 1 image")
     ).toBeInTheDocument()
     expect(screen.getByText(/finish post 2 next/i)).toBeInTheDocument()
+  })
+
+  it("does not pretend an untouched grid has a next post to finish", () => {
+    const chooseDirection = vi.fn()
+    render(
+      <CalendarNeedsMe
+        posts={Array.from({ length: 9 }, (_, index) => ({
+          id: index + 1,
+          position: index + 1,
+          image_url: null,
+          caption: null,
+          generation_status: "pending",
+        }))}
+        onSelectPost={vi.fn()}
+        onChooseVisualDirection={chooseDirection}
+      />
+    )
+
+    expect(screen.queryByText(/finish post/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/choose how the grid should feel first/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /choose visual direction/i }))
+    expect(chooseDirection).toHaveBeenCalledTimes(1)
+  })
+
+  it("asks for truthful content context after the visual direction is saved", () => {
+    const openContentContext = vi.fn()
+    render(
+      <CalendarNeedsMe
+        posts={Array.from({ length: 9 }, (_, index) => ({
+          id: index + 1,
+          position: index + 1,
+          image_url: null,
+          caption: null,
+          generation_status: "pending",
+        }))}
+        hasVisualDirection
+        hasContentContext={false}
+        onSelectPost={vi.fn()}
+        onOpenContentContext={openContentContext}
+      />
+    )
+
+    expect(
+      screen.queryByRole("button", { name: /choose visual direction/i })
+    ).not.toBeInTheDocument()
+    expect(screen.getByText(/visual direction ready/i)).toBeInTheDocument()
+    expect(screen.getByText(/won’t make up your story/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /add content context/i }))
+    expect(openContentContext).toHaveBeenCalledTimes(1)
+  })
+
+  it("opens post 1 once direction and truthful context are ready", () => {
+    const selectPost = vi.fn()
+    const posts = Array.from({ length: 9 }, (_, index) => ({
+      id: index + 1,
+      position: index + 1,
+      image_url: null,
+      caption: null,
+      generation_status: "pending",
+    }))
+    render(
+      <CalendarNeedsMe
+        posts={posts}
+        hasVisualDirection
+        hasContentContext
+        onSelectPost={selectPost}
+      />
+    )
+
+    expect(screen.getByText(/ready to create/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /open post 1/i }))
+    expect(selectPost).toHaveBeenCalledWith(posts[0])
   })
 })

@@ -25,9 +25,15 @@ import FeedSinglePlaceholder from "./feed-single-placeholder"
 import { CalendarMayaWorkspace } from "./calendar-maya-workspace"
 import { CalendarNeedsMe } from "./calendar-needs-me"
 import { CalendarBulkCreate } from "./calendar-bulk-create"
+import FeedStyleModal, {
+  type FeedStyle,
+  type FeedStyleModalData,
+  type FeedVisualDirectionMode,
+} from "./feed-style-modal"
 import type { CalendarAgentProposal } from "@/lib/feed-planner/calendar-agent"
 import {
   calendarPlanSettingsFromProfile,
+  isCalendarPlanComplete,
   type CalendarPlanSettings,
 } from "@/lib/feed-planner/calendar-plan-settings"
 import { useFeedNav } from "./feed-nav-context"
@@ -102,6 +108,11 @@ export default function InstagramFeedView({
   const [activePostId, setActivePostId] = useState<number | null>(null)
   const [previewProposal, setPreviewProposal] = useState<CalendarAgentProposal | null>(null)
   const [planSettingsOpen, setPlanSettingsOpen] = useState(false)
+  const [visualDirectionOpen, setVisualDirectionOpen] = useState(false)
+  const [visualDirectionMode, setVisualDirectionMode] = useState<FeedVisualDirectionMode | null>(
+    null
+  )
+  const [isSavingVisualDirection, setIsSavingVisualDirection] = useState(false)
   const calendarUndoRef = useRef<(() => Promise<void>) | null>(null)
   const feedNav = useFeedNav()
 
@@ -111,6 +122,10 @@ export default function InstagramFeedView({
     { revalidateOnFocus: false, dedupingInterval: 60000 }
   )
   const calendarPlanSettings = calendarPlanSettingsFromProfile(personalBrandData)
+  const hasVisualDirection = Boolean(
+    feedData?.feed?.visual_direction_mode || feedData?.feed?.feed_style_variation_id
+  )
+  const hasContentContext = isCalendarPlanComplete(calendarPlanSettings)
 
   const saveCalendarPlanSettings = async (settings: CalendarPlanSettings) => {
     const response = await fetch("/api/profile/personal-brand", {
@@ -121,7 +136,7 @@ export default function InstagramFeedView({
         businessType: settings.businessType,
         idealAudience: settings.idealAudience,
         currentSituation: settings.currentSituation,
-        settingsPreference: [settings.feedStyle],
+        ...(settings.feedStyle.trim() ? { settingsPreference: [settings.feedStyle] } : {}),
         isCompleted: true,
       }),
     })
@@ -611,6 +626,38 @@ export default function InstagramFeedView({
     window.dispatchEvent(new CustomEvent("calendar:feed-updated", { detail: { feedId } }))
   }
 
+  const openVisualDirection = (mode: FeedVisualDirectionMode | null = null) => {
+    setPlanSettingsOpen(false)
+    setVisualDirectionMode(mode)
+    setVisualDirectionOpen(true)
+  }
+
+  const saveVisualDirection = async (data: FeedStyleModalData) => {
+    setIsSavingVisualDirection(true)
+    try {
+      await requestCalendarMutation(`/api/feed/${feedId}/update-style`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      })
+      setVisualDirectionOpen(false)
+      await refreshCalendar()
+      toast({
+        title: "Visual direction saved",
+        description: "Maya will use this direction as she creates each post.",
+      })
+    } catch (error) {
+      toast({
+        title: "Could not save the direction",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSavingVisualDirection(false)
+    }
+  }
+
   const requestCalendarMutation = async (url: string, init: RequestInit) => {
     const response = await fetch(url, init)
     const data = await response.json().catch(() => ({}))
@@ -629,7 +676,7 @@ export default function InstagramFeedView({
     }
 
     if (proposal.kind === "open_style_picker") {
-      onRequireFeedStyle?.()
+      openVisualDirection(null)
       calendarUndoRef.current = null
       return { undoAvailable: false }
     }
@@ -867,6 +914,10 @@ export default function InstagramFeedView({
         await mutate()
       }}
       onCreateNewGrid={onRequireFeedStyle}
+      onChooseVisualDirection={openVisualDirection}
+      hasVisualDirection={hasVisualDirection}
+      hasContentContext={hasContentContext}
+      onOpenContentContext={() => setPlanSettingsOpen(true)}
     />
   ) : null
 
@@ -908,7 +959,8 @@ export default function InstagramFeedView({
           onOpenWizard={() => setPlanSettingsOpen(true)}
           onOpenWelcomeWizard={onOpenWelcomeWizard}
           access={access}
-          showProfileDetails={false}
+          showProfileDetails
+          onOpenVisualDirection={() => openVisualDirection(null)}
           workspaceNavigation={
             <FeedTabs
               activeTab={activeTab}
@@ -921,7 +973,14 @@ export default function InstagramFeedView({
 
         {!access?.isFree ? (
           <>
-            <CalendarNeedsMe posts={displayPosts} onSelectPost={openPostStudio} />
+            <CalendarNeedsMe
+              posts={displayPosts}
+              hasVisualDirection={hasVisualDirection}
+              hasContentContext={hasContentContext}
+              onSelectPost={openPostStudio}
+              onChooseVisualDirection={() => openVisualDirection(null)}
+              onOpenContentContext={() => setPlanSettingsOpen(true)}
+            />
             <CalendarBulkCreate
               feedId={feedId}
               posts={displayPosts}
@@ -957,7 +1016,7 @@ export default function InstagramFeedView({
                     if (postId) setShowGallery(postId)
                   }} // Open gallery for free users
                   onGenerateImage={() => mutate()} // Refresh feed data after generation
-                  onRequireFeedStyle={onRequireFeedStyle}
+                  onRequireFeedStyle={() => openVisualDirection(null)}
                   onRequireOnboarding={onOpenWizard}
                   autoGenerateOnce={activationAction === "generate"}
                 />
@@ -974,7 +1033,7 @@ export default function InstagramFeedView({
                     onPostClick={openPostStudio}
                     onAddImage={setShowGallery}
                     onGenerateImage={async (_postId: number) => await mutate()} // Phase 5.1: Refresh feed data after generation
-                    onRequireFeedStyle={onRequireFeedStyle}
+                    onRequireFeedStyle={() => openVisualDirection(null)}
                     onRequireOnboarding={onOpenWizard}
                     onDragStart={dragDrop.handleDragStart}
                     onDragOver={dragDrop.handleDragOver}
@@ -1169,6 +1228,16 @@ export default function InstagramFeedView({
                         .slice(0, 8)
                 : []
           }
+        />
+        <FeedStyleModal
+          open={visualDirectionOpen}
+          onOpenChange={setVisualDirectionOpen}
+          onConfirm={saveVisualDirection}
+          mode="style"
+          initialDirectionMode={visualDirectionMode}
+          defaultFeedStyle={(feedData?.feed?.feed_style as FeedStyle | null) ?? null}
+          defaultFeedStyleVariationId={feedData?.feed?.feed_style_variation_id ?? null}
+          isLoading={isSavingVisualDirection}
         />
       </div>
       {!selectedPost ? calendarMayaWorkspace : null}

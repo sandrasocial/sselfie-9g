@@ -189,7 +189,7 @@ function renderContent({
         fill
         // Top-biased crop (2026-07-07): generated photos are portrait (2:3) shown in square
         // tiles - a center crop routinely cut faces off. Faces live in the upper third.
-        className="object-cover object-top"
+        className="object-cover object-[center_20%]"
         sizes="(max-width: 768px) 33vw, 311px"
       />
     )
@@ -199,7 +199,7 @@ function renderContent({
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#F8FAFA]/90 backdrop-blur-sm">
         <Spinner className="h-5 w-5" />
-        <span className="rounded-full bg-[color:var(--app-btn-primary-bg)]/65 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+        <span className="rounded-full bg-[color:var(--app-btn-primary-bg)]/65 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-[color:var(--app-btn-primary-text)] backdrop-blur-sm">
           Creating…
         </span>
         <button
@@ -481,7 +481,7 @@ export default function FeedGridItem({
         <span
           className={`absolute right-1.5 top-1.5 rounded-full border px-2 py-1 text-[8px] font-medium uppercase tracking-[0.12em] backdrop-blur-md ${
             isReadyPost
-              ? "border-white/25 bg-[color:var(--app-btn-primary-bg)] text-white"
+              ? "border-white/25 bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)]"
               : "border-white/60 bg-white/85 text-[color:var(--app-text-secondary)]"
           }`}
         >
@@ -551,7 +551,7 @@ export default function FeedGridItem({
               type="button"
               aria-label={`Retry image for post ${post.position}`}
               onClick={handleGenerateClick}
-              className="absolute bottom-7 right-2 z-10 min-h-8 rounded-full bg-[color:var(--app-btn-primary-bg)] px-2.5 text-[9px] font-medium text-white"
+              className="absolute bottom-7 right-2 z-10 min-h-8 rounded-full bg-[color:var(--app-btn-primary-bg)] px-2.5 text-[9px] font-medium text-[color:var(--app-btn-primary-text)]"
             >
               Retry
             </button>

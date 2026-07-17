@@ -5,6 +5,7 @@
 
 import OpenAI, { toFile } from "openai"
 import sharp from "sharp"
+import { normalizeInspirationImageUrl } from "@/lib/feed-planner/visual-direction"
 
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
 
@@ -51,6 +52,8 @@ export interface FeedImageRequest {
    *  (flatlay/detail) - those generate without references so the model never paints the
    *  member into a product shot. */
   referenceUrls: string[]
+  /** Optional style-world reference. It is appended after identity files and never used as identity. */
+  inspirationUrl?: string | null
   /** gpt-image portrait canvas; the grid renders 4:5-ish tiles from it. */
   size?: "1024x1536" | "1024x1024"
 }
@@ -61,17 +64,29 @@ export async function generateFeedImageWithOpenAI(req: FeedImageRequest): Promis
   const size = req.size ?? "1024x1536"
 
   const run = async (): Promise<Buffer> => {
-    if (req.referenceUrls.length > 0) {
+    const safeInspirationUrl = normalizeInspirationImageUrl(req.inspirationUrl)
+    if (req.referenceUrls.length > 0 || safeInspirationUrl) {
       // One unreadable reference must not kill the shot - generate with the ones that load.
       const settled = await Promise.allSettled(
-        req.referenceUrls.slice(0, 5).map((url, i) => fetchAsFile(url, `identity-${i + 1}.png`)),
+        req.referenceUrls.slice(0, 5).map((url, i) => fetchAsFile(url, `identity-${i + 1}.png`))
       )
-      const files = settled
-        .filter((s): s is PromiseFulfilledResult<Awaited<ReturnType<typeof fetchAsFile>>> => s.status === "fulfilled")
-        .map((s) => s.value)
-      const failed = settled.length - files.length
-      if (failed > 0) console.warn(`[feed openai] ${failed} reference image(s) skipped (unreadable)`)
-      if (files.length === 0) throw new Error("No readable identity reference images")
+      const identityFiles = settled
+        .filter(
+          (s): s is PromiseFulfilledResult<Awaited<ReturnType<typeof fetchAsFile>>> =>
+            s.status === "fulfilled"
+        )
+        .map(s => s.value)
+      const failed = settled.length - identityFiles.length
+      if (failed > 0)
+        console.warn(`[feed openai] ${failed} reference image(s) skipped (unreadable)`)
+      if (req.referenceUrls.length > 0 && identityFiles.length === 0) {
+        throw new Error("No readable identity reference images")
+      }
+      const inspirationFile = safeInspirationUrl
+        ? await fetchAsFile(safeInspirationUrl, "calendar-inspiration.png")
+        : null
+      const files = inspirationFile ? [...identityFiles, inspirationFile] : identityFiles
+      if (files.length === 0) throw new Error("No readable reference images")
       const input: Record<string, unknown> = {
         model: OPENAI_IMAGE_MODEL,
         image: files.length === 1 ? files[0] : files,
@@ -111,7 +126,7 @@ export async function generateFeedImageWithOpenAI(req: FeedImageRequest): Promis
     return await run()
   } catch (error) {
     if (isTransientError(error)) {
-      await new Promise((resolve) => setTimeout(resolve, 2500))
+      await new Promise(resolve => setTimeout(resolve, 2500))
       return await run()
     }
     throw error

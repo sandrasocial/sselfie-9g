@@ -7,6 +7,11 @@ import {
   getFeedStyleV2ByName,
   getFeedStyleVariationById,
 } from "@/lib/feed-planner/feed-style-prompt-loader"
+import {
+  normalizeInspirationImageUrl,
+  normalizeVisualDirectionBrief,
+  normalizeVisualDirectionMode,
+} from "@/lib/feed-planner/visual-direction"
 
 /**
  * Create Manual Feed
@@ -37,6 +42,27 @@ async function handleCreateManualFeed({
     }
     const title = body.title || `My Feed - ${new Date().toLocaleDateString()}`
     let feedStyle = body.feedStyle || null // "luxury", "minimal", or "beige"
+    const directionMode = normalizeVisualDirectionMode(
+      body.directionMode ?? (feedStyle ? "curated" : "maya")
+    )
+    const visualDirectionBrief = normalizeVisualDirectionBrief(body.visualDirectionBrief)
+    const inspirationImageUrl = normalizeInspirationImageUrl(body.inspirationImageUrl)
+    if (directionMode === "curated" && !feedStyle) {
+      return NextResponse.json({ error: "Choose one of Sandra's visual worlds." }, { status: 400 })
+    }
+    if (directionMode === "custom" && !visualDirectionBrief) {
+      return NextResponse.json(
+        { error: "Describe the visual direction in a little more detail." },
+        { status: 400 }
+      )
+    }
+    if (directionMode === "inspiration" && !inspirationImageUrl) {
+      return NextResponse.json(
+        { error: "Upload an inspiration image before creating the grid." },
+        { status: 400 }
+      )
+    }
+    if (directionMode !== "curated") feedStyle = null
     let visualAesthetic = body.visualAesthetic || null // Array of visual aesthetics
     let fashionStyle = body.fashionStyle || null // Array of fashion styles
     // CRITICAL: Accept feedStyleVariationId even if it's null (user explicitly selected "no variation")
@@ -77,9 +103,16 @@ async function handleCreateManualFeed({
 
     let personalBrandVariationId: number | null = null
     let personalBrand: Record<string, unknown> | null = null
-    if (!feedStyle || !requestedVariationId) {
+    if (!feedStyle || requestedVariationId == null || directionMode !== "curated") {
       const [personalBrandRow] = await sql`
-        SELECT settings_preference, feed_style_variation_id
+        SELECT
+          settings_preference,
+          feed_style_variation_id,
+          visual_aesthetic,
+          fashion_style,
+          brand_vibe,
+          color_mood,
+          color_theme
         FROM user_personal_brand
         WHERE user_id = ${user.id}
         ORDER BY updated_at DESC
@@ -104,6 +137,11 @@ async function handleCreateManualFeed({
           // Ignore parse errors; fall through to validation
         }
       }
+    }
+
+    if (directionMode === "custom" && visualDirectionBrief) {
+      const { scoreFeedStyle } = await import("@/lib/feed-planner/resolve-feed-style")
+      feedStyle = scoreFeedStyle(visualDirectionBrief)?.style ?? feedStyle
     }
 
     if (!feedStyle) {
@@ -187,6 +225,9 @@ async function handleCreateManualFeed({
           feed_style_variation_id,
           visual_aesthetic,
           fashion_style,
+          visual_direction_mode,
+          visual_direction_brief,
+          inspiration_image_url,
           created_by
         )
         VALUES (
@@ -200,6 +241,9 @@ async function handleCreateManualFeed({
           ${feedStyleVariationIdToStore},
           ${visualAesthetic}::jsonb,
           ${fashionStyle}::jsonb,
+          ${directionMode},
+          ${visualDirectionBrief},
+          ${inspirationImageUrl},
           'manual'
         )
         RETURNING *

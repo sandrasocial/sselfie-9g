@@ -78,4 +78,12 @@ describe("Calendar direct manipulation", () => {
     expect(stylePicker).toContain("z-[120]")
     expect(stylePicker).toContain("z-[121]")
   })
+
+  it("uses a face-safe focal point for square grid previews", () => {
+    const gridItem = read("components/feed-planner/feed-grid-item.tsx")
+    const week = read("components/feed-planner/feed-week-view.tsx")
+
+    expect(gridItem).toContain("object-[center_20%]")
+    expect(week).toContain("object-[center_20%]")
+  })
 })

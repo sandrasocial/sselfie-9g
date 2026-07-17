@@ -47,9 +47,12 @@ vi.mock("@/components/feed-planner/feed-style-modal", () => ({
   default: ({
     open,
     onConfirm,
+    initialDirectionMode,
   }: {
     open: boolean
+    initialDirectionMode?: string | null
     onConfirm: (data: {
+      directionMode: "curated"
       feedStyle: string
       feedStyleVariationId: number | null
       visualAesthetic: string[]
@@ -60,13 +63,14 @@ vi.mock("@/components/feed-planner/feed-style-modal", () => ({
         type="button"
         onClick={() =>
           onConfirm({
+            directionMode: "curated",
             feedStyle: "Light & Minimalistic",
             feedStyleVariationId: 2,
             visualAesthetic: ["Editorial"],
           })
         }
       >
-        Confirm grid style
+        Confirm {initialDirectionMode ?? "visual"} direction
       </button>
     ) : null,
 }))
@@ -87,7 +91,7 @@ describe("Calendar grid creation", () => {
     global.fetch = mocks.fetch as unknown as typeof fetch
   })
 
-  it("opens an Instagram-style empty canvas and lets Maya build the first grid", async () => {
+  it("opens an Instagram-style empty canvas and creates the first grid from a visual direction", async () => {
     mocks.swrData.set("/api/feed/latest", { exists: false })
     mocks.swrData.set("/api/profile/personal-brand", {
       data: {
@@ -99,7 +103,7 @@ describe("Calendar grid creation", () => {
     })
     mocks.fetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ created: true, feedLayoutId: 101, postCount: 9 }),
+      json: async () => ({ feedId: 101 }),
     })
 
     const { default: FeedViewScreen } = await import("@/components/feed-planner/feed-view-screen")
@@ -110,66 +114,41 @@ describe("Calendar grid creation", () => {
     expect(screen.queryByRole("button", { name: /add photo to post/i })).not.toBeInTheDocument()
     expect(screen.getByRole("button", { name: /start with my own photos/i })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: /plan my first month with maya/i }))
+    fireEvent.click(screen.getByRole("button", { name: /choose my visual direction/i }))
+    fireEvent.click(screen.getByRole("button", { name: /confirm visual direction/i }))
 
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(
-        "/api/app-v3/maya/feed-plan/draft",
+        "/api/feed/create-manual",
         expect.objectContaining({ method: "POST" })
       )
       expect(mocks.navigateToFeed).toHaveBeenCalledWith(101)
     })
   })
 
-  it("asks for real brand context before Maya plans a new user's month", async () => {
+  it("lets a new user choose the visual direction from Maya before any planning request", async () => {
     mocks.swrData.set("/api/feed/latest", { exists: false })
     mocks.swrData.set("/api/profile/personal-brand", { exists: false, completed: false })
-    mocks.fetch
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ saved: true }) })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ created: true, feedLayoutId: 103, postCount: 9 }),
-      })
 
     const { default: FeedViewScreen } = await import("@/components/feed-planner/feed-view-screen")
 
     render(<FeedViewScreen access={{ isMembership: true } as any} />)
 
-    fireEvent.click(screen.getByRole("button", { name: /plan my first month with maya/i }))
+    fireEvent.click(screen.getByRole("button", { name: /open maya for this calendar/i }))
 
     expect(screen.getByRole("region", { name: /instagram grid/i })).toBeInTheDocument()
     expect(
       screen.getByRole("complementary", { name: /maya for this calendar/i })
     ).toBeInTheDocument()
-    expect(screen.getByRole("region", { name: /plan settings/i })).toBeInTheDocument()
-    expect(mocks.fetch).not.toHaveBeenCalledWith(
-      "/api/app-v3/maya/feed-plan/draft",
-      expect.anything()
-    )
+    expect(screen.getByRole("button", { name: "Let Maya decide" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Use Sandra’s favourites" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Upload inspiration" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Describe the look I want" })).toBeInTheDocument()
+    expect(screen.queryByRole("region", { name: /plan settings/i })).not.toBeInTheDocument()
 
-    fireEvent.change(screen.getByRole("textbox", { name: "What you do" }), {
-      target: { value: "Interior designer" },
-    })
-    fireEvent.change(screen.getByRole("textbox", { name: "Who this plan is for" }), {
-      target: { value: "First-time homeowners" },
-    })
-    fireEvent.change(screen.getByRole("textbox", { name: "Current offer or focus" }), {
-      target: { value: "Room design consultations" },
-    })
-    fireEvent.click(screen.getByRole("button", { name: "Light & Minimalistic" }))
-    fireEvent.click(screen.getByRole("button", { name: "Save plan settings" }))
-
-    await waitFor(() => {
-      expect(mocks.fetch).toHaveBeenCalledWith(
-        "/api/profile/personal-brand",
-        expect.objectContaining({ method: "POST" })
-      )
-      expect(mocks.fetch).toHaveBeenCalledWith(
-        "/api/app-v3/maya/feed-plan/draft",
-        expect.objectContaining({ method: "POST" })
-      )
-      expect(mocks.navigateToFeed).toHaveBeenCalledWith(103)
-    })
+    fireEvent.click(screen.getByRole("button", { name: "Use Sandra’s favourites" }))
+    expect(screen.getByRole("button", { name: /confirm curated direction/i })).toBeInTheDocument()
+    expect(mocks.fetch).not.toHaveBeenCalled()
   })
 
   it("creates a manual grid only through the explicit own-photos action", async () => {
@@ -288,7 +267,7 @@ describe("Calendar grid creation", () => {
       />
     )
 
-    fireEvent.click(screen.getByRole("button", { name: /confirm grid style/i }))
+    fireEvent.click(screen.getByRole("button", { name: /confirm visual direction/i }))
 
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(
@@ -342,7 +321,7 @@ describe("Calendar grid creation", () => {
     )
 
     fireEvent.click(screen.getByRole("button", { name: /new (feed|grid)/i }))
-    fireEvent.click(screen.getByRole("button", { name: /confirm grid style/i }))
+    fireEvent.click(screen.getByRole("button", { name: /confirm visual direction/i }))
 
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(
@@ -353,7 +332,7 @@ describe("Calendar grid creation", () => {
     })
   })
 
-  it("asks a fresh auto-drafted calendar user to choose her look before adding another grid", async () => {
+  it("keeps visual direction and new-grid actions explicit for a fresh calendar", async () => {
     mocks.swrData.set("/api/profile/personal-brand", {
       data: { settingsPreference: [] },
     })
@@ -374,9 +353,9 @@ describe("Calendar grid creation", () => {
       />
     )
 
-    expect(screen.queryByRole("button", { name: /new (feed|grid)/i })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: /choose your look/i }))
-    fireEvent.click(screen.getByRole("button", { name: /confirm grid style/i }))
+    expect(screen.getByRole("button", { name: /new (feed|grid)/i })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /visual direction/i }))
+    fireEvent.click(screen.getByRole("button", { name: /confirm visual direction/i }))
 
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(

@@ -73,10 +73,12 @@ describe("Calendar UI trust repairs", () => {
     expect(entry).not.toContain("Start blank")
   })
 
-  it("offers a clear first-month action without asking members to understand a blank-grid mode", () => {
+  it("starts a first month with visual direction without asking members to understand a blank-grid mode", () => {
     const canvas = read("components/feed-planner/calendar-empty-canvas.tsx")
 
-    expect(canvas).toContain("Plan my first month with Maya")
+    expect(canvas).toContain("Choose my visual direction")
+    expect(canvas).toContain("Maya can decide")
+    expect(canvas).toContain("inspiration image")
     expect(canvas).toContain("Start with my own photos")
     expect(canvas).not.toContain("Plan Settings")
     expect(canvas).not.toContain("blank grid")

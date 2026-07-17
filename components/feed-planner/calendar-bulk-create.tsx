@@ -295,7 +295,7 @@ export function CalendarBulkCreate({
             type="button"
             onClick={() => void runBulkCreation()}
             disabled={!canCreate || running}
-            className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[color:var(--app-text-primary)] px-4 text-[12px] font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-text-primary)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[color:var(--app-btn-primary-bg)] px-4 text-[12px] font-medium text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-text-primary)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {running ? (
               <>

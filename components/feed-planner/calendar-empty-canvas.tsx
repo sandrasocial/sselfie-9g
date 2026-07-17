@@ -106,8 +106,8 @@ export function CalendarEmptyCanvas({
           Let’s make this feel like you.
         </p>
         <p className="mx-auto max-w-[38ch] text-[12px] leading-relaxed text-[color:var(--app-text-secondary)]">
-          Maya can map the month from what she already knows, then you can shape every post
-          together.
+          Start with a visual direction. Maya can decide, use Sandra’s favourites, follow your
+          description, or learn from an inspiration image.
         </p>
         <button
           type="button"
@@ -115,7 +115,7 @@ export function CalendarEmptyCanvas({
           disabled={busy}
           className="mt-2 min-h-12 w-full rounded-full bg-[color:var(--app-btn-primary-bg)] px-5 text-[12px] font-medium text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto"
         >
-          {busy ? "Maya is mapping your month…" : "Plan my first month with Maya"}
+          {busy ? "Creating your grid…" : "Choose my visual direction"}
         </button>
         <button
           type="button"

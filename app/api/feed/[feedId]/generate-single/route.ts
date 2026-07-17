@@ -6,7 +6,12 @@ import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { checkGenerationRateLimit } from "@/lib/rate-limit"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
-import { extractReplicateVersionId, ensureTriggerWordPrefix, ensureGenderInPrompt, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
+import {
+  extractReplicateVersionId,
+  ensureTriggerWordPrefix,
+  ensureGenderInPrompt,
+  buildClassicModeReplicateInput,
+} from "@/lib/replicate-helpers"
 import { validatePrompt } from "@/lib/generation/prompt"
 import { getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
@@ -16,6 +21,8 @@ import {
   ensureReadyPostCaption,
   type CalendarCaptionPost,
 } from "@/lib/feed-planner/ready-post-caption"
+import { normalizeInspirationImageUrl } from "@/lib/feed-planner/visual-direction"
+import { SSELFIE_INSPIRATION_SET_VARIATION } from "@/lib/app-v3/maya/visual-rules"
 
 /* eslint-disable no-console */
 // Console statements are used for debugging and monitoring in development
@@ -32,6 +39,9 @@ interface FeedLayout {
   visual_aesthetic?: string | unknown[] | null
   fashion_style?: string | unknown[] | null
   period_month?: string | null
+  visual_direction_mode?: string | null
+  visual_direction_brief?: string | null
+  inspiration_image_url?: string | null
 }
 
 interface AvatarImage {
@@ -62,12 +72,17 @@ function calendarGenerationMode(): 'pro' | 'classic' {
 // 30-90s, so the route needs the extended window.
 export const maxDuration = 180
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ feedId: string }> | { feedId: string } }
+) {
   let claimedPostId: number | null = null
   let claimedUserId: string | number | null = null
   try {
-    console.log("[v0] [GENERATE-SINGLE] ==================== GENERATE SINGLE API CALLED ====================")
-    
+    console.log(
+      "[v0] [GENERATE-SINGLE] ==================== GENERATE SINGLE API CALLED ===================="
+    )
+
     // Resolve params first (Next.js 16 pattern)
     let feedId: string
     try {
@@ -76,24 +91,30 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       console.log("[v0] [GENERATE-SINGLE] Resolved feedId from params:", feedId)
     } catch (paramsError) {
       console.error("[v0] [GENERATE-SINGLE] Error resolving params:", paramsError)
-      return Response.json({ 
-        error: "Invalid request parameters",
-        details: "Failed to parse feed ID from request"
-      }, { status: 400 })
+      return Response.json(
+        {
+          error: "Invalid request parameters",
+          details: "Failed to parse feed ID from request",
+        },
+        { status: 400 }
+      )
     }
-    
+
     if (!feedId || feedId === "null" || feedId === "undefined") {
       console.error("[v0] [GENERATE-SINGLE] Invalid feedId:", feedId)
-      return Response.json({ 
-        error: "Invalid feed ID",
-        details: "Feed ID is required. Please refresh the page and try again."
-      }, { status: 400 })
+      return Response.json(
+        {
+          error: "Invalid feed ID",
+          details: "Feed ID is required. Please refresh the page and try again.",
+        },
+        { status: 400 }
+      )
     }
-    
+
     // Try to get authenticated user
     let authUser
     let authError
-    
+
     try {
       const result = await getAuthenticatedUserWithRetry(3)
       authUser = result.user
@@ -108,20 +129,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         hasError: !!authError,
         errorMessage: authError?.message,
         hasUser: !!authUser,
-        userId: authUser?.id
+        userId: authUser?.id,
       })
-      
+
       // Clear auth cache to force fresh check on next attempt
       clearAuthCache()
-      
-      return Response.json({ 
-        error: "Unauthorized", 
-        details: authError?.message || "Your session may have expired. Please refresh the page and try again.",
-        shouldRetry: true,
-        requiresRefresh: true
-      }, { status: 401 })
+
+      return Response.json(
+        {
+          error: "Unauthorized",
+          details:
+            authError?.message ||
+            "Your session may have expired. Please refresh the page and try again.",
+          shouldRetry: true,
+          requiresRefresh: true,
+        },
+        { status: 401 }
+      )
     }
-    
+
     console.log("[v0] [GENERATE-SINGLE] ✅ User authenticated:", authUser.id)
 
     const user = await getUserByAuthId(authUser.id)
@@ -146,9 +172,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       return Response.json(
         {
           error: "Generation access required",
-          details: "You need credits to generate images. Free users can generate one image with their welcome credits.",
+          details:
+            "You need credits to generate images. Free users can generate one image with their welcome credits.",
         },
-        { status: 403 },
+        { status: 403 }
       )
     }
 
@@ -163,12 +190,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           remaining: rateLimit.remaining,
           reset: rateLimit.reset,
         },
-        { status: 429 },
+        { status: 429 }
       )
     }
 
     const { postId } = await req.json()
-    
+
     console.log("[v0] [GENERATE-SINGLE] Request params:", { feedId, postId })
 
     if (!postId) {
@@ -178,10 +205,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           error: "Missing post ID",
           details: "Post ID is required to generate a post.",
         },
-        { status: 400 },
+        { status: 400 }
       )
     }
-
 
     const feedIdInt = Number.parseInt(feedId, 10)
     if (isNaN(feedIdInt)) {
@@ -192,7 +218,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           details: "Feed ID must be a valid number. Please refresh the page and try again.",
           shouldRetry: false,
         },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
@@ -235,20 +261,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     // Account-only opt-in and must never be selected by a stale post or browser preference.
     const generationMode = calendarGenerationMode()
     const proModeType = post.pro_mode_type || null
-    console.log("[v0] [GENERATE-SINGLE] Post generation mode:", { generationMode, proModeType, isFree: access.isFree, isPaidBlueprint: access.isPaidBlueprint, postGenerationMode: post.generation_mode })
+    console.log("[v0] [GENERATE-SINGLE] Post generation mode:", {
+      generationMode,
+      proModeType,
+      isFree: access.isFree,
+      isPaidBlueprint: access.isPaidBlueprint,
+      postGenerationMode: post.generation_mode,
+    })
 
     // Check credits based on generation mode (Pro Mode = 2 credits, Classic = 1 credit)
-    const creditsNeeded = generationMode === 'pro' ? getStudioProCreditCost('2K') : CREDIT_COSTS.IMAGE
+    const creditsNeeded =
+      generationMode === "pro" ? getStudioProCreditCost("2K") : CREDIT_COSTS.IMAGE
     const hasCredits = await checkCredits(user.id.toString(), creditsNeeded)
     if (!hasCredits) {
       console.error("[v0] [GENERATE-SINGLE] Insufficient credits")
       return Response.json(
         {
           error: "Insufficient credits",
-          details: `You need ${creditsNeeded} credit${creditsNeeded > 1 ? 's' : ''} to generate this ${generationMode === 'pro' ? 'Pro Mode' : 'Classic Mode'} image. Please purchase more credits.`,
+          details: `You need ${creditsNeeded} credit${creditsNeeded > 1 ? "s" : ""} to generate this ${generationMode === "pro" ? "Pro Mode" : "Classic Mode"} image. Please purchase more credits.`,
           creditsNeeded,
         },
-        { status: 402 },
+        { status: 402 }
       )
     }
 
@@ -293,7 +326,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           error: "Generation already in progress",
           retryable: true,
         },
-        { status: 409 },
+        { status: 409 }
       )
     }
     claimedPostId = Number(postId)
@@ -303,21 +336,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     let feedLayout: FeedLayout | undefined
     try {
       const result = await sql`
-        SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed, feed_style, feed_style_variation_id, layout_type, visual_aesthetic, fashion_style, period_month
+        SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed, feed_style, feed_style_variation_id, layout_type, visual_aesthetic, fashion_style, period_month, visual_direction_mode, visual_direction_brief, inspiration_image_url
         FROM feed_layouts
         WHERE id = ${feedIdInt}
         AND user_id = ${user.id}
       `
       feedLayout = result[0] as FeedLayout | undefined
-      
+
       // Log what we retrieved from database for debugging
-      console.log(`[v0] [GENERATE-SINGLE] Feed layout retrieved: feedStyle=${feedLayout?.feed_style}, variationId=${feedLayout?.feed_style_variation_id}, layoutType=${feedLayout?.layout_type}`)
-      
+      console.log(
+        `[v0] [GENERATE-SINGLE] Feed layout retrieved: feedStyle=${feedLayout?.feed_style}, variationId=${feedLayout?.feed_style_variation_id}, layoutType=${feedLayout?.layout_type}`
+      )
+
       // Validate variation_id is a valid number if present
-      if (feedLayout?.feed_style_variation_id !== null && feedLayout?.feed_style_variation_id !== undefined) {
+      if (
+        feedLayout?.feed_style_variation_id !== null &&
+        feedLayout?.feed_style_variation_id !== undefined
+      ) {
         const numericVariationId = Number(feedLayout.feed_style_variation_id)
         if (!Number.isFinite(numericVariationId) || numericVariationId <= 0) {
-          console.warn(`[v0] [GENERATE-SINGLE] ⚠️ Invalid variation_id in database: ${feedLayout.feed_style_variation_id}, setting to null`)
+          console.warn(
+            `[v0] [GENERATE-SINGLE] ⚠️ Invalid variation_id in database: ${feedLayout.feed_style_variation_id}, setting to null`
+          )
           feedLayout.feed_style_variation_id = null
         } else {
           feedLayout.feed_style_variation_id = numericVariationId
@@ -326,7 +366,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     } catch (error: unknown) {
       // If feed_style column doesn't exist, query without it
       const errorObj = error as { message?: string; code?: string }
-      if (errorObj?.message?.includes('feed_style') || errorObj?.code === '42703') {
+      if (errorObj?.message?.includes("feed_style") || errorObj?.code === "42703") {
         console.warn("[v0] [GENERATE-SINGLE] feed_style column not found, querying without it")
         const result = await sql`
           SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed, layout_type
@@ -348,7 +388,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
 
     // Only fetch model for Classic Mode (Pro Mode doesn't need custom model)
     let model: Model | null = null
-    if (generationMode === 'classic') {
+    if (generationMode === "classic") {
       const [modelResult] = await sql`
         SELECT 
           um.trigger_word, 
@@ -390,30 +430,34 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     }
 
     // Route to Pro Mode or Classic Mode based on generation_mode
-    if (generationMode === 'pro') {
+    if (generationMode === "pro") {
       console.log("[v0] [GENERATE-SINGLE] 🎨 Pro Mode post detected - routing to Nano Banana Pro")
-      
+
       // Fetch user's avatar images for Pro Mode
       const avatarImages = await sql`
         SELECT image_url, display_order, uploaded_at
         FROM user_avatar_images
         WHERE user_id = ${user.id}
         AND is_active = true
+        AND COALESCE(image_type, 'selfie') <> 'inspiration'
         ORDER BY display_order ASC, uploaded_at ASC
         LIMIT 5
       `
-      
+
       // Enhanced logging for reference image validation
       const referenceImageCount = avatarImages.length
-      console.log(`[v0] [GENERATE-SINGLE] 📸 Reference images found: ${referenceImageCount} (max 5, optimal: 3-5)`)
-      
+      console.log(
+        `[v0] [GENERATE-SINGLE] 📸 Reference images found: ${referenceImageCount} (max 5, optimal: 3-5)`
+      )
+
       // Object scenes (flatlay/detail) generate WITHOUT identity references - attaching her
       // selfie to a product shot risks painting her into it. Only person scenes require one.
       // Legacy rows (2026-07-07, Sandra's duplicate-portraits report): older manual grids
       // wrote post_type 'user' for every slot, killing the curated selfie/flatlay/detail
       // rotation - resolve those from the style's own grid pattern by position instead.
       const { CURATED_FEED_STYLE_MAP: STYLE_MAP } = await import("@/lib/style-presets")
-      const { postTypeForPosition: slotTypeFor } = await import("@/lib/feed-planner/write-auto-draft")
+      const { postTypeForPosition: slotTypeFor } =
+        await import("@/lib/feed-planner/write-auto-draft")
       const declaredType = typeof post.post_type === "string" ? post.post_type : ""
       const effectivePostType =
         declaredType === "selfie" || declaredType === "flatlay" || declaredType === "detail"
@@ -421,35 +465,44 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           : slotTypeFor(
               (STYLE_MAP[feedLayout?.feed_style as keyof typeof STYLE_MAP]?.grid ??
                 STYLE_MAP["Dark & Moody"].grid) as readonly string[],
-              Number(post.position) || 1,
+              Number(post.position) || 1
             )
       const isObjectScene = effectivePostType === "flatlay" || effectivePostType === "detail"
-      console.log(`[v0] [GENERATE-SINGLE] Slot role: declared=${declaredType || "(none)"} effective=${effectivePostType} objectScene=${isObjectScene}`)
+      console.log(
+        `[v0] [GENERATE-SINGLE] Slot role: declared=${declaredType || "(none)"} effective=${effectivePostType} objectScene=${isObjectScene}`
+      )
       if (referenceImageCount === 0 && !isObjectScene) {
         return Response.json(
           {
             error: "Pro Mode requires reference images",
-            details: "Please upload at least one avatar image in your profile settings to use Pro Mode.",
+            details:
+              "Please upload at least one avatar image in your profile settings to use Pro Mode.",
           },
-          { status: 400 },
+          { status: 400 }
         )
       }
-      
+
       // Enhanced warning for low reference image count
       if (referenceImageCount < 3) {
-        console.warn(`[v0] [GENERATE-SINGLE] ⚠️ Low reference image count (${referenceImageCount}). 3-5 images recommended for best identity preservation.`)
+        console.warn(
+          `[v0] [GENERATE-SINGLE] ⚠️ Low reference image count (${referenceImageCount}). 3-5 images recommended for best identity preservation.`
+        )
       } else if (referenceImageCount >= 3 && referenceImageCount <= 5) {
-        console.log(`[v0] [GENERATE-SINGLE] ✅ Optimal reference image count (${referenceImageCount}) for identity preservation`)
+        console.log(
+          `[v0] [GENERATE-SINGLE] ✅ Optimal reference image count (${referenceImageCount}) for identity preservation`
+        )
       }
-      
+
       // Map all available images (up to 5) for NanoBanana Pro
-      const baseImages = (avatarImages as AvatarImage[]).map((img) => ({
+      const baseImages = (avatarImages as AvatarImage[]).map(img => ({
         url: img.image_url,
-        type: 'user-photo' as const,
+        type: "user-photo" as const,
       }))
-      
-      console.log(`[v0] [GENERATE-SINGLE] 📤 Sending ${baseImages.length} reference image(s) to NanoBanana Pro`)
-      
+
+      console.log(
+        `[v0] [GENERATE-SINGLE] 📤 Sending ${baseImages.length} reference image(s) to NanoBanana Pro`
+      )
+
       // Get brand kit if available (currently unused but may be needed in future)
       const [_brandKit] = await sql`
         SELECT primary_color, secondary_color, accent_color, font_style, brand_tone
@@ -457,16 +510,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         WHERE user_id = ${user.id} AND is_default = true
         LIMIT 1
       `
-      
+
       let chosenPromptSource: "v2_scene_prompt" | null = null
-      
+
       // For paid blueprint users: Each position should already have its extracted scene prompt
       // If not, extract it from the template using the current feed's feed_style
       // The full template is NOT stored in position 1 for paid blueprint - each position has its own scene
       let finalPrompt: string | null = null
-      
+
       // Always resolve the prompt from the active feed style and post position.
-      
+
       const isPromptUsable = (prompt: string | null): prompt is string =>
         typeof prompt === "string" && prompt.trim().length >= 20
 
@@ -482,7 +535,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                   error: "FEED_STYLE_REQUIRED",
                   details: "Feed style is required for Feed Planner V2 generation.",
                 },
-                { status: 422 },
+                { status: 422 }
               )
             }
 
@@ -490,30 +543,36 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             if (!style || !style.enabled) {
               return Response.json(
                 { error: "FEED_STYLE_NOT_READY", details: "Feed style is not available for V2." },
-                { status: 422 },
+                { status: 422 }
               )
             }
 
             const feedVariationId = feedLayout?.feed_style_variation_id ?? null
-            console.log(`[v0] [GENERATE-SINGLE] Loading prompt for feed: feedId=${feedIdInt}, styleId=${style.id}, feedStyle=${feedLayout?.feed_style}, variationId=${feedVariationId}, position=${post.position}`)
+            console.log(
+              `[v0] [GENERATE-SINGLE] Loading prompt for feed: feedId=${feedIdInt}, styleId=${style.id}, feedStyle=${feedLayout?.feed_style}, variationId=${feedVariationId}, position=${post.position}`
+            )
 
             // Validate variation_id is a valid number if provided
             if (feedVariationId !== null && feedVariationId !== undefined) {
               const numericVariationId = Number(feedVariationId)
               if (!Number.isFinite(numericVariationId) || numericVariationId <= 0) {
-                console.warn(`[v0] [GENERATE-SINGLE] Invalid variation_id in feed_layouts: ${feedVariationId}, using null`)
+                console.warn(
+                  `[v0] [GENERATE-SINGLE] Invalid variation_id in feed_layouts: ${feedVariationId}, using null`
+                )
                 feedLayout.feed_style_variation_id = null
               }
             }
 
             const selected = await selectPromptForPosition(
               style.id,
-              post.position,
-              feedVariationId,
+              Number(post.position) || 1,
+              feedVariationId
             )
             finalPrompt = selected.prompt_text
             chosenPromptSource = "v2_scene_prompt"
-            console.log(`[v0] [GENERATE-SINGLE] Scene prompt loaded: position=${post.position}, variationId=${feedVariationId}, selectedVariationId=${selected.variation_id}, length=${finalPrompt?.length || 0}`)
+            console.log(
+              `[v0] [GENERATE-SINGLE] Scene prompt loaded: position=${post.position}, variationId=${feedVariationId}, selectedVariationId=${selected.variation_id}, length=${finalPrompt?.length || 0}`
+            )
 
             await sql`
               UPDATE feed_posts
@@ -531,7 +590,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 position: post.position,
                 feedId: feedIdInt,
               },
-              { status: 500 },
+              { status: 500 }
             )
           }
         }
@@ -545,7 +604,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               postId,
               position: post.position,
             },
-            { status: 422 },
+            { status: 422 }
           )
         }
         // Fallback to simple prompt
@@ -555,37 +614,38 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       if (isPromptUsable(finalPrompt)) {
         const safePrompt = typeof finalPrompt === "string" ? finalPrompt : ""
         console.log(
-          `[v0] [GENERATE-SINGLE] ✅ Using pre-generated prompt (${safePrompt.split(/\s+/).length} words)`,
+          `[v0] [GENERATE-SINGLE] ✅ Using pre-generated prompt (${safePrompt.split(/\s+/).length} words)`
         )
       }
-      
+
       // Ensure finalPrompt is not null before proceeding
       if (!isPromptUsable(finalPrompt)) {
         const safePrompt = typeof finalPrompt === "string" ? finalPrompt : ""
         console.error(`[v0] [GENERATE-SINGLE] ❌ Final prompt validation failed`, {
           promptLength: safePrompt.length,
-          promptPreview: safePrompt.substring(0, 100) || '(empty)',
+          promptPreview: safePrompt.substring(0, 100) || "(empty)",
           postId,
           position: post.position,
           feedId: feedIdInt,
           access: {
             isPaidBlueprint: access.isPaidBlueprint,
             isFree: access.isFree,
-            isMembership: access.isMembership
-          }
+            isMembership: access.isMembership,
+          },
         })
-        
+
         return Response.json(
-          { 
+          {
             error: "Prompt generation incomplete",
-            details: "We couldn't generate a valid prompt for your image. This might be due to missing brand profile information. Please ensure your feed style and aesthetic are set.",
+            details:
+              "We couldn't generate a valid prompt for your image. This might be due to missing brand profile information. Please ensure your feed style and aesthetic are set.",
             position: post.position,
-            feedId: feedIdInt
+            feedId: feedIdInt,
           },
           { status: 500 }
         )
       }
-      
+
       console.log("[v0] [GENERATE-SINGLE] PROVENANCE", {
         feedId: feedIdInt,
         postId,
@@ -600,16 +660,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       })
       // The selected style-position prompt is already final and must remain unchanged.
       const cleanedPrompt = finalPrompt
-      
+
       // Deduct credits BEFORE calling NanoBanana - once generation starts, API cost is incurred
       const deduction = await deductCredits(
         user.id.toString(),
-        getStudioProCreditCost('2K'),
+        getStudioProCreditCost("2K"),
         "image",
-        `Feed post generation (Pro Mode) - ${post.post_type}`,
+        `Feed post generation (Pro Mode) - ${post.post_type}`
       )
       if (!deduction.success) {
-        console.error("[v0] [GENERATE-SINGLE] Failed to deduct credits before generation:", deduction.error)
+        console.error(
+          "[v0] [GENERATE-SINGLE] Failed to deduct credits before generation:",
+          deduction.error
+        )
         await sql`
           UPDATE feed_posts
           SET generation_status = 'failed',
@@ -625,7 +688,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             code: "credit_deduction_failed",
             message: deduction.error ?? "Credit deduction failed. Please try again.",
           },
-          { status: 402 },
+          { status: 402 }
         )
       }
 
@@ -634,8 +697,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       // scene foundation; identity + environment-true realism wrap it for person scenes.
       // Object scenes (flatlay/detail) ship the template as-is - it's already a complete,
       // person-free scene prompt with the realism header.
-      const { IDENTITY_ANCHOR, PHOTOGRAPHER_REALISM, REALISM_TOKENS, AVOID_LIST, PORTRAIT_QUALITY } =
-        await import("@/lib/app-v3/maya/ingredients")
+      const {
+        IDENTITY_ANCHOR,
+        PHOTOGRAPHER_REALISM,
+        REALISM_TOKENS,
+        AVOID_LIST,
+        PORTRAIT_QUALITY,
+      } = await import("@/lib/app-v3/maya/ingredients")
       const { SSELFIE_ENVIRONMENT_INTEGRATION, SSELFIE_SELFIE_RESTYLE } =
         await import("@/lib/app-v3/maya/visual-rules")
       // SCENE LEADS, IDENTITY FOLLOWS (2026-07-07, Sandra's duplicate-portraits report):
@@ -649,21 +717,41 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       // invented one, and several "flatlay"-labeled templates legitimately describe her in
       // the scene). Template mentions a person -> attach her references. No person in the
       // template -> forbid people entirely.
-      const templateMentionsPerson = /\b(woman|person|she|her|hers|model|girl|lady)\b/i.test(cleanedPrompt)
+      const templateMentionsPerson = /\b(woman|person|she|her|hers|model|girl|lady)\b/i.test(
+        cleanedPrompt
+      )
       if (templateMentionsPerson && baseImages.length === 0) {
         return Response.json(
           {
             error: "Pro Mode requires reference images",
-            details: "Please upload at least one avatar image in your profile settings to use Pro Mode.",
+            details:
+              "Please upload at least one avatar image in your profile settings to use Pro Mode.",
           },
-          { status: 400 },
+          { status: 400 }
         )
       }
       const usesIdentity = templateMentionsPerson && baseImages.length > 0
+      const inspirationUrl =
+        feedLayout.visual_direction_mode === "inspiration"
+          ? normalizeInspirationImageUrl(feedLayout.inspiration_image_url)
+          : null
+      const memberDirection =
+        feedLayout.visual_direction_mode === "custom" && feedLayout.visual_direction_brief?.trim()
+          ? `MEMBER VISUAL DIRECTION: ${feedLayout.visual_direction_brief.trim()}`
+          : null
+      const directionRules = inspirationUrl
+        ? [
+            SSELFIE_INSPIRATION_SET_VARIATION,
+            "The final output is this post only, as one complete Instagram image. Never reproduce the uploaded grid screenshot as a grid, collage, contact sheet, or multi-post layout.",
+          ]
+        : memberDirection
+          ? [memberDirection]
+          : []
       const openaiPrompt = usesIdentity
         ? [
             "THE SCENE (this controls composition, framing, camera distance, pose, and what is in frame):",
             cleanedPrompt,
+            ...directionRules,
             "Follow the scene's stated framing and camera distance exactly - a close-up stays a close-up, a full-body shot stays full-body, a seated or walking moment stays exactly that. Never flatten the scene into a standard eye-level portrait.",
             IDENTITY_ANCHOR,
             SSELFIE_SELFIE_RESTYLE,
@@ -675,6 +763,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           ].join("\n")
         : [
             cleanedPrompt,
+            ...directionRules,
             "No people in this photo: it is a scene, object, or detail shot exactly as described. Do not add a person, a face, hands, or any human presence.",
             PORTRAIT_QUALITY,
           ].join("\n")
@@ -687,22 +776,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         const imageBuffer = await generateFeedImageWithOpenAI({
           prompt: openaiPrompt,
           referenceUrls: usesIdentity ? baseImages.map(img => img.url) : [],
+          inspirationUrl: feedLayout.inspiration_image_url,
         })
 
         const { put } = await import("@vercel/blob")
         blob = await put(
           `feed-images/${user.id}/${feedIdInt}-${postId}-${Date.now()}.png`,
           imageBuffer,
-          { access: "public", contentType: "image/png" },
+          { access: "public", contentType: "image/png" }
         )
       } catch (generationError) {
         try {
           const { refundCredits } = await import("@/lib/credits")
           await refundCredits(
             user.id.toString(),
-            getStudioProCreditCost('2K'),
+            getStudioProCreditCost("2K"),
             "Refund: feed image generation failed",
-            `feed-${feedIdInt}-${postId}`,
+            `feed-${feedIdInt}-${postId}`
           )
         } catch (refundError) {
           console.error("[v0] [GENERATE-SINGLE] Credit refund failed:", refundError)
@@ -727,7 +817,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         const monthLabel = (() => {
           if (!feedLayout?.period_month) return null
           const [y, m] = String(feedLayout.period_month).split("-").map(Number)
-          const names = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+          const names = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+          ]
           return names[(m || 1) - 1] && y ? `${names[(m || 1) - 1]} ${y}` : null
         })()
         const galleryTitle = [
@@ -750,7 +853,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       } catch (galleryError) {
         // The feed post is already updated - a gallery-insert failure must not fail the
         // generation, but it must be visible in logs (image exists but is missing from Photos).
-        console.error("[v0] [GENERATE-SINGLE] Gallery insert failed (image saved to feed):", galleryError)
+        console.error(
+          "[v0] [GENERATE-SINGLE] Gallery insert failed (image saved to feed):",
+          galleryError
+        )
       }
 
       const captionOutcome = await ensureReadyPostCaption({ userId: user.id, post })
@@ -760,13 +866,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         imageUrl: blob.url,
         completed: true,
         message: "Image generated",
-        mode: 'pro',
-        engine: 'openai',
+        mode: "pro",
+        engine: "openai",
         caption: captionOutcome.caption,
         captionStatus: captionOutcome.status,
       })
     }
-    
+
     console.log("[v0] [GENERATE-SINGLE] Classic Mode post - using trained model")
     console.log("[v0] [GENERATE-SINGLE] Request data:", {
       postType: post.post_type,
@@ -784,13 +890,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       // We need to create a proper NextRequest that includes cookies
       const url = new URL(`${req.nextUrl.origin}/api/maya/generate-feed-prompt`)
       const cookieHeader = req.headers.get("cookie") || ""
-      
+
       // Create a new request with cookies
       const mayaRequest = new NextRequest(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Cookie": cookieHeader,
+          Cookie: cookieHeader,
         },
         body: JSON.stringify({
           postType: post.post_type,
@@ -803,11 +909,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           category: post.category, // Preserve the same category
         }),
       })
-      
+
       // Import and call the route handler directly to avoid authentication issues
-      const { POST: generateFeedPromptHandler } = await import("@/app/api/maya/generate-feed-prompt/route")
+      const { POST: generateFeedPromptHandler } =
+        await import("@/app/api/maya/generate-feed-prompt/route")
       mayaResponse = await generateFeedPromptHandler(mayaRequest)
-      
+
       console.log("[v0] [GENERATE-SINGLE] Maya response status:", mayaResponse.status)
     } catch (fetchError: unknown) {
       const error = fetchError as { message?: string; stack?: string; cause?: unknown }
@@ -822,12 +929,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           details: "Maya's prompt generation service is unavailable. Please try again.",
           shouldRetry: true,
         },
-        { status: 503 },
+        { status: 503 }
       )
     }
 
     if (!mayaResponse.ok) {
-      console.error("[v0] [GENERATE-SINGLE] Maya prompt generation failed with status:", mayaResponse.status)
+      console.error(
+        "[v0] [GENERATE-SINGLE] Maya prompt generation failed with status:",
+        mayaResponse.status
+      )
 
       let errorMessage = "Maya's prompt generation failed. Please try again."
       const shouldRetry = true
@@ -851,7 +961,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           details: "Maya's intelligent prompt generation is required for your designed feed.",
           shouldRetry,
         },
-        { status: mayaResponse.status },
+        { status: mayaResponse.status }
       )
     }
 
@@ -859,7 +969,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     try {
       const mayaData = await mayaResponse.json()
       finalPrompt = mayaData.prompt || mayaData.enhancedPrompt
-      console.log("[v0] [GENERATE-SINGLE] ✅ Maya generated enhanced prompt (raw):", finalPrompt?.substring(0, 150))
+      console.log(
+        "[v0] [GENERATE-SINGLE] ✅ Maya generated enhanced prompt (raw):",
+        finalPrompt?.substring(0, 150)
+      )
 
       if (!finalPrompt || finalPrompt.trim().length === 0) {
         console.error("[v0] [GENERATE-SINGLE] Maya returned empty prompt")
@@ -868,28 +981,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             error: "Maya generated an empty prompt. Please try again.",
             shouldRetry: true,
           },
-          { status: 500 },
+          { status: 500 }
         )
       }
 
       // CRITICAL: Strip any markdown formatting, prefixes, or metadata that might have slipped through
       finalPrompt = finalPrompt
         // Remove markdown bold/italic formatting
-        .replace(/\*\*/g, '')
-        .replace(/\*/g, '')
-        .replace(/__/g, '')
-        .replace(/_/g, '')
+        .replace(/\*\*/g, "")
+        .replace(/\*/g, "")
+        .replace(/__/g, "")
+        .replace(/_/g, "")
         // Remove common prefix patterns like "FLUX PROMPT (Type - X words):" or "PROMPT:" etc.
-        .replace(/^.*?FLUX\s+PROMPT\s*\([^)]*\)\s*:?\s*/i, '')
-        .replace(/^.*?PROMPT\s*:?\s*/i, '')
-        .replace(/^.*?FLUX\s*:?\s*/i, '')
+        .replace(/^.*?FLUX\s+PROMPT\s*\([^)]*\)\s*:?\s*/i, "")
+        .replace(/^.*?PROMPT\s*:?\s*/i, "")
+        .replace(/^.*?FLUX\s*:?\s*/i, "")
         // Remove word count patterns like "(62 words)" or "(X words)"
-        .replace(/\([^)]*\d+\s+words?[^)]*\)\s*/gi, '')
+        .replace(/\([^)]*\d+\s+words?[^)]*\)\s*/gi, "")
         // Remove any leading colons, dashes, or other separators
-        .replace(/^[:;\-\s]+/, '')
+        .replace(/^[:;\-\s]+/, "")
         .trim()
 
-      console.log("[v0] [GENERATE-SINGLE] ✅ Maya generated enhanced prompt (cleaned):", finalPrompt?.substring(0, 150))
+      console.log(
+        "[v0] [GENERATE-SINGLE] ✅ Maya generated enhanced prompt (cleaned):",
+        finalPrompt?.substring(0, 150)
+      )
 
       // Double-check trigger word and gender are present (backup validation)
       // Guard: model is guaranteed to be non-null in Classic Mode (checked earlier)
@@ -902,7 +1018,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       // Build user gender term (same format as concept cards)
       let userGender = "person"
       if (model.gender) {
-        const genderStr = typeof model.gender === 'string' ? model.gender : String(model.gender)
+        const genderStr = typeof model.gender === "string" ? model.gender : String(model.gender)
         const dbGender = genderStr.toLowerCase().trim()
         if (dbGender === "woman" || dbGender === "female") {
           userGender = "woman"
@@ -910,38 +1026,62 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           userGender = "man"
         }
       }
-      
-      const ethnicityStr = typeof model.ethnicity === 'string' ? model.ethnicity : undefined
-      
+
+      const ethnicityStr = typeof model.ethnicity === "string" ? model.ethnicity : undefined
+
       try {
-        const validationResult = validatePrompt(finalPrompt, 'classic', {
+        const validationResult = validatePrompt(finalPrompt, "classic", {
           userId: user.id.toString(),
-          triggerWord: model.trigger_word || '',
+          triggerWord: model.trigger_word || "",
           userGender,
           ethnicity: ethnicityStr,
         })
-        
+
         if (validationResult.valid) {
           finalPrompt = validationResult.prompt
           if (validationResult.fixes.length > 0) {
-            console.log("[v0] [GENERATE-SINGLE] ✅ Prompt validated via Authority Layer, fixes applied:", validationResult.fixes)
+            console.log(
+              "[v0] [GENERATE-SINGLE] ✅ Prompt validated via Authority Layer, fixes applied:",
+              validationResult.fixes
+            )
           } else {
-            console.log("[v0] [GENERATE-SINGLE] ✅ Prompt validated via Authority Layer, no fixes needed")
+            console.log(
+              "[v0] [GENERATE-SINGLE] ✅ Prompt validated via Authority Layer, no fixes needed"
+            )
           }
         } else {
           // Fallback to original validation if Authority Layer fails
-          console.warn("[v0] [GENERATE-SINGLE] ⚠️ Authority Layer validation failed, using fallback:", validationResult.fixes)
-          finalPrompt = ensureTriggerWordPrefix(finalPrompt, model.trigger_word || '')
-          finalPrompt = ensureGenderInPrompt(finalPrompt, model.trigger_word || '', userGender, ethnicityStr)
+          console.warn(
+            "[v0] [GENERATE-SINGLE] ⚠️ Authority Layer validation failed, using fallback:",
+            validationResult.fixes
+          )
+          finalPrompt = ensureTriggerWordPrefix(finalPrompt, model.trigger_word || "")
+          finalPrompt = ensureGenderInPrompt(
+            finalPrompt,
+            model.trigger_word || "",
+            userGender,
+            ethnicityStr
+          )
         }
       } catch (authorityError) {
         // Fallback to original validation if Authority Layer throws
-        console.warn("[v0] [GENERATE-SINGLE] ⚠️ Prompt Authority Layer error, using fallback:", authorityError)
-        finalPrompt = ensureTriggerWordPrefix(finalPrompt, model.trigger_word || '')
-        finalPrompt = ensureGenderInPrompt(finalPrompt, model.trigger_word || '', userGender, ethnicityStr)
+        console.warn(
+          "[v0] [GENERATE-SINGLE] ⚠️ Prompt Authority Layer error, using fallback:",
+          authorityError
+        )
+        finalPrompt = ensureTriggerWordPrefix(finalPrompt, model.trigger_word || "")
+        finalPrompt = ensureGenderInPrompt(
+          finalPrompt,
+          model.trigger_word || "",
+          userGender,
+          ethnicityStr
+        )
       }
-      
-      if (model.trigger_word && finalPrompt.toLowerCase().startsWith(model.trigger_word.toLowerCase())) {
+
+      if (
+        model.trigger_word &&
+        finalPrompt.toLowerCase().startsWith(model.trigger_word.toLowerCase())
+      ) {
         console.log("[v0] [GENERATE-SINGLE] ✅ Trigger word confirmed at start of prompt")
       } else {
         console.log("[v0] [GENERATE-SINGLE] ⚠️ Trigger word prepended:", model.trigger_word)
@@ -953,12 +1093,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           error: "Failed to parse Maya's response. Please try again.",
           shouldRetry: true,
         },
-        { status: 500 },
+        { status: 500 }
       )
     }
 
     const qualitySettings =
-      MAYA_QUALITY_PRESETS[post.post_type as keyof typeof MAYA_QUALITY_PRESETS] || MAYA_QUALITY_PRESETS.default
+      MAYA_QUALITY_PRESETS[post.post_type as keyof typeof MAYA_QUALITY_PRESETS] ||
+      MAYA_QUALITY_PRESETS.default
 
     // Guard: model is guaranteed to be non-null in Classic Mode (checked earlier)
     if (!model) {
@@ -972,7 +1113,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
 
     // Extract version ID using shared helper
     const replicateVersionId = extractReplicateVersionId(model.replicate_version_id || null)
-    
+
     if (!replicateVersionId) {
       console.error("[v0] [GENERATE-SINGLE] Replicate version ID not found after extraction")
       return Response.json({ error: "Replicate version ID not found" }, { status: 400 })
@@ -992,7 +1133,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     if (feedLayout?.photoshoot_enabled && feedLayout?.photoshoot_base_seed) {
       const seedVariation = post.seed_variation || 0
       seed = feedLayout.photoshoot_base_seed + seedVariation
-      console.log("[v0] [GENERATE-SINGLE] Using photoshoot seed:", seed, "variation:", seedVariation)
+      console.log(
+        "[v0] [GENERATE-SINGLE] Using photoshoot seed:",
+        seed,
+        "variation:",
+        seedVariation
+      )
     }
 
     // Build Replicate input using shared helper
@@ -1003,7 +1149,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       return Response.json({ error: "LoRA weights URL not found" }, { status: 400 })
     }
 
-    console.log("[v0] [GENERATE-SINGLE] Final prompt sent to Replicate (Classic Mode):", finalPrompt)
+    console.log(
+      "[v0] [GENERATE-SINGLE] Final prompt sent to Replicate (Classic Mode):",
+      finalPrompt
+    )
     const generationInput = buildClassicModeReplicateInput({
       prompt: finalPrompt,
       qualitySettings,
@@ -1032,7 +1181,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       CREDIT_COSTS.IMAGE,
       "image",
       `Feed post generation (Classic Mode) - ${post.post_type}`,
-      prediction.id,
+      prediction.id
     )
 
     if (!deduction.success) {
@@ -1054,11 +1203,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       AND user_id = ${user.id}
     `
 
-    console.log("[v0] [GENERATE-SINGLE] ✅ Database updated with prediction_id:", prediction.id, "for post:", postId)
+    console.log(
+      "[v0] [GENERATE-SINGLE] ✅ Database updated with prediction_id:",
+      prediction.id,
+      "for post:",
+      postId
+    )
 
     const captionOutcome = await ensureReadyPostCaption({ userId: user.id, post })
 
-    return Response.json({ 
+    return Response.json({
       predictionId: prediction.id,
       success: true,
       message: "Image generation started",
@@ -1078,27 +1232,33 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           AND image_url IS NULL
         `
       } catch (recoveryError) {
-        console.error("[v0] [GENERATE-SINGLE] Failed to mark post as failed after error:", recoveryError)
+        console.error(
+          "[v0] [GENERATE-SINGLE] Failed to mark post as failed after error:",
+          recoveryError
+        )
       }
     }
     const err = error as { message?: string; stack?: string }
-    console.error("[v0] [GENERATE-SINGLE] Error generating single post:", err.message || String(error))
-    
+    console.error(
+      "[v0] [GENERATE-SINGLE] Error generating single post:",
+      err.message || String(error)
+    )
+
     // Use replicate error handler for user-friendly messages
     const { formatReplicateErrorResponse } = await import("@/lib/replicate-error-handler")
     const errorResponse = formatReplicateErrorResponse(error, "Failed to start image generation")
-    
+
     // Log technical details but return user-friendly message
     console.error("[v0] [GENERATE-SINGLE] Technical error:", errorResponse._technical)
-    
+
     return Response.json(
       {
         error: errorResponse.error,
         details: errorResponse.details,
         shouldRetry: errorResponse.shouldRetry,
-        retryAfter: errorResponse.retryAfter
+        retryAfter: errorResponse.retryAfter,
       },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }

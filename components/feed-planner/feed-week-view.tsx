@@ -82,7 +82,11 @@ export default function FeedWeekView({ posts, onPostClick }: FeedWeekViewProps) 
         >
           {post.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={post.image_url} alt="" className="h-full w-full object-cover object-top" />
+            <img
+              src={post.image_url}
+              alt=""
+              className="h-full w-full object-cover object-[center_20%]"
+            />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[linear-gradient(145deg,var(--calendar-stone-1),var(--calendar-stone-3))] px-8 text-center">
               <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-muted)]">

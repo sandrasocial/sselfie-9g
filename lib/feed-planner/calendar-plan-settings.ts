@@ -38,7 +38,6 @@ export function isCalendarPlanComplete(settings: CalendarPlanSettings): boolean 
   return Boolean(
     settings.businessType.trim() &&
     settings.idealAudience.trim() &&
-    settings.currentSituation.trim() &&
-    settings.feedStyle.trim()
+    settings.currentSituation.trim()
   )
 }

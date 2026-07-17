@@ -138,6 +138,113 @@ describe("Maya Calendar workspace", () => {
     expect(screen.queryByRole("button", { name: "Build my month" })).not.toBeInTheDocument()
   })
 
+  it("starts an untouched grid with visual direction instead of advanced plan advice", async () => {
+    const chooseVisualDirection = vi.fn()
+    const { CalendarMayaWorkspace } =
+      await import("@/components/feed-planner/calendar-maya-workspace")
+
+    render(
+      <CalendarMayaWorkspace
+        feedId={7}
+        displayMode="embedded"
+        selectedPost={null}
+        feedSummary={{
+          title: "July",
+          bio: null,
+          posts: Array.from({ length: 9 }, (_, index) => ({
+            id: index + 1,
+            position: index + 1,
+            caption: null,
+            hasImage: false,
+          })),
+        }}
+        onChooseVisualDirection={chooseVisualDirection}
+        onApplyProposal={vi.fn()}
+        onUndo={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText(/start with the visual direction/i)).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Adjust my content mix" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Let Maya decide" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Use Sandra’s favourites" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Upload inspiration" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Describe the look I want" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("link", { name: /find grid inspiration on pinterest/i })
+    ).toHaveAttribute("href", expect.stringContaining("pinterest.com"))
+
+    fireEvent.click(screen.getByRole("button", { name: "Upload inspiration" }))
+    expect(chooseVisualDirection).toHaveBeenCalledWith("inspiration")
+  })
+
+  it("asks for real content context after a direction is saved", async () => {
+    const openContentContext = vi.fn()
+    const { CalendarMayaWorkspace } =
+      await import("@/components/feed-planner/calendar-maya-workspace")
+
+    render(
+      <CalendarMayaWorkspace
+        feedId={7}
+        displayMode="embedded"
+        selectedPost={null}
+        feedSummary={{
+          title: "July",
+          posts: Array.from({ length: 9 }, (_, index) => ({
+            id: index + 1,
+            position: index + 1,
+            caption: null,
+            hasImage: false,
+          })),
+        }}
+        hasVisualDirection
+        hasContentContext={false}
+        onOpenContentContext={openContentContext}
+        onApplyProposal={vi.fn()}
+        onUndo={vi.fn()}
+      />
+    )
+
+    expect(screen.queryByRole("button", { name: "Let Maya decide" })).not.toBeInTheDocument()
+    expect(screen.getByText(/visual direction is saved/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/without inventing your story/i)).toHaveLength(2)
+    fireEvent.click(screen.getByRole("button", { name: /add my content context/i }))
+    expect(openContentContext).toHaveBeenCalledTimes(1)
+  })
+
+  it("opens post 1 when an untouched grid has direction and context", async () => {
+    const openPost = vi.fn()
+    const { CalendarMayaWorkspace } =
+      await import("@/components/feed-planner/calendar-maya-workspace")
+
+    render(
+      <CalendarMayaWorkspace
+        feedId={7}
+        displayMode="embedded"
+        selectedPost={null}
+        feedSummary={{
+          title: "July",
+          posts: Array.from({ length: 9 }, (_, index) => ({
+            id: index + 1,
+            position: index + 1,
+            caption: null,
+            hasImage: false,
+          })),
+        }}
+        hasVisualDirection
+        hasContentContext
+        onOpenPostDetails={openPost}
+        onApplyProposal={vi.fn()}
+        onUndo={vi.fn()}
+      />
+    )
+
+    expect(screen.queryByRole("button", { name: "Adjust my content mix" })).not.toBeInTheDocument()
+    expect(screen.getByText(/let’s create your first post/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /open post 1/i }))
+    expect(openPost).toHaveBeenCalledWith(1)
+  })
+
   it("shows visible progress while Maya prepares a first grid", async () => {
     const { CalendarMayaWorkspace } =
       await import("@/components/feed-planner/calendar-maya-workspace")
@@ -157,7 +264,8 @@ describe("Maya Calendar workspace", () => {
     )
   })
 
-  it("offers one clear first-month action inside Maya instead of duplicate build buttons", async () => {
+  it("offers the four visual-direction paths before asking a new user to build anything", async () => {
+    const chooseVisualDirection = vi.fn()
     const { CalendarMayaWorkspace } =
       await import("@/components/feed-planner/calendar-maya-workspace")
     render(
@@ -165,6 +273,7 @@ describe("Maya Calendar workspace", () => {
         feedId={null}
         selectedPost={null}
         feedSummary={null}
+        onChooseVisualDirection={chooseVisualDirection}
         onApplyProposal={vi.fn()}
         onUndo={vi.fn()}
       />
@@ -176,10 +285,14 @@ describe("Maya Calendar workspace", () => {
     ).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: "Open Maya for this Calendar" }))
-    expect(screen.getByRole("button", { name: "Build my month" })).toBeInTheDocument()
-    expect(
-      screen.queryByRole("button", { name: "Build my grid with Maya" })
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Let Maya decide" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Use Sandra’s favourites" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Upload inspiration" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Describe the look I want" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Build my month" })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Let Maya decide" }))
+    expect(chooseVisualDirection).toHaveBeenCalledWith("maya")
   })
 
   it("offers a fresh chat and a new grid without hiding either action", async () => {

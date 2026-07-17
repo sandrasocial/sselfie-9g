@@ -9,7 +9,11 @@ import { CalendarMayaWorkspace } from "./calendar-maya-workspace"
 import type { CalendarAgentProposal } from "@/lib/feed-planner/calendar-agent"
 import { toast } from "@/hooks/use-toast"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
-import FeedStyleModal, { type FeedStyle, type FeedStyleModalData } from "./feed-style-modal"
+import FeedStyleModal, {
+  type FeedStyle,
+  type FeedStyleModalData,
+  type FeedVisualDirectionMode,
+} from "./feed-style-modal"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { useFeedNav } from "./feed-nav-context"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
@@ -62,6 +66,8 @@ export default function FeedViewScreen({
   const [isPlanningWithMaya, setIsPlanningWithMaya] = useState(false)
   const [firstPlanSettingsOpen, setFirstPlanSettingsOpen] = useState(false)
   const [localFeedStyleModal, setLocalFeedStyleModal] = useState(false)
+  const [firstVisualDirectionMode, setFirstVisualDirectionMode] =
+    useState<FeedVisualDirectionMode | null>(null)
   const didOpenFeedStyleFromQuery = useRef(false)
   const didOpenWizardFromQuery = useRef(false)
   const didOpenCreateFirstFeedFromQuery = useRef(false)
@@ -106,7 +112,7 @@ export default function FeedViewScreen({
         businessType: settings.businessType,
         idealAudience: settings.idealAudience,
         currentSituation: settings.currentSituation,
-        settingsPreference: [settings.feedStyle],
+        ...(settings.feedStyle.trim() ? { settingsPreference: [settings.feedStyle] } : {}),
         isCompleted: true,
       }),
     })
@@ -384,6 +390,7 @@ export default function FeedViewScreen({
 
   const handleFeedStyleConfirm = async (modalData: FeedStyleModalData) => {
     setShowFeedStyleModal(false)
+    setFirstVisualDirectionMode(null)
 
     setIsCreatingManual(true)
 
@@ -392,10 +399,7 @@ export default function FeedViewScreen({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          feedStyle: modalData.feedStyle,
-          feedStyleVariationId: modalData.feedStyleVariationId,
-        }),
+        body: JSON.stringify(modalData),
       })
 
       if (!response.ok) {
@@ -414,7 +418,7 @@ export default function FeedViewScreen({
       if (feedNav) feedNav.navigateToFeed(data.feedId)
       else router.push(`/feed-planner?feedId=${data.feedId}`)
 
-      onFeedStyleSelected?.(modalData.feedStyle)
+      if (modalData.feedStyle) onFeedStyleSelected?.(modalData.feedStyle)
 
       toast({
         // DRAFT UX copy for Sandra approval before release.
@@ -439,6 +443,7 @@ export default function FeedViewScreen({
       open={showFeedStyleModal}
       onOpenChange={open => {
         setShowFeedStyleModal(open)
+        if (!open) setFirstVisualDirectionMode(null)
         onFeedStyleModalChange?.(open)
       }}
       onConfirm={handleFeedStyleConfirm}
@@ -446,6 +451,7 @@ export default function FeedViewScreen({
       defaultFeedStyle={initialFeedStyle || lastFeedStyle}
       defaultFeedStyleVariationId={initialFeedStyleVariationId ?? undefined}
       isLoading={isCreatingManual}
+      initialDirectionMode={firstVisualDirectionMode}
     />
   )
 
@@ -489,7 +495,10 @@ export default function FeedViewScreen({
         <div className="app-light-panel-text min-h-0 flex-1 overflow-y-auto bg-[color:var(--app-bg)] px-0 py-3 sm:px-4 lg:px-6">
           <div className="mx-auto grid w-full max-w-[1380px] min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
             <CalendarEmptyCanvas
-              onPlanWithMaya={() => void handlePlanWithMaya()}
+              onPlanWithMaya={() => {
+                setFirstVisualDirectionMode(null)
+                setShowFeedStyleModal(true)
+              }}
               onStartWithPhotos={() => void handleQuickManualGrid(1)}
               busy={isCreatingManual || isPlanningWithMaya}
             />
@@ -503,6 +512,10 @@ export default function FeedViewScreen({
               planSettingsOpen={firstPlanSettingsOpen}
               onPlanSettingsClosed={() => setFirstPlanSettingsOpen(false)}
               onPlanSettingsConfirmed={() => void createFirstPlanWithMaya()}
+              onChooseVisualDirection={mode => {
+                setFirstVisualDirectionMode(mode)
+                setShowFeedStyleModal(true)
+              }}
               onApplyProposal={async (proposal: CalendarAgentProposal) => {
                 if (proposal.kind !== "create_plan")
                   throw new Error("Create your grid first, then I can change it.")
