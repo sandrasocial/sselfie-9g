@@ -148,6 +148,9 @@ describe("Calendar creative-director workflow", () => {
       screen.getByText((_, node) => node?.textContent === "1 needs a photo")
     ).toBeInTheDocument()
     expect(
+      screen.getByText((_, node) => node?.textContent === "1 needs a caption")
+    ).toBeInTheDocument()
+    expect(
       screen.getByText((_, node) => node?.textContent === "Maya is creating 1 image")
     ).toBeInTheDocument()
     expect(screen.getByText(/finish post 2 next/i)).toBeInTheDocument()

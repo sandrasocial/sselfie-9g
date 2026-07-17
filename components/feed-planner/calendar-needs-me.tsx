@@ -17,6 +17,7 @@ export function CalendarNeedsMe({ posts, onSelectPost }: CalendarNeedsMeProps) {
       !post.prediction_id &&
       post.generation_status !== "generating"
   )
+  const needsCaption = posts.filter(post => !post.caption?.trim())
   const next = needsPhoto[0] ?? posts.find(post => !post.caption?.trim() && !post.prediction_id)
 
   return (
@@ -34,6 +35,12 @@ export function CalendarNeedsMe({ posts, onSelectPost }: CalendarNeedsMeProps) {
             {needsPhoto.length}
           </strong>{" "}
           {needsPhoto.length === 1 ? "needs a photo" : "need a photo"}
+        </span>
+        <span>
+          <strong className="font-medium text-[color:var(--app-text-primary)]">
+            {needsCaption.length}
+          </strong>{" "}
+          {needsCaption.length === 1 ? "needs a caption" : "need a caption"}
         </span>
         {creating > 0 ? (
           <span>
