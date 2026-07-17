@@ -848,9 +848,11 @@ export function MayaConcierge({
 
   // Conversation persistence (Phase C). Client-driven save on each completed turn.
   const [chatId, setChatId] = useState<string>(() => restoredDraft?.chatId ?? newChatId())
+  // Keep one client-side Chat instance while the persistence id changes. @ai-sdk/react creates
+  // a brand-new Chat during render when its `id` option changes; a same-click setMessages call
+  // still targets the previous instance, so history hydration would be discarded.
   const { messages, sendMessage, status, error, setMessages } = useChat({
     transport,
-    id: chatId,
     messages: (restoredDraft?.messages ?? []) as any[],
   })
 

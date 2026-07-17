@@ -64,6 +64,7 @@ describe("Maya chat trust pass", () => {
     expect(concierge).toContain("suppressChatSaveForIdRef")
     expect(concierge).toContain("suppressChatSaveForIdRef.current = id")
     expect(concierge).toContain("if (suppressChatSaveForIdRef.current === chatId)")
+    expect(concierge).not.toContain("id: chatId,\n    messages:")
   })
 
   it("keeps recommended graphic actions behind the explicit text choice", () => {
