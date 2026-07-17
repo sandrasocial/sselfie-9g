@@ -5,6 +5,7 @@
 // concierge header. Loads from /api/app-v3/maya/chats.
 
 import { useCallback, useEffect, useState } from "react"
+import Image from "next/image"
 import { useAccessibleModal } from "./use-accessible-modal"
 
 const CHAT_PAGE_SIZE = 20
@@ -13,6 +14,9 @@ interface ChatListItem {
   id: string
   title: string | null
   updatedAt: string
+  taskStatus?: "planning" | "creating" | "ready"
+  thumbnailUrl?: string | null
+  outputCount?: number
 }
 
 interface ChatHistoryModalProps {
@@ -108,10 +112,10 @@ export function ChatHistoryModal({
               id="chat-history-title"
               className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]"
             >
-              Your chats
+              Creative tasks
             </h3>
             <p className="mt-2 max-w-xs text-[12px] leading-relaxed text-[#6D6E70]">
-              Opening a past chat restores the conversation. Finished files stay in Photos.
+              Reopen the conversation, direction cards, and finished versions from a past shoot.
             </p>
           </div>
           <button
@@ -142,7 +146,7 @@ export function ChatHistoryModal({
           )}
           {chats && chats.length === 0 && (
             <p className="text-[13px] text-[#6D6E70]">
-              No saved chats yet. Start one and it&apos;ll show up here.
+              No saved creative tasks yet. Start one and it&apos;ll show up here.
             </p>
           )}
           {chats && chats.length > 0 && (
@@ -152,6 +156,15 @@ export function ChatHistoryModal({
                 const title = c.title?.trim() || "Untitled chat"
                 return (
                   <li key={c.id} className="flex items-center justify-between gap-3 py-3">
+                    {c.thumbnailUrl ? (
+                      <span className="relative h-14 w-11 shrink-0 overflow-hidden rounded-[5px] bg-[#E7E8E8]">
+                        <Image src={c.thumbnailUrl} alt="" fill sizes="44px" className="object-cover" />
+                      </span>
+                    ) : (
+                      <span className="flex h-14 w-11 shrink-0 items-center justify-center rounded-[5px] bg-[#E7E8E8] text-[9px] uppercase tracking-[0.1em] text-[#6D6E70]">
+                        {c.taskStatus === "creating" ? "Making" : "Plan"}
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() => void select(c.id)}
@@ -166,6 +179,11 @@ export function ChatHistoryModal({
                       </p>
                       <p className="mt-0.5 text-[11px] text-[#6D6E70]">
                         {formatWhen(c.updatedAt)}
+                        {c.taskStatus === "creating"
+                          ? " · creating"
+                          : c.taskStatus === "ready"
+                            ? ` · ${c.outputCount || 1} ready`
+                            : " · planning"}
                         {isCurrent ? " · current" : ""}
                       </p>
                     </button>

@@ -7,6 +7,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { loadChat, archiveChat } from "@/lib/app-v3/maya/chat-store"
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
+import { sanitizeServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
 
 export const dynamic = "force-dynamic"
 
@@ -26,6 +27,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       messages: Array.isArray(chat.messages)
         ? sanitizeMayaMessages(chat.messages, { admin: true })
         : [],
+      workspace: sanitizeServerMayaDraftSnapshot(chat.workspace),
     })
   } catch (e) {
     console.error("[app-v3 chats/:id] load failed:", e)

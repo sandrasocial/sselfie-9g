@@ -103,6 +103,8 @@ export interface ConciergeSession {
   referenceSelfieUrl: string | null
   /** URL of the still image selected for image-to-video generation. */
   videoSourceUrl: string | null
+  /** Optional Gallery/Vault image that should guide the visual direction of this session. */
+  inspirationImageUrl?: string | null
   /** On-image text for graphic formats. */
   graphicText: GraphicTextSpec | null
   /** Optional first message to seed Maya with (e.g. a Content recommendation idea). */
@@ -142,6 +144,8 @@ export interface OpenConciergeOptions {
   referenceSelfieUrl?: string | null
   /** Optional gallery/uploaded image to animate when opening Maya in video mode. */
   videoSourceUrl?: string | null
+  /** Optional Gallery/Vault image to carry into Maya as the active visual reference. */
+  inspirationImageUrl?: string | null
   /** Deterministic client-side routing hint for Maya-first creation. */
   creationIntent?: CreationIntent | null
   /** Optional director decision for a selected Vault shot. */

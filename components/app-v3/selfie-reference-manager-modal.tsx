@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import type { RefObject } from "react"
 import Image from "next/image"
+import { announceIdentityUpdated } from "./use-identity-references"
 
 type ReferenceSlot = "face" | "angle" | "side" | "body" | "inspiration"
 
@@ -166,6 +167,7 @@ export function SelfieReferenceManagerModal({
         setInspirationUrl(data.url)
         onExtraReady?.("inspiration", data.url)
       }
+      announceIdentityUpdated()
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Upload failed")
     } finally {
@@ -183,6 +185,7 @@ export function SelfieReferenceManagerModal({
       else if (slot === "body") setFullBodyUrl(null)
       else setInspirationUrl(null)
       onExtraReady?.(slot, null)
+      announceIdentityUpdated()
     } catch (removeError) {
       setError(removeError instanceof Error ? removeError.message : "Couldn't remove that photo.")
     }
@@ -338,6 +341,7 @@ export function SelfieReferenceManagerModal({
                         onClick={() => {
                           setFaceUrl(url)
                           onFaceReady?.(url, "saved")
+                          announceIdentityUpdated()
                         }}
                         className={`relative aspect-square overflow-hidden rounded-[5px] border transition-colors ${
                           faceUrl === url

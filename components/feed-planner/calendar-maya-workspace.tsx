@@ -7,6 +7,7 @@ import { ArrowUp, Check, ChevronDown, Loader2, Plus, RotateCcw, X } from "lucide
 import { ClarifyCard } from "@/components/app-v3/clarify-card"
 import { Markdown } from "@/components/app-v3/markdown"
 import { CalendarPlanSettingsCard } from "./calendar-plan-settings-card"
+import { CalendarTextStudio } from "./calendar-text-studio"
 import type { CalendarAgentProposal, CalendarAgentResult } from "@/lib/feed-planner/calendar-agent"
 import type { ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
 import type { CalendarPlanSettings } from "@/lib/feed-planner/calendar-plan-settings"
@@ -54,6 +55,7 @@ interface CalendarMayaWorkspaceProps {
   onClearSelectedPost?: () => void
   onOpenPhotoPicker?: (postId: number) => void
   onCreateNewGrid?: () => void
+  onPostUpdated?: (updatedPost?: unknown) => void | Promise<void>
 }
 
 const storageKey = (feedId: number | null) => `calendar:maya-thread:v1:${feedId ?? "new"}`
@@ -156,6 +158,7 @@ export function CalendarMayaWorkspace({
   onClearSelectedPost,
   onOpenPhotoPicker,
   onCreateNewGrid,
+  onPostUpdated,
 }: CalendarMayaWorkspaceProps) {
   const [expanded, setExpanded] = useState(true)
   const [input, setInput] = useState("")
@@ -169,6 +172,7 @@ export function CalendarMayaWorkspace({
   const [planConfirmed, setPlanConfirmed] = useState(false)
   const [newMenuOpen, setNewMenuOpen] = useState(false)
   const [newChatConfirming, setNewChatConfirming] = useState(false)
+  const [textStudioOpen, setTextStudioOpen] = useState(false)
   const threadEndRef = useRef<HTMLDivElement>(null)
   const scrollRegionRef = useRef<HTMLDivElement>(null)
   const skipNextPersistenceRef = useRef(true)
@@ -507,6 +511,15 @@ export function CalendarMayaWorkspace({
                 {selectedPost.hasImage ? "Replace photo" : "Add photo"}
               </button>
             ) : null}
+            {selectedPost.hasImage && selectedPost.imageUrl ? (
+              <button
+                type="button"
+                onClick={() => setTextStudioOpen(true)}
+                className="min-h-11 rounded-[8px] bg-[color:var(--app-btn-primary-bg)] px-3 text-[11px] text-[color:var(--app-btn-primary-text)]"
+              >
+                Add text
+              </button>
+            ) : null}
             {onClearSelectedPost ? (
               <button
                 type="button"
@@ -724,6 +737,20 @@ export function CalendarMayaWorkspace({
           Review changes before applying.
         </p>
       </form>
+
+      {selectedPost?.imageUrl ? (
+        <CalendarTextStudio
+          key={`${feedId}:${selectedPost.id}:${selectedPost.imageUrl}`}
+          open={textStudioOpen}
+          feedId={feedId as number}
+          postId={selectedPost.id}
+          position={selectedPost.position}
+          cleanImageUrl={selectedPost.imageUrl}
+          initialHeadline={selectedPost.caption?.split(/[.!?\n]/)[0] ?? null}
+          onClose={() => setTextStudioOpen(false)}
+          onApplied={updatedPost => onPostUpdated?.(updatedPost)}
+        />
+      ) : null}
     </aside>
   )
 }

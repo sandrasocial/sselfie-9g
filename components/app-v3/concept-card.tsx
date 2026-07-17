@@ -39,6 +39,13 @@ export interface ConceptGenState {
   error?: string
   /** Progressive partial frame (data URL) while streaming - the photo "develops" in place. */
   previewUrl?: string
+  /** Durable correlation for a paid OpenAI request whose browser response may be interrupted. */
+  pendingRequest?: {
+    clientRequestId: string
+    startedAt: number
+    format: OutputFormat
+    expectedCount: number
+  }
 }
 
 interface ConceptCardProps {
@@ -146,6 +153,23 @@ export function ConceptCard({
   >("idle")
   const [savedDateLabel, setSavedDateLabel] = useState<string | null>(null)
   const [textRetryStatus, setTextRetryStatus] = useState<"idle" | "retrying" | "error">("idle")
+  const [keepStatus, setKeepStatus] = useState<"idle" | "saving" | "kept" | "error">("idle")
+
+  const handleKeep = async () => {
+    if (!firstDownloadAssetId || keepStatus === "saving" || keepStatus === "kept") return
+    setKeepStatus("saving")
+    try {
+      const response = await fetch("/api/app-v3/gallery/favorite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assetId: `ai_${firstDownloadAssetId}`, isFavorite: true }),
+      })
+      if (!response.ok) throw new Error("Keep failed")
+      setKeepStatus("kept")
+    } catch {
+      setKeepStatus("error")
+    }
+  }
 
   const handleRetryText = async () => {
     if (!onRetryText || textRetryStatus === "retrying") return
@@ -333,6 +357,24 @@ export function ConceptCard({
               </div>
             )}
             <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 min-[380px]:gap-3">
+              {!isVideoDone && firstDownloadAssetId ? (
+                <button
+                  type="button"
+                  onClick={() => void handleKeep()}
+                  disabled={keepStatus === "saving" || keepStatus === "kept"}
+                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-65 min-[380px]:px-5"
+                >
+                  {keepStatus === "saving" ? "Keeping…" : keepStatus === "kept" ? "Kept" : "Keep this"}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={onGenerate}
+                disabled={disabled}
+                className="inline-flex min-h-11 items-center justify-center rounded-[8px] border border-[#0D0E10] bg-white px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] transition-colors hover:bg-[#F1F2F2] disabled:opacity-40"
+              >
+                Continue this shoot
+              </button>
               {isVideoDone ? (
                 <button
                   type="button"
@@ -355,7 +397,7 @@ export function ConceptCard({
                     onDownloaded?.()
                   }}
                   disabled={downloadStatus === "downloading"}
-                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-50 min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
+                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] px-3 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-4 disabled:opacity-50"
                 >
                   {downloadStatus === "downloading" ? "Preparing…" : "Download video"}
                 </button>
@@ -363,7 +405,7 @@ export function ConceptCard({
                 <button
                   type="button"
                   onClick={() => onOpen?.(images)}
-                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
+                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] px-3 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-4"
                 >
                   View all slides
                 </button>
@@ -389,7 +431,7 @@ export function ConceptCard({
                     onDownloaded?.()
                   }}
                   disabled={downloadStatus === "downloading"}
-                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-50 min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
+                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] px-3 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-4 disabled:opacity-50"
                 >
                   {downloadStatus === "downloading" ? "Preparing…" : "Download"}
                 </button>
@@ -398,6 +440,11 @@ export function ConceptCard({
             {downloadStatus === "error" && (
               <p role="alert" className="text-[12px] text-[#4F5052]">
                 Download did not start. Please try again.
+              </p>
+            )}
+            {keepStatus === "error" && (
+              <p role="alert" className="text-[12px] text-[#4F5052]">
+                Couldn&apos;t keep that result. It is still safe in Gallery.
               </p>
             )}
             {resultActions}
@@ -441,14 +488,6 @@ export function ConceptCard({
                             : "Save to calendar"}
                     </button>
                   ))}
-                <button
-                  type="button"
-                  onClick={onGenerate}
-                  disabled={disabled}
-                  className="inline-flex min-h-11 items-center rounded-[6px] border border-[#C5C6C8] px-3.5 text-[11px] uppercase tracking-[0.12em] text-[#4F5052] hover:border-[#0D0E10] disabled:opacity-40"
-                >
-                  Make another version
-                </button>
                 {promptAssetId && !isVideoDone && (
                   <a
                     href={`/api/admin/app-v3/generation-prompt?id=${encodeURIComponent(promptAssetId)}`}

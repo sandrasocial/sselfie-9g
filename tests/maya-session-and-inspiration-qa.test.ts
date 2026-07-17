@@ -131,9 +131,9 @@ describe("QA open-list build (2026-07-06)", () => {
     const frontDoor = read("components/app-v3/visual-front-door.tsx")
     // AUDIT-01 fix (2026-07-09): no more split screen for someone without a selfie - the
     // typed start / chips column must not render at all until she has one saved.
-    expect(frontDoor).toContain("{!hasSelfie ? (")
-    expect(frontDoor).toContain("Maya recommends today")
-    expect(frontDoor).toContain("Tell Maya what you need instead")
+    expect(frontDoor).toContain("if (!hasSelfie)")
+    expect(frontDoor).toContain("Maya recommends ·")
+    expect(frontDoor).toContain("Tell Maya what you need")
   })
 })
 

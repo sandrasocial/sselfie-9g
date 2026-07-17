@@ -111,7 +111,7 @@ function ShellInner({
   videoEnabled = true,
 }: AppV3ShellProps) {
   const [section, setSection] = useState<AppV3Section>(initialSection)
-  const { openWithAesthetic } = useConcierge()
+  const { isOpen: mayaOpen, openWithAesthetic } = useConcierge()
   const openedInitialAestheticRef = useRef<string | null>(null)
   const limited = accessLevel === "limited"
   const cohort: AppV3AnalyticsCohort =
@@ -215,7 +215,11 @@ function ShellInner({
   }
 
   return (
-    <main className="min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10] [overflow-x:clip]">
+    <main
+      className={`min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10] transition-[padding] duration-300 [overflow-x:clip] ${
+        mayaOpen && section === "create" ? "lg:pr-[27rem]" : ""
+      }`}
+    >
       {/* Trial: quiet days-left bar. Limited: photo-making paused, everything she owns stays open. */}
       {accessLevel === "trial" && typeof trialDaysLeft === "number" && (
         <div className="border-b border-[#C5C6C8]/50 bg-white px-5 py-2.5 text-center">
@@ -249,6 +253,7 @@ function ShellInner({
           <div className="relative">
             <div className="pointer-events-none select-none opacity-60" aria-hidden>
               <VisualFrontDoor
+                firstName={firstName}
                 cohort={cohort}
                 hasSelfie={trialHasSavedSelfie}
                 videoEnabled={videoEnabled}
@@ -277,6 +282,7 @@ function ShellInner({
           </div>
         ) : (
           <VisualFrontDoor
+            firstName={firstName}
             showTrialFirstRunStep={
               accessLevel === "trial" &&
               !trialHasGeneratedImages &&

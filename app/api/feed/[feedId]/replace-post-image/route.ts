@@ -22,7 +22,11 @@ export async function POST(
     }
 
     // Parse request body
-    const { postId, imageUrl } = await request.json()
+    const { postId, imageUrl, aiImageId } = await request.json()
+    const ownedAiImageId =
+      typeof aiImageId === "number" && Number.isInteger(aiImageId) && aiImageId > 0
+        ? aiImageId
+        : null
 
     if (!postId || !imageUrl) {
       return NextResponse.json({ error: "Missing postId or imageUrl" }, { status: 400 })
@@ -73,6 +77,10 @@ export async function POST(
       UPDATE feed_posts
       SET 
         image_url = ${imageUrl},
+        ai_image_id = (
+          SELECT id FROM ai_images
+          WHERE id = ${ownedAiImageId} AND user_id = ${neonUser.id}
+        ),
         generation_status = 'completed',
         updated_at = NOW()
       WHERE id = ${postId}

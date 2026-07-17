@@ -230,6 +230,8 @@ function sanitizeSession(value: unknown): ConciergeSession | null {
   const referenceSelfieUrl =
     typeof session.referenceSelfieUrl === "string" ? session.referenceSelfieUrl : null
   const videoSourceUrl = typeof session.videoSourceUrl === "string" ? session.videoSourceUrl : null
+  const inspirationImageUrl =
+    typeof session.inspirationImageUrl === "string" ? session.inspirationImageUrl : null
   const seedPrompt = typeof session.seedPrompt === "string" ? session.seedPrompt : null
 
   return {
@@ -248,6 +250,7 @@ function sanitizeSession(value: unknown): ConciergeSession | null {
     outputFormat,
     referenceSelfieUrl,
     videoSourceUrl,
+    inspirationImageUrl,
     graphicText:
       session.graphicText && typeof session.graphicText === "object"
         ? (session.graphicText as ConciergeSession["graphicText"])
@@ -347,11 +350,34 @@ function sanitizeGenState(value: unknown): Record<string, ConceptGenState> {
         ...(aiImageId != null ? { aiImageId } : {}),
         ...(aiImageIds?.some(id => id != null) ? { aiImageIds } : {}),
       }
-    } else if (
-      state.status === "idle" ||
-      state.status === "generating" ||
-      state.status === "error"
-    ) {
+    } else if (state.status === "generating" && state.pendingRequest && typeof state.pendingRequest === "object") {
+      const pending = state.pendingRequest as Record<string, unknown>
+      const pendingFormat = VALID_FORMATS.includes(pending.format as OutputFormat)
+        ? (pending.format as OutputFormat)
+        : null
+      if (
+        typeof pending.clientRequestId === "string" &&
+        pending.clientRequestId.length > 0 &&
+        typeof pending.startedAt === "number" &&
+        Date.now() - pending.startedAt < 1000 * 60 * 60 * 6 &&
+        pendingFormat
+      ) {
+        out[key] = {
+          status: "generating",
+          pendingRequest: {
+            clientRequestId: pending.clientRequestId.slice(0, 120),
+            startedAt: pending.startedAt,
+            format: pendingFormat,
+            expectedCount:
+              typeof pending.expectedCount === "number" && Number.isInteger(pending.expectedCount)
+                ? Math.max(1, Math.min(9, pending.expectedCount))
+                : 1,
+          },
+        }
+      } else {
+        out[key] = { status: "idle" }
+      }
+    } else if (state.status === "idle" || state.status === "generating" || state.status === "error") {
       out[key] = { status: "idle" }
     }
   }

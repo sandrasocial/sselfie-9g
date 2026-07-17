@@ -321,6 +321,36 @@ function deriveTitle(msgs: any[]): string | null {
   return text ? text.slice(0, 80) : null
 }
 
+function summarizeCreativeTask(genState: Record<string, ConceptGenState>) {
+  const states = Object.values(genState)
+  const creating = states.some(state => state.status === "generating")
+  const finished = states.filter(state => state.status === "done")
+  const outputCount = finished.reduce(
+    (total, state) => total + (state.imageUrls?.length ?? (state.videoUrl ? 1 : 0)),
+    0
+  )
+  const newest = [...finished].reverse().find(state => state.bakedImageUrls?.some(Boolean) || state.imageUrls?.length)
+  const thumbnailUrl =
+    newest?.bakedImageUrls?.find((url): url is string => Boolean(url)) ??
+    newest?.imageUrls?.[0] ??
+    null
+  return {
+    status: creating ? ("creating" as const) : outputCount > 0 ? ("ready" as const) : ("planning" as const),
+    outputCount,
+    thumbnailUrl,
+  }
+}
+
+function durableCreativeTaskState(genState: Record<string, ConceptGenState>) {
+  return Object.fromEntries(
+    Object.entries(genState).map(([key, state]) => {
+      const durable = { ...state }
+      delete durable.previewUrl
+      return [key, durable]
+    })
+  ) as Record<string, ConceptGenState>
+}
+
 const FORMAT_OPTIONS: { id: OutputFormat; label: string }[] = [
   { id: "photo", label: "Photo" },
   { id: "photoshoot", label: "Photoshoot" },
@@ -591,6 +621,8 @@ export function MayaConcierge({
   const drawerCloseRef = useRef<HTMLButtonElement>(null)
   const drawerRef = useRef<HTMLElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
+  const [isDesktopWorkspace, setIsDesktopWorkspace] = useState(false)
+  const [mobileSheetSize, setMobileSheetSize] = useState<"half" | "expanded">("half")
   const restoredDraftRef = useRef<MayaDraftSnapshot | null>(null)
   // Seed the draft ONCE per mount. Re-seeding whenever the ref is null let a "Start new"
   // session re-restore the previous thread: the save effect below could persist the old
@@ -651,6 +683,7 @@ export function MayaConcierge({
     () => restoredDraft?.genState ?? {}
   )
   const inFlightGenerationKeysRef = useRef<Set<string>>(new Set())
+  const recoveringGenerationKeysRef = useRef<Set<string>>(new Set())
   // Authoritative snapshot of the most recent completed render (2026 UX contract rule 4):
   // sent with every chat turn so Maya's belief about "what just rendered" is ground truth.
   const [lastGeneration, setLastGeneration] = useState<LastGenerationSnapshot | null>(
@@ -741,6 +774,14 @@ export function MayaConcierge({
   }, [showBrandPrompt])
 
   useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)")
+    const sync = () => setIsDesktopWorkspace(media.matches)
+    sync()
+    media.addEventListener("change", sync)
+    return () => media.removeEventListener("change", sync)
+  }, [])
+
+  useEffect(() => {
     if (!isOpen) return
     fetch("/api/app-v3/maya/memory")
       .then(r => r.json())
@@ -790,7 +831,9 @@ export function MayaConcierge({
   const [threeQuarterUrl, setThreeQuarterUrl] = useState<string | null>(null)
   const [sideProfileUrl, setSideProfileUrl] = useState<string | null>(null)
   const [fullBodyUrl, setFullBodyUrl] = useState<string | null>(null)
-  const [inspirationUrl, setInspirationUrl] = useState<string | null>(null)
+  const [inspirationUrl, setInspirationUrl] = useState<string | null>(
+    session?.inspirationImageUrl ?? null
+  )
   // SUITE-UX-02: inspiration attaches straight from the composer (no buried slot).
   const attachInputRef = useRef<HTMLInputElement>(null)
   const pendingInspirationIntentRef = useRef<CreationIntent | null>(null)
@@ -901,6 +944,7 @@ export function MayaConcierge({
   // first save for the destination id so the previous conversation can never overwrite a past
   // chat during that transition.
   const suppressChatSaveForIdRef = useRef<string | null>(null)
+  const chatSaveSignatureRef = useRef("")
 
   useEffect(() => {
     if (!session) return
@@ -969,19 +1013,27 @@ export function MayaConcierge({
     setLocalCreationIntent(session.creationIntent ?? null)
   }, [hasTrainedModel, session, setMessages])
 
+  // A progressive preview can update many times per second. Persist only the durable projection
+  // so transient frames neither bloat storage nor continuously cancel either save debounce.
+  const durableGenStateSignature = JSON.stringify(durableCreativeTaskState(genState))
+
   useEffect(() => {
     if (!isOpen || !session) return
     // Stale-commit guard: right after a session switch, this render's chatId/messages still
     // belong to the PREVIOUS thread. Saving them under the new session key is how "Start
     // new" used to resurrect the old conversation.
     if (sessionChatIdRef.current !== null && sessionChatIdRef.current !== chatId) return
+    const durableGenState = JSON.parse(durableGenStateSignature) as Record<
+      string,
+      ConceptGenState
+    >
     const snapshot: ServerMayaDraftSnapshot = {
       isOpen,
       chatId,
       session,
       savedAt: Date.now(),
       messages,
-      genState,
+      genState: durableGenState,
       generatedOnce,
       setupOpen,
       lastGeneration,
@@ -995,7 +1047,7 @@ export function MayaConcierge({
       chatId: snapshot.chatId,
       sessionStartedAt: snapshot.session.startedAt,
       messages: snapshot.messages,
-      genState,
+      genState: durableGenState,
       generatedOnce: snapshot.generatedOnce,
       setupOpen: snapshot.setupOpen,
       lastGeneration,
@@ -1020,7 +1072,7 @@ export function MayaConcierge({
     return () => window.clearTimeout(timeout)
   }, [
     chatId,
-    genState,
+    durableGenStateSignature,
     generatedOnce,
     generationSource,
     isOpen,
@@ -1036,28 +1088,92 @@ export function MayaConcierge({
   ])
 
   useEffect(() => {
-    if (status !== "ready") return
+    if (status !== "ready" || !session) return
+    if (sessionChatIdRef.current !== null && sessionChatIdRef.current !== chatId) return
     if (suppressChatSaveForIdRef.current === chatId) {
       suppressChatSaveForIdRef.current = null
       return
     }
-    if (messages.length === 0 || messages.length === savedCountRef.current) return
-    const last = messages[messages.length - 1] as { role?: string } | undefined
-    if (last?.role !== "assistant") return
+    const durableGenState = JSON.parse(durableGenStateSignature) as Record<
+      string,
+      ConceptGenState
+    >
+    const task = summarizeCreativeTask(durableGenState)
+    if (messages.length === 0 && task.outputCount === 0 && task.status !== "creating") return
+    const signature = JSON.stringify({
+      chatId,
+      messageIds: messages.map((message: any) => message?.id),
+      genState: durableGenState,
+      lastGeneration,
+      setupOpen,
+      textOverlayMode,
+      textStyleChoice,
+      generationSource,
+      retry: chatSaveRetry,
+    })
+    if (chatSaveSignatureRef.current === signature) return
     const messageCount = messages.length
     const savedAt = Date.now()
+    const workspace: ServerMayaDraftSnapshot = {
+      isOpen,
+      chatId,
+      session,
+      savedAt,
+      messages,
+      genState: durableGenState,
+      generatedOnce,
+      setupOpen,
+      lastGeneration,
+      textOverlayMode,
+      textStyleChoice,
+      textStyleAdjustments,
+      generationSource,
+      valueUsed,
+    }
     setChatSaveError(false)
-    void fetch("/api/app-v3/maya/chats", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: chatId, messages, title: deriveTitle(messages), savedAt }),
-    })
-      .then(response => {
-        if (!response.ok) throw new Error(`Chat save returned ${response.status}`)
-        savedCountRef.current = Math.max(savedCountRef.current, messageCount)
+    const timeout = window.setTimeout(() => {
+      chatSaveSignatureRef.current = signature
+      void fetch("/api/app-v3/maya/chats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: chatId,
+          messages,
+          title: deriveTitle(messages) ?? session.creationIdea?.slice(0, 80) ?? session.aesthetic.name,
+          savedAt,
+          workspace,
+          taskStatus: task.status,
+          thumbnailUrl: task.thumbnailUrl,
+          outputCount: task.outputCount,
+        }),
       })
-      .catch(() => setChatSaveError(true))
-  }, [status, messages, chatId, chatSaveRetry])
+        .then(response => {
+          if (!response.ok) throw new Error(`Chat save returned ${response.status}`)
+          savedCountRef.current = Math.max(savedCountRef.current, messageCount)
+        })
+        .catch(() => {
+          chatSaveSignatureRef.current = ""
+          setChatSaveError(true)
+        })
+    }, 500)
+    return () => window.clearTimeout(timeout)
+  }, [
+    chatId,
+    chatSaveRetry,
+    durableGenStateSignature,
+    generatedOnce,
+    generationSource,
+    isOpen,
+    lastGeneration,
+    messages,
+    session,
+    setupOpen,
+    status,
+    textOverlayMode,
+    textStyleAdjustments,
+    textStyleChoice,
+    valueUsed,
+  ])
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
@@ -1092,6 +1208,7 @@ export function MayaConcierge({
     setLastGeneration(null) // a new session has no completed render yet
     setPreMessageThreadOpen(false)
     setLocalCreationIntent(session.creationIntent ?? null)
+    setInspirationUrl(session.inspirationImageUrl ?? null)
     setGenerationSource(
       session.generationSource === "trained-model" && hasTrainedModel ? "trained-model" : "selfie"
     )
@@ -1360,7 +1477,7 @@ export function MayaConcierge({
       document.activeElement instanceof HTMLElement ? document.activeElement : null
     previousFocusRef.current = previouslyFocused
     const previousBodyOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
+    if (!isDesktopWorkspace) document.body.style.overflow = "hidden"
     const frame = window.requestAnimationFrame(() => drawerCloseRef.current?.focus())
     return () => {
       window.cancelAnimationFrame(frame)
@@ -1374,7 +1491,7 @@ export function MayaConcierge({
       }
       previousFocusRef.current = null
     }
-  }, [isOpen])
+  }, [isDesktopWorkspace, isOpen])
 
   useEffect(() => {
     if (!isOpen) return
@@ -1449,6 +1566,114 @@ export function MayaConcierge({
     selfieManagerOpen,
     trialCapOpen,
   ])
+
+  // A paid OpenAI request outlives this drawer. When a refresh or navigation interrupts the
+  // response, the durable request id survives in the draft and this watcher reconnects it to
+  // the exact Gallery rows written by the server. It never starts a second paid request.
+  useEffect(() => {
+    if (!isOpen) return
+    let cancelled = false
+    const startedKeys: string[] = []
+    const pendingEntries = Object.entries(genState).filter(
+      (entry): entry is [string, ConceptGenState & { pendingRequest: NonNullable<ConceptGenState["pendingRequest"]> }] =>
+        entry[1].status === "generating" && Boolean(entry[1].pendingRequest)
+    )
+
+    for (const [key, state] of pendingEntries) {
+      if (inFlightGenerationKeysRef.current.has(key) || recoveringGenerationKeysRef.current.has(key)) {
+        continue
+      }
+      recoveringGenerationKeysRef.current.add(key)
+      startedKeys.push(key)
+      const pending = state.pendingRequest
+      void (async () => {
+        const contentType = pending.format === "story-sequence" ? "story-slide" : pending.format
+        const cutoff = pending.startedAt - 2 * 60 * 1000
+        let latest: Array<{ url: string; id: number | null }> = []
+        for (let attempt = 0; attempt < 72 && !cancelled; attempt += 1) {
+          if (attempt > 0) await wait(5_000)
+          try {
+            const response = await fetch("/api/app-v3/gallery", { cache: "no-store" })
+            if (!response.ok) continue
+            const data = (await response.json().catch(() => null)) as {
+              assets?: Array<{
+                id?: string
+                kind?: string
+                contentType?: string
+                url?: string
+                createdAt?: string
+                generationRef?: string | null
+              }>
+            } | null
+            latest = (data?.assets ?? [])
+              .filter(
+                asset =>
+                  asset.kind === "image" &&
+                  asset.contentType === contentType &&
+                  asset.generationRef?.includes(pending.clientRequestId) &&
+                  typeof asset.url === "string" &&
+                  Date.parse(asset.createdAt || "") >= cutoff
+              )
+              .map(asset => {
+                const match = asset.id?.match(/^ai_(\d+)$/)
+                return {
+                  url: asset.url as string,
+                  id: match ? Number.parseInt(match[1], 10) : null,
+                }
+              })
+            if (latest.length >= pending.expectedCount) break
+          } catch {
+            // Offline is expected here; keep the durable creating state and retry quietly.
+          }
+        }
+        if (cancelled) return
+        if (latest.length > 0) {
+          const completed = latest.slice(0, pending.expectedCount)
+          setGenState(current => {
+            const active = current[key]?.pendingRequest
+            if (active?.clientRequestId !== pending.clientRequestId) return current
+            return {
+              ...current,
+              [key]: {
+                status: "done",
+                imageUrls: completed.map(item => item.url),
+                aiImageId: completed[0]?.id ?? null,
+                aiImageIds: completed.map(item => item.id),
+              },
+            }
+          })
+          setGeneratedOnce(true)
+          setLastGeneration({
+            format: pending.format,
+            imageCount: completed.length,
+            styleName: session?.aesthetic?.name?.trim() || null,
+            conceptTitle: null,
+            usedInspiration: Boolean(inspirationUrl),
+            usedTrainedModel: false,
+          })
+        } else {
+          setGenState(current => {
+            const active = current[key]?.pendingRequest
+            if (active?.clientRequestId !== pending.clientRequestId) return current
+            return {
+              ...current,
+              [key]: {
+                status: "error",
+                error:
+                  "Maya could not reconnect this request yet. Check Gallery first; if it is not there, retrying is safe because the original request id is preserved.",
+              },
+            }
+          })
+        }
+        recoveringGenerationKeysRef.current.delete(key)
+      })()
+    }
+
+    return () => {
+      cancelled = true
+      for (const key of startedKeys) recoveringGenerationKeysRef.current.delete(key)
+    }
+  }, [genState, generationSource, inspirationUrl, isOpen, session?.aesthetic?.name])
 
   if (!isOpen || !session) return null
   const { aesthetic, outputFormat, referenceSelfieUrl } = session
@@ -1646,7 +1871,10 @@ export function MayaConcierge({
     const requestId = ++historyLoadRequestRef.current
     const res = await fetch(`/api/app-v3/maya/chats/${id}`)
     if (!res.ok) throw new Error(`Chat returned ${res.status}`)
-    const data = (await res.json().catch(() => null)) as { messages?: unknown[] } | null
+    const data = (await res.json().catch(() => null)) as {
+      messages?: unknown[]
+      workspace?: ServerMayaDraftSnapshot | null
+    } | null
     if (requestId !== historyLoadRequestRef.current) return
     const loaded = Array.isArray(data?.messages) ? data.messages : []
     savedCountRef.current = loaded.length
@@ -1662,8 +1890,36 @@ export function MayaConcierge({
     sessionChatIdRef.current = id
     suppressChatSaveForIdRef.current = id
     setChatId(id)
-    setGenState({})
-    setGeneratedOnce(false)
+    const workspace = data?.workspace ?? null
+    if (workspace) {
+      updateCurrentSession(workspace.session.aesthetic as Aesthetic, {
+        format: workspace.session.outputFormat ?? undefined,
+        referenceSelfieUrl: workspace.session.referenceSelfieUrl,
+        videoSourceUrl: workspace.session.videoSourceUrl,
+        inspirationImageUrl: workspace.session.inspirationImageUrl,
+        creationIntent: workspace.session.creationIntent,
+        shotDirector: workspace.session.shotDirector,
+        generationSource: workspace.generationSource,
+        creationIdea: workspace.session.creationIdea,
+      })
+      setGenState(workspace.genState as Record<string, ConceptGenState>)
+      setGeneratedOnce(workspace.generatedOnce)
+      setLastGeneration(workspace.lastGeneration ?? null)
+      setTextOverlayMode(workspace.textOverlayMode ?? null)
+      setTextStyleChoice(workspace.textStyleChoice ?? null)
+      setTextStyleAdjustments(workspace.textStyleAdjustments ?? null)
+      setGenerationSource(
+        workspace.generationSource === "trained-model" && hasTrainedModel
+          ? "trained-model"
+          : "selfie"
+      )
+      setValueUsed(workspace.valueUsed === true)
+      setSetupOpen(workspace.setupOpen)
+    } else {
+      setGenState({})
+      setGeneratedOnce(false)
+      setLastGeneration(null)
+    }
     sessionResumedWithHistoryRef.current = loaded.length > 0
     setMessages(loaded as any)
     setHistoryOpen(false)
@@ -1744,9 +2000,37 @@ export function MayaConcierge({
     const rerun = genState[key]?.status === "done"
     if (inFlightGenerationKeysRef.current.has(key)) return
     inFlightGenerationKeysRef.current.add(key)
-    setGenState(s => ({ ...s, [key]: { status: "generating" } }))
     let generationRequestId: string | null = null
     let generationStartedAt = 0
+    if (targetFormat !== "video" && !canUseCustomModel) {
+      generationRequestId = newGenerationRequestId()
+      generationStartedAt = Date.now()
+    }
+    const expectedOutputCount = Math.max(
+      1,
+      targetFormat === "carousel" || targetFormat === "story-sequence"
+        ? concept.brief.graphic?.creativePlan?.outputs?.length ??
+            concept.brief.graphic?.slides?.length ??
+            concept.brief.graphic?.slideCount ??
+            1
+        : 1
+    )
+    setGenState(s => ({
+      ...s,
+      [key]: {
+        status: "generating",
+        ...(generationRequestId
+          ? {
+              pendingRequest: {
+                clientRequestId: generationRequestId,
+                startedAt: generationStartedAt,
+                format: targetFormat,
+                expectedCount: Math.min(9, expectedOutputCount),
+              },
+            }
+          : {}),
+      },
+    }))
     let generationResponseStatus: number | null = null
     let streamResponseStarted = false
     let generationServerVerdict = false
@@ -1884,8 +2168,6 @@ export function MayaConcierge({
         isGraphicOutputFormat(targetFormat) && textOverlayMode ? textOverlayMode : null
       const bakeStyle = overlayStyle ?? (wantsGraphicText ? textStyleChoice : null)
       const wantsBakedText = Boolean(bakeStyle && isGraphicOutputFormat(targetFormat))
-      generationRequestId = newGenerationRequestId()
-      generationStartedAt = Date.now()
       const res = await fetch("/api/app-v3/maya/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1897,7 +2179,7 @@ export function MayaConcierge({
           inspirationImageUrl: inspirationUrl,
           aestheticId: aesthetic.id,
           conceptTitle: concept.title,
-          clientRequestId: generationRequestId,
+          clientRequestId: generationRequestId as string,
           rerun,
           ...(graphicTextMode ? { textOverlayMode: graphicTextMode } : {}),
           ...(bakeStyle ? { overlayStyle: bakeStyle } : {}),
@@ -2146,9 +2428,20 @@ export function MayaConcierge({
     }
     if (inFlightGenerationKeysRef.current.has(key)) return
     inFlightGenerationKeysRef.current.add(key)
-    setGenState(s => ({ ...s, [key]: { status: "generating" } }))
     const clientRequestId = newGenerationRequestId()
     const shootStartedAt = Date.now()
+    setGenState(s => ({
+      ...s,
+      [key]: {
+        status: "generating",
+        pendingRequest: {
+          clientRequestId,
+          startedAt: shootStartedAt,
+          format: "photoshoot",
+          expectedCount: shootConcepts.length,
+        },
+      },
+    }))
     // true once we parsed a real server reply; false means the response was lost in transit
     let gotServerVerdict = false
     let responseStatus: number | null = null
@@ -2899,27 +3192,39 @@ export function MayaConcierge({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex w-full max-w-[100dvw] justify-end overscroll-x-none [overflow-x:clip]">
+    <div className="pointer-events-none fixed inset-0 z-50 flex w-full max-w-[100dvw] items-end justify-end overscroll-x-none [overflow-x:clip] lg:items-stretch">
       <button
         type="button"
         tabIndex={-1}
         aria-hidden="true"
         aria-label="Close"
         onClick={close}
-        className="absolute inset-0 bg-[#0D0E10]/30 backdrop-blur-[2px] animate-in fade-in duration-200 motion-reduce:animate-none"
+        className="pointer-events-auto absolute inset-0 bg-[#0D0E10]/30 backdrop-blur-[2px] animate-in fade-in duration-200 motion-reduce:animate-none lg:hidden"
       />
       <aside
         ref={drawerRef}
         role="dialog"
-        aria-modal="true"
+        aria-modal={!isDesktopWorkspace}
         aria-labelledby="maya-workspace-title"
         style={
           keyboardBox
             ? { height: keyboardBox.height, transform: `translateY(${keyboardBox.top}px)` }
             : undefined
         }
-        className="relative flex h-[100dvh] w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden bg-[#F8FAFA] shadow-xl animate-in fade-in duration-200 ease-out motion-reduce:animate-none sm:max-w-md sm:slide-in-from-right sm:duration-300"
+        className={`pointer-events-auto relative flex w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden rounded-t-[18px] border border-[#C5C6C8]/55 bg-[#F8FAFA] shadow-[0_-18px_60px_rgba(13,14,16,0.16)] animate-in slide-in-from-bottom-4 duration-300 ease-out motion-reduce:animate-none lg:h-[100dvh] lg:w-[27rem] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-[-18px_0_60px_rgba(13,14,16,0.10)] lg:slide-in-from-right ${
+          mobileSheetSize === "expanded" ? "h-[94dvh]" : "h-[62dvh]"
+        }`}
       >
+        <div className="flex shrink-0 justify-center pt-2 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileSheetSize(size => (size === "half" ? "expanded" : "half"))}
+            aria-label={mobileSheetSize === "half" ? "Expand Maya" : "Return Maya to half screen"}
+            className="flex min-h-8 w-20 items-center justify-center"
+          >
+            <span className="h-1 w-10 rounded-full bg-[#C5C6C8]" aria-hidden />
+          </button>
+        </div>
         {/* Header - one calm row. Actions live in a quiet menu, and Close is always visible
             (on phones the drawer is full-width, so the backdrop can't be tapped to leave). */}
         <header className="flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-3.5 sm:px-6">

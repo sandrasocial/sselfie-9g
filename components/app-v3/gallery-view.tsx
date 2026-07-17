@@ -92,6 +92,37 @@ function filterAssets(assets: AppV3GalleryAsset[], filter: GalleryFilter): AppV3
   }
 }
 
+/** Keep a clean original and every edit/text bake next to each other without changing storage. */
+export function groupGalleryVersions(assets: AppV3GalleryAsset[]): AppV3GalleryAsset[] {
+  const byId = new Map(assets.map(asset => [asset.id, asset]))
+  const groups = new Map<string, AppV3GalleryAsset[]>()
+  const order: string[] = []
+  for (const asset of assets) {
+    const rootId = asset.variantOf && byId.has(asset.variantOf) ? asset.variantOf : asset.id
+    if (!groups.has(rootId)) {
+      groups.set(rootId, [])
+      order.push(rootId)
+    }
+    groups.get(rootId)!.push(asset)
+  }
+  return order.flatMap(rootId => {
+    const members = groups.get(rootId) ?? []
+    return [...members].sort((a, b) => {
+      if (a.id === rootId) return -1
+      if (b.id === rootId) return 1
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    })
+  })
+}
+
+function versionMeta(asset: AppV3GalleryAsset, assets: AppV3GalleryAsset[]) {
+  const byId = new Map(assets.map(item => [item.id, item]))
+  const rootId = asset.variantOf && byId.has(asset.variantOf) ? asset.variantOf : asset.id
+  const members = assets.filter(item => item.id === rootId || item.variantOf === rootId)
+  const ordered = groupGalleryVersions(members)
+  return { index: ordered.findIndex(item => item.id === asset.id), count: ordered.length }
+}
+
 async function downloadAsset(asset: AppV3GalleryAsset) {
   const started = await initiateAssetDownload(
     asset.url,
@@ -134,6 +165,9 @@ const AssetTile = memo(function AssetTile({
   onDelete,
   onDownload,
   onMakeMotion,
+  onCompare,
+  versionIndex,
+  versionCount,
 }: {
   asset: AppV3GalleryAsset
   index: number
@@ -146,6 +180,9 @@ const AssetTile = memo(function AssetTile({
   onDelete: (asset: AppV3GalleryAsset) => void
   onDownload: (asset: AppV3GalleryAsset) => void
   onMakeMotion?: (url: string) => void
+  onCompare: (asset: AppV3GalleryAsset) => void
+  versionIndex: number
+  versionCount: number
 }) {
   const isVideo = asset.kind === "video"
   const title = safeAssetTitle(asset)
@@ -202,13 +239,13 @@ const AssetTile = memo(function AssetTile({
           {assetLabel(asset)}
         </span>
       )}
-      {asset.variantOf && (
+      {versionCount > 1 && (
         <span
           className={`pointer-events-none absolute left-2 rounded-[3px] bg-white/85 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.14em] text-[color:var(--ss-charcoal)] backdrop-blur-sm ${
             showLabel ? "top-8" : "top-2"
           }`}
         >
-          Variant
+          {versionIndex === 0 ? "Original" : `Version ${versionIndex + 1}`} · {versionCount}
         </span>
       )}
       {asset.title?.trim() && title === asset.title.trim() && (
@@ -245,6 +282,15 @@ const AssetTile = memo(function AssetTile({
       {!selectionMode && (
         <div className="flex items-center justify-between gap-1 bg-white px-1.5 py-1.5">
           <div className="flex min-w-0 items-center">
+            {versionCount > 1 ? (
+              <button
+                type="button"
+                onClick={() => onCompare(asset)}
+                className="flex min-h-11 items-center px-2 text-[9px] uppercase tracking-[0.11em] text-[#4F5052] hover:text-[#0D0E10]"
+              >
+                Compare
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => onDownload(asset)}
@@ -299,6 +345,7 @@ export function GalleryView({
   const [selectionMode, setSelectionMode] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [previewVideo, setPreviewVideo] = useState<AppV3GalleryAsset | null>(null)
+  const [compareAsset, setCompareAsset] = useState<AppV3GalleryAsset | null>(null)
   const [busy, setBusy] = useState(false)
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null)
   const [visibleAssetCount, setVisibleAssetCount] = useState(GALLERY_PAGE_SIZE)
@@ -310,8 +357,15 @@ export function GalleryView({
     previewVideo !== null,
     () => setPreviewVideo(null),
   )
+  const { dialogRef: compareDialogRef, initialFocusRef: closeCompareRef } = useAccessibleModal(
+    compareAsset !== null,
+    () => setCompareAsset(null),
+  )
 
-  const filteredAssets = useMemo(() => filterAssets(assets ?? [], filter), [assets, filter])
+  const filteredAssets = useMemo(
+    () => groupGalleryVersions(filterAssets(assets ?? [], filter)),
+    [assets, filter]
+  )
   const displayedAssets = useMemo(
     () => filteredAssets.slice(0, visibleAssetCount),
     [filteredAssets, visibleAssetCount],
@@ -321,6 +375,23 @@ export function GalleryView({
     [displayedAssets]
   )
   const lightboxImages = useMemo(() => displayedImages.map(asset => asset.url), [displayedImages])
+  const comparison = useMemo(() => {
+    if (!compareAsset || !assets) return null
+    const byId = new Map(assets.map(asset => [asset.id, asset]))
+    const rootId = compareAsset.variantOf && byId.has(compareAsset.variantOf)
+      ? compareAsset.variantOf
+      : compareAsset.id
+    const original = byId.get(rootId) ?? compareAsset
+    const versions = groupGalleryVersions(
+      assets.filter(asset => asset.id === rootId || asset.variantOf === rootId)
+    )
+    const selected = compareAsset.id === rootId
+      ? [...versions].reverse().find(asset => asset.id !== rootId) ?? null
+      : compareAsset
+    if (!selected) return null
+    const versionIndex = versions.findIndex(asset => asset.id === selected.id)
+    return { original, selected, versionLabel: `Version ${Math.max(2, versionIndex + 1)} of ${versions.length}` }
+  }, [assets, compareAsset])
 
   const loadGallery = useCallback(() => {
     setError(null)
@@ -578,20 +649,28 @@ export function GalleryView({
       {displayedAssets.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {displayedAssets.map((asset, i) => (
-            <AssetTile
-              key={asset.id}
-              asset={asset}
-              index={i}
-              selected={selectedIds.has(asset.id)}
-              selectionMode={selectionMode}
-              showLabel={filter === "all"}
-              onOpen={openAsset}
-              onToggleSelect={toggleSelected}
-              onFavorite={toggleFavorite}
-              onDelete={asset => setPendingDeleteIds([asset.id])}
-              onDownload={downloadAsset}
-              onMakeMotion={onMakeMotion}
-            />
+            (() => {
+              const version = versionMeta(asset, filteredAssets)
+              return (
+                <AssetTile
+                  key={asset.id}
+                  asset={asset}
+                  index={i}
+                  selected={selectedIds.has(asset.id)}
+                  selectionMode={selectionMode}
+                  showLabel={filter === "all"}
+                  versionIndex={version.index}
+                  versionCount={version.count}
+                  onOpen={openAsset}
+                  onToggleSelect={toggleSelected}
+                  onFavorite={toggleFavorite}
+                  onDelete={asset => setPendingDeleteIds([asset.id])}
+                  onDownload={downloadAsset}
+                  onMakeMotion={onMakeMotion}
+                  onCompare={setCompareAsset}
+                />
+              )
+            })()
           ))}
         </div>
       )}
@@ -615,6 +694,31 @@ export function GalleryView({
           onClose={() => setLightboxIndex(null)}
         />
       )}
+
+      {compareAsset && comparison ? (
+        <div className="fixed inset-0 z-[72] flex items-end justify-center bg-[#0D0E10]/80 p-0 backdrop-blur-sm sm:items-center sm:p-5">
+          <div ref={compareDialogRef} role="dialog" aria-modal="true" aria-labelledby="compare-versions-title" className="max-h-[94dvh] w-full max-w-5xl overflow-y-auto rounded-t-[16px] bg-[#F8FAFA] p-4 shadow-2xl sm:rounded-[10px] sm:p-6">
+            <header className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.24em] text-[#6D6E70]">Version history</p>
+                <h2 id="compare-versions-title" className="mt-1 font-serif text-[30px] font-light text-[#0D0E10]">Compare versions.</h2>
+                <p className="mt-1 text-[12px] leading-relaxed text-[#4F5052]">The original stays untouched. Edits and text versions are saved separately.</p>
+              </div>
+              <button ref={closeCompareRef} type="button" onClick={() => setCompareAsset(null)} aria-label="Close version comparison" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#4F5052] hover:bg-white"><X size={18} aria-hidden /></button>
+            </header>
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-5">
+              {[{ asset: comparison.original, label: "Original" }, { asset: comparison.selected, label: comparison.versionLabel }].map(item => (
+                <figure key={`${item.label}:${item.asset.id}`} className="min-w-0">
+                  <div className="relative aspect-[4/5] overflow-hidden rounded-[7px] bg-[#C5C6C8]/30">
+                    <Image src={item.asset.url} alt={item.label} fill sizes="(max-width: 640px) 48vw, 440px" className="object-cover" />
+                  </div>
+                  <figcaption className="mt-2 text-[10px] uppercase tracking-[0.18em] text-[#4F5052]">{item.label}</figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {previewVideo && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4">

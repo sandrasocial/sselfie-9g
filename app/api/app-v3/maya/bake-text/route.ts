@@ -100,6 +100,8 @@ export async function POST(request: NextRequest) {
       conceptTitle?: string
       spec?: unknown
       styleAdjustments?: unknown
+      feedId?: number
+      postId?: number
     } | null
     // ALWAYS bake from the clean text-free base. The client never sends a baked result here.
     if (!body || !isAllowedImageUrl(body.cleanImageUrl)) {
@@ -110,7 +112,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "A valid text design is required" }, { status: 400 })
     }
     const cleanImageUrl = body.cleanImageUrl
-    const cleanImageId =
+    let cleanImageId =
       typeof body.cleanImageId === "number" &&
       Number.isInteger(body.cleanImageId) &&
       body.cleanImageId > 0
@@ -129,12 +131,55 @@ export async function POST(request: NextRequest) {
     if (!neonUser)
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })
 
-    // Members and active trials only (same lock as generate/edit).
+    // Calendar reuses this exact bake pipeline too. Verify the selected post belongs to the
+    // authenticated member and still points at the clean image supplied by the client. This
+    // gives paid Blueprint owners the same additive text action without changing Calendar's
+    // proven image prompt, engine, or generation route.
+    const feedId =
+      typeof body.feedId === "number" && Number.isInteger(body.feedId) && body.feedId > 0
+        ? body.feedId
+        : null
+    const postId =
+      typeof body.postId === "number" && Number.isInteger(body.postId) && body.postId > 0
+        ? body.postId
+        : null
+    let calendarPostAuthorized = false
+    if (feedId && postId) {
+      const rows = await sql`
+        SELECT fp.ai_image_id
+        FROM feed_posts fp
+        INNER JOIN feed_layouts fl ON fl.id = fp.feed_layout_id
+        WHERE fp.id = ${postId}
+          AND fp.feed_layout_id = ${feedId}
+          AND fp.user_id = ${neonUser.id}
+          AND fl.user_id = ${neonUser.id}
+          AND fp.image_url = ${cleanImageUrl}
+        LIMIT 1
+      `
+      const calendarPost = rows[0] as { ai_image_id?: unknown } | undefined
+      calendarPostAuthorized = Boolean(calendarPost)
+      if (
+        cleanImageId === null &&
+        typeof calendarPost?.ai_image_id === "number" &&
+        Number.isInteger(calendarPost.ai_image_id)
+      ) {
+        cleanImageId = calendarPost.ai_image_id
+      }
+    }
+
+    // Members and active trials use the Suite gate. Calendar owners may instead use their
+    // existing Feed Planner generation entitlement; credits are still checked and deducted.
     {
       const { isAdminEmail } = await import("@/lib/admin-feature-flags")
       if (!isAdminEmail(user.email)) {
         const { canGenerate } = await import("@/lib/trial/suite-trial")
-        if (!(await canGenerate(String(neonUser.id)))) {
+        const suiteCanGenerate = await canGenerate(String(neonUser.id))
+        let calendarCanGenerate = false
+        if (!suiteCanGenerate && calendarPostAuthorized) {
+          const { getFeedPlannerAccess } = await import("@/lib/feed-planner/access-control")
+          calendarCanGenerate = (await getFeedPlannerAccess(String(neonUser.id))).canGenerateImages
+        }
+        if (!suiteCanGenerate && !calendarCanGenerate) {
           return NextResponse.json(
             {
               error: "Photo-making is paused. Join the SUITE to keep creating.",

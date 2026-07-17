@@ -71,6 +71,7 @@ export function ConciergeProvider({
           outputFormat: opts?.format ?? null,
           referenceSelfieUrl: opts?.referenceSelfieUrl ?? null,
           videoSourceUrl: opts?.videoSourceUrl ?? null,
+          inspirationImageUrl: opts?.inspirationImageUrl ?? null,
           graphicText: null,
           seedPrompt: opts?.seed ?? null,
           creationIntent:
@@ -101,6 +102,10 @@ export function ConciergeProvider({
             : prev.referenceSelfieUrl,
         videoSourceUrl:
           opts?.videoSourceUrl !== undefined ? opts.videoSourceUrl : prev.videoSourceUrl,
+        inspirationImageUrl:
+          opts?.inspirationImageUrl !== undefined
+            ? opts.inspirationImageUrl
+            : prev.inspirationImageUrl,
         seedPrompt: opts?.seed ?? prev.seedPrompt,
         creationIntent: opts?.creationIntent ?? prev.creationIntent,
         shotDirector: opts?.shotDirector ?? prev.shotDirector,
@@ -141,6 +146,7 @@ export function ConciergeProvider({
             creationIntent: null,
             shotDirector: null,
             generationSource: null,
+            inspirationImageUrl: null,
             initialSetupAction: null,
             creationIdea: null,
             startedAt: Date.now(),
@@ -163,6 +169,7 @@ export function ConciergeProvider({
             outputFormat: null,
             referenceSelfieUrl: null,
             videoSourceUrl: null,
+            inspirationImageUrl: null,
             graphicText: null,
             seedPrompt: null,
             creationIntent: null,
@@ -194,6 +201,7 @@ export function ConciergeProvider({
         outputFormat: null,
         referenceSelfieUrl: null,
         videoSourceUrl: null,
+        inspirationImageUrl: null,
         graphicText: null,
         seedPrompt: "Help me choose what to make today.",
         creationIntent: { format: null, source: "manual", confidence: "needs_clarify" },
@@ -220,6 +228,7 @@ export function ConciergeProvider({
           outputFormat: null,
           referenceSelfieUrl: null,
           videoSourceUrl: null,
+          inspirationImageUrl: null,
           graphicText: null,
           seedPrompt: null,
           creationIntent: null,

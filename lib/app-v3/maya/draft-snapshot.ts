@@ -67,6 +67,7 @@ export type ServerConciergeSessionSnapshot = {
   outputFormat: ServerOutputFormat | null
   referenceSelfieUrl: string | null
   videoSourceUrl: string | null
+  inspirationImageUrl?: string | null
   graphicText: unknown | null
   seedPrompt?: string | null
   creationIntent?: ServerCreationIntentSnapshot | null
@@ -94,6 +95,12 @@ export type ServerConceptGenState = {
   videoAssetId?: string | null
   error?: string
   previewUrl?: string
+  pendingRequest?: {
+    clientRequestId: string
+    startedAt: number
+    format: ServerOutputFormat
+    expectedCount: number
+  }
 }
 
 export type ServerMayaDraftSnapshot = {
@@ -288,6 +295,8 @@ function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null 
     referenceSelfieUrl:
       typeof session.referenceSelfieUrl === "string" ? session.referenceSelfieUrl : null,
     videoSourceUrl: typeof session.videoSourceUrl === "string" ? session.videoSourceUrl : null,
+    inspirationImageUrl:
+      typeof session.inspirationImageUrl === "string" ? session.inspirationImageUrl : null,
     graphicText:
       session.graphicText && typeof session.graphicText === "object" ? session.graphicText : null,
     seedPrompt: typeof session.seedPrompt === "string" ? session.seedPrompt : null,
@@ -361,11 +370,34 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
         ...(aiImageId != null ? { aiImageId } : {}),
         ...(aiImageIds?.some(id => id != null) ? { aiImageIds } : {}),
       }
-    } else if (
-      state.status === "idle" ||
-      state.status === "generating" ||
-      state.status === "error"
-    ) {
+    } else if (state.status === "generating" && state.pendingRequest && typeof state.pendingRequest === "object") {
+      const pending = state.pendingRequest as Record<string, unknown>
+      const pendingFormat = VALID_FORMATS.includes(pending.format as ServerOutputFormat)
+        ? (pending.format as ServerOutputFormat)
+        : null
+      if (
+        typeof pending.clientRequestId === "string" &&
+        pending.clientRequestId.length > 0 &&
+        typeof pending.startedAt === "number" &&
+        Date.now() - pending.startedAt < 1000 * 60 * 60 * 6 &&
+        pendingFormat
+      ) {
+        out[key] = {
+          status: "generating",
+          pendingRequest: {
+            clientRequestId: pending.clientRequestId.slice(0, 120),
+            startedAt: pending.startedAt,
+            format: pendingFormat,
+            expectedCount:
+              typeof pending.expectedCount === "number" && Number.isInteger(pending.expectedCount)
+                ? Math.max(1, Math.min(9, pending.expectedCount))
+                : 1,
+          },
+        }
+      } else {
+        out[key] = { status: "idle" }
+      }
+    } else if (state.status === "idle" || state.status === "generating" || state.status === "error") {
       out[key] = { status: "idle" }
     }
   }

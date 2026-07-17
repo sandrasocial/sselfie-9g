@@ -88,6 +88,7 @@ export function EditMode({
   const [instruction, setInstruction] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [likenessMessage, setLikenessMessage] = useState<string | null>(null)
   const [likenessOffer, setLikenessOffer] = useState<string | null>(null)
   const [savingLikeness, setSavingLikeness] = useState(false)
@@ -133,6 +134,7 @@ export function EditMode({
     if (!change || busy) return
     setBusy(true)
     setError(null)
+    setSaveMessage(null)
     try {
       const res = await fetch("/api/app-v3/maya/edit", {
         method: "POST",
@@ -167,6 +169,7 @@ export function EditMode({
       if (!res.ok || !data?.imageUrl) throw new Error(data?.error || "Couldn't make that change.")
       setCurrent(data.imageUrl)
       setInstruction("")
+      setSaveMessage("Saved to your Gallery as a new version.")
       if (data.likenessMemory?.status === "captured") {
         setLikenessMessage(data.likenessMemory.acknowledgement)
         setLikenessOffer(null)
@@ -185,6 +188,16 @@ export function EditMode({
       setBusy(false)
     }
   }
+
+  function revertToOriginal() {
+    if (busy || current === imageUrl) return
+    setCurrent(imageUrl)
+    setError(null)
+    setSaveMessage("Original restored here. Your edited versions are still safe in Gallery.")
+    onResult(imageUrl, sourceImageId ?? null)
+  }
+
+  const hasEditedVersion = current !== imageUrl
 
   return (
     <div
@@ -205,21 +218,28 @@ export function EditMode({
           disabled={busy}
           className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-white/80 hover:text-white"
         >
-          Done
+          Save &amp; return
         </button>
       </header>
 
       {/* Split region: min-h-0 on the flex children is what keeps the controls on screen. */}
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {/* Image */}
-        <div className="relative flex min-h-0 flex-1 items-center justify-center p-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={current}
-            alt="Editing"
-            decoding="async"
-            className="max-h-full max-w-full rounded-[6px] object-contain"
-          />
+        <div className="relative flex min-h-0 flex-1 items-center justify-center p-3 sm:p-4">
+          <div className={`grid max-h-full w-full max-w-4xl items-center gap-3 ${hasEditedVersion ? "grid-cols-2" : "grid-cols-1"}`}>
+            {hasEditedVersion ? (
+              <figure className="min-w-0 text-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageUrl} alt="Original version" decoding="async" className="mx-auto max-h-[55dvh] max-w-full rounded-[6px] object-contain md:max-h-[76dvh]" />
+                <figcaption className="mt-2 text-[9px] uppercase tracking-[0.2em] text-white/60">Original</figcaption>
+              </figure>
+            ) : null}
+            <figure className="min-w-0 text-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={current} alt={hasEditedVersion ? "Edited version" : "Editing"} decoding="async" className="mx-auto max-h-[55dvh] max-w-full rounded-[6px] object-contain md:max-h-[76dvh]" />
+              {hasEditedVersion ? <figcaption className="mt-2 text-[9px] uppercase tracking-[0.2em] text-white/80">Edited</figcaption> : null}
+            </figure>
+          </div>
           {busy && (
             <div
               role="status"
@@ -240,6 +260,21 @@ export function EditMode({
               {error}
             </p>
           )}
+
+          {saveMessage ? (
+            <p role="status" className="rounded-[4px] border border-white/20 bg-white/10 px-3 py-2.5 text-[12px] leading-relaxed text-white/90">
+              {saveMessage}
+            </p>
+          ) : null}
+
+          {hasEditedVersion ? (
+            <div className="rounded-[4px] border border-white/20 bg-white/5 px-3 py-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/50">Original / Edited comparison</p>
+              <button type="button" onClick={revertToOriginal} disabled={busy} className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-white underline underline-offset-4 disabled:opacity-40">
+                Revert to original
+              </button>
+            </div>
+          ) : null}
 
           {likenessMessage && (
             <div className="rounded-[4px] border border-white/20 bg-white/10 px-3 py-2.5">

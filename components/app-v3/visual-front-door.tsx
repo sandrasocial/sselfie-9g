@@ -1,15 +1,24 @@
 "use client"
 
-// SSELFIE Studio 3.0 - Create front door.
-// Creation decisions live inside Maya. This page is only the calm starting surface:
-// type an intention, tap a starter, or ask Maya to open the selfie manager.
-
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
+import {
+  ArrowUpRight,
+  Heart,
+  History,
+  Images,
+  Lightbulb,
+  Plus,
+  Sparkles,
+  UserRound,
+} from "lucide-react"
+
 import { AESTHETICS, MAYA_DECIDES_AESTHETIC } from "./aesthetics"
 import { useConcierge } from "./concierge-context"
+import { useIdentityReferences } from "./use-identity-references"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { detectCreationIntent, intentForFormat } from "@/lib/app-v3/maya/intent-router"
+import type { AppV3GalleryAsset } from "@/lib/app-v3/gallery-assets"
 import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
 
 interface MayaRecommendation {
@@ -37,12 +46,6 @@ const MAYA_GENERAL: Aesthetic = {
     "A general SSELFIE editorial brand session. Help her decide the look from her brand, then create.",
 }
 
-// Sandra-approved arrival copy, 2026-07-15.
-const MAYA_ARRIVAL_COPY = {
-  vaultPicker: "Pick from your Vault instead",
-  preSelfieChat: "Have a question first? Ask Maya",
-} as const
-
 const FORMAT_LABEL: Record<OutputFormat, string> = {
   photo: "Photo",
   photoshoot: "Full shoot",
@@ -65,34 +68,6 @@ function isOutputFormat(value: unknown): value is OutputFormat {
   )
 }
 
-const STARTER_CHIPS: { format: OutputFormat; label: string; prompt: string }[] = [
-  {
-    format: "photo",
-    label: "Make my first photo",
-    prompt: "I want to make my first photo from one selfie.",
-  },
-  {
-    format: "photoshoot",
-    label: "Create a full shoot",
-    prompt: "I want to create a full shoot in one style.",
-  },
-  {
-    format: "reel-cover",
-    label: "Make a reel cover",
-    prompt: "I want to make a Reel cover.",
-  },
-  {
-    format: "carousel",
-    label: "Turn an idea into a carousel",
-    prompt: "I want to turn an idea into a carousel.",
-  },
-  {
-    format: "story-sequence",
-    label: "Make stories",
-    prompt: "I want to make a story sequence.",
-  },
-]
-
 const FIRST_RUN_SEEN_KEY = "sselfie_app_v3_first_run_seen"
 
 function readFirstRunSeen() {
@@ -105,21 +80,21 @@ function markFirstRunSeen() {
   window.localStorage.setItem(FIRST_RUN_SEEN_KEY, "true")
 }
 
-const CARD_COPY = {
-  eyebrow: "Recommended",
-  title: "Start with one selfie.",
-  body: "Maya keeps your real face and turns it into one brand photo you can use today.",
-  action: "Add one selfie",
+function imageAsset(asset: unknown): asset is AppV3GalleryAsset {
+  if (!asset || typeof asset !== "object") return false
+  const item = asset as AppV3GalleryAsset
+  return item.kind === "image" && typeof item.url === "string" && item.url.startsWith("http")
 }
 
-function LookbookAction({
+function VisualCard({
   image,
   eyebrow,
   title,
   body,
   action,
   onClick,
-  tall = false,
+  priority = false,
+  compact = false,
 }: {
   image: string
   eyebrow: string
@@ -127,35 +102,40 @@ function LookbookAction({
   body: string
   action: string
   onClick: () => void
-  tall?: boolean
+  priority?: boolean
+  compact?: boolean
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group relative block min-h-[260px] w-full overflow-hidden rounded-[8px] bg-[color:var(--ss-night)] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] ${
-        tall ? "sm:min-h-[430px]" : "sm:min-h-full"
+      className={`group relative block w-full overflow-hidden rounded-[10px] bg-[color:var(--ss-night)] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2 ${
+        compact ? "min-h-[300px]" : "min-h-[430px] sm:min-h-[520px]"
       }`}
     >
-      {image && (
+      {image ? (
         <Image
           src={image}
           alt=""
           fill
-          sizes="(max-width: 1024px) 100vw, 50vw"
-          className="object-cover object-[center_24%] opacity-90 transition-transform duration-700 ease-out group-hover:scale-[1.025]"
-          priority
+          priority={priority}
+          sizes={compact ? "(max-width: 720px) 88vw, 28vw" : "(max-width: 1024px) 100vw, 54vw"}
+          className="object-cover object-center opacity-95 transition-transform duration-700 ease-out group-hover:scale-[1.025]"
         />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--ss-night)]/85 via-[color:var(--ss-night)]/25 to-transparent" />
+      ) : null}
+      <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--ss-night)]/90 via-[color:var(--ss-night)]/20 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
-        <p className="text-[10px] uppercase tracking-[0.28em] text-white/75">{eyebrow}</p>
-        <p className="mt-2 font-serif text-[30px] font-light leading-[1.04] text-white sm:text-[40px]">
+        <p className="text-[10px] uppercase tracking-[0.26em] text-white/75">{eyebrow}</p>
+        <h3
+          className={`mt-2 font-serif font-light leading-[1.04] text-white ${
+            compact ? "text-[29px]" : "text-[34px] sm:text-[46px]"
+          }`}
+        >
           {title}
-        </p>
-        <p className="mt-2 max-w-sm text-[13px] leading-relaxed text-white/82">{body}</p>
-        <span className="mt-4 inline-flex min-h-10 items-center rounded-[4px] bg-white px-4 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-night)] transition-colors group-hover:bg-[color:var(--ss-seasalt)]">
-          {action}
+        </h3>
+        <p className="mt-2 max-w-lg text-[13px] leading-relaxed text-white/82">{body}</p>
+        <span className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-[5px] bg-white px-4 text-[10px] uppercase tracking-[0.17em] text-[color:var(--ss-night)]">
+          {action} <ArrowUpRight size={14} aria-hidden />
         </span>
       </div>
     </button>
@@ -163,57 +143,76 @@ function LookbookAction({
 }
 
 export function VisualFrontDoor({
+  firstName,
   showTrialFirstRunStep = false,
   cohort = "member",
-  hasSelfie = false,
+  hasSelfie: initialHasSelfie = false,
   hasVaultAccess = false,
   preSelfieChatEnabled = false,
-  videoEnabled = true,
+  videoEnabled: _videoEnabled = true,
 }: {
+  firstName?: string | null
   showTrialFirstRunStep?: boolean
   cohort?: AppV3AnalyticsCohort
   hasSelfie?: boolean
   hasVaultAccess?: boolean
   preSelfieChatEnabled?: boolean
-  /** VIDEO reliability kill switch: false removes the Video starter tile. */
   videoEnabled?: boolean
 } = {}) {
-  const { openWithAesthetic } = useConcierge()
+  const { openFresh, openHistory, openWithAesthetic } = useConcierge()
+  const { hasSelfie, primarySelfieUrl, referenceCount } =
+    useIdentityReferences(initialHasSelfie)
   const homeTrackedRef = useRef(false)
   const firstRunTrackedRef = useRef(false)
+  const forYouRef = useRef<HTMLElement>(null)
+  const savedRef = useRef<HTMLElement>(null)
+  const recentRef = useRef<HTMLElement>(null)
   const [aesthetics, setAesthetics] = useState<Aesthetic[]>(AESTHETICS)
   const [weeklyLook, setWeeklyLook] = useState<{ aestheticId: string; name: string } | null>(null)
   const [recommendations, setRecommendations] = useState<MayaRecommendation[]>([])
-  const [recommendationStatus, setRecommendationStatus] = useState<
-    "idle" | "loading" | "ready" | "error"
-  >("idle")
+  const [recommendationStatus, setRecommendationStatus] = useState<"idle" | "loading" | "ready" | "error">("idle")
   const [recommendationReload, setRecommendationReload] = useState(0)
+  const [gallery, setGallery] = useState<AppV3GalleryAsset[]>([])
   const [firstRunAlreadySeen] = useState(readFirstRunSeen)
   const [startText, setStartText] = useState("")
 
-  const shouldShowTrialFirstRun = showTrialFirstRunStep && !hasSelfie && !firstRunAlreadySeen
+  const shouldShowTrialFirstRun =
+    showTrialFirstRunStep && !hasSelfie && !firstRunAlreadySeen
   const fallbackImage = aesthetics[0]?.coverImage || AESTHETICS[0]?.coverImage || ""
-  const selfieImage = aesthetics[1]?.coverImage || fallbackImage
   const recommendation = recommendations[0] ?? FALLBACK_RECOMMENDATION
   const recommendationImage = recommendation.imageUrl || fallbackImage
+  const alternateWorlds = useMemo(
+    () => aesthetics.filter(item => item.coverImage && item.id !== "maya-general").slice(0, 2),
+    [aesthetics]
+  )
+  const savedLooks = gallery.filter(asset => asset.isFavorite).slice(0, 4)
+  const recentShoots = gallery.slice(0, 5)
 
   useEffect(() => {
     let alive = true
-    fetch("/api/app-v3/aesthetics")
-      .then(response => (response.ok ? response.json() : null))
-      .then(data => {
-        if (!alive || !Array.isArray(data?.aesthetics) || data.aesthetics.length === 0) return
-        setAesthetics(data.aesthetics)
-        // The same rotating look the Monday email announces - surfaced as ONE starter chip
-        // (a tap into Maya), never a vault grid on Create (single-owner contract).
-        if (data.weeklyLook?.aestheticId && typeof data.weeklyLook.name === "string") {
+    Promise.allSettled([
+      fetch("/api/app-v3/aesthetics").then(response => (response.ok ? response.json() : null)),
+      fetch("/api/app-v3/gallery", { cache: "no-store" }).then(response =>
+        response.ok ? response.json() : null
+      ),
+    ]).then(([aestheticResult, galleryResult]) => {
+      if (!alive) return
+      if (aestheticResult.status === "fulfilled" && Array.isArray(aestheticResult.value?.aesthetics)) {
+        setAesthetics(aestheticResult.value.aesthetics)
+        if (
+          aestheticResult.value.weeklyLook?.aestheticId &&
+          typeof aestheticResult.value.weeklyLook.name === "string"
+        ) {
           setWeeklyLook({
-            aestheticId: String(data.weeklyLook.aestheticId),
-            name: data.weeklyLook.name,
+            aestheticId: String(aestheticResult.value.weeklyLook.aestheticId),
+            name: aestheticResult.value.weeklyLook.name,
           })
         }
-      })
-      .catch(() => {})
+      }
+      if (galleryResult.status === "fulfilled" && Array.isArray(galleryResult.value?.assets)) {
+        setGallery(galleryResult.value.assets.filter(imageAsset))
+      }
+    })
     return () => {
       alive = false
     }
@@ -224,7 +223,6 @@ export function VisualFrontDoor({
       setRecommendationStatus("idle")
       return
     }
-
     let alive = true
     setRecommendationStatus("loading")
     fetch("/api/app-v3/maya/recommendations")
@@ -247,16 +245,14 @@ export function VisualFrontDoor({
               })
               .slice(0, 1)
           : []
-
         setRecommendations(next)
-        setRecommendationStatus(next.length > 0 ? "ready" : "error")
+        setRecommendationStatus(next.length ? "ready" : "error")
       })
       .catch(() => {
         if (!alive) return
         setRecommendations([])
         setRecommendationStatus("error")
       })
-
     return () => {
       alive = false
     }
@@ -280,26 +276,49 @@ export function VisualFrontDoor({
         properties: { cohort, source: "front_door", action },
       })
     }
-    void trackAnalyticsEvent({
-      event: "first_action_selected",
-      properties: { cohort, action },
+    void trackAnalyticsEvent({ event: "first_action_selected", properties: { cohort, action } })
+  }
+
+  function openSelfieManagerInMaya(source = "my_selfies") {
+    trackFirstAction(source)
+    openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
+      format: "photo",
+      creationIdea: "Create one strong brand photo I can use today.",
+      creationIntent: intentForFormat("photo", "starter_chip"),
+      initialSetupAction: "selfie_manager",
+      referenceSelfieUrl: primarySelfieUrl,
     })
   }
 
-  function trackInlineStart(action: string, format: OutputFormat | null, confidence: string) {
-    void trackAnalyticsEvent({
-      event: "suite_maya_inline_started",
-      properties: { cohort, action, format, confidence },
+  function openRecommendation() {
+    const intent = intentForFormat(recommendation.format, "content_card")
+    trackFirstAction("maya_recommendation")
+    openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
+      format: recommendation.format,
+      seed: `Let's create this: ${recommendation.title}. ${recommendation.rationale}`,
+      creationIdea: `${recommendation.title}. ${recommendation.rationale}`,
+      creationIntent: intent,
+      referenceSelfieUrl: primarySelfieUrl,
     })
-    void trackAnalyticsEvent({
-      event: "suite_intent_detected",
-      properties: {
-        cohort,
-        action,
-        intent_label: format ?? "needs_clarify",
-        format,
-        confidence,
-      },
+  }
+
+  function openWorld(aesthetic: Aesthetic) {
+    trackFirstAction(`visual_world_${aesthetic.id}`)
+    openWithAesthetic(aesthetic, {
+      format: "photo",
+      creationIntent: intentForFormat("photo", "vault_shot"),
+      referenceSelfieUrl: primarySelfieUrl,
+    })
+  }
+
+  function openWeeklyLook() {
+    if (!weeklyLook) return
+    const matched = aesthetics.find(aesthetic => aesthetic.id === weeklyLook.aestheticId)
+    if (!matched) return
+    trackFirstAction("weekly_look_chip")
+    openWithAesthetic(matched, {
+      creationIntent: { format: null, source: "manual", confidence: "needs_clarify" },
+      referenceSelfieUrl: primarySelfieUrl,
     })
   }
 
@@ -308,284 +327,254 @@ export function VisualFrontDoor({
     const seed = text || "I know I want to create something, but I need Maya to help me choose."
     const intent = detectCreationIntent(seed, "typed")
     trackFirstAction("maya_text_start")
-    trackInlineStart("typed_start", intent.format, intent.confidence)
     openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
       format: intent.format ?? undefined,
       seed,
       creationIdea: seed,
       creationIntent: intent,
+      referenceSelfieUrl: primarySelfieUrl,
     })
   }
 
-  function openStarterChip(item: (typeof STARTER_CHIPS)[number]) {
-    const intent = intentForFormat(item.format, "starter_chip")
-    trackFirstAction(`starter_${item.format}`)
-    trackInlineStart("starter_chip", intent.format, intent.confidence)
-    openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
-      format: item.format,
-      seed: item.prompt,
-      creationIdea: item.prompt,
-      creationIntent: intent,
-    })
-  }
-
-  function openRecommendation() {
-    const intent = intentForFormat(recommendation.format, "content_card")
-    const seed = `Let's create this: ${recommendation.title}. ${recommendation.rationale}`
-    trackFirstAction("maya_recommendation")
-    trackInlineStart("maya_recommendation", intent.format, intent.confidence)
-    openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
-      format: recommendation.format,
-      seed,
-      creationIdea: `${recommendation.title}. ${recommendation.rationale}`,
-      creationIntent: intent,
-    })
-  }
-
-  function openWeeklyLook() {
-    if (!weeklyLook) return
-    const matched = aesthetics.find(a => a.id === weeklyLook.aestheticId)
-    if (!matched) return
-    trackFirstAction("weekly_look_chip")
-    trackInlineStart("weekly_look_chip", null, "needs_clarify")
-    // Single-owner contract: the chip only opens Maya with the look preloaded. Format is
-    // still Maya's one next question - no fabricated seed, no preset format.
-    openWithAesthetic(matched, {
-      creationIntent: { format: null, source: "manual", confidence: "needs_clarify" },
-    })
-  }
-
-  function openSelfieManagerInMaya() {
-    const intent = intentForFormat("photo", "starter_chip")
-    trackFirstAction("add_selfie")
-    trackInlineStart("selfie_manager", intent.format, intent.confidence)
-    // The card already promises a first photo, so that decision is complete. Maya owns the
-    // visual direction and the member only supplies her identity. The creation idea stays as
-    // structured context; it is never replayed as a sentence the member did not type.
-    openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
-      format: "photo",
-      creationIdea: "Create one strong brand photo I can use today.",
-      creationIntent: intent,
-      initialSetupAction: "selfie_manager",
-    })
-  }
-
-  function openVaultPicker() {
-    const intent = intentForFormat("photo", "manual")
-    trackFirstAction("vault_picker")
-    trackInlineStart("vault_picker", intent.format, intent.confidence)
-    // This is the existing maya-general path. It opens the inline Vault picker without
-    // changing the default maya-decides recommendation or the guided first-selfie flow.
+  function continueFromAsset(asset: AppV3GalleryAsset) {
+    trackFirstAction("continue_recent_shoot")
     openWithAesthetic(MAYA_GENERAL, {
       format: "photo",
-      creationIntent: intent,
+      seed: "Continue this visual direction with a fresh photo that belongs to the same shoot.",
+      creationIdea: "Continue this shoot.",
+      creationIntent: intentForFormat("photo", "gallery_action"),
+      referenceSelfieUrl: primarySelfieUrl,
+      inspirationImageUrl: asset.url,
     })
   }
 
-  function openPreSelfieChat() {
-    trackFirstAction("pre_selfie_chat")
-    trackInlineStart("pre_selfie_chat", null, "needs_clarify")
-    openWithAesthetic(MAYA_GENERAL, {
-      creationIntent: { format: null, source: "manual", confidence: "needs_clarify" },
-      initialSetupAction: "plain_chat",
-    })
+  const quickActions = [
+    { label: "My selfies", icon: UserRound, action: () => openSelfieManagerInMaya() },
+    { label: "For you", icon: Sparkles, action: () => forYouRef.current?.scrollIntoView({ behavior: "smooth" }) },
+    { label: "Saved looks", icon: Heart, action: () => savedRef.current?.scrollIntoView({ behavior: "smooth" }) },
+    { label: "Inspiration", icon: Lightbulb, action: () => openSelfieManagerInMaya("inspiration") },
+    { label: "Recent shoots", icon: History, action: () => recentRef.current?.scrollIntoView({ behavior: "smooth" }) },
+    { label: "New", icon: Plus, action: openFresh },
+  ]
+
+  if (!hasSelfie) {
+    return (
+      <section className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-8 sm:py-14">
+        <header className="mb-7 max-w-xl sm:mb-10">
+          <p className="text-[10px] uppercase tracking-[0.34em] text-[color:var(--ss-gray)]">
+            Your world
+          </p>
+          <h1 className="mt-3 font-serif text-[34px] font-light leading-[1.03] text-[color:var(--ss-night)] sm:text-[50px]">
+            {shouldShowTrialFirstRun
+              ? "Hi, I'm Maya. Let's make your first photo."
+              : "Your first brand photo starts here."}
+          </h1>
+          <p className="mt-3 text-[15px] leading-relaxed text-[color:var(--ss-davy)]">
+            Add one clear selfie. Maya keeps your real face, chooses one strong direction, and guides the rest.
+          </p>
+        </header>
+        <VisualCard
+          image={fallbackImage}
+          eyebrow="SSELFIE SUITE"
+          title="Start with one clear selfie."
+          body="One photo is enough to begin. You can add more angles later if you want them."
+          action={shouldShowTrialFirstRun ? "Add my selfie" : "Add one selfie"}
+          onClick={() => openSelfieManagerInMaya("add_selfie")}
+          priority
+        />
+        {preSelfieChatEnabled ? (
+          <button
+            type="button"
+            onClick={() =>
+              openWithAesthetic(MAYA_GENERAL, {
+                creationIntent: { format: null, source: "manual", confidence: "needs_clarify" },
+                initialSetupAction: "plain_chat",
+              })
+            }
+            className="mx-auto mt-4 flex min-h-11 items-center px-3 text-[12px] text-[color:var(--ss-davy)] underline underline-offset-4"
+          >
+            Have a question first? Ask Maya
+          </button>
+        ) : null}
+      </section>
+    )
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-8 sm:py-16">
-      <header className="mb-7 sm:mb-10">
-        <p className="text-[10px] uppercase tracking-[0.34em] text-[color:var(--ss-gray)]">
-          SSELFIE Studio
-        </p>
-        <h1 className="mt-3 font-serif text-[32px] font-light leading-[1.05] text-[color:var(--ss-night)] sm:text-[46px]">
-          {hasSelfie ? "What needs to move forward today?" : "Your first brand photo starts here."}
-        </h1>
-        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[color:var(--ss-davy)]">
-          {hasSelfie
-            ? "Maya looks at what you are building and puts one useful next move in front of you."
-            : "Add one clear selfie. Maya keeps your real face, chooses one strong direction, and guides the rest."}
-        </p>
+    <section className="mx-auto w-full max-w-[1320px] px-4 py-7 sm:px-8 sm:py-12">
+      <header className="flex flex-col gap-5 border-b border-[color:var(--ss-silver)]/55 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.34em] text-[color:var(--ss-gray)]">
+            Your world
+          </p>
+          <h1 className="mt-2 font-serif text-[38px] font-light leading-none text-[color:var(--ss-night)] sm:text-[56px]">
+            {firstName ? `${firstName}, what are we making?` : "What are we making?"}
+          </h1>
+          <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-[color:var(--ss-davy)]">
+            Explore a direction, continue a shoot, or tell Maya what you need. Your identity stays with you across every path.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={openHistory}
+          className="inline-flex min-h-11 items-center gap-2 self-start rounded-[5px] border border-[color:var(--ss-silver)] bg-white px-4 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ss-night)] sm:self-auto"
+        >
+          <History size={15} aria-hidden /> Creative tasks
+        </button>
       </header>
 
-      {/* No selfie yet: the selfie upload is the ONLY action on screen - no competing text
-          box or chips to bypass it. Once a selfie is saved, the typed start leads (her power
-          path) and the selfie card becomes a secondary, always-available action. */}
-      {!hasSelfie ? (
-        <div className="mb-9">
-          <LookbookAction
-            image={selfieImage}
-            eyebrow={shouldShowTrialFirstRun ? "SSELFIE SUITE" : CARD_COPY.eyebrow}
-            title={
-              shouldShowTrialFirstRun
-                ? "Hi, I'm Maya. Let's make your first photo."
-                : CARD_COPY.title
-            }
-            body={
-              shouldShowTrialFirstRun
-                ? "Add one clear selfie and I'll keep your real face, then build the rest around you."
-                : CARD_COPY.body
-            }
-            action={shouldShowTrialFirstRun ? "Add my selfie" : CARD_COPY.action}
-            tall
-            onClick={openSelfieManagerInMaya}
-          />
-          {preSelfieChatEnabled && (
+      <nav aria-label="Create shortcuts" className="-mx-4 overflow-x-auto px-4 py-5 sm:-mx-8 sm:px-8">
+        <div className="flex min-w-max gap-2">
+          {quickActions.map(({ label, icon: Icon, action }) => (
             <button
+              key={label}
               type="button"
-              onClick={openPreSelfieChat}
-              className="mx-auto mt-4 flex min-h-11 items-center px-3 text-[12px] text-[color:var(--ss-davy)] underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]"
+              onClick={action}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[color:var(--ss-silver)]/70 bg-white px-4 text-[11px] text-[color:var(--ss-davy)] transition-colors hover:border-[color:var(--ss-night)] hover:text-[color:var(--ss-night)]"
             >
-              {MAYA_ARRIVAL_COPY.preSelfieChat}
+              <Icon size={14} strokeWidth={1.7} aria-hidden /> {label}
             </button>
-          )}
+          ))}
         </div>
-      ) : (
-        <div className="mb-9 space-y-5">
-          <section
-            aria-labelledby="maya-recommendation-heading"
-            className="overflow-hidden rounded-[10px] border border-[color:var(--ss-silver)]/60 bg-white"
-          >
-            <div className="grid min-h-[300px] grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.72fr)]">
-              <div className="flex min-w-0 flex-col p-5 sm:p-7">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ss-gray)]">
-                  Maya recommends today
-                </p>
-                <p
-                  aria-live="polite"
-                  className="mt-3 min-h-5 text-[12px] leading-relaxed text-[color:var(--ss-gray)]"
-                >
-                  {recommendationStatus === "loading"
-                    ? "Maya is reviewing your brand. You can start now if you are ready."
-                    : recommendationStatus === "error"
-                      ? "Maya could not personalize this just now. Her best starting point is ready below."
-                      : recommendation.imageReason || "One useful move for your brand today."}
-                </p>
-                <span className="mt-5 self-start rounded-full border border-[color:var(--ss-silver)]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] text-[color:var(--ss-gray)]">
-                  {FORMAT_LABEL[recommendation.format]}
-                </span>
-                <h2
-                  id="maya-recommendation-heading"
-                  className="mt-3 max-w-xl font-serif text-[30px] font-light leading-[1.04] text-[color:var(--ss-night)] sm:text-[40px]"
-                >
-                  {recommendation.title}
-                </h2>
-                <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-[color:var(--ss-davy)]">
-                  {recommendation.rationale}
-                </p>
-                <div className="mt-auto flex flex-wrap items-center gap-3 pt-6">
-                  <button
-                    type="button"
-                    onClick={openRecommendation}
-                    className="min-h-12 rounded-[5px] bg-[color:var(--ss-night)] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-white transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2"
-                  >
-                    Continue with Maya
-                  </button>
-                  {recommendationStatus === "error" && (
-                    <button
-                      type="button"
-                      onClick={() => setRecommendationReload(value => value + 1)}
-                      className="min-h-11 px-2 text-[12px] text-[color:var(--ss-davy)] underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]"
-                    >
-                      Try my personal suggestion again
-                    </button>
-                  )}
-                </div>
-              </div>
+      </nav>
 
-              {recommendationImage && (
-                <div className="relative min-h-[220px] overflow-hidden bg-[color:var(--ss-seasalt)] sm:min-h-full">
-                  <Image
-                    src={recommendationImage}
-                    alt=""
-                    fill
-                    sizes="(max-width: 640px) 100vw, 38vw"
-                    className="object-cover"
-                    priority
-                  />
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section className="rounded-[10px] border border-[color:var(--ss-silver)]/60 bg-white p-5 sm:p-7">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ss-gray)]">
-              Tell Maya what you need instead
-            </p>
-            <form
-              className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end"
-              onSubmit={event => {
-                event.preventDefault()
-                startFromText()
-              }}
-            >
-              <label className="block min-w-0 flex-1">
-                <span className="sr-only">What do you want to make today?</span>
-                <textarea
-                  value={startText}
-                  onChange={event => setStartText(event.target.value)}
-                  rows={2}
-                  placeholder="Example: I need a reel cover for my new offer"
-                  className="min-h-[88px] w-full resize-none rounded-[7px] border border-[color:var(--ss-silver)]/70 bg-[color:var(--ss-seasalt)] px-4 py-3 text-[15px] leading-relaxed text-[color:var(--ss-night)] outline-none transition-colors placeholder:text-[color:var(--ss-gray)] focus:border-[color:var(--ss-night)] focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]/20"
-                />
-              </label>
-              <button
-                type="submit"
-                className="min-h-12 w-full rounded-[5px] border border-[color:var(--ss-night)] bg-white px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-[color:var(--ss-night)] transition-colors hover:bg-[color:var(--ss-seasalt)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2 sm:w-auto"
-              >
-                Ask Maya
+      <section ref={forYouRef} aria-labelledby="for-you-heading" className="scroll-mt-5 pt-2">
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">For you</p>
+            <h2 id="for-you-heading" className="mt-1 font-serif text-[30px] font-light text-[color:var(--ss-night)] sm:text-[38px]">
+              Maya&apos;s pick, with room to wander.
+            </h2>
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-4">
+            {weeklyLook && aesthetics.some(aesthetic => aesthetic.id === weeklyLook.aestheticId) ? (
+              <button type="button" onClick={openWeeklyLook} className="min-h-11 text-[11px] text-[color:var(--ss-davy)] underline underline-offset-4">
+                New this week: {weeklyLook.name}
               </button>
-            </form>
-            {hasVaultAccess && (
+            ) : null}
+            {recommendationStatus === "error" ? (
               <button
                 type="button"
-                onClick={openVaultPicker}
-                className="mt-3 inline-flex min-h-11 items-center text-[12px] text-[color:var(--ss-davy)] underline underline-offset-4 transition-colors hover:text-[color:var(--ss-night)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]"
+                onClick={() => setRecommendationReload(value => value + 1)}
+                className="min-h-11 text-[11px] text-[color:var(--ss-davy)] underline underline-offset-4"
               >
-                {MAYA_ARRIVAL_COPY.vaultPicker}
+                Refresh Maya&apos;s pick
               </button>
-            )}
-          </section>
-
-          <details className="group rounded-[10px] border border-[color:var(--ss-silver)]/60 bg-white">
-            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between px-5 text-[12px] uppercase tracking-[0.16em] text-[color:var(--ss-davy)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ss-night)] sm:px-7 [&::-webkit-details-marker]:hidden">
-              <span>More ways to create</span>
-              <span
-                aria-hidden="true"
-                className="text-lg font-light transition-transform group-open:rotate-45"
-              >
-                +
-              </span>
-            </summary>
-            <div className="border-t border-[color:var(--ss-silver)]/50 px-5 py-5 sm:px-7">
-              <div className="flex flex-wrap gap-2">
-                {weeklyLook && aesthetics.some(a => a.id === weeklyLook.aestheticId) && (
-                  <button
-                    type="button"
-                    onClick={openWeeklyLook}
-                    className="min-h-10 rounded-full border border-[color:var(--ss-night)]/50 bg-white px-3.5 py-2 text-[12px] text-[color:var(--ss-night)] transition-colors hover:border-[color:var(--ss-night)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2"
-                  >
-                    New this week: {weeklyLook.name}
-                  </button>
-                )}
-                {STARTER_CHIPS.filter(item => videoEnabled || item.format !== "video").map(item => (
-                  <button
-                    key={item.format}
-                    type="button"
-                    onClick={() => openStarterChip(item)}
-                    className="min-h-10 rounded-full border border-[color:var(--ss-silver)]/70 bg-white px-3.5 py-2 text-[12px] text-[color:var(--ss-davy)] transition-colors hover:border-[color:var(--ss-night)] hover:text-[color:var(--ss-night)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2"
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-4 max-w-lg text-[12px] leading-relaxed text-[color:var(--ss-gray)]">
-                Maya can still help with a specific format or the weekly look when you want more
-                control.
-              </p>
-            </div>
-          </details>
+            ) : null}
+          </div>
         </div>
-      )}
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.75fr)]">
+          <VisualCard
+            image={recommendationImage}
+            eyebrow={recommendationStatus === "loading" ? "Maya is choosing" : `Maya recommends · ${FORMAT_LABEL[recommendation.format]}`}
+            title={recommendation.title}
+            body={recommendation.rationale}
+            action="Create this with Maya"
+            onClick={openRecommendation}
+            priority
+          />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+            {alternateWorlds.map(world => (
+              <VisualCard
+                key={world.id}
+                image={world.coverImage}
+                eyebrow="Another direction"
+                title={world.name}
+                body={world.blurb}
+                action="Recreate this look"
+                onClick={() => openWorld(world)}
+                compact
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="my-12 rounded-[10px] border border-[color:var(--ss-silver)]/60 bg-white p-5 sm:p-7">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <label className="block min-w-0">
+            <span className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">
+              Tell Maya what you need
+            </span>
+            <textarea
+              value={startText}
+              onChange={event => setStartText(event.target.value)}
+              rows={2}
+              placeholder="A launch photo, a full shoot, a Reel cover…"
+              className="mt-3 min-h-[92px] w-full resize-none border-0 border-b border-[color:var(--ss-silver)] bg-transparent px-0 py-3 font-serif text-[24px] font-light leading-tight text-[color:var(--ss-night)] outline-none placeholder:text-[color:var(--ss-gray)] focus:border-[color:var(--ss-night)]"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={startFromText}
+            className="min-h-12 rounded-[5px] bg-[color:var(--ss-night)] px-6 text-[11px] uppercase tracking-[0.18em] text-white"
+          >
+            Start with Maya
+          </button>
+        </div>
+        {hasVaultAccess ? (
+          <p className="mt-3 text-[11px] text-[color:var(--ss-gray)]">
+            Your Vault styles are already available inside Maya.
+          </p>
+        ) : null}
+      </section>
+
+      <section ref={savedRef} aria-labelledby="saved-heading" className="scroll-mt-5 border-t border-[color:var(--ss-silver)]/55 py-10">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">Saved looks</p>
+            <h2 id="saved-heading" className="mt-1 font-serif text-[30px] font-light text-[color:var(--ss-night)]">The directions you kept.</h2>
+          </div>
+          <span className="text-[11px] text-[color:var(--ss-gray)]">{savedLooks.length || 0} saved</span>
+        </div>
+        {savedLooks.length ? (
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {savedLooks.map(asset => (
+              <button key={asset.id} type="button" onClick={() => continueFromAsset(asset)} className="group text-left">
+                <span className="relative block aspect-[4/5] overflow-hidden rounded-[7px] bg-[color:var(--ss-silver)]/30">
+                  <Image src={asset.url} alt="" fill sizes="(max-width: 640px) 48vw, 22vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.025]" />
+                </span>
+                <span className="mt-2 block text-[11px] text-[color:var(--ss-davy)]">Continue this shoot</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-5 rounded-[8px] border border-dashed border-[color:var(--ss-silver)] p-6 text-[13px] leading-relaxed text-[color:var(--ss-gray)]">
+            Keep a result in Maya or tap the heart in Gallery and it will appear here.
+          </div>
+        )}
+      </section>
+
+      <section ref={recentRef} aria-labelledby="recent-heading" className="scroll-mt-5 border-t border-[color:var(--ss-silver)]/55 py-10">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">Recent shoots</p>
+          <h2 id="recent-heading" className="mt-1 font-serif text-[30px] font-light text-[color:var(--ss-night)]">Pick up where you left off.</h2>
+        </div>
+        {recentShoots.length ? (
+          <div className="-mx-4 mt-5 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
+            {recentShoots.map(asset => (
+              <button key={asset.id} type="button" onClick={() => continueFromAsset(asset)} className="group w-[190px] shrink-0 snap-start text-left sm:w-[220px]">
+                <span className="relative block aspect-[4/5] overflow-hidden rounded-[7px] bg-[color:var(--ss-silver)]/30">
+                  <Image src={asset.url} alt="" fill sizes="220px" className="object-cover transition-transform duration-500 group-hover:scale-[1.025]" />
+                </span>
+                <span className="mt-2 flex items-center justify-between gap-2 text-[11px] text-[color:var(--ss-davy)]">
+                  Continue this shoot <ArrowUpRight size={13} aria-hidden />
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <button type="button" onClick={openFresh} className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-[5px] border border-[color:var(--ss-night)] px-5 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-night)]">
+            <Images size={15} aria-hidden /> Start your first shoot
+          </button>
+        )}
+      </section>
+
+      <footer className="border-t border-[color:var(--ss-silver)]/55 py-6 text-[11px] text-[color:var(--ss-gray)]">
+        {referenceCount > 0
+          ? `${referenceCount} identity ${referenceCount === 1 ? "reference" : "references"} ready for Maya.`
+          : "Your saved identity will appear here when it is ready."}
+      </footer>
     </section>
   )
 }

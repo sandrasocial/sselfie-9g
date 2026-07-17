@@ -1164,6 +1164,16 @@ export default function InstagramFeedView({
             const galleryPost = displayPosts.find((item: any) => Number(item.id) === postId)
             if (galleryPost) setShowGallery(Number(galleryPost.id))
           }}
+          onPostUpdated={async updatedPost => {
+            if (updatedPost && typeof updatedPost === "object") {
+              setSelectedPost((current: any | null) =>
+                current?.id === (updatedPost as any).id
+                  ? { ...current, ...(updatedPost as Record<string, unknown>) }
+                  : current
+              )
+            }
+            await mutate()
+          }}
           onCreateNewGrid={onRequireFeedStyle}
         />
       ) : null}

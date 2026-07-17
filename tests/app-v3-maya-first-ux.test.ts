@@ -6,13 +6,14 @@ function read(path: string) {
 }
 
 describe("Maya-first Suite creation UX", () => {
-  it("makes the Create page start with Maya instead of a format grid", () => {
+  it("makes Create an image-first world that hands structured choices to Maya", () => {
     const frontDoor = read("components/app-v3/visual-front-door.tsx")
 
-    expect(frontDoor).toContain("What do you want to make today?")
-    expect(frontDoor).toContain("STARTER_CHIPS")
-    expect(frontDoor).toContain("Make my first photo")
-    expect(frontDoor).toContain("Turn an idea into a carousel")
+    expect(frontDoor).toContain("Your world")
+    expect(frontDoor).toContain("Maya&apos;s pick, with room to wander.")
+    expect(frontDoor).toContain("Recreate this look")
+    expect(frontDoor).toContain("Saved looks")
+    expect(frontDoor).toContain("Recent shoots")
     expect(frontDoor).toContain("detectCreationIntent")
     expect(frontDoor).toContain("creationIntent: intent")
     expect(frontDoor).not.toContain("manualOpen")
@@ -161,7 +162,7 @@ describe("Maya-first Suite creation UX", () => {
     expect(shell).toContain('creationIntent: intentForFormat(format, "manual")')
   })
 
-  it("uses the full-screen Maya drawer so the bottom nav does not compete with chat", () => {
+  it("uses a responsive Maya workspace beside desktop Create and as a mobile sheet", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
@@ -170,9 +171,11 @@ describe("Maya-first Suite creation UX", () => {
     expect(shell).not.toContain('"--sselfie-bottom-nav-height"')
     expect(shell).toContain("pb-[calc(4.75rem+env(safe-area-inset-bottom))]")
 
-    expect(concierge).toContain("fixed inset-0 z-50 flex w-full")
-    expect(concierge).toContain('className="relative flex h-[100dvh]')
-    expect(concierge).not.toContain("fixed inset-x-0 top-0 z-50")
+    expect(shell).toContain('mayaOpen && section === "create" ? "lg:pr-[27rem]"')
+    expect(concierge).toContain('mobileSheetSize === "expanded"')
+    expect(concierge).toContain('"h-[94dvh]" : "h-[62dvh]"')
+    expect(concierge).toContain("lg:w-[27rem]")
+    expect(concierge).toContain("lg:hidden")
   })
 
   it("requires an explicit text/no-text choice before graphic generation", () => {

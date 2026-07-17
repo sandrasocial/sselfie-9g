@@ -8,6 +8,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { listChats, saveChat } from "@/lib/app-v3/maya/chat-store"
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
+import { sanitizeServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
 
 export const dynamic = "force-dynamic"
 
@@ -36,6 +37,10 @@ export async function POST(request: Request) {
     messages?: unknown[]
     title?: string
     savedAt?: number
+    workspace?: unknown
+    taskStatus?: string
+    thumbnailUrl?: string | null
+    outputCount?: number
   } | null
   const id = typeof body?.id === "string" && body.id.length > 0 ? body.id : null
   const messages = Array.isArray(body?.messages) ? body.messages : null
@@ -55,7 +60,22 @@ export async function POST(request: Request) {
       id,
       sanitizeMayaMessages(messages, { admin: true }),
       title,
-      savedAt
+      savedAt,
+      {
+        workspace: sanitizeServerMayaDraftSnapshot(body?.workspace),
+        status:
+          body?.taskStatus === "creating" || body?.taskStatus === "ready"
+            ? body.taskStatus
+            : "planning",
+        thumbnailUrl:
+          typeof body?.thumbnailUrl === "string" && body.thumbnailUrl.startsWith("https://")
+            ? body.thumbnailUrl.slice(0, 2000)
+            : null,
+        outputCount:
+          typeof body?.outputCount === "number" && Number.isInteger(body.outputCount)
+            ? body.outputCount
+            : 0,
+      }
     )
     return NextResponse.json({ ok: true })
   } catch (e) {

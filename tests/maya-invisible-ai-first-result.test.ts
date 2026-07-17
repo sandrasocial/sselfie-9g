@@ -93,10 +93,10 @@ describe("Maya Invisible AI: first result and return integrity", () => {
 
     expect(frontDoor).toContain('fetch("/api/app-v3/maya/recommendations")')
     expect(frontDoor).toContain("recommendations[0]")
-    expect(frontDoor).toContain("Maya recommends today")
-    expect(frontDoor).toContain("Continue with Maya")
-    expect(frontDoor).toContain("<details")
-    expect(frontDoor).toContain("More ways to create")
+    expect(frontDoor).toContain("Maya recommends ·")
+    expect(frontDoor).toContain("Create this with Maya")
+    expect(frontDoor).toContain("alternateWorlds")
+    expect(frontDoor).toContain("Recreate this look")
     expect(frontDoor).not.toContain("helps you choose the format, style")
     expect(frontDoor).not.toContain("title={CARD_COPY.title}")
   })
@@ -191,7 +191,8 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(launcher).toContain("View past chats")
     expect(launcher).toContain("open()")
     expect(context).toContain("const open = useCallback")
-    expect(history).toContain("Finished files stay in Photos")
+    expect(history).toContain("direction cards, and finished versions")
+    expect(history).toContain("Creative tasks")
 
     for (const source of [localDraft, serverDraft]) {
       expect(source).toContain("lastGeneration")

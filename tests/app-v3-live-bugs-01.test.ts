@@ -22,7 +22,7 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
     const events = read("lib/analytics/event-contract.ts")
 
     expect(frontDoor).toContain("Hi, I'm Maya. Let's make your first photo.")
-    expect(frontDoor).toContain("Add one clear selfie and I'll keep your real face")
+    expect(frontDoor).toContain("Add one clear selfie. Maya keeps your real face")
     expect(frontDoor).toContain("Add my selfie")
     expect(frontDoor).toContain("suite_home_viewed")
     expect(frontDoor).toContain("first_action_selected")
@@ -30,7 +30,7 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
     // every access level) instead of the fragile trial-only, mount-tracked first-run flag -
     // so the competing text box never reappears for anyone without a saved selfie, on any
     // visit, in any cohort.
-    expect(frontDoor).toContain("{!hasSelfie ? (")
+    expect(frontDoor).toContain("if (!hasSelfie) {")
     expect(frontDoor).not.toContain("!shouldShowTrialFirstRun && !compact")
     // Single-owner UX (2026-07-06): the front door routes into Maya's reference manager;
     // the activation event now fires from the Maya-mounted upload, not a Create-tab modal.

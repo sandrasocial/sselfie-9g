@@ -68,7 +68,9 @@ describe("App V3 image reliability persistence", () => {
     expect(assets).toContain("variantOf: image.variant_of")
 
     expect(gallery).toContain("asset.title")
-    expect(gallery).toContain("Variant")
+    expect(gallery).toContain("groupGalleryVersions")
+    expect(gallery).toContain('versionIndex === 0 ? "Original"')
+    expect(gallery).toContain("Compare")
   })
 })
 
