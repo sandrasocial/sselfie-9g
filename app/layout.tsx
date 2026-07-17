@@ -4,6 +4,8 @@ import Script from "next/script"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
+const GOOGLE_ANALYTICS_MEASUREMENT_ID = "G-VNGYFYJNCM"
+
 // const _geist = Geist({ subsets: ["latin"] })
 // const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
@@ -124,24 +126,20 @@ export default function RootLayout({
       </head>
       <body className="antialiased min-h-screen">
         {/* Google Analytics 4 */}
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
-              strategy="afterInteractive"
-            />
-            <Script id="google-analytics" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}', {
-                  page_path: window.location.pathname,
-                });
-              `}
-            </Script>
-          </>
-        )}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ANALYTICS_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GOOGLE_ANALYTICS_MEASUREMENT_ID}', {
+              page_path: window.location.pathname,
+            });
+          `}
+        </Script>
 
         {/* Facebook Pixel */}
         {process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID && (
