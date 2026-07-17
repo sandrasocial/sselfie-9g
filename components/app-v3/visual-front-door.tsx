@@ -160,8 +160,7 @@ export function VisualFrontDoor({
   videoEnabled?: boolean
 } = {}) {
   const { openFresh, openHistory, openWithAesthetic } = useConcierge()
-  const { hasSelfie, primarySelfieUrl, referenceCount } =
-    useIdentityReferences(initialHasSelfie)
+  const { hasSelfie, primarySelfieUrl, referenceCount } = useIdentityReferences(initialHasSelfie)
   const homeTrackedRef = useRef(false)
   const firstRunTrackedRef = useRef(false)
   const forYouRef = useRef<HTMLElement>(null)
@@ -170,14 +169,15 @@ export function VisualFrontDoor({
   const [aesthetics, setAesthetics] = useState<Aesthetic[]>(AESTHETICS)
   const [weeklyLook, setWeeklyLook] = useState<{ aestheticId: string; name: string } | null>(null)
   const [recommendations, setRecommendations] = useState<MayaRecommendation[]>([])
-  const [recommendationStatus, setRecommendationStatus] = useState<"idle" | "loading" | "ready" | "error">("idle")
+  const [recommendationStatus, setRecommendationStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle")
   const [recommendationReload, setRecommendationReload] = useState(0)
   const [gallery, setGallery] = useState<AppV3GalleryAsset[]>([])
   const [firstRunAlreadySeen] = useState(readFirstRunSeen)
   const [startText, setStartText] = useState("")
 
-  const shouldShowTrialFirstRun =
-    showTrialFirstRunStep && !hasSelfie && !firstRunAlreadySeen
+  const shouldShowTrialFirstRun = showTrialFirstRunStep && !hasSelfie && !firstRunAlreadySeen
   const fallbackImage = aesthetics[0]?.coverImage || AESTHETICS[0]?.coverImage || ""
   const recommendation = recommendations[0] ?? FALLBACK_RECOMMENDATION
   const recommendationImage = recommendation.imageUrl || fallbackImage
@@ -197,7 +197,10 @@ export function VisualFrontDoor({
       ),
     ]).then(([aestheticResult, galleryResult]) => {
       if (!alive) return
-      if (aestheticResult.status === "fulfilled" && Array.isArray(aestheticResult.value?.aesthetics)) {
+      if (
+        aestheticResult.status === "fulfilled" &&
+        Array.isArray(aestheticResult.value?.aesthetics)
+      ) {
         setAesthetics(aestheticResult.value.aesthetics)
         if (
           aestheticResult.value.weeklyLook?.aestheticId &&
@@ -326,7 +329,17 @@ export function VisualFrontDoor({
     const text = startText.trim()
     const seed = text || "I know I want to create something, but I need Maya to help me choose."
     const intent = detectCreationIntent(seed, "typed")
+    const format = intent.format
     trackFirstAction("maya_text_start")
+    void trackAnalyticsEvent({
+      event: "suite_intent_detected",
+      properties: {
+        cohort,
+        action: "maya_text_start",
+        intent_label: format ?? "needs_clarify",
+        ...intent,
+      },
+    })
     openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
       format: intent.format ?? undefined,
       seed,
@@ -350,10 +363,22 @@ export function VisualFrontDoor({
 
   const quickActions = [
     { label: "My selfies", icon: UserRound, action: () => openSelfieManagerInMaya() },
-    { label: "For you", icon: Sparkles, action: () => forYouRef.current?.scrollIntoView({ behavior: "smooth" }) },
-    { label: "Saved looks", icon: Heart, action: () => savedRef.current?.scrollIntoView({ behavior: "smooth" }) },
+    {
+      label: "For you",
+      icon: Sparkles,
+      action: () => forYouRef.current?.scrollIntoView({ behavior: "smooth" }),
+    },
+    {
+      label: "Saved looks",
+      icon: Heart,
+      action: () => savedRef.current?.scrollIntoView({ behavior: "smooth" }),
+    },
     { label: "Inspiration", icon: Lightbulb, action: () => openSelfieManagerInMaya("inspiration") },
-    { label: "Recent shoots", icon: History, action: () => recentRef.current?.scrollIntoView({ behavior: "smooth" }) },
+    {
+      label: "Recent shoots",
+      icon: History,
+      action: () => recentRef.current?.scrollIntoView({ behavior: "smooth" }),
+    },
     { label: "New", icon: Plus, action: openFresh },
   ]
 
@@ -370,7 +395,8 @@ export function VisualFrontDoor({
               : "Your first brand photo starts here."}
           </h1>
           <p className="mt-3 text-[15px] leading-relaxed text-[color:var(--ss-davy)]">
-            Add one clear selfie. Maya keeps your real face, chooses one strong direction, and guides the rest.
+            Add one clear selfie. Maya keeps your real face, chooses one strong direction, and
+            guides the rest.
           </p>
         </header>
         <VisualCard
@@ -411,7 +437,8 @@ export function VisualFrontDoor({
             {firstName ? `${firstName}, what are we making?` : "What are we making?"}
           </h1>
           <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-[color:var(--ss-davy)]">
-            Explore a direction, continue a shoot, or tell Maya what you need. Your identity stays with you across every path.
+            Explore a direction, continue a shoot, or tell Maya what you need. Your identity stays
+            with you across every path.
           </p>
         </div>
         <button
@@ -423,7 +450,10 @@ export function VisualFrontDoor({
         </button>
       </header>
 
-      <nav aria-label="Create shortcuts" className="-mx-4 overflow-x-auto px-4 py-5 sm:-mx-8 sm:px-8">
+      <nav
+        aria-label="Create shortcuts"
+        className="-mx-4 overflow-x-auto px-4 py-5 sm:-mx-8 sm:px-8"
+      >
         <div className="flex min-w-max gap-2">
           {quickActions.map(({ label, icon: Icon, action }) => (
             <button
@@ -441,14 +471,23 @@ export function VisualFrontDoor({
       <section ref={forYouRef} aria-labelledby="for-you-heading" className="scroll-mt-5 pt-2">
         <div className="mb-4 flex items-end justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">For you</p>
-            <h2 id="for-you-heading" className="mt-1 font-serif text-[30px] font-light text-[color:var(--ss-night)] sm:text-[38px]">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">
+              For you
+            </p>
+            <h2
+              id="for-you-heading"
+              className="mt-1 font-serif text-[30px] font-light text-[color:var(--ss-night)] sm:text-[38px]"
+            >
               Maya&apos;s pick, with room to wander.
             </h2>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-4">
             {weeklyLook && aesthetics.some(aesthetic => aesthetic.id === weeklyLook.aestheticId) ? (
-              <button type="button" onClick={openWeeklyLook} className="min-h-11 text-[11px] text-[color:var(--ss-davy)] underline underline-offset-4">
+              <button
+                type="button"
+                onClick={openWeeklyLook}
+                className="min-h-11 text-[11px] text-[color:var(--ss-davy)] underline underline-offset-4"
+              >
                 New this week: {weeklyLook.name}
               </button>
             ) : null}
@@ -466,7 +505,11 @@ export function VisualFrontDoor({
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.75fr)]">
           <VisualCard
             image={recommendationImage}
-            eyebrow={recommendationStatus === "loading" ? "Maya is choosing" : `Maya recommends · ${FORMAT_LABEL[recommendation.format]}`}
+            eyebrow={
+              recommendationStatus === "loading"
+                ? "Maya is choosing"
+                : `Maya recommends · ${FORMAT_LABEL[recommendation.format]}`
+            }
             title={recommendation.title}
             body={recommendation.rationale}
             action="Create this with Maya"
@@ -519,22 +562,48 @@ export function VisualFrontDoor({
         ) : null}
       </section>
 
-      <section ref={savedRef} aria-labelledby="saved-heading" className="scroll-mt-5 border-t border-[color:var(--ss-silver)]/55 py-10">
+      <section
+        ref={savedRef}
+        aria-labelledby="saved-heading"
+        className="scroll-mt-5 border-t border-[color:var(--ss-silver)]/55 py-10"
+      >
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">Saved looks</p>
-            <h2 id="saved-heading" className="mt-1 font-serif text-[30px] font-light text-[color:var(--ss-night)]">The directions you kept.</h2>
+            <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">
+              Saved looks
+            </p>
+            <h2
+              id="saved-heading"
+              className="mt-1 font-serif text-[30px] font-light text-[color:var(--ss-night)]"
+            >
+              The directions you kept.
+            </h2>
           </div>
-          <span className="text-[11px] text-[color:var(--ss-gray)]">{savedLooks.length || 0} saved</span>
+          <span className="text-[11px] text-[color:var(--ss-gray)]">
+            {savedLooks.length || 0} saved
+          </span>
         </div>
         {savedLooks.length ? (
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {savedLooks.map(asset => (
-              <button key={asset.id} type="button" onClick={() => continueFromAsset(asset)} className="group text-left">
+              <button
+                key={asset.id}
+                type="button"
+                onClick={() => continueFromAsset(asset)}
+                className="group text-left"
+              >
                 <span className="relative block aspect-[4/5] overflow-hidden rounded-[7px] bg-[color:var(--ss-silver)]/30">
-                  <Image src={asset.url} alt="" fill sizes="(max-width: 640px) 48vw, 22vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.025]" />
+                  <Image
+                    src={asset.url}
+                    alt=""
+                    fill
+                    sizes="(max-width: 640px) 48vw, 22vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.025]"
+                  />
                 </span>
-                <span className="mt-2 block text-[11px] text-[color:var(--ss-davy)]">Continue this shoot</span>
+                <span className="mt-2 block text-[11px] text-[color:var(--ss-davy)]">
+                  Continue this shoot
+                </span>
               </button>
             ))}
           </div>
@@ -545,17 +614,39 @@ export function VisualFrontDoor({
         )}
       </section>
 
-      <section ref={recentRef} aria-labelledby="recent-heading" className="scroll-mt-5 border-t border-[color:var(--ss-silver)]/55 py-10">
+      <section
+        ref={recentRef}
+        aria-labelledby="recent-heading"
+        className="scroll-mt-5 border-t border-[color:var(--ss-silver)]/55 py-10"
+      >
         <div>
-          <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">Recent shoots</p>
-          <h2 id="recent-heading" className="mt-1 font-serif text-[30px] font-light text-[color:var(--ss-night)]">Pick up where you left off.</h2>
+          <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">
+            Recent shoots
+          </p>
+          <h2
+            id="recent-heading"
+            className="mt-1 font-serif text-[30px] font-light text-[color:var(--ss-night)]"
+          >
+            Pick up where you left off.
+          </h2>
         </div>
         {recentShoots.length ? (
           <div className="-mx-4 mt-5 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
             {recentShoots.map(asset => (
-              <button key={asset.id} type="button" onClick={() => continueFromAsset(asset)} className="group w-[190px] shrink-0 snap-start text-left sm:w-[220px]">
+              <button
+                key={asset.id}
+                type="button"
+                onClick={() => continueFromAsset(asset)}
+                className="group w-[190px] shrink-0 snap-start text-left sm:w-[220px]"
+              >
                 <span className="relative block aspect-[4/5] overflow-hidden rounded-[7px] bg-[color:var(--ss-silver)]/30">
-                  <Image src={asset.url} alt="" fill sizes="220px" className="object-cover transition-transform duration-500 group-hover:scale-[1.025]" />
+                  <Image
+                    src={asset.url}
+                    alt=""
+                    fill
+                    sizes="220px"
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.025]"
+                  />
                 </span>
                 <span className="mt-2 flex items-center justify-between gap-2 text-[11px] text-[color:var(--ss-davy)]">
                   Continue this shoot <ArrowUpRight size={13} aria-hidden />
@@ -564,7 +655,11 @@ export function VisualFrontDoor({
             ))}
           </div>
         ) : (
-          <button type="button" onClick={openFresh} className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-[5px] border border-[color:var(--ss-night)] px-5 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-night)]">
+          <button
+            type="button"
+            onClick={openFresh}
+            className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-[5px] border border-[color:var(--ss-night)] px-5 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-night)]"
+          >
             <Images size={15} aria-hidden /> Start your first shoot
           </button>
         )}

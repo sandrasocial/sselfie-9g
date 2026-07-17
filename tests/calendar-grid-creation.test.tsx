@@ -108,9 +108,9 @@ describe("Calendar grid creation", () => {
 
     expect(screen.getByRole("region", { name: /instagram grid/i })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /add photo to post/i })).not.toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /start a blank grid instead/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /start with my own photos/i })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: /use this plan/i }))
+    fireEvent.click(screen.getByRole("button", { name: /plan my first month with maya/i }))
 
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(
@@ -121,7 +121,58 @@ describe("Calendar grid creation", () => {
     })
   })
 
-  it("creates a manual grid only through the explicit blank-grid action", async () => {
+  it("asks for real brand context before Maya plans a new user's month", async () => {
+    mocks.swrData.set("/api/feed/latest", { exists: false })
+    mocks.swrData.set("/api/profile/personal-brand", { exists: false, completed: false })
+    mocks.fetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ saved: true }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ created: true, feedLayoutId: 103, postCount: 9 }),
+      })
+
+    const { default: FeedViewScreen } = await import("@/components/feed-planner/feed-view-screen")
+
+    render(<FeedViewScreen access={{ isMembership: true } as any} />)
+
+    fireEvent.click(screen.getByRole("button", { name: /plan my first month with maya/i }))
+
+    expect(screen.getByRole("region", { name: /instagram grid/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole("complementary", { name: /maya for this calendar/i })
+    ).toBeInTheDocument()
+    expect(screen.getByRole("region", { name: /plan settings/i })).toBeInTheDocument()
+    expect(mocks.fetch).not.toHaveBeenCalledWith(
+      "/api/app-v3/maya/feed-plan/draft",
+      expect.anything()
+    )
+
+    fireEvent.change(screen.getByRole("textbox", { name: "What you do" }), {
+      target: { value: "Interior designer" },
+    })
+    fireEvent.change(screen.getByRole("textbox", { name: "Who this plan is for" }), {
+      target: { value: "First-time homeowners" },
+    })
+    fireEvent.change(screen.getByRole("textbox", { name: "Current offer or focus" }), {
+      target: { value: "Room design consultations" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Light & Minimalistic" }))
+    fireEvent.click(screen.getByRole("button", { name: "Save plan settings" }))
+
+    await waitFor(() => {
+      expect(mocks.fetch).toHaveBeenCalledWith(
+        "/api/profile/personal-brand",
+        expect.objectContaining({ method: "POST" })
+      )
+      expect(mocks.fetch).toHaveBeenCalledWith(
+        "/api/app-v3/maya/feed-plan/draft",
+        expect.objectContaining({ method: "POST" })
+      )
+      expect(mocks.navigateToFeed).toHaveBeenCalledWith(103)
+    })
+  })
+
+  it("creates a manual grid only through the explicit own-photos action", async () => {
     mocks.swrData.set("/api/feed/latest", { exists: false })
     mocks.fetch.mockResolvedValueOnce({
       ok: true,
@@ -132,7 +183,7 @@ describe("Calendar grid creation", () => {
 
     render(<FeedViewScreen access={{ isMembership: true } as any} />)
 
-    fireEvent.click(screen.getByRole("button", { name: /start a blank grid instead/i }))
+    fireEvent.click(screen.getByRole("button", { name: /start with my own photos/i }))
 
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(
@@ -151,7 +202,7 @@ describe("Calendar grid creation", () => {
     render(<FeedViewScreen access={{ isPaidBlueprint: true } as any} />)
 
     expect(screen.getByRole("region", { name: /instagram grid/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /start a blank grid instead/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /start with my own photos/i })).toBeInTheDocument()
     expect(screen.getByRole("region", { name: /instagram grid/i })).toBeInTheDocument()
   })
 

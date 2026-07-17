@@ -41,7 +41,7 @@ export async function POST(
       return NextResponse.json({ error: "Invalid feed ID" }, { status: 400 })
     }
 
-    const { postId } = await req.json()
+    const { postId, storyContext } = await req.json()
 
     if (!postId) {
       return NextResponse.json({ error: "Post ID is required" }, { status: 400 })
@@ -109,13 +109,41 @@ export async function POST(
 
     // Caption type rotates story/value/motivational across the 9-post grid
     const CAPTION_TYPE_ROTATION: Array<"story" | "value" | "motivational"> = [
-      "story", "value", "motivational",
-      "story", "value", "motivational",
-      "story", "value", "motivational",
+      "story",
+      "value",
+      "motivational",
+      "story",
+      "value",
+      "motivational",
+      "story",
+      "value",
+      "motivational",
     ]
-    const TONE_BY_TYPE: Record<string, string> = { story: "warm", value: "confident", motivational: "inspiring" }
+    const TONE_BY_TYPE: Record<string, string> = {
+      story: "warm",
+      value: "confident",
+      motivational: "inspiring",
+    }
     const captionType = CAPTION_TYPE_ROTATION[(post.position - 1) % 9]
     const emotionalTone = TONE_BY_TYPE[captionType]
+    const verifiedStorySource =
+      captionType === "story"
+        ? String(storyContext || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 2000)
+        : ""
+
+    if (captionType === "story" && !verifiedStorySource) {
+      return NextResponse.json(
+        {
+          error:
+            "Tell Maya one real moment first so she can write this without making anything up.",
+          code: "STORY_CONTEXT_REQUIRED",
+        },
+        { status: 409 }
+      )
+    }
 
     // Parse content pillars from brand profile
     const contentPillars: any[] = parseJsonOrNull<any[]>(brandProfile?.content_pillars) ?? []
@@ -123,25 +151,26 @@ export async function POST(
     // Generate new caption using the same logic as create-from-strategy
     const captionResult = await generateInstagramCaption({
       postPosition: post.position,
-      shotType: post.post_type || 'portrait',
-      purpose: post.content_pillar || 'general',
+      shotType: post.post_type || "portrait",
+      purpose: post.content_pillar || "general",
       emotionalTone,
       captionType,
       contentPillars,
       brandProfile: (brandProfile as any) || {
-        business_type: post.business_type || 'Personal Brand',
-        brand_vibe: post.brand_vibe || 'Strategic',
-        brand_voice: 'Authentic',
-        target_audience: 'Entrepreneurs',
+        business_type: post.business_type || "Personal Brand",
+        brand_vibe: post.brand_vibe || "Strategic",
+        brand_voice: "Authentic",
+        target_audience: "Entrepreneurs",
       },
-      targetAudience: brandProfile?.target_audience || 'general audience',
-      brandVoice: brandProfile?.brand_voice || 'authentic',
-      contentPillar: post.content_pillar || 'lifestyle',
+      targetAudience: brandProfile?.target_audience || "general audience",
+      brandVoice: brandProfile?.brand_voice || "authentic",
+      contentPillar: post.content_pillar || "lifestyle",
       previousCaptions: previousCaptions,
       researchData: researchData,
+      storySource: verifiedStorySource || null,
     })
 
-    const newCaption = captionResult.caption || ''
+    const newCaption = captionResult.caption || ""
 
     // Update the caption in the database
     await sql`
@@ -153,17 +182,19 @@ export async function POST(
 
     console.log(`[v0] ✅ Regenerated caption for post ${postId} (${newCaption.length} chars)`)
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       caption: newCaption,
-      message: "Caption regenerated successfully"
+      message: "Caption regenerated successfully",
     })
   } catch (error) {
     console.error("[v0] Regenerate caption error:", error)
-    return NextResponse.json({ 
-      error: "Failed to regenerate caption",
-      details: error instanceof Error ? error.message : "Unknown error"
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Failed to regenerate caption",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    )
   }
 }
-

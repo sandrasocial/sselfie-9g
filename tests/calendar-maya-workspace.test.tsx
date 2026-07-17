@@ -43,6 +43,7 @@ describe("Maya Calendar workspace", () => {
     render(
       <CalendarMayaWorkspace
         feedId={7}
+        displayMode="embedded"
         selectedPost={{ id: 44, position: 4, caption: "Old caption" }}
         feedSummary={{ title: "July", posts: [] }}
         onApplyProposal={apply}
@@ -79,11 +80,42 @@ describe("Maya Calendar workspace", () => {
       />
     )
 
+    expect(screen.getByRole("button", { name: "Open Maya for this Calendar" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Open Maya for this Calendar" }))
     expect(
       screen.getByRole("complementary", { name: "Maya for this Calendar" })
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Collapse Maya" }))
     expect(screen.getByRole("button", { name: "Open Maya for this Calendar" })).toBeInTheDocument()
+  })
+
+  it("closes Plan Settings when the Maya sheet is collapsed", async () => {
+    const closePlanSettings = vi.fn()
+    const { CalendarMayaWorkspace } =
+      await import("@/components/feed-planner/calendar-maya-workspace")
+    render(
+      <CalendarMayaWorkspace
+        feedId={7}
+        selectedPost={null}
+        feedSummary={{ title: "July", posts: [] }}
+        planSettings={{
+          businessType: "Coach",
+          idealAudience: "Women founders",
+          currentSituation: "Membership",
+          feedStyle: "Light & Minimalistic",
+        }}
+        onSavePlanSettings={vi.fn()}
+        planSettingsOpen
+        onPlanSettingsClosed={closePlanSettings}
+        onApplyProposal={vi.fn()}
+        onUndo={vi.fn()}
+      />
+    )
+
+    await screen.findByRole("complementary", { name: "Maya for this Calendar" })
+    fireEvent.click(screen.getByRole("button", { name: "Collapse Maya" }))
+
+    expect(closePlanSettings).toHaveBeenCalledTimes(1)
   })
 
   it("changes shared inline suggestions when an empty post is selected", async () => {
@@ -92,22 +124,15 @@ describe("Maya Calendar workspace", () => {
     render(
       <CalendarMayaWorkspace
         feedId={7}
+        displayMode="embedded"
         selectedPost={{ id: 44, position: 4, caption: "Caption ready", hasImage: false }}
         feedSummary={{ title: "July", posts: [] }}
-        planSettings={{
-          businessType: "Photographer",
-          idealAudience: "Women founders",
-          currentSituation: "Membership",
-          feedStyle: "Light & Minimalistic",
-        }}
-        onSavePlanSettings={vi.fn()}
         onApplyProposal={vi.fn()}
         onUndo={vi.fn()}
       />
     )
 
     expect(screen.getAllByText("Post 4 selected")).toHaveLength(2)
-    fireEvent.click(screen.getByRole("button", { name: "Use this plan" }))
     expect(screen.getByRole("button", { name: "Create this image" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Use one from my Gallery" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Build my month" })).not.toBeInTheDocument()
@@ -122,7 +147,6 @@ describe("Maya Calendar workspace", () => {
         selectedPost={null}
         feedSummary={null}
         busy
-        onBuildFirstGrid={vi.fn()}
         onApplyProposal={vi.fn()}
         onUndo={vi.fn()}
       />
@@ -133,6 +157,31 @@ describe("Maya Calendar workspace", () => {
     )
   })
 
+  it("offers one clear first-month action inside Maya instead of duplicate build buttons", async () => {
+    const { CalendarMayaWorkspace } =
+      await import("@/components/feed-planner/calendar-maya-workspace")
+    render(
+      <CalendarMayaWorkspace
+        feedId={null}
+        selectedPost={null}
+        feedSummary={null}
+        onApplyProposal={vi.fn()}
+        onUndo={vi.fn()}
+      />
+    )
+
+    expect(screen.getByRole("button", { name: "Open Maya for this Calendar" })).toBeInTheDocument()
+    expect(
+      screen.queryByRole("complementary", { name: "Maya for this Calendar" })
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Maya for this Calendar" }))
+    expect(screen.getByRole("button", { name: "Build my month" })).toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "Build my grid with Maya" })
+    ).not.toBeInTheDocument()
+  })
+
   it("offers a fresh chat and a new grid without hiding either action", async () => {
     const createNewGrid = vi.fn()
     const { CalendarMayaWorkspace } =
@@ -140,6 +189,7 @@ describe("Maya Calendar workspace", () => {
     render(
       <CalendarMayaWorkspace
         feedId={7}
+        displayMode="embedded"
         selectedPost={null}
         feedSummary={{ title: "July", posts: [] }}
         onCreateNewGrid={createNewGrid}
@@ -175,6 +225,7 @@ describe("Maya Calendar workspace", () => {
     const { rerender } = render(
       <CalendarMayaWorkspace
         feedId={7}
+        displayMode="embedded"
         selectedPost={null}
         feedSummary={{ title: "July", posts: [] }}
         onApplyProposal={vi.fn()}
@@ -186,6 +237,7 @@ describe("Maya Calendar workspace", () => {
     rerender(
       <CalendarMayaWorkspace
         feedId={8}
+        displayMode="embedded"
         selectedPost={null}
         feedSummary={{ title: "August", posts: [] }}
         onApplyProposal={vi.fn()}

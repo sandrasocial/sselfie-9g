@@ -81,7 +81,10 @@ async function hasUnlimitedCredits(userId: string): Promise<boolean> {
       LIMIT 1
     `
 
-    if (subscriptionResult.length > 0 && subscriptionResult[0].product_type === "sselfie_studio_membership") {
+    if (
+      subscriptionResult.length > 0 &&
+      subscriptionResult[0].product_type === "sselfie_studio_membership"
+    ) {
       console.log("[v0] [CREDITS] User has active studio membership - generous credit allocation")
       return false // Studio members still use credits, but get 200/month
     }
@@ -135,14 +138,15 @@ export async function addCredits(
   description: string,
   stripePaymentId?: string,
   isTestMode = false,
-  options?: AddCreditsOptions,
+  options?: AddCreditsOptions
 ): Promise<{ success: boolean; newBalance: number; error?: string }> {
   if (!sql) {
     console.log("[v0] [CREDITS] Database not available - skipping add credits")
     return { success: false, newBalance: 0, error: "Database not available" }
   }
 
-  const normalizedStripePaymentId = typeof stripePaymentId === "string" ? stripePaymentId.trim() : ""
+  const normalizedStripePaymentId =
+    typeof stripePaymentId === "string" ? stripePaymentId.trim() : ""
   if (type === "purchase" && !normalizedStripePaymentId && !options?.allowUnlinkedPurchase) {
     const error = "Missing stripe_payment_id for purchase credit grant"
     console.error("[v0] [CREDITS] ❌ Refusing unlinked purchase credit grant:", {
@@ -226,7 +230,7 @@ export async function deductCredits(
   amount: number,
   type: "training" | "image" | "animation" | "refund",
   description: string,
-  referenceId?: string,
+  referenceId?: string
 ): Promise<{ success: boolean; newBalance: number; error?: string }> {
   if (!sql) {
     console.log("[v0] [CREDITS] Database not available - allowing action in preview mode")
@@ -260,7 +264,7 @@ export async function deductCredits(
       try {
         // Optimistic check (not locked, but helps avoid unnecessary UPDATE attempts)
         const currentBalance = await getUserCredits(userId)
-        
+
         if (currentBalance < amount) {
           return {
             success: false,
@@ -268,7 +272,7 @@ export async function deductCredits(
             error: `Insufficient credits. You have ${currentBalance} credits but need ${amount}.`,
           }
         }
-        
+
         // Single atomic CTE: UPDATE balance + INSERT ledger record in one transaction.
         // If the INSERT fails, the UPDATE rolls back — ledger and balance stay in sync.
         const result = await sql`
@@ -324,16 +328,15 @@ export async function deductCredits(
         const newBalance = Number(result[0].balance)
         finalBalance = newBalance
         success = true
-        
+
         console.log("[v0] [CREDITS] ✅ Credits deducted successfully. New balance:", newBalance)
-        
+
         const { invalidateCreditCache } = await import("./credits-cached")
         await invalidateCreditCache(userId)
-        
       } catch (error: any) {
         attempts++
         console.error(`[v0] [CREDITS] ❌ Deduction attempt ${attempts} failed:`, error.message)
-        
+
         if (attempts >= maxAttempts) {
           finalError = `Failed to deduct credits after ${maxAttempts} attempts: ${error.message}`
           console.error("[v0] [CREDITS] ❌ All retry attempts exhausted")
@@ -364,7 +367,7 @@ export async function refundCredits(
   userId: string,
   amount: number,
   description: string,
-  referenceId: string,
+  referenceId: string
 ): Promise<{ success: boolean; newBalance: number; refunded: boolean; error?: string }> {
   if (!sql) {
     console.log("[v0] [CREDITS] Database not available - skipping refund")
@@ -459,7 +462,7 @@ export async function getCreditHistory(userId: string, limit = 50) {
 export async function grantMonthlyCredits(
   userId: string,
   productType: "sselfie_studio_membership",
-  isTestMode = false,
+  isTestMode = false
 ) {
   const credits = SUBSCRIPTION_CREDITS[productType]
 
@@ -471,7 +474,7 @@ export async function grantMonthlyCredits(
     "subscription_grant",
     `Monthly ${productName} grant`,
     undefined,
-    isTestMode,
+    isTestMode
   )
 }
 
@@ -483,12 +486,12 @@ export async function grantOneTimeSessionCredits(
   userId: string,
   stripePaymentId?: string,
   isTestMode = false,
-  options?: AddCreditsOptions,
+  options?: AddCreditsOptions
 ) {
   const credits = SUBSCRIPTION_CREDITS.one_time_session
 
   if (!stripePaymentId) {
-    console.warn('[Credits] ⚠️ grantOneTimeSessionCredits called without stripe_payment_id')
+    console.warn("[Credits] ⚠️ grantOneTimeSessionCredits called without stripe_payment_id")
   }
 
   return await addCredits(
@@ -498,7 +501,7 @@ export async function grantOneTimeSessionCredits(
     "One-Time SSELFIE Session purchase",
     stripePaymentId,
     isTestMode,
-    options,
+    options
   )
 }
 
@@ -507,19 +510,95 @@ export async function grantOneTimeSessionCredits(
  * Decision 1: Credit System for All Users
  * Called on signup for free users
  */
-export async function grantFreeUserCredits(userId: string): Promise<{ success: boolean; newBalance: number; error?: string }> {
+export async function grantFreeUserCredits(
+  userId: string
+): Promise<{ success: boolean; newBalance: number; error?: string }> {
   const credits = 2 // Free users get 2 credits (enough for 1 grid = 2 images × 1 credit)
+  const description = "Free blueprint credits (welcome bonus)"
 
   console.log("[Credits] Granting free user credits:", { userId, credits })
 
-  return await addCredits(
-    userId,
-    credits,
-    "bonus",
-    "Free blueprint credits (welcome bonus)",
-    undefined,
-    false,
-  )
+  try {
+    // The lock is its own statement inside one transaction. Under READ COMMITTED, the grant
+    // statement therefore receives a fresh snapshot after a concurrent request releases the lock.
+    // Keeping the balance and ledger writes in that second statement makes the grant all-or-nothing.
+    const [, grantRows] = await sql.transaction(tx => [
+      tx`SELECT pg_advisory_xact_lock(hashtext(${`free-welcome-credit:${userId}`}))`,
+      tx`
+        WITH existing_grant AS MATERIALIZED (
+          SELECT id
+          FROM credit_transactions
+          WHERE user_id = ${userId}
+            AND transaction_type = 'bonus'
+            AND description = ${description}
+          ORDER BY created_at ASC
+          LIMIT 1
+        ),
+        balance_upsert AS (
+          INSERT INTO user_credits (
+            user_id, balance, total_purchased, total_used, created_at, updated_at
+          )
+          SELECT ${userId}, ${credits}, ${credits}, 0, NOW(), NOW()
+          WHERE NOT EXISTS (SELECT 1 FROM existing_grant)
+          ON CONFLICT (user_id)
+          DO UPDATE SET
+            balance = user_credits.balance + ${credits},
+            total_purchased = user_credits.total_purchased + ${credits},
+            updated_at = NOW()
+          RETURNING balance
+        ),
+        ledger_insert AS (
+          INSERT INTO credit_transactions (
+            user_id, amount, transaction_type, description,
+            stripe_payment_id, balance_after, is_test_mode, created_at
+          )
+          SELECT
+            ${userId}, ${credits}, 'bonus', ${description},
+            NULL, balance, FALSE, NOW()
+          FROM balance_upsert
+          RETURNING balance_after
+        )
+        SELECT
+          COALESCE(
+            (SELECT balance_after FROM ledger_insert),
+            (SELECT balance FROM user_credits WHERE user_id = ${userId}),
+            0
+          ) AS balance,
+          EXISTS (SELECT 1 FROM ledger_insert) AS granted
+      `,
+    ])
+
+    const newBalance = Number(grantRows[0]?.balance || 0)
+    const granted = grantRows[0]?.granted === true
+
+    if (granted) {
+      try {
+        const { invalidateCreditCache } = await import("./credits-cached")
+        await invalidateCreditCache(userId)
+      } catch (cacheError) {
+        console.warn(
+          "[Credits] Welcome credits were granted, but the credit cache could not be invalidated:",
+          cacheError
+        )
+      }
+    }
+
+    console.log(
+      granted ? "[Credits] Welcome credits granted" : "[Credits] Welcome grant already exists",
+      {
+        userId,
+        newBalance,
+      }
+    )
+    return { success: true, newBalance }
+  } catch (error) {
+    console.error("[Credits] Failed to grant free user credits:", error)
+    return {
+      success: false,
+      newBalance: 0,
+      error: "Failed to add credits. Please try again.",
+    }
+  }
 }
 
 /**
@@ -532,15 +611,20 @@ export async function grantPaidBlueprintCredits(
   userId: string,
   stripePaymentId?: string,
   isTestMode = false,
-  options?: AddCreditsOptions,
+  options?: AddCreditsOptions
 ): Promise<{ success: boolean; newBalance: number; error?: string }> {
   const credits = 60 // Paid blueprint users get 60 credits (30 images × 2 credits per image)
 
   if (!stripePaymentId) {
-    console.warn('[Credits] ⚠️ grantPaidBlueprintCredits called without stripe_payment_id')
+    console.warn("[Credits] ⚠️ grantPaidBlueprintCredits called without stripe_payment_id")
   }
 
-  console.log("[Credits] Granting paid blueprint credits:", { userId, credits, stripePaymentId, isTestMode })
+  console.log("[Credits] Granting paid blueprint credits:", {
+    userId,
+    credits,
+    stripePaymentId,
+    isTestMode,
+  })
 
   return await addCredits(
     userId,
@@ -549,6 +633,6 @@ export async function grantPaidBlueprintCredits(
     "Legacy Feed Planner purchase (60 credits - 30 images)",
     stripePaymentId,
     isTestMode,
-    options,
+    options
   )
 }

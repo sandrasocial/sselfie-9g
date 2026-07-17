@@ -97,7 +97,7 @@ describe("Calendar creative-director workflow", () => {
       />
     )
 
-    expect(screen.getByText(/the quick details/i)).toBeInTheDocument()
+    expect(screen.getByText(/real business instead of guessing/i)).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText("Who this plan is for"), {
       target: { value: "Women rebuilding their confidence" },
     })

@@ -113,7 +113,7 @@ export function CalendarPlanSettingsCard({
       <p className="mt-2 text-[13px] leading-relaxed text-[color:var(--app-text-primary)]">
         {complete
           ? "Change anything that no longer fits. I’ll use the same details everywhere in SSELFIE."
-          : "I found most of your direction. Add the quick details I can’t safely guess, then I’ll map the month."}
+          : "Tell me these four things so I can plan from your real business instead of guessing."}
       </p>
       <div className="mt-4 space-y-3">
         <label className="block text-[11px] text-[color:var(--app-text-secondary)]">

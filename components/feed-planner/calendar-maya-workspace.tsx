@@ -43,12 +43,12 @@ interface CalendarMayaWorkspaceProps {
   feedSummary: CalendarFeedSummary | null
   onApplyProposal: (proposal: CalendarAgentProposal) => Promise<{ undoAvailable: boolean }>
   onUndo: () => Promise<void>
-  onBuildFirstGrid?: () => Promise<void>
   busy?: boolean
   planSettings?: CalendarPlanSettings
   onSavePlanSettings?: (settings: CalendarPlanSettings) => Promise<void>
   planSettingsOpen?: boolean
   onPlanSettingsClosed?: () => void
+  onPlanSettingsConfirmed?: () => void
   onPreviewProposal?: (proposal: CalendarAgentProposal) => void
   onClearPreview?: () => void
   onOpenPostDetails?: (postId: number) => void
@@ -56,6 +56,7 @@ interface CalendarMayaWorkspaceProps {
   onOpenPhotoPicker?: (postId: number) => void
   onCreateNewGrid?: () => void
   onPostUpdated?: (updatedPost?: unknown) => void | Promise<void>
+  displayMode?: "sidebar" | "embedded"
 }
 
 const storageKey = (feedId: number | null) => `calendar:maya-thread:v1:${feedId ?? "new"}`
@@ -66,22 +67,21 @@ function initialMessage(feedId: number | null): CalendarMessage {
     role: "assistant",
     content: feedId
       ? "I’ve got your month open. Tap any post and I’ll help you shape it right here."
-      : "Let’s map your first month together. I pulled in what I already know, so you can start with a few taps.",
+      : "Let’s map your first month together. I’ll use what you’ve shared, and I’ll ask before I fill any gaps.",
   }
 }
 
 function savedMessages(value: unknown): CalendarMessage[] {
   if (!Array.isArray(value)) return []
   return value
-    .filter(
-      (message): message is CalendarMessage =>
-        Boolean(
-          message &&
-            typeof message === "object" &&
-            typeof message.id === "string" &&
-            (message.role === "user" || message.role === "assistant") &&
-            typeof message.content === "string"
-        )
+    .filter((message): message is CalendarMessage =>
+      Boolean(
+        message &&
+        typeof message === "object" &&
+        typeof message.id === "string" &&
+        (message.role === "user" || message.role === "assistant") &&
+        typeof message.content === "string"
+      )
     )
     .slice(-16)
 }
@@ -146,12 +146,12 @@ export function CalendarMayaWorkspace({
   feedSummary,
   onApplyProposal,
   onUndo,
-  onBuildFirstGrid,
   busy = false,
   planSettings,
   onSavePlanSettings,
   planSettingsOpen = false,
   onPlanSettingsClosed,
+  onPlanSettingsConfirmed,
   onPreviewProposal,
   onClearPreview,
   onOpenPostDetails,
@@ -159,8 +159,9 @@ export function CalendarMayaWorkspace({
   onOpenPhotoPicker,
   onCreateNewGrid,
   onPostUpdated,
+  displayMode = "sidebar",
 }: CalendarMayaWorkspaceProps) {
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(displayMode === "embedded" || (busy && feedId === null))
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<CalendarMessage[]>(() => [initialMessage(feedId)])
   const [status, setStatus] = useState<"idle" | "thinking" | "applying" | "syncing" | "error">(
@@ -169,13 +170,17 @@ export function CalendarMayaWorkspace({
   const [error, setError] = useState<string | null>(null)
   const [appliedMessageId, setAppliedMessageId] = useState<string | null>(null)
   const [undoAvailable, setUndoAvailable] = useState(false)
-  const [planConfirmed, setPlanConfirmed] = useState(false)
   const [newMenuOpen, setNewMenuOpen] = useState(false)
   const [newChatConfirming, setNewChatConfirming] = useState(false)
   const [textStudioOpen, setTextStudioOpen] = useState(false)
   const threadEndRef = useRef<HTMLDivElement>(null)
   const scrollRegionRef = useRef<HTMLDivElement>(null)
   const skipNextPersistenceRef = useRef(true)
+  const onClearPreviewRef = useRef(onClearPreview)
+
+  useEffect(() => {
+    onClearPreviewRef.current = onClearPreview
+  }, [onClearPreview])
 
   useEffect(() => {
     skipNextPersistenceRef.current = true
@@ -198,8 +203,17 @@ export function CalendarMayaWorkspace({
     setUndoAvailable(false)
     setNewMenuOpen(false)
     setNewChatConfirming(false)
-    onClearPreview?.()
-  }, [feedId])
+    if (displayMode === "sidebar") setExpanded(false)
+    onClearPreviewRef.current?.()
+  }, [displayMode, feedId])
+
+  useEffect(() => {
+    if (displayMode === "embedded") setExpanded(true)
+  }, [displayMode])
+
+  useEffect(() => {
+    if (displayMode === "sidebar" && busy && feedId === null) setExpanded(true)
+  }, [busy, displayMode, feedId])
 
   useEffect(() => {
     if (planSettingsOpen) setExpanded(true)
@@ -353,7 +367,7 @@ export function CalendarMayaWorkspace({
     onClearSelectedPost?.()
   }
 
-  if (!expanded) {
+  if (!expanded && displayMode === "sidebar") {
     return (
       <button
         type="button"
@@ -364,7 +378,7 @@ export function CalendarMayaWorkspace({
         <span className="relative h-8 w-8 overflow-hidden rounded-full bg-[color:var(--app-btn-secondary-bg)]">
           <Image src={MAYA_AVATAR} alt="" fill sizes="32px" className="object-cover" />
         </span>
-        <span className="text-[12px] font-medium">Maya</span>
+        <span className="text-[12px] font-medium">Ask Maya</span>
       </button>
     )
   }
@@ -372,7 +386,11 @@ export function CalendarMayaWorkspace({
   return (
     <aside
       aria-label="Maya for this Calendar"
-      className="fixed inset-x-2 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30 flex max-h-[56dvh] min-h-[18rem] flex-col overflow-hidden rounded-[20px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-surface)] shadow-[0_24px_64px_rgba(13,14,16,0.20)] lg:sticky lg:inset-auto lg:top-4 lg:z-0 lg:max-h-[calc(100dvh-8rem)] lg:min-h-[42rem] lg:rounded-[16px] lg:shadow-none"
+      className={
+        displayMode === "embedded"
+          ? "flex h-full min-h-[34rem] max-h-[calc(100dvh-9rem)] flex-col overflow-hidden rounded-[18px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-surface)] shadow-none"
+          : "fixed inset-x-2 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30 flex max-h-[56dvh] min-h-[18rem] flex-col overflow-hidden rounded-[20px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-surface)] shadow-[0_24px_64px_rgba(13,14,16,0.20)] lg:sticky lg:inset-auto lg:top-4 lg:z-0 lg:max-h-[calc(100dvh-8rem)] lg:min-h-[42rem] lg:rounded-[16px] lg:shadow-none"
+      }
     >
       <header className="relative flex min-h-16 items-center gap-3 border-b border-[color:var(--app-glass-border)] bg-[color:var(--app-bg)] px-4">
         <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[color:var(--app-btn-secondary-bg)]">
@@ -451,14 +469,19 @@ export function CalendarMayaWorkspace({
             </div>
           ) : null}
         </div>
-        <button
-          type="button"
-          onClick={() => setExpanded(false)}
-          aria-label="Collapse Maya"
-          className="flex h-11 w-11 items-center justify-center rounded-full text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)]"
-        >
-          <ChevronDown size={19} aria-hidden />
-        </button>
+        {displayMode === "sidebar" ? (
+          <button
+            type="button"
+            onClick={() => {
+              setExpanded(false)
+              onPlanSettingsClosed?.()
+            }}
+            aria-label="Collapse Maya"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)]"
+          >
+            <ChevronDown size={19} aria-hidden />
+          </button>
+        ) : null}
       </header>
 
       <div
@@ -533,15 +556,14 @@ export function CalendarMayaWorkspace({
           </div>
         ) : null}
 
-        {planSettings && onSavePlanSettings && (!planConfirmed || planSettingsOpen) ? (
+        {planSettings && onSavePlanSettings && planSettingsOpen ? (
           <CalendarPlanSettingsCard
             settings={planSettings}
             forceEditing={planSettingsOpen}
             onSave={onSavePlanSettings}
             onConfirm={() => {
-              setPlanConfirmed(true)
+              onPlanSettingsConfirmed?.()
               onPlanSettingsClosed?.()
-              if (feedId === null) void onBuildFirstGrid?.()
             }}
           />
         ) : null}
@@ -638,7 +660,7 @@ export function CalendarMayaWorkspace({
           )
         })}
 
-        {!isBusy && (planConfirmed || !planSettings) ? (
+        {!isBusy ? (
           <ClarifyCard
             clarify={suggestionsFor(selectedPost, feedId !== null)}
             onPick={answer => void sendMessage(answer)}
@@ -650,17 +672,6 @@ export function CalendarMayaWorkspace({
                 ?.focus()
             }
           />
-        ) : null}
-
-        {feedId === null && onBuildFirstGrid && !planSettings && messages.length === 1 ? (
-          <button
-            type="button"
-            onClick={() => void onBuildFirstGrid()}
-            disabled={isBusy}
-            className="min-h-11 w-full rounded-[9px] bg-[color:var(--app-btn-primary-bg)] px-4 text-[12px] font-medium text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
-            {busy ? "Maya is building your grid…" : "Build my grid with Maya"}
-          </button>
         ) : null}
 
         {activityLabel ? (

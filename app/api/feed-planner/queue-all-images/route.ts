@@ -36,7 +36,8 @@ async function handleQueueAllImages({
     }
     const idempotencyKey = (request.headers.get("x-idempotency-key") || "").trim().slice(0, 120)
 
-    const origin = process.env.NEXT_PUBLIC_APP_URL || request.headers.get("origin") || "http://localhost:3000"
+    const origin =
+      process.env.NEXT_PUBLIC_APP_URL || request.headers.get("origin") || "http://localhost:3000"
 
     try {
       const neonUser = await getUserByAuthId(authUser.id)
@@ -57,7 +58,7 @@ async function handleQueueAllImages({
               error: "Queue request already in progress for this key.",
               retryable: true,
             },
-            { status: 409 },
+            { status: 409 }
           )
         }
       }
@@ -77,7 +78,9 @@ async function handleQueueAllImages({
           targetedPosts: captionResult.targetedPosts,
           captionsGenerated: captionResult.captionsGenerated,
           captionsFailed: captionResult.captionsFailed,
+          captionsNeedStory: captionResult.captionsNeedStory,
           captionsSkipped: captionResult.captionsSkipped,
+          needsStoryPostIds: captionResult.needsStoryPostIds,
         },
       })
     } catch (error) {
@@ -87,7 +90,7 @@ async function handleQueueAllImages({
           error: error instanceof Error ? error.message : "Failed to queue images",
           details: error instanceof Error ? error.stack : undefined,
         },
-        { status: 500 },
+        { status: 500 }
       )
     }
   } catch (error) {
@@ -97,7 +100,7 @@ async function handleQueueAllImages({
         error: error instanceof Error ? error.message : "Failed to queue images",
         details: error instanceof Error ? error.stack : undefined,
       },
-      { status: 500 },
+      { status: 500 }
     )
   } finally {
     if (advisoryLockAcquired && advisoryLockKey) {

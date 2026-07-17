@@ -89,9 +89,7 @@ describe("SUITE trial first-image activation", () => {
     expect(appPage).toContain("FROM user_avatar_images")
     expect(appPage).toContain("suite_trial_first_run_seen")
     expect(shell).toContain("showTrialFirstRunStep")
-    expect(shell).toContain(
-      'accessLevel === "trial" &&'
-    )
+    expect(shell).toContain('accessLevel === "trial" &&')
     expect(shell).toContain("!trialHasSeenFirstRunStep")
     expect(shell).toContain("trialHasSavedSelfie={trialHasSavedSelfie}")
     expect(shell).toContain("trialHasSeenFirstRunStep={trialHasSeenFirstRunStep}")
@@ -101,7 +99,7 @@ describe("SUITE trial first-image activation", () => {
     expect(frontDoor).toContain("markFirstRunSeen()")
     expect(frontDoor).toContain('event: "suite_trial_first_run_seen"')
     expect(frontDoor).toContain("Hi, I'm Maya. Let's make your first photo.")
-    expect(frontDoor).toContain("Add one clear selfie and I'll keep your real face")
+    expect(frontDoor).toContain("Add one clear selfie. Maya keeps your real face")
     expect(frontDoor).toContain("Add my selfie")
     // Best-results recipe (main selfie + optional angles) now lives as structured slots in
     // the reference manager Maya owns, not as a prose blurb in the chat.

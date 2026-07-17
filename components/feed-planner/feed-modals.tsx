@@ -1,6 +1,7 @@
 "use client"
 
 import { createPortal } from "react-dom"
+import { useEffect, useState, type ReactNode } from "react"
 import { toast } from "@/hooks/use-toast"
 import FeedPostCard from "./feed-post-card"
 import { FeedGallerySelector } from "./feed-gallery-selector"
@@ -20,6 +21,7 @@ interface FeedModalsProps {
   onShowGallery: (postId: number) => void
   onNavigateToMaya?: () => void // Navigate to Maya Chat for image generation
   onUpdate: (updatedPost?: any) => void | Promise<void>
+  mayaWorkspace?: ReactNode
 }
 
 export default function FeedModals({
@@ -35,8 +37,14 @@ export default function FeedModals({
   onShowGallery,
   onNavigateToMaya,
   onUpdate,
+  mayaWorkspace,
 }: FeedModalsProps) {
+  const [studioView, setStudioView] = useState<"post" | "maya">("post")
   const { dialogRef, initialFocusRef } = useAccessibleModal(Boolean(selectedPost), onClosePost)
+
+  useEffect(() => {
+    if (selectedPost?.id) setStudioView("post")
+  }, [selectedPost?.id])
 
   return (
     <>
@@ -44,7 +52,7 @@ export default function FeedModals({
         typeof window !== "undefined" &&
         createPortal(
           <div
-            className="fixed inset-0 z-[110] flex items-center justify-center bg-[#0D0E10]/95 p-4 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none"
+            className="fixed inset-0 z-[110] flex items-end justify-center bg-[#0D0E10]/92 p-0 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:items-center sm:p-4"
             onClick={onClosePost}
             style={{
               paddingTop: "calc(1rem + env(safe-area-inset-top))",
@@ -57,31 +65,48 @@ export default function FeedModals({
               aria-modal="true"
               aria-label="Edit calendar post"
               tabIndex={-1}
-              className="relative flex max-h-[calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full max-w-[470px] flex-col animate-in fade-in zoom-in-[0.98] duration-300 motion-reduce:animate-none"
+              className="relative flex max-h-[calc(100dvh-env(safe-area-inset-top))] w-full max-w-[1180px] flex-col overflow-hidden rounded-t-[22px] bg-[color:var(--app-bg)] animate-in fade-in zoom-in-[0.98] duration-300 motion-reduce:animate-none sm:max-h-[calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:rounded-[22px]"
               onClick={e => e.stopPropagation()}
             >
-              <div className="mb-2 flex min-h-11 flex-wrap items-center justify-between gap-1.5">
+              <div className="flex min-h-16 flex-wrap items-center justify-between gap-2 border-b border-[color:var(--app-glass-border)] px-3 sm:px-4">
+                <div className="flex items-center gap-1" role="group" aria-label="Post studio view">
+                  <button
+                    type="button"
+                    onClick={() => setStudioView("post")}
+                    aria-pressed={studioView === "post"}
+                    className={`min-h-11 rounded-full px-4 text-[11px] font-medium transition-colors ${
+                      studioView === "post"
+                        ? "bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)]"
+                        : "text-[color:var(--app-text-secondary)] hover:bg-[color:var(--app-btn-secondary-hover)]"
+                    }`}
+                  >
+                    Post
+                  </button>
+                  {mayaWorkspace ? (
+                    <button
+                      type="button"
+                      onClick={() => setStudioView("maya")}
+                      aria-pressed={studioView === "maya"}
+                      className={`min-h-11 rounded-full px-4 text-[11px] font-medium transition-colors ${
+                        studioView === "maya"
+                          ? "bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)]"
+                          : "text-[color:var(--app-text-secondary)] hover:bg-[color:var(--app-btn-secondary-hover)]"
+                      }`}
+                    >
+                      Ask Maya
+                    </button>
+                  ) : null}
+                </div>
                 {/* Action buttons - shown when image exists */}
                 {selectedPost.image_url && access?.hasGalleryAccess ? (
-                  <div className="flex flex-wrap items-center gap-1">
-                    {onNavigateToMaya && (
-                      <button
-                        onClick={e => {
-                          e.stopPropagation()
-                          onNavigateToMaya()
-                        }}
-                        className="inline-flex min-h-11 items-center rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.12em] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-                      >
-                        Regenerate
-                      </button>
-                    )}
+                  <div className="ml-auto flex flex-wrap items-center gap-1">
                     <button
                       onClick={e => {
                         e.stopPropagation()
                         onShowGallery(selectedPost.id)
                         onClosePost()
                       }}
-                      className="inline-flex min-h-11 items-center rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.12em] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                      className="inline-flex min-h-11 items-center rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.12em] text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)]"
                     >
                       Gallery
                     </button>
@@ -92,20 +117,31 @@ export default function FeedModals({
                 <button
                   ref={initialFocusRef}
                   onClick={onClosePost}
-                  className="inline-flex min-h-11 items-center rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                  className="inline-flex min-h-11 items-center rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)]"
                 >
                   Close
                 </button>
               </div>
 
-              {/* Use FeedPostCard component for full Instagram post mockup */}
-              <div className="min-h-0 overflow-y-auto overscroll-contain rounded-[14px]">
-                <FeedPostCard
-                  post={selectedPost}
-                  feedId={feedId}
-                  onUpdate={onUpdate}
-                  onNavigateToMaya={onNavigateToMaya}
-                />
+              <div className="grid min-h-0 flex-1 overflow-y-auto bg-[color:var(--calendar-stone-1)] p-3 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-4 lg:overflow-hidden lg:p-4">
+                <div
+                  className={`${studioView === "post" ? "block" : "hidden"} min-h-0 overflow-y-auto overscroll-contain lg:block`}
+                >
+                  <FeedPostCard
+                    post={selectedPost}
+                    feedId={feedId}
+                    accountName={feedData?.feed?.username || feedData?.feed?.brand_name}
+                    onUpdate={onUpdate}
+                    onNavigateToMaya={
+                      mayaWorkspace ? () => setStudioView("maya") : onNavigateToMaya
+                    }
+                  />
+                </div>
+                {mayaWorkspace ? (
+                  <div className={`${studioView === "maya" ? "block" : "hidden"} min-h-0 lg:block`}>
+                    {mayaWorkspace}
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>,

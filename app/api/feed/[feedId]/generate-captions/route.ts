@@ -4,7 +4,6 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateAndStoreFeedCaptions } from "@/lib/feed-planner/generate-feed-captions"
 
-
 export const maxDuration = 300 // 5 minutes for generating 9 captions
 
 /**
@@ -50,7 +49,7 @@ export async function POST(
 
     console.log(
       `[GENERATE-CAPTIONS] ✅ Generated ${result.captionsGenerated}/${result.targetedPosts} targeted captions` +
-        `${result.captionsFailed > 0 ? ` (${result.captionsFailed} failed)` : ""}`,
+        `${result.captionsFailed > 0 ? ` (${result.captionsFailed} failed)` : ""}`
     )
 
     return NextResponse.json({
@@ -58,13 +57,16 @@ export async function POST(
       feedId: parseInt(feedId),
       captionsGenerated: result.captionsGenerated,
       captionsFailed: result.captionsFailed,
+      captionsNeedStory: result.captionsNeedStory,
       captionsSkipped: result.captionsSkipped,
+      needsStoryPostIds: result.needsStoryPostIds,
       targetedPosts: result.targetedPosts,
       totalPosts: result.totalPosts,
       message:
         result.targetedPosts === 0
           ? "All captions already meet quality standards."
           : `Successfully generated ${result.captionsGenerated} captions` +
+            `${result.captionsNeedStory > 0 ? ` (${result.captionsNeedStory} need your story)` : ""}` +
             `${result.captionsFailed > 0 ? ` (${result.captionsFailed} failed)` : ""}`,
     })
   } catch (error) {

@@ -1,6 +1,7 @@
 import { generateText } from "ai"
 import { INSTAGRAM_STRATEGIST_SYSTEM_PROMPT } from "@/lib/instagram-strategist/personality"
 import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
+import { requirePersonalStorySource } from "@/lib/feed-planner/caption-truth"
 
 interface CaptionWriterParams {
   postPosition: number
@@ -22,8 +23,10 @@ interface CaptionWriterParams {
   researchData?: any
   narrativeRole?: string
   // Strategic caption type for variety
-  captionType?: 'story' | 'value' | 'motivational'
+  captionType?: "story" | "value" | "motivational"
   contentPillars?: any[] // All content pillars from brand profile
+  /** User-supplied or otherwise verified source for first-person story claims. */
+  storySource?: string | null
 }
 
 interface BioCaptionWriterParams {
@@ -36,10 +39,7 @@ interface BioCaptionWriterParams {
   niche: string
 }
 
-const CAPTION_PLACEHOLDER_MARKERS = [
-  "generating caption",
-  "check out this post! #instagram #feed",
-]
+const CAPTION_PLACEHOLDER_MARKERS = ["generating caption", "check out this post! #instagram #feed"]
 
 const PROMPT_LEAK_MARKERS: RegExp[] = [
   /post context[:\s]/i,
@@ -68,34 +68,32 @@ const EM_DASH_PATTERN = /—/
 export function hasBannedCaptionLanguage(caption: string): boolean {
   const raw = String(caption || "")
   if (EM_DASH_PATTERN.test(raw)) return true
-  return SANDRA_BANNED_WORD_PATTERNS.some((pattern) => pattern.test(raw))
+  return SANDRA_BANNED_WORD_PATTERNS.some(pattern => pattern.test(raw))
 }
 
 /** Em-dashes never ship (locked voice rule). Normalize to a colon separator. */
 function normalizeEmDashes(value: string): string {
-  return String(value || "")
-    .replace(/\s*—+\s*/g, ": ")
+  return String(value || "").replace(/\s*—+\s*/g, ": ")
 }
 
 function formatBrandContext(brandProfile: any): string {
   if (!brandProfile) return "Personal Brand"
   const lines: string[] = []
-  if (brandProfile.business_name || brandProfile.name) lines.push(`Brand: ${brandProfile.business_name || brandProfile.name}`)
+  if (brandProfile.business_name || brandProfile.name)
+    lines.push(`Brand: ${brandProfile.business_name || brandProfile.name}`)
   if (brandProfile.business_type) lines.push(`Business Type: ${brandProfile.business_type}`)
   if (brandProfile.brand_vibe) lines.push(`Brand Vibe: ${brandProfile.brand_vibe}`)
   if (brandProfile.brand_voice) lines.push(`Brand Voice: ${brandProfile.brand_voice}`)
   if (brandProfile.target_audience) lines.push(`Target Audience: ${brandProfile.target_audience}`)
   if (brandProfile.niche) lines.push(`Niche: ${brandProfile.niche}`)
   if (brandProfile.business_description) lines.push(`About: ${brandProfile.business_description}`)
-  if (brandProfile.unique_value_proposition || brandProfile.uvp) lines.push(`Unique Value: ${brandProfile.unique_value_proposition || brandProfile.uvp}`)
+  if (brandProfile.unique_value_proposition || brandProfile.uvp)
+    lines.push(`Unique Value: ${brandProfile.unique_value_proposition || brandProfile.uvp}`)
   return lines.length > 0 ? lines.join("\n") : "Personal Brand"
 }
 
 function countWords(value: string): number {
-  return value
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean).length
+  return value.trim().split(/\s+/).filter(Boolean).length
 }
 
 function normalizeHashtag(tag: string): string {
@@ -156,7 +154,7 @@ function stripHashtags(value: string): string {
 function removePromptLeakLines(value: string): string {
   return String(value || "")
     .split("\n")
-    .filter((line) => !PROMPT_LEAK_MARKERS.some((marker) => marker.test(line)))
+    .filter(line => !PROMPT_LEAK_MARKERS.some(marker => marker.test(line)))
     .join("\n")
 }
 
@@ -172,8 +170,11 @@ export function enforceCaptionPublishingRules(input: {
 
   const cleanedBody = stripHashtags(noLeakText)
   const strategyTags = Array.isArray(input.strategyHashtags) ? input.strategyHashtags : []
-  const combinedTags = limitHashtags([...extractHashtagsFromCaption(noLeakText), ...strategyTags], 5)
-  const hashtagLine = combinedTags.map((tag) => `#${tag}`).join(" ")
+  const combinedTags = limitHashtags(
+    [...extractHashtagsFromCaption(noLeakText), ...strategyTags],
+    5
+  )
+  const hashtagLine = combinedTags.map(tag => `#${tag}`).join(" ")
 
   if (!cleanedBody) {
     return hashtagLine
@@ -189,8 +190,8 @@ export function shouldRegenerateCaption(caption: string | null | undefined): boo
   if (!raw) return true
 
   const lowered = raw.toLowerCase()
-  if (CAPTION_PLACEHOLDER_MARKERS.some((marker) => lowered.includes(marker))) return true
-  if (PROMPT_LEAK_MARKERS.some((pattern) => pattern.test(raw))) return true
+  if (CAPTION_PLACEHOLDER_MARKERS.some(marker => lowered.includes(marker))) return true
+  if (PROMPT_LEAK_MARKERS.some(pattern => pattern.test(raw))) return true
   if (hasBannedCaptionLanguage(raw)) return true
 
   const hashtags = extractHashtagsFromCaption(raw)
@@ -200,15 +201,17 @@ export function shouldRegenerateCaption(caption: string | null | undefined): boo
   return bodyWordCount < 65
 }
 
-export async function generateInstagramCaption(params: CaptionWriterParams): Promise<{ caption: string }> {
-  const { 
-    postPosition, 
-    shotType, 
-    purpose, 
-    emotionalTone, 
-    brandProfile, 
-    targetAudience, 
-    brandVoice, 
+export async function generateInstagramCaption(
+  params: CaptionWriterParams
+): Promise<{ caption: string }> {
+  const {
+    postPosition,
+    shotType,
+    purpose,
+    emotionalTone,
+    brandProfile,
+    targetAudience,
+    brandVoice,
     contentPillar,
     hookConcept,
     storyConcept,
@@ -218,9 +221,12 @@ export async function generateInstagramCaption(params: CaptionWriterParams): Pro
     previousCaptions = [],
     researchData,
     narrativeRole,
-    captionType = 'story',
-    contentPillars = []
+    captionType = "story",
+    contentPillars = [],
+    storySource,
   } = params
+
+  const verifiedStorySource = requirePersonalStorySource(captionType, storySource)
 
   console.log(`[v0] Caption Writer: Creating caption for post ${postPosition}`)
 
@@ -230,7 +236,7 @@ export async function generateInstagramCaption(params: CaptionWriterParams): Pro
       if (pc.hook) return pc.hook
       // Extract first line as hook if caption exists
       if (pc.caption) {
-        const firstLine = pc.caption.split('\n\n')[0]?.trim() || ''
+        const firstLine = pc.caption.split("\n\n")[0]?.trim() || ""
         return firstLine.substring(0, 100) // Limit length
       }
       return null
@@ -247,20 +253,23 @@ ${researchData.trending_hashtags && Array.isArray(researchData.trending_hashtags
 `
     : ""
 
-  const strategyConcepts = (hookConcept || storyConcept || valueConcept || ctaConcept)
-    ? `
+  const strategyConcepts =
+    hookConcept || storyConcept || valueConcept || ctaConcept
+      ? `
 ## Strategy Concepts (Use as inspiration, but make it YOUR unique voice):
 ${hookConcept ? `Hook idea: ${hookConcept}` : ""}
 ${storyConcept ? `Story idea: ${storyConcept}` : ""}
 ${valueConcept ? `Value idea: ${valueConcept}` : ""}
 ${ctaConcept ? `CTA idea: ${ctaConcept}` : ""}
 
-IMPORTANT: Don't copy these word-for-word. Use them as direction and make it sound natural and unique.
+IMPORTANT: These are creative directions, not factual sources. Never turn them into a personal
+story, result, number, customer claim, or event unless the verified story source below supports it.
 `
-    : ""
+      : ""
 
-  const previousContext = previousHooks.length > 0
-    ? `
+  const previousContext =
+    previousHooks.length > 0
+      ? `
 ## Previous Caption Hooks (MUST BE DIFFERENT):
 ${previousHooks.map((hook, idx) => `Post ${previousCaptions.length - previousHooks.length + idx + 1}: ${hook}`).join("\n")}
 
@@ -272,36 +281,39 @@ CRITICAL: Your hook MUST be completely different. Rotate hook styles:
 - Numbered list hook
 - "Plot twist:" style
 `
-    : ""
+      : ""
 
   // Build content pillars context
-  const contentPillarsContext = contentPillars.length > 0
-    ? `
+  const contentPillarsContext =
+    contentPillars.length > 0
+      ? `
 ## CONTENT PILLARS (Use these strategically):
-${contentPillars.map((pillar, idx) => {
-      const name = pillar?.name || pillar || 'General'
-      const desc = pillar?.description || ''
-      return `- **${name}**: ${desc || 'Content theme for this brand'}`
-    }).join('\n')}
+${contentPillars
+  .map(pillar => {
+    const name = pillar?.name || pillar || "General"
+    const desc = pillar?.description || ""
+    return `- **${name}**: ${desc || "Content theme for this brand"}`
+  })
+  .join("\n")}
 
 Current Post Pillar: **${contentPillar || purpose}**
 `
-    : ''
+      : ""
 
   // Build caption type instructions
-  const captionTypeInstructions = {
-    story: `
+  const captionTypeInstructions =
+    {
+      story: `
 ## CAPTION TYPE: STORY (Personal, Behind-the-Scenes, Journey)
 This caption should:
-- Share a personal story, moment, or experience
+- Retell only the real moment supplied in VERIFIED STORY SOURCE
 - Be authentic and vulnerable (real talk, not polished)
-- Connect to the user's journey or transformation
-- Use specific details and moments (not generic)
+- Never add a detail, timeline, quote, result, feeling, or event that is not in that source
+- Connect the verified moment to the user's audience without exaggerating it
 - Show the "behind the scenes" or "real life" aspect
-- Examples: "Three years ago I couldn't afford...", "Took this at 6am before coffee...", "Nobody talks about how..."
 - Focus on the PERSON, not the image
 `,
-    value: `
+      value: `
 ## CAPTION TYPE: VALUE/TIPS (Educational, Actionable, Helpful)
 This caption should:
 - Provide actionable tips, strategies, or insights
@@ -312,7 +324,7 @@ This caption should:
 - Examples: "Here's the exact framework I use...", "3 things that changed everything...", "The mistake I see most people make..."
 - Focus on VALUE, not the image
 `,
-    motivational: `
+      motivational: `
 ## CAPTION TYPE: MOTIVATIONAL/INSPIRATIONAL (Uplifting, Empowering, Transformation)
 This caption should:
 - Inspire and uplift the audience
@@ -323,7 +335,7 @@ This caption should:
 - Examples: "You're closer than you think...", "What if I told you...", "This is your sign to..."
 - Focus on INSPIRATION and TRANSFORMATION, not the image
 `,
-  }[captionType] || ''
+    }[captionType] || ""
 
   const captionPrompt = `Create an Instagram caption for post position ${postPosition} of a 9-post feed.
 
@@ -353,7 +365,15 @@ ${strategyConcepts}
 
 ${researchContext}
 
+## VERIFIED STORY SOURCE
+${verifiedStorySource ? verifiedStorySource : "None. Do not write first-person autobiography or imply a personal event happened."}
+
 ## CRITICAL REQUIREMENTS (2026 Human-Sounding Research):
+
+0. **TRUTH BEFORE POLISH**:
+   - Use only facts present in the brand profile or VERIFIED STORY SOURCE.
+   - Never invent personal history, client stories, testimonials, pricing, income, dates, timelines, metrics, quotes, or results.
+   - When no story source is supplied, use useful teaching, observation, or second-person guidance. Do not pretend the member experienced something.
 
 1. **THE "TEXT A FRIEND" TEST**: Read your caption out loud. If you wouldn't say it to a friend over coffee, rewrite it. That's the whole game.
 
@@ -364,7 +384,7 @@ ${researchContext}
    - DO NOT mix types - stick to the assigned type for this post
 
 3. **UNIQUE HOOK**: Must be COMPLETELY different from previous hooks. Start with something REAL and SPECIFIC:
-   - Story type: Personal moments, specific details, behind-the-scenes
+   - Story type: A real detail from VERIFIED STORY SOURCE only
    - Value type: Actionable tip, framework, or insight
    - Motivational type: Empowering statement, transformation moment, or invitation
    - ❌ NEVER: "Today I'm excited to share..." or "As a [job title], I believe..."
@@ -382,14 +402,14 @@ ${researchContext}
    - ✅ Sandra's banned words (NEVER use any of these): "leverage", "synergy", "transform", "game-changer", "skyrocket", "unlock your potential", "elevate"
    - ✅ NEVER use the em dash character. Use a period, a colon, or a middle dot instead.
    - ✅ Add tiny imperfections: Start sentences with "And" or "But", use sentence fragments, casual language
-   - ✅ Be specific: "6am" not "early morning", "$5k" not "expensive", "47 minutes" not "a while"
+   - ✅ Be specific only when the verified source contains that exact specificity
 
 6. **Authentic Voice (Maya's Style)**:
    - Write like texting a friend
    - Simple, everyday language
    - Use "you" and "I" - make it a conversation
-   - Add emotion: "honestly," "real talk," "not gonna lie"
-   - Include doubt/vulnerability: "I'm still figuring this out but..."
+   - Add emotion only when it fits the verified source
+   - Never manufacture doubt, vulnerability, or a confession
    - Use parentheses for conversational asides: (like this)
    - NO corporate buzzwords or jargon
    - NO "Let's dive in" or "Drop a comment"
@@ -418,13 +438,17 @@ OUTPUT: Only the caption text, ready to post. NO explanations, NO research notes
     system: INSTAGRAM_STRATEGIST_SYSTEM_PROMPT,
     prompt: captionPrompt,
     maxOutputTokens: 2000,
-    temperature: 0.9, // Higher temperature for more creativity and uniqueness
+    temperature: 0.6,
   })
 
   let caption = text.trim()
 
   // Remove any research headers or strategy sections
-  if (caption.includes("RESEARCH PHASE") || caption.includes("CAPTION SPECS") || caption.includes("WHY THIS LENGTH")) {
+  if (
+    caption.includes("RESEARCH PHASE") ||
+    caption.includes("CAPTION SPECS") ||
+    caption.includes("WHY THIS LENGTH")
+  ) {
     // Extract the actual caption between research and specs
     const captionStart = caption.indexOf("\n\n") + 2
     const specsStart = caption.indexOf("CAPTION SPECS")
@@ -432,7 +456,7 @@ OUTPUT: Only the caption text, ready to post. NO explanations, NO research notes
       caption = caption.substring(captionStart, specsStart).trim()
     }
   }
-  
+
   caption = enforceCaptionPublishingRules({
     caption,
     strategyHashtags,
@@ -452,6 +476,8 @@ Rules:
 - Hook -> story/context -> one ask.
 - No prompt notes, no sections, no meta text.
 - Maximum 5 hashtags.
+- Preserve the factual meaning exactly. Do not add a personal event, number, result, quote, timeline, or detail.
+${verifiedStorySource ? `- The only verified personal source is: ${verifiedStorySource}` : "- There is no verified personal story source. Do not write first-person autobiography."}
 - Never use these words: leverage, synergy, transform, game-changer, skyrocket, unlock your potential, elevate.
 - Never use the em dash character. Use a period, a colon, or a middle dot instead.
 
@@ -467,15 +493,27 @@ ${caption}`,
     })
   }
 
-  console.log(`[v0] Caption Writer: Caption created for post ${postPosition} (${caption.length} characters)`)
-  const hook = caption.split('\n\n')[0]?.trim() || ''
+  console.log(
+    `[v0] Caption Writer: Caption created for post ${postPosition} (${caption.length} characters)`
+  )
+  const hook = caption.split("\n\n")[0]?.trim() || ""
   console.log(`[v0] Caption Writer: Hook: ${hook.substring(0, 80)}...`)
 
   return { caption }
 }
 
-export async function generateInstagramBioCaption(params: BioCaptionWriterParams): Promise<{ bio: string }> {
-  const { businessType, brandVibe, brandVoice, targetAudience, businessGoals, researchInsights, niche } = params
+export async function generateInstagramBioCaption(
+  params: BioCaptionWriterParams
+): Promise<{ bio: string }> {
+  const {
+    businessType,
+    brandVibe,
+    brandVoice,
+    targetAudience,
+    businessGoals,
+    researchInsights,
+    niche,
+  } = params
 
   console.log("[v0] Caption Writer: Creating Instagram bio")
 

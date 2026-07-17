@@ -1,5 +1,9 @@
 import { sql } from "@/lib/db/client"
-import { generateInstagramCaption, shouldRegenerateCaption, extractHashtagsFromCaption } from "@/lib/feed-planner/caption-writer"
+import {
+  generateInstagramCaption,
+  shouldRegenerateCaption,
+  extractHashtagsFromCaption,
+} from "@/lib/feed-planner/caption-writer"
 
 export type FeedCaptionGenerationMode = "all" | "missing_or_weak"
 
@@ -11,8 +15,10 @@ export interface FeedCaptionGenerationResult {
   targetedPosts: number
   captionsGenerated: number
   captionsFailed: number
+  captionsNeedStory: number
   captionsSkipped: number
   failedPostIds: number[]
+  needsStoryPostIds: number[]
 }
 
 type FeedPostRow = {
@@ -30,7 +36,11 @@ function parseContentPillars(value: unknown): any[] {
   try {
     const parsed = typeof value === "string" ? JSON.parse(value) : value
     if (Array.isArray(parsed)) return parsed
-    if (parsed && typeof parsed === "object" && Array.isArray((parsed as { pillars?: unknown[] }).pillars)) {
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      Array.isArray((parsed as { pillars?: unknown[] }).pillars)
+    ) {
       return (parsed as { pillars: unknown[] }).pillars
     }
   } catch {
@@ -55,7 +65,11 @@ function getCaptionType(position: number): "story" | "value" | "motivational" {
   return pattern[position - 1] || "story"
 }
 
-function getContentPillarForPost(position: number, postContentPillar: string | null, contentPillars: any[]): { name: string; description?: string } {
+function getContentPillarForPost(
+  position: number,
+  postContentPillar: string | null,
+  contentPillars: any[]
+): { name: string; description?: string } {
   if (postContentPillar && postContentPillar.trim()) {
     return { name: postContentPillar.trim() }
   }
@@ -70,20 +84,6 @@ function getContentPillarForPost(position: number, postContentPillar: string | n
   }
 
   return { name: "lifestyle" }
-}
-
-function fallbackCaptionForPost(input: { pillar: string; audience: string }): string {
-  const normalizedPillar = input.pillar || "your content"
-  const normalizedAudience = input.audience || "your audience"
-  return [
-    `Real talk: if you're building ${normalizedPillar}, clarity beats perfection every single time.`,
-    "",
-    `Pick one story your ${normalizedAudience} can feel, then share one practical next step they can use today.`,
-    "",
-    "Save this for your next post and tell me what you're creating this week.",
-    "",
-    "#personalbrand #contentstrategy #instagramtips #storytelling #contentcreation",
-  ].join("\n")
 }
 
 export async function generateAndStoreFeedCaptions(input: {
@@ -161,8 +161,10 @@ export async function generateAndStoreFeedCaptions(input: {
   let targetedPosts = 0
   let captionsGenerated = 0
   let captionsFailed = 0
+  let captionsNeedStory = 0
   let captionsSkipped = 0
   const failedPostIds: number[] = []
+  const needsStoryPostIds: number[] = []
   const previousCaptions: Array<{ position: number; caption: string }> = []
 
   for (const post of posts) {
@@ -184,12 +186,23 @@ export async function generateAndStoreFeedCaptions(input: {
     targetedPosts += 1
     const captionType = getCaptionType(post.position)
 
+    if (captionType === "story" && !existingCaption) {
+      captionsNeedStory += 1
+      needsStoryPostIds.push(post.id)
+      continue
+    }
+
     try {
       const captionResult = await generateInstagramCaption({
         postPosition: post.position,
         shotType: post.post_type || "portrait",
         purpose: pillarInfo.name,
-        emotionalTone: captionType === "motivational" ? "inspiring" : captionType === "value" ? "helpful" : "warm",
+        emotionalTone:
+          captionType === "motivational"
+            ? "inspiring"
+            : captionType === "value"
+              ? "helpful"
+              : "warm",
         brandProfile: brandProfile || {
           business_type: "Personal Brand",
           brand_vibe: "Strategic",
@@ -203,13 +216,13 @@ export async function generateAndStoreFeedCaptions(input: {
         researchData: researchData || null,
         captionType,
         contentPillars,
+        storySource: captionType === "story" ? existingCaption : null,
       })
 
-      const generatedCaption = String(captionResult.caption || "").trim()
-      const finalCaption = generatedCaption || fallbackCaptionForPost({
-        pillar: pillarInfo.name,
-        audience: defaultAudience,
-      })
+      const finalCaption = String(captionResult.caption || "").trim()
+      if (!finalCaption) {
+        throw new Error("Caption provider returned an empty draft")
+      }
 
       await sql`
         UPDATE feed_posts
@@ -228,26 +241,8 @@ export async function generateAndStoreFeedCaptions(input: {
       console.error(`[FEED-CAPTIONS] Failed to generate caption for post ${post.position}:`, error)
       captionsFailed += 1
       failedPostIds.push(post.id)
-
-      const fallbackCaption = existingCaption && !shouldRegenerateCaption(existingCaption)
-        ? existingCaption
-        : fallbackCaptionForPost({
-            pillar: pillarInfo.name,
-            audience: defaultAudience,
-          })
-
-      await sql`
-        UPDATE feed_posts
-        SET caption = ${fallbackCaption}, updated_at = NOW()
-        WHERE id = ${post.id}
-        AND feed_layout_id = ${normalizedFeedId}
-        AND user_id = ${normalizedUserId}
-      `
-
-      previousCaptions.push({
-        position: post.position,
-        caption: fallbackCaption,
-      })
+      // Never turn a provider failure into invented filler. The post remains visibly
+      // unfinished so the member can retry or give Maya the missing context.
     }
   }
 
@@ -259,8 +254,10 @@ export async function generateAndStoreFeedCaptions(input: {
     targetedPosts,
     captionsGenerated,
     captionsFailed,
+    captionsNeedStory,
     captionsSkipped,
     failedPostIds,
+    needsStoryPostIds,
   }
 }
 

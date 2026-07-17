@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react"
 import { Check, ChevronDown, Loader2, X } from "lucide-react"
+import { isPersonalStoryPosition } from "@/lib/feed-planner/caption-truth"
 
 type CalendarPost = {
   id: number | string
@@ -43,10 +44,7 @@ export function CalendarBulkCreate({
   const missingImages = useMemo(
     () =>
       posts.filter(
-        post =>
-          !post.image_url &&
-          !post.prediction_id &&
-          post.generation_status !== "generating"
+        post => !post.image_url && !post.prediction_id && post.generation_status !== "generating"
       ),
     [posts]
   )
@@ -54,19 +52,27 @@ export function CalendarBulkCreate({
     () => posts.filter(post => !String(post.caption || "").trim()),
     [posts]
   )
+  const storyPosts = useMemo(
+    () => missingCaptions.filter(post => isPersonalStoryPosition(Number(post.position))),
+    [missingCaptions]
+  )
+  const autoDraftableCaptions = useMemo(
+    () => missingCaptions.filter(post => !isPersonalStoryPosition(Number(post.position))),
+    [missingCaptions]
+  )
 
   const canCreate =
     (includeImages && missingImages.length > 0) ||
-    (includeCaptions && missingCaptions.length > 0)
+    (includeCaptions && autoDraftableCaptions.length > 0)
 
   const actionLabel = (() => {
     const parts: string[] = []
     if (includeImages && missingImages.length > 0) {
       parts.push(`${missingImages.length} ${missingImages.length === 1 ? "image" : "images"}`)
     }
-    if (includeCaptions && missingCaptions.length > 0) {
+    if (includeCaptions && autoDraftableCaptions.length > 0) {
       parts.push(
-        `${missingCaptions.length} ${missingCaptions.length === 1 ? "caption" : "captions"}`
+        `${autoDraftableCaptions.length} ${autoDraftableCaptions.length === 1 ? "caption" : "captions"}`
       )
     }
     if (parts.length === 0) return "Everything is ready"
@@ -83,7 +89,7 @@ export function CalendarBulkCreate({
     const nextErrors: BulkError[] = []
 
     try {
-      if (includeCaptions && missingCaptions.length > 0) {
+      if (includeCaptions && autoDraftableCaptions.length > 0) {
         try {
           const response = await fetch(`/api/feed/${feedId}/generate-captions`, {
             method: "POST",
@@ -136,7 +142,8 @@ export function CalendarBulkCreate({
             } catch (error) {
               nextErrors.push({
                 postId,
-                message: error instanceof Error ? error.message : "This image could not be created.",
+                message:
+                  error instanceof Error ? error.message : "This image could not be created.",
               })
             }
           }
@@ -232,7 +239,7 @@ export function CalendarBulkCreate({
                 aria-label="Captions"
                 checked={includeCaptions}
                 onChange={event => setIncludeCaptions(event.target.checked)}
-                disabled={running || missingCaptions.length === 0}
+                disabled={running || autoDraftableCaptions.length === 0}
                 className="h-4 w-4 accent-[color:var(--app-text-primary)]"
               />
               <span>
@@ -240,11 +247,19 @@ export function CalendarBulkCreate({
                   Captions
                 </span>
                 <span className="block text-[10px] text-[color:var(--app-text-secondary)]">
-                  {missingCaptions.length} remaining
+                  {autoDraftableCaptions.length} can be drafted
                 </span>
               </span>
             </label>
           </div>
+
+          {storyPosts.length > 0 ? (
+            <p className="mt-3 rounded-[12px] bg-[color:var(--calendar-stone-1)] px-3 py-2.5 text-[11px] leading-relaxed text-[color:var(--app-text-secondary)]">
+              {storyPosts.length} personal{" "}
+              {storyPosts.length === 1 ? "caption needs" : "captions need"} your real story. Open{" "}
+              {storyPosts.length === 1 ? "that post" : "each post"} and tell Maya what happened.
+            </p>
+          ) : null}
 
           {running && includeImages ? (
             <div className="mt-3" role="status" aria-live="polite">
@@ -289,6 +304,8 @@ export function CalendarBulkCreate({
               </>
             ) : canCreate ? (
               actionLabel
+            ) : storyPosts.length > 0 ? (
+              "Stories need you"
             ) : (
               <>
                 <Check className="h-4 w-4" />

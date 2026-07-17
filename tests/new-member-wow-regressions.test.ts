@@ -14,7 +14,7 @@ describe("new member WOW regressions", () => {
     expect(
       shouldStopAppV3MayaToolLoop({
         steps: [step("save_brand_profile"), step("save_brand_profile"), step("save_brand_profile")],
-      }),
+      })
     ).toBe(true)
   })
 
@@ -45,10 +45,10 @@ describe("new member WOW regressions", () => {
     expect(modal).toContain('mode === "style" ? "Save my style"')
     expect(modal).toContain("Choose its visual world.")
     expect(header).toContain("Choose your look")
-    expect(header).toContain("feedPosts.every((post) => !post?.image_url)")
+    expect(header).toContain("feedPosts.every(post => !post?.image_url)")
     expect(header).toContain("defaultFeedStyle={lastFeedStyle}")
     expect(header).toContain('mode={isCreatingNewFeed ? "new" : "style"}')
-    expect(feedView).toContain('mode="first"')
+    expect(feedView).toContain('mode={feedExists ? "new" : "first"}')
   })
 
   it("uses the light editorial signup system and mobile-sized controls", () => {

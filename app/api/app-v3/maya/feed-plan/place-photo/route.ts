@@ -52,8 +52,7 @@ export async function POST(req: Request) {
 
     // Prefer this month's auto-drafted plan; fall back to the user's latest plan of any month
     // so the action still works for an account whose plan predates period_month.
-    const [layout] =
-      (await sql`
+    const [layout] = (await sql`
         SELECT id, feed_style FROM feed_layouts
         WHERE user_id = ${neonUser.id} AND period_month = ${periodMonth}
         LIMIT 1
@@ -129,7 +128,10 @@ export async function POST(req: Request) {
       const dayAfterLatest = latest?.max_date ? addDays(latest.max_date, 1) : today
       scheduledAt = dayAfterLatest > today ? dayAfterLatest : today
       targetPosition = nextPosition
-      contentPillar = typeof conceptTitle === "string" && conceptTitle.trim() ? conceptTitle.trim() : "From your chat"
+      contentPillar =
+        typeof conceptTitle === "string" && conceptTitle.trim()
+          ? conceptTitle.trim()
+          : "From your chat"
       caption = null
 
       // The photo being placed comes from chat, so it IS a person shot - the new day is
@@ -137,7 +139,7 @@ export async function POST(req: Request) {
       // governs pre-planned slots, not an extension day created for an existing photo).
       const [inserted] = await sql`
         INSERT INTO feed_posts (feed_layout_id, user_id, position, post_type, content_pillar, scheduled_at, generation_status)
-        VALUES (${feedLayoutId}, ${neonUser.id}, ${nextPosition}, ${'selfie'}, ${contentPillar}, ${scheduledAt}, 'pending')
+        VALUES (${feedLayoutId}, ${neonUser.id}, ${nextPosition}, ${"selfie"}, ${contentPillar}, ${scheduledAt}, 'pending')
         RETURNING id
       `
       targetPostId = Number(inserted.id)
@@ -157,7 +159,8 @@ export async function POST(req: Request) {
           shotType: "portrait",
           purpose: contentPillar || "general",
           emotionalTone: "confident",
-          captionType: "story",
+          // Placing a photo does not give us a factual personal story source.
+          captionType: "value",
           contentPillars: [],
           brandProfile: (brandProfile as any) || {
             business_type: "Personal Brand",

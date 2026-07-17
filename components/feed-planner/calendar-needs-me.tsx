@@ -1,5 +1,7 @@
 "use client"
 
+import { isPersonalStoryPosition } from "@/lib/feed-planner/caption-truth"
+
 interface CalendarNeedsMeProps {
   posts: any[]
   onSelectPost: (post: any) => void
@@ -17,8 +19,13 @@ export function CalendarNeedsMe({ posts, onSelectPost }: CalendarNeedsMeProps) {
       !post.prediction_id &&
       post.generation_status !== "generating"
   )
-  const needsCaption = posts.filter(post => !post.caption?.trim())
-  const next = needsPhoto[0] ?? posts.find(post => !post.caption?.trim() && !post.prediction_id)
+  const needsStory = posts.filter(
+    post => !post.caption?.trim() && isPersonalStoryPosition(Number(post.position))
+  )
+  const needsCaption = posts.filter(
+    post => !post.caption?.trim() && !isPersonalStoryPosition(Number(post.position))
+  )
+  const next = needsStory[0] ?? needsPhoto[0] ?? needsCaption.find(post => !post.prediction_id)
 
   return (
     <section
@@ -42,6 +49,14 @@ export function CalendarNeedsMe({ posts, onSelectPost }: CalendarNeedsMeProps) {
           </strong>{" "}
           {needsCaption.length === 1 ? "needs a caption" : "need a caption"}
         </span>
+        {needsStory.length > 0 ? (
+          <span>
+            <strong className="font-medium text-[color:var(--app-text-primary)]">
+              {needsStory.length}
+            </strong>{" "}
+            {needsStory.length === 1 ? "needs your story" : "need your stories"}
+          </span>
+        ) : null}
         {creating > 0 ? (
           <span>
             Maya is creating{" "}
@@ -58,9 +73,11 @@ export function CalendarNeedsMe({ posts, onSelectPost }: CalendarNeedsMeProps) {
         >
           {/* DRAFT UX copy for Sandra approval before release. */}
           I’d finish post {next.position} next.{" "}
-          {next.caption?.trim()
-            ? "The caption is ready and it only needs the image."
-            : "It needs a clear caption before the visual."}
+          {!next.caption?.trim() && isPersonalStoryPosition(Number(next.position))
+            ? "Tell Maya one real moment and she’ll shape it without making anything up."
+            : next.caption?.trim()
+              ? "The caption is ready and it only needs the image."
+              : "It needs a clear caption before the visual."}
         </button>
       ) : null}
     </section>

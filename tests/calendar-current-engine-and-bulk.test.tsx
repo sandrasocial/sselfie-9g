@@ -71,7 +71,8 @@ describe("Calendar bulk creation", () => {
     expect(screen.getByRole("checkbox", { name: /images/i })).toBeChecked()
     expect(screen.getByRole("checkbox", { name: /captions/i })).toBeChecked()
 
-    fireEvent.click(screen.getByRole("button", { name: /create 2 images and 2 captions/i }))
+    expect(screen.getByText(/1 personal caption needs your real story/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /create 2 images and 1 caption/i }))
 
     await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1))
     expect(fetchMock).toHaveBeenCalledWith(
@@ -120,7 +121,7 @@ describe("Calendar bulk creation", () => {
     render(
       <CalendarBulkCreate
         feedId={17}
-        posts={[{ id: 101, position: 1, image_url: null, caption: null }]}
+        posts={[{ id: 101, position: 2, image_url: null, caption: null }]}
         onComplete={onComplete}
       />
     )

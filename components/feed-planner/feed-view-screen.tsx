@@ -15,6 +15,7 @@ import { useFeedNav } from "./feed-nav-context"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import {
   calendarPlanSettingsFromProfile,
+  isCalendarPlanComplete,
   type CalendarPlanSettings,
 } from "@/lib/feed-planner/calendar-plan-settings"
 
@@ -59,6 +60,7 @@ export default function FeedViewScreen({
   const searchParams = useSearchParams()
   const [isCreatingManual, setIsCreatingManual] = useState(false)
   const [isPlanningWithMaya, setIsPlanningWithMaya] = useState(false)
+  const [firstPlanSettingsOpen, setFirstPlanSettingsOpen] = useState(false)
   const [localFeedStyleModal, setLocalFeedStyleModal] = useState(false)
   const didOpenFeedStyleFromQuery = useRef(false)
   const didOpenWizardFromQuery = useRef(false)
@@ -281,7 +283,7 @@ export default function FeedViewScreen({
     router.push("/app?view=create")
   }
 
-  const handlePlanWithMaya = async () => {
+  const createFirstPlanWithMaya = async () => {
     if (isPlanningWithMaya) return
     if (!canPlanMonthWithMaya) {
       void trackAnalyticsEvent({
@@ -302,6 +304,10 @@ export default function FeedViewScreen({
       const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
+        if (data.reason === "missing_context") {
+          setFirstPlanSettingsOpen(true)
+          return
+        }
         throw new Error(
           data.reason === "draft_in_progress"
             ? "Maya is already preparing your month. Please try again in a moment."
@@ -336,6 +342,14 @@ export default function FeedViewScreen({
     } finally {
       setIsPlanningWithMaya(false)
     }
+  }
+
+  const handlePlanWithMaya = async () => {
+    if (!isCalendarPlanComplete(calendarPlanSettings)) {
+      setFirstPlanSettingsOpen(true)
+      return
+    }
+    await createFirstPlanWithMaya()
   }
 
   const handleQuickManualGrid = async (position: number) => {
@@ -475,7 +489,8 @@ export default function FeedViewScreen({
         <div className="app-light-panel-text min-h-0 flex-1 overflow-y-auto bg-[color:var(--app-bg)] px-0 py-3 sm:px-4 lg:px-6">
           <div className="mx-auto grid w-full max-w-[1380px] min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
             <CalendarEmptyCanvas
-              onStartBlank={() => void handleQuickManualGrid(1)}
+              onPlanWithMaya={() => void handlePlanWithMaya()}
+              onStartWithPhotos={() => void handleQuickManualGrid(1)}
               busy={isCreatingManual || isPlanningWithMaya}
             />
             <CalendarMayaWorkspace
@@ -485,7 +500,9 @@ export default function FeedViewScreen({
               busy={isCreatingManual || isPlanningWithMaya}
               planSettings={calendarPlanSettings}
               onSavePlanSettings={saveCalendarPlanSettings}
-              onBuildFirstGrid={handlePlanWithMaya}
+              planSettingsOpen={firstPlanSettingsOpen}
+              onPlanSettingsClosed={() => setFirstPlanSettingsOpen(false)}
+              onPlanSettingsConfirmed={() => void createFirstPlanWithMaya()}
               onApplyProposal={async (proposal: CalendarAgentProposal) => {
                 if (proposal.kind !== "create_plan")
                   throw new Error("Create your grid first, then I can change it.")

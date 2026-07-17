@@ -3,10 +3,12 @@
 import { Plus } from "lucide-react"
 
 export function CalendarEmptyCanvas({
-  onStartBlank,
+  onPlanWithMaya,
+  onStartWithPhotos,
   busy = false,
 }: {
-  onStartBlank: () => void
+  onPlanWithMaya: () => void
+  onStartWithPhotos: () => void
   busy?: boolean
 }) {
   return (
@@ -64,10 +66,11 @@ export function CalendarEmptyCanvas({
       <div className="grid grid-cols-3 gap-[2px] bg-[color:var(--app-bg)] p-[2px]">
         {Array.from({ length: 9 }, (_, index) => {
           const position = index + 1
+          const liveStep = ["Planning", "Writing", "Styling"][index]
           return (
             <div
               key={position}
-              className={`relative aspect-square ${
+              className={`relative aspect-square overflow-hidden ${
                 position % 4 === 0
                   ? "bg-[color:var(--calendar-stone-4)]"
                   : position % 3 === 0
@@ -81,23 +84,46 @@ export function CalendarEmptyCanvas({
                 {position}
               </span>
               <span className="absolute bottom-2 left-2 text-[8px] uppercase tracking-[0.12em] text-[color:var(--app-text-secondary)]">
-                Planned
+                {busy ? liveStep || "Waiting" : "Planned"}
               </span>
+              {busy && liveStep ? (
+                <span className="absolute inset-0 animate-pulse bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.55),transparent)] motion-reduce:animate-none" />
+              ) : null}
             </div>
           )
         })}
       </div>
-      <div className="px-4 py-4 text-center">
-        <p className="text-[12px] text-[color:var(--app-text-secondary)]">
-          Confirm your Plan Settings with Maya to shape these posts.
+      {busy ? (
+        <p
+          role="status"
+          className="border-t border-[color:var(--app-glass-border)] px-4 py-3 text-center text-[11px] text-[color:var(--app-text-secondary)]"
+        >
+          Maya is shaping your first posts here. This grid will update when the plan is ready.
+        </p>
+      ) : null}
+      <div className="space-y-2 px-4 py-5 text-center sm:px-7">
+        <p className="font-serif text-[25px] font-light text-[color:var(--app-text-primary)]">
+          Let’s make this feel like you.
+        </p>
+        <p className="mx-auto max-w-[38ch] text-[12px] leading-relaxed text-[color:var(--app-text-secondary)]">
+          Maya can map the month from what she already knows, then you can shape every post
+          together.
         </p>
         <button
           type="button"
-          onClick={onStartBlank}
+          onClick={onPlanWithMaya}
           disabled={busy}
-          className="mt-2 min-h-11 px-3 text-[11px] text-[color:var(--app-text-secondary)] underline underline-offset-4 disabled:opacity-50"
+          className="mt-2 min-h-12 w-full rounded-full bg-[color:var(--app-btn-primary-bg)] px-5 text-[12px] font-medium text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto"
         >
-          Start a blank grid instead
+          {busy ? "Maya is mapping your month…" : "Plan my first month with Maya"}
+        </button>
+        <button
+          type="button"
+          onClick={onStartWithPhotos}
+          disabled={busy}
+          className="min-h-11 w-full px-3 text-[11px] text-[color:var(--app-text-secondary)] underline underline-offset-4 disabled:opacity-50 sm:w-auto"
+        >
+          Start with my own photos
         </button>
       </div>
     </section>

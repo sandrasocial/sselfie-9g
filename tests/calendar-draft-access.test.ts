@@ -52,4 +52,19 @@ describe("Calendar Maya-plan access", () => {
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toMatchObject({ created: true, feedLayoutId: 12 })
   })
+
+  it("asks an entitled member for context instead of drafting from guesses", async () => {
+    mocks.getFeedPlannerAccess.mockResolvedValue({
+      isFree: false,
+      isMembership: true,
+      isPaidBlueprint: false,
+    })
+    mocks.draftMonthPlanForUser.mockResolvedValue({ created: false, reason: "missing_context" })
+    const { POST } = await import("@/app/api/app-v3/maya/feed-plan/draft/route")
+
+    const response = await POST()
+
+    expect(response.status).toBe(422)
+    await expect(response.json()).resolves.toMatchObject({ reason: "missing_context" })
+  })
 })

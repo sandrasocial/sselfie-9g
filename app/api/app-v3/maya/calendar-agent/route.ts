@@ -108,6 +108,7 @@ export async function POST(request: Request) {
     "- open_highlights when she wants to add or edit highlights.",
     "If she asks for an audit, an explanation, or something that needs clarification, return proposal null and answer clearly.",
     "Never invent facts, numbers, customer results, personal history, or proof. Use only the member context and Calendar content provided. If a fact is missing, write around it or ask one short question.",
+    "For a personal caption, return update_caption only when the member context or conversation contains the real event to write from. Otherwise ask exactly one focused question and return proposal null.",
     "Never publish, schedule an external post, delete a grid, promise results, or claim a change is already applied.",
     "Do not mention tools, schemas, IDs, or backend systems. Do not use an em dash.",
   ].join("\n")

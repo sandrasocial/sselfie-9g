@@ -81,8 +81,15 @@ export async function draftReadyPostCaption(input: {
       targetAudience: safeBrandProfile.target_audience || "her audience",
       brandVoice: safeBrandProfile.brand_voice || "warm, direct and human",
       contentPillar: input.post.content_pillar || "personal brand",
-      previousCaptions: Array.isArray(previousCaptions) ? previousCaptions : [],
-      captionType: "story",
+      previousCaptions: Array.isArray(previousCaptions)
+        ? previousCaptions.map(item => ({
+            position: Number(item.position) || 1,
+            caption: typeof item.caption === "string" ? item.caption : undefined,
+          }))
+        : [],
+      // A photo alone is not evidence of a personal story. Draft useful brand value
+      // automatically; Maya asks for a real moment before writing autobiography.
+      captionType: "value",
       contentPillars: normalizeContentPillars(safeBrandProfile.content_pillars),
     })
     const caption = hasCaption(result.caption) ? result.caption.trim() : null

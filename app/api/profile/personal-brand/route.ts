@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
+import { CacheKeys, getRedisClient } from "@/lib/redis"
 
 export async function GET() {
   try {
@@ -207,7 +208,6 @@ export async function GET() {
     return NextResponse.json({ error: "Failed to fetch personal brand" }, { status: 500 })
   }
 }
-
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerClient()
@@ -580,6 +580,13 @@ export async function POST(request: NextRequest) {
           NOW()
         )
       `
+    }
+
+    try {
+      await getRedisClient().del(CacheKeys.mayaPersonalBrand(String(neonUser.id)))
+      await getRedisClient().del(CacheKeys.mayaUserContext(String(neonUser.id)))
+    } catch (cacheError) {
+      console.error("[personal-brand] cache invalidation skipped:", cacheError)
     }
 
     console.log("[v0] Brand profile save complete!")

@@ -600,6 +600,11 @@ export default function InstagramFeedView({
     return baseDisplayPosts
   })()
   const activePost = displayPosts.find((post: any) => Number(post.id) === activePostId) ?? null
+  const openPostStudio = (post: any) => {
+    setPlanSettingsOpen(false)
+    setActivePostId(Number(post.id))
+    setSelectedPost(post)
+  }
 
   const refreshCalendar = async () => {
     await mutate()
@@ -805,6 +810,66 @@ export default function InstagramFeedView({
     return Array.from(seen)
   })()
 
+  const calendarMayaWorkspace = !access?.isFree ? (
+    <CalendarMayaWorkspace
+      feedId={feedId}
+      displayMode={selectedPost ? "embedded" : "sidebar"}
+      selectedPost={
+        activePost
+          ? {
+              id: Number(activePost.id),
+              position: Number(activePost.position),
+              caption: activePost.caption ?? null,
+              contentPillar: activePost.content_pillar ?? null,
+              scheduledAt: activePost.scheduled_at ?? null,
+              hasImage: Boolean(activePost.image_url),
+              imageUrl: activePost.image_url ?? null,
+            }
+          : null
+      }
+      feedSummary={{
+        title: feedData?.feed?.brand_name || feedData?.feed?.title || "Current grid",
+        bio: feedData?.bio?.bio_text || null,
+        posts: displayPosts.map((post: any) => ({
+          id: Number(post.id),
+          position: Number(post.position),
+          caption: post.caption ?? null,
+          contentPillar: post.content_pillar ?? null,
+          scheduledAt: post.scheduled_at ?? null,
+          hasImage: Boolean(post.image_url),
+        })),
+      }}
+      onApplyProposal={applyCalendarProposal}
+      onUndo={undoCalendarProposal}
+      planSettings={calendarPlanSettings}
+      onSavePlanSettings={saveCalendarPlanSettings}
+      planSettingsOpen={planSettingsOpen}
+      onPlanSettingsClosed={() => setPlanSettingsOpen(false)}
+      onPreviewProposal={setPreviewProposal}
+      onClearPreview={() => setPreviewProposal(null)}
+      onOpenPostDetails={postId => {
+        const post = displayPosts.find((item: any) => Number(item.id) === postId)
+        if (post) openPostStudio(post)
+      }}
+      onClearSelectedPost={() => setActivePostId(null)}
+      onOpenPhotoPicker={postId => {
+        const galleryPost = displayPosts.find((item: any) => Number(item.id) === postId)
+        if (galleryPost) setShowGallery(Number(galleryPost.id))
+      }}
+      onPostUpdated={async updatedPost => {
+        if (updatedPost && typeof updatedPost === "object") {
+          setSelectedPost((current: any | null) =>
+            current?.id === (updatedPost as any).id
+              ? { ...current, ...(updatedPost as Record<string, unknown>) }
+              : current
+          )
+        }
+        await mutate()
+      }}
+      onCreateNewGrid={onRequireFeedStyle}
+    />
+  ) : null
+
   // Show loading overlay ONLY for Maya feeds that are actively generating (paid users, full grid)
   // NEVER show for manual feeds - they should always show the grid
   // NEVER show for free users (single placeholder) - they should see placeholder with inline generation
@@ -856,10 +921,7 @@ export default function InstagramFeedView({
 
         {!access?.isFree ? (
           <>
-            <CalendarNeedsMe
-              posts={displayPosts}
-              onSelectPost={post => setActivePostId(Number(post.id))}
-            />
+            <CalendarNeedsMe posts={displayPosts} onSelectPost={openPostStudio} />
             <CalendarBulkCreate
               feedId={feedId}
               posts={displayPosts}
@@ -879,10 +941,7 @@ export default function InstagramFeedView({
 
         <div className="pb-20">
           {activeTab === "plan" && !access?.isFree && (
-            <FeedWeekView
-              posts={displayPosts}
-              onPostClick={post => setActivePostId(Number(post.id))}
-            />
+            <FeedWeekView posts={displayPosts} onPostClick={openPostStudio} />
           )}
 
           {activeTab === "grid" && (
@@ -912,7 +971,7 @@ export default function InstagramFeedView({
                     feedId={feedId}
                     access={access} // Phase 5.1: Pass access control for image generation
                     activePostId={activePostId}
-                    onPostClick={post => setActivePostId(Number(post.id))}
+                    onPostClick={openPostStudio}
                     onAddImage={setShowGallery}
                     onGenerateImage={async (_postId: number) => await mutate()} // Phase 5.1: Refresh feed data after generation
                     onRequireFeedStyle={onRequireFeedStyle}
@@ -922,14 +981,6 @@ export default function InstagramFeedView({
                     onDragEnd={dragDrop.handleDragEnd}
                     onMovePost={dragDrop.movePost}
                   />
-                  {displayPosts.some((p: any) => !p.image_url) && (
-                    <div className="mt-5 px-4 text-center">
-                      <p className="text-xs font-light text-[color:var(--app-text-secondary)]">
-                        {/* DRAFT UX copy for Sandra approval before release. */}
-                        Tap a post to select it. Add or replace a photo from Maya’s post actions.
-                      </p>
-                    </div>
-                  )}
                 </>
               )}
             </>
@@ -967,6 +1018,7 @@ export default function InstagramFeedView({
           onCloseProfileGallery={() => setShowProfileGallery(false)}
           onShowGallery={setShowGallery}
           onNavigateToMaya={actions.navigateToMayaChat}
+          mayaWorkspace={calendarMayaWorkspace}
           onUpdate={async (updatedPost?: any) => {
             console.log(
               "[v0] onUpdate called with post:",
@@ -1119,64 +1171,7 @@ export default function InstagramFeedView({
           }
         />
       </div>
-      {!access?.isFree ? (
-        <CalendarMayaWorkspace
-          feedId={feedId}
-          selectedPost={
-            activePost
-              ? {
-                  id: Number(activePost.id),
-                  position: Number(activePost.position),
-                  caption: activePost.caption ?? null,
-                  contentPillar: activePost.content_pillar ?? null,
-                  scheduledAt: activePost.scheduled_at ?? null,
-                  hasImage: Boolean(activePost.image_url),
-                  imageUrl: activePost.image_url ?? null,
-                }
-              : null
-          }
-          feedSummary={{
-            title: feedData?.feed?.brand_name || feedData?.feed?.title || "Current grid",
-            bio: feedData?.bio?.bio_text || null,
-            posts: displayPosts.map((post: any) => ({
-              id: Number(post.id),
-              position: Number(post.position),
-              caption: post.caption ?? null,
-              contentPillar: post.content_pillar ?? null,
-              scheduledAt: post.scheduled_at ?? null,
-              hasImage: Boolean(post.image_url),
-            })),
-          }}
-          onApplyProposal={applyCalendarProposal}
-          onUndo={undoCalendarProposal}
-          planSettings={calendarPlanSettings}
-          onSavePlanSettings={saveCalendarPlanSettings}
-          planSettingsOpen={planSettingsOpen}
-          onPlanSettingsClosed={() => setPlanSettingsOpen(false)}
-          onPreviewProposal={setPreviewProposal}
-          onClearPreview={() => setPreviewProposal(null)}
-          onOpenPostDetails={postId => {
-            const post = displayPosts.find((item: any) => Number(item.id) === postId)
-            if (post) setSelectedPost(post)
-          }}
-          onClearSelectedPost={() => setActivePostId(null)}
-          onOpenPhotoPicker={postId => {
-            const galleryPost = displayPosts.find((item: any) => Number(item.id) === postId)
-            if (galleryPost) setShowGallery(Number(galleryPost.id))
-          }}
-          onPostUpdated={async updatedPost => {
-            if (updatedPost && typeof updatedPost === "object") {
-              setSelectedPost((current: any | null) =>
-                current?.id === (updatedPost as any).id
-                  ? { ...current, ...(updatedPost as Record<string, unknown>) }
-                  : current
-              )
-            }
-            await mutate()
-          }}
-          onCreateNewGrid={onRequireFeedStyle}
-        />
-      ) : null}
+      {!selectedPost ? calendarMayaWorkspace : null}
     </div>
   )
 }

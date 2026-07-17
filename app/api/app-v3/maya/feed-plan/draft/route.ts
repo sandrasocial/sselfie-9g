@@ -34,6 +34,7 @@ export async function POST() {
     const outcome = await draftMonthPlanForUser(user.id, neonUser.id)
     if (outcome.created) return NextResponse.json(outcome)
     if (outcome.reason === "draft_in_progress") return NextResponse.json(outcome, { status: 409 })
+    if (outcome.reason === "missing_context") return NextResponse.json(outcome, { status: 422 })
     if (outcome.reason === "generation_failed") return NextResponse.json(outcome, { status: 502 })
     return NextResponse.json(outcome)
   } catch (error) {

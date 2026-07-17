@@ -8,7 +8,10 @@ describe("CUSTOMER-PHOTOSHOOT-01 format contract", () => {
 
   it("adds Photoshoot as a first-class customer format", () => {
     expect(read("components/app-v3/types.ts")).toContain('"photoshoot"')
-    expect(read("components/app-v3/visual-front-door.tsx")).toContain('format: "photoshoot"')
+    expect(read("components/app-v3/visual-front-door.tsx")).toContain('photoshoot: "Full shoot"')
+    expect(read("components/app-v3/visual-front-door.tsx")).toContain(
+      "A launch photo, a full shoot"
+    )
     expect(read("components/app-v3/maya-concierge.tsx")).toContain('id: "photoshoot"')
     expect(read("lib/app-v3/maya/draft-snapshot.ts")).toContain('"photoshoot"')
   })
@@ -19,7 +22,7 @@ describe("CUSTOMER-PHOTOSHOOT-01 format contract", () => {
     const chatRoute = read("app/api/app-v3/maya/chat/route.ts")
 
     expect(concierge).toContain("generatePhotoshootSet")
-    expect(concierge).toContain("conceptFormat === \"photoshoot\"")
+    expect(concierge).toContain('conceptFormat === "photoshoot"')
     expect(concierge).toContain("Create full photoshoot")
     expect(route).toContain("validatePhotoshootBriefs")
     expect(route).toContain("photoshoot_plan_invalid")
@@ -37,7 +40,9 @@ describe("CUSTOMER-PHOTOSHOOT-01 format contract", () => {
     expect(route).toContain("const selfieAndHeroFiles = [...selfieFiles, heroFile]")
 
     // Hero renders from selfies + optional inspiration (identity + style ground truth).
-    const heroFirst = route.indexOf("const heroBuffer = await runJob(hero.job, selfieAndInspirationFiles)")
+    const heroFirst = route.indexOf(
+      "const heroBuffer = await runJob(hero.job, selfieAndInspirationFiles)"
+    )
     const restAfter = route.indexOf("restJobs.map(async ({ item, index })")
     expect(heroFirst).toBeGreaterThan(-1)
     expect(restAfter).toBeGreaterThan(heroFirst)

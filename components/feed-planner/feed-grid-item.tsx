@@ -7,6 +7,7 @@ import { useFeedPostPolling } from "@/lib/hooks/use-feed-post-polling"
 import { toast } from "@/hooks/use-toast"
 import { Spinner } from "@/components/app-v3/loading"
 import { StopGenerationDialog } from "./stop-generation-dialog"
+import { isPersonalStoryPosition } from "@/lib/feed-planner/caption-truth"
 
 interface FeedGridItemProps {
   post: any
@@ -431,6 +432,7 @@ export default function FeedGridItem({
 
   if (isComplete) {
     const isReadyPost = Boolean(post.caption?.trim())
+    const needsStory = !isReadyPost && isPersonalStoryPosition(Number(post.position))
     return (
       <button
         type="button"
@@ -483,7 +485,7 @@ export default function FeedGridItem({
               : "border-white/60 bg-white/85 text-[color:var(--app-text-secondary)]"
           }`}
         >
-          {isReadyPost ? "Ready" : "Needs caption"}
+          {isReadyPost ? "Ready" : needsStory ? "Needs your story" : "Needs caption"}
         </span>
       </button>
     )
@@ -536,9 +538,11 @@ export default function FeedGridItem({
                   ? "Image failed"
                   : isGenerating
                     ? "Creating image"
-                    : post.caption?.trim()
-                      ? "Needs photo"
-                      : "Planned"}
+                    : !post.caption?.trim() && isPersonalStoryPosition(Number(post.position))
+                      ? "Needs your story"
+                      : post.caption?.trim()
+                        ? "Needs photo"
+                        : "Planned"}
               </span>
             </span>
           </button>
