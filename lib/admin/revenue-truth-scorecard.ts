@@ -31,6 +31,13 @@ export type RevenueTruthScorecard = {
     paymentFormRendered30d: number
     converted: number
   }
+  membershipFunnel30d: {
+    pageViews: number
+    ctaClicks: number
+    checkoutStarts: number
+    paymentForms: number
+    newPaidMembers: number
+  }
   products30d: Array<{
     productType: string
     payments: number
@@ -226,10 +233,37 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
               AND (download_trial.is_test_mode = FALSE OR download_trial.is_test_mode IS NULL)
           )
       )::int AS downloads_30d,
-      COUNT(*) FILTER (WHERE event_name = 'studio_membership_payment_form_rendered')::int AS payment_form_rendered_30d
+      COUNT(*) FILTER (
+        WHERE event_name = 'studio_membership_payment_form_rendered'
+          AND COALESCE(properties->>'environment', 'production') = 'production'
+      )::int AS payment_form_rendered_30d,
+      COUNT(*) FILTER (
+        WHERE event_name = 'studio_membership_page_view'
+          AND properties->>'environment' = 'production'
+      )::int AS membership_page_views_30d,
+      COUNT(*) FILTER (
+        WHERE event_name = 'studio_membership_page_cta_click'
+          AND properties->>'environment' = 'production'
+      )::int AS membership_cta_clicks_30d,
+      (
+        SELECT COUNT(*)::int
+        FROM checkout_attribution membership_checkout
+        WHERE membership_checkout.product_type IN (
+          'sselfie_studio_membership',
+          'sselfie_studio_membership_annual'
+        )
+          AND membership_checkout.created_at >= NOW() - INTERVAL '30 days'
+      ) AS membership_checkout_starts_30d
     FROM analytics_events
     WHERE created_at >= NOW() - INTERVAL '30 days'
-  `.catch(() => [{ trial_first_generation_30d: 0, downloads_30d: 0, payment_form_rendered_30d: 0 }])
+  `.catch(() => [{
+    trial_first_generation_30d: 0,
+    downloads_30d: 0,
+    payment_form_rendered_30d: 0,
+    membership_page_views_30d: 0,
+    membership_cta_clicks_30d: 0,
+    membership_checkout_starts_30d: 0,
+  }])
   const events = (eventCounts as any[])[0] || {}
 
   return {
@@ -259,6 +293,13 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
       downloads30d: toNumber(events.downloads_30d),
       paymentFormRendered30d: toNumber(events.payment_form_rendered_30d),
       converted: toNumber(trial.converted),
+    },
+    membershipFunnel30d: {
+      pageViews: toNumber(events.membership_page_views_30d),
+      ctaClicks: toNumber(events.membership_cta_clicks_30d),
+      checkoutStarts: toNumber(events.membership_checkout_starts_30d),
+      paymentForms: toNumber(events.payment_form_rendered_30d),
+      newPaidMembers: memberMetrics.newSubscribers30d,
     },
     products30d: (productRows as any[]).map((row) => ({
       productType: productLabel(row.product_type),
@@ -312,6 +353,7 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
       "Members are active Stripe subscriptions only.",
       "MRR is net of discounts.",
       "Historical revenue uses stripe_payments.",
+      "SUITE page views and CTA clicks are event counts, not unique people.",
     ],
   }
 }

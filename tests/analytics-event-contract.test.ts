@@ -26,6 +26,8 @@ describe("analytics event contract", () => {
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_public_page_view")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_public_page_checkout_clicked")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_public_page_lead_captured")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("studio_membership_page_view")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("studio_membership_page_cta_click")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_tool_blocked_low_credits")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_multi_step_executor_run")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("brand_strategy_pack_upsell_view")

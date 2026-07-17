@@ -145,10 +145,10 @@ const CHECKOUT_COPY: Record<
   },
   sselfie_studio_membership: {
     heroTitle: "Join SSELFIE SUITE",
-    heroBody: "Maya helps you turn your face, story, and ideas into photos, covers, captions, and posts.",
-    heading: "Secure checkout",
-    blurb: "You're joining SSELFIE SUITE. Monthly membership, cancel anytime.",
-    footer: "Your access is delivered right after payment. Cancel anytime from your account.",
+    heroBody: "Start with one selfie. Create the visual, find the words, and plan what goes out next.",
+    heading: "SSELFIE SUITE · €97 monthly",
+    blurb: "Maya, Create, Calendar, Learn, the SSELFIE library, and 200 credits that refill each month.",
+    footer: "Your access opens after payment. Manage or cancel the membership from your account.",
   },
   sselfie_studio_membership_annual: {
     heroTitle: "Join SSELFIE SUITE",
@@ -213,6 +213,18 @@ const CHECKOUT_CONFIDENCE_POINTS: Record<string, string[]> = {
     "Three finished posts: attention, trust, and offer",
     "Still-you visuals with Sandra quality control",
     "No subscription or AI to learn",
+  ],
+  sselfie_studio_membership: [
+    "€97 billed monthly",
+    "200 credits refill each month",
+    "Access right after payment",
+    "Cancel from your account",
+  ],
+  sselfie_studio_membership_annual: [
+    "€970 billed yearly",
+    "Annual SUITE access",
+    "Access right after payment",
+    "Manage billing in your account",
   ],
 }
 
@@ -344,6 +356,9 @@ function CheckoutContent() {
             properties: {
               product_type: productType,
               checkout_session_id: secret.split("_secret_")[0] || null,
+              environment: ["sselfie.ai", "www.sselfie.ai"].includes(window.location.hostname)
+                ? "production"
+                : "non_production",
               ...checkoutAttributionProperties(searchParams),
             },
           }),

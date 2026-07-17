@@ -108,6 +108,9 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "ai_prompts_starter_kit_click",
   "studio_membership_door_view",
   "studio_membership_door_click",
+  // Public SUITE sales journey. Event counts are behavior signals, never payment truth.
+  "studio_membership_page_view",
+  "studio_membership_page_cta_click",
   "studio_membership_payment_form_rendered",
   "prompt_vault_landing_view",
   "prompt_vault_reel_click",

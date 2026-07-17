@@ -5,6 +5,7 @@ import Link from "next/link"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { appendReferralParam, buildReferralLoginHref } from "@/lib/referrals/routing"
 import { PromptVaultCheckoutLink } from "@/components/prompt-vault/prompt-vault-checkout-link"
+import { SuiteProductWalkthrough } from "@/components/sselfie/suite-product-walkthrough"
 
 // ─── Vercel Blob images ───────────────────────────────────────────────────────
 const BLOB = "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com"
@@ -42,12 +43,6 @@ const IMG = {
 
 // SUITE landing assets - Sandra-approved vault collection images (BRIDGE-01 Phase B)
 const SUITE_IMG = {
-  monday:      "/images/ai-prompts/clean-girl-morning-shot-3.jpg",
-  photoshoots: "/images/ai-prompts/coastal-white-shot-2.jpg",
-  carousels:   "/images/ai-prompts/quiet-luxury-london-shot-1.jpg",
-  reelCovers:  "/images/ai-prompts/denim-street-shot-2.jpg",
-  captions:    "/images/ai-prompts/marble-wine-shot-1.jpg",
-  plan:        "/images/ai-prompts/dark-feminine-cafe-shot-1.jpg",
   honest:      "/images/ai-prompts/clean-girl-morning-shot-1.jpg",
 }
 
@@ -265,7 +260,7 @@ function Btn({
     // Zero border-radius - SSELFIE Agents system
   }
 
-  if (href) return <Link href={href} style={base}>{children}</Link>
+  if (href) return <Link href={href} style={base} onClick={onClick}>{children}</Link>
   return <button onClick={onClick} style={base} disabled={disabled}>{children}</button>
 }
 
@@ -500,7 +495,7 @@ function Hero({
   eyebrow:    string
   title:      ReactNode
   body:       ReactNode
-  primary?:   { href: string; label: string }
+  primary?:   { href: string; label: string; onClick?: () => void }
   primaryNode?: ReactNode
   secondary?: { href: string; label: string }
   imageSrc:   string
@@ -527,7 +522,7 @@ function Hero({
             {body}
           </div>
           <div className="mf flex flex-col sm:flex-row gap-3 items-center justify-center" style={{ transitionDelay: "0.15s" }}>
-            {primaryNode ?? (primary && <Btn href={primary.href} surface="dark">{primary.label}</Btn>)}
+            {primaryNode ?? (primary && <Btn href={primary.href} onClick={primary.onClick} surface="dark">{primary.label}</Btn>)}
             {secondary && <Btn href={secondary.href} ghost surface="dark">{secondary.label}</Btn>}
           </div>
         </div>
@@ -607,7 +602,7 @@ function CtaClose({
 }: {
   title:      ReactNode
   body?:      ReactNode
-  primary:    { href: string; label: string }
+  primary:    { href: string; label: string; onClick?: () => void }
   secondary?: { href: string; label: string }
   dark?:      boolean
 }) {
@@ -619,26 +614,11 @@ function CtaClose({
         <h2 className="mf" style={{ ...ty("h2", dark), marginBottom: body ? "16px" : "36px" }}>{title}</h2>
         {body && <div className="mf" style={{ ...ty("body", dark), marginBottom: "34px" }}>{body}</div>}
         <div className="mf flex flex-col sm:flex-row gap-3 items-center justify-center" style={{ transitionDelay: "0.05s" }}>
-          <Btn href={primary.href} surface={dark ? "dark" : "cream"}>{primary.label}</Btn>
+          <Btn href={primary.href} onClick={primary.onClick} surface={dark ? "dark" : "cream"}>{primary.label}</Btn>
           {secondary && <Btn href={secondary.href} ghost surface={dark ? "dark" : "cream"}>{secondary.label}</Btn>}
         </div>
       </div>
     </section>
-  )
-}
-
-// ─── Image feature card (BRIDGE-01) ──────────────────────────────────────────
-function ImgCard({ src, title, body, dark = false }: { src: string; title: string; body: string; dark?: boolean }) {
-  return (
-    <article className="mf" style={{ ...cardSx(dark), padding: 0, overflow: "hidden" }}>
-      <div className="relative overflow-hidden" style={{ aspectRatio: "4/5" }}>
-        <img src={src} alt={title} loading="lazy" className="w-full h-full object-cover" />
-      </div>
-      <div style={{ padding: "20px 22px 24px" }}>
-        <h3 style={{ ...ty("h3", dark), marginBottom: "8px" }}>{title}</h3>
-        <p style={{ ...ty("body", dark), fontSize: "14px" }}>{body}</p>
-      </div>
-    </article>
   )
 }
 
@@ -716,16 +696,18 @@ const FAQS = {
       answer: "That's exactly who this is for. The course is built around getting you from scattered to a system you can actually follow." },
   ],
   studio: [
-    { question: "Is this just another AI image generator?",
-      answer: "No. Image tools hand you a picture and leave. Maya builds the whole visual layer of your brand: photoshoots, carousels, reel covers, captions, and a plan for what to post. And she remembers your brand, so it gets easier every week." },
-    { question: "What makes this different from ChatGPT?",
-      answer: "Same class of engine money can rent. What you can't rent is a creative director who already knows your brand. Maya remembers your style, your colors, what you said no to, and you're still you in every photo." },
-    { question: "Will the photos actually look like me?",
-      answer: "Yes. That's the whole product. Maya works from your reference selfies. If something doesn't feel like you, you tell her and she remembers." },
+    { question: "What do I get each month?",
+      answer: "You get Maya, Create, Calendar, Learn, the SSELFIE library, and 200 credits that refill each month. Different creations can use different amounts of credits, so the exact number of finished images depends on what you make." },
     { question: "Do I need to learn prompts?",
-      answer: "No. You tap. Maya does the prompt work." },
+      answer: "No. Tell Maya what you are trying to create in normal words. She helps with the direction and the prompt, and you decide what to use." },
+    { question: "Will every photo look exactly like me?",
+      answer: "That is the goal, but AI can still get things wrong. Start with clear reference selfies, review every result, and tell Maya what feels off so your next direction can get closer." },
+    { question: "Is Maya just ChatGPT inside another app?",
+      answer: "No. Maya works beside your SSELFIE tools, brand context, images, learning, and Calendar. The value is not another chat box. It is having one place that helps you create, decide what to say, and plan what goes out next." },
+    { question: "Who is SUITE best for?",
+      answer: "It is for a woman building a personal brand who wants ongoing help creating content around her own face, story, and work. If you only want one quick image or a done-for-you service, a monthly membership may not be the right fit." },
     { question: "Can I cancel?",
-      answer: "Anytime, from your account, no forms. Your gallery stays yours." },
+      answer: "Yes. You can cancel from your account. Your membership stays open until the end of the period you already paid for." },
   ],
   visibilityToPaid: [
     { question: "What if I don't know what my offer is yet?",
@@ -758,12 +740,12 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
       {/* HERO - dark */}
       <Hero
         eyebrow="Personal branding by Sandra"
-        title={<>Your iPhone is already in your hand.</>}
+        title={<>One selfie. One clear direction. A brand you can keep building.</>}
         body={
-          <p>You already have the phone. You already have the story. SSELFIE helps you turn both into a personal brand people understand, trust, and can buy from.</p>
+          <p>SSELFIE helps you turn your face, story, and ideas into photos and content that feel like you. Start free. When you want help every week, Maya is inside SUITE.</p>
         }
-        primary={{ href: r("/ai-prompts"), label: "Get the Free AI Prompts" }}
-        secondary={{ href: r("/join/studio"),   label: "Meet Maya · SSELFIE SUITE" }}
+        primary={{ href: r("/ai-prompts"), label: "Start free · get the AI prompts" }}
+        secondary={{ href: r("/join/studio"), label: "Meet Maya inside SSELFIE SUITE" }}
         imageSrc={IMG.homeHero}
         imageAlt="Sandra Aamodt, founder of SSELFIE"
       />
@@ -771,14 +753,14 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
       {/* RECOGNITION - cream */}
       <Section
         eyebrow="Sound familiar?"
-        title={<>You are not invisible because you are not good enough.</>}
+        title={<>You do not need more random ideas. You need the pieces to work together.</>}
         dark={false}
         narrow
       >
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>You are stuck because your message, content, visuals, and offer are not connected yet.</p>
-          <p>You might have the phone. You might have the story. You might even have something to sell.</p>
-          <p>But if people do not understand what you do, what to remember you for, or what step to take next, your content will keep feeling random.</p>
+          <p>You have the phone. You have a story. You probably have hundreds of saved ideas too.</p>
+          <p>But the photo, the words, the plan, and the thing you want people to understand are still living in different places.</p>
+          <p>SSELFIE gives them one direction, so showing up gets simpler.</p>
         </div>
       </Section>
 
@@ -833,29 +815,42 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         cta={<Btn href={r("/ai-prompts")} surface="dark" ghost>Start with the free AI prompts</Btn>}
       />
 
-      {/* OFFER LADDER - cream */}
-      <Section eyebrow="Start here" title={<>One clear next step.</>} dark={false}>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {[
-            { title: "Free AI Prompts", price: "Free", body: "Editorial photoshoot prompts that turn one selfie into photos you'd actually post. Start here.", href: "/ai-prompts" },
-            { title: "Prompt Vault", price: "$37", body: "Every editorial collection, plus each new drop. Turn one selfie into unlimited photoshoots.", href: "/prompt-vault" },
-            { title: "Starter Kit", price: "$37", body: "Presets, editing walkthroughs, posing guide, and 7 days of content from one session.", href: "/starter-kit" },
-            { title: "SSELFIE SUITE", price: "€97/mo", body: "Maya builds your visual brand: photoshoots, carousels, reel covers, captions. Everything included.", href: "/join/studio" },
-          ].map((p) => (
-            <Link key={p.title} href={r(p.href)} className="mf block"
-              style={{ ...cardSx(false), minHeight: "220px", display: "flex", flexDirection: "column", justifyContent: "space-between", textDecoration: "none", transition: "border-color 0.2s" }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "color-mix(in srgb, var(--color-obsidian) 24%, transparent)" }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.divCream }}
-            >
-              <div>
-                <span style={{ ...ty("eyebrow", false), marginBottom: "8px" }}>{p.price}</span>
-                <h3 style={{ ...ty("h3", false), fontSize: "clamp(16px, 2vw, 20px)", marginBottom: "8px" }}>{p.title}</h3>
-                <p style={{ ...ty("body", false), fontSize: "13px" }}>{p.body}</p>
-              </div>
-              <span style={{ ...ty("eyebrow", false), marginTop: "18px" }}>See page →</span>
-            </Link>
-          ))}
+      {/* TWO CLEAR DOORS - cream */}
+      <Section eyebrow="Start where you are" title={<>Free first. Ongoing help when you are ready.</>} dark={false}>
+        <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <article className="mf flex min-h-[310px] flex-col justify-between" style={cardSx(false)}>
+            <div>
+              <span style={{ ...ty("eyebrow", false), marginBottom: "14px" }}>Start free</span>
+              <h3 style={{ ...ty("h2", false), fontSize: "clamp(28px, 4vw, 42px)", marginBottom: "14px" }}>
+                Try one selfie first.
+              </h3>
+              <p style={{ ...ty("body", false), fontSize: "15px", maxWidth: "460px" }}>
+                Get the free AI photo prompts and create your first editorial image with the phone you already have.
+              </p>
+            </div>
+            <div className="mt-8">
+              <Btn href={r("/ai-prompts")} surface="cream">Get the free AI prompts</Btn>
+            </div>
+          </article>
+
+          <article className="mf flex min-h-[310px] flex-col justify-between bg-stone-950 p-7 text-white sm:p-9">
+            <div>
+              <span style={{ ...ty("eyebrow", true), marginBottom: "14px" }}>Ready for help every week?</span>
+              <h3 style={{ ...ty("h2", true), fontSize: "clamp(28px, 4vw, 42px)", marginBottom: "14px" }}>
+                Maya helps you create, write, and plan what goes out next.
+              </h3>
+              <p style={{ ...ty("body", true), fontSize: "15px", maxWidth: "520px" }}>
+                One membership. Maya, Create, Calendar, Learn, and the SSELFIE library together. €97 a month.
+              </p>
+            </div>
+            <div className="mt-8">
+              <Btn href={r("/join/studio")} surface="dark">Meet Maya inside SSELFIE SUITE</Btn>
+            </div>
+          </article>
         </div>
+        <p className="mf mt-6 text-sm leading-6 text-stone-500">
+          Looking for a one-time lesson? You can still explore the <Link className="underline underline-offset-4" href={r("/starter-kit")}>Starter Kit</Link> or <Link className="underline underline-offset-4" href={r("/masterclass")}>Masterclass</Link>.
+        </p>
       </Section>
 
       {/* FROM SANDRA - cream */}
@@ -1227,6 +1222,40 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
   // checkout attribution survives the landing-page hop. Defaults stay unchanged.
   const sourceTop = checkoutSource || "studio_page"
   const sourceBottom = checkoutSource ? `${checkoutSource}_bottom` : "studio_page_bottom"
+  const pageViewTrackedRef = useRef(false)
+  const analyticsEnvironment =
+    typeof window !== "undefined" && ["sselfie.ai", "www.sselfie.ai"].includes(window.location.hostname)
+      ? "production"
+      : "non_production"
+
+  useEffect(() => {
+    if (pageViewTrackedRef.current) return
+    pageViewTrackedRef.current = true
+    void trackAnalyticsEvent({
+      event: "studio_membership_page_view",
+      properties: {
+        source: checkoutSource || "direct",
+        path: "/join/studio",
+        environment: analyticsEnvironment,
+      },
+    })
+  }, [analyticsEnvironment, checkoutSource])
+
+  const trackMembershipCheckoutClick = (placement: "hero" | "pricing" | "closing", destination: string) => {
+    void trackAnalyticsEvent({
+      event: "studio_membership_page_cta_click",
+      properties: {
+        source: checkoutSource || "direct",
+        placement,
+        destination,
+        environment: analyticsEnvironment,
+      },
+    })
+  }
+
+  const heroCheckoutHref = `/checkout/membership?interval=month&source=${sourceTop}`
+  const pricingCheckoutHref = `/checkout/membership?interval=month&source=${checkoutSource ? `${checkoutSource}_pricing` : "studio_page_pricing"}`
+  const closingCheckoutHref = `/checkout/membership?interval=month&source=${sourceBottom}`
   return (
     <PublicPageShell>
       <PublicNav />
@@ -1234,9 +1263,13 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       {/* HERO - dark */}
       <Hero
         eyebrow="SSELFIE SUITE · €97/mo"
-        title={<>Your monthly system for showing up online.</>}
-        body={<p>Maya helps you turn your face, story, and ideas into photos, covers, captions, and posts you can actually use. So your brand starts looking clear, recognizable, and easier to trust.</p>}
-        primary={{ href: `/checkout/membership?interval=month&source=${sourceTop}`, label: "Join SSELFIE SUITE" }}
+        title={<>Start with one selfie. Maya helps with the rest.</>}
+        body={<p>Create photos that still feel like you. Know what to say. Plan what goes out next. Maya, Create, Calendar, and Learn work together in one monthly membership.</p>}
+        primary={{
+          href: heroCheckoutHref,
+          label: "Join SSELFIE SUITE",
+          onClick: () => trackMembershipCheckoutClick("hero", heroCheckoutHref),
+        }}
         secondary={{ href: "#how-it-works", label: "See how it works" }}
         imageSrc={IMG.feed}
       />
@@ -1244,75 +1277,93 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       {/* THE PAIN - cream */}
       <Section
         eyebrow="Sound familiar?"
-        title={<>You already know you should be posting. That&apos;s not the problem.</>}
+        title={<>The hard part is not posting. It is everything you need before you can post.</>}
         dark={false}
         narrow
       >
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>The problem is everything behind one post. You need a photo that feels like you. Words that do not sound like everyone else. A feed that looks like a brand and not a camera roll.</p>
-          <p>A photographer every month is not realistic. And the AI tools you&apos;ve tried made you look like someone else, which is worse than not posting at all.</p>
-          <p>Showing up should not cost you a whole evening. Or your face.</p>
+          <p>You need a photo that feels like you. Words that sound like you. And a plan that does not disappear the second life gets busy.</p>
+          <p>So you open five different tools, save more ideas, and still do not know what should go out first.</p>
+          <p>SUITE brings the photo, the words, and the plan into one place.</p>
         </div>
       </Section>
 
-      {/* YOUR NEW MONDAY - dark */}
-      <div id="how-it-works">
-        <Split
-          eyebrow="How it works"
-          title={<>Here&apos;s your new Monday.</>}
-          body={
-            <div className="space-y-4">
-              <p>You open the app with your coffee. Maya already has three concepts pulled in your style: the photos, the reel cover, the caption.</p>
-              <p>You tap the one that feels most like you. By the time your coffee is done, this week&apos;s content has a direction.</p>
-              <p>You, showing up like the brand you are already building. Every week.</p>
-            </div>
-          }
-          imgSrc={SUITE_IMG.monday}
-          imgAlt="Editorial morning photo made with Maya"
-          imgFirst
-          dark
-        />
-      </div>
+      {/* PRODUCT WALKTHROUGH - cream */}
+      <Section
+        id="how-it-works"
+        eyebrow="Maya + Calendar"
+        title={<>See the photo, the words, and the week come together.</>}
+        dark={false}
+      >
+        <p className="mf mb-10 max-w-3xl" style={{ ...ty("body", false), fontSize: "16px" }}>
+          Maya works beside your content plan. She helps you choose a direction, create the pieces, and move them into a week you can actually see and change.
+        </p>
+        <SuiteProductWalkthrough />
+      </Section>
 
-      {/* WHAT MAYA MAKES - cream */}
-      <Section eyebrow="What Maya makes" title={<>One selfie in. A clearer brand out.</>} dark={false}>
+      {/* THREE JOBS - dark */}
+      <Section eyebrow="What SUITE helps you do" title={<>Create. Say it clearly. Plan what comes next.</>} dark>
+        <div className="grid gap-4 md:grid-cols-3">
+          <FCard dark eyebrow="01 · Create" title="Make the visual" body="Start with your own selfie. Build photos, covers, and content pieces around a direction that feels like you." />
+          <FCard dark eyebrow="02 · Say" title="Find the words" body="Use Maya to shape captions, hooks, and ideas in plain language, then keep the parts that sound like you." />
+          <FCard dark eyebrow="03 · Plan" title="See the week" body="Move your ideas into Calendar, change the order, and know what you are creating next." />
+        </div>
+        <p className="mf mt-8 max-w-3xl" style={{ ...ty("body", true), fontSize: "14px", color: C.onDarkMuted }}>
+          Maya suggests. You review, change, and choose. Nothing has to go out just because AI made it.
+        </p>
+      </Section>
+
+      {/* EVERYTHING INCLUDED - cream */}
+      <Section eyebrow="One membership" title={<>The full working space. €97 a month.</>} dark={false}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <ImgCard src={SUITE_IMG.photoshoots} title="Photoshoots" body="Brand images from one selfie. Recognizably you, in every shot." />
-          <ImgCard src={SUITE_IMG.carousels} title="Carousels" body="Your ideas turned into posts people can save and understand." />
-          <ImgCard src={SUITE_IMG.reelCovers} title="Reel covers" body="Clean covers with your hook line, so your grid feels more intentional." />
-          <ImgCard src={SUITE_IMG.captions} title="Captions" body="Words that sound like you on a clear day." />
-          <ImgCard src={SUITE_IMG.plan} title="A plan" body="No more staring at a blank feed. Maya suggests, you choose." />
+          <FCard dark={false} title="Maya" body="Your AI creative director, working with your brand context and the tools inside SUITE." />
+          <FCard dark={false} title="Create + 200 monthly credits" body="Create photos and visual content. Credits refill each month; different creations can use different amounts." />
+          <FCard dark={false} title="Calendar" body="Plan your grid and your week, move posts around, and keep the next step visible." />
+          <FCard dark={false} title="Learn" body="Personalized help and the deeper SSELFIE lessons when you need more than a quick answer." />
+          <FCard dark={false} title="The SSELFIE library" body="Prompt collections, Starter Kit resources, the Masterclass, and current member drops in one place." />
+          <FCard dark={false} title="Your account" body="Access after payment, monthly billing, and cancellation from your account when you need it." />
         </div>
-      </Section>
-
-      {/* EVERYTHING INCLUDED - dark */}
-      <Section eyebrow="Everything included" title={<>Everything you need to keep creating.</>}>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <FCard title="Maya" body="Your creative director, plus 200 photos a month." />
-          <FCard title="The Prompt Vault" eyebrow="$37 value" body="Visual worlds and prompt collections included." />
-          <FCard title="The Starter Kit" eyebrow="$37 value" body="Presets, posing, captions, and source-photo help included." />
-          <FCard title="The Masterclass" eyebrow="$147 value" body="The deeper brand and content method included." />
-          <FCard title="Every new drop" body="New collections and products land in your library as they are released." />
-        </div>
-        <p className="mf" style={{ ...ty("body", true), fontSize: "16px", marginTop: "32px" }}>
-          Buy nothing twice. Members get the full SSELFIE library.
+        <p className="mf" style={{ ...ty("body", false), fontSize: "16px", marginTop: "32px" }}>
+          One public plan. No feature maze. No three tiers to compare.
         </p>
       </Section>
 
       {/* HONEST AI - dark */}
       <Split
         eyebrow="The honest part"
-        title={<>These photos will look like you. That&apos;s the point.</>}
+        title={<>The goal is recognizable. Not a perfect AI stranger.</>}
         body={
           <div className="space-y-4">
-            <p>No filtered stranger. No &quot;perfect&quot; face that isn&apos;t yours. Maya works from your real selfies and keeps what makes you recognizable.</p>
-            <p>AI should not erase you. It should frame you.</p>
+            <p>Maya works from your reference selfies and the direction you give her. Clear selfies and clear feedback usually give AI a better chance of keeping you recognizable.</p>
+            <p>AI can still get things wrong. Review every result. Change what feels off. You stay the decision-maker.</p>
           </div>
         }
         imgSrc={SUITE_IMG.honest}
         imgAlt="Realistic AI-assisted brand photo that still looks like you"
         dark
       />
+
+      {/* FIT - cream */}
+      <Section eyebrow="Is this for you?" title={<>A monthly tool should earn its place in your week.</>} dark={false}>
+        <div className="grid gap-4 md:grid-cols-2">
+          <article className="mf" style={cardSx(false)}>
+            <span style={{ ...ty("eyebrow", false), marginBottom: "14px" }}>SUITE may fit if</span>
+            <ul className="space-y-3" style={{ ...ty("body", false), fontSize: "15px" }}>
+              <li>· You are building a personal brand around your own face, story, or work.</li>
+              <li>· You create often enough to want help with photos, words, and planning.</li>
+              <li>· You want one place to keep the direction, not another folder of ideas.</li>
+            </ul>
+          </article>
+          <article className="mf" style={cardSx(false)}>
+            <span style={{ ...ty("eyebrow", false), marginBottom: "14px" }}>It may not fit if</span>
+            <ul className="space-y-3" style={{ ...ty("body", false), fontSize: "15px" }}>
+              <li>· You only need one quick image and do not plan to create again next month.</li>
+              <li>· You want someone to post everything for you without your input.</li>
+              <li>· You need a promise that AI will make every image perfect on the first try.</li>
+            </ul>
+          </article>
+        </div>
+      </Section>
 
       {/* PROOF - cream (real customer words, before the price) */}
       <Section eyebrow="Real customer words" title={<>Still you. And they feel it.</>} dark={false}>
@@ -1333,12 +1384,17 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       </Section>
 
       {/* PRICING - cream */}
-      <Section eyebrow="Pricing" title={<>€97 a month. Your brand creation system.</>} dark={false} narrow>
+      <Section eyebrow="One simple plan" title={<>€97 a month. Everything works together.</>} dark={false} narrow>
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>200 photos a month. Maya. The Vault. The Starter Kit. The course library. Cancel anytime, no forms.</p>
+          <p>Maya, Create, Calendar, Learn, the SSELFIE library, and 200 credits that refill each month. Different creations can use different amounts of credits.</p>
+          <p className="text-sm text-stone-500">Billed monthly in EUR. Access opens after payment. Cancel from your account.</p>
         </div>
         <div className="mf" style={{ marginTop: "32px" }}>
-          <Btn href={`/checkout/membership?interval=month&source=${checkoutSource ? `${checkoutSource}_pricing` : "studio_page_pricing"}`} surface="cream">
+          <Btn
+            href={pricingCheckoutHref}
+            onClick={() => trackMembershipCheckoutClick("pricing", pricingCheckoutHref)}
+            surface="cream"
+          >
             Join SSELFIE SUITE · €97/mo
           </Btn>
         </div>
@@ -1351,9 +1407,13 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
 
       {/* CTA - dark */}
       <CtaClose
-        title="Stop trying to build your brand from a blank screen."
-        body={<p>Maya&apos;s ready. Start with one selfie, one direction, and one next post.</p>}
-        primary={{ href: `/checkout/membership?interval=month&source=${sourceBottom}`, label: "Join SSELFIE SUITE · €97/mo" }}
+        title="Start with one selfie. Build from there."
+        body={<p>Maya helps you create the visual, find the words, and see what goes out next.</p>}
+        primary={{
+          href: closingCheckoutHref,
+          label: "Join SSELFIE SUITE · €97/mo",
+          onClick: () => trackMembershipCheckoutClick("closing", closingCheckoutHref),
+        }}
         dark
       />
 

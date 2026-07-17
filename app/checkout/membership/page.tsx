@@ -117,14 +117,20 @@ export default async function MembershipCheckoutPage({
           actionPath="/checkout/membership"
           eyebrow="SSELFIE SUITE"
           title="Where should I send your access?"
-          copy="Add your email before checkout so your login, receipt, and SUITE access go to the right place. Maya helps you turn your face, story, and ideas into photos, covers, captions, and posts you can actually use."
+          copy={isAnnual
+            ? "Add your email so your login, receipt, and SUITE access go to the right place. You are joining Maya, Create, Calendar, Learn, and the SSELFIE library for the year."
+            : "Add your email so your login, receipt, and SUITE access go to the right place. You are joining Maya, Create, Calendar, Learn, the SSELFIE library, and 200 credits that refill each month."}
           inputId="membership-checkout-email"
           buttonLabel="Continue to secure payment"
           skipLabel="Skip and go straight to payment"
           productName="SSELFIE SUITE"
-          productMeta="Maya, weekly content, and your personal brand workspace"
+          productMeta={isAnnual
+            ? "Maya, Create, Calendar, Learn, and the SSELFIE library"
+            : "Maya, Create, Calendar, Learn, and 200 monthly credits"}
           productPrice={foundingAvailable ? "697 EUR / year · founding" : isAnnual ? "970 EUR / year" : "97 EUR / month"}
-          reassurance="Used only for your login, receipt, and access link."
+          reassurance={isAnnual
+            ? "Used only for your login, receipt, and access link."
+            : "€97 billed monthly. Cancel from your account."}
           visuals={[
             {
               src: "/images/email/studio-visual-workspace.jpg",
@@ -202,7 +208,7 @@ export default async function MembershipCheckoutPage({
             letterSpacing: "-0.04em",
           }}
         >
-          Choose your SUITE path.
+          Start with one selfie.
         </h1>
         <p
           style={{
@@ -213,8 +219,8 @@ export default async function MembershipCheckoutPage({
             color: "rgba(229,229,229,0.78)",
           }}
         >
-          The SSELFIE SUITE is the weekly creation layer with Maya. Join monthly when you want help
-          turning your face, story, and ideas into photos, covers, captions, and posts.
+          SUITE is one monthly membership with Maya, Create, Calendar, Learn, the SSELFIE library,
+          and 200 credits that refill each month.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 30 }}>
           <Link
@@ -230,10 +236,10 @@ export default async function MembershipCheckoutPage({
               fontSize: 12,
             }}
           >
-            Join the SUITE Monthly
+            Join SUITE · €97/month
           </Link>
           <Link
-            href="/masterclass"
+            href="/join/studio"
             style={{
               display: "inline-flex",
               padding: "16px 24px",
@@ -245,7 +251,7 @@ export default async function MembershipCheckoutPage({
               fontSize: 12,
             }}
           >
-            Start With Masterclass
+            See what is inside
           </Link>
         </div>
       </div>
