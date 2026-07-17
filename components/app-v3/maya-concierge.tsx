@@ -884,6 +884,10 @@ export function MayaConcierge({
   // the rendered chatId/messages are still the previous thread's - the save effect must not
   // persist that stale pairing under the new session key ("Start new shows the old chat").
   const sessionChatIdRef = useRef<string | null>(restoredDraft?.chatId ?? null)
+  // Changing useChat's id and hydrating its messages can span two React commits. Suppress the
+  // first save for the destination id so the previous conversation can never overwrite a past
+  // chat during that transition.
+  const suppressChatSaveForIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!session) return
@@ -901,6 +905,7 @@ export function MayaConcierge({
       pendingInspirationIntentRef.current = null
       const freshChatId = newChatId()
       sessionChatIdRef.current = freshChatId
+      suppressChatSaveForIdRef.current = freshChatId
       setChatId(freshChatId)
       setMessages([])
       setGenState({})
@@ -933,6 +938,7 @@ export function MayaConcierge({
       }
     }
     sessionChatIdRef.current = draft.chatId
+    suppressChatSaveForIdRef.current = draft.chatId
     setChatId(draft.chatId)
     setMessages(draft.messages as any)
     setGenState(draft.genState)
@@ -1018,6 +1024,10 @@ export function MayaConcierge({
 
   useEffect(() => {
     if (status !== "ready") return
+    if (suppressChatSaveForIdRef.current === chatId) {
+      suppressChatSaveForIdRef.current = null
+      return
+    }
     if (messages.length === 0 || messages.length === savedCountRef.current) return
     const last = messages[messages.length - 1] as { role?: string } | undefined
     if (last?.role !== "assistant") return
@@ -1609,6 +1619,7 @@ export function MayaConcierge({
     setInput("")
     setPreMessageThreadOpen(false)
     sessionChatIdRef.current = nextChatId
+    suppressChatSaveForIdRef.current = nextChatId
     setChatId(nextChatId)
     setHistoryOpen(false)
     // Visible reset (P1): back to the four format chips, NOT an instant re-pull of the same
@@ -1636,6 +1647,7 @@ export function MayaConcierge({
       }
     }
     sessionChatIdRef.current = id
+    suppressChatSaveForIdRef.current = id
     setChatId(id)
     setGenState({})
     setGeneratedOnce(false)

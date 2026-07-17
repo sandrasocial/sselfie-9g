@@ -58,6 +58,14 @@ describe("Maya chat trust pass", () => {
     expect(chatsRoute).toContain("savedAt")
   })
 
+  it("does not save the visible conversation under a newly selected history id", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+
+    expect(concierge).toContain("suppressChatSaveForIdRef")
+    expect(concierge).toContain("suppressChatSaveForIdRef.current = id")
+    expect(concierge).toContain("if (suppressChatSaveForIdRef.current === chatId)")
+  })
+
   it("keeps recommended graphic actions behind the explicit text choice", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
