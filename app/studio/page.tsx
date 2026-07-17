@@ -3,12 +3,20 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { getUserSubscription, shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 import { redirect } from "next/navigation"
+import type { Metadata } from "next"
 import SselfieApp from "@/components/sselfie/sselfie-app"
 import { parseStudioAcademyContext } from "@/lib/academy/studio-query-context"
 // Studio 3.0: admin-only override to route the admin to the new /app shell.
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 
 export const dynamic = "force-dynamic"
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 export default async function StudioPage({
   searchParams,

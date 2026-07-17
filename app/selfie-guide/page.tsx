@@ -9,11 +9,11 @@ export const metadata: Metadata = {
     title: "Free Guide: Your First Visible Post",
     description:
       "Take one phone photo and turn it into a post with a job: reach, trust, proof, buyer belief, or a simple invitation.",
-    url: "https://sselfie.ai/selfie-guide",
+    url: "https://www.sselfie.ai/selfie-guide",
     type: "website",
     images: [
       {
-        url: "https://sselfie.ai/og-image.png",
+        url: "https://www.sselfie.ai/og-image.png",
         width: 1200,
         height: 630,
         alt: "SSELFIE Free Selfie Guide",
@@ -25,10 +25,10 @@ export const metadata: Metadata = {
     title: "Free Guide: Your First Visible Post",
     description:
       "A free guide for your first visible post: phone photo, caption prompt, and one clear next step.",
-    images: ["https://sselfie.ai/og-image.png"],
+    images: ["https://www.sselfie.ai/og-image.png"],
   },
   alternates: {
-    canonical: "https://sselfie.ai/selfie-guide",
+    canonical: "https://www.sselfie.ai/selfie-guide",
   },
 }
 

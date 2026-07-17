@@ -13,14 +13,18 @@ import {
 import { getPromptVaultPriceDisplay } from "@/lib/launch/cash-launch-pricing"
 
 export const metadata: Metadata = {
-  title: "The AI Photo Prompt Vault · SSELFIE",
+  title: "The AI Photo Prompt Vault",
   description:
     "Turn one clear selfie into unlimited AI photoshoots that still look like you. Copy-paste prompts, full shoots, one payment.",
   openGraph: {
-    title: "The AI Photo Prompt Vault · SSELFIE",
+    title: "The AI Photo Prompt Vault",
     description:
       "Turn one clear selfie into unlimited AI photoshoots that still look like you. Copy-paste prompts, full shoots, one payment.",
-    images: ["/academy/visibility-suite/sandra-hero.png"],
+    url: "https://www.sselfie.ai/prompt-vault",
+    images: ["/og-image.png"],
+  },
+  alternates: {
+    canonical: "https://www.sselfie.ai/prompt-vault",
   },
 }
 

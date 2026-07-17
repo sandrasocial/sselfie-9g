@@ -18,9 +18,18 @@ const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
 
 export const metadata: Metadata = {
-  title: "Free AI Photo Prompts · SSELFIE",
+  title: "Free AI Photo Prompts",
   description:
     "Free AI photoshoot prompts for turning one selfie into editorial personal brand images that still look like you.",
+  alternates: {
+    canonical: "https://www.sselfie.ai/ai-prompts",
+  },
+  openGraph: {
+    title: "Free AI Photo Prompts",
+    description: "Free AI photoshoot prompts for editorial personal brand images that still look like you.",
+    url: "https://www.sselfie.ai/ai-prompts",
+    images: ["/og-image.png"],
+  },
 }
 
 export const dynamic = "force-dynamic"

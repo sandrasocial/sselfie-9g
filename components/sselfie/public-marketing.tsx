@@ -10,10 +10,10 @@ import { PromptVaultCheckoutLink } from "@/components/prompt-vault/prompt-vault-
 const BLOB = "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com"
 const IMG = {
   hero:        `${BLOB}/sandra-portrait-after.jpg`,
-  homeHero:    "/academy/visibility-suite/sandra-hero.png",
+  homeHero:    "/academy/visibility-suite/sandra-hero.webp",
   homeFounder: "/academy/visibility-suite/sandra-founder.webp",
-  homeStudio:  "/academy/visibility-suite/hero.png",
-  homeSelfie:  "/images/selfie-guide/img-editorial-dark.png",
+  homeStudio:  "/academy/visibility-suite/hero.webp",
+  homeSelfie:  "/images/selfie-guide/img-editorial-dark.webp",
   before:      `${BLOB}/sandra-portrait-before.jpg`,
   after:       `${BLOB}/sandra-portrait-after.jpg`,
   founder:     `${BLOB}/maya-pro-generations/c8cjbbd6ehrmt0cvhqasfj7q30-CVfFXH8JOv3NtYQFMbPU0opeNPo6De.png`,
@@ -495,7 +495,7 @@ export function PublicFooter() {
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 function Hero({
-  eyebrow, title, body, primary, primaryNode, secondary, imageSrc,
+  eyebrow, title, body, primary, primaryNode, secondary, imageSrc, imageAlt = "",
 }: {
   eyebrow:    string
   title:      ReactNode
@@ -504,13 +504,15 @@ function Hero({
   primaryNode?: ReactNode
   secondary?: { href: string; label: string }
   imageSrc:   string
+  imageAlt?:  string
 }) {
   return (
     <section
       className="relative"
       style={{ minHeight: "100dvh", overflow: "hidden", display: "flex", flexDirection: "column" }}
     >
-      <img src={imageSrc} alt="" aria-hidden
+      <img src={imageSrc} alt={imageAlt} aria-hidden={imageAlt ? undefined : true}
+        fetchPriority="high" decoding="async"
         className="absolute inset-0 w-full h-full object-cover"
         style={{ objectPosition: "50% 22%" }} />
       <div className="absolute inset-0" style={{ background: C.heroGrad }} />
@@ -574,7 +576,7 @@ function Split({
   const surface = dark ? C.ink : C.cream
   const img = (
     <div className="mf relative overflow-hidden" style={{ aspectRatio: "4/5" }}>
-      <img src={imgSrc} alt={imgAlt} className="w-full h-full object-cover" />
+      <img src={imgSrc} alt={imgAlt} loading="lazy" decoding="async" className="w-full h-full object-cover" />
       <div className="absolute inset-0"
         style={{ background: dark
           ? "linear-gradient(to bottom, color-mix(in srgb, var(--color-obsidian) 4%, transparent) 0%, color-mix(in srgb, var(--color-obsidian) 30%, transparent) 100%)"
@@ -763,6 +765,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         primary={{ href: r("/ai-prompts"), label: "Get the Free AI Prompts" }}
         secondary={{ href: r("/join/studio"),   label: "Meet Maya · SSELFIE SUITE" }}
         imageSrc={IMG.homeHero}
+        imageAlt="Sandra Aamodt, founder of SSELFIE"
       />
 
       {/* RECOGNITION - cream */}
@@ -791,6 +794,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
           </div>
         }
         imgSrc={IMG.homeStudio}
+        imgAlt="SSELFIE phone-first personal brand workspace"
         dark
       />
 
@@ -823,6 +827,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
           </div>
         }
         imgSrc={IMG.homeSelfie}
+        imgAlt="Editorial personal brand photo collection created with SSELFIE"
         imgFirst
         dark
         cta={<Btn href={r("/ai-prompts")} surface="dark" ghost>Start with the free AI prompts</Btn>}
@@ -864,6 +869,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
           </div>
         }
         imgSrc={IMG.homeFounder}
+        imgAlt="Sandra Aamodt, founder of SSELFIE"
         imgFirst
         dark={false}
         cta={<Btn href={r("/join/studio")} surface="cream">See the SUITE</Btn>}
