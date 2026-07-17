@@ -121,9 +121,10 @@ describe("QA open-list build (2026-07-06)", () => {
     expect(inline).toContain("Not sure? Let Maya choose")
   })
 
-  it("legacy members are told their trained model came with them", () => {
+  it("keeps legacy trained-model selection out of Maya Create", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
-    expect(concierge).toContain("Your trained model from Studio came with you.")
+    expect(concierge).not.toContain("Your trained model from Studio came with you.")
+    expect(concierge).not.toContain("Photo source")
   })
 
   it("without a selfie the selfie action is the ONLY thing on Create; with one, the typed start leads", () => {

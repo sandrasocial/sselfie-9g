@@ -40,10 +40,12 @@ export async function POST(
     if (!feed) {
       return NextResponse.json({ error: "Feed not found" }, { status: 404 })
     }
+    const body = await request.json().catch(() => ({}))
+    const mode = body?.mode === "missing_or_weak" ? "missing_or_weak" : "all"
     const result = await generateAndStoreFeedCaptions({
       feedId,
       userId: neonUser.id,
-      mode: "all",
+      mode,
     })
 
     console.log(

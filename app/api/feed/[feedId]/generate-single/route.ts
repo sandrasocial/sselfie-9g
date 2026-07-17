@@ -8,11 +8,14 @@ import { checkGenerationRateLimit } from "@/lib/rate-limit"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
 import { extractReplicateVersionId, ensureTriggerWordPrefix, ensureGenderInPrompt, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
 import { validatePrompt } from "@/lib/generation/prompt"
-import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
+import { getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getFeedStyleV2ByName } from "@/lib/feed-planner/feed-style-prompt-loader"
 import { selectPromptForPosition } from "@/lib/feed-planner/feed-style-generation"
-import { ensureReadyPostCaption } from "@/lib/feed-planner/ready-post-caption"
+import {
+  ensureReadyPostCaption,
+  type CalendarCaptionPost,
+} from "@/lib/feed-planner/ready-post-caption"
 
 /* eslint-disable no-console */
 // Console statements are used for debugging and monitoring in development
@@ -46,6 +49,13 @@ interface Model {
   replicate_version_id?: string | null
   lora_weights_url?: string | null
   [key: string]: unknown
+}
+
+type FeedPostRow = CalendarCaptionPost & Record<string, any>
+
+/** Calendar has one image path. Legacy trained models are launched explicitly from Account. */
+function calendarGenerationMode(): 'pro' | 'classic' {
+  return 'pro'
 }
 
 // gpt-image-2 generates synchronously (no prediction polling) - the call itself takes
@@ -157,7 +167,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       )
     }
 
-    const { postId, generationMode: requestedMode } = await req.json()
+    const { postId } = await req.json()
     
     console.log("[v0] [GENERATE-SINGLE] Request params:", { feedId, postId })
 
@@ -186,12 +196,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       )
     }
 
-    const [post] = await sql`
+    const [postRecord] = await sql`
       SELECT * FROM feed_posts
       WHERE feed_layout_id = ${feedIdInt}
       AND id = ${postId}
       AND user_id = ${user.id}
     `
+    const post = postRecord as FeedPostRow | undefined
 
     if (!post) {
       return Response.json({ error: "Post not found" }, { status: 404 })
@@ -220,19 +231,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       })
     }
 
-    // Check generation mode (Pro Mode vs Classic Mode)
-    // Feed Planner should ALWAYS use Pro Mode (Nano Banana Pro) for ALL users
-    // This includes free users, paid blueprint users, and Studio membership users
-    // Force Pro Mode for all Feed Planner users, regardless of post.generation_mode or membership status
-    // Access was already fetched above, reuse it
-    const forceProMode = Boolean(process.env.FEED_PLANNER_FORCE_PRO ?? true)
-    let generationMode: 'pro' | 'classic' = post.generation_mode === 'classic' ? 'classic' : 'pro'
-    if (access.isMembership && (requestedMode === 'classic' || requestedMode === 'pro')) {
-      generationMode = requestedMode
-    }
-    if (!access.isMembership && forceProMode) {
-      generationMode = 'pro'
-    }
+    // Calendar always uses the current image engine. The trained LoRA model is a legacy,
+    // Account-only opt-in and must never be selected by a stale post or browser preference.
+    const generationMode = calendarGenerationMode()
     const proModeType = post.pro_mode_type || null
     console.log("[v0] [GENERATE-SINGLE] Post generation mode:", { generationMode, proModeType, isFree: access.isFree, isPaidBlueprint: access.isPaidBlueprint, postGenerationMode: post.generation_mode })
 
@@ -597,8 +598,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         generationMode,
         chosenPromptSource: chosenPromptSource || "unknown",
       })
-      const aspectRatio = access.isFree ? '9:16' : '4:5'
-      
       // The selected style-position prompt is already final and must remain unchanged.
       const cleanedPrompt = finalPrompt
       
@@ -630,54 +629,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         )
       }
 
-      // ── FLAGSHIP ENGINE (2026-07-07): gpt-image-2 via OpenAI, same model as Maya chat. ──
-      // Nano Banana Pro is retired here; FEED_PLANNER_IMAGE_ENGINE=nano-banana is the
-      // emergency rollback only. Classic (Flux trained model) stays as the legacy opt-in
-      // branch below - never the default.
-      if (process.env.FEED_PLANNER_IMAGE_ENGINE === "nano-banana") {
-        let generation
-        for (let attempt = 0; attempt < 2; attempt++) {
-          try {
-            generation = await generateWithNanoBanana({
-              prompt: cleanedPrompt,
-              image_input: baseImages.map(img => img.url),
-              aspect_ratio: aspectRatio,
-              resolution: '2K',
-              output_format: 'png',
-              safety_filter_level: 'block_only_high',
-            })
-            break
-          } catch (error) {
-            const message = error instanceof Error ? error.message : String(error)
-            const retryable = message.includes("502") || message.includes("Bad Gateway")
-            if (attempt === 1 || !retryable) {
-              throw error
-            }
-            await new Promise(resolve => setTimeout(resolve, 1200))
-          }
-        }
-        if (!generation) {
-          throw new Error("Failed to generate image")
-        }
-
-        await sql`
-          UPDATE feed_posts
-          SET generation_status = 'generating',
-              prediction_id = ${generation.predictionId},
-              prompt = ${cleanedPrompt},
-              updated_at = NOW()
-          WHERE id = ${postId}
-          AND user_id = ${user.id}
-        `
-
-        return Response.json({
-          predictionId: generation.predictionId,
-          success: true,
-          message: "Pro Mode image generation started",
-          mode: 'pro',
-        })
-      }
-
+      // Calendar uses gpt-image-2 via OpenAI, the same current engine as Maya chat.
       // Compose the full prompt the way the chat compiler does: the approved template is the
       // scene foundation; identity + environment-true realism wrap it for person scenes.
       // Object scenes (flatlay/detail) ship the template as-is - it's already a complete,

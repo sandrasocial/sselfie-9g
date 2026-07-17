@@ -24,6 +24,7 @@ import FeedHighlightsModal from "./feed-highlights-modal"
 import FeedSinglePlaceholder from "./feed-single-placeholder"
 import { CalendarMayaWorkspace } from "./calendar-maya-workspace"
 import { CalendarNeedsMe } from "./calendar-needs-me"
+import { CalendarBulkCreate } from "./calendar-bulk-create"
 import type { CalendarAgentProposal } from "@/lib/feed-planner/calendar-agent"
 import {
   calendarPlanSettingsFromProfile,
@@ -32,7 +33,6 @@ import {
 import { useFeedNav } from "./feed-nav-context"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getBrandColorThemeColors } from "@/lib/style-presets"
-import { readMayaProModePreference } from "@/lib/maya/mode-storage"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -104,7 +104,6 @@ export default function InstagramFeedView({
   const [planSettingsOpen, setPlanSettingsOpen] = useState(false)
   const calendarUndoRef = useRef<(() => Promise<void>) | null>(null)
   const feedNav = useFeedNav()
-  const generationMode = readMayaProModePreference() ? "pro" : "classic"
 
   const { data: personalBrandData, mutate: mutatePersonalBrand } = useSWR(
     "/api/profile/personal-brand",
@@ -752,7 +751,7 @@ export default function InstagramFeedView({
       const generation = await requestCalendarMutation(`/api/feed/${feedId}/generate-single`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postId: proposal.postId, generationMode }),
+        body: JSON.stringify({ postId: proposal.postId }),
       })
       if (generation.predictionId) {
         await mutate(
@@ -782,7 +781,7 @@ export default function InstagramFeedView({
     }
 
     setPreviewProposal(null)
-    void refreshCalendar()
+    await refreshCalendar()
     return { undoAvailable: Boolean(calendarUndoRef.current) }
   }
 
@@ -856,10 +855,18 @@ export default function InstagramFeedView({
         />
 
         {!access?.isFree ? (
-          <CalendarNeedsMe
-            posts={displayPosts}
-            onSelectPost={post => setActivePostId(Number(post.id))}
-          />
+          <>
+            <CalendarNeedsMe
+              posts={displayPosts}
+              onSelectPost={post => setActivePostId(Number(post.id))}
+            />
+            <CalendarBulkCreate
+              feedId={feedId}
+              posts={displayPosts}
+              onRefresh={() => mutate()}
+              onComplete={() => mutate()}
+            />
+          </>
         ) : null}
 
         {!access?.isFree && activeTab === "plan" && (
@@ -893,7 +900,6 @@ export default function InstagramFeedView({
                   onGenerateImage={() => mutate()} // Refresh feed data after generation
                   onRequireFeedStyle={onRequireFeedStyle}
                   onRequireOnboarding={onOpenWizard}
-                  generationMode={generationMode}
                   autoGenerateOnce={activationAction === "generate"}
                 />
               ) : (
@@ -915,7 +921,6 @@ export default function InstagramFeedView({
                     onDragOver={dragDrop.handleDragOver}
                     onDragEnd={dragDrop.handleDragEnd}
                     onMovePost={dragDrop.movePost}
-                    generationMode={generationMode}
                   />
                   {displayPosts.some((p: any) => !p.image_url) && (
                     <div className="mt-5 px-4 text-center">
@@ -1159,6 +1164,7 @@ export default function InstagramFeedView({
             const galleryPost = displayPosts.find((item: any) => Number(item.id) === postId)
             if (galleryPost) setShowGallery(Number(galleryPost.id))
           }}
+          onCreateNewGrid={onRequireFeedStyle}
         />
       ) : null}
     </div>

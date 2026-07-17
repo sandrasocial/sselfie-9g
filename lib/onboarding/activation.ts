@@ -27,36 +27,30 @@ export function getFreeUserWizardDecision(input: FreeUserWizardDecisionInput): F
 
 export type ActivationChecklistInput = {
   hasSelfies: boolean
-  hasTrainedModel: boolean
+  /** Legacy compatibility only. Current activation never requires a trained model. */
+  hasTrainedModel?: boolean
   hasGeneratedAny: boolean
+  /** Legacy compatibility only. Model training is no longer an activation step. */
   requiresModelTraining?: boolean
 }
 
-export type ActivationNextAction = "upload_selfie" | "train_model" | "generate_first_image" | "none"
+export type ActivationNextAction = "upload_selfie" | "generate_first_image" | "none"
 
 export function getActivationChecklist(input: ActivationChecklistInput): {
   steps: Array<{ key: string; label: string; done: boolean }>
   nextAction: ActivationNextAction
 } {
-  const requiresModelTraining = input.requiresModelTraining ?? true
   const steps: Array<{ key: string; label: string; done: boolean }> = [
     { key: "selfie", label: "Upload first selfie", done: Boolean(input.hasSelfies) },
+    { key: "generate", label: "Generate first image", done: Boolean(input.hasGeneratedAny) },
   ]
 
-  if (requiresModelTraining) {
-    steps.push({ key: "model", label: "Train model", done: Boolean(input.hasTrainedModel) })
-  }
-
-  steps.push({ key: "generate", label: "Generate first image", done: Boolean(input.hasGeneratedAny) })
-
   if (!steps[0].done) return { steps, nextAction: "upload_selfie" }
-  if (requiresModelTraining && !Boolean(input.hasTrainedModel)) return { steps, nextAction: "train_model" }
   if (!Boolean(input.hasGeneratedAny)) return { steps, nextAction: "generate_first_image" }
   return { steps, nextAction: "none" }
 }
 
 export function getActivationContinueHref(nextAction: ActivationNextAction): string | null {
-  if (nextAction === "train_model") return "/studio?tab=maya"
-  if (nextAction === "generate_first_image") return "/studio?tab=maya"
+  if (nextAction === "generate_first_image") return "/app?view=create"
   return null
 }

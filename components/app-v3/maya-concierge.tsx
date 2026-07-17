@@ -3186,59 +3186,6 @@ export function MayaConcierge({
               </div>
             )}
 
-            {!guidedFirstPhoto && customModelAvailable && (
-              <div className="rounded-[6px] border border-[#C5C6C8]/60 bg-white p-2.5">
-                <p className="mb-2 px-1 text-[10px] uppercase tracking-[0.2em] text-[#6D6E70]">
-                  Photo source
-                </p>
-                {/* Legacy Studio members: their model came along - say so, once, right where
-                    the choice lives. Selfie engine stays the default (flagship doctrine:
-                    gpt-image-2 reference edits; the LoRA path is kept, not promoted). */}
-                <p className="mb-2 px-1 text-[11px] leading-relaxed text-[#6D6E70]">
-                  Your trained model from Studio came with you. Use it any time - or let the selfie
-                  engine work straight from your photos.
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    {
-                      id: "trained-model" as const,
-                      label: "My trained model",
-                      note: "Uses your saved model.",
-                    },
-                    {
-                      id: "selfie" as const,
-                      label: "Selfie engine",
-                      note: "Uses your uploaded selfie.",
-                    },
-                  ].map(option => {
-                    const selected = generationSource === option.id
-                    return (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => setGenerationSource(option.id)}
-                        disabled={isThinking}
-                        className={`min-h-14 rounded-[4px] border px-3 py-2 text-left transition-colors disabled:opacity-50 ${
-                          selected
-                            ? "border-[#0D0E10] bg-[#0D0E10] text-white"
-                            : "border-[#C5C6C8]/60 bg-[#F8FAFA] text-[#4F5052] hover:border-[#0D0E10]/40"
-                        }`}
-                      >
-                        <span className="block text-[12px] font-medium">{option.label}</span>
-                        <span
-                          className={`mt-0.5 block text-[10px] leading-relaxed ${
-                            selected ? "text-white/70" : "text-[#6D6E70]"
-                          }`}
-                        >
-                          {option.note}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
             {format === "video" && (
               <div className="rounded-[6px] border border-[#0D0E10]/15 bg-white px-3 py-3">
                 <div className="flex items-start justify-between gap-3">

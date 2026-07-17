@@ -49,27 +49,29 @@ describe("getActivationChecklist", () => {
       hasGeneratedAny: false,
     })
     expect(result.nextAction).toBe("upload_selfie")
-    expect(result.steps.map((step) => step.done)).toEqual([false, false, false])
+    expect(result.steps.map((step) => step.done)).toEqual([false, false])
   })
 
-  it("moves next action to model training after selfie upload", () => {
+  it("moves directly to first generation after selfie upload", () => {
     const result = getActivationChecklist({
       hasSelfies: true,
       hasTrainedModel: false,
       hasGeneratedAny: false,
     })
-    expect(result.nextAction).toBe("train_model")
-    expect(result.steps.map((step) => step.done)).toEqual([true, false, false])
+    expect(result.nextAction).toBe("generate_first_image")
+    expect(result.steps.map((step) => step.key)).toEqual(["selfie", "generate"])
+    expect(result.steps.map((step) => step.done)).toEqual([true, false])
   })
 
-  it("moves next action to first generation when model is ready", () => {
+  it("does not add model training even when a legacy model exists", () => {
     const result = getActivationChecklist({
       hasSelfies: true,
       hasTrainedModel: true,
       hasGeneratedAny: false,
     })
     expect(result.nextAction).toBe("generate_first_image")
-    expect(result.steps.map((step) => step.done)).toEqual([true, true, false])
+    expect(result.steps.map((step) => step.key)).toEqual(["selfie", "generate"])
+    expect(result.steps.map((step) => step.done)).toEqual([true, false])
   })
 
   it("returns none when all activation steps are complete", () => {
@@ -79,7 +81,7 @@ describe("getActivationChecklist", () => {
       hasGeneratedAny: true,
     })
     expect(result.nextAction).toBe("none")
-    expect(result.steps.map((step) => step.done)).toEqual([true, true, true])
+    expect(result.steps.map((step) => step.done)).toEqual([true, true])
   })
 
   it("skips model training step when it is not required", () => {
@@ -98,7 +100,7 @@ describe("getActivationChecklist", () => {
 
 describe("getActivationContinueHref", () => {
   it("routes first-generation activation back into Maya", () => {
-    expect(getActivationContinueHref("generate_first_image")).toBe("/studio?tab=maya")
+    expect(getActivationContinueHref("generate_first_image")).toBe("/app?view=create")
   })
 
   it("returns null for upload step because UI should open wizard in place", () => {

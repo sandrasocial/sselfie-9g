@@ -125,15 +125,6 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
     }
   )
 
-  const { data: setupStatus } = useSWR(
-    showWizard ? null : "/api/user/setup-status",
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 60000,
-    },
-  )
-
   const { data: latestFeedData } = useSWR(
     showWizard ? null : "/api/feed/latest",
     fetcher,
@@ -156,11 +147,9 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
     () =>
       getActivationChecklist({
         hasSelfies: Boolean(onboardingStatus?.hasSelfies),
-        hasTrainedModel: Boolean(setupStatus?.hasTrainedModel),
         hasGeneratedAny,
-        requiresModelTraining: !Boolean(access?.isFree),
       }),
-    [access?.isFree, hasGeneratedAny, onboardingStatus?.hasSelfies, setupStatus?.hasTrainedModel],
+    [hasGeneratedAny, onboardingStatus?.hasSelfies],
   )
 
   // Determine if wizard is needed

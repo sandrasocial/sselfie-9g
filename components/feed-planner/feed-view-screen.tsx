@@ -428,7 +428,7 @@ export default function FeedViewScreen({
         onFeedStyleModalChange?.(open)
       }}
       onConfirm={handleFeedStyleConfirm}
-      mode="first"
+      mode={feedExists ? "new" : "first"}
       defaultFeedStyle={initialFeedStyle || lastFeedStyle}
       defaultFeedStyleVariationId={initialFeedStyleVariationId ?? undefined}
       isLoading={isCreatingManual}

@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react"
-import { ArrowUp, Check, ChevronDown, Loader2, RotateCcw, X } from "lucide-react"
+import { ArrowUp, Check, ChevronDown, Loader2, Plus, RotateCcw, X } from "lucide-react"
 
 import { ClarifyCard } from "@/components/app-v3/clarify-card"
 import { Markdown } from "@/components/app-v3/markdown"
@@ -53,6 +53,7 @@ interface CalendarMayaWorkspaceProps {
   onOpenPostDetails?: (postId: number) => void
   onClearSelectedPost?: () => void
   onOpenPhotoPicker?: (postId: number) => void
+  onCreateNewGrid?: () => void
 }
 
 const storageKey = (feedId: number | null) => `calendar:maya-thread:v1:${feedId ?? "new"}`
@@ -65,6 +66,22 @@ function initialMessage(feedId: number | null): CalendarMessage {
       ? "I’ve got your month open. Tap any post and I’ll help you shape it right here."
       : "Let’s map your first month together. I pulled in what I already know, so you can start with a few taps.",
   }
+}
+
+function savedMessages(value: unknown): CalendarMessage[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter(
+      (message): message is CalendarMessage =>
+        Boolean(
+          message &&
+            typeof message === "object" &&
+            typeof message.id === "string" &&
+            (message.role === "user" || message.role === "assistant") &&
+            typeof message.content === "string"
+        )
+    )
+    .slice(-16)
 }
 
 function suggestionsFor(selectedPost: CalendarPostSummary | null, hasFeed: boolean): ClarifyPrompt {
@@ -138,6 +155,7 @@ export function CalendarMayaWorkspace({
   onOpenPostDetails,
   onClearSelectedPost,
   onOpenPhotoPicker,
+  onCreateNewGrid,
 }: CalendarMayaWorkspaceProps) {
   const [expanded, setExpanded] = useState(true)
   const [input, setInput] = useState("")
@@ -149,6 +167,8 @@ export function CalendarMayaWorkspace({
   const [appliedMessageId, setAppliedMessageId] = useState<string | null>(null)
   const [undoAvailable, setUndoAvailable] = useState(false)
   const [planConfirmed, setPlanConfirmed] = useState(false)
+  const [newMenuOpen, setNewMenuOpen] = useState(false)
+  const [newChatConfirming, setNewChatConfirming] = useState(false)
   const threadEndRef = useRef<HTMLDivElement>(null)
   const scrollRegionRef = useRef<HTMLDivElement>(null)
   const skipNextPersistenceRef = useRef(true)
@@ -162,12 +182,19 @@ export function CalendarMayaWorkspace({
         return
       }
       const parsed = JSON.parse(saved)
-      if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed.slice(-16))
+      const restored = savedMessages(parsed)
+      setMessages(restored.length > 0 ? restored : [initialMessage(feedId)])
     } catch {
       setMessages([initialMessage(feedId)])
     }
+    setInput("")
+    setError(null)
+    setStatus("idle")
     setAppliedMessageId(null)
     setUndoAvailable(false)
+    setNewMenuOpen(false)
+    setNewChatConfirming(false)
+    onClearPreview?.()
   }, [feedId])
 
   useEffect(() => {
@@ -303,6 +330,25 @@ export function CalendarMayaWorkspace({
     }
   }
 
+  function startNewChat() {
+    skipNextPersistenceRef.current = true
+    try {
+      window.localStorage.removeItem(storageKey(feedId))
+    } catch {
+      // A fresh in-memory thread still works when storage is unavailable.
+    }
+    setMessages([initialMessage(feedId)])
+    setInput("")
+    setError(null)
+    setStatus("idle")
+    setAppliedMessageId(null)
+    setUndoAvailable(false)
+    setNewMenuOpen(false)
+    setNewChatConfirming(false)
+    onClearPreview?.()
+    onClearSelectedPost?.()
+  }
+
   if (!expanded) {
     return (
       <button
@@ -324,7 +370,7 @@ export function CalendarMayaWorkspace({
       aria-label="Maya for this Calendar"
       className="fixed inset-x-2 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30 flex max-h-[56dvh] min-h-[18rem] flex-col overflow-hidden rounded-[20px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-surface)] shadow-[0_24px_64px_rgba(13,14,16,0.20)] lg:sticky lg:inset-auto lg:top-4 lg:z-0 lg:max-h-[calc(100dvh-8rem)] lg:min-h-[42rem] lg:rounded-[16px] lg:shadow-none"
     >
-      <header className="flex min-h-16 items-center gap-3 border-b border-[color:var(--app-glass-border)] bg-[color:var(--app-bg)] px-4">
+      <header className="relative flex min-h-16 items-center gap-3 border-b border-[color:var(--app-glass-border)] bg-[color:var(--app-bg)] px-4">
         <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[color:var(--app-btn-secondary-bg)]">
           <Image src={MAYA_AVATAR} alt="" fill sizes="40px" className="object-cover" />
         </span>
@@ -335,6 +381,71 @@ export function CalendarMayaWorkspace({
               ? `Post ${selectedPost.position} selected`
               : "Your Calendar creative director"}
           </p>
+        </div>
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              setNewMenuOpen(value => !value)
+              setNewChatConfirming(false)
+            }}
+            disabled={isBusy}
+            aria-expanded={newMenuOpen}
+            aria-controls="calendar-maya-new-menu"
+            className="inline-flex min-h-11 items-center gap-1 rounded-full px-2.5 text-[11px] font-medium text-[color:var(--app-text-secondary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] hover:text-[color:var(--app-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-text-primary)] disabled:opacity-40"
+          >
+            <Plus size={15} aria-hidden /> New
+          </button>
+          {newMenuOpen ? (
+            <div
+              id="calendar-maya-new-menu"
+              role="group"
+              aria-label="Start something new"
+              className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-[10px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-bg)] p-1 shadow-[0_12px_32px_rgba(13,14,16,0.14)]"
+            >
+              {!newChatConfirming ? (
+                <button
+                  type="button"
+                  onClick={() => setNewChatConfirming(true)}
+                  className="min-h-11 w-full rounded-[7px] px-3 text-left text-[12px] text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-hover)]"
+                >
+                  New chat
+                </button>
+              ) : (
+                <>
+                  <p className="px-3 pb-1 pt-2 text-[10px] leading-relaxed text-[color:var(--app-text-secondary)]">
+                    Clear this conversation? Your grid stays exactly as it is.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={startNewChat}
+                    className="min-h-11 w-full rounded-[7px] px-3 text-left text-[12px] font-medium text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-hover)]"
+                  >
+                    Start fresh
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewChatConfirming(false)}
+                    className="min-h-11 w-full rounded-[7px] px-3 text-left text-[12px] text-[color:var(--app-text-secondary)] hover:bg-[color:var(--app-btn-secondary-hover)]"
+                  >
+                    Keep this chat
+                  </button>
+                </>
+              )}
+              {onCreateNewGrid && !newChatConfirming ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewMenuOpen(false)
+                    onCreateNewGrid()
+                  }}
+                  className="min-h-11 w-full rounded-[7px] px-3 text-left text-[12px] text-[color:var(--app-text-primary)] hover:bg-[color:var(--app-btn-secondary-hover)]"
+                >
+                  New grid
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         <button
           type="button"
