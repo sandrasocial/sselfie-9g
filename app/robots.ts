@@ -8,17 +8,14 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
         disallow: [
           "/api/",
-          "/studio",
-          "/studio/",
-          "/checkout/",
           "/selfie-guide/access/",
           "/brand-strategy/setup/",
           "/strategy/",
-          "/auth/",
           "/admin/",
         ],
       },
     ],
-    sitemap: "https://sselfie.ai/sitemap.xml",
+    sitemap: "https://www.sselfie.ai/sitemap.xml",
+    host: "https://www.sselfie.ai",
   }
 }

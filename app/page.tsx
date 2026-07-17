@@ -13,6 +13,50 @@ export const metadata: Metadata = {
   title: "SSELFIE | Phone-First Personal Brand & Selfie Education",
   description:
     "SSELFIE helps women turn their phone, story, content, and first offer into a personal brand people understand, trust, and can buy from.",
+  alternates: {
+    canonical: "https://www.sselfie.ai/",
+  },
+}
+
+const homeStructuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://www.sselfie.ai/#organization",
+      name: "SSELFIE",
+      url: "https://www.sselfie.ai/",
+      logo: "https://www.sselfie.ai/favicon.png",
+      description:
+        "SSELFIE helps women become visible and recognizable online using their phone, their story, and AI.",
+      founder: { "@id": "https://www.sselfie.ai/#sandra-aamodt" },
+    },
+    {
+      "@type": "Person",
+      "@id": "https://www.sselfie.ai/#sandra-aamodt",
+      name: "Sandra Aamodt",
+      url: "https://www.sselfie.ai/",
+      jobTitle: "Founder of SSELFIE",
+      worksFor: { "@id": "https://www.sselfie.ai/#organization" },
+      sameAs: [
+        "https://www.instagram.com/sandra.social/",
+        "https://www.tiktok.com/@sandra.social",
+        "https://no.linkedin.com/in/sandra-aamodt-919734253",
+      ],
+    },
+  ],
+}
+
+function PublicHome({ referralCode }: { referralCode: string | null }) {
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homeStructuredData) }}
+      />
+      <LandingPage referralCode={referralCode} />
+    </>
+  )
 }
 
 export default async function Home({
@@ -47,7 +91,7 @@ export default async function Home({
   // If Supabase isn't configured (V0 preview), just show landing page
   if (!supabaseConfigured) {
     console.log("[v0] Supabase not configured - showing landing page")
-    return <LandingPage referralCode={referralCode} />
+    return <PublicHome referralCode={referralCode} />
   }
 
   let supabase
@@ -56,7 +100,7 @@ export default async function Home({
   } catch (error) {
     console.error("[v0] Error creating Supabase client:", error)
     // If Supabase client creation fails, just show landing page
-    return <LandingPage referralCode={referralCode} />
+    return <PublicHome referralCode={referralCode} />
   }
 
   let user = null
@@ -72,7 +116,7 @@ export default async function Home({
   } catch (error) {
     console.error("[v0] Auth check failed or timed out:", error)
     // If auth check fails, just show landing page
-    return <LandingPage referralCode={referralCode} />
+    return <PublicHome referralCode={referralCode} />
   }
 
   if (user) {
@@ -120,5 +164,5 @@ export default async function Home({
     }
   }
 
-  return <LandingPage referralCode={referralCode} />
+  return <PublicHome referralCode={referralCode} />
 }

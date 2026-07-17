@@ -3,6 +3,7 @@
 // Cormorant Garamond per the design system, without touching global Tailwind config.
 
 import type { ReactNode } from "react"
+import type { Metadata } from "next"
 import { Cormorant_Garamond, Manrope } from "next/font/google"
 
 const displaySerif = Cormorant_Garamond({
@@ -18,6 +19,13 @@ const bodySans = Manrope({
   variable: "--font-app-sans",
   display: "swap",
 })
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 export default function AppV3Layout({ children }: { children: ReactNode }) {
   return (
