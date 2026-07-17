@@ -125,7 +125,7 @@ export function ThisWeekStrip({
               type="button"
               onClick={dismiss}
               aria-label="Close for this week"
-              className="-mr-2 -mt-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-[#4F5052] transition-colors hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-[#4F5052] transition-colors hover:bg-[#F1F2F2] hover:text-[#0D0E10] sm:-mr-2 sm:-mt-2"
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                 <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />

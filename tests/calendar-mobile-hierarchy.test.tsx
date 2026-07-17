@@ -55,6 +55,7 @@ describe("Calendar mobile hierarchy", () => {
     expect(thisWeek).toContain("line-clamp-2")
     expect(thisWeek).toContain("min-h-11")
     expect(thisWeek).toContain("flex-col items-start")
+    expect(thisWeek).not.toContain('className="-mr-2 -mt-2')
 
     expect(tabs).toContain("Your grids")
     expect(tabs).toContain('aria-label="Choose a grid"')
