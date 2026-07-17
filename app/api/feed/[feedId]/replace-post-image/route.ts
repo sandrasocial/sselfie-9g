@@ -2,9 +2,12 @@ import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
+import { ensureReadyPostCaption } from "@/lib/feed-planner/ready-post-caption"
 
-
-export async function POST(request: Request, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ feedId: string }> | { feedId: string } }
+) {
   try {
     const { user: authUser, error: authError } = await getAuthenticatedUser()
 
@@ -29,7 +32,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
     const resolvedParams = await Promise.resolve(params)
     const feedId = resolvedParams.feedId
 
-    console.log("[v0] Replace post image - feedId:", feedId, "postId:", postId, "imageUrl:", imageUrl?.substring(0, 50))
+    console.log(
+      "[v0] Replace post image - feedId:",
+      feedId,
+      "postId:",
+      postId,
+      "imageUrl:",
+      imageUrl?.substring(0, 50)
+    )
 
     // Verify feed ownership
     const [feed] = await sql`
@@ -46,7 +56,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    // Update post image
+    const [post] = await sql`
+      SELECT id, feed_layout_id, position, post_type, content_pillar, caption
+      FROM feed_posts
+      WHERE id = ${postId}
+        AND feed_layout_id = ${feedId}
+        AND user_id = ${neonUser.id}
+      LIMIT 1
+    `
+    if (!post) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 })
+    }
+
+    // Persist the member's photo before asking the caption provider for enrichment.
     const [updatedPost] = await sql`
       UPDATE feed_posts
       SET 
@@ -63,6 +85,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
       return NextResponse.json({ error: "Post not found" }, { status: 404 })
     }
 
+    const captionOutcome = await ensureReadyPostCaption({
+      userId: neonUser.id,
+      post: {
+        id: Number(post.id),
+        feed_layout_id: Number(post.feed_layout_id),
+        position: post.position,
+        post_type: post.post_type,
+        content_pillar: post.content_pillar,
+        caption: post.caption,
+      },
+    })
+
     console.log("[v0] Post image replaced successfully:", {
       postId,
       feedId,
@@ -71,7 +105,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
 
     return NextResponse.json({
       success: true,
-      post: updatedPost,
+      post: {
+        ...updatedPost,
+        caption: captionOutcome.caption ?? updatedPost.caption,
+      },
+      captionStatus: captionOutcome.status,
     })
   } catch (error) {
     console.error("[v0] Error replacing post image:", error)

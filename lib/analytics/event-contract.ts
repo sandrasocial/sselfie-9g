@@ -222,6 +222,11 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "suite_likeness_note_deleted",
   // CALENDAR-UPGRADE-01: behavioral outcome only. Revenue truth never lives here.
   "calendar_post_published",
+  // MAYA-CALENDAR-WORKSPACE: first-run choice, workspace use, and ready-post completion.
+  "calendar_mode_selected",
+  "calendar_workspace_opened",
+  "calendar_photo_added",
+  "calendar_post_ready",
   // TEXT-STUDIO-01 — hybrid text studio: she asked for a baked text render / the bake failed
   // (behavior only, never money; credits truth lives in credit_transactions).
   "suite_text_bake_requested",

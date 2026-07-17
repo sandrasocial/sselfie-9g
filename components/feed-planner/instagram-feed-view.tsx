@@ -62,9 +62,7 @@ export default function InstagramFeedView({
   
   // Removed excessive console.log statements that were causing performance issues during polling
 
-  const [activeTab, setActiveTab] = useState<FeedTab>("grid")
-  // 2026-07-07: Week view - same month plan as a week-by-week schedule (paid/membership).
-  const [calendarLens, setCalendarLens] = useState<"grid" | "week">("grid")
+  const [activeTab, setActiveTab] = useState<FeedTab>(() => access?.isFree ? "grid" : "plan")
   const [businessType, setBusinessType] = useState<string | undefined>(undefined)
   const [showBioModal, setShowBioModal] = useState(false)
   
@@ -563,16 +561,18 @@ export default function InstagramFeedView({
         access={access}
         generationMode={generationMode}
         onToggleGenerationMode={access?.isMembership ? handleToggleGenerationMode : undefined}
-      />
-      
-      <FeedTabs
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        access={access} // Phase 4.2: Pass access control instead of mode
-        currentFeedId={feedId} // 2026-07-07: plan switcher highlights the open plan
+        showProfileDetails={activeTab === "profile"}
+        workspaceNavigation={
+          <FeedTabs
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            access={access}
+            currentFeedId={feedId}
+          />
+        }
       />
 
-      {!access?.isFree && (
+      {!access?.isFree && activeTab === "plan" && (
         <FeedMonthSummary
           themeSummary={feedData?.feed?.overall_vibe}
           schedulingRationale={feedData?.feed?.strategic_rationale}
@@ -582,6 +582,10 @@ export default function InstagramFeedView({
 
 
       <div className="pb-20">
+        {activeTab === "plan" && !access?.isFree && (
+          <FeedWeekView posts={displayPosts} onPostClick={setSelectedPost} />
+        )}
+
         {activeTab === "grid" && (
           <>
             {/* Show single placeholder for preview feeds OR free users, full grid for paid users with full feeds */}
@@ -599,40 +603,6 @@ export default function InstagramFeedView({
               />
             ) : (
               <>
-                {/* Grid | Week lens toggle - always visible for paid plans (2026-07-07:
-                    Sandra's report - gating it on scheduled dates made it vanish on classic
-                    grids, leaving "nowhere to switch". Week view handles undated posts via
-                    its Anytime section, so the toggle is safe everywhere). */}
-                {!access?.isFree && (
-                  <div className="mx-auto mb-3 flex max-w-3xl items-center justify-between gap-3 px-3">
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#4F5052]">
-                      Choose a view
-                    </p>
-                    <div
-                      role="group"
-                      aria-label="Choose a calendar view"
-                      className="flex min-w-[176px] gap-1 rounded-full border border-[#C5C6C8]/60 bg-white p-1"
-                    >
-                      {(["grid", "week"] as const).map((lens) => (
-                        <button
-                          key={lens}
-                          onClick={() => setCalendarLens(lens)}
-                          aria-pressed={calendarLens === lens}
-                          className={`min-h-11 flex-1 rounded-full px-4 py-2 text-[10px] uppercase tracking-[0.14em] transition-colors ${
-                            calendarLens === lens
-                              ? "bg-[#0D0E10] text-white"
-                              : "text-[#4F5052] hover:text-[#0D0E10]"
-                          }`}
-                        >
-                          {lens === "grid" ? "Grid" : "Week"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {calendarLens === "week" && !access?.isFree ? (
-                  <FeedWeekView posts={displayPosts} onPostClick={setSelectedPost} />
-                ) : (
                 <FeedGrid
                   posts={displayPosts}
                   postStatuses={postStatuses}
@@ -651,9 +621,7 @@ export default function InstagramFeedView({
                   onMovePost={dragDrop.movePost}
                   generationMode={generationMode}
                 />
-                )}
-                {/* Helpful hint for empty posts (grid lens only - week cards carry their own state) */}
-                {calendarLens !== "week" && displayPosts.some((p: any) => !p.image_url) && (
+                {displayPosts.some((p: any) => !p.image_url) && (
                   <div className="mt-5 px-4 text-center">
                     <p className="text-xs font-light text-[color:var(--app-text-secondary)]">
                       {/* DRAFT UX copy for Sandra approval before release. */}

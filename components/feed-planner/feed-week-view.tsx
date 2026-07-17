@@ -36,9 +36,9 @@ function fmtWeek(ts: number): string {
 
 export default function FeedWeekView({ posts, onPostClick }: FeedWeekViewProps) {
   const dated = posts
-    .filter((p) => p.scheduled_at && !Number.isNaN(new Date(p.scheduled_at).getTime()))
+    .filter(p => p.scheduled_at && !Number.isNaN(new Date(p.scheduled_at).getTime()))
     .sort((a, b) => new Date(a.scheduled_at!).getTime() - new Date(b.scheduled_at!).getTime())
-  const undated = posts.filter((p) => !p.scheduled_at)
+  const undated = posts.filter(p => !p.scheduled_at)
 
   const weeks = new Map<number, WeekViewPost[]>()
   for (const post of dated) {
@@ -55,6 +55,8 @@ export default function FeedWeekView({ posts, onPostClick }: FeedWeekViewProps) 
   const renderCard = (post: WeekViewPost, dateLabel: string) => {
     const isPast =
       post.scheduled_at != null && new Date(post.scheduled_at).getTime() < todayStart.getTime()
+    const readiness =
+      post.image_url && post.caption ? "Ready" : post.image_url ? "Needs caption" : "Needs photo"
     return (
       <button
         key={post.id}
@@ -84,11 +86,15 @@ export default function FeedWeekView({ posts, onPostClick }: FeedWeekViewProps) 
             {post.caption ? post.caption : "Caption coming with the photo"}
           </p>
         </div>
-        {!post.image_url && !isPast && (
-          <span className="shrink-0 rounded-full border border-[#C5C6C8] px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] text-[#4F5052]">
-            Open
-          </span>
-        )}
+        <span
+          className={`shrink-0 rounded-full border px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] ${
+            readiness === "Ready"
+              ? "border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)]"
+              : "border-[color:var(--app-glass-border)] text-[color:var(--app-text-secondary)]"
+          }`}
+        >
+          {readiness}
+        </span>
       </button>
     )
   }
@@ -98,13 +104,17 @@ export default function FeedWeekView({ posts, onPostClick }: FeedWeekViewProps) 
       {Array.from(weeks.entries()).map(([key, weekPosts]) => (
         <section key={key}>
           <div className="mb-2 flex items-baseline gap-2 px-1">
-            <h3 className="text-[11px] uppercase tracking-[0.2em] text-[#4F5052]">{fmtWeek(key)}</h3>
+            <h3 className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
+              {fmtWeek(key)}
+            </h3>
             {key === currentWeekKey && (
-              <span className="text-[10px] uppercase tracking-[0.14em] text-[#4F5052]">This week</span>
+              <span className="text-[10px] uppercase tracking-[0.14em] text-[color:var(--app-text-secondary)]">
+                This week
+              </span>
             )}
           </div>
           <div className="space-y-2">
-            {weekPosts.map((post) => renderCard(post, fmtDay(new Date(post.scheduled_at!))))}
+            {weekPosts.map(post => renderCard(post, fmtDay(new Date(post.scheduled_at!))))}
           </div>
         </section>
       ))}
@@ -112,10 +122,12 @@ export default function FeedWeekView({ posts, onPostClick }: FeedWeekViewProps) 
         <section>
           <div className="mb-2 px-1">
             <h3 className="text-[11px] uppercase tracking-[0.2em] text-[#4F5052]">Not scheduled</h3>
-            <p className="mt-1 text-[12px] text-[#4F5052]">These posts are still part of your grid.</p>
+            <p className="mt-1 text-[12px] text-[color:var(--app-text-secondary)]">
+              These posts are still part of your grid.
+            </p>
           </div>
           <div className="space-y-2">
-            {undated.map((post) => renderCard(post, `Post ${post.position}`))}
+            {undated.map(post => renderCard(post, `Post ${post.position}`))}
           </div>
         </section>
       )}

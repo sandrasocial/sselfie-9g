@@ -12,6 +12,7 @@ import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banan
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getFeedStyleV2ByName } from "@/lib/feed-planner/feed-style-prompt-loader"
 import { selectPromptForPosition } from "@/lib/feed-planner/feed-style-generation"
+import { ensureReadyPostCaption } from "@/lib/feed-planner/ready-post-caption"
 
 /* eslint-disable no-console */
 // Console statements are used for debugging and monitoring in development
@@ -197,19 +198,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     }
 
     if (post.image_url) {
+      const captionOutcome = await ensureReadyPostCaption({ userId: user.id, post })
       return Response.json({
         success: true,
         alreadyGenerated: true,
         imageUrl: post.image_url,
         predictionId: post.prediction_id || null,
+        caption: captionOutcome.caption,
+        captionStatus: captionOutcome.status,
       })
     }
 
     if (post.prediction_id && post.generation_status !== "failed") {
+      const captionOutcome = await ensureReadyPostCaption({ userId: user.id, post })
       return Response.json({
         success: true,
         alreadyGenerating: true,
         predictionId: post.prediction_id,
+        caption: captionOutcome.caption,
+        captionStatus: captionOutcome.status,
       })
     }
 
@@ -794,6 +801,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         console.error("[v0] [GENERATE-SINGLE] Gallery insert failed (image saved to feed):", galleryError)
       }
 
+      const captionOutcome = await ensureReadyPostCaption({ userId: user.id, post })
+
       return Response.json({
         success: true,
         imageUrl: blob.url,
@@ -801,6 +810,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         message: "Image generated",
         mode: 'pro',
         engine: 'openai',
+        caption: captionOutcome.caption,
+        captionStatus: captionOutcome.status,
       })
     }
     
@@ -1093,10 +1104,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
 
     console.log("[v0] [GENERATE-SINGLE] ✅ Database updated with prediction_id:", prediction.id, "for post:", postId)
 
+    const captionOutcome = await ensureReadyPostCaption({ userId: user.id, post })
+
     return Response.json({ 
       predictionId: prediction.id,
       success: true,
       message: "Image generation started",
+      caption: captionOutcome.caption,
+      captionStatus: captionOutcome.status,
     })
   } catch (error: unknown) {
     if (claimedPostId && claimedUserId) {

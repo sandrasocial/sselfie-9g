@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
@@ -21,6 +21,8 @@ interface FeedHeaderProps {
   access?: { isFree?: boolean; isPaidBlueprint?: boolean; isMembership?: boolean } // Access control to hide buttons for free users
   generationMode?: "classic" | "pro"
   onToggleGenerationMode?: () => void
+  workspaceNavigation?: ReactNode
+  showProfileDetails?: boolean
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -48,6 +50,8 @@ export default function FeedHeader({
   access,
   generationMode = "pro",
   onToggleGenerationMode,
+  workspaceNavigation,
+  showProfileDetails = true,
 }: FeedHeaderProps) {
   const router = useRouter()
   const feedNav = useFeedNav()
@@ -544,7 +548,9 @@ export default function FeedHeader({
         )}
       </div>
 
-      <div className="px-3 sm:px-4 md:px-8 py-3 sm:py-4">
+      {workspaceNavigation}
+
+      <div className={showProfileDetails ? "px-3 sm:px-4 md:px-8 py-3 sm:py-4" : "hidden"}>
         <div className="mb-3 flex items-start gap-4 md:gap-8">
           <button
             onClick={onProfileImageClick}

@@ -136,7 +136,12 @@ async function startGeneration({
     const data = await onGenerate(postId)
     if (data?.predictionId) {
       setPredictionId(data.predictionId)
-      console.log("[Feed Grid Item] ✅ Generation started for post", postId, "predictionId:", data.predictionId)
+      console.log(
+        "[Feed Grid Item] ✅ Generation started for post",
+        postId,
+        "predictionId:",
+        data.predictionId
+      )
       return
     }
 
@@ -213,7 +218,8 @@ function renderContent({
   }
 
   if (showGenerateButton) {
-    const isMayaDraft = typeof post?.content_pillar === "string" && post.content_pillar.trim().length > 0
+    const isMayaDraft =
+      typeof post?.content_pillar === "string" && post.content_pillar.trim().length > 0
 
     // Feed Planner Phase 2c: Suite members generate photos in Create/Chat and Maya places
     // them on the calendar herself - so no Generate button here. But an empty day IS
@@ -225,7 +231,7 @@ function renderContent({
         <button
           type="button"
           className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-1.5 bg-[#F8FAFA] p-3 text-center transition-colors hover:bg-[#F1F2F2]"
-          onClick={(event) => {
+          onClick={event => {
             event.stopPropagation()
             onAddImage?.(post.id)
           }}
@@ -235,9 +241,7 @@ function renderContent({
               {post.content_pillar}
             </span>
           )}
-          <span className="text-[9px] uppercase tracking-[0.18em] text-[#A2A3A5]">
-            Add photo
-          </span>
+          <span className="text-[9px] uppercase tracking-[0.18em] text-[color:var(--app-text-muted)]">Add photo</span>
         </button>
       )
     }
@@ -281,7 +285,7 @@ function renderContent({
     <button
       type="button"
       className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-1 bg-[#F8FAFA] p-3 transition-colors hover:bg-[#F1F2F2]"
-      onClick={(event) => {
+      onClick={event => {
         event.stopPropagation()
         onAddImage?.(post.id)
       }}
@@ -325,12 +329,17 @@ export default function FeedGridItem({
     // Suite members never self-trigger generation from an empty tile (Phase 2c) - no
     // prediction to poll for, so skip the polling hook entirely for that population.
     enabled: !isMembership && !!predictionId && !post?.image_url,
-    onComplete: (imageUrl) => {
-      console.log("[Feed Grid Item] ✅ Generation completed for post", post.id, "imageUrl:", imageUrl)
+    onComplete: imageUrl => {
+      console.log(
+        "[Feed Grid Item] ✅ Generation completed for post",
+        post.id,
+        "imageUrl:",
+        imageUrl
+      )
       setPredictionId(null)
       onGenerateImage?.(post.id)
     },
-    onError: (error) => {
+    onError: error => {
       console.error("[Feed Grid Item] ❌ Generation failed for post", post.id, ":", error)
       setPredictionId(null)
     },
@@ -349,7 +358,9 @@ export default function FeedGridItem({
   })
   const isComplete = !!displayImageUrl
   const canStop = !!predictionId && !predictionId.startsWith("temp-")
-  const completeInteractionClassName = isSavingOrder ? "cursor-pointer" : "cursor-move hover:opacity-90"
+  const completeInteractionClassName = isSavingOrder
+    ? "cursor-pointer"
+    : "cursor-move hover:opacity-90"
 
   const handleGenerateClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     void startGeneration({
@@ -413,6 +424,7 @@ export default function FeedGridItem({
   }`
 
   if (isComplete) {
+    const isReadyPost = Boolean(post.caption?.trim())
     return (
       <button
         type="button"
@@ -426,7 +438,8 @@ export default function FeedGridItem({
         }}
         onTouchEnd={event => {
           if (touchStartXRef.current === null) return
-          const delta = (event.changedTouches[0]?.clientX ?? touchStartXRef.current) - touchStartXRef.current
+          const delta =
+            (event.changedTouches[0]?.clientX ?? touchStartXRef.current) - touchStartXRef.current
           touchStartXRef.current = null
           if (Math.abs(delta) < 44) return
           didSwipeRef.current = true
@@ -454,13 +467,24 @@ export default function FeedGridItem({
         className={`${baseClassName} ${completeInteractionClassName}`}
       >
         {content}
+        <span
+          className={`absolute right-1.5 top-1.5 rounded-full border px-2 py-1 text-[8px] font-medium uppercase tracking-[0.12em] backdrop-blur-md ${
+            isReadyPost
+              ? "border-white/25 bg-[color:var(--app-btn-primary-bg)] text-white"
+              : "border-white/60 bg-white/85 text-[color:var(--app-text-secondary)]"
+          }`}
+        >
+          {isReadyPost ? "Ready" : "Needs caption"}
+        </span>
       </button>
     )
   }
 
   return (
     <>
-      <div className={`${baseClassName} ${isQuietPlaceholder ? "" : "cursor-pointer"}`}>{content}</div>
+      <div className={`${baseClassName} ${isQuietPlaceholder ? "" : "cursor-pointer"}`}>
+        {content}
+      </div>
       <StopGenerationDialog
         open={showStopDialog}
         isStopping={isStopping}

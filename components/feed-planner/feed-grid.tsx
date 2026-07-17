@@ -4,6 +4,7 @@ import { toast } from "@/hooks/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import FeedGridItem from "./feed-grid-item"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
 interface FeedGridProps {
   posts: any[]
@@ -86,7 +87,10 @@ export default function FeedGrid({
             return { error: errorCode }
           }
 
-          if (errorCode === "CANONICAL_FIELDS_REQUIRED" || errorCode === "TEMPLATE_INJECTION_REQUIRED") {
+          if (
+            errorCode === "CANONICAL_FIELDS_REQUIRED" ||
+            errorCode === "TEMPLATE_INJECTION_REQUIRED"
+          ) {
             toast({
               title: "Complete your brand profile",
               description: "Add your visual aesthetic and fashion style to generate images.",
@@ -113,18 +117,24 @@ export default function FeedGrid({
 
         // Use errorDetails if available, otherwise use errorCode
         // Don't concatenate if they're similar to avoid "error: error" messages
-        const fullErrorMessage = errorDetails && errorDetails !== errorCode 
-          ? errorDetails 
-          : errorCode
+        const fullErrorMessage =
+          errorDetails && errorDetails !== errorCode ? errorDetails : errorCode
         throw new Error(fullErrorMessage)
       }
 
       const data = await response.json()
 
+      if (data.captionStatus === "ready" || data.captionStatus === "preserved") {
+        void trackAnalyticsEvent({
+          event: "calendar_post_ready",
+          properties: { feedId, postId, source: "generated" },
+        })
+      }
+
       // NON-BLOCKING: Call refresh callback without awaiting (don't block UI)
       // This allows the loading state to show immediately while data refreshes in background
       if (onGenerateImage) {
-        onGenerateImage(postId).catch((err) => {
+        onGenerateImage(postId).catch(err => {
           console.error("[Feed Grid] Error refreshing feed data:", err)
           // Don't show error to user - this is just a background refresh
         })
@@ -135,10 +145,11 @@ export default function FeedGrid({
     } catch (error) {
       console.error("[Feed Grid] Generate error:", error)
       const errorMessage = error instanceof Error ? error.message : "Please try again"
-      
+
       toast({
         title: "Generation failed",
-        description: errorMessage.length > 100 ? `${errorMessage.substring(0, 100)}...` : errorMessage,
+        description:
+          errorMessage.length > 100 ? `${errorMessage.substring(0, 100)}...` : errorMessage,
         variant: "destructive",
       })
       return { error: errorMessage }
@@ -184,7 +195,7 @@ export default function FeedGrid({
           onAddImage={onAddImage}
           onGenerateImage={onGenerateImage}
           onDragStart={() => onDragStart(index)}
-          onDragOver={(e) => onDragOver(e, index)}
+          onDragOver={e => onDragOver(e, index)}
           onDragEnd={onDragEnd}
           onMoveLeft={() => onMovePost(index, -1)}
           onMoveRight={() => onMovePost(index, 1)}

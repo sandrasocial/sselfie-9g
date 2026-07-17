@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   swrData: new Map<string, unknown>(),
   toast: vi.fn(),
+  trackAnalyticsEvent: vi.fn(),
 }))
 
 vi.mock("next/navigation", () => ({
@@ -29,6 +30,10 @@ vi.mock("swr", () => ({
 
 vi.mock("@/hooks/use-toast", () => ({
   toast: mocks.toast,
+}))
+
+vi.mock("@/lib/analytics/client", () => ({
+  trackAnalyticsEvent: mocks.trackAnalyticsEvent,
 }))
 
 vi.mock("@/components/feed-planner/feed-nav-context", () => ({
@@ -82,27 +87,105 @@ describe("Calendar grid creation", () => {
     global.fetch = mocks.fetch as unknown as typeof fetch
   })
 
-  it("routes a no-grid member from the empty state into the newly created grid", async () => {
+  it("makes Maya the primary no-grid path and routes into her drafted month", async () => {
     mocks.swrData.set("/api/feed/latest", { exists: false })
     mocks.fetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ feedId: 101 }),
+      json: async () => ({ created: true, feedLayoutId: 101, postCount: 9 }),
     })
 
     const { default: FeedViewScreen } = await import("@/components/feed-planner/feed-view-screen")
 
     render(<FeedViewScreen access={{ isMembership: true } as any} />)
 
-    fireEvent.click(screen.getByRole("button", { name: /create my grid/i }))
+    expect(screen.getByRole("button", { name: /plan with maya/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /start blank/i })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: /plan with maya/i }))
+
+    await waitFor(() => {
+      expect(mocks.fetch).toHaveBeenCalledWith(
+        "/api/app-v3/maya/feed-plan/draft",
+        expect.objectContaining({ method: "POST" })
+      )
+      expect(mocks.navigateToFeed).toHaveBeenCalledWith(101)
+    })
+  })
+
+  it("lets a no-grid member deliberately start with a blank grid", async () => {
+    mocks.swrData.set("/api/feed/latest", { exists: false })
+    mocks.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ feedId: 102 }),
+    })
+
+    const { default: FeedViewScreen } = await import("@/components/feed-planner/feed-view-screen")
+
+    render(<FeedViewScreen access={{ isMembership: true } as any} />)
+
+    fireEvent.click(screen.getByRole("button", { name: /start blank/i }))
     fireEvent.click(screen.getByRole("button", { name: /confirm grid style/i }))
 
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(
         "/api/feed/create-manual",
-        expect.objectContaining({ method: "POST" }),
+        expect.objectContaining({ method: "POST" })
       )
-      expect(mocks.navigateToFeed).toHaveBeenCalledWith(101)
+      expect(mocks.navigateToFeed).toHaveBeenCalledWith(102)
     })
+  })
+
+  it("offers the Maya path to paid-blueprint users instead of forcing a blank grid", async () => {
+    mocks.swrData.set("/api/feed/latest", { exists: false })
+
+    const { default: FeedViewScreen } = await import("@/components/feed-planner/feed-view-screen")
+
+    render(<FeedViewScreen access={{ isPaidBlueprint: true } as any} />)
+
+    expect(screen.getByRole("button", { name: /plan with maya/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /start blank/i })).toBeInTheDocument()
+  })
+
+  it("shows paid Calendar workspaces without hiding the grid switcher", async () => {
+    mocks.swrData.set("/api/feed/list", {
+      feeds: [
+        {
+          id: 7,
+          title: "July",
+          created_at: "2026-07-01",
+          layout_type: "grid_3x3",
+          period_month: "2026-07",
+          image_count: 3,
+        },
+        {
+          id: 6,
+          title: "June",
+          created_at: "2026-06-01",
+          layout_type: "grid_3x3",
+          period_month: "2026-06",
+          image_count: 9,
+        },
+      ],
+    })
+    const onTabChange = vi.fn()
+    const { default: FeedTabs } = await import("@/components/feed-planner/feed-tabs")
+
+    render(
+      <FeedTabs
+        activeTab="plan"
+        onTabChange={onTabChange}
+        access={{ isMembership: true } as any}
+        currentFeedId={7}
+      />
+    )
+
+    expect(screen.getByRole("button", { name: "Plan" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Grid" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Profile" })).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Choose a grid" })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Profile" }))
+    expect(onTabChange).toHaveBeenCalledWith("profile")
   })
 
   it("turns the paid welcome guide create action into a grid-creation action", async () => {
@@ -114,13 +197,7 @@ describe("Calendar grid creation", () => {
     const onComplete = vi.fn()
     const { default: WelcomeWizard } = await import("@/components/feed-planner/welcome-wizard")
 
-    render(
-      <WelcomeWizard
-        open
-        onComplete={onComplete}
-        onCreateFeed={onCreateFeed}
-      />,
-    )
+    render(<WelcomeWizard open onComplete={onComplete} onCreateFeed={onCreateFeed} />)
 
     fireEvent.click(screen.getByRole("button", { name: "Next" }))
     fireEvent.click(screen.getByRole("button", { name: "Next" }))
@@ -145,7 +222,7 @@ describe("Calendar grid creation", () => {
         controlledFeedStyleModal
         onFeedStyleModalChange={vi.fn()}
         onFeedStyleSelected={onFeedStyleSelected}
-      />,
+      />
     )
 
     fireEvent.click(screen.getByRole("button", { name: /confirm grid style/i }))
@@ -153,7 +230,7 @@ describe("Calendar grid creation", () => {
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(
         "/api/feed/create-manual",
-        expect.objectContaining({ method: "POST" }),
+        expect.objectContaining({ method: "POST" })
       )
       expect(mocks.navigateToFeed).toHaveBeenCalledWith(151)
       expect(onFeedStyleSelected).toHaveBeenCalledWith("Light & Minimalistic")
@@ -169,13 +246,7 @@ describe("Calendar grid creation", () => {
     const onComplete = vi.fn()
     const { default: WelcomeWizard } = await import("@/components/feed-planner/welcome-wizard")
 
-    render(
-      <WelcomeWizard
-        open
-        onComplete={onComplete}
-        onUsePreviewStyle={onUsePreviewStyle}
-      />,
-    )
+    render(<WelcomeWizard open onComplete={onComplete} onUsePreviewStyle={onUsePreviewStyle} />)
 
     fireEvent.click(screen.getByRole("button", { name: /create feed using preview style/i }))
 
@@ -204,7 +275,7 @@ describe("Calendar grid creation", () => {
         onProfileImageClick={vi.fn()}
         onWriteBio={vi.fn()}
         access={{ isPaidBlueprint: true }}
-      />,
+      />
     )
 
     fireEvent.click(screen.getByRole("button", { name: /new (feed|grid)/i }))
@@ -213,7 +284,7 @@ describe("Calendar grid creation", () => {
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(
         "/api/feed/create-manual",
-        expect.objectContaining({ method: "POST" }),
+        expect.objectContaining({ method: "POST" })
       )
       expect(mocks.navigateToFeed).toHaveBeenCalledWith(202)
     })
@@ -237,7 +308,7 @@ describe("Calendar grid creation", () => {
         onProfileImageClick={vi.fn()}
         onWriteBio={vi.fn()}
         access={{ isMembership: true }}
-      />,
+      />
     )
 
     expect(screen.queryByRole("button", { name: /new (feed|grid)/i })).not.toBeInTheDocument()
@@ -247,12 +318,9 @@ describe("Calendar grid creation", () => {
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(
         "/api/feed/7/update-style",
-        expect.objectContaining({ method: "PATCH" }),
+        expect.objectContaining({ method: "PATCH" })
       )
-      expect(mocks.fetch).not.toHaveBeenCalledWith(
-        "/api/feed/create-manual",
-        expect.anything(),
-      )
+      expect(mocks.fetch).not.toHaveBeenCalledWith("/api/feed/create-manual", expect.anything())
     })
   })
 })

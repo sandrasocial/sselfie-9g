@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation"
 import useSWR from "swr"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { useFeedNav } from "./feed-nav-context"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
-export type FeedTab = "grid" | "posts" | "captions" | "strategy" | "pillars"
+export type FeedTab = "plan" | "grid" | "profile" | "posts" | "captions" | "strategy" | "pillars"
 
 interface FeedTabsProps {
   activeTab: FeedTab
@@ -25,8 +26,18 @@ interface FeedListEntry {
 }
 
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ]
 
 /** "2026-07" -> "July 2026"; classic grids -> short creation-date label. */
@@ -43,13 +54,12 @@ function planLabel(feed: FeedListEntry): string {
   return feed.title || `Grid ${feed.id}`
 }
 
-const fetcher = (url: string) => fetch(url, { credentials: "include" }).then((r) => r.json())
+const fetcher = (url: string) => fetch(url, { credentials: "include" }).then(r => r.json())
 
 export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId }: FeedTabsProps) {
   // For free users: Grid - Captions - Strategy - Ideas (all unchanged, out of scope here).
-  // For paid/membership (Feed Planner Phase 2b/2c): the row is a PLAN SWITCHER - a pill per
-  // month plan / classic grid, so creating a new feed never "loses" the old one. Nothing is
-  // ever deleted; older grids are one tap away.
+  // Paid/membership uses two distinct navigation levels: Plan / Grid / Profile switches the
+  // current workspace, while the smaller grid switcher changes which saved month is open.
   const isFreeUser = access?.isFree ?? false
   const showStrategyTab = isFreeUser && (access?.canGenerateStrategy ?? true)
 
@@ -82,8 +92,8 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
   useEffect(() => {
     if (isFreeUser && activeTab === "posts") {
       onTabChange("captions")
-    } else if (!isFreeUser && (activeTab === "posts" || activeTab === "pillars")) {
-      onTabChange("grid")
+    } else if (!isFreeUser && !(["plan", "grid", "profile"] as FeedTab[]).includes(activeTab)) {
+      onTabChange("plan")
     }
   }, [isFreeUser, activeTab, onTabChange])
 
@@ -95,42 +105,74 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
     }`
 
   if (!isFreeUser) {
-    // One plan = nothing to switch between; keep the row out of the way entirely.
-    if (plans.length < 2) return null
     return (
-      <div className="mb-3 px-3">
-        <p className="mb-2 px-1 text-[10px] uppercase tracking-[0.18em] text-[#4F5052]">Your grids</p>
+      <div className="space-y-3 border-b border-[color:var(--app-glass-border)] px-3 py-3 sm:px-4">
         <div
           role="group"
-          aria-label="Choose a grid"
-          className="flex min-w-0 gap-2 overflow-x-auto pb-1 [scrollbar-width:none]"
+          aria-label="Calendar workspace"
+          className="grid grid-cols-3 rounded-[10px] bg-[color:var(--app-btn-secondary-bg)] p-1"
         >
-          {plans.map((plan) => (
+          {(["plan", "grid", "profile"] as const).map(tab => (
             <button
               type="button"
-              key={plan.id}
-              aria-pressed={plan.id === currentFeedId}
+              key={tab}
+              aria-pressed={activeTab === tab}
               onClick={() => {
-                if (plan.id === currentFeedId) return
-                if (feedNav) feedNav.navigateToFeed(plan.id)
-                else router.push(`/feed-planner?feedId=${plan.id}`)
+                onTabChange(tab)
+                void trackAnalyticsEvent({
+                  event: "calendar_workspace_opened",
+                  properties: { workspace: tab, feedId: currentFeedId ?? null },
+                })
               }}
-              className={pillClass(plan.id === currentFeedId)}
+              className={`min-h-11 rounded-[8px] px-3 text-[11px] font-medium transition-all active:scale-[0.98] ${
+                activeTab === tab
+                  ? "bg-white text-[color:var(--app-text-primary)] shadow-[var(--app-shadow-soft)]"
+                  : "text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)]"
+              }`}
             >
-              {planLabel(plan)}
+              {tab === "plan" ? "Plan" : tab === "grid" ? "Grid" : "Profile"}
             </button>
           ))}
-          {allPlans.length > 8 && (
-            <button
-              type="button"
-              onClick={() => setShowAllPlans(value => !value)}
-              aria-expanded={showAllPlans}
-              className={pillClass(false)}
-            >
-              {showAllPlans ? "Recent only" : `View all (${allPlans.length})`}
-            </button>
-          )}
         </div>
+
+        {plans.length >= 2 && (
+          <div>
+            <p className="mb-2 px-1 text-[10px] uppercase tracking-[0.18em] text-[color:var(--app-text-secondary)]">
+              Your grids
+            </p>
+            <div
+              role="group"
+              aria-label="Choose a grid"
+              className="flex min-w-0 gap-2 overflow-x-auto pb-1 [scrollbar-width:none]"
+            >
+              {plans.map(plan => (
+                <button
+                  type="button"
+                  key={plan.id}
+                  aria-pressed={plan.id === currentFeedId}
+                  onClick={() => {
+                    if (plan.id === currentFeedId) return
+                    if (feedNav) feedNav.navigateToFeed(plan.id)
+                    else router.push(`/feed-planner?feedId=${plan.id}`)
+                  }}
+                  className={pillClass(plan.id === currentFeedId)}
+                >
+                  {planLabel(plan)}
+                </button>
+              ))}
+              {allPlans.length > 8 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllPlans(value => !value)}
+                  aria-expanded={showAllPlans}
+                  className={pillClass(false)}
+                >
+                  {showAllPlans ? "Recent only" : `View all (${allPlans.length})`}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -138,7 +180,12 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
   return (
     <div className="mb-3 overflow-x-auto px-3 [scrollbar-width:none]">
       <div className="flex min-w-max gap-2">
-        <button type="button" aria-pressed={activeTab === "grid"} onClick={() => onTabChange("grid")} className={pillClass(activeTab === "grid")}>
+        <button
+          type="button"
+          aria-pressed={activeTab === "grid"}
+          onClick={() => onTabChange("grid")}
+          className={pillClass(activeTab === "grid")}
+        >
           Grid
         </button>
 

@@ -10,6 +10,7 @@ import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { draftMonthPlanForUser } from "@/lib/feed-planner/auto-draft"
+import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -20,6 +21,14 @@ export async function POST() {
 
   const neonUser = await getUserByAuthId(user.id)
   if (!neonUser) return NextResponse.json({ error: "User not found" }, { status: 404 })
+
+  const access = await getFeedPlannerAccess(String(neonUser.id))
+  if (!access.isMembership && !access.isPaidBlueprint) {
+    return NextResponse.json(
+      { error: "Calendar planning requires an eligible plan" },
+      { status: 403 }
+    )
+  }
 
   try {
     const outcome = await draftMonthPlanForUser(user.id, neonUser.id)

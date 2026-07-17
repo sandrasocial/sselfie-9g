@@ -143,33 +143,6 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
     },
   )
 
-  // Feed Planner Phase 2b: Maya auto-drafts the month. Single trigger site - this client
-  // powers both the standalone /feed-planner route and the Suite Calendar tab
-  // (components/app-v3/feed-planner-view.tsx wraps it unchanged), so wiring it here covers
-  // both without risking a second, racing trigger. The draft route re-checks "does a plan
-  // already exist for this month" itself under an advisory lock, so it's safe (cheap, just a
-  // couple of guard SELECTs) to fire once per mount for any eligible user - no separate
-  // client-side "does a plan exist" check needed, and no risk of double-drafting.
-  const autoDraftFiredRef = useRef(false)
-  useEffect(() => {
-    if (autoDraftFiredRef.current) return
-    if (showWizard) return
-    if (!access || !(access.isPaidBlueprint || access.isMembership)) return
-
-    autoDraftFiredRef.current = true
-    fetch("/api/app-v3/maya/feed-plan/draft", { method: "POST" })
-      .then(res => res.json())
-      .then(data => {
-        if (data?.created) {
-          console.log("[FeedPlannerClient] Maya auto-drafted this month's plan:", data)
-          mutate("/api/feed/latest")
-        }
-      })
-      .catch(error => {
-        console.error("[FeedPlannerClient] Auto-draft request failed:", error)
-      })
-  }, [access, showWizard, mutate])
-
   const hasGeneratedAny = useMemo(() => {
     const posts = Array.isArray(latestFeedData?.posts)
       ? latestFeedData.posts

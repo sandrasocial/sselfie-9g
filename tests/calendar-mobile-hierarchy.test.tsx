@@ -37,7 +37,7 @@ describe("Calendar mobile hierarchy", () => {
           { id: 2, position: 2, caption: "A real caption" },
         ]}
         onPostClick={vi.fn()}
-      />,
+      />
     )
 
     expect(screen.getByRole("heading", { name: "Not scheduled" })).toBeTruthy()
@@ -59,7 +59,8 @@ describe("Calendar mobile hierarchy", () => {
     expect(tabs).toContain('aria-label="Choose a grid"')
     expect(tabs).toContain("min-h-11")
 
-    expect(planner).toContain("Choose a view")
+    expect(tabs).toContain('aria-label="Calendar workspace"')
+    expect(tabs).toContain('["plan", "grid", "profile"]')
     expect(planner).toContain("rounded-none")
   })
 })

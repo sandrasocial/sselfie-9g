@@ -6,6 +6,7 @@ import Image from "next/image"
 import type { GalleryImage } from "@/lib/data/images"
 import { toast } from "@/hooks/use-toast"
 import { useAccessibleModal } from "@/components/app-v3/use-accessible-modal"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
 interface FeedGallerySelectorProps {
   type: "post" | "profile"
@@ -163,6 +164,23 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
         imageUrl: result.post?.image_url?.substring(0, 50),
         hasPost: !!result.post
       })
+
+      if (type === "post") {
+        void trackAnalyticsEvent({
+          event: "calendar_photo_added",
+          properties: {
+            feedId,
+            postId: result.post?.id || postId || null,
+            captionStatus: result.captionStatus || null,
+          },
+        })
+        if (result.post?.caption) {
+          void trackAnalyticsEvent({
+            event: "calendar_post_ready",
+            properties: { feedId, postId: result.post.id, source: "gallery" },
+          })
+        }
+      }
 
       // Call the callback to refresh feed data (this will trigger optimistic update + revalidation)
       // Pass the updated post data so we can do optimistic update

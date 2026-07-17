@@ -33,11 +33,11 @@ describe("Calendar UI trust repairs", () => {
     expect(modals).toContain("useAccessibleModal(Boolean(selectedPost), onClosePost)")
   })
 
-  it("uses touch-sized Calendar lens controls with explicit selected state", () => {
-    const view = read("components/feed-planner/instagram-feed-view.tsx")
+  it("uses touch-sized Calendar workspace controls with explicit selected state", () => {
+    const tabs = read("components/feed-planner/feed-tabs.tsx")
 
-    expect(view).toContain("min-h-11")
-    expect(view).toContain("aria-pressed={calendarLens === lens}")
+    expect(tabs).toContain("min-h-11")
+    expect(tabs).toContain("aria-pressed={activeTab === tab}")
   })
 
   it("uses the light-surface Maya toggle inside Calendar", () => {
@@ -46,7 +46,7 @@ describe("Calendar UI trust repairs", () => {
 
     expect(header).toContain('surface="light"')
     expect(toggle).toContain('surface?: "dark" | "light"')
-    expect(toggle).toContain('bg-[#0D0E10] text-white')
+    expect(toggle).toContain("bg-[#0D0E10] text-white")
   })
 
   it("waits for the saved style before initializing the new-grid picker", () => {
@@ -56,5 +56,15 @@ describe("Calendar UI trust repairs", () => {
     expect(modal).toContain("if (!defaultFeedStyle && isLoadingPersonalBrand) return")
     expect(modal).toContain('role="dialog"')
     expect(modal).toContain("aria-pressed={isSelected}")
+  })
+
+  it("waits for an explicit member choice before Maya drafts a month", () => {
+    const client = read("app/feed-planner/feed-planner-client.tsx")
+    const entry = read("components/feed-planner/feed-view-screen.tsx")
+
+    expect(client).not.toContain("autoDraftFiredRef")
+    expect(entry).toContain("handlePlanWithMaya")
+    expect(entry).toContain('"/api/app-v3/maya/feed-plan/draft"')
+    expect(entry).toContain("Start blank")
   })
 })

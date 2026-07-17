@@ -9,6 +9,7 @@ import UnifiedLoading from "@/components/sselfie/unified-loading"
 import FeedStyleModal, { type FeedStyle, type FeedStyleModalData } from "./feed-style-modal"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { useFeedNav } from "./feed-nav-context"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -40,6 +41,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isCreatingManual, setIsCreatingManual] = useState(false)
+  const [isPlanningWithMaya, setIsPlanningWithMaya] = useState(false)
   const [localFeedStyleModal, setLocalFeedStyleModal] = useState(false)
   const didOpenFeedStyleFromQuery = useRef(false)
   const didOpenWizardFromQuery = useRef(false)
@@ -87,6 +89,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   
   // Use provided access or fetched access
   const access = accessProp || accessData
+  const canPlanMonthWithMaya = Boolean(access?.isMembership || access?.isPaidBlueprint)
   
   // Get feedId from embedded nav (inside /app), prop, query param, or null
   const feedNav = useFeedNav()
@@ -245,9 +248,65 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   }
 
 
-  const handleCreateFeed = handleBackToMaya
+  const handlePlanWithMaya = async () => {
+    if (isPlanningWithMaya) return
+    if (!canPlanMonthWithMaya) {
+      void trackAnalyticsEvent({
+        event: "calendar_mode_selected",
+        properties: { mode: "maya_create" },
+      })
+      handleBackToMaya()
+      return
+    }
+    void trackAnalyticsEvent({ event: "calendar_mode_selected", properties: { mode: "maya_plan" } })
+    setIsPlanningWithMaya(true)
+
+    try {
+      const response = await fetch("/api/app-v3/maya/feed-plan/draft", {
+        method: "POST",
+        credentials: "include",
+      })
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(
+          data.reason === "draft_in_progress"
+            ? "Maya is already preparing your month. Please try again in a moment."
+            : "Maya could not prepare your month. Please try again."
+        )
+      }
+
+      let nextFeedId = Number(data.feedLayoutId) || null
+      if (!nextFeedId && data.reason === "plan_exists") {
+        const latest = await mutateFeed()
+        nextFeedId = Number(latest?.feed?.id) || null
+      }
+
+      if (!nextFeedId) {
+        throw new Error("Your month could not be opened. Please try again.")
+      }
+
+      await mutateFeedList?.()
+      if (feedNav) feedNav.navigateToFeed(nextFeedId)
+      else router.push(`/feed-planner?feedId=${nextFeedId}`)
+
+      toast({
+        title: "Your month is ready",
+        description: "Maya planned your posts and drafted the captions.",
+      })
+    } catch (error) {
+      toast({
+        title: "Could not plan your month",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsPlanningWithMaya(false)
+    }
+  }
 
   const handleCreateManualFeedClick = () => {
+    void trackAnalyticsEvent({ event: "calendar_mode_selected", properties: { mode: "blank" } })
     // Show feed style modal first
     setShowFeedStyleModal(true)
   }
@@ -356,65 +415,71 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     return (
       <>
       <div className="app-light-panel-text flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
-        {/* Placeholder State - paid blueprint: inline "Set up in 30 seconds" card (A-02) */}
+        {/* One Calendar, two entry paths: Maya-led by default or a deliberate blank grid. */}
         <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-4 sm:p-6 md:p-12">
-          <div className="w-full max-w-md space-y-6 rounded-[20px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.74)] p-6 text-center shadow-[0_24px_70px_rgba(61,56,48,0.10)] backdrop-blur-[18px]">
-            {/* Icon */}
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] sm:h-20 sm:w-20">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">Grid</span>
-            </div>
-
-            {/* Heading - paid blueprint: "Set up in 30 seconds" per §1.4 */}
-            <div className="space-y-2">
-              <h2 
-                className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)] sm:text-2xl"
-                style={{ fontFamily: "'Cormorant Garamond', serif" }}
-              >
-                {/* DRAFT UX copy for Sandra approval before release. */}
-                Create your first grid
-              </h2>
-              <p className="text-sm font-light text-[color:var(--app-text-secondary)] sm:text-base">
-                {access?.isPaidBlueprint
-                  ? "Your credits are ready. Start with a few posts and Maya will help match your style."
-                  : "Start with one clear post plan, or let Maya help you choose what to make next."}
-              </p>
-            </div>
-
-            {/* CTA - paid blueprint: single prominent "Create my first feed →" per content doc */}
-            <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
-              <button
-                onClick={handleCreateManualFeedClick}
-                disabled={isCreatingManual}
-                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[6px] border border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] px-6 py-4 text-sm font-medium uppercase tracking-[0.2em] text-[color:var(--app-btn-primary-text)] transition-opacity duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-                style={{ fontFamily: "'Cormorant Garamond', serif" }}
-              >
-                {isCreatingManual ? "Creating..." : "Create my grid"}
-              </button>
-              {!access?.isPaidBlueprint && (
-                <button
-                  onClick={handleCreateFeed}
-                  className="min-h-[44px] w-full rounded-[6px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-[color:var(--app-text-primary)] transition-colors duration-200 hover:bg-[color:var(--app-btn-secondary-hover)] sm:w-auto"
-                >
-                  Plan with Maya
-                </button>
-              )}
-            </div>
-
-            {/* Placeholder Grid Preview (Visual Guide) */}
-            <div className="border-t border-[color:var(--app-glass-border)] pt-8">
-              <p className="mb-4 text-xs uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">
-                Your Grid Preview
-              </p>
-              <div className="mx-auto grid max-w-[300px] grid-cols-3 gap-0 border border-[color:var(--app-glass-border)]">
-                {Array.from({ length: 9 }).map((_, i) => (
+          <div className="w-full max-w-xl space-y-6 rounded-[22px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.82)] p-5 shadow-[0_24px_70px_rgba(61,56,48,0.10)] backdrop-blur-[18px] sm:p-7">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)]">
+                <span className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">Month</span>
+              </div>
+              <div className="grid w-[112px] shrink-0 grid-cols-3 gap-1" aria-hidden="true">
+                {Array.from({ length: 6 }).map((_, index) => (
                   <div
-                    key={i}
-                    className="flex aspect-square items-center justify-center border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)]"
-                  >
-                    <span className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--app-text-muted)]">Slot</span>
-                  </div>
+                    key={index}
+                    className={`aspect-square rounded-[4px] ${index === 1 || index === 5 ? "bg-[color:var(--app-text-muted)]" : "bg-[color:var(--app-btn-secondary-bg)]"}`}
+                  />
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-2 text-left">
+              <h2
+                className="font-serif text-2xl font-light leading-tight text-[color:var(--app-text-primary)] sm:text-[28px]"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Choose how to build your month
+              </h2>
+              <p className="max-w-[48ch] text-sm leading-relaxed text-[color:var(--app-text-secondary)]">
+                Let Maya plan the strongest starting point, or keep the grid completely blank and build it yourself.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => void handlePlanWithMaya()}
+                disabled={isPlanningWithMaya || isCreatingManual}
+                aria-busy={isPlanningWithMaya}
+                className="group w-full rounded-[14px] border border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] px-5 py-4 text-left text-[color:var(--app-btn-primary-text)] transition-transform active:scale-[0.99] disabled:cursor-wait disabled:opacity-60"
+              >
+                <span className="flex items-center justify-between gap-4">
+                  <span>
+                    <span className="block text-sm font-medium">
+                      {isPlanningWithMaya ? "Planning your month..." : canPlanMonthWithMaya ? "Plan with Maya" : "Create with Maya"}
+                    </span>
+                    <span className="mt-1 block text-xs leading-relaxed text-white/70">
+                      {canPlanMonthWithMaya
+                        ? "Personalized themes, dates and ready captions. You choose which photos to create."
+                        : "Make your first photo with Maya, then bring it into your grid."}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-lg font-light" aria-hidden="true">→</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCreateManualFeedClick}
+                disabled={isCreatingManual || isPlanningWithMaya}
+                className="w-full rounded-[14px] border border-[color:var(--app-glass-border)] bg-white px-5 py-4 text-left transition-colors hover:border-[color:var(--app-text-muted)] active:scale-[0.99] disabled:cursor-wait disabled:opacity-60"
+              >
+                <span className="block text-sm font-medium text-[color:var(--app-text-primary)]">
+                  {isCreatingManual ? "Creating your grid..." : "Start blank"}
+                </span>
+                <span className="mt-1 block text-xs leading-relaxed text-[color:var(--app-text-secondary)]">
+                  Pick a visual style, then add your own photos. Maya can help whenever you ask.
+                </span>
+              </button>
             </div>
           </div>
         </div>
