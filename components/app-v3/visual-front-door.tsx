@@ -271,17 +271,15 @@ export function VisualFrontDoor({
     })
   }, [cohort, hasSelfie])
 
-  useEffect(() => {
-    if (!shouldShowTrialFirstRun || firstRunTrackedRef.current) return
-    firstRunTrackedRef.current = true
-    markFirstRunSeen()
-    void trackAnalyticsEvent({
-      event: "suite_trial_first_run_seen",
-      properties: { cohort, source: "front_door" },
-    })
-  }, [cohort, shouldShowTrialFirstRun])
-
   function trackFirstAction(action: string) {
+    if (shouldShowTrialFirstRun && !firstRunTrackedRef.current) {
+      firstRunTrackedRef.current = true
+      markFirstRunSeen()
+      void trackAnalyticsEvent({
+        event: "suite_trial_first_run_seen",
+        properties: { cohort, source: "front_door", action },
+      })
+    }
     void trackAnalyticsEvent({
       event: "first_action_selected",
       properties: { cohort, action },
@@ -457,9 +455,9 @@ export function VisualFrontDoor({
                   className="mt-3 min-h-5 text-[12px] leading-relaxed text-[color:var(--ss-gray)]"
                 >
                   {recommendationStatus === "loading"
-                    ? "Maya is looking at your week. You can start now if you are ready."
+                    ? "Maya is reviewing your brand. You can start now if you are ready."
                     : recommendationStatus === "error"
-                      ? "Maya could not read your week just now. Her best starting point is ready below."
+                      ? "Maya could not personalize this just now. Her best starting point is ready below."
                       : recommendation.imageReason || "One useful move for your brand today."}
                 </p>
                 <span className="mt-5 self-start rounded-full border border-[color:var(--ss-silver)]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] text-[color:var(--ss-gray)]">

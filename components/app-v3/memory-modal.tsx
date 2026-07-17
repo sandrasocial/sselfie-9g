@@ -4,7 +4,7 @@
 // View and edit cross-session memory: the agent's name, your profile photo, brand notes, and
 // style preferences. Saved to /api/app-v3/maya/memory and injected into every chat session.
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { useAccessibleModal } from "./use-accessible-modal"
 
@@ -36,15 +36,16 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
   const [clearingStyle, setClearingStyle] = useState(false)
   const [removingNote, setRemovingNote] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [loadedSuccessfully, setLoadedSuccessfully] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const { dialogRef, initialFocusRef } = useAccessibleModal(open, onClose)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!open) return
+  const loadMemory = useCallback(() => {
     setLoading(true)
+    setLoadedSuccessfully(false)
     setError(null)
     fetch("/api/app-v3/maya/memory")
       .then(r => {
@@ -63,42 +64,55 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
         setPreferredFeedStyle(
           typeof d?.preferredFeedStyle === "string" ? d.preferredFeedStyle : null
         )
+        setLoadedSuccessfully(true)
       })
-      .catch(() => setError("Couldn't load Maya's memory. Try closing and opening it again."))
+      .catch(() => setError("Maya's memory couldn't load. Nothing has been changed."))
       .finally(() => setLoading(false))
-  }, [open])
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    loadMemory()
+  }, [loadMemory, open])
 
   // A learned preference she can't see or undo is a trust gap, not a feature.
   async function clearOverlayStyle() {
     setClearingStyle(true)
+    setError(null)
     try {
       const res = await fetch("/api/app-v3/maya/memory", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ preferredOverlayStyle: null }),
       })
-      if (res.ok) setOverlayStyle(null)
+      if (!res.ok) throw new Error("Could not clear that style")
+      setOverlayStyle(null)
+    } catch {
+      setError("That style is still saved. Please try again.")
     } finally {
       setClearingStyle(false)
     }
   }
 
   async function clearFeedStyle() {
+    setError(null)
     try {
       const res = await fetch("/api/app-v3/maya/memory", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clearPreferredFeedStyle: true }),
       })
-      if (res.ok) setPreferredFeedStyle(null)
+      if (!res.ok) throw new Error("Could not clear that world")
+      setPreferredFeedStyle(null)
     } catch {
-      // Memory is fail-open. She can try again without losing the rest of the form.
+      setError("That world is still saved. Please try again.")
     }
   }
 
   // LIKENESS-MEMORY-01: a wrong note has to be removable, one tap, right here.
   async function removeNote(note: string) {
     setRemovingNote(note)
+    setError(null)
     try {
       const res = await fetch("/api/app-v3/maya/memory", {
         method: "PUT",
@@ -106,7 +120,10 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
         body: JSON.stringify({ removeLikenessNote: note }),
       })
       const d = (await res.json().catch(() => null)) as Memory | null
-      if (res.ok && d) setLikenessNotes(Array.isArray(d.likenessNotes) ? d.likenessNotes : [])
+      if (!res.ok || !d) throw new Error("Could not remove note")
+      setLikenessNotes(Array.isArray(d.likenessNotes) ? d.likenessNotes : [])
+    } catch {
+      setError("That note is still saved. Please try again.")
     } finally {
       setRemovingNote(null)
     }
@@ -114,18 +131,23 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
 
   async function uploadAvatar(file: File) {
     setUploading(true)
+    setError(null)
     try {
       const form = new FormData()
       form.append("file", file)
       const res = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
       const d = (await res.json().catch(() => null)) as { url?: string } | null
-      if (res.ok && d?.url) setAvatarUrl(d.url)
+      if (!res.ok || !d?.url) throw new Error("Could not upload photo")
+      setAvatarUrl(d.url)
+    } catch {
+      setError("Your photo did not upload. Please try again.")
     } finally {
       setUploading(false)
     }
   }
 
   async function save() {
+    if (!loadedSuccessfully) return
     setSaving(true)
     setError(null)
     try {
@@ -174,8 +196,11 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
       >
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Memory</p>
-            <h3 id="memory-modal-title" className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[#6D6E70]">Memory</p>
+            <h3
+              id="memory-modal-title"
+              className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]"
+            >
               What Maya remembers
             </h3>
           </div>
@@ -190,7 +215,23 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
         </div>
 
         <div className="mt-5 space-y-4">
-          {error && <p role="alert" className="rounded-[4px] bg-white px-3 py-2 text-[13px] text-[#282728]">{error}</p>}
+          {error && (
+            <div
+              role="alert"
+              className="rounded-[4px] bg-white px-3 py-2 text-[13px] text-[#282728]"
+            >
+              <p>{error}</p>
+              {!loadedSuccessfully && !loading && (
+                <button
+                  type="button"
+                  onClick={loadMemory}
+                  className="mt-2 inline-flex min-h-11 items-center font-medium underline underline-offset-2"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
+          )}
           {/* Your photo */}
           <div className="flex items-center gap-3">
             <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/60 bg-white">
@@ -209,11 +250,11 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
               )}
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">Your photo</p>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#6D6E70]">Your photo</p>
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                disabled={uploading}
+                disabled={uploading || !loadedSuccessfully}
                 className="mt-1 inline-flex min-h-11 items-center text-[12px] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10] disabled:opacity-50"
               >
                 {uploading ? "Uploading…" : avatarUrl ? "Change photo" : "Upload a photo"}
@@ -232,18 +273,18 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
           </div>
 
           <label className="block">
-            <span className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">Her name</span>
+            <span className="text-[11px] uppercase tracking-[0.18em] text-[#6D6E70]">Her name</span>
             <input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="e.g. Aria"
-              disabled={loading}
+              disabled={loading || !loadedSuccessfully}
               className="mt-1.5 min-h-11 w-full rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[15px] text-[#282728] outline-none focus:border-[#0D0E10]"
             />
           </label>
           <label className="block">
-            <span className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">
+            <span className="text-[11px] uppercase tracking-[0.18em] text-[#6D6E70]">
               Your brand
             </span>
             <textarea
@@ -251,12 +292,12 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
               onChange={e => setBrand(e.target.value)}
               placeholder="Who you are, who you serve, your vibe. e.g. warm minimal, founder coach for women, Iceland."
               rows={3}
-              disabled={loading}
+              disabled={loading || !loadedSuccessfully}
               className="mt-1.5 w-full resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[14px] text-[#282728] outline-none focus:border-[#0D0E10]"
             />
           </label>
           <label className="block">
-            <span className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">
+            <span className="text-[11px] uppercase tracking-[0.18em] text-[#6D6E70]">
               Style notes
             </span>
             <textarea
@@ -264,7 +305,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
               onChange={e => setPrefs(e.target.value)}
               placeholder="What you love and what you avoid. e.g. no heels, no busy prints, always natural light."
               rows={3}
-              disabled={loading}
+              disabled={loading || !loadedSuccessfully}
               className="mt-1.5 w-full resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[14px] text-[#282728] outline-none focus:border-[#0D0E10]"
             />
           </label>
@@ -272,13 +313,13 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
           {/* What Maya learns on her own - shown so an empty modal never reads as "Maya
               knows nothing". These fill automatically as she creates. */}
           <div>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[#6D6E70]">
               What I know about you
             </p>
             <div className="mt-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[12px] text-[#818283]">Your usual text style</p>
+                  <p className="text-[12px] text-[#6D6E70]">Your usual text style</p>
                   <p className="mt-0.5 text-[13px] leading-snug text-[#282728]">
                     {overlayStyle
                       ? overlayStyle.replace(/-/g, " ")
@@ -300,7 +341,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
             <div className="mt-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[12px] text-[#818283]">Your preferred world</p>
+                  <p className="text-[12px] text-[#6D6E70]">Your preferred world</p>
                   <p className="mt-0.5 text-[13px] leading-snug text-[#282728]">
                     {preferredFeedStyle ||
                       "Not learned yet. Maya remembers it when you choose a clear direction."}
@@ -318,7 +359,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
               </div>
             </div>
             {likenessNotes.length === 0 && (
-              <p className="mt-2 text-[12px] leading-relaxed text-[#818283]">
+              <p className="mt-2 text-[12px] leading-relaxed text-[#6D6E70]">
                 Maya also keeps notes from your photo corrections (“hair: dark brown, not black”) so
                 every new photo stays you. They will show up here as she learns.
               </p>
@@ -329,7 +370,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
               she can SEE Maya learning, and deletable so a wrong note never sticks. */}
           {likenessNotes.length > 0 && (
             <div>
-              <p className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#6D6E70]">
                 What Maya keeps true about you
               </p>
               <p className="mt-1 text-[12px] leading-relaxed text-[#4F5052]">
@@ -362,7 +403,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
           <button
             type="button"
             onClick={() => void save()}
-            disabled={saving || loading}
+            disabled={saving || loading || !loadedSuccessfully}
             className="inline-flex min-h-11 items-center rounded-[4px] bg-[#0D0E10] px-5 py-3 text-[11px] uppercase tracking-[0.2em] text-white disabled:opacity-40"
           >
             {saving ? "Saving…" : "Save"}

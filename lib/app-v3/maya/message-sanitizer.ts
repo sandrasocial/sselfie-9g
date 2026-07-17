@@ -1,4 +1,11 @@
-const BASE_TOOL_NAMES = new Set(["emit_concepts", "ask_clarify", "set_format", "remember"])
+const BASE_TOOL_NAMES = new Set([
+  "emit_concepts",
+  "ask_clarify",
+  "set_format",
+  "remember",
+  "show_feed_plan",
+  "save_brand_profile",
+])
 
 const ADMIN_TOOL_NAMES = new Set([
   "show_admin_content_sources",
@@ -72,4 +79,3 @@ export function sanitizeMayaMessages(
   if (cleaned.length <= maxMessages) return cleaned
   return cleaned.slice(-maxMessages)
 }
-

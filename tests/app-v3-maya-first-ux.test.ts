@@ -195,12 +195,12 @@ describe("Maya-first Suite creation UX", () => {
     expect(lightbox).not.toContain("TextOverlayLayer")
   })
 
-  it("turns a recommended graphic next step into a publishable result without a hidden extra gate", () => {
+  it("keeps recommended graphic next steps behind the explicit text and style choice", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
-    expect(concierge).toContain('selection === "recommended"')
-    expect(concierge).toContain('setTextOverlayMode(autoTextStyle ? "with-text" : null)')
-    expect(concierge).toContain("recommendedGraphicTextStyle(nextFormat, rememberedOverlayStyle)")
+    expect(concierge).toContain("setTextOverlayMode(null)")
+    expect(concierge).toContain("setTextStyleChoice(null)")
+    expect(concierge).not.toContain("recommendedGraphicTextStyle(nextFormat")
   })
 
   it("scrolls the newly revealed next step into view after a result action", () => {

@@ -15,27 +15,46 @@ interface ClarifyCardProps {
 }
 
 export function ClarifyCard({ clarify, onPick, onFreeText, disabled }: ClarifyCardProps) {
+  const [firstOption, ...otherOptions] = clarify.options
   return (
     <div className="rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4">
       <p className="text-[15px] leading-relaxed text-[#282728]">{clarify.question}</p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {clarify.options.map(o => (
-          <button
-            key={o}
-            type="button"
-            disabled={disabled}
-            onClick={() => onPick(o)}
-            className="min-h-10 rounded-full border border-[#C5C6C8]/70 bg-white px-3.5 py-2 text-[13px] text-[#4F5052] transition-colors hover:border-[#0D0E10] hover:text-[#0D0E10] disabled:opacity-40 sm:min-h-0"
-          >
-            {o}
-          </button>
-        ))}
-      </div>
+      {firstOption && (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onPick(firstOption)}
+          className="mt-3 min-h-11 w-full rounded-[8px] bg-[#0D0E10] px-4 py-3 text-left text-[13px] text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+        >
+          {firstOption}
+        </button>
+      )}
+      {otherOptions.length > 0 && (
+        <details className="mt-2 rounded-[8px] border border-[#C5C6C8]/60 bg-[#F8FAFA]">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3.5 text-[12px] text-[#4F5052] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0D0E10]">
+            Other options
+            <span aria-hidden>+</span>
+          </summary>
+          <div className="flex flex-wrap gap-2 border-t border-[#C5C6C8]/50 p-3">
+            {otherOptions.map(o => (
+              <button
+                key={o}
+                type="button"
+                disabled={disabled}
+                onClick={() => onPick(o)}
+                className="min-h-11 rounded-full border border-[#C5C6C8]/70 bg-white px-3.5 py-2 text-[13px] text-[#4F5052] transition-colors hover:border-[#0D0E10] hover:text-[#0D0E10] disabled:opacity-40"
+              >
+                {o}
+              </button>
+            ))}
+          </div>
+        </details>
+      )}
       {clarify.allowFreeText && onFreeText && (
         <button
           type="button"
           onClick={onFreeText}
-          className="mt-3 inline-flex min-h-11 items-center text-[12px] text-[#818283] underline underline-offset-2 hover:text-[#4F5052]"
+          className="mt-3 inline-flex min-h-11 items-center text-[12px] text-[#6D6E70] underline underline-offset-2 hover:text-[#4F5052]"
         >
           Or tell me in your own words
         </button>

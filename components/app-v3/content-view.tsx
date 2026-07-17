@@ -97,7 +97,7 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
   return (
     <div className="mx-auto max-w-3xl space-y-7 px-4 py-6 sm:px-5 sm:py-8">
       <header>
-        <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Content</p>
+        <p className="text-[10px] uppercase tracking-[0.3em] text-[#6D6E70]">Content</p>
         {showGreeting ? (
           <div className="mt-2 space-y-1">
             {greetingLines.map((line, i) => (
@@ -119,13 +119,13 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
           </h1>
         )}
         {recs === null && (
-          <p className="mt-2 text-[14px] text-[#818283]">Maya is looking at your week...</p>
+          <p className="mt-2 text-[14px] text-[#6D6E70]">Maya is reviewing your brand...</p>
         )}
       </header>
 
       {recs && recs.length > 0 && (
         <section>
-          <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+          <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">
             Maya recommends today
           </p>
           <div className="space-y-3">
@@ -150,7 +150,7 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
                     )}
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="self-start rounded-full border border-[#C5C6C8]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] text-[#818283]">
+                    <span className="self-start rounded-full border border-[#C5C6C8]/70 px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] text-[#6D6E70]">
                       {FORMAT_LABEL[r.format]}
                     </span>
                     <h3 className="mt-2 font-serif text-[20px] font-light leading-tight text-[#0D0E10]">
@@ -160,7 +160,7 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
                       {r.rationale}
                     </p>
                     {r.imageReason && (
-                      <span className="mt-1.5 block text-[11px] italic text-[#818283]">
+                      <span className="mt-1.5 block text-[11px] italic text-[#6D6E70]">
                         {r.imageReason}
                       </span>
                     )}
@@ -176,7 +176,7 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
       )}
 
       <section>
-        <p className="mb-2 text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+        <p className="mb-2 text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">
           {recs && recs.length > 0 ? "Or start from a format" : "Start something"}
         </p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -190,7 +190,7 @@ export function ContentView({ onCreateIdea, onCreate, onBrowse, firstName }: Con
               <span className="block font-serif text-[19px] font-light text-[#0D0E10]">
                 {c.label}
               </span>
-              <span className="mt-0.5 block text-[13px] text-[#818283]">{c.line}</span>
+              <span className="mt-0.5 block text-[13px] text-[#6D6E70]">{c.line}</span>
             </button>
           ))}
         </div>

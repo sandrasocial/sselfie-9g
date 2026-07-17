@@ -67,7 +67,6 @@ export async function GET() {
     return NextResponse.json({ images, extras })
   } catch (e) {
     console.error("[app-v3 reference-library] list failed:", e)
-    // Never hard-fail the picker; just show it empty.
-    return NextResponse.json({ images: [] })
+    return NextResponse.json({ error: "Could not load selfies" }, { status: 500 })
   }
 }

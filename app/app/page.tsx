@@ -165,6 +165,17 @@ export default async function StudioV3Page({
       if (neonUserId) {
         const { hasCompletedTrainedModel } = await import("@/lib/data/training")
         hasTrainedModel = await hasCompletedTrainedModel(String(neonUserId))
+        const rows = await import("@/lib/db/client").then(
+          ({ sql }) => sql`
+            SELECT 1
+            FROM user_avatar_images
+            WHERE user_id = ${String(neonUserId)}
+              AND is_active = ${true}
+              AND image_type = 'selfie'
+            LIMIT 1
+          `
+        )
+        trialHasSavedSelfie = rows.length > 0
       }
     } catch (e) {
       console.error("[/app gate] admin trained-model check failed:", e)

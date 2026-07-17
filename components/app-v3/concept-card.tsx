@@ -122,6 +122,10 @@ export function ConceptCard({
   onDownloaded,
   disabled,
 }: ConceptCardProps) {
+  const plannedOutputs = concept.brief.graphic?.creativePlan?.outputs?.length ?? 0
+  const plannedSlides = concept.brief.graphic?.slides?.length ?? 0
+  const declaredSlides = concept.brief.graphic?.slideCount ?? 0
+  const estimatedCredits = Math.max(1, plannedOutputs, plannedSlides, declaredSlides)
   const isGenerating = gen.status === "generating"
   const images = gen.imageUrls ?? []
   const videoUrl = gen.videoUrl
@@ -135,6 +139,8 @@ export function ConceptCard({
   const firstDownloadAssetId = firstBaked ? (gen.bakedAiImageIds?.[0] ?? null) : firstCleanAssetId
   const suggestedText = buildSuggestedTextCopy(gen.textOverlaySpecs)
   const [copiedText, setCopiedText] = useState(false)
+  const [copyError, setCopyError] = useState(false)
+  const [downloadStatus, setDownloadStatus] = useState<"idle" | "downloading" | "error">("idle")
   const [calendarStatus, setCalendarStatus] = useState<
     "idle" | "saving" | "saved" | "error" | "unavailable"
   >("idle")
@@ -237,7 +243,7 @@ export function ConceptCard({
               className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-5 text-center"
             >
               <Spinner className="h-7 w-7" />
-              <p className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#6D6E70]">
                 {CREATING_LABEL[format]}
               </p>
             </div>
@@ -248,7 +254,7 @@ export function ConceptCard({
       {/* Copy + action */}
       <div className="min-w-0 space-y-3 p-4 sm:p-5">
         <div className="min-w-0 break-words [overflow-wrap:anywhere]">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">{eyebrow}</p>
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">{eyebrow}</p>
           <h4 className="mt-1.5 font-serif text-[21px] font-light leading-tight text-[#0D0E10]">
             {concept.title}
           </h4>
@@ -256,14 +262,17 @@ export function ConceptCard({
         </div>
 
         {gen.status === "error" && (
-          <p className="break-words rounded-[4px] bg-[#282728]/5 px-3 py-2 text-[12px] text-[#282728] [overflow-wrap:anywhere]">
+          <p
+            role="alert"
+            className="break-words rounded-[4px] bg-[#282728]/5 px-3 py-2 text-[12px] text-[#282728] [overflow-wrap:anywhere]"
+          >
             {gen.error || "That one didn't go through. Try again."}
           </p>
         )}
 
         {isDone || isVideoDone ? (
           <div className="space-y-3">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-[#818283]">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-[#6D6E70]">
               {isVideoDone ? "Saved to your videos" : "Saved to your gallery"}
             </p>
             {bakeMissing && (
@@ -277,7 +286,7 @@ export function ConceptCard({
                     type="button"
                     onClick={() => void handleRetryText()}
                     disabled={textRetryStatus === "retrying"}
-                    className="mt-2 inline-flex min-h-10 items-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] underline underline-offset-2 disabled:opacity-50"
+                    className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] underline underline-offset-2 disabled:opacity-50"
                   >
                     {textRetryStatus === "retrying" ? "Adding text…" : "Try text again"}
                   </button>
@@ -292,17 +301,23 @@ export function ConceptCard({
             {suggestedText && (
               <div className="rounded-[10px] border border-[#C5C6C8]/50 bg-[#F8FAFA] p-3">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#818283]">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
                     Maya&apos;s suggested text
                   </p>
                   <button
                     type="button"
-                    onClick={() => {
-                      void navigator.clipboard?.writeText(suggestedText)
-                      setCopiedText(true)
-                      window.setTimeout(() => setCopiedText(false), 1800)
+                    onClick={async () => {
+                      setCopyError(false)
+                      try {
+                        if (!navigator.clipboard) throw new Error("Clipboard unavailable")
+                        await navigator.clipboard.writeText(suggestedText)
+                        setCopiedText(true)
+                        window.setTimeout(() => setCopiedText(false), 1800)
+                      } catch {
+                        setCopyError(true)
+                      }
                     }}
-                    className="inline-flex min-h-8 items-center text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                    className="inline-flex min-h-11 items-center text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
                   >
                     {copiedText ? "Copied" : "Copy"}
                   </button>
@@ -310,6 +325,11 @@ export function ConceptCard({
                 <pre className="mt-2 whitespace-pre-wrap break-words font-sans text-[12px] leading-relaxed text-[#282728] [overflow-wrap:anywhere]">
                   {suggestedText}
                 </pre>
+                {copyError && (
+                  <p role="alert" className="mt-2 text-[11px] text-[#4F5052]">
+                    Copy did not work. Press and hold the text to copy it.
+                  </p>
+                )}
               </div>
             )}
             <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 min-[380px]:gap-3">
@@ -317,11 +337,16 @@ export function ConceptCard({
                 <button
                   type="button"
                   onClick={async () => {
+                    setDownloadStatus("downloading")
                     const started = await initiateAssetDownload(
                       videoUrl,
                       `sselfie-${gen.videoAssetId ?? "video"}.mp4`
                     )
-                    if (!started) return
+                    if (!started) {
+                      setDownloadStatus("error")
+                      return
+                    }
+                    setDownloadStatus("idle")
                     void recordSuiteDownloadForReview({
                       source: "concept-card",
                       format: "video",
@@ -329,9 +354,10 @@ export function ConceptCard({
                     })
                     onDownloaded?.()
                   }}
-                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
+                  disabled={downloadStatus === "downloading"}
+                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-50 min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
                 >
-                  Download video
+                  {downloadStatus === "downloading" ? "Preparing…" : "Download video"}
                 </button>
               ) : isCarousel ? (
                 <button
@@ -345,11 +371,16 @@ export function ConceptCard({
                 <button
                   type="button"
                   onClick={async () => {
+                    setDownloadStatus("downloading")
                     const started = await initiateAssetDownload(
                       firstBaked ?? images[0],
                       `sselfie-${firstDownloadAssetId ?? "photo"}.png`
                     )
-                    if (!started) return
+                    if (!started) {
+                      setDownloadStatus("error")
+                      return
+                    }
+                    setDownloadStatus("idle")
                     void recordSuiteDownloadForReview({
                       source: "concept-card",
                       format,
@@ -357,12 +388,18 @@ export function ConceptCard({
                     })
                     onDownloaded?.()
                   }}
-                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
+                  disabled={downloadStatus === "downloading"}
+                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-50 min-[380px]:px-5 min-[380px]:tracking-[0.2em]"
                 >
-                  Download
+                  {downloadStatus === "downloading" ? "Preparing…" : "Download"}
                 </button>
               )}
             </div>
+            {downloadStatus === "error" && (
+              <p role="alert" className="text-[12px] text-[#4F5052]">
+                Download did not start. Please try again.
+              </p>
+            )}
             {resultActions}
             <details className="group rounded-[8px] border border-[#C5C6C8]/55 bg-white">
               <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3.5 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0D0E10]">
@@ -438,7 +475,7 @@ export function ConceptCard({
               ? "Creating…"
               : format === "photo"
                 ? "Create my photo · 1 credit"
-                : "Create this"}
+                : `Create this · ${estimatedCredits} ${estimatedCredits === 1 ? "credit" : "credits"}`}
           </button>
         )}
       </div>

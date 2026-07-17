@@ -20,17 +20,22 @@ export function ensureChatsTable(): Promise<void> {
           user_id     text NOT NULL,
           title       text,
           messages    jsonb NOT NULL DEFAULT '[]'::jsonb,
+          client_saved_at bigint NOT NULL DEFAULT 0,
           created_at  timestamptz NOT NULL DEFAULT now(),
           updated_at  timestamptz NOT NULL DEFAULT now(),
           archived_at timestamptz
         )
       `
       await sql`
+        ALTER TABLE app_v3_chats
+          ADD COLUMN IF NOT EXISTS client_saved_at bigint NOT NULL DEFAULT 0
+      `
+      await sql`
         CREATE INDEX IF NOT EXISTS idx_app_v3_chats_user
           ON app_v3_chats (user_id, updated_at DESC)
           WHERE archived_at IS NULL
       `
-    })().catch((e) => {
+    })().catch(e => {
       ensured = null // allow a later retry if the first attempt failed
       throw e
     })
@@ -53,7 +58,7 @@ export async function listChats(userId: string): Promise<ChatListItem[]> {
     ORDER BY updated_at DESC
     LIMIT 50
   `
-  return rows.map((r) => ({
+  return rows.map(r => ({
     id: String(r.id),
     title: (r.title ?? null) as string | null,
     updatedAt: String(r.updated_at),
@@ -62,7 +67,7 @@ export async function listChats(userId: string): Promise<ChatListItem[]> {
 
 export async function loadChat(
   userId: string,
-  id: string,
+  id: string
 ): Promise<{ id: string; messages: unknown[] } | null> {
   await ensureChatsTable()
   const rows = await sql`
@@ -82,16 +87,19 @@ export async function saveChat(
   id: string,
   messages: unknown[],
   title: string | null,
+  savedAt: number
 ): Promise<void> {
   await ensureChatsTable()
   await sql`
-    INSERT INTO app_v3_chats (id, user_id, title, messages, updated_at)
-    VALUES (${id}, ${userId}, ${title}, ${JSON.stringify(messages)}::jsonb, now())
+    INSERT INTO app_v3_chats (id, user_id, title, messages, client_saved_at, updated_at)
+    VALUES (${id}, ${userId}, ${title}, ${JSON.stringify(messages)}::jsonb, ${savedAt}, now())
     ON CONFLICT (id) DO UPDATE
       SET messages = EXCLUDED.messages,
           title = COALESCE(app_v3_chats.title, EXCLUDED.title),
+          client_saved_at = EXCLUDED.client_saved_at,
           updated_at = now()
       WHERE app_v3_chats.user_id = ${userId}
+        AND EXCLUDED.client_saved_at >= app_v3_chats.client_saved_at
   `
 }
 

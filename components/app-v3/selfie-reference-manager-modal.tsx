@@ -69,7 +69,10 @@ export function SelfieReferenceManagerModal({
     setPastSelfies(null)
     setFaceUrl(initialFaceUrl ?? null)
     fetch("/api/app-v3/reference-library")
-      .then(response => (response.ok ? response.json() : null))
+      .then(response => {
+        if (!response.ok) throw new Error(`Selfies returned ${response.status}`)
+        return response.json()
+      })
       .then((data: ReferenceLibraryResponse | null) => {
         if (!alive) return
         const images = Array.isArray(data?.images) ? data.images : []
@@ -145,7 +148,10 @@ export function SelfieReferenceManagerModal({
 
       if (slot === "face") {
         setFaceUrl(uploadedUrl)
-        setPastSelfies(current => [uploadedUrl, ...(current ?? []).filter(url => url !== uploadedUrl)])
+        setPastSelfies(current => [
+          uploadedUrl,
+          ...(current ?? []).filter(url => url !== uploadedUrl),
+        ])
         onFaceReady?.(uploadedUrl, "upload")
       } else if (slot === "angle") {
         setThreeQuarterUrl(data.url)
@@ -243,7 +249,7 @@ export function SelfieReferenceManagerModal({
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            className="min-h-10 rounded-[4px] border border-[color:var(--ss-silver)] px-4 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-night)] transition-colors hover:border-[color:var(--ss-night)]"
+            className="min-h-11 rounded-[4px] border border-[color:var(--ss-silver)] px-4 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-night)] transition-colors hover:border-[color:var(--ss-night)]"
           >
             Close
           </button>
@@ -255,7 +261,7 @@ export function SelfieReferenceManagerModal({
               <p className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--ss-gray)]">
                 Selected selfie
               </p>
-              <div className="mt-3 overflow-hidden rounded-[7px] border border-[color:var(--ss-silver)] bg-[color:var(--ss-seasalt)]">
+              <div className="mx-auto mt-3 w-full max-w-[220px] overflow-hidden rounded-[7px] border border-[color:var(--ss-silver)] bg-[color:var(--ss-seasalt)] lg:max-w-none">
                 <div className="relative aspect-[4/5] w-full">
                   {faceUrl ? (
                     <Image
@@ -401,7 +407,7 @@ export function SelfieReferenceManagerModal({
                                   type="button"
                                   onClick={() => item.inputRef.current?.click()}
                                   disabled={uploadingSlot === item.slot}
-                                  className="min-h-9 rounded-[4px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)] px-3 text-[10px] uppercase tracking-[0.14em] text-[color:var(--ss-davy)] hover:border-[color:var(--ss-night)]/40 disabled:opacity-60"
+                                  className="min-h-11 rounded-[4px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)] px-3 text-[10px] uppercase tracking-[0.14em] text-[color:var(--ss-davy)] hover:border-[color:var(--ss-night)]/40 disabled:opacity-60"
                                 >
                                   {uploadingSlot === item.slot
                                     ? "Uploading..."
@@ -413,7 +419,7 @@ export function SelfieReferenceManagerModal({
                                   <button
                                     type="button"
                                     onClick={() => void clearSlot(item.slot)}
-                                    className="min-h-9 rounded-[4px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)] px-3 text-[10px] uppercase tracking-[0.14em] text-[color:var(--ss-gray)] hover:border-[color:var(--ss-night)]/40 hover:text-[color:var(--ss-night)]"
+                                    className="min-h-11 rounded-[4px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)] px-3 text-[10px] uppercase tracking-[0.14em] text-[color:var(--ss-gray)] hover:border-[color:var(--ss-night)]/40 hover:text-[color:var(--ss-night)]"
                                   >
                                     Remove
                                   </button>
@@ -441,8 +447,7 @@ export function SelfieReferenceManagerModal({
 
               {error && (
                 <p
-                  role="status"
-                  aria-live="polite"
+                  role="alert"
                   className="text-[13px] leading-relaxed text-[color:var(--ss-raisin)]"
                 >
                   {error}

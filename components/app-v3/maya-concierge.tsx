@@ -62,10 +62,7 @@ import {
   intentForFormat,
   needsClarificationIntent,
 } from "@/lib/app-v3/maya/intent-router"
-import {
-  recommendedGraphicTextStyle,
-  shouldContinueCompletedFormatSwitch,
-} from "@/lib/app-v3/maya/next-action"
+import { shouldContinueCompletedFormatSwitch } from "@/lib/app-v3/maya/next-action"
 import {
   OVERLAY_STYLE_PRESETS,
   resolveOverlayStyle,
@@ -98,7 +95,7 @@ function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
       {src ? (
         <Image src={src} alt="" fill className="object-cover" sizes="28px" />
       ) : (
-        <span className="flex h-full w-full items-center justify-center text-[10px] uppercase text-[#818283]">
+        <span className="flex h-full w-full items-center justify-center text-[10px] uppercase text-[#6D6E70]">
           {fallback}
         </span>
       )}
@@ -205,7 +202,7 @@ function TextStyleTemplatePicker({
   return (
     <div className="space-y-3 rounded-[8px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
       <div>
-        <p className="text-[10px] uppercase tracking-[0.2em] text-[#818283]">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-[#6D6E70]">
           Maya pulled six looks
         </p>
         <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
@@ -253,7 +250,7 @@ function TextStyleTemplatePicker({
                 <p className="truncate font-serif text-[15px] leading-tight text-[#0D0E10]">
                   {preset.name}
                 </p>
-                <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-[#818283]">
+                <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-[#6D6E70]">
                   {preset.hint}
                 </p>
               </div>
@@ -269,7 +266,7 @@ function GraphicTextChoiceCard({ onChoose }: { onChoose: (mode: GraphicTextMode)
   return (
     <div className="space-y-3 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4">
       <div>
-        <p className="text-[10px] uppercase tracking-[0.2em] text-[#818283]">Text on image</p>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-[#6D6E70]">Text on image</p>
         <p className="mt-1 text-[14px] leading-relaxed text-[#4F5052]">
           Maya can bake short words into the finished image. Choose this now, so nothing appears on
           your result by surprise.
@@ -291,13 +288,13 @@ function GraphicTextChoiceCard({ onChoose }: { onChoose: (mode: GraphicTextMode)
           onClick={() => onChoose("without-text")}
           className="min-h-20 rounded-[6px] border border-[#C5C6C8]/70 bg-[#F8FAFA] px-4 py-3 text-left text-[#0D0E10] transition hover:border-[#0D0E10]"
         >
-          <span className="block text-[11px] uppercase tracking-[0.16em] text-[#818283]">
+          <span className="block text-[11px] uppercase tracking-[0.16em] text-[#6D6E70]">
             Clean image
           </span>
           <span className="mt-1 block text-[15px] leading-snug">No text, just the visual</span>
         </button>
       </div>
-      <p className="text-[12px] leading-relaxed text-[#818283]">
+      <p className="text-[12px] leading-relaxed text-[#6D6E70]">
         If you choose no text, Maya still writes suggested words below the result so you can copy
         them into Instagram, Canva, or your caption.
       </p>
@@ -680,7 +677,10 @@ export function MayaConcierge({
     format: OutputFormat
     sourceImageId: number | null
     sourceTitle: string | null
+    chatId: string
+    sessionStartedAt: number
   } | null>(null)
+  const [editBusy, setEditBusy] = useState(false)
   const [textRefining, setTextRefining] = useState(false)
   // Out-of-credits modal (opened when /generate returns 402).
   const [creditModal, setCreditModal] = useState<{ open: boolean; balance: number | null }>({
@@ -727,6 +727,7 @@ export function MayaConcierge({
   const [valueUsed, setValueUsed] = useState(() => restoredDraft?.valueUsed ?? false)
   const [brandDraft, setBrandDraft] = useState("")
   const [brandPromptDismissed, setBrandPromptDismissed] = useState(false)
+  const [brandSaveState, setBrandSaveState] = useState<"idle" | "saving" | "error">("idle")
 
   useEffect(() => {
     if (!isOpen) return
@@ -855,6 +856,7 @@ export function MayaConcierge({
 
   const isThinking = status === "submitted" || status === "streaming"
   const workspaceBusy =
+    editBusy ||
     isThinking ||
     textRefining ||
     inFlightGenerationKeysRef.current.size > 0 ||
@@ -873,6 +875,10 @@ export function MayaConcierge({
 
   const [historyOpen, setHistoryOpen] = useState(false)
   const savedCountRef = useRef(restoredDraft?.messages.length ?? 0)
+  const [chatSaveError, setChatSaveError] = useState(false)
+  const [chatSaveRetry, setChatSaveRetry] = useState(0)
+  const [draftSyncError, setDraftSyncError] = useState(false)
+  const [draftSyncRetry, setDraftSyncRetry] = useState(0)
   const appliedDraftSessionRef = useRef<number | null>(restoredDraft?.sessionStartedAt ?? null)
   // The chatId that belongs to the CURRENT session. For one commit after a session switch,
   // the rendered chatId/messages are still the previous thread's - the save effect must not
@@ -980,12 +986,17 @@ export function MayaConcierge({
       generationSource,
       valueUsed,
     })
+    setDraftSyncError(false)
     const timeout = window.setTimeout(() => {
       void fetch("/api/app-v3/maya/draft", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ draft: snapshot }),
-      }).catch(() => {})
+      })
+        .then(response => {
+          if (!response.ok) throw new Error(`Draft sync returned ${response.status}`)
+        })
+        .catch(() => setDraftSyncError(true))
     }, 700)
     return () => window.clearTimeout(timeout)
   }, [
@@ -1002,6 +1013,7 @@ export function MayaConcierge({
     textStyleAdjustments,
     textStyleChoice,
     valueUsed,
+    draftSyncRetry,
   ])
 
   useEffect(() => {
@@ -1009,13 +1021,20 @@ export function MayaConcierge({
     if (messages.length === 0 || messages.length === savedCountRef.current) return
     const last = messages[messages.length - 1] as { role?: string } | undefined
     if (last?.role !== "assistant") return
-    savedCountRef.current = messages.length
+    const messageCount = messages.length
+    const savedAt = Date.now()
+    setChatSaveError(false)
     void fetch("/api/app-v3/maya/chats", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: chatId, messages, title: deriveTitle(messages) }),
-    }).catch(() => {})
-  }, [status, messages, chatId])
+      body: JSON.stringify({ id: chatId, messages, title: deriveTitle(messages), savedAt }),
+    })
+      .then(response => {
+        if (!response.ok) throw new Error(`Chat save returned ${response.status}`)
+        savedCountRef.current = Math.max(savedCountRef.current, messageCount)
+      })
+      .catch(() => setChatSaveError(true))
+  }, [status, messages, chatId, chatSaveRetry])
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
@@ -1066,6 +1085,7 @@ export function MayaConcierge({
 
   // "Continue history" from the launcher: the chat list shows as soon as the drawer opens.
   const lastHistoryRequestRef = useRef(0)
+  const historyLoadRequestRef = useRef(0)
   useEffect(() => {
     if (historyRequestId === 0 || historyRequestId === lastHistoryRequestRef.current) return
     if (workspaceBusy) return
@@ -1517,14 +1537,20 @@ export function MayaConcierge({
     }
   }
 
-  // SUITE-UX-02: removing an optional image must stick across refreshes, so clear the
-  // saved copy too (best-effort - local state clears either way).
-  function clearSlot(slot: "angle" | "side" | "body" | "inspiration") {
-    if (slot === "angle") setThreeQuarterUrl(null)
-    else if (slot === "side") setSideProfileUrl(null)
-    else if (slot === "body") setFullBodyUrl(null)
-    else handleInspirationReady(null, "manager")
-    void fetch(`/api/app-v3/upload-selfie?slot=${slot}`, { method: "DELETE" }).catch(() => {})
+  // Clear the saved copy first. If persistence fails, keep the visible photo so refresh cannot
+  // surprise her by bringing back something the UI claimed was removed.
+  async function clearSlot(slot: "angle" | "side" | "body" | "inspiration") {
+    setUploadError(null)
+    try {
+      const response = await fetch(`/api/app-v3/upload-selfie?slot=${slot}`, { method: "DELETE" })
+      if (!response.ok) throw new Error("Could not remove that photo")
+      if (slot === "angle") setThreeQuarterUrl(null)
+      else if (slot === "side") setSideProfileUrl(null)
+      else if (slot === "body") setFullBodyUrl(null)
+      else handleInspirationReady(null, "manager")
+    } catch {
+      setUploadError("That photo is still saved. Please try removing it again.")
+    }
   }
 
   async function handleSend() {
@@ -1592,32 +1618,75 @@ export function MayaConcierge({
   }
 
   async function handleSelectChat(id: string) {
-    if (workspaceBusy) return
-    try {
-      const res = await fetch(`/api/app-v3/maya/chats/${id}`)
-      if (!res.ok) return
-      const data = (await res.json().catch(() => null)) as { messages?: unknown[] } | null
-      const loaded = Array.isArray(data?.messages) ? data.messages : []
-      savedCountRef.current = loaded.length
-      // Historical set_format parts are already-acted-on: seed them so reopening an old
-      // chat never replays a format switch (and the auto-pull it triggers).
-      for (const m of loaded as any[]) {
-        if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
-        for (const p of m.parts) {
-          const fmt = extractFormatSwitch(p)
-          if (fmt) formatSwitchAppliedRef.current.add(`${m.id}:${fmt}`)
-        }
+    if (workspaceBusy) throw new Error("Maya is busy")
+    const requestId = ++historyLoadRequestRef.current
+    const res = await fetch(`/api/app-v3/maya/chats/${id}`)
+    if (!res.ok) throw new Error(`Chat returned ${res.status}`)
+    const data = (await res.json().catch(() => null)) as { messages?: unknown[] } | null
+    if (requestId !== historyLoadRequestRef.current) return
+    const loaded = Array.isArray(data?.messages) ? data.messages : []
+    savedCountRef.current = loaded.length
+    // Historical set_format parts are already-acted-on: seed them so reopening an old
+    // chat never replays a format switch (and the auto-pull it triggers).
+    for (const m of loaded as any[]) {
+      if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
+      for (const p of m.parts) {
+        const fmt = extractFormatSwitch(p)
+        if (fmt) formatSwitchAppliedRef.current.add(`${m.id}:${fmt}`)
       }
-      sessionChatIdRef.current = id
-      setChatId(id)
-      setGenState({})
-      setGeneratedOnce(false)
-      sessionResumedWithHistoryRef.current = loaded.length > 0
-      setMessages(loaded as any)
-      setHistoryOpen(false)
-    } catch {
-      /* leave history open so the user can retry */
     }
+    sessionChatIdRef.current = id
+    setChatId(id)
+    setGenState({})
+    setGeneratedOnce(false)
+    sessionResumedWithHistoryRef.current = loaded.length > 0
+    setMessages(loaded as any)
+    setHistoryOpen(false)
+  }
+
+  async function recoverSingleImageFromGallery(
+    clientRequestId: string,
+    startedAtMs: number,
+    expectedFormat: OutputFormat,
+    maxAttempts: number
+  ): Promise<{ url: string; aiImageId: number | null } | null> {
+    const expectedContentType = expectedFormat === "story-sequence" ? "story-slide" : expectedFormat
+    const cutoff = startedAtMs - 2 * 60 * 1000
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 5_000))
+      try {
+        const response = await fetch("/api/app-v3/gallery", { cache: "no-store" })
+        if (!response.ok) continue
+        const data = (await response.json().catch(() => null)) as {
+          assets?: Array<{
+            id?: string
+            kind?: string
+            contentType?: string
+            url?: string
+            createdAt?: string
+            generationRef?: string | null
+          }>
+        } | null
+        const asset = (data?.assets ?? []).find(
+          item =>
+            item.kind === "image" &&
+            item.contentType === expectedContentType &&
+            item.generationRef?.includes(clientRequestId) &&
+            typeof item.url === "string" &&
+            item.url.length > 0 &&
+            Date.parse(item.createdAt || "") >= cutoff
+        )
+        if (!asset?.url) continue
+        const idMatch = asset.id?.match(/^ai_(\d+)$/)
+        return {
+          url: asset.url,
+          aiImageId: idMatch ? Number.parseInt(idMatch[1], 10) : null,
+        }
+      } catch {
+        // The browser may be briefly offline while the server finishes and stores the image.
+      }
+    }
+    return null
   }
 
   async function generateConcept(
@@ -1651,6 +1720,41 @@ export function MayaConcierge({
     if (inFlightGenerationKeysRef.current.has(key)) return
     inFlightGenerationKeysRef.current.add(key)
     setGenState(s => ({ ...s, [key]: { status: "generating" } }))
+    let generationRequestId: string | null = null
+    let generationStartedAt = 0
+    let generationResponseStatus: number | null = null
+    let streamResponseStarted = false
+    let generationServerVerdict = false
+    const isSingleImageRequest =
+      targetFormat !== "carousel" &&
+      targetFormat !== "story-sequence" &&
+      targetFormat !== "photoshoot"
+    const restorePaidSingleImage = async (
+      source: "stream_recovered" | "request_recovered",
+      maxAttempts: number
+    ) => {
+      if (!isSingleImageRequest || !generationRequestId || maxAttempts <= 0) return false
+      const recovered = await recoverSingleImageFromGallery(
+        generationRequestId,
+        generationStartedAt,
+        targetFormat,
+        maxAttempts
+      )
+      if (!recovered) return false
+      setGenState(state => ({
+        ...state,
+        [key]: {
+          status: "done",
+          imageUrls: [recovered.url],
+          aiImageId: recovered.aiImageId,
+          aiImageIds: [recovered.aiImageId],
+        },
+      }))
+      setGeneratedOnce(true)
+      recordCompletedRender(targetFormat, 1, concept.title)
+      trackGenerationCompleted(targetFormat, source)
+      return true
+    }
     try {
       if (targetFormat === "video") {
         const startRes = await fetch("/api/app-v3/maya/video/generate", {
@@ -1755,6 +1859,8 @@ export function MayaConcierge({
         isGraphicOutputFormat(targetFormat) && textOverlayMode ? textOverlayMode : null
       const bakeStyle = overlayStyle ?? (wantsGraphicText ? textStyleChoice : null)
       const wantsBakedText = Boolean(bakeStyle && isGraphicOutputFormat(targetFormat))
+      generationRequestId = newGenerationRequestId()
+      generationStartedAt = Date.now()
       const res = await fetch("/api/app-v3/maya/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1766,6 +1872,7 @@ export function MayaConcierge({
           inspirationImageUrl: inspirationUrl,
           aestheticId: aesthetic.id,
           conceptTitle: concept.title,
+          clientRequestId: generationRequestId,
           rerun,
           ...(graphicTextMode ? { textOverlayMode: graphicTextMode } : {}),
           ...(bakeStyle ? { overlayStyle: bakeStyle } : {}),
@@ -1776,10 +1883,12 @@ export function MayaConcierge({
           stream: wantsBakedText ? false : targetFormat !== "carousel",
         }),
       })
+      generationResponseStatus = res.status
 
       // ── Streaming path: the photo develops in the card as partial frames arrive. ──
       const contentType = res.headers.get("content-type") || ""
       if (res.ok && contentType.includes("text/event-stream") && res.body) {
+        streamResponseStarted = true
         const reader = res.body.getReader()
         const decoder = new TextDecoder()
         let buffer = ""
@@ -1838,6 +1947,7 @@ export function MayaConcierge({
               recordCompletedRender(targetFormat, evt.imageUrls.length, concept.title)
               trackGenerationCompleted(targetFormat, "stream")
               showTrialCapIfDepleted(evt.newBalance)
+              generationServerVerdict = true
               settled = true
             } else if (evt?.type === "error") {
               trackRecoveryShown(targetFormat, "stream_error")
@@ -1845,13 +1955,24 @@ export function MayaConcierge({
                 ...s,
                 [key]: { status: "error", error: evt!.error || "Generation failed" },
               }))
+              generationServerVerdict = true
               settled = true
             }
           }
         }
         if (!settled) {
-          trackRecoveryShown(targetFormat, "stream_unsettled")
-          setGenState(s => ({ ...s, [key]: { status: "error", error: "Generation failed" } }))
+          const recovered = await restorePaidSingleImage("stream_recovered", 3)
+          if (!recovered) {
+            trackRecoveryShown(targetFormat, "stream_unsettled")
+            setGenState(s => ({
+              ...s,
+              [key]: {
+                status: "error",
+                error:
+                  "The connection ended before the final photo arrived. Check Photos before trying again.",
+              },
+            }))
+          }
         }
         return
       }
@@ -1871,6 +1992,7 @@ export function MayaConcierge({
         current?: number
         newBalance?: number
       } | null
+      generationServerVerdict = data !== null
       if (res.status === 402 || data?.code === "insufficient_credits") {
         // Graceful path: reset the card and open the right offer instead of a raw error.
         setGenState(s => ({ ...s, [key]: { status: "idle" } }))
@@ -1909,6 +2031,13 @@ export function MayaConcierge({
       trackGenerationCompleted(targetFormat, "generate")
       showTrialCapIfDepleted(data?.newBalance)
     } catch (e) {
+      const recoveryAttempts =
+        generationResponseStatus === null || (streamResponseStarted && !generationServerVerdict)
+          ? 18
+          : generationResponseStatus >= 500 && !generationServerVerdict
+            ? 3
+            : 0
+      if (await restorePaidSingleImage("request_recovered", recoveryAttempts)) return
       trackRecoveryShown(targetFormat, "exception")
       setGenState(s => ({
         ...s,
@@ -2373,10 +2502,6 @@ export function MayaConcierge({
   ) {
     if (isThinking) return
     const intent = intentForFormat(nextFormat, "gallery_action")
-    const autoTextStyle =
-      selection === "recommended"
-        ? recommendedGraphicTextStyle(nextFormat, rememberedOverlayStyle)
-        : null
     const needsGraphicTextChoice = isGraphicOutputFormat(nextFormat)
     setLocalCreationIntent(intent)
     extrasRef.current = { ...extrasRef.current, format: intent.format, creationIntent: intent }
@@ -2398,15 +2523,14 @@ export function MayaConcierge({
         setInspirationUrl(styleReferenceUrl)
       }
     }
-    setTextOverlayMode(autoTextStyle ? "with-text" : null)
-    setTextStyleChoice(autoTextStyle)
+    setTextOverlayMode(null)
+    setTextStyleChoice(null)
     setTextStyleAdjustments(null)
     setStyleSwapOpen(false)
     setOutputFormat(nextFormat)
     setSetupOpen(false)
-    // A manual graphic choice returns to the explicit text/no-text gate. Maya's recommended
-    // graphic action is already a clear promise, so it carries a sensible text style and pulls
-    // the finished direction immediately instead of revealing a hidden extra gate below the fold.
+    // Every graphic action returns to the explicit with-text / without-text gate. A recommendation
+    // must never silently spend a credit on words or a style the member did not choose.
     lastPulledFormatRef.current = needsGraphicTextChoice ? null : nextFormat
     seedRetiredRef.current = true
     if (!needsGraphicTextChoice) sendMessage({ text: FORMAT_PHRASE[nextFormat] })
@@ -2477,7 +2601,7 @@ export function MayaConcierge({
   async function saveBrand() {
     const text = brandDraft.trim()
     if (!text) return
-    setBrandPromptDismissed(true)
+    setBrandSaveState("saving")
     try {
       const res = await fetch("/api/app-v3/maya/memory", {
         method: "PUT",
@@ -2485,18 +2609,19 @@ export function MayaConcierge({
         body: JSON.stringify({ brandNotes: text }),
       })
       const d = (await res.json().catch(() => null)) as Memory | null
-      if (res.ok && d) {
-        setMemory({
-          agentName: d.agentName ?? null,
-          brandNotes: d.brandNotes ?? null,
-          preferences: d.preferences ?? null,
-          userAvatarUrl: d.userAvatarUrl ?? null,
-        })
-      }
+      if (!res.ok || !d) throw new Error("Brand save failed")
+      setMemory({
+        agentName: d.agentName ?? null,
+        brandNotes: d.brandNotes ?? null,
+        preferences: d.preferences ?? null,
+        userAvatarUrl: d.userAvatarUrl ?? null,
+      })
+      setBrandDraft("")
+      setBrandPromptDismissed(true)
+      setBrandSaveState("idle")
     } catch {
-      /* ignore; she can add it later in Memory */
+      setBrandSaveState("error")
     }
-    setBrandDraft("")
   }
 
   type TextRefinementTarget = {
@@ -2637,6 +2762,15 @@ export function MayaConcierge({
       styleAdjustments = typographyAdjustmentLine(refinement.instruction)
     }
 
+    const previousTextState = genState[target.key]
+    const restoreTextRefinementState = (message?: string) => {
+      if (!previousTextState) return
+      setGenState(state => ({
+        ...state,
+        [target.key]: message ? { ...previousTextState, error: message } : previousTextState,
+      }))
+    }
+
     setTextRefining(true)
     updateTextOverlaySpec(target.key, target.index, nextSpec)
 
@@ -2662,10 +2796,12 @@ export function MayaConcierge({
       } | null
 
       if (res.status === 402 || data?.code === "insufficient_credits") {
+        restoreTextRefinementState()
         showCreditBlock(typeof data?.current === "number" ? data.current : null)
         return true
       }
       if (data?.code === "generation_locked" && cohort === "trial") {
+        restoreTextRefinementState()
         setTrialCapOpen(true)
         return true
       }
@@ -2678,17 +2814,7 @@ export function MayaConcierge({
       showTrialCapIfDepleted(data.newBalance)
       return true
     } catch (error) {
-      setGenState(state => {
-        const current = state[target.key]
-        if (!current || current.status !== "done") return state
-        return {
-          ...state,
-          [target.key]: {
-            ...current,
-            error: error instanceof Error ? error.message : "Text update failed",
-          },
-        }
-      })
+      restoreTextRefinementState(error instanceof Error ? error.message : "Text update failed")
       return true
     } finally {
       setTextRefining(false)
@@ -2776,7 +2902,7 @@ export function MayaConcierge({
             (on phones the drawer is full-width, so the backdrop can't be tapped to leave). */}
         <header className="flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-3.5 sm:px-6">
           <div className="min-w-0">
-            <p className="truncate text-[10px] uppercase tracking-[0.3em] text-[#818283]">
+            <p className="truncate text-[10px] uppercase tracking-[0.3em] text-[#6D6E70]">
               {agentLabel}
             </p>
             <h2
@@ -2804,7 +2930,6 @@ export function MayaConcierge({
                 setMenuOpen(v => !v)
               }}
               aria-expanded={menuOpen}
-              aria-haspopup="menu"
               aria-controls="maya-workspace-menu"
               className="inline-flex min-h-11 items-center py-1 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
             >
@@ -2823,16 +2948,22 @@ export function MayaConcierge({
                 <button
                   type="button"
                   aria-label="Close menu"
+                  aria-hidden="true"
+                  tabIndex={-1}
                   onClick={() => {
                     setMenuOpen(false)
                     setNewChatConfirming(false)
                   }}
                   className="fixed inset-0 z-10 cursor-default"
                 />
-                <div id="maya-workspace-menu" role="menu" className="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white py-1 shadow-sm">
+                <div
+                  id="maya-workspace-menu"
+                  role="group"
+                  aria-label="Maya actions"
+                  className="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white py-1 shadow-sm"
+                >
                   <button
                     type="button"
-                    role="menuitem"
                     onClick={handleNewChat}
                     disabled={workspaceBusy}
                     className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10] disabled:opacity-40"
@@ -2842,7 +2973,6 @@ export function MayaConcierge({
                   {newChatConfirming && (
                     <button
                       type="button"
-                      role="menuitem"
                       onClick={() => setNewChatConfirming(false)}
                       className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
                     >
@@ -2851,7 +2981,6 @@ export function MayaConcierge({
                   )}
                   <button
                     type="button"
-                    role="menuitem"
                     onClick={() => {
                       setMenuOpen(false)
                       setNewChatConfirming(false)
@@ -2864,7 +2993,6 @@ export function MayaConcierge({
                   </button>
                   <button
                     type="button"
-                    role="menuitem"
                     onClick={() => {
                       setMenuOpen(false)
                       setNewChatConfirming(false)
@@ -2897,7 +3025,7 @@ export function MayaConcierge({
                   />
                 </span>
               )}
-              <span className="truncate text-[11px] uppercase tracking-[0.14em] text-[#818283]">
+              <span className="truncate text-[11px] uppercase tracking-[0.14em] text-[#6D6E70]">
                 {FORMAT_OPTIONS.find(o => o.id === format)?.label ?? "Photo"}
                 {customModelAvailable
                   ? activeGenerationSource === "trained-model"
@@ -2930,7 +3058,7 @@ export function MayaConcierge({
                 className="rounded-[8px] border border-[#C5C6C8]/55 bg-[#F8FAFA] p-4"
                 aria-live="polite"
               >
-                <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+                <p className="text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">
                   Your first photo
                 </p>
                 <div className="mt-3 flex items-center gap-3">
@@ -2997,7 +3125,7 @@ export function MayaConcierge({
                         setPendingShotDirector(null)
                         setInlineShotPickerAesthetic(null)
                       }}
-                      className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#818283] underline underline-offset-2 hover:text-[#0D0E10]"
+                      className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#6D6E70] underline underline-offset-2 hover:text-[#0D0E10]"
                     >
                       Choose another style
                     </button>
@@ -3038,13 +3166,13 @@ export function MayaConcierge({
 
             {!guidedFirstPhoto && customModelAvailable && (
               <div className="rounded-[6px] border border-[#C5C6C8]/60 bg-white p-2.5">
-                <p className="mb-2 px-1 text-[10px] uppercase tracking-[0.2em] text-[#818283]">
+                <p className="mb-2 px-1 text-[10px] uppercase tracking-[0.2em] text-[#6D6E70]">
                   Photo source
                 </p>
                 {/* Legacy Studio members: their model came along - say so, once, right where
                     the choice lives. Selfie engine stays the default (flagship doctrine:
                     gpt-image-2 reference edits; the LoRA path is kept, not promoted). */}
-                <p className="mb-2 px-1 text-[11px] leading-relaxed text-[#818283]">
+                <p className="mb-2 px-1 text-[11px] leading-relaxed text-[#6D6E70]">
                   Your trained model from Studio came with you. Use it any time - or let the selfie
                   engine work straight from your photos.
                 </p>
@@ -3077,7 +3205,7 @@ export function MayaConcierge({
                         <span className="block text-[12px] font-medium">{option.label}</span>
                         <span
                           className={`mt-0.5 block text-[10px] leading-relaxed ${
-                            selected ? "text-white/70" : "text-[#818283]"
+                            selected ? "text-white/70" : "text-[#6D6E70]"
                           }`}
                         >
                           {option.note}
@@ -3093,7 +3221,7 @@ export function MayaConcierge({
               <div className="rounded-[6px] border border-[#0D0E10]/15 bg-white px-3 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-[#818283]">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-[#6D6E70]">
                       Image to animate
                     </p>
                     <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
@@ -3115,14 +3243,14 @@ export function MayaConcierge({
                 </div>
                 <div className="mt-3 space-y-3">
                   <div>
-                    <p className="mb-2 text-[10px] uppercase tracking-[0.18em] text-[#818283]">
+                    <p className="mb-2 text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
                       Pick from your photos
                     </p>
                     {videoGalleryImages === null && !videoGalleryError && (
-                      <p className="text-[12px] text-[#818283]">Loading photos...</p>
+                      <p className="text-[12px] text-[#6D6E70]">Loading photos...</p>
                     )}
                     {videoGalleryError && (
-                      <p className="text-[12px] text-[#818283]">{videoGalleryError}</p>
+                      <p className="text-[12px] text-[#6D6E70]">{videoGalleryError}</p>
                     )}
                     {videoGalleryImages && videoGalleryImages.length > 0 && (
                       <div className="flex gap-2 overflow-x-auto pb-1">
@@ -3152,7 +3280,7 @@ export function MayaConcierge({
                       </div>
                     )}
                     {videoGalleryImages && videoGalleryImages.length === 0 && (
-                      <p className="text-[12px] text-[#818283]">
+                      <p className="text-[12px] text-[#6D6E70]">
                         No gallery photos yet. Upload one from your device.
                       </p>
                     )}
@@ -3170,7 +3298,7 @@ export function MayaConcierge({
                       <button
                         type="button"
                         onClick={() => setVideoSourceUrl(null)}
-                        className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#818283] underline underline-offset-2 hover:text-[#0D0E10]"
+                        className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#6D6E70] underline underline-offset-2 hover:text-[#0D0E10]"
                       >
                         Clear
                       </button>
@@ -3219,7 +3347,7 @@ export function MayaConcierge({
                       {uploadingSlot === "face" ? "Uploading…" : "Replace selfie"}
                     </button>
                   </div>
-                  <p className="mt-1 text-[11px] leading-relaxed text-[#818283]">
+                  <p className="mt-1 text-[11px] leading-relaxed text-[#6D6E70]">
                     Maya will keep your skin tone and natural features recognizable, so it&apos;s
                     still you.
                   </p>
@@ -3296,7 +3424,7 @@ export function MayaConcierge({
               <button
                 type="button"
                 onClick={() => setShowMore(v => !v)}
-                className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#818283] hover:text-[#0D0E10]"
+                className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#6D6E70] hover:text-[#0D0E10]"
               >
                 {showMore ? "Hide extras" : "Add more angles (optional)"}
               </button>
@@ -3304,7 +3432,7 @@ export function MayaConcierge({
 
             {!guidedFirstPhoto && format !== "video" && showMore && (
               <div className="space-y-2">
-                <p className="text-[11px] leading-relaxed text-[#818283]">
+                <p className="text-[11px] leading-relaxed text-[#6D6E70]">
                   For stronger likeness, add 1-3 extra identity photos: a three-quarter face, side
                   profile, and full-body shot. Inspiration is separate: Maya uses it for pose,
                   light, or vibe, never as your face.
@@ -3356,7 +3484,7 @@ export function MayaConcierge({
                           onClick={() => clearSlot(slot)}
                           aria-label={`Remove ${label.toLowerCase()}`}
                           title={`Remove ${label.toLowerCase()}`}
-                          className="self-stretch rounded-r-[4px] border border-l-0 border-[#C5C6C8]/60 bg-white px-2.5 text-[12px] text-[#818283] hover:border-[#0D0E10]/40 hover:text-[#0D0E10]"
+                          className="self-stretch rounded-r-[4px] border border-l-0 border-[#C5C6C8]/60 bg-white px-2.5 text-[12px] text-[#6D6E70] hover:border-[#0D0E10]/40 hover:text-[#0D0E10]"
                         >
                           ×
                         </button>
@@ -3465,7 +3593,7 @@ export function MayaConcierge({
                     />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-[#818283]">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-[#6D6E70]">
                       Animating this photo
                     </p>
                     <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
@@ -3598,6 +3726,8 @@ export function MayaConcierge({
                           format: conceptFormat,
                           sourceImageId,
                           sourceTitle: concept.title,
+                          chatId,
+                          sessionStartedAt: session?.startedAt ?? 0,
                         })
                       }
                     }}
@@ -3718,7 +3848,7 @@ export function MayaConcierge({
                   {conceptPart && conceptPart.length > 0 && conceptFormat === "photoshoot" && (
                     <div className="min-w-0 max-w-full space-y-3 rounded-[8px] border border-[#C5C6C8] bg-white p-4 [overflow-x:clip]">
                       <div>
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-[#818283]">
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-[#6D6E70]">
                           Full photoshoot
                         </p>
                         <p className="mt-1 text-[15px] leading-relaxed text-[#282728]">
@@ -3731,7 +3861,7 @@ export function MayaConcierge({
                             key={concept.id}
                             className="min-w-0 rounded-[6px] bg-[#F8FAFA] px-3 py-2"
                           >
-                            <p className="text-[10px] uppercase tracking-[0.16em] text-[#818283]">
+                            <p className="text-[10px] uppercase tracking-[0.16em] text-[#6D6E70]">
                               {String(index + 1).padStart(2, "0")} ·{" "}
                               {concept.brief.shotRole?.replaceAll("-", " ") || "shot"}
                             </p>
@@ -3763,6 +3893,7 @@ export function MayaConcierge({
                                     textOverlaySpecs: gen.textOverlaySpecs,
                                   })
                                 }
+                                aria-label={`View ${urls.length} generated photos full screen`}
                                 className="grid w-full grid-cols-3 gap-2 text-left"
                               >
                                 {urls.slice(0, 6).map((url, index) => (
@@ -3777,7 +3908,9 @@ export function MayaConcierge({
                               </button>
                             )}
                             {gen.status === "error" && (
-                              <p className="text-[13px] text-[#8A3B2E]">{gen.error}</p>
+                              <p role="alert" className="text-[13px] text-[#8A3B2E]">
+                                {gen.error}
+                              </p>
                             )}
                             <button
                               type="button"
@@ -3789,7 +3922,7 @@ export function MayaConcierge({
                                 ? "Creating shoot..."
                                 : urls.length > 0
                                   ? "Create another set"
-                                  : "Create full photoshoot"}
+                                  : `Create full photoshoot · ${conceptPart.length} credits`}
                             </button>
                           </div>
                         )
@@ -3837,7 +3970,7 @@ export function MayaConcierge({
                         textStyleChoice === rememberedOverlayStyle &&
                         !styleSwapOpen && (
                           <div className="min-w-0 rounded-[6px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
-                            <p className="text-[10px] uppercase tracking-[0.18em] text-[#818283]">
+                            <p className="text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
                               Usual style variations
                             </p>
                             <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
@@ -3872,7 +4005,7 @@ export function MayaConcierge({
                                 )
                               })}
                             </div>
-                            <p className="mt-1 text-[11px] leading-relaxed text-[#818283]">
+                            <p className="mt-1 text-[11px] leading-relaxed text-[#6D6E70]">
                               Layout stays the same. Only the text finish changes.
                             </p>
                           </div>
@@ -3882,7 +4015,7 @@ export function MayaConcierge({
                         <details className="group rounded-[8px] border border-[#C5C6C8]/55 bg-white">
                           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-4 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0D0E10]">
                             See more ideas
-                            <span className="font-serif text-[16px] font-light text-[#818283]">
+                            <span className="font-serif text-[16px] font-light text-[#6D6E70]">
                               {conceptPart.length - 1}
                             </span>
                           </summary>
@@ -3954,13 +4087,13 @@ export function MayaConcierge({
                   <button
                     type="button"
                     onClick={() => setBrandPromptDismissed(true)}
-                    className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#818283] hover:text-[#4F5052]"
+                    className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#6D6E70] hover:text-[#4F5052]"
                   >
                     Not now
                   </button>
                 </div>
                 <details className="mt-3">
-                  <summary className="cursor-pointer text-[11px] uppercase tracking-[0.14em] text-[#818283] hover:text-[#4F5052]">
+                  <summary className="cursor-pointer text-[11px] uppercase tracking-[0.14em] text-[#6D6E70] hover:text-[#4F5052]">
                     Rather type it yourself?
                   </summary>
                   <textarea
@@ -3973,11 +4106,16 @@ export function MayaConcierge({
                   <button
                     type="button"
                     onClick={() => void saveBrand()}
-                    disabled={brandDraft.trim().length === 0}
+                    disabled={brandDraft.trim().length === 0 || brandSaveState === "saving"}
                     className="mt-2 min-h-11 rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white disabled:opacity-40"
                   >
-                    Save
+                    {brandSaveState === "saving" ? "Saving…" : "Save"}
                   </button>
+                  {brandSaveState === "error" && (
+                    <p role="alert" className="mt-2 text-[12px] text-[#4F5052]">
+                      That did not save. Your words are still here so you can try again.
+                    </p>
+                  )}
                 </details>
               </div>
             </div>
@@ -3987,7 +4125,7 @@ export function MayaConcierge({
             <div role="status" className="flex min-w-0 max-w-full items-center gap-3">
               <TypingDots />
               {!hasConcepts && (
-                <span className="min-w-0 break-words text-[13px] text-[#818283] [overflow-wrap:anywhere]">
+                <span className="min-w-0 break-words text-[13px] text-[#6D6E70] [overflow-wrap:anywhere]">
                   Maya is preparing your directions…
                 </span>
               )}
@@ -3995,7 +4133,10 @@ export function MayaConcierge({
           )}
 
           {error && !isThinking && (
-            <div role="alert" className="min-w-0 max-w-full rounded-[6px] bg-[#282728]/5 px-4 py-3 [overflow-x:clip]">
+            <div
+              role="alert"
+              className="min-w-0 max-w-full rounded-[6px] bg-[#282728]/5 px-4 py-3 [overflow-x:clip]"
+            >
               <p className="text-[13px] text-[#282728]">
                 Maya hit a snag creating your directions.
               </p>
@@ -4007,7 +4148,9 @@ export function MayaConcierge({
                     .find((message: any) => message?.role === "user")
                   const retryText = Array.isArray(lastUserMessage?.parts)
                     ? lastUserMessage.parts
-                        .filter((part: any) => part?.type === "text" && typeof part.text === "string")
+                        .filter(
+                          (part: any) => part?.type === "text" && typeof part.text === "string"
+                        )
                         .map((part: any) => part.text)
                         .join("")
                         .trim()
@@ -4017,6 +4160,38 @@ export function MayaConcierge({
                 className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] underline underline-offset-2 hover:opacity-70"
               >
                 Try again
+              </button>
+            </div>
+          )}
+
+          {chatSaveError && (
+            <div role="alert" className="min-w-0 max-w-full rounded-[6px] bg-[#282728]/5 px-4 py-3">
+              <p className="text-[13px] text-[#282728]">
+                This conversation has not reached your history yet. Your work is still on this
+                device.
+              </p>
+              <button
+                type="button"
+                onClick={() => setChatSaveRetry(value => value + 1)}
+                className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] underline underline-offset-2"
+              >
+                Save again
+              </button>
+            </div>
+          )}
+
+          {draftSyncError && (
+            <div role="alert" className="min-w-0 max-w-full rounded-[6px] bg-[#282728]/5 px-4 py-3">
+              <p className="text-[13px] text-[#282728]">
+                Your latest workspace changes have not synced yet. Keep this window open and try
+                again.
+              </p>
+              <button
+                type="button"
+                onClick={() => setDraftSyncRetry(value => value + 1)}
+                className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] underline underline-offset-2"
+              >
+                Sync again
               </button>
             </div>
           )}
@@ -4038,13 +4213,13 @@ export function MayaConcierge({
                 alt="Inspiration"
                 className="h-9 w-9 rounded-[8px] object-cover"
               />
-              <span className="min-w-0 flex-1 truncate text-[11px] text-[#818283]">
+              <span className="min-w-0 flex-1 truncate text-[11px] text-[#6D6E70]">
                 Inspiration attached. Maya uses its style, never its face.
               </span>
               <button
                 type="button"
                 onClick={() => clearSlot("inspiration")}
-                className="inline-flex min-h-11 shrink-0 items-center text-[11px] uppercase tracking-[0.14em] text-[#818283] underline underline-offset-2 hover:text-[#0D0E10]"
+                className="inline-flex min-h-11 shrink-0 items-center text-[11px] uppercase tracking-[0.14em] text-[#6D6E70] underline underline-offset-2 hover:text-[#0D0E10]"
               >
                 Remove
               </button>
@@ -4168,7 +4343,7 @@ export function MayaConcierge({
         open={historyOpen}
         currentChatId={chatId}
         onClose={() => setHistoryOpen(false)}
-        onSelect={id => void handleSelectChat(id)}
+        onSelect={handleSelectChat}
       />
 
       <MemoryModal
@@ -4183,6 +4358,7 @@ export function MayaConcierge({
           format={editTarget.format}
           sourceImageId={editTarget.sourceImageId}
           sourceTitle={editTarget.sourceTitle}
+          onBusyChange={setEditBusy}
           onClose={() => setEditTarget(null)}
           onCreditBlock={balance => {
             setEditTarget(null)
@@ -4190,17 +4366,31 @@ export function MayaConcierge({
           }}
           onResult={(newUrl, aiImageId) =>
             setGenState(s => {
+              if (
+                editTarget.chatId !== chatId ||
+                editTarget.sessionStartedAt !== (session?.startedAt ?? 0)
+              ) {
+                return s
+              }
               const current = s[editTarget.key]
-              const prevUrls = current?.imageUrls ?? []
-              const prevIds = current?.aiImageIds ?? []
+              const nextUrls = [...(current?.imageUrls ?? [])]
+              const nextIds = [...(current?.aiImageIds ?? [])]
+              const nextBaked = [...(current?.bakedImageUrls ?? [])]
+              const nextBakedIds = [...(current?.bakedAiImageIds ?? [])]
+              nextUrls[0] = newUrl
+              nextIds[0] = aiImageId ?? null
+              nextBaked[0] = null
+              nextBakedIds[0] = null
               return {
                 ...s,
                 [editTarget.key]: {
                   ...(current ?? { status: "done" }),
                   status: "done",
-                  imageUrls: [newUrl, ...prevUrls],
+                  imageUrls: nextUrls,
                   aiImageId: aiImageId ?? current?.aiImageId ?? null,
-                  aiImageIds: [aiImageId ?? null, ...prevIds],
+                  aiImageIds: nextIds,
+                  bakedImageUrls: nextBaked,
+                  bakedAiImageIds: nextBakedIds,
                 },
               }
             })

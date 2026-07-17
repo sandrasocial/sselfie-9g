@@ -12,7 +12,7 @@ import {
   removeLikenessNote,
   saveMemory,
 } from "@/lib/app-v3/maya/memory-store"
-import { getUserContextForMaya } from "@/lib/maya/get-user-context"
+import { hasUsableBrandProfile } from "@/lib/app-v3/maya/brand-profile-store"
 import {
   clearPreferredFeedStyle,
   getPreferredFeedStyle,
@@ -49,19 +49,19 @@ export async function GET() {
 
   try {
     const mem = await readVisibleMemory(String(neonUserId))
-    // Does she already have a real brand profile in the existing SSELFIE system? If so, we never
-    // run progressive onboarding (Maya already knows her). Default to true on any doubt = don't nag.
+    // Progressive onboarding is based on real profile fields, not the length of Maya's assembled
+    // context (purchases and account notes can make that string long even when her brand is empty).
     let hasBrandProfile = true
     try {
-      const ctx = await getUserContextForMaya(user.id)
-      hasBrandProfile = typeof ctx === "string" && ctx.trim().length > 200
+      hasBrandProfile =
+        Boolean(mem.brandNotes?.trim()) || (await hasUsableBrandProfile(String(neonUserId)))
     } catch {
       /* leave true */
     }
     return NextResponse.json({ ...mem, hasBrandProfile })
   } catch (e) {
     console.error("[app-v3 memory] read failed:", e)
-    return NextResponse.json(EMPTY)
+    return NextResponse.json({ error: "Could not load memory" }, { status: 500 })
   }
 }
 
@@ -69,21 +69,19 @@ export async function PUT(request: Request) {
   const { user, error: authError } = await getAuthenticatedUser()
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const body = (await request.json().catch(() => null)) as
-    | {
-        agentName?: string | null
-        brandNotes?: string | null
-        preferences?: string | null
-        userAvatarUrl?: string | null
-        preferredOverlayStyle?: string | null
-        /** LIKENESS-MEMORY-01: delete one stored likeness note (a wrong note must be removable). */
-        removeLikenessNote?: string
-        /** MAYA-LEARNING-01: one-tap acceptance of a low-confidence capture offer. */
-        addLikenessNote?: string
-        /** Remove only Maya's learned feed world. */
-        clearPreferredFeedStyle?: boolean
-      }
-    | null
+  const body = (await request.json().catch(() => null)) as {
+    agentName?: string | null
+    brandNotes?: string | null
+    preferences?: string | null
+    userAvatarUrl?: string | null
+    preferredOverlayStyle?: string | null
+    /** LIKENESS-MEMORY-01: delete one stored likeness note (a wrong note must be removable). */
+    removeLikenessNote?: string
+    /** MAYA-LEARNING-01: one-tap acceptance of a low-confidence capture offer. */
+    addLikenessNote?: string
+    /** Remove only Maya's learned feed world. */
+    clearPreferredFeedStyle?: boolean
+  } | null
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 })
   }

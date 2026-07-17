@@ -4,7 +4,7 @@
 // Lists the admin's saved conversations, with select + soft-delete. New Chat lives in the
 // concierge header. Loads from /api/app-v3/maya/chats.
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useAccessibleModal } from "./use-accessible-modal"
 
 const CHAT_PAGE_SIZE = 20
@@ -19,7 +19,7 @@ interface ChatHistoryModalProps {
   open: boolean
   currentChatId: string
   onClose: () => void
-  onSelect: (id: string) => void
+  onSelect: (id: string) => Promise<void>
 }
 
 function formatWhen(iso: string): string {
@@ -43,8 +43,7 @@ export function ChatHistoryModal({
   const [visibleChatCount, setVisibleChatCount] = useState(CHAT_PAGE_SIZE)
   const { dialogRef, initialFocusRef } = useAccessibleModal(open, onClose)
 
-  useEffect(() => {
-    if (!open) return
+  const loadChats = useCallback(() => {
     setChats(null)
     setError(null)
     setPendingDeleteId(null)
@@ -56,7 +55,25 @@ export function ChatHistoryModal({
       })
       .then(d => setChats(Array.isArray(d?.chats) ? d.chats : []))
       .catch(() => setError("Couldn't load your chats."))
-  }, [open])
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    loadChats()
+  }, [loadChats, open])
+
+  async function select(id: string) {
+    if (busyId) return
+    setBusyId(id)
+    setError(null)
+    try {
+      await onSelect(id)
+    } catch {
+      setError("Couldn't open that chat. Please try again.")
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   async function remove(id: string) {
     setBusyId(id)
@@ -86,11 +103,14 @@ export function ChatHistoryModal({
       >
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">History</p>
-            <h3 id="chat-history-title" className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[#6D6E70]">History</p>
+            <h3
+              id="chat-history-title"
+              className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]"
+            >
               Your chats
             </h3>
-            <p className="mt-2 max-w-xs text-[12px] leading-relaxed text-[#818283]">
+            <p className="mt-2 max-w-xs text-[12px] leading-relaxed text-[#6D6E70]">
               Opening a past chat restores the conversation. Finished files stay in Photos.
             </p>
           </div>
@@ -105,10 +125,23 @@ export function ChatHistoryModal({
         </div>
 
         <div className="mt-5 min-h-0 flex-1">
-          {chats === null && !error && <p className="text-[13px] text-[#818283]">Loading…</p>}
-          {error && <p role="alert" className="mb-3 text-[13px] text-[#282728]">{error}</p>}
+          {chats === null && !error && <p className="text-[13px] text-[#6D6E70]">Loading…</p>}
+          {error && (
+            <div role="alert" className="mb-3 text-[13px] text-[#282728]">
+              <p>{error}</p>
+              {chats === null && (
+                <button
+                  type="button"
+                  onClick={loadChats}
+                  className="mt-2 inline-flex min-h-11 items-center underline underline-offset-2"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
+          )}
           {chats && chats.length === 0 && (
-            <p className="text-[13px] text-[#818283]">
+            <p className="text-[13px] text-[#6D6E70]">
               No saved chats yet. Start one and it&apos;ll show up here.
             </p>
           )}
@@ -121,7 +154,8 @@ export function ChatHistoryModal({
                   <li key={c.id} className="flex items-center justify-between gap-3 py-3">
                     <button
                       type="button"
-                      onClick={() => onSelect(c.id)}
+                      onClick={() => void select(c.id)}
+                      disabled={busyId !== null || isCurrent}
                       aria-current={isCurrent ? "true" : undefined}
                       className="min-h-11 min-w-0 flex-1 text-left"
                     >
@@ -130,12 +164,16 @@ export function ChatHistoryModal({
                       >
                         {title}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-[#818283]">
+                      <p className="mt-0.5 text-[11px] text-[#6D6E70]">
                         {formatWhen(c.updatedAt)}
                         {isCurrent ? " · current" : ""}
                       </p>
                     </button>
-                    {pendingDeleteId === c.id ? (
+                    {isCurrent ? (
+                      <span className="inline-flex min-h-11 shrink-0 items-center px-2 text-[10px] uppercase tracking-[0.12em] text-[#6D6E70]">
+                        Current
+                      </span>
+                    ) : pendingDeleteId === c.id ? (
                       <div className="flex shrink-0 items-center gap-1">
                         <button
                           type="button"

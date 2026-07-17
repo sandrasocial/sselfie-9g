@@ -23,7 +23,7 @@ export async function GET() {
     return NextResponse.json({ chats })
   } catch (e) {
     console.error("[app-v3 chats] list failed:", e)
-    return NextResponse.json({ chats: [] })
+    return NextResponse.json({ error: "Could not load chats" }, { status: 500 })
   }
 }
 
@@ -31,21 +31,32 @@ export async function POST(request: Request) {
   const { user, error: authError } = await getAuthenticatedUser()
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const body = (await request.json().catch(() => null)) as
-    | { id?: string; messages?: unknown[]; title?: string }
-    | null
+  const body = (await request.json().catch(() => null)) as {
+    id?: string
+    messages?: unknown[]
+    title?: string
+    savedAt?: number
+  } | null
   const id = typeof body?.id === "string" && body.id.length > 0 ? body.id : null
   const messages = Array.isArray(body?.messages) ? body.messages : null
   if (!id || !messages) {
     return NextResponse.json({ error: "id and messages are required" }, { status: 400 })
   }
   const title = typeof body?.title === "string" ? body.title.slice(0, 80) : null
+  const savedAt =
+    typeof body?.savedAt === "number" && Number.isFinite(body.savedAt) ? body.savedAt : Date.now()
 
   const neonUserId = await getUserIdFromSupabase(user.id)
   if (!neonUserId) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
   try {
-    await saveChat(String(neonUserId), id, sanitizeMayaMessages(messages, { admin: true }), title)
+    await saveChat(
+      String(neonUserId),
+      id,
+      sanitizeMayaMessages(messages, { admin: true }),
+      title,
+      savedAt
+    )
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error("[app-v3 chats] save failed:", e)

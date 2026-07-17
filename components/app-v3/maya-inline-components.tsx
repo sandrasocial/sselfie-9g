@@ -60,7 +60,7 @@ export function InlineFormatChoice({
 }) {
   return (
     <div className="min-w-0 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4 [overflow-x:clip]">
-      <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">Choose one path</p>
+      <p className="text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">Choose one path</p>
       <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
         Pick what you need. Maya will only ask for the next detail.
       </p>
@@ -122,7 +122,7 @@ export function InlineSelfieUpload({
       </div>
       {/* The trust line lives AT the button, not in copy she scrolled past: handing over her
           face is the app's biggest ask (No-Fake doctrine - identity safety at the moment of fear). */}
-      <p className="mt-2 text-[12px] leading-relaxed text-[#818283]">
+      <p className="mt-2 text-[12px] leading-relaxed text-[#6D6E70]">
         Your selfie stays yours. Maya only uses it to keep your real face in every photo.
       </p>
     </div>
@@ -217,7 +217,7 @@ export function InlineVibePicker({
         <button
           type="button"
           onClick={() => setShowAllStyles(v => !v)}
-          className="mt-3 min-h-10 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-davy)] underline underline-offset-4 transition-colors hover:text-[color:var(--ss-night)]"
+          className="mt-3 min-h-11 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-davy)] underline underline-offset-4 transition-colors hover:text-[color:var(--ss-night)]"
         >
           {showAllStyles ? "Show fewer styles" : `Show all ${aesthetics.length} styles`}
         </button>
@@ -237,7 +237,7 @@ export function InlineShotPicker({
 }) {
   return (
     <div className="min-w-0 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4 [overflow-x:clip]">
-      <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">Choose the shot</p>
+      <p className="text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">Choose the shot</p>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {shots.slice(0, 8).map((shot, index) => (
           <button
@@ -286,7 +286,7 @@ export function InlineShotDirectorCard({
 
   return (
     <div className="min-w-0 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4 [overflow-x:clip]">
-      <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">Choose the next step</p>
+      <p className="text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">Choose the next step</p>
       <div className="mt-3 flex gap-3">
         <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-[6px] bg-[#E9EAEB]">
           <Image src={shot.image} alt="" fill sizes="80px" className="object-cover" />
@@ -330,7 +330,7 @@ export function InlineShotDirectorCard({
       </div>
 
       <div className="mt-4 rounded-[6px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-[#818283]">Full shoot</p>
+        <p className="text-[11px] uppercase tracking-[0.18em] text-[#6D6E70]">Full shoot</p>
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {[
             {
@@ -374,7 +374,7 @@ export function InlineShotDirectorCard({
                 type="button"
                 disabled={disabled}
                 onClick={() => setShotCount(count)}
-                className={`min-h-10 rounded-full border px-3.5 text-[11px] uppercase tracking-[0.14em] transition-colors disabled:opacity-45 ${
+                className={`min-h-11 rounded-full border px-3.5 text-[11px] uppercase tracking-[0.14em] transition-colors disabled:opacity-45 ${
                   selected
                     ? "border-[#0D0E10] bg-[#0D0E10] text-white"
                     : "border-[#C5C6C8]/70 bg-white text-[#4F5052] hover:border-[#0D0E10]/40"
@@ -398,7 +398,7 @@ export function InlineShotDirectorCard({
       <button
         type="button"
         onClick={onBack}
-        className="mt-3 inline-flex min-h-10 items-center text-[11px] uppercase tracking-[0.16em] text-[#818283] underline underline-offset-2 hover:text-[#0D0E10]"
+        className="mt-3 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#6D6E70] underline underline-offset-2 hover:text-[#0D0E10]"
       >
         Choose another shot
       </button>
@@ -529,7 +529,7 @@ export function InlineResultActions({
         {recommendation.label}
       </button>
       <details className="group mt-2">
-        <summary className="inline-flex min-h-10 cursor-pointer list-none items-center text-[11px] uppercase tracking-[0.13em] text-[color:var(--ss-davy)] underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]">
+        <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-[11px] uppercase tracking-[0.13em] text-[color:var(--ss-davy)] underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]">
           More things Maya can make
         </summary>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -540,7 +540,7 @@ export function InlineResultActions({
                 key={action.format}
                 type="button"
                 onClick={() => onNextFormat(action.format, "next_action", "more")}
-                className="min-h-10 rounded-[4px] border border-[#C5C6C8]/70 bg-white px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-[#4F5052] transition-colors hover:border-[#0D0E10] hover:text-[#0D0E10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10]"
+                className="min-h-11 rounded-[4px] border border-[#C5C6C8]/70 bg-white px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-[#4F5052] transition-colors hover:border-[#0D0E10] hover:text-[#0D0E10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10]"
               >
                 {action.label}
               </button>

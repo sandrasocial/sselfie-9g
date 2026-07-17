@@ -20,6 +20,31 @@ export interface BrandProfileFacts {
   brandVoice?: string
 }
 
+export async function hasUsableBrandProfile(neonUserId: string | number): Promise<boolean> {
+  const rows = await sql`
+    SELECT business_type, target_audience, ideal_audience, transformation_story
+    FROM user_personal_brand
+    WHERE user_id = ${String(neonUserId)}
+    LIMIT 1
+  `
+  const profile = rows[0] as
+    | {
+        business_type?: unknown
+        target_audience?: unknown
+        ideal_audience?: unknown
+        transformation_story?: unknown
+      }
+    | undefined
+  if (!profile) return false
+  const present = (value: unknown) => typeof value === "string" && value.trim().length > 0
+  return (
+    present(profile.business_type) &&
+    (present(profile.target_audience) ||
+      present(profile.ideal_audience) ||
+      present(profile.transformation_story))
+  )
+}
+
 const clean = (v: string | undefined): string | null => {
   const t = typeof v === "string" ? v.trim() : ""
   return t.length > 0 ? t.slice(0, 2000) : null
@@ -32,7 +57,7 @@ const clean = (v: string | undefined): string | null => {
  */
 export async function saveBrandProfileFacts(
   neonUserId: string | number,
-  facts: BrandProfileFacts,
+  facts: BrandProfileFacts
 ): Promise<boolean> {
   const userId = String(neonUserId)
   const name = clean(facts.name)
@@ -43,7 +68,15 @@ export async function saveBrandProfileFacts(
   const futureVision = clean(facts.futureVision)
   const brandVoice = clean(facts.brandVoice)
 
-  if (!name && !businessType && !targetAudience && !transformationStory && !goals && !futureVision && !brandVoice) {
+  if (
+    !name &&
+    !businessType &&
+    !targetAudience &&
+    !transformationStory &&
+    !goals &&
+    !futureVision &&
+    !brandVoice
+  ) {
     return false
   }
 

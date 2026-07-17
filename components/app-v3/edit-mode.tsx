@@ -9,7 +9,7 @@
 // desktop it's a split view (image left, edit panel right); on mobile the panel pins below and
 // scrolls. Presets are SSELFIE looks first, then quick mechanical edits.
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import type { OutputFormat } from "./types"
 import { Spinner } from "./loading"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
@@ -27,6 +27,7 @@ interface EditModeProps {
    * right offer (trial-cap membership offer for trials, top-up for members) instead of a
    * dead error string. */
   onCreditBlock?: (balance: number | null) => void
+  onBusyChange?: (busy: boolean) => void
 }
 
 // Branded look presets (re-grade the whole image to a SSELFIE aesthetic).
@@ -81,6 +82,7 @@ export function EditMode({
   onClose,
   onResult,
   onCreditBlock,
+  onBusyChange,
 }: EditModeProps) {
   const [current, setCurrent] = useState(imageUrl)
   const [instruction, setInstruction] = useState("")
@@ -89,7 +91,15 @@ export function EditMode({
   const [likenessMessage, setLikenessMessage] = useState<string | null>(null)
   const [likenessOffer, setLikenessOffer] = useState<string | null>(null)
   const [savingLikeness, setSavingLikeness] = useState(false)
-  const { dialogRef, initialFocusRef } = useAccessibleModal(true, onClose)
+  const closeWhenIdle = () => {
+    if (!busy) onClose()
+  }
+  const { dialogRef, initialFocusRef } = useAccessibleModal(true, closeWhenIdle)
+
+  useEffect(() => {
+    onBusyChange?.(busy)
+    return () => onBusyChange?.(false)
+  }, [busy, onBusyChange])
 
   async function rememberLikenessOffer() {
     if (!likenessOffer || savingLikeness) return
@@ -185,11 +195,14 @@ export function EditMode({
       className="fixed inset-0 z-[80] flex h-[100dvh] flex-col bg-[#0D0E10]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none"
     >
       <header className="flex shrink-0 items-center justify-between px-5 py-3.5">
-        <p id="edit-mode-title" className="text-[11px] uppercase tracking-[0.22em] text-white/80">Edit with Maya</p>
+        <p id="edit-mode-title" className="text-[11px] uppercase tracking-[0.22em] text-white/80">
+          Edit with Maya
+        </p>
         <button
           ref={initialFocusRef}
           type="button"
-          onClick={onClose}
+          onClick={closeWhenIdle}
+          disabled={busy}
           className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.18em] text-white/80 hover:text-white"
         >
           Done
@@ -208,7 +221,10 @@ export function EditMode({
             className="max-h-full max-w-full rounded-[6px] object-contain"
           />
           {busy && (
-            <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#0D0E10]/40">
+            <div
+              role="status"
+              className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#0D0E10]/40"
+            >
               <Spinner className="h-8 w-8 border-white/40 border-t-white" />
               <p className="text-[11px] uppercase tracking-[0.22em] text-white/80">
                 Making your change…
@@ -219,7 +235,11 @@ export function EditMode({
 
         {/* Edit panel - pinned right on desktop, below (scrollable) on mobile. Always reachable. */}
         <div className="max-h-[55dvh] shrink-0 space-y-4 overflow-y-auto border-t border-white/10 bg-[#0D0E10]/85 p-5 md:max-h-none md:w-[340px] md:border-l md:border-t-0">
-          {error && <p role="alert" className="text-[12px] text-white/80">{error}</p>}
+          {error && (
+            <p role="alert" className="text-[12px] text-white/80">
+              {error}
+            </p>
+          )}
 
           {likenessMessage && (
             <div className="rounded-[4px] border border-white/20 bg-white/10 px-3 py-2.5">

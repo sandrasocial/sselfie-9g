@@ -54,6 +54,8 @@ export async function saveActiveDraft(
           snapshot = EXCLUDED.snapshot,
           updated_at = now(),
           cleared_at = NULL
+      WHERE COALESCE((EXCLUDED.snapshot ->> 'savedAt')::bigint, 0) >=
+            COALESCE((app_v3_maya_drafts.snapshot ->> 'savedAt')::bigint, 0)
   `
 }
 

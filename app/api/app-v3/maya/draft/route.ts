@@ -23,7 +23,7 @@ export async function GET() {
     return NextResponse.json({ draft })
   } catch (error) {
     console.error("[app-v3 maya draft] load failed:", error)
-    return NextResponse.json({ draft: null })
+    return NextResponse.json({ error: "Could not load draft" }, { status: 500 })
   }
 }
 

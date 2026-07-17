@@ -533,7 +533,8 @@ describe("retired Text Studio surface (Sandra's 2026-07-05 direction)", () => {
     expect(card).not.toContain("TextOverlayLayer")
     expect(card).not.toContain("downloadImageWithOverlay")
     expect(card).toContain("Maya&apos;s suggested text")
-    expect(card).toContain("navigator.clipboard?.writeText(suggestedText)")
+    expect(card).toContain("await navigator.clipboard.writeText(suggestedText)")
+    expect(card).toContain("Copy did not work. Press and hold the text to copy it.")
     // A baked render wins the card view and the download; the clean base stays kept.
     expect(card).toContain("firstBaked ?? images[0]")
     expect(card).toContain("const started = await initiateAssetDownload(")
