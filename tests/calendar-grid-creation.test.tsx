@@ -87,7 +87,7 @@ describe("Calendar grid creation", () => {
     global.fetch = mocks.fetch as unknown as typeof fetch
   })
 
-  it("makes Maya the primary no-grid path and routes into her drafted month", async () => {
+  it("opens an Instagram-style empty canvas and lets Maya build the first grid", async () => {
     mocks.swrData.set("/api/feed/latest", { exists: false })
     mocks.fetch.mockResolvedValueOnce({
       ok: true,
@@ -98,10 +98,11 @@ describe("Calendar grid creation", () => {
 
     render(<FeedViewScreen access={{ isMembership: true } as any} />)
 
-    expect(screen.getByRole("button", { name: /plan with maya/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /start blank/i })).toBeInTheDocument()
+    expect(screen.getByRole("region", { name: /instagram grid/i })).toBeInTheDocument()
+    expect(screen.getAllByRole("button", { name: /add photo to post/i })).toHaveLength(9)
+    expect(screen.queryByRole("button", { name: /start blank/i })).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: /plan with maya/i }))
+    fireEvent.click(screen.getByRole("button", { name: /build my grid with maya/i }))
 
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(
@@ -112,7 +113,7 @@ describe("Calendar grid creation", () => {
     })
   })
 
-  it("lets a no-grid member deliberately start with a blank grid", async () => {
+  it("creates a manual grid by touching the empty Instagram canvas", async () => {
     mocks.swrData.set("/api/feed/latest", { exists: false })
     mocks.fetch.mockResolvedValueOnce({
       ok: true,
@@ -123,30 +124,29 @@ describe("Calendar grid creation", () => {
 
     render(<FeedViewScreen access={{ isMembership: true } as any} />)
 
-    fireEvent.click(screen.getByRole("button", { name: /start blank/i }))
-    fireEvent.click(screen.getByRole("button", { name: /confirm grid style/i }))
+    fireEvent.click(screen.getByRole("button", { name: /add photo to post 1/i }))
 
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(
         "/api/feed/create-manual",
-        expect.objectContaining({ method: "POST" })
+        expect.objectContaining({ method: "POST", body: "{}" })
       )
-      expect(mocks.navigateToFeed).toHaveBeenCalledWith(102)
+      expect(mocks.navigateToFeed).toHaveBeenCalledWith(102, { openPosition: 1 })
     })
   })
 
-  it("offers the Maya path to paid-blueprint users instead of forcing a blank grid", async () => {
+  it("gives paid-blueprint users the same grid-first entry", async () => {
     mocks.swrData.set("/api/feed/latest", { exists: false })
 
     const { default: FeedViewScreen } = await import("@/components/feed-planner/feed-view-screen")
 
     render(<FeedViewScreen access={{ isPaidBlueprint: true } as any} />)
 
-    expect(screen.getByRole("button", { name: /plan with maya/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /start blank/i })).toBeInTheDocument()
+    expect(screen.getByRole("region", { name: /instagram grid/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /build my grid with maya/i })).toBeInTheDocument()
   })
 
-  it("shows paid Calendar workspaces without hiding the grid switcher", async () => {
+  it("keeps the grid primary and moves planning into a secondary view", async () => {
     mocks.swrData.set("/api/feed/list", {
       feeds: [
         {
@@ -172,20 +172,23 @@ describe("Calendar grid creation", () => {
 
     render(
       <FeedTabs
-        activeTab="plan"
+        activeTab="grid"
         onTabChange={onTabChange}
         access={{ isMembership: true } as any}
         currentFeedId={7}
       />
     )
 
-    expect(screen.getByRole("button", { name: "Plan" })).toHaveAttribute("aria-pressed", "true")
-    expect(screen.getByRole("button", { name: "Grid" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Profile" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Grid view" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
+    expect(screen.getByRole("button", { name: "Calendar view" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Profile" })).not.toBeInTheDocument()
     expect(screen.getByRole("group", { name: "Choose a grid" })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: "Profile" }))
-    expect(onTabChange).toHaveBeenCalledWith("profile")
+    fireEvent.click(screen.getByRole("button", { name: "Calendar view" }))
+    expect(onTabChange).toHaveBeenCalledWith("plan")
   })
 
   it("turns the paid welcome guide create action into a grid-creation action", async () => {

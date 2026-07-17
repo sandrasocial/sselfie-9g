@@ -37,7 +37,10 @@ describe("Calendar UI trust repairs", () => {
     const tabs = read("components/feed-planner/feed-tabs.tsx")
 
     expect(tabs).toContain("min-h-11")
-    expect(tabs).toContain("aria-pressed={activeTab === tab}")
+    expect(tabs).toContain('aria-label="Grid view"')
+    expect(tabs).toContain('aria-label="Calendar view"')
+    expect(tabs).toContain('aria-pressed={activeTab === "grid"}')
+    expect(tabs).not.toContain('["plan", "grid", "profile"]')
   })
 
   it("uses the light-surface Maya toggle inside Calendar", () => {
@@ -58,13 +61,16 @@ describe("Calendar UI trust repairs", () => {
     expect(modal).toContain("aria-pressed={isSelected}")
   })
 
-  it("waits for an explicit member choice before Maya drafts a month", () => {
+  it("opens on an editable Instagram canvas without a mode-choice gate", () => {
     const client = read("app/feed-planner/feed-planner-client.tsx")
     const entry = read("components/feed-planner/feed-view-screen.tsx")
 
     expect(client).not.toContain("autoDraftFiredRef")
     expect(entry).toContain("handlePlanWithMaya")
     expect(entry).toContain('"/api/app-v3/maya/feed-plan/draft"')
-    expect(entry).toContain("Start blank")
+    expect(entry).toContain("CalendarEmptyCanvas")
+    expect(entry).toContain("CalendarMayaWorkspace")
+    expect(entry).toContain("handleQuickManualGrid")
+    expect(entry).not.toContain("Start blank")
   })
 })

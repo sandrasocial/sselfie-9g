@@ -29,7 +29,14 @@ import type { AppV3Section } from "@/lib/app-v3/navigation"
 import { buildStoredSectionHref, readStoredAppSection, saveStoredAppSection } from "./continuity"
 import { intentForFormat } from "@/lib/app-v3/maya/intent-router"
 import { PostSuccessReviewPrompt } from "@/components/testimonials/post-success-review-prompt"
-import { CalendarDays, Images, PlusCircle, UserRound, LibraryBig, type LucideIcon } from "lucide-react"
+import {
+  CalendarDays,
+  Images,
+  PlusCircle,
+  UserRound,
+  LibraryBig,
+  type LucideIcon,
+} from "lucide-react"
 
 export interface AppV3ShellProps {
   firstName?: string | null
@@ -341,7 +348,7 @@ function ShellInner({
           onOpenCalendar={() => goToSection("calendar")}
         />
       )}
-      {!limited && <MayaFloatingLauncher />}
+      {!limited && section !== "calendar" && <MayaFloatingLauncher />}
       <PostSuccessReviewPrompt />
 
       {/* Bottom product navigation (text-only, on-brand, thumb-friendly for a phone-first audience) */}

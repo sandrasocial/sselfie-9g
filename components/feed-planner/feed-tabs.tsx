@@ -6,6 +6,7 @@ import useSWR from "swr"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { useFeedNav } from "./feed-nav-context"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import { CalendarDays, Grid3X3 } from "lucide-react"
 
 export type FeedTab = "plan" | "grid" | "profile" | "posts" | "captions" | "strategy" | "pillars"
 
@@ -58,8 +59,8 @@ const fetcher = (url: string) => fetch(url, { credentials: "include" }).then(r =
 
 export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId }: FeedTabsProps) {
   // For free users: Grid - Captions - Strategy - Ideas (all unchanged, out of scope here).
-  // Paid/membership uses two distinct navigation levels: Plan / Grid / Profile switches the
-  // current workspace, while the smaller grid switcher changes which saved month is open.
+  // Paid/membership opens on the Instagram grid. Calendar is a secondary view and profile
+  // details stay in the Instagram header instead of becoming a separate destination.
   const isFreeUser = access?.isFree ?? false
   const showStrategyTab = isFreeUser && (access?.canGenerateStrategy ?? true)
 
@@ -92,8 +93,8 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
   useEffect(() => {
     if (isFreeUser && activeTab === "posts") {
       onTabChange("captions")
-    } else if (!isFreeUser && !(["plan", "grid", "profile"] as FeedTab[]).includes(activeTab)) {
-      onTabChange("plan")
+    } else if (!isFreeUser && !(["plan", "grid"] as FeedTab[]).includes(activeTab)) {
+      onTabChange("grid")
     }
   }, [isFreeUser, activeTab, onTabChange])
 
@@ -108,31 +109,48 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
     return (
       <div className="space-y-3 border-b border-[color:var(--app-glass-border)] px-3 py-3 sm:px-4">
         <div
+          className="flex items-center justify-end gap-1"
           role="group"
-          aria-label="Calendar workspace"
-          className="grid grid-cols-3 rounded-[10px] bg-[color:var(--app-btn-secondary-bg)] p-1"
+          aria-label="Calendar view options"
         >
-          {(["plan", "grid", "profile"] as const).map(tab => (
-            <button
-              type="button"
-              key={tab}
-              aria-pressed={activeTab === tab}
-              onClick={() => {
-                onTabChange(tab)
-                void trackAnalyticsEvent({
-                  event: "calendar_workspace_opened",
-                  properties: { workspace: tab, feedId: currentFeedId ?? null },
-                })
-              }}
-              className={`min-h-11 rounded-[8px] px-3 text-[11px] font-medium transition-all active:scale-[0.98] ${
-                activeTab === tab
-                  ? "bg-white text-[color:var(--app-text-primary)] shadow-[var(--app-shadow-soft)]"
-                  : "text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)]"
-              }`}
-            >
-              {tab === "plan" ? "Plan" : tab === "grid" ? "Grid" : "Profile"}
-            </button>
-          ))}
+          <button
+            type="button"
+            aria-label="Grid view"
+            aria-pressed={activeTab === "grid"}
+            onClick={() => {
+              onTabChange("grid")
+              void trackAnalyticsEvent({
+                event: "calendar_workspace_opened",
+                properties: { workspace: "grid", feedId: currentFeedId ?? null },
+              })
+            }}
+            className={`flex min-h-11 min-w-11 items-center justify-center rounded-[8px] border transition-colors active:scale-[0.98] ${
+              activeTab === "grid"
+                ? "border-[#0D0E10] bg-[#0D0E10] text-white"
+                : "border-[#C5C6C8] bg-white text-[#4F5052] hover:border-[#818283]"
+            }`}
+          >
+            <Grid3X3 size={18} strokeWidth={1.8} aria-hidden />
+          </button>
+          <button
+            type="button"
+            aria-label="Calendar view"
+            aria-pressed={activeTab === "plan"}
+            onClick={() => {
+              onTabChange("plan")
+              void trackAnalyticsEvent({
+                event: "calendar_workspace_opened",
+                properties: { workspace: "plan", feedId: currentFeedId ?? null },
+              })
+            }}
+            className={`flex min-h-11 min-w-11 items-center justify-center rounded-[8px] border transition-colors active:scale-[0.98] ${
+              activeTab === "plan"
+                ? "border-[#0D0E10] bg-[#0D0E10] text-white"
+                : "border-[#C5C6C8] bg-white text-[#4F5052] hover:border-[#818283]"
+            }`}
+          >
+            <CalendarDays size={18} strokeWidth={1.8} aria-hidden />
+          </button>
         </div>
 
         {plans.length >= 2 && (

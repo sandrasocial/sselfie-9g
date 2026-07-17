@@ -13,7 +13,10 @@ export interface FeedNav {
   /** The feed currently selected inside the embedded planner (null = latest). */
   feedId: number | null
   /** Switch the embedded planner to another feed without leaving /app. */
-  navigateToFeed: (feedId: number | null) => void
+  navigateToFeed: (feedId: number | null, options?: { openPosition?: number }) => void
+  /** A grid-first manual entry can create the grid and open the touched slot in one flow. */
+  pendingSlotPosition?: number | null
+  consumePendingSlot?: () => void
   /** Open Maya from the embedded calendar without leaving the Suite shell. */
   navigateToMaya?: () => void
 }

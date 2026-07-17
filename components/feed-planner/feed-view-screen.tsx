@@ -4,6 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import useSWR from "swr"
 import InstagramFeedView from "./instagram-feed-view"
+import { CalendarEmptyCanvas } from "./calendar-empty-canvas"
+import { CalendarMayaWorkspace } from "./calendar-maya-workspace"
+import type { CalendarAgentProposal } from "@/lib/feed-planner/calendar-agent"
 import { toast } from "@/hooks/use-toast"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
 import FeedStyleModal, { type FeedStyle, type FeedStyleModalData } from "./feed-style-modal"
@@ -11,7 +14,7 @@ import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { useFeedNav } from "./feed-nav-context"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 interface FeedViewScreenProps {
   feedId?: number | null
@@ -27,17 +30,27 @@ interface FeedViewScreenProps {
 
 /**
  * Feed View Screen
- * 
+ *
  * Displays a feed and opens creation through the current App v3 or standalone flow.
- * 
+ *
  * Accepts feedId as:
  * - Prop (from parent)
  * - Query parameter (?feedId=123)
- * 
+ *
  * When no feedId is provided, automatically fetches the latest feed.
  * Shows placeholder state if no feed exists.
  */
-export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp, onOpenWizard, onOpenWelcomeWizard, controlledFeedStyleModal, onFeedStyleModalChange, onFeedStyleSelected, initialFeedStyle, initialFeedStyleVariationId }: FeedViewScreenProps = {}) {
+export default function FeedViewScreen({
+  feedId: feedIdProp,
+  access: accessProp,
+  onOpenWizard,
+  onOpenWelcomeWizard,
+  controlledFeedStyleModal,
+  onFeedStyleModalChange,
+  onFeedStyleSelected,
+  initialFeedStyle,
+  initialFeedStyleVariationId,
+}: FeedViewScreenProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isCreatingManual, setIsCreatingManual] = useState(false)
@@ -48,18 +61,22 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   const didOpenCreateFirstFeedFromQuery = useRef(false)
 
   // Use controlled state if provided, otherwise use local state
-  const showFeedStyleModal = controlledFeedStyleModal !== undefined ? controlledFeedStyleModal : localFeedStyleModal
-  
-  const setShowFeedStyleModal = useCallback((open: boolean) => {
-    if (controlledFeedStyleModal !== undefined) {
-      // Parent controls the modal - notify parent
-      onFeedStyleModalChange?.(open)
-    } else {
-      // Local state - update directly
-      setLocalFeedStyleModal(open)
-    }
-  }, [controlledFeedStyleModal, onFeedStyleModalChange])
-  
+  const showFeedStyleModal =
+    controlledFeedStyleModal !== undefined ? controlledFeedStyleModal : localFeedStyleModal
+
+  const setShowFeedStyleModal = useCallback(
+    (open: boolean) => {
+      if (controlledFeedStyleModal !== undefined) {
+        // Parent controls the modal - notify parent
+        onFeedStyleModalChange?.(open)
+      } else {
+        // Local state - update directly
+        setLocalFeedStyleModal(open)
+      }
+    },
+    [controlledFeedStyleModal, onFeedStyleModalChange]
+  )
+
   // Fetch user's last feed style from personal brand
   const { data: personalBrandData } = useSWR(
     showFeedStyleModal ? "/api/profile/personal-brand" : null,
@@ -69,14 +86,14 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       dedupingInterval: 60000, // Cache for 1 minute
     }
   )
-  
+
   // Extract last feed style from settings_preference[0]
   const lastFeedStyle: FeedStyle | null = personalBrandData?.data?.settingsPreference?.[0] || null
-  
+
   // Fetch access control if not provided (for use in SselfieApp)
   const { data: accessData } = useSWR<FeedPlannerAccess>(
     accessProp ? null : "/api/feed-planner/access",
-    async (url) => {
+    async url => {
       const res = await fetch(url)
       if (!res.ok) throw new Error("Failed to fetch access control")
       return res.json()
@@ -86,14 +103,17 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       dedupingInterval: 60000, // Cache for 1 minute
     }
   )
-  
+
   // Use provided access or fetched access
   const access = accessProp || accessData
   const canPlanMonthWithMaya = Boolean(access?.isMembership || access?.isPaidBlueprint)
-  
+
   // Get feedId from embedded nav (inside /app), prop, query param, or null
   const feedNav = useFeedNav()
-  const feedIdFromQuery = feedNav?.feedId ?? feedIdProp ?? (searchParams.get('feedId') ? parseInt(searchParams.get('feedId')!, 10) : null)
+  const feedIdFromQuery =
+    feedNav?.feedId ??
+    feedIdProp ??
+    (searchParams.get("feedId") ? parseInt(searchParams.get("feedId")!, 10) : null)
   const activationAction = searchParams.get("activation") === "generate" ? "generate" : null
   const createFirstFeedParam = searchParams.get("createFirstFeed") === "1"
 
@@ -121,9 +141,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
 
   // Phase 4.1: Use standard feed endpoints (removed blueprint endpoint)
   // Use specific feedId or latest feed
-  const swrKey = feedIdFromQuery 
-    ? `/api/feed/${feedIdFromQuery}` 
-    : '/api/feed/latest'
+  const swrKey = feedIdFromQuery ? `/api/feed/${feedIdFromQuery}` : "/api/feed/latest"
 
   // Fetch feed data (handles both specific feed and latest feed)
   // Note: Polling is handled by InstagramFeedView's useFeedPolling hook, not here
@@ -133,15 +151,11 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     isLoading,
     isValidating: isFeedValidating,
     mutate: mutateFeed,
-  } = useSWR(
-    swrKey,
-    fetcher,
-    {
-      refreshInterval: 0, // No polling here - InstagramFeedView handles it
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
-    }
-  )
+  } = useSWR(swrKey, fetcher, {
+    refreshInterval: 0, // No polling here - InstagramFeedView handles it
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+  })
 
   // Normalize a legacy redirected response to its full feed.
   useEffect(() => {
@@ -168,15 +182,11 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   const feedExists = feedData?.exists !== false && (feedData?.feed || feedData?.posts)
 
   // Fetch feed list for selector (only if we have a feed)
-  const { mutate: mutateFeedList } = useSWR(
-    feedExists ? '/api/feed/list' : null,
-    fetcher,
-    {
-      revalidateOnFocus: true, // Revalidate when tab becomes visible
-      revalidateOnReconnect: true, // Revalidate on reconnect
-      refreshInterval: 0, // Don't auto-poll, but allow manual refresh
-    }
-  )
+  const { mutate: mutateFeedList } = useSWR(feedExists ? "/api/feed/list" : null, fetcher, {
+    revalidateOnFocus: true, // Revalidate when tab becomes visible
+    revalidateOnReconnect: true, // Revalidate on reconnect
+    refreshInterval: 0, // Don't auto-poll, but allow manual refresh
+  })
 
   // Revalidate feed list when feedId changes (e.g., after creating new feed)
   useEffect(() => {
@@ -202,12 +212,12 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
         !isExpandingFeed
       ) {
         setIsExpandingFeed(true)
-        console.log('[FEED EXPANSION] Paid user has only 1 post, expanding...')
+        console.log("[FEED EXPANSION] Paid user has only 1 post, expanding...")
 
         try {
-          const response = await fetch('/api/feed/expand-for-paid', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+          const response = await fetch("/api/feed/expand-for-paid", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               feedId: feedData.feed.id,
             }),
@@ -215,7 +225,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
 
           if (response.ok) {
             const result = await response.json()
-            console.log('[FEED EXPANSION] Created positions:', result.positionsCreated)
+            console.log("[FEED EXPANSION] Created positions:", result.positionsCreated)
 
             await Promise.all([mutateFeed(), mutateFeedList?.()])
           } else {
@@ -223,7 +233,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
             throw new Error(data.error || "Failed to expand feed")
           }
         } catch (error) {
-          console.error('[FEED EXPANSION] Error:', error)
+          console.error("[FEED EXPANSION] Error:", error)
           // DRAFT copy for Sandra approval before release.
           toast({
             title: "Could not prepare your full calendar",
@@ -246,7 +256,6 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     if (feedNav?.navigateToMaya) return feedNav.navigateToMaya()
     router.push("/app?view=create")
   }
-
 
   const handlePlanWithMaya = async () => {
     if (isPlanningWithMaya) return
@@ -305,22 +314,46 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     }
   }
 
-  const handleCreateManualFeedClick = () => {
-    void trackAnalyticsEvent({ event: "calendar_mode_selected", properties: { mode: "blank" } })
-    // Show feed style modal first
-    setShowFeedStyleModal(true)
+  const handleQuickManualGrid = async (position: number) => {
+    if (isCreatingManual || isPlanningWithMaya) return
+    void trackAnalyticsEvent({ event: "calendar_mode_selected", properties: { mode: "canvas" } })
+    setIsCreatingManual(true)
+    try {
+      const response = await fetch("/api/feed/create-manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: "{}",
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok || !data.feedId) {
+        throw new Error(data.details || data.error || "Your grid could not be created.")
+      }
+      await mutateFeedList?.()
+      if (feedNav) feedNav.navigateToFeed(Number(data.feedId), { openPosition: position })
+      else router.push(`/feed-planner?feedId=${data.feedId}`)
+      toast({ title: "Your grid is ready", description: "Choose the photo for this post." })
+    } catch (error) {
+      toast({
+        title: "Could not create your grid",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCreatingManual(false)
+    }
   }
 
   const handleFeedStyleConfirm = async (modalData: FeedStyleModalData) => {
     setShowFeedStyleModal(false)
 
     setIsCreatingManual(true)
-    
+
     try {
-      const response = await fetch('/api/feed/create-manual', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const response = await fetch("/api/feed/create-manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           feedStyle: modalData.feedStyle,
           feedStyleVariationId: modalData.feedStyleVariationId,
@@ -328,17 +361,17 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       })
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Failed to create feed' }))
-        throw new Error(error.error || 'Failed to create feed')
+        const error = await response.json().catch(() => ({ error: "Failed to create feed" }))
+        throw new Error(error.error || "Failed to create feed")
       }
 
       const data = await response.json()
-      
+
       // Invalidate feed list cache so selector appears immediately
       if (mutateFeedList) {
         await mutateFeedList()
       }
-      
+
       // Navigate to the new feed (in place when embedded in /app)
       if (feedNav) feedNav.navigateToFeed(data.feedId)
       else router.push(`/feed-planner?feedId=${data.feedId}`)
@@ -354,7 +387,8 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       console.error("[v0] Error creating manual feed:", error)
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create feed. Please try again.",
+        description:
+          error instanceof Error ? error.message : "Failed to create feed. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -365,7 +399,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   const feedStyleModal = (
     <FeedStyleModal
       open={showFeedStyleModal}
-      onOpenChange={(open) => {
+      onOpenChange={open => {
         setShowFeedStyleModal(open)
         onFeedStyleModalChange?.(open)
       }}
@@ -414,77 +448,29 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   if (!feedExists || (!feedIdFromQuery && feedData?.exists === false)) {
     return (
       <>
-      <div className="app-light-panel-text flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
-        {/* One Calendar, two entry paths: Maya-led by default or a deliberate blank grid. */}
-        <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-4 sm:p-6 md:p-12">
-          <div className="w-full max-w-xl space-y-6 rounded-[22px] border border-[color:var(--app-glass-border)] bg-[rgba(255,255,255,0.82)] p-5 shadow-[0_24px_70px_rgba(61,56,48,0.10)] backdrop-blur-[18px] sm:p-7">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)]">
-                <span className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--app-text-secondary)]">Month</span>
-              </div>
-              <div className="grid w-[112px] shrink-0 grid-cols-3 gap-1" aria-hidden="true">
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className={`aspect-square rounded-[4px] ${index === 1 || index === 5 ? "bg-[color:var(--app-text-muted)]" : "bg-[color:var(--app-btn-secondary-bg)]"}`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2 text-left">
-              <h2
-                className="font-serif text-2xl font-light leading-tight text-[color:var(--app-text-primary)] sm:text-[28px]"
-                style={{ fontFamily: "'Cormorant Garamond', serif" }}
-              >
-                Choose how to build your month
-              </h2>
-              <p className="max-w-[48ch] text-sm leading-relaxed text-[color:var(--app-text-secondary)]">
-                Let Maya plan the strongest starting point, or keep the grid completely blank and build it yourself.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() => void handlePlanWithMaya()}
-                disabled={isPlanningWithMaya || isCreatingManual}
-                aria-busy={isPlanningWithMaya}
-                className="group w-full rounded-[14px] border border-[color:var(--app-btn-primary-bg)] bg-[color:var(--app-btn-primary-bg)] px-5 py-4 text-left text-[color:var(--app-btn-primary-text)] transition-transform active:scale-[0.99] disabled:cursor-wait disabled:opacity-60"
-              >
-                <span className="flex items-center justify-between gap-4">
-                  <span>
-                    <span className="block text-sm font-medium">
-                      {isPlanningWithMaya ? "Planning your month..." : canPlanMonthWithMaya ? "Plan with Maya" : "Create with Maya"}
-                    </span>
-                    <span className="mt-1 block text-xs leading-relaxed text-white/70">
-                      {canPlanMonthWithMaya
-                        ? "Personalized themes, dates and ready captions. You choose which photos to create."
-                        : "Make your first photo with Maya, then bring it into your grid."}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-lg font-light" aria-hidden="true">→</span>
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleCreateManualFeedClick}
-                disabled={isCreatingManual || isPlanningWithMaya}
-                className="w-full rounded-[14px] border border-[color:var(--app-glass-border)] bg-white px-5 py-4 text-left transition-colors hover:border-[color:var(--app-text-muted)] active:scale-[0.99] disabled:cursor-wait disabled:opacity-60"
-              >
-                <span className="block text-sm font-medium text-[color:var(--app-text-primary)]">
-                  {isCreatingManual ? "Creating your grid..." : "Start blank"}
-                </span>
-                <span className="mt-1 block text-xs leading-relaxed text-[color:var(--app-text-secondary)]">
-                  Pick a visual style, then add your own photos. Maya can help whenever you ask.
-                </span>
-              </button>
-            </div>
+        <div className="app-light-panel-text min-h-0 flex-1 overflow-y-auto bg-[color:var(--app-bg)] px-0 py-3 sm:px-4 lg:px-6">
+          <div className="mx-auto grid w-full max-w-[1380px] min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
+            <CalendarEmptyCanvas
+              onAddPhoto={position => void handleQuickManualGrid(position)}
+              busy={isCreatingManual || isPlanningWithMaya}
+            />
+            <CalendarMayaWorkspace
+              feedId={null}
+              selectedPost={null}
+              feedSummary={null}
+              busy={isCreatingManual || isPlanningWithMaya}
+              onBuildFirstGrid={handlePlanWithMaya}
+              onApplyProposal={async (proposal: CalendarAgentProposal) => {
+                if (proposal.kind !== "create_plan")
+                  throw new Error("Create your grid first, then I can change it.")
+                await handlePlanWithMaya()
+                return { undoAvailable: false }
+              }}
+              onUndo={async () => {}}
+            />
           </div>
         </div>
-      </div>
-      {feedStyleModal}
+        {feedStyleModal}
       </>
     )
   }
@@ -496,7 +482,9 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       <div className="app-light-panel-text flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--app-bg)]">
         <div className="flex min-h-[400px] items-center justify-center p-4">
           <div className="text-center space-y-4">
-            <p className="text-sm text-[color:var(--app-text-secondary)]">Unable to determine feed ID.</p>
+            <p className="text-sm text-[color:var(--app-text-secondary)]">
+              Unable to determine feed ID.
+            </p>
             <button
               onClick={handleBackToMaya}
               className="mx-auto flex items-center gap-2 text-sm text-[color:var(--app-text-secondary)] underline hover:text-[color:var(--app-text-primary)]"

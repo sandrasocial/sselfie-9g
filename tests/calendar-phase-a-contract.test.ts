@@ -62,7 +62,9 @@ describe("Calendar Phase A operational contracts", () => {
     expect(queue).toContain("chargeCredits?: boolean")
     expect(queue).toContain("if (chargeCredits)")
     expect(queue).toContain("pregenerated_at = NOW()")
-    expect(queue).toContain("Keep the established manual path independent of the dark-release migration")
+    expect(queue).toContain(
+      "Keep the established manual path independent of the dark-release migration"
+    )
     expect(deliveredMonth).toContain("chargeCredits: false")
     expect(deliveredMonth).toContain("markPregenerated: true")
     expect(deliveredMonth).toContain("forceProMode: true")
@@ -90,13 +92,15 @@ describe("Calendar Phase A operational contracts", () => {
     expect(deliveredMonth).toContain("fl.period_month = ${periodMonth}")
     expect(deliveredMonth).toContain("pending.post_type = 'selfie'")
     expect(deliveredMonth).toContain("pending.scheduled_at::date < CURRENT_DATE + 7")
-    expect(deliveredMonth).toContain("uai.image_type IN ('selfie', 'side-profile', 'three-quarter', 'full-body')")
+    expect(deliveredMonth).toContain(
+      "uai.image_type IN ('selfie', 'side-profile', 'three-quarter', 'full-body')"
+    )
     expect(deliveredMonth).toContain("selfie_visibility_bundle_pass")
     expect(deliveredMonth).not.toContain("one_time_session")
     expect(migration).toContain("ADD COLUMN IF NOT EXISTS pregenerated BOOLEAN")
   })
 
-  it("keeps the compact Today outcome available only through the dark endpoint", () => {
+  it("keeps the compact Today outcome available through its gated endpoint, not as the Calendar front door", () => {
     const endpoint = read("app/api/feed-planner/today/route.ts")
     const strip = read("components/app-v3/calendar-today-strip.tsx")
     const view = read("components/app-v3/feed-planner-view.tsx")
@@ -106,7 +110,8 @@ describe("Calendar Phase A operational contracts", () => {
     expect(strip).toContain('"Download"')
     expect(strip).toContain('"Copy caption"')
     expect(strip).toContain('"Mark as posted"')
-    expect(view).toContain("<CalendarTodayStrip />")
+    expect(view).not.toContain("<CalendarTodayStrip />")
+    expect(view).toContain("The Instagram canvas is the Calendar front door")
   })
 
   it("records the real calendar outcome after an owned post is marked posted", () => {

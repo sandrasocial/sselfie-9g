@@ -3,10 +3,9 @@
 import fs from "node:fs"
 import path from "node:path"
 import React from "react"
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { CalendarExplainer } from "@/components/app-v3/feed-planner-view"
 import FeedWeekView from "@/components/feed-planner/feed-week-view"
 
 const repoRoot = process.cwd()
@@ -15,18 +14,12 @@ const read = (file: string) => fs.readFileSync(path.join(repoRoot, file), "utf8"
 afterEach(() => cleanup())
 
 describe("Calendar mobile hierarchy", () => {
-  it("keeps first-run guidance compact until the user asks for the steps", () => {
-    const onDismiss = vi.fn()
-    render(<CalendarExplainer onDismiss={onDismiss} />)
+  it("opens directly on the workspace without a first-run explainer gate", () => {
+    const plannerView = read("components/app-v3/feed-planner-view.tsx")
 
-    expect(screen.getByRole("heading", { name: "Your month, ready to create" })).toBeTruthy()
-    expect(screen.queryByText(/Maya drafts your month/)).toBeNull()
-
-    fireEvent.click(screen.getByRole("button", { name: "How Calendar works" }))
-    expect(screen.getByText(/Maya drafts your month/)).toBeTruthy()
-
-    fireEvent.click(screen.getByRole("button", { name: "Got it" }))
-    expect(onDismiss).toHaveBeenCalledTimes(1)
+    expect(plannerView).not.toContain("CalendarExplainer")
+    expect(plannerView).not.toContain("calendar:onboarding:v1")
+    expect(plannerView).toContain("<FeedPlannerClient />")
   })
 
   it("names undated posts honestly and gives every row a useful label", () => {
@@ -61,8 +54,10 @@ describe("Calendar mobile hierarchy", () => {
     expect(tabs).toContain('aria-label="Choose a grid"')
     expect(tabs).toContain("min-h-11")
 
-    expect(tabs).toContain('aria-label="Calendar workspace"')
-    expect(tabs).toContain('["plan", "grid", "profile"]')
+    expect(tabs).toContain('aria-label="Grid view"')
+    expect(tabs).toContain('aria-label="Calendar view"')
+    expect(tabs).not.toContain('["plan", "grid", "profile"]')
     expect(planner).toContain("rounded-none")
+    expect(planner).toContain('useState<FeedTab>("grid")')
   })
 })

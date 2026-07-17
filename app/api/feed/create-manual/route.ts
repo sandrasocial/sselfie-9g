@@ -10,7 +10,7 @@ import {
 
 /**
  * Create Manual Feed
- * 
+ *
  * Creates an empty feed with 9 placeholder posts that can be filled manually.
  * User can upload images or select from gallery, then add captions.
  */
@@ -66,7 +66,7 @@ async function handleCreateManualFeed({
         return value.length > 0 ? value : null
       }
       // If single string, convert to array
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         return [value]
       }
       return null
@@ -76,23 +76,26 @@ async function handleCreateManualFeed({
     fashionStyle = prepareJsonbArray(fashionStyle)
 
     let personalBrandVariationId: number | null = null
+    let personalBrand: Record<string, unknown> | null = null
     if (!feedStyle || !requestedVariationId) {
-      const [personalBrand] = await sql`
+      const [personalBrandRow] = await sql`
         SELECT settings_preference, feed_style_variation_id
         FROM user_personal_brand
         WHERE user_id = ${user.id}
         ORDER BY updated_at DESC
         LIMIT 1
       `
+      personalBrand = (personalBrandRow as Record<string, unknown> | undefined) ?? null
       const settingsPreference = personalBrand?.settings_preference
       personalBrandVariationId = personalBrand?.feed_style_variation_id
         ? Number(personalBrand.feed_style_variation_id)
         : null
       if (!feedStyle && settingsPreference) {
         try {
-          const settings = typeof settingsPreference === "string"
-            ? JSON.parse(settingsPreference)
-            : settingsPreference
+          const settings =
+            typeof settingsPreference === "string"
+              ? JSON.parse(settingsPreference)
+              : settingsPreference
           if (Array.isArray(settings) && settings.length > 0) {
             const rawStyle = settings[0]?.trim?.() || null
             feedStyle = rawStyle
@@ -104,12 +107,17 @@ async function handleCreateManualFeed({
     }
 
     if (!feedStyle) {
-      return NextResponse.json(
-        { error: "FEED_STYLE_REQUIRED", details: "Feed style is required to create a feed." },
-        { status: 422 }
-      )
+      // Grid-first Calendar: touching an empty Instagram slot creates a usable manual grid
+      // immediately. Resolve the best existing curated world from her saved context instead
+      // of forcing a style-picker ceremony before she can add her own photo.
+      const { resolveFeedStyleForUser } = await import("@/lib/feed-planner/resolve-feed-style")
+      const resolved = await resolveFeedStyleForUser(personalBrand, user.id)
+      feedStyle = resolved.feedStyle
+      if (requestedVariationId === undefined) {
+        requestedVariationId = resolved.variationId
+      }
     }
-    
+
     // Log feed-specific style selections that will be persisted
     if (visualAesthetic) {
       console.log(`[v0] Feed will be created with feed-specific visualAesthetic:`, visualAesthetic)
@@ -135,11 +143,15 @@ async function handleCreateManualFeed({
         // User provided a specific variation ID - use it
         const variation = await getFeedStyleVariationById(requestedVariationId)
         if (!variation || !variation.enabled || variation.feed_style_id !== style.id) {
-          console.warn(`[v0] Invalid variationId=${requestedVariationId} for styleId=${style.id}, falling back to default`)
+          console.warn(
+            `[v0] Invalid variationId=${requestedVariationId} for styleId=${style.id}, falling back to default`
+          )
           feedStyleVariationIdToStore = await getDefaultVariationId(style.id)
         } else {
           feedStyleVariationIdToStore = variation.id
-          console.log(`[v0] Using requested variationId=${feedStyleVariationIdToStore} for styleId=${style.id}`)
+          console.log(
+            `[v0] Using requested variationId=${feedStyleVariationIdToStore} for styleId=${style.id}`
+          )
         }
       } else if (requestedVariationId === null) {
         // User explicitly selected null (no variation) - use default
@@ -163,7 +175,7 @@ async function handleCreateManualFeed({
     // Try with created_by field first, fallback if field doesn't exist
     let feedResult: any[]
     try {
-      feedResult = await sql`
+      feedResult = (await sql`
         INSERT INTO feed_layouts (
           user_id,
           brand_name,
@@ -191,19 +203,19 @@ async function handleCreateManualFeed({
           'manual'
         )
         RETURNING *
-      ` as any[]
+      `) as any[]
     } catch (error: any) {
       // If created_by, visual_aesthetic, or fashion_style fields don't exist, try without them
       if (
-        error?.message?.includes('created_by') ||
-        error?.message?.includes('visual_aesthetic') ||
-        error?.message?.includes('fashion_style') ||
-        error?.message?.includes('feed_style_variation_id') ||
-        error?.code === '42703'
+        error?.message?.includes("created_by") ||
+        error?.message?.includes("visual_aesthetic") ||
+        error?.message?.includes("fashion_style") ||
+        error?.message?.includes("feed_style_variation_id") ||
+        error?.code === "42703"
       ) {
         console.log("[v0] New columns not found, trying without visual_aesthetic/fashion_style")
         try {
-          feedResult = await sql`
+          feedResult = (await sql`
             INSERT INTO feed_layouts (
               user_id,
               brand_name,
@@ -227,12 +239,12 @@ async function handleCreateManualFeed({
               'manual'
             )
             RETURNING *
-          ` as any[]
+          `) as any[]
         } catch (error2: any) {
           // If created_by also doesn't exist, try without it
-          if (error2?.message?.includes('created_by') || error2?.code === '42703') {
+          if (error2?.message?.includes("created_by") || error2?.code === "42703") {
             console.log("[v0] created_by field not found, creating feed without it")
-            feedResult = await sql`
+            feedResult = (await sql`
               INSERT INTO feed_layouts (
                 user_id,
                 brand_name,
@@ -254,7 +266,7 @@ async function handleCreateManualFeed({
                 ${feedStyleVariationIdToStore}
               )
               RETURNING *
-            ` as any[]
+            `) as any[]
           } else {
             throw error2
           }
@@ -270,18 +282,24 @@ async function handleCreateManualFeed({
 
     const feedLayout = feedResult[0]
     const feedId = feedLayout.id
-    
+
     // Verify the stored values match what we intended
     const storedVariationId = feedLayout.feed_style_variation_id
     const storedFeedStyle = feedLayout.feed_style
-    console.log(`[v0] Created manual feed ${feedId}: feedStyle=${storedFeedStyle} (requested: ${feedStyle}), variationId=${storedVariationId} (requested: ${feedStyleVariationIdToStore})`)
-    
+    console.log(
+      `[v0] Created manual feed ${feedId}: feedStyle=${storedFeedStyle} (requested: ${feedStyle}), variationId=${storedVariationId} (requested: ${feedStyleVariationIdToStore})`
+    )
+
     // Validation: Ensure stored values match requested
     if (storedFeedStyle !== feedStyle) {
-      console.error(`[v0] ⚠️ Feed style mismatch! Stored: ${storedFeedStyle}, Requested: ${feedStyle}`)
+      console.error(
+        `[v0] ⚠️ Feed style mismatch! Stored: ${storedFeedStyle}, Requested: ${feedStyle}`
+      )
     }
     if (storedVariationId !== feedStyleVariationIdToStore) {
-      console.error(`[v0] ⚠️ Variation ID mismatch! Stored: ${storedVariationId}, Requested: ${feedStyleVariationIdToStore}`)
+      console.error(
+        `[v0] ⚠️ Variation ID mismatch! Stored: ${storedVariationId}, Requested: ${feedStyleVariationIdToStore}`
+      )
     }
 
     // Create 9 empty posts (position 1-9) for 3x3 grid.
@@ -296,7 +314,7 @@ async function handleCreateManualFeed({
       CURATED_FEED_STYLE_MAP["Dark & Moody"].grid
     const posts = []
     for (let position = 1; position <= 9; position++) {
-      const postResult = await sql`
+      const postResult = (await sql`
         INSERT INTO feed_posts (
           feed_layout_id,
           user_id,
@@ -320,7 +338,7 @@ async function handleCreateManualFeed({
           NULL
         )
         RETURNING *
-      ` as any[]
+      `) as any[]
 
       if (postResult.length > 0) {
         posts.push(postResult[0])
@@ -330,7 +348,9 @@ async function handleCreateManualFeed({
     // Prompts will be generated on-demand when user clicks to generate each image
     // This is simpler and more reliable than pre-generation
 
-    console.log(`[v0] Created full feed ${feedId} with ${posts.length} empty posts for user ${user.id} (layout_type: grid_3x3)`)
+    console.log(
+      `[v0] Created full feed ${feedId} with ${posts.length} empty posts for user ${user.id} (layout_type: grid_3x3)`
+    )
 
     // Keep Maya in sync with the picker: a style chosen here becomes her preferred style
     // world (chat context, scene templates, next month's auto-draft). The new feed already
@@ -358,27 +378,28 @@ async function handleCreateManualFeed({
       details: error?.details,
       cause: error?.cause,
     })
-    
+
     // Return more specific error message
     const errorMessage = error?.message || "Internal server error"
-    const isDatabaseError = error?.code?.startsWith('42') || error?.code?.startsWith('23') || error?.code?.startsWith('P')
-    
+    const isDatabaseError =
+      error?.code?.startsWith("42") || error?.code?.startsWith("23") || error?.code?.startsWith("P")
+
     // For database errors, provide more context
     if (isDatabaseError) {
       return NextResponse.json(
-        { 
-          error: "Database error", 
+        {
+          error: "Database error",
           details: errorMessage,
           code: error?.code,
         },
         { status: 500 }
       )
     }
-    
+
     return NextResponse.json(
-      { 
-        error: "Internal server error", 
-        details: errorMessage 
+      {
+        error: "Internal server error",
+        details: errorMessage,
       },
       { status: 500 }
     )

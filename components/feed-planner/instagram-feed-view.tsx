@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import type React from "react"
 import { toast } from "@/hooks/use-toast"
 import useSWR from "swr"
@@ -22,6 +22,9 @@ import FeedModals from "./feed-modals"
 import FeedLoadingOverlay from "./feed-loading-overlay"
 import FeedHighlightsModal from "./feed-highlights-modal"
 import FeedSinglePlaceholder from "./feed-single-placeholder"
+import { CalendarMayaWorkspace } from "./calendar-maya-workspace"
+import type { CalendarAgentProposal } from "@/lib/feed-planner/calendar-agent"
+import { useFeedNav } from "./feed-nav-context"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getBrandColorThemeColors } from "@/lib/style-presets"
 import {
@@ -31,7 +34,7 @@ import {
   writeMayaProModePreference,
 } from "@/lib/maya/mode-storage"
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 const feedPlannerShellClass = "mx-auto w-full max-w-none md:max-w-[935px]"
 const feedPlannerCanvasClass = `${feedPlannerShellClass} app-light-panel-text overflow-hidden rounded-none border-y border-[color:var(--app-glass-border)] bg-white shadow-none sm:rounded-[20px] sm:border sm:bg-[rgba(255,255,255,0.72)] sm:shadow-[0_24px_70px_rgba(61,56,48,0.10)] sm:backdrop-blur-[20px]`
@@ -57,24 +60,34 @@ export default function InstagramFeedView({
   activationAction = null,
 }: InstagramFeedViewProps) {
   // Use custom hooks for all complex logic
-  const { feedData, feedError, mutate, isLoading: isFeedLoading, isValidating, isTakingLonger } = useFeedPolling(feedId)
-  const { selectedPost, setSelectedPost, showGallery, setShowGallery, showProfileGallery, setShowProfileGallery } = useFeedModals()
-  
+  const {
+    feedData,
+    feedError,
+    mutate,
+    isLoading: isFeedLoading,
+    isValidating,
+    isTakingLonger,
+  } = useFeedPolling(feedId)
+  const {
+    selectedPost,
+    setSelectedPost,
+    showGallery,
+    setShowGallery,
+    showProfileGallery,
+    setShowProfileGallery,
+  } = useFeedModals()
+
   // Removed excessive console.log statements that were causing performance issues during polling
 
-  const [activeTab, setActiveTab] = useState<FeedTab>(() => access?.isFree ? "grid" : "plan")
+  const [activeTab, setActiveTab] = useState<FeedTab>("grid")
   const [businessType, setBusinessType] = useState<string | undefined>(undefined)
   const [showBioModal, setShowBioModal] = useState(false)
-  
+
   // Fetch business type from blueprint_subscribers for free users (caption templates)
-  const { data: blueprintState } = useSWR(
-    access?.isFree ? "/api/blueprint/state" : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 60000, // Cache for 1 minute
-    }
-  )
+  const { data: blueprintState } = useSWR(access?.isFree ? "/api/blueprint/state" : null, fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000, // Cache for 1 minute
+  })
 
   // Extract business type from blueprint state
   useEffect(() => {
@@ -86,9 +99,20 @@ export default function InstagramFeedView({
   const [isSavingBio, setIsSavingBio] = useState(false)
   const [showHighlightsModal, setShowHighlightsModal] = useState(false)
   const [brandColors, setBrandColors] = useState<string[]>([])
+  const calendarUndoRef = useRef<(() => Promise<void>) | null>(null)
+  const feedNav = useFeedNav()
   const [generationMode, setGenerationMode] = useState<"classic" | "pro">(() => {
     return readMayaProModePreference() ? "pro" : "classic"
   })
+
+  useEffect(() => {
+    const pendingPosition = feedNav?.pendingSlotPosition
+    const posts = Array.isArray(feedData?.posts) ? feedData.posts : []
+    if (!pendingPosition || posts.length === 0) return
+    const index = posts.findIndex((post: any) => Number(post.position) === pendingPosition)
+    if (index >= 0) setShowGallery(index)
+    feedNav?.consumePendingSlot?.()
+  }, [feedData?.posts, feedNav, setShowGallery])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -116,12 +140,14 @@ export default function InstagramFeedView({
     setGenerationMode(nextMode)
     if (typeof window !== "undefined") {
       writeMayaProModePreference(nextMode === "pro")
-      window.dispatchEvent(new CustomEvent("feedPlannerModeChanged", { detail: { mode: nextMode === "pro" } }))
+      window.dispatchEvent(
+        new CustomEvent("feedPlannerModeChanged", { detail: { mode: nextMode === "pro" } })
+      )
     }
   }
   // Fetch brand colors from user profile
   useEffect(() => {
-    fetch('/api/profile/personal-brand')
+    fetch("/api/profile/personal-brand")
       .then(res => res.json())
       .then(data => {
         if (data.completed && data.data) {
@@ -129,17 +155,20 @@ export default function InstagramFeedView({
           let colors: string[] = []
           if (data.data.colorPalette) {
             try {
-              const palette = typeof data.data.colorPalette === 'string' 
-                ? JSON.parse(data.data.colorPalette)
-                : data.data.colorPalette
+              const palette =
+                typeof data.data.colorPalette === "string"
+                  ? JSON.parse(data.data.colorPalette)
+                  : data.data.colorPalette
               if (Array.isArray(palette)) {
                 // Extract hex values from array (could be strings or objects with hex property)
-                colors = palette.map((c: any) => {
-                  if (typeof c === 'string') return c
-                  if (c?.hex) return c.hex
-                  if (c?.color) return c.color
-                  return null
-                }).filter(Boolean)
+                colors = palette
+                  .map((c: any) => {
+                    if (typeof c === "string") return c
+                    if (c?.hex) return c.hex
+                    if (c?.color) return c.color
+                    return null
+                  })
+                  .filter(Boolean)
               }
             } catch (e) {
               console.error("[v0] Failed to parse colorPalette:", e)
@@ -178,18 +207,18 @@ export default function InstagramFeedView({
     try {
       // Generate bio using AI
       const response = await fetch(`/api/feed/${feedId}/generate-bio`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to generate bio' }))
-        throw new Error(errorData.error || 'Failed to generate bio')
+        const errorData = await response.json().catch(() => ({ error: "Failed to generate bio" }))
+        throw new Error(errorData.error || "Failed to generate bio")
       }
 
       const data = await response.json()
-      
+
       if (data.bio) {
         setBioText(data.bio)
         setIsSavingBio(false)
@@ -199,18 +228,19 @@ export default function InstagramFeedView({
           description: "Your AI-generated bio is ready. You can edit it if needed.",
         })
       } else {
-        throw new Error('No bio generated')
+        throw new Error("No bio generated")
       }
     } catch (error) {
       console.error("[v0] Error generating bio:", error)
       setIsSavingBio(false)
-      const errorMessage = error instanceof Error ? error.message : "Failed to generate bio. Please try again."
-      
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to generate bio. Please try again."
+
       // If generation fails, load existing bio if available
       if (feedData?.bio?.bio_text) {
         setBioText(feedData.bio.bio_text)
       }
-      
+
       // Check if it's a brand profile error
       if (errorMessage.includes("brand profile")) {
         toast({
@@ -233,18 +263,18 @@ export default function InstagramFeedView({
 
   const handleSaveBio = async () => {
     if (!feedId || !bioText.trim()) return
-    
+
     setIsSavingBio(true)
     try {
       const response = await fetch(`/api/feed/${feedId}/update-bio`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ bioText: bioText.trim() }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to save bio')
+        throw new Error("Failed to save bio")
       }
 
       await mutate() // Refresh feed data
@@ -268,14 +298,16 @@ export default function InstagramFeedView({
   // Memoize posts to prevent unnecessary re-renders
   // NOTE: This hook MUST be called before any early returns to comply with Rules of Hooks
   const posts = useMemo(() => {
-    return feedData?.posts ? [...feedData.posts].sort((a: any, b: any) => a.position - b.position) : []
+    return feedData?.posts
+      ? [...feedData.posts].sort((a: any, b: any) => a.position - b.position)
+      : []
   }, [feedData?.posts])
 
   // Derived state from feedData (single source of truth)
   // SIMPLIFIED: A post is complete if it has an image_url (regardless of generation_status)
   const postStatuses = useMemo(() => {
     if (!feedData?.posts) return []
-    
+
     return feedData.posts.map((post: any) => ({
       id: post.id,
       position: post.position,
@@ -293,7 +325,7 @@ export default function InstagramFeedView({
   // Use hooks for complex logic
   const dragDrop = useFeedDragDrop(posts, feedId, mutate)
   const actions = useFeedActions(feedId, posts, feedData, mutate, onBack)
-  
+
   // Calculate ready posts for confetti
   const readyPosts = postStatuses.filter((p: any) => p.isComplete).length
   useFeedConfetti(readyPosts)
@@ -301,25 +333,29 @@ export default function InstagramFeedView({
   // Log post status for debugging - only log once per feed load to prevent excessive logging during polling
   useEffect(() => {
     if (!feedData?.posts) return
-    
+
     const postsWithoutPrediction = feedData.posts.filter(
-      (p: any) => !p.prediction_id && p.generation_status !== "completed" && !p.image_url,
+      (p: any) => !p.prediction_id && p.generation_status !== "completed" && !p.image_url
     )
-    
+
     if (postsWithoutPrediction.length > 0) {
       // Only log once per feed load, not on every render
       const hasLogged = sessionStorage.getItem(`warned-no-prediction-${feedId}`)
       if (!hasLogged) {
-        const feedCreatedRecently = feedData.feed?.created_at 
-          ? (Date.now() - new Date(feedData.feed.created_at).getTime()) < 120000 // 2 minutes
+        const feedCreatedRecently = feedData.feed?.created_at
+          ? Date.now() - new Date(feedData.feed.created_at).getTime() < 120000 // 2 minutes
           : false
-        
+
         if (feedCreatedRecently) {
-          console.log(`[v0] ⏳ Feed was just created - queue-all-images is processing ${postsWithoutPrediction.length} posts in background. SWR will poll for updates...`)
+          console.log(
+            `[v0] ⏳ Feed was just created - queue-all-images is processing ${postsWithoutPrediction.length} posts in background. SWR will poll for updates...`
+          )
         } else {
-          console.log(`[v0] ⚠️ Found ${postsWithoutPrediction.length} posts without prediction_id. If this persists, use the "Generate All" button.`)
+          console.log(
+            `[v0] ⚠️ Found ${postsWithoutPrediction.length} posts without prediction_id. If this persists, use the "Generate All" button.`
+          )
         }
-        sessionStorage.setItem(`warned-no-prediction-${feedId}`, 'true')
+        sessionStorage.setItem(`warned-no-prediction-${feedId}`, "true")
       }
     }
   }, [feedData?.feed?.created_at, feedData?.posts, feedId])
@@ -329,7 +365,9 @@ export default function InstagramFeedView({
     return (
       <div className={feedPlannerStateClass}>
         <div className="text-center space-y-4">
-          <h2 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]">Feed Not Found</h2>
+          <h2 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]">
+            Feed Not Found
+          </h2>
           <p className="text-sm text-[color:var(--app-text-secondary)]">{feedData.error}</p>
           {onBack && (
             <button
@@ -351,8 +389,12 @@ export default function InstagramFeedView({
     return (
       <div className={feedPlannerStateClass}>
         <div className="text-center space-y-4 max-w-md">
-          <h2 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]">Feed Not Found</h2>
-          <p className="text-sm text-[color:var(--app-text-secondary)]">{feedData?.error || feedError?.message || "Unable to load feed data"}</p>
+          <h2 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]">
+            Feed Not Found
+          </h2>
+          <p className="text-sm text-[color:var(--app-text-secondary)]">
+            {feedData?.error || feedError?.message || "Unable to load feed data"}
+          </p>
           {onBack && (
             <button
               onClick={onBack}
@@ -375,18 +417,20 @@ export default function InstagramFeedView({
       // Return null to let FeedViewScreen show the empty state
       return null
     }
-    
+
     // If feedData is an empty object (no keys), treat it as still loading
-    if (feedData && typeof feedData === 'object' && Object.keys(feedData).length === 0) {
+    if (feedData && typeof feedData === "object" && Object.keys(feedData).length === 0) {
       return null
     }
-    
+
     // If we have an error in the response, show that
     if (feedData?.error) {
       return (
         <div className={feedPlannerStateClass}>
           <div className="text-center space-y-4 max-w-md">
-            <h2 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]">Feed Not Found</h2>
+            <h2 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]">
+              Feed Not Found
+            </h2>
             <p className="text-sm text-[color:var(--app-text-secondary)]">{feedData.error}</p>
             {onBack && (
               <button
@@ -400,10 +444,16 @@ export default function InstagramFeedView({
         </div>
       )
     }
-    
+
     // Only log error if we're not loading and data structure is actually invalid
     // (feedData exists, has keys, but has no feed and no exists flag)
-    if (feedData && typeof feedData === 'object' && Object.keys(feedData).length > 0 && !feedData.exists && !feedData.error) {
+    if (
+      feedData &&
+      typeof feedData === "object" &&
+      Object.keys(feedData).length > 0 &&
+      !feedData.exists &&
+      !feedData.error
+    ) {
       console.error("[v0] Feed data exists but feed object is missing:", {
         hasFeedData: !!feedData,
         feedDataKeys: feedData ? Object.keys(feedData) : [],
@@ -414,13 +464,17 @@ export default function InstagramFeedView({
         feedError: feedError,
         isFeedLoading,
       })
-      
+
       // Show error UI for invalid data structure
       return (
         <div className={feedPlannerStateClass}>
           <div className="text-center space-y-4 max-w-md">
-            <h2 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]">Invalid Feed Data</h2>
-            <p className="text-sm text-[color:var(--app-text-secondary)]">The feed data structure is invalid. Please try creating a new feed.</p>
+            <h2 className="text-xl font-light uppercase tracking-[0.15em] text-[color:var(--app-text-primary)]">
+              Invalid Feed Data
+            </h2>
+            <p className="text-sm text-[color:var(--app-text-secondary)]">
+              The feed data structure is invalid. Please try creating a new feed.
+            </p>
             {onBack && (
               <button
                 onClick={onBack}
@@ -433,11 +487,11 @@ export default function InstagramFeedView({
         </div>
       )
     }
-    
+
     // During initial load or when feedData is undefined, return null to let parent handle it
     return null
   }
-  
+
   // If still loading, return null to let parent handle the loading state
   if (isFeedLoading && !feedData) {
     return null
@@ -445,35 +499,40 @@ export default function InstagramFeedView({
 
   // All hooks must be declared before this point (Rules of Hooks)
   // The 'posts' useMemo has been moved above the early returns
-  
+
   const totalPosts = 9
-  
+
   // Get processing progress from feed data (if available)
   const processingProgress = feedData?.feed?.processingProgress || 0
   const processingStage = feedData?.feed?.processingStage
-  const isProcessing = feedData?.feed?.status === 'processing' || feedData?.feed?.status === 'queueing'
-  
+  const isProcessing =
+    feedData?.feed?.status === "processing" || feedData?.feed?.status === "queueing"
+
   // Calculate image generation progress
   const imageProgress = Math.round((readyPosts / totalPosts) * 100)
   const isFeedComplete = readyPosts === totalPosts
-  
+
   // Check if feed is manually created
   // Manual feeds: created_by='manual' OR all posts are empty with pending status
   // Maya feeds: have prediction_id or are actively generating
-  const isManualFeed = feedData?.feed?.created_by === 'manual' || 
-    (feedData?.posts && feedData.posts.length > 0 && 
-     feedData.posts.every((p: any) => 
-       !p.image_url && 
-       !p.prediction_id && 
-       (p.generation_status === 'pending' || !p.generation_status)
-     ))
-  
+  const isManualFeed =
+    feedData?.feed?.created_by === "manual" ||
+    (feedData?.posts &&
+      feedData.posts.length > 0 &&
+      feedData.posts.every(
+        (p: any) =>
+          !p.image_url &&
+          !p.prediction_id &&
+          (p.generation_status === "pending" || !p.generation_status)
+      ))
+
   // For manual feeds, show grid even if not complete (allow adding images)
   // For Maya feeds, show loading overlay while actively generating (bulk generation only)
-  const isMayaProcessing = feedData?.feed?.status === 'processing' || 
-                          feedData?.feed?.status === 'queueing' ||
-                          feedData?.feed?.status === 'generating'
-  
+  const isMayaProcessing =
+    feedData?.feed?.status === "processing" ||
+    feedData?.feed?.status === "queueing" ||
+    feedData?.feed?.status === "generating"
+
   // Simple rule: Show overlay ONLY for bulk generation (all 9 images at once)
   // Bulk generation = feed status is 'processing'/'queueing'/'generating' (Maya is setting up the feed)
   // Single image generation = feed status is NOT processing, only individual posts have prediction_id
@@ -482,39 +541,177 @@ export default function InstagramFeedView({
   // - Free users (single placeholder)
   // - Single image generation (show grid with inline loading instead)
   const isBulkGeneration = isMayaProcessing // Feed is in bulk setup phase
-  const shouldShowLoadingOverlay = !isManualFeed && 
-                                   access?.placeholderType !== "single" && // Never show for free users (single placeholder)
-                                   feedData?.feed && // Must have feed data
-                                   isBulkGeneration && // ONLY show for bulk generation (Maya feed setup)
-                                   !isFeedComplete // Hide when all complete
-  
+  const shouldShowLoadingOverlay =
+    !isManualFeed &&
+    access?.placeholderType !== "single" && // Never show for free users (single placeholder)
+    feedData?.feed && // Must have feed data
+    isBulkGeneration && // ONLY show for bulk generation (Maya feed setup)
+    !isFeedComplete // Hide when all complete
+
   // Overall progress (combines processing + image generation)
-  const overallProgress = isProcessing 
+  const overallProgress = isProcessing
     ? Math.min(processingProgress, 90) // Processing is 0-90%, images are 90-100%
     : imageProgress
-  
+
   // Progress message based on stage
   const getProgressMessage = () => {
     if (isProcessing && processingStage) {
       switch (processingStage) {
-        case 'generating_prompts':
-          return 'Generating prompts...'
-        case 'generating_captions':
-          return 'Writing captions...'
-        case 'queueing_images':
-          return 'Queueing images...'
+        case "generating_prompts":
+          return "Generating prompts..."
+        case "generating_captions":
+          return "Writing captions..."
+        case "queueing_images":
+          return "Queueing images..."
         default:
-          return 'Processing...'
+          return "Processing..."
       }
     }
     if (readyPosts < totalPosts) {
       return `Generating images... (${readyPosts}/${totalPosts})`
     }
-    return 'Complete!'
+    return "Complete!"
   }
 
   // Use reorderedPosts from drag-drop hook
   const displayPosts = dragDrop.reorderedPosts
+
+  const refreshCalendar = async () => {
+    await mutate()
+    window.dispatchEvent(new CustomEvent("calendar:feed-updated", { detail: { feedId } }))
+  }
+
+  const requestCalendarMutation = async (url: string, init: RequestInit) => {
+    const response = await fetch(url, init)
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok)
+      throw new Error(data.details || data.error || "The grid could not be updated.")
+    return data
+  }
+
+  const applyCalendarProposal = async (
+    proposal: CalendarAgentProposal
+  ): Promise<{ undoAvailable: boolean }> => {
+    if (proposal.kind === "create_plan") {
+      throw new Error("This grid already exists. Tell Maya what you want to change.")
+    }
+
+    if (proposal.kind === "open_style_picker") {
+      onRequireFeedStyle?.()
+      calendarUndoRef.current = null
+      return { undoAvailable: false }
+    }
+    if (proposal.kind === "open_highlights") {
+      setShowHighlightsModal(true)
+      calendarUndoRef.current = null
+      return { undoAvailable: false }
+    }
+
+    const post =
+      "postId" in proposal
+        ? displayPosts.find((item: any) => Number(item.id) === proposal.postId)
+        : null
+
+    if (proposal.kind === "open_photo_picker") {
+      const index = displayPosts.findIndex((item: any) => Number(item.id) === proposal.postId)
+      if (index < 0) throw new Error("Select the post you want to fill first.")
+      setShowGallery(index)
+      calendarUndoRef.current = null
+      return { undoAvailable: false }
+    }
+
+    if (proposal.kind === "update_caption") {
+      if (!post) throw new Error("That post is no longer in this grid.")
+      const previousCaption = typeof post.caption === "string" ? post.caption : ""
+      await requestCalendarMutation(`/api/feed/${feedId}/update-caption`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId: proposal.postId, caption: proposal.caption }),
+      })
+      calendarUndoRef.current = async () => {
+        await requestCalendarMutation(`/api/feed/${feedId}/update-caption`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ postId: proposal.postId, caption: previousCaption }),
+        })
+        await refreshCalendar()
+      }
+    } else if (proposal.kind === "update_bio") {
+      const previousBio = typeof feedData?.bio?.bio_text === "string" ? feedData.bio.bio_text : ""
+      await requestCalendarMutation(`/api/feed/${feedId}/update-bio`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bioText: proposal.bio }),
+      })
+      calendarUndoRef.current = previousBio
+        ? async () => {
+            await requestCalendarMutation(`/api/feed/${feedId}/update-bio`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ bioText: previousBio }),
+            })
+            await refreshCalendar()
+          }
+        : null
+    } else if (proposal.kind === "move_post") {
+      if (!post) throw new Error("That post is no longer in this grid.")
+      const target = displayPosts.find(
+        (item: any) => Number(item.position) === proposal.targetPosition
+      )
+      if (!target) throw new Error("That position is not available in this grid.")
+      const originalOrders = displayPosts.map((item: any) => ({
+        postId: Number(item.id),
+        newPosition: Number(item.position),
+      }))
+      const nextOrders = originalOrders.map(order => {
+        if (order.postId === Number(post.id))
+          return { ...order, newPosition: Number(target.position) }
+        if (order.postId === Number(target.id))
+          return { ...order, newPosition: Number(post.position) }
+        return order
+      })
+      await requestCalendarMutation(`/api/feed/${feedId}/reorder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postOrders: nextOrders }),
+      })
+      calendarUndoRef.current = async () => {
+        await requestCalendarMutation(`/api/feed/${feedId}/reorder`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ postOrders: originalOrders }),
+        })
+        await refreshCalendar()
+      }
+    } else if (proposal.kind === "generate_image") {
+      if (!post) throw new Error("That post is no longer in this grid.")
+      if (post.image_url)
+        throw new Error("This post already has a photo. Select an empty post first.")
+      await requestCalendarMutation(`/api/feed/${feedId}/generate-single`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId: proposal.postId, generationMode }),
+      })
+      calendarUndoRef.current = async () => {
+        await requestCalendarMutation(`/api/feed/${feedId}/remove-post-image`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ postId: proposal.postId }),
+        })
+        await refreshCalendar()
+      }
+    }
+
+    await refreshCalendar()
+    return { undoAvailable: Boolean(calendarUndoRef.current) }
+  }
+
+  const undoCalendarProposal = async () => {
+    const undo = calendarUndoRef.current
+    if (!undo) return
+    calendarUndoRef.current = null
+    await undo()
+  }
 
   // Feed Planner Phase 2b: distinct pillars across this month's posts, for the "About this
   // month" strip (replaces the retired standalone Pillars tab for paid/membership users).
@@ -533,7 +730,12 @@ export default function InstagramFeedView({
   // NEVER show for manual feeds - they should always show the grid
   // NEVER show for free users (single placeholder) - they should see placeholder with inline generation
   // Also don't show if we don't have feed data yet (let it load in background)
-  if (shouldShowLoadingOverlay && feedData?.feed && !isManualFeed && access?.placeholderType !== "single") {
+  if (
+    shouldShowLoadingOverlay &&
+    feedData?.feed &&
+    !isManualFeed &&
+    access?.placeholderType !== "single"
+  ) {
     return (
       <FeedLoadingOverlay
         feedId={feedId}
@@ -548,267 +750,309 @@ export default function InstagramFeedView({
   }
 
   return (
-    <div className={feedPlannerCanvasClass}>
-      <FeedHeader
-        feedData={feedData}
-        currentFeedId={feedId}
-        onBack={onBack}
-        onProfileImageClick={access?.hasGalleryAccess ? () => setShowProfileGallery(true) : undefined}
-        onWriteBio={handleOpenBio}
-        onCreateHighlights={() => setShowHighlightsModal(true)}
-        onOpenWizard={onOpenWizard}
-        onOpenWelcomeWizard={onOpenWelcomeWizard}
-        access={access}
-        generationMode={generationMode}
-        onToggleGenerationMode={access?.isMembership ? handleToggleGenerationMode : undefined}
-        showProfileDetails={activeTab === "profile"}
-        workspaceNavigation={
-          <FeedTabs
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            access={access}
-            currentFeedId={feedId}
-          />
-        }
-      />
-
-      {!access?.isFree && activeTab === "plan" && (
-        <FeedMonthSummary
-          themeSummary={feedData?.feed?.overall_vibe}
-          schedulingRationale={feedData?.feed?.strategic_rationale}
-          pillars={monthPillars}
+    <div className="mx-auto grid w-full max-w-[1380px] min-w-0 gap-4 px-0 py-3 sm:px-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:px-6">
+      <div className={feedPlannerCanvasClass}>
+        <FeedHeader
+          feedData={feedData}
+          currentFeedId={feedId}
+          onBack={onBack}
+          onProfileImageClick={
+            access?.hasGalleryAccess ? () => setShowProfileGallery(true) : undefined
+          }
+          onWriteBio={handleOpenBio}
+          onCreateHighlights={() => setShowHighlightsModal(true)}
+          onOpenWizard={onOpenWizard}
+          onOpenWelcomeWizard={onOpenWelcomeWizard}
+          access={access}
+          generationMode={generationMode}
+          onToggleGenerationMode={access?.isMembership ? handleToggleGenerationMode : undefined}
+          showProfileDetails
+          workspaceNavigation={
+            <FeedTabs
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              access={access}
+              currentFeedId={feedId}
+            />
+          }
         />
-      )}
 
-
-      <div className="pb-20">
-        {activeTab === "plan" && !access?.isFree && (
-          <FeedWeekView posts={displayPosts} onPostClick={setSelectedPost} />
+        {!access?.isFree && activeTab === "plan" && (
+          <FeedMonthSummary
+            themeSummary={feedData?.feed?.overall_vibe}
+            schedulingRationale={feedData?.feed?.strategic_rationale}
+            pillars={monthPillars}
+          />
         )}
 
-        {activeTab === "grid" && (
-          <>
-            {/* Show single placeholder for preview feeds OR free users, full grid for paid users with full feeds */}
-            {/* Preview feeds (layout_type='preview') always show single placeholder regardless of user access */}
-            {feedData?.feed?.layout_type === 'preview' || access?.placeholderType === "single" ? (
-              <FeedSinglePlaceholder
-                feedId={feedId}
-                post={displayPosts?.[0] || null}
-                onAddImage={() => setShowGallery(0)} // Open gallery for free users
-                onGenerateImage={() => mutate()} // Refresh feed data after generation
-                onRequireFeedStyle={onRequireFeedStyle}
-                onRequireOnboarding={onOpenWizard}
-                generationMode={generationMode}
-                autoGenerateOnce={activationAction === "generate"}
-              />
-            ) : (
-              <>
-                <FeedGrid
-                  posts={displayPosts}
-                  postStatuses={postStatuses}
-                  draggedIndex={dragDrop.draggedIndex}
-                  isSavingOrder={dragDrop.isSavingOrder}
+        <div className="pb-20">
+          {activeTab === "plan" && !access?.isFree && (
+            <FeedWeekView posts={displayPosts} onPostClick={setSelectedPost} />
+          )}
+
+          {activeTab === "grid" && (
+            <>
+              {/* Show single placeholder for preview feeds OR free users, full grid for paid users with full feeds */}
+              {/* Preview feeds (layout_type='preview') always show single placeholder regardless of user access */}
+              {feedData?.feed?.layout_type === "preview" || access?.placeholderType === "single" ? (
+                <FeedSinglePlaceholder
                   feedId={feedId}
-                  access={access} // Phase 5.1: Pass access control for image generation
-                  onPostClick={setSelectedPost}
-                  onAddImage={setShowGallery}
-                  onGenerateImage={async (_postId: number) => await mutate()} // Phase 5.1: Refresh feed data after generation
+                  post={displayPosts?.[0] || null}
+                  onAddImage={() => setShowGallery(0)} // Open gallery for free users
+                  onGenerateImage={() => mutate()} // Refresh feed data after generation
                   onRequireFeedStyle={onRequireFeedStyle}
                   onRequireOnboarding={onOpenWizard}
-                  onDragStart={dragDrop.handleDragStart}
-                  onDragOver={dragDrop.handleDragOver}
-                  onDragEnd={dragDrop.handleDragEnd}
-                  onMovePost={dragDrop.movePost}
                   generationMode={generationMode}
+                  autoGenerateOnce={activationAction === "generate"}
                 />
-                {displayPosts.some((p: any) => !p.image_url) && (
-                  <div className="mt-5 px-4 text-center">
-                    <p className="text-xs font-light text-[color:var(--app-text-secondary)]">
-                      {/* DRAFT UX copy for Sandra approval before release. */}
-                      Tap an empty post to add a photo.
+              ) : (
+                <>
+                  <FeedGrid
+                    posts={displayPosts}
+                    postStatuses={postStatuses}
+                    draggedIndex={dragDrop.draggedIndex}
+                    isSavingOrder={dragDrop.isSavingOrder}
+                    feedId={feedId}
+                    access={access} // Phase 5.1: Pass access control for image generation
+                    onPostClick={setSelectedPost}
+                    onAddImage={setShowGallery}
+                    onGenerateImage={async (_postId: number) => await mutate()} // Phase 5.1: Refresh feed data after generation
+                    onRequireFeedStyle={onRequireFeedStyle}
+                    onRequireOnboarding={onOpenWizard}
+                    onDragStart={dragDrop.handleDragStart}
+                    onDragOver={dragDrop.handleDragOver}
+                    onDragEnd={dragDrop.handleDragEnd}
+                    onMovePost={dragDrop.movePost}
+                    generationMode={generationMode}
+                  />
+                  {displayPosts.some((p: any) => !p.image_url) && (
+                    <div className="mt-5 px-4 text-center">
+                      <p className="text-xs font-light text-[color:var(--app-text-secondary)]">
+                        {/* DRAFT UX copy for Sandra approval before release. */}
+                        Tap an empty post to add a photo.
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+
+          {/* Free users can still view the legacy caption templates. */}
+          {activeTab === "captions" && access?.isFree && (
+            <FeedCaptionTemplates businessType={businessType} />
+          )}
+
+          {/* Strategy tab: Show Content Calendar for free users, FeedStrategy for paid/membership */}
+          {activeTab === "strategy" && access?.canGenerateStrategy && (
+            <>
+              {access.isFree ? (
+                <FeedContentCalendar />
+              ) : (
+                <FeedStrategy feedData={feedData} feedId={feedId} onStrategyGenerated={mutate} />
+              )}
+            </>
+          )}
+
+          {/* Brand Pillars tab - show for all users */}
+          {activeTab === "pillars" && <FeedBrandPillars businessType={businessType} />}
+        </div>
+
+        <FeedModals
+          selectedPost={selectedPost}
+          showGallery={showGallery}
+          showProfileGallery={showProfileGallery}
+          feedId={feedId}
+          feedData={feedData}
+          access={access} // Phase 8.1: Pass access control for gallery access
+          onClosePost={() => setSelectedPost(null)}
+          onCloseGallery={() => setShowGallery(null)}
+          onCloseProfileGallery={() => setShowProfileGallery(false)}
+          onShowGallery={setShowGallery}
+          onNavigateToMaya={actions.navigateToMayaChat}
+          onUpdate={async (updatedPost?: any) => {
+            console.log(
+              "[v0] onUpdate called with post:",
+              updatedPost?.id,
+              "has feedData:",
+              !!feedData
+            )
+
+            if (updatedPost && feedData?.posts) {
+              setSelectedPost((current: any | null) =>
+                current?.id === updatedPost.id ? { ...current, ...updatedPost } : current
+              )
+              // Find the post index
+              const postIndex = feedData.posts.findIndex((p: any) => p.id === updatedPost.id)
+              console.log("[v0] Found post at index:", postIndex)
+
+              if (postIndex !== -1) {
+                // Optimistic update: immediately update the cache with the new post data
+                const updatedPosts = [...feedData.posts]
+                updatedPosts[postIndex] = { ...updatedPosts[postIndex], ...updatedPost }
+
+                const optimisticData = {
+                  ...feedData,
+                  posts: updatedPosts,
+                }
+
+                console.log("[v0] Applying optimistic update for post:", updatedPost.id)
+                // Update cache optimistically (no revalidation, instant UI update)
+                await mutate(optimisticData, { revalidate: false })
+                return
+              }
+            }
+
+            // Then revalidate in background to get fresh data from server
+            // This ensures we have the latest data but doesn't block the UI update
+            console.log("[v0] Triggering background revalidation")
+            await mutate(undefined, { revalidate: true })
+          }}
+        />
+
+        {/* Bio Editing Modal */}
+        {showBioModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+            <button
+              type="button"
+              className="absolute inset-0"
+              aria-label="Close bio editor"
+              onClick={() => !isSavingBio && setShowBioModal(false)}
+            />
+            <dialog
+              open
+              aria-label="Edit bio"
+              className="relative z-[1] m-0 w-full max-w-md space-y-4 rounded-[20px] border border-[color:var(--app-glass-border)] bg-white p-6 text-[color:var(--app-text-primary)] shadow-[0_24px_70px_rgba(61,56,48,0.16)]"
+            >
+              <h2
+                className="text-lg font-light uppercase tracking-[0.12em]"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                {isSavingBio ? "Creating Your Bio" : bioText ? "Edit Bio" : "Create Bio"}
+              </h2>
+              {isSavingBio ? (
+                <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-[color:var(--app-glass-border)] border-t-[color:var(--app-text-primary)]" />
+                  <div className="text-center space-y-2">
+                    <p className="text-sm font-medium text-[color:var(--app-text-primary)]">
+                      I&apos;m crafting your perfect bio...
+                    </p>
+                    <p className="text-xs text-[color:var(--app-text-secondary)]">
+                      This will just take a moment.
                     </p>
                   </div>
-                )}
-              </>
-            )}
-          </>
-        )}
-
-        {/* Free users can still view the legacy caption templates. */}
-        {activeTab === "captions" && access?.isFree && (
-          <FeedCaptionTemplates businessType={businessType} />
-        )}
-
-        {/* Strategy tab: Show Content Calendar for free users, FeedStrategy for paid/membership */}
-        {activeTab === "strategy" && access?.canGenerateStrategy && (
-          <>
-            {access.isFree ? (
-              <FeedContentCalendar />
-            ) : (
-              <FeedStrategy
-                feedData={feedData}
-                feedId={feedId}
-                onStrategyGenerated={mutate}
-              />
-            )}
-          </>
-        )}
-
-        {/* Brand Pillars tab - show for all users */}
-        {activeTab === "pillars" && (
-          <FeedBrandPillars businessType={businessType} />
-        )}
-      </div>
-
-      <FeedModals
-        selectedPost={selectedPost}
-        showGallery={showGallery}
-        showProfileGallery={showProfileGallery}
-        feedId={feedId}
-        feedData={feedData}
-        access={access} // Phase 8.1: Pass access control for gallery access
-        onClosePost={() => setSelectedPost(null)}
-        onCloseGallery={() => setShowGallery(null)}
-        onCloseProfileGallery={() => setShowProfileGallery(false)}
-        onShowGallery={setShowGallery}
-        onNavigateToMaya={actions.navigateToMayaChat}
-        onUpdate={async (updatedPost?: any) => {
-          console.log("[v0] onUpdate called with post:", updatedPost?.id, "has feedData:", !!feedData)
-          
-          if (updatedPost && feedData?.posts) {
-            setSelectedPost((current: any | null) =>
-              current?.id === updatedPost.id ? { ...current, ...updatedPost } : current,
-            )
-            // Find the post index
-            const postIndex = feedData.posts.findIndex((p: any) => p.id === updatedPost.id)
-            console.log("[v0] Found post at index:", postIndex)
-            
-            if (postIndex !== -1) {
-              // Optimistic update: immediately update the cache with the new post data
-              const updatedPosts = [...feedData.posts]
-              updatedPosts[postIndex] = { ...updatedPosts[postIndex], ...updatedPost }
-              
-              const optimisticData = {
-                ...feedData,
-                posts: updatedPosts
-              }
-              
-              console.log("[v0] Applying optimistic update for post:", updatedPost.id)
-              // Update cache optimistically (no revalidation, instant UI update)
-              await mutate(optimisticData, { revalidate: false })
-              return
-            }
-          }
-          
-          // Then revalidate in background to get fresh data from server
-          // This ensures we have the latest data but doesn't block the UI update
-          console.log("[v0] Triggering background revalidation")
-          await mutate(undefined, { revalidate: true })
-        }}
-      />
-
-      {/* Bio Editing Modal */}
-      {showBioModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <button
-            type="button"
-            className="absolute inset-0"
-            aria-label="Close bio editor"
-            onClick={() => !isSavingBio && setShowBioModal(false)}
-          />
-          <dialog
-            open
-            aria-label="Edit bio"
-            className="relative z-[1] m-0 w-full max-w-md space-y-4 rounded-[20px] border border-[color:var(--app-glass-border)] bg-white p-6 text-[color:var(--app-text-primary)] shadow-[0_24px_70px_rgba(61,56,48,0.16)]"
-          >
-            <h2 className="text-lg font-light uppercase tracking-[0.12em]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-              {isSavingBio ? "Creating Your Bio" : bioText ? "Edit Bio" : "Create Bio"}
-            </h2>
-            {isSavingBio ? (
-              <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[color:var(--app-glass-border)] border-t-[color:var(--app-text-primary)]" />
-                <div className="text-center space-y-2">
-                  <p className="text-sm font-medium text-[color:var(--app-text-primary)]">I&apos;m crafting your perfect bio...</p>
-                  <p className="text-xs text-[color:var(--app-text-secondary)]">This will just take a moment.</p>
                 </div>
-              </div>
-            ) : (
-              <>
-                <p className="text-sm leading-relaxed text-[color:var(--app-text-secondary)]">
-                  {/* DRAFT UX copy for Sandra approval before release. */}
-                  Maya can write and save a bio for this grid. You can edit it afterward.
-                </p>
-                <textarea
-                  value={bioText}
-                  onChange={(e) => setBioText(e.target.value)}
-                  placeholder="Write your Instagram bio here..."
-                  className="h-32 w-full resize-none rounded-[8px] border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] p-3 text-sm text-[color:var(--app-text-primary)] placeholder:text-[color:var(--app-text-muted)] focus:outline-none focus:ring-1 focus:ring-[color:var(--app-focus-ring)]"
-                  maxLength={150}
+              ) : (
+                <>
+                  <p className="text-sm leading-relaxed text-[color:var(--app-text-secondary)]">
+                    {/* DRAFT UX copy for Sandra approval before release. */}
+                    Maya can write and save a bio for this grid. You can edit it afterward.
+                  </p>
+                  <textarea
+                    value={bioText}
+                    onChange={e => setBioText(e.target.value)}
+                    placeholder="Write your Instagram bio here..."
+                    className="h-32 w-full resize-none rounded-[8px] border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] p-3 text-sm text-[color:var(--app-text-primary)] placeholder:text-[color:var(--app-text-muted)] focus:outline-none focus:ring-1 focus:ring-[color:var(--app-focus-ring)]"
+                    maxLength={150}
+                    disabled={isSavingBio}
+                  />
+                  <div className="text-right text-xs text-[color:var(--app-text-secondary)]">
+                    {bioText.length}/150 characters
+                  </div>
+                </>
+              )}
+              <div className="flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBioModal(false)}
                   disabled={isSavingBio}
-                />
-                <div className="text-right text-xs text-[color:var(--app-text-secondary)]">
-                  {bioText.length}/150 characters
-                </div>
-              </>
-            )}
-            <div className="flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowBioModal(false)}
-                disabled={isSavingBio}
-                className="min-h-11 rounded-[8px] px-4 text-sm text-[color:var(--app-text-secondary)] transition-colors hover:text-[color:var(--app-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              {!isSavingBio && (
-                <button
-                  type="button"
-                  onClick={handleGenerateBio}
-                  className="min-h-11 rounded-[8px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-4 text-sm text-[color:var(--app-text-primary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)]"
+                  className="min-h-11 rounded-[8px] px-4 text-sm text-[color:var(--app-text-secondary)] transition-colors hover:text-[color:var(--app-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {bioText ? "Regenerate with Maya" : "Generate with Maya"}
+                  Cancel
                 </button>
-              )}
-              {!isSavingBio && bioText && (
-                <button
-                  type="button"
-                  onClick={handleSaveBio}
-                  disabled={!bioText.trim()}
-                  className="min-h-11 rounded-[8px] bg-[color:var(--app-text-primary)] px-4 text-sm uppercase tracking-[0.16em] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Save
-                </button>
-              )}
-            </div>
-          </dialog>
-        </div>
-      )}
-
-      {/* Highlights Modal */}
-      <FeedHighlightsModal
-        feedId={feedId}
-        isOpen={showHighlightsModal}
-        onClose={() => setShowHighlightsModal(false)}
-        onSave={async () => {
-          await mutate() // Refresh feed data to show updated highlights
-        }}
-        existingHighlights={feedData?.highlights || []}
-        brandColors={brandColors.length > 0 ? brandColors : (
-          feedData?.feed?.color_palette
-            ? typeof feedData.feed.color_palette === "string"
-              ? JSON.parse(feedData.feed.color_palette)
-                  .filter((c: any) => typeof c === "string")
-                  .slice(0, 8)
-              : Array.isArray(feedData.feed.color_palette)
-              ? feedData.feed.color_palette
-                  .filter((c: any) => typeof c === "string")
-                  .slice(0, 8)
-              : Object.values(feedData.feed.color_palette)
-                  .filter((c: any) => typeof c === "string")
-                  .slice(0, 8)
-            : []
+                {!isSavingBio && (
+                  <button
+                    type="button"
+                    onClick={handleGenerateBio}
+                    className="min-h-11 rounded-[8px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] px-4 text-sm text-[color:var(--app-text-primary)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)]"
+                  >
+                    {bioText ? "Regenerate with Maya" : "Generate with Maya"}
+                  </button>
+                )}
+                {!isSavingBio && bioText && (
+                  <button
+                    type="button"
+                    onClick={handleSaveBio}
+                    disabled={!bioText.trim()}
+                    className="min-h-11 rounded-[8px] bg-[color:var(--app-text-primary)] px-4 text-sm uppercase tracking-[0.16em] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Save
+                  </button>
+                )}
+              </div>
+            </dialog>
+          </div>
         )}
-      />
+
+        {/* Highlights Modal */}
+        <FeedHighlightsModal
+          feedId={feedId}
+          isOpen={showHighlightsModal}
+          onClose={() => setShowHighlightsModal(false)}
+          onSave={async () => {
+            await mutate() // Refresh feed data to show updated highlights
+          }}
+          existingHighlights={feedData?.highlights || []}
+          brandColors={
+            brandColors.length > 0
+              ? brandColors
+              : feedData?.feed?.color_palette
+                ? typeof feedData.feed.color_palette === "string"
+                  ? JSON.parse(feedData.feed.color_palette)
+                      .filter((c: any) => typeof c === "string")
+                      .slice(0, 8)
+                  : Array.isArray(feedData.feed.color_palette)
+                    ? feedData.feed.color_palette
+                        .filter((c: any) => typeof c === "string")
+                        .slice(0, 8)
+                    : Object.values(feedData.feed.color_palette)
+                        .filter((c: any) => typeof c === "string")
+                        .slice(0, 8)
+                : []
+          }
+        />
+      </div>
+      {!access?.isFree ? (
+        <CalendarMayaWorkspace
+          feedId={feedId}
+          selectedPost={
+            selectedPost
+              ? {
+                  id: Number(selectedPost.id),
+                  position: Number(selectedPost.position),
+                  caption: selectedPost.caption ?? null,
+                  contentPillar: selectedPost.content_pillar ?? null,
+                  scheduledAt: selectedPost.scheduled_at ?? null,
+                  hasImage: Boolean(selectedPost.image_url),
+                }
+              : null
+          }
+          feedSummary={{
+            title: feedData?.feed?.brand_name || feedData?.feed?.title || "Current grid",
+            bio: feedData?.bio?.bio_text || null,
+            posts: displayPosts.map((post: any) => ({
+              id: Number(post.id),
+              position: Number(post.position),
+              caption: post.caption ?? null,
+              contentPillar: post.content_pillar ?? null,
+              scheduledAt: post.scheduled_at ?? null,
+              hasImage: Boolean(post.image_url),
+            })),
+          }}
+          onApplyProposal={applyCalendarProposal}
+          onUndo={undoCalendarProposal}
+        />
+      ) : null}
     </div>
   )
 }
