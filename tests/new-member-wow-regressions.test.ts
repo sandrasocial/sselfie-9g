@@ -29,6 +29,8 @@ describe("new member WOW regressions", () => {
 
   it("keeps the first-grid style decision compact, explicit, and touch friendly", () => {
     const modal = read("components/feed-planner/feed-style-modal.tsx")
+    const header = read("components/feed-planner/feed-header.tsx")
+    const feedView = read("components/feed-planner/feed-view-screen.tsx")
 
     expect(modal).toContain("useState<FeedStyle | null>(defaultFeedStyle ?? null)")
     expect(modal).not.toContain('defaultFeedStyle || "Dark & Moody"')
@@ -39,6 +41,14 @@ describe("new member WOW regressions", () => {
     expect(modal).toContain("min-h-11")
     expect(modal).not.toContain("setShowAdvanced(true)")
     expect(modal).toContain("if (selectedStyle && previousStyleRef.current !== selectedStyle)")
+    expect(modal).toContain('mode?: "first" | "new" | "style"')
+    expect(modal).toContain('mode === "style" ? "Save my style"')
+    expect(modal).toContain("Choose its visual world.")
+    expect(header).toContain("Choose your look")
+    expect(header).toContain("feedPosts.every((post) => !post?.image_url)")
+    expect(header).toContain("defaultFeedStyle={lastFeedStyle}")
+    expect(header).toContain('mode={isCreatingNewFeed ? "new" : "style"}')
+    expect(feedView).toContain('mode="first"')
   })
 
   it("uses the light editorial signup system and mobile-sized controls", () => {

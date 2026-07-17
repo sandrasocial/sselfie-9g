@@ -311,6 +311,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
         onFeedStyleModalChange?.(open)
       }}
       onConfirm={handleFeedStyleConfirm}
+      mode="first"
       defaultFeedStyle={initialFeedStyle || lastFeedStyle}
       defaultFeedStyleVariationId={initialFeedStyleVariationId ?? undefined}
       isLoading={isCreatingManual}

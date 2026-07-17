@@ -218,4 +218,41 @@ describe("Calendar grid creation", () => {
       expect(mocks.navigateToFeed).toHaveBeenCalledWith(202)
     })
   })
+
+  it("asks a fresh auto-drafted calendar user to choose her look before adding another grid", async () => {
+    mocks.swrData.set("/api/profile/personal-brand", {
+      data: { settingsPreference: [] },
+    })
+    mocks.fetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { settingsPreference: [] } }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) })
+
+    const { default: FeedHeader } = await import("@/components/feed-planner/feed-header")
+
+    render(
+      <FeedHeader
+        feedData={{ feed: { id: 7, title: "July" }, posts: [{ id: 1, image_url: null }] }}
+        currentFeedId={7}
+        onProfileImageClick={vi.fn()}
+        onWriteBio={vi.fn()}
+        access={{ isMembership: true }}
+      />,
+    )
+
+    expect(screen.queryByRole("button", { name: /new (feed|grid)/i })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /choose your look/i }))
+    fireEvent.click(screen.getByRole("button", { name: /confirm grid style/i }))
+
+    await waitFor(() => {
+      expect(mocks.fetch).toHaveBeenCalledWith(
+        "/api/feed/7/update-style",
+        expect.objectContaining({ method: "PATCH" }),
+      )
+      expect(mocks.fetch).not.toHaveBeenCalledWith(
+        "/api/feed/create-manual",
+        expect.anything(),
+      )
+    })
+  })
 })
