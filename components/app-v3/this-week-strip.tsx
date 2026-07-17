@@ -111,11 +111,11 @@ export function ThisWeekStrip({
   return (
     <div className="mx-auto mb-3 max-w-3xl px-3 pt-3">
       <div className="rounded-[14px] border border-[#C5C6C8]/50 bg-white p-4 shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)] sm:p-5">
-        <div className="flex items-start justify-between gap-3 sm:items-center">
+        <div className="flex flex-col items-start gap-1 sm:flex-row sm:justify-between sm:gap-3 sm:items-center">
           <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">
             This week on Instagram
           </p>
-          <div className="flex items-start gap-2 sm:items-center sm:gap-3">
+          <div className="flex w-full items-start justify-between gap-2 sm:w-auto sm:items-center sm:justify-start sm:gap-3">
             {weekStart && (
               <p className="text-[10px] uppercase tracking-[0.14em] text-[#A2A3A5]">
                 Week of {fmtWeek(weekStart)}
