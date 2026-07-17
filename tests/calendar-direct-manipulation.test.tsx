@@ -69,4 +69,13 @@ describe("Calendar direct manipulation", () => {
     expect(workspace).toContain('displayMode === "embedded"')
     expect(workspace).toContain("busy && feedId === null")
   })
+
+  it("keeps the new-grid picker interactive above the post studio", () => {
+    const postStudio = read("components/feed-planner/feed-modals.tsx")
+    const stylePicker = read("components/feed-planner/feed-style-modal.tsx")
+
+    expect(postStudio).toContain("z-[110]")
+    expect(stylePicker).toContain("z-[120]")
+    expect(stylePicker).toContain("z-[121]")
+  })
 })

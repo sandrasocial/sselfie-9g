@@ -259,7 +259,7 @@ export default function FeedStyleModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-[#0D0E10]/45 backdrop-blur-sm"
+            className="fixed inset-0 z-[120] bg-[#0D0E10]/45 backdrop-blur-sm"
             onClick={() => onOpenChange(false)}
           />
 
@@ -267,7 +267,7 @@ export default function FeedStyleModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-0 z-[101] flex items-end justify-center p-0 sm:items-center sm:p-5"
+            className="fixed inset-0 z-[121] flex items-end justify-center p-0 sm:items-center sm:p-5"
             onClick={(e) => e.stopPropagation()}
           >
             <div
