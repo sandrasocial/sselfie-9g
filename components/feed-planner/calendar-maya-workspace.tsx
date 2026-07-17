@@ -4,7 +4,12 @@ import Image from "next/image"
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowUp, Check, ChevronDown, Loader2, RotateCcw, X } from "lucide-react"
 
+import { ClarifyCard } from "@/components/app-v3/clarify-card"
+import { Markdown } from "@/components/app-v3/markdown"
+import { CalendarPlanSettingsCard } from "./calendar-plan-settings-card"
 import type { CalendarAgentProposal, CalendarAgentResult } from "@/lib/feed-planner/calendar-agent"
+import type { ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
+import type { CalendarPlanSettings } from "@/lib/feed-planner/calendar-plan-settings"
 
 const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
 
@@ -15,6 +20,7 @@ interface CalendarPostSummary {
   contentPillar?: string | null
   scheduledAt?: string | null
   hasImage?: boolean
+  imageUrl?: string | null
 }
 
 interface CalendarFeedSummary {
@@ -38,6 +44,15 @@ interface CalendarMayaWorkspaceProps {
   onUndo: () => Promise<void>
   onBuildFirstGrid?: () => Promise<void>
   busy?: boolean
+  planSettings?: CalendarPlanSettings
+  onSavePlanSettings?: (settings: CalendarPlanSettings) => Promise<void>
+  planSettingsOpen?: boolean
+  onPlanSettingsClosed?: () => void
+  onPreviewProposal?: (proposal: CalendarAgentProposal) => void
+  onClearPreview?: () => void
+  onOpenPostDetails?: (postId: number) => void
+  onClearSelectedPost?: () => void
+  onOpenPhotoPicker?: (postId: number) => void
 }
 
 const storageKey = (feedId: number | null) => `calendar:maya-thread:v1:${feedId ?? "new"}`
@@ -47,8 +62,48 @@ function initialMessage(feedId: number | null): CalendarMessage {
     id: "maya-welcome",
     role: "assistant",
     content: feedId
-      ? "I can see this grid. Select a post or tell me what you want to change, and I will show you the update before anything moves."
-      : "Let’s build your first grid here. I can plan the starting point, or you can tap any square to add your own photo.",
+      ? "I’ve got your month open. Tap any post and I’ll help you shape it right here."
+      : "Let’s map your first month together. I pulled in what I already know, so you can start with a few taps.",
+  }
+}
+
+function suggestionsFor(selectedPost: CalendarPostSummary | null, hasFeed: boolean): ClarifyPrompt {
+  if (!selectedPost) {
+    return {
+      question: hasFeed ? "What should we shape next?" : "Where should I start?",
+      options: hasFeed
+        ? [
+            "Adjust my content mix",
+            "Make the grid feel more like me",
+            "Plan around my current offer",
+          ]
+        : ["Build my month", "Plan around my current offer", "Make the grid feel more like me"],
+      allowFreeText: true,
+    }
+  }
+  if (selectedPost.hasImage) {
+    return {
+      question: `What would you like me to change on post ${selectedPost.position}?`,
+      options: [
+        "Change the image direction",
+        "Rewrite the hook",
+        "Make the caption more personal",
+        "Give this a softer CTA",
+        "Swap this with another post",
+      ],
+      allowFreeText: true,
+    }
+  }
+  return {
+    question: `Post ${selectedPost.position} is planned. What should I do next?`,
+    options: [
+      "Create this image",
+      "Use one from my Gallery",
+      "Change the post idea",
+      "Write the caption",
+      "Make this a personal post",
+    ],
+    allowFreeText: true,
   }
 }
 
@@ -74,6 +129,15 @@ export function CalendarMayaWorkspace({
   onUndo,
   onBuildFirstGrid,
   busy = false,
+  planSettings,
+  onSavePlanSettings,
+  planSettingsOpen = false,
+  onPlanSettingsClosed,
+  onPreviewProposal,
+  onClearPreview,
+  onOpenPostDetails,
+  onClearSelectedPost,
+  onOpenPhotoPicker,
 }: CalendarMayaWorkspaceProps) {
   const [expanded, setExpanded] = useState(true)
   const [input, setInput] = useState("")
@@ -84,7 +148,9 @@ export function CalendarMayaWorkspace({
   const [error, setError] = useState<string | null>(null)
   const [appliedMessageId, setAppliedMessageId] = useState<string | null>(null)
   const [undoAvailable, setUndoAvailable] = useState(false)
+  const [planConfirmed, setPlanConfirmed] = useState(false)
   const threadEndRef = useRef<HTMLDivElement>(null)
+  const scrollRegionRef = useRef<HTMLDivElement>(null)
   const skipNextPersistenceRef = useRef(true)
 
   useEffect(() => {
@@ -103,6 +169,18 @@ export function CalendarMayaWorkspace({
     setAppliedMessageId(null)
     setUndoAvailable(false)
   }, [feedId])
+
+  useEffect(() => {
+    if (planSettingsOpen) setExpanded(true)
+    if (!planSettingsOpen && !selectedPost?.id) return
+    const frame = window.requestAnimationFrame(() => {
+      const region = scrollRegionRef.current
+      if (!region) return
+      if (typeof region.scrollTo === "function") region.scrollTo({ top: 0, behavior: "smooth" })
+      else region.scrollTop = 0
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [planSettingsOpen, selectedPost?.id])
 
   useEffect(() => {
     if (skipNextPersistenceRef.current) {
@@ -136,9 +214,8 @@ export function CalendarMayaWorkspace({
           ? "Syncing the grid"
           : null
 
-  async function submitMessage(event: FormEvent) {
-    event.preventDefault()
-    const message = input.trim()
+  async function sendMessage(rawMessage: string) {
+    const message = rawMessage.trim()
     if (!message || isBusy) return
 
     const userMessage: CalendarMessage = {
@@ -168,6 +245,7 @@ export function CalendarMayaWorkspace({
       if (!response.ok) throw new Error(data.error || "Maya could not review this grid.")
 
       const result = data as CalendarAgentResult
+      if (result.proposal) onPreviewProposal?.(result.proposal)
       setMessages(current => [
         ...current,
         {
@@ -186,6 +264,11 @@ export function CalendarMayaWorkspace({
     }
   }
 
+  async function submitMessage(event: FormEvent) {
+    event.preventDefault()
+    await sendMessage(input)
+  }
+
   async function applyProposal(message: CalendarMessage, proposal: CalendarAgentProposal) {
     if (isBusy) return
     setError(null)
@@ -195,10 +278,12 @@ export function CalendarMayaWorkspace({
       setStatus("syncing")
       setAppliedMessageId(message.id)
       setUndoAvailable(outcome.undoAvailable)
+      onClearPreview?.()
       setStatus("idle")
     } catch (applyError) {
       setStatus("error")
       setError(applyError instanceof Error ? applyError.message : "The grid could not be updated.")
+      onClearPreview?.()
     }
   }
 
@@ -210,6 +295,7 @@ export function CalendarMayaWorkspace({
       await onUndo()
       setUndoAvailable(false)
       setAppliedMessageId(null)
+      onClearPreview?.()
       setStatus("idle")
     } catch (undoError) {
       setStatus("error")
@@ -246,7 +332,7 @@ export function CalendarMayaWorkspace({
           <h2 className="text-[15px] font-medium text-[color:var(--app-text-primary)]">Maya</h2>
           <p className="truncate text-[11px] text-[color:var(--app-text-secondary)]">
             {selectedPost
-              ? `Working on post ${selectedPost.position}`
+              ? `Post ${selectedPost.position} selected`
               : "Your Calendar creative director"}
           </p>
         </div>
@@ -260,7 +346,82 @@ export function CalendarMayaWorkspace({
         </button>
       </header>
 
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4" aria-live="polite">
+      <div
+        ref={scrollRegionRef}
+        className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4"
+        aria-live="polite"
+      >
+        {selectedPost ? (
+          <div className="flex items-center gap-3 rounded-[12px] border border-[color:var(--calendar-stone-4)]/70 bg-[color:var(--app-surface)] p-2.5">
+            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-[color:var(--calendar-stone-3)] text-[12px] font-medium text-[color:var(--app-text-primary)]">
+              {selectedPost.imageUrl ? (
+                <Image
+                  src={selectedPost.imageUrl}
+                  alt=""
+                  fill
+                  sizes="48px"
+                  className="object-cover object-top"
+                />
+              ) : (
+                selectedPost.position
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[12px] font-medium text-[color:var(--app-text-primary)]">
+                Post {selectedPost.position} selected
+              </p>
+              <p className="mt-0.5 truncate text-[10px] text-[color:var(--app-text-secondary)]">
+                {selectedPost.hasImage
+                  ? "Photo ready"
+                  : selectedPost.caption?.trim()
+                    ? "Caption ready · needs a photo"
+                    : "Planned post"}
+              </p>
+            </div>
+            {onOpenPostDetails ? (
+              <button
+                type="button"
+                onClick={() => onOpenPostDetails(selectedPost.id)}
+                className="min-h-11 rounded-[8px] bg-white px-3 text-[11px] text-[color:var(--app-text-primary)]"
+              >
+                Details
+              </button>
+            ) : null}
+            {onOpenPhotoPicker ? (
+              <button
+                type="button"
+                onClick={() => onOpenPhotoPicker(selectedPost.id)}
+                className="min-h-11 rounded-[8px] bg-white px-3 text-[11px] text-[color:var(--app-text-primary)]"
+              >
+                {selectedPost.hasImage ? "Replace photo" : "Add photo"}
+              </button>
+            ) : null}
+            {onClearSelectedPost ? (
+              <button
+                type="button"
+                onClick={onClearSelectedPost}
+                aria-label={`Clear post ${selectedPost.position} selection`}
+                className="flex h-11 w-11 items-center justify-center rounded-full text-[color:var(--app-text-secondary)] hover:bg-white"
+              >
+                <X size={15} aria-hidden />
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {planSettings && onSavePlanSettings && (!planConfirmed || planSettingsOpen) ? (
+          <CalendarPlanSettingsCard
+            settings={planSettings}
+            forceEditing={planSettingsOpen}
+            onSave={onSavePlanSettings}
+            onConfirm={() => {
+              setPlanConfirmed(true)
+              onPlanSettingsClosed?.()
+              if (feedId === null) void onBuildFirstGrid?.()
+            }}
+          />
+        ) : null}
+
         {messages.map(message => {
           const applied = appliedMessageId === message.id
           const preview = message.proposal ? proposalPreview(message.proposal) : null
@@ -276,7 +437,13 @@ export function CalendarMayaWorkspace({
                     : "max-w-[95%] text-[13px] leading-relaxed text-[color:var(--app-text-primary)]"
                 }
               >
-                {message.content}
+                {message.role === "assistant" ? (
+                  <div className="[&_ol]:!text-[13px] [&_p]:!text-[13px] [&_ul]:!text-[13px]">
+                    <Markdown>{message.content}</Markdown>
+                  </div>
+                ) : (
+                  message.content
+                )}
               </div>
 
               {message.role === "assistant" && message.proposal && preview ? (
@@ -316,13 +483,14 @@ export function CalendarMayaWorkspace({
                       <>
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => (
+                            onClearPreview?.(),
                             setMessages(current =>
                               current.map(item =>
                                 item.id === message.id ? { ...item, proposal: null } : item
                               )
                             )
-                          }
+                          )}
                           aria-label="Dismiss proposed change"
                           className="flex min-h-11 items-center gap-2 rounded-[8px] px-3 text-[11px] text-[color:var(--app-text-secondary)] hover:text-[color:var(--app-text-primary)]"
                         >
@@ -346,7 +514,21 @@ export function CalendarMayaWorkspace({
           )
         })}
 
-        {feedId === null && onBuildFirstGrid && messages.length === 1 ? (
+        {!isBusy && (planConfirmed || !planSettings) ? (
+          <ClarifyCard
+            clarify={suggestionsFor(selectedPost, feedId !== null)}
+            onPick={answer => void sendMessage(answer)}
+            onFreeText={() =>
+              document
+                .querySelector<HTMLTextAreaElement>(
+                  'textarea[aria-label="Message Maya about this grid"]'
+                )
+                ?.focus()
+            }
+          />
+        ) : null}
+
+        {feedId === null && onBuildFirstGrid && !planSettings && messages.length === 1 ? (
           <button
             type="button"
             onClick={() => void onBuildFirstGrid()}
@@ -371,7 +553,19 @@ export function CalendarMayaWorkspace({
             role="alert"
             className="rounded-[9px] bg-destructive/10 px-3 py-2.5 text-[12px] leading-relaxed text-destructive"
           >
-            {error}
+            <p>{error}</p>
+            {messages.findLast(message => message.role === "user") ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const last = messages.findLast(message => message.role === "user")
+                  if (last) void sendMessage(last.content)
+                }}
+                className="mt-2 min-h-11 rounded-[8px] border border-current px-3 text-[11px] font-medium"
+              >
+                Try again
+              </button>
+            ) : null}
           </div>
         ) : null}
         <div ref={threadEndRef} />

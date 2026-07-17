@@ -3,10 +3,10 @@
 import { Plus } from "lucide-react"
 
 export function CalendarEmptyCanvas({
-  onAddPhoto,
+  onStartBlank,
   busy = false,
 }: {
-  onAddPhoto: (position: number) => void
+  onStartBlank: () => void
   busy?: boolean
 }) {
   return (
@@ -65,26 +65,41 @@ export function CalendarEmptyCanvas({
         {Array.from({ length: 9 }, (_, index) => {
           const position = index + 1
           return (
-            <button
-              type="button"
+            <div
               key={position}
-              onClick={() => onAddPhoto(position)}
-              disabled={busy}
-              aria-label={`Add photo to post ${position}`}
-              className="group relative aspect-square bg-[color:var(--app-btn-secondary-bg)] transition-colors hover:bg-[color:var(--app-btn-secondary-hover)] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)] disabled:cursor-wait disabled:opacity-60"
+              className={`relative aspect-square ${
+                position % 4 === 0
+                  ? "bg-[color:var(--calendar-stone-4)]"
+                  : position % 3 === 0
+                    ? "bg-[color:var(--calendar-stone-3)]"
+                    : position % 2 === 0
+                      ? "bg-[color:var(--calendar-stone-2)]"
+                      : "bg-[color:var(--calendar-stone-1)]"
+              }`}
             >
-              <span className="absolute inset-0 flex items-center justify-center">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--app-glass-border)] bg-[color:var(--app-bg)] text-[color:var(--app-text-secondary)] transition-transform group-active:scale-[0.96]">
-                  <Plus size={16} aria-hidden />
-                </span>
+              <span className="absolute right-2 top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-white/75 px-1 text-[9px] text-[color:var(--app-text-primary)]">
+                {position}
               </span>
-            </button>
+              <span className="absolute bottom-2 left-2 text-[8px] uppercase tracking-[0.12em] text-[color:var(--app-text-secondary)]">
+                Planned
+              </span>
+            </div>
           )
         })}
       </div>
-      <p className="px-4 py-4 text-center text-[12px] text-[color:var(--app-text-secondary)]">
-        Tap any square to add your own photo. Maya can work beside you whenever you want.
-      </p>
+      <div className="px-4 py-4 text-center">
+        <p className="text-[12px] text-[color:var(--app-text-secondary)]">
+          Confirm your Plan Settings with Maya to shape these posts.
+        </p>
+        <button
+          type="button"
+          onClick={onStartBlank}
+          disabled={busy}
+          className="mt-2 min-h-11 px-3 text-[11px] text-[color:var(--app-text-secondary)] underline underline-offset-4 disabled:opacity-50"
+        >
+          Start a blank grid instead
+        </button>
+      </div>
     </section>
   )
 }

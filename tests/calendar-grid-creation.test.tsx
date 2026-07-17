@@ -89,6 +89,14 @@ describe("Calendar grid creation", () => {
 
   it("opens an Instagram-style empty canvas and lets Maya build the first grid", async () => {
     mocks.swrData.set("/api/feed/latest", { exists: false })
+    mocks.swrData.set("/api/profile/personal-brand", {
+      data: {
+        businessType: "Coach",
+        idealAudience: "Women founders",
+        currentSituation: "Membership",
+        settingsPreference: ["Light & Minimalistic"],
+      },
+    })
     mocks.fetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ created: true, feedLayoutId: 101, postCount: 9 }),
@@ -99,10 +107,10 @@ describe("Calendar grid creation", () => {
     render(<FeedViewScreen access={{ isMembership: true } as any} />)
 
     expect(screen.getByRole("region", { name: /instagram grid/i })).toBeInTheDocument()
-    expect(screen.getAllByRole("button", { name: /add photo to post/i })).toHaveLength(9)
-    expect(screen.queryByRole("button", { name: /start blank/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /add photo to post/i })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /start a blank grid instead/i })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: /build my grid with maya/i }))
+    fireEvent.click(screen.getByRole("button", { name: /use this plan/i }))
 
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(
@@ -113,7 +121,7 @@ describe("Calendar grid creation", () => {
     })
   })
 
-  it("creates a manual grid by touching the empty Instagram canvas", async () => {
+  it("creates a manual grid only through the explicit blank-grid action", async () => {
     mocks.swrData.set("/api/feed/latest", { exists: false })
     mocks.fetch.mockResolvedValueOnce({
       ok: true,
@@ -124,7 +132,7 @@ describe("Calendar grid creation", () => {
 
     render(<FeedViewScreen access={{ isMembership: true } as any} />)
 
-    fireEvent.click(screen.getByRole("button", { name: /add photo to post 1/i }))
+    fireEvent.click(screen.getByRole("button", { name: /start a blank grid instead/i }))
 
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(
@@ -143,7 +151,8 @@ describe("Calendar grid creation", () => {
     render(<FeedViewScreen access={{ isPaidBlueprint: true } as any} />)
 
     expect(screen.getByRole("region", { name: /instagram grid/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /build my grid with maya/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /start a blank grid instead/i })).toBeInTheDocument()
+    expect(screen.getByRole("region", { name: /instagram grid/i })).toBeInTheDocument()
   })
 
   it("keeps the grid primary and moves planning into a secondary view", async () => {

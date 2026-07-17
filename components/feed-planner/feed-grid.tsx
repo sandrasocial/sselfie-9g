@@ -14,6 +14,7 @@ interface FeedGridProps {
   feedId: number // Feed ID for image generation
   access?: FeedPlannerAccess // Phase 5.1: Access control for image generation
   generationMode?: "classic" | "pro"
+  activePostId?: number | null
   onPostClick: (post: any) => void
   onAddImage?: (postId: number) => void // Open gallery selector (upload + gallery)
   onGenerateImage?: (postId: number) => Promise<void> // Phase 5.1: Callback after image generation
@@ -33,6 +34,7 @@ export default function FeedGrid({
   feedId,
   access,
   generationMode = "pro",
+  activePostId = null,
   onPostClick,
   onAddImage,
   onGenerateImage,
@@ -202,6 +204,7 @@ export default function FeedGrid({
           onGenerate={handleGenerateImage}
           onRegenerateIdea={handleRegenerateIdea}
           isMembership={access?.isMembership}
+          isSelected={Number(post.id) === activePostId}
         />
       ))}
     </div>

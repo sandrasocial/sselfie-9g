@@ -12,13 +12,13 @@ export function useFeedModals() {
 
   // Prevent body scroll when any modal is open
   useEffect(() => {
-    const hasOpenModal = !!selectedPost || !!showGallery || showProfileGallery
-    
+    const hasOpenModal = !!selectedPost || showGallery !== null || showProfileGallery
+
     if (hasOpenModal) {
       // Save original overflow style
       const originalOverflow = document.body.style.overflow
       // Prevent body scroll
-      document.body.style.overflow = 'hidden'
+      document.body.style.overflow = "hidden"
       // Cleanup: restore original overflow on unmount or when modal closes
       return () => {
         document.body.style.overflow = originalOverflow
@@ -35,4 +35,3 @@ export function useFeedModals() {
     setShowProfileGallery,
   }
 }
-

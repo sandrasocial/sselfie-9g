@@ -23,16 +23,16 @@ import FeedLoadingOverlay from "./feed-loading-overlay"
 import FeedHighlightsModal from "./feed-highlights-modal"
 import FeedSinglePlaceholder from "./feed-single-placeholder"
 import { CalendarMayaWorkspace } from "./calendar-maya-workspace"
+import { CalendarNeedsMe } from "./calendar-needs-me"
 import type { CalendarAgentProposal } from "@/lib/feed-planner/calendar-agent"
+import {
+  calendarPlanSettingsFromProfile,
+  type CalendarPlanSettings,
+} from "@/lib/feed-planner/calendar-plan-settings"
 import { useFeedNav } from "./feed-nav-context"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getBrandColorThemeColors } from "@/lib/style-presets"
-import {
-  MAYA_MODE_STORAGE_KEY,
-  MAYA_MODE_TOUCHED_STORAGE_KEY,
-  readMayaProModePreference,
-  writeMayaProModePreference,
-} from "@/lib/maya/mode-storage"
+import { readMayaProModePreference } from "@/lib/maya/mode-storage"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -99,52 +99,48 @@ export default function InstagramFeedView({
   const [isSavingBio, setIsSavingBio] = useState(false)
   const [showHighlightsModal, setShowHighlightsModal] = useState(false)
   const [brandColors, setBrandColors] = useState<string[]>([])
+  const [activePostId, setActivePostId] = useState<number | null>(null)
+  const [previewProposal, setPreviewProposal] = useState<CalendarAgentProposal | null>(null)
+  const [planSettingsOpen, setPlanSettingsOpen] = useState(false)
   const calendarUndoRef = useRef<(() => Promise<void>) | null>(null)
   const feedNav = useFeedNav()
-  const [generationMode, setGenerationMode] = useState<"classic" | "pro">(() => {
-    return readMayaProModePreference() ? "pro" : "classic"
-  })
+  const generationMode = readMayaProModePreference() ? "pro" : "classic"
+
+  const { data: personalBrandData, mutate: mutatePersonalBrand } = useSWR(
+    "/api/profile/personal-brand",
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60000 }
+  )
+  const calendarPlanSettings = calendarPlanSettingsFromProfile(personalBrandData)
+
+  const saveCalendarPlanSettings = async (settings: CalendarPlanSettings) => {
+    const response = await fetch("/api/profile/personal-brand", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        businessType: settings.businessType,
+        idealAudience: settings.idealAudience,
+        currentSituation: settings.currentSituation,
+        settingsPreference: [settings.feedStyle],
+        isCompleted: true,
+      }),
+    })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok)
+      throw new Error(data.details || data.error || "Your plan settings could not be saved.")
+    await mutatePersonalBrand()
+  }
 
   useEffect(() => {
     const pendingPosition = feedNav?.pendingSlotPosition
     const posts = Array.isArray(feedData?.posts) ? feedData.posts : []
     if (!pendingPosition || posts.length === 0) return
-    const index = posts.findIndex((post: any) => Number(post.position) === pendingPosition)
-    if (index >= 0) setShowGallery(index)
+    const post = posts.find((item: any) => Number(item.position) === pendingPosition)
+    if (post?.id) setShowGallery(Number(post.id))
     feedNav?.consumePendingSlot?.()
   }, [feedData?.posts, feedNav, setShowGallery])
 
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === MAYA_MODE_STORAGE_KEY || event.key === MAYA_MODE_TOUCHED_STORAGE_KEY) {
-        setGenerationMode(readMayaProModePreference() ? "pro" : "classic")
-      }
-    }
-    const handleCustomEvent = (event: Event) => {
-      const detail = (event as CustomEvent).detail as { mode?: boolean }
-      if (typeof detail?.mode === "boolean") {
-        setGenerationMode(detail.mode ? "pro" : "classic")
-      }
-    }
-    window.addEventListener("storage", handleStorageChange)
-    window.addEventListener("feedPlannerModeChanged", handleCustomEvent as EventListener)
-    return () => {
-      window.removeEventListener("storage", handleStorageChange)
-      window.removeEventListener("feedPlannerModeChanged", handleCustomEvent as EventListener)
-    }
-  }, [])
-
-  const handleToggleGenerationMode = () => {
-    const nextMode = generationMode === "pro" ? "classic" : "pro"
-    setGenerationMode(nextMode)
-    if (typeof window !== "undefined") {
-      writeMayaProModePreference(nextMode === "pro")
-      window.dispatchEvent(
-        new CustomEvent("feedPlannerModeChanged", { detail: { mode: nextMode === "pro" } })
-      )
-    }
-  }
   // Fetch brand colors from user profile
   useEffect(() => {
     fetch("/api/profile/personal-brand")
@@ -574,7 +570,37 @@ export default function InstagramFeedView({
   }
 
   // Use reorderedPosts from drag-drop hook
-  const displayPosts = dragDrop.reorderedPosts
+  const baseDisplayPosts = dragDrop.reorderedPosts
+  const displayPosts = (() => {
+    if (!previewProposal) return baseDisplayPosts
+    if (previewProposal.kind === "update_caption") {
+      return baseDisplayPosts.map((post: any) =>
+        Number(post.id) === previewProposal.postId
+          ? { ...post, caption: previewProposal.caption, calendar_preview: true }
+          : post
+      )
+    }
+    if (previewProposal.kind === "move_post") {
+      const source = baseDisplayPosts.find(
+        (post: any) => Number(post.id) === previewProposal.postId
+      )
+      const target = baseDisplayPosts.find(
+        (post: any) => Number(post.position) === previewProposal.targetPosition
+      )
+      if (!source || !target) return baseDisplayPosts
+      return baseDisplayPosts
+        .map((post: any) => {
+          if (Number(post.id) === Number(source.id))
+            return { ...post, position: target.position, calendar_preview: true }
+          if (Number(post.id) === Number(target.id))
+            return { ...post, position: source.position, calendar_preview: true }
+          return post
+        })
+        .sort((a: any, b: any) => Number(a.position) - Number(b.position))
+    }
+    return baseDisplayPosts
+  })()
+  const activePost = displayPosts.find((post: any) => Number(post.id) === activePostId) ?? null
 
   const refreshCalendar = async () => {
     await mutate()
@@ -584,8 +610,10 @@ export default function InstagramFeedView({
   const requestCalendarMutation = async (url: string, init: RequestInit) => {
     const response = await fetch(url, init)
     const data = await response.json().catch(() => ({}))
-    if (!response.ok)
+    if (!response.ok) {
+      void mutate()
       throw new Error(data.details || data.error || "The grid could not be updated.")
+    }
     return data
   }
 
@@ -613,9 +641,9 @@ export default function InstagramFeedView({
         : null
 
     if (proposal.kind === "open_photo_picker") {
-      const index = displayPosts.findIndex((item: any) => Number(item.id) === proposal.postId)
-      if (index < 0) throw new Error("Select the post you want to fill first.")
-      setShowGallery(index)
+      const galleryPost = displayPosts.find((item: any) => Number(item.id) === proposal.postId)
+      if (!galleryPost) throw new Error("Select the post you want to fill first.")
+      setShowGallery(Number(galleryPost.id))
       calendarUndoRef.current = null
       return { undoAvailable: false }
     }
@@ -623,6 +651,15 @@ export default function InstagramFeedView({
     if (proposal.kind === "update_caption") {
       if (!post) throw new Error("That post is no longer in this grid.")
       const previousCaption = typeof post.caption === "string" ? post.caption : ""
+      await mutate(
+        {
+          ...feedData,
+          posts: feedData.posts.map((item: any) =>
+            Number(item.id) === proposal.postId ? { ...item, caption: proposal.caption } : item
+          ),
+        },
+        { revalidate: false }
+      )
       await requestCalendarMutation(`/api/feed/${feedId}/update-caption`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -670,6 +707,16 @@ export default function InstagramFeedView({
           return { ...order, newPosition: Number(post.position) }
         return order
       })
+      await mutate(
+        {
+          ...feedData,
+          posts: feedData.posts.map((item: any) => {
+            const order = nextOrders.find(next => next.postId === Number(item.id))
+            return order ? { ...item, position: order.newPosition } : item
+          }),
+        },
+        { revalidate: false }
+      )
       await requestCalendarMutation(`/api/feed/${feedId}/reorder`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -687,11 +734,43 @@ export default function InstagramFeedView({
       if (!post) throw new Error("That post is no longer in this grid.")
       if (post.image_url)
         throw new Error("This post already has a photo. Select an empty post first.")
-      await requestCalendarMutation(`/api/feed/${feedId}/generate-single`, {
+      await mutate(
+        {
+          ...feedData,
+          posts: feedData.posts.map((item: any) =>
+            Number(item.id) === proposal.postId
+              ? {
+                  ...item,
+                  generation_status: "generating",
+                  prediction_id: `temp-calendar-${Date.now()}`,
+                }
+              : item
+          ),
+        },
+        { revalidate: false }
+      )
+      const generation = await requestCalendarMutation(`/api/feed/${feedId}/generate-single`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ postId: proposal.postId, generationMode }),
       })
+      if (generation.predictionId) {
+        await mutate(
+          {
+            ...feedData,
+            posts: feedData.posts.map((item: any) =>
+              Number(item.id) === proposal.postId
+                ? {
+                    ...item,
+                    generation_status: "generating",
+                    prediction_id: generation.predictionId,
+                  }
+                : item
+            ),
+          },
+          { revalidate: false }
+        )
+      }
       calendarUndoRef.current = async () => {
         await requestCalendarMutation(`/api/feed/${feedId}/remove-post-image`, {
           method: "POST",
@@ -702,7 +781,8 @@ export default function InstagramFeedView({
       }
     }
 
-    await refreshCalendar()
+    setPreviewProposal(null)
+    void refreshCalendar()
     return { undoAvailable: Boolean(calendarUndoRef.current) }
   }
 
@@ -755,18 +835,16 @@ export default function InstagramFeedView({
         <FeedHeader
           feedData={feedData}
           currentFeedId={feedId}
-          onBack={onBack}
+          onBack={feedNav ? undefined : onBack}
           onProfileImageClick={
             access?.hasGalleryAccess ? () => setShowProfileGallery(true) : undefined
           }
           onWriteBio={handleOpenBio}
           onCreateHighlights={() => setShowHighlightsModal(true)}
-          onOpenWizard={onOpenWizard}
+          onOpenWizard={() => setPlanSettingsOpen(true)}
           onOpenWelcomeWizard={onOpenWelcomeWizard}
           access={access}
-          generationMode={generationMode}
-          onToggleGenerationMode={access?.isMembership ? handleToggleGenerationMode : undefined}
-          showProfileDetails
+          showProfileDetails={false}
           workspaceNavigation={
             <FeedTabs
               activeTab={activeTab}
@@ -776,6 +854,13 @@ export default function InstagramFeedView({
             />
           }
         />
+
+        {!access?.isFree ? (
+          <CalendarNeedsMe
+            posts={displayPosts}
+            onSelectPost={post => setActivePostId(Number(post.id))}
+          />
+        ) : null}
 
         {!access?.isFree && activeTab === "plan" && (
           <FeedMonthSummary
@@ -787,7 +872,10 @@ export default function InstagramFeedView({
 
         <div className="pb-20">
           {activeTab === "plan" && !access?.isFree && (
-            <FeedWeekView posts={displayPosts} onPostClick={setSelectedPost} />
+            <FeedWeekView
+              posts={displayPosts}
+              onPostClick={post => setActivePostId(Number(post.id))}
+            />
           )}
 
           {activeTab === "grid" && (
@@ -798,7 +886,10 @@ export default function InstagramFeedView({
                 <FeedSinglePlaceholder
                   feedId={feedId}
                   post={displayPosts?.[0] || null}
-                  onAddImage={() => setShowGallery(0)} // Open gallery for free users
+                  onAddImage={() => {
+                    const postId = Number(displayPosts?.[0]?.id)
+                    if (postId) setShowGallery(postId)
+                  }} // Open gallery for free users
                   onGenerateImage={() => mutate()} // Refresh feed data after generation
                   onRequireFeedStyle={onRequireFeedStyle}
                   onRequireOnboarding={onOpenWizard}
@@ -814,7 +905,8 @@ export default function InstagramFeedView({
                     isSavingOrder={dragDrop.isSavingOrder}
                     feedId={feedId}
                     access={access} // Phase 5.1: Pass access control for image generation
-                    onPostClick={setSelectedPost}
+                    activePostId={activePostId}
+                    onPostClick={post => setActivePostId(Number(post.id))}
                     onAddImage={setShowGallery}
                     onGenerateImage={async (_postId: number) => await mutate()} // Phase 5.1: Refresh feed data after generation
                     onRequireFeedStyle={onRequireFeedStyle}
@@ -829,7 +921,7 @@ export default function InstagramFeedView({
                     <div className="mt-5 px-4 text-center">
                       <p className="text-xs font-light text-[color:var(--app-text-secondary)]">
                         {/* DRAFT UX copy for Sandra approval before release. */}
-                        Tap an empty post to add a photo.
+                        Tap a post to select it. Add or replace a photo from Maya’s post actions.
                       </p>
                     </div>
                   )}
@@ -1026,14 +1118,15 @@ export default function InstagramFeedView({
         <CalendarMayaWorkspace
           feedId={feedId}
           selectedPost={
-            selectedPost
+            activePost
               ? {
-                  id: Number(selectedPost.id),
-                  position: Number(selectedPost.position),
-                  caption: selectedPost.caption ?? null,
-                  contentPillar: selectedPost.content_pillar ?? null,
-                  scheduledAt: selectedPost.scheduled_at ?? null,
-                  hasImage: Boolean(selectedPost.image_url),
+                  id: Number(activePost.id),
+                  position: Number(activePost.position),
+                  caption: activePost.caption ?? null,
+                  contentPillar: activePost.content_pillar ?? null,
+                  scheduledAt: activePost.scheduled_at ?? null,
+                  hasImage: Boolean(activePost.image_url),
+                  imageUrl: activePost.image_url ?? null,
                 }
               : null
           }
@@ -1051,6 +1144,21 @@ export default function InstagramFeedView({
           }}
           onApplyProposal={applyCalendarProposal}
           onUndo={undoCalendarProposal}
+          planSettings={calendarPlanSettings}
+          onSavePlanSettings={saveCalendarPlanSettings}
+          planSettingsOpen={planSettingsOpen}
+          onPlanSettingsClosed={() => setPlanSettingsOpen(false)}
+          onPreviewProposal={setPreviewProposal}
+          onClearPreview={() => setPreviewProposal(null)}
+          onOpenPostDetails={postId => {
+            const post = displayPosts.find((item: any) => Number(item.id) === postId)
+            if (post) setSelectedPost(post)
+          }}
+          onClearSelectedPost={() => setActivePostId(null)}
+          onOpenPhotoPicker={postId => {
+            const galleryPost = displayPosts.find((item: any) => Number(item.id) === postId)
+            if (galleryPost) setShowGallery(Number(galleryPost.id))
+          }}
         />
       ) : null}
     </div>

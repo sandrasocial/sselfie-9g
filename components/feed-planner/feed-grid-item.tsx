@@ -18,6 +18,7 @@ interface FeedGridItemProps {
    *  empty tiles become a quiet, non-interactive placeholder for them. Paid-blueprint-only
    *  buyers (no Chat surface) keep today's Generate/Different-idea buttons unchanged. */
   isMembership?: boolean
+  isSelected?: boolean
   onPostClick: (post: any) => void
   onAddImage?: (postId: number) => void
   onGenerateImage?: (postId: number) => Promise<void>
@@ -197,7 +198,7 @@ function renderContent({
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#F8FAFA]/90 backdrop-blur-sm">
         <Spinner className="h-5 w-5" />
-        <span className="rounded-full bg-[#0D0E10]/65 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+        <span className="rounded-full bg-[color:var(--app-btn-primary-bg)]/65 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white backdrop-blur-sm">
           Creating…
         </span>
         <button
@@ -208,7 +209,7 @@ function renderContent({
           className={`mt-1 flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
             !canStop || isStopping
               ? "text-[#818283] opacity-40"
-              : "text-[#4F5052] hover:bg-[#0D0E10]/[0.06] hover:text-[#0D0E10]"
+              : "text-[#4F5052] hover:bg-[color:var(--app-btn-primary-bg)]/[0.06] hover:text-[color:var(--app-text-primary)]"
           }`}
         >
           <Square size={12} className={isStopping ? "animate-pulse" : ""} />
@@ -241,7 +242,9 @@ function renderContent({
               {post.content_pillar}
             </span>
           )}
-          <span className="text-[9px] uppercase tracking-[0.18em] text-[color:var(--app-text-muted)]">Add photo</span>
+          <span className="text-[9px] uppercase tracking-[0.18em] text-[color:var(--app-text-muted)]">
+            Add photo
+          </span>
         </button>
       )
     }
@@ -255,10 +258,10 @@ function renderContent({
         >
           {isMayaDraft && (
             <>
-              <span className="rounded-full bg-[#0D0E10]/[0.06] px-2 py-0.5 text-[8px] font-medium uppercase tracking-[0.18em] text-[#4F5052]">
+              <span className="rounded-full bg-[color:var(--app-btn-primary-bg)]/[0.06] px-2 py-0.5 text-[8px] font-medium uppercase tracking-[0.18em] text-[#4F5052]">
                 Maya&apos;s idea
               </span>
-              <span className="line-clamp-2 px-1 text-[11px] leading-snug text-[#0D0E10]">
+              <span className="line-clamp-2 px-1 text-[11px] leading-snug text-[color:var(--app-text-primary)]">
                 {post.content_pillar}
               </span>
             </>
@@ -272,7 +275,7 @@ function renderContent({
             type="button"
             onClick={onRegenerateIdeaClick}
             disabled={isRegeneratingIdea}
-            className="shrink-0 border-t border-[#C5C6C8]/40 py-1.5 text-[8px] uppercase tracking-[0.16em] text-[#818283] transition-colors hover:text-[#0D0E10] disabled:opacity-50"
+            className="shrink-0 border-t border-[#C5C6C8]/40 py-1.5 text-[8px] uppercase tracking-[0.16em] text-[#818283] transition-colors hover:text-[color:var(--app-text-primary)] disabled:opacity-50"
           >
             {isRegeneratingIdea ? "Asking Maya…" : "Different idea"}
           </button>
@@ -304,6 +307,7 @@ export default function FeedGridItem({
   isSavingOrder,
   showGenerateButton,
   isMembership,
+  isSelected = false,
   onPostClick,
   onAddImage,
   onGenerateImage,
@@ -328,7 +332,7 @@ export default function FeedGridItem({
     predictionId,
     // Suite members never self-trigger generation from an empty tile (Phase 2c) - no
     // prediction to poll for, so skip the polling hook entirely for that population.
-    enabled: !isMembership && !!predictionId && !post?.image_url,
+    enabled: !!predictionId && !post?.image_url,
     onComplete: imageUrl => {
       console.log(
         "[Feed Grid Item] ✅ Generation completed for post",
@@ -419,9 +423,11 @@ export default function FeedGridItem({
   // affordance's pointer cursor.
   const isQuietPlaceholder = isMembership && showGenerateButton && !isComplete && !isGenerating
 
-  const baseClassName = `relative block aspect-square w-full overflow-hidden rounded-[6px] border border-[#C5C6C8]/40 bg-[#F8FAFA] transition-all duration-200 ${
-    isDragging ? "scale-95 opacity-50" : ""
-  }`
+  const baseClassName = `relative block aspect-square w-full overflow-hidden rounded-[6px] border bg-[color:var(--calendar-stone-1)] transition-all duration-200 ${
+    isSelected
+      ? "z-10 border-[color:var(--app-text-primary)] ring-2 ring-[color:var(--app-focus-ring)] ring-offset-2 ring-offset-white"
+      : "border-[color:var(--calendar-stone-4)]/70"
+  } ${isDragging ? "scale-95 opacity-50" : ""}`
 
   if (isComplete) {
     const isReadyPost = Boolean(post.caption?.trim())
@@ -463,10 +469,13 @@ export default function FeedGridItem({
           }
           onPostClick(post)
         }}
-        aria-label={`Open post ${post.position}. Swipe or use left and right arrow keys to move it.`}
+        aria-label={`Select post ${post.position}. Swipe or use left and right arrow keys to move it.`}
         className={`${baseClassName} ${completeInteractionClassName}`}
       >
         {content}
+        <span className="absolute left-1.5 top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-white/60 bg-white/85 px-1 text-[9px] font-medium text-[color:var(--app-text-primary)] backdrop-blur-md">
+          {post.position}
+        </span>
         <span
           className={`absolute right-1.5 top-1.5 rounded-full border px-2 py-1 text-[8px] font-medium uppercase tracking-[0.12em] backdrop-blur-md ${
             isReadyPost
@@ -477,6 +486,89 @@ export default function FeedGridItem({
           {isReadyPost ? "Ready" : "Needs caption"}
         </span>
       </button>
+    )
+  }
+
+  if (isMembership) {
+    const rawConcept = typeof post.content_pillar === "string" ? post.content_pillar.trim() : ""
+    const [rawRole, ...conceptParts] = rawConcept.split(":")
+    const knownRoles = new Set(["Personal", "Trust", "Authority", "Offer"])
+    const role = knownRoles.has(rawRole.trim()) ? rawRole.trim() : "Planned"
+    const concept = conceptParts.length > 0 ? conceptParts.join(":").trim() : rawConcept
+    const failed = post.generation_status === "failed" || pollingStatus === "failed"
+    const date = post.scheduled_at
+      ? new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(
+          new Date(post.scheduled_at)
+        )
+      : null
+
+    return (
+      <>
+        <div className={baseClassName}>
+          <button
+            type="button"
+            onClick={() => onPostClick(post)}
+            aria-label={`Select post ${post.position}`}
+            aria-pressed={isSelected}
+            className={`absolute inset-0 flex w-full flex-col p-2.5 text-left transition-colors hover:brightness-[0.98] ${
+              Number(post.position) % 4 === 0
+                ? "bg-[color:var(--calendar-stone-4)]"
+                : Number(post.position) % 3 === 0
+                  ? "bg-[color:var(--calendar-stone-3)]"
+                  : Number(post.position) % 2 === 0
+                    ? "bg-[color:var(--calendar-stone-2)]"
+                    : "bg-[color:var(--calendar-stone-1)]"
+            }`}
+          >
+            <span className="flex items-start justify-between gap-1 text-[8px] font-medium uppercase tracking-[0.12em] text-[color:var(--app-text-secondary)]">
+              <span>{role}</span>
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white/75 px-1 text-[9px] text-[color:var(--app-text-primary)]">
+                {post.position}
+              </span>
+            </span>
+            <span className="mt-auto line-clamp-3 text-[10px] font-medium leading-snug text-[color:var(--app-text-primary)]">
+              {concept || (post.caption?.trim() ? "Caption ready" : "Maya will shape this post")}
+            </span>
+            <span className="mt-1 flex items-center justify-between gap-1 text-[8px] text-[color:var(--app-text-secondary)]">
+              <span>{date ?? "This month"}</span>
+              <span>
+                {failed
+                  ? "Image failed"
+                  : isGenerating
+                    ? "Creating image"
+                    : post.caption?.trim()
+                      ? "Needs photo"
+                      : "Planned"}
+              </span>
+            </span>
+          </button>
+          {failed ? (
+            <button
+              type="button"
+              aria-label={`Retry image for post ${post.position}`}
+              onClick={handleGenerateClick}
+              className="absolute bottom-7 right-2 z-10 min-h-8 rounded-full bg-[color:var(--app-btn-primary-bg)] px-2.5 text-[9px] font-medium text-white"
+            >
+              Retry
+            </button>
+          ) : isGenerating && canStop ? (
+            <button
+              type="button"
+              aria-label={`Stop image generation for post ${post.position}`}
+              onClick={handleStopGeneration}
+              className="absolute bottom-7 right-2 z-10 min-h-8 rounded-full bg-white/85 px-2.5 text-[9px] font-medium text-[color:var(--app-text-primary)]"
+            >
+              Stop
+            </button>
+          ) : null}
+        </div>
+        <StopGenerationDialog
+          open={showStopDialog}
+          isStopping={isStopping}
+          onOpenChange={setShowStopDialog}
+          onConfirm={() => void confirmStopGeneration()}
+        />
+      </>
     )
   }
 

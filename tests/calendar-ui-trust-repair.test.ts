@@ -43,13 +43,12 @@ describe("Calendar UI trust repairs", () => {
     expect(tabs).not.toContain('["plan", "grid", "profile"]')
   })
 
-  it("uses the light-surface Maya toggle inside Calendar", () => {
+  it("removes the unexplained generation-mode toggle from Calendar", () => {
     const header = read("components/feed-planner/feed-header.tsx")
-    const toggle = read("components/sselfie/maya/maya-mode-toggle.tsx")
 
-    expect(header).toContain('surface="light"')
-    expect(toggle).toContain('surface?: "dark" | "light"')
-    expect(toggle).toContain("bg-[#0D0E10] text-white")
+    expect(header).not.toContain("MayaModeToggle")
+    expect(header).not.toContain("onToggleGenerationMode")
+    expect(header).not.toContain("My look")
   })
 
   it("waits for the saved style before initializing the new-grid picker", () => {

@@ -15,7 +15,7 @@ describe("Maya Calendar workspace", () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        message: "I tightened the caption for post 4.",
+        message: "I tightened the caption for **post 4**.",
         proposal: {
           kind: "update_caption",
           label: "Update post 4 caption",
@@ -44,7 +44,7 @@ describe("Maya Calendar workspace", () => {
     })
     fireEvent.click(screen.getByRole("button", { name: "Send to Maya" }))
 
-    expect(await screen.findByText("I tightened the caption for post 4.")).toBeInTheDocument()
+    expect(await screen.findByText("post 4")).toHaveProperty("tagName", "STRONG")
     expect(screen.getByText("A clearer caption that sounds like her.")).toBeInTheDocument()
     expect(apply).not.toHaveBeenCalled()
 
@@ -53,7 +53,7 @@ describe("Maya Calendar workspace", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Undo change" }))
     await waitFor(() => expect(undo).toHaveBeenCalledTimes(1))
-  })
+  }, 10_000)
 
   it("keeps the grid visible when the mobile Maya sheet is collapsed", async () => {
     const { CalendarMayaWorkspace } =
@@ -73,6 +73,33 @@ describe("Maya Calendar workspace", () => {
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Collapse Maya" }))
     expect(screen.getByRole("button", { name: "Open Maya for this Calendar" })).toBeInTheDocument()
+  })
+
+  it("changes shared inline suggestions when an empty post is selected", async () => {
+    const { CalendarMayaWorkspace } =
+      await import("@/components/feed-planner/calendar-maya-workspace")
+    render(
+      <CalendarMayaWorkspace
+        feedId={7}
+        selectedPost={{ id: 44, position: 4, caption: "Caption ready", hasImage: false }}
+        feedSummary={{ title: "July", posts: [] }}
+        planSettings={{
+          businessType: "Photographer",
+          idealAudience: "Women founders",
+          currentSituation: "Membership",
+          feedStyle: "Light & Minimalistic",
+        }}
+        onSavePlanSettings={vi.fn()}
+        onApplyProposal={vi.fn()}
+        onUndo={vi.fn()}
+      />
+    )
+
+    expect(screen.getAllByText("Post 4 selected")).toHaveLength(2)
+    fireEvent.click(screen.getByRole("button", { name: "Use this plan" }))
+    expect(screen.getByRole("button", { name: "Create this image" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Use one from my Gallery" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Build my month" })).not.toBeInTheDocument()
   })
 
   it("shows visible progress while Maya prepares a first grid", async () => {

@@ -13,6 +13,11 @@ import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import { getMemory } from "@/lib/app-v3/maya/memory-store"
+import {
+  MAYA_CORE_INTELLIGENCE_SLIM,
+  MAYA_PROMPT_PHILOSOPHY,
+  MAYA_VOICE,
+} from "@/lib/app-v3/maya/persona"
 import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 
@@ -39,7 +44,8 @@ export async function POST(request: Request) {
   }
 
   const input = parsed.data
-  let ownedFeed: { id: number; brand_name?: string | null; username?: string | null } | null = null
+  type OwnedFeed = { id: number; brand_name?: string | null; username?: string | null }
+  let ownedFeed: OwnedFeed | null = null
   let posts: Array<{
     id: number
     position: number
@@ -58,7 +64,7 @@ export async function POST(request: Request) {
       LIMIT 1
     `
     if (!feed) return NextResponse.json({ error: "Grid not found" }, { status: 404 })
-    ownedFeed = feed as typeof ownedFeed
+    ownedFeed = feed as unknown as OwnedFeed
 
     const [postRows, bioRows] = await Promise.all([
       sql`
@@ -87,7 +93,7 @@ export async function POST(request: Request) {
     ? (posts.find(post => Number(post.id) === input.selectedPostId) ?? null)
     : null
 
-  const system = [
+  const calendarCapability = [
     `You are ${agentName}, the member's warm, decisive Instagram creative director inside her live Calendar.`,
     "You are operating a real visual workspace. Be specific and concise. Never give generic social-media advice.",
     "Return one short useful response and at most one proposed operation. A proposal is only a preview; the member must apply it.",
@@ -105,6 +111,26 @@ export async function POST(request: Request) {
     "Never publish, schedule an external post, delete a grid, promise results, or claim a change is already applied.",
     "Do not mention tools, schemas, IDs, or backend systems. Do not use an em dash.",
   ].join("\n")
+  const memoryContext = [
+    memory?.agentName?.trim() ? `The user named you "${memory.agentName.trim()}".` : "",
+    memory?.brandNotes?.trim()
+      ? `What you already know about her brand: ${memory.brandNotes.trim()}`
+      : "",
+    memory?.preferences?.trim() ? `Her lasting preferences: ${memory.preferences.trim()}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n")
+  const system = [
+    MAYA_VOICE,
+    MAYA_CORE_INTELLIGENCE_SLIM,
+    MAYA_PROMPT_PHILOSOPHY,
+    memoryContext,
+    "## YOUR CURRENT JOB: LIVE CALENDAR CREATIVE DIRECTION",
+    calendarCapability,
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+    .replace(/\s*—\s*/g, ", ")
 
   const gridState = ownedFeed
     ? JSON.stringify({

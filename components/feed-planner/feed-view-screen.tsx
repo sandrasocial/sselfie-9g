@@ -13,6 +13,10 @@ import FeedStyleModal, { type FeedStyle, type FeedStyleModalData } from "./feed-
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { useFeedNav } from "./feed-nav-context"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import {
+  calendarPlanSettingsFromProfile,
+  type CalendarPlanSettings,
+} from "@/lib/feed-planner/calendar-plan-settings"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -78,8 +82,8 @@ export default function FeedViewScreen({
   )
 
   // Fetch user's last feed style from personal brand
-  const { data: personalBrandData } = useSWR(
-    showFeedStyleModal ? "/api/profile/personal-brand" : null,
+  const { data: personalBrandData, mutate: mutatePersonalBrand } = useSWR(
+    "/api/profile/personal-brand",
     fetcher,
     {
       revalidateOnFocus: false,
@@ -89,6 +93,26 @@ export default function FeedViewScreen({
 
   // Extract last feed style from settings_preference[0]
   const lastFeedStyle: FeedStyle | null = personalBrandData?.data?.settingsPreference?.[0] || null
+  const calendarPlanSettings = calendarPlanSettingsFromProfile(personalBrandData)
+
+  const saveCalendarPlanSettings = async (settings: CalendarPlanSettings) => {
+    const response = await fetch("/api/profile/personal-brand", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        businessType: settings.businessType,
+        idealAudience: settings.idealAudience,
+        currentSituation: settings.currentSituation,
+        settingsPreference: [settings.feedStyle],
+        isCompleted: true,
+      }),
+    })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok)
+      throw new Error(data.details || data.error || "Your plan settings could not be saved.")
+    await mutatePersonalBrand()
+  }
 
   // Fetch access control if not provided (for use in SselfieApp)
   const { data: accessData } = useSWR<FeedPlannerAccess>(
@@ -451,7 +475,7 @@ export default function FeedViewScreen({
         <div className="app-light-panel-text min-h-0 flex-1 overflow-y-auto bg-[color:var(--app-bg)] px-0 py-3 sm:px-4 lg:px-6">
           <div className="mx-auto grid w-full max-w-[1380px] min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
             <CalendarEmptyCanvas
-              onAddPhoto={position => void handleQuickManualGrid(position)}
+              onStartBlank={() => void handleQuickManualGrid(1)}
               busy={isCreatingManual || isPlanningWithMaya}
             />
             <CalendarMayaWorkspace
@@ -459,6 +483,8 @@ export default function FeedViewScreen({
               selectedPost={null}
               feedSummary={null}
               busy={isCreatingManual || isPlanningWithMaya}
+              planSettings={calendarPlanSettings}
+              onSavePlanSettings={saveCalendarPlanSettings}
               onBuildFirstGrid={handlePlanWithMaya}
               onApplyProposal={async (proposal: CalendarAgentProposal) => {
                 if (proposal.kind !== "create_plan")
