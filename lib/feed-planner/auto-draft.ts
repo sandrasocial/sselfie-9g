@@ -24,6 +24,49 @@ export type AutoDraftOutcome =
   | { created: true; feedLayoutId: number; postCount: number }
   | { created: false; reason: "draft_in_progress" | "plan_exists" | "generation_failed" }
 
+type AutoDraftPromptInput = {
+  agentName: string
+  periodMonth: string
+  postCount: number
+  cadence: number
+  daysInMonth: number
+  brandContext: string | null
+}
+
+export function buildAutoDraftPrompt(input: AutoDraftPromptInput): {
+  system: string
+  userMessage: string
+} {
+  const { agentName, periodMonth, postCount, cadence, daysInMonth, brandContext } = input
+  const system = [
+    `You are ${agentName}, her personal content strategist at SSELFIE. Plan her Instagram feed for ${periodMonth} the way a stylist would: specific to her, never generic.`,
+    `Plan exactly ${postCount} posts, spread naturally across the month (about ${cadence} per week) rather than clustered at the start.`,
+    "Factual safety:",
+    "- Never invent facts, numbers, customer results, personal history, testimonials, pricing, timelines, or proof.",
+    "- Use only facts explicitly present in the context. Treat missing information as unknown, not as permission to create a plausible detail.",
+    "- Do not write first-person autobiography, quantified proof, or a client story unless the supplied context supports it.",
+    "- When context is limited, write useful caption structures the member can personalize without pretending an unverified experience happened.",
+    "Rules:",
+    "- Each post's contentPillar is a short creator-specific category grounded in HER brand (e.g. 'Behind the offer', 'Useful lesson', 'Personal perspective'), never generic ('Motivation', 'Lifestyle').",
+    "- Only use categories such as 'Client win' or 'Personal story' when the supplied context contains the real source material for them.",
+    "- Each post's title is a short editorial label for that day's post (a few words), specific to what it's about.",
+    "- Each post's caption is a real, postable Instagram caption in HER voice - warm, direct, human, a few sentences, no hashtag spam, no hype words, never a long dash.",
+    "- plannedDate is an ISO date (YYYY-MM-DD) within the target month, one distinct date per post, in ascending order.",
+    "- position is 1-indexed and sequential (1, 2, 3, ...).",
+    "Return ONLY raw JSON, no prose, no code fences, in exactly this shape:",
+    `{"themeSummary": string, "schedulingRationale": string, "posts": [{"position": number, "plannedDate": "YYYY-MM-DD", "contentPillar": string, "title": string, "caption": string}]}`,
+  ].join("\n")
+
+  const userMessage = [
+    `Target month: ${periodMonth} (${daysInMonth} days).`,
+    brandContext
+      ? `What you know about her:\n${brandContext}`
+      : "You don't have much on her yet. Keep the plan relevant to her business and audience. Use observations, useful how-to guidance, thoughtful questions, and editable caption structures. Do not fill missing context with plausible details.",
+  ].join("\n\n")
+
+  return { system, userMessage }
+}
+
 export async function draftMonthPlanForUser(
   authUserId: string,
   neonUserId: string | number,
@@ -61,28 +104,19 @@ export async function draftMonthPlanForUser(
     const today = new Date()
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
 
-    const system = [
-      `You are ${agentName}, her personal content strategist at SSELFIE. Plan her Instagram feed for ${periodMonth} the way a stylist would: specific to her, never generic.`,
-      `Plan exactly ${postCount} posts, spread naturally across the month (about ${cadence} per week) rather than clustered at the start.`,
-      "Rules:",
-      "- Each post's contentPillar is a short creator-specific category grounded in HER brand (e.g. 'Behind the offer', 'Client win', 'Personal story'), never generic ('Motivation', 'Lifestyle').",
-      "- Each post's title is a short editorial label for that day's post (a few words), specific to what it's about.",
-      "- Each post's caption is a real, postable Instagram caption in HER voice - warm, direct, human, a few sentences, no hashtag spam, no hype words, never a long dash.",
-      "- plannedDate is an ISO date (YYYY-MM-DD) within the target month, one distinct date per post, in ascending order.",
-      "- position is 1-indexed and sequential (1, 2, 3, ...).",
-      "Return ONLY raw JSON, no prose, no code fences, in exactly this shape:",
-      `{"themeSummary": string, "schedulingRationale": string, "posts": [{"position": number, "plannedDate": "YYYY-MM-DD", "contentPillar": string, "title": string, "caption": string}]}`,
-    ].join("\n")
-
-    const userMsg = [
-      `Target month: ${periodMonth} (${daysInMonth} days).`,
-      brandContext ? `What you know about her:\n${brandContext}` : "You don't have much on her yet; keep the plan about her business and audience, never generic.",
-    ].join("\n\n")
+    const { system, userMessage } = buildAutoDraftPrompt({
+      agentName,
+      periodMonth,
+      postCount,
+      cadence,
+      daysInMonth,
+      brandContext,
+    })
 
     const { text } = await generateText({
       model: createMayaOpenRouterModel("chat_pro"),
       system,
-      messages: [{ role: "user", content: userMsg }],
+      messages: [{ role: "user", content: userMessage }],
       temperature: 0.8,
       maxOutputTokens: getMayaMaxTokensForTask("chat_pro"),
     })
