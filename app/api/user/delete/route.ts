@@ -98,7 +98,7 @@ export async function DELETE() {
 
     // Agent profiles / brand strategy
     await sql`DELETE FROM agent_profiles WHERE user_id = ${userId}`.catch(tolerateMissingLegacyTable)
-    await sql`DELETE FROM freebie_brand_strategies WHERE user_id = ${userId}`
+    await sql`DELETE FROM freebie_brand_strategies WHERE email = ${neonUser.email}`
 
     // Settings
     await sql`DELETE FROM user_settings WHERE user_id = ${userId}`.catch(tolerateMissingLegacyTable)
