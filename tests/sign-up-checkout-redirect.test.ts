@@ -6,6 +6,9 @@ const pushMock = vi.fn()
 const signInWithPasswordMock = vi.fn()
 const signUpMock = vi.fn()
 const fetchMock = vi.fn()
+const { autoConfirmUserMock } = vi.hoisted(() => ({
+  autoConfirmUserMock: vi.fn(async () => ({ success: true })),
+}))
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -23,7 +26,7 @@ vi.mock("@/lib/supabase/client", () => ({
 }))
 
 vi.mock("@/app/actions/auto-confirm-user", () => ({
-  autoConfirmUser: vi.fn(async () => ({ success: true })),
+  autoConfirmUser: autoConfirmUserMock,
 }))
 
 import SignUpPage from "@/app/auth/sign-up/page"
@@ -52,6 +55,7 @@ describe("sign-up checkout redirect", () => {
     signInWithPasswordMock.mockReset()
     signUpMock.mockReset()
     fetchMock.mockReset()
+    autoConfirmUserMock.mockClear()
 
     mockUserLookup(false)
 
@@ -105,6 +109,18 @@ describe("sign-up checkout redirect", () => {
     await submitSignUpForm()
 
     await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith("/app")
+    })
+  })
+
+  it("syncs an auto-confirmed signup into the application database before redirecting", async () => {
+    setSearch("")
+
+    render(createElement(SignUpPage))
+    await submitSignUpForm()
+
+    await waitFor(() => {
+      expect(autoConfirmUserMock).toHaveBeenCalledWith("test@example.com", "user-1")
       expect(pushMock).toHaveBeenCalledWith("/app")
     })
   })

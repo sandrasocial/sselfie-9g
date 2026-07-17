@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import {
@@ -25,6 +26,7 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [userExists, setUserExists] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [loginHref, setLoginHref] = useState("/auth/login")
   const router = useRouter()
 
@@ -128,22 +130,20 @@ export default function SignUpPage() {
 
       if (signUpError) throw signUpError
 
-      // Check if user was already confirmed (Supabase may auto-confirm if configured)
+      // Check if user was already confirmed (Supabase may auto-confirm if configured).
+      // Always run the server action: it also creates the Neon application user. Previously,
+      // auto-confirmed signups skipped that sync and landed in /app with failing Maya APIs.
       const userId = signUpData.user?.id
       const isAlreadyConfirmed = signUpData.user?.email_confirmed_at !== null
 
-      if (isAlreadyConfirmed) {
-        console.log("[Sign Up] ✅ User already confirmed, signing in...")
-      } else if (userId) {
-        // Auto-confirm email for free signups - simple server action
-        console.log("[Sign Up] Auto-confirming email for:", email)
+      if (userId) {
         const { autoConfirmUser } = await import("@/app/actions/auto-confirm-user")
         const confirmResult = await autoConfirmUser(email, userId)
-        
+
         if (!confirmResult.success) {
           console.warn("[Sign Up] Auto-confirm failed:", confirmResult.error)
           // Don't throw - user was created, they can confirm via email link if needed
-        } else {
+        } else if (!isAlreadyConfirmed) {
           console.log("[Sign Up] ✅ Email auto-confirmed")
         }
       }
@@ -197,61 +197,116 @@ export default function SignUpPage() {
     }
   }
 
+  const fieldClass =
+    "h-12 rounded-[10px] border-[#C5C6C8] bg-white px-4 text-[15px] text-[#0D0E10] placeholder:text-[#818283] focus-visible:border-[#0D0E10] focus-visible:ring-[#0D0E10]/10"
+
   return (
-    <div
-      className="flex min-h-screen w-full items-center justify-center p-6 bg-[#0d0c0b]"
-      style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(168,164,156,0.08) 0%, #0d0c0b 70%)" }}
-    >
-      <div className="w-full max-w-5xl grid gap-6 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] items-stretch">
-        <Card className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl">
-          <CardHeader className="pb-6">
-            <div className="mb-2">
-              <span className="font-['Cormorant_Garamond'] text-3xl text-[#f0ede8] tracking-[0.3em] uppercase font-light">SSELFIE</span>
-            </div>
-            <CardTitle className="font-['Cormorant_Garamond'] font-light text-2xl text-[#f0ede8] tracking-wide">Create your account</CardTitle>
-            <CardDescription className="font-['Inter'] text-[#8a8780] text-sm">
-              Join SSELFIE and start building clear, consistent visibility for your brand
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {userExists ? (
-              // Password-only flow for existing users (like paid users)
-              <form onSubmit={handleLogin}>
+    <main className="min-h-screen bg-[#F8FAFA] px-4 py-6 text-[#0D0E10] sm:px-6 sm:py-10">
+      <div className="mx-auto grid min-h-[calc(100vh-3rem)] w-full max-w-5xl overflow-hidden rounded-[24px] border border-[#C5C6C8]/65 bg-white shadow-[0_24px_80px_rgba(13,14,16,0.08)] lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
+        <section className="flex items-center px-5 py-8 sm:px-10 lg:py-12">
+          <Card className="w-full border-0 bg-transparent py-0 shadow-none">
+            <CardHeader className="px-0 pb-7">
+              <p className="text-[11px] uppercase tracking-[0.28em] text-[#818283]">SSELFIE Studio</p>
+              <CardTitle className="mt-3 font-serif text-[38px] font-light leading-[0.98] tracking-[-0.02em] text-[#0D0E10] sm:text-[46px]">
+                {userExists ? "Welcome back." : "Start with one photo."}
+              </CardTitle>
+              <CardDescription className="mt-3 max-w-sm text-[15px] leading-relaxed text-[#4F5052]">
+                {userExists
+                  ? "Sign in and pick up where you left off."
+                  : "Create your account. Maya will show you the clearest next step for your access."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-0">
+              <form onSubmit={userExists ? handleLogin : handleSignUp}>
                 <div className="flex flex-col gap-5">
+                  {!userExists && (
+                    <div className="grid gap-2">
+                      <Label htmlFor="name" className="text-[11px] uppercase tracking-[0.18em] text-[#4F5052]">
+                        Name
+                      </Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        autoComplete="name"
+                        placeholder="Your name"
+                        required
+                        value={name}
+                        onChange={(event) => setName(event.target.value)}
+                        className={fieldClass}
+                      />
+                    </div>
+                  )}
+
                   <div className="grid gap-2">
-                    <Label htmlFor="email-existing" className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780]">
+                    <Label htmlFor={userExists ? "email-existing" : "email"} className="text-[11px] uppercase tracking-[0.18em] text-[#4F5052]">
                       Email
                     </Label>
                     <Input
-                      id="email-existing"
+                      id={userExists ? "email-existing" : "email"}
                       type="email"
+                      autoComplete="email"
                       placeholder="you@example.com"
                       required
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="bg-[rgba(175,170,162,0.08)] border-[rgba(195,190,182,0.25)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.5)]"
+                      onChange={(event) => setEmail(event.target.value)}
+                      className={fieldClass}
                     />
                   </div>
+
                   <div className="grid gap-2">
-                    <Label htmlFor="password-existing" className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780]">
+                    <Label htmlFor={userExists ? "password-existing" : "password"} className="text-[11px] uppercase tracking-[0.18em] text-[#4F5052]">
                       Password
                     </Label>
-                    <Input
-                      id="password-existing"
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="bg-[rgba(175,170,162,0.08)] border-[rgba(195,190,182,0.25)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.5)]"
-                      placeholder="Enter your password"
-                    />
+                    <div className="relative">
+                      <Input
+                        id={userExists ? "password-existing" : "password"}
+                        type={showPassword ? "text" : "password"}
+                        autoComplete={userExists ? "current-password" : "new-password"}
+                        minLength={8}
+                        required
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        placeholder={userExists ? "Enter your password" : "At least 8 characters"}
+                        className={`${fieldClass} pr-20`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((visible) => !visible)}
+                        className="absolute inset-y-0 right-1 min-h-11 px-3 text-[11px] uppercase tracking-[0.12em] text-[#4F5052]"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? "Hide" : "Show"}
+                      </button>
+                    </div>
                   </div>
-                  {error && <p className="text-sm text-red-300">{error}</p>}
-                  <Button type="submit" className="w-full bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors" disabled={isLoading}>
-                    {isLoading ? "Signing in..." : "Sign In"}
+
+                  {error && (
+                    <p role="alert" className="rounded-[8px] bg-[#282728]/5 px-3 py-2.5 text-[13px] leading-relaxed text-[#282728]">
+                      {error}
+                    </p>
+                  )}
+
+                  <Button
+                    type="submit"
+                    className="min-h-12 w-full rounded-full bg-[#0D0E10] px-6 text-[12px] uppercase tracking-[0.16em] text-white shadow-none hover:bg-[#282728]"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (userExists ? "Signing in…" : "Creating account…") : userExists ? "Sign In" : "Sign Up"}
                   </Button>
-                  <p className="text-xs text-center text-[#8a8780]">
-                    New user?{" "}
+                </div>
+
+                {!userExists && (
+                  <p className="mt-4 text-center text-[11px] leading-relaxed text-[#6D6E70]">
+                    By signing up, you agree to the{" "}
+                    <Link href="/terms" className="underline underline-offset-2 hover:text-[#0D0E10]">Terms</Link>
+                    {" "}and{" "}
+                    <Link href="/privacy" className="underline underline-offset-2 hover:text-[#0D0E10]">Privacy Policy</Link>.
+                  </p>
+                )}
+
+                <div className="mt-6 text-center text-[14px] text-[#4F5052]">
+                  {userExists ? "New to SSELFIE?" : "Already have an account?"}{" "}
+                  {userExists ? (
                     <button
                       type="button"
                       onClick={() => {
@@ -260,101 +315,39 @@ export default function SignUpPage() {
                         setPassword("")
                         setError(null)
                       }}
-                      className="text-[#a8a49c] hover:text-[#c8c4bb] transition-colors"
+                      className="min-h-11 font-medium text-[#0D0E10] underline underline-offset-4"
                     >
-                      Sign up here
+                      Sign up
                     </button>
-                  </p>
+                  ) : (
+                    <Link href={loginHref} className="inline-flex min-h-11 items-center font-medium text-[#0D0E10] underline underline-offset-4">
+                      Sign in
+                    </Link>
+                  )}
                 </div>
               </form>
-            ) : (
-              // Full signup form for new users
-              <form onSubmit={handleSignUp}>
-                <div className="flex flex-col gap-5">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name" className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780]">
-                      Name
-                    </Label>
-                    <Input
-                      id="name"
-                      type="text"
-                      placeholder="Your name"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="bg-[rgba(175,170,162,0.08)] border-[rgba(195,190,182,0.25)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.5)]"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="email" className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780]">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="bg-[rgba(175,170,162,0.08)] border-[rgba(195,190,182,0.25)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.5)]"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="password" className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780]">
-                      Password
-                    </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="bg-[rgba(175,170,162,0.08)] border-[rgba(195,190,182,0.25)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.5)]"
-                    />
-                  </div>
-                  {error && <p className="text-sm text-red-300">{error}</p>}
-                  <Button type="submit" className="w-full bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors" disabled={isLoading}>
-                    {isLoading ? "Creating account..." : "Sign Up"}
-                  </Button>
-                </div>
-                <div className="mt-5 text-center text-sm text-[#8a8780]">
-                  Already have an account?{" "}
-                  <Link href={loginHref} className="text-[#a8a49c] hover:text-[#c8c4bb] transition-colors">
-                    Sign in
-                  </Link>
-                </div>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </section>
 
-        <aside className="hidden lg:flex flex-col justify-between rounded-2xl border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.06)] p-8">
-          <div>
-            <p className="font-['Inter'] text-[10px] uppercase tracking-[0.35em] text-[#8a8780] mb-4">Before you start</p>
-            <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-[#f0ede8] leading-tight mb-6">
-              You&apos;re joining the same system behind a 100K+ personal brand.
-            </h2>
-            <p className="font-['Inter'] text-sm text-[#8a8780] leading-relaxed">
-              Sandra built this from scratch with a tiny setup and real consistency. You get that exact workflow in-app.
+        <aside className="relative hidden min-h-[650px] overflow-hidden bg-[#282728] lg:block">
+          <Image
+            src="/landing/grid-after.png"
+            alt="A cohesive SSELFIE visual grid"
+            fill
+            priority
+            className="object-cover"
+            sizes="560px"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0D0E10]/85 via-[#0D0E10]/15 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 p-10 text-white">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-white/70">What happens next</p>
+            <p className="mt-3 max-w-md font-serif text-[34px] font-light leading-tight">
+              Your photo. Your voice. One clear place to keep creating.
             </p>
-          </div>
-
-          <div className="space-y-4 mt-8">
-            <blockquote className="rounded-xl border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] p-4">
-              <p className="font-['Inter'] text-sm text-[#f0ede8] leading-relaxed">
-                &ldquo;I stopped overthinking and finally posted photos I felt proud of.&rdquo;
-              </p>
-              <p className="font-['Inter'] text-xs uppercase tracking-[0.25em] text-[#8a8780] mt-3">Studio Member</p>
-            </blockquote>
-            <blockquote className="rounded-xl border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] p-4">
-              <p className="font-['Inter'] text-sm text-[#f0ede8] leading-relaxed">
-                &ldquo;The first prompt already sounded like my brand voice. That never happened before.&rdquo;
-              </p>
-              <p className="font-['Inter'] text-xs uppercase tracking-[0.25em] text-[#8a8780] mt-3">Brand Strategy Buyer</p>
-            </blockquote>
           </div>
         </aside>
       </div>
-    </div>
+    </main>
   )
 }

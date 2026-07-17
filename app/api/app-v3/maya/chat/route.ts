@@ -27,6 +27,7 @@ import { repairSemanticPlan } from "@/lib/app-v3/maya/semantic-plan-repair"
 import type { CreationIntent, CreationIntentSource, OutputFormat } from "@/components/app-v3/types"
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
+import { shouldStopAppV3MayaToolLoop } from "@/lib/app-v3/maya/tool-loop-policy"
 
 export const maxDuration = 300
 
@@ -1036,6 +1037,7 @@ export async function POST(req: Request) {
       tools,
       temperature: 0.8,
       maxOutputTokens: APP_V3_MAX_OUTPUT_TOKENS,
+      stopWhen: shouldStopAppV3MayaToolLoop,
       // STORY-GENERATION fix round 3 (2026-07-03, live failures 06:42Z + 15:56Z): story
       // formats keep producing emit_concepts payloads that are complete JSON but the wrong
       // shape, which fails schema validation, drops the tool call, and dead-ends the member
