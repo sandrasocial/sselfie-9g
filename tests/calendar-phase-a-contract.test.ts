@@ -121,4 +121,14 @@ describe("Calendar Phase A operational contracts", () => {
     expect(route).toContain('eventName: "calendar_post_published"')
     expect(contract).toContain('"calendar_post_published"')
   })
+
+  it("hydrates the embedded Calendar before restoring its saved grid", () => {
+    const view = read("components/app-v3/feed-planner-view.tsx")
+
+    expect(view).toContain("useState<number | null>(null)")
+    expect(view).toContain("window.localStorage.getItem(SELECTED_FEED_KEY)")
+    expect(view).not.toContain(
+      'useState<number | null>(() => {\n    if (typeof window === "undefined")'
+    )
+  })
 })

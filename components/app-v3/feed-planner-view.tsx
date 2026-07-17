@@ -25,21 +25,30 @@ export function FeedPlannerView({
   /** Starts Maya seeded with a THIS WEEK idea (the shell's creationIdea channel). */
   onCreateIdea?: (format: OutputFormat, title: string) => void
 } = {}) {
-  const [selectedFeedId, setSelectedFeedId] = useState<number | null>(() => {
-    if (typeof window === "undefined") return null
-    const stored = Number(window.localStorage.getItem(SELECTED_FEED_KEY))
-    return Number.isInteger(stored) && stored > 0 ? stored : null
-  })
+  const [selectedFeedId, setSelectedFeedId] = useState<number | null>(null)
+  const [hasRestoredFeed, setHasRestoredFeed] = useState(false)
   const [pendingSlotPosition, setPendingSlotPosition] = useState<number | null>(null)
 
   useEffect(() => {
+    try {
+      const stored = Number(window.localStorage.getItem(SELECTED_FEED_KEY))
+      if (Number.isInteger(stored) && stored > 0) setSelectedFeedId(stored)
+    } catch {
+      // best effort; the calendar still works when storage is unavailable
+    } finally {
+      setHasRestoredFeed(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!hasRestoredFeed) return
     try {
       if (selectedFeedId) window.localStorage.setItem(SELECTED_FEED_KEY, String(selectedFeedId))
       else window.localStorage.removeItem(SELECTED_FEED_KEY)
     } catch {
       // best effort; the calendar still works when storage is unavailable
     }
-  }, [selectedFeedId])
+  }, [hasRestoredFeed, selectedFeedId])
 
   const navigateToFeed = useCallback(
     (feedId: number | null, options?: { openPosition?: number }) => {
