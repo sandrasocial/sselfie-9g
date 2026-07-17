@@ -259,6 +259,7 @@ export default function UnifiedOnboardingWizard({
   }, [isOpen]) // Only run when wizard opens/closes - existingData changes are handled via dataKey comparison
 
   const [isSaving, setIsSaving] = useState(false)
+  const [completionError, setCompletionError] = useState<string | null>(null)
   const [isGeneratingPillars, setIsGeneratingPillars] = useState(false)
   const [pillarExplanation, setPillarExplanation] = useState("")
 
@@ -357,14 +358,14 @@ export default function UnifiedOnboardingWizard({
     // Optional step
     if (step.isOptional) return true
     
-    // Selfie upload step - optional, user can always skip to continue
+    // Selfie upload step - the completion API requires one saved identity image.
     if (step.isSelfieUpload) {
-      return true
+      return formData.selfieImages.length > 0
     }
     
     // Visual selector step
     if (step.isVisualSelector) {
-      return formData.feedStyle.length > 0
+      return formData.feedStyle.length > 0 && formData.selfieImages.length > 0
     }
     
     // Audience builder step
@@ -412,11 +413,14 @@ export default function UnifiedOnboardingWizard({
       properties: { step: totalSteps, total_steps: totalSteps },
     }).catch(() => {})
 
-    // Only 3 core fields are required: businessType, idealAudience, feedStyle.
-    // Selfie upload is optional - users can add selfies from Maya later.
+    setCompletionError(null)
     const missingCore = !formData.businessType?.trim() || !formData.idealAudience?.trim() || !formData.feedStyle?.trim()
     if (missingCore) {
-      alert("Please fill in your brand focus, audience, and choose a feed style to continue.")
+      setCompletionError("Add your brand focus, audience, and choose a visual style to continue.")
+      return
+    }
+    if (formData.selfieImages.length === 0) {
+      setCompletionError("Add one clear selfie before creating your first grid.")
       return
     }
 
@@ -458,7 +462,9 @@ export default function UnifiedOnboardingWizard({
       })
     } catch (error) {
       console.error("[Unified Onboarding] Error saving data:", error)
-      alert(error instanceof Error ? error.message : "Failed to save. Please try again.")
+      setCompletionError(
+        error instanceof Error ? error.message : "That did not save. Please try again.",
+      )
     } finally {
       setIsSaving(false)
     }
@@ -684,7 +690,7 @@ export default function UnifiedOnboardingWizard({
 
                     <div>
                       <label className="mb-2 block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">
-                        Upload 1–3 selfies
+                        Upload 1–3 selfies (required)
                       </label>
                       <p className="mb-3 text-xs font-light text-white/55">
                         These help AI generate images that match your look.
@@ -710,6 +716,11 @@ export default function UnifiedOnboardingWizard({
                     <p className="text-sm font-light text-white/65">
                       You can always come back to edit your goal or style from the Feed Planner header.
                     </p>
+                    {completionError && (
+                      <p role="alert" className="rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm leading-relaxed text-white">
+                        {completionError}
+                      </p>
+                    )}
                     <Button
                       onClick={handleComplete}
                       disabled={isSaving}

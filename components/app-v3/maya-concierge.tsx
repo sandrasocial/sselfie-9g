@@ -728,6 +728,17 @@ export function MayaConcierge({
   const [brandDraft, setBrandDraft] = useState("")
   const [brandPromptDismissed, setBrandPromptDismissed] = useState(false)
   const [brandSaveState, setBrandSaveState] = useState<"idle" | "saving" | "error">("idle")
+  // Value-first: the brand interview waits until she has actually used/downloaded a result.
+  const showBrandPrompt =
+    valueUsed && !hasBrandProfile && !memory?.brandNotes?.trim() && !brandPromptDismissed
+
+  useEffect(() => {
+    if (!showBrandPrompt) return
+    const frame = window.requestAnimationFrame(() => {
+      threadEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [showBrandPrompt])
 
   useEffect(() => {
     if (!isOpen) return
@@ -2608,9 +2619,6 @@ export function MayaConcierge({
   }
 
   const userAvatar = memory?.userAvatarUrl ?? null
-  // Value-first: the brand interview waits until she has actually used/downloaded a result.
-  const showBrandPrompt =
-    valueUsed && !hasBrandProfile && !memory?.brandNotes?.trim() && !brandPromptDismissed
 
   async function saveBrand() {
     const text = brandDraft.trim()

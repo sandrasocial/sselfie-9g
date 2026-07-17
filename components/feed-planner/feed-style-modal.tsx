@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { DesignClasses } from "@/lib/design-tokens"
 import { Button } from "@/components/ui/button"
 import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-upload"
 import useSWR from "swr"
@@ -54,10 +53,8 @@ export default function FeedStyleModal({
 }: FeedStyleModalProps) {
   // V2 is always enabled
   
-  const [selectedStyle, setSelectedStyle] = useState<FeedStyle>(
-    defaultFeedStyle || "Dark & Moody"
-  )
-  const [showAdvanced, setShowAdvanced] = useState(true) // Show advanced options by default
+  const [selectedStyle, setSelectedStyle] = useState<FeedStyle | null>(defaultFeedStyle ?? null)
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const [selfieImages, setSelfieImages] = useState<string[]>([])
   const [selectedVariationId, setSelectedVariationId] = useState<number | null>(defaultFeedStyleVariationId ?? null)
 
@@ -86,7 +83,9 @@ export default function FeedStyleModal({
   )
 
   const { data: variationData } = useSWR(
-    open ? `/api/feed-planner/v2/variations?style=${encodeURIComponent(selectedStyle)}` : null,
+    open && selectedStyle
+      ? `/api/feed-planner/v2/variations?style=${encodeURIComponent(selectedStyle)}`
+      : null,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -103,7 +102,7 @@ export default function FeedStyleModal({
   useEffect(() => {
     if (!open) {
       // Reset everything when modal closes
-      setSelectedStyle(defaultFeedStyle || "Dark & Moody")
+      setSelectedStyle(defaultFeedStyle ?? null)
       setSelectedVariationId(null)
       userExplicitlySelectedVariationRef.current = false
       previousStyleRef.current = null
@@ -122,7 +121,7 @@ export default function FeedStyleModal({
     if (!defaultFeedStyle && isLoadingPersonalBrand) return
 
     hasInitializedRef.current = true
-    const initialStyle = defaultFeedStyle || selectedStyle
+    const initialStyle = defaultFeedStyle ?? selectedStyle
     setSelectedStyle(initialStyle)
     previousStyleRef.current = initialStyle
 
@@ -197,9 +196,8 @@ export default function FeedStyleModal({
   // Handle style change - reset variation to default for new style
   useEffect(() => {
     if (!open) return
-    
-    const styleChanged = previousStyleRef.current !== selectedStyle && previousStyleRef.current !== null
-    if (styleChanged) {
+
+    if (selectedStyle && previousStyleRef.current !== selectedStyle) {
       console.log('[Feed Style Modal] Style changed, resetting variation')
       previousStyleRef.current = selectedStyle
       userExplicitlySelectedVariationRef.current = false // Allow auto-selection for new style
@@ -223,6 +221,7 @@ export default function FeedStyleModal({
   }, [open])
 
   const handleConfirm = () => {
+    if (!selectedStyle) return
     console.log('[Feed Style Modal] Confirming selection:', {
       feedStyle: selectedStyle,
       feedStyleVariationId: selectedVariationId,
@@ -246,67 +245,61 @@ export default function FeedStyleModal({
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop - matching unified wizard */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-md"
+            className="fixed inset-0 z-[100] bg-[#0D0E10]/45 backdrop-blur-sm"
             onClick={() => onOpenChange(false)}
           />
 
-          {/* Modal - matching unified wizard */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 pb-24 sm:pb-28 md:pb-32"
+            className="fixed inset-0 z-[101] flex items-end justify-center p-0 sm:items-center sm:p-5"
             onClick={(e) => e.stopPropagation()}
-            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}
           >
             <div
               role="dialog"
               aria-modal="true"
               aria-labelledby="feed-style-modal-title"
-              className={`relative flex flex-col w-full max-w-4xl max-h-[calc(100dvh-8rem)] sm:max-h-[90vh] overflow-hidden rounded-2xl border border-white/15 bg-[rgba(13,15,19,0.94)] text-white shadow-2xl backdrop-blur-2xl`}
+              className="relative flex max-h-[calc(100dvh-0.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-t-[24px] border border-[#C5C6C8]/65 bg-[#F8FAFA] text-[#0D0E10] shadow-[0_30px_100px_rgba(13,14,16,0.24)] sm:max-h-[92dvh] sm:rounded-[24px]"
             >
-              {/* Close Button - matching unified wizard */}
               <button
+                type="button"
                 onClick={() => onOpenChange(false)}
-                className="absolute right-4 top-4 z-10 flex min-h-11 items-center justify-center rounded-lg border border-white/15 px-3 text-white/65 transition-colors hover:bg-white/10 hover:text-white"
+                className="absolute right-4 top-4 z-10 flex min-h-11 items-center justify-center rounded-full border border-[#C5C6C8] bg-white px-4 text-[#4F5052] transition-colors hover:border-[#0D0E10]/45 hover:text-[#0D0E10]"
                 aria-label="Close"
               >
                 <span className="text-[10px] uppercase tracking-[0.18em]">Close</span>
               </button>
 
-              {/* Scrollable content - flex-1 so sticky footer stays anchored */}
-              <div className={`overflow-y-auto flex-1 min-h-0 ${DesignClasses.spacing.padding.lg}`}>
-                <div className="space-y-8 py-6">
-                  {/* Title - matching unified wizard typography */}
-                  <div>
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-7 pt-8 sm:px-7">
+                <div className="space-y-7">
+                  <div className="pr-20">
+                    <p className="text-[10px] uppercase tracking-[0.24em] text-[#818283]">Your first grid</p>
                     <h2
                       id="feed-style-modal-title"
-                      style={{ fontFamily: "'Cormorant Garamond', serif" }}
-                      className="mb-3 text-2xl font-light uppercase tracking-[0.15em] text-white sm:text-3xl md:text-4xl"
+                      className="mt-2 font-serif text-[32px] font-light leading-[1.02] text-[#0D0E10] sm:text-[42px]"
                     >
-                      Choose Feed Style
+                      Choose your visual world.
                     </h2>
-                    <p className="text-sm font-light leading-relaxed text-white/65">
-                      Select the visual style for this feed. You can use your last selection or choose a different style.
+                    <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-[#4F5052]">
+                      Pick the one that feels most like you. Maya will use it to keep this grid
+                      visually connected. You can change it later.
                     </p>
                   </div>
 
                   <div className="space-y-6">
-                    {/* Feed Style Selection */}
                     <div>
-                      <label className="mb-4 block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">
-                        Feed Style
-                      </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
+                      <p className="mb-3 text-[10px] uppercase tracking-[0.2em] text-[#6D6E70]">
+                        Swipe to compare
+                      </p>
+                      <div className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-7 sm:px-7 md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0">
                         {Object.entries(FEED_EXAMPLES).map(([key, style]) => {
                           const feedStyle = key as FeedStyle
                           const isSelected = selectedStyle === feedStyle
-                          const isDefault = defaultFeedStyle === feedStyle
 
                           return (
                             <button
@@ -314,23 +307,19 @@ export default function FeedStyleModal({
                               key={key}
                               onClick={() => setSelectedStyle(feedStyle)}
                               aria-pressed={isSelected}
-                              className={`cursor-pointer text-left transition-all duration-300 ${
-                                isSelected ? "scale-105" : "hover:scale-102"
+                              className={`w-[min(78vw,18rem)] shrink-0 snap-center rounded-[16px] border p-3 text-left transition-[border-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10] focus-visible:ring-offset-2 md:w-auto ${
+                                isSelected
+                                  ? "border-[#0D0E10] bg-white shadow-[0_12px_28px_rgba(13,14,16,0.10)]"
+                                  : "border-[#C5C6C8]/70 bg-white hover:border-[#818283]"
                               }`}
                             >
-                              <div
-                                className={`border p-4 rounded-2xl backdrop-blur-xl ${
-                                  isSelected ? "border-white/40 bg-white/18" : "border-white/15 bg-white/[0.04]"
-                                }`}
-                              >
-                                {/* Grid Preview */}
-                                <div className="grid grid-cols-3 gap-2 mb-4">
+                              <div>
+                                <div className="mb-3 grid grid-cols-3 gap-1.5 rounded-[10px] bg-[#F8FAFA] p-1.5">
                                   {style.grid.map((type, idx) => (
-                                    <div
+                                    <span
                                       key={idx}
-                                      className={`aspect-square rounded ${
-                                        feedStyle === "Light & Minimalistic" ? "border border-white/35" : ""
-                                      }`}
+                                      aria-hidden
+                                      className="aspect-square rounded-[5px] border border-[#0D0E10]/5"
                                       style={{
                                         backgroundColor:
                                           type === "selfie" ? style.colors[0] : style.colors[1],
@@ -339,43 +328,23 @@ export default function FeedStyleModal({
                                   ))}
                                 </div>
 
-                                {/* Style Name */}
-                                <h3 className="mb-2 text-sm font-medium uppercase tracking-wider text-white">
-                                  {style.name}
-                                </h3>
-
-                                {/* Color Swatches */}
-                                <div className="flex gap-2 mb-4">
-                                  {style.colors.map((color, idx) => (
-                                    <div
-                                      key={idx}
-                                      className={`w-6 h-6 rounded-full ${
-                                        feedStyle === "Light & Minimalistic"
-                                          ? "border border-white/35"
-                                          : "border border-white/15"
-                                      }`}
-                                      style={{ backgroundColor: color }}
-                                    />
-                                  ))}
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <h3 className="text-[14px] font-medium text-[#0D0E10]">{style.name}</h3>
+                                    <div className="mt-2 flex gap-1.5" aria-hidden>
+                                      {style.colors.map((color, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="h-5 w-5 rounded-full border border-[#0D0E10]/10"
+                                          style={{ backgroundColor: color }}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <span className={`rounded-full px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] ${isSelected ? "bg-[#0D0E10] text-white" : "bg-[#F8FAFA] text-[#6D6E70]"}`}>
+                                    {isSelected ? "Selected" : "Choose"}
+                                  </span>
                                 </div>
-
-                                {/* Selection Button */}
-                                <div
-                                  className={`w-full border py-3 text-xs uppercase tracking-[0.2em] transition-all duration-200 sm:tracking-[0.3em] ${
-                                    isSelected
-                                      ? "border-white/35 bg-white/20 text-white"
-                                      : "border-white/20 bg-white/[0.03] text-white/75 hover:border-white/40 hover:text-white"
-                                  }`}
-                                >
-                                  {isSelected ? "SELECTED" : "SELECT"}
-                                </div>
-
-                                {/* Default Badge */}
-                                {isDefault && !isSelected && (
-                                  <p className="mt-2 text-center text-[10px] text-white/50">
-                                    (Your last selection)
-                                  </p>
-                                )}
                               </div>
                             </button>
                           )
@@ -383,32 +352,32 @@ export default function FeedStyleModal({
                       </div>
                     </div>
 
-                    {(
-                      <div>
-                        <label className="mb-4 block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">
-                          Choose Variation
-                        </label>
+                    {selectedStyle && (
+                      <div className="rounded-[14px] border border-[#C5C6C8]/65 bg-white p-4">
+                        <p className="mb-3 text-[10px] uppercase tracking-[0.2em] text-[#6D6E70]">
+                          Choose a version
+                        </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {(variationData?.variations || []).map((variation: FeedStyleVariationOption) => {
                             const isSelected = selectedVariationId === variation.id
                             return (
                               <button
+                                type="button"
                                 key={variation.id}
+                                aria-pressed={isSelected}
                                 onClick={() => {
-                                  console.log('[Feed Style Modal] User explicitly selected variation:', variation.id, variation.name)
-                                  // Mark as user selection to prevent auto-reset
                                   userExplicitlySelectedVariationRef.current = true
                                   setSelectedVariationId(variation.id)
                                 }}
-                                className={`w-full border p-4 text-left transition-all duration-200 ${
+                                className={`min-h-11 w-full rounded-[10px] border p-3 text-left transition-colors duration-200 ${
                                   isSelected
-                                    ? "border-white/35 bg-white/20 text-white"
-                                    : "border-white/20 bg-white/[0.04] text-white/75 hover:border-white/40 hover:text-white"
+                                    ? "border-[#0D0E10] bg-[#F8FAFA] text-[#0D0E10]"
+                                    : "border-[#C5C6C8]/65 bg-white text-[#4F5052] hover:border-[#818283]"
                                 }`}
                               >
-                                <div className="text-xs tracking-wider uppercase font-medium">{variation.name}</div>
+                                <div className="text-[12px] font-medium">{variation.name}</div>
                                 {variation.description ? (
-                                  <p className={`mt-2 text-xs ${isSelected ? "text-white/75" : "text-white/55"}`}>
+                                  <p className="mt-1 text-[11px] leading-relaxed text-[#6D6E70]">
                                     {variation.description}
                                   </p>
                                 ) : null}
@@ -417,49 +386,42 @@ export default function FeedStyleModal({
                           })}
                         </div>
                         {variationData?.variations?.length === 0 && (
-                          <p className="mt-3 text-xs text-white/55">
-                            No variations are available yet for this style.
+                          <p className="text-[12px] text-[#6D6E70]">
+                            Maya will use the strongest version of this style.
                           </p>
                         )}
                       </div>
                     )}
 
-                    {/* Advanced Options Toggle */}
-                    <div className="border-t border-white/15 pt-4">
+                    <div className="border-t border-[#C5C6C8]/60 pt-3">
                       <button
+                        type="button"
                         onClick={() => setShowAdvanced(!showAdvanced)}
-                        className="flex w-full items-center justify-between py-3 text-sm font-medium text-white/80 transition-colors hover:text-white"
+                        aria-expanded={showAdvanced}
+                        className="flex min-h-11 w-full items-center justify-between rounded-[8px] px-1 text-[11px] uppercase tracking-[0.15em] text-[#4F5052]"
                       >
-                        <span className="uppercase tracking-wider">Advanced Options</span>
-                        <span className="text-[10px] uppercase tracking-[0.18em] text-white/70">
-                          {showAdvanced ? "Hide" : "Show"}
+                        <span>Selfie references</span>
+                        <span className="text-[10px] text-[#818283]">
+                          {showAdvanced ? "Hide" : "Optional"}
                         </span>
                       </button>
 
-                      {/* Advanced Options Content */}
                       <AnimatePresence>
                         {showAdvanced && (
                           <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3 }}
+                            transition={{ duration: 0.2 }}
                             className="overflow-hidden"
                           >
-                            <div className="pt-6 space-y-6">
-                              {/* Selfie Upload */}
-                              <div>
-                                <label className="mb-4 block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">
-                                  Reference Images (Optional)
-                                </label>
-                                <p className="mb-4 text-xs font-light text-white/55">
-                                  Upload 1-3 selfies to use as reference images for generating your feed.
-                                  These will help AI generate images that match your style and aesthetic.
+                            <div className="pt-3">
+                              <div className="rounded-[14px] bg-white p-4">
+                                <p className="mb-4 text-[12px] leading-relaxed text-[#6D6E70]">
+                                  Your saved selfie is already ready. Add more angles only if you want to.
                                 </p>
                                 <BlueprintSelfieUpload
-                                  onUploadComplete={(imageUrls) => {
-                                    setSelfieImages(imageUrls)
-                                  }}
+                                  onUploadComplete={(imageUrls) => setSelfieImages(imageUrls)}
                                   maxImages={3}
                                   initialImages={selfieImages}
                                 />
@@ -473,29 +435,33 @@ export default function FeedStyleModal({
                 </div>
               </div>
 
-              {/* Sticky Action Buttons - outside scroll area, always visible */}
-              <div className="flex flex-shrink-0 items-center justify-between border-t border-white/15 px-6 sm:px-8 py-4">
+              <div
+                className="flex shrink-0 items-center gap-3 border-t border-[#C5C6C8]/65 bg-white px-5 py-3 sm:justify-end sm:px-7"
+                style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+              >
                 <Button
                   variant="ghost"
                   onClick={() => onOpenChange(false)}
                   disabled={isLoading}
-                  className="text-white/70 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
+                  className="min-h-11 flex-1 rounded-full px-5 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F8FAFA] sm:flex-none"
                 >
                   Cancel
                 </Button>
 
                 <Button
                   onClick={handleConfirm}
-                  disabled={isLoading}
-                  className="border border-white/25 bg-white/12 px-6 py-3 text-sm font-medium uppercase tracking-wider text-white transition-all duration-200 hover:scale-105 hover:bg-white/18 active:scale-95 sm:px-8 sm:py-4 disabled:opacity-50"
+                  disabled={isLoading || !selectedStyle}
+                  className="min-h-11 flex-[1.6] rounded-full bg-[#0D0E10] px-6 text-[11px] uppercase tracking-[0.16em] text-white shadow-none hover:bg-[#282728] sm:flex-none disabled:opacity-40"
                 >
                   {isLoading
                     ? isPreviewFeed
-                      ? "Creating Preview..."
-                      : "Creating Feed..."
+                      ? "Creating preview…"
+                      : "Creating your grid…"
                     : isPreviewFeed
-                      ? "Create Preview"
-                      : "Create Feed"}
+                      ? "Create preview"
+                      : selectedStyle
+                        ? "Create my grid"
+                        : "Choose a style"}
                 </Button>
               </div>
             </div>
