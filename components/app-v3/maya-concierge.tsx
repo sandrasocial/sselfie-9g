@@ -1241,7 +1241,7 @@ export function MayaConcierge({
   }, [session])
 
   // "Continue history" from the launcher: the chat list shows as soon as the drawer opens.
-  const lastHistoryRequestRef = useRef(0)
+  const lastHistoryRequestRef = useRef(historyRequestId)
   const historyLoadRequestRef = useRef(0)
   useEffect(() => {
     if (historyRequestId === 0 || historyRequestId === lastHistoryRequestRef.current) return

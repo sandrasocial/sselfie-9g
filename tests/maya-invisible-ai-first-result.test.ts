@@ -228,6 +228,7 @@ describe("Maya Invisible AI: first result and return integrity", () => {
 
   it("keeps a requested history view queued until the active work finishes", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
+    expect(concierge).toContain("useRef(historyRequestId)")
     const requestIndex = concierge.indexOf("historyRequestId === 0")
     const busyIndex = concierge.indexOf("if (workspaceBusy) return", requestIndex)
     const consumedIndex = concierge.indexOf(
