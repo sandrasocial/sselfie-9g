@@ -72,6 +72,7 @@ export function ChatHistoryModal({
     setError(null)
     try {
       await onSelect(id)
+      onClose()
     } catch {
       setError("Couldn't open that chat. Please try again.")
     } finally {

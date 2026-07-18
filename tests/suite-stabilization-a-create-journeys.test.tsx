@@ -3,6 +3,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
+import { ChatHistoryModal } from "@/components/app-v3/chat-history-modal"
 import { ConciergeProvider, useConcierge } from "@/components/app-v3/concierge-context"
 import { ImageLightbox } from "@/components/app-v3/image-lightbox"
 import { MayaConcierge } from "@/components/app-v3/maya-concierge"
@@ -137,7 +138,29 @@ describe("Stabilization A Creative Tasks", () => {
                 parts: [{ type: "text", text: "Create my saved launch photo" }],
               },
             ],
-            workspace: null,
+            workspace: {
+              session: {
+                aesthetic: MAYA_GENERAL,
+                outputFormat: "photo",
+                referenceSelfieUrl: "https://example.com/member-selfie.jpg",
+                videoSourceUrl: null,
+                inspirationImageUrl: null,
+                creationIntent: null,
+                shotDirector: null,
+                generationSource: "selfie",
+                creationIdea: null,
+                startedAt: 123,
+              },
+              genState: {},
+              generatedOnce: true,
+              lastGeneration: null,
+              textOverlayMode: null,
+              textStyleChoice: null,
+              textStyleAdjustments: null,
+              generationSource: "selfie",
+              valueUsed: false,
+              setupOpen: false,
+            },
           })
         }
         if (url.endsWith("/reference-library")) {
@@ -192,6 +215,21 @@ describe("Stabilization A Creative Tasks", () => {
 
     expect(screen.queryByRole("dialog", { name: /Creative tasks/i })).not.toBeInTheDocument()
     expect(screen.getByRole("dialog", { name: /SSELFIE/i })).toBeInTheDocument()
+  })
+
+  it("requests a close after a saved task restores successfully", async () => {
+    const onClose = vi.fn()
+    const onSelect = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <ChatHistoryModal open currentChatId="current-task" onClose={onClose} onSelect={onSelect} />
+    )
+
+    const history = await screen.findByRole("dialog", { name: /Creative tasks/i })
+    fireEvent.click(within(history).getByRole("button", { name: /^Plan Past task/ }))
+
+    await waitFor(() => expect(onSelect).toHaveBeenCalledWith("past-task"))
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 })
 
