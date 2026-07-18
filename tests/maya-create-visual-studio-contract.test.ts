@@ -9,7 +9,14 @@ describe("Maya Create visual studio contract", () => {
   it("renders an image-first world with six working navigation paths", () => {
     const frontDoor = read("components/app-v3/visual-front-door.tsx")
 
-    for (const label of ["My selfies", "For you", "Saved looks", "Inspiration", "Recent shoots", "New"]) {
+    for (const label of [
+      "My selfies",
+      "For you",
+      "Saved looks",
+      "Inspiration",
+      "Recent shoots",
+      "New",
+    ]) {
       expect(frontDoor).toContain(label)
     }
     expect(frontDoor).toContain("openHistory")
@@ -26,7 +33,7 @@ describe("Maya Create visual studio contract", () => {
     const frontDoor = read("components/app-v3/visual-front-door.tsx")
     const manager = read("components/app-v3/selfie-reference-manager-modal.tsx")
 
-    expect(hook).toContain('/api/app-v3/reference-library')
+    expect(hook).toContain("/api/app-v3/reference-library")
     expect(hook).toContain('"sselfie:identity-updated"')
     expect(frontDoor).toContain("useIdentityReferences(")
     expect(frontDoor).toContain("initialHasSelfie,")
@@ -39,7 +46,7 @@ describe("Maya Create visual studio contract", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
     const maya = read("components/app-v3/maya-concierge.tsx")
 
-    expect(shell).toContain('mayaOpen && section === "create" ? "lg:pr-[27rem]"')
+    expect(shell).toContain('section === "create" || section === "calendar"')
     expect(maya).toContain("aria-modal={!isDesktopWorkspace}")
     expect(maya).toContain("h-[94dvh]")
     expect(maya).not.toContain("h-[62dvh]")
@@ -67,7 +74,8 @@ describe("Maya Create visual studio contract", () => {
     expect(migration).toContain("ADD COLUMN IF NOT EXISTS workspace jsonb")
     expect(migration).toContain("CHECK (task_status IN ('planning', 'creating', 'ready'))")
     for (const draft of [localDraft, serverDraft]) {
-      expect(draft).toContain('state.status === "generating" && state.pendingRequest')
+      expect(draft).toContain('state.status === "generating"')
+      expect(draft).toContain("state.pendingRequest")
       expect(draft).toContain("expectedCount")
     }
   })
@@ -88,7 +96,7 @@ describe("Maya Create visual studio contract", () => {
     expect(card).toContain("FavoriteButton")
     expect(card).toContain("firstDownloadAssetId")
     expect(card).toContain("Continue this shoot")
-    expect(favoriteButton).toContain('/api/app-v3/gallery/favorite')
+    expect(favoriteButton).toContain("/api/app-v3/gallery/favorite")
     expect(favoriteButton).toContain("aria-pressed={isFavorite}")
   })
 
@@ -98,8 +106,8 @@ describe("Maya Create visual studio contract", () => {
     const replaceRoute = read("app/api/feed/[feedId]/replace-post-image/route.ts")
     const agentRoute = read("app/api/app-v3/maya/calendar-agent/route.ts")
 
-    expect(studio).toContain('/api/app-v3/maya/bake-text')
-    expect(studio).toContain('Use in grid')
+    expect(studio).toContain("/api/app-v3/maya/bake-text")
+    expect(studio).toContain("Use in grid")
     expect(studio).toContain("`/api/feed/${feedId}/replace-post-image`")
     expect(studio).toContain("Your clean photo stays safe")
     expect(bakeRoute).toContain("calendarPostAuthorized")

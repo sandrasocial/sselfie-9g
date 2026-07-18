@@ -63,7 +63,9 @@ describe("Calendar creative-director workflow", () => {
     })
 
     expect(screen.getByText("Image failed")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Retry image for post 5" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Ask Maya to try post 5 again" })
+    ).toBeInTheDocument()
   })
 
   it("shows saved context without asking a returning user to confirm it again", () => {
@@ -142,9 +144,9 @@ describe("Calendar creative-director workflow", () => {
     expect(screen.getByRole("status", { name: "Post 2 status: Creating image" })).toBeInTheDocument()
     expect(screen.getByRole("status", { name: "Post 3 status: Ready" })).toBeInTheDocument()
     expect(screen.getByRole("status", { name: "Post 4 status: Image failed" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Retry image for post 4" }).className).toContain(
-      "min-h-11"
-    )
+    expect(
+      screen.getByRole("button", { name: "Ask Maya to try post 4 again" }).className
+    ).toContain("min-h-11")
   })
 
   it("keeps incomplete settings inline and saves them to the shared profile", async () => {

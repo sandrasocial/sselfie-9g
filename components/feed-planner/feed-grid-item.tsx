@@ -35,7 +35,9 @@ interface FeedGridItemProps {
 }
 
 const getInitialPredictionId = (post: any) =>
-  post?.prediction_id && !post?.image_url ? post.prediction_id : null
+  post?.prediction_id && post?.generation_status === "generating" && !post?.image_url
+    ? post.prediction_id
+    : null
 
 const syncPredictionId = (
   post: any,
@@ -352,7 +354,7 @@ export default function FeedGridItem({
     predictionId,
     // Suite members never self-trigger generation from an empty tile (Phase 2c) - no
     // prediction to poll for, so skip the polling hook entirely for that population.
-    enabled: !!predictionId && !post?.image_url,
+    enabled: !!predictionId && !predictionId.startsWith("maya:") && !post?.image_url,
     onComplete: imageUrl => {
       console.log(
         "[Feed Grid Item] ✅ Generation completed for post",
@@ -381,7 +383,8 @@ export default function FeedGridItem({
     post,
   })
   const isComplete = !!displayImageUrl
-  const canStop = !!predictionId && !predictionId.startsWith("temp-")
+  const canStop =
+    !!predictionId && !predictionId.startsWith("temp-") && !predictionId.startsWith("maya:")
   const completeInteractionClassName = isSavingOrder
     ? "cursor-pointer"
     : "cursor-move hover:opacity-90"
@@ -585,11 +588,14 @@ export default function FeedGridItem({
           {failed ? (
             <button
               type="button"
-              aria-label={`Retry image for post ${post.position}`}
-              onClick={handleGenerateClick}
+              aria-label={`Ask Maya to try post ${post.position} again`}
+              onClick={event => {
+                event.stopPropagation()
+                onPostClick(post)
+              }}
               className="absolute bottom-6 right-2 z-10 min-h-11 rounded-full bg-[color:var(--app-btn-primary-bg)] px-3 text-[9px] font-medium text-[color:var(--app-btn-primary-text)]"
             >
-              Retry
+              Ask Maya to try again
             </button>
           ) : isGenerating && canStop ? (
             <button

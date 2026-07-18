@@ -49,6 +49,7 @@ import type {
   Aesthetic,
   AestheticShot,
   AppV3AnalyticsCohort,
+  CalendarPostTarget,
   CreationIntent,
   GenerationSource,
   InlineActionKind,
@@ -598,10 +599,13 @@ export function MayaConcierge({
   hasTrainedModel = false,
   analyticsCohort,
   onOpenCalendar,
+  calendarSurfaceActive = false,
 }: {
   hasTrainedModel?: boolean
   analyticsCohort?: AppV3AnalyticsCohort
   onOpenCalendar?: () => void
+  /** Prevents a Create-tab generation from ever spilling into a previously selected slot. */
+  calendarSurfaceActive?: boolean
 } = {}) {
   const cohort: AppV3AnalyticsCohort = analyticsCohort ?? "member"
   const {
@@ -610,6 +614,9 @@ export function MayaConcierge({
     historyRequestId,
     setWorkspaceBusy,
     updateCurrentSession,
+    markCalendarTargetAnnounced,
+    completeCalendarTarget,
+    clearCalendarDelivery,
     resetCurrentSession,
     setOutputFormat,
     setReferenceSelfieUrl,
@@ -945,6 +952,7 @@ export function MayaConcierge({
   const savedCountRef = useRef(restoredDraft?.messages.length ?? 0)
   const [chatSaveError, setChatSaveError] = useState(false)
   const [chatSaveRetry, setChatSaveRetry] = useState(0)
+  const [calendarDeliveryError, setCalendarDeliveryError] = useState<string | null>(null)
   const [draftSyncError, setDraftSyncError] = useState(false)
   const [draftSyncRetry, setDraftSyncRetry] = useState(0)
   const appliedDraftSessionRef = useRef<number | null>(restoredDraft?.sessionStartedAt ?? null)
@@ -1329,6 +1337,42 @@ export function MayaConcierge({
     if (!isOpen) return
     void retryAesthetics()
   }, [isOpen, retryAesthetics])
+
+  const calendarHandoffSentRef = useRef<string | null>(
+    session?.calendarTarget?.announced ? (session.calendarTarget.requestId ?? null) : null
+  )
+
+  // Calendar is a surface switch inside this same chat. Send one visible, human handoff turn
+  // while keeping the existing chat id, messages, model routing, Vault logic, and memory.
+  useEffect(() => {
+    const target = session?.calendarTarget
+    if (!calendarSurfaceActive || !isOpen || !target || target.announced || isThinking) return
+    if (calendarHandoffSentRef.current === target.requestId) return
+    calendarHandoffSentRef.current = target.requestId
+    const intent = intentForFormat("photo", "content_card")
+    lastPulledFormatRef.current = "photo"
+    setGenerationSource("selfie")
+    setLocalCreationIntent(intent)
+    extrasRef.current = {
+      ...extrasRef.current,
+      format: "photo",
+      creationIntent: intent,
+      creationIdea: target.caption || target.contentPillar || `Calendar post ${target.position}`,
+    }
+    const idea = target.caption?.trim() || target.contentPillar?.trim()
+    const text = target.hasImage
+      ? `Let's create a fresh photo option for post ${target.position}${idea ? ` about: ${idea}` : ""}. Keep the current Calendar photo safe.`
+      : `Let's create the photo for post ${target.position}${idea ? ` about: ${idea}` : ""}.`
+    markCalendarTargetAnnounced(target.requestId)
+    sendMessage({ text })
+  }, [
+    calendarSurfaceActive,
+    isOpen,
+    isThinking,
+    markCalendarTargetAnnounced,
+    sendMessage,
+    session?.calendarTarget,
+  ])
 
   // Maya-guided: once a format is chosen (a chip tap, or preselected from Content), she
   // pulls directions automatically. One pull per format; resets on a new chat or new session.
@@ -2001,6 +2045,153 @@ export function MayaConcierge({
     return null
   }
 
+  function announceCalendarUpdated(feedId: number) {
+    window.dispatchEvent(new CustomEvent("calendar:feed-updated", { detail: { feedId } }))
+  }
+
+  async function beginCalendarGeneration(
+    target: CalendarPostTarget,
+    generationRequestId: string
+  ): Promise<void> {
+    const response = await fetch(`/api/feed/${target.feedId}/maya-generation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "start",
+        postId: target.postId,
+        requestId: generationRequestId,
+      }),
+    })
+    const data = (await response.json().catch(() => null)) as { error?: string } | null
+    if (!response.ok) {
+      throw new Error(data?.error || "Maya could not start this Calendar post.")
+    }
+    setCalendarDeliveryError(null)
+    announceCalendarUpdated(target.feedId)
+  }
+
+  async function failCalendarGeneration(
+    target: CalendarPostTarget,
+    generationRequestId: string
+  ): Promise<void> {
+    await fetch(`/api/feed/${target.feedId}/maya-generation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "fail",
+        postId: target.postId,
+        requestId: generationRequestId,
+      }),
+    }).catch(() => null)
+    announceCalendarUpdated(target.feedId)
+  }
+
+  async function attachCalendarGeneration(
+    target: CalendarPostTarget,
+    generationRequestId: string,
+    imageUrl: string,
+    aiImageId: number | null
+  ): Promise<boolean> {
+    const response = await fetch(`/api/feed/${target.feedId}/replace-post-image`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        postId: target.postId,
+        imageUrl,
+        aiImageId,
+        generationRequestId,
+      }),
+    })
+    const data = (await response.json().catch(() => null)) as {
+      error?: string
+      captionStatus?: string
+    } | null
+    if (!response.ok) {
+      await failCalendarGeneration(target, generationRequestId)
+      setCalendarDeliveryError(
+        data?.error || "Your photo is safe in Gallery, but it did not reach the Calendar yet."
+      )
+      return false
+    }
+    completeCalendarTarget(target.requestId, {
+      generationRequestId,
+      imageUrl,
+      aiImageId,
+      previousImageUrl: target.imageUrl,
+      previousAiImageId: target.aiImageId,
+    })
+    setCalendarDeliveryError(null)
+    announceCalendarUpdated(target.feedId)
+    void trackAnalyticsEvent({
+      event: "calendar_photo_added",
+      properties: { feedId: target.feedId, postId: target.postId, source: "maya_concierge" },
+    })
+    if (data?.captionStatus === "ready" || data?.captionStatus === "preserved") {
+      void trackAnalyticsEvent({
+        event: "calendar_post_ready",
+        properties: { feedId: target.feedId, postId: target.postId, source: "maya_concierge" },
+      })
+    }
+    return true
+  }
+
+  async function placeExistingPhotoInCalendar(
+    target: CalendarPostTarget,
+    imageUrl: string,
+    aiImageId: number | null
+  ): Promise<boolean> {
+    const response = await fetch(`/api/feed/${target.feedId}/replace-post-image`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId: target.postId, imageUrl, aiImageId }),
+    })
+    const data = (await response.json().catch(() => null)) as { error?: string } | null
+    if (!response.ok) {
+      setCalendarDeliveryError(data?.error || "That photo did not reach the Calendar.")
+      return false
+    }
+    completeCalendarTarget(target.requestId, {
+      generationRequestId: `manual:${Date.now()}`,
+      imageUrl,
+      aiImageId,
+      previousImageUrl: target.imageUrl,
+      previousAiImageId: target.aiImageId,
+    })
+    setCalendarDeliveryError(null)
+    announceCalendarUpdated(target.feedId)
+    return true
+  }
+
+  async function undoCalendarDelivery() {
+    const target = session?.calendarTarget
+    if (!target?.delivery) return
+    const restorePrevious = Boolean(target.delivery.previousImageUrl)
+    const response = await fetch(
+      `/api/feed/${target.feedId}/${restorePrevious ? "replace-post-image" : "remove-post-image"}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          restorePrevious
+            ? {
+                postId: target.postId,
+                imageUrl: target.delivery.previousImageUrl,
+                aiImageId: target.delivery.previousAiImageId,
+              }
+            : { postId: target.postId }
+        ),
+      }
+    )
+    const data = (await response.json().catch(() => null)) as { error?: string } | null
+    if (!response.ok) {
+      setCalendarDeliveryError(data?.error || "That did not undo. Please try again.")
+      return
+    }
+    clearCalendarDelivery(target.requestId)
+    setCalendarDeliveryError(null)
+    announceCalendarUpdated(target.feedId)
+  }
+
   async function generateConcept(
     key: string,
     concept: ConceptCardData,
@@ -2062,6 +2253,33 @@ export function MayaConcierge({
           : {}),
       },
     }))
+    const activeCalendarTarget = session?.calendarTarget
+    const calendarTargetForRequest =
+      targetFormat === "photo" &&
+      generationRequestId &&
+      calendarSurfaceActive &&
+      activeCalendarTarget &&
+      !activeCalendarTarget.hasImage &&
+      !activeCalendarTarget.delivery
+        ? activeCalendarTarget
+        : null
+    let calendarSettled = !calendarTargetForRequest
+    if (calendarTargetForRequest && generationRequestId) {
+      try {
+        await beginCalendarGeneration(calendarTargetForRequest, generationRequestId)
+      } catch (error) {
+        setGenState(s => ({
+          ...s,
+          [key]: {
+            status: "error",
+            error:
+              error instanceof Error ? error.message : "Maya could not start this Calendar post.",
+          },
+        }))
+        inFlightGenerationKeysRef.current.delete(key)
+        return
+      }
+    }
     let generationResponseStatus: number | null = null
     let streamResponseStarted = false
     let generationServerVerdict = false
@@ -2093,6 +2311,15 @@ export function MayaConcierge({
       setGeneratedOnce(true)
       recordCompletedRender(targetFormat, 1, concept.title)
       trackGenerationCompleted(targetFormat, source)
+      if (calendarTargetForRequest && generationRequestId) {
+        await attachCalendarGeneration(
+          calendarTargetForRequest,
+          generationRequestId,
+          recovered.url,
+          recovered.aiImageId
+        )
+        calendarSettled = true
+      }
       return true
     }
     try {
@@ -2285,6 +2512,15 @@ export function MayaConcierge({
               recordCompletedRender(targetFormat, evt.imageUrls.length, concept.title)
               trackGenerationCompleted(targetFormat, "stream")
               showTrialCapIfDepleted(evt.newBalance)
+              if (calendarTargetForRequest && generationRequestId) {
+                await attachCalendarGeneration(
+                  calendarTargetForRequest,
+                  generationRequestId,
+                  evt.imageUrls[0],
+                  evt.aiImageIds?.[0] ?? evt.aiImageId ?? null
+                )
+                calendarSettled = true
+              }
               generationServerVerdict = true
               settled = true
             } else if (evt?.type === "error") {
@@ -2368,6 +2604,15 @@ export function MayaConcierge({
       recordCompletedRender(targetFormat, urls.length, concept.title)
       trackGenerationCompleted(targetFormat, "generate")
       showTrialCapIfDepleted(data?.newBalance)
+      if (calendarTargetForRequest && generationRequestId) {
+        await attachCalendarGeneration(
+          calendarTargetForRequest,
+          generationRequestId,
+          urls[0],
+          data?.aiImageIds?.[0] ?? data?.aiImageId ?? null
+        )
+        calendarSettled = true
+      }
     } catch (e) {
       const recoveryAttempts =
         generationResponseStatus === null || (streamResponseStarted && !generationServerVerdict)
@@ -2382,6 +2627,9 @@ export function MayaConcierge({
         [key]: { status: "error", error: e instanceof Error ? e.message : "Generation failed" },
       }))
     } finally {
+      if (calendarTargetForRequest && generationRequestId && !calendarSettled) {
+        await failCalendarGeneration(calendarTargetForRequest, generationRequestId)
+      }
       inFlightGenerationKeysRef.current.delete(key)
     }
   }
@@ -3354,6 +3602,39 @@ export function MayaConcierge({
           </div>
         </header>
 
+        {calendarSurfaceActive && session.calendarTarget && (
+          <div className="shrink-0 border-b border-[#C5C6C8]/40 bg-white/70 px-5 py-2.5 sm:px-6">
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <p role="status" className="min-w-0 text-[12px] leading-relaxed text-[#4F5052]">
+                <span className="font-medium text-[#0D0E10]">
+                  Post {session.calendarTarget.position}.
+                </span>{" "}
+                {session.calendarTarget.delivery
+                  ? "Ready in your Calendar."
+                  : session.calendarTarget.hasImage
+                    ? "Your current photo stays safe while we make another option."
+                    : workspaceBusy
+                      ? "Maya is working on it now."
+                      : "Choose a direction and Maya will place it here."}
+              </p>
+              {session.calendarTarget.delivery && (
+                <button
+                  type="button"
+                  onClick={() => void undoCalendarDelivery()}
+                  className="min-h-11 shrink-0 text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                >
+                  Undo
+                </button>
+              )}
+            </div>
+            {calendarDeliveryError && (
+              <p role="alert" className="mt-1 text-[12px] leading-relaxed text-[#4F5052]">
+                {calendarDeliveryError}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Setup - full block before the conversation starts (the guided beginning), then it
             collapses to a one-line status strip so Maya's output owns the screen. "Change"
             re-opens it for a format switch or a selfie swap. */}
@@ -4031,6 +4312,26 @@ export function MayaConcierge({
                             const url = (current?.imageUrls ?? [])[0]
                             if (!url) return null
                             const aiImageId = current?.aiImageIds?.[0] ?? current?.aiImageId ?? null
+                            const selectedCalendarPost = session?.calendarTarget
+                            if (calendarSurfaceActive && selectedCalendarPost) {
+                              if (selectedCalendarPost.delivery?.imageUrl === url) {
+                                return {
+                                  scheduledAt:
+                                    selectedCalendarPost.scheduledAt ?? new Date().toISOString(),
+                                }
+                              }
+                              const placed = await placeExistingPhotoInCalendar(
+                                selectedCalendarPost,
+                                url,
+                                aiImageId
+                              )
+                              return placed
+                                ? {
+                                    scheduledAt:
+                                      selectedCalendarPost.scheduledAt ?? new Date().toISOString(),
+                                  }
+                                : null
+                            }
                             try {
                               const res = await fetch("/api/app-v3/maya/feed-plan/place-photo", {
                                 method: "POST",

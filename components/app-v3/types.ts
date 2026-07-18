@@ -94,6 +94,33 @@ export interface GeneratedResult {
   createdAt: number
 }
 
+/** The Calendar slot Maya is actively helping with. This is routing state only. It never
+ * changes Maya's prompt authority, model, Vault selection, or memory. */
+export interface CalendarPostTarget {
+  /** Stable for this feed + post so repeated taps reopen instead of duplicating the handoff. */
+  requestId: string
+  feedId: number
+  postId: number
+  position: number
+  caption: string | null
+  contentPillar: string | null
+  scheduledAt: string | null
+  hasImage: boolean
+  imageUrl: string | null
+  aiImageId: number | null
+  /** Prevents a reload from replaying the same visible Calendar handoff message. */
+  announced?: boolean
+  /** Present only when Maya placed a newly generated photo in this slot. */
+  delivery?: {
+    generationRequestId: string
+    imageUrl: string
+    aiImageId: number | null
+    /** Lets Undo restore an already-filled post instead of emptying it. */
+    previousImageUrl: string | null
+    previousAiImageId: number | null
+  } | null
+}
+
 /** State carried through the Concierge Handoff once a vibe is chosen. */
 export interface ConciergeSession {
   aesthetic: Aesthetic
@@ -121,6 +148,8 @@ export interface ConciergeSession {
   generationSource?: GenerationSource | null
   /** Optional one-shot setup action Maya should open after the drawer mounts. */
   initialSetupAction?: "selfie_manager" | "inspiration_manager" | "plain_chat" | null
+  /** Optional Calendar destination for the next approved photo generation. */
+  calendarTarget?: CalendarPostTarget | null
   startedAt: number
 }
 
@@ -181,6 +210,17 @@ export interface ConciergeContextValue {
   openWithAesthetic: (aesthetic: Aesthetic, opts?: OpenConciergeOptions) => void
   /** Change the active visual world without starting a new chat or changing startedAt. */
   updateCurrentSession: (aesthetic: Aesthetic, opts?: OpenConciergeOptions) => void
+  /** Reopen this same Maya conversation with one exact Calendar post selected. */
+  openForCalendarPost: (target: CalendarPostTarget) => void
+  /** Marks the Calendar handoff message durable so reload cannot replay it. */
+  markCalendarTargetAnnounced: (requestId: string) => void
+  /** Records the exact photo Maya placed in the selected Calendar slot. */
+  completeCalendarTarget: (
+    requestId: string,
+    delivery: NonNullable<CalendarPostTarget["delivery"]>
+  ) => void
+  /** Restores the Calendar slot to its previous state without deleting the Gallery photo. */
+  clearCalendarDelivery: (requestId: string) => void
   /** Start a clean thread while keeping the active reference image available. */
   resetCurrentSession: () => void
   /** Pass null to return to the uncommitted state (no format chosen, no auto-pull). */

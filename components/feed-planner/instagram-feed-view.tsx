@@ -38,6 +38,7 @@ import {
 import { useFeedNav } from "./feed-nav-context"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getBrandColorThemeColors } from "@/lib/style-presets"
+import type { CalendarPostTarget } from "@/components/app-v3/types"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -107,6 +108,7 @@ export default function InstagramFeedView({
   const [isSavingVisualDirection, setIsSavingVisualDirection] = useState(false)
   const calendarUndoRef = useRef<(() => Promise<void>) | null>(null)
   const feedNav = useFeedNav()
+  const usesSharedSuiteMaya = Boolean(feedNav?.navigateToMaya)
 
   const { data: personalBrandData, mutate: mutatePersonalBrand } = useSWR(
     "/api/profile/personal-brand",
@@ -146,6 +148,15 @@ export default function InstagramFeedView({
     if (post?.id) setShowGallery(Number(post.id))
     feedNav?.consumePendingSlot?.()
   }, [feedData?.posts, feedNav, setShowGallery])
+
+  useEffect(() => {
+    const handleFeedUpdated = (event: Event) => {
+      const changedFeedId = Number((event as CustomEvent<{ feedId?: number }>).detail?.feedId)
+      if (changedFeedId === feedId) void mutate()
+    }
+    window.addEventListener("calendar:feed-updated", handleFeedUpdated)
+    return () => window.removeEventListener("calendar:feed-updated", handleFeedUpdated)
+  }, [feedId, mutate])
 
   // Fetch brand colors from user profile
   useEffect(() => {
@@ -535,9 +546,29 @@ export default function InstagramFeedView({
   })()
   const activePost = displayPosts.find((post: any) => Number(post.id) === activePostId) ?? null
   const liveSelectedPost = selectedPost ? (activePost ?? selectedPost) : null
+  const calendarPostTarget = (post: any): CalendarPostTarget => ({
+    requestId: `calendar:${feedId}:${Number(post.id)}`,
+    feedId,
+    postId: Number(post.id),
+    position: Number(post.position),
+    caption: typeof post.caption === "string" ? post.caption : null,
+    contentPillar: typeof post.content_pillar === "string" ? post.content_pillar : null,
+    scheduledAt: typeof post.scheduled_at === "string" ? post.scheduled_at : null,
+    hasImage: Boolean(post.image_url),
+    imageUrl: typeof post.image_url === "string" ? post.image_url : null,
+    aiImageId:
+      typeof post.ai_image_id === "number" && Number.isInteger(post.ai_image_id)
+        ? post.ai_image_id
+        : null,
+  })
   const openPostStudio = (post: any) => {
     setPlanSettingsOpen(false)
     setActivePostId(Number(post.id))
+    if (usesSharedSuiteMaya) {
+      setSelectedPost(null)
+      feedNav?.navigateToMaya?.(calendarPostTarget(post))
+      return
+    }
     setSelectedPost(post)
   }
 
@@ -777,77 +808,78 @@ export default function InstagramFeedView({
     return Array.from(seen)
   })()
 
-  const calendarMayaWorkspace = !access?.isFree ? (
-    <CalendarMayaWorkspace
-      feedId={feedId}
-      displayMode={selectedPost ? "embedded" : "sidebar"}
-      selectedPost={
-        activePost
-          ? {
-              id: Number(activePost.id),
-              position: Number(activePost.position),
-              caption: activePost.caption ?? null,
-              contentPillar: activePost.content_pillar ?? null,
-              scheduledAt: activePost.scheduled_at ?? null,
-              hasImage: Boolean(activePost.image_url),
-              imageUrl: activePost.image_url ?? null,
-            }
-          : null
-      }
-      feedSummary={{
-        title: feedData?.feed?.brand_name || feedData?.feed?.title || "Current grid",
-        bio: feedData?.bio?.bio_text || null,
-        visualDirectionMode: feedData?.feed?.visual_direction_mode || null,
-        visualDirectionBrief: feedData?.feed?.visual_direction_brief || null,
-        inspirationImageUrl: feedData?.feed?.inspiration_image_url || null,
-        feedStyle: feedData?.feed?.feed_style || null,
-        feedStyleVariationId: feedData?.feed?.feed_style_variation_id ?? null,
-        posts: displayPosts.map((post: any) => ({
-          id: Number(post.id),
-          position: Number(post.position),
-          caption: post.caption ?? null,
-          contentPillar: post.content_pillar ?? null,
-          scheduledAt: post.scheduled_at ?? null,
-          hasImage: Boolean(post.image_url),
-          imageUrl: post.image_url ?? null,
-          generationStatus: post.generation_status ?? null,
-          predictionId: post.prediction_id ?? null,
-        })),
-      }}
-      onApplyProposal={applyCalendarProposal}
-      onUndo={undoCalendarProposal}
-      planSettings={calendarPlanSettings}
-      onSavePlanSettings={saveCalendarPlanSettings}
-      planSettingsOpen={planSettingsOpen}
-      onPlanSettingsClosed={() => setPlanSettingsOpen(false)}
-      onPreviewProposal={setPreviewProposal}
-      onClearPreview={() => setPreviewProposal(null)}
-      onOpenPostDetails={postId => {
-        const post = displayPosts.find((item: any) => Number(item.id) === postId)
-        if (post) openPostStudio(post)
-      }}
-      onClearSelectedPost={() => setActivePostId(null)}
-      onOpenPhotoPicker={postId => {
-        const galleryPost = displayPosts.find((item: any) => Number(item.id) === postId)
-        if (galleryPost) setShowGallery(Number(galleryPost.id))
-      }}
-      onPostUpdated={async updatedPost => {
-        if (updatedPost && typeof updatedPost === "object") {
-          setSelectedPost((current: any | null) =>
-            current?.id === (updatedPost as any).id
-              ? { ...current, ...(updatedPost as Record<string, unknown>) }
-              : current
-          )
+  const calendarMayaWorkspace =
+    !access?.isFree && !usesSharedSuiteMaya ? (
+      <CalendarMayaWorkspace
+        feedId={feedId}
+        displayMode={selectedPost ? "embedded" : "sidebar"}
+        selectedPost={
+          activePost
+            ? {
+                id: Number(activePost.id),
+                position: Number(activePost.position),
+                caption: activePost.caption ?? null,
+                contentPillar: activePost.content_pillar ?? null,
+                scheduledAt: activePost.scheduled_at ?? null,
+                hasImage: Boolean(activePost.image_url),
+                imageUrl: activePost.image_url ?? null,
+              }
+            : null
         }
-        await mutate()
-      }}
-      onCreateNewGrid={onRequireFeedStyle}
-      onChooseVisualDirection={openVisualDirection}
-      hasVisualDirection={hasVisualDirection}
-      hasContentContext={hasContentContext}
-      onOpenContentContext={() => setPlanSettingsOpen(true)}
-    />
-  ) : null
+        feedSummary={{
+          title: feedData?.feed?.brand_name || feedData?.feed?.title || "Current grid",
+          bio: feedData?.bio?.bio_text || null,
+          visualDirectionMode: feedData?.feed?.visual_direction_mode || null,
+          visualDirectionBrief: feedData?.feed?.visual_direction_brief || null,
+          inspirationImageUrl: feedData?.feed?.inspiration_image_url || null,
+          feedStyle: feedData?.feed?.feed_style || null,
+          feedStyleVariationId: feedData?.feed?.feed_style_variation_id ?? null,
+          posts: displayPosts.map((post: any) => ({
+            id: Number(post.id),
+            position: Number(post.position),
+            caption: post.caption ?? null,
+            contentPillar: post.content_pillar ?? null,
+            scheduledAt: post.scheduled_at ?? null,
+            hasImage: Boolean(post.image_url),
+            imageUrl: post.image_url ?? null,
+            generationStatus: post.generation_status ?? null,
+            predictionId: post.prediction_id ?? null,
+          })),
+        }}
+        onApplyProposal={applyCalendarProposal}
+        onUndo={undoCalendarProposal}
+        planSettings={calendarPlanSettings}
+        onSavePlanSettings={saveCalendarPlanSettings}
+        planSettingsOpen={planSettingsOpen}
+        onPlanSettingsClosed={() => setPlanSettingsOpen(false)}
+        onPreviewProposal={setPreviewProposal}
+        onClearPreview={() => setPreviewProposal(null)}
+        onOpenPostDetails={postId => {
+          const post = displayPosts.find((item: any) => Number(item.id) === postId)
+          if (post) openPostStudio(post)
+        }}
+        onClearSelectedPost={() => setActivePostId(null)}
+        onOpenPhotoPicker={postId => {
+          const galleryPost = displayPosts.find((item: any) => Number(item.id) === postId)
+          if (galleryPost) setShowGallery(Number(galleryPost.id))
+        }}
+        onPostUpdated={async updatedPost => {
+          if (updatedPost && typeof updatedPost === "object") {
+            setSelectedPost((current: any | null) =>
+              current?.id === (updatedPost as any).id
+                ? { ...current, ...(updatedPost as Record<string, unknown>) }
+                : current
+            )
+          }
+          await mutate()
+        }}
+        onCreateNewGrid={onRequireFeedStyle}
+        onChooseVisualDirection={openVisualDirection}
+        hasVisualDirection={hasVisualDirection}
+        hasContentContext={hasContentContext}
+        onOpenContentContext={() => setPlanSettingsOpen(true)}
+      />
+    ) : null
 
   return (
     <div className="mx-auto grid w-full max-w-[1380px] min-w-0 gap-4 px-0 py-3 sm:px-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:px-6">

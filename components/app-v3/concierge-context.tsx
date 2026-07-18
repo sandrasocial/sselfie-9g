@@ -16,6 +16,7 @@ import {
 } from "react"
 import type {
   Aesthetic,
+  CalendarPostTarget,
   ConciergeContextValue,
   ConciergeSession,
   GraphicTextSpec,
@@ -40,6 +41,14 @@ const GENERAL_MAYA_AESTHETIC: Aesthetic = {
   shotCount: 0,
   intent:
     "A general SSELFIE editorial brand session. Help her decide the look from her brand, then create.",
+}
+
+function calendarCreationIdea(target: CalendarPostTarget): string {
+  return (
+    target.caption?.trim() ||
+    target.contentPillar?.trim() ||
+    `Post ${target.position} in my content calendar`
+  ).slice(0, 400)
 }
 
 export function ConciergeProvider({
@@ -123,6 +132,109 @@ export function ConciergeProvider({
     setIsOpen(true)
   }, [])
 
+  const openForCalendarPost = useCallback(
+    (target: CalendarPostTarget) => {
+      if (workspaceBusy) {
+        setIsOpen(true)
+        return
+      }
+      startTransition(() => {
+        setSession(prev => {
+          const existingTarget =
+            prev?.calendarTarget?.requestId === target.requestId ? prev.calendarTarget : null
+          const canKeepDelivery = existingTarget?.delivery?.imageUrl === target.imageUrl
+          const calendarTarget: CalendarPostTarget = existingTarget
+            ? {
+                ...target,
+                announced: existingTarget.announced,
+                delivery: canKeepDelivery ? (existingTarget.delivery ?? null) : null,
+              }
+            : { ...target, announced: false, delivery: null }
+          if (prev) {
+            return {
+              ...prev,
+              outputFormat: "photo",
+              seedPrompt: null,
+              creationIdea: calendarCreationIdea(target),
+              creationIntent: { format: "photo", source: "content_card", confidence: "high" },
+              generationSource: null,
+              initialSetupAction: null,
+              calendarTarget,
+              // Calendar is another surface for the same conversation, not a second chat.
+              startedAt: prev.startedAt,
+            }
+          }
+          return {
+            aesthetic: GENERAL_MAYA_AESTHETIC,
+            outputFormat: "photo",
+            referenceSelfieUrl: null,
+            videoSourceUrl: null,
+            inspirationImageUrl: null,
+            graphicText: null,
+            seedPrompt: null,
+            creationIdea: calendarCreationIdea(target),
+            creationIntent: { format: "photo", source: "content_card", confidence: "high" },
+            shotDirector: null,
+            generationSource: null,
+            initialSetupAction: null,
+            calendarTarget,
+            startedAt: Date.now(),
+          }
+        })
+        setIsOpen(true)
+      })
+    },
+    [workspaceBusy]
+  )
+
+  const markCalendarTargetAnnounced = useCallback((requestId: string) => {
+    setSession(prev =>
+      prev?.calendarTarget?.requestId === requestId
+        ? {
+            ...prev,
+            calendarTarget: { ...prev.calendarTarget, announced: true },
+          }
+        : prev
+    )
+  }, [])
+
+  const completeCalendarTarget = useCallback(
+    (requestId: string, delivery: NonNullable<CalendarPostTarget["delivery"]>) => {
+      setSession(prev =>
+        prev?.calendarTarget?.requestId === requestId
+          ? {
+              ...prev,
+              calendarTarget: {
+                ...prev.calendarTarget,
+                hasImage: true,
+                imageUrl: delivery.imageUrl,
+                aiImageId: delivery.aiImageId,
+                delivery,
+              },
+            }
+          : prev
+      )
+    },
+    []
+  )
+
+  const clearCalendarDelivery = useCallback((requestId: string) => {
+    setSession(prev =>
+      prev?.calendarTarget?.requestId === requestId
+        ? {
+            ...prev,
+            calendarTarget: {
+              ...prev.calendarTarget,
+              hasImage: Boolean(prev.calendarTarget.delivery?.previousImageUrl),
+              imageUrl: prev.calendarTarget.delivery?.previousImageUrl ?? null,
+              aiImageId: prev.calendarTarget.delivery?.previousAiImageId ?? null,
+              delivery: null,
+            },
+          }
+        : prev
+    )
+  }, [])
+
   const setOutputFormat = useCallback((format: OutputFormat | null) => {
     setSession(prev => (prev ? { ...prev, outputFormat: format } : prev))
   }, [])
@@ -153,6 +265,7 @@ export function ConciergeProvider({
             inspirationImageUrl: null,
             initialSetupAction: null,
             creationIdea: null,
+            calendarTarget: null,
             startedAt: Date.now(),
           }
         : prev
@@ -295,6 +408,10 @@ export function ConciergeProvider({
       historyRequestId,
       openWithAesthetic,
       updateCurrentSession,
+      openForCalendarPost,
+      markCalendarTargetAnnounced,
+      completeCalendarTarget,
+      clearCalendarDelivery,
       resetCurrentSession,
       setOutputFormat,
       setReferenceSelfieUrl,
@@ -313,6 +430,10 @@ export function ConciergeProvider({
       historyRequestId,
       openWithAesthetic,
       updateCurrentSession,
+      openForCalendarPost,
+      markCalendarTargetAnnounced,
+      completeCalendarTarget,
+      clearCalendarDelivery,
       resetCurrentSession,
       setOutputFormat,
       setReferenceSelfieUrl,

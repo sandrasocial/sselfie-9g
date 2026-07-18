@@ -176,6 +176,47 @@ describe("Calendar ready-post captions", () => {
     })
   })
 
+  it("rejects a late Maya result when a newer Calendar request owns the slot", async () => {
+    let updateCalled = false
+    mocks.sql.mockImplementation((strings: TemplateStringsArray) => {
+      const query = queryText(strings)
+      if (query.includes("FROM feed_layouts")) return [{ id: 12, user_id: 77 }]
+      if (query.includes("FROM feed_posts") && query.includes("SELECT")) {
+        return [
+          {
+            id: 9,
+            feed_layout_id: 12,
+            position: 2,
+            post_type: "selfie",
+            content_pillar: "Authority",
+            caption: "A planned post",
+            prediction_id: "maya:new-request-123",
+          },
+        ]
+      }
+      if (query.includes("UPDATE feed_posts")) updateCalled = true
+      return []
+    })
+
+    const { POST } = await import("@/app/api/feed/[feedId]/replace-post-image/route")
+    const response = await POST(
+      new Request("http://localhost/api/feed/12/replace-post-image", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          postId: 9,
+          imageUrl: "https://example.com/late.jpg",
+          generationRequestId: "old-request-123",
+        }),
+      }),
+      { params: Promise.resolve({ feedId: "12" }) }
+    )
+
+    expect(response.status).toBe(409)
+    expect(updateCalled).toBe(false)
+    expect(mocks.generateInstagramCaption).not.toHaveBeenCalled()
+  })
+
   it("does not fail image generation when the automatic caption cannot be saved", async () => {
     mocks.sql.mockImplementation((strings: TemplateStringsArray) => {
       const query = queryText(strings)
@@ -185,9 +226,7 @@ describe("Calendar ready-post captions", () => {
       return []
     })
 
-    const { ensureReadyPostCaption } = await import(
-      "@/lib/feed-planner/ready-post-caption"
-    )
+    const { ensureReadyPostCaption } = await import("@/lib/feed-planner/ready-post-caption")
     await expect(
       ensureReadyPostCaption({
         userId: 77,

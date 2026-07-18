@@ -222,10 +222,12 @@ function ShellInner({
     })
   }
 
+  const mayaUsesSideWorkspace = section === "create" || section === "calendar"
+
   return (
     <main
       className={`min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10] transition-[padding] duration-300 [overflow-x:clip] ${
-        mayaOpen && section === "create" ? "lg:pr-[27rem]" : ""
+        mayaOpen && mayaUsesSideWorkspace ? "lg:pr-[27rem]" : ""
       }`}
     >
       {/* Trial: quiet days-left bar. Limited: photo-making paused, everything she owns stays open. */}
@@ -345,7 +347,7 @@ function ShellInner({
             </div>
           </div>
         ) : (
-          <FeedPlannerView onCreateIdea={createIdea} />
+          <FeedPlannerView />
         ))}
       {section === "library" && <LibraryView />}
       {section === "account" && (
@@ -364,9 +366,10 @@ function ShellInner({
           hasTrainedModel={hasTrainedModel}
           analyticsCohort={cohort}
           onOpenCalendar={() => goToSection("calendar")}
+          calendarSurfaceActive={section === "calendar"}
         />
       )}
-      {!limited && section !== "calendar" && <MayaFloatingLauncher />}
+      {!limited && <MayaFloatingLauncher />}
       <PostSuccessReviewPrompt />
 
       {/* Bottom product navigation (text-only, on-brand, thumb-friendly for a phone-first audience) */}

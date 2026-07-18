@@ -76,6 +76,26 @@ export type ServerConciergeSessionSnapshot = {
   initialSetupAction?: "selfie_manager" | "inspiration_manager" | "plain_chat" | null
   /** The member's carried idea (structured context, never a replayed message). */
   creationIdea?: string | null
+  calendarTarget?: {
+    requestId: string
+    feedId: number
+    postId: number
+    position: number
+    caption: string | null
+    contentPillar: string | null
+    scheduledAt: string | null
+    hasImage: boolean
+    imageUrl: string | null
+    aiImageId: number | null
+    announced?: boolean
+    delivery?: {
+      generationRequestId: string
+      imageUrl: string
+      aiImageId: number | null
+      previousImageUrl: string | null
+      previousAiImageId: number | null
+    } | null
+  } | null
   startedAt: number
 }
 
@@ -277,6 +297,83 @@ function sanitizeTextStyleAdjustments(value: unknown): string | null {
   return clean || null
 }
 
+function sanitizeCalendarTarget(value: unknown): ServerConciergeSessionSnapshot["calendarTarget"] {
+  if (!value || typeof value !== "object") return null
+  const target = value as Record<string, unknown>
+  const positiveInteger = (candidate: unknown): candidate is number =>
+    typeof candidate === "number" && Number.isInteger(candidate) && candidate > 0
+  if (
+    typeof target.requestId !== "string" ||
+    target.requestId.length === 0 ||
+    target.requestId.length > 160 ||
+    !positiveInteger(target.feedId) ||
+    !positiveInteger(target.postId) ||
+    !positiveInteger(target.position)
+  ) {
+    return null
+  }
+  const cleanText = (candidate: unknown, max: number): string | null => {
+    if (typeof candidate !== "string") return null
+    const clean = candidate.replace(/\s+/g, " ").trim().slice(0, max)
+    return clean || null
+  }
+  const rawDelivery =
+    target.delivery && typeof target.delivery === "object"
+      ? (target.delivery as Record<string, unknown>)
+      : null
+  const delivery =
+    rawDelivery &&
+    typeof rawDelivery.generationRequestId === "string" &&
+    rawDelivery.generationRequestId.length > 0 &&
+    rawDelivery.generationRequestId.length <= 160 &&
+    typeof rawDelivery.imageUrl === "string" &&
+    rawDelivery.imageUrl.startsWith("https://")
+      ? {
+          generationRequestId: rawDelivery.generationRequestId,
+          imageUrl: rawDelivery.imageUrl,
+          aiImageId:
+            typeof rawDelivery.aiImageId === "number" &&
+            Number.isInteger(rawDelivery.aiImageId) &&
+            rawDelivery.aiImageId > 0
+              ? rawDelivery.aiImageId
+              : null,
+          previousImageUrl:
+            typeof rawDelivery.previousImageUrl === "string" &&
+            rawDelivery.previousImageUrl.startsWith("https://")
+              ? rawDelivery.previousImageUrl
+              : null,
+          previousAiImageId:
+            typeof rawDelivery.previousAiImageId === "number" &&
+            Number.isInteger(rawDelivery.previousAiImageId) &&
+            rawDelivery.previousAiImageId > 0
+              ? rawDelivery.previousAiImageId
+              : null,
+        }
+      : null
+  return {
+    requestId: target.requestId,
+    feedId: target.feedId,
+    postId: target.postId,
+    position: target.position,
+    caption: cleanText(target.caption, 400),
+    contentPillar: cleanText(target.contentPillar, 240),
+    scheduledAt: cleanText(target.scheduledAt, 80),
+    hasImage: target.hasImage === true,
+    imageUrl:
+      typeof target.imageUrl === "string" && target.imageUrl.startsWith("https://")
+        ? target.imageUrl
+        : null,
+    aiImageId:
+      typeof target.aiImageId === "number" &&
+      Number.isInteger(target.aiImageId) &&
+      target.aiImageId > 0
+        ? target.aiImageId
+        : null,
+    announced: target.announced === true,
+    delivery,
+  }
+}
+
 function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null {
   if (!value || typeof value !== "object") return null
   const session = value as Record<string, unknown>
@@ -312,6 +409,7 @@ function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null 
       typeof session.creationIdea === "string" && session.creationIdea.trim()
         ? session.creationIdea.slice(0, 400)
         : null,
+    calendarTarget: sanitizeCalendarTarget(session.calendarTarget),
     startedAt: session.startedAt,
   }
 }
@@ -370,7 +468,11 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
         ...(aiImageId != null ? { aiImageId } : {}),
         ...(aiImageIds?.some(id => id != null) ? { aiImageIds } : {}),
       }
-    } else if (state.status === "generating" && state.pendingRequest && typeof state.pendingRequest === "object") {
+    } else if (
+      state.status === "generating" &&
+      state.pendingRequest &&
+      typeof state.pendingRequest === "object"
+    ) {
       const pending = state.pendingRequest as Record<string, unknown>
       const pendingFormat = VALID_FORMATS.includes(pending.format as ServerOutputFormat)
         ? (pending.format as ServerOutputFormat)
@@ -397,7 +499,11 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
       } else {
         out[key] = { status: "idle" }
       }
-    } else if (state.status === "idle" || state.status === "generating" || state.status === "error") {
+    } else if (
+      state.status === "idle" ||
+      state.status === "generating" ||
+      state.status === "error"
+    ) {
       out[key] = { status: "idle" }
     }
   }

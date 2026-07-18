@@ -15,16 +15,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import FeedPlannerClient from "@/app/feed-planner/feed-planner-client"
 import { FeedNavContext } from "@/components/feed-planner/feed-nav-context"
-import type { OutputFormat } from "./types"
+import type { CalendarPostTarget } from "./types"
+import { useConcierge } from "./concierge-context"
 
 const SELECTED_FEED_KEY = "calendar:selected-feed:v1"
 
-export function FeedPlannerView({
-  onCreateIdea,
-}: {
-  /** Starts Maya seeded with a THIS WEEK idea (the shell's creationIdea channel). */
-  onCreateIdea?: (format: OutputFormat, title: string) => void
-} = {}) {
+export function FeedPlannerView() {
+  const { open, openForCalendarPost } = useConcierge()
   const [selectedFeedId, setSelectedFeedId] = useState<number | null>(null)
   const [hasRestoredFeed, setHasRestoredFeed] = useState(false)
   const [pendingSlotPosition, setPendingSlotPosition] = useState<number | null>(null)
@@ -64,11 +61,12 @@ export function FeedPlannerView({
       navigateToFeed,
       pendingSlotPosition,
       consumePendingSlot: () => setPendingSlotPosition(null),
-      navigateToMaya: onCreateIdea
-        ? () => onCreateIdea("photo", "Create a photo for my content calendar")
-        : undefined,
+      navigateToMaya: (target?: CalendarPostTarget) => {
+        if (target) openForCalendarPost(target)
+        else open()
+      },
     }),
-    [navigateToFeed, onCreateIdea, pendingSlotPosition, selectedFeedId]
+    [navigateToFeed, open, openForCalendarPost, pendingSlotPosition, selectedFeedId]
   )
 
   return (

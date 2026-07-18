@@ -22,7 +22,7 @@ export async function POST(
     }
 
     // Parse request body
-    const { postId, imageUrl, aiImageId } = await request.json()
+    const { postId, imageUrl, aiImageId, generationRequestId } = await request.json()
     const ownedAiImageId =
       typeof aiImageId === "number" && Number.isInteger(aiImageId) && aiImageId > 0
         ? aiImageId
@@ -30,6 +30,13 @@ export async function POST(
 
     if (!postId || !imageUrl) {
       return NextResponse.json({ error: "Missing postId or imageUrl" }, { status: 400 })
+    }
+    const calendarGenerationRef =
+      typeof generationRequestId === "string" && /^[a-zA-Z0-9:_-]{8,160}$/.test(generationRequestId)
+        ? `maya:${generationRequestId}`
+        : null
+    if (generationRequestId != null && !calendarGenerationRef) {
+      return NextResponse.json({ error: "Invalid generationRequestId" }, { status: 400 })
     }
 
     // Resolve params (handle both Promise and direct object)
@@ -61,7 +68,7 @@ export async function POST(
     }
 
     const [post] = await sql`
-      SELECT id, feed_layout_id, position, post_type, content_pillar, caption
+      SELECT id, feed_layout_id, position, post_type, content_pillar, caption, prediction_id
       FROM feed_posts
       WHERE id = ${postId}
         AND feed_layout_id = ${feedId}
@@ -71,26 +78,57 @@ export async function POST(
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 })
     }
+    if (calendarGenerationRef && post.prediction_id !== calendarGenerationRef) {
+      return NextResponse.json(
+        { error: "This Calendar request is no longer active" },
+        { status: 409 }
+      )
+    }
 
     // Persist the member's photo before asking the caption provider for enrichment.
-    const [updatedPost] = await sql`
-      UPDATE feed_posts
-      SET 
-        image_url = ${imageUrl},
-        ai_image_id = (
-          SELECT id FROM ai_images
-          WHERE id = ${ownedAiImageId} AND user_id = ${neonUser.id}
-        ),
-        generation_status = 'completed',
-        updated_at = NOW()
-      WHERE id = ${postId}
-        AND feed_layout_id = ${feedId}
-      RETURNING *
-    `
+    const [updatedPost] = calendarGenerationRef
+      ? await sql`
+          UPDATE feed_posts
+          SET image_url = ${imageUrl},
+              ai_image_id = (
+                SELECT id FROM ai_images
+                WHERE id = ${ownedAiImageId} AND user_id = ${neonUser.id}
+              ),
+              generation_status = 'completed',
+              prediction_id = NULL,
+              updated_at = NOW()
+          WHERE id = ${postId}
+            AND feed_layout_id = ${feedId}
+            AND user_id = ${neonUser.id}
+            AND prediction_id = ${calendarGenerationRef}
+          RETURNING *
+        `
+      : await sql`
+          UPDATE feed_posts
+          SET image_url = ${imageUrl},
+              ai_image_id = (
+                SELECT id FROM ai_images
+                WHERE id = ${ownedAiImageId} AND user_id = ${neonUser.id}
+              ),
+              generation_status = 'completed',
+              prediction_id = NULL,
+              updated_at = NOW()
+          WHERE id = ${postId}
+            AND feed_layout_id = ${feedId}
+            AND user_id = ${neonUser.id}
+          RETURNING *
+        `
 
     if (!updatedPost) {
       console.error("[v0] Post not found - postId:", postId, "feedId:", feedId)
-      return NextResponse.json({ error: "Post not found" }, { status: 404 })
+      return NextResponse.json(
+        {
+          error: calendarGenerationRef
+            ? "This Calendar request is no longer active"
+            : "Post not found",
+        },
+        { status: calendarGenerationRef ? 409 : 404 }
+      )
     }
 
     const captionOutcome = await ensureReadyPostCaption({

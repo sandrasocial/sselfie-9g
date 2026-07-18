@@ -173,7 +173,8 @@ describe("Maya-first Suite creation UX", () => {
     expect(shell).not.toContain('"--sselfie-bottom-nav-height"')
     expect(shell).toContain("pb-[calc(4.75rem+env(safe-area-inset-bottom))]")
 
-    expect(shell).toContain('mayaOpen && section === "create" ? "lg:pr-[27rem]"')
+    expect(shell).toContain('section === "create" || section === "calendar"')
+    expect(shell).toContain('mayaOpen && mayaUsesSideWorkspace ? "lg:pr-[27rem]"')
     expect(concierge).toContain("h-[94dvh]")
     expect(concierge).not.toContain("h-[62dvh]")
     expect(concierge).not.toContain("mobileSheetSize")

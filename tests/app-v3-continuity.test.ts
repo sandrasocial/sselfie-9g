@@ -11,6 +11,7 @@ describe("App v3 refresh continuity", () => {
   it("keeps the last valid app section and maps it to a refresh-safe URL", () => {
     expect(coerceStoredAppSection("photos", "create")).toBe("photos")
     expect(coerceStoredAppSection("content", "create")).toBe("content")
+    expect(coerceStoredAppSection("calendar", "create")).toBe("calendar")
     expect(coerceStoredAppSection("maya", "photos")).toBe("photos")
 
     expect(buildStoredSectionHref("create")).toBe("/app")
@@ -35,12 +36,41 @@ describe("App v3 refresh continuity", () => {
         referenceSelfieUrl: "https://example.com/selfie.png",
         graphicText: null,
         seedPrompt: null,
+        calendarTarget: {
+          requestId: "calendar:12:9",
+          feedId: 12,
+          postId: 9,
+          position: 2,
+          caption: "A clear post idea",
+          contentPillar: "Authority",
+          scheduledAt: "2026-07-20T09:00:00.000Z",
+          hasImage: false,
+          imageUrl: null,
+          aiImageId: null,
+          announced: true,
+          delivery: {
+            generationRequestId: "manual:123",
+            imageUrl: "https://example.com/new.png",
+            aiImageId: 12,
+            previousImageUrl: "https://example.com/original.png",
+            previousAiImageId: 9,
+          },
+        },
         startedAt: 123,
       },
     })
 
     expect(snapshot?.isOpen).toBe(true)
     expect(snapshot?.session?.aesthetic.name).toBe("Quiet Luxury")
+    expect(snapshot?.session.calendarTarget).toMatchObject({
+      requestId: "calendar:12:9",
+      announced: true,
+      aiImageId: null,
+      delivery: {
+        previousImageUrl: "https://example.com/original.png",
+        previousAiImageId: 9,
+      },
+    })
     expect(
       sanitizeConciergeSnapshot({ isOpen: true, session: null, savedAt: Date.now() })
     ).toBeNull()
@@ -108,10 +138,7 @@ describe("App v3 refresh continuity", () => {
     const cleaned = sanitizeMayaMessages(messages) as any[]
 
     expect(cleaned).toHaveLength(2)
-    expect(cleaned[1].parts.map((part: any) => part.type)).toEqual([
-      "text",
-      "tool-emit_concepts",
-    ])
+    expect(cleaned[1].parts.map((part: any) => part.type)).toEqual(["text", "tool-emit_concepts"])
     expect(cleaned[1].parts.some((part: any) => part.toolName === "show_style_options")).toBe(false)
   })
 })

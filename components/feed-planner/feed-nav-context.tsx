@@ -8,6 +8,7 @@
 // Blueprint-only buyers.
 
 import { createContext, useContext } from "react"
+import type { CalendarPostTarget } from "@/components/app-v3/types"
 
 export interface FeedNav {
   /** The feed currently selected inside the embedded planner (null = latest). */
@@ -18,7 +19,7 @@ export interface FeedNav {
   pendingSlotPosition?: number | null
   consumePendingSlot?: () => void
   /** Open Maya from the embedded calendar without leaving the Suite shell. */
-  navigateToMaya?: () => void
+  navigateToMaya?: (target?: CalendarPostTarget) => void
 }
 
 export const FeedNavContext = createContext<FeedNav | null>(null)
