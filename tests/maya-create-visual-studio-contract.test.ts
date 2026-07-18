@@ -28,7 +28,9 @@ describe("Maya Create visual studio contract", () => {
 
     expect(hook).toContain('/api/app-v3/reference-library')
     expect(hook).toContain('"sselfie:identity-updated"')
-    expect(frontDoor).toContain("useIdentityReferences(initialHasSelfie)")
+    expect(frontDoor).toContain("useIdentityReferences(")
+    expect(frontDoor).toContain("initialHasSelfie,")
+    expect(frontDoor).toContain("initialPrimarySelfieUrl")
     expect(frontDoor).toContain("referenceSelfieUrl: primarySelfieUrl")
     expect(manager).toContain("announceIdentityUpdated()")
   })
@@ -73,6 +75,7 @@ describe("Maya Create visual studio contract", () => {
     const gallery = read("components/app-v3/gallery-view.tsx")
     const card = read("components/app-v3/concept-card.tsx")
     const editMode = read("components/app-v3/edit-mode.tsx")
+    const favoriteButton = read("components/app-v3/favorite-button.tsx")
 
     expect(gallery).toContain("groupGalleryVersions")
     expect(gallery).toContain('"Original"')
@@ -81,9 +84,11 @@ describe("Maya Create visual studio contract", () => {
     expect(editMode).toContain("Original / Edited comparison")
     expect(editMode).toContain("Revert to original")
     expect(editMode).toContain("Saved to your Gallery as a new version.")
-    expect(card).toContain("Keep this")
+    expect(card).toContain("FavoriteButton")
+    expect(card).toContain("firstDownloadAssetId")
     expect(card).toContain("Continue this shoot")
-    expect(card).toContain('/api/app-v3/gallery/favorite')
+    expect(favoriteButton).toContain('/api/app-v3/gallery/favorite')
+    expect(favoriteButton).toContain("aria-pressed={isFavorite}")
   })
 
   it("adds Calendar text through the existing bake endpoint and only swaps after approval", () => {

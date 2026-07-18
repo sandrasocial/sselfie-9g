@@ -195,9 +195,28 @@ function renderContent({
     )
   }
 
+  if (post.generation_status === "queued") {
+    return (
+      <div
+        role="status"
+        aria-label={`Post ${post.position} status: Queued`}
+        className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#F8FAFA]/90"
+      >
+        <span className="h-2 w-2 animate-pulse rounded-full bg-[color:var(--app-text-secondary)] motion-reduce:animate-none" />
+        <span className="text-[9px] uppercase tracking-[0.18em] text-[color:var(--app-text-secondary)]">
+          Queued
+        </span>
+      </div>
+    )
+  }
+
   if (isGenerating) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#F8FAFA]/90 backdrop-blur-sm">
+      <div
+        role="status"
+        aria-label={`Post ${post.position} status: Creating image`}
+        className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#F8FAFA]/90 backdrop-blur-sm"
+      >
         <Spinner className="h-5 w-5" />
         <span className="rounded-full bg-[color:var(--app-btn-primary-bg)]/65 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-[color:var(--app-btn-primary-text)] backdrop-blur-sm">
           Creating…
@@ -479,6 +498,8 @@ export default function FeedGridItem({
           {post.position}
         </span>
         <span
+          role="status"
+          aria-label={`Post ${post.position} status: ${isReadyPost ? "Ready" : needsStory ? "Needs your story" : "Needs caption"}`}
           className={`absolute right-1.5 top-1.5 rounded-full border px-2 py-1 text-[8px] font-medium uppercase tracking-[0.12em] backdrop-blur-md ${
             isReadyPost
               ? "border-white/25 bg-[color:var(--app-btn-primary-bg)] text-[color:var(--app-btn-primary-text)]"
@@ -498,6 +519,18 @@ export default function FeedGridItem({
     const role = knownRoles.has(rawRole.trim()) ? rawRole.trim() : "Planned"
     const concept = conceptParts.length > 0 ? conceptParts.join(":").trim() : rawConcept
     const failed = post.generation_status === "failed" || pollingStatus === "failed"
+    const queued = post.generation_status === "queued"
+    const statusLabel = failed
+      ? "Image failed"
+      : queued
+        ? "Queued"
+        : isGenerating || post.generation_status === "generating"
+          ? "Creating image"
+          : !post.caption?.trim() && isPersonalStoryPosition(Number(post.position))
+            ? "Needs your story"
+            : post.caption?.trim()
+              ? "Needs photo"
+              : "Planned"
     const date = post.scheduled_at
       ? new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(
           new Date(post.scheduled_at)
@@ -533,16 +566,19 @@ export default function FeedGridItem({
             </span>
             <span className="mt-1 flex items-center justify-between gap-1 text-[8px] text-[color:var(--app-text-secondary)]">
               <span>{date ?? "This month"}</span>
-              <span>
-                {failed
-                  ? "Image failed"
-                  : isGenerating
-                    ? "Creating image"
-                    : !post.caption?.trim() && isPersonalStoryPosition(Number(post.position))
-                      ? "Needs your story"
-                      : post.caption?.trim()
-                        ? "Needs photo"
-                        : "Planned"}
+              <span
+                role="status"
+                aria-label={`Post ${post.position} status: ${statusLabel}`}
+                className="inline-flex items-center gap-1"
+              >
+                {(isGenerating || post.generation_status === "generating") && !queued ? (
+                  <span aria-hidden>
+                    <Spinner className="h-2.5 w-2.5 motion-reduce:animate-none" />
+                  </span>
+                ) : queued ? (
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current motion-reduce:animate-none" />
+                ) : null}
+                {statusLabel}
               </span>
             </span>
           </button>
@@ -551,7 +587,7 @@ export default function FeedGridItem({
               type="button"
               aria-label={`Retry image for post ${post.position}`}
               onClick={handleGenerateClick}
-              className="absolute bottom-7 right-2 z-10 min-h-8 rounded-full bg-[color:var(--app-btn-primary-bg)] px-2.5 text-[9px] font-medium text-[color:var(--app-btn-primary-text)]"
+              className="absolute bottom-6 right-2 z-10 min-h-11 rounded-full bg-[color:var(--app-btn-primary-bg)] px-3 text-[9px] font-medium text-[color:var(--app-btn-primary-text)]"
             >
               Retry
             </button>

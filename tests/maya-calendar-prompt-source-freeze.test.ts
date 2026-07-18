@@ -33,9 +33,9 @@ const FROZEN_PROMPT_SOURCES = {
   "app/api/app-v3/maya/chat/route.ts":
     "c6a0808bcacf55422f5e576fb1e506aeeee7a73fe939421bcdd760e482914ba0",
   "app/api/app-v3/maya/calendar-agent/route.ts":
-    // Approved Calendar truth-gate change: Maya asks for one real story detail instead of
-    // proposing invented autobiography.
-    "efb2ebde7634a1459f400b4c0cd8e31c149e2f62e3d58dc9bdd3f3b791b26774",
+    // Approved Wave 1 Calendar context change: Maya receives the saved visual direction,
+    // inspiration, and template metadata. Prompt wording and model routing remain unchanged.
+    "db0b850d72a05aff5a987b6b232c0bb0a6fd576dc18a2ffe5a449f257c427566",
 } as const
 
 function sourceHash(path: string) {

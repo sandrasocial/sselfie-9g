@@ -66,7 +66,7 @@ describe("Calendar creative-director workflow", () => {
     expect(screen.getByRole("button", { name: "Retry image for post 5" })).toBeInTheDocument()
   })
 
-  it("lets a returning user confirm the saved plan without typing", () => {
+  it("shows saved context without asking a returning user to confirm it again", () => {
     const onConfirm = vi.fn()
     render(
       <CalendarPlanSettingsCard
@@ -83,8 +83,68 @@ describe("Calendar creative-director workflow", () => {
 
     expect(screen.getByText("Personal brand photography")).toBeInTheDocument()
     expect(screen.getByText("Women building a visible business")).toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: "Use this context" }))
-    expect(onConfirm).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole("button", { name: "Adjust" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Use this context" })).not.toBeInTheDocument()
+    expect(onConfirm).not.toHaveBeenCalled()
+  })
+
+  it("announces queued, generating, ready, and failed image states per post", () => {
+    const posts = [
+      {
+        id: 51,
+        position: 1,
+        image_url: null,
+        caption: "Queued caption",
+        generation_status: "queued",
+      },
+      {
+        id: 52,
+        position: 2,
+        image_url: null,
+        caption: "Generating caption",
+        generation_status: "generating",
+      },
+      {
+        id: 53,
+        position: 3,
+        image_url: "https://example.com/ready.jpg",
+        caption: "Ready caption",
+        generation_status: "completed",
+      },
+      {
+        id: 54,
+        position: 4,
+        image_url: null,
+        caption: "Failed caption",
+        generation_status: "failed",
+      },
+    ]
+
+    render(
+      <FeedGrid
+        posts={posts}
+        postStatuses={[]}
+        draggedIndex={null}
+        isSavingOrder={false}
+        feedId={7}
+        access={{ isMembership: true, canGenerateImages: true } as any}
+        activePostId={null}
+        onPostClick={vi.fn()}
+        onAddImage={vi.fn()}
+        onDragStart={noopDrag}
+        onDragOver={noopDrag}
+        onDragEnd={noopDrag}
+        onMovePost={noopDrag}
+      />
+    )
+
+    expect(screen.getByRole("status", { name: "Post 1 status: Queued" })).toBeInTheDocument()
+    expect(screen.getByRole("status", { name: "Post 2 status: Creating image" })).toBeInTheDocument()
+    expect(screen.getByRole("status", { name: "Post 3 status: Ready" })).toBeInTheDocument()
+    expect(screen.getByRole("status", { name: "Post 4 status: Image failed" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Retry image for post 4" }).className).toContain(
+      "min-h-11"
+    )
   })
 
   it("keeps incomplete settings inline and saves them to the shared profile", async () => {

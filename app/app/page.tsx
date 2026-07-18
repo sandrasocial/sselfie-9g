@@ -65,6 +65,7 @@ export default async function StudioV3Page({
   let trialDaysLeft: number | null = null
   let trialHasGeneratedImages = false
   let trialHasSavedSelfie = false
+  let primarySelfieUrl: string | null = null
   let trialHasSeenFirstRunStep = false
   let hasVaultAccess = true
   // Whether this member has a completed, non-test trained LoRA model. When true, App v3
@@ -128,15 +129,17 @@ export default async function StudioV3Page({
           try {
             const rows = await import("@/lib/db/client").then(
               ({ sql }) => sql`
-              SELECT 1
+              SELECT image_url
               FROM user_avatar_images
               WHERE user_id = ${String(neonUserId)}
                 AND is_active = ${true}
                 AND image_type = 'selfie'
+              ORDER BY uploaded_at DESC
               LIMIT 1
             `
             )
             trialHasSavedSelfie = rows.length > 0
+            primarySelfieUrl = typeof rows[0]?.image_url === "string" ? rows[0].image_url : null
           } catch (selfieErr) {
             console.error("[/app gate] saved-selfie check failed:", selfieErr)
           }
@@ -167,15 +170,17 @@ export default async function StudioV3Page({
         hasTrainedModel = await hasCompletedTrainedModel(String(neonUserId))
         const rows = await import("@/lib/db/client").then(
           ({ sql }) => sql`
-            SELECT 1
+            SELECT image_url
             FROM user_avatar_images
             WHERE user_id = ${String(neonUserId)}
               AND is_active = ${true}
               AND image_type = 'selfie'
+            ORDER BY uploaded_at DESC
             LIMIT 1
           `
         )
         trialHasSavedSelfie = rows.length > 0
+        primarySelfieUrl = typeof rows[0]?.image_url === "string" ? rows[0].image_url : null
       }
     } catch (e) {
       console.error("[/app gate] admin trained-model check failed:", e)
@@ -200,6 +205,7 @@ export default async function StudioV3Page({
       preSelfieChatEnabled={preSelfieChatEnabled}
       trialHasGeneratedImages={trialHasGeneratedImages}
       trialHasSavedSelfie={trialHasSavedSelfie}
+      primarySelfieUrl={primarySelfieUrl}
       trialHasSeenFirstRunStep={trialHasSeenFirstRunStep}
       videoEnabled={isVideoGenerationEnabled()}
     />

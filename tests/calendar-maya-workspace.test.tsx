@@ -118,7 +118,7 @@ describe("Maya Calendar workspace", () => {
     expect(closePlanSettings).toHaveBeenCalledTimes(1)
   })
 
-  it("changes shared inline suggestions when an empty post is selected", async () => {
+  it("recommends the next action from the selected post state", async () => {
     const { CalendarMayaWorkspace } =
       await import("@/components/feed-planner/calendar-maya-workspace")
     render(
@@ -133,9 +133,131 @@ describe("Maya Calendar workspace", () => {
     )
 
     expect(screen.getAllByText("Post 4 selected")).toHaveLength(2)
-    expect(screen.getByRole("button", { name: "Create this image" })).toBeInTheDocument()
+    expect(screen.getByText("Post 4 needs a photo. What should I do next?")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Create the image" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Use one from my Gallery" })).toBeInTheDocument()
+    expect(screen.queryByText(/post 4 is planned/i)).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Build my month" })).not.toBeInTheDocument()
+  })
+
+  it("changes the next action for ready, generating, failed, and empty posts", async () => {
+    const { CalendarMayaWorkspace } =
+      await import("@/components/feed-planner/calendar-maya-workspace")
+    const baseProps = {
+      feedId: 7,
+      displayMode: "embedded" as const,
+      feedSummary: { title: "July", posts: [] },
+      onApplyProposal: vi.fn(),
+      onUndo: vi.fn(),
+    }
+    const { rerender } = render(
+      <CalendarMayaWorkspace
+        {...baseProps}
+        selectedPost={{ id: 1, position: 1, caption: "Ready", hasImage: true }}
+      />
+    )
+
+    expect(screen.getByText("Post 1 is ready. What would you like to adjust?")).toBeInTheDocument()
+
+    rerender(
+      <CalendarMayaWorkspace
+        {...baseProps}
+        selectedPost={{
+          id: 1,
+          position: 1,
+          caption: "Ready",
+          hasImage: true,
+          generationStatus: "completed",
+          predictionId: "historical-prediction-id",
+        }}
+      />
+    )
+    expect(screen.getByText("Post 1 is ready. What would you like to adjust?")).toBeInTheDocument()
+    expect(screen.getByText("Photo ready")).toBeInTheDocument()
+
+    rerender(
+      <CalendarMayaWorkspace
+        {...baseProps}
+        selectedPost={{
+          id: 2,
+          position: 2,
+          caption: null,
+          hasImage: false,
+          generationStatus: "generating",
+        }}
+      />
+    )
+    expect(screen.getByText("Post 2 is creating its image. What can we finish meanwhile?")).toBeInTheDocument()
+
+    rerender(
+      <CalendarMayaWorkspace
+        {...baseProps}
+        selectedPost={{
+          id: 3,
+          position: 3,
+          caption: "Caption ready",
+          hasImage: false,
+          generationStatus: "failed",
+        }}
+      />
+    )
+    expect(screen.getByText("Post 3 image did not finish. What should I do next?")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Retry the image" })).toBeInTheDocument()
+
+    rerender(
+      <CalendarMayaWorkspace
+        {...baseProps}
+        selectedPost={{ id: 4, position: 4, caption: null, hasImage: false }}
+      />
+    )
+    expect(screen.getByText("Post 4 needs an idea and caption. Where should I start?")).toBeInTheDocument()
+  })
+
+  it("sends the current feed visual direction in the deterministic Calendar request", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ message: "I have the current direction.", proposal: null }),
+    })
+    const { CalendarMayaWorkspace } =
+      await import("@/components/feed-planner/calendar-maya-workspace")
+
+    render(
+      <CalendarMayaWorkspace
+        feedId={7}
+        displayMode="embedded"
+        selectedPost={null}
+        feedSummary={{
+          title: "July",
+          posts: [],
+          visualDirectionMode: "custom",
+          visualDirectionBrief: "Bright city mornings with silver details",
+          inspirationImageUrl: "https://example.com/inspiration.jpg",
+          feedStyle: "Light & Minimalistic",
+          feedStyleVariationId: 14,
+        }}
+        onApplyProposal={vi.fn()}
+        onUndo={vi.fn()}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText("Message Maya about this grid"), {
+      target: { value: "Does this post fit my direction?" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Send to Maya" }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit
+    expect(JSON.parse(String(request.body))).toEqual(
+      expect.objectContaining({
+        feedSummary: expect.objectContaining({
+          visualDirectionMode: "custom",
+          visualDirectionBrief: "Bright city mornings with silver details",
+          inspirationImageUrl: "https://example.com/inspiration.jpg",
+          feedStyle: "Light & Minimalistic",
+          feedStyleVariationId: 14,
+        }),
+      })
+    )
   })
 
   it("starts an untouched grid with visual direction instead of advanced plan advice", async () => {

@@ -120,7 +120,7 @@ export interface ConciergeSession {
   /** Optional explicit engine choice. Normal sessions default to selfie; trained model is opt-in. */
   generationSource?: GenerationSource | null
   /** Optional one-shot setup action Maya should open after the drawer mounts. */
-  initialSetupAction?: "selfie_manager" | "plain_chat" | null
+  initialSetupAction?: "selfie_manager" | "inspiration_manager" | "plain_chat" | null
   startedAt: number
 }
 
@@ -153,7 +153,7 @@ export interface OpenConciergeOptions {
   /** Explicitly open the legacy trained-model path. Normal Maya opens default to selfie. */
   generationSource?: GenerationSource | null
   /** Optional one-shot setup action Maya should open after the drawer mounts. */
-  initialSetupAction?: "selfie_manager" | "plain_chat" | null
+  initialSetupAction?: "selfie_manager" | "inspiration_manager" | "plain_chat" | null
   /** Carry the member's idea into the new session as structured context (not a replayed message). */
   creationIdea?: string | null
 }
@@ -172,7 +172,7 @@ export interface ConciergeContextValue {
   /** Reopen the current conversation, or start a blank general Maya session if none exists. */
   open: () => void
   /** Start a clean guided Maya thread instead of restoring the active draft. */
-  openFresh: () => void
+  openFresh: (opts?: Pick<OpenConciergeOptions, "referenceSelfieUrl">) => void
   /** Open the drawer WITH the chat-history list showing: "continue" means picking a real
    * past thread, not just re-showing whatever is in memory. Increments on every request. */
   openHistory: () => void

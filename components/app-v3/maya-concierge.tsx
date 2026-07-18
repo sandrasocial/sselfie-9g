@@ -1212,7 +1212,10 @@ export function MayaConcierge({
     setGenerationSource(
       session.generationSource === "trained-model" && hasTrainedModel ? "trained-model" : "selfie"
     )
-    if (session.initialSetupAction === "selfie_manager") {
+    if (
+      session.initialSetupAction === "selfie_manager" ||
+      session.initialSetupAction === "inspiration_manager"
+    ) {
       setSetupOpen(true)
       setSelfieManagerOpen(true)
     }
@@ -4579,6 +4582,9 @@ export function MayaConcierge({
       <SelfieReferenceManagerModal
         open={selfieManagerOpen}
         initialFaceUrl={referenceSelfieUrl}
+        initialFocus={
+          session?.initialSetupAction === "inspiration_manager" ? "inspiration" : "face"
+        }
         hideOptionalReferences={guidedFirstPhoto}
         onClose={() => setSelfieManagerOpen(false)}
         onFaceReady={(url, source) => {

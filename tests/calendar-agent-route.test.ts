@@ -120,4 +120,43 @@ describe("Calendar Maya agent route", () => {
       })
     )
   })
+
+  it("grounds the Calendar request in the owned feed's saved visual direction", async () => {
+    mocks.sql
+      .mockResolvedValueOnce([
+        {
+          id: 42,
+          brand_name: "July",
+          username: "sandra",
+          feed_style: "Light & Minimalistic",
+          feed_style_variation_id: 14,
+          visual_direction_mode: "custom",
+          visual_direction_brief: "Bright city mornings with silver details",
+          inspiration_image_url: "https://example.com/inspiration.jpg",
+        },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+    mocks.generateObject.mockResolvedValue({
+      object: { message: "This fits the saved direction.", proposal: null },
+    })
+    const { POST } = await import("@/app/api/app-v3/maya/calendar-agent/route")
+
+    const response = await POST(request(validBody))
+
+    expect(response.status).toBe(200)
+    expect(mocks.generateObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: [
+          expect.objectContaining({
+            content: expect.stringContaining("Bright city mornings with silver details"),
+          }),
+        ],
+      })
+    )
+    const call = mocks.generateObject.mock.calls[0]?.[0]
+    expect(call.messages[0].content).toContain('"visualDirectionMode":"custom"')
+    expect(call.messages[0].content).toContain('"feedStyle":"Light & Minimalistic"')
+    expect(call.messages[0].content).toContain('"feedStyleVariationId":14')
+  })
 })

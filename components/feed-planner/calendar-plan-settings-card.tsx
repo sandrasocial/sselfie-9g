@@ -90,13 +90,6 @@ export function CalendarPlanSettingsCard({
           >
             <Pencil size={14} aria-hidden /> Adjust
           </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="ml-auto min-h-11 rounded-[9px] bg-[color:var(--app-btn-primary-bg)] px-4 text-[12px] font-medium text-[color:var(--app-btn-primary-text)] hover:opacity-90"
-          >
-            Use this context
-          </button>
         </div>
       </section>
     )

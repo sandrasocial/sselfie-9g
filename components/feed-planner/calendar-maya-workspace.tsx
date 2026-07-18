@@ -23,11 +23,18 @@ interface CalendarPostSummary {
   scheduledAt?: string | null
   hasImage?: boolean
   imageUrl?: string | null
+  generationStatus?: string | null
+  predictionId?: string | null
 }
 
 interface CalendarFeedSummary {
   title?: string | null
   bio?: string | null
+  visualDirectionMode?: FeedVisualDirectionMode | null
+  visualDirectionBrief?: string | null
+  inspirationImageUrl?: string | null
+  feedStyle?: string | null
+  feedStyleVariationId?: number | null
   posts: CalendarPostSummary[]
 }
 
@@ -123,11 +130,31 @@ function suggestionsFor(selectedPost: CalendarPostSummary | null, hasFeed: boole
       allowFreeText: true,
     }
   }
-  if (selectedPost.hasImage) {
+  const generationStatus = selectedPost.generationStatus?.toLowerCase()
+  if (generationStatus === "failed") {
     return {
-      question: `What would you like me to change on post ${selectedPost.position}?`,
+      question: `Post ${selectedPost.position} image did not finish. What should I do next?`,
+      options: ["Retry the image", "Use one from my Gallery", "Adjust the visual direction"],
+      allowFreeText: true,
+    }
+  }
+  if (
+    !selectedPost.hasImage &&
+    (generationStatus === "queued" ||
+      generationStatus === "generating" ||
+      Boolean(selectedPost.predictionId))
+  ) {
+    return {
+      question: `Post ${selectedPost.position} is creating its image. What can we finish meanwhile?`,
+      options: ["Write the caption", "Review the post idea", "Work on another post"],
+      allowFreeText: true,
+    }
+  }
+  if (selectedPost.hasImage && selectedPost.caption?.trim()) {
+    return {
+      question: `Post ${selectedPost.position} is ready. What would you like to adjust?`,
       options: [
-        "Change the image direction",
+        "Replace the photo",
         "Rewrite the hook",
         "Make the caption more personal",
         "Give this a softer CTA",
@@ -136,14 +163,32 @@ function suggestionsFor(selectedPost: CalendarPostSummary | null, hasFeed: boole
       allowFreeText: true,
     }
   }
+  if (selectedPost.hasImage) {
+    return {
+      question: `Post ${selectedPost.position} needs a caption. What should I do next?`,
+      options: ["Write the caption", "Make this a personal post", "Start with a stronger hook"],
+      allowFreeText: true,
+    }
+  }
+  if (selectedPost.caption?.trim()) {
+    return {
+      question: `Post ${selectedPost.position} needs a photo. What should I do next?`,
+      options: [
+        "Create the image",
+        "Use one from my Gallery",
+        "Change the post idea",
+        "Review the caption",
+      ],
+      allowFreeText: true,
+    }
+  }
   return {
-    question: `Post ${selectedPost.position} is planned. What should I do next?`,
+    question: `Post ${selectedPost.position} needs an idea and caption. Where should I start?`,
     options: [
-      "Create this image",
-      "Use one from my Gallery",
-      "Change the post idea",
+      "Shape the post idea",
       "Write the caption",
       "Make this a personal post",
+      "Use one from my Gallery",
     ],
     allowFreeText: true,
   }
@@ -569,6 +614,12 @@ export function CalendarMayaWorkspace({
               <p className="mt-0.5 truncate text-[10px] text-[color:var(--app-text-secondary)]">
                 {selectedPost.hasImage
                   ? "Photo ready"
+                  : selectedPost.generationStatus === "failed"
+                    ? "Image failed"
+                    : selectedPost.generationStatus === "queued" ||
+                        selectedPost.generationStatus === "generating" ||
+                        selectedPost.predictionId
+                      ? "Image in progress"
                   : selectedPost.caption?.trim()
                     ? "Caption ready · needs a photo"
                     : "Planned post"}

@@ -32,9 +32,16 @@ export function announceIdentityUpdated() {
   if (typeof window !== "undefined") window.dispatchEvent(new Event(IDENTITY_UPDATED_EVENT))
 }
 
-export function useIdentityReferences(initialHasSelfie = false) {
-  const [identity, setIdentity] = useState<IdentityReferences>(EMPTY_IDENTITY)
-  const [hasSelfie, setHasSelfie] = useState(initialHasSelfie)
+export function useIdentityReferences(
+  initialHasSelfie = false,
+  initialPrimarySelfieUrl: string | null = null
+) {
+  const serverPrimarySelfieUrl = cleanUrl(initialPrimarySelfieUrl)
+  const [identity, setIdentity] = useState<IdentityReferences>(() => ({
+    ...EMPTY_IDENTITY,
+    images: serverPrimarySelfieUrl ? [serverPrimarySelfieUrl] : [],
+  }))
+  const [hasSelfie, setHasSelfie] = useState(initialHasSelfie || Boolean(serverPrimarySelfieUrl))
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
@@ -50,20 +57,22 @@ export function useIdentityReferences(initialHasSelfie = false) {
           inspiration?: unknown
         }
       } | null
-      const images = Array.isArray(data?.images)
+      const hydratedImages = Array.isArray(data?.images)
         ? data.images.map(cleanUrl).filter((url): url is string => Boolean(url))
         : []
-      const next: IdentityReferences = {
-        images,
-        extras: {
-          threeQuarter: cleanUrl(data?.extras?.threeQuarter),
-          sideProfile: cleanUrl(data?.extras?.sideProfile),
-          fullBody: cleanUrl(data?.extras?.fullBody),
-          inspiration: cleanUrl(data?.extras?.inspiration),
-        },
-      }
-      setIdentity(next)
-      setHasSelfie(images.length > 0)
+      setIdentity(current => {
+        const images = hydratedImages.length > 0 ? hydratedImages : current.images
+        return {
+          images,
+          extras: {
+            threeQuarter: cleanUrl(data?.extras?.threeQuarter),
+            sideProfile: cleanUrl(data?.extras?.sideProfile),
+            fullBody: cleanUrl(data?.extras?.fullBody),
+            inspiration: cleanUrl(data?.extras?.inspiration),
+          },
+        }
+      })
+      setHasSelfie(current => current || hydratedImages.length > 0)
     } catch {
       // The server-rendered truth remains the fallback if the live library is unavailable.
       setHasSelfie(current => current || initialHasSelfie)

@@ -16,6 +16,7 @@ import {
 import { AESTHETICS, MAYA_DECIDES_AESTHETIC } from "./aesthetics"
 import { useConcierge } from "./concierge-context"
 import { useIdentityReferences } from "./use-identity-references"
+import { MemoryModal } from "./memory-modal"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { detectCreationIntent, intentForFormat } from "@/lib/app-v3/maya/intent-router"
 import type { AppV3GalleryAsset } from "@/lib/app-v3/gallery-assets"
@@ -95,6 +96,7 @@ function VisualCard({
   onClick,
   priority = false,
   compact = false,
+  disabled = false,
 }: {
   image: string
   eyebrow: string
@@ -104,14 +106,16 @@ function VisualCard({
   onClick: () => void
   priority?: boolean
   compact?: boolean
+  disabled?: boolean
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={`group relative block w-full overflow-hidden rounded-[10px] bg-[color:var(--ss-night)] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2 ${
         compact ? "min-h-[300px]" : "min-h-[430px] sm:min-h-[520px]"
-      }`}
+      } disabled:cursor-not-allowed disabled:opacity-55`}
     >
       {image ? (
         <Image
@@ -147,6 +151,8 @@ export function VisualFrontDoor({
   showTrialFirstRunStep = false,
   cohort = "member",
   hasSelfie: initialHasSelfie = false,
+  initialPrimarySelfieUrl = null,
+  onOpenFavorites,
   hasVaultAccess = false,
   preSelfieChatEnabled = false,
   videoEnabled: _videoEnabled = true,
@@ -155,12 +161,17 @@ export function VisualFrontDoor({
   showTrialFirstRunStep?: boolean
   cohort?: AppV3AnalyticsCohort
   hasSelfie?: boolean
+  initialPrimarySelfieUrl?: string | null
+  onOpenFavorites?: () => void
   hasVaultAccess?: boolean
   preSelfieChatEnabled?: boolean
   videoEnabled?: boolean
 } = {}) {
-  const { openFresh, openHistory, openWithAesthetic } = useConcierge()
-  const { hasSelfie, primarySelfieUrl, referenceCount } = useIdentityReferences(initialHasSelfie)
+  const { openFresh, openHistory, openWithAesthetic, workspaceBusy } = useConcierge()
+  const { hasSelfie, primarySelfieUrl, referenceCount } = useIdentityReferences(
+    initialHasSelfie,
+    initialPrimarySelfieUrl
+  )
   const homeTrackedRef = useRef(false)
   const firstRunTrackedRef = useRef(false)
   const forYouRef = useRef<HTMLElement>(null)
@@ -176,15 +187,23 @@ export function VisualFrontDoor({
   const [gallery, setGallery] = useState<AppV3GalleryAsset[]>([])
   const [firstRunAlreadySeen] = useState(readFirstRunSeen)
   const [startText, setStartText] = useState("")
+  const [memoryOpen, setMemoryOpen] = useState(false)
 
   const shouldShowTrialFirstRun = showTrialFirstRunStep && !hasSelfie && !firstRunAlreadySeen
   const fallbackImage = aesthetics[0]?.coverImage || AESTHETICS[0]?.coverImage || ""
   const recommendation = recommendations[0] ?? FALLBACK_RECOMMENDATION
   const recommendationImage = recommendation.imageUrl || fallbackImage
-  const alternateWorlds = useMemo(
-    () => aesthetics.filter(item => item.coverImage && item.id !== "maya-general").slice(0, 2),
-    [aesthetics]
-  )
+  const alternateWorlds = useMemo(() => {
+    const seenImages = new Set<string>([recommendationImage])
+    return aesthetics
+      .filter(item => item.coverImage && item.id !== "maya-general")
+      .filter(item => {
+        if (seenImages.has(item.coverImage)) return false
+        seenImages.add(item.coverImage)
+        return true
+      })
+      .slice(0, 2)
+  }, [aesthetics, recommendationImage])
   const savedLooks = gallery.filter(asset => asset.isFavorite).slice(0, 4)
   const recentShoots = gallery.slice(0, 5)
 
@@ -293,6 +312,16 @@ export function VisualFrontDoor({
     })
   }
 
+  function openInspirationManager() {
+    trackFirstAction("inspiration")
+    openWithAesthetic(MAYA_GENERAL, {
+      format: "photo",
+      creationIntent: intentForFormat("photo", "starter_chip"),
+      initialSetupAction: "inspiration_manager",
+      referenceSelfieUrl: primarySelfieUrl,
+    })
+  }
+
   function openRecommendation() {
     const intent = intentForFormat(recommendation.format, "content_card")
     trackFirstAction("maya_recommendation")
@@ -366,20 +395,24 @@ export function VisualFrontDoor({
     {
       label: "For you",
       icon: Sparkles,
-      action: () => forYouRef.current?.scrollIntoView({ behavior: "smooth" }),
+      action: openRecommendation,
     },
     {
       label: "Saved looks",
       icon: Heart,
-      action: () => savedRef.current?.scrollIntoView({ behavior: "smooth" }),
+      action: () => onOpenFavorites?.(),
     },
-    { label: "Inspiration", icon: Lightbulb, action: () => openSelfieManagerInMaya("inspiration") },
+    { label: "Inspiration", icon: Lightbulb, action: openInspirationManager },
     {
       label: "Recent shoots",
       icon: History,
       action: () => recentRef.current?.scrollIntoView({ behavior: "smooth" }),
     },
-    { label: "New", icon: Plus, action: openFresh },
+    {
+      label: "New",
+      icon: Plus,
+      action: () => openFresh({ referenceSelfieUrl: primarySelfieUrl }),
+    },
   ]
 
   if (!hasSelfie) {
@@ -444,11 +477,25 @@ export function VisualFrontDoor({
         <button
           type="button"
           onClick={openHistory}
+          disabled={workspaceBusy}
           className="inline-flex min-h-11 items-center gap-2 self-start rounded-[5px] border border-[color:var(--ss-silver)] bg-white px-4 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ss-night)] sm:self-auto"
         >
           <History size={15} aria-hidden /> Creative tasks
         </button>
+        <button
+          type="button"
+          onClick={() => setMemoryOpen(true)}
+          className="inline-flex min-h-11 items-center self-start px-2 text-[11px] text-[color:var(--ss-davy)] underline underline-offset-4 sm:self-auto"
+        >
+          What Maya knows
+        </button>
       </header>
+
+      {workspaceBusy ? (
+        <p role="status" className="mt-4 text-[12px] text-[color:var(--ss-davy)]">
+          Maya is finishing your current task. You can start something new when it is ready.
+        </p>
+      ) : null}
 
       <nav
         aria-label="Create shortcuts"
@@ -460,6 +507,7 @@ export function VisualFrontDoor({
               key={label}
               type="button"
               onClick={action}
+              disabled={workspaceBusy}
               className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[color:var(--ss-silver)]/70 bg-white px-4 text-[11px] text-[color:var(--ss-davy)] transition-colors hover:border-[color:var(--ss-night)] hover:text-[color:var(--ss-night)]"
             >
               <Icon size={14} strokeWidth={1.7} aria-hidden /> {label}
@@ -486,6 +534,7 @@ export function VisualFrontDoor({
               <button
                 type="button"
                 onClick={openWeeklyLook}
+                disabled={workspaceBusy}
                 className="min-h-11 text-[11px] text-[color:var(--ss-davy)] underline underline-offset-4"
               >
                 New this week: {weeklyLook.name}
@@ -495,6 +544,7 @@ export function VisualFrontDoor({
               <button
                 type="button"
                 onClick={() => setRecommendationReload(value => value + 1)}
+                disabled={workspaceBusy}
                 className="min-h-11 text-[11px] text-[color:var(--ss-davy)] underline underline-offset-4"
               >
                 Refresh Maya&apos;s pick
@@ -514,6 +564,7 @@ export function VisualFrontDoor({
             body={recommendation.rationale}
             action="Create this with Maya"
             onClick={openRecommendation}
+            disabled={workspaceBusy}
             priority
           />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
@@ -527,6 +578,7 @@ export function VisualFrontDoor({
                 action="Recreate this look"
                 onClick={() => openWorld(world)}
                 compact
+                disabled={workspaceBusy}
               />
             ))}
           </div>
@@ -542,6 +594,7 @@ export function VisualFrontDoor({
             <textarea
               value={startText}
               onChange={event => setStartText(event.target.value)}
+              disabled={workspaceBusy}
               rows={2}
               placeholder="A launch photo, a full shoot, a Reel cover…"
               className="mt-3 min-h-[92px] w-full resize-none border-0 border-b border-[color:var(--ss-silver)] bg-transparent px-0 py-3 font-serif text-[24px] font-light leading-tight text-[color:var(--ss-night)] outline-none placeholder:text-[color:var(--ss-gray)] focus:border-[color:var(--ss-night)]"
@@ -550,6 +603,7 @@ export function VisualFrontDoor({
           <button
             type="button"
             onClick={startFromText}
+            disabled={workspaceBusy}
             className="min-h-12 rounded-[5px] bg-[color:var(--ss-night)] px-6 text-[11px] uppercase tracking-[0.18em] text-white"
           >
             Start with Maya
@@ -590,6 +644,7 @@ export function VisualFrontDoor({
                 key={asset.id}
                 type="button"
                 onClick={() => continueFromAsset(asset)}
+                disabled={workspaceBusy}
                 className="group text-left"
               >
                 <span className="relative block aspect-[4/5] overflow-hidden rounded-[7px] bg-[color:var(--ss-silver)]/30">
@@ -637,6 +692,7 @@ export function VisualFrontDoor({
                 key={asset.id}
                 type="button"
                 onClick={() => continueFromAsset(asset)}
+                disabled={workspaceBusy}
                 className="group w-[190px] shrink-0 snap-start text-left sm:w-[220px]"
               >
                 <span className="relative block aspect-[4/5] overflow-hidden rounded-[7px] bg-[color:var(--ss-silver)]/30">
@@ -657,7 +713,8 @@ export function VisualFrontDoor({
         ) : (
           <button
             type="button"
-            onClick={openFresh}
+            onClick={() => openFresh({ referenceSelfieUrl: primarySelfieUrl })}
+            disabled={workspaceBusy}
             className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-[5px] border border-[color:var(--ss-night)] px-5 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-night)]"
           >
             <Images size={15} aria-hidden /> Start your first shoot
@@ -670,6 +727,7 @@ export function VisualFrontDoor({
           ? `${referenceCount} identity ${referenceCount === 1 ? "reference" : "references"} ready for Maya.`
           : "Your saved identity will appear here when it is ready."}
       </footer>
+      <MemoryModal open={memoryOpen} onClose={() => setMemoryOpen(false)} onSaved={() => {}} />
     </section>
   )
 }

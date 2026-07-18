@@ -184,36 +184,39 @@ export function ConciergeProvider({
     })
   }, [])
 
-  const openFresh = useCallback(() => {
-    if (workspaceBusy) {
-      setIsOpen(true)
-      return
-    }
-    const startedAt = Date.now()
-    clearMayaDraft()
-    // Also outranks any in-flight server-draft GET: a draft saved before this moment must
-    // never be restored over a session the member explicitly started clean.
-    restoredSavedAtRef.current = startedAt
-    void fetch("/api/app-v3/maya/draft", { method: "DELETE" }).catch(() => {})
-    startTransition(() => {
-      setSession({
-        aesthetic: GENERAL_MAYA_AESTHETIC,
-        outputFormat: null,
-        referenceSelfieUrl: null,
-        videoSourceUrl: null,
-        inspirationImageUrl: null,
-        graphicText: null,
-        seedPrompt: "Help me choose what to make today.",
-        creationIntent: { format: null, source: "manual", confidence: "needs_clarify" },
-        shotDirector: null,
-        generationSource: null,
-        initialSetupAction: null,
-        creationIdea: null,
-        startedAt,
+  const openFresh = useCallback(
+    (opts?: Pick<OpenConciergeOptions, "referenceSelfieUrl">) => {
+      if (workspaceBusy) {
+        setIsOpen(true)
+        return
+      }
+      const startedAt = Date.now()
+      clearMayaDraft()
+      // Also outranks any in-flight server-draft GET: a draft saved before this moment must
+      // never be restored over a session the member explicitly started clean.
+      restoredSavedAtRef.current = startedAt
+      void fetch("/api/app-v3/maya/draft", { method: "DELETE" }).catch(() => {})
+      startTransition(() => {
+        setSession({
+          aesthetic: GENERAL_MAYA_AESTHETIC,
+          outputFormat: null,
+          referenceSelfieUrl: opts?.referenceSelfieUrl ?? session?.referenceSelfieUrl ?? null,
+          videoSourceUrl: null,
+          inspirationImageUrl: null,
+          graphicText: null,
+          seedPrompt: "Help me choose what to make today.",
+          creationIntent: { format: null, source: "manual", confidence: "needs_clarify" },
+          shotDirector: null,
+          generationSource: null,
+          initialSetupAction: null,
+          creationIdea: null,
+          startedAt,
+        })
+        setIsOpen(true)
       })
-      setIsOpen(true)
-    })
-  }, [workspaceBusy])
+    },
+    [session?.referenceSelfieUrl, workspaceBusy]
+  )
 
   const close = useCallback(() => setIsOpen(false), [])
 

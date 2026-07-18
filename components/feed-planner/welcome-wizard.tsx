@@ -23,16 +23,7 @@ interface WelcomeWizardProps {
   onChooseNewStyle?: () => void // Callback when user chooses to select new style
 }
 
-/**
- * Welcome Wizard for legacy Feed Planner buyers
- * 
- * Interactive tutorial matching the unified wizard style
- * Explains how to use the full feed planner with consistent UI
- * 
- * If user has a preview feed, shows preview image in first step with options to:
- * - Use preview style (create feed with existing data)
- * - Choose new style (open onboarding wizard at step 4)
- */
+/** Current Calendar guide for paid Blueprint members. */
 export default function WelcomeWizard({ 
   open, 
   onComplete, 
@@ -95,10 +86,10 @@ export default function WelcomeWizard({
       return (
         <div className="space-y-6">
           <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
-            Great news! We found your preview feed from the free blueprint.
+            We found the visual direction from your preview.
           </p>
           <p className="text-sm font-light text-white/65">
-            You can create your full feed using this style, or choose a new style.
+            Keep it for this grid, or choose a different direction before you start.
           </p>
           
           {/* Preview Image */}
@@ -130,7 +121,7 @@ export default function WelcomeWizard({
               }}
               className="flex-1 rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-white transition-all duration-200 hover:scale-105 hover:bg-white/15 active:scale-95 shadow-lg"
             >
-              Create Feed Using Preview Style
+              Keep this visual direction
             </Button>
             <Button
               onClick={() => {
@@ -143,7 +134,7 @@ export default function WelcomeWizard({
               variant="outline"
               className="flex-1 border-white/25 bg-white/[0.04] px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-white/75 transition-all duration-200 hover:border-white/45 hover:bg-white/10 hover:text-white"
             >
-              Choose New Style
+              Choose another direction
             </Button>
           </div>
         </div>
@@ -154,18 +145,18 @@ export default function WelcomeWizard({
     return (
       <div className="space-y-6">
         <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
-          Your first 60 credits are ready.
+          Your Calendar starts with a grid.
         </p>
         <p className="text-sm font-light text-white/65">
-          Create a complete 9-post feed in minutes. Let&apos;s walk through how it works.
+          Choose the visual direction first. Then open one post and make the next move with Maya.
         </p>
         <Button
           onClick={handleCreateFeed}
           className="flex w-full items-center justify-center gap-2 rounded-full bg-white/90 py-5 text-sm font-medium uppercase tracking-[0.2em] text-black shadow-lg transition-colors hover:bg-white"
         >
-          Generate my first feed now →
+          Choose visual direction
         </Button>
-        <p className="text-center text-xs text-white/35">Or continue the walkthrough below</p>
+        <p className="text-center text-xs text-white/35">Or see how Grid and Maya work together</p>
       </div>
     )
   }, [isLoadingPreview, hasPreviewFeed, previewImageUrl, previewFeedStyle, previewVariationId, onUsePreviewStyle, onChooseNewStyle, handleCreateFeed])
@@ -177,21 +168,21 @@ export default function WelcomeWizard({
     // Step 1: Welcome or Preview discovery
     if (hasPreviewFeed && previewImageUrl) {
       stepList.push({
-        title: "Great news! We found your preview feed",
+        title: "Your preview direction is ready",
         subtitle: "Step 1 of 3",
         content: firstStepContent,
       })
     } else {
       stepList.push({
-        title: "Your first 60 credits are ready",
+        title: "Your Calendar starts with a grid",
         subtitle: "Step 1 of 3",
         content: (
           <div className="space-y-6">
             <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
-              Create your first 9-post feed in minutes.
+              Choose a visual direction, then start with one post.
             </p>
             <p className="text-sm font-light text-white/65">
-              Each photo will be unique but cohesive. Here&apos;s how it works.
+              You can add your own photos or ask Maya to help inside the grid.
             </p>
           </div>
         ),
@@ -200,16 +191,16 @@ export default function WelcomeWizard({
 
     // Step 2: How it works (combined - generate photos + captions/strategy)
     stepList.push({
-      title: "How it works",
+      title: "Grid and Maya work together",
       subtitle: "Step 2 of 3",
       content: (
         <div className="space-y-6">
           <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
-            Click any empty slot in your grid to create a photo. Then use the Post tab for captions and the Plan tab for what to make next.
+            Tap any post to open its details. Ask Maya for help with the idea, caption, image, or order.
           </p>
           <div className="rounded-xl border border-white/15 bg-white/[0.04] p-4">
             <p className="text-sm font-light text-white/65">
-              Start with a few photos to see how they look together.
+              Use Create in bulk when you want to finish several posts at once. Each post still shows its own progress.
             </p>
           </div>
         </div>
@@ -218,19 +209,13 @@ export default function WelcomeWizard({
 
     // Step 3: You're ready - single CTA per content doc
     stepList.push({
-      title: "You're ready!",
+      title: "Start with one post",
       subtitle: "Step 3 of 3",
       content: (
         <div className="space-y-6">
           <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
-            Your first 60 credits are ready - create your first feed below.
+            Choose the visual direction. Then open one post and make it ready before you move to the next.
           </p>
-          <Button
-            onClick={handleCreateFeed}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 py-6 text-base font-medium uppercase tracking-[0.2em] text-white shadow-lg transition-colors hover:bg-white/15"
-          >
-            Create my first grid
-          </Button>
         </div>
       ),
     })
@@ -385,9 +370,7 @@ export default function WelcomeWizard({
                         Next
                       </>
                     ) : (
-                      <>
-                        Create my first feed
-                      </>
+                      <>Choose visual direction</>
                     )}
                   </Button>
                 </div>

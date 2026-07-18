@@ -6,10 +6,7 @@ import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 import { AESTHETICS } from "@/components/app-v3/aesthetics"
 import { matchWeeklyLookAesthetic, toLookSlug } from "@/lib/app-v3/weekly-look"
-import {
-  WEEKLY_DROP_LOOKS,
-  weeklyDropLookForDate,
-} from "@/lib/email/templates/suite-habit-emails"
+import { WEEKLY_DROP_LOOKS, weeklyDropLookForDate } from "@/lib/email/templates/suite-habit-emails"
 
 function read(path: string) {
   return readFileSync(path, "utf8")
@@ -33,17 +30,14 @@ describe("weekly look matching", () => {
   })
 
   it("matches shorter email names inside longer collection names", () => {
-    const denim = matchWeeklyLookAesthetic(
-      { name: "Denim Street", oneLiner: "" },
-      AESTHETICS
-    )
+    const denim = matchWeeklyLookAesthetic({ name: "Denim Street", oneLiner: "" }, AESTHETICS)
     expect(denim?.name).toContain("Denim Street")
   })
 
   it("does not match on partial words or empty names", () => {
-    expect(
-      matchWeeklyLookAesthetic({ name: "Noir", oneLiner: "" }, AESTHETICS)?.name
-    ).not.toBe("Quiet Luxury London")
+    expect(matchWeeklyLookAesthetic({ name: "Noir", oneLiner: "" }, AESTHETICS)?.name).not.toBe(
+      "Quiet Luxury London"
+    )
     expect(matchWeeklyLookAesthetic({ name: "", oneLiner: "" }, AESTHETICS)).toBeNull()
     expect(
       matchWeeklyLookAesthetic({ name: "Something That Does Not Exist", oneLiner: "" }, AESTHETICS)
@@ -61,12 +55,12 @@ describe("weekly look matching", () => {
 })
 
 describe("in-app freshness wiring", () => {
-  it("aesthetics API returns the weekly look matched server-side", () => {
+  it("aesthetics API returns the newest published collection server-side", () => {
     const route = read("app/api/app-v3/aesthetics/route.ts")
-    expect(route).toContain("weeklyDropLookForDate")
-    expect(route).toContain("matchWeeklyLookAesthetic")
+    expect(route).toContain("published[0]")
+    expect(route).toContain("newestCollection")
     expect(route).toContain("weeklyLook")
-    expect(route).toContain("aestheticId: matched.id")
+    expect(route).toContain("aestheticId: newestAesthetic.id")
   })
 
   it("surfaces the weekly look as ONE starter chip into Maya, never a vault grid on Create", () => {

@@ -21,6 +21,7 @@ interface CalendarBulkCreateProps {
 }
 
 type BulkError = { postId?: number; message: string }
+type ImageProgress = "queued" | "generating" | "ready" | "failed"
 
 async function readError(response: Response, fallback: string) {
   const data = await response.json().catch(() => ({}))
@@ -38,6 +39,7 @@ export function CalendarBulkCreate({
   const [includeCaptions, setIncludeCaptions] = useState(true)
   const [running, setRunning] = useState(false)
   const [completedImages, setCompletedImages] = useState(0)
+  const [imageProgress, setImageProgress] = useState<Record<number, ImageProgress>>({})
   const [errors, setErrors] = useState<BulkError[]>([])
   const runningRef = useRef(false)
 
@@ -85,6 +87,11 @@ export function CalendarBulkCreate({
     runningRef.current = true
     setRunning(true)
     setCompletedImages(0)
+    setImageProgress(
+      includeImages
+        ? Object.fromEntries(missingImages.map(post => [Number(post.id), "queued" as const]))
+        : {}
+    )
     setErrors([])
     const nextErrors: BulkError[] = []
 
@@ -121,6 +128,7 @@ export function CalendarBulkCreate({
             const post = missingImages[index]
             if (!post) return
             const postId = Number(post.id)
+            setImageProgress(current => ({ ...current, [postId]: "generating" }))
 
             try {
               const response = await fetch(`/api/feed/${feedId}/generate-single`, {
@@ -134,8 +142,10 @@ export function CalendarBulkCreate({
                   postId,
                   message: await readError(response, `Post ${post.position || index + 1} failed.`),
                 })
+                setImageProgress(current => ({ ...current, [postId]: "failed" }))
                 if (response.status === 402 || response.status === 429) stopStarting = true
               } else {
+                setImageProgress(current => ({ ...current, [postId]: "ready" }))
                 setCompletedImages(value => value + 1)
                 await onRefresh?.()
               }
@@ -145,6 +155,7 @@ export function CalendarBulkCreate({
                 message:
                   error instanceof Error ? error.message : "This image could not be created.",
               })
+              setImageProgress(current => ({ ...current, [postId]: "failed" }))
             }
           }
         }
@@ -152,6 +163,14 @@ export function CalendarBulkCreate({
         await Promise.all(Array.from({ length: Math.min(2, missingImages.length) }, () => worker()))
         const unstarted = Math.max(0, missingImages.length - nextIndex)
         if (stopStarting && unstarted > 0) {
+          setImageProgress(current =>
+            Object.fromEntries(
+              Object.entries(current).map(([postId, state]) => [
+                postId,
+                state === "queued" ? "failed" : state,
+              ])
+            ) as Record<number, ImageProgress>
+          )
           nextErrors.unshift({
             message: `${unstarted} ${unstarted === 1 ? "image was" : "images were"} not started. Fix the issue below, then try again.`,
           })
@@ -262,7 +281,12 @@ export function CalendarBulkCreate({
           ) : null}
 
           {running && includeImages ? (
-            <div className="mt-3" role="status" aria-live="polite">
+            <div
+              className="mt-3"
+              role="status"
+              aria-label="Bulk creation progress"
+              aria-live="polite"
+            >
               <div className="mb-1.5 flex items-center justify-between text-[10px] text-[color:var(--app-text-secondary)]">
                 <span>Maya is creating your Calendar</span>
                 <span>
@@ -278,6 +302,45 @@ export function CalendarBulkCreate({
                 />
               </div>
             </div>
+          ) : null}
+
+          {Object.keys(imageProgress).length > 0 ? (
+            <ul
+              aria-label="Bulk image progress"
+              className="mt-3 grid gap-1.5 sm:grid-cols-2"
+            >
+              {missingImages.map(post => {
+                const postId = Number(post.id)
+                const state = imageProgress[postId]
+                if (!state) return null
+                const label =
+                  state === "generating"
+                    ? "Creating"
+                    : state === "ready"
+                      ? "Ready"
+                      : state === "failed"
+                        ? "Failed"
+                        : "Queued"
+                return (
+                  <li
+                    key={postId}
+                    role="status"
+                    aria-label={`Post ${post.position ?? postId} image status: ${label}`}
+                    className="flex min-h-11 items-center justify-between rounded-[10px] bg-[color:var(--calendar-stone-1)] px-3 text-[11px] text-[color:var(--app-text-primary)]"
+                  >
+                    <span>Post {post.position ?? postId}</span>
+                    <span className="inline-flex items-center gap-1.5 text-[10px] text-[color:var(--app-text-secondary)]">
+                      {state === "generating" ? (
+                        <Loader2 className="h-3 w-3 animate-spin motion-reduce:animate-none" aria-hidden />
+                      ) : state === "queued" ? (
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current motion-reduce:animate-none" />
+                      ) : null}
+                      {label}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
           ) : null}
 
           {errors.length > 0 ? (

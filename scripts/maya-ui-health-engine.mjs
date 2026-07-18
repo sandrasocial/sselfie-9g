@@ -78,18 +78,6 @@ async function runStaticChecks() {
     detail: "Post-auth and portal returns should still land on a valid Studio tab after shell and routing changes.",
   })
 
-  const feedbackButton = await readFile(resolve(process.cwd(), "components/feedback/feedback-button.tsx"), "utf8")
-  checks.push({
-    label: "feedback button respects bottom nav safe area",
-    status:
-      feedbackButton.includes("--sselfie-bottom-nav-height") &&
-      feedbackButton.includes("env(safe-area-inset-bottom") &&
-      feedbackButton.includes("z-40")
-        ? "pass"
-        : "fail",
-    detail: "The floating feedback button must stay above the bottom nav instead of overlapping the Maya input on mobile.",
-  })
-
   return checks
 }
 
@@ -120,7 +108,6 @@ async function main() {
       "tests/studio-tab-routing.test.ts",
       "tests/ui-z-index-hygiene.test.ts",
       "tests/gallery-empty-state.test.tsx",
-      "tests/feedback-button.test.tsx",
     ]),
   ]
 

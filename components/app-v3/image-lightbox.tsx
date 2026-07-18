@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react"
 import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 import { initiateAssetDownload } from "@/lib/app-v3/download-asset"
+import { FavoriteButton } from "./favorite-button"
 
 interface ImageLightboxProps {
   images: string[]
@@ -18,6 +19,8 @@ interface ImageLightboxProps {
   bakedAssetIds?: Array<string | number | null>
   /** Per-image output formats, index-aligned with images. */
   formats?: Array<string | null>
+  /** Per-image favorite state, index-aligned with images. */
+  favoriteStates?: boolean[]
   textOverlaySpecs?: TextOverlaySpec[]
   /** Per-image baked text renders, index-aligned with images. */
   bakedImageUrls?: Array<string | null>
@@ -31,6 +34,7 @@ export function ImageLightbox({
   assetIds,
   bakedAssetIds,
   formats,
+  favoriteStates,
   textOverlaySpecs,
   bakedImageUrls,
   startIndex = 0,
@@ -177,6 +181,12 @@ export function ImageLightbox({
           {overlay && !baked && (
             <span className="text-[11px] text-white/50">Clean image shown. Text is below.</span>
           )}
+          <FavoriteButton
+            key={String((baked ? bakedAssetIds?.[index] : assetIds?.[index]) ?? index)}
+            assetId={baked ? bakedAssetIds?.[index] : assetIds?.[index]}
+            initialFavorite={favoriteStates?.[index] ?? false}
+            dark
+          />
           <button
             type="button"
             onClick={async () => {

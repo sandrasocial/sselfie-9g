@@ -77,6 +77,11 @@ export const calendarAgentRequestSchema = z.object({
     .object({
       title: z.string().max(160).nullable().optional(),
       bio: z.string().max(150).nullable().optional(),
+      visualDirectionMode: z.enum(["maya", "curated", "inspiration", "custom"]).nullable().optional(),
+      visualDirectionBrief: z.string().max(500).nullable().optional(),
+      inspirationImageUrl: z.string().url().max(2048).nullable().optional(),
+      feedStyle: z.string().max(160).nullable().optional(),
+      feedStyleVariationId: z.number().int().positive().nullable().optional(),
       posts: z.array(calendarPostSchema).max(12),
     })
     .nullable(),

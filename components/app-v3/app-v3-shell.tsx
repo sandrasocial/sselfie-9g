@@ -19,7 +19,7 @@ import { VisualFrontDoor } from "./visual-front-door"
 import { AESTHETICS, MAYA_DECIDES_AESTHETIC } from "./aesthetics"
 import { MayaConcierge } from "./maya-concierge"
 import { MayaFloatingLauncher } from "./maya-floating-launcher"
-import { GalleryView } from "./gallery-view"
+import { GalleryView, type GalleryFilter } from "./gallery-view"
 import { ContentView } from "./content-view"
 import { FeedPlannerView } from "./feed-planner-view"
 import { LibraryView } from "./library-view"
@@ -46,6 +46,7 @@ export interface AppV3ShellProps {
   trialDaysLeft?: number | null
   trialHasGeneratedImages?: boolean
   trialHasSavedSelfie?: boolean
+  primarySelfieUrl?: string | null
   trialHasSeenFirstRunStep?: boolean
   initialSection?: AppV3Section
   /** A sanitized Vault collection id supplied by an authenticated /app deep link. */
@@ -102,6 +103,7 @@ function ShellInner({
   trialDaysLeft,
   trialHasGeneratedImages = false,
   trialHasSavedSelfie = false,
+  primarySelfieUrl = null,
   trialHasSeenFirstRunStep = false,
   initialSection = "create",
   initialAestheticId = null,
@@ -111,6 +113,7 @@ function ShellInner({
   videoEnabled = true,
 }: AppV3ShellProps) {
   const [section, setSection] = useState<AppV3Section>(initialSection)
+  const [galleryFilter, setGalleryFilter] = useState<GalleryFilter>("all")
   const { isOpen: mayaOpen, openWithAesthetic } = useConcierge()
   const openedInitialAestheticRef = useRef<string | null>(null)
   const limited = accessLevel === "limited"
@@ -134,6 +137,11 @@ function ShellInner({
     if (typeof window !== "undefined") {
       window.history.replaceState(null, "", buildStoredSectionHref(next))
     }
+  }
+
+  function openGallery(filter: GalleryFilter = "all") {
+    setGalleryFilter(filter)
+    goToSection("photos")
   }
 
   useEffect(() => {
@@ -256,6 +264,7 @@ function ShellInner({
                 firstName={firstName}
                 cohort={cohort}
                 hasSelfie={trialHasSavedSelfie}
+                initialPrimarySelfieUrl={primarySelfieUrl}
                 videoEnabled={videoEnabled}
               />
             </div>
@@ -291,6 +300,8 @@ function ShellInner({
             }
             cohort={cohort}
             hasSelfie={trialHasSavedSelfie}
+            initialPrimarySelfieUrl={primarySelfieUrl}
+            onOpenFavorites={() => openGallery("favorites")}
             hasVaultAccess={hasVaultAccess}
             preSelfieChatEnabled={preSelfieChatEnabled}
             videoEnabled={videoEnabled}
@@ -298,6 +309,7 @@ function ShellInner({
         ))}
       {section === "photos" && (
         <GalleryView
+          initialFilter={galleryFilter}
           onMakeMotion={videoEnabled ? createMotionFromImage : undefined}
           onStartCreate={limited ? undefined : () => createFormat("photo")}
         />
@@ -307,7 +319,7 @@ function ShellInner({
           firstName={firstName}
           onCreateIdea={createIdea}
           onCreate={createFormat}
-          onBrowse={() => goToSection("photos")}
+          onBrowse={() => openGallery("all")}
         />
       )}
       {section === "calendar" &&
@@ -367,7 +379,7 @@ function ShellInner({
               <button
                 key={n.id}
                 type="button"
-                onClick={() => goToSection(n.id)}
+                onClick={() => (n.id === "photos" ? openGallery("all") : goToSection(n.id))}
                 aria-current={active ? "page" : undefined}
                 aria-label={n.label}
                 className={`flex min-h-[60px] flex-1 flex-col items-center justify-center gap-1 px-0.5 py-1.5 text-[10px] font-medium transition-colors ${
@@ -392,6 +404,7 @@ export function AppV3Shell({
   trialDaysLeft,
   trialHasGeneratedImages,
   trialHasSavedSelfie,
+  primarySelfieUrl,
   trialHasSeenFirstRunStep,
   initialSection,
   initialAestheticId,
@@ -409,6 +422,7 @@ export function AppV3Shell({
         trialDaysLeft={trialDaysLeft}
         trialHasGeneratedImages={trialHasGeneratedImages}
         trialHasSavedSelfie={trialHasSavedSelfie}
+        primarySelfieUrl={primarySelfieUrl}
         trialHasSeenFirstRunStep={trialHasSeenFirstRunStep}
         initialSection={initialSection}
         initialAestheticId={initialAestheticId}

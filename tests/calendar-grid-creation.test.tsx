@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
   swrData: new Map<string, unknown>(),
+  swrLoadingKeys: new Set<string>(),
   toast: vi.fn(),
   trackAnalyticsEvent: vi.fn(),
 }))
@@ -21,7 +22,7 @@ vi.mock("swr", () => ({
   default: (key: string | null) => ({
     data: key ? mocks.swrData.get(key) : undefined,
     error: undefined,
-    isLoading: false,
+    isLoading: key ? mocks.swrLoadingKeys.has(key) : false,
     isValidating: false,
     mutate: mocks.localMutate,
   }),
@@ -88,7 +89,19 @@ describe("Calendar grid creation", () => {
     vi.clearAllMocks()
     mocks.fetch.mockReset()
     mocks.swrData.clear()
+    mocks.swrLoadingKeys.clear()
     global.fetch = mocks.fetch as unknown as typeof fetch
+  })
+
+  it("keeps the first-load screen visible while the latest grid is loading", async () => {
+    mocks.swrLoadingKeys.add("/api/feed/latest")
+
+    const { default: FeedViewScreen } = await import("@/components/feed-planner/feed-view-screen")
+
+    render(<FeedViewScreen access={{ isMembership: true } as any} />)
+
+    expect(screen.getByText("Loading")).toBeInTheDocument()
+    expect(screen.queryByRole("region", { name: /instagram grid/i })).not.toBeInTheDocument()
   })
 
   it("opens an Instagram-style empty canvas and creates the first grid from a visual direction", async () => {
@@ -241,9 +254,16 @@ describe("Calendar grid creation", () => {
 
     render(<WelcomeWizard open onComplete={onComplete} onCreateFeed={onCreateFeed} />)
 
+    expect(screen.getByText(/your calendar starts with a grid/i)).toBeInTheDocument()
+    expect(screen.queryByText(/60 credits/i)).not.toBeInTheDocument()
+
     fireEvent.click(screen.getByRole("button", { name: "Next" }))
+    expect(screen.getByText(/grid and maya work together/i)).toBeInTheDocument()
+    expect(await screen.findByText(/tap any post to open its details/i)).toBeInTheDocument()
+    expect(screen.queryByText(/post tab/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/plan tab/i)).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Next" }))
-    fireEvent.click(screen.getAllByRole("button", { name: /create my first (feed|grid)/i })[0])
+    fireEvent.click(screen.getByRole("button", { name: /choose visual direction/i }))
 
     expect(onCreateFeed).toHaveBeenCalledTimes(1)
     expect(onComplete).not.toHaveBeenCalled()
@@ -290,7 +310,7 @@ describe("Calendar grid creation", () => {
 
     render(<WelcomeWizard open onComplete={onComplete} onUsePreviewStyle={onUsePreviewStyle} />)
 
-    fireEvent.click(screen.getByRole("button", { name: /create feed using preview style/i }))
+    fireEvent.click(screen.getByRole("button", { name: /keep this visual direction/i }))
 
     expect(onUsePreviewStyle).toHaveBeenCalledTimes(1)
     expect(onComplete).not.toHaveBeenCalled()

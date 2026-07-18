@@ -3,7 +3,7 @@
 // SSELFIE Studio 3.0 - Photos hub.
 // Functional first pass: typed assets, filters, videos, favorites, selection, delete/download.
 
-import { memo, startTransition, useCallback, useEffect, useMemo, useState } from "react"
+import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import {
   Check,
@@ -22,12 +22,13 @@ import { retryGeneratedImageOnce } from "./image-retry"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 import { initiateAssetDownload } from "@/lib/app-v3/download-asset"
 import { useAccessibleModal } from "./use-accessible-modal"
+import { FAVORITE_UPDATED_EVENT, type FavoriteUpdatedDetail } from "./favorite-button"
 
 // The project intentionally serves generated assets without Next's image optimizer.
 // Keep each page modest so opening Photos does not compete for dozens of full-resolution files.
 const GALLERY_PAGE_SIZE = 24
 
-type GalleryFilter =
+export type GalleryFilter =
   | "all"
   | "favorites"
   | "photos"
@@ -168,6 +169,7 @@ const AssetTile = memo(function AssetTile({
   onCompare,
   versionIndex,
   versionCount,
+  favoritePending,
 }: {
   asset: AppV3GalleryAsset
   index: number
@@ -183,6 +185,7 @@ const AssetTile = memo(function AssetTile({
   onCompare: (asset: AppV3GalleryAsset) => void
   versionIndex: number
   versionCount: number
+  favoritePending: boolean
 }) {
   const isVideo = asset.kind === "video"
   const title = safeAssetTitle(asset)
@@ -271,9 +274,15 @@ const AssetTile = memo(function AssetTile({
             type="button"
             onClick={() => onFavorite(asset)}
             aria-label={asset.isFavorite ? "Remove favorite" : "Favorite"}
+            aria-pressed={asset.isFavorite}
+            disabled={favoritePending}
             className="absolute right-1 top-1 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#0D0E10]/35 text-white backdrop-blur-sm transition-colors hover:bg-[#0D0E10]/55"
           >
-            <Heart size={15} className={asset.isFavorite ? "fill-white text-white" : ""} />
+            <Heart
+              size={15}
+              className={asset.isFavorite ? "fill-red-500 text-red-500" : ""}
+              aria-hidden
+            />
           </button>
         )
       )}
@@ -333,13 +342,15 @@ const CORE_FILTERS = new Set<GalleryFilter>(["all", "favorites", "photos", "vide
 export function GalleryView({
   onMakeMotion,
   onStartCreate,
+  initialFilter = "all",
 }: {
   onMakeMotion?: (url: string) => void
   onStartCreate?: () => void
+  initialFilter?: GalleryFilter
 }) {
   const [assets, setAssets] = useState<AppV3GalleryAsset[] | null>(null)
   const [counts, setCounts] = useState<AppV3GalleryCounts | null>(null)
-  const [filter, setFilter] = useState<GalleryFilter>("all")
+  const [filter, setFilter] = useState<GalleryFilter>(initialFilter)
   const [error, setError] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [selectionMode, setSelectionMode] = useState(false)
@@ -349,6 +360,8 @@ export function GalleryView({
   const [busy, setBusy] = useState(false)
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null)
   const [visibleAssetCount, setVisibleAssetCount] = useState(GALLERY_PAGE_SIZE)
+  const favoritePendingRef = useRef(new Set<string>())
+  const [favoritePendingIds, setFavoritePendingIds] = useState<Set<string>>(new Set())
   const { dialogRef: deleteDialogRef, initialFocusRef: cancelDeleteRef } = useAccessibleModal(
     pendingDeleteIds !== null,
     () => setPendingDeleteIds(null),
@@ -416,6 +429,25 @@ export function GalleryView({
     setVisibleAssetCount(GALLERY_PAGE_SIZE)
   }, [filter])
 
+  useEffect(() => {
+    setFilter(initialFilter)
+    clearSelection()
+  }, [initialFilter])
+
+  useEffect(() => {
+    const syncFavorite = (event: Event) => {
+      const detail = (event as CustomEvent<FavoriteUpdatedDetail>).detail
+      if (!detail?.assetId) return
+      setAssets(current =>
+        current?.map(asset =>
+          asset.id === detail.assetId ? { ...asset, isFavorite: detail.isFavorite } : asset
+        ) ?? current
+      )
+    }
+    window.addEventListener(FAVORITE_UPDATED_EVENT, syncFavorite)
+    return () => window.removeEventListener(FAVORITE_UPDATED_EVENT, syncFavorite)
+  }, [])
+
   const openAsset = useCallback(
     (asset: AppV3GalleryAsset) => {
       if (asset.kind === "video") {
@@ -443,19 +475,23 @@ export function GalleryView({
   }
 
   async function toggleFavorite(asset: AppV3GalleryAsset) {
-    if (!asset.canFavorite) return
+    if (!asset.canFavorite || favoritePendingRef.current.has(asset.id)) return
+    favoritePendingRef.current.add(asset.id)
+    setFavoritePendingIds(current => new Set(current).add(asset.id))
     const nextFavorite = !asset.isFavorite
     setAssets(
       prev =>
         prev?.map(item => (item.id === asset.id ? { ...item, isFavorite: nextFavorite } : item)) ??
         prev
     )
-    const res = await fetch("/api/app-v3/gallery/favorite", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ assetId: asset.id, isFavorite: nextFavorite }),
-    })
-    if (!res.ok) {
+    try {
+      const res = await fetch("/api/app-v3/gallery/favorite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assetId: asset.id, isFavorite: nextFavorite }),
+      })
+      if (!res.ok) throw new Error("Favorite failed")
+    } catch {
       setAssets(
         prev =>
           prev?.map(item =>
@@ -463,9 +499,14 @@ export function GalleryView({
           ) ?? prev
       )
       setError("Couldn't update favorite. Try again.")
-      return
+    } finally {
+      favoritePendingRef.current.delete(asset.id)
+      setFavoritePendingIds(current => {
+        const next = new Set(current)
+        next.delete(asset.id)
+        return next
+      })
     }
-    loadGallery()
   }
 
   async function deleteAssets(ids: string[]) {
@@ -547,6 +588,7 @@ export function GalleryView({
                   setFilter(option.id)
                   clearSelection()
                 }}
+                aria-label={option.id === "favorites" ? "Show saved photos" : undefined}
                 aria-pressed={active}
                 className={`min-h-11 rounded-full border px-4 text-[10px] uppercase tracking-[0.14em] transition-colors ${
                   active
@@ -631,7 +673,7 @@ export function GalleryView({
             <button
               type="button"
               onClick={onStartCreate}
-              className="mt-5 inline-block rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[10px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728]"
+              className="mt-5 inline-flex min-h-11 items-center rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[10px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728]"
             >
               Create with Maya
             </button>
@@ -661,6 +703,7 @@ export function GalleryView({
                   showLabel={filter === "all"}
                   versionIndex={version.index}
                   versionCount={version.count}
+                  favoritePending={favoritePendingIds.has(asset.id)}
                   onOpen={openAsset}
                   onToggleSelect={toggleSelected}
                   onFavorite={toggleFavorite}
@@ -690,6 +733,7 @@ export function GalleryView({
           images={lightboxImages}
           assetIds={displayedImages.map(asset => asset.id)}
           formats={displayedImages.map(asset => asset.contentType)}
+          favoriteStates={displayedImages.map(asset => asset.isFavorite)}
           startIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
         />

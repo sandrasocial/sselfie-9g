@@ -35,7 +35,9 @@ describe("Maya-first Suite creation UX", () => {
     expect(frontDoor).not.toContain("onOpen={openAesthetic}")
     expect(frontDoor).not.toContain("onUseTrainedModel")
 
-    expect(types).toContain('initialSetupAction?: "selfie_manager" | "plain_chat" | null')
+    expect(types).toContain(
+      'initialSetupAction?: "selfie_manager" | "inspiration_manager" | "plain_chat" | null'
+    )
     expect(concierge).toContain('session.initialSetupAction === "selfie_manager"')
     expect(concierge).toContain("setSelfieManagerOpen(true)")
 

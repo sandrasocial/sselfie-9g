@@ -156,36 +156,44 @@ export function ChatHistoryModal({
                 const title = c.title?.trim() || "Untitled chat"
                 return (
                   <li key={c.id} className="flex items-center justify-between gap-3 py-3">
-                    {c.thumbnailUrl ? (
-                      <span className="relative h-14 w-11 shrink-0 overflow-hidden rounded-[5px] bg-[#E7E8E8]">
-                        <Image src={c.thumbnailUrl} alt="" fill sizes="44px" className="object-cover" />
-                      </span>
-                    ) : (
-                      <span className="flex h-14 w-11 shrink-0 items-center justify-center rounded-[5px] bg-[#E7E8E8] text-[9px] uppercase tracking-[0.1em] text-[#6D6E70]">
-                        {c.taskStatus === "creating" ? "Making" : "Plan"}
-                      </span>
-                    )}
                     <button
                       type="button"
-                      onClick={() => void select(c.id)}
-                      disabled={busyId !== null || isCurrent}
+                      onClick={() => (isCurrent ? onClose() : void select(c.id))}
+                      disabled={busyId !== null}
                       aria-current={isCurrent ? "true" : undefined}
-                      className="min-h-11 min-w-0 flex-1 text-left"
+                      className="flex min-h-14 min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-50"
                     >
-                      <p
-                        className={`truncate text-[14px] ${isCurrent ? "text-[#0D0E10]" : "text-[#282728]"}`}
-                      >
-                        {title}
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-[#6D6E70]">
-                        {formatWhen(c.updatedAt)}
-                        {c.taskStatus === "creating"
-                          ? " · creating"
-                          : c.taskStatus === "ready"
-                            ? ` · ${c.outputCount || 1} ready`
-                            : " · planning"}
-                        {isCurrent ? " · current" : ""}
-                      </p>
+                      {c.thumbnailUrl ? (
+                        <span className="relative h-14 w-11 shrink-0 overflow-hidden rounded-[5px] bg-[#E7E8E8]">
+                          <Image
+                            src={c.thumbnailUrl}
+                            alt=""
+                            fill
+                            sizes="44px"
+                            className="object-cover"
+                          />
+                        </span>
+                      ) : (
+                        <span className="flex h-14 w-11 shrink-0 items-center justify-center rounded-[5px] bg-[#E7E8E8] text-[9px] uppercase tracking-[0.1em] text-[#6D6E70]">
+                          {c.taskStatus === "creating" ? "Making" : "Plan"}
+                        </span>
+                      )}
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className={`block truncate text-[14px] ${isCurrent ? "text-[#0D0E10]" : "text-[#282728]"}`}
+                        >
+                          {title}
+                        </span>
+                        <span className="mt-0.5 block text-[11px] text-[#6D6E70]">
+                          {formatWhen(c.updatedAt)}
+                          {c.taskStatus === "creating"
+                            ? " · creating"
+                            : c.taskStatus === "ready"
+                              ? ` · ${c.outputCount || 1} ready`
+                              : " · planning"}
+                          {isCurrent ? " · current" : ""}
+                        </span>
+                      </span>
                     </button>
                     {isCurrent ? (
                       <span className="inline-flex min-h-11 shrink-0 items-center px-2 text-[10px] uppercase tracking-[0.12em] text-[#6D6E70]">

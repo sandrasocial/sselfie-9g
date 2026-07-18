@@ -44,7 +44,16 @@ export async function POST(request: Request) {
   }
 
   const input = parsed.data
-  type OwnedFeed = { id: number; brand_name?: string | null; username?: string | null }
+  type OwnedFeed = {
+    id: number
+    brand_name?: string | null
+    username?: string | null
+    feed_style?: string | null
+    feed_style_variation_id?: number | null
+    visual_direction_mode?: string | null
+    visual_direction_brief?: string | null
+    inspiration_image_url?: string | null
+  }
   let ownedFeed: OwnedFeed | null = null
   let posts: Array<{
     id: number
@@ -58,7 +67,8 @@ export async function POST(request: Request) {
 
   if (input.feedId) {
     const [feed] = await sql`
-      SELECT id, brand_name, username
+      SELECT id, brand_name, username, feed_style, feed_style_variation_id,
+             visual_direction_mode, visual_direction_brief, inspiration_image_url
       FROM feed_layouts
       WHERE id = ${input.feedId} AND user_id = ${neonUser.id}
       LIMIT 1
@@ -131,7 +141,7 @@ export async function POST(request: Request) {
   ]
     .filter(Boolean)
     .join("\n\n")
-    .replace(/\s*—\s*/g, ", ")
+    .replace(/\s*\u2014\s*/g, ", ")
 
   const gridState = ownedFeed
     ? JSON.stringify({
@@ -140,6 +150,11 @@ export async function POST(request: Request) {
           title: ownedFeed.brand_name || input.feedSummary?.title || "Current grid",
           username: ownedFeed.username || null,
           bio,
+          visualDirectionMode: ownedFeed.visual_direction_mode || null,
+          visualDirectionBrief: ownedFeed.visual_direction_brief || null,
+          inspirationImageUrl: ownedFeed.inspiration_image_url || null,
+          feedStyle: ownedFeed.feed_style || null,
+          feedStyleVariationId: ownedFeed.feed_style_variation_id || null,
         },
         selectedPost,
         posts: posts.map(post => ({

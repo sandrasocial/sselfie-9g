@@ -35,6 +35,7 @@ export function SelfieReferenceManagerModal({
   onExtraReady,
   onContinue,
   hideOptionalReferences = false,
+  initialFocus = "face",
 }: {
   open: boolean
   initialFaceUrl?: string | null
@@ -43,6 +44,7 @@ export function SelfieReferenceManagerModal({
   onExtraReady?: (slot: Exclude<ReferenceSlot, "face">, url: string | null) => void
   onContinue: (url: string) => void
   hideOptionalReferences?: boolean
+  initialFocus?: "face" | "inspiration"
 }) {
   const faceInputRef = useRef<HTMLInputElement>(null)
   const angleInputRef = useRef<HTMLInputElement>(null)
@@ -234,18 +236,22 @@ export function SelfieReferenceManagerModal({
         <div className="flex items-start justify-between gap-4 border-b border-[color:var(--ss-silver)]/55 px-5 py-5 sm:px-7">
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ss-gray)]">
-              Your face
+              {initialFocus === "inspiration" ? "Your inspiration" : "Your face"}
             </p>
             <h2
               id="selfie-manager-title"
               className="mt-2 font-serif text-[30px] font-light leading-[1.05] text-[color:var(--ss-night)] sm:text-[40px]"
             >
-              Start with one clear selfie.
+              {initialFocus === "inspiration"
+                ? "Add visual inspiration."
+                : "Start with one clear selfie."}
             </h2>
             <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-[color:var(--ss-davy)]">
-              {hideOptionalReferences
-                ? "Choose one selfie. Maya will keep your real face and create one brand photo you can use today."
-                : "Choose the selfie Maya should protect. Add extra angles only if you have them. Inspiration stays separate, so it never becomes your face."}
+              {initialFocus === "inspiration"
+                ? "Add a photo for pose, light, or mood. Maya keeps your saved selfie as your identity."
+                : hideOptionalReferences
+                  ? "Choose one selfie. Maya will keep your real face and create one brand photo you can use today."
+                  : "Choose the selfie Maya should protect. Add extra angles only if you have them. Inspiration stays separate, so it never becomes your face."}
             </p>
           </div>
           <button
@@ -365,7 +371,10 @@ export function SelfieReferenceManagerModal({
               </div>
 
               {!hideOptionalReferences && (
-                <details className="group rounded-[8px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)]">
+                <details
+                  open={initialFocus === "inspiration"}
+                  className="group rounded-[8px] border border-[color:var(--ss-silver)]/60 bg-[color:var(--ss-white)]"
+                >
                   <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between px-4 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-davy)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ss-night)] [&::-webkit-details-marker]:hidden">
                     Improve likeness with extra angles
                     <span aria-hidden className="text-[18px] font-light group-open:rotate-45">

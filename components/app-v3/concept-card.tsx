@@ -14,6 +14,7 @@ import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 import { retryGeneratedImageOnce } from "./image-retry"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 import { initiateAssetDownload } from "@/lib/app-v3/download-asset"
+import { FavoriteButton } from "./favorite-button"
 
 export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
 
@@ -153,24 +154,6 @@ export function ConceptCard({
   >("idle")
   const [savedDateLabel, setSavedDateLabel] = useState<string | null>(null)
   const [textRetryStatus, setTextRetryStatus] = useState<"idle" | "retrying" | "error">("idle")
-  const [keepStatus, setKeepStatus] = useState<"idle" | "saving" | "kept" | "error">("idle")
-
-  const handleKeep = async () => {
-    if (!firstDownloadAssetId || keepStatus === "saving" || keepStatus === "kept") return
-    setKeepStatus("saving")
-    try {
-      const response = await fetch("/api/app-v3/gallery/favorite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ assetId: `ai_${firstDownloadAssetId}`, isFavorite: true }),
-      })
-      if (!response.ok) throw new Error("Keep failed")
-      setKeepStatus("kept")
-    } catch {
-      setKeepStatus("error")
-    }
-  }
-
   const handleRetryText = async () => {
     if (!onRetryText || textRetryStatus === "retrying") return
     setTextRetryStatus("retrying")
@@ -358,14 +341,7 @@ export function ConceptCard({
             )}
             <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 min-[380px]:gap-3">
               {!isVideoDone && firstDownloadAssetId ? (
-                <button
-                  type="button"
-                  onClick={() => void handleKeep()}
-                  disabled={keepStatus === "saving" || keepStatus === "kept"}
-                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 py-3 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-65 min-[380px]:px-5"
-                >
-                  {keepStatus === "saving" ? "Keeping…" : keepStatus === "kept" ? "Kept" : "Keep this"}
-                </button>
+                <FavoriteButton assetId={firstDownloadAssetId} />
               ) : null}
               <button
                 type="button"
@@ -440,11 +416,6 @@ export function ConceptCard({
             {downloadStatus === "error" && (
               <p role="alert" className="text-[12px] text-[#4F5052]">
                 Download did not start. Please try again.
-              </p>
-            )}
-            {keepStatus === "error" && (
-              <p role="alert" className="text-[12px] text-[#4F5052]">
-                Couldn&apos;t keep that result. It is still safe in Gallery.
               </p>
             )}
             {resultActions}

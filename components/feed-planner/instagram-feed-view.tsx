@@ -19,7 +19,6 @@ import FeedContentCalendar from "./feed-content-calendar"
 import FeedBrandPillars from "./feed-brand-pillars"
 import FeedMonthSummary from "./feed-month-summary"
 import FeedModals from "./feed-modals"
-import FeedLoadingOverlay from "./feed-loading-overlay"
 import FeedHighlightsModal from "./feed-highlights-modal"
 import FeedSinglePlaceholder from "./feed-single-placeholder"
 import { CalendarMayaWorkspace } from "./calendar-maya-workspace"
@@ -71,8 +70,6 @@ export default function InstagramFeedView({
     feedError,
     mutate,
     isLoading: isFeedLoading,
-    isValidating,
-    isTakingLonger,
   } = useFeedPolling(feedId)
   const {
     selectedPost,
@@ -510,79 +507,6 @@ export default function InstagramFeedView({
   // All hooks must be declared before this point (Rules of Hooks)
   // The 'posts' useMemo has been moved above the early returns
 
-  const totalPosts = 9
-
-  // Get processing progress from feed data (if available)
-  const processingProgress = feedData?.feed?.processingProgress || 0
-  const processingStage = feedData?.feed?.processingStage
-  const isProcessing =
-    feedData?.feed?.status === "processing" || feedData?.feed?.status === "queueing"
-
-  // Calculate image generation progress
-  const imageProgress = Math.round((readyPosts / totalPosts) * 100)
-  const isFeedComplete = readyPosts === totalPosts
-
-  // Check if feed is manually created
-  // Manual feeds: created_by='manual' OR all posts are empty with pending status
-  // Maya feeds: have prediction_id or are actively generating
-  const isManualFeed =
-    feedData?.feed?.created_by === "manual" ||
-    (feedData?.posts &&
-      feedData.posts.length > 0 &&
-      feedData.posts.every(
-        (p: any) =>
-          !p.image_url &&
-          !p.prediction_id &&
-          (p.generation_status === "pending" || !p.generation_status)
-      ))
-
-  // For manual feeds, show grid even if not complete (allow adding images)
-  // For Maya feeds, show loading overlay while actively generating (bulk generation only)
-  const isMayaProcessing =
-    feedData?.feed?.status === "processing" ||
-    feedData?.feed?.status === "queueing" ||
-    feedData?.feed?.status === "generating"
-
-  // Simple rule: Show overlay ONLY for bulk generation (all 9 images at once)
-  // Bulk generation = feed status is 'processing'/'queueing'/'generating' (Maya is setting up the feed)
-  // Single image generation = feed status is NOT processing, only individual posts have prediction_id
-  // NEVER show for:
-  // - Manual feeds (they always show grid)
-  // - Free users (single placeholder)
-  // - Single image generation (show grid with inline loading instead)
-  const isBulkGeneration = isMayaProcessing // Feed is in bulk setup phase
-  const shouldShowLoadingOverlay =
-    !isManualFeed &&
-    access?.placeholderType !== "single" && // Never show for free users (single placeholder)
-    feedData?.feed && // Must have feed data
-    isBulkGeneration && // ONLY show for bulk generation (Maya feed setup)
-    !isFeedComplete // Hide when all complete
-
-  // Overall progress (combines processing + image generation)
-  const overallProgress = isProcessing
-    ? Math.min(processingProgress, 90) // Processing is 0-90%, images are 90-100%
-    : imageProgress
-
-  // Progress message based on stage
-  const getProgressMessage = () => {
-    if (isProcessing && processingStage) {
-      switch (processingStage) {
-        case "generating_prompts":
-          return "Generating prompts..."
-        case "generating_captions":
-          return "Writing captions..."
-        case "queueing_images":
-          return "Queueing images..."
-        default:
-          return "Processing..."
-      }
-    }
-    if (readyPosts < totalPosts) {
-      return `Generating images... (${readyPosts}/${totalPosts})`
-    }
-    return "Complete!"
-  }
-
   // Use reorderedPosts from drag-drop hook
   const baseDisplayPosts = dragDrop.reorderedPosts
   const displayPosts = (() => {
@@ -877,6 +801,11 @@ export default function InstagramFeedView({
       feedSummary={{
         title: feedData?.feed?.brand_name || feedData?.feed?.title || "Current grid",
         bio: feedData?.bio?.bio_text || null,
+        visualDirectionMode: feedData?.feed?.visual_direction_mode || null,
+        visualDirectionBrief: feedData?.feed?.visual_direction_brief || null,
+        inspirationImageUrl: feedData?.feed?.inspiration_image_url || null,
+        feedStyle: feedData?.feed?.feed_style || null,
+        feedStyleVariationId: feedData?.feed?.feed_style_variation_id ?? null,
         posts: displayPosts.map((post: any) => ({
           id: Number(post.id),
           position: Number(post.position),
@@ -884,6 +813,9 @@ export default function InstagramFeedView({
           contentPillar: post.content_pillar ?? null,
           scheduledAt: post.scheduled_at ?? null,
           hasImage: Boolean(post.image_url),
+          imageUrl: post.image_url ?? null,
+          generationStatus: post.generation_status ?? null,
+          predictionId: post.prediction_id ?? null,
         })),
       }}
       onApplyProposal={applyCalendarProposal}
@@ -920,29 +852,6 @@ export default function InstagramFeedView({
       onOpenContentContext={() => setPlanSettingsOpen(true)}
     />
   ) : null
-
-  // Show loading overlay ONLY for Maya feeds that are actively generating (paid users, full grid)
-  // NEVER show for manual feeds - they should always show the grid
-  // NEVER show for free users (single placeholder) - they should see placeholder with inline generation
-  // Also don't show if we don't have feed data yet (let it load in background)
-  if (
-    shouldShowLoadingOverlay &&
-    feedData?.feed &&
-    !isManualFeed &&
-    access?.placeholderType !== "single"
-  ) {
-    return (
-      <FeedLoadingOverlay
-        feedId={feedId}
-        readyPosts={readyPosts}
-        totalPosts={totalPosts}
-        overallProgress={overallProgress}
-        isValidating={isValidating}
-        getProgressMessage={getProgressMessage}
-        isTakingLonger={isTakingLonger}
-      />
-    )
-  }
 
   return (
     <div className="mx-auto grid w-full max-w-[1380px] min-w-0 gap-4 px-0 py-3 sm:px-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:px-6">
