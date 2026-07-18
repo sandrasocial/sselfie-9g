@@ -65,7 +65,7 @@ export default function FeedModals({
               aria-modal="true"
               aria-label="Edit calendar post"
               tabIndex={-1}
-              className="relative flex max-h-[calc(100dvh-env(safe-area-inset-top))] w-full max-w-[1180px] flex-col overflow-hidden rounded-t-[22px] bg-[color:var(--app-bg)] animate-in fade-in zoom-in-[0.98] duration-300 motion-reduce:animate-none sm:max-h-[calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:rounded-[22px]"
+              className="relative flex max-h-[calc(100dvh-env(safe-area-inset-top))] min-w-0 w-full max-w-[1180px] flex-col overflow-hidden rounded-t-[22px] bg-[color:var(--app-bg)] animate-in fade-in zoom-in-[0.98] duration-300 motion-reduce:animate-none sm:max-h-[calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:rounded-[22px]"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex min-h-16 flex-wrap items-center justify-between gap-2 border-b border-[color:var(--app-glass-border)] px-3 sm:px-4">
@@ -123,7 +123,7 @@ export default function FeedModals({
                 </button>
               </div>
 
-              <div className="grid min-h-0 flex-1 overflow-y-auto bg-[color:var(--calendar-stone-1)] p-3 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-4 lg:overflow-hidden lg:p-4">
+              <div className="grid min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-[color:var(--calendar-stone-1)] p-3 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-4 lg:overflow-hidden lg:p-4">
                 <div
                   className={`${studioView === "post" ? "block" : "hidden"} min-h-0 overflow-y-auto overscroll-contain lg:block`}
                 >
@@ -138,7 +138,9 @@ export default function FeedModals({
                   />
                 </div>
                 {mayaWorkspace ? (
-                  <div className={`${studioView === "maya" ? "block" : "hidden"} min-h-0 lg:block`}>
+                  <div
+                    className={`${studioView === "maya" ? "block" : "hidden"} min-h-0 min-w-0 max-w-full overflow-hidden lg:block`}
+                  >
                     {mayaWorkspace}
                   </div>
                 ) : null}

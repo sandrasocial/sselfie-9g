@@ -491,11 +491,11 @@ export function CalendarMayaWorkspace({
       aria-label="Maya for this Calendar"
       className={
         displayMode === "embedded"
-          ? "flex h-full min-h-[34rem] max-h-[calc(100dvh-9rem)] flex-col overflow-hidden rounded-[18px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-surface)] shadow-none"
+          ? "flex h-full min-h-[34rem] min-w-0 w-full max-w-full max-h-[calc(100dvh-9rem)] flex-col overflow-hidden rounded-[18px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-surface)] shadow-none"
           : "fixed inset-x-2 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30 flex max-h-[56dvh] min-h-[18rem] flex-col overflow-hidden rounded-[20px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-surface)] shadow-[0_24px_64px_rgba(13,14,16,0.20)] lg:sticky lg:inset-auto lg:top-4 lg:z-0 lg:max-h-[calc(100dvh-8rem)] lg:min-h-[42rem] lg:rounded-[16px] lg:shadow-none"
       }
     >
-      <header className="relative flex min-h-16 items-center gap-3 border-b border-[color:var(--app-glass-border)] bg-[color:var(--app-bg)] px-4">
+      <header className="relative flex min-h-16 min-w-0 items-center gap-3 border-b border-[color:var(--app-glass-border)] bg-[color:var(--app-bg)] px-4">
         <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[color:var(--app-btn-secondary-bg)]">
           <Image src={MAYA_AVATAR} alt="" fill sizes="40px" className="object-cover" />
         </span>
@@ -589,11 +589,11 @@ export function CalendarMayaWorkspace({
 
       <div
         ref={scrollRegionRef}
-        className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4"
+        className="min-h-0 min-w-0 max-w-full flex-1 space-y-4 overflow-y-auto overflow-x-hidden px-4 py-4"
         aria-live="polite"
       >
         {selectedPost ? (
-          <div className="flex items-center gap-3 rounded-[12px] border border-[color:var(--calendar-stone-4)]/70 bg-[color:var(--app-surface)] p-2.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-[12px] border border-[color:var(--calendar-stone-4)]/70 bg-[color:var(--app-surface)] p-2.5">
             <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-[color:var(--calendar-stone-3)] text-[12px] font-medium text-[color:var(--app-text-primary)]">
               {selectedPost.imageUrl ? (
                 <Image
@@ -683,13 +683,13 @@ export function CalendarMayaWorkspace({
           return (
             <div
               key={message.id}
-              className={message.role === "user" ? "flex justify-end" : "block"}
+              className={message.role === "user" ? "flex min-w-0 justify-end" : "block min-w-0"}
             >
               <div
                 className={
                   message.role === "user"
-                    ? "max-w-[88%] rounded-[16px] rounded-br-[5px] bg-[color:var(--app-btn-primary-bg)] px-3.5 py-2.5 text-[13px] leading-relaxed text-[color:var(--app-btn-primary-text)]"
-                    : "max-w-[95%] text-[13px] leading-relaxed text-[color:var(--app-text-primary)]"
+                    ? "min-w-0 max-w-[88%] break-words [overflow-wrap:anywhere] rounded-[16px] rounded-br-[5px] bg-[color:var(--app-btn-primary-bg)] px-3.5 py-2.5 text-[13px] leading-relaxed text-[color:var(--app-btn-primary-text)]"
+                    : "min-w-0 max-w-[95%] break-words [overflow-wrap:anywhere] text-[13px] leading-relaxed text-[color:var(--app-text-primary)]"
                 }
               >
                 {message.role === "assistant" ? (
@@ -900,7 +900,7 @@ export function CalendarMayaWorkspace({
         onSubmit={submitMessage}
         className="border-t border-[color:var(--app-glass-border)] bg-[color:var(--app-bg)] p-3"
       >
-        <div className="flex items-end gap-2 rounded-[12px] border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] p-2 focus-within:border-[color:var(--app-text-muted)]">
+        <div className="flex min-w-0 items-end gap-2 rounded-[12px] border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] p-2 focus-within:border-[color:var(--app-text-muted)]">
           <textarea
             value={input}
             onChange={event => setInput(event.target.value)}
@@ -919,7 +919,7 @@ export function CalendarMayaWorkspace({
             rows={1}
             maxLength={1000}
             disabled={isBusy}
-            className="max-h-24 min-h-10 flex-1 resize-none bg-transparent px-1.5 py-2 text-[13px] leading-relaxed text-[color:var(--app-text-primary)] outline-none placeholder:text-[color:var(--app-text-muted)] disabled:opacity-60"
+            className="max-h-24 min-h-10 min-w-0 flex-1 resize-none bg-transparent px-1.5 py-2 text-[13px] leading-relaxed text-[color:var(--app-text-primary)] outline-none placeholder:text-[color:var(--app-text-muted)] disabled:opacity-60"
           />
           <button
             type="submit"

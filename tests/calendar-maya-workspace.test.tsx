@@ -89,6 +89,28 @@ describe("Maya Calendar workspace", () => {
     expect(screen.getByRole("button", { name: "Open Maya for this Calendar" })).toBeInTheDocument()
   })
 
+  it("contains the embedded workspace inside a narrow mobile post studio", async () => {
+    const { CalendarMayaWorkspace } =
+      await import("@/components/feed-planner/calendar-maya-workspace")
+    render(
+      <CalendarMayaWorkspace
+        feedId={7}
+        displayMode="embedded"
+        selectedPost={{ id: 2, position: 2, caption: "Ready", hasImage: true }}
+        feedSummary={{ title: "July", posts: [] }}
+        onApplyProposal={vi.fn()}
+        onUndo={vi.fn()}
+      />
+    )
+
+    const workspace = screen.getByRole("complementary", { name: "Maya for this Calendar" })
+    expect(workspace).toHaveClass("min-w-0", "w-full", "max-w-full")
+    expect(screen.getAllByText("Post 2 selected")[1]?.parentElement?.parentElement).toHaveClass(
+      "min-w-0",
+      "flex-wrap"
+    )
+  })
+
   it("closes Plan Settings when the Maya sheet is collapsed", async () => {
     const closePlanSettings = vi.fn()
     const { CalendarMayaWorkspace } =
