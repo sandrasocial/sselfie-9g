@@ -1139,7 +1139,11 @@ export default function InstagramFeedView({
           onOpenChange={setVisualDirectionOpen}
           onConfirm={saveVisualDirection}
           mode="style"
-          initialDirectionMode={visualDirectionMode}
+          initialDirectionMode={
+            visualDirectionMode ?? feedData?.feed?.visual_direction_mode ?? null
+          }
+          initialVisualDirectionBrief={feedData?.feed?.visual_direction_brief ?? null}
+          initialInspirationImageUrl={feedData?.feed?.inspiration_image_url ?? null}
           defaultFeedStyle={(feedData?.feed?.feed_style as FeedStyle | null) ?? null}
           defaultFeedStyleVariationId={feedData?.feed?.feed_style_variation_id ?? null}
           isLoading={isSavingVisualDirection}

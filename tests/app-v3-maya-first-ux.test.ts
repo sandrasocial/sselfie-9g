@@ -164,7 +164,7 @@ describe("Maya-first Suite creation UX", () => {
     expect(shell).toContain('creationIntent: intentForFormat(format, "manual")')
   })
 
-  it("uses a responsive Maya workspace beside desktop Create and as a mobile sheet", () => {
+  it("uses a responsive Maya workspace beside desktop Create and as a full-height mobile sheet", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
@@ -174,8 +174,9 @@ describe("Maya-first Suite creation UX", () => {
     expect(shell).toContain("pb-[calc(4.75rem+env(safe-area-inset-bottom))]")
 
     expect(shell).toContain('mayaOpen && section === "create" ? "lg:pr-[27rem]"')
-    expect(concierge).toContain('mobileSheetSize === "expanded"')
-    expect(concierge).toContain('"h-[94dvh]" : "h-[62dvh]"')
+    expect(concierge).toContain("h-[94dvh]")
+    expect(concierge).not.toContain("h-[62dvh]")
+    expect(concierge).not.toContain("mobileSheetSize")
     expect(concierge).toContain("lg:w-[27rem]")
     expect(concierge).toContain("lg:hidden")
   })

@@ -100,4 +100,53 @@ describe("Calendar visual direction", () => {
       })
     )
   })
+
+  it("reopens a saved custom direction instead of looking unsaved", async () => {
+    const { default: FeedStyleModal } = await import("@/components/feed-planner/feed-style-modal")
+
+    render(
+      <FeedStyleModal
+        open
+        onOpenChange={vi.fn()}
+        onConfirm={vi.fn()}
+        mode="style"
+        initialDirectionMode="custom"
+        initialVisualDirectionBrief="Bright city mornings, silver details and confident movement"
+      />
+    )
+
+    expect(screen.getByRole("button", { name: /describe it myself/i })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
+    expect(screen.getByLabelText("Describe your visual direction")).toHaveValue(
+      "Bright city mornings, silver details and confident movement"
+    )
+    expect(screen.getByRole("button", { name: /save direction/i })).toBeEnabled()
+  })
+
+  it("reopens a saved inspiration image instead of asking for it again", async () => {
+    const { default: FeedStyleModal } = await import("@/components/feed-planner/feed-style-modal")
+
+    render(
+      <FeedStyleModal
+        open
+        onOpenChange={vi.fn()}
+        onConfirm={vi.fn()}
+        mode="style"
+        initialDirectionMode="inspiration"
+        initialInspirationImageUrl="https://example.com/saved-inspiration.jpg"
+      />
+    )
+
+    expect(screen.getByRole("button", { name: /upload inspiration/i })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
+    expect(screen.getByAltText("Selected inspiration")).toHaveAttribute(
+      "src",
+      expect.stringContaining("saved-inspiration.jpg")
+    )
+    expect(screen.getByRole("button", { name: /save direction/i })).toBeEnabled()
+  })
 })

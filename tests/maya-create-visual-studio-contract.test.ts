@@ -35,14 +35,15 @@ describe("Maya Create visual studio contract", () => {
     expect(manager).toContain("announceIdentityUpdated()")
   })
 
-  it("keeps desktop Maya beside the canvas and mobile Maya in half or expanded sheet states", () => {
+  it("keeps desktop Maya beside the canvas and mobile Maya in a full-height sheet", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
     const maya = read("components/app-v3/maya-concierge.tsx")
 
     expect(shell).toContain('mayaOpen && section === "create" ? "lg:pr-[27rem]"')
-    expect(maya).toContain('useState<"half" | "expanded">("half")')
-    expect(maya).toContain('aria-modal={!isDesktopWorkspace}')
-    expect(maya).toContain('mobileSheetSize === "expanded" ? "h-[94dvh]" : "h-[62dvh]"')
+    expect(maya).toContain("aria-modal={!isDesktopWorkspace}")
+    expect(maya).toContain("h-[94dvh]")
+    expect(maya).not.toContain("h-[62dvh]")
+    expect(maya).not.toContain("mobileSheetSize")
     expect(maya).toContain("lg:w-[27rem]")
   })
 

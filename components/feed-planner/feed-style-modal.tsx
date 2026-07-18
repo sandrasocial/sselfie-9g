@@ -37,6 +37,8 @@ interface FeedStyleModalProps {
   isLoading?: boolean
   isPreviewFeed?: boolean // Optional: true for preview feeds, false for full feeds
   initialDirectionMode?: FeedVisualDirectionMode | null
+  initialVisualDirectionBrief?: string | null
+  initialInspirationImageUrl?: string | null
   // V2 is always enabled - useFeedPlannerV2 prop removed
 }
 
@@ -60,6 +62,8 @@ export default function FeedStyleModal({
   isLoading = false,
   isPreviewFeed = false,
   initialDirectionMode = null,
+  initialVisualDirectionBrief = null,
+  initialInspirationImageUrl = null,
 }: FeedStyleModalProps) {
   // V2 is always enabled
 
@@ -72,8 +76,12 @@ export default function FeedStyleModal({
   const [directionMode, setDirectionMode] = useState<FeedVisualDirectionMode | null>(
     initialDirectionMode
   )
-  const [visualDirectionBrief, setVisualDirectionBrief] = useState("")
-  const [inspirationImageUrl, setInspirationImageUrl] = useState<string | null>(null)
+  const [visualDirectionBrief, setVisualDirectionBrief] = useState(
+    initialVisualDirectionBrief ?? ""
+  )
+  const [inspirationImageUrl, setInspirationImageUrl] = useState<string | null>(
+    initialInspirationImageUrl
+  )
   const [isUploadingInspiration, setIsUploadingInspiration] = useState(false)
   const [inspirationError, setInspirationError] = useState<string | null>(null)
   const inspirationInputRef = useRef<HTMLInputElement>(null)
@@ -117,8 +125,8 @@ export default function FeedStyleModal({
       setSelectedStyle(defaultFeedStyle ?? null)
       setSelectedVariationId(null)
       setDirectionMode(initialDirectionMode)
-      setVisualDirectionBrief("")
-      setInspirationImageUrl(null)
+      setVisualDirectionBrief(initialVisualDirectionBrief ?? "")
+      setInspirationImageUrl(initialInspirationImageUrl)
       setInspirationError(null)
       userExplicitlySelectedVariationRef.current = false
       previousStyleRef.current = null
@@ -140,6 +148,8 @@ export default function FeedStyleModal({
     const initialStyle = defaultFeedStyle ?? selectedStyle
     setSelectedStyle(initialStyle)
     previousStyleRef.current = initialStyle
+    setVisualDirectionBrief(initialVisualDirectionBrief ?? "")
+    setInspirationImageUrl(initialInspirationImageUrl)
 
     // Load feed style from personal brand (if no defaultFeedStyle provided)
     if (!defaultFeedStyle && personalBrandData?.data?.settingsPreference) {
@@ -191,6 +201,8 @@ export default function FeedStyleModal({
     personalBrandData,
     selectedStyle,
     initialDirectionMode,
+    initialVisualDirectionBrief,
+    initialInspirationImageUrl,
   ])
 
   // Set default variation when variationData loads (only if no variation is set yet)

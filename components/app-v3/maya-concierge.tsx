@@ -628,7 +628,6 @@ export function MayaConcierge({
   const drawerRef = useRef<HTMLElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
   const [isDesktopWorkspace, setIsDesktopWorkspace] = useState(false)
-  const [mobileSheetSize, setMobileSheetSize] = useState<"half" | "expanded">("half")
   const restoredDraftRef = useRef<MayaDraftSnapshot | null>(null)
   // Seed the draft ONCE per mount. Re-seeding whenever the ref is null let a "Start new"
   // session re-restore the previous thread: the save effect below could persist the old
@@ -746,6 +745,13 @@ export function MayaConcierge({
   // One selfie surface everywhere in chat: the full reference manager (main selfie +
   // saved selfies + angle/side/body/inspiration slots), not a raw file picker.
   const [selfieManagerOpen, setSelfieManagerOpen] = useState(false)
+  const [selfieManagerInitialFocus, setSelfieManagerInitialFocus] = useState<
+    "face" | "inspiration"
+  >("face")
+  const openSelfieManager = useCallback((initialFocus: "face" | "inspiration" = "face") => {
+    setSelfieManagerInitialFocus(initialFocus)
+    setSelfieManagerOpen(true)
+  }, [])
   // Header overflow menu (New chat / History / Memory live here, not as stacked buttons).
   const [menuOpen, setMenuOpen] = useState(false)
   const [newChatConfirming, setNewChatConfirming] = useState(false)
@@ -1218,14 +1224,16 @@ export function MayaConcierge({
       session.initialSetupAction === "inspiration_manager"
     ) {
       setSetupOpen(true)
-      setSelfieManagerOpen(true)
+      openSelfieManager(
+        session.initialSetupAction === "inspiration_manager" ? "inspiration" : "face"
+      )
       // Retire the launch instruction immediately. Waiting for the child Close event left a
       // race where the parent session effect could reopen the manager before the close painted.
       updateCurrentSession(session.aesthetic, {
         initialSetupAction: null,
       })
     }
-  }, [hasTrainedModel, session, updateCurrentSession])
+  }, [hasTrainedModel, openSelfieManager, session, updateCurrentSession])
 
   // Mirror of the active selfie for async callbacks (avoids clobbering a fresh upload).
   useEffect(() => {
@@ -1732,6 +1740,7 @@ export function MayaConcierge({
     // the parent effect immediately re-opens the child after its local open state changes.
     updateCurrentSession(aesthetic, { initialSetupAction: null })
     setSelfieManagerOpen(false)
+    setSelfieManagerInitialFocus("face")
   }
   const workspaceTitle = mayaChoosesVisualWorld ? "Create with Maya" : aesthetic.name
   const openerLine = outputFormat
@@ -3233,20 +3242,8 @@ export function MayaConcierge({
             ? { height: keyboardBox.height, transform: `translateY(${keyboardBox.top}px)` }
             : undefined
         }
-        className={`pointer-events-auto relative flex w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden rounded-t-[18px] border border-[#C5C6C8]/55 bg-[#F8FAFA] shadow-[0_-18px_60px_rgba(13,14,16,0.16)] animate-in slide-in-from-bottom-4 duration-300 ease-out motion-reduce:animate-none lg:h-[100dvh] lg:w-[27rem] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-[-18px_0_60px_rgba(13,14,16,0.10)] lg:slide-in-from-right ${
-          mobileSheetSize === "expanded" ? "h-[94dvh]" : "h-[62dvh]"
-        }`}
+        className="pointer-events-auto relative flex h-[94dvh] w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden rounded-t-[18px] border border-[#C5C6C8]/55 bg-[#F8FAFA] shadow-[0_-18px_60px_rgba(13,14,16,0.16)] animate-in slide-in-from-bottom-4 duration-300 ease-out motion-reduce:animate-none lg:h-[100dvh] lg:w-[27rem] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-[-18px_0_60px_rgba(13,14,16,0.10)] lg:slide-in-from-right"
       >
-        <div className="flex shrink-0 justify-center pt-2 lg:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileSheetSize(size => (size === "half" ? "expanded" : "half"))}
-            aria-label={mobileSheetSize === "half" ? "Expand Maya" : "Return Maya to half screen"}
-            className="flex min-h-8 w-20 items-center justify-center"
-          >
-            <span className="h-1 w-10 rounded-full bg-[#C5C6C8]" aria-hidden />
-          </button>
-        </div>
         {/* Header - one calm row. Actions live in a quiet menu, and Close is always visible
             (on phones the drawer is full-width, so the backdrop can't be tapped to leave). */}
         <header className="flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-3.5 sm:px-6">
@@ -3436,7 +3433,7 @@ export function MayaConcierge({
                 {!referenceSelfieUrl && (
                   <button
                     type="button"
-                    onClick={() => setSelfieManagerOpen(true)}
+                    onClick={() => openSelfieManager()}
                     className="mt-4 min-h-12 w-full rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.16em] text-white hover:bg-[#282728]"
                   >
                     Add my selfie
@@ -3636,7 +3633,7 @@ export function MayaConcierge({
                     </span>
                     <button
                       type="button"
-                      onClick={() => setSelfieManagerOpen(true)}
+                      onClick={() => openSelfieManager()}
                       disabled={uploadingSlot === "face"}
                       className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10] disabled:opacity-60"
                     >
@@ -3652,7 +3649,7 @@ export function MayaConcierge({
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setSelfieManagerOpen(true)}
+                    onClick={() => openSelfieManager()}
                     disabled={uploadingSlot === "face"}
                     className="flex min-h-11 items-center gap-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3.5 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
                   >
@@ -3660,7 +3657,7 @@ export function MayaConcierge({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSelfieManagerOpen(true)}
+                    onClick={() => openSelfieManager()}
                     className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
                   >
                     Use a past selfie
@@ -3693,7 +3690,7 @@ export function MayaConcierge({
                   if (outputFormat === "video" && !videoSourceUrl) {
                     videoInput.current?.click()
                   } else if (!referenceSelfieUrl && activeGenerationSource !== "trained-model") {
-                    setSelfieManagerOpen(true)
+                    openSelfieManager()
                   }
                 }}
                 disabled={isThinking || !outputFormat || needsInitialVisualWorld}
@@ -3917,8 +3914,8 @@ export function MayaConcierge({
                 title="Start your brand shoot"
                 description="Add one clear selfie and Maya turns it into the result you chose."
                 uploading={uploadingSlot === "face"}
-                onUpload={() => setSelfieManagerOpen(true)}
-                onUseExisting={() => setSelfieManagerOpen(true)}
+                onUpload={() => openSelfieManager()}
+                onUseExisting={() => openSelfieManager()}
               />
             )}
 
@@ -4601,9 +4598,7 @@ export function MayaConcierge({
       <SelfieReferenceManagerModal
         open={selfieManagerOpen}
         initialFaceUrl={referenceSelfieUrl}
-        initialFocus={
-          session?.initialSetupAction === "inspiration_manager" ? "inspiration" : "face"
-        }
+        initialFocus={selfieManagerInitialFocus}
         hideOptionalReferences={guidedFirstPhoto}
         onClose={closeSelfieManager}
         onFaceReady={(url, source) => {
