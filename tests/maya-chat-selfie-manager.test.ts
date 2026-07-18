@@ -57,6 +57,15 @@ describe("Maya chat selfie management", () => {
     expect(setupEffect).toContain("updateCurrentSession(session.aesthetic, {")
     expect(setupEffect).toContain("initialSetupAction: null")
   })
+
+  it("uses the same current close callback for the visible button and Escape key", () => {
+    const modal = readFileSync(
+      join(process.cwd(), "components/app-v3/selfie-reference-manager-modal.tsx"),
+      "utf8"
+    )
+
+    expect(modal).toContain("onClick={() => onCloseRef.current()}")
+  })
 })
 
 describe("mid-thread format chip re-tap", () => {

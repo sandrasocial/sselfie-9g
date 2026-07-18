@@ -257,7 +257,7 @@ export function SelfieReferenceManagerModal({
           <button
             ref={closeButtonRef}
             type="button"
-            onClick={onClose}
+            onClick={() => onCloseRef.current()}
             className="min-h-11 rounded-[4px] border border-[color:var(--ss-silver)] px-4 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-night)] transition-colors hover:border-[color:var(--ss-night)]"
           >
             Close

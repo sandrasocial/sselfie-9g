@@ -33,9 +33,9 @@ const FROZEN_PROMPT_SOURCES = {
   "app/api/app-v3/maya/chat/route.ts":
     "c6a0808bcacf55422f5e576fb1e506aeeee7a73fe939421bcdd760e482914ba0",
   "app/api/app-v3/maya/calendar-agent/route.ts":
-    // Sandra-approved Wave 1 production QA correction: Maya receives the saved visual
-    // direction and must label imagined image scenes as concepts, never lived events.
-    "36c963d2db01b57213369fea45de92168ac1693ab65b29f289db65d6d48bca6d",
+    // Sandra-approved Wave 1 production QA correction: preserve factual image language and
+    // use the proven plain-text provider path with a locally validated JSON response.
+    "f8388b20e5357e3b20b52bcdb37a1287b5da32b2bda48bf1fbd372576ae4d479",
 } as const
 
 function sourceHash(path: string) {

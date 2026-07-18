@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   getFeedPlannerAccess: vi.fn(),
   getUserContextForMaya: vi.fn(),
   getMemory: vi.fn(),
-  generateObject: vi.fn(),
+  generateText: vi.fn(),
   sql: vi.fn(),
 }))
 
@@ -23,7 +23,7 @@ vi.mock("@/lib/maya/get-user-context", () => ({
 }))
 vi.mock("@/lib/app-v3/maya/memory-store", () => ({ getMemory: mocks.getMemory }))
 vi.mock("@/lib/db/client", () => ({ sql: mocks.sql }))
-vi.mock("ai", () => ({ generateObject: mocks.generateObject }))
+vi.mock("ai", () => ({ generateText: mocks.generateText }))
 vi.mock("@/lib/maya/openrouter", () => ({
   createMayaOpenRouterModel: vi.fn(() => "mock-calendar-model"),
 }))
@@ -66,7 +66,7 @@ describe("Calendar Maya agent route", () => {
 
     expect(response.status).toBe(401)
     expect(mocks.sql).not.toHaveBeenCalled()
-    expect(mocks.generateObject).not.toHaveBeenCalled()
+    expect(mocks.generateText).not.toHaveBeenCalled()
   })
 
   it("does not expose or operate on a grid the member does not own", async () => {
@@ -77,7 +77,7 @@ describe("Calendar Maya agent route", () => {
 
     expect(response.status).toBe(404)
     await expect(response.json()).resolves.toEqual({ error: "Grid not found" })
-    expect(mocks.generateObject).not.toHaveBeenCalled()
+    expect(mocks.generateText).not.toHaveBeenCalled()
   })
 
   it("turns a model proposal for an unknown post into a safe clarification", async () => {
@@ -94,8 +94,8 @@ describe("Calendar Maya agent route", () => {
         },
       ])
       .mockResolvedValueOnce([])
-    mocks.generateObject.mockResolvedValue({
-      object: {
+    mocks.generateText.mockResolvedValue({
+      text: JSON.stringify({
         message: "I will move it now.",
         proposal: {
           kind: "move_post",
@@ -103,7 +103,7 @@ describe("Calendar Maya agent route", () => {
           postId: 999,
           targetPosition: 1,
         },
-      },
+      }),
     })
     const { POST } = await import("@/app/api/app-v3/maya/calendar-agent/route")
 
@@ -114,12 +114,12 @@ describe("Calendar Maya agent route", () => {
       message: "I need you to select the grid or post you want me to change first.",
       proposal: null,
     })
-    expect(mocks.generateObject).toHaveBeenCalledWith(
+    expect(mocks.generateText).toHaveBeenCalledWith(
       expect.objectContaining({
         system: expect.stringContaining("Never invent facts, numbers, customer results"),
       })
     )
-    expect(mocks.generateObject).toHaveBeenCalledWith(
+    expect(mocks.generateText).toHaveBeenCalledWith(
       expect.objectContaining({
         system: expect.stringContaining(
           "Never say or imply that an imagined image scene really happened"
@@ -144,15 +144,15 @@ describe("Calendar Maya agent route", () => {
       ])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
-    mocks.generateObject.mockResolvedValue({
-      object: { message: "This fits the saved direction.", proposal: null },
+    mocks.generateText.mockResolvedValue({
+      text: '```json\n{"message":"This fits the saved direction.","proposal":null}\n```',
     })
     const { POST } = await import("@/app/api/app-v3/maya/calendar-agent/route")
 
     const response = await POST(request(validBody))
 
     expect(response.status).toBe(200)
-    expect(mocks.generateObject).toHaveBeenCalledWith(
+    expect(mocks.generateText).toHaveBeenCalledWith(
       expect.objectContaining({
         messages: [
           expect.objectContaining({
@@ -161,7 +161,7 @@ describe("Calendar Maya agent route", () => {
         ],
       })
     )
-    const call = mocks.generateObject.mock.calls[0]?.[0]
+    const call = mocks.generateText.mock.calls[0]?.[0]
     expect(call.messages[0].content).toContain('"visualDirectionMode":"custom"')
     expect(call.messages[0].content).toContain('"feedStyle":"Light & Minimalistic"')
     expect(call.messages[0].content).toContain('"feedStyleVariationId":14')

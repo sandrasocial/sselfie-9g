@@ -5,10 +5,8 @@ function createProposalSchema(
   targetPosition: z.ZodNumber,
   mode: "bounded" | "generation" = "bounded"
 ) {
-  const label =
-    mode === "bounded" ? z.string().trim().min(1).max(100) : z.string().trim()
-  const caption =
-    mode === "bounded" ? z.string().trim().min(1).max(2200) : z.string().trim()
+  const label = mode === "bounded" ? z.string().trim().min(1).max(100) : z.string().trim()
+  const caption = mode === "bounded" ? z.string().trim().min(1).max(2200) : z.string().trim()
   const bio = mode === "bounded" ? z.string().trim().min(1).max(150) : z.string().trim()
   const proposalBase = z.object({ label })
 
@@ -84,7 +82,10 @@ export const calendarAgentRequestSchema = z.object({
     .object({
       title: z.string().max(160).nullable().optional(),
       bio: z.string().max(150).nullable().optional(),
-      visualDirectionMode: z.enum(["maya", "curated", "inspiration", "custom"]).nullable().optional(),
+      visualDirectionMode: z
+        .enum(["maya", "curated", "inspiration", "custom"])
+        .nullable()
+        .optional(),
       visualDirectionBrief: z.string().max(500).nullable().optional(),
       inspirationImageUrl: z.string().url().max(2048).nullable().optional(),
       feedStyle: z.string().max(160).nullable().optional(),

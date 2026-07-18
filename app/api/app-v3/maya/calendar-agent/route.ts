@@ -1,4 +1,4 @@
-import { generateObject } from "ai"
+import { generateText } from "ai"
 import { NextResponse } from "next/server"
 
 import { getAuthenticatedUser } from "@/lib/auth-helper"
@@ -23,6 +23,25 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
+
+function parseCalendarAgentText(text: string) {
+  const trimmed = text.trim()
+  const withoutFence = trimmed
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim()
+  const objectStart = withoutFence.indexOf("{")
+  const objectEnd = withoutFence.lastIndexOf("}")
+  if (objectStart < 0 || objectEnd < objectStart) {
+    throw new Error("Calendar Maya returned no JSON object")
+  }
+
+  const raw = JSON.parse(withoutFence.slice(objectStart, objectEnd + 1)) as Record<string, unknown>
+  return calendarAgentGenerationSchema.parse({
+    ...raw,
+    proposal: Object.prototype.hasOwnProperty.call(raw, "proposal") ? raw.proposal : null,
+  })
+}
 
 export async function POST(request: Request) {
   const { user: authUser, error: authError } = await getAuthenticatedUser()
@@ -170,10 +189,10 @@ export async function POST(request: Request) {
     : "No grid exists yet."
 
   try {
-    const { object } = await generateObject({
+    const { text } = await generateText({
       model: createMayaOpenRouterModel("chat_pro"),
-      schema: calendarAgentGenerationSchema,
       temperature: 0.35,
+      maxOutputTokens: 1200,
       system,
       messages: [
         {
@@ -185,12 +204,14 @@ export async function POST(request: Request) {
               ? `Recent Calendar conversation:\n${input.history.map(item => `${item.role}: ${item.content}`).join("\n")}`
               : "",
             `Her message now:\n${input.message}`,
+            'Return only one valid JSON object with this shape: {"message":"your short response","proposal":null}. When proposing a change, proposal must contain one allowed operation and every field it requires. Do not use markdown.',
           ]
             .filter(Boolean)
             .join("\n\n"),
         },
       ],
     })
+    const object = parseCalendarAgentText(text)
 
     let result = calendarAgentResultSchema.parse(object)
     const proposal = result.proposal
