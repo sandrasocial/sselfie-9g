@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
 interface LibraryCourse {
   id: number
@@ -70,6 +71,80 @@ interface LibraryData {
   ownedProducts: LibraryProduct[]
   lockedProducts: LockedProduct[]
   drops: LibraryDrop[]
+  learningPlan?: {
+    goal: LearnGoal
+    recommendation: LearnRecommendation
+    status: "active" | "completed"
+    updated_at: string
+  } | null
+}
+
+type LearnGoal = "what-to-post" | "sound-like-me" | "photos-no-plan" | "connect-offer"
+
+interface LearnRecommendation {
+  type: "course" | "product"
+  id: string
+  title: string
+  href: string
+  reason: string
+}
+
+const LEARN_GOALS: Array<{ id: LearnGoal; label: string; reason: string }> = [
+  {
+    id: "what-to-post",
+    label: "I don't know what to post",
+    reason:
+      "This gives you one clear place to start, then we can turn the lesson into your next post.",
+  },
+  {
+    id: "sound-like-me",
+    label: "My content doesn't sound like me",
+    reason:
+      "Start here to make your message clearer and more personal before creating more content.",
+  },
+  {
+    id: "photos-no-plan",
+    label: "I have photos but no plan",
+    reason: "Use this lesson, then take what you learn straight into your Calendar.",
+  },
+  {
+    id: "connect-offer",
+    label: "I want my content to support my offer",
+    reason: "This helps connect what you teach, what you sell and what your audience needs next.",
+  },
+]
+
+function recommendationFor(data: LibraryData, goal: LearnGoal): LearnRecommendation | null {
+  const incomplete = data.courses.filter(course => course.progressPercentage < 100)
+  const keywords =
+    goal === "photos-no-plan"
+      ? /content|brand|plan/i
+      : goal === "connect-offer"
+        ? /brand|business|content/i
+        : /brand|content|story/i
+  const course =
+    incomplete.find(item => keywords.test(`${item.title} ${item.description || ""}`)) ??
+    incomplete[0] ??
+    data.courses[0]
+  const goalCopy = LEARN_GOALS.find(item => item.id === goal)
+  if (course)
+    return {
+      type: "course",
+      id: String(course.id),
+      title: course.title,
+      href: course.href,
+      reason: goalCopy?.reason ?? "This is your clearest next step.",
+    }
+  const product = data.ownedProducts[0]
+  if (product)
+    return {
+      type: "product",
+      id: product.id,
+      title: product.name,
+      href: product.accessUrl,
+      reason: goalCopy?.reason ?? "This is your clearest next step.",
+    }
+  return null
 }
 
 const card = "rounded-[8px] border border-[#C5C6C8]/60 bg-white"
@@ -134,9 +209,19 @@ function ProductTile({
   )
 }
 
-export function LibraryView() {
+export function LibraryView({
+  onOpenMaya,
+  onOpenCalendar,
+}: {
+  onOpenMaya?: (idea: string) => void
+  onOpenCalendar?: () => void
+} = {}) {
   const [data, setData] = useState<LibraryData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [selectedGoal, setSelectedGoal] = useState<LearnGoal | null>(null)
+  const [recommendation, setRecommendation] = useState<LearnRecommendation | null>(null)
+  const [savingPlan, setSavingPlan] = useState(false)
+  const [planSaved, setPlanSaved] = useState(false)
 
   function loadLibrary() {
     setError(null)
@@ -146,8 +231,15 @@ export function LibraryView() {
         return r.json()
       })
       .then(d => {
-        if (d && Array.isArray(d.ownedProducts)) setData(d as LibraryData)
-        else setError("Couldn't load your library. Try again.")
+        if (d && Array.isArray(d.ownedProducts)) {
+          const nextData = d as LibraryData
+          setData(nextData)
+          if (nextData.learningPlan?.goal && nextData.learningPlan?.recommendation) {
+            setSelectedGoal(nextData.learningPlan.goal)
+            setRecommendation(nextData.learningPlan.recommendation)
+            setPlanSaved(true)
+          }
+        } else setError("Couldn't load your library. Try again.")
       })
       .catch(() => setError("Couldn't load your library. Try again."))
   }
@@ -163,6 +255,36 @@ export function LibraryView() {
     p => !(data?.courses?.length && courseProductIds.has(p.id))
   )
 
+  const chooseGoal = (goal: LearnGoal) => {
+    if (!data) return
+    setSelectedGoal(goal)
+    setRecommendation(recommendationFor(data, goal))
+    setPlanSaved(false)
+    void trackAnalyticsEvent({ event: "learn_goal_selected", properties: { goal } })
+  }
+
+  const savePlan = async () => {
+    if (!selectedGoal || !recommendation || savingPlan) return
+    setSavingPlan(true)
+    try {
+      const response = await fetch("/api/app-v3/library/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal: selectedGoal, recommendation }),
+      })
+      if (!response.ok) throw new Error("Could not save plan")
+      setPlanSaved(true)
+      void trackAnalyticsEvent({
+        event: "learn_plan_saved",
+        properties: { goal: selectedGoal, resourceId: recommendation.id },
+      })
+    } catch {
+      setError("Couldn't save your plan. Try again.")
+    } finally {
+      setSavingPlan(false)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-7 px-4 py-6 sm:px-5 sm:py-8">
       <header>
@@ -174,15 +296,132 @@ export function LibraryView() {
       </header>
 
       {error && (
-        <div role="alert" className="flex items-center justify-between gap-3 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4">
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4"
+        >
           <p className="text-[14px] text-[#4F5052]">{error}</p>
-          <button type="button" onClick={loadLibrary} className="min-h-11 px-2 text-[10px] uppercase tracking-[0.14em] text-[#0D0E10] underline underline-offset-2">Retry</button>
+          <button
+            type="button"
+            onClick={loadLibrary}
+            className="min-h-11 px-2 text-[10px] uppercase tracking-[0.14em] text-[#0D0E10] underline underline-offset-2"
+          >
+            Retry
+          </button>
         </div>
       )}
       {!data && !error && <p className="text-[14px] text-[#818283]">Opening your library…</p>}
 
       {data && (
         <>
+          <section
+            aria-labelledby="maya-coach-title"
+            className="overflow-hidden rounded-[14px] border border-[#C5C6C8]/65 bg-white shadow-[0_12px_35px_rgba(13,14,16,.05)]"
+          >
+            <div className="border-b border-[#C5C6C8]/45 p-4 sm:p-5">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+                Your next step
+              </p>
+              <h2
+                id="maya-coach-title"
+                className="mt-1.5 font-serif text-[28px] font-light leading-tight text-[#0D0E10]"
+              >
+                Maya Coach
+              </h2>
+              <p className="mt-1.5 text-[14px] leading-relaxed text-[#4F5052]">
+                Tell me where you feel stuck. I’ll choose one lesson you already own and help you
+                use it.
+              </p>
+            </div>
+            <div className="p-4 sm:p-5">
+              <div
+                className="grid gap-2 sm:grid-cols-2"
+                role="group"
+                aria-label="Choose what you need help with"
+              >
+                {LEARN_GOALS.map(goal => (
+                  <button
+                    key={goal.id}
+                    type="button"
+                    aria-pressed={selectedGoal === goal.id}
+                    onClick={() => chooseGoal(goal.id)}
+                    className={`min-h-12 rounded-[9px] border px-3 py-2.5 text-left text-[13px] leading-snug ${selectedGoal === goal.id ? "border-[#0D0E10] bg-[#F8FAFA] text-[#0D0E10]" : "border-[#C5C6C8]/70 text-[#4F5052] hover:border-[#0D0E10]/40"}`}
+                  >
+                    {goal.label}
+                  </button>
+                ))}
+              </div>
+
+              {recommendation ? (
+                <div className="mt-4 rounded-[11px] bg-[#F1F2F2] p-4" aria-live="polite">
+                  <p className="text-[9px] uppercase tracking-[0.18em] text-[#818283]">
+                    {planSaved ? "Your saved plan" : "Start here"}
+                  </p>
+                  <h3 className="mt-1.5 font-serif text-[22px] font-light leading-tight text-[#0D0E10]">
+                    {recommendation.title}
+                  </h3>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">
+                    {recommendation.reason}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <a
+                      href={recommendation.href}
+                      className="inline-flex min-h-11 items-center justify-center rounded-[8px] bg-[#0D0E10] px-4 text-[10px] uppercase tracking-[0.15em] text-white"
+                    >
+                      Open lesson
+                    </a>
+                    {onOpenCalendar ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void trackAnalyticsEvent({
+                            event: "learn_calendar_handoff",
+                            properties: { goal: selectedGoal },
+                          })
+                          onOpenCalendar()
+                        }}
+                        className="min-h-11 rounded-[8px] border border-[#0D0E10] bg-white px-4 text-[10px] uppercase tracking-[0.15em] text-[#0D0E10]"
+                      >
+                        Plan it in Calendar
+                      </button>
+                    ) : null}
+                    {onOpenMaya ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void trackAnalyticsEvent({
+                            event: "learn_maya_handoff",
+                            properties: { goal: selectedGoal },
+                          })
+                          onOpenMaya(
+                            `Help me use what I learned in ${recommendation.title} to create one useful piece of content.`
+                          )
+                        }}
+                        className="min-h-11 px-2 text-[11px] text-[#0D0E10] underline underline-offset-4"
+                      >
+                        Use it with Maya
+                      </button>
+                    ) : null}
+                  </div>
+                  {!planSaved ? (
+                    <button
+                      type="button"
+                      onClick={() => void savePlan()}
+                      disabled={savingPlan}
+                      className="mt-3 min-h-11 text-[11px] text-[#4F5052] underline underline-offset-4 disabled:opacity-50"
+                    >
+                      {savingPlan ? "Saving…" : "Save this plan"}
+                    </button>
+                  ) : (
+                    <p className="mt-3 text-[11px] text-[#6D6E70]">
+                      Saved. Come back here when you are ready for the next step.
+                    </p>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          </section>
+
           {/* Courses with progress */}
           {data.courses.length > 0 && (
             <section>

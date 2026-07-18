@@ -179,11 +179,21 @@ export default function WelcomeWizard({
         content: (
           <div className="space-y-6">
             <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
-              Choose a visual direction, then start with one post.
+              Choose how you want the month to look. Maya keeps that direction while every post stays its own photo.
             </p>
-            <p className="text-sm font-light text-white/65">
-              You can add your own photos or ask Maya to help inside the grid.
-            </p>
+            <div data-guide-demo="choose-post" className="mx-auto max-w-sm rounded-[18px] border border-white/15 bg-white/[0.05] p-3">
+              <div className="grid grid-cols-3 gap-1">
+                {[1, 2, 3, 4, 5, 6].map(item => (
+                  <motion.div
+                    key={item}
+                    animate={item === 2 ? { boxShadow: ["0 0 0 0 rgba(255,255,255,0)", "0 0 0 3px rgba(255,255,255,.8)", "0 0 0 0 rgba(255,255,255,0)"] } : undefined}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 0.8 }}
+                    className={`aspect-[3/4] rounded-[5px] ${item === 2 ? "bg-white/35" : "bg-white/10"}`}
+                  />
+                ))}
+              </div>
+              <p className="mt-3 text-center text-[11px] text-white/65">Tap any post to start there.</p>
+            </div>
           </div>
         ),
       })
@@ -198,10 +208,16 @@ export default function WelcomeWizard({
           <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
             Tap any post to open its details. Ask Maya for help with the idea, caption, image, or order.
           </p>
-          <div className="rounded-xl border border-white/15 bg-white/[0.04] p-4">
-            <p className="text-sm font-light text-white/65">
-              Use Create in bulk when you want to finish several posts at once. Each post still shows its own progress.
-            </p>
+          <div data-guide-demo="maya-approval" className="rounded-xl border border-white/15 bg-white/[0.04] p-4">
+            <div className="max-w-[85%] rounded-[14px] rounded-bl-[4px] bg-white/10 px-3 py-2.5 text-[12px] leading-relaxed text-white/75">
+              I have three ideas for this post. Pick the one that feels most like you.
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              {["Teach one thing", "Tell your story", "Show the result"].map((label, index) => (
+                <motion.div key={label} animate={index === 0 ? { opacity: [0.55, 1, 0.55] } : undefined} transition={{ duration: 1.8, repeat: Infinity }} className="rounded-[10px] border border-white/15 bg-white/[0.04] p-3 text-[11px] text-white/75">{label}</motion.div>
+              ))}
+            </div>
+            <p className="mt-3 text-[11px] text-white/55">Your choice is the approval. Maya gets to work from there.</p>
           </div>
         </div>
       ),
@@ -214,8 +230,20 @@ export default function WelcomeWizard({
       content: (
         <div className="space-y-6">
           <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
-            Choose the visual direction. Then open one post and make it ready before you move to the next.
+            Maya creates, designs and writes. You review the finished post, then copy, download or move to the next one.
           </p>
+          <div data-guide-demo="ready-to-post" className="grid grid-cols-[5.5rem_1fr] gap-3 rounded-xl border border-white/15 bg-white/[0.04] p-3">
+            <div className="aspect-[3/4] rounded-[8px] bg-white/20" />
+            <div className="min-w-0 space-y-2 py-1">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-white/45">Ready to post</p>
+              <div className="h-2 w-full rounded-full bg-white/15" />
+              <div className="h-2 w-4/5 rounded-full bg-white/10" />
+              <div className="flex flex-wrap gap-2 pt-2">
+                <span className="rounded-full bg-white px-3 py-1.5 text-[9px] uppercase tracking-[0.13em] text-black">Download</span>
+                <span className="rounded-full border border-white/25 px-3 py-1.5 text-[9px] uppercase tracking-[0.13em] text-white/75">Copy caption</span>
+              </div>
+            </div>
+          </div>
         </div>
       ),
     })
@@ -352,7 +380,7 @@ export default function WelcomeWizard({
                 </AnimatePresence>
 
                 {/* Navigation Buttons - matching unified wizard style */}
-                <div className="flex items-center justify-between border-t border-white/15 pt-6">
+                <div className="sticky bottom-0 z-20 -mx-2 flex items-center justify-between border-t border-white/15 bg-[rgba(13,15,19,0.96)] px-2 pb-1 pt-4 backdrop-blur-xl">
                   <Button
                     variant="ghost"
                     onClick={currentStep > 0 ? handleBack : handleDismiss}

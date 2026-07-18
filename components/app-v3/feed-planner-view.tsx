@@ -15,13 +15,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import FeedPlannerClient from "@/app/feed-planner/feed-planner-client"
 import { FeedNavContext } from "@/components/feed-planner/feed-nav-context"
-import type { CalendarPostTarget } from "./types"
+import type { Aesthetic, CalendarPostTarget } from "./types"
 import { useConcierge } from "./concierge-context"
 
 const SELECTED_FEED_KEY = "calendar:selected-feed:v1"
 
 export function FeedPlannerView() {
-  const { open, openForCalendarPost } = useConcierge()
+  const { open, openForCalendarPost, openWithAesthetic } = useConcierge()
   const [selectedFeedId, setSelectedFeedId] = useState<number | null>(null)
   const [hasRestoredFeed, setHasRestoredFeed] = useState(false)
   const [pendingSlotPosition, setPendingSlotPosition] = useState<number | null>(null)
@@ -65,8 +65,33 @@ export function FeedPlannerView() {
         if (target) openForCalendarPost(target)
         else open()
       },
+      navigateToMayaForStory: (title: string, coverOnly = false) => {
+        const storyAesthetic: Aesthetic = {
+          id: "maya-general",
+          name: "SSELFIE",
+          blurb: "Let's make something that's truly you.",
+          coverImage: "",
+          thumbnails: [],
+          shotCount: 0,
+          intent: "A general SSELFIE editorial brand session.",
+        }
+        openWithAesthetic(storyAesthetic, {
+          format: coverOnly ? "story-slide" : "story-sequence",
+          creationIdea: coverOnly
+            ? `Create a Highlight cover for ${title}.`
+            : `Create a complete Instagram Story sequence for my ${title} Highlight.`,
+          seed: coverOnly
+            ? `Let's create a Highlight cover for ${title}.`
+            : `Let's create a complete Story sequence for my ${title} Highlight.`,
+          creationIntent: {
+            format: coverOnly ? "story-slide" : "story-sequence",
+            source: "content_card",
+            confidence: "high",
+          },
+        })
+      },
     }),
-    [navigateToFeed, open, openForCalendarPost, pendingSlotPosition, selectedFeedId]
+    [navigateToFeed, open, openForCalendarPost, openWithAesthetic, pendingSlotPosition, selectedFeedId]
   )
 
   return (

@@ -349,7 +349,12 @@ function ShellInner({
         ) : (
           <FeedPlannerView />
         ))}
-      {section === "library" && <LibraryView />}
+      {section === "library" && (
+        <LibraryView
+          onOpenMaya={idea => createIdea("photo", idea)}
+          onOpenCalendar={() => goToSection("calendar")}
+        />
+      )}
       {section === "account" && (
         <AccountView
           firstName={firstName}

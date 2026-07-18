@@ -15,6 +15,9 @@ interface FeedHeaderProps {
   onProfileImageClick?: () => void
   onWriteBio: () => void
   onCreateHighlights?: () => void
+  onHighlightClick?: (highlight: any) => void
+  onAddRow?: () => void
+  isAddingRow?: boolean
   onOpenWizard?: () => void // Callback to open wizard
   onOpenWelcomeWizard?: () => void // Callback to open welcome wizard (for paid blueprint users)
   access?: { isFree?: boolean; isPaidBlueprint?: boolean; isMembership?: boolean } // Access control to hide buttons for free users
@@ -41,6 +44,9 @@ export default function FeedHeader({
   onProfileImageClick,
   onWriteBio,
   onCreateHighlights,
+  onHighlightClick,
+  onAddRow,
+  isAddingRow = false,
   onOpenWizard,
   onOpenWelcomeWizard,
   access,
@@ -540,7 +546,7 @@ export default function FeedHeader({
           )}
         </div>
 
-        {onOpenWelcomeWizard && access?.isPaidBlueprint && (
+        {onOpenWelcomeWizard && (access?.isPaidBlueprint || access?.isMembership) && (
           <div className="flex items-center gap-1.5">
             <button
               onClick={onOpenWelcomeWizard}
@@ -657,6 +663,16 @@ export default function FeedHeader({
                   {isCreatingFeed ? "Creating…" : "New grid"}
                 </button>
               ) : null}
+              {!access?.isFree && onAddRow && feedPosts.length < 30 ? (
+                <button
+                  type="button"
+                  onClick={onAddRow}
+                  disabled={isAddingRow}
+                  className={`${feedHeaderChipClass} disabled:opacity-50`}
+                >
+                  {isAddingRow ? "Adding…" : "Add a row"}
+                </button>
+              ) : null}
               {!access?.isFree && hasBio ? (
                 <button type="button" onClick={onWriteBio} className={feedHeaderChipClass}>
                   Edit bio
@@ -679,7 +695,13 @@ export default function FeedHeader({
         <div className="mt-5 flex items-start gap-4 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:ml-1">
           {Array.isArray(feedData?.highlights) && feedData.highlights.length > 0
             ? feedData.highlights.map((highlight: any) => (
-                <div key={highlight.id || highlight.title} className="w-16 shrink-0 text-center">
+                <button
+                  type="button"
+                  key={highlight.id || highlight.title}
+                  onClick={() => onHighlightClick?.(highlight)}
+                  aria-label={`Open ${highlight.title} story sequence`}
+                  className="w-16 shrink-0 text-center"
+                >
                   <div className="relative mx-auto flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-[#C5C6C8] bg-[#EEEDE9] text-[14px] font-medium text-[#4F5052]">
                     {highlight.image_url && !String(highlight.image_url).startsWith("#") ? (
                       <Image
@@ -694,7 +716,7 @@ export default function FeedHeader({
                     )}
                   </div>
                   <p className="mt-1.5 truncate text-[10px] text-[#4F5052]">{highlight.title}</p>
-                </div>
+                </button>
               ))
             : ["About", "Work", "Life"].map(label => (
                 <div key={label} className="w-16 shrink-0 text-center">

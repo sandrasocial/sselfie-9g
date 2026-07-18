@@ -34,8 +34,8 @@ describe("Calendar secondary action trust", () => {
   it("exposes Highlights as a labelled modal that closes with Escape", () => {
     expect(highlightsSource).toContain('role="dialog"')
     expect(highlightsSource).toContain('aria-modal="true"')
-    expect(highlightsSource).toContain('aria-labelledby="feed-highlights-title"')
-    expect(highlightsSource).toContain('id="feed-highlights-title"')
+    expect(highlightsSource).toContain('aria-labelledby="story-studio-title"')
+    expect(highlightsSource).toContain('id="story-studio-title"')
     expect(highlightsSource).toContain('event.key === "Escape"')
   })
 })

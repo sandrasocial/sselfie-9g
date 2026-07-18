@@ -68,6 +68,12 @@ describe("analytics event contract", () => {
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_generation_path_completed")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_next_action_selected")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_maya_recovery_shown")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("story_studio_opened")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("story_studio_saved")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("learn_goal_selected")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("learn_plan_saved")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("learn_calendar_handoff")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("learn_maya_handoff")
   })
 
   it("rejects unknown event names", () => {

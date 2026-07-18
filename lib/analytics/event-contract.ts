@@ -230,6 +230,14 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "calendar_workspace_opened",
   "calendar_photo_added",
   "calendar_post_ready",
+  // Calendar/Stories/Learn convergence. These measure whether members use the new guided
+  // surfaces and handoffs; they are behavior signals only and never revenue truth.
+  "story_studio_opened",
+  "story_studio_saved",
+  "learn_goal_selected",
+  "learn_plan_saved",
+  "learn_calendar_handoff",
+  "learn_maya_handoff",
   // TEXT-STUDIO-01 — hybrid text studio: she asked for a baked text render / the bake failed
   // (behavior only, never money; credits truth lives in credit_transactions).
   "suite_text_bake_requested",

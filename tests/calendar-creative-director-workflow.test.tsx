@@ -63,9 +63,7 @@ describe("Calendar creative-director workflow", () => {
     })
 
     expect(screen.getByText("Image failed")).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: "Ask Maya to try post 5 again" })
-    ).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Ask Maya to try post 5 again" })).toBeInTheDocument()
   })
 
   it("shows saved context without asking a returning user to confirm it again", () => {
@@ -85,7 +83,7 @@ describe("Calendar creative-director workflow", () => {
 
     expect(screen.getByText("Personal brand photography")).toBeInTheDocument()
     expect(screen.getByText("Women building a visible business")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Adjust" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Update what Maya knows" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Use this context" })).not.toBeInTheDocument()
     expect(onConfirm).not.toHaveBeenCalled()
   })
@@ -141,7 +139,9 @@ describe("Calendar creative-director workflow", () => {
     )
 
     expect(screen.getByRole("status", { name: "Post 1 status: Queued" })).toBeInTheDocument()
-    expect(screen.getByRole("status", { name: "Post 2 status: Creating image" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("status", { name: "Post 2 status: Creating image" })
+    ).toBeInTheDocument()
     expect(screen.getByRole("status", { name: "Post 3 status: Ready" })).toBeInTheDocument()
     expect(screen.getByRole("status", { name: "Post 4 status: Image failed" })).toBeInTheDocument()
     expect(
@@ -167,7 +167,9 @@ describe("Calendar creative-director workflow", () => {
       target: { value: "A six week confidence programme" },
     })
     expect(screen.queryByRole("group", { name: "Visual direction" })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: "Save content context" }))
+    fireEvent.click(screen.getByRole("button", { name: "Next" }))
+    fireEvent.click(screen.getByRole("button", { name: "Next" }))
+    fireEvent.click(screen.getByRole("button", { name: "Save what Maya knows" }))
 
     await waitFor(() =>
       expect(onSave).toHaveBeenCalledWith(
@@ -187,11 +189,7 @@ describe("Calendar creative-director workflow", () => {
       feedStyle: "",
     }
     const { rerender } = render(
-      <CalendarPlanSettingsCard
-        settings={baseSettings}
-        onSave={vi.fn()}
-        onConfirm={vi.fn()}
-      />
+      <CalendarPlanSettingsCard settings={baseSettings} onSave={vi.fn()} onConfirm={vi.fn()} />
     )
 
     fireEvent.change(screen.getByLabelText("What you do"), {

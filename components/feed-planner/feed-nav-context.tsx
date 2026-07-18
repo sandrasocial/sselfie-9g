@@ -20,6 +20,8 @@ export interface FeedNav {
   consumePendingSlot?: () => void
   /** Open Maya from the embedded calendar without leaving the Suite shell. */
   navigateToMaya?: (target?: CalendarPostTarget) => void
+  /** Start a Story sequence in the same Maya conversation from Story Studio. */
+  navigateToMayaForStory?: (title: string, coverOnly?: boolean) => void
 }
 
 export const FeedNavContext = createContext<FeedNav | null>(null)

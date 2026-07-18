@@ -656,7 +656,9 @@ export default function FeedPlannerClient({ access: accessProp, userName }: Feed
       <FeedViewScreen 
         access={access} 
         onOpenWizard={handleOpenWizard}
-        onOpenWelcomeWizard={access?.isPaidBlueprint ? handleOpenWelcomeWizard : undefined}
+        onOpenWelcomeWizard={
+          access?.isPaidBlueprint || access?.isMembership ? handleOpenWelcomeWizard : undefined
+        }
         controlledFeedStyleModal={showFeedStyleModal}
         onFeedStyleModalChange={setShowFeedStyleModal}
         onFeedStyleSelected={handleFeedStyleSelected}

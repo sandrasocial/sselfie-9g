@@ -189,8 +189,8 @@ function renderContent({
         src={displayImageUrl}
         alt={`Post ${post.position}`}
         fill
-        // Top-biased crop (2026-07-07): generated photos are portrait (2:3) shown in square
-        // tiles - a center crop routinely cut faces off. Faces live in the upper third.
+        // Instagram's current profile grid is portrait-first. Keep the crop top-biased so
+        // a generated portrait never loses the member's face inside the smaller preview.
         className="object-cover object-[center_20%]"
         sizes="(max-width: 768px) 33vw, 311px"
       />
@@ -446,7 +446,7 @@ export default function FeedGridItem({
   // affordance's pointer cursor.
   const isQuietPlaceholder = isMembership && showGenerateButton && !isComplete && !isGenerating
 
-  const baseClassName = `relative block aspect-square w-full overflow-hidden rounded-[6px] border bg-[color:var(--calendar-stone-1)] transition-all duration-200 ${
+  const baseClassName = `relative block aspect-[3/4] w-full overflow-hidden rounded-[6px] border bg-[color:var(--calendar-stone-1)] transition-all duration-200 ${
     isSelected
       ? "z-10 border-[color:var(--app-text-primary)] ring-2 ring-[color:var(--app-focus-ring)] ring-offset-2 ring-offset-white"
       : "border-[color:var(--calendar-stone-4)]/70"

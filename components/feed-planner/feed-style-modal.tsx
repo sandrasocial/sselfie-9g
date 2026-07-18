@@ -52,6 +52,13 @@ interface FeedStyleVariationOption {
   sort_order: number
 }
 
+interface FeedStylePreviewOption {
+  id: number
+  name: string
+  description: string | null
+  previewImageUrl: string | null
+}
+
 export default function FeedStyleModal({
   open,
   onOpenChange,
@@ -112,6 +119,10 @@ export default function FeedStyleModal({
       dedupingInterval: 30000,
     }
   )
+  const { data: stylePreviewData } = useSWR(open ? "/api/feed-planner/v2/styles" : null, fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000,
+  })
 
   // Track if user explicitly selected variation (prevents auto-reset)
   const userExplicitlySelectedVariationRef = useRef(false)
@@ -300,12 +311,12 @@ export default function FeedStyleModal({
   }
 
   const eyebrow =
-    mode === "first" ? "Your first grid" : mode === "new" ? "New grid" : "Your visual style"
-  const title = mode === "new" ? "How should Maya shape this grid?" : "Shape the visual direction."
+    mode === "first" ? "Your first grid" : mode === "new" ? "New grid" : "This month’s look"
+  const title = mode === "new" ? "How should this grid look?" : "Choose the look for this month."
   const description =
     mode === "style"
-      ? "Choose how you want to guide her. Nothing changes until you save this direction."
-      : "Start with what feels easiest. Maya can decide, follow one of Sandra's favourites, use an inspiration image, or listen to your own description."
+      ? "Pick one starting point. Maya will use it across this grid, and nothing changes until you save it."
+      : "Start with what feels easiest. Maya can choose, use one of my favourites, follow an inspiration image, or work from your own words."
   const canConfirm =
     Boolean(directionMode) &&
     (directionMode !== "curated" || Boolean(selectedStyle)) &&
@@ -386,22 +397,22 @@ export default function FeedStyleModal({
                             [
                               "maya",
                               "Maya decides",
-                              "She uses what she already knows about your brand and chooses the strongest SSELFIE direction.",
+                              "She uses what she already knows about you and chooses the strongest look for this month.",
                             ],
                             [
                               "curated",
                               "Sandra's favourites",
-                              "Explore all seven visual worlds Sandra has selected for SSELFIE grids.",
+                              "Choose from the current looks I have saved for SSELFIE grids.",
                             ],
                             [
                               "inspiration",
                               "Upload inspiration",
-                              "Use a saved image for styling, light, mood and colour. Never for someone else's face.",
+                              "Show Maya a grid or photo you love. She follows the mood, light and colour, never someone else’s face.",
                             ],
                             [
                               "custom",
                               "Describe it myself",
-                              "Tell Maya what you like in your own words. No preset language needed.",
+                              "Say what you like in normal words. Maya will turn it into a clear look.",
                             ],
                           ] as const
                         ).map(([value, label, help]) => {
@@ -552,12 +563,15 @@ export default function FeedStyleModal({
                           <p className="text-[10px] uppercase tracking-[0.2em] text-[#6D6E70]">
                             Sandra’s favourites
                           </p>
-                          <p className="text-[10px] text-[#818283]">7 visual worlds</p>
+                          <p className="text-[10px] text-[#818283]">Updated from the saved preview library</p>
                         </div>
                         <div className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-7 sm:px-7 md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0">
                           {Object.entries(FEED_EXAMPLES).map(([key, style]) => {
                             const feedStyle = key as FeedStyle
                             const isSelected = selectedStyle === feedStyle
+                            const preview = (stylePreviewData?.styles || []).find(
+                              (item: FeedStylePreviewOption) => item.name === feedStyle
+                            ) as FeedStylePreviewOption | undefined
 
                             return (
                               <button
@@ -571,19 +585,17 @@ export default function FeedStyleModal({
                                     : "border-[#C5C6C8]/70 bg-white hover:border-[#818283]"
                                 }`}
                               >
-                                <div className="mb-3 grid grid-cols-3 gap-1.5 rounded-[10px] bg-[#F8FAFA] p-1.5">
-                                  {style.grid.map((type, idx) => (
-                                    <span
-                                      key={idx}
-                                      aria-hidden
-                                      className="aspect-square rounded-[5px] border border-[#0D0E10]/5"
-                                      style={{
-                                        backgroundColor:
-                                          type === "selfie" ? style.colors[0] : style.colors[1],
-                                      }}
-                                    />
-                                  ))}
-                                </div>
+                                {preview?.previewImageUrl ? (
+                                  <div className="relative mb-3 aspect-[3/4] overflow-hidden rounded-[10px] bg-[#F8FAFA]">
+                                    <Image src={preview.previewImageUrl} alt={`${style.name} grid preview`} fill className="object-cover object-top" sizes="288px" />
+                                  </div>
+                                ) : (
+                                  <div className="mb-3 grid grid-cols-3 gap-1.5 rounded-[10px] bg-[#F8FAFA] p-1.5">
+                                    {style.grid.map((type, idx) => (
+                                      <span key={idx} aria-hidden className="aspect-[3/4] rounded-[5px] border border-[#0D0E10]/5" style={{ backgroundColor: type === "selfie" ? style.colors[0] : style.colors[1] }} />
+                                    ))}
+                                  </div>
+                                )}
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
                                     <h3 className="text-[14px] font-medium text-[#0D0E10]">

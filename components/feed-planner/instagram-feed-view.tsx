@@ -22,6 +22,7 @@ import FeedModals from "./feed-modals"
 import FeedHighlightsModal from "./feed-highlights-modal"
 import FeedSinglePlaceholder from "./feed-single-placeholder"
 import { CalendarMayaWorkspace } from "./calendar-maya-workspace"
+import { CalendarContentContextModal } from "./calendar-content-context-modal"
 import { CalendarNeedsMe } from "./calendar-needs-me"
 import { CalendarBulkCreate } from "./calendar-bulk-create"
 import FeedStyleModal, {
@@ -97,6 +98,8 @@ export default function InstagramFeedView({
   const [bioText, setBioText] = useState("")
   const [isSavingBio, setIsSavingBio] = useState(false)
   const [showHighlightsModal, setShowHighlightsModal] = useState(false)
+  const [selectedHighlightId, setSelectedHighlightId] = useState<number | null>(null)
+  const [isAddingRow, setIsAddingRow] = useState(false)
   const [brandColors, setBrandColors] = useState<string[]>([])
   const [activePostId, setActivePostId] = useState<number | null>(null)
   const [previewProposal, setPreviewProposal] = useState<CalendarAgentProposal | null>(null)
@@ -130,6 +133,12 @@ export default function InstagramFeedView({
         businessType: settings.businessType,
         idealAudience: settings.idealAudience,
         currentSituation: settings.currentSituation,
+        transformationStory: settings.transformationStory,
+        audienceChallenge: settings.audienceChallenge,
+        audienceTransformation: settings.audienceTransformation,
+        futureVision: settings.futureVision,
+        contentGoals: settings.contentGoals,
+        contentPillars: settings.contentPillars,
         ...(settings.feedStyle.trim() ? { settingsPreference: [settings.feedStyle] } : {}),
         isCompleted: true,
       }),
@@ -138,6 +147,29 @@ export default function InstagramFeedView({
     if (!response.ok)
       throw new Error(data.details || data.error || "Your plan settings could not be saved.")
     await mutatePersonalBrand()
+  }
+
+  const addGridRow = async () => {
+    if (isAddingRow) return
+    setIsAddingRow(true)
+    try {
+      const response = await fetch(`/api/feed/${feedId}/rows`, {
+        method: "POST",
+        credentials: "include",
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.details || data.error || "Could not add another row")
+      await mutate()
+      toast({ title: "Three new posts are ready", description: "Open any one when you are ready." })
+    } catch (rowError) {
+      toast({
+        title: "Could not add another row",
+        description: rowError instanceof Error ? rowError.message : "Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsAddingRow(false)
+    }
   }
 
   useEffect(() => {
@@ -893,6 +925,12 @@ export default function InstagramFeedView({
           }
           onWriteBio={handleOpenBio}
           onCreateHighlights={() => setShowHighlightsModal(true)}
+          onHighlightClick={highlight => {
+            setSelectedHighlightId(Number(highlight.id) || null)
+            setShowHighlightsModal(true)
+          }}
+          onAddRow={() => void addGridRow()}
+          isAddingRow={isAddingRow}
           onOpenWizard={() => setPlanSettingsOpen(true)}
           onOpenWelcomeWizard={onOpenWelcomeWizard}
           access={access}
@@ -1148,6 +1186,8 @@ export default function InstagramFeedView({
             await mutate() // Refresh feed data to show updated highlights
           }}
           existingHighlights={feedData?.highlights || []}
+          initialHighlightId={selectedHighlightId}
+          onCreateWithMaya={feedNav?.navigateToMayaForStory}
           brandColors={
             brandColors.length > 0
               ? brandColors
@@ -1179,6 +1219,12 @@ export default function InstagramFeedView({
           defaultFeedStyle={(feedData?.feed?.feed_style as FeedStyle | null) ?? null}
           defaultFeedStyleVariationId={feedData?.feed?.feed_style_variation_id ?? null}
           isLoading={isSavingVisualDirection}
+        />
+        <CalendarContentContextModal
+          open={usesSharedSuiteMaya && planSettingsOpen}
+          settings={calendarPlanSettings}
+          onClose={() => setPlanSettingsOpen(false)}
+          onSave={saveCalendarPlanSettings}
         />
       </div>
       {!selectedPost ? calendarMayaWorkspace : null}

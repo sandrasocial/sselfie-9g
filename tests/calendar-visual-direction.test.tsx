@@ -52,7 +52,7 @@ describe("Calendar visual direction", () => {
     ]) {
       expect(screen.getByRole("button", { name: new RegExp(style, "i") })).toBeInTheDocument()
     }
-    expect(screen.getByText("7 visual worlds")).toBeInTheDocument()
+    expect(screen.getByText("Updated from the saved preview library")).toBeInTheDocument()
   })
 
   it("makes Pinterest and upload guidance part of the inspiration path", async () => {

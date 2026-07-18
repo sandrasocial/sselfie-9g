@@ -32,6 +32,13 @@ export async function GET() {
 
     const state = await getAcademyHomeState(String(neonUser.id))
 
+    const [learningPlan] = await sql`
+      SELECT goal, recommendation, status, updated_at
+      FROM suite_learning_plans
+      WHERE user_id = ${neonUser.id}
+      LIMIT 1
+    `
+
     // Weekly drops are a membership collection; non-members see the locked empty state.
     let drops: Array<Record<string, unknown>> = []
     let vaultDrops: Awaited<ReturnType<typeof getPublishedVaultCollections>> = []
@@ -50,6 +57,7 @@ export async function GET() {
 
     return NextResponse.json({
       membershipActive: state.membershipActive,
+      learningPlan: learningPlan ?? null,
       courses: state.courses.map((c) => ({
         id: c.id,
         title: c.title,

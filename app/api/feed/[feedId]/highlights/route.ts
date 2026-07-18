@@ -3,8 +3,10 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
 
-
-export async function POST(request: Request, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ feedId: string }> | { feedId: string } }
+) {
   try {
     const { user: authUser, error: authError } = await getAuthenticatedUser()
 
@@ -26,18 +28,41 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
     }
 
     const body = await request.json()
-    const { highlights } = body
+    const highlights = Array.isArray(body?.highlights) ? body.highlights : null
+    if (!highlights) {
+      return NextResponse.json({ error: "Highlights must be a list" }, { status: 400 })
+    }
+    const normalized = highlights.map((highlight: any) => ({
+      title: typeof highlight?.title === "string" ? highlight.title.trim().slice(0, 80) : "",
+      coverUrl:
+        typeof highlight?.coverUrl === "string"
+          ? highlight.coverUrl.slice(0, 2000)
+          : typeof highlight?.image_url === "string"
+            ? highlight.image_url.slice(0, 2000)
+            : "#F1F2F2",
+      type: typeof highlight?.type === "string" ? highlight.type.slice(0, 40) : "image",
+      description:
+        typeof highlight?.description === "string" ? highlight.description.slice(0, 50_000) : "",
+    }))
+    if (normalized.some((highlight: any) => !highlight.title)) {
+      return NextResponse.json({ error: "Every sequence needs a title" }, { status: 400 })
+    }
 
-    // Delete existing highlights for this feed
-    await sql`
-      DELETE FROM instagram_highlights 
-      WHERE feed_layout_id = ${feedIdInt} AND user_id = ${neonUser.id}
+    const [ownedFeed] = await sql`
+      SELECT id FROM feed_layouts
+      WHERE id = ${feedIdInt} AND user_id = ${neonUser.id}
+      LIMIT 1
     `
+    if (!ownedFeed) return NextResponse.json({ error: "Feed not found" }, { status: 404 })
 
-    // Insert new highlights
-    if (highlights && highlights.length > 0) {
-      for (const highlight of highlights) {
-        await sql`
+    // Delete + replace is one transaction so a failed insert can never erase saved Stories.
+    await sql.transaction(tx => [
+      tx`
+        DELETE FROM instagram_highlights
+        WHERE feed_layout_id = ${feedIdInt} AND user_id = ${neonUser.id}
+      `,
+      ...normalized.map(
+        (highlight: any) => tx`
           INSERT INTO instagram_highlights (
             feed_layout_id, 
             user_id, 
@@ -51,14 +76,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
             ${feedIdInt},
             ${neonUser.id},
             ${highlight.title},
-            ${highlight.coverUrl || highlight.image_url},
-            ${highlight.type || "color"},
-            ${highlight.description || ""},
-            ${highlight.coverUrl && !highlight.coverUrl.startsWith("#") && !highlight.coverUrl.includes("placeholder") ? "completed" : "pending"}
+            ${highlight.coverUrl},
+            ${highlight.type},
+            ${highlight.description},
+            ${highlight.coverUrl.startsWith("http") ? "completed" : "pending"}
           )
         `
-      }
-    }
+      ),
+    ])
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -71,7 +96,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
   }
 }
 
-export async function GET(request: Request, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ feedId: string }> | { feedId: string } }
+) {
   try {
     const { user: authUser, error: authError } = await getAuthenticatedUser()
 
