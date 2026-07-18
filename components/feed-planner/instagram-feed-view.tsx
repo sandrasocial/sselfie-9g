@@ -65,12 +65,7 @@ export default function InstagramFeedView({
   activationAction = null,
 }: InstagramFeedViewProps) {
   // Use custom hooks for all complex logic
-  const {
-    feedData,
-    feedError,
-    mutate,
-    isLoading: isFeedLoading,
-  } = useFeedPolling(feedId)
+  const { feedData, feedError, mutate, isLoading: isFeedLoading } = useFeedPolling(feedId)
   const {
     selectedPost,
     setSelectedPost,
@@ -539,6 +534,7 @@ export default function InstagramFeedView({
     return baseDisplayPosts
   })()
   const activePost = displayPosts.find((post: any) => Number(post.id) === activePostId) ?? null
+  const liveSelectedPost = selectedPost ? (activePost ?? selectedPost) : null
   const openPostStudio = (post: any) => {
     setPlanSettingsOpen(false)
     setActivePostId(Number(post.id))
@@ -975,7 +971,7 @@ export default function InstagramFeedView({
         </div>
 
         <FeedModals
-          selectedPost={selectedPost}
+          selectedPost={liveSelectedPost}
           showGallery={showGallery}
           showProfileGallery={showProfileGallery}
           feedId={feedId}

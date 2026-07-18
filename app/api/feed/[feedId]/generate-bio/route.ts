@@ -4,7 +4,6 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateInstagramBio } from "@/lib/instagram-bio-strategist/bio-logic"
 import { sql } from "@/lib/db/client"
 
-
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ feedId: string }> | { feedId: string } }
@@ -60,6 +59,8 @@ export async function POST(
         brand_vibe,
         business_type,
         target_audience,
+        ideal_audience,
+        current_situation,
         content_pillars,
         business_goals
       FROM user_personal_brand
@@ -84,7 +85,9 @@ export async function POST(
       businessType: brandProfile.business_type || feedLayout.business_type || "creator",
       brandVibe: brandProfile.brand_vibe || feedLayout.brand_vibe || "authentic",
       brandVoice: brandProfile.brand_voice || "authentic and relatable",
-      targetAudience: brandProfile.target_audience || "general audience",
+      targetAudience:
+        brandProfile.ideal_audience || brandProfile.target_audience || "general audience",
+      hasCurrentOfferFocus: Boolean(brandProfile.current_situation),
       hasResearchData: !!researchData,
     })
 
@@ -96,9 +99,11 @@ export async function POST(
         businessType: brandProfile.business_type || feedLayout.business_type || "creator",
         brandVibe: brandProfile.brand_vibe || feedLayout.brand_vibe || "authentic",
         brandVoice: brandProfile.brand_voice || "authentic and relatable",
-        targetAudience: brandProfile.target_audience || "general audience",
+        targetAudience:
+          brandProfile.ideal_audience || brandProfile.target_audience || "general audience",
         businessGoals: brandProfile.business_goals ?? undefined,
         researchData: researchData ?? undefined,
+        currentOfferFocus: brandProfile.current_situation ?? undefined,
       })
       console.log("[v0] [GENERATE-BIO] Bio generation result:", {
         success: bioResult.success,
@@ -170,7 +175,9 @@ export async function POST(
       } catch (error: any) {
         // If feed_layout_id doesn't exist, insert without it
         if (error.message?.includes("feed_layout_id") || error.code === "42703") {
-          console.log("[v0] [GENERATE-BIO] feed_layout_id column doesn't exist, inserting without it")
+          console.log(
+            "[v0] [GENERATE-BIO] feed_layout_id column doesn't exist, inserting without it"
+          )
           await sql`
             INSERT INTO instagram_bios (user_id, bio_text, created_at)
             VALUES (${neonUser.id}, ${bioResult.bio}, NOW())

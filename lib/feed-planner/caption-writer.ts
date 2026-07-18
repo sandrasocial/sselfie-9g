@@ -64,6 +64,45 @@ const SANDRA_BANNED_WORD_PATTERNS: RegExp[] = [
 
 const EM_DASH_PATTERN = /—/
 
+const FIRST_PERSON_CAPTION_PATTERN =
+  /\b(?:i|i['’](?:m|ve|d|ll)|my|mine|we|we['’](?:re|ve|d|ll)|us|our|ours)\b/i
+const UNSUPPORTED_EXPERIENCE_PATTERN =
+  /\b(?:my|our)\s+(?:clients|customers|followers|community)|\b(?:people|clients|customers|followers)\s+(?:always|often|constantly|keep)\s+(?:asking|telling|saying|sharing|mentioning)\b/i
+
+/**
+ * A generated caption may use first person only when the member supplied the source.
+ * Conversational asks such as "tell me" are not claims and remain available.
+ */
+export function hasUnverifiedFirstPersonClaim(
+  caption: string,
+  storySource?: string | null
+): boolean {
+  const source = String(storySource || "").trim()
+  const withoutConversationalAsks = String(caption || "").replace(
+    /\b(?:tell|ask|message|dm|send|show|let)\s+me\b/gi,
+    ""
+  )
+  if (!source && FIRST_PERSON_CAPTION_PATTERN.test(withoutConversationalAsks)) return true
+  if (
+    UNSUPPORTED_EXPERIENCE_PATTERN.test(withoutConversationalAsks) &&
+    !UNSUPPORTED_EXPERIENCE_PATTERN.test(source)
+  ) {
+    return true
+  }
+  return false
+}
+
+/** Reject stale calendar-year filler unless that exact year came from the member's source. */
+export function hasOutdatedCaptionYear(
+  caption: string,
+  storySource?: string | null,
+  currentYear = new Date().getFullYear()
+): boolean {
+  const source = String(storySource || "")
+  const years = String(caption || "").match(/\b20\d{2}\b/g) || []
+  return years.some(year => Number(year) < currentYear && !source.includes(year))
+}
+
 /** True when a caption contains Sandra's banned words or an em-dash. */
 export function hasBannedCaptionLanguage(caption: string): boolean {
   const raw = String(caption || "")
@@ -321,14 +360,16 @@ This caption should:
 - Be specific and practical (not vague advice)
 - Use examples, frameworks, or step-by-step guidance
 - Help the audience solve a problem or achieve a goal
-- Examples: "Here's the exact framework I use...", "3 things that changed everything...", "The mistake I see most people make..."
+- When no verified personal source exists, teach in neutral or second-person language. Never claim "I use", "I tell clients", or "I see this all the time"
+- Examples: "Try this three-step reset...", "3 ways to make this easier...", "One mistake that can make this harder..."
 - Focus on VALUE, not the image
 `,
       motivational: `
 ## CAPTION TYPE: MOTIVATIONAL/INSPIRATIONAL (Uplifting, Empowering, Transformation)
 This caption should:
 - Inspire and uplift the audience
-- Share transformation or success stories
+- Share a transformation or success story only when VERIFIED STORY SOURCE contains it
+- Without a verified story, use a grounded invitation, observation, or second-person reminder
 - Empower with belief and confidence
 - Use powerful, emotional language (but still human, not corporate)
 - Connect to bigger purpose or vision
@@ -374,6 +415,7 @@ ${verifiedStorySource ? verifiedStorySource : "None. Do not write first-person a
    - Use only facts present in the brand profile or VERIFIED STORY SOURCE.
    - Never invent personal history, client stories, testimonials, pricing, income, dates, timelines, metrics, quotes, or results.
    - When no story source is supplied, use useful teaching, observation, or second-person guidance. Do not pretend the member experienced something.
+   - Do not invent audience circumstances either. Never assume her audience has children, lost sleep, argued at breakfast, bought something, failed at something, or had a specific life event. If an example is not verified, frame it as a possibility with "if" or "maybe".
 
 1. **THE "TEXT A FRIEND" TEST**: Read your caption out loud. If you wouldn't say it to a friend over coffee, rewrite it. That's the whole game.
 
@@ -392,7 +434,7 @@ ${verifiedStorySource ? verifiedStorySource : "None. Do not write first-person a
 
 4. **2026 Caption Structure: Hook -> Story/Context -> One Ask**
    - Hook: 1-2 lines that stop the scroll (something real and specific)
-   - Story/Context: 2-4 sentences, personal and specific (what happened, why it matters)
+   - Story/Context: 2-4 sentences. Use personal specifics only from VERIFIED STORY SOURCE. Otherwise use grounded guidance or context from the brand profile.
    - One Ask: Clear next step (question, CTA, or invitation)
 
 5. **Anti-AI Formula (MANDATORY)**:
@@ -407,7 +449,7 @@ ${verifiedStorySource ? verifiedStorySource : "None. Do not write first-person a
 6. **Authentic Voice (Maya's Style)**:
    - Write like texting a friend
    - Simple, everyday language
-   - Use "you" and "I" - make it a conversation
+   - Use "you" to make it a conversation. Use "I", "my", "we", or "our" only when VERIFIED STORY SOURCE supports that exact claim
    - Add emotion only when it fits the verified source
    - Never manufacture doubt, vulnerability, or a confession
    - Use parentheses for conversational asides: (like this)
@@ -427,7 +469,7 @@ ${verifiedStorySource ? verifiedStorySource : "None. Do not write first-person a
    - Did I vary my sentence length? ✓
    - Am I using normal words? ✓
    - Does this sound like ME? ✓
-   - Is there a specific detail/story? ✓
+   - Is every specific detail either verified or clearly framed as guidance? ✓
    - Did I use contractions? ✓
    - Did I kill all AI phrases? ✓
 
@@ -462,9 +504,14 @@ OUTPUT: Only the caption text, ready to post. NO explanations, NO research notes
     strategyHashtags,
   })
 
-  // If output is still too short (or carries banned language) after cleanup, ask for one rewrite pass.
+  // If output is still too short or unsafe after cleanup, ask for one grounded rewrite pass.
   const bodyWordCount = countWords(stripHashtags(caption))
-  if (bodyWordCount < 70 || hasBannedCaptionLanguage(caption)) {
+  if (
+    bodyWordCount < 70 ||
+    hasBannedCaptionLanguage(caption) ||
+    hasUnverifiedFirstPersonClaim(caption, verifiedStorySource) ||
+    hasOutdatedCaptionYear(caption, verifiedStorySource)
+  ) {
     const { text: revised } = await generateText({
       model: createMayaOpenRouterModel("instagram_caption"),
       system: INSTAGRAM_STRATEGIST_SYSTEM_PROMPT,
@@ -478,6 +525,9 @@ Rules:
 - Maximum 5 hashtags.
 - Preserve the factual meaning exactly. Do not add a personal event, number, result, quote, timeline, or detail.
 ${verifiedStorySource ? `- The only verified personal source is: ${verifiedStorySource}` : "- There is no verified personal story source. Do not write first-person autobiography."}
+- Without a verified personal source, do not use I, my, we, or our, and do not claim repeated experience with clients, customers, followers, or an audience.
+- Do not invent a child, family detail, sleep problem, breakfast scene, customer conversation, or other plausible life circumstance. Use "if" or "maybe" for an unverified example.
+- Do not insert an old calendar year as motivational filler.
 - Never use these words: leverage, synergy, transform, game-changer, skyrocket, unlock your potential, elevate.
 - Never use the em dash character. Use a period, a colon, or a middle dot instead.
 
@@ -491,6 +541,16 @@ ${caption}`,
       caption: revised,
       strategyHashtags,
     })
+  }
+
+  const finalBodyWordCount = countWords(stripHashtags(caption))
+  if (
+    finalBodyWordCount < 70 ||
+    hasBannedCaptionLanguage(caption) ||
+    hasUnverifiedFirstPersonClaim(caption, verifiedStorySource) ||
+    hasOutdatedCaptionYear(caption, verifiedStorySource)
+  ) {
+    throw new Error("Caption could not be grounded in the member's verified context")
   }
 
   console.log(

@@ -56,7 +56,7 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     const concierge2 = concierge
     expect(concierge2).toContain("sessionResumedWithHistoryRef.current = draft.messages.length > 0")
     expect(concierge2).toContain("sessionResumedWithHistoryRef.current = loaded.length > 0")
-    expect(concierge).toContain("setSelfieManagerOpen(false)\n          setSetupOpen(false)")
+    expect(concierge).toContain("closeSelfieManager()\n          setSetupOpen(false)")
     expect(concierge).toContain("hideOptionalReferences={guidedFirstPhoto}")
     expect(selfieManager).toContain("hideOptionalReferences = false")
     expect(selfieManager).toContain("{!hideOptionalReferences && (")
@@ -99,6 +99,12 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(frontDoor).toContain("Recreate this look")
     expect(frontDoor).not.toContain("helps you choose the format, style")
     expect(frontDoor).not.toContain("title={CARD_COPY.title}")
+  })
+
+  it("refreshes the recommendation after the member teaches Maya about her brand", () => {
+    const frontDoor = read("components/app-v3/visual-front-door.tsx")
+
+    expect(frontDoor).toContain("onSaved={() => setRecommendationReload(current => current + 1)}")
   })
 
   it("uses bundled looks as a failure-safe and exposes a retry", () => {

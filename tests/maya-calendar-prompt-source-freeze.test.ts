@@ -33,9 +33,9 @@ const FROZEN_PROMPT_SOURCES = {
   "app/api/app-v3/maya/chat/route.ts":
     "c6a0808bcacf55422f5e576fb1e506aeeee7a73fe939421bcdd760e482914ba0",
   "app/api/app-v3/maya/calendar-agent/route.ts":
-    // Approved Wave 1 Calendar context change: Maya receives the saved visual direction,
-    // inspiration, and template metadata. Prompt wording and model routing remain unchanged.
-    "db0b850d72a05aff5a987b6b232c0bb0a6fd576dc18a2ffe5a449f257c427566",
+    // Sandra-approved Wave 1 production QA correction: Maya receives the saved visual
+    // direction and must label imagined image scenes as concepts, never lived events.
+    "36c963d2db01b57213369fea45de92168ac1693ab65b29f289db65d6d48bca6d",
 } as const
 
 function sourceHash(path: string) {

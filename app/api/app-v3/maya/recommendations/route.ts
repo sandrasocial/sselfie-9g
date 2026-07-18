@@ -11,6 +11,7 @@ import { createMayaOpenRouterModel, getMayaMaxTokensForTask } from "@/lib/maya/o
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getMemory } from "@/lib/app-v3/maya/memory-store"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
+import { hasUsableBrandProfile } from "@/lib/app-v3/maya/brand-profile-store"
 import { sql } from "@/lib/db/client"
 import { extractJson } from "@/lib/ai/extract-json"
 import type { OutputFormat } from "@/components/app-v3/types"
@@ -34,24 +35,42 @@ interface Recommendation {
 // Until we have real image metadata, score each image's stored prompt text against the
 // intent's visual cues (the rubric Sandra outlined). Pick the best, prefer not reusing.
 
-type Intent = "personal-story" | "tutorial" | "authority" | "behind-scenes" | "story-slide" | "editorial"
+type Intent =
+  | "personal-story"
+  | "tutorial"
+  | "authority"
+  | "behind-scenes"
+  | "story-slide"
+  | "editorial"
 
 function intentFor(rec: { title: string; rationale: string; format: OutputFormat }): Intent {
   const t = `${rec.title} ${rec.rationale}`.toLowerCase()
   if (rec.format === "story-slide") return "story-slide"
-  if (/\b(story|life|journey|rebuild|divorce|honest|vulnerable|fear|almost|started over|starting over|why i)\b/.test(t))
+  if (
+    /\b(story|life|journey|rebuild|divorce|honest|vulnerable|fear|almost|started over|starting over|why i)\b/.test(
+      t
+    )
+  )
     return "personal-story"
-  if (/\b(selfie|tutorial|how to|how i|tip|pose|lighting|angle|teach|guide)\b/.test(t)) return "tutorial"
-  if (/\b(behind|desk|working|process|day in|routine|building|making|setup)\b/.test(t)) return "behind-scenes"
-  if (/\b(offer|launch|sell|founder|business|authority|expert|program|masterclass|client|sale|book|pitch)\b/.test(t))
+  if (/\b(selfie|tutorial|how to|how i|tip|pose|lighting|angle|teach|guide)\b/.test(t))
+    return "tutorial"
+  if (/\b(behind|desk|working|process|day in|routine|building|making|setup)\b/.test(t))
+    return "behind-scenes"
+  if (
+    /\b(offer|launch|sell|founder|business|authority|expert|program|masterclass|client|sale|book|pitch)\b/.test(
+      t
+    )
+  )
     return "authority"
   return "editorial"
 }
 
 const IMAGE_CUES: Record<Intent, RegExp> = {
-  "personal-story": /(candid|intimate|soft|natural|home|window|mirror|close|emotional|quiet|cozy|bed|morning)/gi,
+  "personal-story":
+    /(candid|intimate|soft|natural|home|window|mirror|close|emotional|quiet|cozy|bed|morning)/gi,
   tutorial: /(selfie|iphone|front camera|mirror|face|close-up|close up|phone|portrait)/gi,
-  authority: /(editorial|blazer|tailored|professional|studio|confident|suit|office|marble|luxury|power|sharp)/gi,
+  authority:
+    /(editorial|blazer|tailored|professional|studio|confident|suit|office|marble|luxury|power|sharp)/gi,
   "behind-scenes": /(desk|laptop|coffee|home|kitchen|working|caf|process|cozy|sofa)/gi,
   "story-slide": /(vertical|minimal|negative space|plain|clean|empty|simple|spacious)/gi,
   editorial: /(editorial|magazine|elegant|refined|luxury|polished|cinematic)/gi,
@@ -70,7 +89,6 @@ function scorePrompt(promptText: string, intent: Intent): number {
   return (promptText.match(IMAGE_CUES[intent]) || []).length
 }
 
-
 export async function GET() {
   const { user, error: authError } = await getAuthenticatedUser()
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -79,22 +97,33 @@ export async function GET() {
   let brandContext = ""
   let agentName = "Maya"
   let recentActivity: string[] = []
+  let hasMeaningfulContext = false
   try {
-    brandContext = await getUserContextForMaya(user.id)
     const neonUserId = await getUserIdFromSupabase(user.id)
     if (neonUserId) {
-      const mem = await getMemory(String(neonUserId))
+      const [mem, chats, hasBrandProfile] = await Promise.all([
+        getMemory(String(neonUserId)),
+        listChats(String(neonUserId)),
+        hasUsableBrandProfile(neonUserId).catch(() => false),
+      ])
       if (mem.agentName?.trim()) agentName = mem.agentName.trim()
       if (mem.brandNotes?.trim()) brandContext += `\nNotes she gave: ${mem.brandNotes.trim()}`
-      const chats = await listChats(String(neonUserId))
+      hasMeaningfulContext = Boolean(mem.brandNotes?.trim()) || hasBrandProfile
       recentActivity = chats
-        .map((c) => c.title)
+        .map(c => c.title)
         .filter((t): t is string => !!t && t.trim().length > 0)
-        .filter((t) => !/^(let's|actually,\s*let's)\b/i.test(t.trim()))
+        .filter(t => !/^(let's|actually,\s*let's)\b/i.test(t.trim()))
         .slice(0, 8)
+      if (hasMeaningfulContext) brandContext = await getUserContextForMaya(user.id)
     }
   } catch (e) {
     console.error("[app-v3 recommendations] context load skipped:", e)
+  }
+
+  // A name and selfie do not prove a business, audience, or personal story. Let the
+  // deterministic frontend starter lead until the member has taught Maya enough to be specific.
+  if (!hasMeaningfulContext) {
+    return NextResponse.json({ greeting: "", recommendations: [] })
   }
 
   const firstName =
@@ -106,10 +135,11 @@ export async function GET() {
     `You are ${agentName}, her personal creative director at SSELFIE. You decide what she should post next, like a stylist who knows her, not a generic AI.`,
     "Recommend 3 to 5 content ideas for today, grounded in HER brand, story, and recent activity.",
     "Rules:",
-    "- Each idea TITLE is a creator-specific content angle in HER voice, tied to her real story/brand (e.g. 'The Selfie I Almost Didn't Post'), NEVER a generic mood ('Authentic Moment', 'Boss Energy').",
+    "- Each idea TITLE is a creator-specific content angle tied to a real topic in HER supplied brand context, never a generic mood such as 'Authentic Moment' or 'Boss Energy'.",
+    "- Never suggest a personal story, origin story, client result, or lived event unless that exact source appears in her context or recent activity. If it is missing, recommend a useful brand photo, teaching angle, or question instead.",
     "- Each idea has a one-line rationale: why this, now (what is missing from her feed, what her audience needs).",
     "- Each idea has a format: one of photo, reel-cover, carousel, story-slide. Pick the format that fits the idea.",
-    "- greeting: short and sharp, not a paragraph. One warm opener plus at most one observation about her recent activity (e.g. 'You've mostly posted selfie tutorials lately.' or 'Your audience hasn't heard a personal story in a while.'). Keep it to one or two short sentences.",
+    "- greeting: short and sharp, not a paragraph. One warm opener plus at most one observation directly supported by the recent activity list. Keep it to one or two short sentences.",
     "- Never use the long dash (em dash). Short, warm, human. No hype words.",
     "Return ONLY raw JSON, no prose, no code fences, in exactly this shape:",
     `{"greeting": string, "recommendations": [{"title": string, "rationale": string, "format": "photo|reel-cover|carousel|story-slide"}]}`,
@@ -117,7 +147,9 @@ export async function GET() {
 
   const userMsg = [
     firstName ? `Her name: ${firstName}.` : "",
-    brandContext ? `What you know about her:\n${brandContext}` : "You don't have much on her yet; keep ideas about her business and audience, never generic.",
+    brandContext
+      ? `What you know about her:\n${brandContext}`
+      : "You don't have much on her yet; keep ideas about her business and audience, never generic.",
     recentActivity.length ? `Recently she created: ${recentActivity.join("; ")}.` : "",
   ]
     .filter(Boolean)
@@ -136,23 +168,26 @@ export async function GET() {
     try {
       parsed = JSON.parse(extractJson(text))
     } catch {
-      console.error("[app-v3 recommendations] JSON parse failed. Raw model output:", text.slice(0, 400))
+      console.error(
+        "[app-v3 recommendations] JSON parse failed. Raw model output:",
+        text.slice(0, 400)
+      )
       parsed = null
     }
 
     const greeting = typeof parsed?.greeting === "string" ? parsed.greeting : ""
     const recommendations: Recommendation[] = Array.isArray(parsed?.recommendations)
       ? (parsed.recommendations as unknown[])
-          .map((r) => r as Record<string, unknown>)
+          .map(r => r as Record<string, unknown>)
           .filter(
-            (r) =>
+            r =>
               typeof r?.title === "string" &&
               typeof r?.rationale === "string" &&
               typeof r?.format === "string" &&
-              VALID_FORMATS.includes(r.format as OutputFormat),
+              VALID_FORMATS.includes(r.format as OutputFormat)
           )
           .slice(0, 5)
-          .map((r) => ({
+          .map(r => ({
             title: r.title as string,
             rationale: r.rationale as string,
             format: r.format as OutputFormat,
@@ -178,7 +213,7 @@ export async function GET() {
             url: typeof r.image_url === "string" ? r.image_url : "",
             prompt: typeof r.prompt === "string" ? r.prompt.toLowerCase() : "",
           }))
-          .filter((x) => x.url.startsWith("http"))
+          .filter(x => x.url.startsWith("http"))
 
         const used = new Set<string>()
         for (const rec of recommendations) {

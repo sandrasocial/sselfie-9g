@@ -10,10 +10,7 @@ import { describe, expect, it } from "vitest"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 
-const concierge = readFileSync(
-  join(process.cwd(), "components/app-v3/maya-concierge.tsx"),
-  "utf8"
-)
+const concierge = readFileSync(join(process.cwd(), "components/app-v3/maya-concierge.tsx"), "utf8")
 
 describe("Maya chat selfie management", () => {
   it("uses the full reference manager modal in chat, not the retired single-grid picker", () => {
@@ -37,6 +34,19 @@ describe("Maya chat selfie management", () => {
     const mountBlock = mount.slice(0, mount.indexOf("/>"))
     expect(mountBlock).toContain("setReferenceSelfieUrl")
     expect(mountBlock).not.toContain("openWithAesthetic")
+  })
+
+  it("consumes the one-shot setup action when the reference manager closes", () => {
+    const context = readFileSync(
+      join(process.cwd(), "components/app-v3/concierge-context.tsx"),
+      "utf8"
+    )
+    const mount = concierge.slice(concierge.indexOf("<SelfieReferenceManagerModal"))
+    const mountBlock = mount.slice(0, mount.indexOf("/>"))
+
+    expect(context).toContain('Object.prototype.hasOwnProperty.call(opts, "initialSetupAction")')
+    expect(mountBlock).toContain("onClose={closeSelfieManager}")
+    expect(mountBlock).toContain("closeSelfieManager()")
   })
 })
 
@@ -72,10 +82,7 @@ describe("mid-thread format chip re-tap", () => {
 
 describe("gallery labels trust the stored format", () => {
   it("inferGalleryContentType reads real format categories before keyword sniffing", () => {
-    const galleryAssets = readFileSync(
-      join(process.cwd(), "lib/app-v3/gallery-assets.ts"),
-      "utf8"
-    )
+    const galleryAssets = readFileSync(join(process.cwd(), "lib/app-v3/gallery-assets.ts"), "utf8")
     expect(galleryAssets).toContain('case "photoshoot":')
     expect(galleryAssets).toContain('case "story-sequence":')
     const generateRoute = readFileSync(

@@ -25,6 +25,15 @@ describe("Calendar UI trust repairs", () => {
     expect(modals).toContain("selectedPost.image_url && access?.hasGalleryAccess")
   })
 
+  it("keeps the open post editor synced to the live post after generation", () => {
+    const view = read("components/feed-planner/instagram-feed-view.tsx")
+
+    expect(view).toContain(
+      "const liveSelectedPost = selectedPost ? (activePost ?? selectedPost) : null"
+    )
+    expect(view).toContain("selectedPost={liveSelectedPost}")
+  })
+
   it("gives the post editor dialog semantics and keyboard dismissal", () => {
     const modals = read("components/feed-planner/feed-modals.tsx")
 

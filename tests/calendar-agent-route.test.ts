@@ -119,6 +119,13 @@ describe("Calendar Maya agent route", () => {
         system: expect.stringContaining("Never invent facts, numbers, customer results"),
       })
     )
+    expect(mocks.generateObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        system: expect.stringContaining(
+          "Never say or imply that an imagined image scene really happened"
+        ),
+      })
+    )
   })
 
   it("grounds the Calendar request in the owned feed's saved visual direction", async () => {

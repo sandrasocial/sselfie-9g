@@ -329,13 +329,19 @@ function summarizeCreativeTask(genState: Record<string, ConceptGenState>) {
     (total, state) => total + (state.imageUrls?.length ?? (state.videoUrl ? 1 : 0)),
     0
   )
-  const newest = [...finished].reverse().find(state => state.bakedImageUrls?.some(Boolean) || state.imageUrls?.length)
+  const newest = [...finished]
+    .reverse()
+    .find(state => state.bakedImageUrls?.some(Boolean) || state.imageUrls?.length)
   const thumbnailUrl =
     newest?.bakedImageUrls?.find((url): url is string => Boolean(url)) ??
     newest?.imageUrls?.[0] ??
     null
   return {
-    status: creating ? ("creating" as const) : outputCount > 0 ? ("ready" as const) : ("planning" as const),
+    status: creating
+      ? ("creating" as const)
+      : outputCount > 0
+        ? ("ready" as const)
+        : ("planning" as const),
     outputCount,
     thumbnailUrl,
   }
@@ -1023,10 +1029,7 @@ export function MayaConcierge({
     // belong to the PREVIOUS thread. Saving them under the new session key is how "Start
     // new" used to resurrect the old conversation.
     if (sessionChatIdRef.current !== null && sessionChatIdRef.current !== chatId) return
-    const durableGenState = JSON.parse(durableGenStateSignature) as Record<
-      string,
-      ConceptGenState
-    >
+    const durableGenState = JSON.parse(durableGenStateSignature) as Record<string, ConceptGenState>
     const snapshot: ServerMayaDraftSnapshot = {
       isOpen,
       chatId,
@@ -1094,10 +1097,7 @@ export function MayaConcierge({
       suppressChatSaveForIdRef.current = null
       return
     }
-    const durableGenState = JSON.parse(durableGenStateSignature) as Record<
-      string,
-      ConceptGenState
-    >
+    const durableGenState = JSON.parse(durableGenStateSignature) as Record<string, ConceptGenState>
     const task = summarizeCreativeTask(durableGenState)
     if (messages.length === 0 && task.outputCount === 0 && task.status !== "creating") return
     const signature = JSON.stringify({
@@ -1139,7 +1139,8 @@ export function MayaConcierge({
         body: JSON.stringify({
           id: chatId,
           messages,
-          title: deriveTitle(messages) ?? session.creationIdea?.slice(0, 80) ?? session.aesthetic.name,
+          title:
+            deriveTitle(messages) ?? session.creationIdea?.slice(0, 80) ?? session.aesthetic.name,
           savedAt,
           workspace,
           taskStatus: task.status,
@@ -1578,12 +1579,19 @@ export function MayaConcierge({
     let cancelled = false
     const startedKeys: string[] = []
     const pendingEntries = Object.entries(genState).filter(
-      (entry): entry is [string, ConceptGenState & { pendingRequest: NonNullable<ConceptGenState["pendingRequest"]> }] =>
-        entry[1].status === "generating" && Boolean(entry[1].pendingRequest)
+      (
+        entry
+      ): entry is [
+        string,
+        ConceptGenState & { pendingRequest: NonNullable<ConceptGenState["pendingRequest"]> },
+      ] => entry[1].status === "generating" && Boolean(entry[1].pendingRequest)
     )
 
     for (const [key, state] of pendingEntries) {
-      if (inFlightGenerationKeysRef.current.has(key) || recoveringGenerationKeysRef.current.has(key)) {
+      if (
+        inFlightGenerationKeysRef.current.has(key) ||
+        recoveringGenerationKeysRef.current.has(key)
+      ) {
         continue
       }
       recoveringGenerationKeysRef.current.add(key)
@@ -1714,6 +1722,12 @@ export function MayaConcierge({
   const activeGenerationSource: GenerationSource = customModelAvailable
     ? generationSource
     : "selfie"
+  const closeSelfieManager = () => {
+    // initialSetupAction is a one-shot launch instruction. If it stays on the session,
+    // the parent effect immediately re-opens the child after its local open state changes.
+    updateCurrentSession(aesthetic, { initialSetupAction: null })
+    setSelfieManagerOpen(false)
+  }
   const workspaceTitle = mayaChoosesVisualWorld ? "Create with Maya" : aesthetic.name
   const openerLine = outputFormat
     ? activeGenerationSource === "trained-model" && outputFormat === "photo"
@@ -2012,10 +2026,10 @@ export function MayaConcierge({
     const expectedOutputCount = Math.max(
       1,
       targetFormat === "carousel" || targetFormat === "story-sequence"
-        ? concept.brief.graphic?.creativePlan?.outputs?.length ??
+        ? (concept.brief.graphic?.creativePlan?.outputs?.length ??
             concept.brief.graphic?.slides?.length ??
             concept.brief.graphic?.slideCount ??
-            1
+            1)
         : 1
     )
     setGenState(s => ({
@@ -4586,7 +4600,7 @@ export function MayaConcierge({
           session?.initialSetupAction === "inspiration_manager" ? "inspiration" : "face"
         }
         hideOptionalReferences={guidedFirstPhoto}
-        onClose={() => setSelfieManagerOpen(false)}
+        onClose={closeSelfieManager}
         onFaceReady={(url, source) => {
           setSelfieRestored(false) // she chose this one herself
           setReferenceSelfieUrl(url)
@@ -4614,7 +4628,7 @@ export function MayaConcierge({
         onContinue={url => {
           setSelfieRestored(false)
           setReferenceSelfieUrl(url)
-          setSelfieManagerOpen(false)
+          closeSelfieManager()
           setSetupOpen(false)
         }}
       />

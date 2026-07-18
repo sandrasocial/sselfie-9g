@@ -3,6 +3,8 @@ import {
   enforceCaptionPublishingRules,
   extractHashtagsFromCaption,
   hasBannedCaptionLanguage,
+  hasOutdatedCaptionYear,
+  hasUnverifiedFirstPersonClaim,
   shouldRegenerateCaption,
 } from "@/lib/feed-planner/caption-writer"
 
@@ -35,8 +37,8 @@ describe("feed caption quality guards", () => {
         "I almost quit three times before this started working.\n\n" +
           "For months I kept posting polished content that looked perfect but sounded nothing like me, and people scrolled past without replying. The shift happened when I shared one messy lesson from a bad launch and explained exactly what I changed the next day. That post brought better conversations than the previous ten combined.\n\n" +
           "If you're stuck, pick one real moment from this week and turn it into tomorrow's post, then tell me how your audience responds.\n\n" +
-          "#personalbrand #contentstrategy #storytelling #instagramtips #creatorbusiness",
-      ),
+          "#personalbrand #contentstrategy #storytelling #instagramtips #creatorbusiness"
+      )
     ).toBe(false)
   })
 
@@ -64,5 +66,40 @@ describe("feed caption quality guards", () => {
 
     expect(cleaned).not.toContain("—")
     expect(cleaned).toContain("One photo: one story.")
+  })
+
+  it("rejects invented first-person experience while allowing a conversational ask", () => {
+    expect(
+      hasUnverifiedFirstPersonClaim(
+        "Here's the trick I give every busy mom I talk to. My clients use it every morning.",
+        null
+      )
+    ).toBe(true)
+    expect(
+      hasUnverifiedFirstPersonClaim(
+        "Try one small step tomorrow. Tell me which one feels realistic for you.",
+        null
+      )
+    ).toBe(false)
+    expect(
+      hasUnverifiedFirstPersonClaim(
+        "I started with five quiet minutes before breakfast.",
+        "I started with five quiet minutes before breakfast."
+      )
+    ).toBe(false)
+  })
+
+  it("rejects stale years unless the member supplied that year as source material", () => {
+    expect(hasOutdatedCaptionYear("You don't need a new you for 2024.", null, 2026)).toBe(true)
+    expect(
+      hasOutdatedCaptionYear(
+        "In 2024 I started again.",
+        "In 2024 I started again after closing my shop.",
+        2026
+      )
+    ).toBe(false)
+    expect(hasOutdatedCaptionYear("Build one routine you can keep in 2026.", null, 2026)).toBe(
+      false
+    )
   })
 })

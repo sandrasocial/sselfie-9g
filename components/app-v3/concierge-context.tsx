@@ -110,6 +110,10 @@ export function ConciergeProvider({
         creationIntent: opts?.creationIntent ?? prev.creationIntent,
         shotDirector: opts?.shotDirector ?? prev.shotDirector,
         generationSource: opts?.generationSource ?? prev.generationSource,
+        initialSetupAction:
+          opts && Object.prototype.hasOwnProperty.call(opts, "initialSetupAction")
+            ? (opts.initialSetupAction ?? null)
+            : prev.initialSetupAction,
         creationIdea: opts?.creationIdea ?? prev.creationIdea,
         // Keep the same workspace identity. Normal style/shot choices must never wipe the
         // visible conversation or generated cards.

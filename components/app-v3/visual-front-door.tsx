@@ -727,7 +727,11 @@ export function VisualFrontDoor({
           ? `${referenceCount} identity ${referenceCount === 1 ? "reference" : "references"} ready for Maya.`
           : "Your saved identity will appear here when it is ready."}
       </footer>
-      <MemoryModal open={memoryOpen} onClose={() => setMemoryOpen(false)} onSaved={() => {}} />
+      <MemoryModal
+        open={memoryOpen}
+        onClose={() => setMemoryOpen(false)}
+        onSaved={() => setRecommendationReload(current => current + 1)}
+      />
     </section>
   )
 }
