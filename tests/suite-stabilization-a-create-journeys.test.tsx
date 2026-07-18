@@ -343,6 +343,27 @@ describe("Stabilization A finished-result download", () => {
     })
   })
 
+  it("keeps Maya's fullscreen result interactive and closes without activating Calendar behind it", () => {
+    const onClose = vi.fn()
+    const onOpenCalendar = vi.fn()
+
+    render(
+      <div className="pointer-events-none">
+        <button type="button" onClick={onOpenCalendar}>
+          Calendar
+        </button>
+        <ImageLightbox images={["https://example.com/photo.png"]} onClose={onClose} />
+      </div>
+    )
+
+    const fullscreen = screen.getByRole("dialog", { name: "Your finished creation" })
+    expect(fullscreen).toHaveClass("pointer-events-auto")
+
+    fireEvent.click(within(fullscreen).getByRole("button", { name: "Close" }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(onOpenCalendar).not.toHaveBeenCalled()
+  })
+
   it("does not claim success when the browser download fails", async () => {
     const onDownloaded = vi.fn()
     vi.mocked(initiateAssetDownload).mockResolvedValue(false)
