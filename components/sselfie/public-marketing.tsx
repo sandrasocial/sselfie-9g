@@ -5,6 +5,7 @@ import Link from "next/link"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { appendReferralParam, buildReferralLoginHref } from "@/lib/referrals/routing"
 import { PromptVaultCheckoutLink } from "@/components/prompt-vault/prompt-vault-checkout-link"
+import { SuiteMultiFormatWalkthrough } from "@/components/sselfie/suite-multiformat-walkthrough"
 import { SuiteProductWalkthrough } from "@/components/sselfie/suite-product-walkthrough"
 
 // ─── Vercel Blob images ───────────────────────────────────────────────────────
@@ -1299,6 +1300,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
           Maya works beside your content plan. She helps you choose a direction, create the pieces, and move them into a week you can actually see and change.
         </p>
         <SuiteProductWalkthrough />
+        <SuiteMultiFormatWalkthrough />
       </Section>
 
       {/* THREE JOBS - dark */}

@@ -54,6 +54,28 @@ describe("SUITE revenue foundation", () => {
     }
   })
 
+  it("shows one honest Maya campaign across carousel, Stories, and motion", () => {
+    const walkthrough = readFileSync("components/sselfie/suite-multiformat-walkthrough.tsx", "utf8")
+
+    expect(walkthrough).toContain("data-mockup-scene={scene}")
+    expect(walkthrough).toContain('scene="carousel"')
+    expect(walkthrough).toContain('scene="stories"')
+    expect(walkthrough).toContain('scene="motion"')
+    expect(walkthrough).toContain("This was never just about selfies.")
+    expect(walkthrough).toContain("I started with my phone in a tiny bathroom.")
+    expect(walkthrough).toContain("Can you make this image move without making it feel fake?")
+    expect(walkthrough).toContain("Your B-roll")
+    expect(walkthrough).toContain("View all slides")
+    expect(walkthrough).toContain("Download video")
+    expect(walkthrough).not.toContain("Download all")
+    expect(walkthrough).not.toContain("publish automatically")
+    expect(walkthrough).not.toContain("full video editor")
+    expect(walkthrough.match(/\/images\/ai-prompts\/clean-girl-morning-shot-1\.jpg/g)).toHaveLength(
+      1
+    )
+    expect(existsSync("public/videos/suite-visibility-broll.mp4")).toBe(true)
+  })
+
   it("gives the membership page its own search and sharing contract", () => {
     const page = readFileSync("app/join/studio/page.tsx", "utf8")
 
