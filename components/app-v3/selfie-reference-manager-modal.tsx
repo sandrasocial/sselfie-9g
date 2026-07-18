@@ -101,6 +101,13 @@ export function SelfieReferenceManagerModal({
     const previouslyFocused =
       document.activeElement instanceof HTMLElement ? document.activeElement : null
     const frame = window.requestAnimationFrame(() => closeButtonRef.current?.focus())
+    const closeButton = closeButtonRef.current
+    const handleClose = (event: MouseEvent) => {
+      // This modal sits above Maya's own dialog. Handle the control on the element itself so
+      // delegated React clicks cannot be swallowed by the nested modal/focus boundary.
+      event.stopPropagation()
+      onCloseRef.current()
+    }
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onCloseRef.current()
@@ -123,9 +130,11 @@ export function SelfieReferenceManagerModal({
         first.focus()
       }
     }
+    closeButton?.addEventListener("click", handleClose)
     window.addEventListener("keydown", onKeyDown)
     return () => {
       window.cancelAnimationFrame(frame)
+      closeButton?.removeEventListener("click", handleClose)
       window.removeEventListener("keydown", onKeyDown)
       if (previouslyFocused?.isConnected) previouslyFocused.focus()
     }

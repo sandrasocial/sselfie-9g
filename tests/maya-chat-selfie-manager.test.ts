@@ -66,6 +66,16 @@ describe("Maya chat selfie management", () => {
 
     expect(modal).toContain("onClick={() => onCloseRef.current()}")
   })
+
+  it("backs the visible close control with a native click listener", () => {
+    const modal = readFileSync(
+      join(process.cwd(), "components/app-v3/selfie-reference-manager-modal.tsx"),
+      "utf8"
+    )
+
+    expect(modal).toContain('addEventListener("click", handleClose)')
+    expect(modal).toContain('removeEventListener("click", handleClose)')
+  })
 })
 
 describe("mid-thread format chip re-tap", () => {
