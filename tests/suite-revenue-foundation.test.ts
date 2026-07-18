@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
 describe("SUITE revenue foundation", () => {
@@ -26,17 +26,32 @@ describe("SUITE revenue foundation", () => {
     expect(homepage).not.toContain("xl:grid-cols-4")
   })
 
-  it("uses the newest Vault direction with face-safe grid crops", () => {
+  it("uses the approved personal-brand grid and the live Maya avatar", () => {
     const walkthrough = readFileSync(
       "components/sselfie/suite-product-walkthrough.tsx",
       "utf8",
     )
 
-    expect(walkthrough).toContain("mysterious-vogue-shot-3.png")
-    expect(walkthrough).toContain("noir-femme-shot-9.png")
-    expect(walkthrough).toContain("objectPosition")
-    expect(walkthrough).not.toContain("clean-girl-morning-shot")
-    expect(walkthrough).not.toContain("quiet-luxury-london-shot")
+    expect(walkthrough.match(/\/images\/suite-personal-brand-grid\//g)).toHaveLength(9)
+    expect(walkthrough).toContain("post-01-founder-black.jpg")
+    expect(walkthrough).toContain("post-09-chair-gown.jpg")
+    expect(walkthrough).toContain("/images/ai-prompts/clean-girl-morning-shot-1.jpg")
+    expect(walkthrough).not.toContain("mysterious-vogue-shot")
+    expect(walkthrough).not.toContain("noir-femme-shot")
+
+    for (const filename of [
+      "post-01-founder-black.jpg",
+      "post-02-black-jumpsuit.jpg",
+      "post-03-white-flowing.jpg",
+      "post-04-creative-director.jpg",
+      "post-05-black-halter.jpg",
+      "post-06-phone-flatlay.jpg",
+      "post-07-white-wrap.jpg",
+      "post-08-laptop-grid.jpg",
+      "post-09-chair-gown.jpg",
+    ]) {
+      expect(existsSync(`public/images/suite-personal-brand-grid/${filename}`)).toBe(true)
+    }
   })
 
   it("gives the membership page its own search and sharing contract", () => {
@@ -80,6 +95,7 @@ describe("SUITE revenue foundation", () => {
     expect(admin).toContain("Checkout sessions")
     expect(admin).toContain("Payment forms")
     expect(admin).toContain("New paid members")
-    expect(admin).not.toContain("The fixed 48-hour event")
+    expect(admin).toContain("The fixed 48-hour event")
+    expect(admin).toContain("One Selfie · July 13–15")
   })
 })

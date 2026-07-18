@@ -104,6 +104,7 @@ export default async function AdminPage({
     new Date(igConnection.token_expires_at).getTime() - Date.now() < 14 * 24 * 60 * 60 * 1000
   )
   const scorecard = report.scorecard
+  const oneSelfieCampaign = report.oneSelfieCampaign
   const applicationTotal = scorecard?.workWithMe.receivedTotal || 0
   const applications30d = scorecard?.workWithMe.applications30d || 0
   const contentIsFresh = freshWithin(report.content.briefGeneratedAt, 8)
@@ -343,6 +344,129 @@ export default async function AdminPage({
                 {report.trials.active} active trials
               </p>
             </div>
+            {oneSelfieCampaign ? (
+              <div className="bg-white p-5 sm:col-span-2 sm:p-6">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-stone-500">
+                      One Selfie · July 13–15
+                    </p>
+                    <p className="mt-2 font-serif text-2xl font-light">The fixed 48-hour event</p>
+                  </div>
+                  <p className="text-xs uppercase tracking-[0.14em] text-stone-500">
+                    {oneSelfieCampaign.phase}
+                  </p>
+                </div>
+
+                <div className="mt-5 grid gap-px border border-stone-200 bg-stone-200 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="bg-stone-50 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Page views
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {oneSelfieCampaign.traffic.views}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500">
+                      {oneSelfieCampaign.traffic.ctaClicks} primary CTA clicks
+                    </p>
+                  </div>
+                  <div className="bg-stone-50 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Checkout starts
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {oneSelfieCampaign.checkout.starts}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500">
+                      {oneSelfieCampaign.checkout.pageToCheckoutPct}% of page views
+                    </p>
+                  </div>
+                  <div className="bg-stone-50 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Paid buyers
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {oneSelfieCampaign.checkout.paidBuyers}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500">
+                      {oneSelfieCampaign.checkout.checkoutToPaidPct}% of checkout starts
+                    </p>
+                  </div>
+                  <div className="bg-stone-50 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Bundle revenue
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {money(oneSelfieCampaign.checkout.grossUsd)}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500">Stripe · USD gross</p>
+                  </div>
+                  <div className="bg-white p-4">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Buyer home
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {oneSelfieCampaign.activation.buyerHomeOpened}
+                    </p>
+                  </div>
+                  <div className="bg-white p-4">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Maya opened
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {oneSelfieCampaign.activation.mayaOpened}
+                    </p>
+                  </div>
+                  <div className="bg-white p-4">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      First image
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {oneSelfieCampaign.activation.generated}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500">buyers who generated</p>
+                  </div>
+                  <div className="bg-white p-4">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      First download
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {oneSelfieCampaign.activation.downloaded}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500">buyers who downloaded</p>
+                  </div>
+                </div>
+
+                <div className="mt-5 border-t border-stone-200 pt-4">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                    Page views by source
+                  </p>
+                  {oneSelfieCampaign.traffic.bySource.length > 0 ? (
+                    <div className="mt-3 grid gap-2 md:grid-cols-2">
+                      {oneSelfieCampaign.traffic.bySource.slice(0, 6).map(row => (
+                        <div
+                          key={`${row.source}-${row.medium}`}
+                          className="flex items-center justify-between gap-4 border-t border-stone-200 pt-2 text-sm"
+                        >
+                          <span>
+                            {row.source} · {row.medium}
+                          </span>
+                          <span className="text-stone-500">
+                            {row.views} views · {row.ctaClicks} clicks
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-stone-500">No event traffic recorded yet.</p>
+                  )}
+                  <p className="mt-4 text-xs leading-5 text-stone-500">
+                    Traffic and activation are behavior signals. Paid buyers and revenue come only
+                    from successful live Stripe payment rows tied to this event checkout window.
+                  </p>
+                </div>
+              </div>
+            ) : null}
             {scorecard ? (
               <div className="bg-white p-5 sm:col-span-2 sm:p-6">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">

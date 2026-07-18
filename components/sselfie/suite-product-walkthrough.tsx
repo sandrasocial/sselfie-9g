@@ -1,53 +1,41 @@
+import Image from "next/image"
+
 const GRID_ITEMS = [
   {
-    type: "image" as const,
-    src: "/images/ai-prompts/mysterious-vogue-shot-3.png",
-    alt: "Mysterious Vogue editorial portrait",
-    objectPosition: "50% 30%",
+    src: "/images/suite-personal-brand-grid/post-01-founder-black.jpg",
+    alt: "Sandra in a black coat holding coffee",
   },
   {
-    type: "image" as const,
-    src: "/images/ai-prompts/noir-femme-shot-5.png",
-    alt: "Noir Femme editorial street scene",
-    objectPosition: "50% 52%",
+    src: "/images/suite-personal-brand-grid/post-02-black-jumpsuit.jpg",
+    alt: "Sandra in a black jumpsuit in a minimal studio",
   },
   {
-    type: "image" as const,
-    src: "/images/ai-prompts/mysterious-vogue-shot-7.png",
-    alt: "Mysterious Vogue shoulder portrait",
-    objectPosition: "50% 28%",
+    src: "/images/suite-personal-brand-grid/post-03-white-flowing.jpg",
+    alt: "Sandra in a flowing ivory wrap dress",
   },
   {
-    type: "text" as const,
-    text: "Clarity makes creating easier.",
+    src: "/images/suite-personal-brand-grid/post-04-creative-director.jpg",
+    alt: "Sandra arranging personal-brand photographs at a creative direction table",
   },
   {
-    type: "image" as const,
-    src: "/images/ai-prompts/noir-femme-shot-3.png",
-    alt: "Noir Femme portrait on a city street",
-    objectPosition: "50% 20%",
+    src: "/images/suite-personal-brand-grid/post-05-black-halter.jpg",
+    alt: "Sandra wearing a black halter dress against an ivory wall",
   },
   {
-    type: "image" as const,
-    src: "/images/ai-prompts/mysterious-vogue-shot-5.png",
-    alt: "Mysterious Vogue close portrait",
-    objectPosition: "50% 27%",
+    src: "/images/suite-personal-brand-grid/post-06-phone-flatlay.jpg",
+    alt: "Phone and earbuds beside a monochrome personal-brand photo grid",
   },
   {
-    type: "image" as const,
-    src: "/images/ai-prompts/noir-femme-shot-1.png",
-    alt: "Noir Femme full-length editorial portrait",
-    objectPosition: "50% 18%",
+    src: "/images/suite-personal-brand-grid/post-07-white-wrap.jpg",
+    alt: "Close portrait of Sandra in an ivory wrap blouse",
   },
   {
-    type: "status" as const,
-    text: "Planning post 8…",
+    src: "/images/suite-personal-brand-grid/post-08-laptop-grid.jpg",
+    alt: "Laptop displaying Sandra's personal-brand content grid",
   },
   {
-    type: "image" as const,
-    src: "/images/ai-prompts/noir-femme-shot-9.png",
-    alt: "Noir Femme close editorial portrait",
-    objectPosition: "50% 22%",
+    src: "/images/suite-personal-brand-grid/post-09-chair-gown.jpg",
+    alt: "Sandra seated on a white sculptural chair in a black dress",
   },
 ]
 
@@ -56,28 +44,16 @@ function GridPreview({ compact = false }: { compact?: boolean }) {
     <div className="grid grid-cols-3 gap-[2px] bg-stone-200" aria-label="Example nine-post content grid">
       {GRID_ITEMS.map((item, index) => (
         <div
-          key={`${item.type}-${index}`}
+          key={item.src}
           className={`relative aspect-square overflow-hidden bg-stone-100 ${index === 4 ? "ring-2 ring-inset ring-stone-500" : ""}`}
         >
-          {item.type === "image" ? (
-            <Image
-              src={item.src}
-              alt={item.alt}
-              fill
-              sizes={compact ? "90px" : "(min-width: 1024px) 220px, 30vw"}
-              className="object-cover"
-              style={{ objectPosition: item.objectPosition }}
-            />
-          ) : item.type === "text" ? (
-            <div className="flex h-full items-center justify-center px-2 text-center font-serif text-[10px] leading-tight text-stone-800 sm:px-4 sm:text-sm lg:text-lg">
-              {item.text}
-            </div>
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-2 px-2 text-center text-[7px] text-stone-500 sm:text-[10px]">
-              <span className="h-5 w-5 animate-pulse rounded-full border border-stone-300 border-t-stone-700" />
-              {!compact ? item.text : "Planning…"}
-            </div>
-          )}
+          <Image
+            src={item.src}
+            alt={item.alt}
+            fill
+            sizes={compact ? "90px" : "(min-width: 1024px) 220px, 30vw"}
+            className="object-cover"
+          />
           {index === 4 ? (
             <span className="absolute left-1.5 top-1.5 flex h-5 min-w-5 items-center justify-center rounded bg-white/90 px-1 text-[9px] text-stone-700 shadow-sm">
               5
@@ -93,11 +69,11 @@ function MayaHeader({ small = false }: { small?: boolean }) {
   return (
     <div className="flex items-center gap-3">
       <Image
-        src="/images/maya-68de145ae1rme0cs07ja9mcp90-0-1756673402614-20-281-29.png"
+        src="/images/ai-prompts/clean-girl-morning-shot-1.jpg"
         alt="Maya"
         width={40}
         height={40}
-        className={`${small ? "h-8 w-8" : "h-10 w-10"} rounded-full object-cover`}
+        className={`${small ? "h-8 w-8" : "h-10 w-10"} rounded-full object-cover object-[50%_28%]`}
       />
       <div className="min-w-0">
         <p className={`${small ? "text-sm" : "font-serif text-xl"} leading-none text-stone-950`}>Maya</p>
@@ -202,4 +178,3 @@ export function SuiteProductWalkthrough() {
     </figure>
   )
 }
-import Image from "next/image"
