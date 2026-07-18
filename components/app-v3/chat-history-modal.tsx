@@ -98,7 +98,7 @@ export function ChatHistoryModal({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:p-6">
+    <div className="pointer-events-auto fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:p-6">
       <div
         ref={dialogRef}
         role="dialog"

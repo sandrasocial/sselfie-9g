@@ -217,6 +217,20 @@ describe("Stabilization A Creative Tasks", () => {
     expect(screen.getByRole("dialog", { name: /SSELFIE/i })).toBeInTheDocument()
   })
 
+  it("keeps the Creative Tasks layer clickable inside Maya's pointer-safe shell", async () => {
+    render(
+      <ChatHistoryModal
+        open
+        currentChatId="current-task"
+        onClose={vi.fn()}
+        onSelect={vi.fn().mockResolvedValue(undefined)}
+      />
+    )
+
+    const history = await screen.findByRole("dialog", { name: /Creative tasks/i })
+    expect(history.parentElement).toHaveClass("pointer-events-auto")
+  })
+
   it("requests a close after a saved task restores successfully", async () => {
     const onClose = vi.fn()
     const onSelect = vi.fn().mockResolvedValue(undefined)
