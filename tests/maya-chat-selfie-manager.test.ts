@@ -67,14 +67,13 @@ describe("Maya chat selfie management", () => {
     expect(modal).toContain("onClick={() => onCloseRef.current()}")
   })
 
-  it("backs the visible close control with a native click listener", () => {
+  it("opts the nested manager back into pointer events above Maya's inert root", () => {
     const modal = readFileSync(
       join(process.cwd(), "components/app-v3/selfie-reference-manager-modal.tsx"),
       "utf8"
     )
 
-    expect(modal).toContain('addEventListener("click", handleClose)')
-    expect(modal).toContain('removeEventListener("click", handleClose)')
+    expect(modal).toContain('className="pointer-events-auto fixed inset-0')
   })
 })
 

@@ -101,13 +101,6 @@ export function SelfieReferenceManagerModal({
     const previouslyFocused =
       document.activeElement instanceof HTMLElement ? document.activeElement : null
     const frame = window.requestAnimationFrame(() => closeButtonRef.current?.focus())
-    const closeButton = closeButtonRef.current
-    const handleClose = (event: MouseEvent) => {
-      // This modal sits above Maya's own dialog. Handle the control on the element itself so
-      // delegated React clicks cannot be swallowed by the nested modal/focus boundary.
-      event.stopPropagation()
-      onCloseRef.current()
-    }
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onCloseRef.current()
@@ -130,11 +123,9 @@ export function SelfieReferenceManagerModal({
         first.focus()
       }
     }
-    closeButton?.addEventListener("click", handleClose)
     window.addEventListener("keydown", onKeyDown)
     return () => {
       window.cancelAnimationFrame(frame)
-      closeButton?.removeEventListener("click", handleClose)
       window.removeEventListener("keydown", onKeyDown)
       if (previouslyFocused?.isConnected) previouslyFocused.focus()
     }
@@ -239,7 +230,7 @@ export function SelfieReferenceManagerModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="selfie-manager-title"
-      className="fixed inset-0 z-[85] bg-[color:var(--ss-night)]/55 px-3 py-4 backdrop-blur-sm sm:px-6 sm:py-8"
+      className="pointer-events-auto fixed inset-0 z-[85] bg-[color:var(--ss-night)]/55 px-3 py-4 backdrop-blur-sm sm:px-6 sm:py-8"
     >
       <div className="mx-auto flex h-full max-w-5xl flex-col overflow-hidden rounded-[10px] bg-[color:var(--ss-seasalt)] shadow-[0_30px_90px_rgba(13,14,16,0.24)]">
         <div className="flex items-start justify-between gap-4 border-b border-[color:var(--ss-silver)]/55 px-5 py-5 sm:px-7">
