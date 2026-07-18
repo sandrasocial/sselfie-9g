@@ -1219,8 +1219,13 @@ export function MayaConcierge({
     ) {
       setSetupOpen(true)
       setSelfieManagerOpen(true)
+      // Retire the launch instruction immediately. Waiting for the child Close event left a
+      // race where the parent session effect could reopen the manager before the close painted.
+      updateCurrentSession(session.aesthetic, {
+        initialSetupAction: null,
+      })
     }
-  }, [hasTrainedModel, session])
+  }, [hasTrainedModel, session, updateCurrentSession])
 
   // Mirror of the active selfie for async callbacks (avoids clobbering a fresh upload).
   useEffect(() => {

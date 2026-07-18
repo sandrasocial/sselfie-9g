@@ -48,6 +48,15 @@ describe("Maya chat selfie management", () => {
     expect(mountBlock).toContain("onClose={closeSelfieManager}")
     expect(mountBlock).toContain("closeSelfieManager()")
   })
+
+  it("retires the one-shot setup action as soon as the manager opens", () => {
+    const effectStart = concierge.indexOf("// When a new look (or a Content idea) opens Maya")
+    const effectEnd = concierge.indexOf("// Mirror of the active selfie", effectStart)
+    const setupEffect = concierge.slice(effectStart, effectEnd)
+
+    expect(setupEffect).toContain("updateCurrentSession(session.aesthetic, {")
+    expect(setupEffect).toContain("initialSetupAction: null")
+  })
 })
 
 describe("mid-thread format chip re-tap", () => {

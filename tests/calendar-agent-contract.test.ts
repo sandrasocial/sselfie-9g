@@ -36,5 +36,7 @@ describe("Calendar agent contract", () => {
     expect(jsonSchema).not.toContain("exclusiveMinimum")
     expect(jsonSchema).not.toContain('"minimum"')
     expect(jsonSchema).not.toContain('"maximum"')
+    expect(jsonSchema).not.toContain('"minLength"')
+    expect(jsonSchema).not.toContain('"maxLength"')
   })
 })

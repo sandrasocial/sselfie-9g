@@ -1,16 +1,23 @@
 import { z } from "zod"
 
-const proposalBase = z.object({
-  label: z.string().trim().min(1).max(100),
-})
+function createProposalSchema(
+  postId: z.ZodNumber,
+  targetPosition: z.ZodNumber,
+  mode: "bounded" | "generation" = "bounded"
+) {
+  const label =
+    mode === "bounded" ? z.string().trim().min(1).max(100) : z.string().trim()
+  const caption =
+    mode === "bounded" ? z.string().trim().min(1).max(2200) : z.string().trim()
+  const bio = mode === "bounded" ? z.string().trim().min(1).max(150) : z.string().trim()
+  const proposalBase = z.object({ label })
 
-function createProposalSchema(postId: z.ZodNumber, targetPosition: z.ZodNumber) {
   return z.discriminatedUnion("kind", [
     proposalBase.extend({ kind: z.literal("create_plan") }),
     proposalBase.extend({
       kind: z.literal("update_caption"),
       postId,
-      caption: z.string().trim().min(1).max(2200),
+      caption,
     }),
     proposalBase.extend({
       kind: z.literal("move_post"),
@@ -19,7 +26,7 @@ function createProposalSchema(postId: z.ZodNumber, targetPosition: z.ZodNumber) 
     }),
     proposalBase.extend({
       kind: z.literal("update_bio"),
-      bio: z.string().trim().min(1).max(150),
+      bio,
     }),
     proposalBase.extend({
       kind: z.literal("generate_image"),
@@ -44,11 +51,11 @@ export const calendarAgentResultSchema = z.object({
   proposal: calendarAgentProposalSchema.nullable(),
 })
 
-// Anthropic structured outputs reject numeric range keywords in the JSON schema.
+// Anthropic structured outputs reject numeric and string range keywords in the JSON schema.
 // The generated object is parsed through the stricter result schema before it is returned.
 export const calendarAgentGenerationSchema = z.object({
-  message: z.string().trim().min(1).max(700),
-  proposal: createProposalSchema(z.number().int(), z.number().int()).nullable(),
+  message: z.string().trim(),
+  proposal: createProposalSchema(z.number().int(), z.number().int(), "generation").nullable(),
 })
 
 const calendarPostSchema = z.object({
