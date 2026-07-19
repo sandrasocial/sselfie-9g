@@ -11,12 +11,14 @@ describe("SSELFIE Company Kernel", () => {
     expect(existsSync(KERNEL)).toBe(true)
 
     const kernel = read(KERNEL)
-    expect(kernel).toContain("Media engine")
+    expect(kernel).toContain("Media capability")
     expect(kernel).toContain("Software engine")
-    expect(kernel).toContain("IP engine")
+    expect(kernel).toContain("IP capability")
     expect(kernel).toContain("Commerce base")
-    expect(kernel).toContain("Sandra is the only public voice")
+    expect(kernel).toContain("Sandra is the public voice")
     expect(kernel).toContain("No income guarantees")
+    expect(kernel).toContain("New idea | EXPLORATION UNTIL DECIDED")
+    expect(kernel).toContain("A hypothesis is not forbidden simply because it is unproven")
 
     for (const path of [
       "CLAUDE.md",
@@ -54,8 +56,8 @@ describe("SSELFIE Company Kernel", () => {
     ]) {
       const content = read(path)
       expect(content, path).toContain(KERNEL)
-      expect(content, path).toContain("NEVER SEND")
-      expect(content, path).toContain("private high-value")
+      expect(content, path).toMatch(/Never sends|never sends|Never post|never post/)
+      expect(content, path).toMatch(/Private and unvalidated|private and unvalidated|private.*offer/i)
       expect(content, path).not.toContain("reply WORK")
     }
   })
@@ -63,7 +65,7 @@ describe("SSELFIE Company Kernel", () => {
   it("classifies the held campaign as internal capability, not the current public offer", () => {
     const kernel = read(KERNEL)
     expect(kernel).toContain("Your Next Campaign")
-    expect(kernel).toContain("dormant internal delivery capability")
+    expect(kernel).toContain("Your Next Campaign | DORMANT CAPABILITY")
 
     const feature = read("lib/campaign-outcome/feature.ts")
     expect(feature).toContain('CAMPAIGN_OUTCOME_DISABLED === "false"')

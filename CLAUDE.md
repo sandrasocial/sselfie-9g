@@ -1,5 +1,5 @@
 # SSELFIE Operational Memory
-*Last updated: 2026-07-16 — Read this at the start of every session*
+*Last updated: 2026-07-19 — Read this at the start of every session*
 
 ## Controlling company authority
 
@@ -7,6 +7,10 @@ Read **`docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`** immediately after 
 Constitution. It controls the revenue portfolio, offer status, channel separation, AI-team roles,
 and decision rules. Older growth-machine, Work With Me, campaign, and higher-self routing documents
 are historical unless the Company Kernel explicitly keeps a capability active.
+
+Then read **`docs/business/SANDRA_AI_TEAM_BRAIN_PACK_2026-07-16.md`**. It gives every AI seat
+permission to reason, challenge, recommend, and finish safe work without turning specialist rules
+into refusal scripts.
 
 ---
 
@@ -17,7 +21,7 @@ and IP company. Live at **sselfie.ai**.
 **For current MRR, paying counts, audience metrics, and email counts: pull the live source and attach
 the verification date. Do not turn a dated number in this file into current truth.**
 
-## Current Brand / Voice / Audience Source Of Truth (LOCKED 2026-07-13)
+## Current Brand / Voice / Audience Source Of Truth (UPDATED 2026-07-19)
 
 Before writing or editing any outward-facing copy, prompts, Studio.com blueprint text, landing-page copy, emails, DMs, product descriptions, Maya/persona language, or content-generation rules, read:
 
@@ -35,10 +39,11 @@ Then read the operational writing contract:
 
 **`docs/brand/SANDRA_VOICE_OS_2026-07-16.md`**
 
-For anything written in Sandra's name, invoke `.agents/skills/sandra-writing-style/`. It selects the
-channel contract, separates evidence from drafting, runs a voice-critic rewrite, and blocks the copy
-from Gmail or an outward-facing artifact until it scores at least 9/10 with no zero. ChatGPT memory
-may support the work, but memory never replaces this explicit contract or current thread evidence.
+For anything written in Sandra's name, invoke `.agents/skills/sandra-writing-style/`. Use a process
+that fits the risk: normal replies and internal notes stay natural; meaningful outward copy gets one
+truth pass and one voice pass; sensitive commercial copy is verified carefully. Do not show Sandra
+a numeric voice score unless she asked for an audit. Memory may support the work, but it never
+replaces current facts or this written contract.
 
 For daily CEO focus, money moves, offer-temperature routing, and the admin Command Center, read:
 
@@ -52,15 +57,20 @@ Core lock:
 - Destination: freedom. Bridge: visibility. Starting tool: selfies. Accelerator: AI.
 - The honest business path is photo -> visibility -> story -> trust -> offer -> income -> choices -> freedom.
 - Freedom means helping women build skills and choices. Never promise income or use family pressure to manipulate a sale.
-- SSELFIE is Sandra's category, not an AI photo tool: helping women stop hiding, become recognizable, know what to say, and build something of their own from their phone, their story, and AI.
-- This was never just about selfies. It was about becoming visible enough to build something of your own.
+- SSELFIE's deeper territory is technology-enabled reinvention for women: helping a capable,
+  overwhelmed woman who is starting again see what is possible, create something useful, and build
+  something of her own with the phone, story, creativity, and technology she already has.
+- The clear doorway is: Start with one selfie. See yourself differently. Create something useful.
+  Take the next step.
 - AI is not the hero. The woman is.
 - The selfie is where we start. Visibility is where it leads.
 - Public content keeps teaching AI selfies, prompts, visibility, story, and freedom. Private media,
   institutional, and founding-partner offers use buyer-specific channels.
-- Daily operating rule: protect customers and money, move the active private cash pipeline, then
-  create public expertise content. Do not invent another product because sales are quiet.
-- Sandra writes like a real woman texting another woman: simple, warm, direct, human.
+- Daily operating rule: protect customers and money, finish the current useful work, and keep Sandra
+  present in public content. A new idea may be explored when Sandra asks or a real unmet job appears;
+  it may not silently become a build or launch because sales are quiet.
+- Sandra writes like a woman building her way forward in real time: honest, warm, practical,
+  hopeful, and beside the reader rather than above her.
 - Do not drift into generic AI/photo-tool, corporate personal-brand, or motivational-coach language.
 - Do not use old Studio marketing drafts as current copy.
 
@@ -84,17 +94,18 @@ Core lock:
 | Role | Tool | Responsibilities |
 |------|------|-----------------|
 | **Sandra** | Founder | CEO, public voice, relationships, judgment, video, final outward approval |
-| **ChatGPT** | Chief of staff | Routes work, reconciles decisions, exposes blockers, maintains the operating queue |
-| **Claude** | Strategy + production desk | Challenges decisions, researches, drafts, and prepares work using the Company Kernel |
-| **Codex** | Builder + revenue operations | Implements, tests, validates, documents, and finishes authorized system work |
-| **Maya** | Customer delivery intelligence | Delivers the in-product creation experience within product and privacy rules |
+| **ChatGPT** | Chief of staff | Keeps the whole picture, reconciles decisions, and exposes the real blocker |
+| **Claude** | Strategy + production desk | Reads deeply, challenges, researches, recommends, drafts, and prepares work |
+| **Codex** | Builder + revenue operations | Investigates, implements, tests, validates, documents, and finishes authorized work |
+| **Maya** | Customer creative director | Makes useful creation feel personal, decisive, and safe |
 
 **No OpenClaw. No North. No Stella. Those systems are retired.** The last repo notifier and
 Telegram shell are deleted, and the local zero-job OpenClaw gateway launch agent is disabled.
 
-No model is the company brain. The Company Kernel is the shared authority. Agent roles stay stable
-when model versions change. Sandra should receive only decisions and actions that genuinely require
-her judgment, relationship, public voice, or approval.
+No model is the company brain. The Company Kernel is the shared business authority and the AI Team
+Operating Contract defines collaboration. Roles show accountability, not silos. Sandra should
+receive only decisions and actions that genuinely require her judgment, relationship, public voice,
+or approval.
 
 **App codebase path:** Sandra's selected folder in Cowork (mounted). Verify path with `pwd` when in doubt.
 
@@ -105,9 +116,10 @@ her judgment, relationship, public voice, or approval.
 1. Read `AS-BUILT.md` (repo facts, verified remotes)
 2. Read this file (`CLAUDE.md`) for business context
 3. Read `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`
-4. Read `docs/CODEX_CONTEXT.md` for tech stack + file map
-5. Check `tasks/` for active specs
-6. Before creating, enabling, or debugging ANY automation: read `docs/AUTOMATION_ROSTER.md` —
+4. Read `docs/business/SANDRA_AI_TEAM_BRAIN_PACK_2026-07-16.md`
+5. Read `docs/CODEX_CONTEXT.md` for tech stack + file map
+6. Check `tasks/` for an applicable spec; Sandra's current request takes priority over unrelated files
+7. Before creating, enabling, or debugging ANY automation: read `docs/AUTOMATION_ROSTER.md` —
    the single map of every automation across all layers (repo/Vercel, Claude Cowork, Codex app,
    ManyChat/Resend/Stripe) plus the lane rules for where new automations may live. Update it the
    same day anything changes. Core lane rule: customer/money automations live in the repo ONLY;
@@ -117,19 +129,23 @@ her judgment, relationship, public voice, or approval.
 
 ## Current Priorities (July 2026)
 
-### Current company portfolio (locked 2026-07-16)
+### Current company portfolio (updated 2026-07-19)
 
 The controlling contract is `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`.
 
-- **Media engine:** EUR 3,000 Tutorial Partnership pilots; current private cash lane.
-- **Software engine:** EUR 97/month SUITE plus a bounded, invitation-only USD 497/month Visibility
-  Partner founding hypothesis.
-- **IP engine:** paid keynote, AI Visibility Lab, and scoped annual education/license proposals.
+- **Media capability:** Tutorial Partnership is an unproven background pipeline. Existing
+  conversations may be monitored, but the lane has zero cleared paid SSELFIE proof as of 2026-07-16
+  and is not the default answer to a general revenue question.
+- **Software engine:** EUR 97/month SUITE is active. Visibility Partner is an unvalidated hypothesis,
+  not an approved automatic replacement for another weak lane.
+- **IP capability:** keynote, AI Visibility Lab, and licensing remain opportunities to explore from a
+  named buyer job, not active public offers.
 - **Commerce base:** Prompt Vault, Starter Kit, presets, existing paid assets, and carefully chosen
   affiliates.
 - Public content remains AI-selfie/tutorial/visibility-led. High-value offers are not rotated into
   unattended public content.
-- The ambitious immediate target is EUR 15,000 cleared by 2026-07-25. It is a goal, not a promise.
+- New ideas may be researched and recommended. They do not become live products, prices, campaigns,
+  or promises until that state is explicitly decided.
 
 ### Historical Growth Machine (SUPERSEDED 2026-07-16)
 
@@ -403,11 +419,11 @@ DB↔Resend sync state (2026-06-11): DB union of email tables = 6,795 distinct; 
 | Starter Kit | $37 | ⚠️ Secondary/support only | Not the primary prompt-funnel upgrade. Keep fulfillment for buyers. |
 | Masterclass | $147 | ✅ Active, 14 published lessons | Lessons 15-17 (Offer Map, Content-To-Cash, 30-Day Sprint) to be built as interactive lessons — drafts pending Sandra approval. Bundles Brand Strategy tool. |
 | SUITE membership | €97/mo | ✅ Active | Cancel anytime. No landing page yet (BRIDGE-01 scope). **Includes ALL one-time products (D3, 2026-06-11)**: flags in `academy_products` DB table (DB wins) + `lib/academy-entitlements.ts` defaults. |
-| Visibility To Paid Sprint | €2,000 or 2 × €1,100 | ✅ Active application offer; decision locked 2026-07-11 | Private two-week build/prep plus four-week sprint. Uses the existing Work With Me application, personal review, fit call, and attended payment-link path. No passive checkout. |
+| Visibility To Paid Sprint | Historical €2,000 or 2 × €1,100 | ⚠️ Legacy, attended only | Preserve existing commitments and access. Do not route public or unattended content here; any renewed offer needs a current buyer decision. |
 | Brand Strategy Pack | $19 | ❌ Retired standalone (2026-06-11 verified) | `/brand-strategy` + its checkout redirect to Masterclass; tool bundled into Masterclass. Selfie Guide order-bump path still fulfills. |
 | Feed Planner | See blueprint | ✅ Active | `paid_blueprint` type |
 | Mini-products (4) | DEACTIVATED | ❌ | Prices set `active=false`. Become free workbooks in Academy |
-| Website Agent V1 | €27/mo | 🔒 Planned | Standalone, not bundled — on hold |
+| Website Agent V1 | Historical €27/mo hypothesis | 🔒 Held exploration | Not an approved current product, price, or build. Reassess only from a real buyer job. |
 
 **Free entry points are limited to AI Prompts and the Selfie Guide.** `/freebie/*` legacy routes are not current funnel authority; verify their current redirects in code before making a claim.
 

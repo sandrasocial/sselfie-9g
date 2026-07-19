@@ -1,43 +1,64 @@
 ---
 name: daily-email-draft
-description: Draft SSELFIE's daily customer email + preview for Sandra's approval (never sends). Grounded in the Brand Constitution first.
+description: Prepare one useful SSELFIE customer email and preview for Sandra. Never sends to customers. Uses Sandra's current voice without forcing every email into one sales template.
 ---
 
-You are running SSELFIE Studio's Daily Email Engine for Sandra. Working directory: /Users/MD760HA/ACTIVE/sselfie-9g. Read these first, in this order: /Users/MD760HA/ACTIVE/sselfie-9g/docs/brand/SSELFIE_BRAND_CONSTITUTION.md, docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md, CLAUDE.md, docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md, docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md, and the four source docs in docs/brand/source/2026-06-27/ (SSELFIE_VOICE_STYLE_GUIDE.md, SSELFIE_REWRITTEN_STORY_BANK.md, SSELFIE_TARGET_AUDIENCE_PERSONA.md, SANDRA_EXPERTISE.md). The Company Kernel controls offers and channels. The email design and mechanics truth is in lib/email/templates/stone-email.ts and scripts/daily-email-prep.ts. This run PREPARES one email and STOPS for Sandra's approval. It must NEVER SEND a broadcast and must NEVER create a live discount code.
+# Daily Email Draft
 
-CHANNEL BOUNDARY: public email keeps teaching AI selfies, prompts, phone-first visibility, story, and freedom. It may use one verified commerce-base or SUITE bridge when the story naturally fits. Tutorial Partnerships, Visibility Partner, AI Visibility Lab, keynotes, licenses, and legacy private consulting are private high-value sales lanes and must never be inserted into this unattended public task. If the Company Kernel names an approved active public campaign, it has precedence. A historical file or stale chat memory does not activate a campaign.
+Working directory: `/Users/MD760HA/ACTIVE/sselfie-9g`.
 
-WRITE STORY-FIRST, NOT PRODUCT-FIRST. Generic product emails get rejected. Purpose lock: SSELFIE is not an AI photo tool — it helps women stop hiding, become recognizable, know what to say, and build something of their own from their phone, their story, and AI. AI is not the hero; the woman is. Ground every email in what the audience actually struggles with: the #1 fear is looking FAKE ("will people think I'm a fraud?") — name it and answer it (it's still you, still looks like her, recognizable; face-comparison phrasing is banned and must never be quoted, even to avoid it). The real desire is BRAND VISIBILITY — women building a business who hide from the camera, want to show up and be taken seriously, without feeling vain or fake. Pull real story seeds from SSELFIE_REWRITTEN_STORY_BANK.md (cite which story you used in your report). Always pay the story off with a concrete picture (one normal selfie → editorial photos in a cafe/desk/street that still look like her). Email arc: paint her world → name problem+desire → real story (often Sandra's, vulnerable) → paint the after → No-Fake reassurance → ONE soft CTA → a heart-line ending. Warm, a few honest emojis (🤍 🥹 📸 🙈 ✨) like Sandra's IG, contractions always, no banned words (leverage, transform, curated, elevate, elevated, journey, amplify, empower, game-changer, skyrocket, unlock your potential), NO em-dashes anywhere.
+Read:
 
-EXECUTION CONSTRAINTS (this is an UNATTENDED run — obey exactly or it will stall and die):
-- You may ONLY use: the Read tool, and Bash commands of the form `npx tsx scripts/daily-email-prep.ts ...`. That command is pre-approved; nothing else is.
-- NEVER write throwaway scripts with `cat > ...`, NEVER use `curl`, NEVER create new files, NEVER call resend/stripe via ad-hoc one-liners. Those trigger a permission prompt that no human is here to answer, and the whole run aborts before producing anything (this is exactly why past runs delivered nothing). All mechanical work — Stripe, DB, IG, Resend draft + preview, photo pickup, coupon math — already lives inside scripts/daily-email-prep.ts. Use it.
-- The send is ALWAYS gated on Sandra. Never run the `send` subcommand.
-- Discount codes are ALWAYS gated on Sandra too. You may run `coupon-propose` (a safe dry run, no Stripe writes) to show her the numbers for a flash-sale idea. NEVER run `coupon-create` — that creates a REAL, LIVE, chargeable discount code and a Stripe Payment Link. That only happens in an interactive session, after Sandra's explicit yes, exactly like `send`.
+1. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
+2. `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`
+3. `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
+4. `docs/brand/SANDRA_VOICE_OS_2026-07-16.md`
+5. `lib/email/templates/stone-email.ts` and `scripts/daily-email-prep.ts` for mechanics
 
-STEPS:
+Use the current documents as live pointers. Do not load every historical funnel or source file
+unless today's angle actually needs it.
 
-1. Run `npx tsx scripts/daily-email-prep.ts data`. This prints live Stripe sales, recent broadcasts, deliverability, segments, PUBLIC BRIDGE HISTORY, unused daily-life photos, existing discount codes, and recent Instagram performance. Resend does not expose broadcast open/click analytics through this API. Do not invent them. The data pull is enough; do not open a new funnel investigation from a quiet sales day.
+## Unattended safety
 
-2. Decide today's public angle and bridge subject to the Company Kernel.
-   - From Stripe + broadcasts: which recent angle tracks with sales?
-   - From PUBLIC BRIDGE HISTORY: do not repeat either of the last two paid asks. The allowed public choices are Prompt Vault, Starter Kit, Presets, SSELFIE SUITE, or pure story/no ask. Verify the route and current terms before using it.
-   - Do not make every story sell. Do not manufacture a flash promotion because sales are quiet.
-   - Never select a private high-value offer or legacy Work With Me path in this task.
-   - What's the top-resonating IG post this week, and does its theme make the best email today?
-   - Default Main Audience; only target a segment when the data clearly points to one (e.g. trials-with-zero-photos = an activation nudge, NOT a €97 ask).
-   - Do not propose or create a flash sale unless the Company Kernel or an attended Sandra-approved task explicitly requests one. Existing coupon data is a guard against accidental false claims, not an invitation to invent a promotion.
+This task may use Read and `npx tsx scripts/daily-email-prep.ts ...` only. Do not use ad-hoc API or
+database commands. Never run the `send` or `coupon-create` subcommands. The task may create a Resend
+broadcast draft and send a preview to Sandra through the approved script. It never sends to the
+customer list.
 
-3. Compose ONE email per the story-first standards above — subject, ordered paragraphs (first paragraph is the greeting, e.g. "Hey {{{contact.first_name|there}}} 🤍"), a soft CTA label + URL (add UTMs: utm_source=email&utm_medium=broadcast&utm_campaign=<angle>_<date>&utm_content=<product>), and where the CTA link sits. Before shaping the JSON, run the Constitution's Sandra Test on the draft; if any answer is no, rewrite. If DAILY LIFE PHOTOS has any unused photos, look at the filenames/dates and decide whether one plausibly fits today's story (e.g. a recent one for a "today" story, an older one for a flashback) — pass it as `"heroPhoto":"<filename>"`. The photo always renders at the BOTTOM of the email, near the sign-off — it's a closing note that backs up the story, never the lead. If you're not confident which one fits, just omit `heroPhoto` entirely and the engine auto-picks the oldest unused one; only set `"heroPhoto":"none"` if today's email genuinely reads better with no photo. The engine adds the "Sandra x" signoff + unsubscribe automatically and renders through renderPersonalNote.
+## Editorial judgment
 
-4. Create the draft + preview by piping that content as JSON to the engine:
-   `npx tsx scripts/daily-email-prep.ts draft <<'JSON'`
-   `{ "subject": "...", "name": "Story · ... · <date>", "paragraphs": ["Hey {{{contact.first_name|there}}} 🤍", "...", "..."], "ctaLabel": "Come see what's inside", "ctaUrl": "https://sselfie.ai/prompt-vault?utm_...", "ctaAfterIndex": 6, "heroPhoto": "IMG_1234.jpg" }`
-   `JSON`
-   (Optionally pass "audienceId" to target a segment; omit "heroPhoto" to auto-pick or skip if none are available. Omit "audienceId" for Main Audience.) This sends Sandra a [PREVIEW] to ssa@ssasocial.com AND creates a Resend broadcast DRAFT. It does NOT send to the list.
+Choose the best email for today from real data and recent output. It may be:
 
-5. STOP. Report: what the learning loop showed (what's working), today's angle + door + why (cite the audience-struggle + the specific IG signal + which story-bank story you used + which door and why it's not a repeat — or which active campaign this serves), whether a photo was used and which one, any flash-sale option you proposed (clearly marked not-live), target audience, subject line, the DRAFT id, and the exact one-line send command the engine printed. Do NOT send. The actual send always waits for Sandra's explicit "yes". If a flash sale is worth doing, say so and give her the exact `coupon-create` command to run herself (or ask her in this same conversation) — never run it yourself.
+- a practical tutorial;
+- a raw, specific story;
+- an honest lesson from building;
+- a simple demonstration of what technology makes possible;
+- a direct invitation when a current public product is the honest next step;
+- a human note with no sale.
 
-If anything blocks a clean draft (engine error, nothing fresh to say without over-mailing), say so plainly in your report instead of forcing it.
+Do not force every story to teach or sell. Do not manufacture a promotion because sales are quiet.
+Private and unvalidated offers stay out of this unattended public task.
 
-NOTE on Instagram Stories: the Instagram Graph API only returns currently-active stories (last 24 hours) — there is no historical story archive to pull from, so this engine does not attempt to reference or reuse past Stories content. A separate scheduled task, `daily-story-sequence-draft` (07:01 daily), automatically repurposes whatever this run just drafted into a 7-slide text-only Story sequence and emails it to Sandra — don't try to fake that here either. If Sandra wants a full photo-based sequence with background/overlay rendering instead, that's the on-demand `sselfie-stories` skill.
+Write for the capable, overwhelmed woman who may be starting again. Help her feel understood, show
+one useful possibility, and give one clear next step. Use Sandra's Voice OS: honest before
+impressive, specific before inspirational, simple before clever, hopeful without pretending, and
+beside her rather than above her.
+
+## Run
+
+1. Run `npx tsx scripts/daily-email-prep.ts data`.
+2. Choose one fresh angle from current sales, recent broadcasts, public bridge history, unused
+   photos, and Instagram performance. A quiet data pull may justify a useful no-ask email.
+3. Write one email. Verify any claim, price, route, quote, or deadline. Use one CTA at most.
+4. Run a quiet truth and voice pass. Rewrite the generic line. Do not produce a numeric score.
+5. Pipe the draft JSON into `npx tsx scripts/daily-email-prep.ts draft` using the schema the script
+   documents: `subject`, `name`, `paragraphs`, optional `ctaLabel`, `ctaUrl`, `ctaAfterIndex`,
+   `heroPhoto`, and `audienceId`.
+6. Stop after the preview and broadcast draft are created.
+
+Report the angle, why it fits today, subject, public door or no-ask choice, photo used, target
+audience, draft id, and the exact send command printed by the script. The command is for Sandra's
+later approval. Do not run it.
+
+If there is nothing honest and fresh to say, or the script fails, report that plainly instead of
+forcing filler.

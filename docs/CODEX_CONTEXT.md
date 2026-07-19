@@ -1,6 +1,6 @@
 # CODEX_CONTEXT
 
-Last verified: 2026-07-16
+Last verified: 2026-07-19
 
 ## Controlling company authority
 
@@ -8,6 +8,9 @@ Before business, offer, automation, admin-decision, campaign, or revenue work, r
 `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`. It supersedes old Growth Machine, Work With
 Me, and single-experiment routing when they conflict. Codex is the builder and revenue-operations
 seat; no model is the company brain.
+
+Read `docs/business/SANDRA_AI_TEAM_BRAIN_PACK_2026-07-16.md` for agent autonomy, approval
+boundaries, and how to communicate with Sandra. Specialist skills are lenses, not vetoes.
 
 ## Purpose
 
@@ -22,16 +25,20 @@ offers, channels, or operating decisions conflict, the Company Kernel wins.
 
 1. `AS-BUILT.md` — verified repository and deployment identity.
 2. `CLAUDE.md` — live business context, admin data contract, and current priorities.
-3. `docs/CODEX_CONTEXT.md` — technical constraints and file map.
-4. `tasks/README.md` — current implementation queue and held work.
-5. The relevant current contract below before changing that surface.
+3. `docs/business/SANDRA_AI_TEAM_BRAIN_PACK_2026-07-16.md` — shared agent behavior.
+4. `docs/CODEX_CONTEXT.md` — technical constraints and file map.
+5. `tasks/README.md` — applicable implementation specs and held work. Sandra's direct current
+   request takes priority over an unrelated newer task.
+6. The relevant current contract below before changing that surface.
 
 Current contracts:
 
 - Brand North Star, message hierarchy, ethical line, and agent contract:
   `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
-- Voice, audience, story, and positioning:
+- Audience, niche, story, and positioning:
   `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
+- Sandra's voice and proportional writing process:
+  `docs/brand/SANDRA_VOICE_OS_2026-07-16.md`
 - Purpose, category, and messaging:
   `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`
 - Daily CEO focus and offer routing:
@@ -163,7 +170,8 @@ or repo-hosted Instagram-reply runtime remains in the application.
 3. Use a clean `codex/` branch or isolated worktree for implementation.
 4. Bugfixes require a failing test or a documented reproduction before the patch.
 5. No broad code refactors without an explicit spec.
-6. Outward-facing copy stays draft-only until Sandra approves it. Load `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` before creating or editing it.
+6. Outward-facing copy stays draft-only until Sandra approves the exact words. Use the Brand
+   Constitution and Voice OS, but do not turn normal internal responses into a formal copy audit.
 7. Never print secrets. Report only presence, scope, and whether identifiers resolve.
 8. GitHub Actions workflows are intentionally disabled to avoid paid-run charges. Run required
    checks locally and do not re-enable workflows without Sandra's approval.

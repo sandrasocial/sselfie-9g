@@ -143,13 +143,15 @@ makes one bounded fix, and requires an independent verification pass before the 
 
 | Task | Schedule | Status | Job |
 |---|---|---|---|
-| `daily-email-draft` | 06:34 daily | ✅ ACTIVE (Kernel-aligned 2026-07-16) | Drafts one public story-first broadcast and preview. NEVER sends. Public bridges are commerce/SUITE or no ask; private high-value offers are forbidden. |
-| `daily-story-sequence-draft` | 07:01 daily | ✅ ACTIVE (Kernel-aligned 2026-07-16) | Mirrors the morning draft into seven text-only Story slides. NEVER posts or adds a different offer. |
-| `weekly-content-brief-draft` | Mon 06:05 | ✅ ACTIVE (Kernel-aligned 2026-07-16) | Uses real data and current research for five public pieces and seven Story themes. NEVER posts and cannot use the retired public WORK CTA. |
+| `daily-email-draft` | 06:34 daily | ✅ ACTIVE (Voice-aligned 2026-07-19) | Drafts one useful email in the best-fit mode: story, teaching, building, future guidance, invitation, or no ask. NEVER sends. |
+| `daily-story-sequence-draft` | 07:01 daily | ✅ ACTIVE (Voice-aligned 2026-07-19) | Drafts one coherent Story sequence from current evidence or the morning direction. NEVER posts or invents a sale. |
+| `weekly-content-brief-draft` | Mon 06:05 | ✅ ACTIVE (Voice-aligned 2026-07-19) | Uses real data and current research for a practical weekly mix led by tutorials, story, and Sandra's building-with-AI edge. NEVER posts. |
+| `partnership-reply-watch` | Temporary through 2026-07-21 | ⏳ TEMPORARY | Reads four allowlisted partnership threads, suppresses stale follow-ups, and may prepare approval-only drafts. NEVER sends and expires after its final run. |
 
 Retired task directories were physically removed on 2026-07-12. This includes
 `claude-codex-loop`, `daily-photo-export`, `funnel-health-daily`, and the duplicate
-`weekly-content-trends`. Only the three active draft tasks above remain on disk.
+`weekly-content-trends`. Three ongoing draft tasks remain. The temporary fourth task above was
+added for a bounded July 17-21 reply-watch window and is not a new permanent business automation.
 
 **`sselfie-community-manager` skill** — on demand and attended only. It opens the signed-in
 ManyChat inbox in the browser, reads the real customer message and history, and can suggest a
@@ -169,11 +171,10 @@ campaigns. The local `.claude/agents/revenue-campaign-director.md` agent is a re
 read-only campaign auditor. It prepares P0/P1/P2 findings and approval-ready copy but never sends,
 publishes, charges, deploys, or schedules. Neither is an automation. The one-time Claude Desktop
 alignment work specified in
-`docs/operations/CLAUDE_DESKTOP_BRAND_ALIGNMENT_SPEC_2026-07-13.md` was COMPLETED 2026-07-13: all
-three scheduled tasks load the Constitution first with attended-campaign precedence, `sselfie-brand`
-is a live pointer skill (no stored facts), the five content skills preflight the Constitution, three
-stale brand-authority memories were demoted to historical, and the scheduled-task count remains
-exactly three.
+`docs/operations/CLAUDE_DESKTOP_BRAND_ALIGNMENT_SPEC_2026-07-13.md` is now the continuing local-sync
+contract. The three ongoing tasks and Claude's attended skills load the current authorities and the
+July 19 Voice OS. During the bounded reply-watch window, the on-disk task count is four and returns
+to three after expiry.
 
 **`sselfie-content-engine` plugin — RETIRED 2026-07-11 (content-system audit).** Lived outside
 this repo at `~/Desktop/SSELFIE Work/Business & Admin/SSELFIE/SSELFIE-Content-Engine/` (inside

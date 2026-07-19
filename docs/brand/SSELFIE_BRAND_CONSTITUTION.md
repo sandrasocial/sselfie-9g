@@ -4,7 +4,7 @@ Status: Highest-level brand law
 
 Owner: Sandra
 
-Last locked: 2026-07-13
+Last approved: 2026-07-19
 
 This is the first brand document every person and AI reads before creating or changing SSELFIE copy, content, campaigns, emails, product language, Maya behavior, UX, offers, or customer-facing code.
 
@@ -17,7 +17,7 @@ Do not maintain a second human-authored copy of this Constitution. Point back to
   "bridge": "Visibility",
   "startingTool": "Selfies",
   "accelerator": "AI",
-  "coreMessage": "This was never about selfies. It was about becoming visible enough to build a business and a life you're proud of.",
+  "coreMessage": "Start with one selfie. See yourself differently. Create something useful. Take the next step toward building something of your own.",
   "businessPath": ["Photo", "Visibility", "Story", "Trust", "Offer", "Income", "Choices", "Freedom"],
   "freedomMeans": [
     "earn her own money",
@@ -52,9 +52,12 @@ Photo -> visibility -> story -> trust -> offer -> income -> choices -> freedom.
 
 ## The Core Message
 
-This was never about selfies.
+This was never just about selfies.
 
-It was about becoming visible enough to build a business and a life you're proud of.
+It was about a woman seeing herself again and thinking: maybe I am not finished. Maybe I can still
+create something of my own.
+
+Start with one selfie. See yourself differently. Create something useful. Take the next step.
 
 To use the tools we have today to earn your own money.
 
@@ -93,6 +96,10 @@ No income guarantees. We do not promise that visibility alone creates money. We 
 - AI should help you become more you, not someone else.
 - Simple systems beat complicated plans.
 - A selfie is not the destination. It is one small first step.
+- Starting over does not mean starting with nothing.
+- The future should feel personal, beautiful, and possible for women who do not see themselves as
+  technical.
+- A capable, overwhelmed woman usually needs one clear next step, not another complete system.
 - The photo gets attention. The story builds connection. The message builds trust. The offer creates income.
 - The woman is the point. The technology is support.
 
@@ -149,7 +156,7 @@ Every product or feature must help with at least one real step. If it only adds 
 
 ## Sandra's Voice
 
-Write like Sandra is talking to one woman over coffee.
+Write like Sandra is talking to one woman over coffee: beside her, not above her.
 
 Use:
 
@@ -158,6 +165,7 @@ Use:
 - real observations and specific moments;
 - warmth without fluff;
 - honesty about what worked and what did not;
+- hope without pretending she has every answer;
 - one clear thought and one clear next step.
 
 Do not use:
@@ -183,7 +191,8 @@ Before anything is approved, ask:
 7. Are we helping her make a good decision instead of pressuring her?
 8. Does this create trust even if she does not buy today?
 
-If any answer is no, rewrite or remove it.
+Use these questions as judgment, not as a mandatory report. If an important answer is no, rewrite
+the weak line or remove it.
 
 ## The Creative Bar
 
@@ -195,22 +204,27 @@ Added at Sandra's direction on 2026-07-13. After the Sandra Test, every outward 
 4. Is this share-worthy? Would a stranger send it to a friend without being asked?
 5. Does it create demand and desire? Does she want the result today, not just nod along?
 
-If any answer fails, rewrite before it ships.
+If an important answer fails, rewrite before it ships. Do not show Sandra a scorecard unless she
+asked for an audit.
 
 ## Agent Contract
 
 Every AI agent working on SSELFIE must:
 
-1. Read this Constitution first.
-2. Read `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md` for voice, audience, story, and expertise.
-3. Read `docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md` for category, audience temperature, and offer routing.
-4. Read `docs/funnel/NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` before any AI-photo promise.
-5. Read `docs/SSELFIE_DESIGN_SYSTEM.md` before visible design work.
-6. Use current Stripe or `stripe_payments` truth for money. Never invent or infer revenue from behavior events.
-7. Keep customer copy in draft until Sandra approves it.
-8. Never create a new automation, funnel, agent, or product merely because it can.
-9. Prefer one clear answer, one offer, and one next step.
-10. Propose lasting brand decisions for Sandra's approval. Only Sandra may approve a change to this Constitution. No agent may silently rewrite brand law or store a conflicting decision in a private prompt.
+1. Use this Constitution for purpose and ethics, the Company Kernel for current business state, and
+   `docs/business/SANDRA_AI_TEAM_BRAIN_PACK_2026-07-16.md` for how agents work with Sandra.
+2. Load the Voice OS and current conversation evidence when writing in Sandra's name. Load specialist
+   contracts only when the task actually touches them.
+3. Use current Stripe or `stripe_payments` truth for money. Never infer revenue from behavior events.
+4. Keep outward customer copy as a draft until Sandra approves the exact words.
+5. Think broadly and recommend clearly. A rule against silently launching a new product is not a
+   rule against exploring or proposing one.
+6. Finish safe, authorized work before returning a founder action.
+7. Prefer one clear answer and one useful next step when the evidence supports them.
+8. Treat specialist skills as lenses, not vetoes. If a rule blocks useful work, explain the real
+   risk and continue with the safest valuable action.
+9. Propose lasting brand decisions for Sandra's approval. Only Sandra may approve a change to this
+   Constitution. No agent may silently store a conflicting decision in a private prompt.
 
 ## Conflict Order
 

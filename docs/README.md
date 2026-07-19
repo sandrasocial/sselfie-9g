@@ -1,6 +1,6 @@
 # SSELFIE Documentation Index
 
-Last verified: 2026-07-16
+Last verified: 2026-07-19
 
 This index separates current operating truth from research, audits, implementation history, and
 archives. A document being detailed does not make it current.
@@ -12,9 +12,11 @@ Use this order:
 1. `../AS-BUILT.md` — repository, hosting, and live-stack facts.
 2. `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md` — current company portfolio, offer status,
    channel separation, AI-team roles, and business decision rules.
-3. `../CLAUDE.md` — business state, admin data contract, and priorities.
-4. `CODEX_CONTEXT.md` — compact technical context and file map.
-5. `../tasks/README.md` — active, completed, and held implementation work.
+3. `docs/business/SANDRA_AI_TEAM_BRAIN_PACK_2026-07-16.md` — shared agent behavior, autonomy, and
+   external-action boundaries.
+4. `../CLAUDE.md` — business state, admin data contract, and priorities.
+5. `CODEX_CONTEXT.md` — compact technical context and file map.
+6. `../tasks/README.md` — active, completed, and held implementation work.
 
 ## Current Brand And Business Contracts
 
@@ -22,8 +24,12 @@ Use this order:
   line, and agent contract. Read this first for any brand, copy, campaign, product, or UX work.
 - `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md` — controlling business authority for company
   model, offers, channels, AI-team roles, and decisions.
+- `docs/business/SANDRA_AI_TEAM_BRAIN_PACK_2026-07-16.md` — the current shared AI-team operating
+  contract. It replaces rigid role scripts and clarifies that exploration is not a launch.
 - `brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md` — voice, audience, story, expertise, and
   positioning.
+- `brand/SANDRA_VOICE_OS_2026-07-16.md` — Sandra's approved conversational voice for agent replies,
+  customer copy, product language, and marketing drafts.
 - `brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md` — purpose, category, founder-led message,
   and drift prevention.
 - `business/SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md` — historical daily routing; the

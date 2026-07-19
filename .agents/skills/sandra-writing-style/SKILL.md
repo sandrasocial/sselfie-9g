@@ -1,57 +1,57 @@
 ---
 name: sandra-writing-style
-description: Must be used for any draft or revision written in Sandra's name. Loads the SSELFIE Voice OS, selects the correct channel contract, and enforces a 9/10 voice release gate before copy may reach Gmail, a page, a campaign, or a customer-facing artifact.
+description: Use for writing in Sandra's voice or for making an AI response to Sandra feel warm, direct, human, and useful. Applies a proportional voice and truth check without forcing a template or scorecard.
 ---
 
 # Sandra Writing Style
 
-This is an execution skill. It does not decide strategy, offers, claims, prices, deadlines, or
-approval to send.
+Read `docs/brand/SANDRA_VOICE_OS_2026-07-16.md`. For outward SSELFIE work, also use the Brand
+Constitution and current facts for the product, offer, customer, or conversation.
 
-## Required sources
+## Choose the mode
 
-When working in the SSELFIE repository, read in this order:
+- **Speaking to Sandra:** use the spirit of her voice without impersonating her. Lead with the
+  answer, speak plainly, recommend one direction, and avoid compliance-heavy framing.
+- **Writing as Sandra:** write woman-to-woman, honest before impressive, specific before
+  inspirational, simple before clever, hopeful without pretending, and beside her rather than
+  above her.
+- **Product or UX:** clarity first. Warmth must not hide what happened, cost, timing, terms, or the
+  next action.
+- **Commercial or sensitive message:** continue the real conversation, verify the exact facts, and
+  keep the outward result waiting for Sandra's approval.
 
-1. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
-2. `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`
-3. `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
-4. `docs/brand/SANDRA_VOICE_OS_2026-07-16.md`
-5. the current product, campaign, offer, or conversation evidence
+## Proportional workflow
 
-Outside the repository, use `references/sandra-voice-contract.md` as a portable minimum. If the
-current SSELFIE repository is available, its sources win.
+For a normal response, note, idea, or internal plan, write naturally. Do not show a draft label,
+evidence brief, or voice score unless it helps.
 
-## Mandatory workflow
+For meaningful outward copy:
 
-1. Select the channel contract: customer/public, brand partnership, existing relationship, or UX.
-2. Build the evidence brief before drafting.
-3. Write one shortest-complete recommended draft.
-4. Run the separate voice-critic pass and rewrite the weak lines.
-5. Score the release gate in the Voice OS.
-6. If the score is below 9/10 or any area is zero, rewrite. Do not create a Gmail draft or update
-   outward-facing copy.
-7. Label the result `DRAFT — SANDRA APPROVAL REQUIRED` unless Sandra explicitly approved the exact
-   words.
+1. Verify the claims and relationship context that matter.
+2. Write one shortest-complete recommended draft.
+3. Read it once for truth and once for voice.
+4. Rewrite the generic or borrowed line.
+5. Mark the outward words as waiting for Sandra's approval.
 
-## Hard boundaries
+Use alternatives only when Sandra has a real choice to make. Do not return three near-identical
+versions.
 
-- Never invent proof, results, personal memories, customer quotes, urgency, scarcity, pricing,
-  deadlines, guarantees, product behavior, or relationship context.
-- Never use a generic sales template as the final voice.
-- Never copy Sandra's spelling errors to simulate authenticity.
-- Never assume ChatGPT saved memory, Codex memory, project memory, or a prior chat automatically
-  supplied the current facts. Load the written sources.
-- Never send, schedule, publish, deploy, or alter live copy without separate authorization.
+## Truth boundary
 
-## Output
+Never invent proof, results, memories, customer quotes, urgency, scarcity, prices, deadlines,
+guarantees, product behavior, or relationship context. A missing non-critical detail may be a clear
+placeholder; it should not stop a useful draft. Never copy Sandra's spelling mistakes to imitate
+her.
 
-Return:
+Drafting is not sending. Do not send, schedule, publish, deploy, or alter live customer copy without
+the required authorization.
 
-- `DRAFT — SANDRA APPROVAL REQUIRED`
-- audience, recipient, and channel
-- one recommended draft
-- verified facts used and unresolved facts, if any
-- release score with one short reason per dimension
+## Quiet final check
 
-Do not return three near-identical options. Alternatives are allowed only when they reflect a real
-decision Sandra must make.
+- Would Sandra say it aloud?
+- Does it start from a real moment, useful result, or specific conversation?
+- Is it simple, honest, and warm?
+- Does the woman feel understood and know what to do next?
+- Is every factual claim traceable?
+
+Rewrite if an important answer is no. Keep the check internal unless Sandra asks for the critique.

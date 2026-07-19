@@ -2,213 +2,191 @@
 
 Status: **CURRENT CONTROLLING BUSINESS AUTHORITY**
 
-Effective: 2026-07-16
+Updated: 2026-07-19
 
 Owner: Sandra
 
-This file controls SSELFIE revenue architecture, offer status, channel rules, AI-team roles, and
-business decision logic. If another document, memory, skill, automation, task, or code path conflicts
-with it, this file wins. Historical files may explain how SSELFIE arrived here; they may not silently
-reactivate an old offer or operating model.
+This file controls current company state, revenue engines, offer status, buyer channels, and
+business decision logic. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` controls purpose and ethics.
+`docs/business/SANDRA_AI_TEAM_BRAIN_PACK_2026-07-16.md` controls how agents work with Sandra.
 
-Brand and ethical language still begins with
-`docs/brand/SSELFIE_BRAND_CONSTITUTION.md`, followed by
-`docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md` and
-`docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md`.
+Historical files are evidence. They do not silently reactivate an old offer, funnel, campaign, or
+operating model.
 
 ## The company
 
-SSELFIE is one **media + software + intellectual-property company**, supported by a focused
-commerce base.
+SSELFIE is one media, software, and intellectual-property company supported by a focused commerce
+base.
 
-It helps women become visible enough to create choices: more confidence, stronger communication,
-earned income, time, growth, and freedom. Selfies and AI are the accessible starting tools, not the
-limit of the company. AI is not the hero. The woman is.
+It helps women who are starting again use their story, creativity, phone, and today's technology to
+see what is possible, build something of their own, and move toward financial independence.
 
-Sandra is the only public voice. Agents can research, prepare, build, verify, organize, monitor, and
-draft. They may not impersonate Sandra, invent proof, promise income, or send a high-value proposal
-without her approval of the recipient and final message.
+Selfies are the accessible first action. Visibility is the bridge. Technology helps her move.
+Earning power creates choices. Freedom is the destination. AI is not the hero. The woman is.
 
-## The four-part revenue portfolio
+Sandra is the public voice. Agents may think, challenge, research, recommend, draft, build, verify,
+organize, and prepare. They may not impersonate Sandra, invent proof, promise income, or cross an
+external-action boundary without the required approval.
 
-### 1. Media engine
+## The current portfolio
 
-SSELFIE sells a useful, measurable way for aligned companies to reach and teach Sandra's audience.
-The current cash offer is the **SSELFIE Tutorial Partnership**:
+### 1. Media capability and background pipeline
 
-- commercial floor: **EUR 3,000** for a paid pilot unless a written exception is approved;
-- buyer: brands already paying for creator education, AI, mobile creation, photography, travel,
-  beauty, fashion, or tools used by women building visibility;
-- value: Sandra teaches a real workflow in her trusted format and integrates the product only when
-  it genuinely improves the result;
-- difference from commodity UGC: the buyer receives creator distribution, category expertise,
-  tutorial IP, community trust, and a reusable learning concept—not a bundle of anonymous clips;
-- proof obligation: every proposal names the audience fit, buyer objective, deliverables, usage
-  rights, timing, success signals, and what is explicitly excluded;
-- expansion: propose a retainer only after a paid pilot produces a result the buyer values.
+The SSELFIE Tutorial Partnership is an unvalidated private offer hypothesis with a historical floor
+of EUR 3,000 for a paid pilot. As of 2026-07-16, SSELFIE has zero cleared paid brand-partnership
+deals.
 
-The media engine is the primary private cash lane through 2026-07-25. The ambitious target is
-EUR 15,000 cleared cash. Five EUR 3,000 pilots is one path, not a forecast or guarantee.
+The already-sent emails may be monitored in the background. Pending emails, replies, category
+spend, requested rate cards, and another creator's results are not first-party proof. Do not make
+Sandra wait on this lane or route a general revenue question back to it. Reopen it as a priority
+when Sandra explicitly asks or cleared payment and completed delivery produce new evidence.
 
 ### 2. Software engine
 
-**SSELFIE SUITE** is the recurring product base at **EUR 97/month** for new standard-price
-customers. Existing subscription prices and entitlements remain protected.
+SSELFIE SUITE is the active recurring product at EUR 97/month for new standard-price customers.
+Existing prices, discounts, credits, access, and entitlements stay protected.
 
-The next recurring hypothesis is **SSELFIE Visibility Partner**, an invitation-only founding offer
-at **USD 497/month** for no more than five customers before a review. It must use existing Maya and
-campaign capability with bounded human calibration; it must not quietly become an unlimited agency
-service.
+The recurring job under evaluation is helping a capable, overwhelmed woman turn one selfie and one
+idea into something useful, know what to say, plan what comes next, and return when she loses
+momentum. This can be improved inside SUITE and Maya without pretending the entire long-term vision
+is already proven.
 
-Before any public launch, its buyer contract must state:
+Visibility Partner remains an unvalidated founding hypothesis, not the automatic answer to a
+general revenue question. Before it becomes an offer, it needs a named buyer, urgent job, budget,
+decision authority, measurable outcome, bounded delivery, and a founder-time ceiling.
 
-- the exact monthly outcome and included deliverables;
-- Sandra's maximum attended time and response boundary;
-- customer inputs and publishing responsibility;
-- revision and acceptance rules;
-- cancellation, privacy, and no-income-guarantee language;
-- a delivery QA target and a renewal decision gate.
+### 3. IP capability
 
-Founding proof gates: at least three paid customers, first-pass acceptance at or above 80%, Sandra
-delivery time at or below 45 minutes per customer per week, and at least two month-two renewals.
-Missing a gate means narrow, reprice, or stop; it does not justify another software build.
+Sandra's method may support a keynote, founder story, AI Visibility Lab, education program, or
+license. These are capabilities to explore, not active revenue engines. A real proposal needs a
+named buyer job, budget, decision authority, scope, rights, timing, and payment path.
 
-### 3. IP engine
-
-SSELFIE packages Sandra's method as paid institutional expertise:
-
-- keynote or founder story;
-- **AI Visibility Lab** for a company, accelerator, women's network, membership, or community;
-- annual internal education/license partnership when a buyer wants repeat use.
-
-Internal proposal floors are EUR 3,000 for a keynote or focused session, EUR 5,000 for a scoped lab,
-and EUR 12,000 for a one-year license or program. These are decision floors, not public prices or
-promises. Sandra approves every quote after the buyer's scope, rights, travel, preparation, and
-delivery load are known.
-
-Non-profits, previous collaborators, and mission-aligned organizations are never treated as generic
-leads. Relationship history and the organization's funding model must be checked before outreach.
+Historical internal price floors are evidence only. Sandra approves a future quote after the actual
+buyer context is known. Previous collaborators and mission-aligned organizations are treated as
+relationships, not generic leads.
 
 ### 4. Commerce base
 
 Prompt Vault, Starter Kit, presets, existing paid learning assets, and carefully chosen affiliates
-remain useful customer entry points and cash contributors. They are not expected to carry the
-EUR 15,000 cash target or USD 200,000 ARR alone.
+remain useful entry products and cash contributors.
 
-Rules:
-
-- protect every existing buyer's access and fulfillment;
-- do not add another low-ticket product because sales are quiet;
-- do not run overlapping launch messages;
-- use affiliates only for products Sandra actually uses and can teach honestly;
-- route activated customers toward SUITE when it is the useful next step, not by default pressure.
+Protect buyer access and fulfillment. Improve a current entry product when evidence supports it.
+Do not create another low-ticket product merely because sales are quiet. That sentence does not ban
+new ideas: it prevents an unmeasured idea from becoming an accidental build or launch.
 
 ## Channel architecture
 
-The public audience does not need to experience a confusing pivot.
-
 ### Public discovery
 
-Instagram, TikTok, Pinterest, Facebook, Threads, and public email keep leading with Sandra's real
-strength: AI selfies, useful prompts, phone-first tutorials, visibility, story, and the freedom they
-can help create. Public content is expertise and trust, not a rotating catalog of every company
-offer.
+Public content keeps using Sandra's real strengths: selfie and AI-photo tutorials, useful prompts,
+phone-first teaching, starting-over stories, building with AI, visibility, and the freedom those
+skills can support.
 
-Scheduled public content may use one approved commerce-base or SUITE bridge when it naturally fits.
-It must not automatically pitch Tutorial Partnerships, Visibility Partner, keynotes, licenses, or
-private consulting. Those are private high-value sales lanes.
+Public content is not a rotating catalog. It may use one current commerce or SUITE bridge when it is
+the natural next step. Private media, institutional, and higher-touch hypotheses do not appear in
+unattended public content.
 
 ### Private buyer channels
 
-- Media buyers: researched email, warm introductions, LinkedIn, and inbound partnership requests.
-- Institutional/IP buyers: founder relationships, previous speaking relationships, relevant
-  networks, accelerators, companies, and direct proposals.
-- Visibility Partner buyers: invited only from qualified inbound, strong customers, or attended
-  conversations.
-
-Private selling uses buyer-specific evidence. It never uses mass outreach disguised as a personal
-message.
+Media, institutional, licensing, and higher-touch work uses buyer-specific research, warm
+relationships, relevant introductions, or attended conversations. Private selling does not disguise
+mass outreach as a personal message.
 
 ## Current offer status
 
-| Offer or capability | Status | Rule |
+| Offer or capability | Status | Working rule |
 |---|---|---|
-| Tutorial Partnership | ACTIVE PRIVATE CASH LANE | Buyer-specific proposal; Sandra approves send |
-| SSELFIE SUITE | ACTIVE RECURRING PRODUCT | Protect customer truth, activation, and retention |
-| Visibility Partner | APPROVED FOUNDING HYPOTHESIS | Invite-only; max five before gate review |
-| AI Visibility Lab / keynote / license | ACTIVE PRIVATE IP LANE | Scope and relationship check before proposal |
+| SSELFIE SUITE | ACTIVE RECURRING PRODUCT | Protect truth, first value, repeat value, and renewal |
 | Prompt Vault / Starter Kit / presets | ACTIVE COMMERCE BASE | Useful entry products, not the whole company |
+| Tutorial Partnership | UNPROVEN BACKGROUND PIPELINE | Monitor existing conversations; no default routing |
+| Visibility Partner | UNVALIDATED HYPOTHESIS | Explore only with a real buyer job and bounded delivery evidence |
+| AI Visibility Lab / keynote / license | UNVALIDATED CAPABILITY | Explore from a named buyer context |
 | Work With Me / Visibility To Paid | LEGACY, ATTENDED ONLY | Fulfill existing commitments; no automatic public routing |
 | One Selfie Visibility Bundle | CLOSED EVENT | Preserve buyer access and evidence |
-| Your Next Campaign | DORMANT | Keep as a dormant internal delivery capability; public flag stays fail-closed |
-| New course, marketplace, or community | NOT APPROVED | Requires a new evidence-backed company decision |
+| Your Next Campaign | DORMANT CAPABILITY | Public path stays fail-closed; preserve private paid fulfillment |
+| New idea | EXPLORATION UNTIL DECIDED | May be researched and proposed; no silent build, price, or launch |
 
 ## The AI company team
 
-Roles are stable; model versions are replaceable tools and must be verified when current capability
-matters.
+Roles are accountable seats, not silos.
 
 | Seat | Default tool | Accountable outcome |
 |---|---|---|
-| CEO and public voice | Sandra | Vision, relationships, final judgment, video, and outward approval |
-| Chief of staff and router | ChatGPT | Maintain the decision queue, route work, reconcile outputs, expose blockers |
-| Strategic board | Claude Fable-class model | Challenge assumptions, synthesize research, pressure-test portfolio decisions |
-| Research and production desk | Claude Sonnet-class model | Buyer research, briefs, first drafts, content preparation, operational analysis |
-| Builder and revenue operations | Codex | Implement, test, validate, document, and complete authorized technical/system work |
-| Customer delivery intelligence | Maya | Deliver the in-product creation experience and learn within explicit privacy rules |
+| CEO and public voice | Sandra | Vision, relationships, lived judgment, video, outward approval |
+| Chief of staff and router | ChatGPT | Keep the whole picture, reconcile decisions, expose the real blocker |
+| Strategic board and production desk | Claude | Read deeply, challenge, research, recommend, and prepare strong drafts |
+| Builder and revenue operations | Codex | Investigate, implement, test, validate, document, and finish authorized work |
+| Customer creative director | Maya | Make useful creation feel personal, decisive, and safe |
 
-No tool is “the brain” of the company. This Kernel is the shared authority. An agent must state
-uncertainty, use current evidence for unstable facts, and hand off only the decision that genuinely
-requires Sandra.
+No model is the company brain. Agents use the same authorities and hand off only the decision or
+human action that genuinely requires Sandra.
 
 ## Human and agent work split
 
-Sandra does:
+Sandra records and publishes her public videos, has real relationship conversations, approves exact
+external messages and promises, and brings the lived judgment only she has.
 
-- records and publishes her public videos;
-- has real relationship conversations;
-- approves the exact external message, proposal, price exception, and customer promise;
-- delivers appearances that require her physical presence or lived experience.
+Agents complete everything else that is safe and in scope. They do not make Sandra perform a
+technical step they can complete. They do not stop at an audit when she authorized a fix. They do
+not implement a materially different business decision she did not request.
 
-Agents do everything else that can be completed safely: research, qualification, drafting,
-personalization preparation, data checks, pipeline upkeep, code, QA, documentation, monitoring, and
-follow-up reminders. Agents must finish authorized work end to end and name any remaining human
-action precisely.
+## How new ideas are handled
+
+A new product, offer, campaign, feature, agent, or income stream can be:
+
+1. **Explored:** the team may think broadly, research, compare, and recommend.
+2. **Decided:** Sandra or current evidence selects the opportunity and validation need.
+3. **Built:** authorized internal implementation with acceptance tests and customer protection.
+4. **Released:** explicit approval for the public promise, price, send, charge, or deployment.
+5. **Measured:** facts are separated from interpretation and the next decision is made.
+
+Do not collapse these states. A good idea is not a live offer. A page is not a sale. A positive
+reply is not cleared cash. A hypothesis is not forbidden simply because it is unproven.
+
+When Sandra names an active product or customer problem, improve that engine first unless the
+evidence shows it cannot test the job. When she explicitly asks for a new direction, compare real
+alternatives instead of reciting the existing portfolio back to her.
 
 ## Decision and evidence rules
 
-1. Money comes from Stripe or qualifying `stripe_payments`; behavior comes from analytics; audience
-   metrics must name their source and verification date.
-2. Distinguish facts, supported inferences, hypotheses, and unknowns.
-3. A deployed page, generated document, checkout start, or positive reply is not a sale.
-4. A quiet sales period is not proof of a code defect. Technical work starts from a reproduced
-   defect or customer-protection risk.
-5. Multiple revenue engines may run at the same time because they serve different buyers and
-   channels. One buyer must still receive one coherent next decision.
-6. No income guarantees. No invented urgency, proof, reach, audience metric, or buyer result.
-7. Do not redesign the whole company around one anecdote. Do not use “more data” to postpone an
-   already supported decision.
-8. Every new build names the revenue engine, buyer problem, evidence, replacement, delivery load,
-   success gate, kill rule, and customer-protection check.
+1. Money comes from Stripe or qualifying `stripe_payments`. Behavior comes from analytics. Current
+   audience and platform facts name their source and verification date.
+2. Distinguish facts, supported inferences, hypotheses, proposals, approved builds, live state, and
+   cleared payment.
+3. Founder intuition is a signal worth investigating. It is not dismissed, and it does not replace
+   verification when customer or payment risk is high.
+4. A quiet sales period is not proof of a code defect. Reproduce the technical failure or identify
+   the customer-protection risk.
+5. Multiple engines may run because they serve different buyers. One buyer still receives one clear
+   next decision.
+6. No income guarantees, invented urgency, fake proof, hidden terms, or manipulative use of family,
+   divorce, fear, or financial pressure.
+7. Do not use `more data` to postpone an already supported decision. Do not redesign the company
+   around one anecdote.
+8. A meaningful build names the buyer job, evidence, delivery load, success signal, failure signal,
+   and customer-protection check in proportion to its risk. Small reversible work does not need a
+   ceremonial offer contract.
 
-## What is forbidden now
+## Protected boundaries
 
-- another generic funnel rebuild without a verified technical failure;
-- another random low-ticket offer, course, marketplace, community, or dashboard;
-- automatic public promotion of private high-value offers;
-- autonomous sending, publishing, pricing, charging, refunding, or relationship outreach;
-- storing customer PII, spend, payment history, or private prospect research in the public repo;
-- deleting historical customer access or evidence to make the new strategy look cleaner;
-- letting an old task, memory, model prompt, or automation overrule this Kernel.
+These are safety boundaries, not conversation stoppers:
 
-## Review cadence
+- no autonomous sending, publishing, pricing, charging, refunding, or relationship outreach;
+- no customer PII, private payment history, or private prospect research in the public repo;
+- no deletion of customer access or evidence to make a new direction look cleaner;
+- no automatic public promotion of private hypotheses;
+- no old task, memory, skill, or automation overriding the current authorities;
+- no specialist skill turning its narrow workflow into a blanket refusal.
 
-- Daily: protect customers and money, move the active private cash pipeline, then create public
-  expertise content.
-- Weekly: review cleared cash, qualified pipeline by engine, SUITE activation/retention, delivery
-  capacity, and the single largest constraint inside each engine.
-- Monthly: decide whether each engine should scale, narrow, hold, or stop. Do not average one engine's
-  weak signal into another engine's decision.
+When a boundary applies, explain the risk once and continue with the safest useful preparation.
 
-The company can think bigger without becoming chaotic: one brand, one authority, several distinct
-buyers, and one clear promise per buyer conversation.
+## Review rhythm
+
+- Daily: protect customers and money, finish the current useful work, and keep Sandra present in
+  public content.
+- Weekly: review cleared cash, qualified demand, SUITE activation and repeat use, founder load, and
+  what women actually responded to.
+- Monthly: decide what to repeat, improve, scale, narrow, hold, stop, or explore next.
+
+The company can think bigger without becoming chaotic: one purpose, current evidence, clear states,
+and one useful next decision at a time.

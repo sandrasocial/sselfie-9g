@@ -19,16 +19,19 @@ Read these before making changes:
 3. `CLAUDE.md`
    Live business context, admin data contract, current priorities, and product guardrails.
 
-4. `docs/CODEX_CONTEXT.md`
+4. `docs/business/SANDRA_AI_TEAM_BRAIN_PACK_2026-07-16.md`
+   Shared agent behavior, permission to think, and external-action boundaries.
+
+5. `docs/CODEX_CONTEXT.md`
    Technical context, file map, automation notes, and operating procedure.
 
-5. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
+6. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
    Highest-level North Star, message hierarchy, ethical line, and agent contract.
 
-6. `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
+7. `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
    Current voice, audience, story, expertise, product positioning, and agent behavior source.
 
-7. `docs/SSELFIE_DESIGN_SYSTEM.md`
+8. `docs/SSELFIE_DESIGN_SYSTEM.md`
    Current visual and UI design authority.
 
 The older `VOICE_BIBLE`, old content grounding docs, and old Studio marketing drafts are no longer active guidance.
@@ -126,12 +129,15 @@ Before writing customer-facing copy, read:
 
 - `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
 - `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
+- `docs/brand/SANDRA_VOICE_OS_2026-07-16.md`
 - `docs/brand/source/2026-06-27/SSELFIE_VOICE_STYLE_GUIDE.md`
 - `docs/brand/source/2026-06-27/SSELFIE_TARGET_AUDIENCE_PERSONA.md`
 - `docs/brand/source/2026-06-27/SSELFIE_REWRITTEN_STORY_BANK.md`
 - `docs/brand/source/2026-06-27/SANDRA_EXPERTISE.md`
 
-Sandra's voice is simple, warm, direct, and human.
+Sandra's voice is honest before impressive, specific before inspirational, simple before clever,
+hopeful without pretending, and beside her rather than above her. Agents use its spirit when
+speaking to Sandra without impersonating her.
 
 Avoid generic AI-tool language, corporate personal-brand language, motivational-coach language, and anything that makes AI the hero.
 

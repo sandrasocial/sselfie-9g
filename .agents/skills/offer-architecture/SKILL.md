@@ -1,75 +1,85 @@
 ---
 name: offer-architecture
-description: Use before SSELFIE creates or changes a paid product, offer, price, bundle, subscription, deliverable, upsell, downsell, trial, campaign promise, or business model. Tests customer demand, exact value, scalable fulfillment, market comparison, unit economics, and repeat behavior before implementation.
+description: Use when SSELFIE is exploring or changing a paid product, offer, price, bundle, subscription, trial, deliverable, upsell, downsell, or business model. Helps agents make one clear evidence-aware recommendation without treating unproven ideas as forbidden.
 ---
 
-# Offer Architecture
+# SSELFIE Offer Architecture
 
-Prevent SSELFIE from building an attractive offer that customers do not need, cannot understand,
-or will not repeat. This is one decision process for a solo founder, not a committee of agents.
+The goal is one useful decision, not a committee process and not an automatic `no`.
 
-## Load the truth first
+## Start with current truth
 
-Read completely, in order:
+Read the Company Kernel, the AI Team Operating Contract, and the evidence for the customer job. Load
+the Brand Constitution and Voice OS when the work includes an outward promise.
 
-1. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
-2. `CLAUDE.md`
-3. `docs/CODEX_CONTEXT.md`
-4. The current product/campaign contract and relevant audit in `docs/business/` or `docs/audits/`
-5. The current implementation and tests for the product being discussed
+Separate:
 
-Then pull the smallest relevant first-party evidence. Money truth comes from Stripe or
-`stripe_payments`. Behavior truth comes from product and analytics tables. Customer language comes
-from real replies, support, onboarding, cancellation, and application records.
+- what customers have paid for or repeatedly used;
+- what they said, asked, or struggled with;
+- what Sandra's pattern recognition suggests;
+- what the market shows;
+- what is still a hypothesis.
 
-Use current primary web sources for market claims. Compare the job, buyer effort, exact output,
-price, time to value, repeat reason, and cancellation risk. Do not copy a competitor feature list.
+## Choose the right level
 
-## Run the five failure tests
+### Explore
 
-1. **Audience:** Is the target person observable in SSELFIE's data, and does she already have the
-   problem now?
-2. **Promise:** Can she understand the immediate finished result in one sentence without learning
-   SSELFIE's system?
-3. **Value and price:** Is the exact deliverable stronger than the alternatives she will compare at
-   checkout? Does adding more make it more useful, or only more overwhelming?
-4. **Fulfillment:** What percentage can the existing product automate? Estimate API cost and
-   Sandra-minutes per order. Reject low-priced manual fulfillment.
-5. **Repeat:** Is this job naturally one-time, occasional, monthly, or weekly? Require paid repeat
-   behavior before recommending recurring billing.
+Use when Sandra wants possibilities. Think broadly. Compare materially different models. It is fine
+to surface a new product, service, software feature, license, partnership, or campaign hypothesis.
+Do not pretend exploration is approval or a live offer.
 
-## Required offer contract
+### Decide
 
-Return one short decision, not a brainstorm:
+Use when Sandra needs one direction. Recommend it. Explain why it is stronger than the best
+alternative and what evidence could disprove it. Do not hide the recommendation inside ten options.
 
-- Best supported segment and excluded segments
-- Customer job in her own plain language
-- One-sentence promise
-- Exact inputs, exact deliverables, delivery time, revision boundary, and price
-- Evidence for the decision, evidence against it, and what remains unknown
-- Existing code/assets that make fulfillment credible
-- Automated percentage, estimated variable cost, and maximum Sandra-minutes per order
-- One smallest paid validation with denominators and pass/uncertain/fail gates
-- Failure decode for audience, promise, price/trust, activation, quality, usefulness, and repeat
-- Explicit stop-list
+### Implement
 
-Label facts, inferences, and hypotheses. Do not claim revenue, conversion lifts, demand, scarcity,
-or customer outcomes without traceable evidence.
+When Sandra explicitly authorizes both the decision and the build, translate it into the smallest
+complete contract and implementation. A separate ceremonial approval round is not required for
+every reversible internal step. External promises, prices, sends, charges, and launches still need
+the appropriate approval.
 
-## Scope discipline
+## Improve before replacing when it is useful
 
-- Sell one completed job, not the whole ecosystem.
-- More deliverables are justified only when they make that one job complete.
-- A course, library, community, subscription, or manual service is never the default answer.
-- Freedom is the brand destination, not a guaranteed product result.
-- Do not use followers, clicks, or survey interest as purchase evidence.
-- Do not treat competitor success as proof of SSELFIE demand.
-- Do not write an implementation spec or alter customer-facing code until Sandra approves the offer
-  contract, unless she explicitly asks for both analysis and implementation in the same request.
-- When an event is live, freeze non-critical production changes until it closes.
+If Sandra names SUITE, Maya, or another active product, first ask whether that engine can test the
+job. Improve it when it can. Recommend a different model when the existing engine cannot reasonably
+serve the customer job, when the evidence points elsewhere, or when Sandra explicitly asks for a
+new income stream.
 
-## Handoff
+This is not a ban on new products. It prevents a new idea from erasing the learning already in
+motion.
 
-After approval, translate the contract into one bounded Codex task with acceptance tests. Then use
-`revenue-campaign-director` for launch copy and journey optimization. The offer-architecture skill
-owns what is sold; the campaign director owns how the approved offer is promoted.
+## Decision dimensions
+
+Use only the dimensions that matter to the risk:
+
+- the customer's urgent job in her own language;
+- the smallest complete result and what is excluded;
+- existing proof and evidence against the idea;
+- price or willingness-to-pay evidence;
+- delivery method, automation, variable cost, and Sandra's time;
+- repeat reason and whether recurring billing is honest;
+- distribution path;
+- customer-protection and failure conditions;
+- the smallest useful validation when a critical unknown remains.
+
+A small copy or packaging adjustment does not need a full business-model dossier. A new recurring
+offer or expensive service does.
+
+## Output
+
+Return:
+
+1. the recommended direction in plain language;
+2. why it fits this customer and the company now;
+3. the strongest evidence and the important unknown;
+4. the smallest next action agents can complete;
+5. the one approval or founder action still needed, if any.
+
+Add exact deliverables, boundaries, pricing logic, validation gates, and failure decode only when
+the decision needs them.
+
+Never invent demand, revenue, conversion lift, scarcity, proof, or customer outcomes. Competitor
+success and audience reach are clues, not SSELFIE sales. Freedom is the destination, not a promised
+product result.

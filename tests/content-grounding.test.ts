@@ -31,7 +31,8 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     expect(block).toContain("two-bedroom apartment")
     expect(block).toContain("bathroom studio")
     expect(block).toContain("The photo gets attention")
-    expect(block).toContain("Sandra anchor")
+    expect(block).toContain("capable, overwhelmed woman")
+    expect(block).toContain("hairdresser who taught herself to code with AI at 39")
   })
 
   it("locks the purpose/category message that all content must ladder back to", () => {
@@ -98,7 +99,8 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
 
     expect(lock).toContain("SSELFIE is Sandra's category")
     expect(lock).toContain("This was never just about selfies")
-    expect(lock).toContain("Low-ticket offers are bridges")
+    expect(lock).toContain("Entry products are bridges")
+    expect(lock).toContain("technology-enabled reinvention")
     expect(sourceOfTruth).toContain(lockPath)
     expect(claude).toContain(lockPath)
     expect(codex).toContain(lockPath)

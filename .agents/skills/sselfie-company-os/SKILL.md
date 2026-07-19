@@ -1,43 +1,60 @@
 ---
 name: sselfie-company-os
-description: Use before SSELFIE business-model, revenue-engine, offer-status, public/private channel, AI-team role, campaign-priority, or operating-system decisions. Prevents stale funnel, Work With Me, campaign, and agent-role instructions from becoming current policy.
+description: Use for SSELFIE business, offer-status, channel, AI-team, priority, or operating-system decisions. Loads current company truth while preserving agent judgment and useful exploration.
 ---
 
 # SSELFIE Company OS
 
-## Read first
+## Load the minimum authority
 
 1. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
 2. `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`
-3. `CLAUDE.md`
-4. `docs/CODEX_CONTEXT.md`
-5. Current live evidence and the one relevant active contract
+3. `docs/business/SANDRA_AI_TEAM_BRAIN_PACK_2026-07-16.md`
+4. Current evidence for the decision
 
-## Authority rule
+Load `CLAUDE.md`, `docs/CODEX_CONTEXT.md`, or a product contract only when their facts are relevant.
+Older documents and memory are evidence, not automatic policy.
 
-The Company Kernel controls the company model, offer status, buyer channels, AI-team roles, and
-decision rules. Older documents and memory are evidence only. Do not reactivate a historical,
-legacy, closed, or dormant offer because it is detailed or technically implemented.
+## Use judgment
 
-## Working rule
+This skill prevents stale routing. It does not prevent thinking.
 
-- Name the revenue engine and buyer before acting.
-- Separate facts, supported inferences, hypotheses, and unknowns.
-- Pull current numbers from their live source and attach a verification date.
-- Public content stays AI-selfie/tutorial/visibility-led and uses only an approved public bridge.
-- Media, institutional, and founding-partner offers use private buyer-specific channels.
-- Preserve current customer access, payment truth, fulfillment, and support.
-- Finish safe authorized agent work before returning a founder action.
-- Sandra approves the exact external promise, recipient, price exception, and send.
+- Improve a named active engine before replacing it when that engine can test the job.
+- Explore new products, offers, features, campaigns, or income streams when Sandra asks or a real
+  unmet job appears.
+- Label exploration, hypothesis, recommendation, approved build, live offer, and measured result.
+- Recommend one direction when the evidence supports one. Do not hide behind a list of gates.
+- If a rule no longer serves the company, name the conflict and propose the exact change.
+- Finish safe authorized work before returning a founder action.
 
-## Stop conditions
+`No new products` means no accidental build or launch. It does not mean no new ideas.
 
-Stop and surface the conflict when a task would:
+## External-action boundary
 
-- restore automatic Work With Me or WORK routing;
-- launch Your Next Campaign or a closed event;
-- create another low-ticket product, course, marketplace, community, funnel, or dashboard without a
-  new evidence-backed decision;
-- put customer PII or private buyer research into the public repo;
-- treat low sales as proof of a technical defect;
-- let a model, memory, task, or automation overrule the Company Kernel.
+Sandra approves the exact outward promise, recipient, meaningful price change, send, publish,
+charge, refund, and destructive action. Research, recommendations, drafts, local implementation,
+tests, and internal preparation are different states and may proceed when they are in scope.
+
+## Decision response
+
+Return the smallest useful answer:
+
+- the recommended decision;
+- the current facts and important unknowns;
+- why this direction is better than the strongest alternative;
+- what can be completed by agents now;
+- the one remaining Sandra decision, only if there is one.
+
+Do not turn a normal question into an offer contract, seven-agent handoff, or policy speech unless
+the risk genuinely requires it.
+
+## Safety that remains firm
+
+- Money truth comes from Stripe or qualifying `stripe_payments`.
+- Behavior events do not prove revenue.
+- Do not invent proof, demand, urgency, customer language, or outcomes.
+- Preserve existing customer access, billing truth, privacy, and fulfillment.
+- Do not publish private offers through unattended public channels.
+- Do not let a specialist skill overrule Sandra's current request or the Company Kernel.
+
+When one of these boundaries applies, explain the risk once and move to the safest useful action.
