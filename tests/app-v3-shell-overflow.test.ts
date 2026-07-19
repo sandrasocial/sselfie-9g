@@ -66,4 +66,10 @@ describe("App v3 shell overflow containment", () => {
     expect(conceptCard).toContain("max-w-full")
     expect(conceptCard).toContain("[overflow-x:clip]")
   })
+
+  it("keeps account actions clear of the fixed Maya button", () => {
+    const account = read("components/app-v3/account-view.tsx")
+
+    expect(account).toContain("px-1 pr-20 pt-2")
+  })
 })

@@ -408,7 +408,7 @@ export function AccountView({
         </div>
 
         {/* Logout (legacy Studio entry now lives in the gated "Your trained model" card above). */}
-        <div className="flex flex-col gap-1 px-1 pt-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-end min-[420px]:gap-3">
+        <div className="flex flex-col gap-1 px-1 pr-20 pt-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-end min-[420px]:gap-3">
           <button type="button" onClick={handleLogout} disabled={loggingOut} className={quietBtn}>
             {loggingOut ? "Logging out…" : "Log out"}
           </button>
