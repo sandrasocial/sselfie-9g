@@ -22,13 +22,21 @@ export async function POST(
     }
 
     // Parse request body
-    const { postId, imageUrl, aiImageId, generationRequestId } = await request.json()
+    const { postId, imageUrl, imageUrls, aiImageId, generationRequestId } = await request.json()
+    const ownedImageUrls = (
+      Array.isArray(imageUrls) && imageUrls.length > 0 ? imageUrls : [imageUrl]
+    )
+      .filter(
+        (url: unknown): url is string =>
+          typeof url === "string" && url.startsWith("https://") && url.length <= 4096
+      )
+      .slice(0, 10)
     const ownedAiImageId =
       typeof aiImageId === "number" && Number.isInteger(aiImageId) && aiImageId > 0
         ? aiImageId
         : null
 
-    if (!postId || !imageUrl) {
+    if (!postId || ownedImageUrls.length === 0) {
       return NextResponse.json({ error: "Missing postId or imageUrl" }, { status: 400 })
     }
     const calendarGenerationRef =
@@ -49,7 +57,7 @@ export async function POST(
       "postId:",
       postId,
       "imageUrl:",
-      imageUrl?.substring(0, 50)
+      ownedImageUrls[0]?.substring(0, 50)
     )
 
     // Verify feed ownership
@@ -89,7 +97,8 @@ export async function POST(
     const [updatedPost] = calendarGenerationRef
       ? await sql`
           UPDATE feed_posts
-          SET image_url = ${imageUrl},
+          SET image_url = ${ownedImageUrls[0]},
+              media_urls = ${JSON.stringify(ownedImageUrls)}::jsonb,
               ai_image_id = (
                 SELECT id FROM ai_images
                 WHERE id = ${ownedAiImageId} AND user_id = ${neonUser.id}
@@ -105,7 +114,8 @@ export async function POST(
         `
       : await sql`
           UPDATE feed_posts
-          SET image_url = ${imageUrl},
+          SET image_url = ${ownedImageUrls[0]},
+              media_urls = ${JSON.stringify(ownedImageUrls)}::jsonb,
               ai_image_id = (
                 SELECT id FROM ai_images
                 WHERE id = ${ownedAiImageId} AND user_id = ${neonUser.id}
@@ -146,7 +156,8 @@ export async function POST(
     console.log("[v0] Post image replaced successfully:", {
       postId,
       feedId,
-      imageUrl: imageUrl?.substring(0, 50),
+      imageUrl: ownedImageUrls[0]?.substring(0, 50),
+      mediaCount: ownedImageUrls.length,
     })
 
     return NextResponse.json({

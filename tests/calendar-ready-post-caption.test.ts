@@ -135,6 +135,73 @@ describe("Calendar ready-post captions", () => {
     await expect(response.json()).resolves.toMatchObject({ captionStatus: "preserved" })
   })
 
+  it("keeps carousel slides ordered and uses slide one as the cover", async () => {
+    const values: unknown[][] = []
+    mocks.sql.mockImplementation((strings: TemplateStringsArray, ...params: unknown[]) => {
+      const query = queryText(strings)
+      values.push(params)
+      if (query.includes("FROM feed_layouts")) return [{ id: 12, user_id: 77 }]
+      if (query.includes("FROM feed_posts") && query.includes("SELECT")) {
+        return [
+          {
+            id: 9,
+            feed_layout_id: 12,
+            position: 2,
+            post_type: "detail",
+            content_pillar: "Teaching",
+            caption: "A useful carousel",
+          },
+        ]
+      }
+      if (query.includes("UPDATE feed_posts")) {
+        return [
+          {
+            id: 9,
+            image_url: "https://example.com/slide-1.jpg",
+            media_urls: [
+              "https://example.com/slide-1.jpg",
+              "https://example.com/slide-2.jpg",
+            ],
+            caption: "A useful carousel",
+          },
+        ]
+      }
+      return []
+    })
+
+    const { POST } = await import("@/app/api/feed/[feedId]/replace-post-image/route")
+    const response = await POST(
+      new Request("http://localhost/api/feed/12/replace-post-image", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          postId: 9,
+          imageUrl: "https://example.com/slide-1.jpg",
+          imageUrls: [
+            "https://example.com/slide-1.jpg",
+            "https://example.com/slide-2.jpg",
+          ],
+        }),
+      }),
+      { params: Promise.resolve({ feedId: "12" }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(values.flat()).toContain("https://example.com/slide-1.jpg")
+    expect(values.flat()).toContain(
+      JSON.stringify([
+        "https://example.com/slide-1.jpg",
+        "https://example.com/slide-2.jpg",
+      ])
+    )
+    await expect(response.json()).resolves.toMatchObject({
+      post: {
+        image_url: "https://example.com/slide-1.jpg",
+        media_urls: ["https://example.com/slide-1.jpg", "https://example.com/slide-2.jpg"],
+      },
+    })
+  })
+
   it("still saves the photo when caption generation fails", async () => {
     mocks.generateInstagramCaption.mockRejectedValue(new Error("caption provider unavailable"))
     mocks.sql.mockImplementation((strings: TemplateStringsArray) => {

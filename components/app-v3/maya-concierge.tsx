@@ -1349,20 +1349,26 @@ export function MayaConcierge({
     if (!calendarSurfaceActive || !isOpen || !target || target.announced || isThinking) return
     if (calendarHandoffSentRef.current === target.requestId) return
     calendarHandoffSentRef.current = target.requestId
-    const intent = intentForFormat("photo", "content_card")
-    lastPulledFormatRef.current = "photo"
+    const intent = intentForFormat(target.plannedFormat, "content_card")
+    lastPulledFormatRef.current = target.plannedFormat
     setGenerationSource("selfie")
     setLocalCreationIntent(intent)
     extrasRef.current = {
       ...extrasRef.current,
-      format: "photo",
+      format: target.plannedFormat,
       creationIntent: intent,
       creationIdea: target.caption || target.contentPillar || `Calendar post ${target.position}`,
     }
     const idea = target.caption?.trim() || target.contentPillar?.trim()
+    const formatName =
+      target.plannedFormat === "carousel"
+        ? "carousel"
+        : target.plannedFormat === "reel-cover"
+          ? "Reel cover"
+          : "photo"
     const text = target.hasImage
-      ? `Let's create a fresh photo option for post ${target.position}${idea ? ` about: ${idea}` : ""}. Keep the current Calendar photo safe.`
-      : `Let's create the photo for post ${target.position}${idea ? ` about: ${idea}` : ""}.`
+      ? `Let's create a fresh ${formatName} option for post ${target.position}${idea ? ` about: ${idea}` : ""}. Keep the current Calendar post safe.`
+      : `Let's create the ${formatName} for post ${target.position}${idea ? ` about: ${idea}` : ""}.`
     markCalendarTargetAnnounced(target.requestId)
     sendMessage({ text })
   }, [
@@ -2089,15 +2095,19 @@ export function MayaConcierge({
   async function attachCalendarGeneration(
     target: CalendarPostTarget,
     generationRequestId: string,
-    imageUrl: string,
-    aiImageId: number | null
+    imageUrls: string[],
+    aiImageIds: Array<number | null>
   ): Promise<boolean> {
+    const imageUrl = imageUrls[0]
+    const aiImageId = aiImageIds[0] ?? null
+    if (!imageUrl) return false
     const response = await fetch(`/api/feed/${target.feedId}/replace-post-image`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         postId: target.postId,
         imageUrl,
+        imageUrls,
         aiImageId,
         generationRequestId,
       }),
@@ -2116,15 +2126,23 @@ export function MayaConcierge({
     completeCalendarTarget(target.requestId, {
       generationRequestId,
       imageUrl,
+      imageUrls,
       aiImageId,
       previousImageUrl: target.imageUrl,
+      previousMediaUrls: target.mediaUrls,
       previousAiImageId: target.aiImageId,
     })
     setCalendarDeliveryError(null)
     announceCalendarUpdated(target.feedId)
     void trackAnalyticsEvent({
       event: "calendar_photo_added",
-      properties: { feedId: target.feedId, postId: target.postId, source: "maya_concierge" },
+      properties: {
+        feedId: target.feedId,
+        postId: target.postId,
+        source: "maya_concierge",
+        format: target.plannedFormat,
+        mediaCount: imageUrls.length,
+      },
     })
     if (data?.captionStatus === "ready" || data?.captionStatus === "preserved") {
       void trackAnalyticsEvent({
@@ -2143,7 +2161,7 @@ export function MayaConcierge({
     const response = await fetch(`/api/feed/${target.feedId}/replace-post-image`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ postId: target.postId, imageUrl, aiImageId }),
+      body: JSON.stringify({ postId: target.postId, imageUrl, imageUrls: [imageUrl], aiImageId }),
     })
     const data = (await response.json().catch(() => null)) as { error?: string } | null
     if (!response.ok) {
@@ -2153,8 +2171,10 @@ export function MayaConcierge({
     completeCalendarTarget(target.requestId, {
       generationRequestId: `manual:${Date.now()}`,
       imageUrl,
+      imageUrls: [imageUrl],
       aiImageId,
       previousImageUrl: target.imageUrl,
+      previousMediaUrls: target.mediaUrls,
       previousAiImageId: target.aiImageId,
     })
     setCalendarDeliveryError(null)
@@ -2176,6 +2196,7 @@ export function MayaConcierge({
             ? {
                 postId: target.postId,
                 imageUrl: target.delivery.previousImageUrl,
+                imageUrls: target.delivery.previousMediaUrls,
                 aiImageId: target.delivery.previousAiImageId,
               }
             : { postId: target.postId }
@@ -2255,11 +2276,10 @@ export function MayaConcierge({
     }))
     const activeCalendarTarget = session?.calendarTarget
     const calendarTargetForRequest =
-      targetFormat === "photo" &&
+      targetFormat === activeCalendarTarget?.plannedFormat &&
       generationRequestId &&
       calendarSurfaceActive &&
       activeCalendarTarget &&
-      !activeCalendarTarget.hasImage &&
       !activeCalendarTarget.delivery
         ? activeCalendarTarget
         : null
@@ -2315,8 +2335,8 @@ export function MayaConcierge({
         await attachCalendarGeneration(
           calendarTargetForRequest,
           generationRequestId,
-          recovered.url,
-          recovered.aiImageId
+          [recovered.url],
+          [recovered.aiImageId]
         )
         calendarSettled = true
       }
@@ -2513,11 +2533,18 @@ export function MayaConcierge({
               trackGenerationCompleted(targetFormat, "stream")
               showTrialCapIfDepleted(evt.newBalance)
               if (calendarTargetForRequest && generationRequestId) {
+                const calendarImageUrls =
+                  evt.bakedImageUrls?.map((url, index) => url ?? evt!.imageUrls![index]) ??
+                  evt.imageUrls
+                const calendarImageIds =
+                  evt.bakedAiImageIds?.map((id, index) => id ?? evt!.aiImageIds?.[index] ?? null) ??
+                  evt.aiImageIds ??
+                  evt.imageUrls.map((_, index) => (index === 0 ? (evt!.aiImageId ?? null) : null))
                 await attachCalendarGeneration(
                   calendarTargetForRequest,
                   generationRequestId,
-                  evt.imageUrls[0],
-                  evt.aiImageIds?.[0] ?? evt.aiImageId ?? null
+                  calendarImageUrls,
+                  calendarImageIds
                 )
                 calendarSettled = true
               }
@@ -2605,11 +2632,20 @@ export function MayaConcierge({
       trackGenerationCompleted(targetFormat, "generate")
       showTrialCapIfDepleted(data?.newBalance)
       if (calendarTargetForRequest && generationRequestId) {
+        const calendarImageUrls =
+          data?.bakedImageUrls?.map((url, index) => url ?? urls[index]) ?? urls
+        const calendarDelivery = {
+          imageUrls: calendarImageUrls,
+          aiImageIds:
+            data?.bakedAiImageIds?.map((id, index) => id ?? data?.aiImageIds?.[index] ?? null) ??
+            data?.aiImageIds ??
+            urls.map((_, index) => (index === 0 ? (data?.aiImageId ?? null) : null)),
+        }
         await attachCalendarGeneration(
           calendarTargetForRequest,
           generationRequestId,
-          urls[0],
-          data?.aiImageIds?.[0] ?? data?.aiImageId ?? null
+          calendarDelivery.imageUrls,
+          calendarDelivery.aiImageIds
         )
         calendarSettled = true
       }

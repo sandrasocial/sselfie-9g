@@ -105,8 +105,10 @@ export interface CalendarPostTarget {
   caption: string | null
   contentPillar: string | null
   scheduledAt: string | null
+  plannedFormat: OutputFormat
   hasImage: boolean
   imageUrl: string | null
+  mediaUrls: string[]
   aiImageId: number | null
   /** Prevents a reload from replaying the same visible Calendar handoff message. */
   announced?: boolean
@@ -114,9 +116,11 @@ export interface CalendarPostTarget {
   delivery?: {
     generationRequestId: string
     imageUrl: string
+    imageUrls: string[]
     aiImageId: number | null
     /** Lets Undo restore an already-filled post instead of emptying it. */
     previousImageUrl: string | null
+    previousMediaUrls: string[]
     previousAiImageId: number | null
   } | null
 }

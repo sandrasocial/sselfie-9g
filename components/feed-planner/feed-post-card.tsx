@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { toast } from "@/hooks/use-toast"
 import { isPersonalStoryPosition } from "@/lib/feed-planner/caption-truth"
@@ -18,6 +18,11 @@ interface FeedPostCardProps {
     generation_status: string
     prediction_id?: string | null
     scheduled_at?: string | null
+    media_urls?: string[] | null
+    purpose?: string | null
+    shot_type?: string | null
+    visual_direction?: string | null
+    pro_mode_type?: string | null
   }
   feedId: number
   accountName?: string | null
@@ -42,6 +47,50 @@ export default function FeedPostCard({
   const [copiedHashtags, setCopiedHashtags] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [isRemovingImage, setIsRemovingImage] = useState(false)
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0)
+  const [isSavingSlides, setIsSavingSlides] = useState(false)
+
+  const mediaUrls = Array.isArray(post.media_urls)
+    ? post.media_urls.filter(
+        (url): url is string => typeof url === "string" && url.startsWith("https://")
+      )
+    : []
+  const savedMediaUrls = mediaUrls.length > 0 ? mediaUrls : post.image_url ? [post.image_url] : []
+
+  useEffect(() => setActiveMediaIndex(0), [post.id, savedMediaUrls.length])
+
+  async function handleSaveAllSlides() {
+    if (savedMediaUrls.length < 2 || isSavingSlides) return
+    setIsSavingSlides(true)
+    try {
+      const { default: JSZip } = await import("jszip")
+      const zip = new JSZip()
+      await Promise.all(
+        savedMediaUrls.map(async (url, index) => {
+          const response = await fetch(url)
+          if (!response.ok) throw new Error("A slide could not be downloaded")
+          zip.file(`post-${post.position}-slide-${index + 1}.png`, await response.arrayBuffer())
+        })
+      )
+      const bundle = await zip.generateAsync({ type: "blob" })
+      const downloadUrl = URL.createObjectURL(bundle)
+      const link = document.createElement("a")
+      link.href = downloadUrl
+      link.download = `post-${post.position}-slides.zip`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(downloadUrl)
+    } catch {
+      toast({
+        title: "Couldn't save the slides",
+        description: "Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSavingSlides(false)
+    }
+  }
 
   async function handleRemoveImage() {
     if (!confirmRemove) {
@@ -66,6 +115,7 @@ export default function FeedPostCard({
       await onUpdate?.({
         ...post,
         image_url: null,
+        media_urls: [],
         preview_image_url: null,
         prediction_id: null,
         generation_status: "pending",
@@ -83,7 +133,12 @@ export default function FeedPostCard({
   }
 
   // Get post type label (portrait, carousel, quote, etc.)
-  const postTypeLabel = post.post_type?.toLowerCase() || "portrait"
+  const postTypeLabel =
+    post.pro_mode_type === "carousel-slides"
+      ? "carousel"
+      : post.pro_mode_type === "reel-cover"
+        ? "reel cover"
+        : post.post_type?.toLowerCase() || "portrait"
 
   // Get a cleaner description from content_pillar or a default
   const getPostDescription = () => {
@@ -377,7 +432,8 @@ export default function FeedPostCard({
       <div className="relative aspect-[4/5] bg-[#F1F2F2]">
         {/* PHASE 5 FIX: Use preview_image_url as fallback for preview feeds */}
         {(() => {
-          const imageUrl = post.image_url || post.preview_image_url
+          const imageUrl =
+            savedMediaUrls[activeMediaIndex] || post.image_url || post.preview_image_url
           return imageUrl ? (
             <>
               <Image
@@ -401,6 +457,27 @@ export default function FeedPostCard({
               >
                 {isRemovingImage ? "Removing…" : confirmRemove ? "Tap again to remove" : "Remove"}
               </button>
+              {savedMediaUrls.length > 1 ? (
+                <div className="absolute inset-x-3 bottom-3 flex items-center justify-between gap-3 rounded-full bg-[#0D0E10]/70 px-3 py-2 backdrop-blur-sm">
+                  <div className="flex items-center gap-1" aria-label="Carousel slides">
+                    {savedMediaUrls.map((_, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => setActiveMediaIndex(index)}
+                        aria-label={`Show slide ${index + 1}`}
+                        aria-pressed={activeMediaIndex === index}
+                        className={`h-2.5 w-2.5 rounded-full border border-white/70 ${
+                          activeMediaIndex === index ? "bg-white" : "bg-transparent"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[10px] font-medium text-white">
+                    {activeMediaIndex + 1} / {savedMediaUrls.length}
+                  </span>
+                </div>
+              ) : null}
             </>
           ) : post.generation_status === "generating" && post.prediction_id ? (
             <div className="flex h-full w-full flex-col items-center justify-center">
@@ -470,6 +547,37 @@ export default function FeedPostCard({
           )
         })()}
       </div>
+
+      {savedMediaUrls.length > 1 ? (
+        <div className="flex items-center justify-between border-b border-[#C5C6C8]/35 px-4 py-3">
+          <p className="text-xs text-[#4F5052]">{savedMediaUrls.length} slides saved together</p>
+          <button
+            type="button"
+            onClick={() => void handleSaveAllSlides()}
+            disabled={isSavingSlides}
+            className="min-h-11 rounded-[8px] border border-[#C5C6C8]/60 px-3 text-[10px] uppercase tracking-[0.14em] text-[#0D0E10] transition-colors hover:bg-[#F8FAFA] disabled:opacity-50"
+          >
+            {isSavingSlides ? "Saving..." : "Save all slides"}
+          </button>
+        </div>
+      ) : null}
+
+      {(post.purpose || post.shot_type || post.visual_direction) && (
+        <div className="space-y-1 border-b border-[#C5C6C8]/35 bg-[#F8FAFA] px-4 py-3">
+          <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-[#4F5052]">
+            Maya&apos;s plan for this post
+          </p>
+          <p className="text-sm text-[#0D0E10]">
+            {[post.purpose, post.shot_type]
+              .filter(Boolean)
+              .map(value => String(value).replace(/[-_]/g, " "))
+              .join(" · ")}
+          </p>
+          {post.visual_direction ? (
+            <p className="text-xs leading-relaxed text-[#4F5052]">{post.visual_direction}</p>
+          ) : null}
+        </div>
+      )}
 
       {/* Real post actions only. Decorative Instagram controls created broken expectations. */}
       <div className="space-y-3 px-4 py-3">

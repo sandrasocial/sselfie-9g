@@ -153,10 +153,14 @@ export function ConciergeProvider({
           if (prev) {
             return {
               ...prev,
-              outputFormat: "photo",
+              outputFormat: target.plannedFormat,
               seedPrompt: null,
               creationIdea: calendarCreationIdea(target),
-              creationIntent: { format: "photo", source: "content_card", confidence: "high" },
+              creationIntent: {
+                format: target.plannedFormat,
+                source: "content_card",
+                confidence: "high",
+              },
               generationSource: null,
               initialSetupAction: null,
               calendarTarget,
@@ -166,14 +170,18 @@ export function ConciergeProvider({
           }
           return {
             aesthetic: GENERAL_MAYA_AESTHETIC,
-            outputFormat: "photo",
+            outputFormat: target.plannedFormat,
             referenceSelfieUrl: null,
             videoSourceUrl: null,
             inspirationImageUrl: null,
             graphicText: null,
             seedPrompt: null,
             creationIdea: calendarCreationIdea(target),
-            creationIntent: { format: "photo", source: "content_card", confidence: "high" },
+            creationIntent: {
+              format: target.plannedFormat,
+              source: "content_card",
+              confidence: "high",
+            },
             shotDirector: null,
             generationSource: null,
             initialSetupAction: null,
@@ -208,6 +216,7 @@ export function ConciergeProvider({
                 ...prev.calendarTarget,
                 hasImage: true,
                 imageUrl: delivery.imageUrl,
+                mediaUrls: delivery.imageUrls,
                 aiImageId: delivery.aiImageId,
                 delivery,
               },
@@ -227,6 +236,7 @@ export function ConciergeProvider({
               ...prev.calendarTarget,
               hasImage: Boolean(prev.calendarTarget.delivery?.previousImageUrl),
               imageUrl: prev.calendarTarget.delivery?.previousImageUrl ?? null,
+              mediaUrls: prev.calendarTarget.delivery?.previousMediaUrls ?? [],
               aiImageId: prev.calendarTarget.delivery?.previousAiImageId ?? null,
               delivery: null,
             },

@@ -13,6 +13,11 @@
 
 import { sql } from "@/lib/db/client"
 import { CuratedFeedStyleName } from "@/lib/style-presets"
+import {
+  proModeTypeForFormat,
+  type CohesiveFeedPlan,
+  type CohesiveFeedSlot,
+} from "@/lib/feed-planner/cohesive-feed-plan"
 
 export interface FeedPlanPost {
   position: number
@@ -22,11 +27,14 @@ export interface FeedPlanPost {
   /** Short editorial label shown on the grid tile, e.g. "Monday tutorial". */
   title: string
   caption: string
+  creativeDirection?: CohesiveFeedSlot
 }
 
 export interface FeedMonthPlan {
   themeSummary: string
   schedulingRationale: string
+  feedStory: string
+  visualRhythm: string
   posts: FeedPlanPost[]
 }
 
@@ -37,15 +45,23 @@ function isNonEmptyString(value: unknown): value is string {
 }
 
 function isValidDateInMonth(value: unknown, periodMonth: string): value is string {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && value.startsWith(periodMonth)
+  return (
+    typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && value.startsWith(periodMonth)
+  )
 }
 
 /** Defensive parse, mirrors the array-filter pattern in /api/app-v3/maya/recommendations. */
-export function validateFeedMonthPlan(raw: unknown, periodMonth: string): FeedMonthPlan | null {
+export function validateFeedMonthPlan(
+  raw: unknown,
+  periodMonth: string,
+  cohesivePlan?: CohesiveFeedPlan
+): FeedMonthPlan | null {
   if (!raw || typeof raw !== "object") return null
   const obj = raw as Record<string, unknown>
   const themeSummary = isNonEmptyString(obj.themeSummary) ? obj.themeSummary.trim() : ""
-  const schedulingRationale = isNonEmptyString(obj.schedulingRationale) ? obj.schedulingRationale.trim() : ""
+  const schedulingRationale = isNonEmptyString(obj.schedulingRationale)
+    ? obj.schedulingRationale.trim()
+    : ""
   if (!Array.isArray(obj.posts)) return null
 
   const seenPositions = new Set<number>()
@@ -55,7 +71,12 @@ export function validateFeedMonthPlan(raw: unknown, periodMonth: string): FeedMo
     const p = item as Record<string, unknown>
     const position = Number(p.position)
     if (!Number.isInteger(position) || position < 1 || seenPositions.has(position)) continue
-    if (!isNonEmptyString(p.title) || !isNonEmptyString(p.contentPillar) || !isNonEmptyString(p.caption)) continue
+    if (
+      !isNonEmptyString(p.title) ||
+      !isNonEmptyString(p.contentPillar) ||
+      !isNonEmptyString(p.caption)
+    )
+      continue
     if (!isValidDateInMonth(p.plannedDate, periodMonth)) continue
     seenPositions.add(position)
     posts.push({
@@ -64,13 +85,27 @@ export function validateFeedMonthPlan(raw: unknown, periodMonth: string): FeedMo
       contentPillar: p.contentPillar.trim(),
       title: p.title.trim(),
       caption: p.caption.trim(),
+      creativeDirection: cohesivePlan?.slots.find(slot => slot.position === position),
     })
     if (posts.length >= MAX_POSTS) break
   }
 
   if (posts.length === 0) return null
   posts.sort((a, b) => a.position - b.position)
-  return { themeSummary, schedulingRationale, posts }
+  if (
+    cohesivePlan &&
+    (posts.length !== cohesivePlan.slots.length ||
+      posts.some((post, index) => post.position !== cohesivePlan.slots[index]?.position))
+  ) {
+    return null
+  }
+  return {
+    themeSummary,
+    schedulingRationale,
+    feedStory: cohesivePlan?.feedStory || themeSummary,
+    visualRhythm: cohesivePlan?.visualRhythm || schedulingRationale,
+    posts,
+  }
 }
 
 /** Cyclic shot-type hint from the resolved style's own curated grid pattern (post_type is
@@ -111,6 +146,7 @@ export async function writeAutoDraft(input: WriteAutoDraftInput): Promise<WriteA
 
   let feedLayoutId: number
   let positionOffset = 0
+  let existingPostCount = 0
   let occupiedDates = new Set<string>()
 
   if (existingLayoutId) {
@@ -121,28 +157,50 @@ export async function writeAutoDraft(input: WriteAutoDraftInput): Promise<WriteA
     await sql`
       UPDATE feed_layouts
       SET description = ${plan.themeSummary}, overall_vibe = ${plan.themeSummary},
-          strategic_rationale = ${plan.schedulingRationale}
+          strategic_rationale = ${plan.schedulingRationale},
+          feed_story = ${plan.feedStory}, visual_rhythm = ${plan.visualRhythm}
       WHERE id = ${feedLayoutId} AND user_id = ${userId}
     `
     const existingPosts = await sql`
-      SELECT position, scheduled_at FROM feed_posts WHERE feed_layout_id = ${feedLayoutId}
+      SELECT id, position, scheduled_at FROM feed_posts WHERE feed_layout_id = ${feedLayoutId}
     `
-    positionOffset = existingPosts.reduce((max: number, p: any) => Math.max(max, Number(p.position) || 0), 0)
+    existingPostCount = existingPosts.length
+    positionOffset = existingPosts.reduce(
+      (max: number, p: any) => Math.max(max, Number(p.position) || 0),
+      0
+    )
     occupiedDates = new Set(
       existingPosts
-        .map((p: any) => (p.scheduled_at ? new Date(p.scheduled_at).toISOString().slice(0, 10) : null))
-        .filter((d: string | null): d is string => !!d),
+        .map((p: any) =>
+          p.scheduled_at ? new Date(p.scheduled_at).toISOString().slice(0, 10) : null
+        )
+        .filter((d: string | null): d is string => !!d)
     )
+    for (const existingPost of existingPosts) {
+      const direction = plan.posts.find(
+        post => post.position === Number(existingPost.position)
+      )?.creativeDirection
+      if (!direction) continue
+      await sql`
+        UPDATE feed_posts
+        SET purpose = COALESCE(purpose, ${direction.contentRole}),
+            shot_type = COALESCE(shot_type, ${direction.shotRole}),
+            visual_direction = COALESCE(visual_direction, ${direction.visualDirection}),
+            background = COALESCE(background, ${direction.neighborRelationship}),
+            pro_mode_type = COALESCE(pro_mode_type, ${proModeTypeForFormat(direction.plannedFormat)})
+        WHERE id = ${existingPost.id} AND feed_layout_id = ${feedLayoutId} AND user_id = ${userId}
+      `
+    }
   } else {
     const [layoutRow] = await sql`
       INSERT INTO feed_layouts (
         user_id, title, description, layout_type, status,
         feed_style, feed_style_variation_id, period_month,
-        overall_vibe, strategic_rationale
+        overall_vibe, strategic_rationale, feed_story, visual_rhythm
       ) VALUES (
         ${userId}, ${`Feed plan - ${periodMonth}`}, ${plan.themeSummary}, 'grid_3x3', 'draft',
         ${feedStyle}, ${variationId}, ${periodMonth},
-        ${plan.themeSummary}, ${plan.schedulingRationale}
+        ${plan.themeSummary}, ${plan.schedulingRationale}, ${plan.feedStory}, ${plan.visualRhythm}
       )
       RETURNING id
     `
@@ -156,17 +214,30 @@ export async function writeAutoDraft(input: WriteAutoDraftInput): Promise<WriteA
   const postIds: number[] = []
   try {
     let insertIndex = 0
-    for (const post of plan.posts) {
+    const postsToInsert = existingLayoutId ? plan.posts.slice(existingPostCount) : plan.posts
+    for (const post of postsToInsert) {
       if (occupiedDates.has(post.plannedDate)) continue
       insertIndex += 1
       const position = positionOffset + insertIndex
+      const direction =
+        post.creativeDirection ??
+        ({
+          contentRole: "connect",
+          shotRole: postTypeForPosition(input.grid, position),
+          visualDirection: `Create a clear ${postTypeForPosition(input.grid, position)} post.`,
+          neighborRelationship: "Keep this post visually different from the one beside it.",
+          plannedFormat: "photo",
+        } as CohesiveFeedSlot)
       const [row] = await sql`
         INSERT INTO feed_posts (
           feed_layout_id, user_id, position, post_type, caption,
-          content_pillar, scheduled_at, generation_status
+          content_pillar, scheduled_at, generation_status,
+          purpose, shot_type, visual_direction, background, pro_mode_type
         ) VALUES (
           ${feedLayoutId}, ${userId}, ${position}, ${postTypeForPosition(input.grid, position)},
-          ${post.caption}, ${post.contentPillar}, ${post.plannedDate}, 'pending'
+          ${post.caption}, ${post.contentPillar}, ${post.plannedDate}, 'pending',
+          ${direction.contentRole}, ${direction.shotRole}, ${direction.visualDirection},
+          ${direction.neighborRelationship}, ${proModeTypeForFormat(direction.plannedFormat)}
         )
         RETURNING id
       `
@@ -181,7 +252,9 @@ export async function writeAutoDraft(input: WriteAutoDraftInput): Promise<WriteA
         await sql`DELETE FROM feed_posts WHERE id = ${id}`.catch(() => {})
       }
     } else {
-      await sql`DELETE FROM feed_layouts WHERE id = ${feedLayoutId} AND user_id = ${userId}`.catch(() => {})
+      await sql`DELETE FROM feed_layouts WHERE id = ${feedLayoutId} AND user_id = ${userId}`.catch(
+        () => {}
+      )
     }
     throw error
   }
@@ -198,7 +271,7 @@ export async function writeAutoDraft(input: WriteAutoDraftInput): Promise<WriteA
  */
 export async function getMonthPlanState(
   userId: number | string,
-  periodMonth: string,
+  periodMonth: string
 ): Promise<{ state: "planned" | "stub" | "none"; layoutId: number | null }> {
   const [thisMonth] = await sql`
     SELECT id, strategic_rationale FROM feed_layouts
@@ -233,7 +306,10 @@ export async function getMonthPlanState(
 }
 
 /** True if this user already has a plan for this month - kept as the simple yes/no wrapper. */
-export async function hasPlanForMonth(userId: number | string, periodMonth: string): Promise<boolean> {
+export async function hasPlanForMonth(
+  userId: number | string,
+  periodMonth: string
+): Promise<boolean> {
   const { state } = await getMonthPlanState(userId, periodMonth)
   return state === "planned"
 }

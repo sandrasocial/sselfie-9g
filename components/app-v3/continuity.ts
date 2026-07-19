@@ -181,6 +181,15 @@ function sanitizeCalendarPostTarget(value: unknown): CalendarPostTarget | null {
     const clean = candidate.replace(/\s+/g, " ").trim().slice(0, max)
     return clean || null
   }
+  const cleanUrls = (candidate: unknown): string[] =>
+    Array.isArray(candidate)
+      ? candidate
+          .filter(
+            (url): url is string =>
+              typeof url === "string" && url.startsWith("https://") && url.length <= 4096
+          )
+          .slice(0, 10)
+      : []
   const rawDelivery =
     target.delivery && typeof target.delivery === "object"
       ? (target.delivery as Record<string, unknown>)
@@ -195,6 +204,7 @@ function sanitizeCalendarPostTarget(value: unknown): CalendarPostTarget | null {
       ? {
           generationRequestId: rawDelivery.generationRequestId,
           imageUrl: rawDelivery.imageUrl,
+          imageUrls: cleanUrls(rawDelivery.imageUrls),
           aiImageId:
             typeof rawDelivery.aiImageId === "number" &&
             Number.isInteger(rawDelivery.aiImageId) &&
@@ -206,6 +216,7 @@ function sanitizeCalendarPostTarget(value: unknown): CalendarPostTarget | null {
             rawDelivery.previousImageUrl.startsWith("https://")
               ? rawDelivery.previousImageUrl
               : null,
+          previousMediaUrls: cleanUrls(rawDelivery.previousMediaUrls),
           previousAiImageId:
             typeof rawDelivery.previousAiImageId === "number" &&
             Number.isInteger(rawDelivery.previousAiImageId) &&
@@ -222,11 +233,15 @@ function sanitizeCalendarPostTarget(value: unknown): CalendarPostTarget | null {
     caption: cleanText(target.caption, 400),
     contentPillar: cleanText(target.contentPillar, 240),
     scheduledAt: cleanText(target.scheduledAt, 80),
+    plannedFormat: VALID_FORMATS.includes(target.plannedFormat as OutputFormat)
+      ? (target.plannedFormat as OutputFormat)
+      : "photo",
     hasImage: target.hasImage === true,
     imageUrl:
       typeof target.imageUrl === "string" && target.imageUrl.startsWith("https://")
         ? target.imageUrl
         : null,
+    mediaUrls: cleanUrls(target.mediaUrls),
     aiImageId:
       typeof target.aiImageId === "number" &&
       Number.isInteger(target.aiImageId) &&

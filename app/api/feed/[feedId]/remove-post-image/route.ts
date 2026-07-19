@@ -9,7 +9,7 @@ import { sql } from "@/lib/db/client"
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ feedId: string }> | { feedId: string } },
+  { params }: { params: Promise<{ feedId: string }> | { feedId: string } }
 ) {
   try {
     const { user: authUser, error: authError } = await getAuthenticatedUser()
@@ -27,6 +27,7 @@ export async function POST(
     const updated = await sql`
       UPDATE feed_posts
       SET image_url = NULL,
+          media_urls = '[]'::jsonb,
           preview_image_url = NULL,
           ai_image_id = NULL,
           prediction_id = NULL,

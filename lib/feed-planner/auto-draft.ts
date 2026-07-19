@@ -12,6 +12,11 @@ import { resolvePostingCadence, postsPerMonthForCadence } from "@/lib/feed-plann
 import { resolveFeedStyleForUser } from "@/lib/feed-planner/resolve-feed-style"
 import { CURATED_FEED_STYLE_MAP } from "@/lib/style-presets"
 import {
+  buildCohesiveFeedPlan,
+  describeCohesiveFeedPlan,
+  type CohesiveFeedPlan,
+} from "@/lib/feed-planner/cohesive-feed-plan"
+import {
   validateFeedMonthPlan,
   writeAutoDraft,
   getMonthPlanState,
@@ -27,7 +32,7 @@ export type AutoDraftOutcome =
       reason: "draft_in_progress" | "plan_exists" | "missing_context" | "generation_failed"
     }
 
-type AutoDraftPromptInput = {
+export type AutoDraftPromptInput = {
   agentName: string
   periodMonth: string
   postCount: number
@@ -35,6 +40,7 @@ type AutoDraftPromptInput = {
   daysInMonth: number
   brandContext: string | null
   strictTruthMode?: boolean
+  cohesivePlan?: CohesiveFeedPlan
 }
 
 function profileText(profile: unknown, ...keys: string[]): string {
@@ -107,9 +113,13 @@ export function buildAutoDraftPrompt(input: AutoDraftPromptInput): {
 } {
   const { agentName, periodMonth, postCount, cadence, daysInMonth, brandContext } = input
   const strictTruthMode = input.strictTruthMode ?? !brandContext
+  const cohesivePlan = input.cohesivePlan
   const system = [
-    `You are ${agentName}, her personal content strategist at SSELFIE. Plan her Instagram feed for ${periodMonth} the way a stylist would: specific to her, never generic.`,
+    `You are ${agentName}, her personal content strategist at SSELFIE. Plan her Instagram feed for ${periodMonth} as one connected feed, not separate posts. Make it specific to her, never generic.`,
     `Plan exactly ${postCount} posts, spread naturally across the month (about ${cadence} per week) rather than clustered at the start.`,
+    "Use her own photos and videos first. Create only what is missing.",
+    "Treat inspiration as composition and mood only. Never copy another creator's face, words, or exact feed.",
+    "Keep the feed cohesive, not identical. Do not place similar portraits, text covers, close-ups, or dark images beside each other.",
     "Factual safety:",
     "- Never invent facts, numbers, customer results, personal history, testimonials, pricing, timelines, or proof.",
     "- Use only facts explicitly present in the context. Treat missing information as unknown, not as permission to create a plausible detail.",
@@ -139,7 +149,12 @@ export function buildAutoDraftPrompt(input: AutoDraftPromptInput): {
     brandContext
       ? `What you know about her:\n${brandContext}`
       : "You don't have much on her yet. Keep the plan relevant to her business and audience. Use observations, useful how-to guidance, thoughtful questions, and editable caption structures. Do not fill missing context with plausible details.",
-  ].join("\n\n")
+    cohesivePlan
+      ? `The complete feed structure Maya has chosen:\nFeed story: ${cohesivePlan.feedStory}\nVisual rhythm: ${cohesivePlan.visualRhythm}\n${describeCohesiveFeedPlan(cohesivePlan)}\n\nWrite each post for its assigned job. Do not change the format, shot role, subject, or visual weight.`
+      : null,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join("\n\n")
 
   return { system, userMessage }
 }
@@ -180,6 +195,8 @@ export async function draftMonthPlanForUser(
     const cadence = await resolvePostingCadence(neonUserId)
     const postCount = postsPerMonthForCadence(cadence)
     const resolvedStyle = await resolveFeedStyleForUser(personalBrand, neonUserId)
+    const grid = CURATED_FEED_STYLE_MAP[resolvedStyle.feedStyle].grid
+    const cohesivePlan = buildCohesiveFeedPlan({ personalBrand, postCount, grid })
 
     let agentName = "Maya"
     if (memory?.agentName?.trim()) agentName = memory.agentName.trim()
@@ -202,6 +219,7 @@ export async function draftMonthPlanForUser(
         "specific_phrases",
         "signature_phrases"
       ),
+      cohesivePlan,
     })
     const strictTruthMode = !profileText(
       personalBrand,
@@ -231,7 +249,7 @@ export async function draftMonthPlanForUser(
         console.error("[feed-plan draft] JSON parse failed. Raw model output:", text.slice(0, 400))
       }
 
-      const candidate = validateFeedMonthPlan(parsed, periodMonth)
+      const candidate = validateFeedMonthPlan(parsed, periodMonth, cohesivePlan)
       if (!candidate) continue
       if (candidate.posts.some(post => isUnsupportedAutoDraftPost(post, strictTruthMode))) {
         console.warn("[feed-plan draft] rejected unsupported experience claim")
@@ -242,7 +260,6 @@ export async function draftMonthPlanForUser(
 
     if (!plan) return { created: false, reason: "generation_failed" }
 
-    const grid = CURATED_FEED_STYLE_MAP[resolvedStyle.feedStyle].grid
     const { feedLayoutId, postIds } = await writeAutoDraft({
       userId: neonUserId,
       periodMonth,

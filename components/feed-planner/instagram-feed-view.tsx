@@ -39,9 +39,24 @@ import {
 import { useFeedNav } from "./feed-nav-context"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getBrandColorThemeColors } from "@/lib/style-presets"
-import type { CalendarPostTarget } from "@/components/app-v3/types"
+import type { CalendarPostTarget, OutputFormat } from "@/components/app-v3/types"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
+
+function plannedFormatForPost(post: any): OutputFormat {
+  if (post?.pro_mode_type === "carousel-slides") return "carousel"
+  if (post?.pro_mode_type === "reel-cover") return "reel-cover"
+  return "photo"
+}
+
+function mediaUrlsForPost(post: any): string[] {
+  const urls = Array.isArray(post?.media_urls) ? post.media_urls : []
+  const safe = urls.filter(
+    (url: unknown): url is string => typeof url === "string" && url.startsWith("https://")
+  )
+  if (safe.length > 0) return safe
+  return typeof post?.image_url === "string" ? [post.image_url] : []
+}
 
 const feedPlannerShellClass = "mx-auto w-full max-w-none md:max-w-[935px]"
 const feedPlannerCanvasClass = `${feedPlannerShellClass} app-light-panel-text overflow-hidden rounded-none border-y border-[color:var(--app-glass-border)] bg-white shadow-none sm:rounded-[20px] sm:border sm:bg-[rgba(255,255,255,0.72)] sm:shadow-[0_24px_70px_rgba(61,56,48,0.10)] sm:backdrop-blur-[20px]`
@@ -586,8 +601,10 @@ export default function InstagramFeedView({
     caption: typeof post.caption === "string" ? post.caption : null,
     contentPillar: typeof post.content_pillar === "string" ? post.content_pillar : null,
     scheduledAt: typeof post.scheduled_at === "string" ? post.scheduled_at : null,
+    plannedFormat: plannedFormatForPost(post),
     hasImage: Boolean(post.image_url),
     imageUrl: typeof post.image_url === "string" ? post.image_url : null,
+    mediaUrls: mediaUrlsForPost(post),
     aiImageId:
       typeof post.ai_image_id === "number" && Number.isInteger(post.ai_image_id)
         ? post.ai_image_id
@@ -969,7 +986,10 @@ export default function InstagramFeedView({
           <FeedMonthSummary
             themeSummary={feedData?.feed?.overall_vibe}
             schedulingRationale={feedData?.feed?.strategic_rationale}
+            feedStory={feedData?.feed?.feed_story}
+            visualRhythm={feedData?.feed?.visual_rhythm}
             pillars={monthPillars}
+            posts={displayPosts}
           />
         )}
 
