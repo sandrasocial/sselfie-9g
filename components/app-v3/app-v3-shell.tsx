@@ -260,35 +260,24 @@ function ShellInner({
 
       {section === "create" &&
         (limited ? (
-          <div className="relative">
-            <div className="pointer-events-none select-none opacity-60" aria-hidden>
-              <VisualFrontDoor
-                firstName={firstName}
-                cohort={cohort}
-                hasSelfie={trialHasSavedSelfie}
-                initialPrimarySelfieUrl={primarySelfieUrl}
-                videoEnabled={videoEnabled}
-              />
-            </div>
-            <div className="absolute inset-x-0 top-0 z-10 mx-auto max-w-3xl px-5 pt-10">
-              <div className="rounded-[8px] border border-[#0D0E10] bg-white p-5 shadow-sm">
-                <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">
-                  SSELFIE SUITE
-                </p>
-                <h2 className="mt-2 font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
-                  Maya&apos;s ready when you are.
-                </h2>
-                <p className="mt-1.5 text-[14px] leading-relaxed text-[#4F5052]">
-                  Members get Maya, 200 photos a month, and the SSELFIE library included. Cancel
-                  anytime.
-                </p>
-                <a
-                  href="/checkout/membership?interval=month&source=app_limited_create"
-                  className="mt-4 inline-block rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728]"
-                >
-                  Join SSELFIE SUITE
-                </a>
-              </div>
+          <div className="mx-auto flex min-h-[60dvh] w-full max-w-3xl items-start px-5 pt-10 sm:items-center sm:py-16">
+            <div className="w-full rounded-[8px] border border-[#0D0E10] bg-white p-5 shadow-sm">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+                SSELFIE SUITE
+              </p>
+              <h2 className="mt-2 font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
+                Maya&apos;s ready when you are.
+              </h2>
+              <p className="mt-1.5 text-[14px] leading-relaxed text-[#4F5052]">
+                Members get Maya, 200 photos a month, and the SSELFIE library included. Cancel
+                anytime.
+              </p>
+              <a
+                href="/checkout/membership?interval=month&source=app_limited_create"
+                className="mt-4 inline-block rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728]"
+              >
+                Join SSELFIE SUITE
+              </a>
             </div>
           </div>
         ) : (

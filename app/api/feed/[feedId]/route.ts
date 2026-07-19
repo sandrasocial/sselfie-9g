@@ -27,6 +27,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
     const resolvedParams = await Promise.resolve(params)
     const { feedId } = resolvedParams
     const sql = getDb()
+    const [sharedProfile] = await sql`
+      SELECT image_url
+      FROM user_avatar_images
+      WHERE user_id = ${user.id}
+        AND is_active = ${true}
+        AND image_type = 'selfie'
+      ORDER BY uploaded_at DESC
+      LIMIT 1
+    ` as any[]
+    const sharedProfileImageUrl = typeof sharedProfile?.image_url === "string" ? sharedProfile.image_url : null
 
     console.log("[v0] [FEED API] Fetching feed with ID:", feedId, "for user:", user.id)
 
@@ -81,6 +91,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
         username,
         brandName,
         userDisplayName,
+        sharedProfileImageUrl,
       })
     }
 
@@ -170,6 +181,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
       bio: bios && bios.length > 0 ? bios[0] : null,
       highlights: highlights || [],
       userDisplayName,
+      sharedProfileImageUrl,
     }
 
     // Log post details for debugging

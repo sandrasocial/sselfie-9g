@@ -12,9 +12,14 @@ const read = (file: string) => fs.readFileSync(path.join(process.cwd(), file), "
 describe("Calendar direct manipulation", () => {
   it("opens the Instagram post studio directly from grid and Calendar cards", () => {
     const source = read("components/feed-planner/instagram-feed-view.tsx")
+    const openPostStudio = source.slice(
+      source.indexOf("const openPostStudio ="),
+      source.indexOf("const refreshCalendar =")
+    )
 
     expect(source).toContain("const openPostStudio =")
-    expect(source).toContain("setSelectedPost(post)")
+    expect(openPostStudio).toContain("setSelectedPost(post)")
+    expect(openPostStudio).not.toContain("navigateToMaya")
     expect(source).toContain("onPostClick={openPostStudio}")
     expect(source).not.toContain("Tap a post to select it")
   })

@@ -253,6 +253,7 @@ function renderContent({
       return (
         <button
           type="button"
+          aria-label={`Add photo to post ${post.position}`}
           className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-1.5 bg-[#F8FAFA] p-3 text-center transition-colors hover:bg-[#F1F2F2]"
           onClick={event => {
             event.stopPropagation()
@@ -275,6 +276,7 @@ function renderContent({
       <div className="absolute inset-0 flex flex-col bg-[#F8FAFA]">
         <button
           type="button"
+          aria-label={`Generate image for post ${post.position}`}
           className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-2 p-3 text-center transition-colors hover:bg-[#F1F2F2]"
           onClick={onGenerateClick}
         >

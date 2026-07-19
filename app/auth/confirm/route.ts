@@ -3,6 +3,7 @@ import { cookies } from "next/headers"
 import { type NextRequest, NextResponse } from "next/server"
 import type { EmailOtpType } from "@supabase/supabase-js"
 import { LIVE_MEMBER_APP_PATH, normalizeLegacyStudioRedirect, sanitizeRedirect } from "@/lib/security/url-validator"
+import { syncUserWithNeon } from "@/lib/user-sync"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -38,12 +39,24 @@ export async function GET(request: NextRequest) {
       },
     )
 
-    const { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       type,
       token_hash,
     })
 
     if (!error) {
+      const confirmedUser = data.user
+      if (confirmedUser?.id && confirmedUser.email) {
+        const displayName =
+          confirmedUser.user_metadata?.name ||
+          confirmedUser.user_metadata?.display_name ||
+          confirmedUser.user_metadata?.first_name ||
+          confirmedUser.email.split("@")[0]
+        const neonUser = await syncUserWithNeon(confirmedUser.id, confirmedUser.email, displayName)
+        if (!neonUser) {
+          console.error("[v0] Auth verification succeeded, but application user sync failed")
+        }
+      }
       console.log("[v0] Auth verification successful, redirecting to:", safeNext)
       return NextResponse.redirect(new URL(safeNext, request.url))
     }

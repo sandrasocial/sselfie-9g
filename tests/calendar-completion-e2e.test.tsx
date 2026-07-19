@@ -53,9 +53,8 @@ describe("Calendar completion contract", () => {
   })
 
   it("opens what Maya knows inside the shared Suite Calendar", async () => {
-    const { CalendarContentContextModal } = await import(
-      "@/components/feed-planner/calendar-content-context-modal"
-    )
+    const { CalendarContentContextModal } =
+      await import("@/components/feed-planner/calendar-content-context-modal")
 
     render(
       <CalendarContentContextModal
@@ -167,4 +166,26 @@ describe("Calendar completion contract", () => {
       ).toBe(true)
     })
   }, 10_000)
+
+  it("starts a suggested Highlight with its title already filled in", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, json: async () => ({ assets: [] }) }))
+    )
+    const { default: FeedHighlightsModal } =
+      await import("@/components/feed-planner/feed-highlights-modal")
+
+    render(
+      <FeedHighlightsModal
+        feedId={44}
+        isOpen
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        existingHighlights={[]}
+        initialSequenceTitle="About"
+      />
+    )
+
+    expect(await screen.findByLabelText(/sequence title/i)).toHaveValue("About")
+  })
 })

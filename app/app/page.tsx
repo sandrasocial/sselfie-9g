@@ -18,6 +18,7 @@ import {
 } from "@/lib/app-v3/navigation"
 import { isVideoGenerationEnabled } from "@/lib/app-v3/video-flag"
 import type { AppV3AnalyticsCohort } from "@/components/app-v3/types"
+import { getOrCreateNeonUser } from "@/lib/user-mapping"
 
 export const metadata = {
   title: "SSELFIE Studio",
@@ -54,6 +55,22 @@ export default async function StudioV3Page({
 
   if (!user) {
     redirect(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`)
+  }
+
+  // A confirmed Supabase account must also exist in the application database before
+  // the access gate or any member API runs. This repairs older and interrupted signups
+  // as well as protecting the first visit after email confirmation.
+  if (user.email) {
+    const displayName =
+      (user.user_metadata?.name as string | undefined) ||
+      (user.user_metadata?.display_name as string | undefined) ||
+      (user.user_metadata?.first_name as string | undefined) ||
+      user.email.split("@")[0]
+    try {
+      await getOrCreateNeonUser(user.id, user.email, displayName)
+    } catch (error) {
+      console.error("[/app gate] application user provisioning failed:", error)
+    }
   }
 
   // APP-CUTOVER-01 Phase 2 gate + BRIDGE-01 Phase D access levels: admin always full;

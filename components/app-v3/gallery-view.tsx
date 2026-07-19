@@ -198,6 +198,11 @@ const AssetTile = memo(function AssetTile({
       <button
         type="button"
         onClick={() => (selectionMode ? onToggleSelect(asset.id) : onOpen(asset, index))}
+        aria-label={
+          selectionMode
+            ? `${selected ? "Deselect" : "Select"} ${title}, item ${index + 1}`
+            : `${isVideo ? "Play" : "Open"} ${title}, item ${index + 1}`
+        }
         className="relative block aspect-[4/5] w-full overflow-hidden text-left"
       >
         {isVideo ? (

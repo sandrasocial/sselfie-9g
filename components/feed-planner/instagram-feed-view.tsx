@@ -40,6 +40,7 @@ import { useFeedNav } from "./feed-nav-context"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getBrandColorThemeColors } from "@/lib/style-presets"
 import type { CalendarPostTarget, OutputFormat } from "@/components/app-v3/types"
+import { resolveCalendarBrandLook } from "@/lib/feed-planner/calendar-brand-look"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -114,6 +115,7 @@ export default function InstagramFeedView({
   const [isSavingBio, setIsSavingBio] = useState(false)
   const [showHighlightsModal, setShowHighlightsModal] = useState(false)
   const [selectedHighlightId, setSelectedHighlightId] = useState<number | null>(null)
+  const [initialHighlightTitle, setInitialHighlightTitle] = useState<string | null>(null)
   const [isAddingRow, setIsAddingRow] = useState(false)
   const [brandColors, setBrandColors] = useState<string[]>([])
   const [activePostId, setActivePostId] = useState<number | null>(null)
@@ -134,9 +136,11 @@ export default function InstagramFeedView({
     { revalidateOnFocus: false, dedupingInterval: 60000 }
   )
   const calendarPlanSettings = calendarPlanSettingsFromProfile(personalBrandData)
-  const hasVisualDirection = Boolean(
-    feedData?.feed?.visual_direction_mode || feedData?.feed?.feed_style_variation_id
-  )
+  const calendarBrandLook = resolveCalendarBrandLook({
+    feed: feedData?.feed,
+    personalBrand: personalBrandData,
+  })
+  const hasVisualDirection = Boolean(calendarBrandLook.directionMode)
   const hasContentContext = isCalendarPlanComplete(calendarPlanSettings)
 
   const saveCalendarPlanSettings = async (settings: CalendarPlanSettings) => {
@@ -613,11 +617,6 @@ export default function InstagramFeedView({
   const openPostStudio = (post: any) => {
     setPlanSettingsOpen(false)
     setActivePostId(Number(post.id))
-    if (usesSharedSuiteMaya) {
-      setSelectedPost(null)
-      feedNav?.navigateToMaya?.(calendarPostTarget(post))
-      return
-    }
     setSelectedPost(post)
   }
 
@@ -878,11 +877,11 @@ export default function InstagramFeedView({
         feedSummary={{
           title: feedData?.feed?.brand_name || feedData?.feed?.title || "Current grid",
           bio: feedData?.bio?.bio_text || null,
-          visualDirectionMode: feedData?.feed?.visual_direction_mode || null,
+          visualDirectionMode: calendarBrandLook.directionMode,
           visualDirectionBrief: feedData?.feed?.visual_direction_brief || null,
           inspirationImageUrl: feedData?.feed?.inspiration_image_url || null,
-          feedStyle: feedData?.feed?.feed_style || null,
-          feedStyleVariationId: feedData?.feed?.feed_style_variation_id ?? null,
+          feedStyle: calendarBrandLook.feedStyle,
+          feedStyleVariationId: calendarBrandLook.feedStyleVariationId,
           posts: displayPosts.map((post: any) => ({
             id: Number(post.id),
             position: Number(post.position),
@@ -941,9 +940,19 @@ export default function InstagramFeedView({
             access?.hasGalleryAccess ? () => setShowProfileGallery(true) : undefined
           }
           onWriteBio={handleOpenBio}
-          onCreateHighlights={() => setShowHighlightsModal(true)}
+          onCreateHighlights={() => {
+            setSelectedHighlightId(null)
+            setInitialHighlightTitle(null)
+            setShowHighlightsModal(true)
+          }}
+          onCreateHighlight={title => {
+            setSelectedHighlightId(null)
+            setInitialHighlightTitle(title)
+            setShowHighlightsModal(true)
+          }}
           onHighlightClick={highlight => {
             setSelectedHighlightId(Number(highlight.id) || null)
+            setInitialHighlightTitle(null)
             setShowHighlightsModal(true)
           }}
           onAddRow={() => void addGridRow()}
@@ -1071,7 +1080,15 @@ export default function InstagramFeedView({
           onCloseGallery={() => setShowGallery(null)}
           onCloseProfileGallery={() => setShowProfileGallery(false)}
           onShowGallery={setShowGallery}
-          onNavigateToMaya={actions.navigateToMayaChat}
+          onNavigateToMaya={() => {
+            if (usesSharedSuiteMaya && liveSelectedPost) {
+              const target = calendarPostTarget(liveSelectedPost)
+              setSelectedPost(null)
+              feedNav?.navigateToMaya?.(target)
+              return
+            }
+            actions.navigateToMayaChat()
+          }}
           mayaWorkspace={calendarMayaWorkspace}
           onUpdate={async (updatedPost?: any) => {
             console.log(
@@ -1207,6 +1224,7 @@ export default function InstagramFeedView({
           }}
           existingHighlights={feedData?.highlights || []}
           initialHighlightId={selectedHighlightId}
+          initialSequenceTitle={initialHighlightTitle}
           onCreateWithMaya={feedNav?.navigateToMayaForStory}
           brandColors={
             brandColors.length > 0
@@ -1231,13 +1249,11 @@ export default function InstagramFeedView({
           onOpenChange={setVisualDirectionOpen}
           onConfirm={saveVisualDirection}
           mode="style"
-          initialDirectionMode={
-            visualDirectionMode ?? feedData?.feed?.visual_direction_mode ?? null
-          }
+          initialDirectionMode={visualDirectionMode ?? calendarBrandLook.directionMode}
           initialVisualDirectionBrief={feedData?.feed?.visual_direction_brief ?? null}
           initialInspirationImageUrl={feedData?.feed?.inspiration_image_url ?? null}
-          defaultFeedStyle={(feedData?.feed?.feed_style as FeedStyle | null) ?? null}
-          defaultFeedStyleVariationId={feedData?.feed?.feed_style_variation_id ?? null}
+          defaultFeedStyle={calendarBrandLook.feedStyle as FeedStyle | null}
+          defaultFeedStyleVariationId={calendarBrandLook.feedStyleVariationId}
           isLoading={isSavingVisualDirection}
         />
         <CalendarContentContextModal

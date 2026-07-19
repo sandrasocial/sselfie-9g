@@ -15,6 +15,7 @@ interface FeedHeaderProps {
   onProfileImageClick?: () => void
   onWriteBio: () => void
   onCreateHighlights?: () => void
+  onCreateHighlight?: (title: string) => void
   onHighlightClick?: (highlight: any) => void
   onAddRow?: () => void
   isAddingRow?: boolean
@@ -44,6 +45,7 @@ export default function FeedHeader({
   onProfileImageClick,
   onWriteBio,
   onCreateHighlights,
+  onCreateHighlight,
   onHighlightClick,
   onAddRow,
   isAddingRow = false,
@@ -495,18 +497,29 @@ export default function FeedHeader({
     }
   }
 
-  const hasProfileImage = !!feedData?.feed?.profile_image_url
+  const profileImageUrl =
+    (typeof feedData?.feed?.profile_image_url === "string" &&
+      feedData.feed.profile_image_url.trim()) ||
+    (typeof feedData?.sharedProfileImageUrl === "string" &&
+      feedData.sharedProfileImageUrl.trim()) ||
+    null
+  const hasProfileImage = Boolean(profileImageUrl)
   const hasBio = !!feedData?.bio?.bio_text
 
   // Get feed name (title) - prefer title, then brand_name, then fallback
   const feedName =
     feedData?.feed?.title || feedData?.feed?.brand_name || `Feed ${currentFeedId}` || "My Feed"
-  const profileUsername =
-    feedData?.feed?.username ||
-    String(feedData?.userDisplayName || feedData?.feed?.brand_name || "mybrand")
-      .toLowerCase()
-      .replace(/[^a-z0-9._]/g, "")
   const displayName = feedData?.userDisplayName || feedData?.feed?.brand_name || "Your brand"
+  const fallbackUsername =
+    String(displayName)
+      .toLowerCase()
+      .replace(/[^a-z0-9._]/g, "") || "yourbrand"
+  const storedUsername = String(feedData?.feed?.username || "")
+    .trim()
+    .toLowerCase()
+  const placeholderUsernames = new Set(["yourbrand", "your_brand", "mybrand", "yourinstagram"])
+  const profileUsername =
+    storedUsername && !placeholderUsernames.has(storedUsername) ? storedUsername : fallbackUsername
 
   return (
     <div className="overflow-hidden rounded-[14px] border border-[#C5C6C8]/35 bg-[#F8FAFA] shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)]">
@@ -578,8 +591,8 @@ export default function FeedHeader({
             <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-[#C5C6C8]/40 bg-[#0D0E10]">
               {hasProfileImage ? (
                 <Image
-                  src={feedData.feed.profile_image_url}
-                  alt="Profile"
+                  src={profileImageUrl as string}
+                  alt={`${displayName}'s profile`}
                   fill
                   className="object-cover object-[center_20%]"
                   sizes="(max-width: 768px) 80px, 128px"
@@ -719,10 +732,18 @@ export default function FeedHeader({
                 </button>
               ))
             : ["About", "Work", "Life"].map(label => (
-                <div key={label} className="w-16 shrink-0 text-center">
+                <button
+                  type="button"
+                  key={label}
+                  onClick={() =>
+                    onCreateHighlight ? onCreateHighlight(label) : onCreateHighlights?.()
+                  }
+                  aria-label={`Start ${label} story sequence`}
+                  className="w-16 shrink-0 text-center"
+                >
                   <div className="mx-auto h-14 w-14 rounded-full border border-dashed border-[#C5C6C8] bg-white" />
                   <p className="mt-1.5 text-[10px] text-[#6D6E70]">{label}</p>
-                </div>
+                </button>
               ))}
           {!access?.isFree && onCreateHighlights ? (
             <button

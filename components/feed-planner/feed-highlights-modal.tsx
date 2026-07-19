@@ -41,16 +41,17 @@ interface FeedHighlightsModalProps {
   existingHighlights?: Highlight[]
   brandColors?: string[]
   initialHighlightId?: number | null
+  initialSequenceTitle?: string | null
   onCreateWithMaya?: (title: string, coverOnly?: boolean) => void
 }
 
 const DEFAULT_NOTE =
   "Keep this fresh by replacing the oldest slide when your offer, story or results change."
 
-function newSequence(index: number): StorySequence {
+function newSequence(index: number, title = ""): StorySequence {
   return {
     key: `new-${Date.now()}-${index}`,
-    title: "",
+    title,
     slides: [],
     coverUrl: null,
     coverStyle: "photo",
@@ -98,6 +99,7 @@ export default function FeedHighlightsModal({
   onSave,
   existingHighlights = [],
   initialHighlightId = null,
+  initialSequenceTitle = null,
   onCreateWithMaya,
 }: FeedHighlightsModalProps) {
   const [sequences, setSequences] = useState<StorySequence[]>([])
@@ -113,9 +115,12 @@ export default function FeedHighlightsModal({
   useEffect(() => {
     if (!isOpen) return
     const restored = existingHighlights.map(parseSequence)
-    setSequences(restored)
-    const requested = restored.find(sequence => sequence.id === initialHighlightId)
-    setSelectedKey(requested?.key ?? restored[0]?.key ?? null)
+    const startingTitle = initialSequenceTitle?.trim() || ""
+    const available =
+      restored.length === 0 && startingTitle ? [newSequence(0, startingTitle)] : restored
+    setSequences(available)
+    const requested = available.find(sequence => sequence.id === initialHighlightId)
+    setSelectedKey(requested?.key ?? available[0]?.key ?? null)
     setPreviewIndex(0)
 
     let active = true
@@ -134,7 +139,7 @@ export default function FeedHighlightsModal({
     return () => {
       active = false
     }
-  }, [existingHighlights, feedId, initialHighlightId, isOpen])
+  }, [existingHighlights, feedId, initialHighlightId, initialSequenceTitle, isOpen])
 
   useEffect(() => {
     if (!isOpen) return

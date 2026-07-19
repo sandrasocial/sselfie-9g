@@ -78,4 +78,57 @@ describe("Calendar Instagram profile", () => {
     expect(createBio).toHaveBeenCalledTimes(1)
     expect(createHighlights).toHaveBeenCalledTimes(1)
   })
+
+  it("uses the member's saved identity instead of legacy Calendar placeholders", async () => {
+    const { default: FeedHeader } = await import("@/components/feed-planner/feed-header")
+
+    render(
+      <FeedHeader
+        feedData={{
+          feed: { id: 7, title: "July", username: "yourbrand", profile_image_url: null },
+          userDisplayName: "Sandra",
+          sharedProfileImageUrl: "https://example.com/sandra.jpg",
+          posts: [],
+          bio: null,
+          highlights: [],
+        }}
+        currentFeedId={7}
+        onProfileImageClick={vi.fn()}
+        onWriteBio={vi.fn()}
+        onCreateHighlights={vi.fn()}
+        access={{ isMembership: true }}
+      />
+    )
+
+    expect(screen.getByRole("heading", { name: "sandra" })).toBeInTheDocument()
+    expect(screen.getByRole("img", { name: "Sandra's profile" })).toHaveAttribute(
+      "src",
+      expect.stringContaining(encodeURIComponent("https://example.com/sandra.jpg"))
+    )
+  })
+
+  it("opens each suggested Highlight as a real Story Studio starting point", async () => {
+    const createHighlight = vi.fn()
+    const { default: FeedHeader } = await import("@/components/feed-planner/feed-header")
+
+    render(
+      <FeedHeader
+        feedData={{
+          feed: { id: 7, title: "July" },
+          userDisplayName: "Sandra",
+          posts: [],
+          bio: null,
+          highlights: [],
+        }}
+        currentFeedId={7}
+        onWriteBio={vi.fn()}
+        onCreateHighlights={vi.fn()}
+        onCreateHighlight={createHighlight}
+        access={{ isMembership: true }}
+      />
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: /start about story sequence/i }))
+    expect(createHighlight).toHaveBeenCalledWith("About")
+  })
 })
