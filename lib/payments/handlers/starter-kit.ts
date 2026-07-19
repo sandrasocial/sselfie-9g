@@ -12,7 +12,6 @@ import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { updateContactTags as updateTags } from "@/lib/resend/manage-contact"
 import { generatePasswordSetupLinkForPurchase } from "../shared"
-import { activatePaidBuyerSuiteTrial } from "../paid-buyer-suite-trial"
 import type { CheckoutFulfillmentContext } from "../types"
 
 export async function upsertStarterKitSubscriber(email: string, name?: string | null) {
@@ -269,29 +268,6 @@ export async function handleStarterKitCheckout(ctx: CheckoutFulfillmentContext):
         }
       } catch (emailError: any) {
         console.error(`[v0] Error sending Starter Kit delivery email:`, emailError.message)
-      }
-
-      // Paid buyers with an account start their included trial immediately. Email-token
-      // fulfillment stays in place for guests. The shared helper is live-only and one-ever.
-      try {
-        await activatePaidBuyerSuiteTrial({
-          livemode: event.livemode,
-          userId,
-          customerEmail,
-          customerName: session.customer_details?.name,
-          productType: "starter_kit",
-          stripeSessionId: session.id,
-          getClaimUrl: async () => {
-            const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-            const subscriber = await upsertStarterKitSubscriber(
-              customerEmail!,
-              session.customer_details?.name,
-            )
-            return `${productionUrl}/claim/${subscriber.accessToken}`
-          },
-        })
-      } catch (trialError: any) {
-        console.error(`[v0] Error activating included SUITE trial:`, trialError.message)
       }
 
       await updateTags(customerEmail!, {

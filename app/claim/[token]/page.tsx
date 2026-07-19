@@ -52,6 +52,25 @@ export default async function ClaimTrialPage({ params }: { params: Promise<{ tok
     | undefined
   if (!subscriber?.email) return <InvalidLink />
 
+  // The free 20-credit trial is retired for new buyers. Keep this old claim route only for
+  // women who were already sent the promise, or who already hold a trial row. This preserves
+  // every existing link without letting a new product-access token mint a fresh trial.
+  const promisedTrial = await sql`
+    SELECT 1
+    FROM email_logs
+    WHERE LOWER(user_email) = LOWER(${subscriber.email})
+      AND email_type IN ('suite_trial_unlock', 'selfie-ai-photos-kit-day8-suite-trial')
+      AND status IN ('sent', 'delivered')
+    UNION ALL
+    SELECT 1
+    FROM subscriptions s
+    JOIN users u ON u.id = s.user_id
+    WHERE LOWER(u.email) = LOWER(${subscriber.email})
+      AND s.product_type = 'suite_trial'
+    LIMIT 1
+  `
+  if (promisedTrial.length === 0) return <InvalidLink />
+
   let destination = "/app"
 
   try {

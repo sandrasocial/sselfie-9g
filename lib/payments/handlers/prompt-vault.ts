@@ -18,7 +18,6 @@ import {
   buildAiPhotoshootResendTags,
 } from "@/lib/audience/ai-photoshoot-segment"
 import { generatePasswordSetupLinkForPurchase } from "../shared"
-import { activatePaidBuyerSuiteTrial } from "../paid-buyer-suite-trial"
 import type { CheckoutFulfillmentContext } from "../types"
 
 function metadataValue(
@@ -311,29 +310,6 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
         }
       } catch (emailError: any) {
         console.error(`[v0] Error sending Prompt Vault delivery email:`, emailError.message)
-      }
-
-      // Paid buyers with an account start their included trial immediately. Email-token
-      // fulfillment stays in place for guests. The shared helper is live-only and one-ever.
-      try {
-        await activatePaidBuyerSuiteTrial({
-          livemode: event.livemode,
-          userId,
-          customerEmail,
-          customerName: session.customer_details?.name,
-          productType: "prompt_vault",
-          stripeSessionId: session.id,
-          getClaimUrl: async () => {
-            const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-            const subscriber = await upsertPromptVaultSubscriber(
-              customerEmail!,
-              session.customer_details?.name,
-            )
-            return `${productionUrl}/claim/${subscriber.accessToken}`
-          },
-        })
-      } catch (trialError: any) {
-        console.error(`[v0] Error activating included SUITE trial:`, trialError.message)
       }
 
       await updateTags(customerEmail!, {

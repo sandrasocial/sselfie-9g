@@ -76,7 +76,7 @@ describe("Selfie To AI Photos Kit nurture (cron: nurture-sequence)", () => {
     expect(sendEmailMock).not.toHaveBeenCalled()
     expect(body.results.selfieAiPhotosKitDay2).toEqual({ found: 0, sent: 0, failed: 0 })
     expect(body.results.selfieAiPhotosKitDay4).toEqual({ found: 0, sent: 0, failed: 0 })
-    expect(body.results.selfieAiPhotosKitDay8).toEqual({ found: 0, sent: 0, failed: 0 })
+    expect(body.results.selfieAiPhotosKitDay8).toBeUndefined()
     expect(queries.some(query => query.includes(KIT_QUERY_MARKER))).toBe(false)
   })
 
@@ -111,14 +111,13 @@ describe("Selfie To AI Photos Kit nurture (cron: nurture-sequence)", () => {
     expect(response.status).toBe(200)
     expect(body.results.selfieAiPhotosKitDay2).toEqual({ found: 1, sent: 1, failed: 0 })
     expect(body.results.selfieAiPhotosKitDay4).toEqual({ found: 1, sent: 1, failed: 0 })
-    expect(body.results.selfieAiPhotosKitDay8).toEqual({ found: 1, sent: 1, failed: 0 })
-    expect(body.totalSent).toBe(3)
+    expect(body.results.selfieAiPhotosKitDay8).toBeUndefined()
+    expect(body.totalSent).toBe(2)
 
     const emailTypes = sendEmailMock.mock.calls.map(call => call[0].emailType)
     expect(emailTypes).toEqual([
       "selfie-ai-photos-kit-day2-first-photo",
       "selfie-ai-photos-kit-day4-vault-bridge",
-      "selfie-ai-photos-kit-day8-suite-trial",
     ])
 
     // Every kit send is a marketing email addressed to the buyer.
@@ -127,19 +126,14 @@ describe("Selfie To AI Photos Kit nurture (cron: nurture-sequence)", () => {
       expect(call[0].marketing).toBe(true)
     }
 
-    // Day 8 uses the personal SUITE trial claim link, not the kit access page.
-    const day8Call = sendEmailMock.mock.calls[2][0]
-    expect(day8Call.html).toContain("https://www.sselfie.ai/claim/kit-token-123")
-
     // Day 2 and day 4 link back to the kit access page.
     expect(sendEmailMock.mock.calls[0][0].html).toContain(
       "/access/selfie-to-ai-photos-kit/kit-token-123"
     )
 
-    // Per-touch audience guards: vault owners skip the bridge, members skip the trial.
-    expect(kitQueries).toHaveLength(3)
+    // The paid Vault bridge remains, but the free SUITE trial touch is retired.
+    expect(kitQueries).toHaveLength(2)
     expect(kitQueries[1]).toContain("bought_prompt_vault")
-    expect(kitQueries[2]).toContain("sselfie_studio_membership")
     // Each touch is idempotent via email_logs.
     for (const query of kitQueries) {
       expect(query).toContain("email_logs")

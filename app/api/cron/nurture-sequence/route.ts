@@ -47,7 +47,6 @@ import {
 import {
   generateSelfieAiPhotosKitDay2FirstPhotoEmail,
   generateSelfieAiPhotosKitDay4VaultBridgeEmail,
-  generateSelfieAiPhotosKitDay8SuiteTrialEmail,
 } from "@/lib/email/templates/selfie-ai-photos-kit-buyer-sequence"
 import {
   generateSelfieToBrandShootDay1SourceAndWorldEmail,
@@ -167,13 +166,6 @@ function selfieAiPhotosKitAccessUrl(candidate: { access_token: string | null }):
   return token.length > 0
     ? `${SITE_URL}/access/selfie-to-ai-photos-kit/${token}`
     : `${SITE_URL}/selfie-to-ai-photos-kit`
-}
-
-// BRIDGE-01: the 7-day SUITE trial claim link (one trial per person, ever - the claim
-// page enforces it, so sending the link repeatedly is safe).
-function suiteTrialClaimUrl(candidate: { access_token: string | null }): string | undefined {
-  const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
-  return token.length > 0 ? `${SITE_URL}/claim/${token}` : undefined
 }
 
 function aiPromptsNurtureStartDate(): string {
@@ -806,14 +798,6 @@ async function sendSelfieAiPhotosKitTouchEmail(
         recipientEmail: candidate.email,
       })
       break
-    case "selfie-ai-photos-kit-day8-suite-trial": {
-      const claimUrl = suiteTrialClaimUrl(candidate)
-      if (!claimUrl) {
-        throw new Error("Missing suite trial claim token")
-      }
-      email = generateSelfieAiPhotosKitDay8SuiteTrialEmail({ firstName, claimUrl })
-      break
-    }
     default:
       throw new Error(`Unknown Selfie To AI Photos Kit email type: ${emailType}`)
   }
@@ -1003,7 +987,6 @@ export async function GET(request: Request) {
       promptVaultDay10: { found: 0, sent: 0, failed: 0 },
       selfieAiPhotosKitDay2: { found: 0, sent: 0, failed: 0 },
       selfieAiPhotosKitDay4: { found: 0, sent: 0, failed: 0 },
-      selfieAiPhotosKitDay8: { found: 0, sent: 0, failed: 0 },
       selfieToBrandShootDay1: { found: 0, sent: 0, failed: 0 },
       selfieToBrandShootDay3: { found: 0, sent: 0, failed: 0 },
       selfieToBrandShootDay5: { found: 0, sent: 0, failed: 0 },
@@ -1165,7 +1148,6 @@ export async function GET(request: Request) {
     const selfieAiPhotosKitTouchResultKeys = [
       "selfieAiPhotosKitDay2",
       "selfieAiPhotosKitDay4",
-      "selfieAiPhotosKitDay8",
     ] as const
 
     if (selfieAiPhotosKitNurtureEnabled) {
@@ -1173,7 +1155,6 @@ export async function GET(request: Request) {
         const resultKey = selfieAiPhotosKitTouchResultKeys[index]
         const candidates = await getSelfieAiPhotosKitTouchCandidates(touch.days, touch.emailType, {
           excludeVaultBuyers: touch.excludeVaultBuyers,
-          excludeSuiteMembers: touch.excludeSuiteMembers,
         })
         results[resultKey].found = candidates.length
 
@@ -1432,7 +1413,6 @@ export async function GET(request: Request) {
       results.promptVaultDay10.sent +
       results.selfieAiPhotosKitDay2.sent +
       results.selfieAiPhotosKitDay4.sent +
-      results.selfieAiPhotosKitDay8.sent +
       results.selfieToBrandShootDay1.sent +
       results.selfieToBrandShootDay3.sent +
       results.selfieToBrandShootDay5.sent +
@@ -1468,7 +1448,6 @@ export async function GET(request: Request) {
       results.promptVaultDay10.failed +
       results.selfieAiPhotosKitDay2.failed +
       results.selfieAiPhotosKitDay4.failed +
-      results.selfieAiPhotosKitDay8.failed +
       results.selfieToBrandShootDay1.failed +
       results.selfieToBrandShootDay3.failed +
       results.selfieToBrandShootDay5.failed +
@@ -1509,7 +1488,6 @@ export async function GET(request: Request) {
       selfieAiPhotosKitNurtureEnabled,
       selfieAiPhotosKitDay2: results.selfieAiPhotosKitDay2,
       selfieAiPhotosKitDay4: results.selfieAiPhotosKitDay4,
-      selfieAiPhotosKitDay8: results.selfieAiPhotosKitDay8,
       selfieToBrandShootNurtureEnabled,
       selfieToBrandShootDay1: results.selfieToBrandShootDay1,
       selfieToBrandShootDay3: results.selfieToBrandShootDay3,
