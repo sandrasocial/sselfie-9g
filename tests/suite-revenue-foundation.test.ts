@@ -7,7 +7,7 @@ describe("SUITE revenue foundation", () => {
 
     expect(marketing).toContain('event: "studio_membership_page_view"')
     expect(marketing).toContain('event: "studio_membership_page_cta_click"')
-    expect(marketing).toContain('environment: analyticsEnvironment')
+    expect(marketing).toContain("environment: analyticsEnvironment")
     expect(marketing).toContain('trackMembershipCheckoutClick("hero"')
     expect(marketing).toContain('trackMembershipCheckoutClick("pricing"')
     expect(marketing).toContain('trackMembershipCheckoutClick("closing"')
@@ -17,7 +17,7 @@ describe("SUITE revenue foundation", () => {
     const marketing = readFileSync("components/sselfie/public-marketing.tsx", "utf8")
     const homepage = marketing.slice(
       marketing.indexOf("export function HomePageContent"),
-      marketing.indexOf("export function StarterKitPageContent"),
+      marketing.indexOf("export function StarterKitPageContent")
     )
 
     expect(homepage).toContain("Start free")
@@ -27,10 +27,7 @@ describe("SUITE revenue foundation", () => {
   })
 
   it("uses the approved personal-brand grid and the live Maya avatar", () => {
-    const walkthrough = readFileSync(
-      "components/sselfie/suite-product-walkthrough.tsx",
-      "utf8",
-    )
+    const walkthrough = readFileSync("components/sselfie/suite-product-walkthrough.tsx", "utf8")
 
     expect(walkthrough.match(/\/images\/suite-personal-brand-grid\//g)).toHaveLength(9)
     expect(walkthrough).toContain("post-01-founder-black.jpg")
@@ -76,6 +73,37 @@ describe("SUITE revenue foundation", () => {
     expect(existsSync("public/videos/suite-visibility-broll.mp4")).toBe(true)
   })
 
+  it("uses finished baked Maya designs and mobile swipe rails", () => {
+    const walkthrough = readFileSync("components/sselfie/suite-multiformat-walkthrough.tsx", "utf8")
+    const bakedAssets = [
+      "carousel-01-editorial-cover.png",
+      "carousel-02-top-minimal.png",
+      "carousel-03-cutout-editorial.png",
+      "carousel-04-statement.png",
+      "carousel-05-lower-third.png",
+      "carousel-06-statement.png",
+      "carousel-07-series-cover.png",
+      "story-01-lower-third.png",
+      "story-02-cutout-editorial.png",
+      "story-03-top-minimal.png",
+      "story-04-statement.png",
+      "story-05-editorial-cover.png",
+    ]
+
+    expect(walkthrough).toContain('const BAKED_CAMPAIGN_BASE = "/images/suite-baked-campaign"')
+    expect(walkthrough).toContain("function BakedArtwork")
+    expect(walkthrough.match(/overflow-x-auto/g)).toHaveLength(2)
+    expect(walkthrough.match(/snap-x snap-mandatory/g)).toHaveLength(2)
+    expect(walkthrough).not.toContain("function CarouselArtwork")
+    expect(walkthrough).not.toContain("function StoryArtwork")
+    expect(walkthrough).not.toContain("bg-gradient-to-t")
+
+    for (const filename of bakedAssets) {
+      expect(walkthrough).toContain(filename)
+      expect(existsSync(`public/images/suite-baked-campaign/${filename}`)).toBe(true)
+    }
+  })
+
   it("gives the membership page its own search and sharing contract", () => {
     const page = readFileSync("app/join/studio/page.tsx", "utf8")
 
@@ -83,7 +111,7 @@ describe("SUITE revenue foundation", () => {
     expect(page).toContain("openGraph")
     expect(page).toContain("twitter")
     expect(page).toContain('"@type": "SoftwareApplication"')
-    expect(page).toContain('offers: {')
+    expect(page).toContain("offers: {")
     expect(page).toContain('price: "97"')
     expect(page).toContain('priceCurrency: "EUR"')
   })

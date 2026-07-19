@@ -2,99 +2,79 @@ import Image from "next/image"
 import type { ReactNode } from "react"
 
 const CAMPAIGN_BASE = "/images/suite-personal-brand-grid"
+const BAKED_CAMPAIGN_BASE = "/images/suite-baked-campaign"
 const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
 const BROLL_VIDEO = "/videos/suite-visibility-broll.mp4"
 
-type CarouselSlide = {
-  image?: string
-  imageAlt?: string
-  line: string
-  quiet?: string
-  tone?: "dark" | "light"
-  position?: string
+type BakedCampaignAsset = {
+  artwork: string
+  alt: string
+  copy: string
 }
 
-const CAROUSEL_SLIDES: CarouselSlide[] = [
+const CAROUSEL_SLIDES: BakedCampaignAsset[] = [
   {
-    image: `${CAMPAIGN_BASE}/post-01-founder-black.jpg`,
-    imageAlt: "Sandra in a black coat holding coffee",
-    line: "This was never just about selfies.",
-    tone: "dark",
-    position: "object-[50%_32%]",
+    artwork: `${BAKED_CAMPAIGN_BASE}/carousel-01-editorial-cover.png`,
+    alt: "Finished Editorial Cover carousel design with Sandra in a black coat",
+    copy: "This was never just about selfies.",
   },
   {
-    image: `${CAMPAIGN_BASE}/post-07-white-wrap.jpg`,
-    imageAlt: "Close portrait of Sandra in an ivory wrap blouse",
-    line: "The photo gets attention.",
-    tone: "light",
-    position: "object-[50%_28%]",
+    artwork: `${BAKED_CAMPAIGN_BASE}/carousel-02-top-minimal.png`,
+    alt: "Finished Top Minimal carousel design with Sandra in ivory",
+    copy: "The photo gets attention.",
   },
   {
-    image: `${CAMPAIGN_BASE}/post-04-creative-director.jpg`,
-    imageAlt: "Sandra arranging personal-brand photographs",
-    line: "Your story builds connection.",
-    tone: "dark",
-    position: "object-[50%_34%]",
+    artwork: `${BAKED_CAMPAIGN_BASE}/carousel-03-cutout-editorial.png`,
+    alt: "Finished Cutout Editorial carousel design about story and connection",
+    copy: "Your story builds connection.",
   },
   {
-    image: `${CAMPAIGN_BASE}/post-06-phone-flatlay.jpg`,
-    imageAlt: "Phone and earbuds beside a monochrome personal-brand grid",
-    line: "Your message builds trust.",
-    tone: "dark",
-    position: "object-center",
+    artwork: `${BAKED_CAMPAIGN_BASE}/carousel-04-statement.png`,
+    alt: "Finished Statement carousel design over a phone and personal-brand grid",
+    copy: "Your message builds trust.",
   },
   {
-    image: `${CAMPAIGN_BASE}/post-05-black-halter.jpg`,
-    imageAlt: "Sandra wearing a black halter dress against an ivory wall",
-    line: "A clear offer creates the opportunity to earn.",
-    tone: "dark",
-    position: "object-[50%_28%]",
+    artwork: `${BAKED_CAMPAIGN_BASE}/carousel-05-lower-third.png`,
+    alt: "Finished Lower Third carousel design with Sandra in a black halter dress",
+    copy: "A clear offer creates the opportunity to earn.",
   },
   {
-    line: "Earning your own money creates more choices.",
-    quiet: "Visibility · trust · opportunity",
-    tone: "light",
+    artwork: `${BAKED_CAMPAIGN_BASE}/carousel-06-statement.png`,
+    alt: "Finished Statement carousel design over a personal-brand grid on a laptop",
+    copy: "Earning your own money creates more choices.",
   },
   {
-    image: `${CAMPAIGN_BASE}/post-09-chair-gown.jpg`,
-    imageAlt: "Sandra seated on a sculptural white chair in a black dress",
-    line: "Start with one photo. Build from there.",
-    tone: "dark",
-    position: "object-[50%_30%]",
+    artwork: `${BAKED_CAMPAIGN_BASE}/carousel-07-series-cover.png`,
+    alt: "Finished Series Cover carousel design with Sandra seated in a black gown",
+    copy: "Start with one photo. Build from there.",
   },
 ]
 
-const STORY_FRAMES = [
+const STORY_FRAMES: BakedCampaignAsset[] = [
   {
-    image: `${CAMPAIGN_BASE}/post-07-white-wrap.jpg`,
-    alt: "Close portrait of Sandra in an ivory wrap blouse",
-    line: "I didn't start because I felt ready.",
-    position: "object-[50%_28%]",
+    artwork: `${BAKED_CAMPAIGN_BASE}/story-01-lower-third.png`,
+    alt: "Finished Lower Third Story design with Sandra directing a campaign",
+    copy: "I didn't start because I felt ready.",
   },
   {
-    image: `${CAMPAIGN_BASE}/post-06-phone-flatlay.jpg`,
-    alt: "Phone and earbuds beside a monochrome personal-brand grid",
-    line: "I started with my phone in a tiny bathroom.",
-    position: "object-center",
+    artwork: `${BAKED_CAMPAIGN_BASE}/story-02-cutout-editorial.png`,
+    alt: "Finished Cutout Editorial Story design about starting with a phone",
+    copy: "I started with my phone in a tiny bathroom.",
   },
   {
-    image: `${CAMPAIGN_BASE}/post-04-creative-director.jpg`,
-    alt: "Sandra working at a creative direction table",
-    line: "One photo became one post.",
-    position: "object-[50%_34%]",
+    artwork: `${BAKED_CAMPAIGN_BASE}/story-03-top-minimal.png`,
+    alt: "Finished Top Minimal Story design with Sandra in a flowing ivory outfit",
+    copy: "One photo became one post.",
   },
   {
-    image: `${CAMPAIGN_BASE}/post-01-founder-black.jpg`,
-    alt: "Sandra in a black coat holding coffee",
-    line: "One post helped me stop hiding.",
-    position: "object-[50%_30%]",
+    artwork: `${BAKED_CAMPAIGN_BASE}/story-04-statement.png`,
+    alt: "Finished Statement Story design with Sandra in a black coat",
+    copy: "One post helped me stop hiding.",
   },
   {
-    image: `${CAMPAIGN_BASE}/post-09-chair-gown.jpg`,
-    alt: "Sandra seated on a sculptural white chair",
-    line: "That is how I started building something of my own.",
-    quiet: "Start with one photo.",
-    position: "object-[50%_30%]",
+    artwork: `${BAKED_CAMPAIGN_BASE}/story-05-editorial-cover.png`,
+    alt: "Finished Editorial Cover Story design with Sandra in a black jumpsuit",
+    copy: "That is how I started building something of my own.",
   },
 ]
 
@@ -271,40 +251,10 @@ function PhoneShell({ title, children }: { title: string; children: ReactNode })
   )
 }
 
-function CarouselArtwork({ slide, compact = false }: { slide: CarouselSlide; compact?: boolean }) {
-  const dark = slide.tone === "dark"
+function BakedArtwork({ asset, sizes }: { asset: BakedCampaignAsset; sizes: string }) {
   return (
     <div className="relative h-full w-full overflow-hidden bg-stone-200">
-      {slide.image ? (
-        <Image
-          src={slide.image}
-          alt={slide.imageAlt || "SSELFIE personal-brand campaign image"}
-          fill
-          sizes={compact ? "190px" : "(min-width: 1024px) 430px, 78vw"}
-          className={`object-cover ${slide.position || "object-center"}`}
-        />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-white via-stone-100 to-stone-300" />
-      )}
-      {slide.image ? (
-        <div
-          className={`absolute inset-0 ${dark ? "bg-gradient-to-t from-black/76 via-black/8 to-black/5" : "bg-gradient-to-t from-white/80 via-transparent to-white/5"}`}
-        />
-      ) : null}
-      <div className={`absolute inset-x-0 bottom-0 ${compact ? "p-3" : "p-5 md:p-6"}`}>
-        <p
-          className={`${compact ? "text-[16px]" : "text-[clamp(22px,3.4vw,38px)]"} max-w-[92%] font-serif font-light leading-[0.98] ${dark ? "text-white" : "text-stone-900"}`}
-        >
-          {slide.line}
-        </p>
-        {slide.quiet ? (
-          <p
-            className={`mt-3 text-[7px] uppercase tracking-[0.2em] ${dark ? "text-white/68" : "text-stone-600"}`}
-          >
-            {slide.quiet}
-          </p>
-        ) : null}
-      </div>
+      <Image src={asset.artwork} alt={asset.alt} fill sizes={sizes} className="object-cover" />
     </div>
   )
 }
@@ -319,8 +269,8 @@ function CarouselMockup() {
       subtitle="Maya keeps the message connected across seven slides, then Sandra reviews every word and visual before using it."
       phone={
         <PhoneShell title="Your carousel">
-          <div className="relative aspect-[4/5]">
-            <CarouselArtwork slide={selected} compact />
+          <div className="relative aspect-square">
+            <BakedArtwork asset={selected} sizes="190px" />
             <span className="absolute right-3 top-3 rounded-full bg-black/55 px-2 py-1 text-[7px] text-white">
               1 / 7
             </span>
@@ -350,19 +300,38 @@ function CarouselMockup() {
               View all slides
             </span>
           </div>
-          <div className="grid grid-cols-[minmax(0,1fr)_74px] gap-2.5 sm:grid-cols-[minmax(0,1fr)_92px]">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-[18px] ring-1 ring-black/[0.08] shadow-[0_24px_50px_rgba(28,24,19,0.12)]">
-              <CarouselArtwork slide={selected} />
+          <div className="space-y-3 md:grid md:grid-cols-[minmax(0,1fr)_92px] md:gap-2.5 md:space-y-0">
+            <div className="relative aspect-square overflow-hidden rounded-[18px] ring-1 ring-black/[0.08] shadow-[0_24px_50px_rgba(28,24,19,0.12)]">
+              <BakedArtwork
+                asset={selected}
+                sizes="(min-width: 1024px) 430px, (min-width: 768px) 52vw, 92vw"
+              />
             </div>
-            <div className="grid content-start gap-2">
+            <div className="hidden content-start gap-2 md:grid">
               {CAROUSEL_SLIDES.slice(1).map((slide, index) => (
                 <div
-                  key={slide.line}
-                  className="relative aspect-[4/5] overflow-hidden rounded-[9px] ring-1 ring-black/[0.08]"
+                  key={slide.copy}
+                  className="relative aspect-square overflow-hidden rounded-[9px] ring-1 ring-black/[0.08]"
                 >
-                  <CarouselArtwork slide={slide} compact />
+                  <BakedArtwork asset={slide} sizes="92px" />
                   <span className="absolute left-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white/90 px-1 text-[7px] text-stone-600">
                     {index + 2}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div
+              aria-label="Carousel slide previews"
+              className="-mx-3 flex snap-x snap-mandatory gap-2 overflow-x-auto px-3 pb-2 md:hidden"
+            >
+              {CAROUSEL_SLIDES.map((slide, index) => (
+                <div
+                  key={slide.copy}
+                  className="relative aspect-square w-[78px] shrink-0 snap-start overflow-hidden rounded-[9px] ring-1 ring-black/[0.08]"
+                >
+                  <BakedArtwork asset={slide} sizes="78px" />
+                  <span className="absolute left-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white/90 px-1 text-[7px] text-stone-600">
+                    {index + 1}
                   </span>
                 </div>
               ))}
@@ -384,37 +353,6 @@ function CarouselMockup() {
   )
 }
 
-function StoryArtwork({
-  frame,
-  compact = false,
-}: {
-  frame: (typeof STORY_FRAMES)[number]
-  compact?: boolean
-}) {
-  return (
-    <div className="relative h-full w-full overflow-hidden bg-stone-300">
-      <Image
-        src={frame.image}
-        alt={frame.alt}
-        fill
-        sizes={compact ? "150px" : "(min-width: 1024px) 330px, 68vw"}
-        className={`object-cover ${frame.position}`}
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/72 via-black/8 to-black/12" />
-      <div className={`absolute inset-x-0 bottom-0 ${compact ? "p-2.5" : "p-5 md:p-6"}`}>
-        <p
-          className={`${compact ? "text-[12px]" : "text-[clamp(22px,3vw,35px)]"} font-serif font-light leading-[1.02] text-white`}
-        >
-          {frame.line}
-        </p>
-        {frame.quiet ? (
-          <p className="mt-3 text-[7px] uppercase tracking-[0.2em] text-white/68">{frame.quiet}</p>
-        ) : null}
-      </div>
-    </div>
-  )
-}
-
 function StoriesMockup() {
   const selected = STORY_FRAMES[0]
   return (
@@ -426,11 +364,11 @@ function StoriesMockup() {
       phone={
         <PhoneShell title="Your Stories">
           <div className="relative aspect-[9/16]">
-            <StoryArtwork frame={selected} compact />
+            <BakedArtwork asset={selected} sizes="190px" />
             <div className="absolute inset-x-3 top-3 grid grid-cols-5 gap-1">
               {STORY_FRAMES.map((frame, index) => (
                 <span
-                  key={frame.line}
+                  key={frame.copy}
                   className={`h-[2px] rounded-full ${index === 0 ? "bg-white" : "bg-white/45"}`}
                 />
               ))}
@@ -460,19 +398,35 @@ function StoriesMockup() {
               Preview sequence
             </span>
           </div>
-          <div className="grid grid-cols-[minmax(0,1fr)_96px] gap-2.5 sm:grid-cols-[minmax(0,1fr)_116px]">
-            <div className="relative aspect-[9/16] max-h-[570px] overflow-hidden rounded-[18px] ring-1 ring-black/[0.08] shadow-[0_24px_50px_rgba(28,24,19,0.12)]">
-              <StoryArtwork frame={selected} />
+          <div className="space-y-3 md:grid md:grid-cols-[minmax(0,321px)_80px] md:gap-2.5 md:space-y-0">
+            <div className="relative mx-auto aspect-[9/16] w-full max-w-[321px] overflow-hidden rounded-[18px] ring-1 ring-black/[0.08] shadow-[0_24px_50px_rgba(28,24,19,0.12)] md:mx-0">
+              <BakedArtwork asset={selected} sizes="(min-width: 768px) 321px, min(321px, 92vw)" />
             </div>
-            <div className="grid content-start gap-2">
+            <div className="hidden content-start gap-2 md:grid">
               {STORY_FRAMES.slice(1).map((frame, index) => (
                 <div
-                  key={frame.line}
+                  key={frame.copy}
                   className="relative aspect-[9/16] overflow-hidden rounded-[9px] ring-1 ring-black/[0.08]"
                 >
-                  <StoryArtwork frame={frame} compact />
+                  <BakedArtwork asset={frame} sizes="80px" />
                   <span className="absolute left-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white/90 px-1 text-[7px] text-stone-600">
                     {index + 2}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div
+              aria-label="Story frame previews"
+              className="-mx-3 flex snap-x snap-mandatory gap-2 overflow-x-auto px-3 pb-2 md:hidden"
+            >
+              {STORY_FRAMES.map((frame, index) => (
+                <div
+                  key={frame.copy}
+                  className="relative aspect-[9/16] w-[72px] shrink-0 snap-start overflow-hidden rounded-[9px] ring-1 ring-black/[0.08]"
+                >
+                  <BakedArtwork asset={frame} sizes="72px" />
+                  <span className="absolute left-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white/90 px-1 text-[7px] text-stone-600">
+                    {index + 1}
                   </span>
                 </div>
               ))}
