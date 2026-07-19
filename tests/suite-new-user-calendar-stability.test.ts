@@ -25,7 +25,24 @@ describe("new-user and Calendar stability contracts", () => {
     const gridItem = read("components/feed-planner/feed-grid-item.tsx")
 
     expect(gallery).toContain('${isVideo ? "Play" : "Open"} ${title}, item ${index + 1}')
-    expect(gridItem).toContain("Generate image for post ${post.position}")
+    expect(gridItem).toContain("Open post ${post.position}")
     expect(gridItem).toContain("Add photo to post ${post.position}")
+  })
+
+  it("opens empty Calendar slots before Maya can create anything", () => {
+    const gridItem = read("components/feed-planner/feed-grid-item.tsx")
+
+    expect(gridItem).toContain("onOpenPost: () => void")
+    expect(gridItem).toContain("onClick={onOpenPost}")
+  })
+
+  it("uses the same saved member identity inside the post editor", () => {
+    const modals = read("components/feed-planner/feed-modals.tsx")
+    const postCard = read("components/feed-planner/feed-post-card.tsx")
+
+    expect(modals).toContain("resolveCalendarProfile")
+    expect(modals).toContain("profileImageUrl={calendarProfile.profileImageUrl}")
+    expect(postCard).toContain("profileImageUrl?: string | null")
+    expect(postCard).toContain("alt={`${displayAccount}'s profile`}")
   })
 })

@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast"
 import FeedStyleModal, { type FeedStyle, type FeedStyleModalData } from "./feed-style-modal"
 import useSWR, { mutate } from "swr"
 import { useFeedNav } from "./feed-nav-context"
+import { resolveCalendarProfile } from "@/lib/feed-planner/calendar-profile"
 
 interface FeedHeaderProps {
   feedData: any
@@ -497,29 +498,16 @@ export default function FeedHeader({
     }
   }
 
-  const profileImageUrl =
-    (typeof feedData?.feed?.profile_image_url === "string" &&
-      feedData.feed.profile_image_url.trim()) ||
-    (typeof feedData?.sharedProfileImageUrl === "string" &&
-      feedData.sharedProfileImageUrl.trim()) ||
-    null
+  const calendarProfile = resolveCalendarProfile(feedData)
+  const profileImageUrl = calendarProfile.profileImageUrl
   const hasProfileImage = Boolean(profileImageUrl)
   const hasBio = !!feedData?.bio?.bio_text
 
   // Get feed name (title) - prefer title, then brand_name, then fallback
   const feedName =
     feedData?.feed?.title || feedData?.feed?.brand_name || `Feed ${currentFeedId}` || "My Feed"
-  const displayName = feedData?.userDisplayName || feedData?.feed?.brand_name || "Your brand"
-  const fallbackUsername =
-    String(displayName)
-      .toLowerCase()
-      .replace(/[^a-z0-9._]/g, "") || "yourbrand"
-  const storedUsername = String(feedData?.feed?.username || "")
-    .trim()
-    .toLowerCase()
-  const placeholderUsernames = new Set(["yourbrand", "your_brand", "mybrand", "yourinstagram"])
-  const profileUsername =
-    storedUsername && !placeholderUsernames.has(storedUsername) ? storedUsername : fallbackUsername
+  const displayName = calendarProfile.displayName
+  const profileUsername = calendarProfile.username
 
   return (
     <div className="overflow-hidden rounded-[14px] border border-[#C5C6C8]/35 bg-[#F8FAFA] shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)]">

@@ -119,43 +119,6 @@ async function stopGeneration({
   }
 }
 
-async function startGeneration({
-  event,
-  postId,
-  onGenerate,
-  setPredictionId,
-}: {
-  event: React.MouseEvent<HTMLButtonElement>
-  postId: number
-  onGenerate: (postId: number) => Promise<any>
-  setPredictionId: (value: string | null) => void
-}) {
-  event.stopPropagation()
-
-  const tempPredictionId = `temp-${Date.now()}`
-  setPredictionId(tempPredictionId)
-  console.log("[Feed Grid Item] 🚀 Starting generation (optimistic UI) for post", postId)
-
-  try {
-    const data = await onGenerate(postId)
-    if (data?.predictionId) {
-      setPredictionId(data.predictionId)
-      console.log(
-        "[Feed Grid Item] ✅ Generation started for post",
-        postId,
-        "predictionId:",
-        data.predictionId
-      )
-      return
-    }
-
-    setPredictionId(null)
-  } catch (error) {
-    setPredictionId(null)
-    console.error("[Feed Grid Item] Error starting generation:", error)
-  }
-}
-
 function renderContent({
   displayImageUrl,
   isGenerating,
@@ -165,7 +128,7 @@ function renderContent({
   isMembership,
   post,
   onAddImage,
-  onGenerateClick,
+  onOpenPost,
   onStopGeneration,
   onRegenerateIdeaClick,
   isRegeneratingIdea,
@@ -178,7 +141,7 @@ function renderContent({
   isMembership?: boolean
   post: any
   onAddImage?: (postId: number) => void
-  onGenerateClick: (event: React.MouseEvent<HTMLButtonElement>) => void
+  onOpenPost: () => void
   onStopGeneration: (event: React.MouseEvent<HTMLButtonElement>) => void
   onRegenerateIdeaClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
   isRegeneratingIdea?: boolean
@@ -276,9 +239,9 @@ function renderContent({
       <div className="absolute inset-0 flex flex-col bg-[#F8FAFA]">
         <button
           type="button"
-          aria-label={`Generate image for post ${post.position}`}
+          aria-label={`Open post ${post.position}`}
           className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-2 p-3 text-center transition-colors hover:bg-[#F1F2F2]"
-          onClick={onGenerateClick}
+          onClick={onOpenPost}
         >
           {isMayaDraft && (
             <>
@@ -291,7 +254,7 @@ function renderContent({
             </>
           )}
           <span className="text-center text-[10px] font-medium uppercase tracking-[0.2em] text-[#4F5052]">
-            Generate image
+            Open post
           </span>
         </button>
         {isMayaDraft && onRegenerateIdeaClick && (
@@ -340,7 +303,6 @@ export default function FeedGridItem({
   onDragEnd,
   onMoveLeft,
   onMoveRight,
-  onGenerate,
   onRegenerateIdea,
 }: Readonly<FeedGridItemProps>) {
   const [predictionId, setPredictionId] = useState<string | null>(getInitialPredictionId(post))
@@ -391,15 +353,6 @@ export default function FeedGridItem({
     ? "cursor-pointer"
     : "cursor-move hover:opacity-90"
 
-  const handleGenerateClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    void startGeneration({
-      event,
-      postId: post.id,
-      onGenerate,
-      setPredictionId,
-    })
-  }
-
   const handleStopGeneration = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
     if (canStop && !isStopping) setShowStopDialog(true)
@@ -437,7 +390,7 @@ export default function FeedGridItem({
     isMembership,
     post,
     onAddImage,
-    onGenerateClick: handleGenerateClick,
+    onOpenPost: () => onPostClick(post),
     onStopGeneration: handleStopGeneration,
     onRegenerateIdeaClick: onRegenerateIdea ? handleRegenerateIdeaClick : undefined,
     isRegeneratingIdea,

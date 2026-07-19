@@ -7,6 +7,7 @@ import FeedPostCard from "./feed-post-card"
 import { FeedGallerySelector } from "./feed-gallery-selector"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { useAccessibleModal } from "@/components/app-v3/use-accessible-modal"
+import { resolveCalendarProfile } from "@/lib/feed-planner/calendar-profile"
 
 interface FeedModalsProps {
   selectedPost: any | null
@@ -41,6 +42,7 @@ export default function FeedModals({
 }: FeedModalsProps) {
   const [studioView, setStudioView] = useState<"post" | "maya">("post")
   const { dialogRef, initialFocusRef } = useAccessibleModal(Boolean(selectedPost), onClosePost)
+  const calendarProfile = resolveCalendarProfile(feedData)
 
   useEffect(() => {
     if (selectedPost?.id) setStudioView("post")
@@ -130,7 +132,8 @@ export default function FeedModals({
                   <FeedPostCard
                     post={selectedPost}
                     feedId={feedId}
-                    accountName={feedData?.feed?.username || feedData?.feed?.brand_name}
+                    accountName={calendarProfile.username}
+                    profileImageUrl={calendarProfile.profileImageUrl}
                     onUpdate={onUpdate}
                     onNavigateToMaya={
                       mayaWorkspace ? () => setStudioView("maya") : onNavigateToMaya

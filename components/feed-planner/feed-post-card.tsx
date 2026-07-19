@@ -26,6 +26,7 @@ interface FeedPostCardProps {
   }
   feedId: number
   accountName?: string | null
+  profileImageUrl?: string | null
   onUpdate?: (updatedPost?: FeedPostCardProps["post"]) => void | Promise<void>
   onNavigateToMaya?: () => void // Navigate to Maya Chat for image generation
 }
@@ -34,6 +35,7 @@ export default function FeedPostCard({
   post,
   feedId,
   accountName,
+  profileImageUrl,
   onUpdate,
   onNavigateToMaya,
 }: FeedPostCardProps) {
@@ -413,9 +415,23 @@ export default function FeedPostCard({
       {/* Editorial date with familiar Instagram account context. */}
       <div className="flex items-center justify-between gap-3 border-b border-[#C5C6C8]/35 px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0D0E10]">
-            <span className="text-xs font-bold text-white">S</span>
-          </div>
+          {profileImageUrl ? (
+            <div className="relative h-8 w-8 overflow-hidden rounded-full bg-[#0D0E10]">
+              <Image
+                src={profileImageUrl}
+                alt={`${displayAccount}'s profile`}
+                fill
+                className="object-cover object-top"
+                sizes="32px"
+              />
+            </div>
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0D0E10]">
+              <span className="text-xs font-bold text-white">
+                {displayAccount.charAt(0).toUpperCase() || "S"}
+              </span>
+            </div>
+          )}
           <div>
             <p className="text-sm font-semibold text-[#0D0E10]">{displayAccount}</p>
             {post.content_pillar && (
