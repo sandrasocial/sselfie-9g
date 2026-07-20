@@ -472,6 +472,74 @@ export default async function AdminPage({
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-[0.16em] text-stone-500">
+                      Vault buyer path · last 30 days
+                    </p>
+                    <p className="mt-2 font-serif text-2xl font-light">
+                      See the offer, the choice, and the money separately.
+                    </p>
+                  </div>
+                  <p className="text-xs uppercase tracking-[0.14em] text-stone-500">
+                    Rolling window
+                  </p>
+                </div>
+
+                <div className="mt-5 grid gap-px border border-stone-200 bg-stone-200 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="bg-stone-50 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Offer shown
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {scorecard.vaultCommercialPath30d.offerViews}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500">Vault buyer views</p>
+                  </div>
+                  <div className="bg-stone-50 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      SUITE path
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {scorecard.vaultCommercialPath30d.suiteClicks}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500">
+                      {scorecard.vaultCommercialPath30d.suiteCheckoutStarts} checkout sessions
+                    </p>
+                  </div>
+                  <div className="bg-stone-50 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Presets path
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {scorecard.vaultCommercialPath30d.presetsClicks}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500">
+                      {scorecard.vaultCommercialPath30d.suiteDeclines} SUITE declines · {scorecard.vaultCommercialPath30d.presetsCheckoutStarts} checkouts
+                    </p>
+                  </div>
+                  <div className="bg-stone-50 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      Successful Stripe payments
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {scorecard.vaultCommercialPath30d.suitePayments + scorecard.vaultCommercialPath30d.presetsPayments}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500">
+                      {currencyMoney(scorecard.vaultCommercialPath30d.suiteRevenue, "EUR")} SUITE · {currencyMoney(scorecard.vaultCommercialPath30d.presetsRevenue, "USD")} presets
+                    </p>
+                  </div>
+                </div>
+
+                <p className="mt-4 text-xs leading-5 text-stone-500">
+                  Views and clicks come from analytics events. Checkout sessions come from checkout
+                  attribution. Payment counts and revenue come only from successful live Stripe
+                  payment rows.
+                </p>
+              </div>
+            ) : null}
+            {scorecard ? (
+              <div className="bg-white p-5 sm:col-span-2 sm:p-6">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-stone-500">
                       SUITE journey · last 30 days
                     </p>
                     <p className="mt-2 font-serif text-2xl font-light">

@@ -13,6 +13,11 @@ import {
   getFoundingAnnualOfferStatus,
   getFoundingAnnualPurchaseCount,
 } from "@/lib/launch/cash-launch-pricing"
+import { hasPaidPromptVaultAccess } from "@/lib/prompt-vault/paid-access"
+import {
+  PROMPT_VAULT_SUITE_COUPON_ID,
+  PROMPT_VAULT_SUITE_OFFER_SLUG,
+} from "@/lib/revenue-engine/prompt-vault-commercial-path"
 
 export const dynamic = "force-dynamic"
 
@@ -27,6 +32,8 @@ export default async function MembershipCheckoutPage({
 }: {
   searchParams: Promise<{
     promo?: string
+    offer?: string
+    vault_token?: string
     interval?: string
     plan?: string
     fallback?: string
@@ -65,6 +72,10 @@ export default async function MembershipCheckoutPage({
   } = await supabase.auth.getUser()
   const urlEmail = normalizeCheckoutEmail(params.checkout_email || params.email)
   const checkoutEmail = authUser?.email ?? urlEmail ?? null
+  const requestedVaultOffer = params.offer === PROMPT_VAULT_SUITE_OFFER_SLUG
+  const isApprovedVaultOffer = requestedVaultOffer
+    ? await hasPaidPromptVaultAccess(params.vault_token)
+    : false
 
   if (params.interval) {
     const isAnnual = params.interval === "year" || params.interval === "annual"
@@ -127,10 +138,20 @@ export default async function MembershipCheckoutPage({
           productMeta={isAnnual
             ? "Maya, Create, Calendar, Learn, and the SSELFIE library"
             : "Maya, Create, Calendar, Learn, and 200 monthly credits"}
-          productPrice={foundingAvailable ? "697 EUR / year · founding" : isAnnual ? "970 EUR / year" : "97 EUR / month"}
+          productPrice={
+            foundingAvailable
+              ? "697 EUR / year · founding"
+              : isAnnual
+                ? "970 EUR / year"
+                : isApprovedVaultOffer
+                  ? "€49 first month · then €97/month"
+                  : "€97/month"
+          }
           reassurance={isAnnual
             ? "Used only for your login, receipt, and access link."
-            : "€97 billed monthly. Cancel from your account."}
+            : isApprovedVaultOffer
+              ? "€49 today, then €97 monthly. Cancel from your account."
+              : "€97 billed monthly. Cancel from your account."}
           visuals={[
             {
               src: "/images/email/studio-visual-workspace.jpg",
@@ -150,16 +171,30 @@ export default async function MembershipCheckoutPage({
     }
 
     try {
-      const clientSecret = await createLandingCheckoutSession(productId, params.promo, checkoutEmail, {
-        bonusCredits,
-        ...attribution,
-        membershipPlan: wantsFounding ? "founding" : null,
-        offerSlug: foundingAvailable ? "founding_annual" : attribution.offerSlug,
-      })
+      const clientSecret = await createLandingCheckoutSession(
+        productId,
+        isApprovedVaultOffer ? PROMPT_VAULT_SUITE_COUPON_ID : params.promo,
+        checkoutEmail,
+        {
+          bonusCredits,
+          ...attribution,
+          membershipPlan: wantsFounding ? "founding" : null,
+          offerSlug: foundingAvailable
+            ? "founding_annual"
+            : isApprovedVaultOffer
+              ? PROMPT_VAULT_SUITE_OFFER_SLUG
+              : attribution.offerSlug,
+        },
+      )
       if (clientSecret) {
         // product_type lets the embedded checkout page show membership copy and fire the
         // membership funnel event (it previously arrived as product_type "unknown").
-        redirect(buildCheckoutRedirectUrl(clientSecret, productId, params))
+        redirect(
+          buildCheckoutRedirectUrl(clientSecret, productId, {
+            ...params,
+            offer: isApprovedVaultOffer ? PROMPT_VAULT_SUITE_OFFER_SLUG : undefined,
+          }),
+        )
       }
     } catch (error: unknown) {
       if (

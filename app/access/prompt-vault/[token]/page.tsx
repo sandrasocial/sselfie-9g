@@ -2,7 +2,6 @@ import Image from "next/image"
 import Link from "next/link"
 import type { Metadata } from "next"
 import { Cormorant_Garamond, Inter } from "next/font/google"
-import { sql } from "@/lib/db/client"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
@@ -12,6 +11,8 @@ import { buildAppV3AestheticHref } from "@/lib/app-v3/navigation"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
 import { PromptViewTracker } from "@/components/prompt-vault/prompt-view-tracker"
 import { SuiteDoor } from "@/components/marketing/suite-door"
+import { VaultPostPurchaseOffer } from "@/components/prompt-vault/vault-post-purchase-offer"
+import { getPaidPromptVaultAccess } from "@/lib/prompt-vault/paid-access"
 import {
   MYSTERIOUS_VOGUE_SERIES,
   QUIET_LUXURY_LONDON_SERIES,
@@ -249,34 +250,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-// ── Token validation ─────────────────────────────────────────────────────────
-
-type TokenResult = { valid: false } | { valid: true; name?: string | null }
-
-async function validateToken(token: string): Promise<TokenResult> {
-  try {
-    const rows = await sql`
-      SELECT name
-      FROM freebie_subscribers
-      WHERE access_token = ${token}
-        AND (
-          source = 'prompt-vault-paid'
-          OR source = 'selfie-to-brand-shoot-paid'
-          OR 'prompt-vault-paid' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
-          OR 'selfie-to-brand-shoot-paid' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
-          OR 'bought_selfie_to_brand_shoot_system' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
-          OR 'prompt-vault-admin-access' = ANY(COALESCE(email_tags, ARRAY[]::text[]))
-        )
-      LIMIT 1
-    `
-    if (rows.length === 0) return { valid: false }
-    return { valid: true, name: (rows[0].name as string | null) ?? null }
-  } catch (error) {
-    console.error("[prompt-vault/access] DB error during token validation:", error)
-    return { valid: false }
-  }
-}
-
 type ViewerAccess = {
   isAdmin: boolean
   isActiveMember: boolean
@@ -405,7 +378,7 @@ export default async function PromptVaultAccessPage({
   params: Promise<{ token: string }>
 }) {
   const { token } = await params
-  const result = await validateToken(token)
+  const result = await getPaidPromptVaultAccess(token)
   const viewerAccess = await resolveViewerAccess()
   const adminOverride = !result.valid && viewerAccess.isAdmin
 
@@ -652,6 +625,10 @@ export default async function PromptVaultAccessPage({
         </div>
       </section>
 
+      {!viewerAccess.isActiveMember && (
+        <VaultPostPurchaseOffer vaultToken={token} serifClassName={cormorant.className} />
+      )}
+
       {/* ── HOW TO USE ── */}
       <section className="pva-how-section">
         <div className="pva-how-inner">
@@ -789,23 +766,18 @@ export default async function PromptVaultAccessPage({
       </section>
 
       {/* ── THE SUITE DOOR - the membership invitation for proven buyers ── */}
-      <SuiteDoor
-        eyebrow="Your next step"
-        title="You've done it the manual way."
-        body="Maya already knows every look in this Vault. Inside SSELFIE SUITE, she works from your real selfies and creates your brand shoots for you. No more pasting prompts and hoping the result still looks like you. You pick the vibe, she does the rest, and it looks like you because it's made from you."
-        ctaLabel={
-          viewerAccess.isActiveMember ? MEMBER_ACTION_COPY.suiteDoor : "See SSELFIE SUITE"
-        }
-        href={
-          viewerAccess.isActiveMember
-            ? "/app"
-            : "/join/studio?source=suite_door_vault_access&utm_source=prompt_vault&utm_medium=access_page&utm_campaign=suite_door&utm_content=vault_access_page"
-        }
-        footnote="Monthly membership · cancel anytime"
-        placement="vault_access"
-        destination={viewerAccess.isActiveMember ? "app" : "join-studio"}
-        serifClassName={cormorant.className}
-      />
+      {viewerAccess.isActiveMember && (
+        <SuiteDoor
+          eyebrow="Your next step"
+          title="Open this look in Maya."
+          body="You already have SUITE access. Choose a look from the Vault, then bring it into Maya to keep creating."
+          ctaLabel={MEMBER_ACTION_COPY.suiteDoor}
+          href="/app"
+          placement="vault_access"
+          destination="app"
+          serifClassName={cormorant.className}
+        />
+      )}
 
       {/* ── FOOTER ── */}
       <footer className="pva-footer">

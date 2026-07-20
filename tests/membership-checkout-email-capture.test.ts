@@ -17,6 +17,8 @@ describe("membership checkout email capture", () => {
       interval: "year",
       plan: "founding",
       promo: "FOUNDING",
+      offer: "prompt-vault-suite-first-month-49",
+      vault_token: "paid-vault-token",
       bonus: "4credits",
       source: "trial_day5",
       utm_source: "email",
@@ -27,6 +29,8 @@ describe("membership checkout email capture", () => {
         { name: "interval", value: "year" },
         { name: "plan", value: "founding" },
         { name: "promo", value: "FOUNDING" },
+        { name: "offer", value: "prompt-vault-suite-first-month-49" },
+        { name: "vault_token", value: "paid-vault-token" },
         { name: "bonus", value: "4credits" },
         { name: "source", value: "trial_day5" },
         { name: "utm_source", value: "email" },
@@ -55,7 +59,7 @@ describe("membership checkout email capture", () => {
     expect(membershipPage).toContain("Continue to secure payment")
     expect(membershipPage).toContain("Skip and go straight to payment")
     expect(membershipPage).toContain("SSELFIE SUITE")
-    expect(membershipPage).toContain("97 EUR / month")
+    expect(membershipPage).toContain("€97/month")
     expect(membershipPage).toContain("/images/email/studio-visual-workspace.jpg")
   })
 })

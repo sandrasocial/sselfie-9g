@@ -28,6 +28,7 @@ const ATTRIBUTION_KEYS = [
   "entry_path",
   "entry_post_slug",
   "buyer_stage",
+  "offer",
   "checkout_email",
   "vault_credit",
   "starter_kit_credit",
@@ -241,16 +242,36 @@ function CheckoutContent() {
   const isSelfieVisibilityBundle = productType === "selfie_visibility_bundle"
   const isStarterKit = productType === "starter_kit"
   const isMasterclass = productType === "masterclass"
+  const isVaultSuiteOffer =
+    productType === "sselfie_studio_membership" &&
+    searchParams.get("offer") === "prompt-vault-suite-first-month-49"
   const isVisualIdentityOffer = isPromptVault || isSelfieAiPhotosKit || isSelfieToBrandShoot
   const hasVaultCredit = isSelfieToBrandShoot && searchParams.get("vault_credit") === "1"
-  const checkoutCopy = CHECKOUT_COPY[productType] ?? {
+  const defaultCheckoutCopy = CHECKOUT_COPY[productType] ?? {
     heroTitle: "Complete your SSELFIE Studio order",
     heroBody: "Secure your purchase and keep moving.",
     heading: "Secure checkout",
     blurb: "Your payment is encrypted and protected with Stripe.",
     footer: "Cancel anytime. 30-day refund if you're not happy.",
   }
-  const confidencePoints = CHECKOUT_CONFIDENCE_POINTS[productType] ?? []
+  const checkoutCopy = isVaultSuiteOffer
+    ? {
+        heroTitle: "Your Vault buyer offer",
+        heroBody: "Keep the visual, the words, and what goes out next in one place.",
+        heading: "SSELFIE SUITE · €49 for your first month",
+        blurb:
+          "Maya, Create, Calendar, Learn, the SSELFIE library, and 200 credits that refill each month.",
+        footer: "Then €97 billed monthly. Manage or cancel the membership from your account.",
+      }
+    : defaultCheckoutCopy
+  const confidencePoints = isVaultSuiteOffer
+    ? [
+        "€49 for your first month",
+        "Then €97 billed monthly",
+        "200 credits refill each month",
+        "Cancel from your account",
+      ]
+    : CHECKOUT_CONFIDENCE_POINTS[productType] ?? []
 
   useEffect(() => {
     const secret = searchParams.get("client_secret")

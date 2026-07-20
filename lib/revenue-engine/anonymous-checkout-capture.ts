@@ -6,6 +6,8 @@ export const CHECKOUT_EMAIL_CAPTURE_PARAM_KEYS = [
   "interval",
   "plan",
   "promo",
+  "offer",
+  "vault_token",
   "bonus",
   "source",
   "utm_source",

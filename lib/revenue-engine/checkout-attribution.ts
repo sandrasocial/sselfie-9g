@@ -234,6 +234,7 @@ const CHECKOUT_REDIRECT_ATTRIBUTION_PARAMS = [
   "entry_post_slug",
   "buyer_stage",
   "vault_credit",
+  "offer",
   "upgrade_credit",
   "tier",
   "collection",

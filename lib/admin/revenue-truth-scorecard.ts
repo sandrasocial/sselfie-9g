@@ -38,6 +38,18 @@ export type RevenueTruthScorecard = {
     paymentForms: number
     newPaidMembers: number
   }
+  vaultCommercialPath30d: {
+    offerViews: number
+    suiteClicks: number
+    suiteDeclines: number
+    presetsClicks: number
+    suiteCheckoutStarts: number
+    suitePayments: number
+    suiteRevenue: number
+    presetsCheckoutStarts: number
+    presetsPayments: number
+    presetsRevenue: number
+  }
   products30d: Array<{
     productType: string
     payments: number
@@ -99,6 +111,7 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
     memberMetrics,
     trialRows,
     productRows,
+    vaultPaymentRows,
     funnelRows,
     workWithMeRows,
     workWithMeReceiptRows,
@@ -138,6 +151,29 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
       GROUP BY product_type
       ORDER BY revenue_cents DESC
       LIMIT 10
+    `,
+    sql`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE utm_campaign = 'vault_to_suite'
+            AND product_type = 'sselfie_studio_membership'
+        )::int AS suite_payments,
+        COALESCE(SUM(amount_cents) FILTER (
+          WHERE utm_campaign = 'vault_to_suite'
+            AND product_type = 'sselfie_studio_membership'
+        ), 0)::bigint AS suite_revenue_cents,
+        COUNT(*) FILTER (
+          WHERE utm_campaign = 'vault_to_presets'
+            AND product_type = 'presets_bundle'
+        )::int AS presets_payments,
+        COALESCE(SUM(amount_cents) FILTER (
+          WHERE utm_campaign = 'vault_to_presets'
+            AND product_type = 'presets_bundle'
+        ), 0)::bigint AS presets_revenue_cents
+      FROM stripe_payments
+      WHERE status IN ('succeeded', 'paid')
+        AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+        AND payment_date >= NOW() - INTERVAL '30 days'
     `,
     sql`
       SELECT
@@ -254,6 +290,36 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
         )
           AND membership_checkout.created_at >= NOW() - INTERVAL '30 days'
       ) AS membership_checkout_starts_30d
+      , COUNT(*) FILTER (
+        WHERE event_name = 'prompt_vault_suite_offer_viewed'
+          AND properties->>'environment' = 'production'
+      )::int AS vault_offer_views_30d
+      , COUNT(*) FILTER (
+        WHERE event_name = 'prompt_vault_suite_offer_clicked'
+          AND properties->>'environment' = 'production'
+      )::int AS vault_suite_clicks_30d
+      , COUNT(*) FILTER (
+        WHERE event_name = 'prompt_vault_suite_offer_declined'
+          AND properties->>'environment' = 'production'
+      )::int AS vault_suite_declines_30d
+      , COUNT(*) FILTER (
+        WHERE event_name = 'prompt_vault_presets_downsell_clicked'
+          AND properties->>'environment' = 'production'
+      )::int AS vault_presets_clicks_30d
+      , (
+        SELECT COUNT(*)::int
+        FROM checkout_attribution vault_suite_checkout
+        WHERE vault_suite_checkout.product_type = 'sselfie_studio_membership'
+          AND vault_suite_checkout.utm_campaign = 'vault_to_suite'
+          AND vault_suite_checkout.created_at >= NOW() - INTERVAL '30 days'
+      ) AS vault_suite_checkout_starts_30d
+      , (
+        SELECT COUNT(*)::int
+        FROM checkout_attribution vault_presets_checkout
+        WHERE vault_presets_checkout.product_type = 'presets_bundle'
+          AND vault_presets_checkout.utm_campaign = 'vault_to_presets'
+          AND vault_presets_checkout.created_at >= NOW() - INTERVAL '30 days'
+      ) AS vault_presets_checkout_starts_30d
     FROM analytics_events
     WHERE created_at >= NOW() - INTERVAL '30 days'
   `.catch(() => [{
@@ -263,8 +329,15 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
     membership_page_views_30d: 0,
     membership_cta_clicks_30d: 0,
     membership_checkout_starts_30d: 0,
+    vault_offer_views_30d: 0,
+    vault_suite_clicks_30d: 0,
+    vault_suite_declines_30d: 0,
+    vault_presets_clicks_30d: 0,
+    vault_suite_checkout_starts_30d: 0,
+    vault_presets_checkout_starts_30d: 0,
   }])
   const events = (eventCounts as any[])[0] || {}
+  const vaultPayments = (vaultPaymentRows as any[])[0] || {}
 
   return {
     generatedAt: new Date().toISOString(),
@@ -300,6 +373,18 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
       checkoutStarts: toNumber(events.membership_checkout_starts_30d),
       paymentForms: toNumber(events.payment_form_rendered_30d),
       newPaidMembers: memberMetrics.newSubscribers30d,
+    },
+    vaultCommercialPath30d: {
+      offerViews: toNumber(events.vault_offer_views_30d),
+      suiteClicks: toNumber(events.vault_suite_clicks_30d),
+      suiteDeclines: toNumber(events.vault_suite_declines_30d),
+      presetsClicks: toNumber(events.vault_presets_clicks_30d),
+      suiteCheckoutStarts: toNumber(events.vault_suite_checkout_starts_30d),
+      suitePayments: toNumber(vaultPayments.suite_payments),
+      suiteRevenue: toNumber(vaultPayments.suite_revenue_cents) / 100,
+      presetsCheckoutStarts: toNumber(events.vault_presets_checkout_starts_30d),
+      presetsPayments: toNumber(vaultPayments.presets_payments),
+      presetsRevenue: toNumber(vaultPayments.presets_revenue_cents) / 100,
     },
     products30d: (productRows as any[]).map((row) => ({
       productType: productLabel(row.product_type),
