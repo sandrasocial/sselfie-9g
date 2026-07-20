@@ -25,6 +25,20 @@ changed-file lint, repository invariants, voice rules, production build, visual 
 rendered emails, and authenticated production admin QA. The live Free Prompts and Prompt Vault pages
 loaded with meaningful content, zero browser console errors, and no framework error overlay.
 
+## 2026-07-20 — Membership credit claim cleanup
+
+Aligned the remaining membership, account, free-credit, product, email-draft, and internal pricing
+claims with the live policy: 100 included credits reset each billing month, while purchased top-ups
+stay available. Retired unsafe legacy repair scripts. The separate One Selfie 200-credit pass and
+paid 200-credit top-up were preserved.
+
+Production proof: feature commit `bbd5496d`, Vercel deployment
+`dpl_ERUWGMSy7hJZhb3VLLcQpGg2uyRW`, exact Git commit verified in the build log, full test suite,
+CI typecheck, repository invariants, changed-file lint with zero errors, production build, healthy
+database/cache/auth checks, and clean desktop and 390px mobile browser checks. The read-only live
+postcheck found zero stale email claims, Stripe price metadata at 100, and zero resumable
+subscriptions needing alignment. No email was sent and no customer balance or payment was changed.
+
 ## 2026-07-20 — Homepage commercial path
 
 Connected the public homepage to the existing commercial journey without adding a product. The
