@@ -148,7 +148,7 @@ const CHECKOUT_COPY: Record<
     heroTitle: "Join SSELFIE SUITE",
     heroBody: "Start with one selfie. Create the visual, find the words, and plan what goes out next.",
     heading: "SSELFIE SUITE · €97 monthly",
-    blurb: "Maya, Create, Calendar, Learn, the SSELFIE library, and 200 credits that refill each month.",
+    blurb: "Maya, Create, Calendar, Learn, the SSELFIE library, and 100 credits that reset each month.",
     footer: "Your access opens after payment. Manage or cancel the membership from your account.",
   },
   sselfie_studio_membership_annual: {
@@ -217,7 +217,7 @@ const CHECKOUT_CONFIDENCE_POINTS: Record<string, string[]> = {
   ],
   sselfie_studio_membership: [
     "€97 billed monthly",
-    "200 credits refill each month",
+    "100 credits reset each month",
     "Access right after payment",
     "Cancel from your account",
   ],
@@ -260,7 +260,7 @@ function CheckoutContent() {
         heroBody: "Keep the visual, the words, and what goes out next in one place.",
         heading: "SSELFIE SUITE · €49 for your first month",
         blurb:
-          "Maya, Create, Calendar, Learn, the SSELFIE library, and 200 credits that refill each month.",
+          "Maya, Create, Calendar, Learn, the SSELFIE library, and 100 credits that reset each month.",
         footer: "Then €97 billed monthly. Manage or cancel the membership from your account.",
       }
     : defaultCheckoutCopy
@@ -268,7 +268,7 @@ function CheckoutContent() {
     ? [
         "€49 for your first month",
         "Then €97 billed monthly",
-        "200 credits refill each month",
+        "100 credits reset each month",
         "Cancel from your account",
       ]
     : CHECKOUT_CONFIDENCE_POINTS[productType] ?? []

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const mocks = vi.hoisted(() => ({
   checkCredits: vi.fn(),
   deductCredits: vi.fn(),
+  refundCredits: vi.fn(),
   generateWithNanoBanana: vi.fn(),
   getFeedStyleV2ByName: vi.fn(),
   getUserByAuthId: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock("@/lib/credits", () => ({
   CREDIT_COSTS: { IMAGE: 1 },
   checkCredits: mocks.checkCredits,
   deductCredits: mocks.deductCredits,
+  refundCredits: mocks.refundCredits,
 }))
 vi.mock("@/lib/replicate-client", () => ({
   getReplicateClient: () => ({ predictions: { create: vi.fn() } }),
@@ -76,6 +78,7 @@ describe("delivered month runtime money and recovery", () => {
     mocks.getUserByAuthId.mockResolvedValue({ id: 77 })
     mocks.checkCredits.mockResolvedValue(true)
     mocks.deductCredits.mockResolvedValue({ success: true, newBalance: 18 })
+    mocks.refundCredits.mockResolvedValue({ success: true, newBalance: 20, refunded: true })
     mocks.generateWithNanoBanana.mockResolvedValue({ predictionId: "pregen-91" })
     mocks.getFeedStyleV2ByName.mockResolvedValue({ id: 8, enabled: true })
     mocks.selectPromptForPosition.mockResolvedValue({
@@ -87,19 +90,26 @@ describe("delivered month runtime money and recovery", () => {
     const queries = installSuccessfulSql()
     const { queueAllImagesForFeed } = await import("@/lib/feed-planner/queue-images")
 
-    const result = await queueAllImagesForFeed(12, "auth-77", "https://sselfie.ai", undefined, undefined, {
-      postIds: [91],
-      chargeCredits: false,
-      markPregenerated: true,
-      forceProMode: true,
-      identityReferencesOnly: true,
-      useCuratedFeedStylePrompts: true,
-    })
+    const result = await queueAllImagesForFeed(
+      12,
+      "auth-77",
+      "https://sselfie.ai",
+      undefined,
+      undefined,
+      {
+        postIds: [91],
+        chargeCredits: false,
+        markPregenerated: true,
+        forceProMode: true,
+        identityReferencesOnly: true,
+        useCuratedFeedStylePrompts: true,
+      }
+    )
 
     expect(result).toMatchObject({ queuedCount: 1, failedCount: 0 })
     expect(mocks.checkCredits).not.toHaveBeenCalled()
     expect(mocks.deductCredits).not.toHaveBeenCalled()
-    expect(queries.some((query) => query.includes("pregenerated = TRUE"))).toBe(true)
+    expect(queries.some(query => query.includes("pregenerated = TRUE"))).toBe(true)
   })
 
   it("keeps the default member generation path charged exactly once", async () => {
@@ -116,9 +126,9 @@ describe("delivered month runtime money and recovery", () => {
       2,
       "image",
       "Feed Planner image (post 1)",
-      "pregen-91",
+      expect.stringMatching(/^feed-queue-91-/)
     )
-    expect(queries.some((query) => query.includes("pregenerated = TRUE"))).toBe(false)
+    expect(queries.some(query => query.includes("pregenerated = TRUE"))).toBe(false)
   })
 
   it("resets a failed pre-generation slot instead of leaving it generating", async () => {
@@ -126,21 +136,46 @@ describe("delivered month runtime money and recovery", () => {
     mocks.generateWithNanoBanana.mockRejectedValue(new Error("provider unavailable"))
     const { queueAllImagesForFeed } = await import("@/lib/feed-planner/queue-images")
 
-    const result = await queueAllImagesForFeed(12, "auth-77", "https://sselfie.ai", undefined, undefined, {
-      postIds: [91],
-      chargeCredits: false,
-      markPregenerated: true,
-      forceProMode: true,
-      identityReferencesOnly: true,
-      useCuratedFeedStylePrompts: true,
-    })
+    const result = await queueAllImagesForFeed(
+      12,
+      "auth-77",
+      "https://sselfie.ai",
+      undefined,
+      undefined,
+      {
+        postIds: [91],
+        chargeCredits: false,
+        markPregenerated: true,
+        forceProMode: true,
+        identityReferencesOnly: true,
+        useCuratedFeedStylePrompts: true,
+      }
+    )
 
     expect(result).toMatchObject({ queuedCount: 0, failedCount: 1 })
     expect(mocks.deductCredits).not.toHaveBeenCalled()
     expect(
       queries.some(
-        (query) => query.includes("generation_status = 'failed'") && query.includes("prediction_id = NULL"),
-      ),
+        query =>
+          query.includes("generation_status = 'failed'") && query.includes("prediction_id = NULL")
+      )
     ).toBe(true)
+  })
+
+  it("refunds a charged member when the provider cannot start the image", async () => {
+    installSuccessfulSql()
+    mocks.generateWithNanoBanana.mockRejectedValue(new Error("provider unavailable"))
+    const { queueAllImagesForFeed } = await import("@/lib/feed-planner/queue-images")
+
+    const result = await queueAllImagesForFeed(12, "auth-77", "https://sselfie.ai")
+
+    expect(result).toMatchObject({ queuedCount: 0, failedCount: 1 })
+    expect(mocks.deductCredits).toHaveBeenCalledOnce()
+    expect(mocks.refundCredits).toHaveBeenCalledWith(
+      77,
+      2,
+      "Feed Planner post 1 failed before delivery",
+      expect.stringMatching(/^feed-queue-91-/)
+    )
   })
 })

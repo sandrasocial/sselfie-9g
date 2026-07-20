@@ -13,7 +13,12 @@ interface UpgradeModalProps {
   onClose: () => void
 }
 
-export function UpgradeModal({ open, currentTier: _currentTier, targetTier = "sselfie_studio_membership", onClose }: UpgradeModalProps) {
+export function UpgradeModal({
+  open,
+  currentTier: _currentTier,
+  targetTier = "sselfie_studio_membership",
+  onClose,
+}: UpgradeModalProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -32,17 +37,18 @@ export function UpgradeModal({ open, currentTier: _currentTier, targetTier = "ss
       })
 
       const data = await response.json()
-      
+
       if (!response.ok) {
         let errorMsg = data.error || "Upgrade failed. Please try again."
-        
+
         // Provide more user-friendly error messages
         if (errorMsg.includes("Stripe Price ID not configured")) {
-          errorMsg = "Upgrade service is temporarily unavailable. Please contact support or try again later."
+          errorMsg =
+            "Upgrade service is temporarily unavailable. Please contact support or try again later."
         } else if (errorMsg.includes("not configured")) {
           errorMsg = "Upgrade service is temporarily unavailable. Please contact support."
         }
-        
+
         setError(errorMsg)
         setLoading(false)
         return
@@ -72,16 +78,16 @@ export function UpgradeModal({ open, currentTier: _currentTier, targetTier = "ss
   }
 
   const targetProduct = getProductById(targetTier)
-  const targetName = targetTier === "sselfie_studio_membership"
-    ? "Creator Studio"
-    : "One-Time Session"
-  const targetCredits = targetProduct?.credits || (targetTier === "sselfie_studio_membership" ? 200 : 50)
+  const targetName =
+    targetTier === "sselfie_studio_membership" ? "Creator Studio" : "One-Time Session"
+  const targetCredits =
+    targetProduct?.credits || (targetTier === "sselfie_studio_membership" ? 100 : 50)
   const isSubscription = targetTier !== "one_time_session"
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(13,12,11,0.80)] p-4 backdrop-blur-sm animate-fade-in"
-      onClick={(e) => {
+      onClick={e => {
         if (e.target === e.currentTarget) {
           onClose()
         }
@@ -89,26 +95,27 @@ export function UpgradeModal({ open, currentTier: _currentTier, targetTier = "ss
     >
       <div
         className="relative w-full max-w-sm bg-[rgba(175,170,162,0.15)] backdrop-blur-[70px] border border-[rgba(195,190,182,0.25)] rounded-3xl p-6 sm:p-8"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <h2 className="font-['Cormorant_Garamond'] font-light mb-3 text-center text-2xl text-[#f0ede8] sm:text-3xl">
           Ready to keep going?
         </h2>
 
         <p className="mb-6 text-center text-sm font-light text-[#8a8780]">
-          {isSubscription
-            ? (
-              <>
-                Creator Studio gives you{" "}
-                <strong className="text-[#f0ede8]">{targetCredits} credits a month</strong>, that&apos;s{" "}
-                {Math.floor(targetCredits / 2)} brand photos. One monthly plan, everything you need to show up consistently without scrambling for content.
-              </>
-            ) : (
-              <>
-                <strong className="text-[#f0ede8]">{targetName}</strong> gives you{" "}
-                <strong className="text-[#f0ede8]">{targetCredits} credits</strong> to use whenever you need them.
-              </>
-            )}
+          {isSubscription ? (
+            <>
+              Creator Studio gives you{" "}
+              <strong className="text-[#f0ede8]">{targetCredits} credits a month</strong>,
+              that&apos;s {Math.floor(targetCredits / 2)} brand photos. One monthly plan, everything
+              you need to show up consistently without scrambling for content.
+            </>
+          ) : (
+            <>
+              <strong className="text-[#f0ede8]">{targetName}</strong> gives you{" "}
+              <strong className="text-[#f0ede8]">{targetCredits} credits</strong> to use whenever
+              you need them.
+            </>
+          )}
         </p>
 
         {error && (
@@ -123,7 +130,11 @@ export function UpgradeModal({ open, currentTier: _currentTier, targetTier = "ss
             disabled={loading}
             className="w-full bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? "Processing..." : isSubscription ? "Yes, join the SUITE" : `Get ${targetName}`}
+            {loading
+              ? "Processing..."
+              : isSubscription
+                ? "Yes, join the SUITE"
+                : `Get ${targetName}`}
           </button>
           <button
             onClick={onClose}

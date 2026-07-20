@@ -732,7 +732,7 @@ const FAQS = {
   ],
   studio: [
     { question: "What do I get each month?",
-      answer: "You get Maya, Create, Calendar, Learn, the SSELFIE library, and 200 credits that refill each month. Different creations can use different amounts of credits, so the exact number of finished images depends on what you make." },
+      answer: "You get Maya, Create, Calendar, Learn, the SSELFIE library, and 100 credits that reset each month. Different creations can use different amounts of credits, so the exact number of finished images depends on what you make." },
     { question: "Do I need to learn prompts?",
       answer: "No. Tell Maya what you are trying to create in normal words. She helps with the direction and the prompt, and you decide what to use." },
     { question: "Will every photo look exactly like me?",
@@ -1326,7 +1326,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       <Section eyebrow="One membership" title={<>The full working space. €97 a month.</>} dark={false}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <FCard dark={false} title="Maya" body="Your AI creative director, working with your brand context and the tools inside SUITE." />
-          <FCard dark={false} title="Create + 200 monthly credits" body="Create photos and visual content. Credits refill each month; different creations can use different amounts." />
+          <FCard dark={false} title="Create + 100 monthly credits" body="Create photos and visual content. Credits reset each month; different creations can use different amounts." />
           <FCard dark={false} title="Calendar" body="Plan your grid and your week, move posts around, and keep the next step visible." />
           <FCard dark={false} title="Learn" body="Personalized help and the deeper SSELFIE lessons when you need more than a quick answer." />
           <FCard dark={false} title="The SSELFIE library" body="Prompt collections, Starter Kit resources, the Masterclass, and current member drops in one place." />
@@ -1395,7 +1395,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       {/* PRICING - cream */}
       <Section eyebrow="One simple plan" title={<>€97 a month. Everything works together.</>} dark={false} narrow>
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>Maya, Create, Calendar, Learn, the SSELFIE library, and 200 credits that refill each month. Different creations can use different amounts of credits.</p>
+          <p>Maya, Create, Calendar, Learn, the SSELFIE library, and 100 credits that reset each month. Different creations can use different amounts of credits.</p>
           <p className="text-sm text-stone-500">Billed monthly in EUR. Access opens after payment. Cancel from your account.</p>
         </div>
         <div className="mf" style={{ marginTop: "32px" }}>

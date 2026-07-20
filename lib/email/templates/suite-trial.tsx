@@ -296,7 +296,7 @@ export function generateTrialCapUpgradeEmail(params: {
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">I noticed something today. You used every single trial credit. All 20 photos.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Go look at them again. Every one started from your selfie, and it's still you. Not a filter. Not some AI stranger. You, in photos you'd actually post.</p>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That's exactly what I built this for.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you want to keep going, the SUITE is the next step: 200 credits a month, every look I make, and Maya remembers what feels like you. It's &euro;97 a month, cancel anytime.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you want to keep going, the SUITE is the next step: 100 credits a month, every look I make, and Maya remembers what feels like you. It's &euro;97 a month, cancel anytime.</p>
     <div style="margin:26px 0 22px;">${renderStoneButton("Keep creating with Maya", joinUrl)}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">And if now's not the moment, that's okay. Your photos are yours to keep either way.</p>
   `
@@ -319,7 +319,7 @@ Every one started from your selfie, and it's still you. Not a filter. Not some A
 
 That's exactly what I built this for.
 
-If you want to keep going, the SUITE is the next step: 200 credits a month, every look I make, and Maya remembers what feels like you. It's €97 a month, cancel anytime.
+If you want to keep going, the SUITE is the next step: 100 credits a month, every look I make, and Maya remembers what feels like you. It's €97 a month, cancel anytime.
 
 Keep creating with Maya: ${joinUrl}
 

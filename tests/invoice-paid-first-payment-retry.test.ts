@@ -27,8 +27,8 @@ vi.mock("@/lib/stripe", () => ({
 
 vi.mock("@/lib/credits", () => ({
   addCredits: vi.fn(),
-  grantMonthlyCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 200 }),
-  SUBSCRIPTION_CREDITS: { sselfie_studio_membership: 200 },
+  grantMonthlyCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 100 }),
+  SUBSCRIPTION_CREDITS: { sselfie_studio_membership: 100 },
 }))
 
 vi.mock("@/lib/email/send-email", () => ({
@@ -203,14 +203,13 @@ describe("handleInvoicePaid first-payment race", () => {
     expect(values).toContain("micro")
   })
 
-  it("uses valid Postgres syntax when tagging the recent credit grant with the invoice id", () => {
+  it("passes the paid invoice id into the atomic monthly credit reset", () => {
     const source = readFileSync(
       join(process.cwd(), "lib/payments/lifecycle/invoice-paid.ts"),
       "utf8"
     )
-    expect(source).toContain("WITH recent_credit_grant AS")
-    expect(source).not.toContain(
-      "UPDATE credit_transactions\n                SET stripe_payment_id"
-    )
+    expect(source).toContain("false, // Always false for production payments")
+    expect(source).toContain("invoiceId\n          )")
+    expect(source).not.toContain("WITH recent_credit_grant AS")
   })
 })

@@ -130,14 +130,14 @@ export default async function MembershipCheckoutPage({
           title="Where should I send your access?"
           copy={isAnnual
             ? "Add your email so your login, receipt, and SUITE access go to the right place. You are joining Maya, Create, Calendar, Learn, and the SSELFIE library for the year."
-            : "Add your email so your login, receipt, and SUITE access go to the right place. You are joining Maya, Create, Calendar, Learn, the SSELFIE library, and 200 credits that refill each month."}
+            : "Add your email so your login, receipt, and SUITE access go to the right place. You are joining Maya, Create, Calendar, Learn, the SSELFIE library, and 100 credits that reset each month."}
           inputId="membership-checkout-email"
           buttonLabel="Continue to secure payment"
           skipLabel="Skip and go straight to payment"
           productName="SSELFIE SUITE"
           productMeta={isAnnual
             ? "Maya, Create, Calendar, Learn, and the SSELFIE library"
-            : "Maya, Create, Calendar, Learn, and 200 monthly credits"}
+            : "Maya, Create, Calendar, Learn, and 100 monthly credits"}
           productPrice={
             foundingAvailable
               ? "697 EUR / year · founding"
@@ -255,7 +255,7 @@ export default async function MembershipCheckoutPage({
           }}
         >
           SUITE is one monthly membership with Maya, Create, Calendar, Learn, the SSELFIE library,
-          and 200 credits that refill each month.
+          and 100 credits that reset each month.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 30 }}>
           <Link

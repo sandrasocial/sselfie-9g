@@ -1,6 +1,9 @@
 /**
- * Backfill missing/stale monthly membership credits.
- * Idempotent: only grants if last subscription_grant is missing or older than 40 days.
+ * Historical audit for missing/stale monthly membership credits.
+ *
+ * Applying this legacy additive backfill is intentionally disabled. Membership
+ * resets must go through the verified invoice lifecycle in lib/credits.ts so
+ * unused membership credits expire and purchased top-ups stay protected.
  *
  * Usage:
  *   DRY_RUN=true pnpm exec tsx scripts/backfill/backfill-membership-credits.ts
@@ -23,7 +26,7 @@ const sql = neon(DATABASE_URL)
 const DRY_RUN = process.env.DRY_RUN === "true"
 
 const MONTHLY_GRANT_DESC = "Monthly Creator Studio grant"
-const MONTHLY_CREDITS = 200
+const MONTHLY_CREDITS = 100
 
 async function hasIsTestModeColumn() {
   const result = await sql`
@@ -150,6 +153,12 @@ async function grantMonthlyCredits(userId: string, hasTestMode: boolean) {
 async function main() {
   console.log(`[BACKFILL] Membership monthly credits (dry run: ${DRY_RUN})`)
 
+  if (!DRY_RUN) {
+    throw new Error(
+      "This additive backfill is retired. Use the verified invoice lifecycle monthly reset."
+    )
+  }
+
   const before = await getBeforeSummary()
   console.log("[BACKFILL] Before summary:", before)
 
@@ -171,7 +180,7 @@ async function main() {
   console.log("[BACKFILL] After summary:", after)
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error("[BACKFILL] Error:", error)
   process.exit(1)
 })

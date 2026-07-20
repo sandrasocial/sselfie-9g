@@ -1,6 +1,7 @@
+import { randomUUID } from "node:crypto"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
-import { CREDIT_COSTS, checkCredits, deductCredits } from "@/lib/credits"
+import { CREDIT_COSTS, checkCredits, deductCredits, refundCredits } from "@/lib/credits"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { generateWithNanoBanana } from "@/lib/nano-banana-client"
@@ -8,7 +9,6 @@ import { buildNanoBananaPrompt, type BrandKit } from "@/lib/maya/nano-banana-pro
 import { getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { getFeedStyleV2ByName } from "@/lib/feed-planner/feed-style-prompt-loader"
 import { selectPromptForPosition } from "@/lib/feed-planner/feed-style-generation"
-
 
 /**
  * Image Library interface (user's selected images from library wizard)
@@ -37,20 +37,18 @@ interface QueueImagesOptions {
 }
 
 type AvatarImageRow = { image_url: string }
-type SupportedAspectRatio = '1:1' | '4:5' | '9:16' | '16:9'
+type SupportedAspectRatio = "1:1" | "4:5" | "9:16" | "16:9"
 
 function normalizeAspectRatio(value: string | undefined): SupportedAspectRatio {
-  return value === '1:1' || value === '4:5' || value === '9:16' || value === '16:9'
-    ? value
-    : '4:5'
+  return value === "1:1" || value === "4:5" || value === "9:16" || value === "16:9" ? value : "4:5"
 }
 
 /**
  * Queue all images for a feed layout - extracted logic that can be called directly
  */
 export async function queueAllImagesForFeed(
-  feedLayoutId: number, 
-  authUserId: string, 
+  feedLayoutId: number,
+  authUserId: string,
   origin: string,
   customSettings?: {
     styleStrength?: number
@@ -60,7 +58,7 @@ export async function queueAllImagesForFeed(
     extraLoraScale?: number
   },
   imageLibrary?: ImageLibrary, // CRITICAL: User's selected images from library wizard (Pro Mode only)
-  options: QueueImagesOptions = {},
+  options: QueueImagesOptions = {}
 ) {
   console.log("[v0] ==================== QUEUE ALL IMAGES (DIRECT CALL) ====================")
 
@@ -105,11 +103,11 @@ export async function queueAllImagesForFeed(
   `
 
   const requestedPostIds = options.postIds
-    ? new Set(options.postIds.filter((id) => Number.isInteger(id) && id > 0))
+    ? new Set(options.postIds.filter(id => Number.isInteger(id) && id > 0))
     : null
   const posts = allPosts
-    .filter((post) => !requestedPostIds || requestedPostIds.has(Number(post.id)))
-    .map((post) => (options.forceProMode ? { ...post, generation_mode: "pro" } : post))
+    .filter(post => !requestedPostIds || requestedPostIds.has(Number(post.id)))
+    .map(post => (options.forceProMode ? { ...post, generation_mode: "pro" } : post))
   const chargeCredits = options.chargeCredits !== false
   const markPregenerated = options.markPregenerated === true
 
@@ -139,13 +137,16 @@ export async function queueAllImagesForFeed(
   }
 
   // Check credits upfront (Pro Mode = 2 credits, Classic = 1 credit)
-  const proModePosts = posts.filter(p => p.generation_mode === 'pro')
-  const classicPosts = posts.filter(p => !p.generation_mode || p.generation_mode === 'classic')
-  const totalCreditsNeeded = (proModePosts.length * getStudioProCreditCost('2K')) + (classicPosts.length * CREDIT_COSTS.IMAGE)
+  const proModePosts = posts.filter(p => p.generation_mode === "pro")
+  const classicPosts = posts.filter(p => !p.generation_mode || p.generation_mode === "classic")
+  const totalCreditsNeeded =
+    proModePosts.length * getStudioProCreditCost("2K") + classicPosts.length * CREDIT_COSTS.IMAGE
   if (chargeCredits) {
     const hasEnoughCredits = await checkCredits(neonUser.id, totalCreditsNeeded)
     if (!hasEnoughCredits) {
-      throw new Error(`Insufficient credits. You need ${totalCreditsNeeded} credits (${proModePosts.length} Pro Mode × 2 + ${classicPosts.length} Classic × 1) to generate ${posts.length} images.`)
+      throw new Error(
+        `Insufficient credits. You need ${totalCreditsNeeded} credits (${proModePosts.length} Pro Mode × 2 + ${classicPosts.length} Classic × 1) to generate ${posts.length} images.`
+      )
     }
   }
 
@@ -163,15 +164,24 @@ export async function queueAllImagesForFeed(
     model = modelResult
 
     if (!model || !model.replicate_version_id || !model.lora_weights_url) {
-      throw new Error("No trained model found. Classic Mode requires a trained model. Please train your model first or switch to Pro Mode.")
+      throw new Error(
+        "No trained model found. Classic Mode requires a trained model. Please train your model first or switch to Pro Mode."
+      )
     }
   }
 
   const replicate = getReplicateClient()
-  const REALISM_LORA_URL = "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors"
+  const REALISM_LORA_URL =
+    "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors"
 
   // Generate all predictions directly
-  const results: Array<{ success: boolean; postId: number; position: number; predictionId?: string; error?: string }> = []
+  const results: Array<{
+    success: boolean
+    postId: number
+    position: number
+    predictionId?: string
+    error?: string
+  }> = []
   const hasProModePosts = proModePosts.length > 0
   let sharedAvatarImages: AvatarImageRow[] | null = null
   let sharedBrandKit: BrandKit | null = null
@@ -209,7 +219,9 @@ export async function queueAllImagesForFeed(
 
   for (let i = 0; i < posts.length; i++) {
     const post = posts[i]
-    const creditCost = post.generation_mode === 'pro' ? getStudioProCreditCost('2K') : CREDIT_COSTS.IMAGE
+    const creditCost =
+      post.generation_mode === "pro" ? getStudioProCreditCost("2K") : CREDIT_COSTS.IMAGE
+    let creditReservation: { amount: number; referenceId: string } | null = null
     try {
       // Atomic claim: only one request can move this eligible post into generation.
       const claimed = await sql`
@@ -235,29 +247,50 @@ export async function queueAllImagesForFeed(
         continue
       }
 
-      // Credits are charged AFTER the prediction is durably stored (each success path
-      // below), never before the provider call. A process death mid-post then leaves the
-      // member uncharged (the safe direction) instead of taking credits for an image that
-      // was never created, and a post that reaches the catch below was never charged.
+      // Reserve credits before any paid provider call. The atomic deduction is the authority,
+      // so concurrent bulk requests cannot both pass an earlier balance check and generate for
+      // free. Any failure before durable delivery refunds this reservation in the outer catch.
+      if (chargeCredits) {
+        const referenceId = `feed-queue-${post.id}-${randomUUID()}`
+        const reservation = await deductCredits(
+          neonUser.id,
+          creditCost,
+          "image",
+          `Feed Planner image (post ${post.position})`,
+          referenceId
+        )
+        if (!reservation.success) {
+          throw new Error(reservation.error || `Insufficient credits for post ${post.position}`)
+        }
+        creditReservation = { amount: creditCost, referenceId }
+      }
 
-      console.log(`[v0] ==================== GENERATING POST ${post.position} (${i + 1}/${posts.length}) ====================`)
-      console.log(`[v0] Post ID: ${post.id}, Position: ${post.position}, Mode: ${post.generation_mode || 'classic'}`)
+      console.log(
+        `[v0] ==================== GENERATING POST ${post.position} (${i + 1}/${posts.length}) ====================`
+      )
+      console.log(
+        `[v0] Post ID: ${post.id}, Position: ${post.position}, Mode: ${post.generation_mode || "classic"}`
+      )
 
       // Check if this is a Pro Mode post
-      if (post.generation_mode === 'pro') {
+      if (post.generation_mode === "pro") {
         console.log(`[v0] 🎨 Pro Mode post detected - routing to Studio Pro API`)
-        console.log(`[v0] Pro Mode Type: ${post.pro_mode_type || 'workbench'}`)
-        
+        console.log(`[v0] Pro Mode Type: ${post.pro_mode_type || "workbench"}`)
+
         try {
           // Fetch avatar images from database if not provided in imageLibrary
           let avatarImages: Array<{ image_url: string }> = []
-          
+
           if (sharedAvatarImages && sharedAvatarImages.length > 0) {
-            console.log(`[v0] 📚 Using ${sharedAvatarImages.length} selfie(s) from cached Pro Mode assets`)
+            console.log(
+              `[v0] 📚 Using ${sharedAvatarImages.length} selfie(s) from cached Pro Mode assets`
+            )
             avatarImages = sharedAvatarImages
           } else if (imageLibrary && imageLibrary.selfies && imageLibrary.selfies.length > 0) {
             // Use provided image library (from library wizard)
-            console.log(`[v0] 📚 Using ${imageLibrary.selfies.length} selfie(s) from provided image library`)
+            console.log(
+              `[v0] 📚 Using ${imageLibrary.selfies.length} selfie(s) from provided image library`
+            )
             avatarImages = imageLibrary.selfies.map((url: string) => ({ image_url: url }))
           } else {
             // Auto-fetch avatar images from database (same as generate-single route)
@@ -275,20 +308,22 @@ export async function queueAllImagesForFeed(
           }
 
           if (avatarImages.length < 3) {
-            console.warn(`[v0] ⚠️ Only ${avatarImages.length} avatar image(s) available. Pro Mode works best with 3+ images.`)
+            console.warn(
+              `[v0] ⚠️ Only ${avatarImages.length} avatar image(s) available. Pro Mode works best with 3+ images.`
+            )
           }
 
           // Map to baseImages format for Nano Banana (up to 5 images)
           const baseImages = avatarImages.slice(0, 5).map((img: any) => ({
             url: img.image_url,
-            type: 'user-photo' as const,
+            type: "user-photo" as const,
           }))
 
           console.log(`[v0] ✅ Using ${baseImages.length} avatar image(s) for Pro Mode generation`)
-          
+
           // Get brand kit if available
           const brandKit = sharedBrandKit
-          
+
           // CRITICAL: Use the already-generated prompt from create-from-strategy
           // post.prompt contains the proper Nano Banana prompt generated by create-from-strategy
           // Only regenerate if prompt is missing (shouldn't happen, but safety check)
@@ -303,7 +338,7 @@ export async function queueAllImagesForFeed(
             const selected = await selectPromptForPosition(
               style.id,
               Number(post.position),
-              feedLayout.feed_style_variation_id ?? null,
+              feedLayout.feed_style_variation_id ?? null
             )
             finalPrompt = selected.prompt_text
             await sql`
@@ -312,18 +347,26 @@ export async function queueAllImagesForFeed(
               WHERE id = ${post.id} AND user_id = ${neonUser.id}
             `
           }
-          
-          if (!finalPrompt || finalPrompt.trim().length < 20 || finalPrompt.includes('Generating prompt')) {
-            console.warn(`[v0] ⚠️ Post ${post.position} missing proper prompt (has: "${finalPrompt}"), regenerating with fallback logic...`)
+
+          if (
+            !finalPrompt ||
+            finalPrompt.trim().length < 20 ||
+            finalPrompt.includes("Generating prompt")
+          ) {
+            console.warn(
+              `[v0] ⚠️ Post ${post.position} missing proper prompt (has: "${finalPrompt}"), regenerating with fallback logic...`
+            )
             // FALLBACK: If Maya didn't include prompts in strategy, generate basic prompt
             // This shouldn't happen if Maya follows instructions, but provides safety net
-            const proModeType = (post.pro_mode_type || 'workbench') as any
-            
+            const proModeType = (post.pro_mode_type || "workbench") as any
+
             // Use content_pillar for visual direction (NOT caption - caption is for Instagram)
-            const visualDirection = post.content_pillar || `Position ${post.position} - ${post.post_type || 'portrait'} post`
-            
+            const visualDirection =
+              post.content_pillar ||
+              `Position ${post.position} - ${post.post_type || "portrait"} post`
+
             console.warn(`[v0] 🔄 Regenerating prompt with visual direction: "${visualDirection}"`)
-            
+
             const { optimizedPrompt } = await buildNanoBananaPrompt({
               userId: neonUser.id,
               mode: proModeType,
@@ -331,44 +374,58 @@ export async function queueAllImagesForFeed(
               inputImages: {
                 baseImages,
                 productImages: [],
-                textElements: post.post_type === 'quote' ? [{
-                  text: post.caption && !post.caption.includes('Generating') ? post.caption : 'Inspiring Quote',
-                  style: 'quote' as const,
-                }] : undefined,
+                textElements:
+                  post.post_type === "quote"
+                    ? [
+                        {
+                          text:
+                            post.caption && !post.caption.includes("Generating")
+                              ? post.caption
+                              : "Inspiring Quote",
+                          style: "quote" as const,
+                        },
+                      ]
+                    : undefined,
               },
               workflowMeta: {
                 platformFormat: normalizeAspectRatio(customSettings?.aspectRatio),
               },
               brandKit: brandKit || undefined,
             })
-            
+
             finalPrompt = optimizedPrompt
-            
+
             // Update database with regenerated prompt so it's not lost
             await sql`
               UPDATE feed_posts 
               SET prompt = ${finalPrompt}, updated_at = NOW()
               WHERE id = ${post.id}
             `
-            
-            console.log(`[v0] ⚠️ Regenerated and saved prompt for post ${post.position} (${finalPrompt.length} chars)`)
-            console.log(`[v0] ⚠️ NOTE: This shouldn't happen if Maya includes prompts in [CREATE_FEED_STRATEGY] JSON`)
+
+            console.log(
+              `[v0] ⚠️ Regenerated and saved prompt for post ${post.position} (${finalPrompt.length} chars)`
+            )
+            console.log(
+              `[v0] ⚠️ NOTE: This shouldn't happen if Maya includes prompts in [CREATE_FEED_STRATEGY] JSON`
+            )
           } else {
-            console.log(`[v0] ✅ Using Maya's expert prompt from strategy (${finalPrompt.split(/\s+/).length} words)`)
+            console.log(
+              `[v0] ✅ Using Maya's expert prompt from strategy (${finalPrompt.split(/\s+/).length} words)`
+            )
           }
-          
-          // Generate with Nano Banana Pro (credits deducted at end for successful generations only)
+
+          // Generate with Nano Banana Pro after the credit reservation succeeds.
           // Note: Instagram portrait posts use 4:5 (1080×1350px) - preserve this aspect ratio
           const aspectRatio = normalizeAspectRatio(customSettings?.aspectRatio)
           const generation = await generateWithNanoBanana({
             prompt: finalPrompt, // Use the proper prompt (pre-generated or regenerated)
             image_input: baseImages.map(img => img.url),
             aspect_ratio: aspectRatio, // Use aspect ratio directly (4:5 for Instagram portrait, 1:1 for square, 16:9 for landscape)
-            resolution: '2K',
-            output_format: 'png',
-            safety_filter_level: 'block_only_high',
+            resolution: "2K",
+            output_format: "png",
+            safety_filter_level: "block_only_high",
           })
-          
+
           // Update database with prediction ID
           if (markPregenerated) {
             await sql`
@@ -390,38 +447,36 @@ export async function queueAllImagesForFeed(
                   error = NULL,
                   updated_at = NOW()
               WHERE id = ${post.id} AND user_id = ${neonUser.id}
-            `
+             `
           }
-          // Charge only now that the prediction is durably stored, keyed to the prediction
-          // itself. deductCredits no-ops for unlimited balances. If the charge fails we do
-          // NOT roll back a real prediction - the member keeps the image, the business
-          // absorbs the rare miss (the safe direction for member trust).
-          if (chargeCredits) {
-            const proDeduction = await deductCredits(
-              neonUser.id,
-              creditCost,
-              'image',
-              `Feed Planner image (post ${post.position})`,
-              generation.predictionId,
-            )
-            if (!proDeduction.success) {
-              console.error(`[v0] ⚠️ Post ${post.position} generated but credit charge failed (delivery not blocked):`, proDeduction.error)
-            }
+
+          if (creditReservation) {
+            await sql`
+               UPDATE credit_transactions
+               SET reference_id = ${generation.predictionId}
+               WHERE user_id = ${neonUser.id}
+                 AND transaction_type = 'image'
+                 AND reference_id = ${creditReservation.referenceId}
+             `
           }
-          
-          console.log(`[v0] ✅ Successfully created Pro Mode prediction for post ${post.position}:`, generation.predictionId)
+          creditReservation = null
+
+          console.log(
+            `[v0] ✅ Successfully created Pro Mode prediction for post ${post.position}:`,
+            generation.predictionId
+          )
           results.push({
             success: true,
             postId: post.id,
             position: post.position,
             predictionId: generation.predictionId,
           })
-          
+
           // Wait between predictions
           if (i < posts.length - 1) {
-            await new Promise((resolve) => setTimeout(resolve, 11000))
+            await new Promise(resolve => setTimeout(resolve, 11000))
           }
-          
+
           continue // Skip Classic Mode logic below
         } catch (error: any) {
           console.error(`[v0] ❌ Error generating Pro Mode post ${post.position}:`, {
@@ -436,46 +491,60 @@ export async function queueAllImagesForFeed(
       // Use prompt directly from database (already generated by Maya's concept generation)
       // No enhancement needed - prompts are generated using the same proven logic as concept cards
       let finalPrompt = post.prompt || ""
-      
+
       if (!finalPrompt) {
         throw new Error(`No prompt available for post ${post.position}`)
       }
-      
-      console.log(`[v0] 📝 Classic Mode: Using Maya-generated prompt (${finalPrompt.split(/\s+/).length} words): ${finalPrompt.substring(0, 150)}...`)
+
+      console.log(
+        `[v0] 📝 Classic Mode: Using Maya-generated prompt (${finalPrompt.split(/\s+/).length} words): ${finalPrompt.substring(0, 150)}...`
+      )
 
       // CRITICAL: Classic Mode requires trained model with trigger word
       if (!model || !model.trigger_word) {
-        throw new Error(`Classic Mode requires a trained model with trigger word. Post ${post.position} is set to Classic Mode but no model found.`)
+        throw new Error(
+          `Classic Mode requires a trained model with trigger word. Post ${post.position} is set to Classic Mode but no model found.`
+        )
       }
 
       // CRITICAL: Validate and fix trigger word before sending to Replicate
       const promptLower = finalPrompt.toLowerCase().trim()
       const triggerLower = model.trigger_word.toLowerCase()
-      
+
       if (!promptLower.startsWith(triggerLower)) {
-        console.log(`[v0] ⚠️ WARNING: Prompt doesn't start with trigger word "${model.trigger_word}"`)
+        console.log(
+          `[v0] ⚠️ WARNING: Prompt doesn't start with trigger word "${model.trigger_word}"`
+        )
         console.log(`[v0] Prompt start: "${finalPrompt.substring(0, 50)}..."`)
-        
+
         // Remove any username patterns
-        let cleanedPrompt = finalPrompt.replace(/\b\w+[_@]\w+\b/g, '').trim()
-        cleanedPrompt = cleanedPrompt.replace(/\b[a-zA-Z]+[_@][a-zA-Z0-9_]+\b/g, '').trim()
-        cleanedPrompt = cleanedPrompt.replace(/\b\w*_\w*\b/g, '').trim()
-        
+        let cleanedPrompt = finalPrompt.replace(/\b\w+[_@]\w+\b/g, "").trim()
+        cleanedPrompt = cleanedPrompt.replace(/\b[a-zA-Z]+[_@][a-zA-Z0-9_]+\b/g, "").trim()
+        cleanedPrompt = cleanedPrompt.replace(/\b\w*_\w*\b/g, "").trim()
+
         // Remove trigger word if in wrong position
-        if (cleanedPrompt.toLowerCase().includes(triggerLower) && !cleanedPrompt.toLowerCase().startsWith(triggerLower)) {
-          cleanedPrompt = cleanedPrompt.replace(new RegExp(`\\b${model.trigger_word}\\b`, 'gi'), '').trim()
+        if (
+          cleanedPrompt.toLowerCase().includes(triggerLower) &&
+          !cleanedPrompt.toLowerCase().startsWith(triggerLower)
+        ) {
+          cleanedPrompt = cleanedPrompt
+            .replace(new RegExp(`\\b${model.trigger_word}\\b`, "gi"), "")
+            .trim()
         }
-        
+
         // Remove first part if it's not the trigger word
-        const parts = cleanedPrompt.split(',').map((p: string) => p.trim()).filter((p: string) => p.length > 0)
+        const parts = cleanedPrompt
+          .split(",")
+          .map((p: string) => p.trim())
+          .filter((p: string) => p.length > 0)
         if (parts.length > 0 && !parts[0].toLowerCase().startsWith(triggerLower)) {
           parts.shift()
-          cleanedPrompt = parts.join(', ').trim()
+          cleanedPrompt = parts.join(", ").trim()
         }
-        
+
         // Build correct format
-        cleanedPrompt = cleanedPrompt.replace(/,\s*,/g, ',').replace(/^,\s*/, '').trim()
-        
+        cleanedPrompt = cleanedPrompt.replace(/,\s*,/g, ",").replace(/^,\s*/, "").trim()
+
         // Get user data for correct format
         const [userData] = await sql`
           SELECT u.ethnicity, u.gender
@@ -483,7 +552,7 @@ export async function queueAllImagesForFeed(
           WHERE u.id = ${neonUser.id}
           LIMIT 1
         `
-        
+
         const ethnicity = userData?.ethnicity || null
         let userGender = "person"
         if (userData?.gender) {
@@ -494,31 +563,40 @@ export async function queueAllImagesForFeed(
             userGender = "man"
           }
         }
-        
+
         const correctStart = `${model.trigger_word}, ${ethnicity ? ethnicity + ", " : ""}${userGender}`
         finalPrompt = `${correctStart}, ${cleanedPrompt}`
-        
+
         console.log(`[v0] ✅ Fixed prompt format. New start: "${finalPrompt.substring(0, 80)}..."`)
       } else {
         console.log(`[v0] ✅ Prompt correctly starts with trigger word "${model.trigger_word}"`)
       }
 
       // Get quality settings and apply custom settings if provided
-      const qualitySettings = MAYA_QUALITY_PRESETS[post.post_type as keyof typeof MAYA_QUALITY_PRESETS] || MAYA_QUALITY_PRESETS.default
-      
+      const qualitySettings =
+        MAYA_QUALITY_PRESETS[post.post_type as keyof typeof MAYA_QUALITY_PRESETS] ||
+        MAYA_QUALITY_PRESETS.default
+
       // Apply custom settings (same logic as Maya screen)
       const finalQualitySettings = {
         ...qualitySettings,
         aspect_ratio: customSettings?.aspectRatio || qualitySettings.aspect_ratio,
-        lora_scale: customSettings?.styleStrength ?? (model.lora_scale !== null && model.lora_scale !== undefined ? Number(model.lora_scale) : qualitySettings.lora_scale),
+        lora_scale:
+          customSettings?.styleStrength ??
+          (model.lora_scale !== null && model.lora_scale !== undefined
+            ? Number(model.lora_scale)
+            : qualitySettings.lora_scale),
         guidance_scale: customSettings?.promptAccuracy ?? qualitySettings.guidance_scale,
         extra_lora: qualitySettings.extra_lora,
-        extra_lora_scale: customSettings?.extraLoraScale ?? customSettings?.realismStrength ?? qualitySettings.extra_lora_scale,
+        extra_lora_scale:
+          customSettings?.extraLoraScale ??
+          customSettings?.realismStrength ??
+          qualitySettings.extra_lora_scale,
       }
-      
+
       const loraScale = finalQualitySettings.lora_scale
 
-      // Create Replicate prediction directly (credits deducted at end for successful generations only)
+      // Create Replicate prediction after the credit reservation succeeds.
       let retries = 0
       const maxRetries = 3
       let prediction: any = null
@@ -529,9 +607,10 @@ export async function queueAllImagesForFeed(
           if (versionHash && versionHash.includes(":")) {
             versionHash = versionHash.split(":").pop() || versionHash
           }
-          const userLoraPath = model.replicate_model_id && versionHash 
-            ? `${model.replicate_model_id}:${versionHash}` 
-            : model.lora_weights_url
+          const userLoraPath =
+            model.replicate_model_id && versionHash
+              ? `${model.replicate_model_id}:${versionHash}`
+              : model.lora_weights_url
 
           prediction = await replicate.predictions.create({
             version: model.replicate_version_id,
@@ -562,8 +641,10 @@ export async function queueAllImagesForFeed(
             if (retries >= maxRetries) {
               throw new Error(`Rate limit exceeded after ${maxRetries} retries`)
             }
-            console.log(`[v0] ⚠️ Rate limited, retrying in ${retryAfter + 2} seconds (attempt ${retries}/${maxRetries})...`)
-            await new Promise((resolve) => setTimeout(resolve, (retryAfter + 2) * 1000))
+            console.log(
+              `[v0] ⚠️ Rate limited, retrying in ${retryAfter + 2} seconds (attempt ${retries}/${maxRetries})...`
+            )
+            await new Promise(resolve => setTimeout(resolve, (retryAfter + 2) * 1000))
           } else {
             throw error
           }
@@ -593,24 +674,23 @@ export async function queueAllImagesForFeed(
               error = NULL,
               updated_at = NOW()
           WHERE id = ${post.id} AND user_id = ${neonUser.id}
-        `
+         `
       }
-      // Charge only now that the prediction is durably stored, keyed to the prediction
-      // itself (same safe ordering as the Pro path above).
-      if (chargeCredits) {
-        const classicDeduction = await deductCredits(
-          neonUser.id,
-          creditCost,
-          'image',
-          `Feed Planner image (post ${post.position})`,
-          prediction.id,
-        )
-        if (!classicDeduction.success) {
-          console.error(`[v0] ⚠️ Post ${post.position} generated but credit charge failed (delivery not blocked):`, classicDeduction.error)
-        }
+      if (creditReservation) {
+        await sql`
+           UPDATE credit_transactions
+           SET reference_id = ${prediction.id}
+           WHERE user_id = ${neonUser.id}
+             AND transaction_type = 'image'
+             AND reference_id = ${creditReservation.referenceId}
+         `
       }
+      creditReservation = null
 
-      console.log(`[v0] ✅ Successfully created prediction for post ${post.position}:`, prediction.id)
+      console.log(
+        `[v0] ✅ Successfully created prediction for post ${post.position}:`,
+        prediction.id
+      )
       results.push({
         success: true,
         postId: post.id,
@@ -620,7 +700,7 @@ export async function queueAllImagesForFeed(
 
       // Wait between predictions
       if (i < posts.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 11000))
+        await new Promise(resolve => setTimeout(resolve, 11000))
       }
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
@@ -629,9 +709,21 @@ export async function queueAllImagesForFeed(
         stack: error instanceof Error ? error.stack : undefined,
       })
 
-      // No refund needed: credits are only charged after a prediction is durably stored,
-      // so any post that reaches this catch (provider call failed before store) was never
-      // charged.
+      if (creditReservation) {
+        const refund = await refundCredits(
+          neonUser.id,
+          creditReservation.amount,
+          `Feed Planner post ${post.position} failed before delivery`,
+          creditReservation.referenceId
+        )
+        if (!refund.success) {
+          console.error(
+            `[v0] Failed to refund Feed Planner post ${post.position} reservation:`,
+            refund.error
+          )
+        }
+      }
+
       await sql`
         UPDATE feed_posts
         SET generation_status = 'failed',
@@ -649,11 +741,11 @@ export async function queueAllImagesForFeed(
         position: post.position,
         error: errorMessage,
       })
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
     }
   }
 
-  const successful = results.filter((r) => r.success).length
+  const successful = results.filter(r => r.success).length
   const failed = results.length - successful
 
   console.log(`[v0] Queue complete: ${successful} successful, ${failed} failed`)

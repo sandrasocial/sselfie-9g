@@ -1,11 +1,12 @@
 import { NextRequest } from "next/server"
+import { randomUUID } from "node:crypto"
 import { getAuthenticatedUserWithRetry, clearAuthCache } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { checkGenerationRateLimit } from "@/lib/rate-limit"
-import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
+import { checkCredits, deductCredits, refundCredits, CREDIT_COSTS } from "@/lib/credits"
 import {
   extractReplicateVersionId,
   ensureTriggerWordPrefix,
@@ -64,8 +65,8 @@ interface Model {
 type FeedPostRow = CalendarCaptionPost & Record<string, any>
 
 /** Calendar has one image path. Legacy trained models are launched explicitly from Account. */
-function calendarGenerationMode(): 'pro' | 'classic' {
-  return 'pro'
+function calendarGenerationMode(): "pro" | "classic" {
+  return "pro"
 }
 
 // gpt-image-2 generates synchronously (no prediction polling) - the call itself takes
@@ -78,6 +79,7 @@ export async function POST(
 ) {
   let claimedPostId: number | null = null
   let claimedUserId: string | number | null = null
+  let creditReservation: { userId: string; amount: number; referenceId: string } | null = null
   try {
     console.log(
       "[v0] [GENERATE-SINGLE] ==================== GENERATE SINGLE API CALLED ===================="
@@ -1168,6 +1170,39 @@ export async function POST(
       extraLoraIncluded: !!generationInput.extra_lora,
     })
 
+    const creditReferenceId = `feed-post-${postId}-${randomUUID()}`
+    const deduction = await deductCredits(
+      user.id.toString(),
+      CREDIT_COSTS.IMAGE,
+      "image",
+      `Feed post generation (Classic Mode) - ${post.post_type}`,
+      creditReferenceId
+    )
+
+    if (!deduction.success) {
+      await sql`
+        UPDATE feed_posts
+        SET generation_status = 'failed', updated_at = NOW()
+        WHERE id = ${postId} AND user_id = ${user.id} AND prediction_id IS NULL
+      `
+      return Response.json(
+        {
+          error: "Insufficient credits",
+          code: "insufficient_credits",
+          action: "open_credits_topup",
+          required: CREDIT_COSTS.IMAGE,
+          current: deduction.newBalance,
+        },
+        { status: 402 }
+      )
+    }
+
+    creditReservation = {
+      userId: user.id.toString(),
+      amount: CREDIT_COSTS.IMAGE,
+      referenceId: creditReferenceId,
+    }
+
     const prediction = await replicate.predictions.create({
       version: replicateVersionId,
       input: generationInput,
@@ -1175,21 +1210,15 @@ export async function POST(
 
     console.log("[v0] [GENERATE-SINGLE] ✅ Prediction created successfully:", prediction.id)
 
-    // Deduct Classic Mode credits (1 credit)
-    const deduction = await deductCredits(
-      user.id.toString(),
-      CREDIT_COSTS.IMAGE,
-      "image",
-      `Feed post generation (Classic Mode) - ${post.post_type}`,
-      prediction.id
-    )
+    await sql`
+      UPDATE credit_transactions
+      SET reference_id = ${prediction.id}
+      WHERE user_id = ${user.id.toString()}
+        AND transaction_type = 'image'
+        AND reference_id = ${creditReferenceId}
+    `
 
-    if (!deduction.success) {
-      console.error("[v0] [GENERATE-SINGLE] Failed to deduct credits:", deduction.error)
-      // Note: Prediction already created, so we continue but log the error
-    } else {
-      console.log("[v0] [GENERATE-SINGLE] Credits deducted. New balance:", deduction.newBalance)
-    }
+    console.log("[v0] [GENERATE-SINGLE] Credits reserved. New balance:", deduction.newBalance)
 
     await sql`
       UPDATE feed_posts
@@ -1212,6 +1241,8 @@ export async function POST(
 
     const captionOutcome = await ensureReadyPostCaption({ userId: user.id, post })
 
+    creditReservation = null
+
     return Response.json({
       predictionId: prediction.id,
       success: true,
@@ -1220,6 +1251,18 @@ export async function POST(
       captionStatus: captionOutcome.status,
     })
   } catch (error: unknown) {
+    if (creditReservation) {
+      const refund = await refundCredits(
+        creditReservation.userId,
+        creditReservation.amount,
+        "Feed post generation failed before delivery",
+        creditReservation.referenceId
+      )
+      if (!refund.success) {
+        console.error("[v0] [GENERATE-SINGLE] Failed to refund reserved credits:", refund.error)
+      }
+    }
+
     if (claimedPostId && claimedUserId) {
       try {
         await sql`

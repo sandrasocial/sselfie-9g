@@ -94,7 +94,7 @@ export function UpgradeOrCredits({
           <div className="pt-6 space-y-2 text-xs text-white/70">
             <div className="flex items-center justify-between px-4 py-2 bg-[rgba(255,255,255,0.1)] rounded-lg border border-white/15">
               <span>SSELFIE SUITE</span>
-              <span className="font-medium text-white">200 credits/month</span>
+              <span className="font-medium text-white">100 credits/month</span>
             </div>
             <div className="flex items-center justify-between px-4 py-2 bg-[rgba(255,255,255,0.06)] rounded-lg border border-white/10">
               <span>One-time credits</span>

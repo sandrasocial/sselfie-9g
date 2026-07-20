@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { randomUUID } from "node:crypto"
 import { getDbClient } from "@/lib/db/client"
 import { getReplicateClient } from "@/lib/replicate-client"
-import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
+import { deductCredits, refundCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { generateText } from "ai"
@@ -41,9 +42,12 @@ async function generatePhotoshootPoseVariations({
   if (physicalPreferences) {
     // Convert instruction language to descriptive language while preserving intent
     let cleanedPreferences = physicalPreferences.trim()
-    
+
     // Check for specific intents BEFORE removing instruction phrases
-    const hasNaturalHairColor = /\b(?:keep\s+my\s+natural\s+hair\s+color|keep\s+my\s+natural\s+hair)\b/gi.test(cleanedPreferences)
+    const hasNaturalHairColor =
+      /\b(?:keep\s+my\s+natural\s+hair\s+color|keep\s+my\s+natural\s+hair)\b/gi.test(
+        cleanedPreferences
+      )
     // Remove instruction phrases - these are for Maya, not FLUX prompts
     const instructionPhrases = [
       /\bAlways keep my\b/gi,
@@ -64,19 +68,24 @@ async function generatePhotoshootPoseVariations({
       /\bkeep\s+my\s+natural\s+hair\s+color\b/gi,
       /\bkeep\s+my\s+natural\s+hair\b/gi,
     ]
-    
-    instructionPhrases.forEach((regex) => {
+
+    instructionPhrases.forEach(regex => {
       cleanedPreferences = cleanedPreferences.replace(regex, "")
     })
-    
+
     // PRESERVE INTENT: Convert instructions to descriptive language
     // If user specified "keep natural hair color", convert to descriptive language
-    if (hasNaturalHairColor && !/\b(blonde|brown|black|red|gray|grey|auburn|brunette|hair\s+color|natural\s+hair\s+color)\b/gi.test(cleanedPreferences)) {
+    if (
+      hasNaturalHairColor &&
+      !/\b(blonde|brown|black|red|gray|grey|auburn|brunette|hair\s+color|natural\s+hair\s+color)\b/gi.test(
+        cleanedPreferences
+      )
+    ) {
       cleanedPreferences = "natural hair color, " + cleanedPreferences
     }
-    
+
     // Note: "dont change the face" is preserved by trigger word, so we don't need to add anything
-    
+
     // Clean up commas and spaces
     cleanedPreferences = cleanedPreferences
       .replace(/,\s*,/g, ",") // Remove double commas
@@ -85,7 +94,7 @@ async function generatePhotoshootPoseVariations({
       .replace(/\s*,\s*$/, "") // Remove trailing comma
       .replace(/\s+/g, " ") // Normalize multiple spaces
       .trim() // Final trim
-    
+
     // PRESERVE ALL USER MODIFICATIONS - only add if there's actual descriptive content left
     if (cleanedPreferences && cleanedPreferences.length > 0) {
       characterDescriptor += cleanedPreferences
@@ -237,7 +246,9 @@ Generate ${numImages} lifestyle variations. Return ONLY valid JSON.`
     }
 
     const firstOutfit = photoshootPlan.extractedOutfit
-    const inconsistentPoses = photoshootPlan.poses.filter((pose: any) => !pose.prompt.includes(firstOutfit))
+    const inconsistentPoses = photoshootPlan.poses.filter(
+      (pose: any) => !pose.prompt.includes(firstOutfit)
+    )
 
     if (inconsistentPoses.length > 0) {
       console.warn("[v0] ⚠️ Some poses missing exact outfit, will use base photoshoot outfit")
@@ -255,7 +266,9 @@ Generate ${numImages} lifestyle variations. Return ONLY valid JSON.`
   } catch (parseError) {
     console.error("[v0] ❌ JSON parsing failed:", parseError)
     console.error("[v0] ❌ Attempted to parse:", jsonMatch[0].substring(0, 500))
-    throw new Error(`Failed to parse JSON: ${parseError instanceof Error ? parseError.message : "Unknown error"}`)
+    throw new Error(
+      `Failed to parse JSON: ${parseError instanceof Error ? parseError.message : "Unknown error"}`
+    )
   }
 }
 
@@ -272,9 +285,11 @@ export async function POST(request: NextRequest) {
         message: "Too many photoshoot requests. Please wait a moment.",
         retryAfter: rateLimitResult.retryAfter,
       },
-      { status: 429 },
+      { status: 429 }
     )
   }
+
+  let creditReservation: { userId: string; amount: number; referenceId: string } | null = null
 
   try {
     const { user, error: authError } = await getAuthenticatedUser()
@@ -284,8 +299,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { heroImageUrl, heroPrompt, heroSeed, conceptTitle, category, customSettings } =
-      body
+    const { heroImageUrl, heroPrompt, heroSeed, conceptTitle, category, customSettings } = body
 
     if (!heroImageUrl || !heroPrompt) {
       return NextResponse.json({ error: "Hero image and prompt are required" }, { status: 400 })
@@ -306,21 +320,6 @@ export async function POST(request: NextRequest) {
       originalSeed: heroSeed,
       customSettings: customSettings || "using presets",
     })
-
-    const hasEnoughCredits = await checkCredits(neonUser.id, totalCreditsRequired)
-
-    if (!hasEnoughCredits) {
-      const currentBalance = await getUserCredits(neonUser.id)
-      return NextResponse.json(
-        {
-          error: "Insufficient credits",
-          required: totalCreditsRequired,
-          current: currentBalance,
-          message: `Photoshoot creation requires ${totalCreditsRequired} credits (${NUM_IMAGES} images). You have ${currentBalance} credits. Please purchase more credits.`,
-        },
-        { status: 402 },
-      )
-    }
 
     const userDataResult = await sql`
       SELECT 
@@ -343,7 +342,10 @@ export async function POST(request: NextRequest) {
     `
 
     if (userDataResult.length === 0) {
-      return NextResponse.json({ error: "No trained model found. Please complete training first." }, { status: 400 })
+      return NextResponse.json(
+        { error: "No trained model found. Please complete training first." },
+        { status: 400 }
+      )
     }
 
     const userData = userDataResult[0]
@@ -361,29 +363,59 @@ export async function POST(request: NextRequest) {
     const triggerWord = userData.trigger_word || `user${neonUser.id}`
     // CRITICAL FIX: Ensure version is just the hash, not full model path
     let replicateVersionId = userData.replicate_version_id
-    if (replicateVersionId && replicateVersionId.includes(':')) {
-      const parts = replicateVersionId.split(':')
+    if (replicateVersionId && replicateVersionId.includes(":")) {
+      const parts = replicateVersionId.split(":")
       replicateVersionId = parts[parts.length - 1] // Get last part (the hash)
       console.log("[v0] ⚠️ Version was in full format, extracted hash:", replicateVersionId)
     }
-    
+
     const replicateModelId = userData.replicate_model_id
     const userLoraScale = userData.lora_scale
     const loraWeightsUrl = userData.lora_weights_url
     const ethnicity = userData.ethnicity
     const physicalPreferences = userData.physical_preferences
 
+    const creditReferenceId = `legacy-photoshoot-${neonUser.id}-${randomUUID()}`
+    const deductionResult = await deductCredits(
+      neonUser.id,
+      totalCreditsRequired,
+      "image",
+      `Photoshoot: ${conceptTitle} (${NUM_IMAGES} images)`,
+      creditReferenceId
+    )
+
+    if (!deductionResult.success) {
+      return NextResponse.json(
+        {
+          error: "Insufficient credits",
+          code: "insufficient_credits",
+          action: "open_credits_topup",
+          required: totalCreditsRequired,
+          current: deductionResult.newBalance,
+          message: `This photoshoot needs ${totalCreditsRequired} credits. You have ${deductionResult.newBalance}.`,
+        },
+        { status: 402 }
+      )
+    }
+
+    creditReservation = {
+      userId: neonUser.id,
+      amount: totalCreditsRequired,
+      referenceId: creditReferenceId,
+    }
+
     let versionHash = replicateVersionId
     if (replicateVersionId && replicateVersionId.includes(":")) {
       versionHash = replicateVersionId.split(":").pop()
     }
 
-    const userLoraPath = replicateModelId && versionHash ? `${replicateModelId}:${versionHash}` : loraWeightsUrl
+    const userLoraPath =
+      replicateModelId && versionHash ? `${replicateModelId}:${versionHash}` : loraWeightsUrl
 
     if (!userLoraPath || userLoraPath.trim() === "") {
       return NextResponse.json(
         { error: "LoRA model not found. Please contact support to fix your model." },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
@@ -413,7 +445,8 @@ export async function POST(request: NextRequest) {
       finalSettings = {
         ...presetSettings,
         guidance_scale: customSettings.promptAccuracy || presetSettings.guidance_scale,
-        lora_scale: customSettings.styleStrength || Number(userLoraScale || presetSettings.lora_scale),
+        lora_scale:
+          customSettings.styleStrength || Number(userLoraScale || presetSettings.lora_scale),
         extra_lora_scale: customSettings.realismStrength || presetSettings.extra_lora_scale,
         // Keep aspect_ratio from preset (can be overridden if needed)
         aspect_ratio: presetSettings.aspect_ratio,
@@ -447,7 +480,12 @@ export async function POST(request: NextRequest) {
       caption: string
     }> = []
 
-    console.log("[v0] 📸 Creating", NUM_IMAGES, "predictions with SAME seed for consistency:", consistencySeed)
+    console.log(
+      "[v0] 📸 Creating",
+      NUM_IMAGES,
+      "predictions with SAME seed for consistency:",
+      consistencySeed
+    )
 
     for (let i = 0; i < NUM_IMAGES; i++) {
       const pose = photoshootPlan.poses[i]
@@ -496,12 +534,14 @@ export async function POST(request: NextRequest) {
             const retryAfter = error.response?.data?.retry_after || 10
             retries++
             if (retries >= maxRetries) {
-              throw new Error(`Rate limit exceeded after ${maxRetries} retries. Please try again in a few minutes.`)
+              throw new Error(
+                `Rate limit exceeded after ${maxRetries} retries. Please try again in a few minutes.`
+              )
             }
             console.log(
-              `[v0] ⚠️ Rate limited, retrying in ${retryAfter + 2} seconds (attempt ${retries}/${maxRetries})...`,
+              `[v0] ⚠️ Rate limited, retrying in ${retryAfter + 2} seconds (attempt ${retries}/${maxRetries})...`
             )
-            await new Promise((resolve) => setTimeout(resolve, (retryAfter + 2) * 1000))
+            await new Promise(resolve => setTimeout(resolve, (retryAfter + 2) * 1000))
           } else {
             throw error
           }
@@ -524,7 +564,7 @@ export async function POST(request: NextRequest) {
 
       if (i < NUM_IMAGES - 1) {
         console.log(`[v0] ⏳ Waiting 11 seconds before creating next prediction...`)
-        await new Promise((resolve) => setTimeout(resolve, 11000))
+        await new Promise(resolve => setTimeout(resolve, 11000))
       }
     }
 
@@ -540,7 +580,7 @@ export async function POST(request: NextRequest) {
       ) VALUES (
         ${String(neonUser.id)},
         ${heroPrompt},
-        ${`Photoshoot: ${predictions.map((p) => p.title).join(", ")}`},
+        ${`Photoshoot: ${predictions.map(p => p.title).join(", ")}`},
         ${category},
         ${conceptTitle},
         ${JSON.stringify({
@@ -561,21 +601,14 @@ export async function POST(request: NextRequest) {
 
     // Trigger referral email after 3rd generation (non-blocking)
     try {
-      const { triggerReferralEmailIfNeeded } = await import("@/lib/referrals/trigger-referral-email")
-      triggerReferralEmailIfNeeded(neonUser.id).catch((error) => {
+      const { triggerReferralEmailIfNeeded } =
+        await import("@/lib/referrals/trigger-referral-email")
+      triggerReferralEmailIfNeeded(neonUser.id).catch(error => {
         console.error(`[v0] Error triggering referral email (non-critical):`, error)
       })
     } catch {
       // Ignore errors - referral trigger is non-critical
     }
-
-    const deductionResult = await deductCredits(
-      neonUser.id,
-      totalCreditsRequired,
-      "image",
-      `Photoshoot: ${conceptTitle} (${NUM_IMAGES} images)`,
-      predictions[0].predictionId,
-    )
 
     console.log("[v0] ✅ Photoshoot created with seed variations:", {
       totalImages: NUM_IMAGES,
@@ -588,6 +621,8 @@ export async function POST(request: NextRequest) {
       ethnicity: ethnicity || "not specified",
       physicalPreferences: physicalPreferences || "not specified",
     })
+
+    creditReservation = null
 
     return NextResponse.json({
       success: true,
@@ -602,12 +637,28 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("[v0] Error creating photoshoot:", error)
+
+    if (creditReservation) {
+      const refund = await refundCredits(
+        creditReservation.userId,
+        creditReservation.amount,
+        "Legacy photoshoot failed before delivery",
+        creditReservation.referenceId
+      )
+      if (!refund.success) {
+        console.error("[v0] Failed to refund legacy photoshoot reservation:", {
+          referenceId: creditReservation.referenceId,
+          error: refund.error,
+        })
+      }
+    }
+
     return NextResponse.json(
       {
         error: "Failed to create photoshoot",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }

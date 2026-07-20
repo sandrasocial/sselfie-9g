@@ -2,18 +2,18 @@
 
 import { sql } from "@/lib/db/client"
 import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
+import { MONTHLY_MEMBERSHIP_CREDITS } from "@/lib/credit-policy"
 
 export const CREDIT_COSTS = {
-  TRAINING: 20, // $3.00 / $0.15 per credit (actual API cost)
-  IMAGE: 1, // $0.15 per credit (actual API cost)
+  TRAINING: 20,
+  IMAGE: 1,
   ANIMATION: 10, // Kling Omni 720p 5s video/B-roll generation
 } as const
 
-// NOTE: Credits are priced at cost ($0.15/credit). Profit comes from subscription pricing, not credit markup.
-// See docs/CREDIT-COST-AUDIT.md for detailed cost analysis.
+// Credits are product usage units. Provider cost varies by model, quality, and reference inputs.
 
 export const SUBSCRIPTION_CREDITS = {
-  sselfie_studio_membership: 200, // Creator Studio: 200 credits/month (~100 Pro photos OR ~200 Classic photos, fair use: ~4 photoshoots/month)
+  sselfie_studio_membership: MONTHLY_MEMBERSHIP_CREDITS,
   one_time_session: 50, // LEGACY_ACCESS_ONLY: one-time grant, 50 images
 } as const
 
@@ -86,7 +86,7 @@ async function hasUnlimitedCredits(userId: string): Promise<boolean> {
       subscriptionResult[0].product_type === "sselfie_studio_membership"
     ) {
       console.log("[v0] [CREDITS] User has active studio membership - generous credit allocation")
-      return false // Studio members still use credits, but get 200/month
+      return false // Studio members still use credits, with 100 reset each membership month
     }
 
     return false
@@ -462,20 +462,128 @@ export async function getCreditHistory(userId: string, limit = 50) {
 export async function grantMonthlyCredits(
   userId: string,
   productType: "sselfie_studio_membership",
-  isTestMode = false
-) {
+  isTestMode = false,
+  stripeInvoiceId?: string
+): Promise<{ success: boolean; newBalance: number; granted?: boolean; error?: string }> {
+  if (!sql) {
+    return { success: false, newBalance: 0, error: "Database not available" }
+  }
+
+  const normalizedInvoiceId = stripeInvoiceId?.trim()
+  if (!normalizedInvoiceId) {
+    return {
+      success: false,
+      newBalance: await getUserCredits(userId),
+      error: "A verified billing reference is required for a monthly credit reset",
+    }
+  }
+
   const credits = SUBSCRIPTION_CREDITS[productType]
-
   const productName = "Creator Studio"
+  const description = `Monthly ${productName} reset to ${credits} included credits`
 
-  return await addCredits(
-    userId,
-    credits,
-    "subscription_grant",
-    `Monthly ${productName} grant`,
-    undefined,
-    isTestMode
-  )
+  try {
+    // The lock makes invoice fulfillment idempotent even when Stripe delivers the same event
+    // concurrently. Purchased credits are consumed last: whatever portion still fits inside the
+    // current balance is preserved, while unused membership/bonus credits expire at renewal.
+    const [, resetRows] = await sql.transaction(tx => [
+      tx`SELECT pg_advisory_xact_lock(hashtext(${`membership-credit-reset:${userId}:${normalizedInvoiceId}`}))`,
+      tx`
+        WITH existing_grant AS MATERIALIZED (
+          SELECT balance_after
+          FROM credit_transactions
+          WHERE user_id = ${userId}
+            AND transaction_type = 'subscription_grant'
+            AND stripe_payment_id = ${normalizedInvoiceId}
+          LIMIT 1
+        ),
+        wallet AS MATERIALIZED (
+          SELECT COALESCE(balance, 0)::int AS balance
+          FROM user_credits
+          WHERE user_id = ${userId}
+        ),
+        purchased AS MATERIALIZED (
+          SELECT COALESCE(SUM(GREATEST(amount, 0)), 0)::int AS lifetime_purchased
+          FROM credit_transactions
+          WHERE user_id = ${userId}
+            AND transaction_type = 'purchase'
+            AND COALESCE(is_test_mode, false) = ${isTestMode}
+        ),
+        reset_amounts AS MATERIALIZED (
+          SELECT
+            COALESCE((SELECT balance FROM wallet), 0)::int AS current_balance,
+            LEAST(
+              COALESCE((SELECT balance FROM wallet), 0),
+              COALESCE((SELECT lifetime_purchased FROM purchased), 0)
+            )::int AS purchased_preserved
+        ),
+        balance_reset AS (
+          INSERT INTO user_credits (
+            user_id, balance, total_purchased, total_used, created_at, updated_at
+          )
+          SELECT
+            ${userId}, purchased_preserved + ${credits}, 0, 0, NOW(), NOW()
+          FROM reset_amounts
+          WHERE NOT EXISTS (SELECT 1 FROM existing_grant)
+          ON CONFLICT (user_id)
+          DO UPDATE SET
+            balance = EXCLUDED.balance,
+            updated_at = NOW()
+          RETURNING balance
+        ),
+        ledger_insert AS (
+          INSERT INTO credit_transactions (
+            user_id, amount, transaction_type, description,
+            stripe_payment_id, balance_after, is_test_mode, created_at
+          )
+          SELECT
+            ${userId},
+            balance_reset.balance - reset_amounts.current_balance,
+            'subscription_grant',
+            ${description},
+            ${normalizedInvoiceId},
+            balance_reset.balance,
+            ${isTestMode},
+            NOW()
+          FROM balance_reset
+          CROSS JOIN reset_amounts
+          RETURNING balance_after
+        )
+        SELECT
+          COALESCE(
+            (SELECT balance_after FROM ledger_insert),
+            (SELECT balance_after FROM existing_grant),
+            (SELECT balance FROM user_credits WHERE user_id = ${userId}),
+            0
+          )::int AS balance,
+          EXISTS (SELECT 1 FROM ledger_insert) AS granted
+      `,
+    ])
+
+    const newBalance = Number(resetRows[0]?.balance || 0)
+    const granted = resetRows[0]?.granted === true
+
+    if (granted) {
+      try {
+        const { invalidateCreditCache } = await import("./credits-cached")
+        await invalidateCreditCache(userId)
+      } catch (cacheError) {
+        console.warn(
+          "[v0] [CREDITS] Monthly credits reset but cache invalidation failed:",
+          cacheError
+        )
+      }
+    }
+
+    return { success: true, newBalance, granted }
+  } catch (error) {
+    console.error("[v0] [CREDITS] Failed to reset monthly credits:", error)
+    return {
+      success: false,
+      newBalance: 0,
+      error: "Failed to reset monthly credits",
+    }
+  }
 }
 
 /**

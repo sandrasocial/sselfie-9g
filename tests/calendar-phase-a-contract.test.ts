@@ -9,18 +9,16 @@ describe("Calendar Phase A operational contracts", () => {
     expect(route).toContain("export const maxDuration = 300")
   })
 
-  it("charges bulk posts only after a prediction is stored, and recovers only abandoned claims", () => {
+  it("reserves bulk-post credits before provider work and refunds failed delivery", () => {
     const queue = read("lib/feed-planner/queue-images.ts")
     // Atomic per-post claim.
     expect(queue).toContain("RETURNING id")
-    // Money invariant: the charge is keyed to the STORED prediction id in both provider
-    // paths (charge-after-store), never before the provider call. This is what prevents
-    // taking a member's credits for an image that was never created.
+    // Money invariant: credits are atomically reserved before the paid provider call.
+    // A failed delivery returns that reservation.
+    expect(queue).toContain("Reserve credits before any paid provider call")
     expect(queue).toContain("await deductCredits(")
-    expect(queue).toContain("generation.predictionId,")
-    expect(queue).toContain("prediction.id,")
-    // Charge-after-store needs no refund path, and must not re-introduce a pre-charge.
-    expect(queue).not.toContain("refundCredits")
+    expect(queue).toContain("await refundCredits(")
+    expect(queue).not.toContain("generated but credit charge failed (delivery not blocked)")
     // Stuck-recovery resets only abandoned claims (no stored prediction) so a charged,
     // in-flight prediction is never orphaned and double-charged on retry.
     expect(queue).toContain("AND prediction_id IS NULL")

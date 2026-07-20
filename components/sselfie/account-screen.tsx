@@ -784,7 +784,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
                   value={getAccessLabel(userInfo.product_type)}
                 />
                 <InfoPill label="Upgrade to" value="Creator Studio" />
-                <InfoPill label="Credits" value="200 credits / month" />
+                <InfoPill label="Credits" value="100 credits / month" />
               </div>
 
               <button

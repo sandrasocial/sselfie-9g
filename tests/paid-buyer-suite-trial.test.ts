@@ -52,6 +52,6 @@ describe("retired 20-credit SUITE trial", () => {
 
     expect(credits).toContain("const credits = 2")
     expect(credits).toContain("Free blueprint credits (welcome bonus)")
-    expect(upgrade).toContain("Join SSELFIE SUITE · 200 credits/mo")
+    expect(upgrade).toContain("Join SSELFIE SUITE · 100 credits/mo")
   })
 })

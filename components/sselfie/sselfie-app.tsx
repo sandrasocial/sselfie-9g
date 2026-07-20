@@ -1100,7 +1100,7 @@ export default function SselfieApp({
         <div className="relative z-50 flex items-center justify-between gap-3 bg-[color-mix(in_srgb,var(--color-porcelain)_6%,transparent)] border-b border-[color-mix(in_srgb,var(--color-porcelain)_12%,transparent)] px-4 py-2.5">
           <p className="text-xs text-[color:var(--color-whisper)] leading-snug">
             <span className="font-medium text-[color:var(--color-porcelain)]">You&apos;re out of credits.</span>{" "}
-            Get the SUITE to keep generating: 200 credits every month.
+            Get the SUITE to keep generating: 100 credits every month.
           </p>
           <a
             href="/checkout/membership"

@@ -477,37 +477,9 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
           const result = await grantMonthlyCredits(
             sub.user_id,
             "sselfie_studio_membership",
-            false // Always false for production payments
+            false, // Always false for production payments
+            invoiceId
           )
-
-          // FIX B5: Update the credit transaction to include invoice ID for idempotency
-          if (result.success) {
-            try {
-              await sql`
-                WITH recent_credit_grant AS (
-                  SELECT id
-                  FROM credit_transactions
-                  WHERE user_id = ${sub.user_id}
-                    AND transaction_type = 'subscription_grant'
-                    AND stripe_payment_id IS NULL
-                    AND created_at >= NOW() - INTERVAL '10 seconds'
-                  ORDER BY created_at DESC
-                  LIMIT 1
-                )
-                UPDATE credit_transactions ct
-                SET stripe_payment_id = ${invoiceId}
-                FROM recent_credit_grant
-                WHERE ct.id = recent_credit_grant.id
-              `
-              console.log(`[v0] ✅ Updated credit transaction with invoice ID for idempotency`)
-            } catch (updateError: any) {
-              console.warn(
-                `[v0] ⚠️ Failed to update credit transaction with invoice ID:`,
-                updateError.message
-              )
-              // Non-critical - credits were granted successfully
-            }
-          }
           if (result.success) {
             console.log(
               `[v0] ✅ Monthly credits granted to user ${sub.user_id}. New balance: ${result.newBalance}`
@@ -579,7 +551,7 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
                   await import("@/lib/email/templates/credit-renewal")
                 const emailContent = generateCreditRenewalEmail({
                   firstName: userRecord[0].display_name?.split(" ")[0] || undefined,
-                  creditsGranted: 200,
+                  creditsGranted: SUBSCRIPTION_CREDITS.sselfie_studio_membership,
                 })
 
                 const emailResult = await sendEmail({

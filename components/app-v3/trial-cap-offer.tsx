@@ -70,7 +70,7 @@ export function TrialCapOffer({ open, onClose }: TrialCapOfferProps) {
         )}
         <p className="mt-4 text-[14px] leading-relaxed text-[#4F5052]">
           That was your trial. Every photo started from your selfie, and it&apos;s still you.
-          Members get 200 credits a month, so Maya keeps creating with you. Cancel anytime.
+          Members get 100 credits a month, so Maya keeps creating with you. Cancel anytime.
         </p>
         <div className="mt-6 flex flex-col gap-2">
           <a

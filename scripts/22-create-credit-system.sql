@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS credit_transactions (
 
 -- Subscription tier credit allocations
 -- NOTE: This table defines a 3-tier system (starter, pro, elite) that is LEGACY and no longer used.
--- Current system uses: sselfie_studio_membership (200 credits/month) and one_time_session (50 credits one-time)
+-- Current system uses: sselfie_studio_membership (100 credits per membership month) and one_time_session (50 credits one-time)
 -- This table may be kept for historical data or removed if confirmed unused
 CREATE TABLE IF NOT EXISTS subscription_credit_grants (
   id SERIAL PRIMARY KEY,

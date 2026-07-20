@@ -1,5 +1,6 @@
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import { requireResendClient } from "@/lib/resend/client"
+import { MONTHLY_MEMBERSHIP_CREDITS } from "@/lib/credit-policy"
 
 export async function sendWelcomeEmail(email: string, firstName: string): Promise<void> {
   try {
@@ -7,7 +8,7 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
     const content = generateWelcomeEmail({
       customerName: firstName,
       customerEmail: email,
-      creditsGranted: 200,
+      creditsGranted: MONTHLY_MEMBERSHIP_CREDITS,
       packageName: "STUDIO MEMBERSHIP",
       productType: "sselfie_studio_membership",
     })

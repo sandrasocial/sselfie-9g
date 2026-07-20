@@ -10,7 +10,7 @@ const PRODUCT_COPY: Record<string, { heading: string; body: string; cta: string 
   },
   sselfie_studio_membership: {
     heading: "Welcome to the SUITE.",
-    body: "Your 200 credits are ready. Tell Maya what to create. She already knows your brand.",
+    body: "Your 100 credits are ready. Tell Maya what to create. She already knows your brand.",
     cta: "Let's make my first photo",
   },
   paid_blueprint: {

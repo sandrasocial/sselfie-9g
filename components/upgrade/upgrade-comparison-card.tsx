@@ -22,7 +22,7 @@ const BASE_TIER_META: Record<TierId, Omit<TierMeta, "price" | "credits"> & Parti
   },
   sselfie_studio_membership: {
     name: "Creator Studio",
-    credits: "200 credits / month",
+    credits: "100 credits / month",
     features: ["Unlimited trainings", "Full Maya access", "Academy + drops"],
   },
 }

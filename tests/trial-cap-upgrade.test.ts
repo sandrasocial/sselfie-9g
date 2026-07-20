@@ -39,7 +39,7 @@ describe("trial-cap upgrade email", () => {
   it("celebrates the cap and asks for the upgrade", () => {
     expect(email.subject).toBe("You used all 20. I love that")
     expect(email.text).toContain("You used every single trial credit. All 20 photos.")
-    expect(email.text).toContain("200 credits a month")
+    expect(email.text).toContain("100 credits a month")
     expect(email.text).toContain("cancel anytime")
     expect(email.text).toContain(
       "/checkout/membership?interval=month&source=trial_cap_email&utm_source=email&utm_medium=email&utm_campaign=trial_cap_upgrade"

@@ -82,7 +82,7 @@ export default function MayaPhotosSetupDisclosure({
             <div className="px-4 py-4">
               <p className="text-xs font-medium text-[#f0ede8]">You&apos;ve used your free photos</p>
               <p className="mt-1 text-xs text-[#8a8780] leading-relaxed">
-                Studio includes 200 credits a month. You can also buy a one-time pack.
+                The SUITE includes 100 credits a month. You can also buy a one-time pack.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button

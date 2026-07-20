@@ -51,6 +51,7 @@ vi.mock("@/lib/credits", () => ({
   grantOneTimeSessionCredits: vi.fn(),
   grantMonthlyCredits: grantMonthlyCreditsMock,
   grantPaidBlueprintCredits: vi.fn(),
+  SUBSCRIPTION_CREDITS: { sselfie_studio_membership: 100 },
 }))
 
 vi.mock("@/lib/supabase/admin", () => ({
@@ -150,8 +151,8 @@ describe("selfie guide bonus credits smoke", () => {
     process.env.STRIPE_WEBHOOK_SECRET = "whsec_test"
 
     checkWebhookRateLimitMock.mockResolvedValue({ success: true })
-    grantMonthlyCreditsMock.mockResolvedValue({ success: true, newBalance: 200 })
-    addCreditsMock.mockResolvedValue({ success: true, newBalance: 204 })
+    grantMonthlyCreditsMock.mockResolvedValue({ success: true, newBalance: 100 })
+    addCreditsMock.mockResolvedValue({ success: true, newBalance: 104 })
 
     sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const query = strings.join(" ")
@@ -237,7 +238,12 @@ describe("selfie guide bonus credits smoke", () => {
     )
 
     expect(response.status).toBe(200)
-    expect(grantMonthlyCreditsMock).toHaveBeenCalledWith("user_bonus_1", "sselfie_studio_membership", false)
+    expect(grantMonthlyCreditsMock).toHaveBeenCalledWith(
+      "user_bonus_1",
+      "sselfie_studio_membership",
+      false,
+      "in_bonus_1"
+    )
     expect(addCreditsMock).toHaveBeenCalledWith(
       "user_bonus_1",
       4,

@@ -66,7 +66,7 @@ describe("ENTITLE-01 live-mode subscription gate guards", () => {
       },
       {
         file: "app/api/cron/reconcile-credits/route.ts",
-        marker: "return await sql`\n    WITH active_members AS",
+        marker: "return await sql`\n    WITH annual_members AS",
       },
       {
         file: "app/checkout/blueprint/page.tsx",

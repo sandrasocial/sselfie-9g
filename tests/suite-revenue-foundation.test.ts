@@ -140,11 +140,11 @@ describe("SUITE revenue foundation", () => {
     const membershipCheckout = readFileSync("app/checkout/membership/page.tsx", "utf8")
 
     expect(checkout).toContain("€97 billed monthly")
-    expect(checkout).toContain("200 credits refill each month")
+    expect(checkout).toContain("100 credits reset each month")
     expect(checkout).toContain("Access right after payment")
     expect(checkout).toContain("Cancel from your account")
     expect(checkout).toContain('environment: ["sselfie.ai", "www.sselfie.ai"]')
-    expect(membershipCheckout).toContain("Maya, Create, Calendar, Learn, and 200 monthly credits")
+    expect(membershipCheckout).toContain("Maya, Create, Calendar, Learn, and 100 monthly credits")
     expect(membershipCheckout).toContain("€97 billed monthly. Cancel from your account.")
     expect(membershipCheckout).not.toContain("Choose your SUITE path")
   })

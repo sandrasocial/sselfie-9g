@@ -680,7 +680,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
               />
               <InfoPill
                 label="Credits"
-                value="200 credits / month"
+                value="100 credits / month"
               />
             </div>
 

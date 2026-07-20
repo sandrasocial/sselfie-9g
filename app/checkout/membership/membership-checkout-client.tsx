@@ -39,7 +39,7 @@ export default function MembershipCheckoutClient({ promoCode, bonus }: Props) {
           Choose your plan
         </h1>
         <p className="text-center text-[#666666] font-['Inter'] text-sm mb-10">
-          200 credits / month. Cancel anytime.
+          100 credits / month. Cancel anytime.
         </p>
 
         {/* Billing toggle */}
