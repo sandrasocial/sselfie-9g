@@ -1,5 +1,30 @@
 # Completed releases
 
+## 2026-07-20 — Free Prompts email path alignment
+
+Aligned the active Free AI Prompts nurture with the current commercial path without adding or
+removing a product. Delivery and Day 1 now focus only on getting the first useful image. Day 5 is
+the first paid bridge, and Days 7, 9, and 11 continue to the existing $37 Prompt Vault. The separate
+AI Photos Kit still exists, but the same lead is no longer switched between two $37 offers inside
+one nurture sequence.
+
+The copy now uses Sandra's current voice and states AI limitations honestly. It does not promise
+that a face is technically locked, guarantee a two-minute result, invent urgency, or imply that a
+buyer needs to purchase before trying the free result. The approved Stone email design and existing
+Vault recovery sequence were preserved. No manual email was sent during this release.
+
+Live evidence used: the free prompt delivery was the strongest evergreen click driver, while exact
+successful Stripe rows showed that Prompt Vault recovery was already producing paid sales. The
+Prompt Vault admin now reports those recovered sales and dollars from successful Stripe payments,
+not email conversion flags. At production verification, the selected 14-day view showed 2 recovered
+sales and $74 recovered revenue.
+
+Production proof: release commit `6b8f3c21`, Vercel deployment
+`dpl_4aPpmo7vNHyUc4B3yRdNjVS2a1AD`, complete Vitest suite, focused commercial tests, CI typecheck,
+changed-file lint, repository invariants, voice rules, production build, visual inspection of all six
+rendered emails, and authenticated production admin QA. The live Free Prompts and Prompt Vault pages
+loaded with meaningful content, zero browser console errors, and no framework error overlay.
+
 ## 2026-07-20 — Homepage commercial path
 
 Connected the public homepage to the existing commercial journey without adding a product. The
