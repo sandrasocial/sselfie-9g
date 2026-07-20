@@ -29,10 +29,15 @@ describe("Prompt Vault commercial path", () => {
   it("shows the measured offer only to Vault buyers who are not already members", () => {
     const accessPage = readFileSync("app/access/prompt-vault/[token]/page.tsx", "utf8")
     const offer = readFileSync("components/prompt-vault/vault-post-purchase-offer.tsx", "utf8")
+    const copyButton = readFileSync("components/ai-prompts/copy-button.tsx", "utf8")
 
     expect(accessPage).toContain("!viewerAccess.isActiveMember &&")
     expect(accessPage).toContain("<VaultPostPurchaseOffer")
     expect(accessPage).toContain("vaultToken={token}")
+    expect(copyButton).toContain('new CustomEvent("sselfie:prompt-vault:first-result"')
+    expect(offer).toContain("PROMPT_VAULT_FIRST_RESULT_EVENT")
+    expect(offer).toContain("prompt_vault_first_result_started")
+    expect(offer).toContain("if (!isActivated) return null")
     expect(offer).toContain("Your first month is €49")
     expect(offer).toContain("Then €97/month")
     expect(offer).toContain("Your Vault access is yours either way")
@@ -57,12 +62,30 @@ describe("Prompt Vault commercial path", () => {
     expect(checkout).toContain("Then €97 billed monthly")
   })
 
+  it("keeps paid checkout connected to membership fulfillment and access", () => {
+    const checkoutLifecycle = readFileSync(
+      "lib/payments/lifecycle/checkout-session-completed.ts",
+      "utf8"
+    )
+    const membershipHandler = readFileSync("lib/payments/handlers/studio-membership.ts", "utf8")
+    const invoiceHandler = readFileSync("lib/payments/lifecycle/invoice-paid.ts", "utf8")
+
+    expect(checkoutLifecycle).toContain("handleStudioMembershipSubscriptionCheckout")
+    expect(checkoutLifecycle).toContain("persistCheckoutAttributionContact")
+    expect(membershipHandler).toContain("persistCheckoutMembership")
+    expect(membershipHandler).toContain("Membership welcome (existing user) sent")
+    expect(invoiceHandler).toContain("billing_reason: invoice.billing_reason")
+    expect(invoiceHandler).toContain("FROM checkout_attribution")
+    expect(invoiceHandler).toContain("checkoutAttribution?.utm_campaign")
+  })
+
   it("reports offer behavior and successful Stripe payments separately", () => {
     const contract = readFileSync("lib/analytics/event-contract.ts", "utf8")
     const scorecard = readFileSync("lib/admin/revenue-truth-scorecard.ts", "utf8")
     const admin = readFileSync("app/admin/page.tsx", "utf8")
 
     for (const event of [
+      "prompt_vault_first_result_started",
       "prompt_vault_suite_offer_viewed",
       "prompt_vault_suite_offer_clicked",
       "prompt_vault_suite_offer_declined",
@@ -73,10 +96,30 @@ describe("Prompt Vault commercial path", () => {
     }
 
     expect(scorecard).toContain("vaultCommercialPath30d")
+    expect(scorecard).toContain("firstResultStarts")
     expect(scorecard).toContain("FROM stripe_payments")
     expect(scorecard).toContain("vault_to_suite")
     expect(scorecard).toContain("vault_to_presets")
     expect(admin).toContain("Vault buyer path · last 30 days")
     expect(admin).toContain("Successful Stripe payments")
+  })
+
+  it("keeps the retired $197 Vault upgrade out of active runtime code", () => {
+    const sequence = readFileSync("lib/email/prompt-vault-email-sequence.ts", "utf8")
+    const templates = readFileSync("lib/email/templates/prompt-vault-buyer-sequence.ts", "utf8")
+    const nurture = readFileSync("app/api/cron/nurture-sequence/route.ts", "utf8")
+    const photoshootNurture = readFileSync("app/api/cron/ai-photoshoot-nurture/route.ts", "utf8")
+    const analyticsContract = readFileSync("lib/analytics/event-contract.ts", "utf8")
+    const vaultAdmin = readFileSync("app/admin/prompt-vault/page.tsx", "utf8")
+
+    expect(sequence).not.toContain("prompt-vault-day3-system-upgrade")
+    expect(templates).not.toContain("The System is $197")
+    expect(templates).not.toContain("generatePromptVaultDay3SystemUpgradeEmail")
+    expect(nurture).not.toContain("generatePromptVaultDay3SystemUpgradeEmail")
+    expect(photoshootNurture).not.toContain("generatePromptVaultDay3SystemUpgradeEmail")
+    expect(analyticsContract).not.toContain("prompt_vault_system_upgrade_click")
+    expect(vaultAdmin).not.toContain("prompt-vault-day3-system-upgrade")
+    expect(vaultAdmin).not.toContain("Vault To Selfie To Brand Shoot")
+    expect(vaultAdmin).not.toContain("Vault to $197 System")
   })
 })

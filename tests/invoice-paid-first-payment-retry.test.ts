@@ -138,7 +138,7 @@ describe("handleInvoicePaid first-payment race", () => {
       buildInvoiceEvent({ charge: "ch_legacy_1", payment_intent: "pi_legacy_1" })
     )
 
-    const insertCall = sqlMock.mock.calls.find((call) =>
+    const insertCall = sqlMock.mock.calls.find(call =>
       String(call[0]?.join?.("?")).includes("INSERT INTO stripe_payments")
     )
     expect(insertCall).toBeDefined()
@@ -148,12 +148,69 @@ describe("handleInvoicePaid first-payment race", () => {
     expect(values).not.toContain("pi_legacy_1")
   })
 
+  it("carries the original checkout attribution onto renewal revenue rows", async () => {
+    sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (query.includes("FROM subscriptions") && query.includes("stripe_subscription_id")) {
+        return [
+          {
+            user_id: "user-1",
+            product_type: "sselfie_studio_membership",
+            current_period_start: null,
+          },
+        ]
+      }
+      if (query.includes("FROM checkout_attribution") && query.includes("stripe_subscription_id")) {
+        return [
+          {
+            session_id: "cs_vault_suite_1",
+            user_email: "vault-buyer@example.com",
+            source: "prompt_vault_post_purchase_upsell",
+            utm_source: "prompt_vault",
+            utm_medium: "post_purchase",
+            utm_campaign: "vault_to_suite",
+            utm_content: "vault_buyer_offer",
+            checkout_source: "prompt_vault_post_purchase_offer",
+            cta_keyword: null,
+            prompt_number: null,
+            entry_post_slug: null,
+            buyer_stage: "micro",
+          },
+        ]
+      }
+      return []
+    })
+
+    const { handleInvoicePaid } = await import("@/lib/payments/lifecycle/invoice-paid")
+    await handleInvoicePaid(
+      buildInvoiceEvent({
+        id: "in_vault_renewal_1",
+        billing_reason: "subscription_cycle",
+        amount_paid: 9700,
+      })
+    )
+
+    const insertCall = sqlMock.mock.calls.find(call =>
+      String(call[0]?.join?.("?")).includes("INSERT INTO stripe_payments")
+    )
+    expect(insertCall).toBeDefined()
+    const values = insertCall!.slice(1)
+    expect(values).toContain("cs_vault_suite_1")
+    expect(values).toContain("vault-buyer@example.com")
+    expect(values).toContain("prompt_vault_post_purchase_upsell")
+    expect(values).toContain("vault_to_suite")
+    expect(values).toContain("prompt_vault_post_purchase_offer")
+    expect(values).toContain("micro")
+  })
+
   it("uses valid Postgres syntax when tagging the recent credit grant with the invoice id", () => {
     const source = readFileSync(
       join(process.cwd(), "lib/payments/lifecycle/invoice-paid.ts"),
       "utf8"
     )
     expect(source).toContain("WITH recent_credit_grant AS")
-    expect(source).not.toContain("UPDATE credit_transactions\n                SET stripe_payment_id")
+    expect(source).not.toContain(
+      "UPDATE credit_transactions\n                SET stripe_payment_id"
+    )
   })
 })

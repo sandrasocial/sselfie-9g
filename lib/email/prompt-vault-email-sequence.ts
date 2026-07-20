@@ -1,6 +1,5 @@
 export type PromptVaultEmailType =
   | "prompt-vault-day2-first-result"
-  | "prompt-vault-day3-system-upgrade"
   | "prompt-vault-day5-fix-bad-result"
   | "prompt-vault-day10-next-shoot"
 

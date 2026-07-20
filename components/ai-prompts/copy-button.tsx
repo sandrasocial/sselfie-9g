@@ -78,6 +78,16 @@ export function CopyButton({
         }
       }
       fireTrack()
+      if (trackEvent === "prompt_vault_prompt_copied") {
+        window.dispatchEvent(
+          new CustomEvent("sselfie:prompt-vault:first-result", {
+            detail: {
+              promptTitle: promptTitle || null,
+              promptNumber: promptNumber || null,
+            },
+          })
+        )
+      }
       setTimeout(() => setCopied(false), 2000)
     }
 

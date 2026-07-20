@@ -41,7 +41,6 @@ import { generateAiPromptsDay11PromptVaultWhyNowEmail } from "@/lib/email/templa
 import {
   generatePromptVaultDay10NextShootEmail,
   generatePromptVaultDay2FirstResultEmail,
-  generatePromptVaultDay3SystemUpgradeEmail,
   generatePromptVaultDay5FixBadResultEmail,
 } from "@/lib/email/templates/prompt-vault-buyer-sequence"
 import {
@@ -709,13 +708,6 @@ async function sendPromptVaultTouchEmail(
     case "prompt-vault-day2-first-result":
       email = generatePromptVaultDay2FirstResultEmail({ firstName, accessUrl })
       break
-    case "prompt-vault-day3-system-upgrade":
-      email = generatePromptVaultDay3SystemUpgradeEmail({
-        firstName,
-        accessUrl,
-        recipientEmail: candidate.email,
-      })
-      break
     case "prompt-vault-day5-fix-bad-result":
       email = generatePromptVaultDay5FixBadResultEmail({ firstName, accessUrl })
       break
@@ -1011,10 +1003,7 @@ export async function GET(request: Request) {
       errors: [] as Array<{ email: string; touch: string; error: string }>,
     }
 
-    const freebieGuideTouchResultKeys = [
-      "freebieGuideDay1",
-      "freebieGuideDay5",
-    ] as const
+    const freebieGuideTouchResultKeys = ["freebieGuideDay1", "freebieGuideDay5"] as const
 
     for (const [index, touch] of FREEBIE_GUIDE_EMAIL_TOUCHES.entries()) {
       const resultKey = freebieGuideTouchResultKeys[index]

@@ -22,7 +22,6 @@ import { generateAiPromptsDay11PromptVaultWhyNowEmail } from "@/lib/email/templa
 import {
   generatePromptVaultDay10NextShootEmail,
   generatePromptVaultDay2FirstResultEmail,
-  generatePromptVaultDay3SystemUpgradeEmail,
   generatePromptVaultDay5FixBadResultEmail,
 } from "@/lib/email/templates/prompt-vault-buyer-sequence"
 
@@ -280,12 +279,6 @@ function generatePromptVaultEmail(
   switch (emailType) {
     case "prompt-vault-day2-first-result":
       return generatePromptVaultDay2FirstResultEmail({ firstName, accessUrl })
-    case "prompt-vault-day3-system-upgrade":
-      return generatePromptVaultDay3SystemUpgradeEmail({
-        firstName,
-        accessUrl,
-        recipientEmail: candidate.email,
-      })
     case "prompt-vault-day5-fix-bad-result":
       return generatePromptVaultDay5FixBadResultEmail({ firstName, accessUrl })
     case "prompt-vault-day10-next-shoot":

@@ -1,13 +1,16 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import {
   buildPromptVaultPresetsDownsellHref,
   buildPromptVaultSuiteOfferHref,
 } from "@/lib/revenue-engine/prompt-vault-commercial-path"
+
+const PROMPT_VAULT_FIRST_RESULT_EVENT = "sselfie:prompt-vault:first-result"
+const PROMPT_VAULT_FIRST_RESULT_STORAGE_KEY = "sselfie:prompt-vault:first-result:started"
 
 export function VaultPostPurchaseOffer({
   vaultToken,
@@ -17,6 +20,7 @@ export function VaultPostPurchaseOffer({
   serifClassName?: string
 }) {
   const sectionRef = useRef<HTMLElement | null>(null)
+  const [isActivated, setIsActivated] = useState(false)
   const suiteHref = buildPromptVaultSuiteOfferHref(vaultToken)
   const presetsHref = buildPromptVaultPresetsDownsellHref()
   const analyticsEnvironment = () =>
@@ -25,6 +29,43 @@ export function VaultPostPurchaseOffer({
       : "non_production"
 
   useEffect(() => {
+    const activate = () => {
+      let isFirstActivation = true
+      try {
+        isFirstActivation =
+          window.localStorage.getItem(PROMPT_VAULT_FIRST_RESULT_STORAGE_KEY) !== "1"
+        window.localStorage.setItem(PROMPT_VAULT_FIRST_RESULT_STORAGE_KEY, "1")
+      } catch {
+        // Privacy modes may block storage. The current copy action should still reveal the offer.
+      }
+
+      setIsActivated(true)
+      if (isFirstActivation) {
+        void trackAnalyticsEvent({
+          event: "prompt_vault_first_result_started",
+          properties: {
+            source: "prompt_vault_prompt_copy",
+            activation: "first_prompt_copied",
+            environment: analyticsEnvironment(),
+          },
+        })
+      }
+    }
+
+    try {
+      if (window.localStorage.getItem(PROMPT_VAULT_FIRST_RESULT_STORAGE_KEY) === "1") {
+        setIsActivated(true)
+      }
+    } catch {
+      // Keep the offer hidden until a prompt is copied in this session.
+    }
+
+    window.addEventListener(PROMPT_VAULT_FIRST_RESULT_EVENT, activate)
+    return () => window.removeEventListener(PROMPT_VAULT_FIRST_RESULT_EVENT, activate)
+  }, [])
+
+  useEffect(() => {
+    if (!isActivated) return
     const node = sectionRef.current
     if (!node) return
 
@@ -44,12 +85,12 @@ export function VaultPostPurchaseOffer({
           },
         })
       },
-      { threshold: 0.35 },
+      { threshold: 0.35 }
     )
 
     observer.observe(node)
     return () => observer.disconnect()
-  }, [])
+  }, [isActivated])
 
   function trackSuiteClick() {
     void trackAnalyticsEvent({
@@ -74,11 +115,20 @@ export function VaultPostPurchaseOffer({
     void trackAnalyticsEvent({ event: "prompt_vault_presets_downsell_clicked", properties })
   }
 
+  if (!isActivated) return null
+
   return (
-    <section ref={sectionRef} className="vault-commercial-offer" aria-labelledby="vault-commercial-title">
+    <section
+      ref={sectionRef}
+      className="vault-commercial-offer"
+      aria-labelledby="vault-commercial-title"
+    >
       <div className="vault-commercial-inner">
         <p className="vault-commercial-eyebrow">A private offer for Vault buyers</p>
-        <h2 id="vault-commercial-title" className={`vault-commercial-title ${serifClassName ?? ""}`}>
+        <h2
+          id="vault-commercial-title"
+          className={`vault-commercial-title ${serifClassName ?? ""}`}
+        >
           Want Maya to do the next part with you?
         </h2>
         <p className="vault-commercial-body">

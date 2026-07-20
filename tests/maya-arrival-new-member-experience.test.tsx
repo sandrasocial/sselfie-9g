@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   getUserIdFromSupabase: vi.fn(),
   getSuiteAccess: vi.fn(),
   isAdminEmail: vi.fn(),
+  getPaidPromptVaultAccess: vi.fn(),
   getPublishedVaultCollections: vi.fn(),
   logAnalyticsEvent: vi.fn(),
 }))
@@ -33,6 +34,9 @@ vi.mock("@/lib/user-mapping", () => ({
 }))
 vi.mock("@/lib/trial/suite-trial", () => ({ getSuiteAccess: mocks.getSuiteAccess }))
 vi.mock("@/lib/admin-feature-flags", () => ({ isAdminEmail: mocks.isAdminEmail }))
+vi.mock("@/lib/prompt-vault/paid-access", () => ({
+  getPaidPromptVaultAccess: mocks.getPaidPromptVaultAccess,
+}))
 vi.mock("@/lib/vault/published-collections", () => ({
   getPublishedVaultCollections: mocks.getPublishedVaultCollections,
   toAestheticId: (name: string) =>
@@ -82,6 +86,9 @@ async function renderVaultPage({
     trialEndsAt: null,
     trialDaysLeft: null,
   })
+  mocks.getPaidPromptVaultAccess.mockResolvedValue(
+    tokenValid ? { valid: true, name: "Sandra" } : { valid: false }
+  )
 
   const { default: PromptVaultAccessPage } = await import("@/app/access/prompt-vault/[token]/page")
   const element = await PromptVaultAccessPage({ params: Promise.resolve({ token: "vault-token" }) })
@@ -96,6 +103,7 @@ describe("MAYA-ARRIVAL-01 new-member experience", () => {
     mocks.getUserIdFromSupabase.mockReset()
     mocks.getSuiteAccess.mockReset()
     mocks.isAdminEmail.mockReset()
+    mocks.getPaidPromptVaultAccess.mockReset()
     mocks.getPublishedVaultCollections.mockReset()
     mocks.logAnalyticsEvent.mockReset()
 
@@ -154,14 +162,14 @@ describe("MAYA-ARRIVAL-01 new-member experience", () => {
     { authenticated: false, accessLevel: "none" as const },
     { authenticated: true, accessLevel: "trial" as const },
     { authenticated: true, accessLevel: "limited" as const },
-  ])("keeps the existing buyer page for a non-member session %#", async session => {
+  ])("keeps the buyer page and defers the offer for a non-member session %#", async session => {
     const html = await renderVaultPage({ tokenValid: true, ...session })
 
     expect(html).toContain(">Copy</button>")
     expect(html).not.toContain("Open in Maya")
     expect(html).not.toContain("Copy text")
-    expect(html).toContain("/join/studio?source=suite_door_vault_access")
-    expect(html).toContain("See SSELFIE SUITE")
+    expect(html).not.toContain("/join/studio?source=suite_door_vault_access")
+    expect(html).not.toContain("See SSELFIE SUITE")
   })
 
   it("does not let an authenticated member bypass an invalid access token", async () => {

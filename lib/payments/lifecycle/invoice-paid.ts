@@ -14,6 +14,21 @@ import { completeReferralForPurchase, isReferralPurchaseEligible } from "@/lib/r
 import { markRevenueEnginePurchase } from "../shared"
 import { getSubscriptionPlanFromMetadata } from "@/lib/launch/cash-launch-pricing"
 
+type SubscriptionCheckoutAttribution = {
+  session_id: string | null
+  user_email: string | null
+  source: string | null
+  utm_source: string | null
+  utm_medium: string | null
+  utm_campaign: string | null
+  utm_content: string | null
+  checkout_source: string | null
+  cta_keyword: string | null
+  prompt_number: string | null
+  entry_post_slug: string | null
+  buyer_stage: string | null
+}
+
 export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
   // The dispatcher only routes invoice.paid / invoice.payment_succeeded here, so data.object
   // is an Invoice — restores the switch-case narrowing the monolith had.
@@ -172,6 +187,44 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
   // One invoice = one row, keyed in_..., enforced by idx_stripe_payments_invoice_unique.
   const paymentId = invoice.id
 
+  let checkoutAttribution: SubscriptionCheckoutAttribution | null = null
+  try {
+    const rows = (await sql`
+      SELECT
+        session_id,
+        user_email,
+        source,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        utm_content,
+        checkout_source,
+        cta_keyword,
+        prompt_number,
+        entry_post_slug,
+        buyer_stage
+      FROM checkout_attribution
+      WHERE stripe_subscription_id = ${subscriptionId}
+      ORDER BY created_at ASC
+      LIMIT 1
+    `) as SubscriptionCheckoutAttribution[]
+    checkoutAttribution = rows[0] || null
+  } catch (attributionLookupError: unknown) {
+    const message =
+      attributionLookupError instanceof Error
+        ? attributionLookupError.message
+        : String(attributionLookupError)
+    console.warn(
+      `[v0] Could not resolve original checkout attribution for ${subscriptionId}:`,
+      message
+    )
+  }
+
+  const revenueMetadata = {
+    ...(invoice.metadata || {}),
+    billing_reason: invoice.billing_reason || null,
+  }
+
   if (paymentId && customerId && invoice.amount_paid > 0) {
     try {
       await sql`
@@ -181,6 +234,18 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
           stripe_subscription_id,
           stripe_customer_id,
           user_id,
+          customer_email,
+          checkout_session_id,
+          source,
+          utm_source,
+          utm_medium,
+          utm_campaign,
+          utm_content,
+          checkout_source,
+          cta_keyword,
+          prompt_number,
+          entry_post_slug,
+          buyer_stage,
           amount_cents,
           currency,
           status,
@@ -199,13 +264,25 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
           ${subscriptionId},
           ${customerId},
           ${sub.user_id},
+          ${checkoutAttribution?.user_email || null},
+          ${checkoutAttribution?.session_id || null},
+          ${checkoutAttribution?.source || null},
+          ${checkoutAttribution?.utm_source || null},
+          ${checkoutAttribution?.utm_medium || null},
+          ${checkoutAttribution?.utm_campaign || null},
+          ${checkoutAttribution?.utm_content || null},
+          ${checkoutAttribution?.checkout_source || null},
+          ${checkoutAttribution?.cta_keyword || null},
+          ${checkoutAttribution?.prompt_number || null},
+          ${checkoutAttribution?.entry_post_slug || null},
+          ${checkoutAttribution?.buyer_stage || null},
           ${invoice.amount_paid},
           ${invoice.currency || "usd"},
           ${invoice.status || "succeeded"},
           'subscription',
           ${sub.product_type},
           ${invoice.description || `Subscription payment - ${sub.product_type}`},
-          ${JSON.stringify(invoice.metadata || {})},
+          ${JSON.stringify(revenueMetadata)},
           to_timestamp(${invoice.created}),
           ${isTestMode},
           NOW(),
@@ -215,6 +292,18 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
         DO UPDATE SET
           status = ${invoice.status || "succeeded"},
           amount_cents = ${invoice.amount_paid},
+          customer_email = COALESCE(stripe_payments.customer_email, EXCLUDED.customer_email),
+          checkout_session_id = COALESCE(stripe_payments.checkout_session_id, EXCLUDED.checkout_session_id),
+          source = COALESCE(stripe_payments.source, EXCLUDED.source),
+          utm_source = COALESCE(stripe_payments.utm_source, EXCLUDED.utm_source),
+          utm_medium = COALESCE(stripe_payments.utm_medium, EXCLUDED.utm_medium),
+          utm_campaign = COALESCE(stripe_payments.utm_campaign, EXCLUDED.utm_campaign),
+          utm_content = COALESCE(stripe_payments.utm_content, EXCLUDED.utm_content),
+          checkout_source = COALESCE(stripe_payments.checkout_source, EXCLUDED.checkout_source),
+          cta_keyword = COALESCE(stripe_payments.cta_keyword, EXCLUDED.cta_keyword),
+          prompt_number = COALESCE(stripe_payments.prompt_number, EXCLUDED.prompt_number),
+          entry_post_slug = COALESCE(stripe_payments.entry_post_slug, EXCLUDED.entry_post_slug),
+          buyer_stage = COALESCE(stripe_payments.buyer_stage, EXCLUDED.buyer_stage),
           metadata = CASE
             WHEN COALESCE(stripe_payments.metadata, '{}'::jsonb) ? 'payment_recovery'
               THEN jsonb_set(

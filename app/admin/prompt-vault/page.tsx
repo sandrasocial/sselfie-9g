@@ -1,5 +1,14 @@
 import Link from "next/link"
-import { BarChart3, Copy, DollarSign, Eye, Mail, MousePointerClick, ShoppingCart, Users } from "lucide-react"
+import {
+  BarChart3,
+  Copy,
+  DollarSign,
+  Eye,
+  Mail,
+  MousePointerClick,
+  ShoppingCart,
+  Users,
+} from "lucide-react"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { AdminMetricCard } from "@/components/admin/shared"
 import { sql } from "@/lib/db/client"
@@ -20,8 +29,6 @@ type EventCounts = {
   recovery_sends: number
   payment_completed: number
   checkout_successes: number
-  system_upgrade_clicks: number
-  system_checkout_starts: number
   access_opens: number
   prompt_views: number
   prompt_copies: number
@@ -38,15 +45,8 @@ type BuyerCounts = {
   buyers: number
   delivery_sent: number
   day2_sent: number
-  day3_sent: number
   day5_sent: number
   day10_sent: number
-}
-
-type SystemUpgradeCounts = {
-  checkout_starts: number
-  purchases: number
-  revenue_cents: number
 }
 
 type TopPromptRow = {
@@ -120,8 +120,6 @@ async function getPromptVaultMetrics(windowDays: number) {
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_recovery_sent')::int AS recovery_sends,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_payment_completed')::int AS payment_completed,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_checkout_success')::int AS checkout_successes,
-      COUNT(*) FILTER (WHERE event_name = 'prompt_vault_system_upgrade_click')::int AS system_upgrade_clicks,
-      COUNT(*) FILTER (WHERE event_name = 'selfie_to_brand_shoot_checkout_start')::int AS system_checkout_starts,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_access_opened')::int AS access_opens,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_prompt_viewed')::int AS prompt_views,
       COUNT(*) FILTER (WHERE event_name = 'prompt_vault_prompt_copied')::int AS prompt_copies
@@ -159,7 +157,6 @@ async function getPromptVaultMetrics(windowDays: number) {
   const [buyerEmailCountsRow] = await sql`
     SELECT
       COUNT(DISTINCT user_email) FILTER (WHERE email_type = 'prompt-vault-day2-first-result')::int AS day2_sent,
-      COUNT(DISTINCT user_email) FILTER (WHERE email_type = 'prompt-vault-day3-system-upgrade')::int AS day3_sent,
       COUNT(DISTINCT user_email) FILTER (WHERE email_type = 'prompt-vault-day5-fix-bad-result')::int AS day5_sent,
       COUNT(DISTINCT user_email) FILTER (WHERE email_type = 'prompt-vault-day10-next-shoot')::int AS day10_sent
     FROM email_logs
@@ -289,22 +286,6 @@ async function getPromptVaultMetrics(windowDays: number) {
     LIMIT 12
   `) as PromptFunnelRow[]
 
-  const [systemUpgradeCountsRow] = await sql`
-    SELECT
-      COUNT(*)::int AS checkout_starts,
-      COUNT(*) FILTER (WHERE status = 'completed')::int AS purchases,
-      COALESCE(SUM(purchase_value_cents) FILTER (WHERE status = 'completed'), 0)::int AS revenue_cents
-    FROM checkout_attribution
-    WHERE created_at > NOW() - (${`${windowDays} days`}::interval)
-      AND product_type = 'selfie_to_brand_shoot_system'
-      AND (
-        source IN ('vault_access', 'prompt_vault_buyer_email')
-        OR checkout_source = 'vault_buyer_upgrade_credit'
-        OR utm_campaign = 'selfie_to_brand_shoot_system_upgrade'
-        OR utm_campaign = 'prompt_vault_system_upgrade'
-      )
-  `
-
   const recentPurchases = (await sql`
     SELECT
       payment_date::text AS payment_date,
@@ -332,8 +313,6 @@ async function getPromptVaultMetrics(windowDays: number) {
     recovery_sends: toInt(eventCountsRow?.recovery_sends),
     payment_completed: toInt(eventCountsRow?.payment_completed),
     checkout_successes: toInt(eventCountsRow?.checkout_successes),
-    system_upgrade_clicks: toInt(eventCountsRow?.system_upgrade_clicks),
-    system_checkout_starts: toInt(eventCountsRow?.system_checkout_starts),
     access_opens: toInt(eventCountsRow?.access_opens),
     prompt_views: toInt(eventCountsRow?.prompt_views),
     prompt_copies: toInt(eventCountsRow?.prompt_copies),
@@ -350,18 +329,20 @@ async function getPromptVaultMetrics(windowDays: number) {
     buyers: toInt(buyerCountsRow?.buyers),
     delivery_sent: toInt(buyerCountsRow?.delivery_sent),
     day2_sent: toInt(buyerEmailCountsRow?.day2_sent),
-    day3_sent: toInt(buyerEmailCountsRow?.day3_sent),
     day5_sent: toInt(buyerEmailCountsRow?.day5_sent),
     day10_sent: toInt(buyerEmailCountsRow?.day10_sent),
   }
 
-  const systemUpgradeCounts: SystemUpgradeCounts = {
-    checkout_starts: toInt(systemUpgradeCountsRow?.checkout_starts),
-    purchases: toInt(systemUpgradeCountsRow?.purchases),
-    revenue_cents: toInt(systemUpgradeCountsRow?.revenue_cents),
+  return {
+    eventCounts,
+    paymentCounts,
+    buyerCounts,
+    topPrompts,
+    topViewedPrompts,
+    attributionRows,
+    promptFunnelRows,
+    recentPurchases,
   }
-
-  return { eventCounts, paymentCounts, buyerCounts, systemUpgradeCounts, topPrompts, topViewedPrompts, attributionRows, promptFunnelRows, recentPurchases }
 }
 
 export default async function PromptVaultAdminPage({
@@ -372,8 +353,16 @@ export default async function PromptVaultAdminPage({
   const params = await searchParams
   const requestedDays = Number(params.days || 14)
   const windowDays = [7, 14, 30].includes(requestedDays) ? requestedDays : 14
-  const { eventCounts, paymentCounts, buyerCounts, systemUpgradeCounts, topPrompts, topViewedPrompts, attributionRows, promptFunnelRows, recentPurchases } =
-    await getPromptVaultMetrics(windowDays)
+  const {
+    eventCounts,
+    paymentCounts,
+    buyerCounts,
+    topPrompts,
+    topViewedPrompts,
+    attributionRows,
+    promptFunnelRows,
+    recentPurchases,
+  } = await getPromptVaultMetrics(windowDays)
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -394,7 +383,7 @@ export default async function PromptVaultAdminPage({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {[7, 14, 30].map((days) => (
+            {[7, 14, 30].map(days => (
               <Link
                 key={days}
                 href={`/admin/prompt-vault?days=${days}`}
@@ -433,7 +422,11 @@ export default async function PromptVaultAdminPage({
             label="Vault Revenue"
             value={money(paymentCounts.revenue_cents)}
             icon={<DollarSign className="w-5 h-5" />}
-            subtitle={paymentCounts.latest_purchase_at ? `Latest: ${new Date(paymentCounts.latest_purchase_at).toLocaleDateString()}` : "No purchases yet"}
+            subtitle={
+              paymentCounts.latest_purchase_at
+                ? `Latest: ${new Date(paymentCounts.latest_purchase_at).toLocaleDateString()}`
+                : "No purchases yet"
+            }
           />
           <AdminMetricCard
             label="Buyer Records"
@@ -467,21 +460,9 @@ export default async function PromptVaultAdminPage({
           />
           <AdminMetricCard
             label="Buyer Emails"
-            value={buyerCounts.day2_sent + buyerCounts.day3_sent + buyerCounts.day5_sent + buyerCounts.day10_sent}
+            value={buyerCounts.day2_sent + buyerCounts.day5_sent + buyerCounts.day10_sent}
             icon={<Mail className="w-5 h-5" />}
-            subtitle={`D2 ${buyerCounts.day2_sent} · D3 ${buyerCounts.day3_sent} · D5 ${buyerCounts.day5_sent} · D10 ${buyerCounts.day10_sent}`}
-          />
-          <AdminMetricCard
-            label="System Upgrade Clicks"
-            value={eventCounts.system_upgrade_clicks}
-            icon={<MousePointerClick className="w-5 h-5" />}
-            subtitle="Vault to $197 System"
-          />
-          <AdminMetricCard
-            label="System Upgrade Sales"
-            value={systemUpgradeCounts.purchases}
-            icon={<DollarSign className="w-5 h-5" />}
-            subtitle={`${money(systemUpgradeCounts.revenue_cents)} attributed upgrade revenue`}
+            subtitle={`D2 ${buyerCounts.day2_sent} · D5 ${buyerCounts.day5_sent} · D10 ${buyerCounts.day10_sent}`}
           />
         </div>
 
@@ -496,7 +477,8 @@ export default async function PromptVaultAdminPage({
               </h2>
             </div>
             <p className="max-w-xl text-xs leading-relaxed text-stone-500">
-              This shows whether buyers are dropping before Stripe loads, inside the payment form, or after payment.
+              This shows whether buyers are dropping before Stripe loads, inside the payment form,
+              or after payment.
             </p>
           </div>
           <div className="grid gap-3 md:grid-cols-5">
@@ -526,57 +508,11 @@ export default async function PromptVaultAdminPage({
                 value: eventCounts.payment_completed || eventCounts.checkout_successes,
                 detail: `${pct(eventCounts.payment_completed || eventCounts.checkout_successes, eventCounts.payment_form_rendered || eventCounts.checkout_starts)} of forms`,
               },
-            ].map((metric) => (
+            ].map(metric => (
               <div key={metric.label} className="border border-stone-100 bg-stone-50 p-4">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-stone-400">{metric.label}</p>
-                <p className="mt-3 font-['Times_New_Roman'] text-3xl font-extralight text-stone-950">
-                  {metric.value}
+                <p className="text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                  {metric.label}
                 </p>
-                <p className="mt-2 text-[11px] leading-relaxed text-stone-500">{metric.detail}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="mb-8 border border-stone-200 bg-white p-5 sm:p-6">
-          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="mb-2 text-[10px] uppercase tracking-[0.24em] text-stone-400">
-                Ascension Diagnostic
-              </p>
-              <h2 className="font-['Times_New_Roman'] text-xl font-extralight uppercase tracking-[0.18em] text-stone-950 sm:text-2xl">
-                Vault To Selfie To Brand Shoot
-              </h2>
-            </div>
-            <p className="max-w-xl text-xs leading-relaxed text-stone-500">
-              This shows whether Vault buyers are accepting the $27-credit path into the $197 System.
-            </p>
-          </div>
-          <div className="grid gap-3 md:grid-cols-4">
-            {[
-              {
-                label: "Upgrade Clicks",
-                value: eventCounts.system_upgrade_clicks,
-                detail: "Vault access CTAs",
-              },
-              {
-                label: "Checkout Starts",
-                value: systemUpgradeCounts.checkout_starts || eventCounts.system_checkout_starts,
-                detail: `${pct(systemUpgradeCounts.checkout_starts || eventCounts.system_checkout_starts, eventCounts.system_upgrade_clicks)} of clicks`,
-              },
-              {
-                label: "Upgrade Sales",
-                value: systemUpgradeCounts.purchases,
-                detail: `${pct(systemUpgradeCounts.purchases, systemUpgradeCounts.checkout_starts || eventCounts.system_checkout_starts)} of starts`,
-              },
-              {
-                label: "Upgrade Revenue",
-                value: money(systemUpgradeCounts.revenue_cents),
-                detail: "$27 Vault credit path",
-              },
-            ].map((metric) => (
-              <div key={metric.label} className="border border-stone-100 bg-stone-50 p-4">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-stone-400">{metric.label}</p>
                 <p className="mt-3 font-['Times_New_Roman'] text-3xl font-extralight text-stone-950">
                   {metric.value}
                 </p>
@@ -598,7 +534,8 @@ export default async function PromptVaultAdminPage({
                 </h2>
               </div>
               <p className="max-w-xl text-xs leading-relaxed text-stone-500">
-                Source: analytics_events for views, copies, and email captures. checkout_attribution for starts and purchases. Money still comes from Stripe below.
+                Source: analytics_events for views, copies, and email captures. checkout_attribution
+                for starts and purchases. Money still comes from Stripe below.
               </p>
             </div>
             {promptFunnelRows.length > 0 ? (
@@ -617,18 +554,26 @@ export default async function PromptVaultAdminPage({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100">
-                    {promptFunnelRows.map((row) => (
+                    {promptFunnelRows.map(row => (
                       <tr key={`${row.prompt_number}-${row.cta_keyword}-${row.entry_post_slug}`}>
                         <td className="py-3 pr-4 text-stone-950">
                           {row.prompt_number ? `#${row.prompt_number}` : "-"}
-                          {row.prompt_title ? <span className="block max-w-xs truncate text-xs text-stone-500">{row.prompt_title}</span> : null}
+                          {row.prompt_title ? (
+                            <span className="block max-w-xs truncate text-xs text-stone-500">
+                              {row.prompt_title}
+                            </span>
+                          ) : null}
                         </td>
                         <td className="py-3 pr-4 text-stone-500">{row.cta_keyword || "-"}</td>
                         <td className="py-3 pr-4 text-stone-500">{row.entry_post_slug || "-"}</td>
                         <td className="py-3 pr-4 text-right text-stone-950">{row.page_views}</td>
-                        <td className="py-3 pr-4 text-right text-stone-950">{row.email_captures}</td>
+                        <td className="py-3 pr-4 text-right text-stone-950">
+                          {row.email_captures}
+                        </td>
                         <td className="py-3 pr-4 text-right text-stone-950">{row.prompt_copies}</td>
-                        <td className="py-3 pr-4 text-right text-stone-950">{row.checkout_starts}</td>
+                        <td className="py-3 pr-4 text-right text-stone-950">
+                          {row.checkout_starts}
+                        </td>
                         <td className="py-3 text-right text-stone-950">{row.purchases}</td>
                       </tr>
                     ))}
@@ -637,7 +582,9 @@ export default async function PromptVaultAdminPage({
               </div>
             ) : (
               <p className="text-sm text-stone-500 leading-relaxed">
-                No single-prompt funnel rows in this window yet. The default PROMPT flow now sends traffic to `/ai-prompts`; single-prompt rows only appear from historical `/p/[number]` links.
+                No single-prompt funnel rows in this window yet. The default PROMPT flow now sends
+                traffic to `/ai-prompts`; single-prompt rows only appear from historical
+                `/p/[number]` links.
               </p>
             )}
           </section>
@@ -648,8 +595,11 @@ export default async function PromptVaultAdminPage({
             </h2>
             {topViewedPrompts.length > 0 ? (
               <div className="divide-y divide-stone-100">
-                {topViewedPrompts.map((prompt) => (
-                  <div key={`${prompt.prompt_number}-${prompt.prompt_title}`} className="py-4 flex items-start justify-between gap-4">
+                {topViewedPrompts.map(prompt => (
+                  <div
+                    key={`${prompt.prompt_number}-${prompt.prompt_title}`}
+                    className="py-4 flex items-start justify-between gap-4"
+                  >
                     <div>
                       <p className="text-sm text-stone-950">
                         {prompt.prompt_number ? `${prompt.prompt_number}. ` : ""}
@@ -659,13 +609,16 @@ export default async function PromptVaultAdminPage({
                         Visual demand signal
                       </p>
                     </div>
-                    <p className="font-['Times_New_Roman'] text-2xl text-stone-950">{prompt.views}</p>
+                    <p className="font-['Times_New_Roman'] text-2xl text-stone-950">
+                      {prompt.views}
+                    </p>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-sm text-stone-500 leading-relaxed">
-                No paid-vault prompt views in this window yet. Views start tracking after the next deploy.
+                No paid-vault prompt views in this window yet. Views start tracking after the next
+                deploy.
               </p>
             )}
           </section>
@@ -676,8 +629,11 @@ export default async function PromptVaultAdminPage({
             </h2>
             {topPrompts.length > 0 ? (
               <div className="divide-y divide-stone-100">
-                {topPrompts.map((prompt) => (
-                  <div key={`${prompt.prompt_number}-${prompt.prompt_title}`} className="py-4 flex items-start justify-between gap-4">
+                {topPrompts.map(prompt => (
+                  <div
+                    key={`${prompt.prompt_number}-${prompt.prompt_title}`}
+                    className="py-4 flex items-start justify-between gap-4"
+                  >
                     <div>
                       <p className="text-sm text-stone-950">
                         {prompt.prompt_number ? `${prompt.prompt_number}. ` : ""}
@@ -687,13 +643,16 @@ export default async function PromptVaultAdminPage({
                         Post-purchase usage signal
                       </p>
                     </div>
-                    <p className="font-['Times_New_Roman'] text-2xl text-stone-950">{prompt.copies}</p>
+                    <p className="font-['Times_New_Roman'] text-2xl text-stone-950">
+                      {prompt.copies}
+                    </p>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-sm text-stone-500 leading-relaxed">
-                No paid-vault prompt copies in this window yet. This is the main product-fit signal to watch after launch traffic starts.
+                No paid-vault prompt copies in this window yet. This is the main product-fit signal
+                to watch after launch traffic starts.
               </p>
             )}
           </section>
@@ -718,14 +677,22 @@ export default async function PromptVaultAdminPage({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100">
-                    {attributionRows.map((row) => (
-                      <tr key={`${row.source}-${row.utm_campaign}-${row.entry_post_slug}-${row.cta_keyword}-${row.prompt_number}`}>
-                        <td className="py-3 pr-4 text-stone-950">{row.source || row.utm_source || "direct"}</td>
+                    {attributionRows.map(row => (
+                      <tr
+                        key={`${row.source}-${row.utm_campaign}-${row.entry_post_slug}-${row.cta_keyword}-${row.prompt_number}`}
+                      >
+                        <td className="py-3 pr-4 text-stone-950">
+                          {row.source || row.utm_source || "direct"}
+                        </td>
                         <td className="py-3 pr-4 text-stone-500">{row.utm_campaign || "-"}</td>
                         <td className="py-3 pr-4 text-stone-500">{row.entry_post_slug || "-"}</td>
                         <td className="py-3 pr-4 text-stone-500">{row.cta_keyword || "-"}</td>
-                        <td className="py-3 pr-4 text-stone-500">{row.prompt_number ? `#${row.prompt_number}` : "-"}</td>
-                        <td className="py-3 pr-4 text-right text-stone-950">{row.checkout_starts}</td>
+                        <td className="py-3 pr-4 text-stone-500">
+                          {row.prompt_number ? `#${row.prompt_number}` : "-"}
+                        </td>
+                        <td className="py-3 pr-4 text-right text-stone-950">
+                          {row.checkout_starts}
+                        </td>
                         <td className="py-3 pr-4 text-right text-stone-950">{row.purchases}</td>
                         <td className="py-3 text-right text-stone-950">{row.recovery_sends}</td>
                       </tr>
@@ -746,7 +713,7 @@ export default async function PromptVaultAdminPage({
             </h2>
             {recentPurchases.length > 0 ? (
               <div className="divide-y divide-stone-100">
-                {recentPurchases.map((purchase) => (
+                {recentPurchases.map(purchase => (
                   <div key={purchase.stripe_payment_id || purchase.payment_date} className="py-4">
                     <div className="flex items-center justify-between gap-4">
                       <p className="text-sm text-stone-950">{money(purchase.amount_cents)}</p>

@@ -125,6 +125,7 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "prompt_vault_access_opened",
   "prompt_vault_prompt_viewed",
   "prompt_vault_prompt_copied",
+  "prompt_vault_first_result_started",
   "prompt_vault_suite_offer_viewed",
   "prompt_vault_suite_offer_clicked",
   "prompt_vault_suite_offer_declined",
@@ -175,7 +176,6 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "selfie_to_brand_shoot_testimonial_requested",
   "selfie_to_brand_shoot_testimonial_submitted",
   "selfie_to_brand_shoot_checkout_recovery_sent",
-  "prompt_vault_system_upgrade_click",
   // BRIDGE-01 — SUITE trial lifecycle (behavior only; conversion truth lives in subscriptions)
   "trial_claimed",
   "trial_first_generation",

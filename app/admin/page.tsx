@@ -358,7 +358,16 @@ export default async function AdminPage({
                   </p>
                 </div>
 
-                <div className="mt-5 grid gap-px border border-stone-200 bg-stone-200 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="mt-5 grid gap-px border border-stone-200 bg-stone-200 sm:grid-cols-2 lg:grid-cols-5">
+                  <div className="bg-stone-50 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      First useful action
+                    </p>
+                    <p className="mt-2 font-serif text-3xl font-light">
+                      {scorecard.vaultCommercialPath30d.firstResultStarts}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500">First prompt copied</p>
+                  </div>
                   <div className="bg-stone-50 p-4">
                     <p className="text-[10px] uppercase tracking-[0.14em] text-stone-500">
                       Page views
@@ -512,7 +521,8 @@ export default async function AdminPage({
                       {scorecard.vaultCommercialPath30d.presetsClicks}
                     </p>
                     <p className="mt-1 text-xs text-stone-500">
-                      {scorecard.vaultCommercialPath30d.suiteDeclines} SUITE declines · {scorecard.vaultCommercialPath30d.presetsCheckoutStarts} checkouts
+                      {scorecard.vaultCommercialPath30d.suiteDeclines} SUITE declines ·{" "}
+                      {scorecard.vaultCommercialPath30d.presetsCheckoutStarts} checkouts
                     </p>
                   </div>
                   <div className="bg-stone-50 p-4">
@@ -520,10 +530,17 @@ export default async function AdminPage({
                       Successful Stripe payments
                     </p>
                     <p className="mt-2 font-serif text-3xl font-light">
-                      {scorecard.vaultCommercialPath30d.suitePayments + scorecard.vaultCommercialPath30d.presetsPayments}
+                      {scorecard.vaultCommercialPath30d.suitePayments +
+                        scorecard.vaultCommercialPath30d.presetsPayments}
                     </p>
                     <p className="mt-1 text-xs text-stone-500">
-                      {currencyMoney(scorecard.vaultCommercialPath30d.suiteRevenue, "EUR")} SUITE · {currencyMoney(scorecard.vaultCommercialPath30d.presetsRevenue, "USD")} presets
+                      {scorecard.vaultCommercialPath30d.suiteFirstPayments} first ·{" "}
+                      {scorecard.vaultCommercialPath30d.suiteRenewals} renewal
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500">
+                      {currencyMoney(scorecard.vaultCommercialPath30d.suiteRevenue, "EUR")} SUITE ·{" "}
+                      {currencyMoney(scorecard.vaultCommercialPath30d.presetsRevenue, "USD")}{" "}
+                      presets
                     </p>
                   </div>
                 </div>
@@ -573,8 +590,9 @@ export default async function AdminPage({
                     <p className="mt-1 text-xs text-stone-500">
                       {percent(
                         scorecard.membershipFunnel30d.checkoutStarts,
-                        scorecard.membershipFunnel30d.pageViews,
-                      )}% of page visits
+                        scorecard.membershipFunnel30d.pageViews
+                      )}
+                      % of page visits
                     </p>
                   </div>
                   <div className="bg-stone-50 p-4">
@@ -587,8 +605,9 @@ export default async function AdminPage({
                     <p className="mt-1 text-xs text-stone-500">
                       {percent(
                         scorecard.membershipFunnel30d.paymentForms,
-                        scorecard.membershipFunnel30d.checkoutStarts,
-                      )}% of checkout sessions
+                        scorecard.membershipFunnel30d.checkoutStarts
+                      )}
+                      % of checkout sessions
                     </p>
                   </div>
                   <div className="bg-stone-50 p-4">
@@ -601,8 +620,9 @@ export default async function AdminPage({
                     <p className="mt-1 text-xs text-stone-500">
                       {percent(
                         scorecard.membershipFunnel30d.newPaidMembers,
-                        scorecard.membershipFunnel30d.paymentForms,
-                      )}% of payment forms
+                        scorecard.membershipFunnel30d.paymentForms
+                      )}
+                      % of payment forms
                     </p>
                   </div>
                 </div>
@@ -613,16 +633,19 @@ export default async function AdminPage({
                   </p>
                   <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
                     <p className="border-t border-stone-200 pt-2">
-                      Page visits + CTA clicks <span className="text-stone-500">· analytics_events</span>
+                      Page visits + CTA clicks{" "}
+                      <span className="text-stone-500">· analytics_events</span>
                     </p>
                     <p className="border-t border-stone-200 pt-2">
-                      Checkout sessions <span className="text-stone-500">· checkout_attribution</span>
+                      Checkout sessions{" "}
+                      <span className="text-stone-500">· checkout_attribution</span>
                     </p>
                     <p className="border-t border-stone-200 pt-2">
                       Payment forms <span className="text-stone-500">· analytics_events</span>
                     </p>
                     <p className="border-t border-stone-200 pt-2">
-                      New paid members <span className="text-stone-500">· Stripe live subscriptions</span>
+                      New paid members{" "}
+                      <span className="text-stone-500">· Stripe live subscriptions</span>
                     </p>
                   </div>
                   <p className="mt-4 text-xs leading-5 text-stone-500">

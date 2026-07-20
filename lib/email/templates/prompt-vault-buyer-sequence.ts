@@ -1,38 +1,10 @@
 import { buildRevenueEmailLink } from "./revenue-links"
-import { selfieToBrandShootCheckoutUrl } from "./selfie-education-links"
 import { renderStoneButton, renderStonePanel, renderStoneShell } from "./stone-email"
 
 interface PromptVaultBuyerEmailParams {
   firstName: string
   accessUrl: string
   recipientEmail?: string | null
-}
-
-function promptVaultTokenFromAccessUrl(accessUrl: string): string | null {
-  try {
-    const url = new URL(accessUrl, "https://www.sselfie.ai")
-    const parts = url.pathname.split("/").filter(Boolean)
-    const token = parts[parts.length - 1]
-    return token && token !== "prompt-vault" ? token : null
-  } catch {
-    const token = accessUrl.split("/").filter(Boolean).pop()
-    return token && token !== "prompt-vault" ? token : null
-  }
-}
-
-function buildSystemUpgradeUrl(accessUrl: string): string {
-  const token = promptVaultTokenFromAccessUrl(accessUrl)
-  const checkout = new URL(selfieToBrandShootCheckoutUrl())
-  checkout.searchParams.set("source", "prompt_vault_buyer_email")
-  checkout.searchParams.set("utm_source", "email")
-  checkout.searchParams.set("utm_medium", "lifecycle")
-  checkout.searchParams.set("utm_campaign", "prompt_vault_system_upgrade")
-  checkout.searchParams.set("utm_content", "vault_buyer_credit")
-  checkout.searchParams.set("email_type", "prompt-vault-day3-system-upgrade")
-  checkout.searchParams.set("buyer_stage", "micro")
-  checkout.searchParams.set("vault_credit", "1")
-  if (token) checkout.searchParams.set("freebie_token", token)
-  return checkout.toString()
 }
 
 export function generatePromptVaultDay2FirstResultEmail({
@@ -138,76 +110,6 @@ Open the Vault:
 ${vaultUrl}
 
 The goal isn't a perfect fake photo. The goal is a photo that still feels like you.
-
-Sandra x`
-
-  return { html, text, subject }
-}
-
-export function generatePromptVaultDay3SystemUpgradeEmail({
-  firstName,
-  accessUrl,
-  recipientEmail,
-}: PromptVaultBuyerEmailParams): { html: string; text: string; subject: string } {
-  const upgradeUrl = buildRevenueEmailLink(buildSystemUpgradeUrl(accessUrl), {
-    campaign: "prompt_vault_system_upgrade",
-    content: "vault_buyer_credit",
-    emailType: "prompt-vault-day3-system-upgrade",
-    checkoutEmail: recipientEmail,
-  })
-  const vaultUrl = buildRevenueEmailLink(accessUrl, {
-    campaign: "prompt_vault_system_upgrade",
-    content: "open_vault",
-    emailType: "prompt-vault-day3-system-upgrade",
-  })
-  const subject = "you already have the prompts"
-
-  const bodyHtml = `
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You already have the prompts.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Now the real question is: how do you use them so your images start feeling like one recognizable personal brand, not a folder of pretty experiments?</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That's what the Selfie to Brand Shoot System is for.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The System is $197, and your $37 counts toward it. So you complete it for $160.</p>
-    ${renderStonePanel(
-      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Inside the System, you choose the right source selfie, lock one signature visual world, create your first AI brand shoot, filter the images that still look like you, and turn the shoot into content.</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">The Vault gives you the directions. The System shows you how to build the whole shoot around them.</p>`,
-      "What changes"
-    )}
-    <div style="margin:26px 0 16px;">${renderStoneButton("Complete the System", upgradeUrl)}</div>
-    <p style="margin:0 0 16px;font-size:14px;line-height:1.7;color:#5f5a52;">Or keep using your Vault first: <a href="${vaultUrl}" style="color:#2c2924;text-decoration:underline;">open your prompts here</a>.</p>
-    <p style="margin:0;font-size:16px;line-height:1.75;">Start simple. One clear selfie, one visual world, one first brand shoot.</p>
-  `
-
-  const html = renderStoneShell({
-    title: "You already have the prompts.",
-    eyebrow: "Selfie to Brand Shoot",
-    subtitle: "Now turn them into a complete visual brand shoot.",
-    bodyHtml,
-    footerLead: "The Vault is included. The System gives it structure.",
-    footerSignoff: "Sandra x",
-  })
-
-  const text = `Hi ${firstName},
-
-You already have the prompts.
-
-Now the real question is: how do you use them so your images start feeling like one recognizable personal brand, not a folder of pretty experiments?
-
-That's what the Selfie to Brand Shoot System is for.
-
-The System is $197, and your $37 counts toward it. So you complete it for $160.
-
-Inside the System, you choose the right source selfie, lock one signature visual world, create your first AI brand shoot, filter the images that still look like you, and turn the shoot into content.
-
-The Vault gives you the directions. The System shows you how to build the whole shoot around them.
-
-Complete the System:
-${upgradeUrl}
-
-Or keep using your Vault first:
-${vaultUrl}
-
-Start simple. One clear selfie, one visual world, one first brand shoot.
 
 Sandra x`
 

@@ -39,12 +39,15 @@ export type RevenueTruthScorecard = {
     newPaidMembers: number
   }
   vaultCommercialPath30d: {
+    firstResultStarts: number
     offerViews: number
     suiteClicks: number
     suiteDeclines: number
     presetsClicks: number
     suiteCheckoutStarts: number
     suitePayments: number
+    suiteFirstPayments: number
+    suiteRenewals: number
     suiteRevenue: number
     presetsCheckoutStarts: number
     presetsPayments: number
@@ -158,6 +161,16 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
           WHERE utm_campaign = 'vault_to_suite'
             AND product_type = 'sselfie_studio_membership'
         )::int AS suite_payments,
+        COUNT(*) FILTER (
+          WHERE utm_campaign = 'vault_to_suite'
+            AND product_type = 'sselfie_studio_membership'
+            AND metadata->>'billing_reason' = 'subscription_create'
+        )::int AS suite_first_payments,
+        COUNT(*) FILTER (
+          WHERE utm_campaign = 'vault_to_suite'
+            AND product_type = 'sselfie_studio_membership'
+            AND metadata->>'billing_reason' IN ('subscription_cycle', 'subscription_update')
+        )::int AS suite_renewals,
         COALESCE(SUM(amount_cents) FILTER (
           WHERE utm_campaign = 'vault_to_suite'
             AND product_type = 'sselfie_studio_membership'
@@ -291,6 +304,10 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
           AND membership_checkout.created_at >= NOW() - INTERVAL '30 days'
       ) AS membership_checkout_starts_30d
       , COUNT(*) FILTER (
+        WHERE event_name = 'prompt_vault_first_result_started'
+          AND properties->>'environment' = 'production'
+      )::int AS vault_first_result_starts_30d
+      , COUNT(*) FILTER (
         WHERE event_name = 'prompt_vault_suite_offer_viewed'
           AND properties->>'environment' = 'production'
       )::int AS vault_offer_views_30d
@@ -322,20 +339,23 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
       ) AS vault_presets_checkout_starts_30d
     FROM analytics_events
     WHERE created_at >= NOW() - INTERVAL '30 days'
-  `.catch(() => [{
-    trial_first_generation_30d: 0,
-    downloads_30d: 0,
-    payment_form_rendered_30d: 0,
-    membership_page_views_30d: 0,
-    membership_cta_clicks_30d: 0,
-    membership_checkout_starts_30d: 0,
-    vault_offer_views_30d: 0,
-    vault_suite_clicks_30d: 0,
-    vault_suite_declines_30d: 0,
-    vault_presets_clicks_30d: 0,
-    vault_suite_checkout_starts_30d: 0,
-    vault_presets_checkout_starts_30d: 0,
-  }])
+  `.catch(() => [
+    {
+      trial_first_generation_30d: 0,
+      downloads_30d: 0,
+      payment_form_rendered_30d: 0,
+      membership_page_views_30d: 0,
+      membership_cta_clicks_30d: 0,
+      membership_checkout_starts_30d: 0,
+      vault_first_result_starts_30d: 0,
+      vault_offer_views_30d: 0,
+      vault_suite_clicks_30d: 0,
+      vault_suite_declines_30d: 0,
+      vault_presets_clicks_30d: 0,
+      vault_suite_checkout_starts_30d: 0,
+      vault_presets_checkout_starts_30d: 0,
+    },
+  ])
   const events = (eventCounts as any[])[0] || {}
   const vaultPayments = (vaultPaymentRows as any[])[0] || {}
 
@@ -375,24 +395,27 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
       newPaidMembers: memberMetrics.newSubscribers30d,
     },
     vaultCommercialPath30d: {
+      firstResultStarts: toNumber(events.vault_first_result_starts_30d),
       offerViews: toNumber(events.vault_offer_views_30d),
       suiteClicks: toNumber(events.vault_suite_clicks_30d),
       suiteDeclines: toNumber(events.vault_suite_declines_30d),
       presetsClicks: toNumber(events.vault_presets_clicks_30d),
       suiteCheckoutStarts: toNumber(events.vault_suite_checkout_starts_30d),
       suitePayments: toNumber(vaultPayments.suite_payments),
+      suiteFirstPayments: toNumber(vaultPayments.suite_first_payments),
+      suiteRenewals: toNumber(vaultPayments.suite_renewals),
       suiteRevenue: toNumber(vaultPayments.suite_revenue_cents) / 100,
       presetsCheckoutStarts: toNumber(events.vault_presets_checkout_starts_30d),
       presetsPayments: toNumber(vaultPayments.presets_payments),
       presetsRevenue: toNumber(vaultPayments.presets_revenue_cents) / 100,
     },
-    products30d: (productRows as any[]).map((row) => ({
+    products30d: (productRows as any[]).map(row => ({
       productType: productLabel(row.product_type),
       payments: toNumber(row.payments),
       customers: toNumber(row.customers),
       revenue: toNumber(row.revenue_cents) / 100,
     })),
-    funnels30d: (funnelRows as any[]).map((row) => ({
+    funnels30d: (funnelRows as any[]).map(row => ({
       productType: productLabel(row.product_type),
       starts: toNumber(row.starts),
       recoverableStarts: toNumber(row.recoverable_starts),
@@ -402,11 +425,11 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
     workWithMe: {
       receivedTotal: Math.max(
         toNumber(workWithMe.applications_total),
-        toNumber(workWithMeReceipts.receipts_total),
+        toNumber(workWithMeReceipts.receipts_total)
       ),
       applications30d: Math.max(
         toNumber(workWithMe.applications_30d),
-        toNumber(workWithMeReceipts.receipts_30d),
+        toNumber(workWithMeReceipts.receipts_30d)
       ),
       qualifiedOpen: toNumber(workWithMe.qualified_open),
       bookedCalls: toNumber(workWithMe.booked_calls),
@@ -415,7 +438,7 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
       lost: toNumber(workWithMe.lost),
     },
     demandSignals: {
-      topInstagram: (topInstagramRows as any[]).map((row) => ({
+      topInstagram: (topInstagramRows as any[]).map(row => ({
         hook: String(row.hook_line || "No hook stored"),
         views: toNumber(row.views),
         comments: toNumber(row.comments),
@@ -423,11 +446,11 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
         shares: toNumber(row.shares),
         permalink: row.permalink ? String(row.permalink) : null,
       })),
-      topFreePromptCopies: (topFreePromptRows as any[]).map((row) => ({
+      topFreePromptCopies: (topFreePromptRows as any[]).map(row => ({
         title: String(row.title || "Unknown prompt"),
         copies: toNumber(row.copies),
       })),
-      topEmailConverters: (topEmailRows as any[]).map((row) => ({
+      topEmailConverters: (topEmailRows as any[]).map(row => ({
         emailType: String(row.email_type || "unknown"),
         clicks: toNumber(row.clicks),
         conversions: toNumber(row.conversions),
