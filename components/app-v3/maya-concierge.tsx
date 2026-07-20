@@ -76,6 +76,10 @@ import { salvageConceptsPayload } from "@/lib/app-v3/concept-salvage"
 import { downloadAllSlidesAsZip } from "@/lib/app-v3/download-all-slides"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 import {
+  applyEditedConceptCopy,
+  type EditableConceptCopy,
+} from "@/lib/app-v3/maya/concept-copy-edit"
+import {
   colorAdjustmentLine,
   parseTextRefinement,
   typographyAdjustmentLine,
@@ -2270,8 +2274,16 @@ export function MayaConcierge({
     key: string,
     concept: ConceptCardData,
     targetFormat: OutputFormat = format,
-    overlayStyle?: OverlayStyleId | null
+    overlayStyle?: OverlayStyleId | null,
+    editedCopy?: EditableConceptCopy[]
   ) {
+    // MAYA-COPY-PREVIEW-01: she may have edited the exact words before spending a credit.
+    // Every other field (visual world, imagePromptDirection, purpose, reference strategy)
+    // stays exactly as Maya wrote it - only the baked text is ever hers to change here.
+    const effectiveBrief =
+      editedCopy && editedCopy.length > 0
+        ? applyEditedConceptCopy(concept.brief, editedCopy)
+        : concept.brief
     const canUseCustomModel = activeGenerationSource === "trained-model" && targetFormat === "photo"
 
     if (targetFormat === "video" && !videoSourceUrl) {
@@ -2305,9 +2317,9 @@ export function MayaConcierge({
     const expectedOutputCount = Math.max(
       1,
       targetFormat === "carousel" || targetFormat === "story-sequence"
-        ? (concept.brief.graphic?.creativePlan?.outputs?.length ??
-            concept.brief.graphic?.slides?.length ??
-            concept.brief.graphic?.slideCount ??
+        ? (effectiveBrief.graphic?.creativePlan?.outputs?.length ??
+            effectiveBrief.graphic?.slides?.length ??
+            effectiveBrief.graphic?.slideCount ??
             1)
         : 1
     )
@@ -2402,7 +2414,7 @@ export function MayaConcierge({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             imageUrl: videoSourceUrl,
-            motionPrompt: buildVideoMotionPrompt(concept.brief),
+            motionPrompt: buildVideoMotionPrompt(effectiveBrief),
             imageDescription: concept.description,
             category: "editorial",
           }),
@@ -2455,7 +2467,7 @@ export function MayaConcierge({
           body: JSON.stringify({
             conceptTitle: concept.title,
             conceptDescription: concept.description,
-            conceptPrompt: buildCustomModelConceptPrompt(concept.brief),
+            conceptPrompt: buildCustomModelConceptPrompt(effectiveBrief),
             category: "portrait",
           }),
         })
@@ -2503,7 +2515,7 @@ export function MayaConcierge({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          brief: concept.brief,
+          brief: effectiveBrief,
           format: targetFormat,
           referenceSelfieUrl,
           referenceSelfieUrls: [threeQuarterUrl, sideProfileUrl, fullBodyUrl].filter(Boolean),
@@ -4451,14 +4463,15 @@ export function MayaConcierge({
                     format={conceptFormat}
                     eyebrow={recommended ? "Maya recommends" : "Another direction"}
                     onDownloaded={() => setValueUsed(true)}
-                    onGenerate={() =>
+                    onGenerate={editedCopy =>
                       void generateConcept(
                         key,
                         concept,
                         conceptFormat,
                         isGraphicOutputFormat(conceptFormat) && textOverlayMode === "with-text"
                           ? textStyleChoice
-                          : null
+                          : null,
+                        editedCopy
                       )
                     }
                     onOpen={(urls, startIndex) =>

@@ -15,6 +15,10 @@ import { retryGeneratedImageOnce } from "./image-retry"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 import { initiateAssetDownload } from "@/lib/app-v3/download-asset"
 import { downloadAllSlidesAsZip } from "@/lib/app-v3/download-all-slides"
+import {
+  getEditableConceptCopy,
+  type EditableConceptCopy,
+} from "@/lib/app-v3/maya/concept-copy-edit"
 import { FavoriteButton } from "./favorite-button"
 
 export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
@@ -54,7 +58,9 @@ interface ConceptCardProps {
   concept: ConceptCardData
   gen: ConceptGenState
   format: OutputFormat
-  onGenerate: () => void
+  /** Called with her edited baked-text words (if this concept has any and she touched them),
+   *  so the caller can bake exactly what she approved instead of Maya's original draft. */
+  onGenerate: (editedCopy?: EditableConceptCopy[]) => void
   /** Open the finished image(s) fullscreen (carousels pass all slides). startIndex jumps
    *  straight to the tapped thumbnail instead of always opening at slide 1. */
   onOpen?: (imageUrls: string[], startIndex?: number) => void
@@ -142,6 +148,16 @@ export function ConceptCard({
   const isDone = gen.status === "done" && images.length > 0
   const isVideoDone = gen.status === "done" && !!videoUrl
   const isCarousel = images.length > 1
+  // MAYA-COPY-PREVIEW-01: the exact words Maya is about to bake, editable before she spends
+  // a credit generating them. Seeded once per concept (a new concept.id remounts this card
+  // fresh via the parent's key={key}), so her edits survive re-renders but never leak
+  // between different concepts.
+  const originalCopy = useState(() => getEditableConceptCopy(concept.brief, format))[0]
+  const [editedCopy, setEditedCopy] = useState(originalCopy)
+  const hasEditableCopy = originalCopy.length > 0
+  const copyIsDirty = editedCopy.some(
+    (entry, i) => entry.heading !== originalCopy[i]?.heading || entry.body !== originalCopy[i]?.body
+  )
   const firstOverlay = gen.textOverlaySpecs?.[0] ?? null
   // A baked render (text in the pixels) wins the card; the clean base stays kept underneath.
   const firstBaked = gen.bakedImageUrls?.[0] ?? null
@@ -168,6 +184,12 @@ export function ConceptCard({
     } catch {
       setTextRetryStatus("error")
     }
+  }
+
+  const updateCopyField = (index: number, field: "heading" | "body", value: string) => {
+    setEditedCopy(current =>
+      current.map(entry => (entry.index === index ? { ...entry, [field]: value } : entry))
+    )
   }
 
   const handleAddToCalendar = async () => {
@@ -309,6 +331,62 @@ export function ConceptCard({
           </p>
         )}
 
+        {/* MAYA-COPY-PREVIEW-01: the exact words about to bake, before a credit is spent.
+            Only while idle - once a slide exists the words are already fixed in the pixels. */}
+        {!isDone && !isVideoDone && hasEditableCopy && (
+          <div className="space-y-2.5 rounded-[10px] border border-[#C5C6C8]/50 bg-[#F8FAFA] p-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
+                {editedCopy.length > 1 ? "The words on each slide" : "The words on this cover"}
+              </p>
+              {copyIsDirty && (
+                <button
+                  type="button"
+                  onClick={() => setEditedCopy(originalCopy)}
+                  className="shrink-0 text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                >
+                  Reset to Maya&apos;s words
+                </button>
+              )}
+            </div>
+            <div className="space-y-3">
+              {editedCopy.map(entry => (
+                <div key={entry.index} className="space-y-1.5">
+                  {editedCopy.length > 1 && (
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-[#9A9B9D]">
+                      Slide {entry.index + 1}
+                    </p>
+                  )}
+                  <input
+                    type="text"
+                    value={entry.heading}
+                    onChange={e => updateCopyField(entry.index, "heading", e.target.value)}
+                    disabled={disabled || isGenerating}
+                    aria-label={
+                      editedCopy.length > 1 ? `Slide ${entry.index + 1} headline` : "Headline"
+                    }
+                    placeholder="Headline"
+                    className="w-full rounded-[6px] border border-[#C5C6C8]/70 bg-white px-3 py-2 font-serif text-[15px] leading-snug text-[#0D0E10] focus:border-[#0D0E10] focus:outline-none disabled:opacity-60"
+                  />
+                  <textarea
+                    value={entry.body}
+                    onChange={e => updateCopyField(entry.index, "body", e.target.value)}
+                    disabled={disabled || isGenerating}
+                    aria-label={
+                      editedCopy.length > 1
+                        ? `Slide ${entry.index + 1} supporting line`
+                        : "Supporting line"
+                    }
+                    placeholder="Supporting line (optional)"
+                    rows={1}
+                    className="w-full resize-none rounded-[6px] border border-[#C5C6C8]/50 bg-white px-3 py-1.5 text-[13px] leading-relaxed text-[#4F5052] focus:border-[#0D0E10] focus:outline-none disabled:opacity-60"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {isDone || isVideoDone ? (
           <div className="space-y-3">
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#6D6E70]">
@@ -377,7 +455,7 @@ export function ConceptCard({
               ) : null}
               <button
                 type="button"
-                onClick={onGenerate}
+                onClick={() => onGenerate(hasEditableCopy ? editedCopy : undefined)}
                 disabled={disabled}
                 className="inline-flex min-h-11 items-center justify-center rounded-[8px] border border-[#0D0E10] bg-white px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] transition-colors hover:bg-[#F1F2F2] disabled:opacity-40"
               >
@@ -544,7 +622,7 @@ export function ConceptCard({
         ) : (
           <button
             type="button"
-            onClick={onGenerate}
+            onClick={() => onGenerate(hasEditableCopy ? editedCopy : undefined)}
             disabled={disabled || isGenerating}
             className="min-h-11 w-full rounded-[8px] bg-[#0D0E10] px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.99] disabled:opacity-40 sm:tracking-[0.2em]"
           >
