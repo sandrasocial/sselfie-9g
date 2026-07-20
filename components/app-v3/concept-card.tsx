@@ -361,16 +361,28 @@ export function ConceptCard({
                     type="text"
                     value={entry.heading}
                     onChange={e => updateCopyField(entry.index, "heading", e.target.value)}
+                    onFocus={e => e.currentTarget.scrollIntoView({ block: "center" })}
                     disabled={disabled || isGenerating}
                     aria-label={
                       editedCopy.length > 1 ? `Slide ${entry.index + 1} headline` : "Headline"
                     }
                     placeholder="Headline"
-                    className="w-full rounded-[6px] border border-[#C5C6C8]/70 bg-white px-3 py-2 font-serif text-[15px] leading-snug text-[#0D0E10] focus:border-[#0D0E10] focus:outline-none disabled:opacity-60"
+                    autoComplete="off"
+                    autoCapitalize="sentences"
+                    name={`concept-copy-heading-${entry.index}`}
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    // 16px+ is required on iOS Safari: any input under 16px triggers the
+                    // browser's own auto-zoom on focus, which is what threw this whole card's
+                    // layout (Sandra's live report, 2026-07-20 - a nested input inside this
+                    // scrollable thread, itself inside a position:fixed drawer, is exactly the
+                    // input shape iOS mis-zooms hardest on).
+                    className="w-full rounded-[6px] border border-[#C5C6C8]/70 bg-white px-3 py-2 font-serif text-[16px] leading-snug text-[#0D0E10] focus:border-[#0D0E10] focus:outline-none disabled:opacity-60"
                   />
                   <textarea
                     value={entry.body}
                     onChange={e => updateCopyField(entry.index, "body", e.target.value)}
+                    onFocus={e => e.currentTarget.scrollIntoView({ block: "center" })}
                     disabled={disabled || isGenerating}
                     aria-label={
                       editedCopy.length > 1
@@ -379,7 +391,12 @@ export function ConceptCard({
                     }
                     placeholder="Supporting line (optional)"
                     rows={1}
-                    className="w-full resize-none rounded-[6px] border border-[#C5C6C8]/50 bg-white px-3 py-1.5 text-[13px] leading-relaxed text-[#4F5052] focus:border-[#0D0E10] focus:outline-none disabled:opacity-60"
+                    autoComplete="off"
+                    autoCapitalize="sentences"
+                    name={`concept-copy-body-${entry.index}`}
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    className="w-full resize-none rounded-[6px] border border-[#C5C6C8]/50 bg-white px-3 py-1.5 text-[16px] leading-relaxed text-[#4F5052] focus:border-[#0D0E10] focus:outline-none disabled:opacity-60"
                   />
                 </div>
               ))}

@@ -212,6 +212,59 @@ describe("ConceptCard: editable baked-text preview", () => {
   })
 })
 
+describe("ConceptCard: editable copy fields stay iOS-Safari-safe (2026-07-20 live layout break)", () => {
+  // Sandra's live report: focusing one of these fields on iPhone broke the whole chat
+  // drawer's layout (the header detached and floated mid-screen). Root cause: these inputs
+  // are nested inside the message thread's own overflow-y-auto region, itself inside a
+  // position:fixed drawer - and both fields were under 16px, the exact font-size that
+  // triggers iOS Safari's auto-zoom-on-focus. That zoom is what threw the fixed layout off.
+  it("uses 16px+ font on both fields (under 16px triggers iOS Safari's auto-zoom-on-focus)", () => {
+    render(
+      <ConceptCard
+        concept={coverConcept}
+        format="reel-cover"
+        gen={{ status: "idle" }}
+        onGenerate={vi.fn()}
+      />
+    )
+    const heading = screen.getByLabelText("Headline")
+    const body = screen.getByLabelText("Supporting line")
+    expect(heading.className).toContain("text-[16px]")
+    expect(body.className).toContain("text-[16px]")
+    expect(heading.className).not.toMatch(/text-\[1[0-5]px\]/)
+    expect(body.className).not.toMatch(/text-\[1[0-5]px\]/)
+  })
+
+  it("suppresses iOS's AutoFill Contact bar (it ate real screen space above an already-tight keyboard)", () => {
+    render(
+      <ConceptCard
+        concept={coverConcept}
+        format="reel-cover"
+        gen={{ status: "idle" }}
+        onGenerate={vi.fn()}
+      />
+    )
+    expect(screen.getByLabelText("Headline")).toHaveAttribute("autoComplete", "off")
+    expect(screen.getByLabelText("Supporting line")).toHaveAttribute("autoComplete", "off")
+  })
+
+  it("explicitly scrolls the focused field into view within the thread on focus", () => {
+    render(
+      <ConceptCard
+        concept={coverConcept}
+        format="reel-cover"
+        gen={{ status: "idle" }}
+        onGenerate={vi.fn()}
+      />
+    )
+    const heading = screen.getByLabelText("Headline") as HTMLInputElement
+    const scrollIntoView = vi.fn()
+    heading.scrollIntoView = scrollIntoView
+    fireEvent.focus(heading)
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "center" })
+  })
+})
+
 describe("maya-concierge: applies her edited copy before generating", () => {
   it("merges edited copy into the brief sent to /api/app-v3/maya/generate, and forwards it from the card", async () => {
     const { readFileSync } = await import("node:fs")
