@@ -9,11 +9,13 @@ export function GalleryEmptyState({ onStartNow, hasPaidAccess = false }: Gallery
   const headline = hasPaidAccess ? "Your gallery starts with one photo." : "Ready to see what you actually look like?"
   const body = hasPaidAccess
     ? "Create a photo in Maya and it will show up here."
-    : "Generate your first 3 brand photos in 2 minutes. No waiting. No overthinking."
+    : "Create your first 2 brand photos in 2 minutes. No waiting. No overthinking."
   const followup = hasPaidAccess
     ? "Your credits are ready when you are."
     : "You're about to see yourself as a brand. It changes everything."
-  const footer = hasPaidAccess ? "Create with Maya to add your first photo." : "First 3 photos on us. No credit card required."
+  const footer = hasPaidAccess
+    ? "Create with Maya to add your first photo."
+    : "Your first 2 photos are on us. No credit card required."
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-12 text-center">

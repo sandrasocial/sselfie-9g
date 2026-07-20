@@ -133,6 +133,8 @@ describe("SUITE revenue foundation", () => {
     expect(page).toContain("offers: {")
     expect(page).toContain('price: "97"')
     expect(page).toContain('priceCurrency: "EUR"')
+    expect(page).toContain("100 creation credits that reset each billing month")
+    expect(page).not.toContain("200 creation credits that refill monthly")
   })
 
   it("shows plain membership terms before payment", () => {

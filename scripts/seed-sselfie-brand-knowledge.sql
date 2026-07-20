@@ -32,7 +32,7 @@ INSERT INTO admin_knowledge_base (knowledge_type, category, title, content, conf
 1.0, ARRAY['maya', 'ai', 'features']),
 
 ('product_info', 'sselfie_products', 'Credits System', 
-'SSELFIE uses a credits system. Photos cost 1 credit each, videos cost 5 credits. Beta users get 50% off ($24.50 vs $49.50). We offer credit packs: 50 credits ($24), 100 credits ($39), 250 credits ($79). Credits roll over monthly for subscribers. This gives flexibility - use them when you need them.', 
+'SSELFIE uses a credits system. A standard image costs 1 credit. Membership includes 100 credits per billing month. Unused membership credits do not roll over. Purchased top-up credits stay available and are preserved when the monthly balance resets.',
 1.0, ARRAY['pricing', 'credits', 'billing']),
 
 ('strategy', 'sselfie_brand', 'SSELFIE Content Strategy', 

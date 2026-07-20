@@ -10,7 +10,7 @@ describe("GalleryEmptyState", () => {
     render(<GalleryEmptyState onStartNow={onStartNow} />)
 
     expect(screen.getByText("Ready to see what you actually look like?")).toBeInTheDocument()
-    expect(screen.getByText("First 3 photos on us. No credit card required.")).toBeInTheDocument()
+    expect(screen.getByText("Your first 2 photos are on us. No credit card required.")).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: /create with maya/i }))
     expect(onStartNow).toHaveBeenCalledTimes(1)
@@ -21,6 +21,6 @@ describe("GalleryEmptyState", () => {
 
     expect(screen.getByText("Your gallery starts with one photo.")).toBeInTheDocument()
     expect(screen.getByText("Create with Maya to add your first photo.")).toBeInTheDocument()
-    expect(screen.queryByText("First 3 photos on us. No credit card required.")).not.toBeInTheDocument()
+    expect(screen.queryByText("Your first 2 photos are on us. No credit card required.")).not.toBeInTheDocument()
   })
 })

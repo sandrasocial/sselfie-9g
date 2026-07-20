@@ -161,7 +161,7 @@ export async function POST(
     console.log("[v0] [GENERATE-SINGLE] ✅ Neon user found:", user.id)
 
     // Phase 7.3: Check access control for image generation
-    // Free users can generate ONE image (they have 2 credits), others can generate unlimited
+    // Free users can generate two images with their two welcome credits.
     // Also used later to determine default generation mode
     const access = await getFeedPlannerAccess(user.id.toString())
 
@@ -175,7 +175,7 @@ export async function POST(
         {
           error: "Generation access required",
           details:
-            "You need credits to generate images. Free users can generate one image with their welcome credits.",
+            "You need credits to generate images. Free accounts include two welcome credits.",
         },
         { status: 403 }
       )

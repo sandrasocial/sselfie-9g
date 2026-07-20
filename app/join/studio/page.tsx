@@ -45,7 +45,7 @@ const suiteStructuredData = {
     "AI-assisted personal-brand content creation",
     "Content calendar and grid planning",
     "Personalized learning and brand guidance",
-    "200 creation credits that refill monthly",
+    "100 creation credits that reset each billing month",
   ],
 }
 

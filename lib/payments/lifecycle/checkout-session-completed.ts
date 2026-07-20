@@ -436,7 +436,7 @@ export async function handleCheckoutSessionCompleted(
       })
 
       // Normalise annual product type to monthly for all downstream credit/subscription logic.
-      // The annual product still grants the same 200 monthly credits via the subscription.
+      // Annual and monthly memberships both use the canonical 100-credit billing-period reset.
       const productType = resolveCheckoutProductType(metadata)
       let productTag = "unknown"
 

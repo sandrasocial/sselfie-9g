@@ -3,6 +3,8 @@
  * Part of the new simplified SSELFIE pricing model
  */
 
+import { MONTHLY_MEMBERSHIP_CREDITS } from "@/lib/credit-policy"
+
 export interface CreditPackage {
   id: string
   name: string
@@ -162,7 +164,7 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     description: "Maya helps you turn your face, story, and ideas into photos, covers, captions, and posts you can actually use.",
     priceInCents: 9700, // €97/month
     type: "sselfie_studio_membership",
-    credits: 200,
+    credits: MONTHLY_MEMBERSHIP_CREDITS,
     popular: true,
   },
   {
@@ -172,7 +174,7 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     description: "Maya helps you keep creating photos, covers, captions, and posts with one clear brand direction. Pay annually and save 2 months.",
     priceInCents: 97000, // €970/year (~€80.83/month — save €194 vs monthly)
     type: "sselfie_studio_membership_annual",
-    credits: 200,
+    credits: MONTHLY_MEMBERSHIP_CREDITS,
     popular: false,
   },
   {

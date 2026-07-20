@@ -286,7 +286,7 @@ export function AccountView({
             {typeof trialDaysLeft === "number"
               ? "Each image is one credit. Trial credits do not refill."
               : isRecurringMembership
-                ? "Each image is one credit. Your plan refills monthly."
+                ? "Each image is one credit. Your included credits reset to 100 each billing month. Purchased top-ups stay."
                 : isFixedBundlePass
                   ? "Each image is one credit. Your bundle included 200 credits. It does not refill or renew."
                   : isOwnedBundle

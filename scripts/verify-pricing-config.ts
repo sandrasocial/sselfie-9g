@@ -6,6 +6,7 @@
 
 import { PRICING_PRODUCTS, CREDIT_PACKAGES, getProductById, getCreditPackageById } from "../lib/products"
 import { SUBSCRIPTION_CREDITS, CREDIT_COSTS } from "../lib/credits"
+import { MONTHLY_MEMBERSHIP_CREDITS } from "../lib/credit-policy"
 import { getStudioProCreditCost } from "../lib/nano-banana-client"
 
 console.log("=".repeat(80))
@@ -23,10 +24,10 @@ if (!creatorStudio) {
   allTestsPassed = false
 } else {
   const priceCorrect = creatorStudio.priceInCents === 9700
-  const creditsCorrect = creatorStudio.credits === 200
+  const creditsCorrect = creatorStudio.credits === MONTHLY_MEMBERSHIP_CREDITS
   
   console.log(`   Price: $${creatorStudio.priceInCents / 100} (Expected: $97) - ${priceCorrect ? "✅" : "❌"}`)
-  console.log(`   Credits: ${creatorStudio.credits} (Expected: 200) - ${creditsCorrect ? "✅" : "❌"}`)
+  console.log(`   Credits: ${creatorStudio.credits} (Expected: ${MONTHLY_MEMBERSHIP_CREDITS}) - ${creditsCorrect ? "✅" : "❌"}`)
   console.log(`   Type: ${creatorStudio.type} - ✅`)
   
   if (!priceCorrect || !creditsCorrect) {
@@ -93,9 +94,9 @@ console.log()
 // Test 4: Verify Subscription Credits
 console.log("📦 TEST 4: Subscription Credit Grants")
 const subscriptionCredits = SUBSCRIPTION_CREDITS.sselfie_studio_membership
-const expectedCredits = 200
+const expectedCredits = MONTHLY_MEMBERSHIP_CREDITS
 
-console.log(`   Creator Studio: ${subscriptionCredits} credits/month (Expected: 200) - ${subscriptionCredits === expectedCredits ? "✅" : "❌"}`)
+console.log(`   Creator Studio: ${subscriptionCredits} credits/month (Expected: ${expectedCredits}) - ${subscriptionCredits === expectedCredits ? "✅" : "❌"}`)
 
 if (subscriptionCredits !== expectedCredits) {
   allTestsPassed = false
@@ -109,12 +110,12 @@ const imageCost = CREDIT_COSTS.IMAGE
 const animationCost = CREDIT_COSTS.ANIMATION
 const proModeCost = getStudioProCreditCost('2K')
 
-console.log(`   Training: ${trainingCost} credits (Expected: 25) - ${trainingCost === 25 ? "✅" : "❌"}`)
+console.log(`   Training: ${trainingCost} credits (Expected: 20) - ${trainingCost === 20 ? "✅" : "❌"}`)
 console.log(`   Classic Mode: ${imageCost} credit (Expected: 1) - ${imageCost === 1 ? "✅" : "❌"}`)
 console.log(`   Pro Mode (2K): ${proModeCost} credits (Expected: 2) - ${proModeCost === 2 ? "✅" : "❌"}`)
-console.log(`   Animation: ${animationCost} credits (Expected: 3) - ${animationCost === 3 ? "✅" : "❌"}`)
+console.log(`   Animation: ${animationCost} credits (Expected: 10) - ${animationCost === 10 ? "✅" : "❌"}`)
 
-if (trainingCost !== 25 || imageCost !== 1 || proModeCost !== 2 || animationCost !== 3) {
+if (trainingCost !== 20 || imageCost !== 1 || proModeCost !== 2 || animationCost !== 10) {
   allTestsPassed = false
 }
 console.log()
@@ -188,10 +189,10 @@ if (oldCredits150) {
 
 // Check subscription credits
 if (SUBSCRIPTION_CREDITS.sselfie_studio_membership === 150) {
-  console.error(`   ❌ Subscription credits still set to 150 (should be 200)`)
+  console.error(`   ❌ Subscription credits still set to 150 (should be ${MONTHLY_MEMBERSHIP_CREDITS})`)
   allTestsPassed = false
 } else {
-  console.log(`   ✅ Subscription credits correctly set to 200`)
+  console.log(`   ✅ Subscription credits correctly set to ${MONTHLY_MEMBERSHIP_CREDITS}`)
 }
 console.log()
 
