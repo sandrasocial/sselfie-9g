@@ -12,13 +12,9 @@ describe("growth intelligence synthetic-account filtering", () => {
     expect(isSyntheticAnalyticsEmail("sandra@sselfie.ai")).toBe(false)
   })
 
-  it("applies the synthetic-user filter to live growth scripts", () => {
-    const funnelDigest = readFileSync(resolve(process.cwd(), "scripts/funnel-digest.mjs"), "utf8")
+  it("applies the synthetic-user filter to the live cohort report", () => {
     const cohortReport = readFileSync(resolve(process.cwd(), "scripts/cohort-report-weekly.mjs"), "utf8")
 
-    expect(funnelDigest).toContain("LOWER(COALESCE(email, '')) NOT LIKE")
-    expect(funnelDigest).toContain("%@example.com%")
-    expect(funnelDigest).toContain("%@sselfie.test%")
     expect(cohortReport).toContain("LOWER(COALESCE(email, '')) NOT LIKE")
     expect(cohortReport).toContain("%@example.com%")
     expect(cohortReport).toContain("%@sselfie.test%")

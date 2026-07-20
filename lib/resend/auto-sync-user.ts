@@ -8,7 +8,7 @@ import { getResendApiKey, hasResendApiKey } from "@/lib/resend/api-key"
 
 // Canonical audience ID. RESEND_AUDIENCE_ID env var takes precedence so local/staging
 // environments can override it, but must match the production value in Vercel:
-// 3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd (confirmed in CLAUDE.md)
+// 3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd (verify in Resend before changing)
 const AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID || "3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd"
 let resendClient: Resend | null = null
 

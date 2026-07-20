@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   description: "Download your SSELFIE Lightroom presets and setup guide.",
 }
 
-// DESIGN + COPY owned by Claude (see tasks/PRESETS-PRODUCT-01.md). Data-fetching/logic owned by Codex - preserved as-is below.
+// Paid access surface. Preserve entitlement and download behavior for existing buyers.
 const OBSIDIAN = "#0A0A0A"
 const PORCELAIN = "#FFFFFF"
 const CREAM = "#F5F5F5"

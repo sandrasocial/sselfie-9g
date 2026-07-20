@@ -56,10 +56,13 @@ The monthly rhythm:
 | Dunning / Smart Retries / recovery emails | Built on `codex/campaign-outcome-held`, goes live after event close |
 | Likeness memory pipeline | LIVE both pipelines; Sandra's own notes still unseeded; member seeding via Maya works |
 
-## New pieces (specced 2026-07-15)
+## Historical ideas recorded 2026-07-15
 
-- `tasks/MEMBER-RECAP-01-your-month.md` — the monthly member recap (email + in-app card).
-- `tasks/MAYA-MEMORY-MERGE-01-campaign-intake.md` — campaign intake → member brand memory.
+- A monthly member recap through email and an in-app card.
+- Campaign intake feeding useful member brand memory.
+
+These are not active implementation tasks. Verify current code and live behavior before treating
+either idea as planned work.
 
 ## The one decision only Sandra can make: PAUSE instead of cancel
 

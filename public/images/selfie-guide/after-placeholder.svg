@@ -10,7 +10,7 @@
   <text x="180" y="340" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="300" text-anchor="middle" fill="rgba(240,237,232,0.6)">after Lightroom 5-step edit</text>
 
   <!-- Instruction note -->
-  <text x="180" y="380" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" letter-spacing="0.08em" text-anchor="middle" fill="rgba(195,190,182,0.35)">See tasks/SELFIE-GUIDE-02-phase-b.md</text>
+  <text x="180" y="380" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" letter-spacing="0.08em" text-anchor="middle" fill="rgba(195,190,182,0.35)">ADD APPROVED AFTER PHOTO</text>
   <text x="180" y="396" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" letter-spacing="0.08em" text-anchor="middle" fill="rgba(195,190,182,0.35)">"B2. Real before/after pair in Part 4"</text>
 
   <!-- SSELFIE wordmark -->

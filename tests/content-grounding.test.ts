@@ -90,20 +90,19 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     expect(corePersonality).toContain("purposeMessagingBlock()")
   })
 
-  it("documents the purpose lock everywhere future agents start", () => {
+  it("documents the purpose lock in the canonical brand sources", () => {
     const lockPath = "docs/brand/SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md"
     const lock = read(lockPath)
     const sourceOfTruth = read("docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md")
-    const claude = read("CLAUDE.md")
-    const codex = read("docs/CODEX_CONTEXT.md")
+    const repositoryInstructions = read("AGENTS.md")
 
     expect(lock).toContain("SSELFIE is Sandra's category")
     expect(lock).toContain("This was never just about selfies")
     expect(lock).toContain("Entry products are bridges")
     expect(lock).toContain("technology-enabled reinvention")
     expect(sourceOfTruth).toContain(lockPath)
-    expect(claude).toContain(lockPath)
-    expect(codex).toContain(lockPath)
+    expect(repositoryInstructions).toContain("docs/brand/SSELFIE_BRAND_CONSTITUTION.md")
+    expect(repositoryInstructions).toContain("docs/brand/SANDRA_VOICE_OS_2026-07-16.md")
   })
 
   it("keeps generated grounding in sync with canonical docs", () => {

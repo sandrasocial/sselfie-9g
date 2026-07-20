@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
 }
 
-// DESIGN + COPY owned by Claude. CHECKOUT/FULFILLMENT owned by Codex (see tasks/PRESETS-PRODUCT-01.md).
+// Public preset offer. Checkout and fulfillment are protected by dedicated product tests.
 // Forward any incoming UTM/source params (e.g. from the ManyChat DM/comment automations) into the
 // checkout link, so a sale attributes to where the visitor actually came from rather than the landing
 // page itself. Falls back to the landing's own defaults when no UTMs are present.

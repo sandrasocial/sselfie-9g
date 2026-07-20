@@ -211,8 +211,8 @@ asked for an audit.
 
 Every AI agent working on SSELFIE must:
 
-1. Use this Constitution for purpose and ethics, the Company Kernel for current business state, and
-   `docs/business/SANDRA_AI_TEAM_BRAIN_PACK_2026-07-16.md` for how agents work with Sandra.
+1. Use this Constitution for purpose and ethics, the current conversation for Sandra's direction,
+   and live sources for changing business facts.
 2. Load the Voice OS and current conversation evidence when writing in Sandra's name. Load specialist
    contracts only when the task actually touches them.
 3. Use current Stripe or `stripe_payments` truth for money. Never infer revenue from behavior events.
@@ -235,7 +235,7 @@ When instructions disagree:
 3. `SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md` controls offer temperature and category execution.
 4. `NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` controls identity safety and AI trust.
 5. `SSELFIE_DESIGN_SYSTEM.md` controls visual design.
-6. `CLAUDE.md` controls live business state and current priorities.
-7. Live code and verified production data control technical and operational facts.
+6. Sandra's explicit current direction controls current priorities.
+7. Live code, Stripe, provider data, and verified production behavior control changing facts.
 
 Old prompts, archived documents, and remembered conversations never override these sources.

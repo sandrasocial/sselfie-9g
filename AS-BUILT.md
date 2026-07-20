@@ -46,7 +46,8 @@ hosts no business automations and no long-lived automation worktree is required.
 
 ## Business metrics
 
-Refresh live metrics from **Stripe / dashboard / `CLAUDE.md`** — do not use numbers from this file unless you re-verify them yourself.
+Refresh live metrics from **Stripe, the database, provider dashboards, and production**. Do not use
+numbers from this file unless you re-verify them yourself.
 
 ## Security baseline (verified 2026-07-12)
 

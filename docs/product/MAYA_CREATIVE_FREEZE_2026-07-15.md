@@ -89,5 +89,5 @@ even when nothing in the repo changed.
 
 All of this can proceed under the freeze because it lives in ROUTING and CONTEXT (what Maya
 already knows: vault, memory, calendar, past picks), not in prompt text or models. Every step
-that would touch frozen surfaces waits for the golden regression suite
-(`tasks/MAYA-GOLDEN-01-regression-suite.md`) so quality changes are measured, never felt.
+that would touch frozen surfaces requires the golden regression tests, including
+`tests/maya-prompt-framework-freeze.test.ts`, so quality changes are measured, never felt.

@@ -16,7 +16,7 @@ export const MEMBERSHIP_WELCOME_SUBJECTS: Record<MembershipWelcomeVariant, strin
   existing: "Your SUITE is open. Maya's ready when you are",
 }
 
-// Copy approved by Sandra 2026-06-11 (tasks/BRIDGE-01-suite-bridge.md, Appendix 1.1 + 1.2).
+// Customer-facing copy approved by Sandra on 2026-06-11.
 export function generateMembershipWelcomeEmail(params: MembershipWelcomeParams): {
   html: string
   text: string

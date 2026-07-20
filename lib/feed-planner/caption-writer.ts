@@ -50,7 +50,7 @@ const PROMPT_LEAK_MARKERS: RegExp[] = [
   /output[:\s]only the caption/i,
 ]
 
-// Sandra's locked banned words (CLAUDE.md voice rules). A caption containing any of
+// Sandra's locked banned words from the canonical voice sources. A caption containing any of
 // these must never ship: it gets flagged for a rewrite pass.
 const SANDRA_BANNED_WORD_PATTERNS: RegExp[] = [
   /\bleverage\b/i,

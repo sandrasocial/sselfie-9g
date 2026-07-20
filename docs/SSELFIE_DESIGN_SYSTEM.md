@@ -230,8 +230,8 @@ Active:
 - `docs/SSELFIE_DESIGN_SYSTEM.md`
 - `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
 - `docs/brand/source/2026-06-27/`
-- `CLAUDE.md` for business context and Sandra preferences
-- `docs/CODEX_CONTEXT.md` for implementation context
+- `docs/brand/SANDRA_VOICE_OS_2026-07-16.md`
+- Live UI and current code for implementation truth
 
 Legacy reference:
 

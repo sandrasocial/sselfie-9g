@@ -4,7 +4,7 @@
 -- "Plan" Maya) and creates chats with it, but no migration ever added it to the DB
 -- constraint. Postgres rejected every maya_plan chat (error 23514), crashing the legacy
 -- /studio Maya screen on load for members (e.g. the "PLAN THIS WEEK" surface). This is the
--- exact "new chat_type without a migration" trap CLAUDE.md warns about.
+-- exact "new chat_type without a migration" trap protected by the repository release rules.
 --
 -- Safety: purely ADDITIVE. Live distinct values were maya/pro/videos/feed_planner/
 -- prompt_builder/pro-photoshoot only (verified 2026-06-15) — no existing row violates the

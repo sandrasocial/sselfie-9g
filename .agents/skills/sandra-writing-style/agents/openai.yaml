@@ -1,6 +1,0 @@
-interface:
-  display_name: "Sandra Voice OS"
-  short_description: "Write in Sandra's real channel-specific voice"
-  default_prompt: "Use $sandra-writing-style to give one warm, specific, truthful answer or draft. Apply the smallest truth and voice check the risk requires."
-policy:
-  allow_implicit_invocation: true

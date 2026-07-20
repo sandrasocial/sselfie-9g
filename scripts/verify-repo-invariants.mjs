@@ -2,7 +2,7 @@
 /**
  * Mechanical identity check for sselfie-9g (mothership).
  * Run: node scripts/verify-repo-invariants.mjs
- * This repo does not share lib/maya/ with agents or v2.
+ * This repo does not share lib/maya/ with any other SSELFIE repository.
  */
 
 import fs from "fs";
@@ -30,19 +30,47 @@ if (!fs.existsSync(path.join(root, "lib", "maya"))) {
   failed = true;
 }
 
-const voiceOsPath = "docs/brand/SANDRA_VOICE_OS_2026-07-16.md";
-const voiceSkillPath = ".agents/skills/sandra-writing-style/SKILL.md";
+const requiredPaths = [
+  "AGENTS.md",
+  "AS-BUILT.md",
+  "docs/brand/SSELFIE_BRAND_CONSTITUTION.md",
+  "docs/brand/SANDRA_VOICE_OS_2026-07-16.md",
+  "docs/product/MAYA_CREATIVE_FREEZE_2026-07-15.md",
+];
 
-for (const requiredPath of [voiceOsPath, voiceSkillPath]) {
+for (const requiredPath of requiredPaths) {
   if (!fs.existsSync(path.join(root, requiredPath))) {
     console.error(`FAIL: expected ${requiredPath} to exist`);
     failed = true;
   }
 }
 
-for (const authorityPath of ["AGENTS.md", "CLAUDE.md"]) {
-  if (!read(authorityPath).includes("SANDRA_VOICE_OS_2026-07-16.md")) {
-    console.error(`FAIL: expected ${authorityPath} to load the Sandra Voice OS`);
+const forbiddenRepoSystems = [
+  ".agents",
+  ".claude",
+  ".codex",
+  ".serena",
+  "skills",
+  "tasks",
+  "CLAUDE.md",
+  "SYNC.md",
+];
+
+for (const forbiddenPath of forbiddenRepoSystems) {
+  if (fs.existsSync(path.join(root, forbiddenPath))) {
+    console.error(`FAIL: repo-hosted AI orchestration is forbidden: ${forbiddenPath}`);
+    failed = true;
+  }
+}
+
+const repositoryInstructions = read("AGENTS.md");
+for (const requiredInstruction of [
+  "Do not create repo task files",
+  "Do not open pull requests",
+  "docs/brand/SANDRA_VOICE_OS_2026-07-16.md",
+]) {
+  if (!repositoryInstructions.includes(requiredInstruction)) {
+    console.error(`FAIL: AGENTS.md is missing: ${requiredInstruction}`);
     failed = true;
   }
 }

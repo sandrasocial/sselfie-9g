@@ -77,3 +77,13 @@ verify-cust-*.png
 
 # Sandra's daily-email real-life photo pool (local only — personal photos, not app data)
 content/daily-email-photos/
+# AI work orchestration belongs to the native desktop applications, never this repository.
+/.agents/
+/.claude/
+/.codex/
+/.serena/
+/skills/
+/tasks/
+/.impeccable.md
+/CLAUDE.md
+/SYNC.md

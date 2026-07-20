@@ -4,19 +4,18 @@
 // Brand law: docs/brand/SSELFIE_BRAND_CONSTITUTION.md
 // Detailed voice: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md
 // Run: node scripts/check-voice-rules.mjs
-import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
 
 const ROOT = process.cwd()
 const SCAN_DIRS = ["lib/email/templates", "app", "components"]
-const OUTPUT_DIR = join(ROOT, "output", "automation")
 
 // Product/content files where em-dashes are AI-generation prompt text, not Sandra's copy.
 const ALLOWLIST = [
   "lib/ai-prompts/prompt-data.ts",
   // User-intent detection regex (reads what MEMBERS type, never rendered as copy):
   "app/api/maya/chat/route.ts",
-  // Protected trees (separate cleanup later — see CLAUDE.md Dead Code Map):
+  // Protected legacy product trees; review separately before changing customer access:
   "app/feed-planner/",
   "app/api/feed-planner/",
   "app/api/feed/",
@@ -85,46 +84,6 @@ function shouldSkipRule(line, label) {
 
 const violations = []
 
-function nowStamp(date = new Date()) {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
-  const hh = String(date.getHours()).padStart(2, "0")
-  const mm = String(date.getMinutes()).padStart(2, "0")
-  const ss = String(date.getSeconds()).padStart(2, "0")
-  return `${y}${m}${d}-${hh}${mm}${ss}`
-}
-
-function writeVoiceReport() {
-  mkdirSync(OUTPUT_DIR, { recursive: true })
-  const reportPath = join(OUTPUT_DIR, `voice-rules-check-${nowStamp()}.md`)
-  const lines = [
-    "# SSELFIE Voice Rules Check",
-    "",
-    `Generated: ${new Date().toISOString()}`,
-    "",
-    "## Scope",
-    `- Directories: ${SCAN_DIRS.join(", ")}`,
-    "- Brand law: docs/brand/SSELFIE_BRAND_CONSTITUTION.md",
-    "- Detailed voice: docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md",
-    "",
-    "## Summary",
-    `- Violations: ${violations.length}`,
-    "",
-    "## Findings",
-  ]
-
-  if (violations.length === 0) {
-    lines.push("- No voice violations detected.")
-  } else {
-    for (const violation of violations.slice(0, 220)) lines.push(`- ${violation}`)
-    if (violations.length > 220) lines.push(`- ... ${violations.length - 220} additional findings omitted`)
-  }
-
-  writeFileSync(reportPath, `${lines.join("\n")}\n`, "utf8")
-  return reportPath
-}
-
 for (const dir of SCAN_DIRS) {
   let entries
   try {
@@ -152,16 +111,12 @@ for (const dir of SCAN_DIRS) {
 }
 
 if (violations.length > 0) {
-  const reportPath = writeVoiceReport()
   console.error(`Voice rules check FAILED — ${violations.length} violation(s):\n`)
   for (const v of violations) console.error("  " + v)
-  console.error(`\nReport: ${reportPath}`)
   console.error(
     "\nRules: no em-dashes in copy, no banned language. Start with docs/brand/SSELFIE_BRAND_CONSTITUTION.md.",
   )
   process.exit(1)
 }
 
-const reportPath = writeVoiceReport()
-console.log(`[voice-rules-check] wrote ${reportPath}`)
 console.log("Voice rules check passed.")

@@ -3,7 +3,7 @@ import { buildRevenueEmailLink } from "./revenue-links"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
 
 // BRIDGE-01 Phase D - SUITE trial lifecycle emails.
-// Copy approved by Sandra 2026-06-11 (tasks/BRIDGE-01-suite-bridge.md, Appendix 1.4-1.6).
+// Customer-facing copy approved by Sandra on 2026-06-11.
 
 export interface TrialUnlockParams {
   customerName?: string | null

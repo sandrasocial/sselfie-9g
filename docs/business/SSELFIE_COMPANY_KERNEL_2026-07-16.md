@@ -8,7 +8,8 @@ Owner: Sandra
 
 This file controls current company state, revenue engines, offer status, buyer channels, and
 business decision logic. `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` controls purpose and ethics.
-`docs/business/SANDRA_AI_TEAM_BRAIN_PACK_2026-07-16.md` controls how agents work with Sandra.
+The native Codex/ChatGPT application controls work planning and execution; changing facts must be
+verified from live systems.
 
 Historical files are evidence. They do not silently reactivate an old offer, funnel, campaign, or
 operating model.

@@ -333,8 +333,7 @@ async function normalizeForOpenAI(buffer: Buffer): Promise<Buffer> {
 
 // ── Prompt writing ──────────────────────────────────────────────────────────────
 
-// Condensed from .agents/skills/vault-prompt-writer/SKILL.md (the committed skill is the
-// source of truth — keep this block aligned with it).
+// Prompt anatomy retained directly in product code after the old repo-local authoring skill was removed.
 function buildVaultAnatomy(totalShots = DEFAULT_SHOTS_PER_SHOOT): string {
   return `Each shot prompt must follow the SSELFIE vault anatomy, in this exact order, each section a labeled paragraph:
 1. Series header: "Create image N of a ${totalShots}-part [collection name] editorial photoshoot." (shot 2+ : "Create image N of the same [collection name] editorial photoshoot.")

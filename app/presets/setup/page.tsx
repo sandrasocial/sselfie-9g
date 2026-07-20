@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: "Install your SSELFIE presets in about two minutes. Phone and desktop, step by step.",
 }
 
-// DESIGN + COPY owned by Claude (see tasks/PRESETS-PRODUCT-01.md). Codex: wire the PDF download URL + confirm the video.
+// Customer setup guide. Keep the download and walkthrough verified against live fulfillment.
 // VIDEO: Sandra's preset-application walkthrough, re-edited 2026-06-17 (old website + Drive intro removed, new branded
 // title-card intro prepended via Remotion). Hosted on Vercel Blob.
 const PHONE_VIDEO_URL = "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/presets/applying-your-presets.mp4"

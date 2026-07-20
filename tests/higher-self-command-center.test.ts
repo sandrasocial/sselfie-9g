@@ -147,11 +147,9 @@ describe("Higher Self Command Center", () => {
     expect(center.systemMove.id).toBe("tighten-buying-moment")
   })
 
-  it("is wired into the admin home and documented as the daily operating system", () => {
+  it("is wired into the admin home as the live daily operating surface", () => {
     const homeReport = read("lib/admin/home-report.ts")
     const adminPage = read("app/admin/page.tsx")
-    const claude = read("CLAUDE.md")
-    const codex = read("docs/CODEX_CONTEXT.md")
     const operatingSystem = read("docs/business/SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md")
 
     expect(homeReport).toContain("buildHigherSelfCommandCenter")
@@ -159,8 +157,6 @@ describe("Higher Self Command Center", () => {
     expect(homeReport).toContain("commandCenter:")
     expect(adminPage).toContain("Higher Self Command Center")
     expect(adminPage).toContain("CEO rule today")
-    expect(claude).toContain("SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md")
-    expect(codex).toContain("SSELFIE_HIGHER_SELF_OPERATING_SYSTEM_2026-07-07.md")
     expect(operatingSystem).toContain("Do the money move before opening a new build thread")
   })
 })

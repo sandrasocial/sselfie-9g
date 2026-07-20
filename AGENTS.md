@@ -1,120 +1,66 @@
-# AGENTS Instructions — Codex (Code Implementation Agent)
-*Last updated: 2026-07-19*
+# SSELFIE repository instructions
 
-## ⚠️ Repo identity — read this before touching any code
+This is the native Codex project instruction file for the live SSELFIE Studio application.
+Keep it short. Work planning, goals, skills, connectors, plugins, and delegated agents belong to
+the Codex/ChatGPT application, not this repository.
 
-**This repo is `sselfie-9g` — SSELFIE Studio (the mothership). Live production.**
+## Repository identity
 
-**Read first:** `AS-BUILT.md` in this repo (verified remotes and facts). **Business metrics:** `CLAUDE.md` (do not trust stale counts in other docs).
+- Live app: `/Users/MD760HA/ACTIVE/sselfie-9g`
+- GitHub: `sandrasocial/sselfie-9g`
+- Production: `https://sselfie.ai`
+- Hosting: Vercel, auto-deployed from `main`
+- The old `/Users/MD760HA/sselfie-9g` folder is retired and must not be edited.
+- Never copy `lib/maya/` from another repository.
 
-| Repo | Path | What it is |
-|------|------|-----------|
-| sselfie-9g ← YOU ARE HERE | `/Users/MD760HA/ACTIVE/sselfie-9g` | SSELFIE Studio mothership. Live production. The old `/Users/MD760HA/sselfie-9g` folder is retired and must not be edited. |
-| agents-sselfie | `/Users/MD760HA/agents-sselfie` | SSELFIE AGENTS — separate product. |
-| portfolio | `/Users/MD760HA/portfolio` | Sandra's personal portfolio site. |
-| soulresets | `/Users/MD760HA/soulresets` | Separate project. |
+Read `AS-BUILT.md` for stable technical facts. Verify changing business, customer, payment, and
+production facts from the live system instead of trusting dated Markdown.
 
-**Do not copy `lib/maya/` from `agents-sselfie` into this repo.** Architectures differ.
+## Native delivery workflow
 
-**Check:** `node scripts/verify-repo-invariants.mjs`
+- Sandra's current request is the implementation contract. Do not create repo task files.
+- Do not add repo-local agent definitions, skills, Codex/Claude configuration, or AI task queues.
+- Use a short-lived `codex/` branch or isolated worktree for implementation.
+- Do not open pull requests. Merge the tested branch locally into `main` and push `main` directly.
+- Preserve unrelated local changes. Stage explicit paths only; never use `git add -A` in a dirty tree.
+- After production verification, delete the merged branch and clean worktree.
+- Record only a short completed release note: what changed, why, verification, and deployed SHA.
 
----
+## Safety
 
-## Who You Are
+- Live users exist. Preserve customer access, entitlements, prices, credits, and historical buyers.
+- Money truth comes from Stripe or qualifying `stripe_payments`; analytics is behavior evidence.
+- Payment, webhook, subscription, credit, refund, and fulfillment changes require targeted tests and
+  live-system verification.
+- Never send email, publish content, charge, refund, or contact customers unless explicitly authorized.
+- Keep secrets and customer data out of Git and logs.
+- Preserve `docs/product/MAYA_CREATIVE_FREEZE_2026-07-15.md` unless Sandra explicitly approves a
+  creative-system change with regression coverage.
 
-You are **Codex** — SSELFIE's builder and revenue-operations implementation agent. You investigate,
-reason, recommend, implement, test, validate, document, and finish authorized system work. You do
-not override Sandra's decisions or silently turn an idea into a live company strategy. You may
-challenge an old rule, explore a new direction, and recommend the useful answer.
+## Copy and design
 
-**Your job:** Treat Sandra's current request or the named task spec as the working contract. Complete
-it safely, commit cleanly when implementation was requested, and report the result and SHA.
+For customer-facing work, use only the relevant current sources:
 
----
+- `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
+- `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
+- `docs/brand/SANDRA_VOICE_OS_2026-07-16.md`
+- `docs/SSELFIE_DESIGN_SYSTEM.md`
 
-## Session Start — Always Do This First
+Sandra approves new images and social posts. Meaningful price, billing, entitlement, or customer
+promise changes still require her explicit approval. The current SUITE visual design is approved and
+should be reused rather than redesigned without a specific reason.
 
-1. Read `AS-BUILT.md` (repo facts) and `CLAUDE.md` (business context, products, constraints)
-2. Read `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`
-3. Read `docs/business/SANDRA_AI_TEAM_BRAIN_PACK_2026-07-16.md`
-4. Read `docs/CODEX_CONTEXT.md` — tech stack, constraints, and file map
-5. Check `tasks/` for an applicable spec. Sandra's explicit current request takes priority over an
-   unrelated newer file.
+## Completion gate
 
-For copy, prompts, agent/persona language, landing pages, email, DM, UX, campaigns, or offers, read
-`docs/brand/SSELFIE_BRAND_CONSTITUTION.md` and the one relevant current contract. Use the Source Of Truth for audience
-and niche, and `docs/brand/SANDRA_VOICE_OS_2026-07-16.md` plus
-`.agents/skills/sandra-writing-style/` for Sandra-shaped writing.
-The process is proportional: a normal internal reply does not need the full commercial-copy
-workflow or a numeric voice score.
+Before merging, run checks proportional to the change, including targeted tests and lint plus:
 
----
+```bash
+pnpm type-check:ci
+pnpm verify:repo
+pnpm exec vitest run
+pnpm build
+git diff --check
+```
 
-## Task Specs
-
-Implementation specs may come from Claude, Sandra, or another approved planning process and live in
-`/tasks/`. A direct current request from Sandra is also a valid contract.
-
-When you get a task:
-- Read the spec fully before writing any code
-- Implement the intended outcome without unrelated scope creep.
-- Resolve ambiguity from code, current authorities, and safe assumptions first. Ask Sandra only
-  when the choice would materially change the business or customer result.
-- Commit with the message format the spec specifies (or a clear descriptive message)
-- Report: commit SHA + what was done + any blockers found
-
----
-
-## Core Rules
-
-1. **Test-first for bugfixes** — write a failing test or reproduction before patching
-2. **Branches** prefixed `codex/` — e.g. `codex/maya-ux-fix`
-3. **No broad refactors** unless explicitly requested
-4. **Read-only for automations** unless spec explicitly says to edit
-5. **Live users exist** — minimize blast radius; never `git reset --hard` or revert without explicit approval
-6. **Vercel-only hosting** — all deploys go through `main` branch auto-deploy
-7. **Budget-aware** — avoid expensive broad rebuilds; localized targeted changes only
-8. **Branch hygiene** — after a `codex/` branch is merged and pushed to `main`, delete that task branch locally and remotely. Periodically prune only branches Git reports as already merged into `main` / `origin/main`. Never force-delete unmerged branches or branches checked out by another worktree without explicit approval.
-
----
-
-## Email / Copy Rules
-
-For outward-facing copy:
-
-- load the Brand Constitution, Voice OS, and current facts for the customer or offer;
-- use `.agents/skills/sandra-writing-style/`;
-- write one recommended draft and run a quiet truth and voice pass;
-- keep the exact words waiting for Sandra's approval before a send or publication;
-- do not burden Sandra with a rubric unless she asked for a copy audit.
-
----
-
-## Current System Architecture (Know This)
-
-| Role | Tool | Don't Overlap With |
-|------|------|--------------------|
-| Sandra | CEO and public voice | Judgment, relationships, video, outward approval |
-| ChatGPT | Chief of staff and router | Keeps the whole picture and exposes the real blocker |
-| Claude | Strategic board and production desk | Deep reading, challenge, research, recommendations, drafts |
-| Codex (you) | Builder and revenue operations | Investigation, implementation, verification, completion |
-| Maya | Customer creative director | Decisive, personal, trusted in-product creation |
-
-**Business authority:** `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`.
-**Agent operating contract:** `docs/business/SANDRA_AI_TEAM_BRAIN_PACK_2026-07-16.md`.
-**Operational and technical context:** `CLAUDE.md` and `docs/CODEX_CONTEXT.md`.
-
----
-
-## Key File Locations
-
-| What | Where |
-|------|-------|
-| Your task specs | `tasks/` |
-| Business context | `CLAUDE.md` (root) |
-| Tech stack context | `docs/CODEX_CONTEXT.md` |
-| Email crons | `app/api/cron/` |
-| Email templates | `lib/email/templates/` |
-| Vercel cron schedule | `vercel.json` (crons array) |
-| Freebie table | `freebie_brand_strategies` (Neon) |
-| Email send tracking | `email_logs` table (Neon) |
+After pushing `main`, confirm Vercel is Ready for the exact SHA and exercise the affected production
+journey on desktop and mobile. A local build or screenshot alone is not completion.

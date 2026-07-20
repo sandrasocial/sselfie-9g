@@ -10,7 +10,7 @@
   <text x="180" y="340" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="300" text-anchor="middle" fill="rgba(240,237,232,0.5)">selfie in window light</text>
 
   <!-- Instruction note -->
-  <text x="180" y="380" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" letter-spacing="0.08em" text-anchor="middle" fill="rgba(195,190,182,0.3)">See tasks/SELFIE-GUIDE-02-phase-b.md</text>
+  <text x="180" y="380" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" letter-spacing="0.08em" text-anchor="middle" fill="rgba(195,190,182,0.3)">ADD APPROVED BEFORE PHOTO</text>
   <text x="180" y="396" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" letter-spacing="0.08em" text-anchor="middle" fill="rgba(195,190,182,0.3)">"B2. Real before/after pair in Part 4"</text>
 
   <!-- SSELFIE wordmark -->
