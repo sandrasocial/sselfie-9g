@@ -84,3 +84,24 @@ pointer to the existing €97 EUR price; existing subscriptions were not changed
 Production proof: commit `5705e969`, Vercel deployment `dpl_cYSVo6yZ1cBDrettgvSCkDj2Lyu8`, clean
 Turbopack build, five public route smoke checks, 19 focused tests, CI typecheck, repository invariants,
 voice rules, forged-offer fallback, and live Stripe verification of €49 once then €97 monthly.
+
+## 2026-07-20 — Membership credit cost controls
+
+Changed SUITE membership from an additive 200-credit grant to a 100-credit reset each paid membership
+month. Unused included credits no longer accumulate. Unused separately purchased top-up credits remain
+available. Monthly resets now require a verified billing reference and are idempotent under concurrent
+webhooks. Annual members receive the same monthly reset cadence from their verified annual payment.
+
+Moved the remaining legacy photoshoot and Calendar feed-image paths to reserve credits before calling
+the paid image provider. Insufficient balances now stop before provider cost, and failed provider starts
+refund the reservation. Retired the old additive cron and manual backfill paths. The separate One Selfie
+Visibility Bundle keeps its promised fixed 200-credit pass.
+
+Production proof: feature commit `7e71dcc3`, Vercel deployment
+`dpl_EP4xegbvhFZ2mTA4wccPvFVMuV9A`, exact Git commit verified in the deployment log, CI typecheck,
+repository invariants, changed-file lint with zero errors, focused credit/payment tests, and a successful
+webpack production build. Live desktop and 390px mobile QA confirmed the 100-credit promise, no overflow,
+and zero browser console errors. Nine payment-verified active memberships were reset from 7,999 credits
+to 1,220 total, including all 320 unused purchased top-up credits. Nine matching production ledger entries
+were verified. The broad test run passed 350 files; unrelated existing sandbox, timing, and shared-mock
+failures were isolated from this release, while the full credit-control boundary suite passed cleanly.
