@@ -1,5 +1,21 @@
 # Completed releases
 
+## 2026-07-20 — Prompt Vault buyer path completion
+
+Completed the existing Vault-to-SUITE path without adding a new product or a new automated email.
+The SUITE offer now appears only after a buyer copies her first Vault prompt. That first useful
+action is measured separately from offer views and clicks. Subscription payment rows now retain the
+original Vault checkout attribution and distinguish first payments from renewals.
+
+Removed the unreachable retired $197 Day 3 email code and its stale admin reporting. Historical
+database records were preserved. The active buyer email schedule remains unchanged.
+
+Production proof: feature commit `b88ef789`, Vercel deployment
+`dpl_58BYEjhT8uCGqSacgyEFy7psXPcr`, 1,587 tests passed with 5 intentionally skipped, CI typecheck,
+production build, repository invariants, voice rules, desktop and 390px mobile buyer-flow checks,
+and live non-transactional verification of the €49 first-month SUITE checkout and $39 Presets Bundle
+downsell. No email was entered, no checkout session was created, and no payment was attempted.
+
 ## 2026-07-20 — Native Codex workflow cleanup
 
 Removed repo-hosted AI task queues, custom agents, duplicated skills, tool-specific configuration,
