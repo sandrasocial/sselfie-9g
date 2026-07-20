@@ -1,5 +1,24 @@
 # Completed releases
 
+## 2026-07-20 — Homepage commercial path
+
+Connected the public homepage to the existing commercial journey without adding a product. The
+current path is now Free AI Prompts to Prompt Vault to SSELFIE SUITE, with a real mobile navigation,
+the approved SUITE product walkthrough, and a clear choice between the one-time Vault and ongoing
+SUITE membership. Older generic homepage sections and stale navigation destinations were removed.
+
+Why: visitors can now understand the first useful step, see the current product, and reach the paid
+offers without guessing which SSELFIE page is current. Claude's separately approved Maya carousel
+copy contract was preserved and shipped in the same linear main history; its prompt source was not
+edited as part of the homepage release.
+
+Production proof: release commit `01f2d316`, Vercel deployment
+`dpl_FUf5Fh3igUhJfMakh53uiCCv9bkW`, CI typecheck, production build, repository invariants, voice
+rules, 1,586 passing tests with 5 intentionally skipped, and 37/37 isolated reruns for the six tests
+that timed out or leaked cleanup state under the full-suite load. Live desktop and 390px mobile QA
+confirmed the homepage, SUITE walkthrough, 48px mobile menu targets, zero horizontal overflow,
+working Prompt Vault and SUITE destinations, and zero browser console errors.
+
 ## 2026-07-20 — Prompt Vault buyer path completion
 
 Completed the existing Vault-to-SUITE path without adding a new product or a new automated email.
