@@ -98,7 +98,17 @@ const referenceImageStrategySchema = z.enum([
 ])
 
 const creativePlanOutputSchema = z.object({
-  title: z.string().describe("Slide/output title."),
+  title: z
+    .string()
+    .describe(
+      "The literal line baked onto this slide. Short finished copy in her voice. Never internal planning language: no 'Hook', 'CTA', 'The Turn', 'Slide 3'."
+    ),
+  body: z
+    .string()
+    .optional()
+    .describe(
+      "Optional exact supporting line baked under the title, spelled as it should render."
+    ),
   purpose: z.string().describe("Why this output exists in the creative arc."),
   visualConcept: z.string().describe("Specific visual concept for this output."),
   imagePromptDirection: z
@@ -170,8 +180,16 @@ const creativePlanSchema = z.object({
 const graphicSpec = z
   .object({
     role: z.enum(["hook", "value", "cta"]).optional(),
-    headline: z.string().optional(),
-    subline: z.string().optional(),
+    headline: z
+      .string()
+      .optional()
+      .describe(
+        "The exact words rendered on the image. Finished copy in her voice, never a beat label like 'Hook' or 'CTA'."
+      ),
+    subline: z
+      .string()
+      .optional()
+      .describe("The exact supporting line rendered under the headline, spelled as it should appear."),
     motionPrompt: z
       .string()
       .optional()
@@ -242,8 +260,17 @@ const graphicSpec = z
     slides: z
       .array(
         z.object({
-          heading: z.string(),
-          body: z.string().optional(),
+          heading: z
+            .string()
+            .describe(
+              "The EXACT words baked onto this slide as its headline. Finished copy in her voice. Never a beat label like 'Hook', 'CTA', 'The Turn', or 'Slide 3'."
+            ),
+          body: z
+            .string()
+            .optional()
+            .describe(
+              "The exact supporting line baked under the headline, spelled as it should render."
+            ),
           role: z.enum(["hook", "value", "cta"]).optional(),
           purpose: z.string().optional().describe("Why this slide exists in the carousel arc."),
           visualConcept: z

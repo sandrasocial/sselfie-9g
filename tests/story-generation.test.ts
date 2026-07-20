@@ -402,6 +402,25 @@ describe("chat route concept-turn headroom (app/api/app-v3/maya/chat)", () => {
   })
 })
 
+describe("persona carousel copy contract (lib/app-v3/maya/persona)", () => {
+  const persona = read("lib/app-v3/maya/persona.ts")
+
+  it("keeps the carousel tool payload compact (no mirrored slides duplication)", () => {
+    expect(persona).toContain(
+      "do NOT copy the outputs into brief.graphic.slides: the creativePlan outputs alone are enough"
+    )
+    expect(persona).not.toContain("mirror the Creative Plan output into brief.graphic.slides")
+  })
+
+  it("declares output titles and bodies as the literal baked slide copy", () => {
+    expect(persona).toContain("CAROUSEL COPY RULES")
+    expect(persona).toContain(
+      "Each creativePlan output title IS the exact line baked onto that slide"
+    )
+    expect(persona).toContain("must never appear in a title, heading, or body")
+  })
+})
+
 describe("persona story-sequence contract (lib/app-v3/maya/persona)", () => {
   const persona = read("lib/app-v3/maya/persona.ts")
 
@@ -475,6 +494,91 @@ describe("baked-slide structural label backstop (lib/app-v3/prompt-compiler)", (
     expect(stripStructuralHeading("The shift that changed my business")).toBe(
       "The shift that changed my business"
     )
+  })
+
+  it("strips the label variants that baked onto a live member carousel (2026-07-20)", () => {
+    expect(stripStructuralHeading("The Callout Hook")).toBe("")
+    expect(stripStructuralHeading("Soft CTA into the Membership")).toBe("")
+    expect(stripStructuralHeading("The Turn")).toBe("")
+    expect(stripStructuralHeading("The Big Reveal")).toBe("")
+    expect(stripStructuralHeading("Slide 3 of 7")).toBe("")
+    expect(stripStructuralHeading("The Turn: What If One Thing Actually Knew You?")).toBe(
+      "What If One Thing Actually Knew You?"
+    )
+    // Real copy that merely contains a beat word still passes untouched.
+    expect(stripStructuralHeading("The truth about pricing")).toBe("The truth about pricing")
+    expect(stripStructuralHeading("Turn your selfies into a brand")).toBe(
+      "Turn your selfies into a brand"
+    )
+  })
+
+  it("never bakes planning fields or beat labels on customer carousel slides", () => {
+    const brief: CreativeBrief = {
+      outfit: "black ribbed turtleneck, tailored trousers",
+      setting: "moody bedroom with an arched mirror",
+      mood: "honest, a little tired, then lighter",
+      pose: "sitting on the bed with her phone",
+      cameraSpec: "Leica Q3, 28mm f/1.7",
+      lighting: "low warm window light",
+      graphic: {
+        designSystem: "full-bleed-editorial",
+        creativePlan: {
+          mode: "carousel",
+          userIntent: "Tired of juggling five tools just to post once",
+          useCase: "trust",
+          audienceEmotion: "she feels seen, then relieved",
+          contentGoal: "build trust and invite the next step",
+          visualDirection: "one moody editorial bedroom world",
+          vaultStyleReferences: [],
+          referenceHandling: { identityStrategy: "selfie_identity_anchor" },
+          outputCount: 3,
+          outputs: [
+            {
+              title: "The Callout Hook",
+              body: "Tired of this hot mess?",
+              purpose: "call out the overwhelm",
+              visualConcept: "her on the bed, phone in hand",
+              imagePromptDirection: "same woman on the bed with her phone, moody light",
+              referenceImageStrategy: "selfie_identity_anchor",
+              reasonThisMatchesUserIntent: "names the pain",
+            },
+            {
+              title: "The Turn: What If One Thing Actually Knew You?",
+              purpose: "introduce the shift",
+              visualConcept: "her standing at the mirror",
+              imagePromptDirection: "same woman at the arched mirror",
+              referenceImageStrategy: "selfie_identity_anchor",
+              reasonThisMatchesUserIntent: "creates the turn",
+            },
+            {
+              title: "Soft CTA into the Membership",
+              body: "Soft CTA",
+              purpose: "soft CTA into the membership",
+              visualConcept: "her walking toward the light",
+              imagePromptDirection: "same woman walking toward the window light",
+              referenceImageStrategy: "selfie_identity_anchor",
+              reasonThisMatchesUserIntent: "invites the next step",
+            },
+          ],
+          validationRules: [],
+        } as NonNullable<CreativeBrief["graphic"]>["creativePlan"],
+      },
+    }
+
+    const slides = buildGraphicRedesignSlides(brief, "carousel", "Tired of the hot mess")
+    expect(slides.map(slide => slide.title)).toEqual([
+      "Tired of juggling five tools just to post once",
+      "What If One Thing Actually Knew You?",
+      "Save this one for later",
+    ])
+    // Outputs-only briefs (no mirrored slides array) carry the supporting line through the
+    // plan output's body, and body copy is label-sanitized exactly like headlines.
+    expect(slides[0].body).toBe("Tired of this hot mess?")
+    expect(slides[2].body).toBe("")
+    for (const slide of slides) {
+      expect(slide.title).not.toMatch(/\b(hook|cta|the turn|the truth|slide \d+)\b/i)
+      expect(slide.title).not.toBe(slide.purpose)
+    }
   })
 
   it("replaces pure story beat labels with usable story copy before building overlay specs", () => {

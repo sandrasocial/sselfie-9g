@@ -66,6 +66,9 @@ export interface ReferenceHandlingPlan {
 
 export interface CreativePlanOutput {
   title: string
+  /** Optional exact supporting line baked under the title (carousel slides). With this on
+   *  the plan output, carousels no longer mirror outputs into brief.graphic.slides. */
+  body?: string
   purpose: string
   visualConcept: string
   imagePromptDirection?: string

@@ -134,55 +134,36 @@ function carouselTopicFromBrief(brief: CreativeBrief, fallbackTitle?: string): s
   )
 }
 
-const STRUCTURAL_HEADING_LABELS = new Set([
-  "hook",
-  "the hook",
-  "opening",
-  "the opening",
-  "opener",
-  "setup",
-  "the setup",
-  "context",
-  "the context",
-  "tension",
-  "the tension",
-  "doubt",
-  "the doubt",
-  "problem",
-  "the problem",
-  "truth",
-  "the truth",
-  "shift",
-  "the shift",
-  "turning point",
-  "the turning point",
-  "realization",
-  "the realization",
-  "reveal",
-  "the reveal",
-  "desire",
-  "the desire",
-  "invitation",
-  "the invitation",
-  "cta",
-  "the cta",
-  "soft cta",
-  "the soft cta",
-  "call to action",
-  "the call to action",
-  "question",
-  "the question",
-  "poll",
-  "the poll",
-  "close",
-  "the close",
-  "closing",
-  "the closing",
-  "ending",
-  "the ending",
-  "outro",
-  "the outro",
-])
+// Adjective modifiers the model puts in front of a beat label ("Soft CTA", "The Callout
+// Hook", "Final CTA"). Deliberately small: each is a word that never starts real slide copy
+// when followed by one of the structural cores below.
+const STRUCTURAL_LABEL_MODIFIERS =
+  "callout|call out|call-out|soft|hard|big|final|main|first|last|opening|closing"
+
+// Beat/planning words that are structural when they are the WHOLE heading (with optional
+// "the" and modifiers). "The Turn" is a label; "The turn nobody saw coming" is real copy.
+const STRUCTURAL_LABEL_CORES =
+  "hook|opening|opener|setup|set up|context|intro|introduction|tension|doubt|problem|truth|shift|turn|turning point|realization|realisation|reveal|desire|invitation|invite|cta|call to action|question|poll|close|closer|closing|ending|outro|statement|promise|proof|payoff|takeaway|recap|transition|value"
+
+// These run on normalizedStructuralLabel output (lowercased, separators collapsed).
+const PURE_STRUCTURAL_HEADING_RE = new RegExp(
+  `^(?:the\\s+)?(?:(?:${STRUCTURAL_LABEL_MODIFIERS})\\s+){0,2}(?:${STRUCTURAL_LABEL_CORES})$`
+)
+
+const SLIDE_NUMBER_HEADING_RE = /^(?:slide|beat|frame|page|part)\s*\d+(?:\s*(?:of|\/)\s*\d+)?$/
+
+// "Soft CTA into the Membership" carries no separator, so no copy can be salvaged from it:
+// the whole heading is planning language pointed at a target, never a line a reader sees.
+const CTA_WITH_TAIL_RE = new RegExp(
+  `^(?:the\\s+)?(?:(?:${STRUCTURAL_LABEL_MODIFIERS})\\s+){0,2}(?:cta|call to action)\\s+(?:into|for|to|toward|towards|about|of|on|at|in)\\b`
+)
+
+// A label prefix in front of real copy ("Hook: your first line matters", "The Turn: what if
+// one thing actually knew you?"). The separator is required; the remainder is the copy.
+const STRUCTURAL_PREFIX_RE = new RegExp(
+  `^(?:the\\s+)?(?:(?:${STRUCTURAL_LABEL_MODIFIERS})\\s+){0,2}(?:${STRUCTURAL_LABEL_CORES})\\s*[:.\\-–—·]\\s*(.+)$`,
+  "i"
+)
 
 function normalizedStructuralLabel(value: string): string {
   return value
@@ -195,21 +176,24 @@ function normalizedStructuralLabel(value: string): string {
 function isPureStructuralHeading(value: string): boolean {
   const normalized = normalizedStructuralLabel(value)
   if (!normalized) return true
-  if (/^(slide|beat|frame)\s*\d+$/.test(normalized)) return true
-  return STRUCTURAL_HEADING_LABELS.has(normalized)
+  if (SLIDE_NUMBER_HEADING_RE.test(normalized)) return true
+  if (CTA_WITH_TAIL_RE.test(normalized)) return true
+  return PURE_STRUCTURAL_HEADING_RE.test(normalized)
 }
 
 /** Maya's internal beat labels must never reach a baked slide (live 2026-07-03: a paying
- *  member's story sequence rendered "Slide 1: The Hook" as the actual on-image headline).
- *  The persona now forbids planning language in titles; this is the mechanical backstop. */
+ *  member's story sequence rendered "Slide 1: The Hook" as the actual on-image headline;
+ *  live 2026-07-20: a member carousel baked "The Callout Hook", "The Turn: ..." and
+ *  "Soft CTA into the Membership" as slide headlines). The persona forbids planning
+ *  language in titles; this is the mechanical backstop. */
 export function stripStructuralHeading(value: string): string {
   let text = clean(value)
   if (!text) return ""
-  text = text.replace(/^(?:slide|beat|frame)\s*\d+\s*[:.\-–—]?\s*/i, "").trim()
-  const prefixed = text.match(
-    /^(?:the\s+)?(hook|opening|opener|setup|context|tension|doubt|problem|truth|shift|turning point|realization|reveal|desire|invitation|cta|soft cta|call to action|question|poll|close|closing|ending|outro)\s*[:.\-–—]\s*(.+)$/i
-  )
-  if (prefixed?.[2]) text = prefixed[2].trim()
+  text = text
+    .replace(/^(?:slide|beat|frame|page|part)\s*\d+(?:\s*(?:of|\/)\s*\d+)?\s*[:.\-–—·]?\s*/i, "")
+    .trim()
+  const prefixed = text.match(STRUCTURAL_PREFIX_RE)
+  if (prefixed?.[1]) text = prefixed[1].trim()
   return isPureStructuralHeading(text) ? "" : text
 }
 
@@ -235,6 +219,31 @@ function fallbackStoryHeading(
   return fallbackLines[index % fallbackLines.length]
 }
 
+/** Carousel twin of fallbackStoryHeading: when every copy candidate was planning language,
+ *  bake a usable human line. Never "Slide 4", never a beat label, never a purpose field. */
+function fallbackCarouselHeading(
+  brief: CreativeBrief,
+  conceptTitle: string | undefined,
+  index: number,
+  total: number
+): string {
+  const topic =
+    stripStructuralHeading(clean(brief.graphic?.creativePlan?.userIntent)) ||
+    stripStructuralHeading(clean(brief.graphic?.carouselTitle)) ||
+    stripStructuralHeading(clean(brief.graphic?.headline)) ||
+    stripStructuralHeading(clean(conceptTitle))
+  if (index === 0 && topic) return topic.slice(0, 120)
+  if (total > 1 && index === total - 1) return "Save this one for later"
+  const fallbackLines = [
+    "Here's the part nobody shows",
+    "It's simpler than it looks",
+    "This is where it starts to click",
+    "One small shift, a real difference",
+    "You probably have this already",
+  ]
+  return fallbackLines[index % fallbackLines.length]
+}
+
 function safeGraphicHeading(
   brief: CreativeBrief,
   format: OutputFormat,
@@ -250,14 +259,17 @@ function safeGraphicHeading(
   if (format === "story-sequence" || format === "story-slide") {
     return fallbackStoryHeading(brief, conceptTitle, index, total)
   }
-  return `Slide ${index + 1}`
+  // Never "Slide N": that string bakes onto the finished image exactly like any headline.
+  return fallbackCarouselHeading(brief, conceptTitle, index, total)
 }
 
 function outputFromSlide(slide: CarouselSlidePlanLike, index: number): CreativePlanOutput {
+  // purpose is planning language ("soft CTA into the membership") and must never become a
+  // title candidate: titles are baked onto slides. The "Slide N" placeholder is internal
+  // only; buildCustomerCarouselCreativePlan replaces it with a bakeable line.
   const title =
     stripStructuralHeading(clean(slide.heading)) ||
     stripStructuralHeading(clean(slide.body)) ||
-    stripStructuralHeading(clean(slide.purpose)) ||
     `Slide ${index + 1}`
   const visualConcept = clean(slide.visualConcept) || title
   const imagePromptDirection =
@@ -268,6 +280,7 @@ function outputFromSlide(slide: CarouselSlidePlanLike, index: number): CreativeP
 
   return {
     title,
+    body: clean(slide.body) || undefined,
     purpose:
       clean(slide.purpose) || (index === 0 ? "open the carousel" : "continue the carousel story"),
     visualConcept,
@@ -284,6 +297,7 @@ function outputFromSlide(slide: CarouselSlidePlanLike, index: number): CreativeP
 function outputAsSlide(output: CreativePlanOutput, index: number): CarouselSlidePlanLike {
   return {
     heading: stripStructuralHeading(clean(output.title)) || `Slide ${index + 1}`,
+    body: clean(output.body),
     purpose: clean(output.purpose),
     visualConcept: clean(output.visualConcept),
     imagePrompt: clean(output.imagePromptDirection),
@@ -341,11 +355,13 @@ export function buildCustomerCarouselCreativePlan(
   // (optional in the tool schema). The renderer falls back to visualConcept anyway, so a
   // missing direction must never hard-fail the plan - fill it the same way.
   const outputs = suppliedOutputs.map((output, index) => {
+    // When the title IS a beat label ("The Callout Hook", "CTA"), it must never be
+    // restored: replace it with a line that can safely bake onto the slide.
     const title =
       stripStructuralHeading(clean(output.title)) ||
       (opts?.mode === "story_sequence"
         ? fallbackStoryHeading(brief, conceptTitle, index, suppliedOutputs.length)
-        : clean(output.title) || `Slide ${index + 1}`)
+        : fallbackCarouselHeading(brief, conceptTitle, index, suppliedOutputs.length))
     return {
       ...output,
       title,
@@ -790,32 +806,19 @@ export function buildGraphicRedesignSlides(
       const planOutput = plan.outputs[index]
       return {
         kind: slideKindForRole(role, index, slides.length),
-        title:
-          format === "story-sequence"
-            ? safeGraphicHeading(
-                brief,
-                format,
-                conceptTitle,
-                index,
-                slides.length,
-                slide.heading,
-                planOutput?.title,
-                slide.body
-              )
-            : safeGraphicHeading(
-                brief,
-                format,
-                conceptTitle,
-                index,
-                slides.length,
-                slide.heading,
-                planOutput?.title,
-                slide.body,
-                planOutput?.purpose,
-                slide.purpose,
-                planOutput?.visualConcept
-              ),
-        body: clean(slide.body),
+        // Copy candidates only. purpose and visualConcept are planning fields and read as
+        // meta-language on a finished slide, so they are never headline candidates.
+        title: safeGraphicHeading(
+          brief,
+          format,
+          conceptTitle,
+          index,
+          slides.length,
+          slide.heading,
+          planOutput?.title,
+          slide.body
+        ),
+        body: stripStructuralHeading(clean(slide.body) || clean(planOutput?.body)),
         purpose: clean(slide.purpose) || clean(planOutput?.purpose),
         visualConcept: clean(slide.visualConcept) || clean(planOutput?.visualConcept),
         imagePromptDirection:
@@ -915,15 +918,24 @@ export function compileConceptJobs(
       ? effectiveCarouselSlides(brief).slice(0, MAX_CAROUSEL_SLIDES)
       : [
           {
-            heading: clean(g?.headline) || clean(brief.outfit) || "Slide 1",
-            body: clean(g?.subline),
+            heading:
+              stripStructuralHeading(clean(g?.headline)) ||
+              stripStructuralHeading(clean(g?.creativePlan?.outputs?.[0]?.title)) ||
+              fallbackCarouselHeading(brief, undefined, 0, 1),
+            body: stripStructuralHeading(
+              clean(g?.subline) || clean(g?.creativePlan?.outputs?.[0]?.body)
+            ),
             role: g?.role,
           },
         ]
   const slides =
     rawSlides.length > 0
       ? rawSlides
-      : [{ heading: clean(g?.headline) || "Slide 1" } as (typeof rawSlides)[number]]
+      : [
+          {
+            heading: fallbackCarouselHeading(brief, undefined, 0, 1),
+          } as (typeof rawSlides)[number],
+        ]
   const total = slides.length
 
   // ── Carousel: a designed set with per-slide visual roles (MAYA-REBUILD-16). ──
@@ -940,7 +952,16 @@ export function compileConceptJobs(
             ? CTA_LAYOUT
             : VALUE_LAYOUTS[valueIdx % VALUE_LAYOUTS.length]
       if (role === "value") valueIdx++
-      const text = { heading: clean(slide.heading), body: clean(slide.body) }
+      // Last line of defense at the bake point: this exact heading is rendered into the
+      // image, so a beat label or "Slide N" here becomes the on-image headline.
+      const heading =
+        stripStructuralHeading(clean(slide.heading)) ||
+        stripStructuralHeading(clean(creativePlan.outputs[i]?.title)) ||
+        fallbackCarouselHeading(brief, undefined, i, total)
+      const text = {
+        heading,
+        body: stripStructuralHeading(clean(slide.body) || clean(creativePlan.outputs[i]?.body)),
+      }
       const label = `slide ${i + 1}/${total} (${role} · identity)`
       const plan = slideCreativePlan(slide as CarouselSlidePlanLike, creativePlan.outputs[i])
 
