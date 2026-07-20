@@ -240,7 +240,11 @@ function generateAiPromptsEmail(emailType: AiPromptsEmailType, candidate: AiProm
 
   switch (emailType) {
     case "ai-prompts-day1-vault-bridge":
-      return generateAiPromptsDay1VaultBridgeEmail({ firstName, recipientEmail: candidate.email })
+      return generateAiPromptsDay1VaultBridgeEmail({
+        firstName,
+        recipientEmail: candidate.email,
+        accessUrl,
+      })
     case "ai-prompts-day2-try-first-prompt":
       return generateAiPromptsDay2TryFirstPromptEmail({ firstName, accessUrl })
     case "ai-prompts-day5-edit-makes-postable":

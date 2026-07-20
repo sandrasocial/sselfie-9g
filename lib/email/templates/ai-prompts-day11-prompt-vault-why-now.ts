@@ -23,39 +23,33 @@ export function generateAiPromptsDay11PromptVaultWhyNowEmail({
     emailType: EMAIL_TYPE,
     checkoutEmail: recipientEmail,
   })
-  const subject = "your camera roll's still waiting on the full shoot"
+  const subject = "one last note about the Vault"
 
   const bodyHtml = `
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You've had the free shots for almost two weeks now.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Maybe you used them. Maybe they're still sitting there, waiting for the "right" moment.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here's the thing about showing up. The right moment doesn't come. You just start.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Vault is $37. One time. Every editorial world I&apos;ve shot, every shot in the sequence, and every new drop I add is yours too. No subscription, no catch.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The women who get the most out of this aren't the ones with the best selfies. They're the ones who stopped waiting to feel ready.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your face is your brand. You've already got the camera.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">One last note about the Prompt Vault, then I&apos;ll leave it with you.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If the free prompts are enough, keep using them. You do not need to buy something just because I sent an email.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you want full shoots instead of one-off images, the Vault is $37, once. You get every current visual world and the new drops I add later.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It is there for the moment you want more direction, more images, and less guessing.</p>
     <div style="margin:26px 0 20px;">${renderStoneButton("Get the Vault · $37", promptVaultUrl)}</div>
     <p style="margin:0;font-size:16px;line-height:1.75;">Sandra x</p>
   `
 
   const html = renderStoneShell({
-    title: "Still sitting in your camera roll?",
+    title: "One last note about the Vault.",
     eyebrow: "Prompt Vault",
-    subtitle: "The right moment does not come. You start.",
+    subtitle: "Use the free prompts. Choose the Vault when you want the full shoot.",
     bodyHtml,
-    footerLead: "Your face is your brand. You've already got the camera.",
+    footerLead: "It will be here when it is useful.",
     footerSignoff: "",
   })
 
-  const text = `You've had the free shots for almost two weeks now.
+  const text = `One last note about the Prompt Vault, then I'll leave it with you.
 
-Maybe you used them. Maybe they're still sitting there, waiting for the "right" moment.
+If the free prompts are enough, keep using them. You do not need to buy something just because I sent an email.
 
-Here's the thing about showing up. The right moment doesn't come. You just start.
+If you want full shoots instead of one-off images, the Vault is $37, once. You get every current visual world and the new drops I add later.
 
-The Vault is $37. One time. Every editorial world I've shot, every shot in the sequence, and every new drop I add is yours too. No subscription, no catch.
-
-The women who get the most out of this aren't the ones with the best selfies. They're the ones who stopped waiting to feel ready.
-
-Your face is your brand. You've already got the camera.
+It is there for the moment you want more direction, more images, and less guessing.
 
 Get the Vault · $37:
 ${promptVaultUrl}

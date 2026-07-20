@@ -648,7 +648,11 @@ async function sendAiPromptsTouchEmail(
 
   switch (emailType) {
     case "ai-prompts-day1-vault-bridge":
-      email = generateAiPromptsDay1VaultBridgeEmail({ firstName, recipientEmail: candidate.email })
+      email = generateAiPromptsDay1VaultBridgeEmail({
+        firstName,
+        recipientEmail: candidate.email,
+        accessUrl,
+      })
       break
     case "ai-prompts-day2-try-first-prompt":
       email = generateAiPromptsDay2TryFirstPromptEmail({ firstName, accessUrl })

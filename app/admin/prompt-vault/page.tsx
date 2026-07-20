@@ -37,6 +37,8 @@ type EventCounts = {
 type PaymentCounts = {
   purchases: number
   revenue_cents: number
+  recovery_purchases: number
+  recovery_revenue_cents: number
   first_purchase_at: string | null
   latest_purchase_at: string | null
 }
@@ -131,6 +133,12 @@ async function getPromptVaultMetrics(windowDays: number) {
     SELECT
       COUNT(*)::int AS purchases,
       COALESCE(SUM(amount_cents), 0)::int AS revenue_cents,
+      COUNT(*) FILTER (
+        WHERE metadata->>'email_type' LIKE 'prompt-vault-checkout-recovery%'
+      )::int AS recovery_purchases,
+      COALESCE(SUM(amount_cents) FILTER (
+        WHERE metadata->>'email_type' LIKE 'prompt-vault-checkout-recovery%'
+      ), 0)::int AS recovery_revenue_cents,
       MIN(payment_date)::text AS first_purchase_at,
       MAX(payment_date)::text AS latest_purchase_at
     FROM stripe_payments
@@ -321,6 +329,8 @@ async function getPromptVaultMetrics(windowDays: number) {
   const paymentCounts: PaymentCounts = {
     purchases: toInt(paymentCountsRow?.purchases),
     revenue_cents: toInt(paymentCountsRow?.revenue_cents),
+    recovery_purchases: toInt(paymentCountsRow?.recovery_purchases),
+    recovery_revenue_cents: toInt(paymentCountsRow?.recovery_revenue_cents),
     first_purchase_at: paymentCountsRow?.first_purchase_at ?? null,
     latest_purchase_at: paymentCountsRow?.latest_purchase_at ?? null,
   }
@@ -439,6 +449,18 @@ export default async function PromptVaultAdminPage({
             value={eventCounts.recovery_sends}
             icon={<Mail className="w-5 h-5" />}
             subtitle="Abandoned checkout follow-up"
+          />
+          <AdminMetricCard
+            label="Recovered Sales"
+            value={paymentCounts.recovery_purchases}
+            icon={<DollarSign className="w-5 h-5" />}
+            subtitle="Paid Stripe rows from recovery emails"
+          />
+          <AdminMetricCard
+            label="Recovery Revenue"
+            value={money(paymentCounts.recovery_revenue_cents)}
+            icon={<DollarSign className="w-5 h-5" />}
+            subtitle="Money truth, not conversion flags"
           />
           <AdminMetricCard
             label="Access Opens"

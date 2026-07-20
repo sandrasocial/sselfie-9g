@@ -104,6 +104,16 @@ describe("Prompt Vault commercial path", () => {
     expect(admin).toContain("Successful Stripe payments")
   })
 
+  it("reports checkout-recovery sales from successful Stripe payments", () => {
+    const vaultAdmin = readFileSync("app/admin/prompt-vault/page.tsx", "utf8")
+
+    expect(vaultAdmin).toContain("recovery_purchases")
+    expect(vaultAdmin).toContain("recovery_revenue_cents")
+    expect(vaultAdmin).toContain("metadata->>'email_type' LIKE 'prompt-vault-checkout-recovery%'")
+    expect(vaultAdmin).toContain('label="Recovered Sales"')
+    expect(vaultAdmin).toContain("Recovery Revenue")
+  })
+
   it("keeps the retired $197 Vault upgrade out of active runtime code", () => {
     const sequence = readFileSync("lib/email/prompt-vault-email-sequence.ts", "utf8")
     const templates = readFileSync("lib/email/templates/prompt-vault-buyer-sequence.ts", "utf8")
