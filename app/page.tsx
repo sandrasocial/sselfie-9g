@@ -10,9 +10,9 @@ import { LIVE_MEMBER_APP_PATH, normalizeLegacyStudioRedirect, sanitizeRedirect }
 export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
-  title: "SSELFIE | Phone-First Personal Brand & Selfie Education",
+  title: "SSELFIE | Start With One Selfie. Build From There.",
   description:
-    "SSELFIE helps women turn their phone, story, content, and first offer into a personal brand people understand, trust, and can buy from.",
+    "Turn one normal selfie into photos that still feel like you, something useful to post, and one clear next step with SSELFIE.",
   alternates: {
     canonical: "https://www.sselfie.ai/",
   },
@@ -28,7 +28,7 @@ const homeStructuredData = {
       url: "https://www.sselfie.ai/",
       logo: "https://www.sselfie.ai/favicon.png",
       description:
-        "SSELFIE helps women become visible and recognizable online using their phone, their story, and AI.",
+        "SSELFIE helps women who are starting again use their phone, story, creativity, and today's technology to create something useful and keep moving.",
       founder: { "@id": "https://www.sselfie.ai/#sandra-aamodt" },
     },
     {

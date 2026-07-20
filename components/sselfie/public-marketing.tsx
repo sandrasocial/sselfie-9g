@@ -418,6 +418,13 @@ function IntroScreen() {
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
 export function PublicNav({ loginHref = "/auth/login" }: { loginHref?: string }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const links = [
+    { href: "/ai-prompts", label: "Free AI Prompts" },
+    { href: "/prompt-vault", label: "Prompt Vault" },
+    { href: "/join/studio", label: "SSELFIE SUITE" },
+  ]
+
   return (
     <header
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 md:px-8"
@@ -433,12 +440,8 @@ export function PublicNav({ loginHref = "/auth/login" }: { loginHref?: string })
         SSELFIE
       </Link>
 
-      <nav className="hidden md:flex items-center gap-7">
-        {[
-          { href: "/selfie-guide",  label: "Free Guide"     },
-          { href: "/masterclass",   label: "Masterclass"    },
-          { href: "/join/studio",   label: "SSELFIE SUITE"  },
-        ].map((l) => (
+      <nav aria-label="Main navigation" className="hidden lg:flex items-center gap-7">
+        {links.map((l) => (
           <Link key={l.href} href={l.href}
             style={{ ...ty("eyebrow", true), textDecoration: "none" }}>
             {l.label}
@@ -448,8 +451,40 @@ export function PublicNav({ loginHref = "/auth/login" }: { loginHref?: string })
 
       <div className="flex items-center gap-4">
         <Link href={loginHref} style={{ ...ty("eyebrow", true), textDecoration: "none" }}>Login</Link>
-        <Btn href="/selfie-guide" surface="dark">Start Free</Btn>
+        <span className="hidden lg:block"><Btn href="/ai-prompts" surface="dark">Start Free</Btn></span>
+        <button
+          type="button"
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-controls="sselfie-mobile-menu"
+          aria-expanded={menuOpen}
+          className="flex min-h-11 items-center border border-white/20 px-4 text-[10px] uppercase tracking-[0.22em] text-white lg:hidden"
+          onClick={() => setMenuOpen(open => !open)}
+        >
+          {menuOpen ? "Close" : "Menu"}
+        </button>
       </div>
+
+      {menuOpen ? (
+        <nav
+          id="sselfie-mobile-menu"
+          aria-label="SSELFIE menu"
+          className="absolute inset-x-0 top-[58px] border-b border-white/15 bg-stone-950 px-5 py-5 shadow-2xl lg:hidden"
+        >
+          <div className="mx-auto flex max-w-lg flex-col">
+            {links.map(link => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="flex min-h-12 items-center justify-between border-b border-white/10 text-[11px] uppercase tracking-[0.22em] text-white"
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.label}
+                <span aria-hidden="true">→</span>
+              </Link>
+            ))}
+          </div>
+        </nav>
+      ) : null}
     </header>
   )
 }
@@ -464,9 +499,8 @@ export function PublicFooter() {
         </p>
         <div className="flex flex-wrap gap-6">
           {[
-            "/selfie-guide:Free Selfie Guide",
-            "/starter-kit:Starter Kit",
-            "/masterclass:Masterclass",
+            "/ai-prompts:Free AI Prompts",
+            "/prompt-vault:Prompt Vault",
             "/join/studio:SSELFIE SUITE",
           ].map((s) => {
             const [href, label] = s.split(":")
@@ -733,6 +767,9 @@ const FAQS = {
 export function HomePageContent({ referralCode }: { referralCode?: string | null } = {}) {
   const r     = (href: string) => appendReferralParam(href, referralCode)
   const login = buildReferralLoginHref({ returnTo: "/app", referralCode })
+  const freePrompts = r("/ai-prompts?utm_source=website&utm_medium=homepage&utm_campaign=vault_to_suite_path")
+  const vault = r("/prompt-vault?source=homepage&utm_source=website&utm_medium=homepage&utm_campaign=vault_to_suite_path")
+  const suite = r("/join/studio?source=homepage")
 
   return (
     <PublicPageShell>
@@ -740,13 +777,13 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
 
       {/* HERO - dark */}
       <Hero
-        eyebrow="Personal branding by Sandra"
-        title={<>One selfie. One clear direction. A brand you can keep building.</>}
+        eyebrow="Start with what you already have"
+        title={<>Start with one selfie. See what you can build from there.</>}
         body={
-          <p>SSELFIE helps you turn your face, story, and ideas into photos and content that feel like you. Start free. When you want help every week, Maya is inside SUITE.</p>
+          <p>Turn one normal selfie into photos that still feel like you, something useful to post, and one clear next step. Begin with the Prompt Vault. Keep building with Maya inside SSELFIE SUITE.</p>
         }
-        primary={{ href: r("/ai-prompts"), label: "Start free · get the AI prompts" }}
-        secondary={{ href: r("/join/studio"), label: "Meet Maya inside SSELFIE SUITE" }}
+        primary={{ href: vault, label: "Explore the Prompt Vault" }}
+        secondary={{ href: suite, label: "See SSELFIE SUITE" }}
         imageSrc={IMG.homeHero}
         imageAlt="Sandra Aamodt, founder of SSELFIE"
       />
@@ -754,89 +791,58 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
       {/* RECOGNITION - cream */}
       <Section
         eyebrow="Sound familiar?"
-        title={<>You do not need more random ideas. You need the pieces to work together.</>}
+        title={<>Maybe you do not need a bigger plan. Maybe you need one result you can use.</>}
         dark={false}
         narrow
       >
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>You have the phone. You have a story. You probably have hundreds of saved ideas too.</p>
-          <p>But the photo, the words, the plan, and the thing you want people to understand are still living in different places.</p>
-          <p>SSELFIE gives them one direction, so showing up gets simpler.</p>
+          <p>You have the phone, the idea, and probably hundreds of things saved for later. But later keeps moving.</p>
+          <p>SSELFIE starts smaller. One photo you like enough to use. Then help turning it into something real, without opening five more tools or starting another course.</p>
         </div>
       </Section>
 
-      {/* WHAT THIS ACTUALLY IS - dark */}
-      <Split
-        eyebrow="What this actually is"
-        title={<>It starts with the selfie. Everything builds from there.</>}
-        body={
-          <div className="space-y-4">
-            <p>Better iPhone selfies are how people find you. The car selfie, the mirror photo, the full-body shot that finally looks the way you wanted. That is where it begins.</p>
-            <p>Then Sandra shows you what to do with it. The caption. The content rhythm. The first offer. One clear path from first photo to first sale.</p>
-            <p>Phone-first personal branding for women who are ready to be known for something.</p>
-          </div>
-        }
-        imgSrc={IMG.homeStudio}
-        imgAlt="SSELFIE phone-first personal brand workspace"
-        dark
-      />
-
-      {/* THE PATH - cream */}
-      <Section eyebrow="The SSELFIE Path" title={<>Know what to say, post, show, sell, and do next.</>} dark={false}>
-        <div className="grid gap-3 md:grid-cols-4">
+      {/* CURRENT PRODUCT DEMO - cream */}
+      <Section id="how-it-works" eyebrow="One small beginning" title={<>The photo is the door. What you do with it is the point.</>} dark={false}>
+        <div className="mf mb-8 max-w-3xl">
+          <p style={{ ...ty("body", false), fontSize: "16px" }}>Inside SUITE, Maya works beside your photos and Calendar. She helps you choose a direction, make the pieces, and keep the next step visible.</p>
+        </div>
+        <SuiteProductWalkthrough />
+        <ol className="mt-14 grid gap-8 md:grid-cols-3">
           {[
-            { step: "01", title: "Clarify", body: "Find the words." },
-            { step: "02", title: "Create", body: "Plan the content." },
-            { step: "03", title: "Convert", body: "Build the offer path." },
-            { step: "04", title: "SSELFIE SUITE", body: "Create and execute." },
+            { step: "01", title: "See yourself", body: "Start with one clear selfie and a visual direction that still feels recognizable." },
+            { step: "02", title: "Make something useful", body: "Create a photo or post you can actually use, instead of another idea sitting in a folder." },
+            { step: "03", title: "Keep moving", body: "Bring the visual, the words, and the plan together so you can see what comes next." },
           ].map((item) => (
-            <article key={item.step} className="mf" style={{ ...cardSx(false), minHeight: "170px" }}>
+            <li key={item.step} className="mf border-t border-stone-300 pt-5">
               <span style={{ ...ty("eyebrow", false), marginBottom: "14px" }}>{item.step}</span>
               <h3 style={{ ...ty("h3", false), marginBottom: "10px" }}>{item.title}</h3>
               <p style={{ ...ty("body", false), fontSize: "14px" }}>{item.body}</p>
-            </article>
+            </li>
           ))}
-        </div>
+        </ol>
       </Section>
 
-      {/* WHY SELFIES STILL MATTER - dark */}
-      <Split
-        eyebrow="Start with the selfie"
-        title={<>Your selfie is doing more than you think.</>}
-        body={
-          <div className="space-y-4">
-            <p>People decide in seconds. A great iPhone selfie makes them stop. The caption makes them read. The content rhythm makes them come back.</p>
-            <p>It starts with one photo from your phone. Sandra shows you the rest.</p>
-          </div>
-        }
-        imgSrc={IMG.homeSelfie}
-        imgAlt="Editorial personal brand photo collection created with SSELFIE"
-        imgFirst
-        dark
-        cta={<Btn href={r("/ai-prompts")} surface="dark" ghost>Start with the free AI prompts</Btn>}
-      />
-
       {/* TWO CLEAR DOORS - cream */}
-      <Section eyebrow="Start where you are" title={<>Free first. Ongoing help when you are ready.</>} dark={false}>
+      <Section eyebrow="Start where you are" title={<>Choose the help that fits today.</>} dark={false}>
         <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-          <article className="mf flex min-h-[310px] flex-col justify-between" style={cardSx(false)}>
+          <article className="mf min-w-0 flex min-h-[310px] flex-col justify-between" style={cardSx(false)}>
             <div>
-              <span style={{ ...ty("eyebrow", false), marginBottom: "14px" }}>Start free</span>
+              <span style={{ ...ty("eyebrow", false), marginBottom: "14px" }}>One payment · yours to keep</span>
               <h3 style={{ ...ty("h2", false), fontSize: "clamp(28px, 4vw, 42px)", marginBottom: "14px" }}>
-                Try one selfie first.
+                Start with the Prompt Vault.
               </h3>
               <p style={{ ...ty("body", false), fontSize: "15px", maxWidth: "460px" }}>
-                Get the free AI photo prompts and create your first editorial image with the phone you already have.
+                Pick a complete photoshoot, copy the prompts, and turn one clear selfie into a set of images that still feel like you.
               </p>
             </div>
             <div className="mt-8">
-              <Btn href={r("/ai-prompts")} surface="cream">Get the free AI prompts</Btn>
+              <Btn href={vault} surface="cream">Explore the Prompt Vault</Btn>
             </div>
           </article>
 
-          <article className="mf flex min-h-[310px] flex-col justify-between bg-stone-950 p-7 text-white sm:p-9">
+          <article className="mf min-w-0 flex min-h-[310px] flex-col justify-between bg-stone-950 p-7 text-white sm:p-9">
             <div>
-              <span style={{ ...ty("eyebrow", true), marginBottom: "14px" }}>Ready for help every week?</span>
+              <span style={{ ...ty("eyebrow", true), marginBottom: "14px" }}>Ongoing help · €97 a month</span>
               <h3 style={{ ...ty("h2", true), fontSize: "clamp(28px, 4vw, 42px)", marginBottom: "14px" }}>
                 Maya helps you create, write, and plan what goes out next.
               </h3>
@@ -845,12 +851,12 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
               </p>
             </div>
             <div className="mt-8">
-              <Btn href={r("/join/studio")} surface="dark">Meet Maya inside SSELFIE SUITE</Btn>
+              <Btn href={suite} surface="dark">See SSELFIE SUITE</Btn>
             </div>
           </article>
         </div>
         <p className="mf mt-6 text-sm leading-6 text-stone-500">
-          Looking for a one-time lesson? You can still explore the <Link className="underline underline-offset-4" href={r("/starter-kit")}>Starter Kit</Link> or <Link className="underline underline-offset-4" href={r("/masterclass")}>Masterclass</Link>.
+          Want to try one look first? <Link className="underline underline-offset-4" href={freePrompts}>Get the free AI prompt previews.</Link>
         </p>
       </Section>
 
@@ -861,21 +867,22 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         body={
           <div className="space-y-4">
             <p>Not because everything was perfect. Because I needed a way back to myself, my voice, and my own income.</p>
-            <p>Now SSELFIE is the system I wish I had when I was starting from scratch: what to say, what to post, what to show, what to sell, and what to do next.</p>
+            <p>I am still building too. But I know how much changes when you can see the next version of yourself before the rest of your life has caught up.</p>
           </div>
         }
         imgSrc={IMG.homeFounder}
         imgAlt="Sandra Aamodt, founder of SSELFIE"
         imgFirst
         dark={false}
-        cta={<Btn href={r("/join/studio")} surface="cream">See the SUITE</Btn>}
+        cta={<Btn href={suite} surface="cream">See SSELFIE SUITE</Btn>}
       />
 
       {/* CTA CLOSE - dark */}
       <CtaClose
-        title={<>Your phone is enough. Your story is enough. Now give it a direction.</>}
-        primary={{ href: r("/ai-prompts"), label: "Get the Free AI Prompts" }}
-        secondary={{ href: r("/join/studio"), label: "See the SUITE" }}
+        title={<>Start with one photo. Build from there.</>}
+        body={<p>You do not need everything figured out. You need one useful beginning and a next step you can see.</p>}
+        primary={{ href: vault, label: "Explore the Prompt Vault" }}
+        secondary={{ href: suite, label: "See SSELFIE SUITE" }}
         dark
       />
 

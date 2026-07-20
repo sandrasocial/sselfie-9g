@@ -13,17 +13,36 @@ describe("SUITE revenue foundation", () => {
     expect(marketing).toContain('trackMembershipCheckoutClick("closing"')
   })
 
-  it("keeps the homepage focused on one free entry and one recurring offer", () => {
+  it("connects the homepage to the active Vault-to-SUITE path", () => {
     const marketing = readFileSync("components/sselfie/public-marketing.tsx", "utf8")
     const homepage = marketing.slice(
       marketing.indexOf("export function HomePageContent"),
       marketing.indexOf("export function StarterKitPageContent")
     )
 
-    expect(homepage).toContain("Start free")
-    expect(homepage).toContain("Ready for help every week?")
-    expect(homepage).toContain("Meet Maya inside SSELFIE SUITE")
-    expect(homepage).not.toContain("xl:grid-cols-4")
+    expect(homepage).toContain("/prompt-vault?source=homepage")
+    expect(homepage).toContain("Explore the Prompt Vault")
+    expect(homepage).toContain("<SuiteProductWalkthrough />")
+    expect(homepage).toContain('id="how-it-works"')
+    expect(homepage).toContain("See SSELFIE SUITE")
+    expect(homepage).not.toContain("One clear path from first photo to first sale")
+    expect(homepage).not.toContain("Clarify")
+    expect(homepage).not.toContain("Convert")
+  })
+
+  it("gives desktop and mobile visitors the same current product path", () => {
+    const marketing = readFileSync("components/sselfie/public-marketing.tsx", "utf8")
+    const navigation = marketing.slice(
+      marketing.indexOf("export function PublicNav"),
+      marketing.indexOf("export function PublicFooter")
+    )
+
+    expect(navigation).toContain('{ href: "/prompt-vault", label: "Prompt Vault" }')
+    expect(navigation).toContain('{ href: "/join/studio", label: "SSELFIE SUITE" }')
+    expect(navigation).toContain('aria-label={menuOpen ? "Close menu" : "Open menu"}')
+    expect(navigation).toContain("aria-expanded={menuOpen}")
+    expect(navigation).toContain('aria-label="SSELFIE menu"')
+    expect(navigation).not.toContain('{ href: "/masterclass"')
   })
 
   it("uses the approved personal-brand grid and the live Maya avatar", () => {
