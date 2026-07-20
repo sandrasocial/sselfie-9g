@@ -1,6 +1,6 @@
 "use client"
 
-function safeFilename(value: string): string {
+export function safeFilename(value: string): string {
   const cleaned = value.replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "")
   return cleaned || "sselfie-creation.png"
 }

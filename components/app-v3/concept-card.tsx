@@ -14,6 +14,7 @@ import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 import { retryGeneratedImageOnce } from "./image-retry"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 import { initiateAssetDownload } from "@/lib/app-v3/download-asset"
+import { downloadAllSlidesAsZip } from "@/lib/app-v3/download-all-slides"
 import { FavoriteButton } from "./favorite-button"
 
 export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
@@ -54,8 +55,9 @@ interface ConceptCardProps {
   gen: ConceptGenState
   format: OutputFormat
   onGenerate: () => void
-  /** Open the finished image(s) fullscreen (carousels pass all slides). */
-  onOpen?: (imageUrls: string[]) => void
+  /** Open the finished image(s) fullscreen (carousels pass all slides). startIndex jumps
+   *  straight to the tapped thumbnail instead of always opening at slide 1. */
+  onOpen?: (imageUrls: string[], startIndex?: number) => void
   /** Open true Edit Mode on the finished image. */
   onEdit?: () => void
   /** Feed Planner Phase 2c: Maya saves this photo to the member's content calendar herself,
@@ -149,6 +151,9 @@ export function ConceptCard({
   const [copiedText, setCopiedText] = useState(false)
   const [copyError, setCopyError] = useState(false)
   const [downloadStatus, setDownloadStatus] = useState<"idle" | "downloading" | "error">("idle")
+  const [bulkDownloadStatus, setBulkDownloadStatus] = useState<"idle" | "downloading" | "error">(
+    "idle"
+  )
   const [calendarStatus, setCalendarStatus] = useState<
     "idle" | "saving" | "saved" | "error" | "unavailable"
   >("idle")
@@ -255,6 +260,33 @@ export function ConceptCard({
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Jump straight to any slide instead of only seeing the cover, or opening fullscreen
+          and arrowing through them one at a time. */}
+      {isDone && isCarousel && (
+        <div className="flex gap-1.5 overflow-x-auto border-b border-[#C5C6C8]/35 bg-[#F8FAFA] p-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {images.map((thumbUrl, thumbIndex) => (
+            <button
+              key={`${thumbUrl}-${thumbIndex}`}
+              type="button"
+              onClick={() => onOpen?.(images, thumbIndex)}
+              aria-label={`View slide ${thumbIndex + 1} of ${images.length}`}
+              className="relative h-14 w-11 shrink-0 overflow-hidden rounded-[4px] transition-opacity hover:opacity-80"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={gen.bakedImageUrls?.[thumbIndex] ?? thumbUrl}
+                alt=""
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <span className="absolute bottom-0.5 right-1 text-[9px] font-medium text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]">
+                {thumbIndex + 1}
+              </span>
+            </button>
+          ))}
         </div>
       )}
 
@@ -378,13 +410,43 @@ export function ConceptCard({
                   {downloadStatus === "downloading" ? "Preparing…" : "Download video"}
                 </button>
               ) : isCarousel ? (
-                <button
-                  type="button"
-                  onClick={() => onOpen?.(images)}
-                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] px-3 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-4"
-                >
-                  View all slides
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => onOpen?.(images)}
+                    className="inline-flex min-h-11 items-center justify-center rounded-[8px] border border-[#0D0E10] bg-white px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] transition-colors hover:bg-[#F1F2F2]"
+                  >
+                    View all slides
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (bulkDownloadStatus === "downloading") return
+                      setBulkDownloadStatus("downloading")
+                      const allUrls = images.map(
+                        (imgUrl, i) => gen.bakedImageUrls?.[i] ?? imgUrl
+                      )
+                      const started = await downloadAllSlidesAsZip(allUrls, concept.title)
+                      if (!started) {
+                        setBulkDownloadStatus("error")
+                        return
+                      }
+                      setBulkDownloadStatus("idle")
+                      void recordSuiteDownloadForReview({
+                        source: "concept-card",
+                        assetId: null,
+                        format,
+                      })
+                      onDownloaded?.()
+                    }}
+                    disabled={bulkDownloadStatus === "downloading"}
+                    className="inline-flex min-h-11 items-center justify-center rounded-[8px] px-3 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-4 disabled:opacity-50"
+                  >
+                    {bulkDownloadStatus === "downloading"
+                      ? "Preparing…"
+                      : `Download all ${images.length}`}
+                  </button>
+                </>
               ) : (
                 <button
                   type="button"
@@ -416,6 +478,11 @@ export function ConceptCard({
             {downloadStatus === "error" && (
               <p role="alert" className="text-[12px] text-[#4F5052]">
                 Download did not start. Please try again.
+              </p>
+            )}
+            {bulkDownloadStatus === "error" && (
+              <p role="alert" className="text-[12px] text-[#4F5052]">
+                Couldn&apos;t bundle the zip. Please try again.
               </p>
             )}
             {resultActions}

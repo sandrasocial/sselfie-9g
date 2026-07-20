@@ -73,6 +73,8 @@ import {
 } from "@/lib/app-v3/text-overlay"
 import { getTextStyleExampleImage, textStyleSampleSpec } from "@/lib/app-v3/text-style-examples"
 import { salvageConceptsPayload } from "@/lib/app-v3/concept-salvage"
+import { downloadAllSlidesAsZip } from "@/lib/app-v3/download-all-slides"
+import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 import {
   colorAdjustmentLine,
   parseTextRefinement,
@@ -717,7 +719,33 @@ export function MayaConcierge({
     bakedAssetIds?: Array<string | number | null>
     formats?: Array<string | null>
     textOverlaySpecs?: TextOverlaySpec[]
+    /** Which slide to open on (a specific thumbnail tap), not always slide 1. */
+    startIndex?: number
+    /** Names the "Download all" zip. */
+    conceptTitle?: string | null
   } | null>(null)
+  // The lightbox freezes assetIds/bakedAssetIds at open time (asset-lineage contract: id and
+  // format arrays must come from one consistent read, never mixed live/frozen per field - see
+  // tests/app-v3-asset-lineage.test.tsx). But a with-text carousel can still be baking slides
+  // client-side (bakeMissingTextSlides) while she's looking at it, and each finished bake
+  // writes a real bakedAiImageIds entry into genState. Re-sync the frozen snapshot whenever
+  // that happens, so a slide's Download/Favorite target updates the moment its text lands
+  // instead of staying attributed to the clean image until she reopens the viewer.
+  const liveLightboxBakedIds = lightbox?.key ? genState[lightbox.key]?.bakedAiImageIds : undefined
+  useEffect(() => {
+    // Narrowed to this one concept's bakedAiImageIds array (not the whole genState object):
+    // genState changes on every streaming preview frame across every open generation, and this
+    // sync only matters for the ONE concept currently in the viewer.
+    if (!lightbox?.key || !liveLightboxBakedIds || liveLightboxBakedIds.length === 0) return
+    setLightbox(current => {
+      if (!current || current.key !== lightbox.key) return current
+      const currentIds = current.bakedAssetIds ?? []
+      const changed =
+        liveLightboxBakedIds.length !== currentIds.length ||
+        liveLightboxBakedIds.some((id, i) => id !== currentIds[i])
+      return changed ? { ...current, bakedAssetIds: liveLightboxBakedIds } : current
+    })
+  }, [liveLightboxBakedIds, lightbox?.key])
   // True Edit Mode target: which generated image we're refining.
   const [editTarget, setEditTarget] = useState<{
     key: string
@@ -730,6 +758,8 @@ export function MayaConcierge({
   } | null>(null)
   const [editBusy, setEditBusy] = useState(false)
   const [textRefining, setTextRefining] = useState(false)
+  // Which photoshoot-set generation key is currently zipping a bulk download (null = none).
+  const [photoshootBulkDownloadKey, setPhotoshootBulkDownloadKey] = useState<string | null>(null)
   // Out-of-credits modal (opened when /generate returns 402).
   const [creditModal, setCreditModal] = useState<{ open: boolean; balance: number | null }>({
     open: false,
@@ -4431,7 +4461,7 @@ export function MayaConcierge({
                           : null
                       )
                     }
-                    onOpen={urls =>
+                    onOpen={(urls, startIndex) =>
                       setLightbox({
                         key,
                         format: conceptFormat,
@@ -4441,6 +4471,8 @@ export function MayaConcierge({
                         bakedAssetIds: gen.bakedAiImageIds,
                         formats: urls.map(() => conceptFormat),
                         textOverlaySpecs: genState[key]?.textOverlaySpecs,
+                        startIndex,
+                        conceptTitle: concept.title,
                       })
                     }
                     onEdit={() => {
@@ -4623,42 +4655,94 @@ export function MayaConcierge({
                         const key = `${m.id}:photoshoot-set`
                         const gen = genState[key] ?? { status: "idle" as const }
                         const urls = gen.imageUrls ?? []
+                        const shootTitle = `Photoshoot · ${urls.length} shots`
+                        const openPhotoshootLightbox = (startIndex?: number) =>
+                          setLightbox({
+                            key,
+                            format: "photoshoot",
+                            images: urls,
+                            assetIds:
+                              gen.aiImageIds ??
+                              (gen.aiImageId != null ? [gen.aiImageId] : undefined),
+                            bakedAssetIds: gen.bakedAiImageIds,
+                            formats: urls.map(() => "photoshoot"),
+                            textOverlaySpecs: gen.textOverlaySpecs,
+                            startIndex,
+                            conceptTitle: shootTitle,
+                          })
                         return (
                           <div className="space-y-3">
                             {urls.length > 0 && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setLightbox({
-                                    key,
-                                    format: "photoshoot",
-                                    images: urls,
-                                    assetIds:
-                                      gen.aiImageIds ??
-                                      (gen.aiImageId != null ? [gen.aiImageId] : undefined),
-                                    bakedAssetIds: gen.bakedAiImageIds,
-                                    formats: urls.map(() => "photoshoot"),
-                                    textOverlaySpecs: gen.textOverlaySpecs,
-                                  })
-                                }
-                                aria-label={`View ${urls.length} generated photos full screen`}
-                                className="grid w-full grid-cols-3 gap-2 text-left"
+                              <div
+                                role="group"
+                                aria-label={`${urls.length} generated photos`}
+                                className="grid w-full grid-cols-3 gap-2"
                               >
                                 {urls.slice(0, 6).map((url, index) => (
-                                  <img
+                                  <button
                                     key={`${url}-${index}`}
-                                    src={url}
-                                    alt=""
-                                    onError={retryGeneratedImageOnce}
-                                    className="aspect-[4/5] w-full rounded-[6px] object-cover"
-                                  />
+                                    type="button"
+                                    onClick={() => openPhotoshootLightbox(index)}
+                                    aria-label={`View shot ${index + 1} of ${urls.length} full screen`}
+                                    className="group relative aspect-[4/5] w-full overflow-hidden rounded-[6px] text-left"
+                                  >
+                                    <img
+                                      src={url}
+                                      alt=""
+                                      onError={retryGeneratedImageOnce}
+                                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                                    />
+                                    {index === 5 && urls.length > 6 && (
+                                      <span className="absolute inset-0 flex items-center justify-center bg-[#0D0E10]/55 text-[13px] font-medium text-white">
+                                        +{urls.length - 6} more
+                                      </span>
+                                    )}
+                                  </button>
                                 ))}
-                              </button>
+                              </div>
                             )}
                             {gen.status === "error" && (
                               <p role="alert" className="text-[13px] text-[#8A3B2E]">
                                 {gen.error}
                               </p>
+                            )}
+                            {urls.length > 0 && (
+                              <div className="flex flex-wrap items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => openPhotoshootLightbox()}
+                                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] border border-[#0D0E10] bg-white px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] transition-colors hover:bg-[#F1F2F2]"
+                                >
+                                  View all {urls.length} shots
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (photoshootBulkDownloadKey === key) return
+                                    setPhotoshootBulkDownloadKey(key)
+                                    const allUrls = urls.map(
+                                      (url, i) => gen.bakedImageUrls?.[i] ?? url
+                                    )
+                                    const started = await downloadAllSlidesAsZip(
+                                      allUrls,
+                                      shootTitle
+                                    )
+                                    setPhotoshootBulkDownloadKey(null)
+                                    if (!started) return
+                                    void recordSuiteDownloadForReview({
+                                      source: "concept-card",
+                                      assetId: null,
+                                      format: "photoshoot",
+                                    })
+                                  }}
+                                  disabled={photoshootBulkDownloadKey === key}
+                                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] px-3 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-4 disabled:opacity-50"
+                                >
+                                  {photoshootBulkDownloadKey === key
+                                    ? "Preparing…"
+                                    : `Download all ${urls.length}`}
+                                </button>
+                              </div>
                             )}
                             <button
                               type="button"
@@ -5034,6 +5118,8 @@ export function MayaConcierge({
           formats={lightbox.formats}
           textOverlaySpecs={lightbox.textOverlaySpecs}
           bakedImageUrls={lightbox.key ? genState[lightbox.key]?.bakedImageUrls : undefined}
+          conceptTitle={lightbox.conceptTitle}
+          startIndex={lightbox.startIndex}
           onDownloaded={() => setValueUsed(true)}
           onClose={() => setLightbox(null)}
         />

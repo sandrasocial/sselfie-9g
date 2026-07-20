@@ -101,7 +101,12 @@ describe("Maya chat trust pass", () => {
     expect(card).toContain("estimatedCredits")
     expect(card).toContain('estimatedCredits === 1 ? "credit" : "credits"')
     expect(card).toContain('role="alert"')
-    expect(concierge).toContain("aria-label={`View ${urls.length} generated photos full screen`}")
+    // MAYA-MULTISLIDE-ACCESS-02: the photoshoot-set grid is now per-thumbnail (a tap opens
+    // that exact shot), so each thumbnail carries its own precise label instead of one
+    // generic label for the whole grid.
+    expect(concierge).toContain(
+      "aria-label={`View shot ${index + 1} of ${urls.length} full screen`}"
+    )
   })
 
   it("reconciles a paid single-image request when the stream disappears", () => {

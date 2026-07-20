@@ -191,10 +191,16 @@ describe("Stabilization A Creative Tasks", () => {
     const history = await screen.findByRole("dialog", { name: /Creative tasks/i })
     fireEvent.click(within(history).getByRole("button", { name: /^Plan Past task/ }))
 
-    await waitFor(() =>
-      expect(mocks.setMessages).toHaveBeenLastCalledWith([
-        expect.objectContaining({ id: "past-message", role: "user" }),
-      ])
+    // A past-task restore fans out six fetches (chats, chats/:id, reference-library,
+    // aesthetics, memory, account) before setMessages lands; the vitest default 5000ms
+    // per-test budget is tight for that under load. Give it real headroom instead of a bare
+    // pass on a fast machine.
+    await waitFor(
+      () =>
+        expect(mocks.setMessages).toHaveBeenLastCalledWith([
+          expect.objectContaining({ id: "past-message", role: "user" }),
+        ]),
+      { timeout: 10000 }
     )
     expect(screen.queryByRole("dialog", { name: /Creative tasks/i })).not.toBeInTheDocument()
   })
