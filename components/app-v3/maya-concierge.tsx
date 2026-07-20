@@ -650,6 +650,9 @@ export function MayaConcierge({
   )
   // set_format tool parts already acted on (`${messageId}:${format}`), so a switch fires once.
   const formatSwitchAppliedRef = useRef<Set<string>>(new Set())
+  // MAYA-GUIDED-TEXT-02: one bake continuation per result card at a time. The generation
+  // completion paths (auto) and the card's "Try text again" button (manual) share this.
+  const bakeContinuationKeysRef = useRef<Set<string>>(new Set())
   // MAYA-GUIDED-TEXT-01 (Sandra 2026-07-02): for graphic formats the text style is the FIRST
   // tap. Until she picks one, the concept pull is held and the six example cards sit inline in
   // the thread. The choice rides every generation in this chat; the chip above the direction
@@ -824,6 +827,10 @@ export function MayaConcierge({
         })
       )
   }, [isOpen])
+
+  // Her remembered baked-text style. Derived here, above the conversational format-switch
+  // effect that reads it (a later declaration would be a TDZ crash via the deps array).
+  const rememberedOverlayStyle = normalizeOverlayStyleId(memory?.preferredOverlayStyle)
 
   useEffect(() => {
     if (!isOpen || session?.outputFormat !== "video") return
@@ -1493,8 +1500,23 @@ export function MayaConcierge({
     }
 
     if (session?.outputFormat !== latest) {
-      setTextOverlayMode(null)
-      setTextStyleChoice(null)
+      // The pull that follows must run AS the switched format. Without refreshing the intent
+      // here, a stale session creationIntent (the previous format, high confidence) outranks
+      // extras.format on the server, Maya answers the pull in the OLD format and calls
+      // set_format again: the "On it, switching to carousels" dead end she reported.
+      const intent = intentForFormat(latest, "gallery_action")
+      setLocalCreationIntent(intent)
+      extrasRef.current = { ...extrasRef.current, format: latest, creationIntent: intent }
+      if (isGraphicOutputFormat(latest) && rememberedOverlayStyle) {
+        // She asked for this format in words and already owns a remembered text style, so
+        // continue hands-free with it (the style chip above the concept cards still swaps
+        // it before any credit is spent). First-timers keep the explicit text-choice cards.
+        setTextOverlayMode("with-text")
+        setTextStyleChoice(rememberedOverlayStyle)
+      } else {
+        setTextOverlayMode(null)
+        setTextStyleChoice(null)
+      }
       setTextStyleAdjustments(null)
       setStyleSwapOpen(false)
       // Re-arm the auto-pull too: if this format was already pulled earlier in the thread,
@@ -1505,6 +1527,7 @@ export function MayaConcierge({
   }, [
     messages,
     isThinking,
+    rememberedOverlayStyle,
     sendMessage,
     session,
     setOutputFormat,
@@ -2532,6 +2555,32 @@ export function MayaConcierge({
               recordCompletedRender(targetFormat, evt.imageUrls.length, concept.title)
               trackGenerationCompleted(targetFormat, "stream")
               showTrialCapIfDepleted(evt.newBalance)
+              // MAYA-GUIDED-TEXT-02: she asked for baked text. If the generate function's
+              // time budget skipped any slide's bake (routine for multi-slide carousels),
+              // continue it from here: each bake-text call is its own server function, so
+              // the 300s generation ceiling no longer decides whether her text arrives.
+              if (
+                evt.textOverlayMode === "with-text" &&
+                Array.isArray(evt.textOverlaySpecs) &&
+                evt.textOverlaySpecs.length > 0
+              ) {
+                const cleanUrls = evt.imageUrls
+                const specs = evt.textOverlaySpecs
+                const primaryImageId = evt.aiImageId ?? null
+                const imageIds = evt.aiImageIds
+                const baked = evt.bakedImageUrls ?? cleanUrls.map(() => null)
+                void bakeMissingTextSlides({
+                  key,
+                  conceptTitle: concept.title,
+                  cleanImages: cleanUrls,
+                  specs,
+                  aiImageIds: cleanUrls.map(
+                    (_, index) => imageIds?.[index] ?? (index === 0 ? primaryImageId : null)
+                  ),
+                  bakedImageUrls: baked,
+                  stopOnError: false,
+                }).catch(() => {})
+              }
               if (calendarTargetForRequest && generationRequestId) {
                 const calendarImageUrls =
                   evt.bakedImageUrls?.map((url, index) => url ?? evt!.imageUrls![index]) ??
@@ -2631,6 +2680,29 @@ export function MayaConcierge({
       recordCompletedRender(targetFormat, urls.length, concept.title)
       trackGenerationCompleted(targetFormat, "generate")
       showTrialCapIfDepleted(data?.newBalance)
+      // MAYA-GUIDED-TEXT-02: same client-side bake continuation as the streaming path.
+      if (
+        data &&
+        data.textOverlayMode === "with-text" &&
+        Array.isArray(data.textOverlaySpecs) &&
+        data.textOverlaySpecs.length > 0
+      ) {
+        const specs = data.textOverlaySpecs
+        const primaryImageId = data.aiImageId ?? null
+        const imageIds = data.aiImageIds
+        const baked = data.bakedImageUrls ?? urls.map(() => null)
+        void bakeMissingTextSlides({
+          key,
+          conceptTitle: concept.title,
+          cleanImages: urls,
+          specs,
+          aiImageIds: urls.map(
+            (_, index) => imageIds?.[index] ?? (index === 0 ? primaryImageId : null)
+          ),
+          bakedImageUrls: baked,
+          stopOnError: false,
+        }).catch(() => {})
+      }
       if (calendarTargetForRequest && generationRequestId) {
         const calendarImageUrls =
           data?.bakedImageUrls?.map((url, index) => url ?? urls[index]) ?? urls
@@ -3187,7 +3259,6 @@ export function MayaConcierge({
     setPendingClarifyKind(kind)
     composerRef.current?.focus()
   }
-  const rememberedOverlayStyle = normalizeOverlayStyleId(memory?.preferredOverlayStyle)
 
   function savePreferredOverlayStyle(style: OverlayStyleId) {
     setMemory(current =>
@@ -3280,27 +3351,35 @@ export function MayaConcierge({
     }
   }
 
-  async function retryMissingBakedText(key: string, conceptTitle: string): Promise<void> {
-    const current = genState[key]
-    if (!current || current.status !== "done") throw new Error("That result is not ready yet")
-    const specs = current.textOverlaySpecs ?? []
-    const cleanImages = current.imageUrls ?? []
+  async function bakeMissingTextSlides(args: {
+    key: string
+    conceptTitle: string
+    cleanImages: string[]
+    specs: TextOverlaySpec[]
+    aiImageIds: Array<number | null>
+    bakedImageUrls: Array<string | null>
+    /** true = manual retry semantics (first failure throws to the card); false = best effort
+     *  per slide, failed slides simply keep their "Try text again" button. */
+    stopOnError: boolean
+  }): Promise<void> {
+    const { key, conceptTitle, cleanImages, specs, aiImageIds, bakedImageUrls, stopOnError } = args
     const missingIndexes = specs
       .map((_, index) => index)
-      .filter(index => cleanImages[index] && !current.bakedImageUrls?.[index])
+      .filter(index => cleanImages[index] && !bakedImageUrls[index])
     if (missingIndexes.length === 0) return
+    if (bakeContinuationKeysRef.current.has(key)) return
+    bakeContinuationKeysRef.current.add(key)
 
     setTextRefining(true)
     try {
-      for (const index of missingIndexes) {
-        const cleanImageId =
-          current.aiImageIds?.[index] ?? (index === 0 ? (current.aiImageId ?? null) : null)
+      const queue = [...missingIndexes]
+      const bakeOne = async (index: number): Promise<void> => {
         const res = await fetch("/api/app-v3/maya/bake-text", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             cleanImageUrl: cleanImages[index],
-            cleanImageId: cleanImageId ?? undefined,
+            cleanImageId: aiImageIds[index] ?? undefined,
             conceptTitle,
             spec: specs[index],
           }),
@@ -3315,10 +3394,12 @@ export function MayaConcierge({
         } | null
 
         if (res.status === 402 || data?.code === "insufficient_credits") {
+          queue.length = 0
           showCreditBlock(typeof data?.current === "number" ? data.current : null)
           throw new Error(data?.error || "Not enough credits to add the text")
         }
         if (data?.code === "generation_locked" && cohort === "trial") {
+          queue.length = 0
           setTrialCapOpen(true)
           throw new Error(data?.error || "Photo-making is paused")
         }
@@ -3329,9 +3410,46 @@ export function MayaConcierge({
         updateBakedImage(key, index, data.bakedUrl, data.aiImageId ?? null)
         showTrialCapIfDepleted(data.newBalance)
       }
+      // Two bakes in flight: a 7-slide continuation finishes in a few waves without
+      // hammering the image API. Each bake-text call is its own server function with its
+      // own 300s ceiling, so a long carousel can never outrun the generation route again.
+      const workers = Array.from({ length: Math.min(2, queue.length) }, async () => {
+        while (queue.length > 0) {
+          const index = queue.shift()
+          if (index === undefined) return
+          try {
+            await bakeOne(index)
+          } catch (error) {
+            if (stopOnError) {
+              queue.length = 0
+              throw error
+            }
+            console.error(`[maya] text bake continuation failed for slide ${index + 1}:`, error)
+          }
+        }
+      })
+      await Promise.all(workers)
     } finally {
+      bakeContinuationKeysRef.current.delete(key)
       setTextRefining(false)
     }
+  }
+
+  async function retryMissingBakedText(key: string, conceptTitle: string): Promise<void> {
+    const current = genState[key]
+    if (!current || current.status !== "done") throw new Error("That result is not ready yet")
+    const cleanImages = current.imageUrls ?? []
+    await bakeMissingTextSlides({
+      key,
+      conceptTitle,
+      cleanImages,
+      specs: current.textOverlaySpecs ?? [],
+      aiImageIds: cleanImages.map(
+        (_, index) => current.aiImageIds?.[index] ?? (index === 0 ? (current.aiImageId ?? null) : null)
+      ),
+      bakedImageUrls: current.bakedImageUrls ?? [],
+      stopOnError: true,
+    })
   }
 
   function findTextRefinementTarget(): TextRefinementTarget | null {
