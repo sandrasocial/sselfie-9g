@@ -1,5 +1,20 @@
 # Completed releases
 
+## 2026-07-21 — Maya inline action protocol
+
+Added one Sandra-only Maya action flow for image, caption, combined creation, Calendar assignment,
+and undo while preserving the existing generation, credit, Gallery, Calendar, and publishing
+boundaries. Paid results now save to Gallery before an explicit Calendar apply; applying snapshots
+the prior post, partial caption failures stay recoverable, retries are idempotent, and undo restores
+the assignment without deleting the generated asset or refunding a successful generation.
+
+Production proof: feature SHA `b66cdb5a`, Vercel deployment
+`dpl_yjENWWpGGPqVcbbMTuYsUTpZQfap`, 1,714 passing tests with 6 intentionally skipped, 14 desktop
+and 390x844 Playwright journeys, CI typecheck, repository invariants, production build, and 22/22
+creative-freeze checks. Authenticated production QA created two paid Gallery assets, verified
+preview/cancel/apply/reload/failure/retry/undo, returned the unposted QA grid to 0 ready posts, and
+left both assets in Gallery. Nothing was published and protected prompt hashes remained unchanged.
+
 ## 2026-07-21 — Checkout recovery and email runtime safety
 
 Hardened the live Prompt Vault checkout recovery so successful buyers are excluded before every
