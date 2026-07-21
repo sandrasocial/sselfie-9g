@@ -27,8 +27,18 @@ import {
   cacheServerMayaDraftSnapshot,
   clearMayaDraft,
   readConciergeSnapshot,
+  readMayaDraftForSession,
   saveConciergeSnapshot,
 } from "./continuity"
+import {
+  calendarMayaTaskId,
+  createMayaContextEnvelope,
+  mayaContextMatchesCalendarPost,
+  newMayaTaskId,
+  type MayaContextEnvelope,
+  type MayaJob,
+  type MayaSurface,
+} from "@/lib/app-v3/maya/context-envelope"
 
 const ConciergeContext = createContext<ConciergeContextValue | null>(null)
 
@@ -51,18 +61,94 @@ function calendarCreationIdea(target: CalendarPostTarget): string {
   ).slice(0, 400)
 }
 
+function jobForSurface(surface: MayaSurface): MayaJob {
+  if (surface === "calendar") return "decide_post"
+  if (surface === "learn") return "learn_next"
+  return "create_content"
+}
+
+function newSurfaceContext(surface: MayaSurface, taskId = newMayaTaskId()): MayaContextEnvelope {
+  return createMayaContextEnvelope({
+    taskId,
+    job: jobForSurface(surface),
+    surface,
+    startedAt: new Date().toISOString(),
+  })
+}
+
+function createCleanSession({
+  previous,
+  context,
+  aesthetic = GENERAL_MAYA_AESTHETIC,
+  options,
+  calendarTarget = null,
+}: {
+  previous: ConciergeSession | null
+  context: MayaContextEnvelope
+  aesthetic?: Aesthetic
+  options?: OpenConciergeOptions
+  calendarTarget?: CalendarPostTarget | null
+}): ConciergeSession {
+  const startedAt = Date.parse(context.startedAt)
+  return {
+    mayaContext: context,
+    aesthetic,
+    outputFormat: options?.format ?? calendarTarget?.plannedFormat ?? null,
+    referenceSelfieUrl:
+      options?.referenceSelfieUrl ?? previous?.referenceSelfieUrl ?? null,
+    videoSourceUrl: options?.videoSourceUrl ?? null,
+    inspirationImageUrl: options?.inspirationImageUrl ?? null,
+    graphicText: null,
+    seedPrompt: options?.seed ?? null,
+    creationIdea: options?.creationIdea ?? (calendarTarget ? calendarCreationIdea(calendarTarget) : null),
+    creationIntent:
+      options?.creationIntent ??
+      (calendarTarget
+        ? { format: calendarTarget.plannedFormat, source: "content_card", confidence: "high" }
+        : options?.format
+          ? { format: options.format, source: "manual", confidence: "high" }
+          : null),
+    shotDirector: options?.shotDirector ?? null,
+    generationSource: options?.generationSource ?? null,
+    initialSetupAction: options?.initialSetupAction ?? null,
+    calendarTarget,
+    startedAt: Number.isFinite(startedAt) ? startedAt : Date.now(),
+  }
+}
+
+function migrateLegacySession(session: ConciergeSession, taskId: string): ConciergeSession {
+  if (session.mayaContext) return session
+  return {
+    ...session,
+    mayaContext: createMayaContextEnvelope({
+      taskId,
+      job: "create_content",
+      surface: "create",
+      startedAt: new Date(session.startedAt).toISOString(),
+    }),
+    // A legacy Calendar target cannot prove which thread owns it. History is preserved, while
+    // ambiguous targeting is cleared so a reload cannot act on the wrong post.
+    calendarTarget: null,
+  }
+}
+
 export function ConciergeProvider({
   children,
   suppressRestore = false,
+  operatingLayerEnabled = false,
+  initialSurface = "create",
 }: {
   children: React.ReactNode
   /** An explicit external creation handoff outranks a previously saved draft. */
   suppressRestore?: boolean
+  operatingLayerEnabled?: boolean
+  initialSurface?: MayaSurface
 }) {
   const restoredSavedAtRef = useRef<number | null>(null)
   const [session, setSession] = useState<ConciergeSession | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [workspaceBusy, setWorkspaceBusy] = useState(false)
+  const [activeSurface, setActiveSurfaceState] = useState<MayaSurface>(initialSurface)
   const hasSavedSession = Boolean(session)
 
   const openWithAesthetic = useCallback(
@@ -75,6 +161,27 @@ export function ConciergeProvider({
       // so the tap paints immediately instead of blocking the main thread (fixes the INP stall).
       const startedAt = Date.now()
       startTransition(() => {
+        if (operatingLayerEnabled) {
+          const context = createMayaContextEnvelope({
+            taskId: newMayaTaskId(),
+            job: jobForSurface(activeSurface),
+            surface: activeSurface,
+            ...(opts?.inspirationImageUrl
+              ? {
+                  inspirationRef: {
+                    url: opts.inspirationImageUrl,
+                    explicitlyCarried: true,
+                  },
+                }
+              : {}),
+            startedAt: new Date(startedAt).toISOString(),
+          })
+          setSession(previous =>
+            createCleanSession({ previous, context, aesthetic, options: opts })
+          )
+          setIsOpen(true)
+          return
+        }
         setSession({
           aesthetic,
           outputFormat: opts?.format ?? null,
@@ -95,7 +202,7 @@ export function ConciergeProvider({
         setIsOpen(true)
       })
     },
-    [workspaceBusy]
+    [activeSurface, operatingLayerEnabled, workspaceBusy]
   )
 
   const updateCurrentSession = useCallback((aesthetic: Aesthetic, opts?: OpenConciergeOptions) => {
@@ -139,6 +246,52 @@ export function ConciergeProvider({
         return
       }
       startTransition(() => {
+        if (operatingLayerEnabled) {
+          setSession(previous => {
+            const sameTask = mayaContextMatchesCalendarPost(
+              previous?.mayaContext,
+              target.feedId,
+              target.postId
+            )
+            const existingTarget = sameTask ? previous?.calendarTarget : null
+            const canKeepDelivery = existingTarget?.delivery?.imageUrl === target.imageUrl
+            const calendarTarget: CalendarPostTarget = existingTarget
+              ? {
+                  ...target,
+                  announced: existingTarget.announced,
+                  delivery: canKeepDelivery ? (existingTarget.delivery ?? null) : null,
+                }
+              : { ...target, announced: false, delivery: null }
+
+            if (sameTask && previous) {
+              return {
+                ...previous,
+                outputFormat: target.plannedFormat,
+                creationIdea: calendarCreationIdea(target),
+                creationIntent: {
+                  format: target.plannedFormat,
+                  source: "content_card",
+                  confidence: "high",
+                },
+                calendarTarget,
+              }
+            }
+
+            const taskId = calendarMayaTaskId(target.feedId, target.postId)
+            const context = createMayaContextEnvelope({
+              taskId,
+              job: "finish_calendar_post",
+              surface: "calendar",
+              feedId: target.feedId,
+              postId: target.postId,
+              postPosition: target.position,
+              startedAt: new Date().toISOString(),
+            })
+            return createCleanSession({ previous, context, calendarTarget })
+          })
+          setIsOpen(true)
+          return
+        }
         setSession(prev => {
           const existingTarget =
             prev?.calendarTarget?.requestId === target.requestId ? prev.calendarTarget : null
@@ -164,7 +317,6 @@ export function ConciergeProvider({
               generationSource: null,
               initialSetupAction: null,
               calendarTarget,
-              // Calendar is another surface for the same conversation, not a second chat.
               startedAt: prev.startedAt,
             }
           }
@@ -192,7 +344,7 @@ export function ConciergeProvider({
         setIsOpen(true)
       })
     },
-    [workspaceBusy]
+    [operatingLayerEnabled, workspaceBusy]
   )
 
   const markCalendarTargetAnnounced = useCallback((requestId: string) => {
@@ -257,8 +409,54 @@ export function ConciergeProvider({
     setSession(prev => (prev ? { ...prev, videoSourceUrl: url } : prev))
   }, [])
 
-  const resetCurrentSession = useCallback(() => {
+  const setActiveSurface = useCallback(
+    (surface: MayaSurface) => {
+      setActiveSurfaceState(surface)
+      if (!operatingLayerEnabled || !isOpen || workspaceBusy) return
+      setSession(previous => {
+        if (previous?.mayaContext?.surface === surface) return previous
+        return createCleanSession({ previous, context: newSurfaceContext(surface) })
+      })
+    },
+    [isOpen, operatingLayerEnabled, workspaceBusy]
+  )
+
+  const restoreHistoryTask = useCallback(
+    (taskId: string, restoredSession?: ConciergeSession | null) => {
+      if (!operatingLayerEnabled) {
+        if (restoredSession) setSession(restoredSession)
+        return
+      }
+      setSession(previous => {
+        if (!restoredSession) {
+          return createCleanSession({
+            previous,
+            context: newSurfaceContext(activeSurface, taskId),
+          })
+        }
+        const migrated = migrateLegacySession(restoredSession, taskId)
+        return {
+          ...migrated,
+          referenceSelfieUrl: migrated.referenceSelfieUrl ?? previous?.referenceSelfieUrl ?? null,
+        }
+      })
+      setIsOpen(true)
+    },
+    [activeSurface, operatingLayerEnabled]
+  )
+
+  const resetCurrentSession = useCallback((taskId?: string) => {
     if (workspaceBusy) {
+      setIsOpen(true)
+      return
+    }
+    if (operatingLayerEnabled) {
+      setSession(previous =>
+        createCleanSession({
+          previous,
+          context: newSurfaceContext(activeSurface, taskId ?? newMayaTaskId()),
+        })
+      )
       setIsOpen(true)
       return
     }
@@ -281,7 +479,7 @@ export function ConciergeProvider({
         : prev
     )
     setIsOpen(true)
-  }, [workspaceBusy])
+  }, [activeSurface, operatingLayerEnabled, workspaceBusy])
 
   const setGraphicText = useCallback((spec: GraphicTextSpec) => {
     setSession(prev => (prev ? { ...prev, graphicText: spec } : prev))
@@ -289,6 +487,14 @@ export function ConciergeProvider({
 
   const open = useCallback(() => {
     startTransition(() => {
+      if (operatingLayerEnabled) {
+        setSession(previous => {
+          if (previous?.mayaContext?.surface === activeSurface) return previous
+          return createCleanSession({ previous, context: newSurfaceContext(activeSurface) })
+        })
+        setIsOpen(true)
+        return
+      }
       setSession(
         prev =>
           prev ?? {
@@ -309,7 +515,7 @@ export function ConciergeProvider({
       )
       setIsOpen(true)
     })
-  }, [])
+  }, [activeSurface, operatingLayerEnabled])
 
   const openFresh = useCallback(
     (opts?: Pick<OpenConciergeOptions, "referenceSelfieUrl">) => {
@@ -324,6 +530,32 @@ export function ConciergeProvider({
       restoredSavedAtRef.current = startedAt
       void fetch("/api/app-v3/maya/draft", { method: "DELETE" }).catch(() => {})
       startTransition(() => {
+        if (operatingLayerEnabled) {
+          const context = createMayaContextEnvelope({
+            taskId: newMayaTaskId(),
+            job: jobForSurface(activeSurface),
+            surface: activeSurface,
+            startedAt: new Date(startedAt).toISOString(),
+          })
+          setSession(previous =>
+            createCleanSession({
+              previous,
+              context,
+              options: {
+                referenceSelfieUrl:
+                  opts?.referenceSelfieUrl ?? previous?.referenceSelfieUrl ?? null,
+                seed: "Help me choose what to make today.",
+                creationIntent: {
+                  format: null,
+                  source: "manual",
+                  confidence: "needs_clarify",
+                },
+              },
+            })
+          )
+          setIsOpen(true)
+          return
+        }
         setSession({
           aesthetic: GENERAL_MAYA_AESTHETIC,
           outputFormat: null,
@@ -342,7 +574,7 @@ export function ConciergeProvider({
         setIsOpen(true)
       })
     },
-    [session?.referenceSelfieUrl, workspaceBusy]
+    [activeSurface, operatingLayerEnabled, session?.referenceSelfieUrl, workspaceBusy]
   )
 
   const close = useCallback(() => setIsOpen(false), [])
@@ -352,8 +584,12 @@ export function ConciergeProvider({
   const [historyRequestId, setHistoryRequestId] = useState(0)
   const openHistory = useCallback(() => {
     setSession(
-      prev =>
-        prev ?? {
+      prev => {
+        if (prev) return prev
+        if (operatingLayerEnabled) {
+          return createCleanSession({ previous: null, context: newSurfaceContext(activeSurface) })
+        }
+        return {
           aesthetic: GENERAL_MAYA_AESTHETIC,
           outputFormat: null,
           referenceSelfieUrl: null,
@@ -368,10 +604,11 @@ export function ConciergeProvider({
           creationIdea: null,
           startedAt: Date.now(),
         }
+      }
     )
     setIsOpen(true)
     setHistoryRequestId(n => n + 1)
-  }, [])
+  }, [activeSurface, operatingLayerEnabled])
 
   useEffect(() => {
     saveConciergeSnapshot({ isOpen, session })
@@ -383,7 +620,15 @@ export function ConciergeProvider({
     const local = readConciergeSnapshot()
     if (local) {
       restoredSavedAtRef.current = local.savedAt
-      setSession(local.session)
+      const localDraft = readMayaDraftForSession(local.session.startedAt)
+      setSession(
+        operatingLayerEnabled
+          ? migrateLegacySession(
+              local.session,
+              local.session.mayaContext?.taskId ?? localDraft?.chatId ?? newMayaTaskId()
+            )
+          : local.session
+      )
       setIsOpen(false)
     }
 
@@ -396,14 +641,22 @@ export function ConciergeProvider({
         if (!serverDraft) return
         if (restoredSavedAtRef.current && restoredSavedAtRef.current >= serverDraft.savedAt) return
         restoredSavedAtRef.current = serverDraft.savedAt
-        setSession(serverDraft.session as ConciergeSession)
+        const restoredSession = serverDraft.session as ConciergeSession
+        setSession(
+          operatingLayerEnabled
+            ? migrateLegacySession(
+                restoredSession,
+                restoredSession.mayaContext?.taskId ?? serverDraft.chatId
+              )
+            : restoredSession
+        )
         setIsOpen(false)
       })
       .catch(() => {})
     return () => {
       cancelled = true
     }
-  }, [suppressRestore])
+  }, [operatingLayerEnabled, suppressRestore])
 
   const value = useMemo<ConciergeContextValue>(
     () => ({
@@ -411,6 +664,8 @@ export function ConciergeProvider({
       isOpen,
       workspaceBusy,
       setWorkspaceBusy,
+      setActiveSurface,
+      restoreHistoryTask,
       hasSavedSession,
       open,
       openFresh,
@@ -433,6 +688,8 @@ export function ConciergeProvider({
       session,
       isOpen,
       workspaceBusy,
+      setActiveSurface,
+      restoreHistoryTask,
       hasSavedSession,
       open,
       openFresh,

@@ -40,6 +40,7 @@ import { EditMode } from "./edit-mode"
 import { AESTHETICS, MAYA_DECIDES_AESTHETIC } from "./aesthetics"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { finishMayaJob } from "@/lib/app-v3/maya/job-analytics"
+import { newMayaTaskId } from "@/lib/app-v3/maya/context-envelope"
 import type { ConceptCard as ConceptCardData, ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
 import {
   buildCustomModelConceptPrompt,
@@ -51,6 +52,7 @@ import type {
   AestheticShot,
   AppV3AnalyticsCohort,
   CalendarPostTarget,
+  ConciergeSession,
   CreationIntent,
   GenerationSource,
   InlineActionKind,
@@ -89,7 +91,10 @@ import {
 import {
   clearMayaDraft,
   readMayaDraftForSession,
+  readMayaTaskDraft,
+  readMayaTaskDraftState,
   saveMayaDraft,
+  saveMayaTaskDraft,
   type MayaDraftSnapshot,
 } from "./continuity"
 
@@ -603,11 +608,13 @@ async function pollVideoGeneration(predictionId: string, videoId: number): Promi
 }
 
 export function MayaConcierge({
+  operatingLayerEnabled = false,
   hasTrainedModel = false,
   analyticsCohort,
   onOpenCalendar,
   calendarSurfaceActive = false,
 }: {
+  operatingLayerEnabled?: boolean
   hasTrainedModel?: boolean
   analyticsCohort?: AppV3AnalyticsCohort
   onOpenCalendar?: () => void
@@ -620,6 +627,7 @@ export function MayaConcierge({
     isOpen,
     historyRequestId,
     setWorkspaceBusy,
+    restoreHistoryTask,
     updateCurrentSession,
     markCalendarTargetAnnounced,
     completeCalendarTarget,
@@ -659,7 +667,10 @@ export function MayaConcierge({
   const draftSeededRef = useRef(false)
   if (!draftSeededRef.current && session?.startedAt) {
     draftSeededRef.current = true
-    restoredDraftRef.current = readMayaDraftForSession(session.startedAt)
+    restoredDraftRef.current =
+      operatingLayerEnabled && session.mayaContext?.taskId
+        ? readMayaTaskDraftState(session.mayaContext.taskId)
+        : readMayaDraftForSession(session.startedAt)
   }
   const restoredDraft = restoredDraftRef.current
   const lastPulledFormatRef = useRef<string | null>(
@@ -985,7 +996,11 @@ export function MayaConcierge({
   )
 
   // Conversation persistence (Phase C). Client-driven save on each completed turn.
-  const [chatId, setChatId] = useState<string>(() => restoredDraft?.chatId ?? newChatId())
+  const [chatId, setChatId] = useState<string>(() =>
+    operatingLayerEnabled && session?.mayaContext?.taskId
+      ? session.mayaContext.taskId
+      : (restoredDraft?.chatId ?? newChatId())
+  )
   // Keep one client-side Chat instance while the persistence id changes. @ai-sdk/react creates
   // a brand-new Chat during render when its `id` option changes; a same-click setMessages call
   // still targets the previous instance, so history hydration would be discarded.
@@ -1021,18 +1036,164 @@ export function MayaConcierge({
   const [draftSyncError, setDraftSyncError] = useState(false)
   const [draftSyncRetry, setDraftSyncRetry] = useState(0)
   const appliedDraftSessionRef = useRef<number | null>(restoredDraft?.sessionStartedAt ?? null)
+  const appliedTaskIdRef = useRef<string | null>(
+    operatingLayerEnabled && restoredDraft && session?.mayaContext?.taskId
+      ? session.mayaContext.taskId
+      : null
+  )
+  const hydratedTaskIdRef = useRef<string | null>(appliedTaskIdRef.current)
+  const [taskHydrationEpoch, setTaskHydrationEpoch] = useState(0)
   // The chatId that belongs to the CURRENT session. For one commit after a session switch,
   // the rendered chatId/messages are still the previous thread's - the save effect must not
   // persist that stale pairing under the new session key ("Start new shows the old chat").
-  const sessionChatIdRef = useRef<string | null>(restoredDraft?.chatId ?? null)
+  const sessionChatIdRef = useRef<string | null>(
+    operatingLayerEnabled && session?.mayaContext?.taskId
+      ? session.mayaContext.taskId
+      : (restoredDraft?.chatId ?? null)
+  )
   // Changing useChat's id and hydrating its messages can span two React commits. Suppress the
   // first save for the destination id so the previous conversation can never overwrite a past
   // chat during that transition.
   const suppressChatSaveForIdRef = useRef<string | null>(null)
   const chatSaveSignatureRef = useRef("")
+  const calendarHandoffSentRef = useRef<string | null>(
+    session?.calendarTarget?.announced ? (session.calendarTarget.requestId ?? null) : null
+  )
+
+  const hydrateTaskConversation = useCallback(
+    (snapshot: ServerMayaDraftSnapshot, activeSession: NonNullable<typeof session>) => {
+      const taskId = activeSession.mayaContext?.taskId
+      if (!taskId || snapshot.chatId !== taskId) return
+      const restoredSession = snapshot.session
+      const restoringCalendarPost = activeSession.mayaContext?.job === "finish_calendar_post"
+
+      updateCurrentSession(restoredSession.aesthetic as Aesthetic, {
+        format: restoringCalendarPost
+          ? (activeSession.outputFormat ?? undefined)
+          : (restoredSession.outputFormat ?? undefined),
+        referenceSelfieUrl:
+          restoredSession.referenceSelfieUrl ?? activeSession.referenceSelfieUrl,
+        videoSourceUrl: restoredSession.videoSourceUrl,
+        inspirationImageUrl: restoredSession.inspirationImageUrl,
+        creationIntent: restoringCalendarPost
+          ? activeSession.creationIntent
+          : restoredSession.creationIntent,
+        shotDirector: restoredSession.shotDirector,
+        generationSource: snapshot.generationSource,
+        creationIdea: restoringCalendarPost
+          ? activeSession.creationIdea
+          : restoredSession.creationIdea,
+      })
+      sessionResumedWithHistoryRef.current = snapshot.messages.length > 0
+      savedCountRef.current = snapshot.messages.length
+      lastPulledFormatRef.current = snapshot.messages.length
+        ? (activeSession.outputFormat ?? null)
+        : null
+      seedRetiredRef.current = Boolean(snapshot.messages.length)
+      formatSwitchAppliedRef.current.clear()
+      for (const message of snapshot.messages as any[]) {
+        if (message?.role !== "assistant" || !Array.isArray(message.parts)) continue
+        for (const part of message.parts) {
+          const format = extractFormatSwitch(part)
+          if (format) formatSwitchAppliedRef.current.add(`${message.id}:${format}`)
+        }
+      }
+      sessionChatIdRef.current = taskId
+      suppressChatSaveForIdRef.current = taskId
+      setChatId(taskId)
+      setMessages(snapshot.messages as any[])
+      setGenState(snapshot.genState as Record<string, ConceptGenState>)
+      setGeneratedOnce(snapshot.generatedOnce)
+      setLastGeneration(snapshot.lastGeneration ?? null)
+      setTextOverlayMode(snapshot.textOverlayMode ?? null)
+      setTextStyleChoice(snapshot.textStyleChoice ?? null)
+      setTextStyleAdjustments(snapshot.textStyleAdjustments ?? null)
+      setGenerationSource(
+        snapshot.generationSource === "trained-model" && hasTrainedModel
+          ? "trained-model"
+          : "selfie"
+      )
+      setValueUsed(snapshot.valueUsed === true)
+      setSetupOpen(snapshot.setupOpen)
+      setPreMessageThreadOpen(false)
+      setLocalCreationIntent(activeSession.creationIntent ?? null)
+      if (snapshot.messages.length > 0 && activeSession.calendarTarget) {
+        // Hydration and the provider's announced-state update paint on separate commits. Claim
+        // this request synchronously so the handoff effect cannot send a duplicate turn in the
+        // gap between restoring the messages and painting `announced: true`.
+        calendarHandoffSentRef.current = activeSession.calendarTarget.requestId
+        markCalendarTargetAnnounced(activeSession.calendarTarget.requestId)
+      }
+    },
+    [hasTrainedModel, markCalendarTargetAnnounced, setMessages, updateCurrentSession]
+  )
 
   useEffect(() => {
     if (!session) return
+    if (operatingLayerEnabled && session.mayaContext) {
+      const taskId = session.mayaContext.taskId
+      if (appliedTaskIdRef.current === taskId) return
+      appliedTaskIdRef.current = taskId
+      appliedDraftSessionRef.current = session.startedAt
+      hydratedTaskIdRef.current = null
+      restoredDraftRef.current = null
+      savedCountRef.current = 0
+      lastPulledFormatRef.current = null
+      seedRetiredRef.current = false
+      formatSwitchAppliedRef.current.clear()
+      inFlightGenerationKeysRef.current.clear()
+      pendingInspirationIntentRef.current = null
+      sessionChatIdRef.current = taskId
+      suppressChatSaveForIdRef.current = taskId
+      setChatId(taskId)
+      setMessages([])
+      setGenState({})
+      setGeneratedOnce(false)
+      setLastGeneration(null)
+      setTextOverlayMode(null)
+      setTextStyleChoice(null)
+      setTextStyleAdjustments(null)
+      setGenerationSource(
+        session.generationSource === "trained-model" && hasTrainedModel ? "trained-model" : "selfie"
+      )
+      setValueUsed(false)
+      setSetupOpen(false)
+      setPreMessageThreadOpen(false)
+      setLocalCreationIntent(session.creationIntent ?? null)
+
+      let cancelled = false
+      void (async () => {
+        let snapshot = readMayaTaskDraft(taskId)
+        if (!snapshot) {
+          const response = await fetch(`/api/app-v3/maya/chats/${encodeURIComponent(taskId)}`)
+          if (response.ok) {
+            const data = (await response.json().catch(() => null)) as {
+              messages?: unknown[]
+              workspace?: ServerMayaDraftSnapshot | null
+            } | null
+            if (data?.workspace?.chatId === taskId) {
+              snapshot = {
+                ...data.workspace,
+                messages: Array.isArray(data.messages) ? data.messages : data.workspace.messages,
+              }
+              saveMayaTaskDraft(snapshot)
+            }
+          }
+        }
+        if (cancelled || appliedTaskIdRef.current !== taskId) return
+        if (snapshot) hydrateTaskConversation(snapshot, session)
+        hydratedTaskIdRef.current = taskId
+        setTaskHydrationEpoch(value => value + 1)
+      })().catch(() => {
+        if (cancelled || appliedTaskIdRef.current !== taskId) return
+        hydratedTaskIdRef.current = taskId
+        setTaskHydrationEpoch(value => value + 1)
+      })
+
+      return () => {
+        cancelled = true
+      }
+    }
     if (appliedDraftSessionRef.current === session.startedAt) return
     const draft = readMayaDraftForSession(session.startedAt)
     appliedDraftSessionRef.current = session.startedAt
@@ -1096,7 +1257,13 @@ export function MayaConcierge({
     setSetupOpen(draft.setupOpen)
     setPreMessageThreadOpen(false)
     setLocalCreationIntent(session.creationIntent ?? null)
-  }, [hasTrainedModel, session, setMessages])
+  }, [
+    hasTrainedModel,
+    hydrateTaskConversation,
+    operatingLayerEnabled,
+    session,
+    setMessages,
+  ])
 
   // A progressive preview can update many times per second. Persist only the durable projection
   // so transient frames neither bloat storage nor continuously cancel either save debounce.
@@ -1104,6 +1271,13 @@ export function MayaConcierge({
 
   useEffect(() => {
     if (!isOpen || !session) return
+    if (
+      operatingLayerEnabled &&
+      session.mayaContext &&
+      session.mayaContext.taskId !== chatId
+    ) {
+      return
+    }
     // Stale-commit guard: right after a session switch, this render's chatId/messages still
     // belong to the PREVIOUS thread. Saving them under the new session key is how "Start
     // new" used to resurrect the old conversation.
@@ -1125,20 +1299,24 @@ export function MayaConcierge({
       generationSource,
       valueUsed,
     }
-    saveMayaDraft({
-      chatId: snapshot.chatId,
-      sessionStartedAt: snapshot.session.startedAt,
-      messages: snapshot.messages,
-      genState: durableGenState,
-      generatedOnce: snapshot.generatedOnce,
-      setupOpen: snapshot.setupOpen,
-      lastGeneration,
-      textOverlayMode,
-      textStyleChoice,
-      textStyleAdjustments,
-      generationSource,
-      valueUsed,
-    })
+    if (operatingLayerEnabled && session.mayaContext) {
+      saveMayaTaskDraft(snapshot)
+    } else {
+      saveMayaDraft({
+        chatId: snapshot.chatId,
+        sessionStartedAt: snapshot.session.startedAt,
+        messages: snapshot.messages,
+        genState: durableGenState,
+        generatedOnce: snapshot.generatedOnce,
+        setupOpen: snapshot.setupOpen,
+        lastGeneration,
+        textOverlayMode,
+        textStyleChoice,
+        textStyleAdjustments,
+        generationSource,
+        valueUsed,
+      })
+    }
     setDraftSyncError(false)
     const timeout = window.setTimeout(() => {
       void fetch("/api/app-v3/maya/draft", {
@@ -1160,6 +1338,7 @@ export function MayaConcierge({
     isOpen,
     lastGeneration,
     messages,
+    operatingLayerEnabled,
     session,
     setupOpen,
     textOverlayMode,
@@ -1171,6 +1350,13 @@ export function MayaConcierge({
 
   useEffect(() => {
     if (status !== "ready" || !session) return
+    if (
+      operatingLayerEnabled &&
+      session.mayaContext &&
+      session.mayaContext.taskId !== chatId
+    ) {
+      return
+    }
     if (sessionChatIdRef.current !== null && sessionChatIdRef.current !== chatId) return
     if (suppressChatSaveForIdRef.current === chatId) {
       suppressChatSaveForIdRef.current = null
@@ -1246,6 +1432,7 @@ export function MayaConcierge({
     isOpen,
     lastGeneration,
     messages,
+    operatingLayerEnabled,
     session,
     setupOpen,
     status,
@@ -1404,15 +1591,17 @@ export function MayaConcierge({
     void retryAesthetics()
   }, [isOpen, retryAesthetics])
 
-  const calendarHandoffSentRef = useRef<string | null>(
-    session?.calendarTarget?.announced ? (session.calendarTarget.requestId ?? null) : null
-  )
-
-  // Calendar is a surface switch inside this same chat. Send one visible, human handoff turn
-  // while keeping the existing chat id, messages, model routing, Vault logic, and memory.
+  // A new task gets one visible Calendar handoff after its post-scoped history has hydrated.
   useEffect(() => {
     const target = session?.calendarTarget
     if (!calendarSurfaceActive || !isOpen || !target || target.announced || isThinking) return
+    if (
+      operatingLayerEnabled &&
+      session?.mayaContext &&
+      hydratedTaskIdRef.current !== session.mayaContext.taskId
+    ) {
+      return
+    }
     if (calendarHandoffSentRef.current === target.requestId) return
     calendarHandoffSentRef.current = target.requestId
     const intent = intentForFormat(target.plannedFormat, "content_card")
@@ -1442,8 +1631,11 @@ export function MayaConcierge({
     isOpen,
     isThinking,
     markCalendarTargetAnnounced,
+    operatingLayerEnabled,
     sendMessage,
     session?.calendarTarget,
+    session?.mayaContext,
+    taskHydrationEpoch,
   ])
 
   // Maya-guided: once a format is chosen (a chip tap, or preselected from Content), she
@@ -1452,6 +1644,13 @@ export function MayaConcierge({
   // this same effect fires and pulls the committed format, so upload completes the flow.
   useEffect(() => {
     if (!isOpen || !session) return
+    if (
+      operatingLayerEnabled &&
+      session.mayaContext &&
+      hydratedTaskIdRef.current !== session.mayaContext.taskId
+    ) {
+      return
+    }
     // Uploading can update the active selfie before the member confirms it. Do not start
     // Maya behind the reference manager; Continue is the explicit handoff into creation.
     if (selfieManagerOpen) return
@@ -1498,12 +1697,14 @@ export function MayaConcierge({
     isOpen,
     localCreationIntent,
     messages.length,
+    operatingLayerEnabled,
     selfieManagerOpen,
     session,
     isThinking,
     sendMessage,
     textStyleChoice,
     textOverlayMode,
+    taskHydrationEpoch,
   ])
 
   // Maya-first blank starts: if the Create page opened with typed text but no committed format,
@@ -1511,6 +1712,13 @@ export function MayaConcierge({
   // needs-clarify session opened to a quiet drawer that still expected the member to pick a chip.
   useEffect(() => {
     if (!isOpen || !session || isThinking) return
+    if (
+      operatingLayerEnabled &&
+      session.mayaContext &&
+      hydratedTaskIdRef.current !== session.mayaContext.taskId
+    ) {
+      return
+    }
     if (session.outputFormat) return
     if (messages.length > 0) return
     const seed = session.seedPrompt?.trim()
@@ -1518,7 +1726,15 @@ export function MayaConcierge({
     if (seededMessageSentRef.current === session.startedAt) return
     seededMessageSentRef.current = session.startedAt
     sendMessage({ text: seed })
-  }, [isOpen, isThinking, messages.length, sendMessage, session])
+  }, [
+    isOpen,
+    isThinking,
+    messages.length,
+    operatingLayerEnabled,
+    sendMessage,
+    session,
+    taskHydrationEpoch,
+  ])
 
   // Conversational format switching (SUITE-UX-02): when Maya calls set_format mid-chat
   // ("make me a carousel" typed, no chip), commit the switch here - the auto-pull effect
@@ -1624,21 +1840,36 @@ export function MayaConcierge({
     if (!isOpen) return
     const previouslyFocused =
       document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const drawerElement = drawerRef.current
     previousFocusRef.current = previouslyFocused
-    const previousBodyOverflow = document.body.style.overflow
-    if (!isDesktopWorkspace) document.body.style.overflow = "hidden"
     const frame = window.requestAnimationFrame(() => drawerCloseRef.current?.focus())
     return () => {
       window.cancelAnimationFrame(frame)
-      document.body.style.overflow = previousBodyOverflow
-      if (previouslyFocused?.isConnected) {
-        previouslyFocused.focus()
-      } else {
-        window.requestAnimationFrame(() => {
+      // React runs this cleanup while the old launcher node can still report `isConnected`,
+      // then replaces it as the drawer unmounts. Restore focus after that commit so it lands
+      // on a node that remains in the post-close DOM.
+      window.requestAnimationFrame(() => {
+        if (
+          previouslyFocused &&
+          previouslyFocused !== document.body &&
+          previouslyFocused.isConnected &&
+          !drawerElement?.contains(previouslyFocused)
+        ) {
+          previouslyFocused.focus()
+        } else {
           document.querySelector<HTMLElement>('[aria-label="Open Maya"]')?.focus()
-        })
-      }
+        }
+      })
       previousFocusRef.current = null
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen || isDesktopWorkspace) return
+    const previousBodyOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previousBodyOverflow
     }
   }, [isDesktopWorkspace, isOpen])
 
@@ -1994,7 +2225,7 @@ export function MayaConcierge({
     setNewChatConfirming(false)
     clearMayaDraft()
     void fetch("/api/app-v3/maya/draft", { method: "DELETE" }).catch(() => {})
-    const nextChatId = newChatId()
+    const nextChatId = operatingLayerEnabled ? newMayaTaskId() : newChatId()
     setMenuOpen(false)
     setSetupOpen(false)
     savedCountRef.current = 0
@@ -2026,7 +2257,7 @@ export function MayaConcierge({
     // Visible reset (P1): back to the four format chips, NOT an instant re-pull of the same
     // directions (which made "New chat" look like it did nothing). Selfie + memory are kept.
     setOutputFormat(null)
-    resetCurrentSession()
+    resetCurrentSession(nextChatId)
   }
 
   async function handleSelectChat(id: string) {
@@ -2055,6 +2286,13 @@ export function MayaConcierge({
     setChatId(id)
     const workspace = data?.workspace ?? null
     if (workspace) {
+      if (operatingLayerEnabled) {
+        appliedTaskIdRef.current = id
+        hydratedTaskIdRef.current = id
+        restoreHistoryTask(id, workspace.session as ConciergeSession)
+        saveMayaTaskDraft({ ...workspace, chatId: id, messages: loaded })
+        if (workspace.session.mayaContext?.surface === "calendar") onOpenCalendar?.()
+      }
       updateCurrentSession(workspace.session.aesthetic as Aesthetic, {
         format: workspace.session.outputFormat ?? undefined,
         referenceSelfieUrl: workspace.session.referenceSelfieUrl,
@@ -2079,6 +2317,11 @@ export function MayaConcierge({
       setValueUsed(workspace.valueUsed === true)
       setSetupOpen(workspace.setupOpen)
     } else {
+      if (operatingLayerEnabled) {
+        appliedTaskIdRef.current = id
+        hydratedTaskIdRef.current = id
+        restoreHistoryTask(id)
+      }
       setGenState({})
       setGeneratedOnce(false)
       setLastGeneration(null)
@@ -3693,6 +3936,15 @@ export function MayaConcierge({
     })
   }
 
+  const childOverlayOpen =
+    historyOpen ||
+    memoryOpen ||
+    selfieManagerOpen ||
+    Boolean(lightbox) ||
+    creditModal.open ||
+    trialCapOpen ||
+    Boolean(editTarget)
+
   return (
     <div className="pointer-events-none fixed inset-0 z-50 flex w-full max-w-[100dvw] items-end justify-end overscroll-x-none [overflow-x:clip] lg:items-stretch">
       <button
@@ -3706,8 +3958,19 @@ export function MayaConcierge({
       <aside
         ref={drawerRef}
         role="dialog"
-        aria-modal={!isDesktopWorkspace}
+        aria-modal={!childOverlayOpen && !isDesktopWorkspace}
+        aria-hidden={childOverlayOpen ? true : undefined}
         aria-labelledby="maya-workspace-title"
+        data-maya-task-id={operatingLayerEnabled ? session.mayaContext?.taskId : undefined}
+        data-maya-job={operatingLayerEnabled ? session.mayaContext?.job : undefined}
+        data-maya-surface={operatingLayerEnabled ? session.mayaContext?.surface : undefined}
+        data-maya-feed-id={operatingLayerEnabled ? session.mayaContext?.feedId : undefined}
+        data-maya-post-id={operatingLayerEnabled ? session.mayaContext?.postId : undefined}
+        data-maya-post-position={
+          operatingLayerEnabled ? session.mayaContext?.postPosition : undefined
+        }
+        data-maya-format={session.outputFormat ?? "none"}
+        data-maya-inspiration={inspirationUrl ? "present" : "none"}
         style={
           keyboardBox
             ? { height: keyboardBox.height, transform: `translateY(${keyboardBox.top}px)` }

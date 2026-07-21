@@ -115,4 +115,61 @@ describe("App v3 server-backed Maya drafts", () => {
 
     expect(snapshot?.session.initialSetupAction).toBeNull()
   })
+
+  it("restores only the Maya task envelope owned by the saved chat", () => {
+    const base = {
+      isOpen: true,
+      savedAt: Date.now(),
+      chatId: "maya-calendar-v1-101-707",
+      session: {
+        aesthetic: {
+          id: "maya-blank",
+          name: "Maya",
+          blurb: "Blank session.",
+          coverImage: "",
+          thumbnails: [],
+          shotCount: 0,
+          intent: "Blank.",
+        },
+        outputFormat: "photo",
+        referenceSelfieUrl: null,
+        graphicText: null,
+        startedAt: 123,
+        mayaContext: {
+          schemaVersion: 1,
+          taskId: "maya-calendar-v1-101-707",
+          job: "finish_calendar_post",
+          surface: "calendar",
+          feedId: 101,
+          postId: 707,
+          postPosition: 7,
+          startedAt: "2026-07-21T10:00:00.000Z",
+        },
+      },
+      messages: [],
+      genState: {},
+      generatedOnce: false,
+      setupOpen: true,
+    }
+
+    const owned = sanitizeServerMayaDraftSnapshot(base)
+    expect(owned?.session.mayaContext).toMatchObject({
+      taskId: "maya-calendar-v1-101-707",
+      postId: 707,
+    })
+
+    expect(
+      sanitizeServerMayaDraftSnapshot({
+        ...base,
+        session: {
+          ...base.session,
+          mayaContext: {
+            ...base.session.mayaContext,
+            taskId: "maya-calendar-v1-101-708",
+            postId: 708,
+          },
+        },
+      })
+    ).toBeNull()
+  })
 })

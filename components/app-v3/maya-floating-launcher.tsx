@@ -13,7 +13,11 @@ import { useConcierge } from "./concierge-context"
 // Same portrait the chat thread uses for Maya, so the launcher unmistakably reads as "her".
 const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
 
-export function MayaFloatingLauncher() {
+export function MayaFloatingLauncher({
+  operatingLayerEnabled = false,
+}: {
+  operatingLayerEnabled?: boolean
+}) {
   const { isOpen, open, openFresh, openHistory, hasSavedSession, workspaceBusy } = useConcierge()
   const [choiceOpen, setChoiceOpen] = useState(false)
 
@@ -30,7 +34,7 @@ export function MayaFloatingLauncher() {
 
   return (
     <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-50 sm:right-6">
-      {choiceOpen && hasSavedSession && (
+      {!operatingLayerEnabled && choiceOpen && hasSavedSession && (
         <>
           <button
             type="button"
@@ -92,6 +96,10 @@ export function MayaFloatingLauncher() {
       <button
         type="button"
         onClick={() => {
+          if (operatingLayerEnabled) {
+            open()
+            return
+          }
           if (hasSavedSession) {
             setChoiceOpen(current => !current)
             return
@@ -99,8 +107,8 @@ export function MayaFloatingLauncher() {
           openFresh()
         }}
         aria-label="Open Maya"
-        aria-expanded={hasSavedSession ? choiceOpen : undefined}
-        aria-controls={hasSavedSession ? "maya-launcher-choices" : undefined}
+        aria-expanded={!operatingLayerEnabled && hasSavedSession ? choiceOpen : undefined}
+        aria-controls={!operatingLayerEnabled && hasSavedSession ? "maya-launcher-choices" : undefined}
         className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-[#0D0E10] p-[3px] shadow-[0_10px_30px_rgba(13,14,16,0.28)] transition-transform duration-200 hover:scale-[1.04] focus:outline-none focus:ring-2 focus:ring-[#0D0E10] focus:ring-offset-2 focus:ring-offset-[#F8FAFA] animate-in fade-in zoom-in-90 duration-300 motion-reduce:animate-none"
       >
         <span className="relative block h-full w-full overflow-hidden rounded-full">

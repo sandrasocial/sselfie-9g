@@ -3,6 +3,7 @@ import {
   sanitizeServerMayaDraftSnapshot,
   type ServerMayaDraftSnapshot,
 } from "@/lib/app-v3/maya/draft-snapshot"
+import { sanitizeMayaContextEnvelope } from "@/lib/app-v3/maya/context-envelope"
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 import type {
   AestheticShot,
@@ -22,6 +23,7 @@ import { sanitizeTextOverlaySpec, type OverlayStyleId } from "@/lib/app-v3/text-
 export const APP_SECTION_STORAGE_KEY = "sselfie.appV3.section.v1"
 export const CONCIERGE_STORAGE_KEY = "sselfie.appV3.concierge.v1"
 export const MAYA_DRAFT_STORAGE_KEY = "sselfie.appV3.mayaDraft.v1"
+export const MAYA_TASK_DRAFTS_STORAGE_KEY = "sselfie.appV3.mayaTasks.v1"
 
 const VALID_SECTIONS: AppV3Section[] = [
   "create",
@@ -335,6 +337,7 @@ function sanitizeSession(value: unknown): ConciergeSession | null {
   const seedPrompt = typeof session.seedPrompt === "string" ? session.seedPrompt : null
 
   return {
+    mayaContext: sanitizeMayaContextEnvelope(session.mayaContext),
     aesthetic: {
       id: aesthetic.id,
       name: aesthetic.name,
@@ -539,6 +542,64 @@ export function clearMayaDraft() {
   }
 }
 
+function projectServerTaskDraft(snapshot: ServerMayaDraftSnapshot): MayaDraftSnapshot {
+  return {
+    chatId: snapshot.chatId,
+    sessionStartedAt: snapshot.session.startedAt,
+    savedAt: snapshot.savedAt,
+    messages: snapshot.messages,
+    genState: snapshot.genState as Record<string, ConceptGenState>,
+    generatedOnce: snapshot.generatedOnce,
+    setupOpen: snapshot.setupOpen,
+    lastGeneration: snapshot.lastGeneration,
+    textOverlayMode: snapshot.textOverlayMode,
+    textStyleChoice: snapshot.textStyleChoice,
+    textStyleAdjustments: snapshot.textStyleAdjustments,
+    generationSource: snapshot.generationSource,
+    valueUsed: snapshot.valueUsed,
+  }
+}
+
+/** Task-scoped local continuity for the Sandra-only operating layer. Legacy single-draft
+ * storage remains untouched so disabling the flag is an immediate rollback. */
+export function readMayaTaskDraft(taskId: string): ServerMayaDraftSnapshot | null {
+  const stored = readJson(MAYA_TASK_DRAFTS_STORAGE_KEY)
+  if (!stored || typeof stored !== "object" || Array.isArray(stored)) return null
+  const snapshot = sanitizeServerMayaDraftSnapshot((stored as Record<string, unknown>)[taskId])
+  if (!snapshot || snapshot.chatId !== taskId || snapshot.session.mayaContext?.taskId !== taskId) {
+    return null
+  }
+  return snapshot
+}
+
+export function readMayaTaskDraftState(taskId: string): MayaDraftSnapshot | null {
+  const snapshot = readMayaTaskDraft(taskId)
+  return snapshot ? projectServerTaskDraft(snapshot) : null
+}
+
+export function saveMayaTaskDraft(snapshot: ServerMayaDraftSnapshot) {
+  const sanitized = sanitizeServerMayaDraftSnapshot(snapshot)
+  const taskId = sanitized?.session.mayaContext?.taskId
+  if (!sanitized || !taskId || sanitized.chatId !== taskId) return
+
+  const current = readJson(MAYA_TASK_DRAFTS_STORAGE_KEY)
+  const drafts =
+    current && typeof current === "object" && !Array.isArray(current)
+      ? { ...(current as Record<string, unknown>) }
+      : {}
+  drafts[taskId] = sanitized
+
+  const retained = Object.entries(drafts)
+    .map(([id, value]) => ({ id, snapshot: sanitizeServerMayaDraftSnapshot(value) }))
+    .filter(
+      (entry): entry is { id: string; snapshot: ServerMayaDraftSnapshot } =>
+        Boolean(entry.snapshot)
+    )
+    .sort((a, b) => b.snapshot.savedAt - a.snapshot.savedAt)
+    .slice(0, 30)
+  writeJson(MAYA_TASK_DRAFTS_STORAGE_KEY, Object.fromEntries(retained.map(x => [x.id, x.snapshot])))
+}
+
 export function cacheServerMayaDraftSnapshot(value: unknown): ServerMayaDraftSnapshot | null {
   const snapshot = sanitizeServerMayaDraftSnapshot(value)
   if (!snapshot) return null
@@ -558,5 +619,6 @@ export function cacheServerMayaDraftSnapshot(value: unknown): ServerMayaDraftSna
     generationSource: snapshot.generationSource,
     valueUsed: snapshot.valueUsed,
   })
+  if (snapshot.session.mayaContext?.taskId === snapshot.chatId) saveMayaTaskDraft(snapshot)
   return snapshot
 }

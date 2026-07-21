@@ -1,5 +1,9 @@
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 import {
+  sanitizeMayaContextEnvelope,
+  type MayaContextEnvelope,
+} from "@/lib/app-v3/maya/context-envelope"
+import {
   sanitizeTextOverlaySpec,
   type OverlayStyleId,
   type TextOverlaySpec,
@@ -63,6 +67,7 @@ export type ServerAestheticSnapshot = {
 }
 
 export type ServerConciergeSessionSnapshot = {
+  mayaContext?: MayaContextEnvelope | null
   aesthetic: ServerAestheticSnapshot
   outputFormat: ServerOutputFormat | null
   referenceSelfieUrl: string | null
@@ -406,6 +411,7 @@ function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null 
     return null
   }
   return {
+    mayaContext: sanitizeMayaContextEnvelope(session.mayaContext),
     aesthetic,
     outputFormat: (session.outputFormat as ServerOutputFormat | null) ?? null,
     referenceSelfieUrl:
@@ -537,6 +543,7 @@ export function sanitizeServerMayaDraftSnapshot(value: unknown): ServerMayaDraft
   if (!Array.isArray(draft.messages)) return null
   const session = sanitizeSession(draft.session)
   if (!session) return null
+  if (session.mayaContext && session.mayaContext.taskId !== draft.chatId) return null
   return {
     isOpen: draft.isOpen === true,
     chatId: draft.chatId,

@@ -1,6 +1,8 @@
 // SSELFIE Studio 3.0 - shared types.
 // Strict, self-contained. This tree must NOT import from components/sselfie/.
 
+import type { MayaContextEnvelope, MayaSurface } from "@/lib/app-v3/maya/context-envelope"
+
 /** The output format the user is creating. The OpenAI engine renders all of these
  *  natively in one synchronous call (photo, or structured marketing graphics). */
 export type OutputFormat =
@@ -127,6 +129,8 @@ export interface CalendarPostTarget {
 
 /** State carried through the Concierge Handoff once a vibe is chosen. */
 export interface ConciergeSession {
+  /** Phase 1 routing identity. Stable member knowledge stays server-owned and is not copied here. */
+  mayaContext?: MayaContextEnvelope | null
   aesthetic: Aesthetic
   /** Chosen at the start of the concierge conversation. */
   outputFormat: OutputFormat | null
@@ -200,6 +204,10 @@ export interface ConciergeContextValue {
   workspaceBusy: boolean
   /** Keeps every Maya entry point from replacing a workspace that still has work in flight. */
   setWorkspaceBusy: (busy: boolean) => void
+  /** Keeps contextual entry aligned with the visible Suite surface. */
+  setActiveSurface: (surface: MayaSurface) => void
+  /** Restores an explicitly selected History task without blending it into the active task. */
+  restoreHistoryTask: (taskId: string, restoredSession?: ConciergeSession | null) => void
   /** True when a saved active session exists and can be continued intentionally. */
   hasSavedSession: boolean
   /** Reopen the current conversation, or start a blank general Maya session if none exists. */
@@ -214,7 +222,7 @@ export interface ConciergeContextValue {
   openWithAesthetic: (aesthetic: Aesthetic, opts?: OpenConciergeOptions) => void
   /** Change the active visual world without starting a new chat or changing startedAt. */
   updateCurrentSession: (aesthetic: Aesthetic, opts?: OpenConciergeOptions) => void
-  /** Reopen this same Maya conversation with one exact Calendar post selected. */
+  /** Open or restore the task owned by one exact Calendar grid and post. */
   openForCalendarPost: (target: CalendarPostTarget) => void
   /** Marks the Calendar handoff message durable so reload cannot replay it. */
   markCalendarTargetAnnounced: (requestId: string) => void
@@ -226,7 +234,7 @@ export interface ConciergeContextValue {
   /** Restores the Calendar slot to its previous state without deleting the Gallery photo. */
   clearCalendarDelivery: (requestId: string) => void
   /** Start a clean thread while keeping the active reference image available. */
-  resetCurrentSession: () => void
+  resetCurrentSession: (taskId?: string) => void
   /** Pass null to return to the uncommitted state (no format chosen, no auto-pull). */
   setOutputFormat: (format: OutputFormat | null) => void
   setReferenceSelfieUrl: (url: string | null) => void

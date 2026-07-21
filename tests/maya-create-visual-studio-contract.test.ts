@@ -47,7 +47,8 @@ describe("Maya Create visual studio contract", () => {
     const maya = read("components/app-v3/maya-concierge.tsx")
 
     expect(shell).toContain('section === "create" || section === "calendar"')
-    expect(maya).toContain("aria-modal={!isDesktopWorkspace}")
+    expect(maya).toContain("aria-modal={!childOverlayOpen && !isDesktopWorkspace}")
+    expect(maya).toContain("aria-hidden={childOverlayOpen ? true : undefined}")
     expect(maya).toContain("h-[94dvh]")
     expect(maya).not.toContain("h-[62dvh]")
     expect(maya).not.toContain("mobileSheetSize")

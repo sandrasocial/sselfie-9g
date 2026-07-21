@@ -167,11 +167,15 @@ describe("Stabilization A Maya shell", () => {
   })
 
   it("opens Maya as a full mobile workspace by default", async () => {
-    renderMaya("selfie_manager")
+    const { container } = renderMaya("selfie_manager")
     fireEvent.click(screen.getByRole("button", { name: "Open Maya" }))
 
-    const workspace = await screen.findByRole("dialog", { name: /SSELFIE/i })
+    await screen.findByRole("dialog", { name: "Reference manager" })
+    const workspace = container.querySelector<HTMLElement>('aside[role="dialog"]')
+    expect(workspace).not.toBeNull()
+    if (!workspace) throw new Error("Maya workspace did not render")
     await waitFor(() => expect(workspace.className).toContain("h-[94dvh]"))
     expect(workspace.className).not.toContain("h-[62dvh]")
+    expect(workspace).toHaveAttribute("aria-hidden", "true")
   })
 })

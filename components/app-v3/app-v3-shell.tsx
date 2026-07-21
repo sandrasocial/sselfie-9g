@@ -28,6 +28,7 @@ import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
 import type { AppV3Section } from "@/lib/app-v3/navigation"
 import { buildStoredSectionHref, readStoredAppSection, saveStoredAppSection } from "./continuity"
 import { intentForFormat } from "@/lib/app-v3/maya/intent-router"
+import type { MayaSurface } from "@/lib/app-v3/maya/context-envelope"
 import { PostSuccessReviewPrompt } from "@/components/testimonials/post-success-review-prompt"
 import {
   CalendarDays,
@@ -98,6 +99,13 @@ const FORMAT_LABEL: Record<OutputFormat, string> = {
   video: "video",
 }
 
+function mayaSurfaceForSection(section: AppV3Section): MayaSurface {
+  if (section === "photos") return "gallery"
+  if (section === "library") return "learn"
+  if (section === "content") return "create"
+  return section
+}
+
 function ShellInner({
   firstName,
   accessLevel = "full",
@@ -117,7 +125,7 @@ function ShellInner({
 }: AppV3ShellProps) {
   const [section, setSection] = useState<AppV3Section>(initialSection)
   const [galleryFilter, setGalleryFilter] = useState<GalleryFilter>("all")
-  const { isOpen: mayaOpen, openWithAesthetic } = useConcierge()
+  const { isOpen: mayaOpen, openWithAesthetic, setActiveSurface } = useConcierge()
   const openedInitialAestheticRef = useRef<string | null>(null)
   const limited = accessLevel === "limited"
   const cohort: AppV3AnalyticsCohort =
@@ -149,7 +157,8 @@ function ShellInner({
 
   useEffect(() => {
     saveStoredAppSection(section)
-  }, [section])
+    setActiveSurface(mayaSurfaceForSection(section))
+  }, [section, setActiveSurface])
 
   useEffect(() => {
     if (limited || initialSection !== "create" || !initialAestheticId) return
@@ -361,13 +370,14 @@ function ShellInner({
 
       {!limited && (
         <MayaConcierge
+          operatingLayerEnabled={mayaOperatingLayerEnabled}
           hasTrainedModel={hasTrainedModel}
           analyticsCohort={cohort}
           onOpenCalendar={() => goToSection("calendar")}
           calendarSurfaceActive={section === "calendar"}
         />
       )}
-      {!limited && <MayaFloatingLauncher />}
+      {!limited && <MayaFloatingLauncher operatingLayerEnabled={mayaOperatingLayerEnabled} />}
       <PostSuccessReviewPrompt />
 
       {/* Bottom product navigation (text-only, on-brand, thumb-friendly for a phone-first audience) */}
@@ -416,7 +426,11 @@ export function AppV3Shell({
   mayaOperatingLayerEnabled,
 }: AppV3ShellProps) {
   return (
-    <ConciergeProvider suppressRestore={Boolean(initialAestheticId)}>
+    <ConciergeProvider
+      suppressRestore={Boolean(initialAestheticId)}
+      operatingLayerEnabled={mayaOperatingLayerEnabled}
+      initialSurface={mayaSurfaceForSection(initialSection ?? "create")}
+    >
       <ShellInner
         firstName={firstName}
         accessLevel={accessLevel}
