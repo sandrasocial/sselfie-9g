@@ -1,5 +1,20 @@
 # Completed releases
 
+## 2026-07-21 — Checkout recovery and email runtime safety
+
+Hardened the live Prompt Vault checkout recovery so successful buyers are excluded before every
+touch, each recipient and stage is idempotent, and follow-up stages have durable atomic markers.
+Bounded the AI photoshoot nurture and subscriber win-back batches so their cron runs can finish
+inside Vercel's function limits. Added safe dry-run paths and moved the Prompt Vault Stripe form
+ahead of decorative proof on mobile while preserving the approved desktop design and existing copy.
+
+Production proof: feature commit `cc0c256b`, Vercel deployment
+`dpl_2RKNJLcmquU2Ar4moYrx9TVQmRqn`, exact Git commit verified in the build log, 1,692 passing tests,
+CI typecheck, changed-file lint with zero errors, repository invariants, production build, and live
+desktop plus 390px mobile checkout QA. All three repaired email jobs completed live-data dry-runs
+with zero sends; the production recovery columns were verified and the QA checkout record was
+removed from recovery eligibility. No manual customer email was sent.
+
 ## 2026-07-20 — Free Prompts email path alignment
 
 Aligned the active Free AI Prompts nurture with the current commercial path without adding or
