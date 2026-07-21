@@ -15,14 +15,17 @@ if (!runPlaywright) {
       const paidRequests: string[] = []
       const paidRequestIds: string[] = []
       const calendarMutations: string[] = []
+      const calendarMutationKeys: string[] = []
       const chatStore = new Map<string, any>()
       let activeDraft: any = null
       let generationAttempts = 0
+      let calendarApplyAttempts = 0
       let actionJourneyEnabled = false
       ;(page as any).__mayaOperatingLayerErrors = browserErrors
       ;(page as any).__mayaOperatingLayerPaidRequests = paidRequests
       ;(page as any).__mayaOperatingLayerPaidRequestIds = paidRequestIds
       ;(page as any).__mayaOperatingLayerCalendarMutations = calendarMutations
+      ;(page as any).__mayaOperatingLayerCalendarMutationKeys = calendarMutationKeys
       ;(page as any).__enableMayaActionJourney = () => {
         actionJourneyEnabled = true
       }
@@ -300,10 +303,19 @@ if (!runPlaywright) {
           if (post) {
             post.image_url = String(payload.imageUrl || "")
             post.generation_status = "completed"
-            if (!post.caption) post.caption = `QA caption for post ${post.position}.`
+            calendarApplyAttempts += 1
+            if (!post.caption && (!actionJourneyEnabled || calendarApplyAttempts > 1)) {
+              post.caption = `QA caption for post ${post.position}.`
+            }
           }
           calendarMutations.push(`${method} ${pathname}`)
-          body = { success: true, post, captionStatus: "ready" }
+          calendarMutationKeys.push(request.headers()["x-maya-action-idempotency-key"] || "")
+          body = {
+            success: true,
+            post,
+            captionStatus:
+              actionJourneyEnabled && calendarApplyAttempts === 1 ? "unavailable" : "ready",
+          }
         } else if (pathname === "/api/feed/101/remove-post-image") {
           const payload = request.postDataJSON?.() ?? {}
           const post = posts.find(item => item.id === Number(payload.postId))
@@ -565,10 +577,21 @@ if (!runPlaywright) {
       await applyAction.getByRole("button", { name: "Continue" }).click()
       await expect(applyAction).toContainText("No credits")
       await applyAction.getByRole("button", { name: "Confirm and apply" }).click()
+      await expect(applyAction).toHaveAttribute("data-maya-action-status", "failed")
+      await expect(applyAction.getByRole("alert")).toContainText(
+        "The photo is in post 8, but the caption did not finish"
+      )
+      await expect(page.getByText("Photo added. The caption needs another try.")).toBeVisible()
+      await applyAction.getByRole("button", { name: "Try again" }).click()
       await expect(applyAction).toHaveAttribute("data-maya-action-status", "succeeded")
       expect((page as any).__mayaOperatingLayerCalendarMutations).toEqual([
         "POST /api/feed/101/replace-post-image",
+        "POST /api/feed/101/replace-post-image",
       ])
+      const mutationKeys = (page as any).__mayaOperatingLayerCalendarMutationKeys
+      expect(mutationKeys).toHaveLength(2)
+      expect(mutationKeys[0]).toMatch(/^maya-action-/)
+      expect(mutationKeys[1]).toBe(mutationKeys[0])
 
       await page.waitForTimeout(900)
       await page.goto("/e2e/maya-operating-layer")
@@ -578,6 +601,7 @@ if (!runPlaywright) {
       await restoredApplyAction.getByRole("button", { name: "Undo" }).click()
       await expect(restoredApplyAction).toHaveAttribute("data-maya-action-status", "undone")
       expect((page as any).__mayaOperatingLayerCalendarMutations).toEqual([
+        "POST /api/feed/101/replace-post-image",
         "POST /api/feed/101/replace-post-image",
         "PATCH /api/feed/101/update-caption",
         "POST /api/feed/101/remove-post-image",

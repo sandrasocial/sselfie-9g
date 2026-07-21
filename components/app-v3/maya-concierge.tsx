@@ -2508,34 +2508,46 @@ export function MayaConcierge({
     target: CalendarPostTarget,
     imageUrl: string,
     aiImageId: number | null,
-    idempotencyKey = `manual:${Date.now()}`
+    idempotencyKey = `manual:${Date.now()}`,
+    requireCaption = false
   ): Promise<boolean> {
+    const existingDelivery = target.delivery?.imageUrl === imageUrl ? target.delivery : null
     const response = await fetch(`/api/feed/${target.feedId}/replace-post-image`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-maya-action-idempotency-key": idempotencyKey,
+      },
       body: JSON.stringify({ postId: target.postId, imageUrl, imageUrls: [imageUrl], aiImageId }),
     })
     const data = (await response.json().catch(() => null)) as {
       error?: string
+      captionStatus?: string
       post?: { caption?: string | null }
     } | null
     if (!response.ok) {
       setCalendarDeliveryError(data?.error || "That photo did not reach the Calendar.")
       return false
     }
+    const deliveredCaption = data?.post?.caption ?? target.caption
     completeCalendarTarget(target.requestId, {
       generationRequestId: idempotencyKey,
       imageUrl,
       imageUrls: [imageUrl],
       aiImageId,
-      previousImageUrl: target.imageUrl,
-      previousMediaUrls: target.mediaUrls,
-      previousAiImageId: target.aiImageId,
-      previousCaption: target.caption,
-      deliveredCaption: data?.post?.caption ?? target.caption,
+      previousImageUrl: existingDelivery ? existingDelivery.previousImageUrl : target.imageUrl,
+      previousMediaUrls: existingDelivery ? existingDelivery.previousMediaUrls : target.mediaUrls,
+      previousAiImageId: existingDelivery ? existingDelivery.previousAiImageId : target.aiImageId,
+      previousCaption: existingDelivery ? existingDelivery.previousCaption : target.caption,
+      deliveredCaption,
     })
-    setCalendarDeliveryError(null)
     announceCalendarUpdated(target.feedId)
+    if (requireCaption && (data?.captionStatus === "unavailable" || !deliveredCaption?.trim())) {
+      const message = `The photo is in post ${target.position}, but the caption did not finish. Try again safely.`
+      setCalendarDeliveryError(message)
+      throw new Error(message)
+    }
+    setCalendarDeliveryError(null)
     return true
   }
 
@@ -4159,7 +4171,9 @@ export function MayaConcierge({
                   Post {session.calendarTarget.position}.
                 </span>{" "}
                 {session.calendarTarget.delivery
-                  ? "Ready in your Calendar."
+                  ? session.calendarTarget.delivery.deliveredCaption?.trim()
+                    ? "Ready in your Calendar."
+                    : "Photo added. The caption needs another try."
                   : session.calendarTarget.hasImage
                     ? "Your current photo stays safe while we make another option."
                     : workspaceBusy
@@ -4879,7 +4893,8 @@ export function MayaConcierge({
                           canUndo: true,
                           idempotencyKey: applyIdempotencyKey,
                         })
-                        return actionTarget.delivery?.imageUrl === latestStyleReferenceUrl
+                        return actionTarget.delivery?.imageUrl === latestStyleReferenceUrl &&
+                          actionTarget.delivery.deliveredCaption?.trim()
                           ? restoreMayaActionStatus(next, "succeeded")
                           : next
                       })()
@@ -5021,7 +5036,8 @@ export function MayaConcierge({
                                 actionTarget as CalendarPostTarget,
                                 latestStyleReferenceUrl,
                                 resultAiImageId,
-                                action.idempotencyKey
+                                action.idempotencyKey,
+                                creationActionKind === "create_both"
                               ).then(placed => {
                                 if (!placed)
                                   throw new Error("That photo did not reach the Calendar.")
