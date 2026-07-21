@@ -154,7 +154,9 @@ if (!runPlaywright) {
         } else if (pathname === "/api/app-v3/reference-library") {
           body = {
             images: ["https://example.com/maya-qa-selfie.jpg"],
-            extras: null,
+            // A durable library inspiration must never attach itself to a new task merely
+            // because the task we just left was restored from History.
+            extras: { inspiration: "https://example.com/old-inspiration.jpg" },
           }
         } else if (pathname === "/api/app-v3/account") {
           body = { credits: 100, creditsUnlimited: false }

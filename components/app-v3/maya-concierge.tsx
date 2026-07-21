@@ -1137,6 +1137,7 @@ export function MayaConcierge({
       appliedDraftSessionRef.current = session.startedAt
       hydratedTaskIdRef.current = null
       restoredDraftRef.current = null
+      sessionResumedWithHistoryRef.current = false
       savedCountRef.current = 0
       lastPulledFormatRef.current = null
       seedRetiredRef.current = false
@@ -1153,6 +1154,7 @@ export function MayaConcierge({
       setTextOverlayMode(null)
       setTextStyleChoice(null)
       setTextStyleAdjustments(null)
+      setInspirationUrl(session.inspirationImageUrl ?? null)
       setGenerationSource(
         session.generationSource === "trained-model" && hasTrainedModel ? "trained-model" : "selfie"
       )
