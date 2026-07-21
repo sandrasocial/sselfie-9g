@@ -349,7 +349,7 @@ function ShellInner({
             </div>
           </div>
         ) : (
-          <FeedPlannerView />
+          <FeedPlannerView operatingLayerEnabled={mayaOperatingLayerEnabled} />
         ))}
       {section === "library" && (
         <LibraryView

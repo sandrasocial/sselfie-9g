@@ -13,10 +13,19 @@ if (!runPlaywright) {
     test.beforeEach(async ({ page }: { page: any }) => {
       const browserErrors: string[] = []
       const paidRequests: string[] = []
+      const paidRequestIds: string[] = []
+      const calendarMutations: string[] = []
       const chatStore = new Map<string, any>()
       let activeDraft: any = null
+      let generationAttempts = 0
+      let actionJourneyEnabled = false
       ;(page as any).__mayaOperatingLayerErrors = browserErrors
       ;(page as any).__mayaOperatingLayerPaidRequests = paidRequests
+      ;(page as any).__mayaOperatingLayerPaidRequestIds = paidRequestIds
+      ;(page as any).__mayaOperatingLayerCalendarMutations = calendarMutations
+      ;(page as any).__enableMayaActionJourney = () => {
+        actionJourneyEnabled = true
+      }
       page.on("pageerror", (error: Error) => browserErrors.push(error.message))
       page.on("console", (message: any) => {
         if (message.type() === "error") browserErrors.push(message.text())
@@ -68,6 +77,32 @@ if (!runPlaywright) {
           paidRequests.push(`${method} ${pathname}`)
         }
 
+        if (pathname === "/api/app-v3/maya/generate") {
+          const payload = request.postDataJSON?.() ?? {}
+          paidRequestIds.push(String(payload.clientRequestId || ""))
+          generationAttempts += 1
+          if (generationAttempts === 1) {
+            await route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({ error: "Provider unavailable. Try again safely." }),
+            })
+            return
+          }
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              imageUrl: "https://example.com/maya-action-result.jpg",
+              imageUrls: ["https://example.com/maya-action-result.jpg"],
+              aiImageId: 990,
+              aiImageIds: [990],
+              newBalance: 99,
+            }),
+          })
+          return
+        }
+
         if (pathname === "/api/app-v3/maya/chat") {
           const payload = request.postDataJSON?.() ?? {}
           const messages = Array.isArray(payload.messages) ? payload.messages : []
@@ -84,14 +119,43 @@ if (!runPlaywright) {
             : "Maya QA response for the Create task."
           const messageId = `assistant-${Date.now()}`
           const textId = `text-${Date.now()}`
-          const stream = [
+          const conceptPayload = post && actionJourneyEnabled
+            ? {
+                format: "photo",
+                concepts: [
+                  {
+                    id: `qa-post-${post}`,
+                    title: `Editorial direction for post ${post}`,
+                    description: "A clear, grounded founder portrait for this Calendar post.",
+                    brief: {
+                      outfit: "Black knit and tailored trousers",
+                      setting: "Window-lit studio",
+                      mood: "Calm and assured",
+                      pose: "Standing naturally beside a desk",
+                      cameraSpec: "Hasselblad X2D 100C, 55mm",
+                      lighting: "Soft north-facing window light",
+                    },
+                  },
+                ],
+              }
+            : null
+          const toolCallId = `tool-${Date.now()}`
+          const streamParts = [
             `data: ${JSON.stringify({ type: "start", messageId })}`,
             `data: ${JSON.stringify({ type: "text-start", id: textId })}`,
             `data: ${JSON.stringify({ type: "text-delta", id: textId, delta: answer })}`,
             `data: ${JSON.stringify({ type: "text-end", id: textId })}`,
+            ...(conceptPayload
+              ? [
+                  `data: ${JSON.stringify({ type: "tool-input-start", toolCallId, toolName: "emit_concepts" })}`,
+                  `data: ${JSON.stringify({ type: "tool-input-available", toolCallId, toolName: "emit_concepts", input: conceptPayload })}`,
+                  `data: ${JSON.stringify({ type: "tool-output-available", toolCallId, output: conceptPayload })}`,
+                ]
+              : []),
             `data: ${JSON.stringify({ type: "finish", finishReason: "stop" })}`,
             "data: [DONE]",
-          ].join("\n\n") + "\n\n"
+          ]
+          const stream = streamParts.join("\n\n") + "\n\n"
           await route.fulfill({
             status: 200,
             headers: {
@@ -230,6 +294,31 @@ if (!runPlaywright) {
           body = feedData
         } else if (pathname === "/api/feed/list") {
           body = { feeds: [{ id: 101, name: "Maya Phase QA", post_count: 9 }] }
+        } else if (pathname === "/api/feed/101/replace-post-image") {
+          const payload = request.postDataJSON?.() ?? {}
+          const post = posts.find(item => item.id === Number(payload.postId))
+          if (post) {
+            post.image_url = String(payload.imageUrl || "")
+            post.generation_status = "completed"
+            if (!post.caption) post.caption = `QA caption for post ${post.position}.`
+          }
+          calendarMutations.push(`${method} ${pathname}`)
+          body = { success: true, post, captionStatus: "ready" }
+        } else if (pathname === "/api/feed/101/remove-post-image") {
+          const payload = request.postDataJSON?.() ?? {}
+          const post = posts.find(item => item.id === Number(payload.postId))
+          if (post) {
+            post.image_url = null
+            post.generation_status = "pending"
+          }
+          calendarMutations.push(`${method} ${pathname}`)
+          body = { success: true }
+        } else if (pathname === "/api/feed/101/update-caption") {
+          const payload = request.postDataJSON?.() ?? {}
+          const post = posts.find(item => item.id === Number(payload.postId))
+          if (post) post.caption = String(payload.caption || "")
+          calendarMutations.push(`${method} ${pathname}`)
+          body = { success: true }
         } else if (pathname === "/api/user/credits") body = { balance: 100 }
 
         await route.fulfill({
@@ -432,6 +521,75 @@ if (!runPlaywright) {
         )
         .toBe("Open Maya")
       expect((page as any).__mayaOperatingLayerPaidRequests).toEqual([])
+    })
+
+    test("runs create both, apply, reload, and undo through one retry-safe action protocol", async ({
+      page,
+    }: {
+      page: any
+    }) => {
+      const maya = page.locator("aside[data-maya-task-id]")
+      ;(page as any).__enableMayaActionJourney()
+
+      await page.getByRole("button", { name: "Calendar" }).click()
+      await page.getByRole("button", { name: "Select post 8" }).click()
+      await page.getByRole("button", { name: /Create with Maya/i }).click()
+      await expect(maya).toHaveAttribute("data-maya-post-id", "708")
+
+      const createAction = page.locator('section[data-maya-action-kind="create_both"]')
+      await expect(createAction).toHaveAttribute("data-maya-action-status", "recommended")
+      await createAction.getByRole("button", { name: "Preview" }).click()
+      await expect(createAction).toContainText("Nothing changes in Calendar")
+      await createAction.getByRole("button", { name: "Cancel" }).click()
+      expect((page as any).__mayaOperatingLayerPaidRequests).toEqual([])
+
+      await createAction.getByRole("button", { name: "Preview" }).click()
+      await createAction.getByRole("button", { name: "Continue" }).click()
+      await expect(createAction).toContainText("1 credit")
+      await createAction.getByRole("button", { name: "Confirm and create" }).click()
+      await expect(createAction.getByRole("alert")).toContainText("Provider unavailable")
+      await createAction.getByRole("button", { name: "Try again" }).click()
+
+      await expect(page.getByAltText("Editorial direction for post 8")).toBeVisible()
+      expect((page as any).__mayaOperatingLayerPaidRequests).toEqual([
+        "POST /api/app-v3/maya/generate",
+        "POST /api/app-v3/maya/generate",
+      ])
+      const requestIds = (page as any).__mayaOperatingLayerPaidRequestIds
+      expect(requestIds).toHaveLength(2)
+      expect(requestIds[0]).toBe(requestIds[1])
+
+      const applyAction = page.locator('section[data-maya-action-kind="apply_to_post"]')
+      await expect(applyAction).toHaveAttribute("data-maya-action-status", "recommended")
+      await applyAction.getByRole("button", { name: "Preview" }).click()
+      await applyAction.getByRole("button", { name: "Continue" }).click()
+      await expect(applyAction).toContainText("No credits")
+      await applyAction.getByRole("button", { name: "Confirm and apply" }).click()
+      await expect(applyAction).toHaveAttribute("data-maya-action-status", "succeeded")
+      expect((page as any).__mayaOperatingLayerCalendarMutations).toEqual([
+        "POST /api/feed/101/replace-post-image",
+      ])
+
+      await page.waitForTimeout(900)
+      await page.goto("/e2e/maya-operating-layer")
+      await expect(maya).toHaveAttribute("data-maya-task-id", "maya-calendar-v1-101-708")
+      const restoredApplyAction = page.locator('section[data-maya-action-kind="apply_to_post"]')
+      await expect(restoredApplyAction).toHaveAttribute("data-maya-action-status", "succeeded")
+      await restoredApplyAction.getByRole("button", { name: "Undo" }).click()
+      await expect(restoredApplyAction).toHaveAttribute("data-maya-action-status", "undone")
+      expect((page as any).__mayaOperatingLayerCalendarMutations).toEqual([
+        "POST /api/feed/101/replace-post-image",
+        "PATCH /api/feed/101/update-caption",
+        "POST /api/feed/101/remove-post-image",
+      ])
+
+      const overflow = await page.evaluate(() => ({
+        root: document.documentElement.scrollWidth > window.innerWidth,
+        drawer:
+          (document.querySelector("aside[data-maya-task-id]")?.scrollWidth ?? 0) >
+          (document.querySelector("aside[data-maya-task-id]")?.clientWidth ?? 0),
+      }))
+      expect(overflow).toEqual({ root: false, drawer: false })
     })
   })
 }

@@ -225,6 +225,12 @@ function sanitizeCalendarPostTarget(value: unknown): CalendarPostTarget | null {
             rawDelivery.previousAiImageId > 0
               ? rawDelivery.previousAiImageId
               : null,
+          previousCaption: Object.prototype.hasOwnProperty.call(rawDelivery, "previousCaption")
+            ? cleanText(rawDelivery.previousCaption, 2200)
+            : cleanText(target.caption, 2200),
+          deliveredCaption: Object.prototype.hasOwnProperty.call(rawDelivery, "deliveredCaption")
+            ? cleanText(rawDelivery.deliveredCaption, 2200)
+            : cleanText(target.caption, 2200),
         }
       : null
   return {

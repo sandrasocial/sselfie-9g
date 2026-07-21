@@ -322,7 +322,7 @@ export function ConceptCard({
           <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">{concept.description}</p>
         </div>
 
-        {gen.status === "error" && (
+        {gen.status === "error" && !idleAction && (
           <p
             role="alert"
             className="break-words rounded-[4px] bg-[#282728]/5 px-3 py-2 text-[12px] text-[#282728] [overflow-wrap:anywhere]"

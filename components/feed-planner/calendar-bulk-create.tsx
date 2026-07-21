@@ -3,6 +3,12 @@
 import { useMemo, useRef, useState } from "react"
 import { Check, ChevronDown, Loader2, X } from "lucide-react"
 import { isPersonalStoryPosition } from "@/lib/feed-planner/caption-truth"
+import { MayaActionCard } from "@/components/app-v3/maya-action-card"
+import {
+  createMayaAction,
+  mayaActionIdempotencyKey,
+  type MayaActionDescriptor,
+} from "@/lib/app-v3/maya/action-protocol"
 
 type CalendarPost = {
   id: number | string
@@ -18,6 +24,7 @@ interface CalendarBulkCreateProps {
   posts: CalendarPost[]
   onRefresh?: () => void | Promise<void>
   onComplete: () => void | Promise<void>
+  operatingLayerEnabled?: boolean
 }
 
 type BulkError = { postId?: number; message: string }
@@ -33,6 +40,7 @@ export function CalendarBulkCreate({
   posts,
   onRefresh,
   onComplete,
+  operatingLayerEnabled = false,
 }: CalendarBulkCreateProps) {
   const [open, setOpen] = useState(false)
   const [includeImages, setIncludeImages] = useState(true)
@@ -41,6 +49,7 @@ export function CalendarBulkCreate({
   const [completedImages, setCompletedImages] = useState(0)
   const [imageProgress, setImageProgress] = useState<Record<number, ImageProgress>>({})
   const [errors, setErrors] = useState<BulkError[]>([])
+  const [activeAction, setActiveAction] = useState<MayaActionDescriptor | null>(null)
   const runningRef = useRef(false)
 
   const missingImages = useMemo(
@@ -81,7 +90,7 @@ export function CalendarBulkCreate({
     return `Create ${parts.join(" and ")}`
   })()
 
-  const runBulkCreation = async () => {
+  const runBulkCreation = async (action?: MayaActionDescriptor) => {
     if (!canCreate || runningRef.current) return
 
     runningRef.current = true
@@ -100,7 +109,10 @@ export function CalendarBulkCreate({
         try {
           const response = await fetch(`/api/feed/${feedId}/generate-captions`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              ...(action ? { "x-maya-action-idempotency-key": action.idempotencyKey } : {}),
+            },
             credentials: "include",
             body: JSON.stringify({ mode: "missing_or_weak" }),
           })
@@ -133,7 +145,10 @@ export function CalendarBulkCreate({
             try {
               const response = await fetch(`/api/feed/${feedId}/generate-single`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                  "Content-Type": "application/json",
+                  ...(action ? { "x-maya-action-idempotency-key": action.idempotencyKey } : {}),
+                },
                 credentials: "include",
                 body: JSON.stringify({ postId }),
               })
@@ -189,7 +204,34 @@ export function CalendarBulkCreate({
       runningRef.current = false
       setRunning(false)
     }
+    if (nextErrors.length > 0 && action) throw new Error(nextErrors[0].message)
   }
+
+  const actionKind =
+    includeImages && missingImages.length > 0 && includeCaptions && autoDraftableCaptions.length > 0
+      ? "create_both"
+      : includeImages && missingImages.length > 0
+        ? "create_image"
+        : "create_caption"
+  const actionIdempotencyKey = mayaActionIdempotencyKey(
+    "calendar-bulk",
+    feedId,
+    actionKind,
+    missingImages.map(post => post.id).join(","),
+    autoDraftableCaptions.map(post => post.id).join(",")
+  )
+  const bulkAction = createMayaAction({
+    id: `bulk-${actionIdempotencyKey}`,
+    taskId: `calendar-feed-${feedId}`,
+    kind: actionKind,
+    title: actionLabel,
+    reason: "This finishes the missing Calendar work you selected.",
+    target: { feedId },
+    creditCost: includeImages ? missingImages.length * 2 : 0,
+    requiresConfirmation: true,
+    canUndo: false,
+    idempotencyKey: actionIdempotencyKey,
+  })
 
   return (
     <section
@@ -354,28 +396,45 @@ export function CalendarBulkCreate({
             </div>
           ) : null}
 
-          <button
-            type="button"
-            onClick={() => void runBulkCreation()}
-            disabled={!canCreate || running}
-            className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[color:var(--app-btn-primary-bg)] px-4 text-[12px] font-medium text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-text-primary)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {running ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Creating…
-              </>
-            ) : canCreate ? (
-              actionLabel
-            ) : storyPosts.length > 0 ? (
-              "Stories need you"
-            ) : (
-              <>
-                <Check className="h-4 w-4" />
-                Everything is ready
-              </>
-            )}
-          </button>
+          {operatingLayerEnabled && (canCreate || running) ? (
+            <MayaActionCard
+              key={(activeAction ?? bulkAction).id}
+              descriptor={activeAction ?? bulkAction}
+              preview={`${actionLabel}. Calendar image generation uses 2 credits per image. Captions do not use image credits.`}
+              onExecute={async action => {
+                setActiveAction(action)
+                try {
+                  await runBulkCreation(action)
+                } finally {
+                  setActiveAction(null)
+                }
+              }}
+              className="mt-3"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => void runBulkCreation()}
+              disabled={!canCreate || running}
+              className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[color:var(--app-btn-primary-bg)] px-4 text-[12px] font-medium text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-text-primary)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {running ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating…
+                </>
+              ) : canCreate ? (
+                actionLabel
+              ) : storyPosts.length > 0 ? (
+                "Stories need you"
+              ) : (
+                <>
+                  <Check className="h-4 w-4" />
+                  Everything is ready
+                </>
+              )}
+            </button>
+          )}
         </div>
       ) : null}
     </section>

@@ -124,6 +124,8 @@ export interface CalendarPostTarget {
     previousImageUrl: string | null
     previousMediaUrls: string[]
     previousAiImageId: number | null
+    previousCaption: string | null
+    deliveredCaption: string | null
   } | null
 }
 

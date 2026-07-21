@@ -69,6 +69,8 @@ describe("App v3 refresh continuity", () => {
       delivery: {
         previousImageUrl: "https://example.com/original.png",
         previousAiImageId: 9,
+        previousCaption: "A clear post idea",
+        deliveredCaption: "A clear post idea",
       },
     })
     expect(

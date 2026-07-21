@@ -370,6 +370,7 @@ export function ConciergeProvider({
                 imageUrl: delivery.imageUrl,
                 mediaUrls: delivery.imageUrls,
                 aiImageId: delivery.aiImageId,
+                caption: delivery.deliveredCaption,
                 delivery,
               },
             }
@@ -390,6 +391,7 @@ export function ConciergeProvider({
               imageUrl: prev.calendarTarget.delivery?.previousImageUrl ?? null,
               mediaUrls: prev.calendarTarget.delivery?.previousMediaUrls ?? [],
               aiImageId: prev.calendarTarget.delivery?.previousAiImageId ?? null,
+              caption: prev.calendarTarget.delivery?.previousCaption ?? null,
               delivery: null,
             },
           }

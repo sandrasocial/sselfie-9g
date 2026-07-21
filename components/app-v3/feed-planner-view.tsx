@@ -21,7 +21,11 @@ import { recordMayaJobHandoff, startMayaJob } from "@/lib/app-v3/maya/job-analyt
 
 const SELECTED_FEED_KEY = "calendar:selected-feed:v1"
 
-export function FeedPlannerView() {
+export function FeedPlannerView({
+  operatingLayerEnabled = false,
+}: {
+  operatingLayerEnabled?: boolean
+}) {
   const { open, openForCalendarPost, openWithAesthetic } = useConcierge()
   const [selectedFeedId, setSelectedFeedId] = useState<number | null>(null)
   const [hasRestoredFeed, setHasRestoredFeed] = useState(false)
@@ -60,6 +64,7 @@ export function FeedPlannerView() {
     () => ({
       feedId: selectedFeedId,
       navigateToFeed,
+      operatingLayerEnabled,
       pendingSlotPosition,
       consumePendingSlot: () => setPendingSlotPosition(null),
       navigateToMaya: (target?: CalendarPostTarget) => {
@@ -99,7 +104,15 @@ export function FeedPlannerView() {
         })
       },
     }),
-    [navigateToFeed, open, openForCalendarPost, openWithAesthetic, pendingSlotPosition, selectedFeedId]
+    [
+      navigateToFeed,
+      open,
+      openForCalendarPost,
+      openWithAesthetic,
+      operatingLayerEnabled,
+      pendingSlotPosition,
+      selectedFeedId,
+    ]
   )
 
   return (

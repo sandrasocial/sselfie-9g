@@ -41,6 +41,13 @@ import { AESTHETICS, MAYA_DECIDES_AESTHETIC } from "./aesthetics"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { finishMayaJob } from "@/lib/app-v3/maya/job-analytics"
 import { newMayaTaskId } from "@/lib/app-v3/maya/context-envelope"
+import {
+  createMayaAction,
+  mayaActionIdempotencyKey,
+  restoreMayaActionStatus,
+  type MayaActionDescriptor,
+} from "@/lib/app-v3/maya/action-protocol"
+import { MayaActionCard } from "./maya-action-card"
 import type { ConceptCard as ConceptCardData, ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
 import {
   buildCustomModelConceptPrompt,
@@ -2440,7 +2447,10 @@ export function MayaConcierge({
     if (!imageUrl) return false
     const response = await fetch(`/api/feed/${target.feedId}/replace-post-image`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-maya-action-idempotency-key": idempotencyKey,
+      },
       body: JSON.stringify({
         postId: target.postId,
         imageUrl,
@@ -2452,6 +2462,7 @@ export function MayaConcierge({
     const data = (await response.json().catch(() => null)) as {
       error?: string
       captionStatus?: string
+      post?: { caption?: string | null }
     } | null
     if (!response.ok) {
       await failCalendarGeneration(target, generationRequestId)
@@ -2468,6 +2479,8 @@ export function MayaConcierge({
       previousImageUrl: target.imageUrl,
       previousMediaUrls: target.mediaUrls,
       previousAiImageId: target.aiImageId,
+      previousCaption: target.caption,
+      deliveredCaption: data?.post?.caption ?? target.caption,
     })
     setCalendarDeliveryError(null)
     announceCalendarUpdated(target.feedId)
@@ -2494,26 +2507,32 @@ export function MayaConcierge({
   async function placeExistingPhotoInCalendar(
     target: CalendarPostTarget,
     imageUrl: string,
-    aiImageId: number | null
+    aiImageId: number | null,
+    idempotencyKey = `manual:${Date.now()}`
   ): Promise<boolean> {
     const response = await fetch(`/api/feed/${target.feedId}/replace-post-image`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ postId: target.postId, imageUrl, imageUrls: [imageUrl], aiImageId }),
     })
-    const data = (await response.json().catch(() => null)) as { error?: string } | null
+    const data = (await response.json().catch(() => null)) as {
+      error?: string
+      post?: { caption?: string | null }
+    } | null
     if (!response.ok) {
       setCalendarDeliveryError(data?.error || "That photo did not reach the Calendar.")
       return false
     }
     completeCalendarTarget(target.requestId, {
-      generationRequestId: `manual:${Date.now()}`,
+      generationRequestId: idempotencyKey,
       imageUrl,
       imageUrls: [imageUrl],
       aiImageId,
       previousImageUrl: target.imageUrl,
       previousMediaUrls: target.mediaUrls,
       previousAiImageId: target.aiImageId,
+      previousCaption: target.caption,
+      deliveredCaption: data?.post?.caption ?? target.caption,
     })
     setCalendarDeliveryError(null)
     announceCalendarUpdated(target.feedId)
@@ -2523,6 +2542,24 @@ export function MayaConcierge({
   async function undoCalendarDelivery() {
     const target = session?.calendarTarget
     if (!target?.delivery) return
+    if (target.delivery.deliveredCaption !== target.delivery.previousCaption) {
+      const captionResponse = await fetch(`/api/feed/${target.feedId}/update-caption`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: target.postId,
+          caption: target.delivery.previousCaption ?? "",
+        }),
+      })
+      const captionData = (await captionResponse.json().catch(() => null)) as {
+        error?: string
+      } | null
+      if (!captionResponse.ok) {
+        const message = captionData?.error || "The caption did not undo. Please try again."
+        setCalendarDeliveryError(message)
+        throw new Error(message)
+      }
+    }
     const restorePrevious = Boolean(target.delivery.previousImageUrl)
     const response = await fetch(
       `/api/feed/${target.feedId}/${restorePrevious ? "replace-post-image" : "remove-post-image"}`,
@@ -2543,8 +2580,9 @@ export function MayaConcierge({
     )
     const data = (await response.json().catch(() => null)) as { error?: string } | null
     if (!response.ok) {
-      setCalendarDeliveryError(data?.error || "That did not undo. Please try again.")
-      return
+      const message = data?.error || "That did not undo. Please try again."
+      setCalendarDeliveryError(message)
+      throw new Error(message)
     }
     clearCalendarDelivery(target.requestId)
     setCalendarDeliveryError(null)
@@ -2556,7 +2594,8 @@ export function MayaConcierge({
     concept: ConceptCardData,
     targetFormat: OutputFormat = format,
     overlayStyle?: OverlayStyleId | null,
-    editedCopy?: EditableConceptCopy[]
+    editedCopy?: EditableConceptCopy[],
+    actionRequestId?: string
   ) {
     // MAYA-COPY-PREVIEW-01: she may have edited the exact words before spending a credit.
     // Every other field (visual world, imagePromptDirection, purpose, reference strategy)
@@ -2574,6 +2613,7 @@ export function MayaConcierge({
         [key]: { status: "error", error: "Choose or upload the photo you want to animate first." },
       }))
       setSetupOpen(true)
+      if (actionRequestId) throw new Error("Choose the photo you want to animate first.")
       return
     }
     if (targetFormat !== "video" && !referenceSelfieUrl && !canUseCustomModel) {
@@ -2582,6 +2622,7 @@ export function MayaConcierge({
         ...s,
         [key]: { status: "error", error: "Add a selfie first so it still looks like you." },
       }))
+      if (actionRequestId) throw new Error("Add a selfie first so it still looks like you.")
       return
     }
     // "Make another version" on a finished card is a re-roll - a friction signal the
@@ -2592,7 +2633,7 @@ export function MayaConcierge({
     let generationRequestId: string | null = null
     let generationStartedAt = 0
     if (targetFormat !== "video" && !canUseCustomModel) {
-      generationRequestId = newGenerationRequestId()
+      generationRequestId = actionRequestId ?? newGenerationRequestId()
       generationStartedAt = Date.now()
     }
     const expectedOutputCount = Math.max(
@@ -2624,6 +2665,7 @@ export function MayaConcierge({
     const calendarTargetForRequest =
       targetFormat === activeCalendarTarget?.plannedFormat &&
       generationRequestId &&
+      !operatingLayerEnabled &&
       calendarSurfaceActive &&
       activeCalendarTarget &&
       !activeCalendarTarget.delivery
@@ -2824,6 +2866,7 @@ export function MayaConcierge({
         const decoder = new TextDecoder()
         let buffer = ""
         let settled = false
+        let streamFailure: Error | null = null
         while (true) {
           const { value, done } = await reader.read()
           if (done) break
@@ -2930,6 +2973,7 @@ export function MayaConcierge({
               }))
               generationServerVerdict = true
               settled = true
+              streamFailure = new Error(evt.error || "Generation failed")
             }
           }
         }
@@ -2945,8 +2989,12 @@ export function MayaConcierge({
                   "The connection ended before the final photo arrived. Check Photos before trying again.",
               },
             }))
+            streamFailure = new Error(
+              "The connection ended before the final photo arrived. Check Photos before trying again."
+            )
           }
         }
+        if (streamFailure && actionRequestId) throw streamFailure
         return
       }
 
@@ -2971,11 +3019,13 @@ export function MayaConcierge({
         setGenState(s => ({ ...s, [key]: { status: "idle" } }))
         trackRecoveryShown(targetFormat, "insufficient_credits")
         showCreditBlock(typeof data?.current === "number" ? data.current : null)
+        if (actionRequestId) throw new Error(data?.error || "Not enough credits")
         return
       }
       if (data?.code === "generation_locked" && cohort === "trial") {
         setGenState(s => ({ ...s, [key]: { status: "idle" } }))
         setTrialCapOpen(true)
+        if (actionRequestId) throw new Error(data?.error || "Generation is not available yet")
         return
       }
       const urls =
@@ -3057,6 +3107,7 @@ export function MayaConcierge({
         ...s,
         [key]: { status: "error", error: e instanceof Error ? e.message : "Generation failed" },
       }))
+      if (actionRequestId) throw e instanceof Error ? e : new Error("Generation failed")
     } finally {
       if (calendarTargetForRequest && generationRequestId && !calendarSettled) {
         await failCalendarGeneration(calendarTargetForRequest, generationRequestId)
@@ -4757,6 +4808,82 @@ export function MayaConcierge({
                 const resultUrls = gen.imageUrls ?? []
                 const latestStyleReferenceUrl =
                   resultUrls.length > 0 ? resultUrls[resultUrls.length - 1] : null
+                const actionTaskId = session?.mayaContext?.taskId ?? chatId
+                const actionTarget =
+                  calendarSurfaceActive && session?.calendarTarget ? session.calendarTarget : null
+                const plannedActionOutputs = Math.max(
+                  1,
+                  concept.brief.graphic?.creativePlan?.outputs?.length ?? 0,
+                  concept.brief.graphic?.slides?.length ?? 0,
+                  concept.brief.graphic?.slideCount ?? 0
+                )
+                const creationActionKind =
+                  actionTarget && !actionTarget.caption?.trim() ? "create_both" : "create_image"
+                const creationActionIdempotencyKey = mayaActionIdempotencyKey(
+                  actionTaskId,
+                  creationActionKind,
+                  key,
+                  conceptFormat
+                )
+                const creationAction = createMayaAction({
+                  id: `create-${creationActionIdempotencyKey}`,
+                  taskId: actionTaskId,
+                  kind: creationActionKind,
+                  title: actionTarget
+                    ? creationActionKind === "create_both"
+                      ? `Create the photo and caption for post ${actionTarget.position}`
+                      : `Create the photo for post ${actionTarget.position}`
+                    : `Create ${concept.title}`,
+                  reason: actionTarget
+                    ? "This direction matches the Calendar post you selected."
+                    : "This is the direction Maya recommends for your current task.",
+                  target: actionTarget
+                    ? { feedId: actionTarget.feedId, postId: actionTarget.postId }
+                    : undefined,
+                  creditCost: plannedActionOutputs,
+                  requiresConfirmation: true,
+                  canUndo: false,
+                  idempotencyKey: creationActionIdempotencyKey,
+                })
+                const actionProtocolOwnsGeneration =
+                  operatingLayerEnabled &&
+                  conceptFormat !== "video" &&
+                  !(activeGenerationSource === "trained-model" && conceptFormat === "photo")
+                const generationPreview = actionTarget
+                  ? `Create this direction for post ${actionTarget.position}. The image is saved to Photos first${creationActionKind === "create_both" ? ", and the existing Calendar caption writer finishes the missing caption when you apply" : ""}. Nothing changes in Calendar until you approve the separate apply action.`
+                  : `Create this direction and save the finished result to Photos.`
+
+                const resultAiImageId = gen.aiImageIds?.[0] ?? gen.aiImageId ?? null
+                const applyIdempotencyKey =
+                  actionTarget && latestStyleReferenceUrl
+                    ? mayaActionIdempotencyKey(
+                        actionTaskId,
+                        "apply_to_post",
+                        actionTarget.feedId,
+                        actionTarget.postId,
+                        resultAiImageId ?? latestStyleReferenceUrl
+                      )
+                    : null
+                const applyAction: MayaActionDescriptor | null =
+                  actionTarget && latestStyleReferenceUrl && applyIdempotencyKey
+                    ? (() => {
+                        const next = createMayaAction({
+                          id: `apply-${applyIdempotencyKey}`,
+                          taskId: actionTaskId,
+                          kind: "apply_to_post",
+                          title: `Use this in post ${actionTarget.position}`,
+                          reason: "It completes the Calendar post you selected.",
+                          target: { feedId: actionTarget.feedId, postId: actionTarget.postId },
+                          creditCost: 0,
+                          requiresConfirmation: true,
+                          canUndo: true,
+                          idempotencyKey: applyIdempotencyKey,
+                        })
+                        return actionTarget.delivery?.imageUrl === latestStyleReferenceUrl
+                          ? restoreMayaActionStatus(next, "succeeded")
+                          : next
+                      })()
+                    : null
 
                 return (
                   <ConceptCard
@@ -4776,6 +4903,28 @@ export function MayaConcierge({
                           : null,
                         editedCopy
                       )
+                    }
+                    idleAction={
+                      actionProtocolOwnsGeneration ? (
+                        <MayaActionCard
+                          key={creationAction.id}
+                          descriptor={creationAction}
+                          preview={generationPreview}
+                          onExecute={action =>
+                            generateConcept(
+                              key,
+                              concept,
+                              conceptFormat,
+                              isGraphicOutputFormat(conceptFormat) &&
+                                textOverlayMode === "with-text"
+                                ? textStyleChoice
+                                : null,
+                              undefined,
+                              action.idempotencyKey
+                            )
+                          }
+                        />
+                      ) : undefined
                     }
                     onOpen={(urls, startIndex) =>
                       setLightbox({
@@ -4808,7 +4957,7 @@ export function MayaConcierge({
                       }
                     }}
                     onAddToCalendar={
-                      conceptFormat === "photo"
+                      conceptFormat === "photo" && !(operatingLayerEnabled && actionTarget)
                         ? async () => {
                             const current = genState[key]
                             const url = (current?.imageUrls ?? [])[0]
@@ -4861,21 +5010,42 @@ export function MayaConcierge({
                     }
                     showCalendarOffer={key === firstDonePhotoKey}
                     resultActions={
-                      <InlineResultActions
-                        format={conceptFormat}
-                        completedFormats={Array.from(completedFormats)}
-                        onNextFormat={(nextFormat, kind, selection) =>
-                          handleNextFormat(nextFormat, kind, latestStyleReferenceUrl, selection)
-                        }
-                        onOpenCalendar={
-                          onOpenCalendar
-                            ? () => {
-                                close()
-                                onOpenCalendar()
-                              }
-                            : undefined
-                        }
-                      />
+                      <div className="space-y-3">
+                        {operatingLayerEnabled && applyAction && latestStyleReferenceUrl ? (
+                          <MayaActionCard
+                            key={applyAction.id}
+                            descriptor={applyAction}
+                            preview={`Replace ${actionTarget?.hasImage ? "the current photo" : "the empty photo slot"} in post ${actionTarget?.position}. The finished asset stays in Photos if you undo.`}
+                            onExecute={action =>
+                              placeExistingPhotoInCalendar(
+                                actionTarget as CalendarPostTarget,
+                                latestStyleReferenceUrl,
+                                resultAiImageId,
+                                action.idempotencyKey
+                              ).then(placed => {
+                                if (!placed)
+                                  throw new Error("That photo did not reach the Calendar.")
+                              })
+                            }
+                            onUndo={() => undoCalendarDelivery()}
+                          />
+                        ) : null}
+                        <InlineResultActions
+                          format={conceptFormat}
+                          completedFormats={Array.from(completedFormats)}
+                          onNextFormat={(nextFormat, kind, selection) =>
+                            handleNextFormat(nextFormat, kind, latestStyleReferenceUrl, selection)
+                          }
+                          onOpenCalendar={
+                            onOpenCalendar
+                              ? () => {
+                                  close()
+                                  onOpenCalendar()
+                                }
+                              : undefined
+                          }
+                        />
+                      </div>
                     }
                     onRetryText={
                       isGraphicOutputFormat(conceptFormat) && textOverlayMode === "with-text"

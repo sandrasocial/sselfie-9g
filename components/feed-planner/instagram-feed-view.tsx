@@ -992,6 +992,7 @@ export default function InstagramFeedView({
             <CalendarBulkCreate
               feedId={feedId}
               posts={displayPosts}
+              operatingLayerEnabled={feedNav?.operatingLayerEnabled === true}
               onRefresh={() => mutate()}
               onComplete={() => mutate()}
             />

@@ -22,6 +22,8 @@ export interface FeedNav {
   navigateToMaya?: (target?: CalendarPostTarget) => void
   /** Start a Story sequence in the same Maya conversation from Story Studio. */
   navigateToMayaForStory?: (title: string, coverOnly?: boolean) => void
+  /** Sandra-only rollout gate for the shared inline Maya action protocol. */
+  operatingLayerEnabled?: boolean
 }
 
 export const FeedNavContext = createContext<FeedNav | null>(null)

@@ -103,6 +103,8 @@ export type ServerConciergeSessionSnapshot = {
       previousImageUrl: string | null
       previousMediaUrls: string[]
       previousAiImageId: number | null
+      previousCaption: string | null
+      deliveredCaption: string | null
     } | null
   } | null
   startedAt: number
@@ -368,6 +370,12 @@ function sanitizeCalendarTarget(value: unknown): ServerConciergeSessionSnapshot[
             rawDelivery.previousAiImageId > 0
               ? rawDelivery.previousAiImageId
               : null,
+          previousCaption: Object.prototype.hasOwnProperty.call(rawDelivery, "previousCaption")
+            ? cleanText(rawDelivery.previousCaption, 2200)
+            : cleanText(target.caption, 2200),
+          deliveredCaption: Object.prototype.hasOwnProperty.call(rawDelivery, "deliveredCaption")
+            ? cleanText(rawDelivery.deliveredCaption, 2200)
+            : cleanText(target.caption, 2200),
         }
       : null
   return {
