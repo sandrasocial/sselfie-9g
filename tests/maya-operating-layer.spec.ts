@@ -325,6 +325,7 @@ if (!runPlaywright) {
       await expect(maya).toHaveAttribute("data-maya-inspiration", "none")
       await expect(page.getByText("Maya QA response for post 7.")).toBeVisible()
       await expect(page.getByText("Maya QA response for the Create task.")).toHaveCount(0)
+      await expect(page.getByText("Let's create photos.", { exact: true })).toHaveCount(0)
       await page.waitForTimeout(900)
 
       await page.getByRole("button", { name: "Close", exact: true }).click()
@@ -347,6 +348,7 @@ if (!runPlaywright) {
       await expect(maya).toHaveAttribute("data-maya-task-id", "maya-calendar-v1-101-707")
       await expect(page.getByText("Maya QA response for post 7.")).toHaveCount(1)
       await expect(page.getByText("Maya QA response for post 8.")).toHaveCount(0)
+      await expect(page.getByText("Let's create photos.", { exact: true })).toHaveCount(0)
 
       await page.getByRole("button", { name: "Menu" }).click()
       await page.getByRole("button", { name: "History" }).click()
@@ -406,6 +408,16 @@ if (!runPlaywright) {
         "aria-current",
         "page"
       )
+
+      // Reloading a completed Calendar task must restore its exact thread without re-running
+      // the generic photo pull (which would append a new "Let's create photos." turn).
+      await expect(page.getByText("Let's create photos.", { exact: true })).toHaveCount(0)
+      await page.goto("/e2e/maya-operating-layer")
+      await expect(maya).toHaveAttribute("data-maya-task-id", "maya-calendar-v1-101-707")
+      await expect(maya).toHaveAttribute("data-maya-post-id", "707")
+      await page.waitForTimeout(900)
+      await expect(page.getByText("Let's create photos.", { exact: true })).toHaveCount(0)
+      await expect(page.getByText("Maya QA response for post 7.")).toHaveCount(1)
 
       await page.keyboard.press("Escape")
       await expect(maya).toHaveCount(0)

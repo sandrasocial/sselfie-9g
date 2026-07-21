@@ -1135,6 +1135,7 @@ export function MayaConcierge({
       if (appliedTaskIdRef.current === taskId) return
       appliedTaskIdRef.current = taskId
       appliedDraftSessionRef.current = session.startedAt
+      sessionStartRef.current = session.startedAt
       hydratedTaskIdRef.current = null
       restoredDraftRef.current = null
       sessionResumedWithHistoryRef.current = false
@@ -2291,6 +2292,15 @@ export function MayaConcierge({
       if (operatingLayerEnabled) {
         appliedTaskIdRef.current = id
         hydratedTaskIdRef.current = id
+        sessionStartRef.current = workspace.session.startedAt
+        lastPulledFormatRef.current = loaded.length
+          ? (workspace.session.outputFormat ?? null)
+          : null
+        seedRetiredRef.current = Boolean(loaded.length)
+        if (loaded.length > 0 && workspace.session.calendarTarget) {
+          calendarHandoffSentRef.current = workspace.session.calendarTarget.requestId
+          markCalendarTargetAnnounced(workspace.session.calendarTarget.requestId)
+        }
         restoreHistoryTask(id, workspace.session as ConciergeSession)
         saveMayaTaskDraft({ ...workspace, chatId: id, messages: loaded })
         if (workspace.session.mayaContext?.surface === "calendar") onOpenCalendar?.()
