@@ -214,7 +214,11 @@ describe("Maya-first Suite creation UX", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
     expect(concierge).toContain("preMessageThreadOpen")
-    expect(concierge).toContain("threadEndRef.current?.scrollIntoView")
+    // MAYA-MULTISLIDE-KEYBOARD-01 (2026-07-21): scrolls the thread's own container
+    // directly (threadRef.scrollTo), not Element.scrollIntoView on a sentinel - the
+    // latter could walk past the nearest scrollable ancestor on WebKit and corrupt the
+    // keyboard-viewport tracking below.
+    expect(concierge).toContain("scrollThreadToBottom()")
   })
 
   it("makes continuing old Maya sessions an explicit choice", () => {

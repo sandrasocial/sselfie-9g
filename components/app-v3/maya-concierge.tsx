@@ -635,7 +635,17 @@ export function MayaConcierge({
   const bodyInput = useRef<HTMLInputElement>(null)
   const inspoInput = useRef<HTMLInputElement>(null)
   const videoInput = useRef<HTMLInputElement>(null)
-  const threadEndRef = useRef<HTMLDivElement>(null)
+  // The thread's own scroll container. Scrolled directly (scrollTop), never via
+  // Element.scrollIntoView on a sentinel - scrollIntoView can walk past the nearest
+  // scrollable ancestor and disturb an OUTER container on WebKit, which is what was
+  // corrupting the keyboard-viewport tracking below on mobile (2026-07-21 live report:
+  // the drawer landed behind the shell / lower-half-only after the first message).
+  const threadRef = useRef<HTMLDivElement>(null)
+  const scrollThreadToBottom = useCallback(() => {
+    const el = threadRef.current
+    if (!el) return
+    el.scrollTo?.({ top: el.scrollHeight, behavior: "smooth" })
+  }, [])
   const composerRef = useRef<HTMLInputElement>(null)
   const drawerCloseRef = useRef<HTMLButtonElement>(null)
   const drawerRef = useRef<HTMLElement>(null)
@@ -824,10 +834,10 @@ export function MayaConcierge({
   useEffect(() => {
     if (!showBrandPrompt) return
     const frame = window.requestAnimationFrame(() => {
-      threadEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+      scrollThreadToBottom()
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [showBrandPrompt])
+  }, [showBrandPrompt, scrollThreadToBottom])
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)")
@@ -901,20 +911,33 @@ export function MayaConcierge({
   // SUITE-UX-02 mobile: when the on-screen keyboard opens, iOS shrinks only the VISUAL
   // viewport; a 100dvh drawer keeps its layout height and a dead dark gap opens under the
   // composer. Track the visual viewport and pin the drawer to it while the keyboard is up.
+  //
+  // 2026-07-21 live report: the drawer landed behind the shell (or showed only its lower
+  // half) after the first message, every time after. Root cause: a "scroll" listener here
+  // ALSO recomputed keyboardBox, but visualViewport "scroll" fires for ANY pan of the visual
+  // viewport - including a transient one WebKit can trigger just from scrolling the thread's
+  // own overflow-y-auto content (the auto-scroll-to-bottom effect below runs on every new
+  // message). If that transient pan landed keyboardBox.top on a stray value, nothing ever
+  // corrected it, because the keyboard often never fully closes between messages, so no
+  // fresh "resize" event ever fires to fix it - the drawer stayed wrongly translated for the
+  // rest of the session. Keyboard open/close is fundamentally a RESIZE signal (the viewport's
+  // height changes); it is never a "scroll" signal, so only resize is tracked now.
   const [keyboardBox, setKeyboardBox] = useState<{ height: number; top: number } | null>(null)
   useEffect(() => {
     const vv = typeof window !== "undefined" ? window.visualViewport : null
     if (!vv) return
     const update = () => {
       const keyboardLikely = window.innerHeight - vv.height > 80
-      setKeyboardBox(keyboardLikely ? { height: vv.height, top: vv.offsetTop } : null)
+      // Defensive clamp: a legitimate keyboard-open offset is never negative and never
+      // larger than the visible viewport itself. Never let a stray reading push the drawer
+      // off-screen.
+      const top = Math.max(0, Math.min(vv.offsetTop, vv.height))
+      setKeyboardBox(keyboardLikely ? { height: vv.height, top } : null)
     }
     vv.addEventListener("resize", update)
-    vv.addEventListener("scroll", update)
     update()
     return () => {
       vv.removeEventListener("resize", update)
-      vv.removeEventListener("scroll", update)
     }
   }, [])
 
@@ -1232,7 +1255,7 @@ export function MayaConcierge({
   ])
 
   useEffect(() => {
-    threadEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+    scrollThreadToBottom()
   }, [
     messages,
     isThinking,
@@ -1240,6 +1263,7 @@ export function MayaConcierge({
     session?.outputFormat,
     textOverlayMode,
     textStyleChoice,
+    scrollThreadToBottom,
   ])
 
   useEffect(() => {
@@ -4297,6 +4321,7 @@ export function MayaConcierge({
             actually scrolls (without it, content overflowed and the direction cards were
             unreachable below the fold). */}
         <div
+          ref={threadRef}
           role="log"
           aria-live="polite"
           aria-relevant="additions text"
@@ -5040,8 +5065,6 @@ export function MayaConcierge({
               </button>
             </div>
           )}
-
-          <div ref={threadEndRef} />
         </div>
 
         {/* Composer - secondary: refinement only, the happy path is the taps above. One clean

@@ -24,7 +24,7 @@ describe("new member WOW regressions", () => {
     const scrollEffect = concierge.slice(promptIndex, promptIndex + 900)
 
     expect(scrollEffect).toContain("showBrandPrompt")
-    expect(scrollEffect).toContain("threadEndRef.current?.scrollIntoView")
+    expect(scrollEffect).toContain("scrollThreadToBottom()")
   })
 
   it("keeps the first-grid style decision compact, explicit, and touch friendly", () => {

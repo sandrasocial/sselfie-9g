@@ -19,11 +19,8 @@ describe("Maya carousel ideas CTA feedback", () => {
 
   it("scrolls the newly revealed text choice into view immediately", () => {
     const scrollEffect = concierge.slice(
-      concierge.indexOf("threadEndRef.current?.scrollIntoView"),
-      concierge.indexOf(
-        "// When a new look",
-        concierge.indexOf("threadEndRef.current?.scrollIntoView")
-      )
+      concierge.indexOf("scrollThreadToBottom()"),
+      concierge.indexOf("// When a new look", concierge.indexOf("scrollThreadToBottom()"))
     )
 
     expect(scrollEffect).toContain("preMessageThreadOpen")
