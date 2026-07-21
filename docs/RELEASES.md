@@ -119,3 +119,23 @@ and zero browser console errors. Nine payment-verified active memberships were r
 to 1,220 total, including all 320 unused purchased top-up credits. Nine matching production ledger entries
 were verified. The broad test run passed 350 files; unrelated existing sandbox, timing, and shared-mock
 failures were isolated from this release, while the full credit-control boundary suite passed cleanly.
+
+## 2026-07-21 — Maya writing API cost controls
+
+Reduced Maya's writing cost without weakening the creative work. Simple clarification, Calendar
+guidance, weekly recommendations, member briefs, workbook chat, and prompt-pack requests now use the
+smaller model. Complex creative plans keep the stronger model with output limits sized to the actual
+format. Create sends a shorter recent-message window, Calendar no longer repeats every saved caption,
+and personalized recommendations are cached once per member and context each day.
+
+Added request-level usage and cost records across the centralized Maya model path without storing
+prompt or response content. The meter records feature, task, model, token use, status, timing, and
+provider or estimated cost so future pricing decisions can use real production evidence.
+
+Production proof: feature commit `10feed39`, Vercel deployment
+`dpl_6erscnq3DKiEL2MQ9LZY9WMcYzJJ`, exact Git commit verified in the build log, CI typecheck,
+repository invariants, 86 focused Maya and Calendar tests, full serial suite with 1,666 passing tests
+and one confirmed pre-existing quote-style contract mismatch, and a successful Turbopack production
+build. Authenticated desktop and 390px mobile QA loaded Create with zero browser errors or horizontal
+overflow. The live recommendation used Haiku, logged an estimated `$0.005649` request, and created one
+daily cache row; two subsequent reloads reused it without another AI call.
