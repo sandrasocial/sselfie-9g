@@ -456,7 +456,7 @@ function CheckoutContent() {
     <div className="min-h-screen bg-[#F8FAFA] text-[#0D0E10]">
       {/* Hero Image Section */}
       <div
-        className={`relative overflow-hidden border-b border-[rgba(197,198,200,0.4)] ${
+        className={`${isPromptVault ? "hidden sm:block" : ""} relative overflow-hidden border-b border-[rgba(197,198,200,0.4)] ${
           isSelfieVisibilityBundle ? "h-[132px] sm:h-[150px]" : isVisualIdentityOffer ? "h-[20vh] sm:h-[26vh] md:h-[30vh]" : "h-[28vh] sm:h-[34vh] md:h-[38vh]"
         }`}
       >
@@ -480,9 +480,9 @@ function CheckoutContent() {
       </div>
 
       {/* Checkout Form Section */}
-      <div className={`max-w-3xl mx-auto px-4 sm:px-6 ${isSelfieVisibilityBundle ? "py-4 sm:py-6" : "py-8 sm:py-12"}`}>
+      <div className={`max-w-3xl mx-auto px-4 sm:px-6 ${isPromptVault ? "py-4 sm:py-12" : isSelfieVisibilityBundle ? "py-4 sm:py-6" : "py-8 sm:py-12"}`}>
         {isVisualIdentityOffer && (
-          <div className="mb-6 border border-[rgba(197,198,200,0.45)] bg-white p-4 shadow-[0_18px_60px_rgba(13,14,16,0.06)] sm:p-5">
+          <div className={`${isPromptVault ? "hidden sm:block" : ""} mb-6 border border-[rgba(197,198,200,0.45)] bg-white p-4 shadow-[0_18px_60px_rgba(13,14,16,0.06)] sm:p-5`}>
             <div className="mb-4 grid grid-cols-4 gap-2">
               {[
                 "/images/ai-prompts/dark-feminine-cafe-shot-3.jpg",
@@ -563,7 +563,7 @@ function CheckoutContent() {
             </div>
           )}
           {isPromptVault && (
-            <div className="mx-auto mt-5 max-w-xl border border-[rgba(197,198,200,0.45)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(13,14,16,0.05)] sm:px-5">
+            <div className="mx-auto mt-5 hidden max-w-xl border border-[rgba(197,198,200,0.45)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(13,14,16,0.05)] sm:block sm:px-5">
               <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#818283]">
                 What happens after payment
               </p>
@@ -593,7 +593,7 @@ function CheckoutContent() {
             </div>
           )}
           {confidencePoints.length > 0 && !isSelfieVisibilityBundle && (
-            <div className="mx-auto mt-4 grid max-w-xl gap-2 sm:grid-cols-2">
+            <div className={`${isPromptVault ? "hidden sm:grid" : "grid"} mx-auto mt-4 max-w-xl gap-2 sm:grid-cols-2`}>
               {confidencePoints.map((point) => (
                 <div
                   key={point}

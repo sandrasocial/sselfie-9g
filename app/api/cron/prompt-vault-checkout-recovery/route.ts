@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { createHash } from "node:crypto"
 
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import {
@@ -49,6 +50,16 @@ const SEND_DELAY_MS = 650
 const HYDRATE_EMAIL_LIMIT = 50
 const HYDRATE_RECHECK_AFTER_HOURS = 12
 const HYDRATE_MAX_ATTEMPTS = 3
+const PROMPT_VAULT_RECOVERY_STAGE_2_SENT_AT = "recovery_email_2_sent_at"
+const PROMPT_VAULT_RECOVERY_STAGE_3_SENT_AT = "recovery_email_3_sent_at"
+
+function recoveryIdempotencyKey(emailType: string, email: string): string {
+  const recipientHash = createHash("sha256")
+    .update(email.trim().toLowerCase())
+    .digest("hex")
+    .slice(0, 24)
+  return `prompt-vault-recovery:${emailType}:${recipientHash}`
+}
 
 async function ensureRecoveryHydrationSchema() {
   await ensureRevenueEngineSchema()
@@ -62,8 +73,67 @@ async function ensureRecoveryHydrationSchema() {
     ADD COLUMN IF NOT EXISTS email_hydration_attempts INTEGER NOT NULL DEFAULT 0
   `
   await sql`
+    ALTER TABLE checkout_attribution
+    ADD COLUMN IF NOT EXISTS recovery_email_2_sent_at TIMESTAMPTZ
+  `
+  await sql`
+    ALTER TABLE checkout_attribution
+    ADD COLUMN IF NOT EXISTS recovery_email_3_sent_at TIMESTAMPTZ
+  `
+  await sql`
     CREATE INDEX IF NOT EXISTS checkout_attribution_email_hydration_idx
     ON checkout_attribution (product_type, status, email_hydration_checked_at, created_at DESC)
+  `
+
+  // Preserve already-sent stages when the durable columns are introduced. email_logs remains
+  // delivery evidence; the per-session markers make candidate claiming atomic across cron retries.
+  await sql`
+    UPDATE checkout_attribution ca
+    SET recovery_email_2_sent_at = (
+      SELECT MIN(el.sent_at)
+      FROM email_logs el
+      WHERE LOWER(BTRIM(el.user_email)) = LOWER(BTRIM(ca.user_email))
+        AND el.email_type = ${PROMPT_VAULT_CHECKOUT_RECOVERY_2_EMAIL_TYPE}
+        AND el.status IN ('sent', 'delivered', 'suppressed')
+        AND el.sent_at >= ca.recovery_email_sent_at
+        AND el.sent_at <= ca.recovery_email_sent_at + INTERVAL '14 days'
+    )
+    WHERE ca.product_type = 'prompt_vault'
+      AND ca.recovery_email_2_sent_at IS NULL
+      AND ca.recovery_email_sent_at IS NOT NULL
+      AND EXISTS (
+        SELECT 1
+        FROM email_logs el
+        WHERE LOWER(BTRIM(el.user_email)) = LOWER(BTRIM(ca.user_email))
+          AND el.email_type = ${PROMPT_VAULT_CHECKOUT_RECOVERY_2_EMAIL_TYPE}
+          AND el.status IN ('sent', 'delivered', 'suppressed')
+          AND el.sent_at >= ca.recovery_email_sent_at
+          AND el.sent_at <= ca.recovery_email_sent_at + INTERVAL '14 days'
+      )
+  `
+  await sql`
+    UPDATE checkout_attribution ca
+    SET recovery_email_3_sent_at = (
+      SELECT MIN(el.sent_at)
+      FROM email_logs el
+      WHERE LOWER(BTRIM(el.user_email)) = LOWER(BTRIM(ca.user_email))
+        AND el.email_type = ${PROMPT_VAULT_CHECKOUT_RECOVERY_3_EMAIL_TYPE}
+        AND el.status IN ('sent', 'delivered', 'suppressed')
+        AND el.sent_at >= ca.recovery_email_sent_at
+        AND el.sent_at <= ca.recovery_email_sent_at + INTERVAL '14 days'
+    )
+    WHERE ca.product_type = 'prompt_vault'
+      AND ca.recovery_email_3_sent_at IS NULL
+      AND ca.recovery_email_sent_at IS NOT NULL
+      AND EXISTS (
+        SELECT 1
+        FROM email_logs el
+        WHERE LOWER(BTRIM(el.user_email)) = LOWER(BTRIM(ca.user_email))
+          AND el.email_type = ${PROMPT_VAULT_CHECKOUT_RECOVERY_3_EMAIL_TYPE}
+          AND el.status IN ('sent', 'delivered', 'suppressed')
+          AND el.sent_at >= ca.recovery_email_sent_at
+          AND el.sent_at <= ca.recovery_email_sent_at + INTERVAL '14 days'
+      )
   `
 }
 
@@ -177,6 +247,14 @@ async function getRecoveryCandidates(): Promise<RecoveryCandidate[]> {
         AND created_at > NOW() - INTERVAL '7 days'
         AND NOT EXISTS (
           SELECT 1
+          FROM stripe_payments sp
+          WHERE LOWER(BTRIM(sp.customer_email)) = LOWER(BTRIM(checkout_attribution.user_email))
+            AND sp.product_type = 'prompt_vault'
+            AND sp.status IN ('succeeded', 'paid')
+            AND (sp.is_test_mode = FALSE OR sp.is_test_mode IS NULL)
+        )
+        AND NOT EXISTS (
+          SELECT 1
           FROM email_logs el
           WHERE LOWER(BTRIM(el.user_email)) = LOWER(BTRIM(checkout_attribution.user_email))
             AND el.email_type = ${PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE}
@@ -210,6 +288,9 @@ async function getRecoveryCandidates(): Promise<RecoveryCandidate[]> {
 // even when they purchased through a different checkout session.
 type FollowupStage = {
   emailType: string
+  sentAtColumn:
+    | typeof PROMPT_VAULT_RECOVERY_STAGE_2_SENT_AT
+    | typeof PROMPT_VAULT_RECOVERY_STAGE_3_SENT_AT
   /** Hours after the stage-1 recovery email before this touch becomes eligible. */
   afterHours: number
   /** This stage only goes to people who already received the named earlier touch. */
@@ -224,12 +305,14 @@ type FollowupStage = {
 const FOLLOWUP_STAGES: FollowupStage[] = [
   {
     emailType: PROMPT_VAULT_CHECKOUT_RECOVERY_2_EMAIL_TYPE,
+    sentAtColumn: PROMPT_VAULT_RECOVERY_STAGE_2_SENT_AT,
     afterHours: 24,
     requiresEmailType: PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE,
     generate: generatePromptVaultRecovery2Email,
   },
   {
     emailType: PROMPT_VAULT_CHECKOUT_RECOVERY_3_EMAIL_TYPE,
+    sentAtColumn: PROMPT_VAULT_RECOVERY_STAGE_3_SENT_AT,
     afterHours: 72,
     requiresEmailType: PROMPT_VAULT_CHECKOUT_RECOVERY_2_EMAIL_TYPE,
     generate: generatePromptVaultRecovery3Email,
@@ -264,13 +347,18 @@ async function getFollowupCandidates(stage: FollowupStage): Promise<RecoveryCand
         AND recovery_email_sent_at IS NOT NULL
         AND recovery_email_sent_at <= NOW() - (${`${stage.afterHours} hours`}::interval)
         AND recovery_email_sent_at > NOW() - INTERVAL '14 days'
+        AND (
+          (${stage.sentAtColumn} = ${PROMPT_VAULT_RECOVERY_STAGE_2_SENT_AT} AND recovery_email_2_sent_at IS NULL)
+          OR
+          (${stage.sentAtColumn} = ${PROMPT_VAULT_RECOVERY_STAGE_3_SENT_AT} AND recovery_email_3_sent_at IS NULL)
+        )
         AND NOT EXISTS (
           SELECT 1
           FROM stripe_payments sp
           WHERE LOWER(BTRIM(sp.customer_email)) = LOWER(BTRIM(ca.user_email))
             AND sp.product_type = 'prompt_vault'
             AND sp.status IN ('succeeded', 'paid')
-            AND sp.is_test_mode = FALSE
+            AND (sp.is_test_mode = FALSE OR sp.is_test_mode IS NULL)
         )
         AND EXISTS (
           SELECT 1
@@ -309,11 +397,87 @@ async function getFollowupCandidates(stage: FollowupStage): Promise<RecoveryCand
   `) as RecoveryCandidate[]
 }
 
+async function hasSuccessfulPromptVaultPayment(email: string): Promise<boolean> {
+  const rows = await sql`
+    SELECT 1
+    FROM stripe_payments
+    WHERE LOWER(BTRIM(customer_email)) = LOWER(BTRIM(${email}))
+      AND product_type = 'prompt_vault'
+      AND status IN ('succeeded', 'paid')
+      AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+    LIMIT 1
+  `
+
+  return rows.length > 0
+}
+
+async function markRecoveryResolvedByPurchase(candidate: RecoveryCandidate) {
+  await sql`
+    UPDATE checkout_attribution
+    SET
+      status = 'abandoned',
+      recovered_at = COALESCE(recovered_at, NOW()),
+      updated_at = NOW()
+    WHERE session_id = ${candidate.session_id}
+      AND status <> 'completed'
+  `
+}
+
+async function claimFollowupStage(
+  candidate: RecoveryCandidate,
+  stage: FollowupStage
+): Promise<boolean> {
+  const claimed =
+    stage.sentAtColumn === PROMPT_VAULT_RECOVERY_STAGE_2_SENT_AT
+      ? await sql`
+        UPDATE checkout_attribution
+        SET recovery_email_2_sent_at = NOW(), updated_at = NOW()
+        WHERE session_id = ${candidate.session_id}
+          AND recovery_email_2_sent_at IS NULL
+        RETURNING session_id
+      `
+      : await sql`
+        UPDATE checkout_attribution
+        SET recovery_email_3_sent_at = NOW(), updated_at = NOW()
+        WHERE session_id = ${candidate.session_id}
+          AND recovery_email_3_sent_at IS NULL
+        RETURNING session_id
+      `
+
+  return claimed.length > 0
+}
+
+async function releaseFollowupStageClaim(candidate: RecoveryCandidate, stage: FollowupStage) {
+  if (stage.sentAtColumn === PROMPT_VAULT_RECOVERY_STAGE_2_SENT_AT) {
+    await sql`
+      UPDATE checkout_attribution
+      SET recovery_email_2_sent_at = NULL, updated_at = NOW()
+      WHERE session_id = ${candidate.session_id}
+    `
+    return
+  }
+
+  await sql`
+    UPDATE checkout_attribution
+    SET recovery_email_3_sent_at = NULL, updated_at = NOW()
+    WHERE session_id = ${candidate.session_id}
+  `
+}
+
 async function sendFollowupStage(stage: FollowupStage) {
   const candidates = await getFollowupCandidates(stage)
   const results = { found: candidates.length, sent: 0, failed: 0 }
 
   for (const candidate of candidates) {
+    if (await hasSuccessfulPromptVaultPayment(candidate.user_email)) {
+      await markRecoveryResolvedByPurchase(candidate)
+      continue
+    }
+
+    if (!(await claimFollowupStage(candidate, stage))) {
+      continue
+    }
+
     const firstName = getFirstNameForEmail({ email: candidate.user_email })
     const email = stage.generate({ firstName, recipientEmail: candidate.user_email })
 
@@ -327,6 +491,7 @@ async function sendFollowupStage(stage: FollowupStage) {
       emailType: stage.emailType,
       tags: ["prompt-vault", "checkout-recovery"],
       marketing: true,
+      idempotencyKey: recoveryIdempotencyKey(stage.emailType, candidate.user_email),
     })
 
     if (sent.success) {
@@ -350,6 +515,7 @@ async function sendFollowupStage(stage: FollowupStage) {
       })
     } else {
       results.failed += 1
+      await releaseFollowupStageClaim(candidate, stage)
     }
 
     await sleep(SEND_DELAY_MS)
@@ -408,14 +574,17 @@ async function tagRecoveryCandidate(candidate: RecoveryCandidate) {
   await updateContactTags(candidate.user_email, {
     ...buildAiPhotoshootResendTags("abandoned"),
     prompt_vault_checkout_abandoned: "true",
-  }).catch((error) => {
+  }).catch(error => {
     console.error("[prompt-vault-recovery] Failed to tag Resend contact:", error)
   })
 
   const aiPhotoshootSegmentId = process.env[AI_PHOTOSHOOT_AUDIENCE.resendSegmentEnvKey]
   if (aiPhotoshootSegmentId) {
-    await addContactToSegment(candidate.user_email, aiPhotoshootSegmentId).catch((error) => {
-      console.error("[prompt-vault-recovery] Failed to add contact to AI Photoshoot segment:", error)
+    await addContactToSegment(candidate.user_email, aiPhotoshootSegmentId).catch(error => {
+      console.error(
+        "[prompt-vault-recovery] Failed to add contact to AI Photoshoot segment:",
+        error
+      )
     })
   }
 }
@@ -437,7 +606,7 @@ export async function GET(request: Request) {
         })
         return NextResponse.json(
           { error: "Unauthorized: CRON_SECRET required in production" },
-          { status: 401 },
+          { status: 401 }
         )
       }
       if (authHeader !== `Bearer ${cronSecret}`) {
@@ -448,6 +617,36 @@ export async function GET(request: Request) {
 
     if (!envFlag("PROMPT_VAULT_CHECKOUT_RECOVERY_ENABLED")) {
       const summary = { enabled: false, found: 0, sent: 0, failed: 0, hydrated: 0 }
+      await cronLogger.success(summary)
+      return NextResponse.json({ success: true, ...summary })
+    }
+
+    const dryRun = new URL(request.url).searchParams.get("dry_run") === "1"
+    if (dryRun) {
+      await ensureRecoveryHydrationSchema()
+      const candidates = await getRecoveryCandidates()
+      const followups: Record<string, { found: number; sent: number; failed: number }> = {}
+
+      if (envFlag("PROMPT_VAULT_RECOVERY_FOLLOWUPS_ENABLED")) {
+        for (const stage of FOLLOWUP_STAGES) {
+          const stageCandidates = await getFollowupCandidates(stage)
+          followups[stage.emailType] = {
+            found: stageCandidates.length,
+            sent: 0,
+            failed: 0,
+          }
+        }
+      }
+
+      const summary = {
+        enabled: true,
+        dryRun: true,
+        found: candidates.length,
+        sent: 0,
+        failed: 0,
+        hydrated: 0,
+        followups,
+      }
       await cronLogger.success(summary)
       return NextResponse.json({ success: true, ...summary })
     }
@@ -464,6 +663,11 @@ export async function GET(request: Request) {
     }
 
     for (const candidate of candidates) {
+      if (await hasSuccessfulPromptVaultPayment(candidate.user_email)) {
+        await markRecoveryResolvedByPurchase(candidate)
+        continue
+      }
+
       const firstName = getFirstNameForEmail({
         email: candidate.user_email,
       })
@@ -482,6 +686,10 @@ export async function GET(request: Request) {
         emailType: PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE,
         tags: ["prompt-vault", "checkout-recovery"],
         marketing: true,
+        idempotencyKey: recoveryIdempotencyKey(
+          PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE,
+          candidate.user_email
+        ),
       })
 
       if (sent.success) {
@@ -512,7 +720,7 @@ export async function GET(request: Request) {
         success: false,
         error: error instanceof Error ? error.message : "Checkout recovery cron failed",
       },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }

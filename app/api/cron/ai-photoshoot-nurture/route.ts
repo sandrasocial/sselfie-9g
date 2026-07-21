@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { createHash } from "node:crypto"
 
 import { createCronLogger } from "@/lib/cron-logger"
 import { sql } from "@/lib/db/client"
@@ -36,10 +37,9 @@ const REPLY_TO_EMAIL = "hello@sselfie.ai"
 const DEFAULT_AI_PROMPTS_START_DATE = "2026-05-18"
 const DEFAULT_SEND_DELAY_MS = 650
 const MAX_PER_TOUCH_DEFAULT = 75
-// 300 sends x 650ms delay = ~195s of send time inside the 300s function budget.
-// (Was 225; raised 2026-07-03 with the buyer-first reorder below after the email audit
-// found lead volume starving every later touch.)
-const MAX_TOTAL_PER_RUN_DEFAULT = 300
+// Leave enough room for suppression checks, Resend calls, logging, and retries inside the
+// 300-second Vercel budget. The previous 300-send ceiling timed out before cronLogger.success.
+const MAX_TOTAL_PER_RUN_DEFAULT = 120
 const MIN_TOUCH_GAP_HOURS_DEFAULT = 18
 
 interface AiPromptsCandidate {
@@ -105,6 +105,14 @@ function previousPromptVaultTouch(emailType: PromptVaultEmailType): PromptVaultE
 
 function resultKey(emailType: string): string {
   return emailType.replace(/^ai-prompts-/, "aiPrompts-").replace(/^prompt-vault-/, "promptVault-")
+}
+
+function nurtureIdempotencyKey(emailType: string, email: string): string {
+  const recipientHash = createHash("sha256")
+    .update(email.trim().toLowerCase())
+    .digest("hex")
+    .slice(0, 24)
+  return `ai-photoshoot-nurture:${emailType}:${recipientHash}`
 }
 
 async function getAiPromptsCandidates(input: {
@@ -306,6 +314,7 @@ async function sendAiPromptsTouch(emailType: AiPromptsEmailType, candidate: AiPr
     emailType,
     tags: ["ai-prompts", "ai-photoshoot-nurture", emailType],
     marketing: true,
+    idempotencyKey: nurtureIdempotencyKey(emailType, candidate.email),
   })
 }
 
@@ -324,6 +333,7 @@ async function sendPromptVaultTouch(
     emailType,
     tags: ["prompt-vault", "ai-photoshoot-nurture", emailType],
     marketing: true,
+    idempotencyKey: nurtureIdempotencyKey(emailType, candidate.email),
   })
 }
 

@@ -114,6 +114,30 @@ describe("Prompt Vault commercial path", () => {
     expect(vaultAdmin).toContain("Recovery Revenue")
   })
 
+  it("protects Vault buyers from recovery sends and makes every recovery stage idempotent", () => {
+    const recoveryRoute = readFileSync(
+      "app/api/cron/prompt-vault-checkout-recovery/route.ts",
+      "utf8"
+    )
+
+    expect(recoveryRoute).toContain("PROMPT_VAULT_RECOVERY_STAGE_2_SENT_AT")
+    expect(recoveryRoute).toContain("PROMPT_VAULT_RECOVERY_STAGE_3_SENT_AT")
+    expect(recoveryRoute).toContain("hasSuccessfulPromptVaultPayment")
+    expect(recoveryRoute).toContain("claimFollowupStage")
+    expect(recoveryRoute).toContain("releaseFollowupStageClaim")
+    expect(recoveryRoute).toContain("recoveryIdempotencyKey")
+    expect(recoveryRoute).toContain("createHash")
+    expect(recoveryRoute).toContain('searchParams.get("dry_run") === "1"')
+  })
+
+  it("puts the Prompt Vault payment form ahead of decorative proof on mobile", () => {
+    const checkout = readFileSync("app/checkout/page.tsx", "utf8")
+
+    expect(checkout).toContain('isPromptVault ? "hidden sm:block"')
+    expect(checkout).toContain('isPromptVault ? "py-4 sm:py-12"')
+    expect(checkout).toContain('isPromptVault ? "hidden sm:grid"')
+  })
+
   it("keeps the retired $197 Vault upgrade out of active runtime code", () => {
     const sequence = readFileSync("lib/email/prompt-vault-email-sequence.ts", "utf8")
     const templates = readFileSync("lib/email/templates/prompt-vault-buyer-sequence.ts", "utf8")

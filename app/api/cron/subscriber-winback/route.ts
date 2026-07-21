@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { createHash } from "node:crypto"
 
 import { createCronLogger } from "@/lib/cron-logger"
 import { sql } from "@/lib/db/client"
@@ -33,9 +34,11 @@ export const maxDuration = 60
 
 const FROM_EMAIL = "Sandra from SSELFIE <hello@sselfie.ai>"
 const REPLY_TO_EMAIL = "hello@sselfie.ai"
-const BATCH_LIMIT = 40
+const BATCH_LIMIT = 10
+const MAX_EMAILS_PER_RUN = 20
+const SUNSET_LIMIT = 10
 const SEND_DELAY_MS = 650
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 type WinbackStage = {
   emailType: string
@@ -51,10 +54,30 @@ type WinbackStage = {
 }
 
 const STAGES: WinbackStage[] = [
-  { emailType: SUBSCRIBER_WINBACK_EMAIL_TYPES.reminder, afterDays: 0, requiresEmailType: null, generate: generateWinback1Email },
-  { emailType: SUBSCRIBER_WINBACK_EMAIL_TYPES.value, afterDays: 5, requiresEmailType: SUBSCRIBER_WINBACK_EMAIL_TYPES.reminder, generate: generateWinback2Email },
-  { emailType: SUBSCRIBER_WINBACK_EMAIL_TYPES.offer, afterDays: 7, requiresEmailType: SUBSCRIBER_WINBACK_EMAIL_TYPES.value, generate: generateWinback3Email },
-  { emailType: SUBSCRIBER_WINBACK_EMAIL_TYPES.sunset, afterDays: 7, requiresEmailType: SUBSCRIBER_WINBACK_EMAIL_TYPES.offer, generate: generateWinback4Email },
+  {
+    emailType: SUBSCRIBER_WINBACK_EMAIL_TYPES.reminder,
+    afterDays: 0,
+    requiresEmailType: null,
+    generate: generateWinback1Email,
+  },
+  {
+    emailType: SUBSCRIBER_WINBACK_EMAIL_TYPES.value,
+    afterDays: 5,
+    requiresEmailType: SUBSCRIBER_WINBACK_EMAIL_TYPES.reminder,
+    generate: generateWinback2Email,
+  },
+  {
+    emailType: SUBSCRIBER_WINBACK_EMAIL_TYPES.offer,
+    afterDays: 7,
+    requiresEmailType: SUBSCRIBER_WINBACK_EMAIL_TYPES.value,
+    generate: generateWinback3Email,
+  },
+  {
+    emailType: SUBSCRIBER_WINBACK_EMAIL_TYPES.sunset,
+    afterDays: 7,
+    requiresEmailType: SUBSCRIBER_WINBACK_EMAIL_TYPES.offer,
+    generate: generateWinback4Email,
+  },
 ]
 
 /**
@@ -62,7 +85,18 @@ const STAGES: WinbackStage[] = [
  * zero opens AND zero clicks in 60 days. Excludes active members and anyone who paid in 90d
  * (stripe_payments - money truth), plus anyone already in this win-back round (120d dedupe).
  */
-async function getStageCandidates(stage: WinbackStage): Promise<Array<{ email: string }>> {
+function winbackIdempotencyKey(emailType: string, email: string): string {
+  const recipientHash = createHash("sha256")
+    .update(email.trim().toLowerCase())
+    .digest("hex")
+    .slice(0, 24)
+  return `subscriber-winback:${emailType}:${recipientHash}`
+}
+
+async function getStageCandidates(
+  stage: WinbackStage,
+  limit: number
+): Promise<Array<{ email: string }>> {
   return (await sql`
     WITH recipients AS (
       SELECT
@@ -119,13 +153,15 @@ async function getStageCandidates(stage: WinbackStage): Promise<Array<{ email: s
           AND el.sent_at > NOW() - INTERVAL '120 days'
       )
     ORDER BY r.email ASC
-    LIMIT ${BATCH_LIMIT}
+    LIMIT ${limit}
   `) as Array<{ email: string }>
 }
 
-async function runStage(stage: WinbackStage) {
-  const candidates = await getStageCandidates(stage)
-  const results = { found: candidates.length, sent: 0, failed: 0 }
+async function runStage(stage: WinbackStage, limit: number, dryRun: boolean) {
+  const candidates = await getStageCandidates(stage, limit)
+  const results = { found: candidates.length, sent: 0, failed: 0, dryRun }
+
+  if (dryRun) return results
 
   for (const candidate of candidates) {
     const firstName = getFirstNameForEmail({ email: candidate.email })
@@ -141,6 +177,7 @@ async function runStage(stage: WinbackStage) {
       emailType: stage.emailType,
       tags: ["subscriber-winback"],
       marketing: true,
+      idempotencyKey: winbackIdempotencyKey(stage.emailType, candidate.email),
     })
 
     if (sent.success) results.sent += 1
@@ -157,7 +194,7 @@ async function runStage(stage: WinbackStage) {
  * (every marketing send respects it) + a winback_sunset tag in Resend so broadcasts can
  * exclude them. Counted in dry-run mode whenever the sunset env is off.
  */
-async function runSunset(apply: boolean) {
+async function runSunset(apply: boolean, limit: number) {
   const candidates = (await sql`
     WITH recipients AS (
       SELECT
@@ -188,7 +225,7 @@ async function runSunset(apply: boolean) {
           AND done.email_type = 'subscriber-winback-sunset-applied'
       )
     ORDER BY r.email ASC
-    LIMIT ${BATCH_LIMIT}
+    LIMIT ${limit}
   `) as Array<{ email: string }>
 
   const results = { eligible: candidates.length, suppressed: 0, dryRun: !apply }
@@ -196,7 +233,7 @@ async function runSunset(apply: boolean) {
 
   for (const candidate of candidates) {
     await recordEmailUnsubscribe(createUnsubscribeToken(candidate.email), "winback_sunset")
-    await updateContactTags(candidate.email, { winback_sunset: "true" }).catch((error) => {
+    await updateContactTags(candidate.email, { winback_sunset: "true" }).catch(error => {
       console.error("[subscriber-winback] Failed to tag sunset contact in Resend:", error)
     })
     // Marker row so a subscriber is only sunset once (and the count stays auditable).
@@ -222,8 +259,13 @@ export async function GET(request: Request) {
 
     if (isProduction) {
       if (!cronSecret) {
-        await cronLogger.error(new Error("Unauthorized"), { reason: "CRON_SECRET not set in production" })
-        return NextResponse.json({ error: "Unauthorized: CRON_SECRET required in production" }, { status: 401 })
+        await cronLogger.error(new Error("Unauthorized"), {
+          reason: "CRON_SECRET not set in production",
+        })
+        return NextResponse.json(
+          { error: "Unauthorized: CRON_SECRET required in production" },
+          { status: 401 }
+        )
       }
       if (authHeader !== `Bearer ${cronSecret}`) {
         await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
@@ -237,19 +279,35 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, ...summary })
     }
 
-    const results: Record<string, unknown> = { enabled: true }
-    for (const stage of STAGES) {
-      results[stage.emailType] = await runStage(stage)
+    const dryRun = new URL(request.url).searchParams.get("dry_run") === "1"
+    const results: Record<string, unknown> = { enabled: true, dryRun }
+    let remainingSends = MAX_EMAILS_PER_RUN
+    for (const stage of [...STAGES].reverse()) {
+      if (remainingSends <= 0) {
+        results[stage.emailType] = { found: 0, sent: 0, failed: 0, skippedForBudget: true }
+        continue
+      }
+
+      const stageResult = await runStage(stage, Math.min(BATCH_LIMIT, remainingSends), dryRun)
+      results[stage.emailType] = stageResult
+      remainingSends -= stageResult.sent + stageResult.failed
     }
-    results.sunset = await runSunset(envFlag("SUBSCRIBER_WINBACK_SUNSET_ENABLED"))
+    results.remainingSends = remainingSends
+    results.sunset = await runSunset(
+      !dryRun && envFlag("SUBSCRIBER_WINBACK_SUNSET_ENABLED"),
+      SUNSET_LIMIT
+    )
 
     await cronLogger.success(results)
     return NextResponse.json({ success: true, ...results })
   } catch (error: unknown) {
     await cronLogger.error(error, { step: "subscriber-winback" })
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Subscriber win-back cron failed" },
-      { status: 500 },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Subscriber win-back cron failed",
+      },
+      { status: 500 }
     )
   }
 }
