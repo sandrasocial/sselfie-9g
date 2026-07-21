@@ -10,7 +10,7 @@ import "server-only"
 
 import { generateText } from "ai"
 import { sql } from "@/lib/db/client"
-import { createMayaOpenRouterModel, getMayaMaxTokensForTask } from "@/lib/maya/openrouter"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { extractJson } from "@/lib/ai/extract-json"
 import { getOrCreateWeeklyTrendDigest, type TrendDigest } from "./trends"
@@ -56,6 +56,7 @@ function validateIdeas(parsed: unknown): WeeklyIdea[] | null {
 
 async function generateMemberIdeas(
   authUserId: string,
+  neonUserId: string | number,
   digest: TrendDigest,
   weekStart: string,
 ): Promise<WeeklyIdea[]> {
@@ -82,11 +83,14 @@ async function generateMemberIdeas(
   ].join("\n\n")
 
   const { text } = await generateText({
-    model: createMayaOpenRouterModel("chat_default"),
+    model: createMayaOpenRouterModel("chat_default", {
+      userId: neonUserId,
+      feature: "member_weekly_brief",
+    }),
     system,
     messages: [{ role: "user", content: userMsg }],
     temperature: 0.8,
-    maxOutputTokens: getMayaMaxTokensForTask("chat_default"),
+    maxOutputTokens: 800,
   })
 
   const ideas = validateIdeas(JSON.parse(extractJson(text)))
@@ -110,7 +114,7 @@ export async function getOrCreateMemberWeeklyBrief(
     return { weekStart, ideas: stripLongDashes(existing.brief.ideas as WeeklyIdea[]) }
   }
 
-  const ideas = await generateMemberIdeas(authUserId, digest, weekStart)
+  const ideas = await generateMemberIdeas(authUserId, neonUserId, digest, weekStart)
   await sql`
     INSERT INTO member_weekly_briefs (user_id, week_start, brief)
     VALUES (${String(neonUserId)}, ${weekStart}, ${JSON.stringify({ ideas })}::jsonb)

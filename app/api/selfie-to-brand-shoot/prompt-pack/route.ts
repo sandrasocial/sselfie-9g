@@ -5,6 +5,7 @@ import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { academyRouteErrorToResponse, requireAcademyUser } from "@/lib/academy-server-access"
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { sql } from "@/lib/db/client"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import {
   buildFallbackPromptPack,
   hasUsefulVisualCode,
@@ -152,7 +153,10 @@ export async function POST(request: Request) {
 
     try {
       const { text } = await generateText({
-        model: "anthropic/claude-haiku-4-5-20251001",
+        model: createMayaOpenRouterModel("chat_default", {
+          userId: user.neonUser.id,
+          feature: "selfie_to_brand_shoot_prompt_pack",
+        }),
         temperature: 0.35,
         maxOutputTokens: 2400,
         system: `You are Maya inside SSELFIE.

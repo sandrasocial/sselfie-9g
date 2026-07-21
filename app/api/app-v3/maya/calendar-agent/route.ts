@@ -180,7 +180,6 @@ export async function POST(request: Request) {
         posts: posts.map(post => ({
           id: Number(post.id),
           position: Number(post.position),
-          caption: post.caption || null,
           contentPillar: post.content_pillar || null,
           scheduledAt: post.scheduled_at || null,
           hasImage: Boolean(post.image_url),
@@ -190,9 +189,12 @@ export async function POST(request: Request) {
 
   try {
     const { text } = await generateText({
-      model: createMayaOpenRouterModel("chat_pro"),
+      model: createMayaOpenRouterModel("chat_default", {
+        userId: neonUser.id,
+        feature: "app_v3_calendar_agent",
+      }),
       temperature: 0.35,
-      maxOutputTokens: 1200,
+      maxOutputTokens: 800,
       system,
       messages: [
         {

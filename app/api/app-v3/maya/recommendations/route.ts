@@ -7,7 +7,7 @@ import { NextResponse } from "next/server"
 import { generateText } from "ai"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
-import { createMayaOpenRouterModel, getMayaMaxTokensForTask } from "@/lib/maya/openrouter"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getMemory } from "@/lib/app-v3/maya/memory-store"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
@@ -15,6 +15,11 @@ import { hasUsableBrandProfile } from "@/lib/app-v3/maya/brand-profile-store"
 import { sql } from "@/lib/db/client"
 import { extractJson } from "@/lib/ai/extract-json"
 import type { OutputFormat } from "@/components/app-v3/types"
+import {
+  getCachedRecommendations,
+  getRecommendationContextFingerprint,
+  saveCachedRecommendations,
+} from "@/lib/app-v3/maya/recommendation-cache"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -98,13 +103,15 @@ export async function GET() {
   let agentName = "Maya"
   let recentActivity: string[] = []
   let hasMeaningfulContext = false
+  let neonUserId: string | null = null
   try {
-    const neonUserId = await getUserIdFromSupabase(user.id)
-    if (neonUserId) {
+    const mappedUserId = await getUserIdFromSupabase(user.id)
+    if (mappedUserId) {
+      neonUserId = String(mappedUserId)
       const [mem, chats, hasBrandProfile] = await Promise.all([
-        getMemory(String(neonUserId)),
-        listChats(String(neonUserId)),
-        hasUsableBrandProfile(neonUserId).catch(() => false),
+        getMemory(neonUserId),
+        listChats(neonUserId),
+        hasUsableBrandProfile(mappedUserId).catch(() => false),
       ])
       if (mem.agentName?.trim()) agentName = mem.agentName.trim()
       if (mem.brandNotes?.trim()) brandContext += `\nNotes she gave: ${mem.brandNotes.trim()}`
@@ -130,6 +137,17 @@ export async function GET() {
     (user.user_metadata?.first_name as string | undefined) ||
     (user.user_metadata?.name as string | undefined) ||
     null
+
+  const contextFingerprint = getRecommendationContextFingerprint({
+    agentName,
+    firstName,
+    brandContext,
+    recentActivity,
+  })
+  if (neonUserId) {
+    const cached = await getCachedRecommendations(neonUserId, contextFingerprint)
+    if (cached) return NextResponse.json(cached)
+  }
 
   const system = [
     `You are ${agentName}, her personal creative director at SSELFIE. You decide what she should post next, like a stylist who knows her, not a generic AI.`,
@@ -157,11 +175,14 @@ export async function GET() {
 
   try {
     const { text } = await generateText({
-      model: createMayaOpenRouterModel("chat_pro"),
+      model: createMayaOpenRouterModel("chat_default", {
+        userId: neonUserId,
+        feature: "app_v3_recommendations",
+      }),
       system,
       messages: [{ role: "user", content: userMsg }],
       temperature: 0.8,
-      maxOutputTokens: getMayaMaxTokensForTask("chat_pro"),
+      maxOutputTokens: 800,
     })
 
     let parsed: { greeting?: unknown; recommendations?: unknown } | null = null
@@ -240,7 +261,11 @@ export async function GET() {
       console.error("[app-v3 recommendations] image match skipped:", e)
     }
 
-    return NextResponse.json({ greeting, recommendations })
+    const payload = { greeting, recommendations }
+    if (neonUserId) {
+      await saveCachedRecommendations(neonUserId, contextFingerprint, payload)
+    }
+    return NextResponse.json(payload)
   } catch (e) {
     console.error("[app-v3 recommendations] generation failed:", e)
     // Graceful: the Content surface falls back to the plain format starters.

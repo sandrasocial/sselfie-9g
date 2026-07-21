@@ -32,11 +32,13 @@ const FROZEN_PROMPT_SOURCES = {
     "c6670ec5a543a36c1f99804300e6e7b57e25505c65026c2bc7277e3ce2fc9c96",
   "lib/app-v3/text-bake.ts": "a6783e82ba930b38c69fe8c447aab01a6ce8cd5da7a55fb6591d019e177af1e4",
   "app/api/app-v3/maya/chat/route.ts":
-    "cd3162431c37827b0f82b7ac946f78456bb98bd3b97cf8ec7ff77c6db60b8d30",
+    // Sandra-approved API cost controls (2026-07-21): Haiku only for clarification,
+    // compact recent history, and format-sized output budgets with full creative headroom.
+    "c5455a74fa2517e8254e3d8ec0b4e6262fee3b433f439bc76a1a53c0cf5a75ef",
   "app/api/app-v3/maya/calendar-agent/route.ts":
-    // Sandra-approved Wave 1 production QA correction: preserve factual image language and
-    // use the proven plain-text provider path with a locally validated JSON response.
-    "f8388b20e5357e3b20b52bcdb37a1287b5da32b2bda48bf1fbd372576ae4d479",
+    // Sandra-approved API cost controls (2026-07-21): use Haiku and omit repeated captions
+    // while preserving the selected post context and existing system prompt.
+    "3cc7b5e768c21494f953810d60ae0a6a64a8f7c3984656fc8ebfbd5e1d4516de",
 } as const
 
 function sourceHash(path: string) {

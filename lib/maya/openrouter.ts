@@ -1,6 +1,11 @@
 import { createOpenAI } from "@ai-sdk/openai"
 import { createAnthropic } from "@ai-sdk/anthropic"
+import { wrapLanguageModel } from "ai"
 import { isFeedPlannerChatType } from "@/lib/maya/chat-type"
+import {
+  createMayaAiUsageMiddleware,
+  type MayaAiUsageContext,
+} from "@/lib/maya/ai-usage"
 
 export type MayaRoutingTask =
   | "chat_default"
@@ -184,23 +189,54 @@ export function getMayaGatewayModel(task: MayaRoutingTask): string {
  * Used as a true fallback when OpenRouter is unavailable.
  * Returns null if ANTHROPIC_API_KEY is missing.
  */
-export function createMayaAnthropicModel(task: MayaRoutingTask) {
+type WrappableLanguageModel = Parameters<typeof wrapLanguageModel>[0]["model"]
+
+function withMayaUsageTracking(
+  model: WrappableLanguageModel,
+  input: {
+    task: MayaRoutingTask
+    provider: "openrouter" | "anthropic"
+    modelId: string
+    context?: MayaAiUsageContext
+  }
+) {
+  return wrapLanguageModel({
+    model,
+    middleware: createMayaAiUsageMiddleware({
+      task: input.task,
+      provider: input.provider,
+      model: input.modelId,
+      context: input.context,
+    }),
+  })
+}
+
+export function createMayaAnthropicModel(task: MayaRoutingTask, context?: MayaAiUsageContext) {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) return null
     const openRouterModelId = getMayaModelForTask(task)
     const anthropicModelId =
       OPENROUTER_TO_ANTHROPIC_ID[openRouterModelId] ?? "claude-haiku-4-5-20251001"
-    return createAnthropic({
+    const model = createAnthropic({
       apiKey,
       fetch: createMayaReasoningDisabledFetch("anthropic"),
     })(anthropicModelId)
+    return withMayaUsageTracking(model, {
+      task,
+      provider: "anthropic",
+      modelId: anthropicModelId,
+      context,
+    })
   } catch {
     return null
   }
 }
 
-export function createMayaOpenRouterFallbackModel(task: MayaRoutingTask) {
+export function createMayaOpenRouterFallbackModel(
+  task: MayaRoutingTask,
+  context?: MayaAiUsageContext
+) {
   try {
     const provider = createMayaOpenRouterProvider()
     // CRITICAL: Must use .chat() — OpenRouter supports Chat Completions only.
@@ -209,7 +245,13 @@ export function createMayaOpenRouterFallbackModel(task: MayaRoutingTask) {
     // OpenRouter does not implement. This causes "Invalid Responses API request"
     // on every Maya call. provider.chat() creates OpenAIChatLanguageModel
     // which uses the standard /v1/chat/completions endpoint.
-    return provider.chat(getMayaModelForTask(task))
+    const modelId = getMayaModelForTask(task)
+    return withMayaUsageTracking(provider.chat(modelId), {
+      task,
+      provider: "openrouter",
+      modelId,
+      context,
+    })
   } catch {
     return null
   }
@@ -218,18 +260,18 @@ export function createMayaOpenRouterFallbackModel(task: MayaRoutingTask) {
 /** Thrown when neither OpenRouter nor Anthropic can be constructed (never return a raw model id string). */
 export const MAYA_LLM_NOT_CONFIGURED = "MAYA_LLM_NOT_CONFIGURED"
 
-export function createMayaOpenRouterModel(task: MayaRoutingTask) {
+export function createMayaOpenRouterModel(task: MayaRoutingTask, context?: MayaAiUsageContext) {
   if (!isMayaOpenRouterPrimaryEnabled()) {
-    const anthropic = createMayaAnthropicModel(task)
+    const anthropic = createMayaAnthropicModel(task, context)
     if (anthropic) return anthropic
-    const openRouterWhenPrimaryOff = createMayaOpenRouterFallbackModel(task)
+    const openRouterWhenPrimaryOff = createMayaOpenRouterFallbackModel(task, context)
     if (openRouterWhenPrimaryOff) return openRouterWhenPrimaryOff
     throw new Error(`${MAYA_LLM_NOT_CONFIGURED}: Set ANTHROPIC_API_KEY or OPENROUTER_API_KEY.`)
   }
 
-  const openRouterModel = createMayaOpenRouterFallbackModel(task)
+  const openRouterModel = createMayaOpenRouterFallbackModel(task, context)
   if (openRouterModel) return openRouterModel
-  const anthropic = createMayaAnthropicModel(task)
+  const anthropic = createMayaAnthropicModel(task, context)
   if (anthropic) return anthropic
   throw new Error(`${MAYA_LLM_NOT_CONFIGURED}: Set OPENROUTER_API_KEY or ANTHROPIC_API_KEY.`)
 }

@@ -6,6 +6,7 @@ import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { sql } from "@/lib/db/client"
 import { generateVisibilityPlanPromptViaAuthority } from "@/lib/generation/prompt"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import {
   getVisibilityPlanProductLabel,
   parseVisibilityPlanJson,
@@ -319,7 +320,10 @@ export async function POST(request: NextRequest) {
 
     try {
       const { text } = await generateText({
-        model: "anthropic/claude-sonnet-4-20250514",
+        model: createMayaOpenRouterModel("chat_pro", {
+          userId: neonUser.id,
+          feature: "visibility_suite_plan",
+        }),
         temperature: 0.32,
         maxOutputTokens: 3600,
         prompt,
@@ -328,7 +332,10 @@ export async function POST(request: NextRequest) {
       plan = parseVisibilityPlanJson(text)
       if (!plan.message?.positioning && !plan.content?.firstFivePosts?.length) {
         const retry = await generateText({
-          model: "anthropic/claude-sonnet-4-20250514",
+          model: createMayaOpenRouterModel("chat_pro", {
+            userId: neonUser.id,
+            feature: "visibility_suite_plan_retry",
+          }),
           temperature: 0.2,
           maxOutputTokens: 3600,
           prompt: `${prompt}\n\nIMPORTANT: Return ONLY valid JSON. No prose. No markdown.`,

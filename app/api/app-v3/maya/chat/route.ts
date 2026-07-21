@@ -28,6 +28,10 @@ import type { CreationIntent, CreationIntentSource, OutputFormat } from "@/compo
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { shouldStopAppV3MayaToolLoop } from "@/lib/app-v3/maya/tool-loop-policy"
+import {
+  getAppV3ChatMaxOutputTokens,
+  getAppV3ChatTask,
+} from "@/lib/app-v3/maya/cost-controls"
 
 export const maxDuration = 300
 
@@ -677,6 +681,11 @@ export async function POST(req: Request) {
     const committedFormat = intentFormat ?? requestedFormat
     const format: OutputFormat = committedFormat ?? "photo"
     const needsFormatClarification = creationIntent?.confidence === "needs_clarify" || !committedFormat
+    const mayaChatTask = getAppV3ChatTask({ needsFormatClarification })
+    const mayaMaxOutputTokens = getAppV3ChatMaxOutputTokens(
+      committedFormat,
+      needsFormatClarification
+    )
 
     // Her authoritative brand profile from the EXISTING SSELFIE system (reuse, don't rebuild).
     // This is what makes Maya know the creator (not just the look). Best-effort; never blocks chat.
@@ -868,7 +877,7 @@ export async function POST(req: Request) {
         .catch(() => {})
     }
 
-    const cleanUiMessages = sanitizeMayaMessages(uiMessages) as UIMessage[]
+    const cleanUiMessages = sanitizeMayaMessages(uiMessages, { maxMessages: 16 }) as UIMessage[]
     if (cleanUiMessages.length === 0) {
       return NextResponse.json({ error: "messages is required" }, { status: 400 })
     }
@@ -1058,12 +1067,16 @@ export async function POST(req: Request) {
     }
 
     const result = streamText({
-      model: createMayaOpenRouterModel("chat_pro"), // Claude Sonnet 5
+      model: createMayaOpenRouterModel(mayaChatTask, {
+        userId: memoryUserId,
+        feature: "app_v3_chat",
+        metadata: { format, needsFormatClarification },
+      }),
       system,
       messages: modelMessages,
       tools,
       temperature: 0.8,
-      maxOutputTokens: APP_V3_MAX_OUTPUT_TOKENS,
+      maxOutputTokens: mayaMaxOutputTokens,
       stopWhen: shouldStopAppV3MayaToolLoop,
       // STORY-GENERATION fix round 3 (2026-07-03, live failures 06:42Z + 15:56Z): story
       // formats keep producing emit_concepts payloads that are complete JSON but the wrong
@@ -1147,7 +1160,11 @@ export async function POST(req: Request) {
                 maxAttempts: 2,
                 requestRepair: async ({ candidate, errors, attempt }) => {
                   const repairResult = await generateText({
-                    model: createMayaOpenRouterModel("chat_pro"),
+                    model: createMayaOpenRouterModel("chat_pro", {
+                      userId: memoryUserId,
+                      feature: "app_v3_chat_plan_repair",
+                      metadata: { format },
+                    }),
                     system,
                     prompt: [
                       "Your emit_concepts plan failed semantic validation.",
@@ -1162,7 +1179,7 @@ export async function POST(req: Request) {
                     tools: { emit_concepts: emitConceptsRepairTool },
                     toolChoice: { type: "tool", toolName: "emit_concepts" },
                     temperature: 0.2,
-                    maxOutputTokens: APP_V3_MAX_OUTPUT_TOKENS,
+                    maxOutputTokens: mayaMaxOutputTokens || APP_V3_MAX_OUTPUT_TOKENS,
                   })
                   const repairedCall = repairResult.toolCalls.find(
                     call => call.toolName === "emit_concepts"

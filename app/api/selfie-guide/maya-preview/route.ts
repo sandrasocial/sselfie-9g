@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server"
-import { createAnthropic } from "@ai-sdk/anthropic"
 import { generateText } from "ai"
 import { sql } from "@/lib/db/client"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 
-const MODEL_ID = "claude-haiku-4-5-20251001"
 const MAX_TOKENS = 300
 const MAX_SCENE_LENGTH = 200
 
@@ -92,22 +91,18 @@ export async function POST(request: Request) {
     // Validate and rate-limit by token
     const token = typeof body.token === "string" ? body.token.trim() : ""
 
-    if (token) {
-      // Validate token if provided (non-blocking - still serve on invalid)
-      await validateToken(token)
-
-      if (isRateLimited(token)) {
-        return NextResponse.json({ concept: FALLBACK })
-      }
+    if (!token || !(await validateToken(token))) {
+      return NextResponse.json({ concept: FALLBACK })
     }
 
-    // Call Anthropic
-    const anthropic = createAnthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    })
+    if (isRateLimited(token)) {
+      return NextResponse.json({ concept: FALLBACK })
+    }
 
     const { text } = await generateText({
-      model: anthropic(MODEL_ID),
+      model: createMayaOpenRouterModel("chat_default", {
+        feature: "selfie_guide_maya_preview",
+      }),
       maxOutputTokens: MAX_TOKENS,
       messages: [
         {

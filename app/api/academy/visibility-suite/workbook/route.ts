@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { academyRouteErrorToResponse, requireAcademyUser } from "@/lib/academy-server-access"
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 
 export const runtime = "nodejs"
 export const maxDuration = 30
@@ -134,7 +135,11 @@ export async function POST(request: NextRequest) {
       .join("\n\n")
 
     const { text } = await generateText({
-      model: "anthropic/claude-haiku-4-5-20251001",
+      model: createMayaOpenRouterModel("chat_default", {
+        userId: neonUser.id,
+        feature: "visibility_suite_workbook",
+        metadata: { action, productId },
+      }),
       temperature: 0.35,
       maxOutputTokens: action === "generate" ? 1400 : 700,
       system: `You are Maya inside SSELFIE Academy.

@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { academyRouteErrorToResponse, requireAcademyUser } from "@/lib/academy-server-access"
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 
 export const runtime = "nodejs"
 export const maxDuration = 30
@@ -141,7 +142,10 @@ ${SUITE_PRODUCT_IDS.map(productId => {
       : "No saved workbook answers were sent with this request."
 
     const { text } = await generateText({
-      model: "anthropic/claude-haiku-4-5-20251001",
+      model: createMayaOpenRouterModel("chat_default", {
+        userId: neonUser.id,
+        feature: "visibility_suite_chat",
+      }),
       temperature: 0.35,
       maxOutputTokens: 700,
       system: SYSTEM_PROMPT,
