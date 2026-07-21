@@ -4180,7 +4180,7 @@ export function MayaConcierge({
                       ? "Maya is working on it now."
                       : "Choose a direction and Maya will place it here."}
               </p>
-              {session.calendarTarget.delivery && (
+              {session.calendarTarget.delivery && !operatingLayerEnabled && (
                 <button
                   type="button"
                   onClick={() => void undoCalendarDelivery()}

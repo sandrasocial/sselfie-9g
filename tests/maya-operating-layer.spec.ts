@@ -598,6 +598,7 @@ if (!runPlaywright) {
       await expect(maya).toHaveAttribute("data-maya-task-id", "maya-calendar-v1-101-708")
       const restoredApplyAction = page.locator('section[data-maya-action-kind="apply_to_post"]')
       await expect(restoredApplyAction).toHaveAttribute("data-maya-action-status", "succeeded")
+      await expect(page.getByRole("button", { name: "Undo", exact: true })).toHaveCount(1)
       await restoredApplyAction.getByRole("button", { name: "Undo" }).click()
       await expect(restoredApplyAction).toHaveAttribute("data-maya-action-status", "undone")
       expect((page as any).__mayaOperatingLayerCalendarMutations).toEqual([
