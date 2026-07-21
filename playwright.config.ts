@@ -22,7 +22,21 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: /maya-operating-layer\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'maya-operating-layer-desktop',
+      testMatch: /maya-operating-layer\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'maya-operating-layer-mobile',
+      testMatch: /maya-operating-layer\.spec\.ts/,
+      use: {
+        ...devices['Pixel 5'],
+        viewport: { width: 390, height: 844 },
+      },
     },
   ],
   webServer: {

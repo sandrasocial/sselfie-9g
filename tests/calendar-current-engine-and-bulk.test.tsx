@@ -27,8 +27,8 @@ describe("Calendar current image engine contract", () => {
 
     expect(calendar).not.toContain("readMayaProModePreference")
     expect(calendar).not.toContain('"classic"')
-    expect(route).toContain("function calendarGenerationMode(): 'pro' | 'classic'")
-    expect(route).toContain("return 'pro'")
+    expect(route).toMatch(/function calendarGenerationMode\(\): ["']pro["'] \| ["']classic["']/)
+    expect(route).toMatch(/return ["']pro["']/)
     expect(route).toContain("const generationMode = calendarGenerationMode()")
     expect(route).not.toContain("generationMode = requestedMode")
     expect(route).not.toContain("FEED_PLANNER_IMAGE_ENGINE")

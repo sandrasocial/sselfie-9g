@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   sql: vi.fn(),
 }))
 
+vi.mock("server-only", () => ({}))
+
 vi.mock("next/navigation", () => ({
   redirect: vi.fn((location: string) => {
     throw new Error(`redirect:${location}`)

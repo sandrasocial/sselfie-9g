@@ -59,6 +59,8 @@ export interface AppV3ShellProps {
   hasTrainedModel?: boolean
   /** VIDEO reliability kill switch: false hides the Video tile + gallery motion entry. */
   videoEnabled?: boolean
+  /** Server-owned Phase 0 rollout decision. Inert until the Phase 1 context path exists. */
+  mayaOperatingLayerEnabled?: boolean
 }
 
 // Nav rename (Sandra, 2026-07-07): Photos -> Gallery, Library -> Learn, and the Content tab
@@ -111,6 +113,7 @@ function ShellInner({
   preSelfieChatEnabled = false,
   hasTrainedModel = false,
   videoEnabled = true,
+  mayaOperatingLayerEnabled = false,
 }: AppV3ShellProps) {
   const [section, setSection] = useState<AppV3Section>(initialSection)
   const [galleryFilter, setGalleryFilter] = useState<GalleryFilter>("all")
@@ -226,6 +229,7 @@ function ShellInner({
 
   return (
     <main
+      data-maya-operating-layer={mayaOperatingLayerEnabled ? "enabled" : "legacy"}
       className={`min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10] transition-[padding] duration-300 [overflow-x:clip] ${
         mayaOpen && mayaUsesSideWorkspace ? "lg:pr-[27rem]" : ""
       }`}
@@ -409,6 +413,7 @@ export function AppV3Shell({
   preSelfieChatEnabled,
   hasTrainedModel,
   videoEnabled,
+  mayaOperatingLayerEnabled,
 }: AppV3ShellProps) {
   return (
     <ConciergeProvider suppressRestore={Boolean(initialAestheticId)}>
@@ -427,6 +432,7 @@ export function AppV3Shell({
         preSelfieChatEnabled={preSelfieChatEnabled}
         hasTrainedModel={hasTrainedModel}
         videoEnabled={videoEnabled}
+        mayaOperatingLayerEnabled={mayaOperatingLayerEnabled}
       />
     </ConciergeProvider>
   )

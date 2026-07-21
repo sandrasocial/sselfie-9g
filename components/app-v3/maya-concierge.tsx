@@ -39,6 +39,7 @@ import { MemoryModal, type Memory } from "./memory-modal"
 import { EditMode } from "./edit-mode"
 import { AESTHETICS, MAYA_DECIDES_AESTHETIC } from "./aesthetics"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import { finishMayaJob } from "@/lib/app-v3/maya/job-analytics"
 import type { ConceptCard as ConceptCardData, ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
 import {
   buildCustomModelConceptPrompt,
@@ -2230,6 +2231,7 @@ export function MayaConcierge({
         event: "calendar_post_ready",
         properties: { feedId: target.feedId, postId: target.postId, source: "maya_concierge" },
       })
+      finishMayaJob({ job: "finish_calendar_post", outcome: "completed" })
     }
     return true
   }
@@ -3312,6 +3314,7 @@ export function MayaConcierge({
       event: "suite_generation_path_completed",
       properties: { cohort, format: targetFormat, source },
     })
+    finishMayaJob({ job: "create_content", outcome: "completed" })
   }
 
   function trackRecoveryShown(targetFormat: OutputFormat, reason: string) {

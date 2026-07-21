@@ -17,6 +17,35 @@ The measured guided-Maya cohort had 12 non-admin starters:
 
 The product must therefore protect the working guided path and improve the handoff from first result to download, next action, and return. It must not add another creation system.
 
+## Maya operating layer member jobs
+
+The member experience is measured through five jobs. These are product outcomes, not new tabs,
+agents, dashboards, or generation systems:
+
+1. **Decide what to post.** Leave with one clear post to finish next.
+2. **Create content.** Turn an intention into one usable image, caption, or combined result.
+3. **Finish a selected Calendar post.** Complete the exact post the member selected without losing its context.
+4. **Improve a grid.** Make one coherent visual or planning improvement to the current grid.
+5. **Learn the next useful thing.** Use one relevant lesson or part of Sandra's method, then take one practical action.
+
+### Phase 0 member-job baseline
+
+The table records the shortest observed authenticated production path on 2026-07-21. It separates
+member interaction from provider latency and is a comparison baseline, not a claim that the current
+journey is acceptable. A primary decision is a click or choice that advances the job; ordinary
+navigation and optional exploration are excluded.
+
+| Member job                      | Entry surface and observed path                                       | Primary decisions |         Modal or drawer opens | Surface handoffs |              Context repairs | Interaction time     | Provider wait | Observed completion                                |
+| ------------------------------- | --------------------------------------------------------------------- | ----------------: | ----------------------------: | ---------------: | ---------------------------: | -------------------- | ------------- | -------------------------------------------------- |
+| Decide what to post             | Calendar → What needs me → recommended post sheet                     |                 2 |                             1 |                0 |                            0 | Manual baseline only | Excluded      | A specific post is open                            |
+| Create content                  | Create → Maya recommendation → Start with Maya → approve concept      |                 3 |                             1 |                1 |                            0 | Manual baseline only | Excluded      | Creation is ready for explicit credit confirmation |
+| Finish a selected Calendar post | Calendar → post sheet → Create with Maya → resume/start choice → Maya |                 4 | 2 competing surfaces observed |                1 | 1 possible stale-task repair | Manual baseline only | Excluded      | Maya is open, but task ownership is ambiguous      |
+| Improve a grid                  | Calendar → Visual direction → choose direction → save                 |                 3 |                             1 |                0 |                            0 | Manual baseline only | Excluded      | Current grid direction is saved                    |
+| Learn the next useful thing     | Learn → choose goal → recommendation → Use it with Maya               |                 3 |                 1 Maya drawer |                1 |                            0 | Manual baseline only | Excluded      | A generic lesson handoff reaches Maya              |
+
+Phase 0 does not make paid provider calls. Later measurements must report provider wait separately
+so model latency is never misreported as member decision time.
+
 ## Locked customer journey
 
 1. The returning Create surface shows at most one personalized **Maya recommends today** card.

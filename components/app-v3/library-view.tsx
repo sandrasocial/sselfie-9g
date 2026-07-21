@@ -11,6 +11,7 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import { finishMayaJob, recordMayaJobHandoff, startMayaJob } from "@/lib/app-v3/maya/job-analytics"
 
 interface LibraryCourse {
   id: number
@@ -257,6 +258,7 @@ export function LibraryView({
 
   const chooseGoal = (goal: LearnGoal) => {
     if (!data) return
+    startMayaJob({ job: "learn_next", surface: "learn", entry: goal })
     setSelectedGoal(goal)
     setRecommendation(recommendationFor(data, goal))
     setPlanSaved(false)
@@ -274,6 +276,7 @@ export function LibraryView({
       })
       if (!response.ok) throw new Error("Could not save plan")
       setPlanSaved(true)
+      finishMayaJob({ job: "learn_next", outcome: "completed" })
       void trackAnalyticsEvent({
         event: "learn_plan_saved",
         properties: { goal: selectedGoal, resourceId: recommendation.id },
@@ -393,6 +396,7 @@ export function LibraryView({
                             event: "learn_maya_handoff",
                             properties: { goal: selectedGoal },
                           })
+                          recordMayaJobHandoff("learn_next")
                           onOpenMaya(
                             `Help me use what I learned in ${recommendation.title} to create one useful piece of content.`
                           )

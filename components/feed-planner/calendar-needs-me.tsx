@@ -1,6 +1,7 @@
 "use client"
 
 import { isPersonalStoryPosition } from "@/lib/feed-planner/caption-truth"
+import { finishMayaJob, startMayaJob } from "@/lib/app-v3/maya/job-analytics"
 
 interface CalendarNeedsMeProps {
   posts: any[]
@@ -106,9 +107,23 @@ export function CalendarNeedsMe({
           <button
             type="button"
             onClick={() => {
-              if (!hasVisualDirection) onChooseVisualDirection?.()
-              else if (!hasContentContext) onOpenContentContext?.()
-              else if (posts[0]) onSelectPost(posts[0])
+              if (!hasVisualDirection) {
+                startMayaJob({
+                  job: "improve_grid",
+                  surface: "calendar",
+                  entry: "calendar_needs_visual_direction",
+                })
+                onChooseVisualDirection?.()
+              } else if (!hasContentContext) onOpenContentContext?.()
+              else if (posts[0]) {
+                startMayaJob({
+                  job: "decide_post",
+                  surface: "calendar",
+                  entry: "calendar_first_post",
+                })
+                finishMayaJob({ job: "decide_post", outcome: "completed" })
+                onSelectPost(posts[0])
+              }
             }}
             className="min-h-11 shrink-0 rounded-full bg-[color:var(--app-btn-primary-bg)] px-4 text-[11px] font-medium text-[color:var(--app-btn-primary-text)]"
           >
@@ -122,7 +137,15 @@ export function CalendarNeedsMe({
       ) : next ? (
         <button
           type="button"
-          onClick={() => onSelectPost(next)}
+          onClick={() => {
+            startMayaJob({
+              job: "decide_post",
+              surface: "calendar",
+              entry: "calendar_needs_me",
+            })
+            finishMayaJob({ job: "decide_post", outcome: "completed" })
+            onSelectPost(next)
+          }}
           className="mt-2 min-h-11 w-full rounded-[10px] bg-white px-3 py-2 text-left text-[12px] leading-relaxed text-[color:var(--app-text-primary)] shadow-[0_1px_2px_rgba(13,14,16,0.05)]"
         >
           {/* DRAFT UX copy for Sandra approval before release. */}

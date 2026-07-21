@@ -246,6 +246,12 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   // (behavior only, never money; credits truth lives in credit_transactions).
   "suite_text_bake_requested",
   "suite_text_bake_failed",
+  // MAYA OPERATING LAYER Phase 0. Properties are enumerated in
+  // lib/app-v3/maya/job-analytics.ts and must never contain member-authored content.
+  "suite_maya_job_started",
+  "suite_maya_job_finished",
+  "suite_maya_context_mismatch",
+  "suite_maya_guidance_served",
 ] as const
 
 export type AnalyticsEventName = (typeof ALLOWED_ANALYTICS_EVENTS)[number]

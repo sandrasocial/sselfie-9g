@@ -19,6 +19,7 @@ import {
 import { isVideoGenerationEnabled } from "@/lib/app-v3/video-flag"
 import type { AppV3AnalyticsCohort } from "@/components/app-v3/types"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
+import { isMayaOperatingLayerEnabled } from "@/lib/app-v3/maya/operating-layer-rollout"
 
 export const metadata = {
   title: "SSELFIE Studio",
@@ -208,6 +209,10 @@ export default async function StudioV3Page({
     (user.user_metadata?.first_name as string | undefined) ||
     (user.user_metadata?.name as string | undefined) ||
     null
+  const mayaOperatingLayerEnabled = isMayaOperatingLayerEnabled({
+    userId: user.id,
+    email: user.email,
+  })
 
   return (
     <AppV3Shell
@@ -225,6 +230,7 @@ export default async function StudioV3Page({
       primarySelfieUrl={primarySelfieUrl}
       trialHasSeenFirstRunStep={trialHasSeenFirstRunStep}
       videoEnabled={isVideoGenerationEnabled()}
+      mayaOperatingLayerEnabled={mayaOperatingLayerEnabled}
     />
   )
 }

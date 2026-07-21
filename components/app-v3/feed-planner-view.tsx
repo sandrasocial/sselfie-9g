@@ -17,6 +17,7 @@ import FeedPlannerClient from "@/app/feed-planner/feed-planner-client"
 import { FeedNavContext } from "@/components/feed-planner/feed-nav-context"
 import type { Aesthetic, CalendarPostTarget } from "./types"
 import { useConcierge } from "./concierge-context"
+import { recordMayaJobHandoff, startMayaJob } from "@/lib/app-v3/maya/job-analytics"
 
 const SELECTED_FEED_KEY = "calendar:selected-feed:v1"
 
@@ -62,8 +63,15 @@ export function FeedPlannerView() {
       pendingSlotPosition,
       consumePendingSlot: () => setPendingSlotPosition(null),
       navigateToMaya: (target?: CalendarPostTarget) => {
-        if (target) openForCalendarPost(target)
-        else open()
+        if (target) {
+          startMayaJob({
+            job: "finish_calendar_post",
+            surface: "calendar",
+            entry: "calendar_post_maya",
+          })
+          recordMayaJobHandoff("finish_calendar_post")
+          openForCalendarPost(target)
+        } else open()
       },
       navigateToMayaForStory: (title: string, coverOnly = false) => {
         const storyAesthetic: Aesthetic = {

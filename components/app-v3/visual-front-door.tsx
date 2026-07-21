@@ -18,6 +18,7 @@ import { useConcierge } from "./concierge-context"
 import { useIdentityReferences } from "./use-identity-references"
 import { MemoryModal } from "./memory-modal"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import { startMayaJob, type MayaJobEntry } from "@/lib/app-v3/maya/job-analytics"
 import { detectCreationIntent, intentForFormat } from "@/lib/app-v3/maya/intent-router"
 import type { AppV3GalleryAsset } from "@/lib/app-v3/gallery-assets"
 import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
@@ -289,7 +290,8 @@ export function VisualFrontDoor({
     })
   }, [cohort, hasSelfie])
 
-  function trackFirstAction(action: string) {
+  function trackFirstAction(action: MayaJobEntry) {
+    startMayaJob({ job: "create_content", surface: "create", entry: action, cohort })
     if (shouldShowTrialFirstRun && !firstRunTrackedRef.current) {
       firstRunTrackedRef.current = true
       markFirstRunSeen()
@@ -301,7 +303,7 @@ export function VisualFrontDoor({
     void trackAnalyticsEvent({ event: "first_action_selected", properties: { cohort, action } })
   }
 
-  function openSelfieManagerInMaya(source = "my_selfies") {
+  function openSelfieManagerInMaya(source: "my_selfies" | "add_selfie" = "my_selfies") {
     trackFirstAction(source)
     openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
       format: "photo",
@@ -335,7 +337,7 @@ export function VisualFrontDoor({
   }
 
   function openWorld(aesthetic: Aesthetic) {
-    trackFirstAction(`visual_world_${aesthetic.id}`)
+    trackFirstAction("visual_world")
     openWithAesthetic(aesthetic, {
       format: "photo",
       creationIntent: intentForFormat("photo", "vault_shot"),

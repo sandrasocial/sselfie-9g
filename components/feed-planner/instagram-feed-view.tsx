@@ -41,6 +41,7 @@ import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getBrandColorThemeColors } from "@/lib/style-presets"
 import type { CalendarPostTarget, OutputFormat } from "@/components/app-v3/types"
 import { resolveCalendarBrandLook } from "@/lib/feed-planner/calendar-brand-look"
+import { finishMayaJob, startMayaJob } from "@/lib/app-v3/maya/job-analytics"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -626,6 +627,11 @@ export default function InstagramFeedView({
   }
 
   const openVisualDirection = (mode: FeedVisualDirectionMode | null = null) => {
+    startMayaJob({
+      job: "improve_grid",
+      surface: "calendar",
+      entry: mode ? `visual_direction_${mode}` : "visual_direction",
+    })
     setPlanSettingsOpen(false)
     setVisualDirectionMode(mode)
     setVisualDirectionOpen(true)
@@ -646,6 +652,7 @@ export default function InstagramFeedView({
         title: "Visual direction saved",
         description: "Maya will use this direction as she creates each post.",
       })
+      finishMayaJob({ job: "improve_grid", outcome: "completed" })
     } catch (error) {
       toast({
         title: "Could not save the direction",
