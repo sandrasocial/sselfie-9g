@@ -233,6 +233,11 @@ export function LibraryView({
 } = {}) {
   const [data, setData] = useState<LibraryData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [guidanceError, setGuidanceError] = useState<string | null>(null)
+  const [guidanceRequest, setGuidanceRequest] = useState<{
+    goal: LearnGoal
+    taskId: string
+  } | null>(null)
   const [selectedGoal, setSelectedGoal] = useState<LearnGoal | null>(null)
   const [recommendation, setRecommendation] = useState<LearnRecommendation | null>(null)
   const [savingPlan, setSavingPlan] = useState(false)
@@ -241,6 +246,8 @@ export function LibraryView({
 
   async function requestGuidance(goal: LearnGoal, taskId: string) {
     const startedAt = Date.now()
+    setGuidanceError(null)
+    setGuidanceRequest({ goal, taskId })
     setLoadingGuidance(true)
     setRecommendation(null)
     try {
@@ -271,7 +278,7 @@ export function LibraryView({
       setRecommendation(nextRecommendation)
       recordMayaGuidanceServed("learn_next", guidance.sourceRefs.length, Date.now() - startedAt)
     } catch {
-      setError("Maya couldn't find your next lesson. Try again.")
+      setGuidanceError("Maya couldn't find your next lesson. Try again.")
     } finally {
       setLoadingGuidance(false)
     }
@@ -419,6 +426,27 @@ export function LibraryView({
                   </button>
                 ))}
               </div>
+
+              {guidanceError ? (
+                <div
+                  role="alert"
+                  className="mt-4 flex items-center justify-between gap-3 rounded-[8px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-4"
+                >
+                  <p className="text-[13px] text-[#4F5052]">{guidanceError}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (guidanceRequest) {
+                        void requestGuidance(guidanceRequest.goal, guidanceRequest.taskId)
+                      }
+                    }}
+                    disabled={!guidanceRequest || loadingGuidance}
+                    className="min-h-11 px-2 text-[10px] uppercase tracking-[0.14em] text-[#0D0E10] underline underline-offset-2 disabled:opacity-50"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : null}
 
               {recommendation ? (
                 <div className="mt-4 rounded-[11px] bg-[#F1F2F2] p-4" aria-live="polite">

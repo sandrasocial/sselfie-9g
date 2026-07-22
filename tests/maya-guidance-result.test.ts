@@ -74,4 +74,32 @@ describe("Maya guidance result contract", () => {
     expect(result.sourceRefs).toHaveLength(1)
     expect(result.nextAction.kind).toBe("continue_lesson")
   })
+
+  it("keeps the owned lesson citation when the model selects only a method fragment", () => {
+    const methodSource: MayaGuidanceSource = {
+      id: "method:belief:0",
+      kind: "method",
+      title: "Sandra's SSELFIE method",
+      text: "Visibility grows through clear, useful action.",
+      version: "method1234567890",
+      field: "belief",
+    }
+    const result = buildMayaGuidanceResult({
+      request: { taskId: "maya-task-learning-method", job: "learn_next" },
+      sources: [sources[0], methodSource],
+      modelOutput: {
+        recommendation: "Use one clear teaching point in your next post.",
+        reason: "This is the closest useful step.",
+        sourceIds: [methodSource.id],
+      },
+    })
+
+    expect(result.sourceRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: "lesson", courseId: 1, lessonId: 10 }),
+        expect.objectContaining({ kind: "method" }),
+      ])
+    )
+    expect(result.nextAction.target).toEqual({ lessonId: 10 })
+  })
 })

@@ -90,6 +90,31 @@ describe("Maya Sandra-knowledge retrieval", () => {
     expect(ranked.hasQuestionMatch).toBe(true)
   })
 
+  it("always includes an owned lesson when Learn asks for the next useful thing", () => {
+    const methodSources = Array.from({ length: 5 }, (_, index) => ({
+      id: `method:post:${index}`,
+      kind: "method" as const,
+      title: "Post content lesson",
+      version: `method-version-${index}`,
+      text: "Learn the next useful post content action for your visibility.",
+      field: "belief",
+    }))
+    const lessonSources = normalizeAcademyGuidanceSources(rows.slice(0, 1))
+
+    const ranked = rankMayaGuidanceSources({
+      sources: [...methodSources, ...lessonSources],
+      request: {
+        taskId: "maya-task-learning-owned-lesson",
+        job: "learn_next",
+        memberGoal: "I don't know what to post",
+      },
+      accessibleProductIds: new Set(["branded_by_sselfie"]),
+      lessonProgress: new Map([[10, "not_started"]]),
+    })
+
+    expect(ranked.fragments.some(source => source.lessonId === 10)).toBe(true)
+  })
+
   it("never exposes lesson or transcript text for an unowned product", () => {
     const ranked = rankMayaGuidanceSources({
       sources: normalizeAcademyGuidanceSources(rows),

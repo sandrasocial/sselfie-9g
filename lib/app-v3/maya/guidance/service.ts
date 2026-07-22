@@ -25,10 +25,17 @@ function clipped(value: string, maxLength: number): string {
   return clean.slice(0, maxLength)
 }
 
-function selectedSources(sources: MayaGuidanceSource[], sourceIds: string[]): MayaGuidanceSource[] {
+function selectedSources(
+  sources: MayaGuidanceSource[],
+  sourceIds: string[],
+  requireLesson: boolean
+): MayaGuidanceSource[] {
   const requested = new Set(sourceIds)
   const selected = sources.filter(source => requested.has(source.id)).slice(0, 4)
-  return selected.length ? selected : sources.slice(0, 1)
+  const result = selected.length ? selected : sources.slice(0, 1)
+  const lesson = requireLesson ? sources.find(source => source.lessonId) : undefined
+  if (!lesson || result.some(source => source.id === lesson.id)) return result
+  return [lesson, ...result].slice(0, 4)
 }
 
 function actionKindFor(
@@ -84,7 +91,11 @@ export function buildMayaGuidanceResult(input: {
   modelOutput: MayaGuidanceModelOutput
 }): MayaGuidanceResult {
   if (!input.sources.length) throw new Error("Maya guidance requires at least one source")
-  const sources = selectedSources(input.sources, input.modelOutput.sourceIds)
+  const sources = selectedSources(
+    input.sources,
+    input.modelOutput.sourceIds,
+    input.request.job === "learn_next"
+  )
   const reason = clipped(input.modelOutput.reason, 320)
   return {
     recommendation: clipped(input.modelOutput.recommendation, 320),

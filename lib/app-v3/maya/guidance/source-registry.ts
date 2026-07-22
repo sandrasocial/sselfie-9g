@@ -305,8 +305,22 @@ export function rankMayaGuidanceSources(input: {
   scored.sort(
     (left, right) => right.score - left.score || left.source.id.localeCompare(right.source.id)
   )
+  const topRanked = scored.slice(0, MAX_RETRIEVED_FRAGMENTS)
+  if (input.request.job === "learn_next" && !topRanked.some(item => item.source.lessonId)) {
+    const bestOwnedLesson = scored.find(item => item.source.lessonId)
+    if (bestOwnedLesson) {
+      topRanked.splice(
+        0,
+        topRanked.length,
+        bestOwnedLesson,
+        ...topRanked
+          .filter(item => item.source.id !== bestOwnedLesson.source.id)
+          .slice(0, MAX_RETRIEVED_FRAGMENTS - 1)
+      )
+    }
+  }
   return {
-    fragments: scored.slice(0, MAX_RETRIEVED_FRAGMENTS).map(item => item.source),
+    fragments: topRanked.map(item => item.source),
     hasQuestionMatch,
   }
 }
