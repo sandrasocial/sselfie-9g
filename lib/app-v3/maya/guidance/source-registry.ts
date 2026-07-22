@@ -43,6 +43,19 @@ export type LessonProgressStatus = "not_started" | "in_progress" | "completed"
 
 const MAX_FRAGMENT_LENGTH = 900
 const MAX_RETRIEVED_FRAGMENTS = 4
+const STALE_OR_OFF_BRAND_GUIDANCE_PHRASES = [
+  "studio.com",
+  "today tab",
+  "ceo era",
+  "unstoppable",
+  "go viral",
+  "viral results",
+  "no one will know",
+  "fake photoshoot",
+  "look rich",
+  "perfect face",
+  "flawless skin",
+] as const
 const STOP_WORDS = new Set([
   "about",
   "after",
@@ -79,6 +92,12 @@ function cleanText(value: unknown): string | null {
   if (typeof value !== "string") return null
   const clean = value.replace(/\s+/g, " ").trim()
   return clean || null
+}
+
+function isBrandAlignedGuidanceText(row: AcademyGuidanceRow, text: string): boolean {
+  if (row.productId !== "branded_by_sselfie") return true
+  const normalized = text.toLowerCase()
+  return !STALE_OR_OFF_BRAND_GUIDANCE_PHRASES.some(phrase => normalized.includes(phrase))
 }
 
 function textArray(value: unknown): string[] {
@@ -150,25 +169,33 @@ export function normalizeAcademyGuidanceSources(rows: AcademyGuidanceRow[]): May
     ]
     for (const [field, kind] of scalarFields) {
       const text = cleanText(content[field])
-      if (text) sources.push(academySource(row, field, text, 0, kind))
+      if (text && isBrandAlignedGuidanceText(row, text)) {
+        sources.push(academySource(row, field, text, 0, kind))
+      }
     }
 
     for (const [index, text] of textArray(content.key_takeaways).entries()) {
-      sources.push(academySource(row, "key_takeaways", text, index, "lesson"))
+      if (isBrandAlignedGuidanceText(row, text)) {
+        sources.push(academySource(row, "key_takeaways", text, index, "lesson"))
+      }
     }
     const actionValues = [
       ...textRecordValues(content.action_step),
       ...textArray(content.action_steps),
     ]
     for (const [index, text] of actionValues.entries()) {
-      sources.push(academySource(row, "action_step", text, index, "lesson"))
+      if (isBrandAlignedGuidanceText(row, text)) {
+        sources.push(academySource(row, "action_step", text, index, "lesson"))
+      }
     }
     const workbookPrompts = [
       ...textArray(content.workbook_prompts),
       ...textArray(content.reflection_prompts),
     ]
     for (const [index, text] of workbookPrompts.entries()) {
-      sources.push(academySource(row, "workbook_prompt", text, index, "lesson"))
+      if (isBrandAlignedGuidanceText(row, text)) {
+        sources.push(academySource(row, "workbook_prompt", text, index, "lesson"))
+      }
     }
 
     const transcript =
@@ -177,7 +204,9 @@ export function normalizeAcademyGuidanceSources(rows: AcademyGuidanceRow[]): May
       cleanText(content.transcript)
     if (transcript) {
       for (const [index, text] of chunks(transcript).entries()) {
-        sources.push(academySource(row, "full_transcript", text, index, "transcript"))
+        if (isBrandAlignedGuidanceText(row, text)) {
+          sources.push(academySource(row, "full_transcript", text, index, "transcript"))
+        }
       }
     } else {
       const lessonTitle = normalizedTitle(row.lessonTitle)

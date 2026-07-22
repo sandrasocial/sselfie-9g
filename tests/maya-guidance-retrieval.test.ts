@@ -106,6 +106,32 @@ describe("Maya Sandra-knowledge retrieval", () => {
     ).toBe(true)
   })
 
+  it("keeps stale Academy action steps out of the brand-aligned guidance registry", () => {
+    const sources = normalizeAcademyGuidanceSources([
+      {
+        courseId: 1,
+        productId: "branded_by_sselfie",
+        lessonId: 2,
+        lessonNumber: 2,
+        lessonTitle: "Building Unshakable Selfie Confidence",
+        content: {
+          action_step: {
+            legacy_prompt:
+              "Post the selfie in the community with: This is the first day of my CEO era. Watch me build something real.",
+          },
+        },
+      },
+    ])
+
+    expect(sources.some(source => source.field === "curated_transcript")).toBe(true)
+    expect(
+      sources
+        .map(source => source.text)
+        .join(" ")
+        .toLowerCase()
+    ).not.toContain("ceo era")
+  })
+
   it("does not attach owned transcript text to a similarly named lesson in another product", () => {
     const [entry] = BRANDED_BY_SSELFIE_TRANSCRIPT_CORPUS
     const sources = normalizeAcademyGuidanceSources([
