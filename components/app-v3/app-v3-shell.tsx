@@ -225,6 +225,16 @@ function ShellInner({
     })
   }
 
+  function createVariationFromGallery(imageUrl: string) {
+    openWithAesthetic(MAYA_GENERAL, {
+      format: "photo",
+      seed: "Continue this visual direction with a fresh photo that belongs to the same shoot.",
+      creationIdea: "Continue this shoot.",
+      creationIntent: intentForFormat("photo", "gallery_action"),
+      inspirationImageUrl: imageUrl,
+    })
+  }
+
   function createWithTrainedModel() {
     openWithAesthetic(MAYA_GENERAL, {
       format: "photo",
@@ -309,6 +319,7 @@ function ShellInner({
             hasVaultAccess={hasVaultAccess}
             preSelfieChatEnabled={preSelfieChatEnabled}
             videoEnabled={videoEnabled}
+            operatingLayerEnabled={mayaOperatingLayerEnabled}
           />
         ))}
       {section === "photos" && (
@@ -316,6 +327,9 @@ function ShellInner({
           initialFilter={galleryFilter}
           onMakeMotion={videoEnabled ? createMotionFromImage : undefined}
           onStartCreate={limited ? undefined : () => createFormat("photo")}
+          operatingLayerEnabled={mayaOperatingLayerEnabled}
+          onUseInCalendar={() => goToSection("calendar")}
+          onCreateVariation={asset => createVariationFromGallery(asset.url)}
         />
       )}
       {section === "content" && (

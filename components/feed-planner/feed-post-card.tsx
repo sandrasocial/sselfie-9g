@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import { toast } from "@/hooks/use-toast"
 import { isPersonalStoryPosition } from "@/lib/feed-planner/caption-truth"
+import type { CalendarPostTarget } from "@/components/app-v3/types"
 
 interface FeedPostCardProps {
   post: {
@@ -28,7 +29,8 @@ interface FeedPostCardProps {
   accountName?: string | null
   profileImageUrl?: string | null
   onUpdate?: (updatedPost?: FeedPostCardProps["post"]) => void | Promise<void>
-  onNavigateToMaya?: () => void // Navigate to Maya Chat for image generation
+  onNavigateToMaya?: (requestedAction?: CalendarPostTarget["requestedAction"]) => void
+  operatingLayerEnabled?: boolean
 }
 
 export default function FeedPostCard({
@@ -38,6 +40,7 @@ export default function FeedPostCard({
   profileImageUrl,
   onUpdate,
   onNavigateToMaya,
+  operatingLayerEnabled = false,
 }: FeedPostCardProps) {
   const [showFullCaption, setShowFullCaption] = useState(false)
   const [copiedCaption, setCopiedCaption] = useState(false)
@@ -157,9 +160,11 @@ export default function FeedPostCard({
     return typeDescriptions[postTypeLabel] || `Post ${post.position}`
   }
 
-  const handleNavigateToMaya = () => {
+  const handleNavigateToMaya = (
+    requestedAction: CalendarPostTarget["requestedAction"] = "create"
+  ) => {
     if (onNavigateToMaya) {
-      onNavigateToMaya()
+      onNavigateToMaya(requestedAction)
     } else if (typeof window !== "undefined") {
       window.location.assign("/app?view=create")
     }
@@ -546,7 +551,7 @@ export default function FeedPostCard({
                 {/* Go to Maya Button */}
                 {onNavigateToMaya && (
                   <button
-                    onClick={handleNavigateToMaya}
+                    onClick={() => handleNavigateToMaya("create")}
                     className="group flex items-center gap-2 rounded-[8px] bg-[#0D0E10] px-8 py-3.5 text-sm font-medium tracking-wide text-white transition-all hover:scale-[1.02] hover:opacity-90 hover:shadow-xl"
                   >
                     <span className="text-[10px] uppercase tracking-[0.16em]">AI</span>
@@ -709,6 +714,15 @@ export default function FeedPostCard({
               >
                 <span className="text-[10px] uppercase tracking-[0.16em] text-[#4F5052]">Edit</span>
               </button>
+              {operatingLayerEnabled ? (
+                <button
+                  onClick={() => onNavigateToMaya?.("improve_caption")}
+                  className="min-h-11 rounded-[8px] border border-[#0D0E10] px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-[#0D0E10]"
+                >
+                  Improve with Maya
+                </button>
+              ) : (
+                <>
               <button
                 onClick={handleRegenerateCaption}
                 disabled={isRegenerating || isEnhancing}
@@ -731,6 +745,8 @@ export default function FeedPostCard({
                   </span>
                 )}
               </button>
+                </>
+              )}
             </div>
             <div className="flex items-center justify-between px-4">
               <p className="text-xs uppercase tracking-wide text-[#818283]">{dateLabel}</p>
@@ -759,7 +775,11 @@ export default function FeedPostCard({
               </div>
               <button
                 onClick={
-                  needsStory && onNavigateToMaya ? handleNavigateToMaya : handleRegenerateCaption
+                  operatingLayerEnabled
+                    ? () => onNavigateToMaya?.("redo_caption")
+                    : needsStory && onNavigateToMaya
+                      ? () => handleNavigateToMaya("redo_caption")
+                      : handleRegenerateCaption
                 }
                 disabled={isRegenerating}
                 className="flex items-center gap-2 rounded-[8px] bg-[#0D0E10] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
@@ -772,7 +792,13 @@ export default function FeedPostCard({
                 ) : (
                   <>
                     <span className="text-[10px] uppercase tracking-[0.16em]">AI</span>
-                    <span>{needsStory ? "Tell Maya" : "Generate caption"}</span>
+                    <span>
+                      {operatingLayerEnabled
+                        ? "Finish with Maya"
+                        : needsStory
+                          ? "Tell Maya"
+                          : "Generate caption"}
+                    </span>
                   </>
                 )}
               </button>

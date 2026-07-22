@@ -598,7 +598,10 @@ export default function InstagramFeedView({
   })()
   const activePost = displayPosts.find((post: any) => Number(post.id) === activePostId) ?? null
   const liveSelectedPost = selectedPost ? (activePost ?? selectedPost) : null
-  const calendarPostTarget = (post: any): CalendarPostTarget => ({
+  const calendarPostTarget = (
+    post: any,
+    requestedAction: CalendarPostTarget["requestedAction"] = "create"
+  ): CalendarPostTarget => ({
     requestId: `calendar:${feedId}:${Number(post.id)}`,
     feedId,
     postId: Number(post.id),
@@ -614,6 +617,8 @@ export default function InstagramFeedView({
       typeof post.ai_image_id === "number" && Number.isInteger(post.ai_image_id)
         ? post.ai_image_id
         : null,
+    feedTitle: feedData?.feed?.brand_name || feedData?.feed?.title || "Current grid",
+    requestedAction,
   })
   const openPostStudio = (post: any) => {
     setPlanSettingsOpen(false)
@@ -1088,9 +1093,9 @@ export default function InstagramFeedView({
           onCloseGallery={() => setShowGallery(null)}
           onCloseProfileGallery={() => setShowProfileGallery(false)}
           onShowGallery={setShowGallery}
-          onNavigateToMaya={() => {
+          onNavigateToMaya={requestedAction => {
             if (usesSharedSuiteMaya && liveSelectedPost) {
-              const target = calendarPostTarget(liveSelectedPost)
+              const target = calendarPostTarget(liveSelectedPost, requestedAction)
               setSelectedPost(null)
               feedNav?.navigateToMaya?.(target)
               return
@@ -1098,6 +1103,7 @@ export default function InstagramFeedView({
             actions.navigateToMayaChat()
           }}
           mayaWorkspace={calendarMayaWorkspace}
+          operatingLayerEnabled={feedNav?.operatingLayerEnabled === true}
           onUpdate={async (updatedPost?: any) => {
             console.log(
               "[v0] onUpdate called with post:",

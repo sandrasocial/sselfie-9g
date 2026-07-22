@@ -112,6 +112,12 @@ export interface CalendarPostTarget {
   imageUrl: string | null
   mediaUrls: string[]
   aiImageId: number | null
+  /** Human label shown in Maya's contextual Calendar header. */
+  feedTitle?: string | null
+  /** UI routing only. Existing Calendar endpoints still own the actual mutation. */
+  requestedAction?: "create" | "redo_caption" | "improve_caption"
+  actionPreviousCaption?: string | null
+  captionActionStatus?: "succeeded" | "undone"
   /** Prevents a reload from replaying the same visible Calendar handoff message. */
   announced?: boolean
   /** Present only when Maya placed a newly generated photo in this slot. */
@@ -245,6 +251,12 @@ export interface ConciergeContextValue {
   ) => void
   /** Restores the Calendar slot to its previous state without deleting the Gallery photo. */
   clearCalendarDelivery: (requestId: string) => void
+  /** Keeps the selected Calendar task current after an existing caption endpoint succeeds. */
+  updateCalendarTargetCaption: (
+    requestId: string,
+    caption: string,
+    status: "succeeded" | "undone"
+  ) => void
   /** Start a clean thread while keeping the active reference image available. */
   resetCurrentSession: (taskId?: string) => void
   /** Pass null to return to the uncommitted state (no format chosen, no auto-pull). */

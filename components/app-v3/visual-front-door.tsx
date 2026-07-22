@@ -157,6 +157,7 @@ export function VisualFrontDoor({
   hasVaultAccess = false,
   preSelfieChatEnabled = false,
   videoEnabled: _videoEnabled = true,
+  operatingLayerEnabled = false,
 }: {
   firstName?: string | null
   showTrialFirstRunStep?: boolean
@@ -167,6 +168,7 @@ export function VisualFrontDoor({
   hasVaultAccess?: boolean
   preSelfieChatEnabled?: boolean
   videoEnabled?: boolean
+  operatingLayerEnabled?: boolean
 } = {}) {
   const { openFresh, openHistory, openWithAesthetic, workspaceBusy } = useConcierge()
   const { hasSelfie, primarySelfieUrl, referenceCount } = useIdentityReferences(
@@ -189,6 +191,7 @@ export function VisualFrontDoor({
   const [firstRunAlreadySeen] = useState(readFirstRunSeen)
   const [startText, setStartText] = useState("")
   const [memoryOpen, setMemoryOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
 
   const shouldShowTrialFirstRun = showTrialFirstRunStep && !hasSelfie && !firstRunAlreadySeen
   const fallbackImage = aesthetics[0]?.coverImage || AESTHETICS[0]?.coverImage || ""
@@ -476,6 +479,8 @@ export function VisualFrontDoor({
             with you across every path.
           </p>
         </div>
+        {!operatingLayerEnabled ? (
+          <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={openHistory}
@@ -491,6 +496,8 @@ export function VisualFrontDoor({
         >
           What Maya knows
         </button>
+          </div>
+        ) : null}
       </header>
 
       {workspaceBusy ? (
@@ -499,6 +506,7 @@ export function VisualFrontDoor({
         </p>
       ) : null}
 
+      {!operatingLayerEnabled ? (
       <nav
         aria-label="Create shortcuts"
         className="-mx-4 overflow-x-auto px-4 py-5 sm:-mx-8 sm:px-8"
@@ -517,6 +525,7 @@ export function VisualFrontDoor({
           ))}
         </div>
       </nav>
+      ) : null}
 
       <section ref={forYouRef} aria-labelledby="for-you-heading" className="scroll-mt-5 pt-2">
         <div className="mb-4 flex items-end justify-between gap-4">
@@ -554,7 +563,13 @@ export function VisualFrontDoor({
             ) : null}
           </div>
         </div>
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.75fr)]">
+        <div
+          className={
+            operatingLayerEnabled
+              ? "grid gap-4"
+              : "grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.75fr)]"
+          }
+        >
           <VisualCard
             image={recommendationImage}
             eyebrow={
@@ -569,6 +584,7 @@ export function VisualFrontDoor({
             disabled={workspaceBusy}
             priority
           />
+          {!operatingLayerEnabled ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
             {alternateWorlds.map(world => (
               <VisualCard
@@ -584,6 +600,7 @@ export function VisualFrontDoor({
               />
             ))}
           </div>
+          ) : null}
         </div>
       </section>
 
@@ -618,6 +635,72 @@ export function VisualFrontDoor({
         ) : null}
       </section>
 
+      {operatingLayerEnabled ? (
+        <div className="-mt-7 mb-10">
+          <button
+            type="button"
+            onClick={() => setMoreOpen(open => !open)}
+            aria-expanded={moreOpen}
+            aria-controls="maya-create-more"
+            className="inline-flex min-h-11 items-center rounded-[5px] border border-[color:var(--ss-silver)] bg-white px-4 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ss-night)]"
+          >
+            {moreOpen ? "Hide creation options" : "More creation options"}
+          </button>
+        </div>
+      ) : null}
+
+      {operatingLayerEnabled && moreOpen ? (
+        <div id="maya-create-more" className="border-t border-[color:var(--ss-silver)]/55 pt-6">
+          <div className="flex flex-wrap gap-2" aria-label="More creation options">
+            {quickActions.map(({ label, icon: Icon, action }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={action}
+                disabled={workspaceBusy}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[color:var(--ss-silver)]/70 bg-white px-4 text-[11px] text-[color:var(--ss-davy)] transition-colors hover:border-[color:var(--ss-night)] hover:text-[color:var(--ss-night)]"
+              >
+                <Icon size={14} strokeWidth={1.7} aria-hidden /> {label}
+              </button>
+            ))}
+          </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {alternateWorlds.map(world => (
+              <VisualCard
+                key={world.id}
+                image={world.coverImage}
+                eyebrow="Another direction"
+                title={world.name}
+                body={world.blurb}
+                action="Recreate this look"
+                onClick={() => openWorld(world)}
+                compact
+                disabled={workspaceBusy}
+              />
+            ))}
+          </div>
+          <div className="mt-5 flex flex-wrap gap-4">
+            <button
+              type="button"
+              onClick={openHistory}
+              disabled={workspaceBusy}
+              className="min-h-11 text-[11px] text-[color:var(--ss-davy)] underline underline-offset-4"
+            >
+              History
+            </button>
+            <button
+              type="button"
+              onClick={() => setMemoryOpen(true)}
+              className="min-h-11 text-[11px] text-[color:var(--ss-davy)] underline underline-offset-4"
+            >
+              What Maya knows
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {!operatingLayerEnabled || moreOpen ? (
+        <>
       <section
         ref={savedRef}
         aria-labelledby="saved-heading"
@@ -729,6 +812,8 @@ export function VisualFrontDoor({
           ? `${referenceCount} identity ${referenceCount === 1 ? "reference" : "references"} ready for Maya.`
           : "Your saved identity will appear here when it is ready."}
       </footer>
+        </>
+      ) : null}
       <MemoryModal
         open={memoryOpen}
         onClose={() => setMemoryOpen(false)}

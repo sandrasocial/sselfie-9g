@@ -29,6 +29,8 @@ interface ImageLightboxProps {
   conceptTitle?: string | null
   startIndex?: number
   onDownloaded?: () => void
+  onUseInCalendar?: (index: number) => void
+  onCreateVariation?: (index: number) => void
   onClose: () => void
 }
 
@@ -43,6 +45,8 @@ export function ImageLightbox({
   conceptTitle,
   startIndex = 0,
   onDownloaded,
+  onUseInCalendar,
+  onCreateVariation,
   onClose,
 }: ImageLightboxProps) {
   const count = images.length
@@ -239,7 +243,7 @@ export function ImageLightbox({
             </pre>
           </div>
         )}
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-3">
           {overlay && !baked && (
             <span className="text-[11px] text-white/50">Clean image shown. Text is below.</span>
           )}
@@ -268,6 +272,24 @@ export function ImageLightbox({
           >
             Download
           </button>
+          {onUseInCalendar ? (
+            <button
+              type="button"
+              onClick={() => onUseInCalendar(index)}
+              className="inline-flex min-h-11 items-center rounded-full border border-white/40 px-5 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:border-white"
+            >
+              Use in Calendar
+            </button>
+          ) : null}
+          {onCreateVariation ? (
+            <button
+              type="button"
+              onClick={() => onCreateVariation(index)}
+              className="inline-flex min-h-11 items-center px-3 py-2.5 text-[11px] text-white/80 underline underline-offset-4 hover:text-white"
+            >
+              Create a variation
+            </button>
+          ) : null}
           {count > 1 && (
             <button
               type="button"

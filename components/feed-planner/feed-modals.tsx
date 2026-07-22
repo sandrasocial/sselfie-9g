@@ -8,6 +8,7 @@ import { FeedGallerySelector } from "./feed-gallery-selector"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { useAccessibleModal } from "@/components/app-v3/use-accessible-modal"
 import { resolveCalendarProfile } from "@/lib/feed-planner/calendar-profile"
+import type { CalendarPostTarget } from "@/components/app-v3/types"
 
 interface FeedModalsProps {
   selectedPost: any | null
@@ -20,9 +21,10 @@ interface FeedModalsProps {
   onCloseGallery: () => void
   onCloseProfileGallery: () => void
   onShowGallery: (postId: number) => void
-  onNavigateToMaya?: () => void // Navigate to Maya Chat for image generation
+  onNavigateToMaya?: (requestedAction?: CalendarPostTarget["requestedAction"]) => void
   onUpdate: (updatedPost?: any) => void | Promise<void>
   mayaWorkspace?: ReactNode
+  operatingLayerEnabled?: boolean
 }
 
 export default function FeedModals({
@@ -39,6 +41,7 @@ export default function FeedModals({
   onNavigateToMaya,
   onUpdate,
   mayaWorkspace,
+  operatingLayerEnabled = false,
 }: FeedModalsProps) {
   const [studioView, setStudioView] = useState<"post" | "maya">("post")
   const { dialogRef, initialFocusRef } = useAccessibleModal(Boolean(selectedPost), onClosePost)
@@ -138,6 +141,7 @@ export default function FeedModals({
                     onNavigateToMaya={
                       mayaWorkspace ? () => setStudioView("maya") : onNavigateToMaya
                     }
+                    operatingLayerEnabled={operatingLayerEnabled}
                   />
                 </div>
                 {mayaWorkspace ? (

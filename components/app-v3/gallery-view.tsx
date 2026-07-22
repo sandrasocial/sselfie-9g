@@ -347,10 +347,16 @@ const CORE_FILTERS = new Set<GalleryFilter>(["all", "favorites", "photos", "vide
 export function GalleryView({
   onMakeMotion,
   onStartCreate,
+  onUseInCalendar,
+  onCreateVariation,
+  operatingLayerEnabled = false,
   initialFilter = "all",
 }: {
   onMakeMotion?: (url: string) => void
   onStartCreate?: () => void
+  onUseInCalendar?: (asset: AppV3GalleryAsset) => void
+  onCreateVariation?: (asset: AppV3GalleryAsset) => void
+  operatingLayerEnabled?: boolean
   initialFilter?: GalleryFilter
 }) {
   const [assets, setAssets] = useState<AppV3GalleryAsset[] | null>(null)
@@ -741,6 +747,26 @@ export function GalleryView({
           favoriteStates={displayedImages.map(asset => asset.isFavorite)}
           startIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
+          onUseInCalendar={
+            operatingLayerEnabled && onUseInCalendar
+              ? index => {
+                  const asset = displayedImages[index]
+                  if (!asset) return
+                  setLightboxIndex(null)
+                  onUseInCalendar(asset)
+                }
+              : undefined
+          }
+          onCreateVariation={
+            operatingLayerEnabled && onCreateVariation
+              ? index => {
+                  const asset = displayedImages[index]
+                  if (!asset) return
+                  setLightboxIndex(null)
+                  onCreateVariation(asset)
+                }
+              : undefined
+          }
         />
       )}
 

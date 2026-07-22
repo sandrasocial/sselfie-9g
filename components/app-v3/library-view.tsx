@@ -237,21 +237,23 @@ export function LibraryView({
   const [guidanceRequest, setGuidanceRequest] = useState<{
     goal: LearnGoal
     taskId: string
+    memberGoal?: string
   } | null>(null)
   const [selectedGoal, setSelectedGoal] = useState<LearnGoal | null>(null)
   const [recommendation, setRecommendation] = useState<LearnRecommendation | null>(null)
   const [savingPlan, setSavingPlan] = useState(false)
   const [planSaved, setPlanSaved] = useState(false)
   const [loadingGuidance, setLoadingGuidance] = useState(false)
+  const [browseAllOpen, setBrowseAllOpen] = useState(false)
 
-  async function requestGuidance(goal: LearnGoal, taskId: string) {
+  async function requestGuidance(goal: LearnGoal, taskId: string, memberGoal?: string) {
     const startedAt = Date.now()
     setGuidanceError(null)
-    setGuidanceRequest({ goal, taskId })
+    setGuidanceRequest({ goal, taskId, memberGoal })
     setLoadingGuidance(true)
     setRecommendation(null)
     try {
-      const goalLabel = LEARN_GOALS.find(item => item.id === goal)?.label ?? goal
+      const goalLabel = memberGoal ?? LEARN_GOALS.find(item => item.id === goal)?.label ?? goal
       const response = await fetch("/api/app-v3/maya/guidance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -310,6 +312,20 @@ export function LibraryView({
               setRecommendation(saved)
               setPlanSaved(true)
             }
+          } else if (operatingLayerEnabled && !nextData.learningPlan) {
+            const goal: LearnGoal = "what-to-post"
+            const taskId = startMayaJob({
+              job: "learn_next",
+              surface: "learn",
+              entry: "maya_auto_recommendation",
+            })
+            setSelectedGoal(goal)
+            void requestGuidance(
+              goal,
+              taskId,
+              "Choose the most useful next lesson from what I own and my current progress."
+            )
+            setPlanSaved(false)
           }
         } else setError("Couldn't load your library. Try again.")
       })
@@ -401,14 +417,16 @@ export function LibraryView({
                 id="maya-coach-title"
                 className="mt-1.5 font-serif text-[28px] font-light leading-tight text-[#0D0E10]"
               >
-                Maya Coach
+                {operatingLayerEnabled ? "Maya recommends next" : "Maya Coach"}
               </h2>
               <p className="mt-1.5 text-[14px] leading-relaxed text-[#4F5052]">
-                Tell me where you feel stuck. I’ll choose one lesson you already own and help you
-                use it.
+                {operatingLayerEnabled
+                  ? "One useful lesson from what you own, chosen for the next step in front of you."
+                  : "Tell me where you feel stuck. I’ll choose one lesson you already own and help you use it."}
               </p>
             </div>
             <div className="p-4 sm:p-5">
+              {!operatingLayerEnabled ? (
               <div
                 className="grid gap-2 sm:grid-cols-2"
                 role="group"
@@ -426,6 +444,7 @@ export function LibraryView({
                   </button>
                 ))}
               </div>
+              ) : null}
 
               {guidanceError ? (
                 <div
@@ -437,7 +456,11 @@ export function LibraryView({
                     type="button"
                     onClick={() => {
                       if (guidanceRequest) {
-                        void requestGuidance(guidanceRequest.goal, guidanceRequest.taskId)
+                        void requestGuidance(
+                          guidanceRequest.goal,
+                          guidanceRequest.taskId,
+                          guidanceRequest.memberGoal
+                        )
                       }
                     }}
                     disabled={!guidanceRequest || loadingGuidance}
@@ -479,7 +502,7 @@ export function LibraryView({
                     >
                       Open lesson
                     </a>
-                    {onOpenCalendar ? (
+                    {onOpenCalendar && !operatingLayerEnabled ? (
                       <button
                         type="button"
                         onClick={() => {
@@ -525,7 +548,7 @@ export function LibraryView({
                         }}
                         className="min-h-11 px-2 text-[11px] text-[#0D0E10] underline underline-offset-4"
                       >
-                        Use it with Maya
+                        {operatingLayerEnabled ? "Do this with Maya" : "Use it with Maya"}
                       </button>
                     ) : null}
                   </div>
@@ -553,6 +576,20 @@ export function LibraryView({
             </div>
           </section>
 
+          {operatingLayerEnabled ? (
+            <button
+              type="button"
+              onClick={() => setBrowseAllOpen(open => !open)}
+              aria-expanded={browseAllOpen}
+              aria-controls="maya-learn-catalogue"
+              className="min-h-11 text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] underline underline-offset-4"
+            >
+              {browseAllOpen ? "Hide catalogue" : "Browse all"}
+            </button>
+          ) : null}
+
+          {!operatingLayerEnabled || browseAllOpen ? (
+            <div id="maya-learn-catalogue" className="contents">
           {/* Courses with progress */}
           {data.courses.length > 0 && (
             <section>
@@ -716,6 +753,8 @@ export function LibraryView({
               </div>
             </section>
           )}
+            </div>
+          ) : null}
         </>
       )}
     </div>

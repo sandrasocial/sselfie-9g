@@ -122,7 +122,8 @@ if (!runPlaywright) {
             : "Maya QA response for the Create task."
           const messageId = `assistant-${Date.now()}`
           const textId = `text-${Date.now()}`
-          const conceptPayload = post && actionJourneyEnabled
+          const conceptPayload =
+            post && actionJourneyEnabled
             ? {
                 format: "photo",
                 concepts: [
@@ -256,8 +257,35 @@ if (!runPlaywright) {
         } else if (pathname === "/api/app-v3/account") {
           body = { credits: 100, creditsUnlimited: false }
         } else if (pathname === "/api/app-v3/aesthetics") body = { aesthetics: [] }
-        else if (pathname === "/api/app-v3/gallery") body = { assets: [] }
-        else if (pathname === "/api/app-v3/maya/recommendations") {
+        else if (pathname === "/api/app-v3/gallery") {
+          body = {
+            assets: [
+              {
+                id: "ai_501",
+                kind: "image",
+                contentType: "photo",
+                url: "https://example.com/maya-gallery-photo.jpg",
+                createdAt: "2026-07-22T10:00:00.000Z",
+                isFavorite: false,
+                title: "Founder portrait",
+                canFavorite: true,
+                canDelete: true,
+                canDownload: true,
+                canMakeMotion: true,
+              },
+            ],
+            counts: {
+              all: 1,
+              favorites: 0,
+              photos: 1,
+              photoshoots: 0,
+              reelCovers: 0,
+              carousels: 0,
+              storySlides: 0,
+              videos: 0,
+            },
+          }
+        } else if (pathname === "/api/app-v3/maya/recommendations") {
           body = {
             recommendations: [
               {
@@ -359,6 +387,20 @@ if (!runPlaywright) {
           if (post) post.caption = String(payload.caption || "")
           calendarMutations.push(`${method} ${pathname}`)
           body = { success: true }
+        } else if (pathname === "/api/feed/101/enhance-caption") {
+          const payload = request.postDataJSON?.() ?? {}
+          const post = posts.find(item => item.id === Number(payload.postId))
+          const enhancedCaption = `Improved caption for post ${post?.position ?? "selected"}.`
+          if (post) post.caption = enhancedCaption
+          calendarMutations.push(`${method} ${pathname}`)
+          body = { enhancedCaption }
+        } else if (pathname === "/api/feed/101/regenerate-caption") {
+          const payload = request.postDataJSON?.() ?? {}
+          const post = posts.find(item => item.id === Number(payload.postId))
+          const caption = `Fresh caption for post ${post?.position ?? "selected"}.`
+          if (post) post.caption = caption
+          calendarMutations.push(`${method} ${pathname}`)
+          body = { caption }
         } else if (pathname === "/api/user/credits") body = { balance: 100 }
 
         await route.fulfill({
@@ -380,8 +422,12 @@ if (!runPlaywright) {
       page: any
     }) => {
       await expect(page.getByRole("button", { name: "Create", exact: true })).toBeVisible()
-      await expect(page.getByRole("button", { name: "For you" })).toBeVisible()
+      await expect(page.getByText(/Maya recommends · Photo/i)).toBeVisible()
       await expect(page.getByRole("button", { name: "Start with Maya" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "My selfies" })).toHaveCount(0)
+      await page.getByRole("button", { name: "More creation options" }).click()
+      await expect(page.getByRole("button", { name: "My selfies" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "History", exact: true })).toBeVisible()
     })
 
     test("Decide what to post and Finish a selected Calendar post start in Calendar", async ({
@@ -403,16 +449,24 @@ if (!runPlaywright) {
       await expect(page.getByRole("dialog")).toBeVisible()
     })
 
-    test("Learn the next useful thing starts from Maya Coach", async ({ page }: { page: any }) => {
+    // Member job: Learn the next useful thing.
+    test("Learn starts with one source-backed Maya recommendation", async ({
+      page,
+    }: {
+      page: any
+    }) => {
       await page.getByRole("button", { name: "Learn" }).click()
-      await expect(page.getByRole("heading", { name: "Maya Coach" })).toBeVisible()
-      await page.getByRole("button", { name: "I don't know what to post" }).click()
+      await expect(page.getByRole("heading", { name: "Maya recommends next" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "I don't know what to post" })).toHaveCount(0)
       await expect(page.getByText("Start here")).toBeVisible()
       await expect(
         page.getByRole("heading", { name: "Post Before You Feel Ready", exact: true })
       ).toBeVisible()
       await expect(page.getByText(/From Post Before You Feel Ready/i)).toBeVisible()
-      await expect(page.getByRole("button", { name: "Use it with Maya" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "Do this with Maya" })).toBeVisible()
+      await expect(page.getByText("Branded by SSELFIE", { exact: true })).toHaveCount(0)
+      await page.getByRole("button", { name: "Browse all" }).click()
+      await expect(page.getByText("Branded by SSELFIE", { exact: true })).toBeVisible()
     })
 
     test("keeps a source-backed lesson bound through the Learn to Maya handoff and reload", async ({
@@ -420,10 +474,9 @@ if (!runPlaywright) {
     }: {
       page: any
     }) => {
-      const maya = page.locator('aside[data-maya-task-id]')
+      const maya = page.locator("aside[data-maya-task-id]")
       await page.getByRole("button", { name: "Learn" }).click()
-      await page.getByRole("button", { name: "I don't know what to post" }).click()
-      await page.getByRole("button", { name: "Use it with Maya" }).click()
+      await page.getByRole("button", { name: "Do this with Maya" }).click()
 
       await expect(maya).toHaveAttribute("data-maya-job", "learn_next")
       await expect(maya).toHaveAttribute("data-maya-surface", "learn")
@@ -452,16 +505,75 @@ if (!runPlaywright) {
       await expect(page.getByRole("button", { name: "Account" })).toBeVisible()
     })
 
+    test("keeps Gallery assets stored while offering one explicit Calendar or variation handoff", async ({
+      page,
+    }: {
+      page: any
+    }) => {
+      const maya = page.locator("aside[data-maya-task-id]")
+      await page.getByRole("button", { name: "Gallery" }).click()
+      await page.getByRole("button", { name: /Open Founder portrait/i }).click()
+      const lightbox = page.getByRole("dialog", { name: "Your finished creation" })
+      await expect(lightbox).toBeVisible()
+      await expect(lightbox.getByRole("button", { name: "Download", exact: true })).toBeVisible()
+      await expect(lightbox.getByRole("button", { name: "Use in Calendar" })).toBeVisible()
+      await lightbox.getByRole("button", { name: "Create a variation" }).click()
+
+      await expect(maya).toHaveAttribute("data-maya-surface", "gallery")
+      await expect(maya).toHaveAttribute("data-maya-inspiration", "present")
+      await page.getByRole("button", { name: "Close", exact: true }).click()
+
+      await page.getByRole("button", { name: /Open Founder portrait/i }).click()
+      await page.getByRole("button", { name: "Use in Calendar" }).click()
+      await expect(page.getByRole("button", { name: "Calendar", exact: true })).toHaveAttribute(
+        "aria-current",
+        "page"
+      )
+      await expect(page.getByRole("button", { name: "Gallery", exact: true })).toBeVisible()
+      expect((page as any).__mayaOperatingLayerCalendarMutations).toEqual([])
+    })
+
+    test("routes Calendar caption improvement through preview, confirmation, result, and undo", async ({
+      page,
+    }: {
+      page: any
+    }) => {
+      const maya = page.locator("aside[data-maya-task-id]")
+      await page.getByRole("button", { name: "Calendar" }).click()
+      await page.getByRole("button", { name: "Select post 7" }).click()
+      await expect(page.getByRole("dialog", { name: "Edit calendar post" })).toBeVisible()
+      await page.getByRole("button", { name: "Improve with Maya" }).click()
+
+      await expect(page.getByRole("dialog", { name: "Edit calendar post" })).toHaveCount(0)
+      await expect(maya).toHaveAttribute("data-maya-post-id", "707")
+      await expect(page.getByRole("heading", { name: "Post 7 · Maya Phase QA" })).toBeVisible()
+      const action = page.locator('section[data-maya-action-kind="improve_caption"]')
+      await expect(action).toHaveAttribute("data-maya-action-status", "recommended")
+      await action.getByRole("button", { name: "Preview" }).click()
+      await action.getByRole("button", { name: "Continue" }).click()
+      await expect(action).toContainText("No credits")
+      await action.getByRole("button", { name: "Confirm and improve" }).click()
+      await expect(action).toHaveAttribute("data-maya-action-status", "succeeded")
+      await action.getByRole("button", { name: "Undo" }).click()
+      await expect(action).toHaveAttribute("data-maya-action-status", "undone")
+
+      expect((page as any).__mayaOperatingLayerCalendarMutations).toEqual([
+        "POST /api/feed/101/enhance-caption",
+        "PATCH /api/feed/101/update-caption",
+      ])
+      expect((page as any).__mayaOperatingLayerPaidRequests).toEqual([])
+    })
+
     test("keeps Create and Calendar tasks isolated across post switches, History, and reload", async ({
       page,
     }: {
       page: any
     }) => {
-      const maya = page.locator('aside[data-maya-task-id]')
+      const maya = page.locator("aside[data-maya-task-id]")
 
-      await page.getByPlaceholder("A launch photo, a full shoot, a Reel cover…").fill(
-        "Phase one Create task"
-      )
+      await page
+        .getByPlaceholder("A launch photo, a full shoot, a Reel cover…")
+        .fill("Phase one Create task")
       await page.getByRole("button", { name: "Start with Maya" }).click()
       await expect(maya).toHaveAttribute("data-maya-job", "create_content")
       await expect(maya).toHaveAttribute("data-maya-surface", "create")
@@ -550,8 +662,8 @@ if (!runPlaywright) {
       const viewport = await page.evaluate(() => ({
         rootOverflow: document.documentElement.scrollWidth > window.innerWidth,
         drawerOverflow:
-          (document.querySelector('aside[data-maya-task-id]')?.scrollWidth ?? 0) >
-          (document.querySelector('aside[data-maya-task-id]')?.clientWidth ?? 0),
+          (document.querySelector("aside[data-maya-task-id]")?.scrollWidth ?? 0) >
+          (document.querySelector("aside[data-maya-task-id]")?.clientWidth ?? 0),
       }))
       expect(viewport).toEqual({ rootOverflow: false, drawerOverflow: false })
 

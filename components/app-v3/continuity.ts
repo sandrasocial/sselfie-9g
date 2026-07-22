@@ -256,6 +256,21 @@ function sanitizeCalendarPostTarget(value: unknown): CalendarPostTarget | null {
       target.aiImageId > 0
         ? target.aiImageId
         : null,
+    feedTitle: cleanText(target.feedTitle, 120),
+    requestedAction:
+      target.requestedAction === "redo_caption" || target.requestedAction === "improve_caption"
+        ? target.requestedAction
+        : "create",
+    actionPreviousCaption: Object.prototype.hasOwnProperty.call(
+      target,
+      "actionPreviousCaption"
+    )
+      ? cleanText(target.actionPreviousCaption, 2200)
+      : undefined,
+    captionActionStatus:
+      target.captionActionStatus === "succeeded" || target.captionActionStatus === "undone"
+        ? target.captionActionStatus
+        : undefined,
     announced: target.announced === true,
     delivery,
   }

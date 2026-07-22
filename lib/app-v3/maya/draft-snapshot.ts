@@ -94,6 +94,10 @@ export type ServerConciergeSessionSnapshot = {
     imageUrl: string | null
     mediaUrls: string[]
     aiImageId: number | null
+    feedTitle?: string | null
+    requestedAction?: "create" | "redo_caption" | "improve_caption"
+    actionPreviousCaption?: string | null
+    captionActionStatus?: "succeeded" | "undone"
     announced?: boolean
     delivery?: {
       generationRequestId: string
@@ -401,6 +405,18 @@ function sanitizeCalendarTarget(value: unknown): ServerConciergeSessionSnapshot[
       target.aiImageId > 0
         ? target.aiImageId
         : null,
+    feedTitle: cleanText(target.feedTitle, 120),
+    requestedAction:
+      target.requestedAction === "redo_caption" || target.requestedAction === "improve_caption"
+        ? target.requestedAction
+        : "create",
+    actionPreviousCaption: Object.prototype.hasOwnProperty.call(target, "actionPreviousCaption")
+      ? cleanText(target.actionPreviousCaption, 2200)
+      : undefined,
+    captionActionStatus:
+      target.captionActionStatus === "succeeded" || target.captionActionStatus === "undone"
+        ? target.captionActionStatus
+        : undefined,
     announced: target.announced === true,
     delivery,
   }

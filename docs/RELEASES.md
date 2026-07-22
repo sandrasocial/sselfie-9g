@@ -1,5 +1,18 @@
 # Completed releases
 
+## 2026-07-22 — Maya surface simplification
+
+Simplified the Sandra-only Maya operating layer without rebuilding the approved Suite. Create now
+leads with one recommendation and composer, Gallery has explicit Calendar and variation handoffs,
+Learn opens with one source-backed next step, and Calendar caption creation or improvement follows
+the shared preview, confirmation, result, and undo protocol. Account, stored Gallery assets, direct
+copy/download/edit utilities, and the existing rollback experience remain intact.
+
+Verification: 1,751 passing tests with 6 intentionally skipped, 20 desktop and 390x844 Playwright
+journeys, CI typecheck, repository invariants, production build, and 22/22 creative-freeze checks.
+Protected prompts, providers, routing, credits, payments, entitlements, and publishing boundaries
+remain unchanged.
+
 ## 2026-07-22 — Maya Sandra knowledge corpus
 
 Connected Sandra's owned Branded by SSELFIE course material and current flagship Studio method to

@@ -115,12 +115,14 @@ describe("Maya Learn Coach", () => {
     const { LibraryView } = await import("@/components/app-v3/library-view")
 
     render(<LibraryView operatingLayerEnabled onOpenMaya={onOpenMaya} />)
-    expect(await screen.findByRole("heading", { name: /maya coach/i })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: /i don't know what to post/i }))
+    expect(
+      await screen.findByRole("heading", { name: /maya recommends next/i })
+    ).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /i don't know what to post/i })).toBeNull()
 
     expect(await screen.findByText("Post Before You Feel Ready")).toBeInTheDocument()
     expect(screen.getByText(/From Post Before You Feel Ready/i)).toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: /use it with maya/i }))
+    fireEvent.click(screen.getByRole("button", { name: /do this with maya/i }))
 
     expect(onOpenMaya).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -188,16 +190,17 @@ describe("Maya Learn Coach", () => {
     const { LibraryView } = await import("@/components/app-v3/library-view")
 
     render(<LibraryView operatingLayerEnabled />)
-    expect(await screen.findByRole("heading", { name: /maya coach/i })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: /i don't know what to post/i }))
+    expect(
+      await screen.findByRole("heading", { name: /maya recommends next/i })
+    ).toBeInTheDocument()
     expect(await screen.findByText(/Maya couldn't find your next lesson/i)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: /^retry$/i }))
 
     expect(await screen.findByText("Post Before You Feel Ready")).toBeInTheDocument()
     expect(guidanceRequests).toBe(2)
-    expect(fetchMock.mock.calls.filter(([input]) => String(input) === "/api/app-v3/library")).toHaveLength(
-      1
-    )
+    expect(
+      fetchMock.mock.calls.filter(([input]) => String(input) === "/api/app-v3/library")
+    ).toHaveLength(1)
   })
 })

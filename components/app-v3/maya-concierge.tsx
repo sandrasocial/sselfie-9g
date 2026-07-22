@@ -640,6 +640,7 @@ export function MayaConcierge({
     markCalendarTargetAnnounced,
     completeCalendarTarget,
     clearCalendarDelivery,
+    updateCalendarTargetCaption,
     resetCurrentSession,
     setOutputFormat,
     setReferenceSelfieUrl,
@@ -1608,6 +1609,12 @@ export function MayaConcierge({
     if (!calendarSurfaceActive || !isOpen || !target || target.announced || isThinking) return
     if (
       operatingLayerEnabled &&
+      (target.requestedAction === "redo_caption" || target.requestedAction === "improve_caption")
+    ) {
+      return
+    }
+    if (
+      operatingLayerEnabled &&
       session?.mayaContext &&
       hydratedTaskIdRef.current !== session.mayaContext.taskId
     ) {
@@ -1655,6 +1662,13 @@ export function MayaConcierge({
   // this same effect fires and pulls the committed format, so upload completes the flow.
   useEffect(() => {
     if (!isOpen || !session) return
+    if (
+      operatingLayerEnabled &&
+      (session.calendarTarget?.requestedAction === "redo_caption" ||
+        session.calendarTarget?.requestedAction === "improve_caption")
+    ) {
+      return
+    }
     if (
       operatingLayerEnabled &&
       session.mayaContext &&
@@ -2122,9 +2136,94 @@ export function MayaConcierge({
     session.mayaContext.surface === "learn"
   const workspaceTitle = learningTaskActive
     ? "Learn with Maya"
+    : calendarSurfaceActive && session.calendarTarget
+      ? `Post ${session.calendarTarget.position} · ${session.calendarTarget.feedTitle || "Current grid"}`
     : mayaChoosesVisualWorld
       ? "Create with Maya"
       : aesthetic.name
+  const captionActionTarget =
+    operatingLayerEnabled &&
+    calendarSurfaceActive &&
+    session.calendarTarget &&
+    (session.calendarTarget.requestedAction === "redo_caption" ||
+      session.calendarTarget.requestedAction === "improve_caption")
+      ? session.calendarTarget
+      : null
+  const captionAction = captionActionTarget
+    ? (() => {
+        const idempotencyKey = mayaActionIdempotencyKey(
+          session.mayaContext?.taskId ?? chatId,
+          "improve_caption",
+          captionActionTarget.feedId,
+          captionActionTarget.postId,
+          captionActionTarget.requestedAction
+        )
+        const descriptor = createMayaAction({
+          id: `caption-${idempotencyKey}`,
+          taskId: session.mayaContext?.taskId ?? chatId,
+          kind: "improve_caption",
+          title:
+            captionActionTarget.requestedAction === "redo_caption"
+              ? `Create the caption for post ${captionActionTarget.position}`
+              : `Improve the caption for post ${captionActionTarget.position}`,
+          reason: "Maya will use the Calendar caption system already connected to this post.",
+          target: {
+            feedId: captionActionTarget.feedId,
+            postId: captionActionTarget.postId,
+          },
+          creditCost: 0,
+          requiresConfirmation: true,
+          canUndo: true,
+          idempotencyKey,
+        })
+        return captionActionTarget.captionActionStatus
+          ? restoreMayaActionStatus(descriptor, captionActionTarget.captionActionStatus)
+          : descriptor
+      })()
+    : null
+
+  async function executeCalendarCaptionAction(target: CalendarPostTarget) {
+    const improving = target.requestedAction === "improve_caption"
+    const response = await fetch(
+      `/api/feed/${target.feedId}/${improving ? "enhance-caption" : "regenerate-caption"}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          postId: target.postId,
+          ...(improving ? { currentCaption: target.caption ?? "" } : {}),
+        }),
+      }
+    )
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      throw new Error(data.error || "Maya could not finish that caption.")
+    }
+    const nextCaption = improving ? data.enhancedCaption : data.caption
+    if (typeof nextCaption !== "string" || !nextCaption.trim()) {
+      throw new Error("Maya did not return a finished caption.")
+    }
+    updateCalendarTargetCaption(target.requestId, nextCaption, "succeeded")
+    window.dispatchEvent(
+      new CustomEvent("calendar:feed-updated", { detail: { feedId: target.feedId } })
+    )
+  }
+
+  async function undoCalendarCaptionAction(target: CalendarPostTarget) {
+    const previousCaption = target.actionPreviousCaption ?? ""
+    const response = await fetch(`/api/feed/${target.feedId}/update-caption`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ postId: target.postId, caption: previousCaption }),
+    })
+    if (!response.ok) throw new Error("That caption could not be restored.")
+    updateCalendarTargetCaption(target.requestId, previousCaption, "undone")
+    window.dispatchEvent(
+      new CustomEvent("calendar:feed-updated", { detail: { feedId: target.feedId } })
+    )
+  }
   const openerLine = outputFormat
     ? activeGenerationSource === "trained-model" && outputFormat === "photo"
       ? "Your trained model is ready. Hit create and pick the direction that feels most like you."
@@ -4228,6 +4327,22 @@ export function MayaConcierge({
             )}
           </div>
         )}
+
+            {captionActionTarget && captionAction ? (
+              <div className="shrink-0 border-b border-[#C5C6C8]/40 bg-white/70 px-5 py-3 sm:px-6">
+                <MayaActionCard
+                  key={captionAction.id}
+                  descriptor={captionAction}
+                  preview={
+                    captionActionTarget.requestedAction === "redo_caption"
+                      ? `Create a fresh caption for post ${captionActionTarget.position}. The post changes only after you confirm.`
+                      : `Improve the current caption for post ${captionActionTarget.position}. You can undo and restore the current words.`
+                  }
+                  onExecute={() => executeCalendarCaptionAction(captionActionTarget)}
+                  onUndo={() => undoCalendarCaptionAction(captionActionTarget)}
+                />
+              </div>
+            ) : null}
 
         {/* Setup - full block before the conversation starts (the guided beginning), then it
             collapses to a one-line status strip so Maya's output owns the screen. "Change"

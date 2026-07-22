@@ -257,11 +257,21 @@ export function ConciergeProvider({
             )
             const existingTarget = sameTask ? previous?.calendarTarget : null
             const canKeepDelivery = existingTarget?.delivery?.imageUrl === target.imageUrl
+            const canKeepCaptionAction =
+              existingTarget != null &&
+              existingTarget.requestedAction === target.requestedAction &&
+              existingTarget.postId === target.postId
             const calendarTarget: CalendarPostTarget = existingTarget
               ? {
                   ...target,
                   announced: existingTarget.announced,
                   delivery: canKeepDelivery ? (existingTarget.delivery ?? null) : null,
+                  actionPreviousCaption: canKeepCaptionAction
+                    ? existingTarget.actionPreviousCaption
+                    : undefined,
+                  captionActionStatus: canKeepCaptionAction
+                    ? existingTarget.captionActionStatus
+                    : undefined,
                 }
               : { ...target, announced: false, delivery: null }
 
@@ -429,6 +439,28 @@ export function ConciergeProvider({
         : prev
     )
   }, [])
+
+  const updateCalendarTargetCaption = useCallback(
+    (requestId: string, caption: string, status: "succeeded" | "undone") => {
+      setSession(prev =>
+        prev?.calendarTarget?.requestId === requestId
+          ? {
+              ...prev,
+              calendarTarget: {
+                ...prev.calendarTarget,
+                caption,
+                actionPreviousCaption:
+                  status === "succeeded" && prev.calendarTarget.actionPreviousCaption === undefined
+                    ? prev.calendarTarget.caption
+                    : prev.calendarTarget.actionPreviousCaption,
+                captionActionStatus: status,
+              },
+            }
+          : prev
+      )
+    },
+    []
+  )
 
   const setOutputFormat = useCallback((format: OutputFormat | null) => {
     setSession(prev => (prev ? { ...prev, outputFormat: format } : prev))
@@ -711,6 +743,7 @@ export function ConciergeProvider({
       markCalendarTargetAnnounced,
       completeCalendarTarget,
       clearCalendarDelivery,
+      updateCalendarTargetCaption,
       resetCurrentSession,
       setOutputFormat,
       setReferenceSelfieUrl,
@@ -736,6 +769,7 @@ export function ConciergeProvider({
       markCalendarTargetAnnounced,
       completeCalendarTarget,
       clearCalendarDelivery,
+      updateCalendarTargetCaption,
       resetCurrentSession,
       setOutputFormat,
       setReferenceSelfieUrl,
