@@ -10,12 +10,17 @@ import {
   METHOD_SEQUENCE,
   SANDRA_CORE_BELIEFS,
 } from "@/lib/maya/sandra-teaching-knowledge"
+import {
+  BRANDED_BY_SSELFIE_TRANSCRIPT_CORPUS,
+  SSELFIE_FLAGSHIP_METHOD_CORPUS,
+} from "./curated-corpus"
 import type { MayaGuidanceRequest, MayaGuidanceSourceRef } from "./types"
 
 export interface AcademyGuidanceRow {
   courseId: number
   productId: string | null
   lessonId: number
+  lessonNumber?: number
   lessonTitle: string
   content: unknown
 }
@@ -25,6 +30,8 @@ export interface MayaGuidanceSource extends MayaGuidanceSourceRef {
   text: string
   productId?: string
   field: string
+  sourceDocumentId?: string
+  sourceUpdatedAt?: string
 }
 
 export interface RankedMayaGuidanceSources {
@@ -102,6 +109,13 @@ function chunks(text: string): string[] {
   return result.filter(Boolean)
 }
 
+function normalizedTitle(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+}
+
 function academySource(
   row: AcademyGuidanceRow,
   field: string,
@@ -165,6 +179,25 @@ export function normalizeAcademyGuidanceSources(rows: AcademyGuidanceRow[]): May
       for (const [index, text] of chunks(transcript).entries()) {
         sources.push(academySource(row, "full_transcript", text, index, "transcript"))
       }
+    } else {
+      const lessonTitle = normalizedTitle(row.lessonTitle)
+      const curated = BRANDED_BY_SSELFIE_TRANSCRIPT_CORPUS.find(
+        entry =>
+          entry.productId === row.productId &&
+          (entry.lessonNumber === row.lessonNumber ||
+            [entry.lessonTitle, ...(entry.lessonTitleAliases ?? [])].some(
+              title => normalizedTitle(title) === lessonTitle
+            ))
+      )
+      if (curated) {
+        for (const [index, text] of curated.fragments.entries()) {
+          sources.push({
+            ...academySource(row, "curated_transcript", text, index, "transcript"),
+            sourceDocumentId: curated.sourceDocumentId,
+            sourceUpdatedAt: curated.sourceUpdatedAt,
+          })
+        }
+      }
     }
   }
   return sources
@@ -193,6 +226,14 @@ export function buildSandraMethodGuidanceSources(
   const sources: MayaGuidanceSource[] = SANDRA_CORE_BELIEFS.map((text, index) =>
     methodSource(`method:belief:${index}`, "method", "Sandra's SSELFIE method", text, "belief")
   )
+
+  for (const source of SSELFIE_FLAGSHIP_METHOD_CORPUS) {
+    sources.push({
+      ...methodSource(source.id, "method", source.title, source.text, "flagship_method"),
+      sourceDocumentId: source.sourceDocumentId,
+      sourceUpdatedAt: source.sourceUpdatedAt,
+    })
+  }
 
   for (const insight of RITUAL_STEP_INSIGHTS) {
     const text = methodDepth === "teaser" ? insight.teaser : insight.full
@@ -338,6 +379,7 @@ export async function loadMayaGuidanceSources(
         c.id AS course_id,
         c.product_id,
         l.id AS lesson_id,
+        l.lesson_number,
         l.title AS lesson_title,
         l.content
       FROM academy_courses c
@@ -356,6 +398,7 @@ export async function loadMayaGuidanceSources(
     courseId: Number(row.course_id),
     productId: typeof row.product_id === "string" ? row.product_id : null,
     lessonId: Number(row.lesson_id),
+    lessonNumber: Number(row.lesson_number),
     lessonTitle: String(row.lesson_title),
     content: row.content,
   }))
