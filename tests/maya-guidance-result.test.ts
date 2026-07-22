@@ -2,11 +2,23 @@
 
 import { describe, expect, it, vi } from "vitest"
 
+const mocks = vi.hoisted(() => ({
+  generateText: vi.fn(),
+}))
+
 vi.mock("server-only", () => ({}))
+vi.mock("ai", () => ({
+  generateText: mocks.generateText,
+  Output: { object: vi.fn(() => ({})) },
+}))
+vi.mock("@/lib/maya/openrouter", () => ({
+  createMayaOpenRouterModel: vi.fn(() => "maya-guidance-model"),
+}))
 
 import {
   buildMayaGuidanceLimitation,
   buildMayaGuidanceResult,
+  generateMayaGuidance,
 } from "@/lib/app-v3/maya/guidance/service"
 import type { MayaGuidanceSource } from "@/lib/app-v3/maya/guidance/source-registry"
 
@@ -101,5 +113,37 @@ describe("Maya guidance result contract", () => {
       ])
     )
     expect(result.nextAction.target).toEqual({ lessonId: 10 })
+  })
+
+  it("never leaks internal lesson instructions when the guidance model is unavailable", async () => {
+    mocks.generateText.mockRejectedValueOnce(new Error("provider unavailable"))
+    const internalLessonSource: MayaGuidanceSource = {
+      id: "lesson:12:maya_context:0",
+      kind: "lesson",
+      title: "The Selfie CEO Shooting System",
+      text: "Help the user plan a quick selfie shoot using her space, lighting, settings, pose, and intended use for the photos.",
+      version: "internal123456789",
+      courseId: 1,
+      lessonId: 12,
+      productId: "branded_by_sselfie",
+      field: "maya_context",
+    }
+
+    const result = await generateMayaGuidance({
+      request: {
+        taskId: "maya-task-photos-no-plan",
+        job: "learn_next",
+        memberGoal: "I have photos but no plan",
+      },
+      sources: [internalLessonSource],
+      hasQuestionMatch: true,
+      userId: "qa-user",
+    })
+
+    expect(result.recommendation).toBe(
+      "Plan a quick selfie shoot using your space, lighting, settings, pose, and intended use for the photos."
+    )
+    expect(result.recommendation).not.toMatch(/help the user/i)
+    expect(result.sourceRefs).toEqual([expect.objectContaining({ courseId: 1, lessonId: 12 })])
   })
 })

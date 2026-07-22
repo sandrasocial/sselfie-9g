@@ -133,8 +133,16 @@ function deterministicFallback(
   request: MayaGuidanceRequest,
   sources: MayaGuidanceSource[]
 ): MayaGuidanceResult {
-  const source = sources[0]
-  const recommendation = clipped(source.text, 280)
+  const primarySource = sources[0]
+  const sameLessonSources = primarySource.lessonId
+    ? sources.filter(source => source.lessonId === primarySource.lessonId)
+    : sources
+  const source =
+    sameLessonSources.find(source => source.field === "action_step") ??
+    sameLessonSources.find(source => source.field === "curated_transcript") ??
+    sameLessonSources.find(source => source.field !== "maya_context") ??
+    primarySource
+  const recommendation = memberFacingFallbackText(source.text)
   return buildMayaGuidanceResult({
     request,
     sources,
@@ -144,6 +152,19 @@ function deterministicFallback(
       sourceIds: [source.id],
     },
   })
+}
+
+function memberFacingFallbackText(value: string): string {
+  const instructionPrefix =
+    /^(?:help|guide|encourage|ask|teach|support|show)\s+(?:the\s+)?(?:user|member|student)\s+(?:to\s+)?/i
+  const cleaned = clipped(value, 280)
+    .replace(instructionPrefix, "")
+    .replace(/\bher\b/gi, "your")
+    .replace(/\bshe\b/gi, "you")
+    .trim()
+  return cleaned
+    ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+    : "Choose one useful next step."
 }
 
 export async function generateMayaGuidance(input: {

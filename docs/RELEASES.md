@@ -8,7 +8,7 @@ entitlement-gated transcript guidance; six high-level method sources help Maya c
 next action. Older Studio.com navigation, stale product assumptions, unverified claims, hype, and
 time-sensitive social advice were deliberately excluded.
 
-Verification: 1,739 passing tests with 6 intentionally skipped, 23 focused guidance tests, 16
+Verification: 1,740 passing tests with 6 intentionally skipped, 24 focused guidance tests, 16
 desktop and 390x844 Playwright journeys, CI typecheck, changed-file lint, repository invariants,
 production build, and 22/22 creative-freeze checks. Drive originals and all protected creative
 prompts, generation routing, credits, payments, entitlements, and publishing boundaries remain
