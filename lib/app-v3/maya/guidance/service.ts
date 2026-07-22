@@ -20,6 +20,52 @@ export const mayaGuidanceModelOutputSchema = z.object({
 
 export type MayaGuidanceModelOutput = z.infer<typeof mayaGuidanceModelOutputSchema>
 
+type MayaGuidanceErrorTelemetry = {
+  statusCode?: number
+  isRetryable?: boolean
+  providerErrorCode?: string
+  providerErrorType?: string
+}
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+}
+
+function safeProviderField(value: unknown): string | undefined {
+  if (typeof value !== "string" && typeof value !== "number") return undefined
+  return (
+    String(value)
+      .replace(/[^a-zA-Z0-9_.-]/g, "_")
+      .slice(0, 80) || undefined
+  )
+}
+
+export function getMayaGuidanceErrorTelemetry(error: unknown): MayaGuidanceErrorTelemetry {
+  const details = recordValue(error)
+  if (!details) return {}
+  let responseBody: Record<string, unknown> | null = null
+  if (typeof details.responseBody === "string") {
+    try {
+      responseBody = recordValue(JSON.parse(details.responseBody))
+    } catch {
+      responseBody = null
+    }
+  }
+  const providerError = recordValue(responseBody?.error) ?? responseBody
+  return {
+    ...(typeof details.statusCode === "number" ? { statusCode: details.statusCode } : {}),
+    ...(typeof details.isRetryable === "boolean" ? { isRetryable: details.isRetryable } : {}),
+    ...(safeProviderField(providerError?.code)
+      ? { providerErrorCode: safeProviderField(providerError?.code) }
+      : {}),
+    ...(safeProviderField(providerError?.type)
+      ? { providerErrorType: safeProviderField(providerError?.type) }
+      : {}),
+  }
+}
+
 function clipped(value: string, maxLength: number): string {
   const clean = value.replace(/\s+/g, " ").trim()
   return clean.slice(0, maxLength)
@@ -221,6 +267,7 @@ export async function generateMayaGuidance(input: {
   } catch (error) {
     console.error("[maya-guidance] model output unavailable", {
       errorType: error instanceof Error ? error.name : "unknown",
+      ...getMayaGuidanceErrorTelemetry(error),
     })
     return deterministicFallback(input.request, input.sources)
   }

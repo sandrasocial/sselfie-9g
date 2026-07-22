@@ -19,6 +19,7 @@ import {
   buildMayaGuidanceLimitation,
   buildMayaGuidanceResult,
   generateMayaGuidance,
+  getMayaGuidanceErrorTelemetry,
 } from "@/lib/app-v3/maya/guidance/service"
 import type { MayaGuidanceSource } from "@/lib/app-v3/maya/guidance/source-registry"
 
@@ -48,6 +49,26 @@ const sources: MayaGuidanceSource[] = [
 ]
 
 describe("Maya guidance result contract", () => {
+  it("records only privacy-safe provider error metadata", () => {
+    const details = getMayaGuidanceErrorTelemetry({
+      statusCode: 401,
+      isRetryable: false,
+      responseBody: JSON.stringify({
+        error: { code: "invalid_api_key", type: "authentication_error" },
+      }),
+      requestBodyValues: { prompt: "private member question" },
+      apiKey: "must-never-be-logged",
+    })
+
+    expect(details).toEqual({
+      statusCode: 401,
+      isRetryable: false,
+      providerErrorCode: "invalid_api_key",
+      providerErrorType: "authentication_error",
+    })
+    expect(JSON.stringify(details)).not.toMatch(/private member question|must-never-be-logged/)
+  })
+
   it("returns source-backed guidance and a Phase 2 continue action", () => {
     const result = buildMayaGuidanceResult({
       request: {
