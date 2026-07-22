@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from "vitest"
+import { zodToJsonSchema } from "zod-to-json-schema"
 
 const mocks = vi.hoisted(() => ({
   generateText: vi.fn(),
@@ -20,6 +21,7 @@ import {
   buildMayaGuidanceResult,
   generateMayaGuidance,
   getMayaGuidanceErrorTelemetry,
+  mayaGuidanceProviderOutputSchema,
 } from "@/lib/app-v3/maya/guidance/service"
 import type { MayaGuidanceSource } from "@/lib/app-v3/maya/guidance/source-registry"
 
@@ -49,6 +51,12 @@ const sources: MayaGuidanceSource[] = [
 ]
 
 describe("Maya guidance result contract", () => {
+  it("uses a provider-compatible structured-output schema", () => {
+    const providerJsonSchema = JSON.stringify(zodToJsonSchema(mayaGuidanceProviderOutputSchema))
+
+    expect(providerJsonSchema).not.toMatch(/minLength|maxLength|minItems|maxItems/)
+  })
+
   it("records only privacy-safe provider error metadata", () => {
     const details = getMayaGuidanceErrorTelemetry({
       statusCode: 401,
@@ -166,5 +174,25 @@ describe("Maya guidance result contract", () => {
     )
     expect(result.recommendation).not.toMatch(/help the user/i)
     expect(result.sourceRefs).toEqual([expect.objectContaining({ courseId: 1, lessonId: 12 })])
+  })
+
+  it("rejects invalid provider output before building member guidance", async () => {
+    mocks.generateText.mockResolvedValueOnce({
+      output: { recommendation: "", reason: "", sourceIds: [] },
+    })
+
+    const result = await generateMayaGuidance({
+      request: {
+        taskId: "maya-task-invalid-provider-output",
+        job: "learn_next",
+        memberGoal: "I have photos but no plan",
+      },
+      sources,
+      hasQuestionMatch: true,
+      userId: "qa-user",
+    })
+
+    expect(result.recommendation).toBe("Publish one useful post this week.")
+    expect(result.recommendation).not.toBe("")
   })
 })

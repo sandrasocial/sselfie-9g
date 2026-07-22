@@ -18,6 +18,14 @@ export const mayaGuidanceModelOutputSchema = z.object({
   sourceIds: z.array(z.string().min(1).max(160)).min(1).max(4),
 })
 
+// OpenRouter's Anthropic route rejects string and array length keywords in response_format.
+// Keep the provider shape portable, then enforce the strict member-facing contract below.
+export const mayaGuidanceProviderOutputSchema = z.object({
+  recommendation: z.string(),
+  reason: z.string(),
+  sourceIds: z.array(z.string()),
+})
+
 export type MayaGuidanceModelOutput = z.infer<typeof mayaGuidanceModelOutputSchema>
 
 type MayaGuidanceErrorTelemetry = {
@@ -253,7 +261,7 @@ export async function generateMayaGuidance(input: {
         userId: input.userId,
         feature: "maya_guidance",
       }),
-      output: Output.object({ schema: mayaGuidanceModelOutputSchema }),
+      output: Output.object({ schema: mayaGuidanceProviderOutputSchema }),
       system,
       prompt,
       temperature: 0.2,
@@ -262,7 +270,7 @@ export async function generateMayaGuidance(input: {
     return buildMayaGuidanceResult({
       request: input.request,
       sources: input.sources,
-      modelOutput: output,
+      modelOutput: mayaGuidanceModelOutputSchema.parse(output),
     })
   } catch (error) {
     console.error("[maya-guidance] model output unavailable", {
