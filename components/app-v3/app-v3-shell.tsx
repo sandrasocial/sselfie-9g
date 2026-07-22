@@ -125,7 +125,7 @@ function ShellInner({
 }: AppV3ShellProps) {
   const [section, setSection] = useState<AppV3Section>(initialSection)
   const [galleryFilter, setGalleryFilter] = useState<GalleryFilter>("all")
-  const { isOpen: mayaOpen, openWithAesthetic, setActiveSurface } = useConcierge()
+  const { isOpen: mayaOpen, openWithAesthetic, openForLesson, setActiveSurface } = useConcierge()
   const openedInitialAestheticRef = useRef<string | null>(null)
   const limited = accessLevel === "limited"
   const cohort: AppV3AnalyticsCohort =
@@ -353,7 +353,10 @@ function ShellInner({
         ))}
       {section === "library" && (
         <LibraryView
-          onOpenMaya={idea => createIdea("photo", idea)}
+          operatingLayerEnabled={mayaOperatingLayerEnabled}
+          onOpenMaya={target =>
+            typeof target === "string" ? createIdea("photo", target) : openForLesson(target)
+          }
           onOpenCalendar={() => goToSection("calendar")}
         />
       )}

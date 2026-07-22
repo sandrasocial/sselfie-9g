@@ -438,6 +438,7 @@ export function LessonViewerClient({
   // ─── Action step ──────────────────────────────────────────────────────────
   const actionSection = (
     <section
+      id="academy-lesson-action"
       className="space-y-5 pt-6"
       style={{ borderTop: `1px solid ${C.div}` }}
     >
@@ -920,6 +921,8 @@ export function LessonViewerClient({
         }}
       >
         <LessonMayaChat
+          courseId={course.id}
+          lessonId={lesson.id}
           lessonTitle={lesson.title}
           courseTitle={course.title}
           keyTakeaways={keyTakeaways as string[]}

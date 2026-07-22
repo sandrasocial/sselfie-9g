@@ -28,9 +28,9 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(concierge).toContain("{guidedFirstPhoto && (")
     expect(concierge).toContain("Maya is choosing one strong direction")
     expect(concierge).toContain('guidedFirstPhoto ? "hidden" : ""')
-    expect(concierge).toContain(
-      'const workspaceTitle = mayaChoosesVisualWorld ? "Create with Maya" : aesthetic.name'
-    )
+    expect(concierge).toContain("const workspaceTitle = learningTaskActive")
+    expect(concierge).toContain('? "Learn with Maya"')
+    expect(concierge).toContain('? "Create with Maya"')
     expect(concierge).toContain("{workspaceTitle}")
   })
 

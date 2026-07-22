@@ -20,6 +20,7 @@ import type {
   ConciergeContextValue,
   ConciergeSession,
   GraphicTextSpec,
+  LessonMayaTarget,
   OpenConciergeOptions,
   OutputFormat,
 } from "./types"
@@ -34,6 +35,7 @@ import {
   calendarMayaTaskId,
   createMayaContextEnvelope,
   mayaContextMatchesCalendarPost,
+  learningMayaTaskId,
   newMayaTaskId,
   type MayaContextEnvelope,
   type MayaJob,
@@ -345,6 +347,35 @@ export function ConciergeProvider({
       })
     },
     [operatingLayerEnabled, workspaceBusy]
+  )
+
+  const openForLesson = useCallback(
+    (target: LessonMayaTarget) => {
+      if (workspaceBusy) {
+        setIsOpen(true)
+        return
+      }
+      startTransition(() => {
+        if (!operatingLayerEnabled) {
+          openWithAesthetic(GENERAL_MAYA_AESTHETIC, {
+            seed: `Help me use what I learned in ${target.lessonTitle}.`,
+            creationIdea: target.lessonTitle,
+          })
+          return
+        }
+        const taskId = target.taskId || learningMayaTaskId(target.courseId, target.lessonId)
+        const context = createMayaContextEnvelope({
+          taskId,
+          job: "learn_next",
+          surface: "learn",
+          lessonRef: { courseId: target.courseId, lessonId: target.lessonId },
+          startedAt: new Date().toISOString(),
+        })
+        setSession(previous => createCleanSession({ previous, context }))
+        setIsOpen(true)
+      })
+    },
+    [openWithAesthetic, operatingLayerEnabled, workspaceBusy]
   )
 
   const markCalendarTargetAnnounced = useCallback((requestId: string) => {
@@ -676,6 +707,7 @@ export function ConciergeProvider({
       openWithAesthetic,
       updateCurrentSession,
       openForCalendarPost,
+      openForLesson,
       markCalendarTargetAnnounced,
       completeCalendarTarget,
       clearCalendarDelivery,
@@ -700,6 +732,7 @@ export function ConciergeProvider({
       openWithAesthetic,
       updateCurrentSession,
       openForCalendarPost,
+      openForLesson,
       markCalendarTargetAnnounced,
       completeCalendarTarget,
       clearCalendarDelivery,

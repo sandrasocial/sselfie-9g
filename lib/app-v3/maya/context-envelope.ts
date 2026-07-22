@@ -135,6 +135,13 @@ export function calendarMayaTaskId(feedId: number, postId: number): string {
   return `maya-calendar-v1-${feedId}-${postId}`
 }
 
+export function learningMayaTaskId(courseId: number, lessonId: number): string {
+  if (!positiveInteger(courseId) || !positiveInteger(lessonId)) {
+    throw new Error("A learning Maya task requires a valid course and lesson")
+  }
+  return `maya-learning-v1-${courseId}-${lessonId}`
+}
+
 export function mayaContextMatchesCalendarPost(
   context: MayaContextEnvelope | null | undefined,
   feedId: number,

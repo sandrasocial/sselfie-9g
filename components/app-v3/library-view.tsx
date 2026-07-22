@@ -11,7 +11,14 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
-import { finishMayaJob, recordMayaJobHandoff, startMayaJob } from "@/lib/app-v3/maya/job-analytics"
+import {
+  finishMayaJob,
+  recordMayaGuidanceServed,
+  recordMayaJobHandoff,
+  startMayaJob,
+} from "@/lib/app-v3/maya/job-analytics"
+import type { MayaGuidanceResult, MayaGuidanceSourceRef } from "@/lib/app-v3/maya/guidance/types"
+import type { LessonMayaTarget } from "./types"
 
 interface LibraryCourse {
   id: number
@@ -88,6 +95,11 @@ interface LearnRecommendation {
   title: string
   href: string
   reason: string
+  guidanceReason?: string
+  taskId?: string
+  courseId?: number
+  lessonId?: number
+  sourceRefs?: MayaGuidanceSourceRef[]
 }
 
 const LEARN_GOALS: Array<{ id: LearnGoal; label: string; reason: string }> = [
@@ -213,9 +225,11 @@ function ProductTile({
 export function LibraryView({
   onOpenMaya,
   onOpenCalendar,
+  operatingLayerEnabled = false,
 }: {
-  onOpenMaya?: (idea: string) => void
+  onOpenMaya?: (target: LessonMayaTarget | string) => void
   onOpenCalendar?: () => void
+  operatingLayerEnabled?: boolean
 } = {}) {
   const [data, setData] = useState<LibraryData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -223,6 +237,45 @@ export function LibraryView({
   const [recommendation, setRecommendation] = useState<LearnRecommendation | null>(null)
   const [savingPlan, setSavingPlan] = useState(false)
   const [planSaved, setPlanSaved] = useState(false)
+  const [loadingGuidance, setLoadingGuidance] = useState(false)
+
+  async function requestGuidance(goal: LearnGoal, taskId: string) {
+    const startedAt = Date.now()
+    setLoadingGuidance(true)
+    setRecommendation(null)
+    try {
+      const goalLabel = LEARN_GOALS.find(item => item.id === goal)?.label ?? goal
+      const response = await fetch("/api/app-v3/maya/guidance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, job: "learn_next", memberGoal: goalLabel }),
+      })
+      if (!response.ok) throw new Error("Guidance unavailable")
+      const guidance = (await response.json()) as MayaGuidanceResult
+      const lessonSource = guidance.sourceRefs.find(source => source.courseId && source.lessonId)
+      if (!lessonSource?.courseId || !lessonSource.lessonId) {
+        throw new Error("No owned lesson matched")
+      }
+      const nextRecommendation: LearnRecommendation = {
+        type: "course",
+        id: String(lessonSource.lessonId),
+        title: lessonSource.title,
+        href: `/academy/courses/${lessonSource.courseId}/lessons/${lessonSource.lessonId}`,
+        reason: guidance.recommendation,
+        guidanceReason: guidance.reason,
+        taskId,
+        courseId: lessonSource.courseId,
+        lessonId: lessonSource.lessonId,
+        sourceRefs: guidance.sourceRefs,
+      }
+      setRecommendation(nextRecommendation)
+      recordMayaGuidanceServed("learn_next", guidance.sourceRefs.length, Date.now() - startedAt)
+    } catch {
+      setError("Maya couldn't find your next lesson. Try again.")
+    } finally {
+      setLoadingGuidance(false)
+    }
+  }
 
   function loadLibrary() {
     setError(null)
@@ -237,8 +290,19 @@ export function LibraryView({
           setData(nextData)
           if (nextData.learningPlan?.goal && nextData.learningPlan?.recommendation) {
             setSelectedGoal(nextData.learningPlan.goal)
-            setRecommendation(nextData.learningPlan.recommendation)
-            setPlanSaved(true)
+            const saved = nextData.learningPlan.recommendation
+            if (operatingLayerEnabled && (!saved.courseId || !saved.lessonId || !saved.taskId)) {
+              const taskId = startMayaJob({
+                job: "learn_next",
+                surface: "learn",
+                entry: nextData.learningPlan.goal,
+              })
+              void requestGuidance(nextData.learningPlan.goal, taskId)
+              setPlanSaved(false)
+            } else {
+              setRecommendation(saved)
+              setPlanSaved(true)
+            }
           }
         } else setError("Couldn't load your library. Try again.")
       })
@@ -258,9 +322,10 @@ export function LibraryView({
 
   const chooseGoal = (goal: LearnGoal) => {
     if (!data) return
-    startMayaJob({ job: "learn_next", surface: "learn", entry: goal })
+    const taskId = startMayaJob({ job: "learn_next", surface: "learn", entry: goal })
     setSelectedGoal(goal)
-    setRecommendation(recommendationFor(data, goal))
+    if (operatingLayerEnabled) void requestGuidance(goal, taskId)
+    else setRecommendation(recommendationFor(data, goal))
     setPlanSaved(false)
     void trackAnalyticsEvent({ event: "learn_goal_selected", properties: { goal } })
   }
@@ -366,6 +431,19 @@ export function LibraryView({
                   <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">
                     {recommendation.reason}
                   </p>
+                  {recommendation.guidanceReason ? (
+                    <p className="mt-1.5 text-[12px] leading-relaxed text-[#6D6E70]">
+                      {recommendation.guidanceReason}
+                    </p>
+                  ) : null}
+                  {recommendation.sourceRefs?.length ? (
+                    <p className="mt-2 text-[10px] leading-relaxed text-[#818283]">
+                      From{" "}
+                      {Array.from(
+                        new Set(recommendation.sourceRefs.map(source => source.title))
+                      ).join(", ")}
+                    </p>
+                  ) : null}
                   <div className="mt-4 flex flex-wrap gap-2">
                     <a
                       href={recommendation.href}
@@ -388,7 +466,11 @@ export function LibraryView({
                         Plan it in Calendar
                       </button>
                     ) : null}
-                    {onOpenMaya ? (
+                    {onOpenMaya &&
+                    (!operatingLayerEnabled ||
+                      (recommendation.taskId &&
+                        recommendation.courseId &&
+                        recommendation.lessonId)) ? (
                       <button
                         type="button"
                         onClick={() => {
@@ -397,9 +479,21 @@ export function LibraryView({
                             properties: { goal: selectedGoal },
                           })
                           recordMayaJobHandoff("learn_next")
-                          onOpenMaya(
-                            `Help me use what I learned in ${recommendation.title} to create one useful piece of content.`
-                          )
+                          if (operatingLayerEnabled) {
+                            onOpenMaya({
+                              taskId: recommendation.taskId as string,
+                              courseId: recommendation.courseId as number,
+                              lessonId: recommendation.lessonId as number,
+                              lessonTitle: recommendation.title,
+                              memberGoal:
+                                LEARN_GOALS.find(goal => goal.id === selectedGoal)?.label ??
+                                undefined,
+                            })
+                          } else {
+                            onOpenMaya(
+                              `Help me use what I learned in ${recommendation.title} to create one useful piece of content.`
+                            )
+                          }
                         }}
                         className="min-h-11 px-2 text-[11px] text-[#0D0E10] underline underline-offset-4"
                       >
@@ -422,6 +516,11 @@ export function LibraryView({
                     </p>
                   )}
                 </div>
+              ) : null}
+              {loadingGuidance ? (
+                <p role="status" aria-live="polite" className="mt-4 text-[13px] text-[#6D6E70]">
+                  Maya is finding the most useful lesson you own…
+                </p>
               ) : null}
             </div>
           </section>

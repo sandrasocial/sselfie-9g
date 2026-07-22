@@ -261,6 +261,22 @@ export function recordMayaContextMismatch(job: MayaJob, reason: MayaContextMisma
   })
 }
 
+export function recordMayaGuidanceServed(
+  job: MayaJob,
+  sourceCount: number,
+  providerWaitMs: number
+): void {
+  const active = readActiveJob(job)
+  if (!active) return
+  trackMayaJobEvent("suite_maya_guidance_served", {
+    task_id: active.taskId,
+    job: active.job,
+    surface: active.surface,
+    source_count: Math.max(0, Math.min(4, Math.floor(sourceCount))),
+    provider_wait_ms: Math.max(0, Math.floor(providerWaitMs)),
+  })
+}
+
 export function finishMayaJob(input: {
   job: MayaJob
   outcome: MayaJobOutcome

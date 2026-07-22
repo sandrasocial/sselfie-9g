@@ -48,6 +48,38 @@ describe("Maya Learn Coach", () => {
         if (url === "/api/app-v3/library/plan" && init?.method === "POST") {
           return { ok: true, json: async () => ({ success: true }) } as Response
         }
+        if (url === "/api/app-v3/maya/guidance" && init?.method === "POST") {
+          const payload = JSON.parse(String(init.body || "{}"))
+          return {
+            ok: true,
+            json: async () => ({
+              recommendation: "Publish one useful teaching post before you wait for confidence.",
+              reason: "Sandra teaches that showing up creates confidence.",
+              sourceRefs: [
+                {
+                  kind: "lesson",
+                  courseId: 1,
+                  lessonId: 10,
+                  title: "Post Before You Feel Ready",
+                  version: "1234567890abcdef",
+                },
+              ],
+              nextAction: {
+                id: "guidance-action-10",
+                taskId: payload.taskId,
+                kind: "continue_lesson",
+                title: "Continue with Post Before You Feel Ready",
+                reason: "This is the most useful next lesson.",
+                target: { lessonId: 10 },
+                creditCost: 0,
+                requiresConfirmation: false,
+                canUndo: false,
+                idempotencyKey: "maya-action-guidance-lesson-10",
+                status: "recommended",
+              },
+            }),
+          } as Response
+        }
         throw new Error(`Unexpected fetch: ${url}`)
       })
     )
@@ -71,5 +103,31 @@ describe("Maya Learn Coach", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /plan it in calendar/i }))
     expect(onOpenCalendar).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(screen.getByRole("button", { name: /use it with maya/i }))
+    expect(onOpenMaya).toHaveBeenCalledWith(
+      "Help me use what I learned in Personal Brand Masterclass to create one useful piece of content."
+    )
+  })
+
+  it("uses source-backed guidance and hands the exact lesson task to Maya", async () => {
+    const onOpenMaya = vi.fn()
+    const { LibraryView } = await import("@/components/app-v3/library-view")
+
+    render(<LibraryView operatingLayerEnabled onOpenMaya={onOpenMaya} />)
+    expect(await screen.findByRole("heading", { name: /maya coach/i })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /i don't know what to post/i }))
+
+    expect(await screen.findByText("Post Before You Feel Ready")).toBeInTheDocument()
+    expect(screen.getByText(/From Post Before You Feel Ready/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /use it with maya/i }))
+
+    expect(onOpenMaya).toHaveBeenCalledWith(
+      expect.objectContaining({
+        courseId: 1,
+        lessonId: 10,
+        lessonTitle: "Post Before You Feel Ready",
+      })
+    )
   })
 })

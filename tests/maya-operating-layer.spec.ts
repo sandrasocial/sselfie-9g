@@ -209,6 +209,34 @@ if (!runPlaywright) {
             }
             body = { messages: chat.messages, workspace: chat.workspace }
           }
+        } else if (pathname === "/api/app-v3/maya/guidance") {
+          const payload = request.postDataJSON?.() ?? {}
+          body = {
+            recommendation: "Use one honest teaching post to show up before you feel ready.",
+            reason: "Sandra teaches that confidence is created by showing up, not waiting.",
+            sourceRefs: [
+              {
+                kind: "lesson",
+                courseId: 14,
+                lessonId: 140,
+                title: "Post Before You Feel Ready",
+                version: "1234567890abcdef",
+              },
+            ],
+            nextAction: {
+              id: `guidance-${String(payload.taskId || "maya-task-guidance")}`,
+              taskId: String(payload.taskId || "maya-task-guidance"),
+              kind: "continue_lesson",
+              title: "Continue with Post Before You Feel Ready",
+              reason: "This is the most relevant lesson you own.",
+              target: { lessonId: 140 },
+              creditCost: 0,
+              requiresConfirmation: false,
+              canUndo: false,
+              idempotencyKey: `maya-action-guidance-${String(payload.taskId || "task")}`,
+              status: "recommended",
+            },
+          }
         } else if (pathname === "/api/app-v3/maya/memory") {
           body = {
             agentName: "Maya",
@@ -380,7 +408,40 @@ if (!runPlaywright) {
       await expect(page.getByRole("heading", { name: "Maya Coach" })).toBeVisible()
       await page.getByRole("button", { name: "I don't know what to post" }).click()
       await expect(page.getByText("Start here")).toBeVisible()
+      await expect(
+        page.getByRole("heading", { name: "Post Before You Feel Ready", exact: true })
+      ).toBeVisible()
+      await expect(page.getByText(/From Post Before You Feel Ready/i)).toBeVisible()
       await expect(page.getByRole("button", { name: "Use it with Maya" })).toBeVisible()
+    })
+
+    test("keeps a source-backed lesson bound through the Learn to Maya handoff and reload", async ({
+      page,
+    }: {
+      page: any
+    }) => {
+      const maya = page.locator('aside[data-maya-task-id]')
+      await page.getByRole("button", { name: "Learn" }).click()
+      await page.getByRole("button", { name: "I don't know what to post" }).click()
+      await page.getByRole("button", { name: "Use it with Maya" }).click()
+
+      await expect(maya).toHaveAttribute("data-maya-job", "learn_next")
+      await expect(maya).toHaveAttribute("data-maya-surface", "learn")
+      await expect(maya).toHaveAttribute("data-maya-course-id", "14")
+      await expect(maya).toHaveAttribute("data-maya-lesson-id", "140")
+      await expect(page.getByRole("heading", { name: "One useful next step" })).toBeVisible()
+      await expect(page.getByText("Sandra's method")).toBeVisible()
+      await expect(page.getByRole("button", { name: "Preview" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "Attach an inspiration image" })).toHaveCount(0)
+
+      await page.waitForTimeout(300)
+      // App v3 canonicalizes section URLs to /app. Return to the auth-free E2E host
+      // while preserving browser storage, matching the established reload journey below.
+      await page.goto("/e2e/maya-operating-layer")
+      await expect(maya).toHaveAttribute("data-maya-job", "learn_next")
+      await expect(maya).toHaveAttribute("data-maya-course-id", "14")
+      await expect(maya).toHaveAttribute("data-maya-lesson-id", "140")
+      await expect((page as any).__mayaOperatingLayerPaidRequests).toEqual([])
     })
 
     test("keeps the current member shell inside the viewport", async ({ page }: { page: any }) => {

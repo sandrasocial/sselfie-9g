@@ -48,6 +48,7 @@ import {
   type MayaActionDescriptor,
 } from "@/lib/app-v3/maya/action-protocol"
 import { MayaActionCard } from "./maya-action-card"
+import { MayaGuidanceWorkspace } from "./maya-guidance-workspace"
 import type { ConceptCard as ConceptCardData, ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
 import {
   buildCustomModelConceptPrompt,
@@ -2115,7 +2116,15 @@ export function MayaConcierge({
     setSelfieManagerOpen(false)
     setSelfieManagerInitialFocus("face")
   }
-  const workspaceTitle = mayaChoosesVisualWorld ? "Create with Maya" : aesthetic.name
+  const learningTaskActive =
+    operatingLayerEnabled &&
+    session.mayaContext?.job === "learn_next" &&
+    session.mayaContext.surface === "learn"
+  const workspaceTitle = learningTaskActive
+    ? "Learn with Maya"
+    : mayaChoosesVisualWorld
+      ? "Create with Maya"
+      : aesthetic.name
   const openerLine = outputFormat
     ? activeGenerationSource === "trained-model" && outputFormat === "photo"
       ? "Your trained model is ready. Hit create and pick the direction that feels most like you."
@@ -4044,6 +4053,12 @@ export function MayaConcierge({
         data-maya-post-position={
           operatingLayerEnabled ? session.mayaContext?.postPosition : undefined
         }
+        data-maya-course-id={
+          operatingLayerEnabled ? session.mayaContext?.lessonRef?.courseId : undefined
+        }
+        data-maya-lesson-id={
+          operatingLayerEnabled ? session.mayaContext?.lessonRef?.lessonId : undefined
+        }
         data-maya-format={session.outputFormat ?? "none"}
         data-maya-inspiration={inspirationUrl ? "present" : "none"}
         style={
@@ -4162,6 +4177,22 @@ export function MayaConcierge({
             )}
           </div>
         </header>
+
+        {learningTaskActive && session.mayaContext ? (
+          <MayaGuidanceWorkspace
+            key={session.mayaContext.taskId}
+            className="flex-1"
+            request={{
+              taskId: session.mayaContext.taskId,
+              job: "learn_next",
+              ...(session.mayaContext.lessonRef
+                ? { lessonRef: session.mayaContext.lessonRef }
+                : {}),
+            }}
+          />
+        ) : null}
+        {!learningTaskActive ? (
+          <>
 
         {calendarSurfaceActive && session.calendarTarget && (
           <div className="shrink-0 border-b border-[#C5C6C8]/40 bg-white/70 px-5 py-2.5 sm:px-6">
@@ -5608,6 +5639,8 @@ export function MayaConcierge({
             </button>
           </div>
         </div>
+          </>
+        ) : null}
       </aside>
 
       {lightbox && (

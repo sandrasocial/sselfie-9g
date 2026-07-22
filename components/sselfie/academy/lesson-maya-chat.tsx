@@ -2,6 +2,9 @@
 
 import { Inter } from "next/font/google"
 import { useCallback, useRef, useState } from "react"
+import { Markdown } from "@/components/app-v3/markdown"
+import { MayaActionCard } from "@/components/app-v3/maya-action-card"
+import type { MayaGuidanceResult } from "@/lib/app-v3/maya/guidance/types"
 
 const inter = Inter({ subsets: ["latin"], weight: ["300", "500", "600"] })
 
@@ -30,6 +33,8 @@ interface ChatMessage {
 }
 
 interface LessonMayaChatProps {
+  courseId: number
+  lessonId: number
   lessonTitle: string
   courseTitle: string
   keyTakeaways: string[]
@@ -123,8 +128,10 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingText, setStreamingText] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [guidanceResult, setGuidanceResult] = useState<MayaGuidanceResult | null>(null)
 
   const contextPrefixUsedRef = useRef(false)
+  const guidanceUnavailableRef = useRef(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const chips = buildChips(chosenActionLevel, actionStep)
@@ -161,9 +168,38 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
       setInput("")
       setIsStreaming(true)
       setStreamingText("")
+      setGuidanceResult(null)
       scrollToBottom()
 
       try {
+        if (!guidanceUnavailableRef.current) {
+          const guidanceResponse = await fetch("/api/app-v3/maya/guidance", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              taskId: `maya-learning-v1-${props.courseId}-${props.lessonId}`,
+              job: "learn_next",
+              question: userText,
+              lessonRef: { courseId: props.courseId, lessonId: props.lessonId },
+              memberGoal: chosenActionLevel
+                ? (actionStep[chosenActionLevel] ?? lessonTitle)
+                : lessonTitle,
+            }),
+          })
+          if (guidanceResponse.ok) {
+            const guidance = (await guidanceResponse.json()) as MayaGuidanceResult
+            const assistantText = `${guidance.recommendation}\n\n${guidance.reason}`
+            setGuidanceResult(guidance)
+            setMessages((prev) => [...prev, { role: "assistant", content: assistantText }])
+            setStreamingText("")
+            scrollToBottom()
+            return
+          }
+          if (guidanceResponse.status === 404) guidanceUnavailableRef.current = true
+          else throw new Error("Maya couldn't load Sandra's guidance. Try again.")
+        }
+
         const response = await fetch("/api/maya/chat", {
           method: "POST",
           headers: {
@@ -299,12 +335,12 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
                       {msg.content}
                     </p>
                   ) : (
-                    <p
+                    <div
                       className={`${inter.className} text-[13px] leading-[1.75]`}
                       style={{ color: C.ink, fontWeight: 400 }}
                     >
-                      {msg.content}
-                    </p>
+                      <Markdown>{msg.content}</Markdown>
+                    </div>
                   )}
                 </div>
               ))}
@@ -338,6 +374,37 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
                   {error}
                 </p>
               )}
+
+              {guidanceResult ? (
+                <div className="space-y-3">
+                  <div className="border-t pt-3" style={{ borderColor: C.div }}>
+                    <p
+                      className={`${inter.className} text-[9px] uppercase tracking-[0.18em]`}
+                      style={{ color: C.muted, fontWeight: 600 }}
+                    >
+                      Sources
+                    </p>
+                    <p
+                      className={`${inter.className} mt-1 text-[11px] leading-relaxed`}
+                      style={{ color: C.body, fontWeight: 400 }}
+                    >
+                      {Array.from(
+                        new Set(guidanceResult.sourceRefs.map(source => source.title))
+                      ).join(", ")}
+                    </p>
+                  </div>
+                  <MayaActionCard
+                    key={guidanceResult.nextAction.id}
+                    descriptor={guidanceResult.nextAction}
+                    preview="Return to the action you chose in this lesson. Your progress and notes stay here."
+                    onExecute={async () => {
+                      document
+                        .getElementById("academy-lesson-action")
+                        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    }}
+                  />
+                </div>
+              ) : null}
 
               <div ref={messagesEndRef} />
             </div>

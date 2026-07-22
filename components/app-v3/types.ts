@@ -197,6 +197,14 @@ export interface OpenConciergeOptions {
   creationIdea?: string | null
 }
 
+export interface LessonMayaTarget {
+  taskId: string
+  courseId: number
+  lessonId: number
+  lessonTitle: string
+  memberGoal?: string
+}
+
 export type AppV3AnalyticsCohort = "member" | "trial" | "limited" | "admin"
 
 export interface ConciergeContextValue {
@@ -226,6 +234,8 @@ export interface ConciergeContextValue {
   updateCurrentSession: (aesthetic: Aesthetic, opts?: OpenConciergeOptions) => void
   /** Open or restore the task owned by one exact Calendar grid and post. */
   openForCalendarPost: (target: CalendarPostTarget) => void
+  /** Open or restore one source-backed learning task without turning it into a creative brief. */
+  openForLesson: (target: LessonMayaTarget) => void
   /** Marks the Calendar handoff message durable so reload cannot replay it. */
   markCalendarTargetAnnounced: (requestId: string) => void
   /** Records the exact photo Maya placed in the selected Calendar slot. */
