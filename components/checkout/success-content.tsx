@@ -1761,7 +1761,7 @@ export function SuccessContent({
     )
   }
 
-  if (userInfo && !userInfo.hasAccount && !isAuthenticated) {
+  if (userInfo && !userInfo.hasAccount && !isAuthenticated && !isPromptVaultPurchase) {
     return (
       <div className="min-h-screen bg-brand-obsidian">
         <div className="relative h-[40vh] sm:h-[50vh] md:h-[60vh] overflow-hidden">
@@ -1929,7 +1929,7 @@ export function SuccessContent({
       </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16">
-        {!userInfo.hasAccount && !isAuthenticated ? (
+        {!userInfo.hasAccount && !isAuthenticated && !isPromptVaultPurchase ? (
           <>
             <div className="text-center mb-8 sm:mb-12">
               <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.15em] sm:tracking-[0.2em] uppercase text-brand-porcelain mb-3 sm:mb-4 px-2">

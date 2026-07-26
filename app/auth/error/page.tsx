@@ -16,6 +16,7 @@ export default async function ErrorPage({
     sanitizeRedirect(params.next, LIVE_MEMBER_APP_PATH)
   )
   const recoveryHref = `/auth/forgot-password?next=${encodeURIComponent(safeNext)}`
+  const isPromptVaultRecovery = safeNext === "/prompt-vault"
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-[color:var(--app-bg-primary)] p-6">
@@ -29,21 +30,31 @@ export default async function ErrorPage({
           <CardContent className="space-y-5">
             <div className="space-y-2 text-sm leading-6 text-[color:var(--color-smoke)]">
               <p>Your purchase is safe.</p>
-              <p>
-                Password links expire for security. Ask for a fresh one, or open your purchase
-                directly without logging in.
-              </p>
+              {isPromptVaultRecovery ? (
+                <p>
+                  Prompt Vault does not need a password. Open your private access email, or use
+                  purchase access below.
+                </p>
+              ) : (
+                <p>Password links expire for security. Ask for a fresh one below.</p>
+              )}
             </div>
             <div className="grid gap-3">
-              <Link
-                href={recoveryHref}
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-black px-5 text-xs font-medium uppercase tracking-[0.16em] text-white"
-              >
-                Send a fresh password link
-              </Link>
+              {!isPromptVaultRecovery && (
+                <Link
+                  href={recoveryHref}
+                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-black px-5 text-xs font-medium uppercase tracking-[0.16em] text-white"
+                >
+                  Send a fresh password link
+                </Link>
+              )}
               <Link
                 href="/access"
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-black/20 px-5 text-xs font-medium uppercase tracking-[0.16em] text-black"
+                className={
+                  isPromptVaultRecovery
+                    ? "inline-flex min-h-11 items-center justify-center rounded-full bg-black px-5 text-xs font-medium uppercase tracking-[0.16em] text-white"
+                    : "inline-flex min-h-11 items-center justify-center rounded-full border border-black/20 px-5 text-xs font-medium uppercase tracking-[0.16em] text-black"
+                }
               >
                 Open my purchase
               </Link>

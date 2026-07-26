@@ -5,11 +5,26 @@ import { isReferralSignupEligible, trackReferralSignup } from "@/lib/referrals/s
 import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 import { syncUserWithNeon } from "@/lib/user-sync"
 import { NextResponse } from "next/server"
+import {
+  LIVE_MEMBER_APP_PATH,
+  normalizeLegacyStudioRedirect,
+  sanitizeRedirect,
+} from "@/lib/security/url-validator"
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
   const origin = requestUrl.origin
+  const safeNext = normalizeLegacyStudioRedirect(
+    sanitizeRedirect(requestUrl.searchParams.get("next"), LIVE_MEMBER_APP_PATH)
+  )
+
+  const redirectToRecovery = (message: string) => {
+    const errorUrl = new URL("/auth/error", origin)
+    errorUrl.searchParams.set("error", message)
+    errorUrl.searchParams.set("next", safeNext)
+    return NextResponse.redirect(errorUrl)
+  }
 
   console.log("[v0] ===== AUTH CALLBACK ROUTE HIT =====")
   console.log("[v0] Full URL:", requestUrl.toString())
@@ -33,8 +48,7 @@ export async function GET(request: Request) {
 
       if (isPasswordRecovery) {
         console.log("[v0] 🔐 Password recovery detected, redirecting to setup-password")
-        const nextParam = requestUrl.searchParams.get("next") ?? ""
-        const nextSuffix = nextParam ? `?next=${encodeURIComponent(nextParam)}` : ""
+        const nextSuffix = `?next=${encodeURIComponent(safeNext)}`
         return NextResponse.redirect(`${origin}/auth/setup-password${nextSuffix}`)
       }
 
@@ -182,12 +196,14 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/studio`)
     } else {
       console.error("[v0] ❌ Error exchanging code:", error)
-      return NextResponse.redirect(
-        `${origin}/auth/error?error=${encodeURIComponent(error?.message || "Authentication failed")}`,
-      )
+      return redirectToRecovery(error?.message || "Authentication failed")
     }
   }
 
-  console.log("[v0] ⚠️ No code provided in callback, redirecting to home")
-  return NextResponse.redirect(`${origin}/`)
+  const callbackError =
+    requestUrl.searchParams.get("error_description") ||
+    requestUrl.searchParams.get("error") ||
+    "This sign-in link is invalid or has expired."
+  console.log("[v0] ⚠️ No code provided in callback, redirecting to recovery")
+  return redirectToRecovery(callbackError)
 }

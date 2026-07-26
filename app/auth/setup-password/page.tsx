@@ -2,16 +2,15 @@
 
 import type React from "react"
 
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { createBrowserClient } from "@supabase/ssr"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
-import { getSupabaseEnvVars } from "@/lib/env"
 import { LIVE_MEMBER_APP_PATH, normalizeLegacyStudioRedirect, sanitizeRedirect } from "@/lib/security/url-validator"
 
 function SetupPasswordContent() {
@@ -29,34 +28,65 @@ function SetupPasswordContent() {
     sanitizeRedirect(searchParams.get("next"), LIVE_MEMBER_APP_PATH),
   )
 
-  const { url: supabaseUrl, anonKey: supabaseAnonKey } = getSupabaseEnvVars()
-  const supabase =
-    supabaseUrl && supabaseAnonKey ? createBrowserClient(supabaseUrl, supabaseAnonKey) : null
+  const supabase = useMemo(() => {
+    try {
+      return createClient()
+    } catch {
+      return null
+    }
+  }, [])
 
   useEffect(() => {
-    const checkUser = async () => {
-      if (!supabase) {
-        setError("Authentication is temporarily unavailable. Please request a new setup link or contact support.")
-        setCheckingAuth(false)
-        return
-      }
+    if (!supabase) {
+      setError("Authentication is temporarily unavailable. Please request a new setup link or contact support.")
+      setCheckingAuth(false)
+      return
+    }
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+    let active = true
+    let recoveryReady = false
 
-      if (!user) {
-        // Not authenticated, redirect to error page
-        router.push("/auth/error?error=Please use the link from your email")
-        return
-      }
-
-      setUserEmail(user.email || "")
+    const acceptUser = (email?: string | null) => {
+      if (!active) return
+      recoveryReady = true
+      setUserEmail(email || "")
       setCheckingAuth(false)
     }
 
-    checkUser()
-  }, [router, supabase])
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (
+        event === "PASSWORD_RECOVERY" ||
+        event === "SIGNED_IN" ||
+        event === "INITIAL_SESSION"
+      ) {
+        if (session?.user) {
+          acceptUser(session.user.email)
+        }
+      }
+    })
+
+    void supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        acceptUser(data.user.email)
+      }
+    })
+
+    const authTimeout = window.setTimeout(() => {
+      if (!active || recoveryReady) return
+      const errorUrl = `/auth/error?error=${encodeURIComponent(
+        "Please use a fresh link from your email"
+      )}&next=${encodeURIComponent(nextAfterSetup)}`
+      router.replace(errorUrl)
+    }, 3500)
+
+    return () => {
+      active = false
+      window.clearTimeout(authTimeout)
+      subscription.unsubscribe()
+    }
+  }, [nextAfterSetup, router, supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -89,12 +119,20 @@ function SetupPasswordContent() {
         throw updateError
       }
 
+      const completionResponse = await fetch("/api/auth/password-setup-complete", {
+        method: "POST",
+      })
+
+      if (!completionResponse.ok) {
+        console.error("[v0] Password saved but account setup status could not be updated")
+      }
+
       console.log("[v0] Password set successfully, redirecting to:", nextAfterSetup)
 
       router.push(nextAfterSetup)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[v0] Error setting password:", err)
-      setError(err.message || "Failed to set password. Please try again.")
+      setError(err instanceof Error ? err.message : "Failed to set password. Please try again.")
       setLoading(false)
     }
   }

@@ -40,7 +40,7 @@ function ForgotPasswordContent() {
         process.env.NEXT_PUBLIC_SITE_URL ||
         process.env.NEXT_PUBLIC_APP_URL ||
         window.location.origin
-      const redirectUrl = `${siteUrl}/auth/callback?next=${encodeURIComponent(nextAfterReset)}`
+      const redirectUrl = `${siteUrl}/auth/setup-password?next=${encodeURIComponent(nextAfterReset)}`
 
       console.log("[v0] 📧 Sending password reset email to:", email)
       console.log("[v0] 🔗 Redirect URL being sent to Supabase:", redirectUrl)

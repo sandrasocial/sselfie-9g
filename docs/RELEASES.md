@@ -222,3 +222,14 @@ and one confirmed pre-existing quote-style contract mismatch, and a successful T
 build. Authenticated desktop and 390px mobile QA loaded Create with zero browser errors or horizontal
 overflow. The live recommendation used Haiku, logged an estimated `$0.005649` request, and created one
 daily cache row; two subsequent reloads reused it without another AI call.
+
+## 2026-07-26 — Prompt Vault access and password recovery
+
+Removed password setup from Prompt Vault delivery and checkout. Buyers now receive one private Vault
+link with a clear no-login message. Prompt Vault access remains token-based and independent from a
+SSELFIE account.
+
+Repaired the separate SSELFIE account recovery journey. Reset emails now return directly to the
+password page, the browser waits for the Supabase recovery session before showing the form, completed
+password setup is recorded against the authenticated member, and expired or malformed callbacks lead
+to a useful recovery page instead of the homepage.

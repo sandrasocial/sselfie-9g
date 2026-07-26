@@ -17,7 +17,6 @@ import {
   buildAiPhotoshootEmailTags,
   buildAiPhotoshootResendTags,
 } from "@/lib/audience/ai-photoshoot-segment"
-import { generatePasswordSetupLinkForPurchase } from "../shared"
 import type { CheckoutFulfillmentContext } from "../types"
 
 function metadataValue(
@@ -268,11 +267,6 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
           session.customer_details?.name
         )
         const accessUrl = `${productionUrl}/access/prompt-vault/${subscriberRecord.accessToken}`
-        const passwordSetupLink = await generatePasswordSetupLinkForPurchase(
-          userId,
-          customerEmail!,
-          "/prompt-vault"
-        )
         const firstName = getFirstNameForEmail({
           fullName: session.customer_details?.name,
           email: customerEmail!,
@@ -280,7 +274,6 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
         const email = generatePromptVaultDeliveryEmail({
           firstName,
           accessUrl,
-          passwordSetupUrl: passwordSetupLink,
         })
 
         const emailResult = await sendEmail({
