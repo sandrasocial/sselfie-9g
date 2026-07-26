@@ -69,4 +69,50 @@ describe("payment reconciliation payment truth", () => {
       missing: [expect.objectContaining({ stripeId: "in_recovered_123" })],
     })
   })
+
+  it("flags a recorded Starter Kit payment when access was never fulfilled", async () => {
+    listInvoicesMock.mockResolvedValue({ data: [], has_more: false })
+    listCheckoutsMock.mockResolvedValue({
+      data: [
+        {
+          id: "cs_starter_kit_unfulfilled",
+          livemode: true,
+          mode: "payment",
+          payment_status: "paid",
+          amount_total: 3700,
+          created: Math.floor(Date.now() / 1000) - 7200,
+          currency: "usd",
+          payment_intent: "pi_starter_kit_unfulfilled",
+          customer_details: { email: "starter@example.com" },
+          metadata: { product_type: "starter_kit", source: "email" },
+        },
+      ],
+      has_more: false,
+    })
+    sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (query.includes("FROM stripe_payments")) {
+        return [{ id: 1482, user_id: null }]
+      }
+      return []
+    })
+
+    const { GET } = await import("@/app/api/cron/payment-reconciliation/route")
+    const response = await GET(
+      new NextRequest("https://sselfie.ai/api/cron/payment-reconciliation?dryRun=1", {
+        headers: { authorization: "Bearer cron-secret" },
+      })
+    )
+
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      dryRun: true,
+      missing: [
+        expect.objectContaining({
+          kind: "starter_kit_fulfillment",
+          stripeId: "cs_starter_kit_unfulfilled",
+        }),
+      ],
+    })
+  })
 })

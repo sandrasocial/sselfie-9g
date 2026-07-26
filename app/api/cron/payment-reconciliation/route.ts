@@ -12,8 +12,9 @@ export const maxDuration = 300
  *
  * Compares every live-mode payment Stripe collected in the last 48 hours
  * (paid invoices = subscriptions, paid one-time checkout sessions = products)
- * against `stripe_payments` and alerts ssa@ssasocial.com ONLY when money
- * exists in Stripe that the DB never recorded.
+ * against `stripe_payments` and the fulfillment records required for direct
+ * access products. Alerts only when money is missing from the DB or a recorded
+ * payment did not produce customer access.
  *
  * Why: on 2026-06-12 a Stripe API version bump silently changed webhook
  * payload shapes (invoice.subscription moved to
@@ -31,7 +32,7 @@ const WINDOW_HOURS = 48
 const GRACE_MINUTES = 30
 
 type MissingPayment = {
-  kind: "subscription_invoice" | "one_time_checkout"
+  kind: "subscription_invoice" | "one_time_checkout" | "starter_kit_fulfillment"
   stripeId: string
   email: string | null
   amountCents: number
@@ -107,7 +108,7 @@ async function findMissingCheckouts(
       // Fulfillment handlers store stripe_payment_id = payment_intent || session.id
       // and (where present) checkout_session_id = session.id.
       const rows = await sql`
-        SELECT id FROM stripe_payments
+        SELECT id, user_id FROM stripe_payments
         WHERE status IN ('paid', 'succeeded')
           AND (stripe_payment_id = ${session.id}
            OR checkout_session_id = ${session.id}
@@ -126,6 +127,51 @@ async function findMissingCheckouts(
             ? `https://dashboard.stripe.com/payments/${paymentIntentId}`
             : `https://dashboard.stripe.com/checkouts/sessions/${session.id}`,
         })
+        continue
+      }
+
+      if (session.metadata?.product_type === "starter_kit") {
+        const userId = rows[0]?.user_id || null
+        const fulfillment = userId
+          ? await sql`
+              SELECT
+                EXISTS (
+                  SELECT 1
+                  FROM academy_purchase_entitlements
+                  WHERE user_id = ${userId}
+                    AND product_id = 'starter_kit'
+                    AND status = 'active'
+                ) AS has_entitlement,
+                EXISTS (
+                  SELECT 1
+                  FROM freebie_subscribers fs
+                  INNER JOIN users u ON LOWER(u.email) = LOWER(fs.email)
+                  WHERE u.id = ${userId}
+                    AND fs.access_token IS NOT NULL
+                    AND (
+                      fs.source = 'starter-kit-paid'
+                      OR 'starter-kit-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
+                    )
+                ) AS has_access_token
+            `
+          : []
+        const hasStarterKitAccess =
+          Boolean(fulfillment[0]?.has_entitlement) &&
+          Boolean(fulfillment[0]?.has_access_token)
+
+        if (!hasStarterKitAccess) {
+          missing.push({
+            kind: "starter_kit_fulfillment",
+            stripeId: session.id,
+            email: session.customer_details?.email ?? session.customer_email ?? null,
+            amountCents: session.amount_total,
+            currency: session.currency || "usd",
+            paidAt: new Date((session.created || 0) * 1000),
+            dashboardUrl: paymentIntentId
+              ? `https://dashboard.stripe.com/payments/${paymentIntentId}`
+              : `https://dashboard.stripe.com/checkouts/sessions/${session.id}`,
+          })
+        }
       }
     }
     if (!batch.has_more) break
@@ -144,13 +190,13 @@ function buildAlertEmail(missing: MissingPayment[]): {
   text: string
 } {
   const total = missing.reduce((sum, m) => sum + m.amountCents, 0)
-  const subject = `🚨 ${missing.length} Stripe payment${missing.length === 1 ? "" : "s"} missing from the database`
+  const subject = `🚨 ${missing.length} Stripe payment or access issue${missing.length === 1 ? "" : "s"} needs review`
 
   const rowsHtml = missing
     .map(
       m => `
         <tr>
-          <td style="padding:6px 12px;border-bottom:1px solid #E5E5E5;">${m.kind === "subscription_invoice" ? "Subscription renewal" : "One-time purchase"}</td>
+          <td style="padding:6px 12px;border-bottom:1px solid #E5E5E5;">${m.kind === "subscription_invoice" ? "Subscription renewal" : m.kind === "starter_kit_fulfillment" ? "Starter Kit access" : "One-time purchase"}</td>
           <td style="padding:6px 12px;border-bottom:1px solid #E5E5E5;">${m.email || "unknown"}</td>
           <td style="padding:6px 12px;border-bottom:1px solid #E5E5E5;">${formatAmount(m.amountCents, m.currency)}</td>
           <td style="padding:6px 12px;border-bottom:1px solid #E5E5E5;">${m.paidAt.toISOString().slice(0, 16).replace("T", " ")} UTC</td>
@@ -161,11 +207,11 @@ function buildAlertEmail(missing: MissingPayment[]): {
 
   const html = `
     <div style="font-family:Arial,sans-serif;color:#0A0A0A;max-width:640px;">
-      <h2 style="font-weight:600;">Stripe has money the database doesn't know about</h2>
+      <h2 style="font-weight:600;">A Stripe payment or customer access needs review</h2>
       <p>
         Daily reconciliation (source: live Stripe API vs <code>stripe_payments</code>) found
         <strong>${missing.length} paid payment${missing.length === 1 ? "" : "s"}</strong> in the last ${WINDOW_HOURS} hours
-        with no matching database row. Total: <strong>${formatAmount(total, missing[0]?.currency || "usd")}</strong>.
+        with no matching payment row or completed access record. Total: <strong>${formatAmount(total, missing[0]?.currency || "usd")}</strong>.
       </p>
       <table style="border-collapse:collapse;font-size:14px;">
         <tr>
@@ -185,13 +231,13 @@ function buildAlertEmail(missing: MissingPayment[]): {
     </div>`
 
   const text = [
-    `Stripe has money the database doesn't know about.`,
+    `A Stripe payment or customer access needs review.`,
     ``,
-    `${missing.length} paid payment(s) in the last ${WINDOW_HOURS}h with no stripe_payments row (source: live Stripe API vs stripe_payments):`,
+    `${missing.length} paid payment(s) in the last ${WINDOW_HOURS}h with no matching payment row or completed access record:`,
     ``,
     ...missing.map(
       m =>
-        `- ${m.kind === "subscription_invoice" ? "Subscription renewal" : "One-time purchase"} | ${m.email || "unknown"} | ${formatAmount(m.amountCents, m.currency)} | ${m.paidAt.toISOString()} | ${m.dashboardUrl}`
+        `- ${m.kind === "subscription_invoice" ? "Subscription renewal" : m.kind === "starter_kit_fulfillment" ? "Starter Kit access" : "One-time purchase"} | ${m.email || "unknown"} | ${formatAmount(m.amountCents, m.currency)} | ${m.paidAt.toISOString()} | ${m.dashboardUrl}`
     ),
     ``,
     `Likely cause: the Stripe webhook is dropping events. Check Vercel logs for /api/webhooks/stripe, then backfill.`,
@@ -273,7 +319,7 @@ export async function GET(request: NextRequest) {
     // Missing money is an error state even though the cron itself ran fine -
     // log it loudly so it shows up in cron health checks too.
     await cronLogger.error(
-      new Error(`${missing.length} Stripe payment(s) missing from stripe_payments`),
+      new Error(`${missing.length} Stripe payment or access issue(s) need review`),
       summary
     )
 

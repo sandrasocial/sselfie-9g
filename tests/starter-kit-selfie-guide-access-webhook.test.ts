@@ -251,4 +251,45 @@ describe("Starter Kit checkout from Selfie Guide access", () => {
     })
     expect(reviewInsert).toBe(false)
   })
+
+  it("creates a user and fulfills Starter Kit purchases from checkout recovery emails", async () => {
+    const event = constructEventMock()
+    event.id = "evt_starter_kit_email_recovery"
+    event.data.object.id = "cs_starter_kit_email_recovery"
+    event.data.object.metadata.source = "email"
+    event.data.object.metadata.checkout_source = "starter_kit_checkout_recovery"
+    constructEventMock.mockClear()
+    constructEventMock.mockReturnValue(event)
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route")
+
+    const response = await POST(
+      new Request("http://localhost/api/webhooks/stripe", {
+        method: "POST",
+        headers: { "stripe-signature": "sig_test" },
+        body: "{}",
+      }) as any
+    )
+
+    expect(response.status).toBe(200)
+    expect(getOrCreateNeonUserMock).toHaveBeenCalledWith(
+      "auth_starter_kit_user",
+      "starter-kit-buyer@example.com",
+      null
+    )
+    expect(handleStarterKitCheckoutMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        customerEmail: "starter-kit-buyer@example.com",
+        userId: "neon_starter_kit_user",
+        source: "email",
+        isPaymentPaid: true,
+      })
+    )
+
+    const reviewInsert = sqlMock.mock.calls.some(([strings]) => {
+      const query = Array.isArray(strings) ? strings.join(" ") : String(strings)
+      return query.includes("INSERT INTO webhook_events_needs_review")
+    })
+    expect(reviewInsert).toBe(false)
+  })
 })
