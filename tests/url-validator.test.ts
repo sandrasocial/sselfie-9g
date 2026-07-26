@@ -9,6 +9,11 @@ describe("redirect URL validator", () => {
     expect(sanitizeRedirect("/app", "/studio")).toBe("/app")
   })
 
+  it("allows customers to return to Prompt Vault after password recovery", () => {
+    expect(isValidRedirectPath("/prompt-vault")).toBe(true)
+    expect(sanitizeRedirect("/prompt-vault", "/app")).toBe("/prompt-vault")
+  })
+
   it("blocks unsafe external redirects", () => {
     expect(isValidRedirectPath("//evil.example")).toBe(false)
     expect(isValidRedirectPath("https://evil.example/app")).toBe(false)

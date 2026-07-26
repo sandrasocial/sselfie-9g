@@ -13,6 +13,7 @@ const ALLOWED_REDIRECT_PATHS = [
   "/admin",
   "/checkout",
   "/academy",
+  "/prompt-vault",
   "/feed-planner",
   "/maya",
   "/profile",

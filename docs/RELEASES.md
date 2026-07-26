@@ -1,5 +1,16 @@
 # Completed releases
 
+## 2026-07-26 — Expired purchase-link recovery
+
+Replaced the expired authentication-link dead end with clear actions to request a fresh password
+link or open the paid purchase directly. Prompt Vault delivery now leads with direct Vault access,
+keeps password setup optional, and returns password recovery to the buyer's intended product.
+
+Production proof: feature commit `37cfda34`, Vercel deployment
+`dpl_9wcKxX2P1822NQu6pKDY8VSXsrSi`, 1,760 passing tests with 6 intentionally skipped, CI
+typecheck, repository invariants, production build, and live 390x844 recovery-page QA. The affected
+payment and entitlement were verified before a fresh access email and password email were issued.
+
 ## 2026-07-26 — Maya multi-slide creation recovery and Phase 5 readiness
 
 Restored the proven direct creation path for carousels and other multi-slide concepts: one
