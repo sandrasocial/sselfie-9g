@@ -137,7 +137,7 @@ async function findMissingCheckouts(
               SELECT
                 EXISTS (
                   SELECT 1
-                  FROM academy_purchase_entitlements
+                  FROM user_entitlements
                   WHERE user_id = ${userId}
                     AND product_id = 'starter_kit'
                     AND status = 'active'

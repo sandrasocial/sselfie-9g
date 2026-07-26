@@ -91,8 +91,11 @@ describe("payment reconciliation payment truth", () => {
     })
     sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const query = strings.join(" ")
+      if (query.includes("has_entitlement")) {
+        return [{ has_entitlement: false, has_access_token: false }]
+      }
       if (query.includes("FROM stripe_payments")) {
-        return [{ id: 1482, user_id: null }]
+        return [{ id: 1482, user_id: "user-unfulfilled" }]
       }
       return []
     })
@@ -104,6 +107,10 @@ describe("payment reconciliation payment truth", () => {
       })
     )
 
+    const fulfillmentLookup = sqlMock.mock.calls.find(([strings]) =>
+      strings.join(" ").includes("has_entitlement")
+    )
+    expect(fulfillmentLookup?.[0].join(" ")).toContain("FROM user_entitlements")
     await expect(response.json()).resolves.toMatchObject({
       ok: false,
       dryRun: true,
