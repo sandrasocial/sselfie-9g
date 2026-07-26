@@ -84,12 +84,15 @@ describe("generation robustness (2026-07-06 gap closure)", () => {
     }
   })
 
-  it("anchors multi-slide graphics with an in-memory data URL, never a second blob upload", () => {
+  it("keeps each multi-slide background tied to its own brief and the original inspiration", () => {
     const route = read("app/api/app-v3/maya/generate/route.ts")
-    expect(route).toContain("data:image/png;base64,${heroBuffer.toString(\"base64\")}")
+    expect(route).toContain("const inspirationReferenceUrl = job.inspirationReferenceUrl")
+    expect(route).toMatch(
+      /Promise\.all\(\s*graphicJobs\.map\(\(job, index\) => renderGraphicJob\(job, index\)\)\s*\)/
+    )
+    expect(route).not.toContain("data:image/png;base64,${heroBuffer.toString(\"base64\")}")
     expect(route).not.toContain("graphic-hero-${Date.now()}")
-    // A data URL must never leak into the stored prompt record (megabytes of base64).
-    expect(route).toContain("in-memory hero anchor")
+    expect(route).not.toContain("inspirationOverrideUrl")
   })
 
   it("retries once on transient OpenAI failures without stacking content-policy retries", () => {

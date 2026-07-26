@@ -21,6 +21,7 @@ if (!runPlaywright) {
       let generationAttempts = 0
       let calendarApplyAttempts = 0
       let actionJourneyEnabled = false
+      let carouselJourneyEnabled = false
       ;(page as any).__mayaOperatingLayerErrors = browserErrors
       ;(page as any).__mayaOperatingLayerPaidRequests = paidRequests
       ;(page as any).__mayaOperatingLayerPaidRequestIds = paidRequestIds
@@ -28,6 +29,9 @@ if (!runPlaywright) {
       ;(page as any).__mayaOperatingLayerCalendarMutationKeys = calendarMutationKeys
       ;(page as any).__enableMayaActionJourney = () => {
         actionJourneyEnabled = true
+      }
+      ;(page as any).__enableMayaCarouselJourney = () => {
+        carouselJourneyEnabled = true
       }
       page.on("pageerror", (error: Error) => browserErrors.push(error.message))
       page.on("console", (message: any) => {
@@ -84,6 +88,24 @@ if (!runPlaywright) {
           const payload = request.postDataJSON?.() ?? {}
           paidRequestIds.push(String(payload.clientRequestId || ""))
           generationAttempts += 1
+          if (carouselJourneyEnabled) {
+            await route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({
+                imageUrl: "https://example.com/maya-carousel-1.jpg",
+                imageUrls: [
+                  "https://example.com/maya-carousel-1.jpg",
+                  "https://example.com/maya-carousel-2.jpg",
+                  "https://example.com/maya-carousel-3.jpg",
+                ],
+                aiImageId: 991,
+                aiImageIds: [991, 992, 993],
+                newBalance: 97,
+              }),
+            })
+            return
+          }
           if (generationAttempts === 1) {
             await route.fulfill({
               status: 200,
@@ -122,27 +144,74 @@ if (!runPlaywright) {
             : "Maya QA response for the Create task."
           const messageId = `assistant-${Date.now()}`
           const textId = `text-${Date.now()}`
-          const conceptPayload =
-            post && actionJourneyEnabled
+          const conceptPayload = carouselJourneyEnabled
             ? {
-                format: "photo",
+                format: "carousel",
                 concepts: [
                   {
-                    id: `qa-post-${post}`,
-                    title: `Editorial direction for post ${post}`,
-                    description: "A clear, grounded founder portrait for this Calendar post.",
+                    id: "qa-carousel",
+                    title: "Three-part visibility carousel",
+                    description: "Three distinct scenes in one consistent visual world.",
                     brief: {
                       outfit: "Black knit and tailored trousers",
-                      setting: "Window-lit studio",
+                      setting: "Editorial founder world",
                       mood: "Calm and assured",
-                      pose: "Standing naturally beside a desk",
+                      pose: "Natural movement",
                       cameraSpec: "Hasselblad X2D 100C, 55mm",
-                      lighting: "Soft north-facing window light",
+                      lighting: "Soft directional window light",
+                      graphic: {
+                        carouselTitle: "Visibility creates choices",
+                        slides: [
+                          {
+                            number: 1,
+                            heading: "Visibility creates choices",
+                            body: "Start before you feel ready.",
+                            purpose: "hook",
+                            visualConcept: "Founder portrait beside a bright studio window",
+                            imagePromptDirection: "Medium portrait beside a bright studio window",
+                          },
+                          {
+                            number: 2,
+                            heading: "Your story is the strategy",
+                            body: "Let people understand what shaped your work.",
+                            purpose: "value",
+                            visualConcept: "Overhead notebook and coffee detail",
+                            imagePromptDirection: "Overhead notebook and coffee detail",
+                          },
+                          {
+                            number: 3,
+                            heading: "Take one visible step",
+                            body: "Share the useful thing today.",
+                            purpose: "cta",
+                            visualConcept: "Walking full-body frame outside the studio",
+                            imagePromptDirection: "Walking full-body frame outside the studio",
+                          },
+                        ],
+                      },
                     },
                   },
                 ],
               }
-            : null
+            : post && actionJourneyEnabled
+              ? {
+                  format: "photo",
+                  concepts: [
+                    {
+                      id: `qa-post-${post}`,
+                      title: `Editorial direction for post ${post}`,
+                      description: "A clear, grounded founder portrait for this Calendar post.",
+                      brief: {
+                        outfit: "Black knit and tailored trousers",
+                        setting: "Window-lit studio",
+                        mood: "Calm and assured",
+                        pose: "Standing naturally beside a desk",
+                        cameraSpec: "Hasselblad X2D 100C, 55mm",
+                        lighting: "Soft north-facing window light",
+                      },
+                    },
+                  ],
+                }
+              : null
           const toolCallId = `tool-${Date.now()}`
           const streamParts = [
             `data: ${JSON.stringify({ type: "start", messageId })}`,
@@ -706,6 +775,37 @@ if (!runPlaywright) {
         )
         .toBe("Open Maya")
       expect((page as any).__mayaOperatingLayerPaidRequests).toEqual([])
+    })
+
+    test("creates a multi-slide concept in one credit-labelled action and keeps every slide visible", async ({
+      page,
+    }: {
+      page: any
+    }) => {
+      ;(page as any).__enableMayaCarouselJourney()
+
+      await page
+        .getByPlaceholder("A launch photo, a full shoot, a Reel cover…")
+        .fill("Create a three-slide visibility carousel")
+      await page.getByRole("button", { name: "Start with Maya" }).click()
+      await page.getByRole("button", { name: "Show me carousel ideas" }).click()
+      await page.getByRole("button", { name: "No text, just the visual" }).click()
+
+      await expect(page.getByText("Three-part visibility carousel")).toBeVisible()
+      await expect(page.getByRole("button", { name: "Preview" })).toHaveCount(0)
+      const create = page.getByRole("button", { name: "Create this · 3 credits" })
+      await expect(create).toBeVisible()
+      await create.dblclick()
+
+      await expect(page.getByRole("button", { name: "View all slides" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "Download all 3" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "View slide 1 of 3" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "View slide 2 of 3" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "View slide 3 of 3" })).toBeVisible()
+      expect((page as any).__mayaOperatingLayerPaidRequests).toEqual([
+        "POST /api/app-v3/maya/generate",
+      ])
+      expect((page as any).__mayaOperatingLayerPaidRequestIds).toHaveLength(1)
     })
 
     test("runs create both, apply, reload, and undo through one retry-safe action protocol", async ({

@@ -41,7 +41,11 @@ import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getBrandColorThemeColors } from "@/lib/style-presets"
 import type { CalendarPostTarget, OutputFormat } from "@/components/app-v3/types"
 import { resolveCalendarBrandLook } from "@/lib/feed-planner/calendar-brand-look"
-import { finishMayaJob, startMayaJob } from "@/lib/app-v3/maya/job-analytics"
+import {
+  finishMayaJob,
+  recordMayaJobDecision,
+  startMayaJob,
+} from "@/lib/app-v3/maya/job-analytics"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -644,6 +648,7 @@ export default function InstagramFeedView({
 
   const saveVisualDirection = async (data: FeedStyleModalData) => {
     setIsSavingVisualDirection(true)
+    recordMayaJobDecision("improve_grid")
     try {
       await requestCalendarMutation(`/api/feed/${feedId}/update-style`, {
         method: "PATCH",

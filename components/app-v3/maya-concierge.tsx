@@ -39,7 +39,7 @@ import { MemoryModal, type Memory } from "./memory-modal"
 import { EditMode } from "./edit-mode"
 import { AESTHETICS, MAYA_DECIDES_AESTHETIC } from "./aesthetics"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
-import { finishMayaJob } from "@/lib/app-v3/maya/job-analytics"
+import { finishMayaJob, recordMayaJobDecision } from "@/lib/app-v3/maya/job-analytics"
 import { newMayaTaskId } from "@/lib/app-v3/maya/context-envelope"
 import {
   createMayaAction,
@@ -168,6 +168,10 @@ function isGraphicOutputFormat(format: OutputFormat): boolean {
     format === "story-sequence" ||
     format === "carousel"
   )
+}
+
+function isMultiSlideOutput(format: OutputFormat, plannedOutputs: number): boolean {
+  return format === "carousel" || format === "story-sequence" || plannedOutputs > 1
 }
 
 function isStoryGraphicFormat(format: OutputFormat | null | undefined): boolean {
@@ -2656,6 +2660,13 @@ export function MayaConcierge({
       throw new Error(message)
     }
     setCalendarDeliveryError(null)
+    if (data?.captionStatus === "ready" || data?.captionStatus === "preserved") {
+      void trackAnalyticsEvent({
+        event: "calendar_post_ready",
+        properties: { feedId: target.feedId, postId: target.postId, source: "maya_concierge" },
+      })
+      finishMayaJob({ job: "finish_calendar_post", outcome: "completed" })
+    }
     return true
   }
 
@@ -2750,6 +2761,8 @@ export function MayaConcierge({
     const rerun = genState[key]?.status === "done"
     if (inFlightGenerationKeysRef.current.has(key)) return
     inFlightGenerationKeysRef.current.add(key)
+    const activeMayaJob = session?.mayaContext?.job ?? "create_content"
+    recordMayaJobDecision(activeMayaJob)
     let generationRequestId: string | null = null
     let generationStartedAt = 0
     if (targetFormat !== "video" && !canUseCustomModel) {
@@ -5005,8 +5018,13 @@ export function MayaConcierge({
                   canUndo: false,
                   idempotencyKey: creationActionIdempotencyKey,
                 })
+                const isMultiSlideCreation = isMultiSlideOutput(
+                  conceptFormat,
+                  plannedActionOutputs
+                )
                 const actionProtocolOwnsGeneration =
                   operatingLayerEnabled &&
+                  !isMultiSlideCreation &&
                   conceptFormat !== "video" &&
                   !(activeGenerationSource === "trained-model" && conceptFormat === "photo")
                 const generationPreview = actionTarget

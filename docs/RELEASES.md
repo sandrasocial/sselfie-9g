@@ -1,5 +1,20 @@
 # Completed releases
 
+## 2026-07-26 — Maya multi-slide creation recovery and Phase 5 readiness
+
+Restored the proven direct creation path for carousels and other multi-slide concepts: one
+credit-labelled create action now replaces the generic Preview, Continue, and Confirm loop. Each
+slide again renders from its own planned visual role and the member's original inspiration instead
+of reusing slide one as every later slide's background reference. Single-image creation, explicit
+Calendar apply and undo, retry idempotency, Gallery persistence, credits, and publishing boundaries
+remain unchanged.
+
+Phase 5 measurement now records the member's committed creation, grid, and learning decisions and
+finishes a selected Calendar-post job when an existing generated asset and caption are successfully
+applied. Verification includes 1,762 passing tests, 22 desktop and 390x844 Playwright journeys, CI
+typecheck, changed-file lint with zero errors, repository invariants, production build, and 22/22
+creative-freeze checks. Protected prompts and source hashes remain byte-identical.
+
 ## 2026-07-22 — Maya surface simplification
 
 Simplified the Sandra-only Maya operating layer without rebuilding the approved Suite. Create now

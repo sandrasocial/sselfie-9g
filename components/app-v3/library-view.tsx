@@ -14,6 +14,7 @@ import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import {
   finishMayaJob,
   recordMayaGuidanceServed,
+  recordMayaJobDecision,
   recordMayaJobHandoff,
   startMayaJob,
 } from "@/lib/app-v3/maya/job-analytics"
@@ -356,6 +357,7 @@ export function LibraryView({
   const savePlan = async () => {
     if (!selectedGoal || !recommendation || savingPlan) return
     setSavingPlan(true)
+    recordMayaJobDecision("learn_next")
     try {
       const response = await fetch("/api/app-v3/library/plan", {
         method: "POST",

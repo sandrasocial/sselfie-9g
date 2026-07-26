@@ -1238,10 +1238,9 @@ export async function POST(request: NextRequest) {
 
         const renderGraphicJob = async (
           job: AppGraphicRedesignJob,
-          index: number,
-          inspirationOverrideUrl?: string
+          index: number
         ): Promise<Buffer> => {
-          const inspirationReferenceUrl = inspirationOverrideUrl ?? job.inspirationReferenceUrl
+          const inspirationReferenceUrl = job.inspirationReferenceUrl
           const result = await redesignContentSlideToBuffer({
             referenceUrl: job.referenceUrl,
             styleReferenceUrl: style.imageUrl,
@@ -1290,22 +1289,12 @@ export async function POST(request: NextRequest) {
           return result.buffer
         }
 
-        if (graphicJobs.length > 1) {
-          // Hero-anchored like the photoshoot: render slide 1 first, then anchor every other slide
-          // to it (as the shared visual world) so the whole set keeps one outfit/lighting/world and
-          // one consistent person across slides, instead of drifting into a different look each time.
-          // The hero rides as a data: URL (fetch() resolves it in-process): the previous
-          // put() + fetch-back uploaded the same buffer twice and orphaned one
-          // graphic-hero-*.png blob per multi-slide set.
-          const heroBuffer = await renderGraphicJob(graphicJobs[0], 0)
-          const heroDataUrl = `data:image/png;base64,${heroBuffer.toString("base64")}`
-          const restBuffers = await Promise.all(
-            graphicJobs.slice(1).map((job, i) => renderGraphicJob(job, i + 1, heroDataUrl))
-          )
-          buffers = [heroBuffer, ...restBuffers]
-        } else {
-          buffers = await Promise.all(graphicJobs.map((job, index) => renderGraphicJob(job, index)))
-        }
+        // Each slide keeps its own planned visual role. Reusing slide 1 as the reference for every
+        // later slide made inspiration-led carousels collapse into near-identical backgrounds.
+        // The approved style and the member's original inspiration still bind the set together.
+        buffers = await Promise.all(
+          graphicJobs.map((job, index) => renderGraphicJob(job, index))
+        )
       } else if (photoshootJobs.length > 0) {
         buffers = await runPhotoshootHeroAnchoredJobs(photoshootJobs)
       } else {
