@@ -13,9 +13,9 @@ export function generatePromptVaultDeliveryEmail({
   const fallbackUrl = promptVaultLandingUrl()
 
   const vaultButton = passwordSetupUrl
-    ? `<div style="margin:20px 0 10px;">${renderStoneButton("Set Your Password", passwordSetupUrl)}</div>
-       <div style="margin:8px 0 0;">${renderStoneButton("Open Your Prompt Vault", accessUrl, "outline")}</div>`
-    : `<div style="margin:20px 0 0;">${renderStoneButton("Open Your Prompt Vault", accessUrl, "outline")}</div>`
+    ? `<div style="margin:20px 0 10px;">${renderStoneButton("Open Your Prompt Vault", accessUrl)}</div>
+       <div style="margin:8px 0 0;">${renderStoneButton("Set Your Password", passwordSetupUrl, "outline")}</div>`
+    : `<div style="margin:20px 0 0;">${renderStoneButton("Open Your Prompt Vault", accessUrl)}</div>`
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>

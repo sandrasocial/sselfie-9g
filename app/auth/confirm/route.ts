@@ -2,7 +2,11 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { type NextRequest, NextResponse } from "next/server"
 import type { EmailOtpType } from "@supabase/supabase-js"
-import { LIVE_MEMBER_APP_PATH, normalizeLegacyStudioRedirect, sanitizeRedirect } from "@/lib/security/url-validator"
+import {
+  LIVE_MEMBER_APP_PATH,
+  normalizeLegacyStudioRedirect,
+  sanitizeRedirect,
+} from "@/lib/security/url-validator"
 import { syncUserWithNeon } from "@/lib/user-sync"
 
 export async function GET(request: NextRequest) {
@@ -30,13 +34,15 @@ export async function GET(request: NextRequest) {
           },
           setAll(cookiesToSet) {
             try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
             } catch {
               // Ignore - handled by middleware
             }
           },
         },
-      },
+      }
     )
 
     const { data, error } = await supabase.auth.verifyOtp({
@@ -62,9 +68,15 @@ export async function GET(request: NextRequest) {
     }
 
     console.error("[v0] Auth verification error:", error)
-    return NextResponse.redirect(new URL(`/auth/error?error=${encodeURIComponent(error.message)}`, request.url))
+    const errorUrl = new URL("/auth/error", request.url)
+    errorUrl.searchParams.set("error", error.message)
+    errorUrl.searchParams.set("next", safeNext)
+    return NextResponse.redirect(errorUrl)
   }
 
   console.error("[v0] Auth confirm - Missing required parameters")
-  return NextResponse.redirect(new URL("/auth/error?error=Missing authentication token", request.url))
+  const errorUrl = new URL("/auth/error", request.url)
+  errorUrl.searchParams.set("error", "Missing authentication token")
+  errorUrl.searchParams.set("next", safeNext)
+  return NextResponse.redirect(errorUrl)
 }
