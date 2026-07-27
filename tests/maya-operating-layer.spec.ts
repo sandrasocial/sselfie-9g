@@ -16,6 +16,7 @@ if (!runPlaywright) {
       const paidRequestIds: string[] = []
       const calendarMutations: string[] = []
       const calendarMutationKeys: string[] = []
+      const chatHistoryLookups: string[] = []
       const chatStore = new Map<string, any>()
       let activeDraft: any = null
       let generationAttempts = 0
@@ -27,6 +28,7 @@ if (!runPlaywright) {
       ;(page as any).__mayaOperatingLayerPaidRequestIds = paidRequestIds
       ;(page as any).__mayaOperatingLayerCalendarMutations = calendarMutations
       ;(page as any).__mayaOperatingLayerCalendarMutationKeys = calendarMutationKeys
+      ;(page as any).__mayaOperatingLayerChatHistoryLookups = chatHistoryLookups
       ;(page as any).__enableMayaActionJourney = () => {
         actionJourneyEnabled = true
       }
@@ -265,6 +267,7 @@ if (!runPlaywright) {
           }
         } else if (pathname.startsWith("/api/app-v3/maya/chats/")) {
           const id = decodeURIComponent(pathname.slice("/api/app-v3/maya/chats/".length))
+          if (method === "GET") chatHistoryLookups.push(id)
           if (method === "DELETE") {
             chatStore.delete(id)
           } else {
@@ -650,6 +653,7 @@ if (!runPlaywright) {
       const firstCreateTask = await maya.getAttribute("data-maya-task-id")
       expect(firstCreateTask).toMatch(/^maya-/)
       await expect(page.getByText("Maya QA response for the Create task.")).toBeVisible()
+      expect((page as any).__mayaOperatingLayerChatHistoryLookups).not.toContain(firstCreateTask)
       await page.getByRole("button", { name: "Close", exact: true }).click()
 
       await page.getByRole("button", { name: "Calendar" }).click()
@@ -808,7 +812,7 @@ if (!runPlaywright) {
       expect((page as any).__mayaOperatingLayerPaidRequestIds).toHaveLength(1)
     })
 
-    test("runs create both, apply, reload, and undo through one retry-safe action protocol", async ({
+    test("runs one-step create, apply, reload, and undo with retry-safe boundaries", async ({
       page,
     }: {
       page: any
@@ -821,19 +825,17 @@ if (!runPlaywright) {
       await page.getByRole("button", { name: /Create with Maya/i }).click()
       await expect(maya).toHaveAttribute("data-maya-post-id", "708")
 
-      const createAction = page.locator('section[data-maya-action-kind="create_both"]')
-      await expect(createAction).toHaveAttribute("data-maya-action-status", "recommended")
-      await createAction.getByRole("button", { name: "Preview" }).click()
-      await expect(createAction).toContainText("Nothing changes in Calendar")
-      await createAction.getByRole("button", { name: "Cancel" }).click()
-      expect((page as any).__mayaOperatingLayerPaidRequests).toEqual([])
-
-      await createAction.getByRole("button", { name: "Preview" }).click()
-      await createAction.getByRole("button", { name: "Continue" }).click()
-      await expect(createAction).toContainText("1 credit")
-      await createAction.getByRole("button", { name: "Confirm and create" }).click()
-      await expect(createAction.getByRole("alert")).toContainText("Provider unavailable")
-      await createAction.getByRole("button", { name: "Try again" }).click()
+      await expect(
+        page.locator(
+          'section[data-maya-action-kind="create_both"], section[data-maya-action-kind="create_image"]'
+        )
+      ).toHaveCount(0)
+      const create = page.getByRole("button", { name: "Create my photo · 1 credit" })
+      await expect(create).toBeVisible()
+      await expect(page.getByRole("button", { name: "Preview" })).toHaveCount(0)
+      await create.dblclick()
+      await expect(page.getByText("Provider unavailable. Try again safely.")).toBeVisible()
+      await create.click()
 
       await expect(page.getByAltText("Editorial direction for post 8")).toBeVisible()
       expect((page as any).__mayaOperatingLayerPaidRequests).toEqual([
@@ -843,6 +845,7 @@ if (!runPlaywright) {
       const requestIds = (page as any).__mayaOperatingLayerPaidRequestIds
       expect(requestIds).toHaveLength(2)
       expect(requestIds[0]).toBe(requestIds[1])
+      ;(page as any).__mayaOperatingLayerErrors.length = 0
 
       const applyAction = page.locator('section[data-maya-action-kind="apply_to_post"]')
       await expect(applyAction).toHaveAttribute("data-maya-action-status", "recommended")

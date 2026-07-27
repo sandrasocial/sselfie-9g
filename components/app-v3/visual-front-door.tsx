@@ -19,7 +19,11 @@ import { useIdentityReferences } from "./use-identity-references"
 import { MemoryModal } from "./memory-modal"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { startMayaJob, type MayaJobEntry } from "@/lib/app-v3/maya/job-analytics"
-import { detectCreationIntent, intentForFormat } from "@/lib/app-v3/maya/intent-router"
+import {
+  detectCreationIntent,
+  intentForFormat,
+  memberDelegatesFormatChoice,
+} from "@/lib/app-v3/maya/intent-router"
 import type { AppV3GalleryAsset } from "@/lib/app-v3/gallery-assets"
 import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
 
@@ -362,7 +366,11 @@ export function VisualFrontDoor({
   function startFromText() {
     const text = startText.trim()
     const seed = text || "I know I want to create something, but I need Maya to help me choose."
-    const intent = detectCreationIntent(seed, "typed")
+    const detectedIntent = detectCreationIntent(seed, "typed")
+    const intent =
+      detectedIntent.format == null && memberDelegatesFormatChoice(seed)
+        ? intentForFormat(recommendation.format, "typed")
+        : detectedIntent
     const format = intent.format
     trackFirstAction("maya_text_start")
     void trackAnalyticsEvent({

@@ -168,7 +168,7 @@ describe("ConceptCard: editable baked-text preview", () => {
     expect(screen.queryByLabelText("Headline")).not.toBeInTheDocument()
   })
 
-  it("carries her edited words into a regenerate ('Continue this shoot') after a result exists", () => {
+  it("makes a repeat generation explicit about the credit cost and keeps her edited words", () => {
     const onGenerate = vi.fn()
     const { rerender } = render(
       <ConceptCard
@@ -192,7 +192,7 @@ describe("ConceptCard: editable baked-text preview", () => {
         onGenerate={onGenerate}
       />
     )
-    fireEvent.click(screen.getByRole("button", { name: "Continue this shoot" }))
+    fireEvent.click(screen.getByRole("button", { name: "Create another · 1 credit" }))
     expect(onGenerate).toHaveBeenLastCalledWith([
       { index: 0, heading: "Edited headline", body: "There is a simpler way" },
     ])

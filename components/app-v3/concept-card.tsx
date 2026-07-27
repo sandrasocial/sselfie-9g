@@ -476,7 +476,9 @@ export function ConceptCard({
                 disabled={disabled}
                 className="inline-flex min-h-11 items-center justify-center rounded-[8px] border border-[#0D0E10] bg-white px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] transition-colors hover:bg-[#F1F2F2] disabled:opacity-40"
               >
-                Continue this shoot
+                {`Create another · ${estimatedCredits} ${
+                  estimatedCredits === 1 ? "credit" : "credits"
+                }`}
               </button>
               {isVideoDone ? (
                 <button

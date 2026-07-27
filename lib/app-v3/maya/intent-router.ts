@@ -72,6 +72,14 @@ function normalize(input: string): string {
     .trim()
 }
 
+export function memberDelegatesFormatChoice(input: string): boolean {
+  const text = normalize(input)
+  if (!text) return false
+  return /\b(i don t know|i do not know|not sure|you choose|choose for me|maya choose|you decide|decide for me|maya decide|surprise me)\b/i.test(
+    text
+  )
+}
+
 export function intentForFormat(
   format: OutputFormat,
   source: CreationIntentSource,

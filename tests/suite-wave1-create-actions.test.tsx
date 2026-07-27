@@ -205,6 +205,28 @@ describe("Wave 1 Create actions", () => {
     )
   })
 
+  it("uses Maya's visible recommendation when the member explicitly asks her to choose", async () => {
+    renderCreate()
+    await screen.findByText("Your next photo")
+
+    fireEvent.change(screen.getByLabelText("Tell Maya what you need"), {
+      target: { value: "I don't know what to post today. Maya, choose for me." },
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Start with Maya" }))
+
+    expect(mocks.openWithAesthetic).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: "maya-decides" }),
+      expect.objectContaining({
+        format: "photo",
+        creationIntent: {
+          format: "photo",
+          source: "typed",
+          confidence: "high",
+        },
+      })
+    )
+  })
+
   it("visibly disables Create actions while Maya is finishing active work", async () => {
     mocks.workspaceBusy = true
     renderCreate()

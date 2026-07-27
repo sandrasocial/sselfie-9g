@@ -75,6 +75,7 @@ import {
   needsClarificationIntent,
 } from "@/lib/app-v3/maya/intent-router"
 import { shouldContinueCompletedFormatSwitch } from "@/lib/app-v3/maya/next-action"
+import { shouldSkipMayaTaskHistoryLookup } from "@/lib/app-v3/maya/task-hydration"
 import {
   OVERLAY_STYLE_PRESETS,
   resolveOverlayStyle,
@@ -168,10 +169,6 @@ function isGraphicOutputFormat(format: OutputFormat): boolean {
     format === "story-sequence" ||
     format === "carousel"
   )
-}
-
-function isMultiSlideOutput(format: OutputFormat, plannedOutputs: number): boolean {
-  return format === "carousel" || format === "story-sequence" || plannedOutputs > 1
 }
 
 function isStoryGraphicFormat(format: OutputFormat | null | undefined): boolean {
@@ -1055,6 +1052,7 @@ export function MayaConcierge({
       : null
   )
   const hydratedTaskIdRef = useRef<string | null>(appliedTaskIdRef.current)
+  const conciergeMountedAtRef = useRef(Date.now())
   const [taskHydrationEpoch, setTaskHydrationEpoch] = useState(0)
   // The chatId that belongs to the CURRENT session. For one commit after a session switch,
   // the rendered chatId/messages are still the previous thread's - the save effect must not
@@ -1180,7 +1178,13 @@ export function MayaConcierge({
       let cancelled = false
       void (async () => {
         let snapshot = readMayaTaskDraft(taskId)
-        if (!snapshot) {
+        const skipHistoryLookup = shouldSkipMayaTaskHistoryLookup({
+          taskId,
+          sessionStartedAt: session.startedAt,
+          conciergeMountedAt: conciergeMountedAtRef.current,
+          hasLocalSnapshot: Boolean(snapshot),
+        })
+        if (!snapshot && !skipHistoryLookup) {
           const response = await fetch(`/api/app-v3/maya/chats/${encodeURIComponent(taskId)}`)
           if (response.ok) {
             const data = (await response.json().catch(() => null)) as {
@@ -4984,12 +4988,6 @@ export function MayaConcierge({
                 const actionTaskId = session?.mayaContext?.taskId ?? chatId
                 const actionTarget =
                   calendarSurfaceActive && session?.calendarTarget ? session.calendarTarget : null
-                const plannedActionOutputs = Math.max(
-                  1,
-                  concept.brief.graphic?.creativePlan?.outputs?.length ?? 0,
-                  concept.brief.graphic?.slides?.length ?? 0,
-                  concept.brief.graphic?.slideCount ?? 0
-                )
                 const creationActionKind =
                   actionTarget && !actionTarget.caption?.trim() ? "create_both" : "create_image"
                 const creationActionIdempotencyKey = mayaActionIdempotencyKey(
@@ -4998,39 +4996,6 @@ export function MayaConcierge({
                   key,
                   conceptFormat
                 )
-                const creationAction = createMayaAction({
-                  id: `create-${creationActionIdempotencyKey}`,
-                  taskId: actionTaskId,
-                  kind: creationActionKind,
-                  title: actionTarget
-                    ? creationActionKind === "create_both"
-                      ? `Create the photo and caption for post ${actionTarget.position}`
-                      : `Create the photo for post ${actionTarget.position}`
-                    : `Create ${concept.title}`,
-                  reason: actionTarget
-                    ? "This direction matches the Calendar post you selected."
-                    : "This is the direction Maya recommends for your current task.",
-                  target: actionTarget
-                    ? { feedId: actionTarget.feedId, postId: actionTarget.postId }
-                    : undefined,
-                  creditCost: plannedActionOutputs,
-                  requiresConfirmation: true,
-                  canUndo: false,
-                  idempotencyKey: creationActionIdempotencyKey,
-                })
-                const isMultiSlideCreation = isMultiSlideOutput(
-                  conceptFormat,
-                  plannedActionOutputs
-                )
-                const actionProtocolOwnsGeneration =
-                  operatingLayerEnabled &&
-                  !isMultiSlideCreation &&
-                  conceptFormat !== "video" &&
-                  !(activeGenerationSource === "trained-model" && conceptFormat === "photo")
-                const generationPreview = actionTarget
-                  ? `Create this direction for post ${actionTarget.position}. The image is saved to Photos first${creationActionKind === "create_both" ? ", and the existing Calendar caption writer finishes the missing caption when you apply" : ""}. Nothing changes in Calendar until you approve the separate apply action.`
-                  : `Create this direction and save the finished result to Photos.`
-
                 const resultAiImageId = gen.aiImageIds?.[0] ?? gen.aiImageId ?? null
                 const applyIdempotencyKey =
                   actionTarget && latestStyleReferenceUrl
@@ -5080,30 +5045,9 @@ export function MayaConcierge({
                         isGraphicOutputFormat(conceptFormat) && textOverlayMode === "with-text"
                           ? textStyleChoice
                           : null,
-                        editedCopy
+                        editedCopy,
+                        gen.status === "done" ? undefined : creationActionIdempotencyKey
                       )
-                    }
-                    idleAction={
-                      actionProtocolOwnsGeneration ? (
-                        <MayaActionCard
-                          key={creationAction.id}
-                          descriptor={creationAction}
-                          preview={generationPreview}
-                          onExecute={action =>
-                            generateConcept(
-                              key,
-                              concept,
-                              conceptFormat,
-                              isGraphicOutputFormat(conceptFormat) &&
-                                textOverlayMode === "with-text"
-                                ? textStyleChoice
-                                : null,
-                              undefined,
-                              action.idempotencyKey
-                            )
-                          }
-                        />
-                      ) : undefined
                     }
                     onOpen={(urls, startIndex) =>
                       setLightbox({

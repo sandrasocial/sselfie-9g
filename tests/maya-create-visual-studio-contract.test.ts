@@ -96,7 +96,7 @@ describe("Maya Create visual studio contract", () => {
     expect(editMode).toContain("Saved to your Gallery as a new version.")
     expect(card).toContain("FavoriteButton")
     expect(card).toContain("firstDownloadAssetId")
-    expect(card).toContain("Continue this shoot")
+    expect(card).toContain("Create another · ${estimatedCredits}")
     expect(favoriteButton).toContain("/api/app-v3/gallery/favorite")
     expect(favoriteButton).toContain("aria-pressed={isFavorite}")
   })

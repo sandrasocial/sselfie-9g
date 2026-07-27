@@ -7,15 +7,19 @@ import { describe, expect, it } from "vitest"
 const read = (file: string) => fs.readFileSync(path.join(process.cwd(), file), "utf8")
 
 describe("Maya operating layer Phase 5 readiness", () => {
-  it("keeps multi-slide concepts on the proven one-step ConceptCard creation path", () => {
+  it("keeps every creation on the proven one-step ConceptCard path and confirmations on mutations", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
     const conceptCard = read("components/app-v3/concept-card.tsx")
+    const shell = read("components/app-v3/app-v3-shell.tsx")
 
-    expect(concierge).toContain("isMultiSlideCreation")
-    expect(concierge).toContain("!isMultiSlideCreation")
+    expect(concierge).not.toContain("actionProtocolOwnsGeneration")
+    expect(concierge).not.toContain("generationPreview")
     expect(conceptCard).toContain(
       '`Create this · ${estimatedCredits} ${estimatedCredits === 1 ? "credit" : "credits"}`'
     )
+    expect(conceptCard).toContain("Create another · ${estimatedCredits}")
+    expect(concierge).toContain('kind: "apply_to_post"')
+    expect(shell).toContain("close()")
   })
 
   it("renders every graphic slide from its own brief and the original inspiration", () => {

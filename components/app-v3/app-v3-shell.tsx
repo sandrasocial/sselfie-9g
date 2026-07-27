@@ -125,7 +125,13 @@ function ShellInner({
 }: AppV3ShellProps) {
   const [section, setSection] = useState<AppV3Section>(initialSection)
   const [galleryFilter, setGalleryFilter] = useState<GalleryFilter>("all")
-  const { isOpen: mayaOpen, openWithAesthetic, openForLesson, setActiveSurface } = useConcierge()
+  const {
+    isOpen: mayaOpen,
+    openWithAesthetic,
+    openForLesson,
+    setActiveSurface,
+    close,
+  } = useConcierge()
   const openedInitialAestheticRef = useRef<string | null>(null)
   const limited = accessLevel === "limited"
   const cohort: AppV3AnalyticsCohort =
@@ -143,6 +149,7 @@ function ShellInner({
   }, [initialSection])
 
   function goToSection(next: AppV3Section) {
+    close()
     setSection(next)
     saveStoredAppSection(next)
     if (typeof window !== "undefined") {

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   detectCreationIntent,
   intentForFormat,
+  memberDelegatesFormatChoice,
   needsClarificationIntent,
 } from "@/lib/app-v3/maya/intent-router"
 
@@ -33,6 +34,16 @@ describe("app-v3 Maya intent router", () => {
   it("does not pretend unknown requests are photos", () => {
     expect(detectCreationIntent("I need help").format).toBeNull()
     expect(detectCreationIntent("I need help").confidence).toBe("needs_clarify")
+  })
+
+  it("recognizes when the member explicitly asks Maya to choose the format", () => {
+    expect(memberDelegatesFormatChoice("I don't know what to post. Maya, choose for me.")).toBe(
+      true
+    )
+    expect(memberDelegatesFormatChoice("Surprise me with what works best today.")).toBe(true)
+    expect(memberDelegatesFormatChoice("I want a carousel, but help me with the topic.")).toBe(
+      false
+    )
   })
 
   it("creates explicit intents for buttons and starter chips", () => {
