@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const mocks = vi.hoisted(() => ({
@@ -37,6 +37,7 @@ describe("Calendar visual direction", () => {
     expect(screen.getByRole("button", { name: /sandra's favourites/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /upload inspiration/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /describe it myself/i })).toBeInTheDocument()
+    expect(document.querySelectorAll("[data-direction-preview]")).toHaveLength(4)
     expect(screen.queryByRole("button", { name: /dark & moody/i })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: /sandra's favourites/i }))
@@ -148,5 +149,17 @@ describe("Calendar visual direction", () => {
       expect.stringContaining("saved-inspiration.jpg")
     )
     expect(screen.getByRole("button", { name: /save direction/i })).toBeEnabled()
+  })
+
+  it("traps focus and closes the visual-direction dialog with Escape", async () => {
+    const onOpenChange = vi.fn()
+    const { default: FeedStyleModal } = await import("@/components/feed-planner/feed-style-modal")
+
+    render(<FeedStyleModal open onOpenChange={onOpenChange} onConfirm={vi.fn()} mode="new" />)
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Close" })).toHaveFocus())
+    fireEvent.keyDown(window, { key: "Escape" })
+
+    expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 })

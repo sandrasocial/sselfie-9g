@@ -194,6 +194,14 @@ export default function FeedViewScreen({
     revalidateOnFocus: true,
     revalidateOnReconnect: true,
   })
+  const { data: emptyCalendarAvatarData } = useSWR(
+    feedData?.exists === false ? "/api/images?type=avatar&limit=1" : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+    }
+  )
 
   // Normalize a legacy redirected response to its full feed.
   useEffect(() => {
@@ -218,6 +226,17 @@ export default function FeedViewScreen({
 
   // Check if feed exists (latest endpoint returns { exists: false } when no feed)
   const feedExists = feedData?.exists !== false && (feedData?.feed || feedData?.posts)
+  const emptyCalendarProfile = {
+    displayName:
+      typeof personalBrandData?.data?.name === "string" &&
+      personalBrandData.data.name.trim().length > 0
+        ? personalBrandData.data.name.trim()
+        : "Your profile",
+    profileImageUrl:
+      typeof emptyCalendarAvatarData?.images?.[0]?.image_url === "string"
+        ? emptyCalendarAvatarData.images[0].image_url
+        : null,
+  }
 
   // Fetch feed list for selector (only if we have a feed)
   const { mutate: mutateFeedList } = useSWR(feedExists ? "/api/feed/list" : null, fetcher, {
@@ -496,6 +515,11 @@ export default function FeedViewScreen({
 
   // Placeholder state: No feed exists (exists: false from /api/feed/latest)
   if (!feedExists || (!feedIdFromQuery && feedData?.exists === false)) {
+    const firstGridActivityLabel = isPlanningWithMaya
+      ? "Maya is planning your month and drafting captions"
+      : isCreatingManual
+        ? "Creating your blank grid"
+        : undefined
     return (
       <>
         <div className="app-light-panel-text min-h-0 flex-1 overflow-y-auto bg-[color:var(--app-bg)] px-0 py-3 sm:px-4 lg:px-6">
@@ -507,12 +531,16 @@ export default function FeedViewScreen({
               }}
               onStartWithPhotos={() => void handleQuickManualGrid(1)}
               busy={isCreatingManual || isPlanningWithMaya}
+              activityLabel={firstGridActivityLabel}
+              displayName={emptyCalendarProfile.displayName}
+              profileImageUrl={emptyCalendarProfile.profileImageUrl}
             />
             <CalendarMayaWorkspace
               feedId={null}
               selectedPost={null}
               feedSummary={null}
               busy={isCreatingManual || isPlanningWithMaya}
+              activityLabel={firstGridActivityLabel}
               planSettings={calendarPlanSettings}
               onSavePlanSettings={saveCalendarPlanSettings}
               planSettingsOpen={firstPlanSettingsOpen}

@@ -137,7 +137,13 @@ export function CalendarTextStudio({
         <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(300px,0.9fr)_minmax(0,1.1fr)] lg:overflow-hidden">
           <div className="flex items-center justify-center bg-[color:var(--ss-silver)]/28 p-4 sm:p-7 lg:min-h-0">
             <div className="relative aspect-[4/5] w-full max-w-[420px] overflow-hidden rounded-[8px] bg-white shadow-sm">
-              <Image src={bakedUrl ?? cleanImageUrl} alt="Calendar post preview" fill sizes="420px" className="object-cover" />
+              <Image
+                src={bakedUrl ?? cleanImageUrl}
+                alt="Calendar post preview"
+                fill
+                sizes="420px"
+                className="object-cover object-top"
+              />
               {!bakedUrl && spec ? <TextOverlayLayer spec={spec} /> : null}
               {bakedUrl ? <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] text-[color:var(--ss-night)]"><Check size={11} aria-hidden /> Maya render</span> : null}
             </div>

@@ -45,4 +45,24 @@ describe("new-user and Calendar stability contracts", () => {
     expect(postCard).toContain("profileImageUrl?: string | null")
     expect(postCard).toContain("alt={`${displayAccount}'s profile`}")
   })
+
+  it("uses the saved member identity on the first empty Calendar canvas", () => {
+    const screen = read("components/feed-planner/feed-view-screen.tsx")
+    const canvas = read("components/feed-planner/calendar-empty-canvas.tsx")
+
+    expect(screen).toContain('"/api/images?type=avatar&limit=1"')
+    expect(screen).toContain("displayName={emptyCalendarProfile.displayName}")
+    expect(screen).toContain("profileImageUrl={emptyCalendarProfile.profileImageUrl}")
+    expect(canvas).toContain("displayName")
+    expect(canvas).toContain("profileImageUrl")
+    expect(canvas).not.toContain("yourname")
+  })
+
+  it("passes real selected-post generation state into Calendar Maya", () => {
+    const view = read("components/feed-planner/instagram-feed-view.tsx")
+
+    expect(view).toMatch(
+      /activePost[\s\S]*generationStatus:\s*activePost\.generation_status[\s\S]*predictionId:\s*activePost\.prediction_id/
+    )
+  })
 })

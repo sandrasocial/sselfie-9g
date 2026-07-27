@@ -209,7 +209,9 @@ describe("Maya Calendar workspace", () => {
         }}
       />
     )
-    expect(screen.getByText("Post 2 is creating its image. What can we finish meanwhile?")).toBeInTheDocument()
+    expect(
+      screen.getByText("Post 2 is creating its image. What can we finish meanwhile?")
+    ).toBeInTheDocument()
 
     rerender(
       <CalendarMayaWorkspace
@@ -223,7 +225,9 @@ describe("Maya Calendar workspace", () => {
         }}
       />
     )
-    expect(screen.getByText("Post 3 image did not finish. What should I do next?")).toBeInTheDocument()
+    expect(
+      screen.getByText("Post 3 image did not finish. What should I do next?")
+    ).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Retry the image" })).toBeInTheDocument()
 
     rerender(
@@ -232,7 +236,9 @@ describe("Maya Calendar workspace", () => {
         selectedPost={{ id: 4, position: 4, caption: null, hasImage: false }}
       />
     )
-    expect(screen.getByText("Post 4 needs an idea and caption. Where should I start?")).toBeInTheDocument()
+    expect(
+      screen.getByText("Post 4 needs an idea and caption. Where should I start?")
+    ).toBeInTheDocument()
   })
 
   it("sends the current feed visual direction in the deterministic Calendar request", async () => {
@@ -314,6 +320,7 @@ describe("Maya Calendar workspace", () => {
     expect(screen.getByRole("button", { name: "Use Sandra’s favourites" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Upload inspiration" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Describe the look I want" })).toBeInTheDocument()
+    expect(document.querySelectorAll("[data-direction-preview]")).toHaveLength(4)
     expect(
       screen.getByRole("link", { name: /find grid inspiration on pinterest/i })
     ).toHaveAttribute("href", expect.stringContaining("pinterest.com"))
@@ -398,14 +405,13 @@ describe("Maya Calendar workspace", () => {
         selectedPost={null}
         feedSummary={null}
         busy
+        activityLabel="Creating your blank grid"
         onApplyProposal={vi.fn()}
         onUndo={vi.fn()}
       />
     )
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Maya is mapping your month and drafting the captions"
-    )
+    expect(screen.getByRole("status")).toHaveTextContent("Creating your blank grid")
   })
 
   it("offers the four visual-direction paths before asking a new user to build anything", async () => {

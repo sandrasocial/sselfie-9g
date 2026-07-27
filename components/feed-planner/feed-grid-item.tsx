@@ -154,7 +154,7 @@ function renderContent({
         fill
         // Instagram's current profile grid is portrait-first. Keep the crop top-biased so
         // a generated portrait never loses the member's face inside the smaller preview.
-        className="object-cover object-[center_20%]"
+        className="object-cover object-top"
         sizes="(max-width: 768px) 33vw, 311px"
       />
     )

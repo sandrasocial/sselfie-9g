@@ -8,12 +8,22 @@ import { ClarifyCard } from "@/components/app-v3/clarify-card"
 import { Markdown } from "@/components/app-v3/markdown"
 import { CalendarPlanSettingsCard } from "./calendar-plan-settings-card"
 import { CalendarTextStudio } from "./calendar-text-studio"
+import {
+  CalendarDirectionOptions,
+  type CalendarDirectionOption,
+} from "./calendar-direction-options"
 import type { CalendarAgentProposal, CalendarAgentResult } from "@/lib/feed-planner/calendar-agent"
 import type { ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
 import type { CalendarPlanSettings } from "@/lib/feed-planner/calendar-plan-settings"
 import type { FeedVisualDirectionMode } from "./feed-style-modal"
 
 const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
+const MAYA_DIRECTION_OPTIONS = [
+  { mode: "maya", label: "Let Maya decide" },
+  { mode: "curated", label: "Use Sandra’s favourites" },
+  { mode: "inspiration", label: "Upload inspiration" },
+  { mode: "custom", label: "Describe the look I want" },
+] as const satisfies readonly CalendarDirectionOption[]
 
 interface CalendarPostSummary {
   id: number
@@ -52,6 +62,7 @@ interface CalendarMayaWorkspaceProps {
   onApplyProposal: (proposal: CalendarAgentProposal) => Promise<{ undoAvailable: boolean }>
   onUndo: () => Promise<void>
   busy?: boolean
+  activityLabel?: string
   planSettings?: CalendarPlanSettings
   onSavePlanSettings?: (settings: CalendarPlanSettings) => Promise<void>
   planSettingsOpen?: boolean
@@ -215,6 +226,7 @@ export function CalendarMayaWorkspace({
   onApplyProposal,
   onUndo,
   busy = false,
+  activityLabel: externalActivityLabel,
   planSettings,
   onSavePlanSettings,
   planSettingsOpen = false,
@@ -350,17 +362,19 @@ export function CalendarMayaWorkspace({
     [messages]
   )
   const isBusy = busy || status === "thinking" || status === "applying" || status === "syncing"
-  const activityLabel = busy
-    ? feedId === null
-      ? "Maya is mapping your month and drafting the captions"
-      : "Maya is updating this grid"
-    : status === "thinking"
-      ? "Maya is reviewing this grid"
-      : status === "applying"
-        ? "Applying your approved change"
-        : status === "syncing"
-          ? "Syncing the grid"
-          : null
+  const activityLabel =
+    externalActivityLabel ??
+    (busy
+      ? feedId === null
+        ? "Maya is mapping your month and drafting the captions"
+        : "Maya is updating this grid"
+      : status === "thinking"
+        ? "Maya is reviewing this grid"
+        : status === "applying"
+          ? "Applying your approved change"
+          : status === "syncing"
+            ? "Syncing the grid"
+            : null)
 
   async function sendMessage(rawMessage: string) {
     const message = rawMessage.trim()
@@ -601,7 +615,7 @@ export function CalendarMayaWorkspace({
                   alt=""
                   fill
                   sizes="48px"
-                  className="object-cover object-[center_20%]"
+                  className="object-cover object-top"
                 />
               ) : (
                 selectedPost.position
@@ -620,9 +634,9 @@ export function CalendarMayaWorkspace({
                         selectedPost.generationStatus === "generating" ||
                         selectedPost.predictionId
                       ? "Image in progress"
-                  : selectedPost.caption?.trim()
-                    ? "Caption ready · needs a photo"
-                    : "Planned post"}
+                      : selectedPost.caption?.trim()
+                        ? "Caption ready · needs a photo"
+                        : "Planned post"}
               </p>
             </div>
             {onOpenPostDetails ? (
@@ -780,24 +794,12 @@ export function CalendarMayaWorkspace({
             <p className="mt-2 text-[12px] leading-relaxed text-[color:var(--app-text-primary)]">
               Show me how you want this grid to feel. You can change the direction later.
             </p>
-            <div className="mt-3 grid gap-2">
-              {(
-                [
-                  ["maya", "Let Maya decide"],
-                  ["curated", "Use Sandra’s favourites"],
-                  ["inspiration", "Upload inspiration"],
-                  ["custom", "Describe the look I want"],
-                ] as const
-              ).map(([mode, label]) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => onChooseVisualDirection?.(mode)}
-                  className="min-h-11 rounded-[9px] border border-[color:var(--app-glass-border)] bg-[color:var(--app-surface)] px-3 text-left text-[12px] font-medium text-[color:var(--app-text-primary)] transition-colors hover:border-[color:var(--app-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-text-primary)]"
-                >
-                  {label}
-                </button>
-              ))}
+            <div className="mt-3">
+              <CalendarDirectionOptions
+                compact
+                onSelect={mode => onChooseVisualDirection?.(mode)}
+                options={MAYA_DIRECTION_OPTIONS}
+              />
             </div>
             <a
               href="https://www.pinterest.com/search/pins/?q=instagram%20grid%20inspiration"

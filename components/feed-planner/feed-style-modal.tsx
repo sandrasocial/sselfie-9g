@@ -6,13 +6,40 @@ import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-upload"
+import { useAccessibleModal } from "@/components/app-v3/use-accessible-modal"
 import useSWR from "swr"
 import { CURATED_FEED_STYLE_MAP, type CuratedFeedStyleName } from "@/lib/style-presets"
 import type { FeedVisualDirectionMode } from "@/lib/feed-planner/visual-direction"
+import {
+  CalendarDirectionOptions,
+  type CalendarDirectionOption,
+} from "./calendar-direction-options"
 
 // Feed style examples (V2 - 7 curated styles)
 // V1 code removed - V2 is always enabled
 const FEED_EXAMPLES = CURATED_FEED_STYLE_MAP
+const FEED_DIRECTION_OPTIONS = [
+  {
+    mode: "maya",
+    label: "Maya decides",
+    help: "She uses what she already knows about you and chooses the strongest look for this month.",
+  },
+  {
+    mode: "curated",
+    label: "Sandra's favourites",
+    help: "Choose from the current looks I have saved for SSELFIE grids.",
+  },
+  {
+    mode: "inspiration",
+    label: "Upload inspiration",
+    help: "Show Maya a grid or photo you love. She follows the mood, light and colour, never someone else’s face.",
+  },
+  {
+    mode: "custom",
+    label: "Describe it myself",
+    help: "Say what you like in normal words. Maya will turn it into a clear look.",
+  },
+] as const satisfies readonly CalendarDirectionOption[]
 
 export type FeedStyle = CuratedFeedStyleName
 export type { FeedVisualDirectionMode } from "@/lib/feed-planner/visual-direction"
@@ -287,12 +314,20 @@ export default function FeedStyleModal({
 
   const handleInspirationUpload = async (file: File) => {
     setInspirationError(null)
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setInspirationError("Choose a JPEG, PNG or WebP image.")
+      return
+    }
     setIsUploadingInspiration(true)
     try {
       const form = new FormData()
       form.append("file", file)
       form.append("slot", "inspiration")
-      const response = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
+      const response = await fetch("/api/app-v3/upload-selfie", {
+        method: "POST",
+        credentials: "include",
+        body: form,
+      })
       const data = (await response.json().catch(() => null)) as {
         url?: string
         error?: string
@@ -329,6 +364,18 @@ export default function FeedStyleModal({
   useEffect(() => {
     setPortalTarget(document.body)
   }, [])
+  const { dialogRef, initialFocusRef } = useAccessibleModal(open && portalTarget !== null, () =>
+    onOpenChange(false)
+  )
+
+  const curatedPreviewUrl =
+    ((stylePreviewData?.styles || []) as FeedStylePreviewOption[]).find(
+      item => item.name === selectedStyle
+    )?.previewImageUrl ||
+    ((stylePreviewData?.styles || []) as FeedStylePreviewOption[]).find(item =>
+      Boolean(item.previewImageUrl)
+    )?.previewImageUrl ||
+    null
 
   if (!open || !portalTarget) return null
 
@@ -352,12 +399,14 @@ export default function FeedStyleModal({
             onClick={e => e.stopPropagation()}
           >
             <div
+              ref={dialogRef}
               role="dialog"
               aria-modal="true"
               aria-labelledby="feed-style-modal-title"
               className="relative flex max-h-[calc(100dvh-0.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-t-[24px] border border-[#C5C6C8]/65 bg-[#F8FAFA] text-[#0D0E10] shadow-[0_30px_100px_rgba(13,14,16,0.24)] sm:max-h-[92dvh] sm:rounded-[24px]"
             >
               <button
+                ref={initialFocusRef}
                 type="button"
                 onClick={() => onOpenChange(false)}
                 className="absolute right-4 top-4 z-10 flex min-h-11 items-center justify-center rounded-full border border-[#C5C6C8] bg-white px-4 text-[#4F5052] transition-colors hover:border-[#0D0E10]/45 hover:text-[#0D0E10]"
@@ -391,57 +440,16 @@ export default function FeedStyleModal({
                       >
                         Choose one starting point
                       </p>
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        {(
-                          [
-                            [
-                              "maya",
-                              "Maya decides",
-                              "She uses what she already knows about you and chooses the strongest look for this month.",
-                            ],
-                            [
-                              "curated",
-                              "Sandra's favourites",
-                              "Choose from the current looks I have saved for SSELFIE grids.",
-                            ],
-                            [
-                              "inspiration",
-                              "Upload inspiration",
-                              "Show Maya a grid or photo you love. She follows the mood, light and colour, never someone else’s face.",
-                            ],
-                            [
-                              "custom",
-                              "Describe it myself",
-                              "Say what you like in normal words. Maya will turn it into a clear look.",
-                            ],
-                          ] as const
-                        ).map(([value, label, help]) => {
-                          const selected = directionMode === value
-                          return (
-                            <button
-                              key={value}
-                              type="button"
-                              aria-pressed={selected}
-                              onClick={() => {
-                                setDirectionMode(value)
-                                setInspirationError(null)
-                              }}
-                              className={`min-h-[6.25rem] rounded-[14px] border p-4 text-left transition-[border-color,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10] focus-visible:ring-offset-2 ${
-                                selected
-                                  ? "border-[#0D0E10] bg-white"
-                                  : "border-[#C5C6C8]/70 bg-white/70 hover:border-[#818283]"
-                              }`}
-                            >
-                              <span className="block text-[14px] font-medium text-[#0D0E10]">
-                                {label}
-                              </span>
-                              <span className="mt-1.5 block text-[11px] leading-relaxed text-[#6D6E70]">
-                                {help}
-                              </span>
-                            </button>
-                          )
-                        })}
-                      </div>
+                      <CalendarDirectionOptions
+                        selectedMode={directionMode}
+                        curatedPreviewUrl={curatedPreviewUrl}
+                        inspirationImageUrl={inspirationImageUrl}
+                        onSelect={value => {
+                          setDirectionMode(value)
+                          setInspirationError(null)
+                        }}
+                        options={FEED_DIRECTION_OPTIONS}
+                      />
                     </section>
 
                     {directionMode === "maya" ? (
@@ -563,7 +571,9 @@ export default function FeedStyleModal({
                           <p className="text-[10px] uppercase tracking-[0.2em] text-[#6D6E70]">
                             Sandra’s favourites
                           </p>
-                          <p className="text-[10px] text-[#818283]">Updated from the saved preview library</p>
+                          <p className="text-[10px] text-[#818283]">
+                            Updated from the saved preview library
+                          </p>
                         </div>
                         <div className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-7 sm:px-7 md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0">
                           {Object.entries(FEED_EXAMPLES).map(([key, style]) => {
@@ -587,12 +597,26 @@ export default function FeedStyleModal({
                               >
                                 {preview?.previewImageUrl ? (
                                   <div className="relative mb-3 aspect-[3/4] overflow-hidden rounded-[10px] bg-[#F8FAFA]">
-                                    <Image src={preview.previewImageUrl} alt={`${style.name} grid preview`} fill className="object-cover object-top" sizes="288px" />
+                                    <Image
+                                      src={preview.previewImageUrl}
+                                      alt={`${style.name} grid preview`}
+                                      fill
+                                      className="object-cover object-top"
+                                      sizes="288px"
+                                    />
                                   </div>
                                 ) : (
                                   <div className="mb-3 grid grid-cols-3 gap-1.5 rounded-[10px] bg-[#F8FAFA] p-1.5">
                                     {style.grid.map((type, idx) => (
-                                      <span key={idx} aria-hidden className="aspect-[3/4] rounded-[5px] border border-[#0D0E10]/5" style={{ backgroundColor: type === "selfie" ? style.colors[0] : style.colors[1] }} />
+                                      <span
+                                        key={idx}
+                                        aria-hidden
+                                        className="aspect-[3/4] rounded-[5px] border border-[#0D0E10]/5"
+                                        style={{
+                                          backgroundColor:
+                                            type === "selfie" ? style.colors[0] : style.colors[1],
+                                        }}
+                                      />
                                     ))}
                                   </div>
                                 )}

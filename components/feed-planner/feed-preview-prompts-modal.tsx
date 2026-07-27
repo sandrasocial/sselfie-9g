@@ -62,7 +62,13 @@ export default function FeedPreviewPromptsModal({
                     </div>
                     {post.image_url && (
                       <div className="w-12 h-12 rounded-lg overflow-hidden border border-stone-200">
-                        <Image src={post.image_url} alt={`Post ${post.position}`} width={48} height={48} className="object-cover w-full h-full" />
+                        <Image
+                          src={post.image_url}
+                          alt={`Post ${post.position}`}
+                          width={48}
+                          height={48}
+                          className="h-full w-full object-cover object-top"
+                        />
                       </div>
                     )}
                   </div>

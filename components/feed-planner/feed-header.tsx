@@ -582,7 +582,7 @@ export default function FeedHeader({
                   src={profileImageUrl as string}
                   alt={`${displayName}'s profile`}
                   fill
-                  className="object-cover object-[center_20%]"
+                  className="object-cover object-top"
                   sizes="(max-width: 768px) 80px, 128px"
                   style={{ borderRadius: "50%" }}
                 />
@@ -710,7 +710,7 @@ export default function FeedHeader({
                         alt=""
                         fill
                         sizes="56px"
-                        className="object-cover object-[center_20%]"
+                        className="object-cover object-top"
                       />
                     ) : (
                       highlight.title?.charAt(0).toUpperCase() || "H"

@@ -41,11 +41,8 @@ import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getBrandColorThemeColors } from "@/lib/style-presets"
 import type { CalendarPostTarget, OutputFormat } from "@/components/app-v3/types"
 import { resolveCalendarBrandLook } from "@/lib/feed-planner/calendar-brand-look"
-import {
-  finishMayaJob,
-  recordMayaJobDecision,
-  startMayaJob,
-} from "@/lib/app-v3/maya/job-analytics"
+import { finishMayaJob, recordMayaJobDecision, startMayaJob } from "@/lib/app-v3/maya/job-analytics"
+import { useAccessibleModal } from "@/components/app-v3/use-accessible-modal"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -118,6 +115,12 @@ export default function InstagramFeedView({
   }, [blueprintState])
   const [bioText, setBioText] = useState("")
   const [isSavingBio, setIsSavingBio] = useState(false)
+  const { dialogRef: bioDialogRef, initialFocusRef: bioInitialFocusRef } = useAccessibleModal(
+    showBioModal,
+    () => {
+      if (!isSavingBio) setShowBioModal(false)
+    }
+  )
   const [showHighlightsModal, setShowHighlightsModal] = useState(false)
   const [selectedHighlightId, setSelectedHighlightId] = useState<number | null>(null)
   const [initialHighlightTitle, setInitialHighlightTitle] = useState<string | null>(null)
@@ -888,6 +891,8 @@ export default function InstagramFeedView({
                 scheduledAt: activePost.scheduled_at ?? null,
                 hasImage: Boolean(activePost.image_url),
                 imageUrl: activePost.image_url ?? null,
+                generationStatus: activePost.generation_status ?? null,
+                predictionId: activePost.prediction_id ?? null,
               }
             : null
         }
@@ -1158,8 +1163,10 @@ export default function InstagramFeedView({
               aria-label="Close bio editor"
               onClick={() => !isSavingBio && setShowBioModal(false)}
             />
-            <dialog
-              open
+            <div
+              ref={bioDialogRef}
+              role="dialog"
+              aria-modal="true"
               aria-label="Edit bio"
               className="relative z-[1] m-0 w-full max-w-md space-y-4 rounded-[20px] border border-[color:var(--app-glass-border)] bg-white p-6 text-[color:var(--app-text-primary)] shadow-[0_24px_70px_rgba(61,56,48,0.16)]"
             >
@@ -1167,17 +1174,17 @@ export default function InstagramFeedView({
                 className="text-lg font-light uppercase tracking-[0.12em]"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
-                {isSavingBio ? "Creating Your Bio" : bioText ? "Edit Bio" : "Create Bio"}
+                {isSavingBio ? "Creating your bio" : bioText ? "Edit bio" : "Create bio"}
               </h2>
               {isSavingBio ? (
                 <div className="flex flex-col items-center justify-center py-8 space-y-4">
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-[color:var(--app-glass-border)] border-t-[color:var(--app-text-primary)]" />
                   <div className="text-center space-y-2">
                     <p className="text-sm font-medium text-[color:var(--app-text-primary)]">
-                      I&apos;m crafting your perfect bio...
+                      Maya is writing from your saved brand details.
                     </p>
                     <p className="text-xs text-[color:var(--app-text-secondary)]">
-                      This will just take a moment.
+                      You can review every word before saving.
                     </p>
                   </div>
                 </div>
@@ -1202,6 +1209,7 @@ export default function InstagramFeedView({
               )}
               <div className="flex flex-wrap justify-end gap-2">
                 <button
+                  ref={bioInitialFocusRef}
                   type="button"
                   onClick={() => setShowBioModal(false)}
                   disabled={isSavingBio}
@@ -1225,11 +1233,11 @@ export default function InstagramFeedView({
                     disabled={!bioText.trim()}
                     className="min-h-11 rounded-[8px] bg-[color:var(--app-text-primary)] px-4 text-sm uppercase tracking-[0.16em] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Save
+                    Save bio
                   </button>
                 )}
               </div>
-            </dialog>
+            </div>
           </div>
         )}
 

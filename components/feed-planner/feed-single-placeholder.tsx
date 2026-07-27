@@ -487,7 +487,7 @@ export default function FeedSinglePlaceholder({
               <img
                 src={displayImageUrl}
                 alt="Generated post"
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover object-top"
                 onError={(e) => {
                   console.error("[Feed Single Placeholder] Image load error:", displayImageUrl)
                   console.error("[Feed Single Placeholder] Error event:", e)

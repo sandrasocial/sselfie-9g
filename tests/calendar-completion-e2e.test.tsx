@@ -84,7 +84,8 @@ describe("Calendar completion contract", () => {
     expect(guide).toContain('data-guide-demo="ready-to-post"')
     expect(guide).toContain("sticky bottom-0")
     expect(gridItem).toContain("aspect-[3/4]")
-    expect(gridItem).toContain("object-[center_20%]")
+    expect(gridItem).toContain("object-top")
+    expect(gridItem).not.toContain("object-[center_20%]")
   })
 
   it("adds rows through an owner-scoped endpoint and makes saved highlights interactive", () => {

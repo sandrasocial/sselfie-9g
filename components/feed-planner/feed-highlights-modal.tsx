@@ -400,7 +400,7 @@ export default function FeedHighlightsModal({
                               src={asset.thumbnailUrl || asset.url}
                               alt=""
                               fill
-                              className="object-cover object-[center_20%]"
+                              className="object-cover object-top"
                               sizes="120px"
                             />
                             {chosen ? (
@@ -478,7 +478,7 @@ export default function FeedHighlightsModal({
                       src={previewUrl}
                       alt="Story preview"
                       fill
-                      className="object-cover object-[center_20%]"
+                      className="object-cover object-top"
                       sizes="272px"
                     />
                   ) : (

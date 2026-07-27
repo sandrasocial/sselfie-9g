@@ -1,15 +1,22 @@
 "use client"
 
+import Image from "next/image"
 import { Plus } from "lucide-react"
 
 export function CalendarEmptyCanvas({
   onPlanWithMaya,
   onStartWithPhotos,
   busy = false,
+  activityLabel,
+  displayName = "Your profile",
+  profileImageUrl = null,
 }: {
   onPlanWithMaya: () => void
   onStartWithPhotos: () => void
   busy?: boolean
+  activityLabel?: string
+  displayName?: string
+  profileImageUrl?: string | null
 }) {
   return (
     <section
@@ -18,17 +25,29 @@ export function CalendarEmptyCanvas({
     >
       <header className="border-b border-[color:var(--app-glass-border)] px-4 pb-5 pt-5 sm:px-7 sm:pt-7">
         <div className="flex items-start gap-5 sm:gap-8">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] sm:h-24 sm:w-24">
-            <span className="text-[10px] text-[color:var(--app-text-muted)]">Photo</span>
+          <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--app-glass-border)] bg-[color:var(--app-btn-secondary-bg)] sm:h-24 sm:w-24">
+            {profileImageUrl ? (
+              <Image
+                src={profileImageUrl}
+                alt={`${displayName}'s profile`}
+                fill
+                sizes="96px"
+                className="object-cover object-top"
+              />
+            ) : (
+              <span className="text-[10px] text-[color:var(--app-text-muted)]">
+                Add profile photo
+              </span>
+            )}
           </div>
           <div className="min-w-0 flex-1 pt-1">
             <div className="flex items-center gap-2">
               <h1 className="truncate text-[18px] font-medium text-[color:var(--app-text-primary)]">
-                yourname
+                {displayName}
               </h1>
             </div>
             <p className="mt-3 text-[13px] font-medium text-[color:var(--app-text-primary)]">
-              Your name
+              Your Instagram preview
             </p>
             <p className="mt-1 max-w-[34ch] text-[13px] leading-relaxed text-[color:var(--app-text-secondary)]">
               Your bio and visual story will take shape here.
@@ -66,7 +85,6 @@ export function CalendarEmptyCanvas({
       <div className="grid grid-cols-3 gap-[2px] bg-[color:var(--app-bg)] p-[2px]">
         {Array.from({ length: 9 }, (_, index) => {
           const position = index + 1
-          const liveStep = ["Planning", "Writing", "Styling"][index]
           return (
             <div
               key={position}
@@ -83,10 +101,7 @@ export function CalendarEmptyCanvas({
               <span className="absolute right-2 top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-white/75 px-1 text-[9px] text-[color:var(--app-text-primary)]">
                 {position}
               </span>
-              <span className="absolute bottom-2 left-2 text-[8px] uppercase tracking-[0.12em] text-[color:var(--app-text-secondary)]">
-                {busy ? liveStep || "Waiting" : "Planned"}
-              </span>
-              {busy && liveStep ? (
+              {busy ? (
                 <span className="absolute inset-0 animate-pulse bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.55),transparent)] motion-reduce:animate-none" />
               ) : null}
             </div>
@@ -98,7 +113,7 @@ export function CalendarEmptyCanvas({
           role="status"
           className="border-t border-[color:var(--app-glass-border)] px-4 py-3 text-center text-[11px] text-[color:var(--app-text-secondary)]"
         >
-          Maya is shaping your first posts here. This grid will update when the plan is ready.
+          {activityLabel || "Creating your grid"}
         </p>
       ) : null}
       <div className="space-y-2 px-4 py-5 text-center sm:px-7">
@@ -115,7 +130,7 @@ export function CalendarEmptyCanvas({
           disabled={busy}
           className="mt-2 min-h-12 w-full rounded-full bg-[color:var(--app-btn-primary-bg)] px-5 text-[12px] font-medium text-[color:var(--app-btn-primary-text)] transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto"
         >
-          {busy ? "Creating your grid…" : "Choose my visual direction"}
+          {busy ? "Working…" : "Choose my visual direction"}
         </button>
         <button
           type="button"
