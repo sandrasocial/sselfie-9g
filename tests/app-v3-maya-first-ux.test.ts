@@ -221,7 +221,7 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).toContain("scrollThreadToBottom()")
   })
 
-  it("makes continuing old Maya sessions an explicit choice", () => {
+  it("resumes the current Maya session directly from the floating launcher", () => {
     const context = read("components/app-v3/concierge-context.tsx")
     const launcher = read("components/app-v3/maya-floating-launcher.tsx")
     const concierge = read("components/app-v3/maya-concierge.tsx")
@@ -234,11 +234,23 @@ describe("Maya-first Suite creation UX", () => {
     // The fresh id also syncs sessionChatIdRef so the save effect can't persist a stale
     // thread under the new session (start-new resurrection bug, 2026-07-06).
     expect(concierge).toContain("setChatId(freshChatId)")
-    expect(launcher).toContain("Start new")
-    expect(launcher).toContain("Resume current")
-    expect(launcher).toContain("View past chats")
-    expect(launcher).toContain("open()")
+    expect(launcher).toContain("operatingLayerEnabled || hasSavedSession")
     expect(launcher).toContain("openFresh()")
+    expect(launcher).not.toContain("Resume current")
+    expect(launcher).not.toContain("Start new")
+    expect(launcher).not.toContain("View past chats")
+    expect(launcher).not.toContain("maya-launcher-choices")
+  })
+
+  it("routes Gallery empty-state creation into Maya's recommended first-photo path", () => {
+    const shell = read("components/app-v3/app-v3-shell.tsx")
+
+    expect(shell).toContain("function createFirstPhotoFromGallery()")
+    expect(shell).toContain("openWithAesthetic(MAYA_DECIDES_AESTHETIC")
+    expect(shell).toContain('creationIdea: "Create one strong brand photo I can use today."')
+    expect(shell).toContain('creationIntent: intentForFormat("photo", "starter_chip")')
+    expect(shell).toContain("onStartCreate={limited ? undefined : createFirstPhotoFromGallery}")
+    expect(shell).not.toContain('onStartCreate={limited ? undefined : () => createFormat("photo")}')
   })
 
   it("keeps selfie generation as the default even when a trained model exists", () => {

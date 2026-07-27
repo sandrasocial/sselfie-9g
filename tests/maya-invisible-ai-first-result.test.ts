@@ -192,10 +192,12 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     const localDraft = read("components/app-v3/continuity.ts")
     const serverDraft = read("lib/app-v3/maya/draft-snapshot.ts")
 
-    expect(launcher).toContain("Resume current")
-    expect(launcher).toContain("Start new")
-    expect(launcher).toContain("View past chats")
+    expect(launcher).toContain("operatingLayerEnabled || hasSavedSession")
     expect(launcher).toContain("open()")
+    expect(launcher).toContain("openFresh()")
+    expect(launcher).not.toContain("Resume current")
+    expect(launcher).not.toContain("Start new")
+    expect(launcher).not.toContain("View past chats")
     expect(context).toContain("const open = useCallback")
     expect(history).toContain("direction cards, and finished versions")
     expect(history).toContain("Creative tasks")
@@ -221,9 +223,8 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(concierge).toContain("setWorkspaceBusy(workspaceBusy)")
     expect(context).toContain("if (workspaceBusy)")
     expect(context).toContain("setIsOpen(true)")
-    expect(launcher).toContain("workspaceBusy")
-    expect(launcher).toContain("Maya is finishing your creation")
-    expect(launcher).toContain("disabled={workspaceBusy}")
+    expect(launcher).not.toContain("workspaceBusy")
+    expect(launcher).toContain("operatingLayerEnabled || hasSavedSession")
   })
 
   it("keeps a requested history view queued until the active work finishes", () => {

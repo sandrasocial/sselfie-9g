@@ -107,9 +107,12 @@ describe("QA open-list build (2026-07-06)", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
     expect(context).toContain("openHistory")
     expect(context).toContain("historyRequestId")
-    expect(launcher).toContain("openHistory()")
+    expect(launcher).not.toContain("openHistory()")
+    expect(launcher).toContain("Saved sessions resume directly")
     expect(concierge).toContain("lastHistoryRequestRef")
     expect(concierge).toContain("setHistoryOpen(true)")
+    expect(concierge).toContain("New chat")
+    expect(concierge).toContain("History")
   })
 
   it("Maya chooses one strongest look before planning anything", () => {

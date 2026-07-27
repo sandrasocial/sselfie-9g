@@ -213,6 +213,15 @@ function ShellInner({
     })
   }
 
+  function createFirstPhotoFromGallery() {
+    openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
+      format: "photo",
+      creationIdea: "Create one strong brand photo I can use today.",
+      creationIntent: intentForFormat("photo", "starter_chip"),
+      referenceSelfieUrl: primarySelfieUrl,
+    })
+  }
+
   // From a Content recommendation: open Maya seeded with that exact idea.
   function createIdea(format: OutputFormat, title: string) {
     openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
@@ -333,7 +342,7 @@ function ShellInner({
         <GalleryView
           initialFilter={galleryFilter}
           onMakeMotion={videoEnabled ? createMotionFromImage : undefined}
-          onStartCreate={limited ? undefined : () => createFormat("photo")}
+          onStartCreate={limited ? undefined : createFirstPhotoFromGallery}
           operatingLayerEnabled={mayaOperatingLayerEnabled}
           onUseInCalendar={() => goToSection("calendar")}
           onCreateVariation={asset => createVariationFromGallery(asset.url)}
