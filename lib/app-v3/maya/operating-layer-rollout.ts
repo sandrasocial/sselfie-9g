@@ -3,6 +3,7 @@ import "server-only"
 type MayaOperatingLayerIdentity = {
   userId?: string | null
   email?: string | null
+  accessLevel?: "full" | "trial" | "limited" | null
 }
 
 function normalizedEntries(value: string | undefined): Set<string> {
@@ -20,12 +21,14 @@ function isEnabled(value: string | undefined): boolean {
 }
 
 export function isMayaOperatingLayerEnabled(identity?: MayaOperatingLayerIdentity): boolean {
-  if (isEnabled(process.env.FEATURE_MAYA_OPERATING_LAYER)) return true
-
   const allowlist = normalizedEntries(process.env.MAYA_OPERATING_LAYER_ALLOWLIST)
-  if (!allowlist.size) return false
-
   const email = identity?.email?.trim().toLowerCase()
   const userId = identity?.userId?.trim().toLowerCase()
-  return Boolean((email && allowlist.has(email)) || (userId && allowlist.has(userId)))
+  const allowlisted = Boolean((email && allowlist.has(email)) || (userId && allowlist.has(userId)))
+
+  if (allowlisted) return true
+
+  if (!isEnabled(process.env.FEATURE_MAYA_OPERATING_LAYER)) return false
+
+  return identity?.accessLevel === "full" || identity?.accessLevel === "trial"
 }

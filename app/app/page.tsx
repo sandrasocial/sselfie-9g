@@ -212,6 +212,7 @@ export default async function StudioV3Page({
   const mayaOperatingLayerEnabled = isMayaOperatingLayerEnabled({
     userId: user.id,
     email: user.email,
+    accessLevel,
   })
 
   return (

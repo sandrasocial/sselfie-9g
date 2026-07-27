@@ -1,5 +1,19 @@
 # Completed releases
 
+## 2026-07-27 — Maya operating layer member rollout gate
+
+Opened the corrected Maya operating layer beyond Sandra-only dogfooding only for eligible Suite
+members and active trials when the server rollout flag is enabled. Limited shell users and accounts
+without Suite access remain on the existing experience, while Sandra's private allowlist remains a
+server-side override for rollback and QA. Existing member-vibe systems in support, growth
+intelligence, daily briefing, reviews, and churn/member-health reporting remain the rollout
+watchtower instead of adding another dashboard.
+
+Verification: targeted rollout regressions, CI typecheck, changed-file lint, repository invariants,
+full Vitest, desktop and 390x844 Maya operating-layer Playwright journeys, production build, diff
+checks, and 22/22 creative-freeze checks. Protected prompts, generation routing, Vault selection,
+credits, entitlements, payments, and publishing boundaries remain unchanged.
+
 ## 2026-07-27 — Hungry growth operator and external benchmarks
 
 Reframed SSELFIE revenue decisions so historical prices and conversion results establish a

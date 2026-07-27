@@ -33,10 +33,26 @@ describe("Maya operating layer rollout", () => {
     expect(isMayaOperatingLayerEnabled({ email: "member@example.com" })).toBe(false)
   })
 
-  it("supports an explicit global rollout without changing access or entitlement code", () => {
+  it("supports an explicit global rollout for full members and trials", () => {
     process.env.FEATURE_MAYA_OPERATING_LAYER = "true"
     delete process.env.MAYA_OPERATING_LAYER_ALLOWLIST
 
-    expect(isMayaOperatingLayerEnabled({ email: "member@example.com" })).toBe(true)
+    expect(isMayaOperatingLayerEnabled({ email: "member@example.com", accessLevel: "full" })).toBe(true)
+    expect(isMayaOperatingLayerEnabled({ email: "trial@example.com", accessLevel: "trial" })).toBe(true)
+  })
+
+  it("keeps limited shell users out of the global rollout", () => {
+    process.env.FEATURE_MAYA_OPERATING_LAYER = "true"
+    delete process.env.MAYA_OPERATING_LAYER_ALLOWLIST
+
+    expect(isMayaOperatingLayerEnabled({ email: "limited@example.com", accessLevel: "limited" })).toBe(false)
+    expect(isMayaOperatingLayerEnabled({ email: "unknown@example.com" })).toBe(false)
+  })
+
+  it("keeps the private allowlist as a server-side override", () => {
+    process.env.FEATURE_MAYA_OPERATING_LAYER = "false"
+    process.env.MAYA_OPERATING_LAYER_ALLOWLIST = " sandra@example.com "
+
+    expect(isMayaOperatingLayerEnabled({ email: "sandra@example.com", accessLevel: "limited" })).toBe(true)
   })
 })
