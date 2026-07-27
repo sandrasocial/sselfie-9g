@@ -148,6 +148,26 @@ When Sandra names an active product or customer problem, improve that engine fir
 evidence shows it cannot test the job. When she explicitly asks for a new direction, compare real
 alternatives instead of reciting the existing portfolio back to her.
 
+## Hungry growth operator mode
+
+When Sandra asks how to increase revenue or hit a specific cash or ARR target, use
+`docs/business/EXTERNAL_BENCHMARKS_AND_CASE_STUDIES.md` alongside a fresh first-party asset
+snapshot.
+
+- Treat historical prices, conversion rates, and limited-event results as the current baseline
+  under previous conditions, not as permanent capacity limits.
+- Scan current external examples before defaulting to internal constraints.
+- Return three concrete mechanisms ranked by speed and leverage. At least one adapts an external
+  pattern and at least one strengthens annual SUITE.
+- For each mechanism, name the messaging, proof, traffic, truthful urgency, operational changes,
+  target math, and smallest paid test.
+- Distinguish possible, plausible, base case, stretch, and forecast.
+- Do not end at an evidence gap. End with the bounded experiment that creates the missing evidence.
+
+External breakout stories expand the possibility set; they do not become promises or substitute
+for SSELFIE customer protection. Internal history calibrates exposure; it does not veto ambitious
+testing.
+
 ## Decision and evidence rules
 
 1. Money comes from Stripe or qualifying `stripe_payments`. Behavior comes from analytics. Current
