@@ -1,5 +1,17 @@
 # Completed releases
 
+## 2026-07-27 — Hungry growth operator and external benchmarks
+
+Reframed SSELFIE revenue decisions so historical prices and conversion results establish a
+baseline rather than a ceiling. Revenue-target work now pairs a fresh first-party snapshot with a
+source-graded external case library, returns three ranked mechanisms including annual SUITE and an
+adapted proven pattern, and ends with the bounded paid experiment that creates the missing evidence.
+
+Production proof: feature commit `6b3abb51`, Vercel deployment
+`dpl_TLGCbphqoydmXA8UdRyJhpdTfEaN`, 1,774 passing tests with 6 intentionally skipped, CI
+typecheck, repository invariants, production build, and exact-SHA Vercel Ready verification. No
+pricing, checkout, email, customer, or product behavior changed.
+
 ## 2026-07-26 — Expired purchase-link recovery
 
 Replaced the expired authentication-link dead end with clear actions to request a fresh password
