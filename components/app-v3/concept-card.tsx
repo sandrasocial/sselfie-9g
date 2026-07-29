@@ -87,6 +87,8 @@ interface ConceptCardProps {
   /** Fires only after a browser download has been initiated. */
   onDownloaded?: () => void
   disabled?: boolean
+  /** Why the create button is disabled — always shown with it so a tap never looks dead. */
+  disabledReason?: string | null
 }
 
 const FRAME_ASPECT: Record<OutputFormat, string> = {
@@ -137,6 +139,7 @@ export function ConceptCard({
   eyebrow = "Maya's idea",
   onDownloaded,
   disabled,
+  disabledReason,
 }: ConceptCardProps) {
   const plannedOutputs = concept.brief.graphic?.creativePlan?.outputs?.length ?? 0
   const plannedSlides = concept.brief.graphic?.slides?.length ?? 0
@@ -349,6 +352,10 @@ export function ConceptCard({
                 </button>
               )}
             </div>
+            <p className="text-[12px] leading-relaxed text-[#6D6E70]">
+              These exact words get printed on the images. Edit them here, or just tell Maya
+              what to change.
+            </p>
             <div className="space-y-3">
               {editedCopy.map(entry => (
                 <div key={entry.index} className="space-y-1.5">
@@ -651,6 +658,9 @@ export function ConceptCard({
                 ? "Create my photo · 1 credit"
                 : `Create this · ${estimatedCredits} ${estimatedCredits === 1 ? "credit" : "credits"}`}
           </button>
+        )}
+        {disabled && !isGenerating && !isDone && !isVideoDone && disabledReason && (
+          <p className="text-[12px] leading-relaxed text-[#6D6E70]">{disabledReason}</p>
         )}
       </div>
     </div>

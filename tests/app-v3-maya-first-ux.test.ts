@@ -282,7 +282,10 @@ describe("Maya-first Suite creation UX", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
     expect(concierge).toContain("inFlightGenerationKeysRef")
-    expect(concierge).toContain("if (inFlightGenerationKeysRef.current.has(key)) return")
+    // 2026-07-29: a live generation still swallows duplicate taps, but a key left behind by
+    // an interrupted stream must not make later taps silent no-ops (UX audit issue A).
+    expect(concierge).toContain("if (inFlightGenerationKeysRef.current.has(key)) {")
+    expect(concierge).toContain('if (genState[key]?.status === "generating") return')
     expect(concierge).toContain("inFlightGenerationKeysRef.current.add(key)")
     expect(concierge).toContain("inFlightGenerationKeysRef.current.delete(key)")
   })

@@ -17,6 +17,13 @@ interface MayaActionCardProps {
   onCancel?: () => void
   onUndo?: (descriptor: MayaActionDescriptor) => Promise<void>
   className?: string
+  /** Free + undoable actions may run in ONE tap from the recommended state. The 2026-07-28
+   *  audit found a free caption rewrite behind four identical confirmations — preview →
+   *  confirm is for credit spends and non-undoable mutations, not for undoable free work. */
+  directExecute?: boolean
+  /** What the action produced (e.g. the rewritten caption), shown once it succeeds so
+   *  "Done" is never the only evidence that anything happened. */
+  result?: string | null
 }
 
 function confirmLabel(kind: MayaActionDescriptor["kind"]): string {
@@ -28,6 +35,12 @@ function confirmLabel(kind: MayaActionDescriptor["kind"]): string {
   return "Confirm and create"
 }
 
+function directLabel(kind: MayaActionDescriptor["kind"]): string {
+  if (kind === "improve_caption") return "Rewrite caption"
+  if (kind === "continue_lesson") return "Continue"
+  return "Do it"
+}
+
 export function MayaActionCard({
   descriptor,
   preview,
@@ -35,6 +48,8 @@ export function MayaActionCard({
   onCancel,
   onUndo,
   className = "",
+  directExecute = false,
+  result = null,
 }: MayaActionCardProps) {
   const [action, dispatch] = useReducer(mayaActionReducer, descriptor)
   const [error, setError] = useState<string | null>(null)
@@ -108,7 +123,7 @@ export function MayaActionCard({
             {preview}
           </p>
         ) : null}
-        {action.status === "awaiting_confirmation" ? (
+        {action.status === "previewing" || action.status === "awaiting_confirmation" ? (
           <p className="mt-2 text-[11px] font-medium text-[color:var(--app-text-primary)]">
             {mayaActionCreditLabel(action.creditCost)}
           </p>
@@ -123,13 +138,14 @@ export function MayaActionCard({
           </p>
         ) : null}
         {action.status === "succeeded" ? (
-          <p
-            role="status"
-            aria-live="polite"
-            className="mt-2 text-[12px] text-[color:var(--app-text-secondary)]"
-          >
-            Done
-          </p>
+          <div role="status" aria-live="polite" className="mt-2 space-y-2">
+            <p className="text-[12px] text-[color:var(--app-text-secondary)]">Done</p>
+            {result?.trim() ? (
+              <p className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-[8px] bg-[color:var(--app-glass-border)]/25 px-3 py-2.5 text-[13px] leading-relaxed text-[color:var(--app-text-primary)]">
+                {result}
+              </p>
+            ) : null}
+          </div>
         ) : null}
         {action.status === "undone" ? (
           <p
@@ -163,10 +179,18 @@ export function MayaActionCard({
           {action.status === "recommended" ? (
             <button
               type="button"
-              onClick={() => dispatch({ type: "preview" })}
+              onClick={() => {
+                if (directExecute && action.creditCost === 0 && action.canUndo) {
+                  void execute(action)
+                } else {
+                  dispatch({ type: "preview" })
+                }
+              }}
               className="ml-auto min-h-11 rounded-[8px] bg-[color:var(--app-btn-primary-bg)] px-4 text-[11px] uppercase tracking-[0.14em] text-[color:var(--app-btn-primary-text)]"
             >
-              Preview
+              {directExecute && action.creditCost === 0 && action.canUndo
+                ? directLabel(action.kind)
+                : "Preview"}
             </button>
           ) : null}
           {action.status === "previewing" ? (
@@ -178,15 +202,16 @@ export function MayaActionCard({
               >
                 Cancel
               </button>
+              {/* One decision, not two: the preview already shows exactly what will happen
+                  and what it costs, so confirming happens HERE instead of on a third,
+                  identical screen (2026-07-28 audit: preview→continue→confirm showed the
+                  same copy three times). */}
               <button
                 type="button"
-                onClick={() => {
-                  if (action.requiresConfirmation) dispatch({ type: "request_confirmation" })
-                  else void execute(action)
-                }}
+                onClick={() => void execute(action)}
                 className="ml-auto min-h-11 rounded-[8px] bg-[color:var(--app-btn-primary-bg)] px-4 text-[11px] uppercase tracking-[0.14em] text-[color:var(--app-btn-primary-text)]"
               >
-                Continue
+                {confirmLabel(action.kind)}
               </button>
             </>
           ) : null}

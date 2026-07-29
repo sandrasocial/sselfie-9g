@@ -63,7 +63,7 @@ describe("Calendar Instagram profile", () => {
     expect(screen.getByText(/add a short bio so people know what you do/i)).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /create bio with maya/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /create highlights with maya/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "New grid" })).toHaveClass(
+    expect(screen.getByRole("button", { name: "Plan a new grid" })).toHaveClass(
       "text-[color:var(--app-btn-primary-text)]"
     )
     expect(screen.getByRole("button", { name: /create highlights with maya/i })).toHaveTextContent(

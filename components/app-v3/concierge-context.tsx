@@ -147,11 +147,23 @@ export function ConciergeProvider({
   initialSurface?: MayaSurface
 }) {
   const restoredSavedAtRef = useRef<number | null>(null)
+  // Once the member explicitly starts or restores a session in THIS tab, the mount-time
+  // server-draft GET must never clobber it — a late-resolving restore was observed live
+  // replacing an active mid-stream session and losing its just-sent messages
+  // (UX audit 2026-07-29, issue B1).
+  const explicitSessionRef = useRef(false)
   const [session, setSession] = useState<ConciergeSession | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [workspaceBusy, setWorkspaceBusy] = useState(false)
   const [activeSurface, setActiveSurfaceState] = useState<MayaSurface>(initialSurface)
   const hasSavedSession = Boolean(session)
+
+  // Every user-initiated session action calls this so it outranks draft restoration —
+  // both the in-flight mount GET and anything saved before this moment.
+  const claimSessionAuthority = useCallback(() => {
+    explicitSessionRef.current = true
+    restoredSavedAtRef.current = Date.now()
+  }, [])
 
   const openWithAesthetic = useCallback(
     (aesthetic: Aesthetic, opts?: OpenConciergeOptions) => {
@@ -162,6 +174,7 @@ export function ConciergeProvider({
       // Stamp now (cheap, urgent), but mark the heavy concierge mount as a non-urgent transition
       // so the tap paints immediately instead of blocking the main thread (fixes the INP stall).
       const startedAt = Date.now()
+      claimSessionAuthority()
       startTransition(() => {
         if (operatingLayerEnabled) {
           const context = createMayaContextEnvelope({
@@ -204,10 +217,11 @@ export function ConciergeProvider({
         setIsOpen(true)
       })
     },
-    [activeSurface, operatingLayerEnabled, workspaceBusy]
+    [activeSurface, claimSessionAuthority, operatingLayerEnabled, workspaceBusy]
   )
 
   const updateCurrentSession = useCallback((aesthetic: Aesthetic, opts?: OpenConciergeOptions) => {
+    claimSessionAuthority()
     setSession(prev => {
       if (!prev) return prev
       return {
@@ -239,7 +253,7 @@ export function ConciergeProvider({
       }
     })
     setIsOpen(true)
-  }, [])
+  }, [claimSessionAuthority])
 
   const openForCalendarPost = useCallback(
     (target: CalendarPostTarget) => {
@@ -247,6 +261,7 @@ export function ConciergeProvider({
         setIsOpen(true)
         return
       }
+      claimSessionAuthority()
       startTransition(() => {
         if (operatingLayerEnabled) {
           setSession(previous => {
@@ -356,7 +371,7 @@ export function ConciergeProvider({
         setIsOpen(true)
       })
     },
-    [operatingLayerEnabled, workspaceBusy]
+    [claimSessionAuthority, operatingLayerEnabled, workspaceBusy]
   )
 
   const openForLesson = useCallback(
@@ -365,6 +380,7 @@ export function ConciergeProvider({
         setIsOpen(true)
         return
       }
+      claimSessionAuthority()
       startTransition(() => {
         if (!operatingLayerEnabled) {
           openWithAesthetic(GENERAL_MAYA_AESTHETIC, {
@@ -385,7 +401,7 @@ export function ConciergeProvider({
         setIsOpen(true)
       })
     },
-    [openWithAesthetic, operatingLayerEnabled, workspaceBusy]
+    [claimSessionAuthority, openWithAesthetic, operatingLayerEnabled, workspaceBusy]
   )
 
   const markCalendarTargetAnnounced = useCallback((requestId: string) => {
@@ -488,6 +504,7 @@ export function ConciergeProvider({
 
   const restoreHistoryTask = useCallback(
     (taskId: string, restoredSession?: ConciergeSession | null) => {
+      claimSessionAuthority()
       if (!operatingLayerEnabled) {
         if (restoredSession) setSession(restoredSession)
         return
@@ -507,7 +524,7 @@ export function ConciergeProvider({
       })
       setIsOpen(true)
     },
-    [activeSurface, operatingLayerEnabled]
+    [activeSurface, claimSessionAuthority, operatingLayerEnabled]
   )
 
   const resetCurrentSession = useCallback((taskId?: string) => {
@@ -515,6 +532,7 @@ export function ConciergeProvider({
       setIsOpen(true)
       return
     }
+    claimSessionAuthority()
     if (operatingLayerEnabled) {
       setSession(previous =>
         createCleanSession({
@@ -544,13 +562,14 @@ export function ConciergeProvider({
         : prev
     )
     setIsOpen(true)
-  }, [activeSurface, operatingLayerEnabled, workspaceBusy])
+  }, [activeSurface, claimSessionAuthority, operatingLayerEnabled, workspaceBusy])
 
   const setGraphicText = useCallback((spec: GraphicTextSpec) => {
     setSession(prev => (prev ? { ...prev, graphicText: spec } : prev))
   }, [])
 
   const open = useCallback(() => {
+    claimSessionAuthority()
     startTransition(() => {
       if (operatingLayerEnabled) {
         setSession(previous => {
@@ -580,7 +599,7 @@ export function ConciergeProvider({
       )
       setIsOpen(true)
     })
-  }, [activeSurface, operatingLayerEnabled])
+  }, [activeSurface, claimSessionAuthority, operatingLayerEnabled])
 
   const openFresh = useCallback(
     (opts?: Pick<OpenConciergeOptions, "referenceSelfieUrl">) => {
@@ -592,7 +611,7 @@ export function ConciergeProvider({
       clearMayaDraft()
       // Also outranks any in-flight server-draft GET: a draft saved before this moment must
       // never be restored over a session the member explicitly started clean.
-      restoredSavedAtRef.current = startedAt
+      claimSessionAuthority()
       void fetch("/api/app-v3/maya/draft", { method: "DELETE" }).catch(() => {})
       startTransition(() => {
         if (operatingLayerEnabled) {
@@ -639,7 +658,7 @@ export function ConciergeProvider({
         setIsOpen(true)
       })
     },
-    [activeSurface, operatingLayerEnabled, session?.referenceSelfieUrl, workspaceBusy]
+    [activeSurface, claimSessionAuthority, operatingLayerEnabled, session?.referenceSelfieUrl, workspaceBusy]
   )
 
   const close = useCallback(() => setIsOpen(false), [])
@@ -648,6 +667,7 @@ export function ConciergeProvider({
   // continuing means choosing a past thread explicitly, not re-showing in-memory state.
   const [historyRequestId, setHistoryRequestId] = useState(0)
   const openHistory = useCallback(() => {
+    claimSessionAuthority()
     setSession(
       prev => {
         if (prev) return prev
@@ -673,7 +693,7 @@ export function ConciergeProvider({
     )
     setIsOpen(true)
     setHistoryRequestId(n => n + 1)
-  }, [activeSurface, operatingLayerEnabled])
+  }, [activeSurface, claimSessionAuthority, operatingLayerEnabled])
 
   useEffect(() => {
     saveConciergeSnapshot({ isOpen, session })
@@ -704,6 +724,9 @@ export function ConciergeProvider({
         if (cancelled) return
         const serverDraft = cacheServerMayaDraftSnapshot(payload?.draft)
         if (!serverDraft) return
+        // A session the member explicitly started/restored in this tab always wins over the
+        // mount-time draft, regardless of savedAt (clock skew, cross-device drafts).
+        if (explicitSessionRef.current) return
         if (restoredSavedAtRef.current && restoredSavedAtRef.current >= serverDraft.savedAt) return
         restoredSavedAtRef.current = serverDraft.savedAt
         const restoredSession = serverDraft.session as ConciergeSession

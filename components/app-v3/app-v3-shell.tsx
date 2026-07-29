@@ -25,6 +25,7 @@ import { FeedPlannerView } from "./feed-planner-view"
 import { LibraryView } from "./library-view"
 import { AccountView } from "./account-view"
 import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
+import type { AppV3GalleryAsset } from "@/lib/app-v3/gallery-assets"
 import type { AppV3Section } from "@/lib/app-v3/navigation"
 import { buildStoredSectionHref, readStoredAppSection, saveStoredAppSection } from "./continuity"
 import { intentForFormat } from "@/lib/app-v3/maya/intent-router"
@@ -160,6 +161,15 @@ function ShellInner({
   function openGallery(filter: GalleryFilter = "all") {
     setGalleryFilter(filter)
     goToSection("photos")
+  }
+
+  // Gallery "Add to a post": carry the chosen image into the Calendar's apply mode. The old
+  // handler navigated and dropped the asset (2026-07-29 audit) — the member landed on the
+  // planner with her selection forgotten.
+  const [pendingCalendarImageUrl, setPendingCalendarImageUrl] = useState<string | null>(null)
+  function useAssetInCalendar(asset: AppV3GalleryAsset) {
+    setPendingCalendarImageUrl(asset.url)
+    goToSection("calendar")
   }
 
   useEffect(() => {
@@ -344,7 +354,7 @@ function ShellInner({
           onMakeMotion={videoEnabled ? createMotionFromImage : undefined}
           onStartCreate={limited ? undefined : createFirstPhotoFromGallery}
           operatingLayerEnabled={mayaOperatingLayerEnabled}
-          onUseInCalendar={() => goToSection("calendar")}
+          onUseInCalendar={useAssetInCalendar}
           onCreateVariation={asset => createVariationFromGallery(asset.url)}
         />
       )}
@@ -379,7 +389,11 @@ function ShellInner({
             </div>
           </div>
         ) : (
-          <FeedPlannerView operatingLayerEnabled={mayaOperatingLayerEnabled} />
+          <FeedPlannerView
+            operatingLayerEnabled={mayaOperatingLayerEnabled}
+            pendingApplyImageUrl={pendingCalendarImageUrl}
+            onConsumePendingApplyImage={() => setPendingCalendarImageUrl(null)}
+          />
         ))}
       {section === "library" && (
         <LibraryView

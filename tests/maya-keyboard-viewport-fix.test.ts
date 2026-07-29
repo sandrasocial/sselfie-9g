@@ -36,8 +36,22 @@ describe("Maya drawer: keyboard-viewport tracking only reacts to genuine keyboar
 
   it("clamps the keyboard offset so a stray reading can never push the drawer off-screen", () => {
     const effectStart = concierge.indexOf("const [keyboardBox, setKeyboardBox]")
-    const effect = concierge.slice(effectStart, effectStart + 900)
+    // Window widened 2026-07-29: the focus-precondition comment block sits above the clamp.
+    const effect = concierge.slice(effectStart, effectStart + 2600)
     expect(effect).toContain("Math.max(0, Math.min(vv.offsetTop, vv.height))")
+  })
+
+  it("only translates the drawer while an editable element is focused, and clears on blur", () => {
+    const effectStart = concierge.indexOf("const [keyboardBox, setKeyboardBox]")
+    const effectEnd = concierge.indexOf("}, [])", effectStart)
+    const effect = concierge.slice(effectStart, effectEnd)
+    // 2026-07-29 live report: toolbar show/hide or partial keyboard dismissal latched a
+    // positive offset with no keyboard on screen — the drawer sat "dropped down" until a
+    // tap refocused the composer. The keyboard only exists while an editable is focused.
+    expect(effect).toContain("editableFocused()")
+    expect(effect).toContain('window.addEventListener("focusin", onFocusChange)')
+    expect(effect).toContain('window.addEventListener("focusout", onFocusChange)')
+    expect(effect).toContain("window.setTimeout(update, 250)")
   })
 
   it("scrolls the thread's own container directly - never Element.scrollIntoView on a sentinel", () => {

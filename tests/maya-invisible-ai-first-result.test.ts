@@ -180,9 +180,14 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(start).toBeGreaterThan(-1)
     expect(end).toBeGreaterThan(start)
     expect(body).toContain("isGraphicOutputFormat(nextFormat)")
-    expect(body).toContain(
-      "lastPulledFormatRef.current = needsGraphicTextChoice ? null : nextFormat"
-    )
+    // 2026-07-29 (UX audit): graphic next-steps must never end in silence. A remembered
+    // text style continues hands-free (style still swappable before credits are spent);
+    // first-timers re-enter the explicit text gate, scrolled into view.
+    expect(body).toContain("if (rememberedOverlayStyle) {")
+    expect(body).toContain('setTextOverlayMode("with-text")')
+    expect(body).toContain("setTextStyleChoice(rememberedOverlayStyle)")
+    expect(body).toContain("lastPulledFormatRef.current = null")
+    expect(body).toContain("requestAnimationFrame(() => scrollThreadToBottom())")
   })
 
   it("resumes the exact active draft and labels transcript history honestly", () => {

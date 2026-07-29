@@ -23,8 +23,13 @@ const SELECTED_FEED_KEY = "calendar:selected-feed:v1"
 
 export function FeedPlannerView({
   operatingLayerEnabled = false,
+  pendingApplyImageUrl = null,
+  onConsumePendingApplyImage,
 }: {
   operatingLayerEnabled?: boolean
+  /** Gallery "Add to a post" carries the chosen image into the planner's apply mode. */
+  pendingApplyImageUrl?: string | null
+  onConsumePendingApplyImage?: () => void
 }) {
   const { open, openForCalendarPost, openWithAesthetic } = useConcierge()
   const [selectedFeedId, setSelectedFeedId] = useState<number | null>(null)
@@ -67,6 +72,8 @@ export function FeedPlannerView({
       operatingLayerEnabled,
       pendingSlotPosition,
       consumePendingSlot: () => setPendingSlotPosition(null),
+      pendingApplyImageUrl,
+      consumePendingApplyImage: onConsumePendingApplyImage,
       navigateToMaya: (target?: CalendarPostTarget) => {
         if (target) {
           startMayaJob({
@@ -106,10 +113,12 @@ export function FeedPlannerView({
     }),
     [
       navigateToFeed,
+      onConsumePendingApplyImage,
       open,
       openForCalendarPost,
       openWithAesthetic,
       operatingLayerEnabled,
+      pendingApplyImageUrl,
       pendingSlotPosition,
       selectedFeedId,
     ]

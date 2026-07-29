@@ -240,7 +240,9 @@ export function CalendarBulkCreate({
     >
       <div className="flex items-center justify-between gap-3 border-t border-[color:var(--calendar-stone-4)]/40 pt-3">
         <p className="text-[12px] leading-relaxed text-[color:var(--app-text-secondary)]">
-          Tap any post to create just that one.
+          {missingImages.length === 0 && missingCaptions.length === 0
+            ? `All ${posts.length} posts are ready. Tap one to review it.`
+            : "Tap any post to create just that one."}
         </p>
         <button
           type="button"

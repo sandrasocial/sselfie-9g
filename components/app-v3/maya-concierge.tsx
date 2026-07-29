@@ -400,6 +400,23 @@ const FORMAT_PHRASE: Record<OutputFormat, string> = {
   video: "Let's add motion to a photo.",
 }
 
+// System-authored turns (tap-generated pulls, retries, hands-free continuations) must never
+// render as words the member typed — fabricated "YOU" bubbles were a direct trust complaint
+// in the 2026-07-28 UX audit. The transport still needs a user turn, so these exact strings
+// are recognized at render time and shown as a neutral status line instead.
+const SYSTEM_TURN_LABEL: Record<string, string> = {
+  [FORMAT_PHRASE.photo]: "Starting photos",
+  [FORMAT_PHRASE.photoshoot]: "Starting a full photoshoot",
+  [FORMAT_PHRASE["reel-cover"]]: "Starting a Reel cover",
+  [FORMAT_PHRASE.carousel]: "Starting a carousel",
+  [FORMAT_PHRASE["story-slide"]]: "Starting a Story slide",
+  [FORMAT_PHRASE["story-sequence"]]: "Starting a Story sequence",
+  [FORMAT_PHRASE.video]: "Adding motion to a photo",
+  "Continue with what we already created.": "Continuing with what you already created",
+  "Let's create photos using my trained model.": "Starting photos with your trained model",
+  "Help me choose what to make today.": "Choosing what to make today",
+}
+
 // Maya's opener, tab-aware so it always matches the selected format (fixes the "pick one above"
 // mismatch). BEFORE a selfie is added it guides the next step; AFTER, it shifts to a "start your
 // brand shoot" framing so the system status is clear (the photo case is the one that changes most).
@@ -948,18 +965,49 @@ export function MayaConcierge({
   useEffect(() => {
     const vv = typeof window !== "undefined" ? window.visualViewport : null
     if (!vv) return
+    // 2026-07-29 live report: the drawer sometimes "drops down" on its own (create page
+    // visible behind it) until the member taps to refocus. Root cause: a viewport resize
+    // with no keyboard involved (iOS toolbar show/hide, partial keyboard dismissal) could
+    // still satisfy the >80px shrink heuristic and latch a positive offsetTop, and nothing
+    // corrected it until the NEXT resize. The keyboard only exists while an editable
+    // element is focused, so that focus is now a hard precondition for translating the
+    // drawer, and blur always clears the transform.
+    const editableFocused = () => {
+      const active = document.activeElement
+      if (!active) return false
+      const tag = active.tagName
+      return (
+        tag === "TEXTAREA" ||
+        tag === "INPUT" ||
+        (active as HTMLElement).isContentEditable === true
+      )
+    }
+    let blurTimeout: number | null = null
     const update = () => {
-      const keyboardLikely = window.innerHeight - vv.height > 80
+      const keyboardLikely = editableFocused() && window.innerHeight - vv.height > 80
       // Defensive clamp: a legitimate keyboard-open offset is never negative and never
       // larger than the visible viewport itself. Never let a stray reading push the drawer
       // off-screen.
       const top = Math.max(0, Math.min(vv.offsetTop, vv.height))
       setKeyboardBox(keyboardLikely ? { height: vv.height, top } : null)
     }
+    // On blur the keyboard dismisses, but iOS fires the blur before (and occasionally
+    // without) the matching viewport resize — re-evaluate shortly after so the drawer can
+    // never stay translated with no keyboard on screen.
+    const onFocusChange = () => {
+      update()
+      if (blurTimeout !== null) window.clearTimeout(blurTimeout)
+      blurTimeout = window.setTimeout(update, 250)
+    }
     vv.addEventListener("resize", update)
+    window.addEventListener("focusin", onFocusChange)
+    window.addEventListener("focusout", onFocusChange)
     update()
     return () => {
       vv.removeEventListener("resize", update)
+      window.removeEventListener("focusin", onFocusChange)
+      window.removeEventListener("focusout", onFocusChange)
+      if (blurTimeout !== null) window.clearTimeout(blurTimeout)
     }
   }, [])
 
@@ -2174,13 +2222,16 @@ export function MayaConcierge({
             captionActionTarget.requestedAction === "redo_caption"
               ? `Create the caption for post ${captionActionTarget.position}`
               : `Improve the caption for post ${captionActionTarget.position}`,
-          reason: "Maya will use the Calendar caption system already connected to this post.",
+          reason:
+            captionActionTarget.requestedAction === "redo_caption"
+              ? "Maya writes it in your voice. You can undo."
+              : "Maya rewrites it in your voice. Your current caption is saved and you can undo.",
           target: {
             feedId: captionActionTarget.feedId,
             postId: captionActionTarget.postId,
           },
           creditCost: 0,
-          requiresConfirmation: true,
+          requiresConfirmation: false,
           canUndo: true,
           idempotencyKey,
         })
@@ -2561,6 +2612,15 @@ export function MayaConcierge({
     const imageUrl = imageUrls[0]
     const aiImageId = aiImageIds[0] ?? null
     if (!imageUrl) return false
+    // Pre-existing ReferenceError fixed 2026-07-29: `idempotencyKey` was an undefined name,
+    // so every calendar attach after a generation threw at runtime. One generation request
+    // attaching to one post is the idempotent unit.
+    const idempotencyKey = mayaActionIdempotencyKey(
+      "apply_to_post",
+      target.feedId,
+      target.postId,
+      generationRequestId
+    )
     const response = await fetch(`/api/feed/${target.feedId}/replace-post-image`, {
       method: "POST",
       headers: {
@@ -2763,7 +2823,13 @@ export function MayaConcierge({
     // "Make another version" on a finished card is a re-roll - a friction signal the
     // member pulse tracks server-side (SUITE-UX-02).
     const rerun = genState[key]?.status === "done"
-    if (inFlightGenerationKeysRef.current.has(key)) return
+    if (inFlightGenerationKeysRef.current.has(key)) {
+      // Only a genuinely running generation may swallow the tap. A key left behind by an
+      // interrupted stream (tab hidden mid-generation, renderer reload) used to make every
+      // later "Create this" tap a silent no-op (2026-07-29 audit, issue A).
+      if (genState[key]?.status === "generating") return
+      inFlightGenerationKeysRef.current.delete(key)
+    }
     inFlightGenerationKeysRef.current.add(key)
     const activeMayaJob = session?.mayaContext?.job ?? "create_content"
     recordMayaJobDecision(activeMayaJob)
@@ -3324,7 +3390,11 @@ export function MayaConcierge({
       }))
       return
     }
-    if (inFlightGenerationKeysRef.current.has(key)) return
+    if (inFlightGenerationKeysRef.current.has(key)) {
+      // Same stale-lock recovery as generateConcept: only a live generation may swallow the tap.
+      if (genState[key]?.status === "generating") return
+      inFlightGenerationKeysRef.current.delete(key)
+    }
     inFlightGenerationKeysRef.current.add(key)
     const clientRequestId = newGenerationRequestId()
     const shootStartedAt = Date.now()
@@ -3739,17 +3809,37 @@ export function MayaConcierge({
         setInspirationUrl(styleReferenceUrl)
       }
     }
-    setTextOverlayMode(null)
-    setTextStyleChoice(null)
-    setTextStyleAdjustments(null)
     setStyleSwapOpen(false)
     setOutputFormat(nextFormat)
     setSetupOpen(false)
-    // Every graphic action returns to the explicit with-text / without-text gate. A recommendation
-    // must never silently spend a credit on words or a style the member did not choose.
-    lastPulledFormatRef.current = needsGraphicTextChoice ? null : nextFormat
     seedRetiredRef.current = true
-    if (!needsGraphicTextChoice) sendMessage({ text: FORMAT_PHRASE[nextFormat] })
+    if (!needsGraphicTextChoice) {
+      setTextOverlayMode(null)
+      setTextStyleChoice(null)
+      setTextStyleAdjustments(null)
+      lastPulledFormatRef.current = nextFormat
+      sendMessage({ text: FORMAT_PHRASE[nextFormat] })
+      return
+    }
+    // Graphic next-steps previously stopped here waiting for a text choice the member could
+    // not see — "Turn this into Stories" and the carousel/stories chips did nothing visible
+    // (2026-07-29 live audit). A member with a remembered text style continues hands-free,
+    // the same doctrine as the conversational set_format switch (the style chip above the
+    // concept cards still swaps it before any credit is spent). First-timers keep the
+    // explicit with-text / without-text gate, scrolled into view so the tap always has a
+    // visible response.
+    setTextStyleAdjustments(null)
+    if (rememberedOverlayStyle) {
+      setTextOverlayMode("with-text")
+      setTextStyleChoice(rememberedOverlayStyle)
+      lastPulledFormatRef.current = nextFormat
+      sendMessage({ text: FORMAT_PHRASE[nextFormat] })
+      return
+    }
+    setTextOverlayMode(null)
+    setTextStyleChoice(null)
+    lastPulledFormatRef.current = null
+    requestAnimationFrame(() => scrollThreadToBottom())
   }
 
   function trackGenerationCompleted(targetFormat: OutputFormat, source: string) {
@@ -3879,7 +3969,13 @@ export function MayaConcierge({
       .map((_, index) => index)
       .filter(index => cleanImages[index] && !bakedImageUrls[index])
     if (missingIndexes.length === 0) return
-    if (bakeContinuationKeysRef.current.has(key)) return
+    if (bakeContinuationKeysRef.current.has(key)) {
+      // The auto continuation is already baking this card. Auto callers may drop the
+      // duplicate silently, but a manual "Try text again" tap must never look dead
+      // (2026-07-29 audit, issue A) — tell the card what is happening instead.
+      if (stopOnError) throw new Error("Maya is still adding your words — give it a moment.")
+      return
+    }
     bakeContinuationKeysRef.current.add(key)
 
     setTextRefining(true)
@@ -4350,6 +4446,12 @@ export function MayaConcierge({
                 <MayaActionCard
                   key={captionAction.id}
                   descriptor={captionAction}
+                  directExecute
+                  result={
+                    captionActionTarget.captionActionStatus === "succeeded"
+                      ? (captionActionTarget.caption ?? null)
+                      : null
+                  }
                   preview={
                     captionActionTarget.requestedAction === "redo_caption"
                       ? `Create a fresh caption for post ${captionActionTarget.position}. The post changes only after you confirm.`
@@ -4380,17 +4482,21 @@ export function MayaConcierge({
               )}
               <span className="truncate text-[11px] uppercase tracking-[0.14em] text-[#6D6E70]">
                 {FORMAT_OPTIONS.find(o => o.id === format)?.label ?? "Photo"}
+                {/* "Selfie engine" was internal jargon leaking into the member UI (UX audit
+                    2026-07-28); say what it means instead. */}
                 {customModelAvailable
                   ? activeGenerationSource === "trained-model"
                     ? " · My trained model"
-                    : " · Selfie engine"
+                    : " · From your selfie"
                   : ""}
                 {format === "video"
                   ? videoSourceUrl
                     ? " · Image selected"
                     : " · Pick image"
                   : referenceSelfieUrl
-                    ? " · Selfie in"
+                    ? customModelAvailable
+                      ? ""
+                      : " · Selfie in"
                     : " · No selfie yet"}
                 {format !== "video" && inspirationUrl ? " · Inspiration in" : ""}
               </span>
@@ -5131,6 +5237,11 @@ export function MayaConcierge({
                         ? !videoSourceUrl
                         : !referenceSelfieUrl && activeGenerationSource !== "trained-model"
                     }
+                    disabledReason={
+                      conceptFormat === "video"
+                        ? "Choose the photo you want to animate first."
+                        : "Add a selfie first so it still looks like you."
+                    }
                     showCalendarOffer={key === firstDonePhotoKey}
                     resultActions={
                       <div className="space-y-3">
@@ -5186,7 +5297,11 @@ export function MayaConcierge({
                   className="min-w-0 max-w-full space-y-4 [overflow-x:clip] animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none"
                 >
                   {text.trim() &&
-                    (isUser ? (
+                    (isUser && SYSTEM_TURN_LABEL[text.trim()] ? (
+                      <p className="text-center text-[11px] uppercase tracking-[0.16em] text-[#9A9B9D]">
+                        {SYSTEM_TURN_LABEL[text.trim()]}
+                      </p>
+                    ) : isUser ? (
                       <div className="flex min-w-0 max-w-full flex-row-reverse items-end gap-2">
                         <Avatar src={userAvatar} fallback="You" />
                         <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[18px] rounded-br-[6px] bg-[#0D0E10] px-4 py-3 text-[15px] leading-relaxed text-white [overflow-wrap:anywhere] sm:max-w-[80%]">
@@ -5230,7 +5345,7 @@ export function MayaConcierge({
                         onClick={() => sendMessage({ text: FORMAT_PHRASE[format] })}
                         className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] underline underline-offset-2 hover:opacity-70"
                       >
-                        Show me new ideas
+                        Try again
                       </button>
                     </div>
                   )}

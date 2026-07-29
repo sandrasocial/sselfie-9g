@@ -7,6 +7,9 @@ const nextConfig = {
   // page directories could be deleted. External links (ManyChat, old IG posts) keep working.
   async redirects() {
     return [
+      // Members type /login by hand; it was a raw 404 (UX audit 2026-07-28).
+      { source: "/login", destination: "/auth/login", permanent: true },
+      { source: "/signup", destination: "/auth/sign-up", permanent: true },
       { source: "/visibility-suite", destination: "/join/studio", permanent: true },
       { source: "/concept-cards", destination: "/masterclass", permanent: true },
       { source: "/captions", destination: "/masterclass", permanent: true },

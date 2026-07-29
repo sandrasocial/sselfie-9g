@@ -35,10 +35,11 @@ describe("MayaActionCard", () => {
     expect(screen.getByText("Use this in post 4")).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Preview" }))
     expect(screen.getByText("Replace the current image in post 4.")).toBeInTheDocument()
+    // 2026-07-29: the preview shows the cost and confirms in one decision — the old
+    // separate "Continue" step repeated identical copy a third time.
+    expect(screen.getByText("Free")).toBeInTheDocument()
     expect(onExecute).not.toHaveBeenCalled()
 
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }))
-    expect(screen.getByText("No credits")).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Confirm and apply" }))
 
     await waitFor(() => expect(onExecute).toHaveBeenCalledTimes(1))
@@ -59,7 +60,6 @@ describe("MayaActionCard", () => {
     )
 
     fireEvent.click(screen.getByRole("button", { name: "Preview" }))
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }))
     expect(screen.getByText("3 credits")).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
 
@@ -83,7 +83,6 @@ describe("MayaActionCard", () => {
     )
 
     fireEvent.click(screen.getByRole("button", { name: "Preview" }))
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }))
     fireEvent.click(screen.getByRole("button", { name: "Confirm and apply" }))
     expect(await screen.findByRole("alert")).toHaveTextContent("The connection dropped.")
 
@@ -109,7 +108,6 @@ describe("MayaActionCard", () => {
     )
 
     fireEvent.click(screen.getByRole("button", { name: "Preview" }))
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }))
     const confirm = screen.getByRole("button", { name: "Confirm and apply" })
     fireEvent.click(confirm)
     fireEvent.click(confirm)

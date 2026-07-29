@@ -18,6 +18,10 @@ export interface FeedNav {
   /** A grid-first manual entry can create the grid and open the touched slot in one flow. */
   pendingSlotPosition?: number | null
   consumePendingSlot?: () => void
+  /** Gallery "Add to a post": the chosen image travels here; the member taps its target post.
+   *  (2026-07-29 audit: the old handler dropped the asset and just navigated.) */
+  pendingApplyImageUrl?: string | null
+  consumePendingApplyImage?: () => void
   /** Open Maya from the embedded calendar without leaving the Suite shell. */
   navigateToMaya?: (target?: CalendarPostTarget) => void
   /** Start a Story sequence in the same Maya conversation from Story Studio. */

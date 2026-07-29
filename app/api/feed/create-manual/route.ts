@@ -40,7 +40,9 @@ async function handleCreateManualFeed({
       // Body is empty or invalid JSON, use defaults
       console.log("[v0] No body or invalid JSON, using defaults")
     }
-    const title = body.title || `My Feed - ${new Date().toLocaleDateString()}`
+    // No date stamp: the server-locale date read as a stale US-format date in the header
+    // forever after (UX audit 2026-07-28). The header shows live dates itself.
+    const title = body.title || "My Feed"
     let feedStyle = body.feedStyle || null // "luxury", "minimal", or "beige"
     const directionMode = normalizeVisualDirectionMode(
       body.directionMode ?? (feedStyle ? "curated" : "maya")

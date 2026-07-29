@@ -186,7 +186,8 @@ export function executeMayaActionAdapter<Result>(
 }
 
 export function mayaActionCreditLabel(creditCost: number): string {
-  if (creditCost === 0) return "No credits"
+  // "No credits" read like an error/empty balance in the 2026-07-28 audit.
+  if (creditCost === 0) return "Free"
   return `${creditCost} ${creditCost === 1 ? "credit" : "credits"}`
 }
 

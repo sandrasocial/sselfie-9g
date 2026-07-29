@@ -85,7 +85,8 @@ export default function FeedModals({
                         : "text-[color:var(--app-text-secondary)] hover:bg-[color:var(--app-btn-secondary-hover)]"
                     }`}
                   >
-                    Post
+                    {/* "Post" read as a publish button (UX audit 2026-07-28); this is a view toggle. */}
+                    Preview
                   </button>
                   {mayaWorkspace ? (
                     <button

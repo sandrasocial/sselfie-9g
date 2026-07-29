@@ -33,11 +33,19 @@ describe("start-new chat integrity", () => {
     expect(concierge.match(/sessionChatIdRef\.current = /g)?.length).toBeGreaterThanOrEqual(4)
   })
 
-  it("openFresh outranks any in-flight server-draft restore", () => {
+  it("every explicit session action outranks any in-flight server-draft restore", () => {
     const context = read("components/app-v3/concierge-context.tsx")
     const openFreshStart = context.indexOf("const openFresh")
     const openFreshBody = context.slice(openFreshStart, context.indexOf("}, [])", openFreshStart))
-    expect(openFreshBody).toContain("restoredSavedAtRef.current = startedAt")
+    // 2026-07-29 (UX audit B1): a late-resolving mount GET replaced an ACTIVE mid-stream
+    // session and its just-sent messages were lost. Every user-initiated open/restore path
+    // now claims authority, and the restore discards its result once any exists.
+    expect(openFreshBody).toContain("claimSessionAuthority()")
+    expect(context).toContain("const claimSessionAuthority = useCallback(() => {")
+    expect(context).toContain("explicitSessionRef.current = true")
+    expect(context).toContain("if (explicitSessionRef.current) return")
+    // Every explicit session entry point claims authority (openFresh + 8 more).
+    expect(context.match(/claimSessionAuthority\(\)/g)?.length).toBeGreaterThanOrEqual(9)
   })
 })
 

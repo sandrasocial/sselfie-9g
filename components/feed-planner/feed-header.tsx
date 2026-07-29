@@ -503,9 +503,14 @@ export default function FeedHeader({
   const hasProfileImage = Boolean(profileImageUrl)
   const hasBio = !!feedData?.bio?.bio_text
 
-  // Get feed name (title) - prefer title, then brand_name, then fallback
-  const feedName =
+  // Get feed name (title) - prefer title, then brand_name, then fallback.
+  // Auto-stamped titles ("My Feed - 7/27/2026", server-locale creation date) read as a stale
+  // wrong-format date forever (UX audit 2026-07-28) — show those as plain "My Feed".
+  const rawFeedName =
     feedData?.feed?.title || feedData?.feed?.brand_name || `Feed ${currentFeedId}` || "My Feed"
+  const feedName = /^My Feed - \d{1,2}\/\d{1,2}\/\d{4}$/.test(rawFeedName)
+    ? "My Feed"
+    : rawFeedName
   const displayName = calendarProfile.displayName
   const profileUsername = calendarProfile.username
 
@@ -661,7 +666,9 @@ export default function FeedHeader({
                   disabled={isCreatingFeed}
                   className={`${feedHeaderPrimaryChipClass} disabled:opacity-50`}
                 >
-                  {isCreatingFeed ? "Creating…" : "New grid"}
+                  {/* "New grid" as the primary black button next to a full grid read as
+                      "wipe my 9 posts" (UX audit 2026-07-28) — name the intent. */}
+                  {isCreatingFeed ? "Creating…" : "Plan a new grid"}
                 </button>
               ) : null}
               {!access?.isFree && onAddRow && feedPosts.length < 30 ? (

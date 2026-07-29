@@ -137,6 +137,9 @@ export default function InstagramFeedView({
   const calendarUndoRef = useRef<(() => Promise<void>) | null>(null)
   const feedNav = useFeedNav()
   const usesSharedSuiteMaya = Boolean(feedNav?.navigateToMaya)
+  // Gallery "Add to a post" apply mode (declared in the top hook block — this component has
+  // conditional early returns below, so hooks may never live further down).
+  const [isApplyingPendingImage, setIsApplyingPendingImage] = useState(false)
 
   const { data: personalBrandData, mutate: mutatePersonalBrand } = useSWR(
     "/api/profile/personal-brand",
@@ -627,7 +630,45 @@ export default function InstagramFeedView({
     feedTitle: feedData?.feed?.brand_name || feedData?.feed?.title || "Current grid",
     requestedAction,
   })
+  // Gallery "Add to a post" apply mode: while an image is pending, tapping a post places it
+  // there instead of opening the post studio (2026-07-29 audit — the image used to be
+  // dropped on navigation). Same endpoint the post editor's own gallery picker uses.
+  const pendingApplyImageUrl = feedNav?.pendingApplyImageUrl ?? null
+  const applyPendingImageToPost = async (post: any) => {
+    if (!pendingApplyImageUrl || isApplyingPendingImage) return
+    setIsApplyingPendingImage(true)
+    try {
+      const response = await fetch(`/api/feed/${feedId}/replace-post-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ postId: Number(post.id), imageUrl: pendingApplyImageUrl }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok)
+        throw new Error(data.details || data.error || "The photo did not reach that post.")
+      feedNav?.consumePendingApplyImage?.()
+      await refreshCalendar()
+      toast({
+        title: `Photo placed in post ${post.position ?? ""}`.trim(),
+        description: "Open the post if you want to swap it back or adjust the caption.",
+      })
+    } catch (applyError) {
+      toast({
+        title: "That photo did not reach the post",
+        description: applyError instanceof Error ? applyError.message : "Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsApplyingPendingImage(false)
+    }
+  }
+
   const openPostStudio = (post: any) => {
+    if (pendingApplyImageUrl) {
+      void applyPendingImageToPost(post)
+      return
+    }
     setPlanSettingsOpen(false)
     setActivePostId(Number(post.id))
     setSelectedPost(post)
@@ -993,6 +1034,34 @@ export default function InstagramFeedView({
             />
           }
         />
+
+        {pendingApplyImageUrl && (
+          <div className="mx-auto mb-3 flex w-full max-w-3xl items-center gap-3 rounded-[8px] border border-[#0D0E10] bg-white p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={pendingApplyImageUrl}
+              alt="The photo you chose"
+              className="h-14 w-14 shrink-0 rounded-[4px] object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-medium leading-snug text-[#0D0E10]">
+                {isApplyingPendingImage
+                  ? "Placing your photo…"
+                  : "Tap the post that should use this photo."}
+              </p>
+              <p className="text-[12px] leading-snug text-[#6D6E70]">
+                You can swap it back from the post afterwards.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => feedNav?.consumePendingApplyImage?.()}
+              className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
 
         {!access?.isFree ? (
           <>

@@ -15,6 +15,12 @@ export function guidanceLessonHref(result: MayaGuidanceResult): string | null {
     : null
 }
 
+// Guidance answers were regenerated (a fresh non-zero-temperature LLM call) on EVERY drawer
+// open because this component remounts each time and kept its result in local state only —
+// the member saw different advice wording each open and every open cost tokens (UX audit
+// 2026-07-29, B3). Same request in the same tab now answers from this cache.
+const guidanceResultCache = new Map<string, MayaGuidanceResult>()
+
 export function MayaGuidanceWorkspace({
   request,
   onResult,
@@ -40,6 +46,14 @@ export function MayaGuidanceWorkspace({
   const requestKey = JSON.stringify({ ...request, question: submittedQuestion || undefined })
 
   useEffect(() => {
+    const cached = retry === 0 ? guidanceResultCache.get(requestKey) : undefined
+    if (cached) {
+      setResult(cached)
+      setError(null)
+      setLoading(false)
+      callbacksRef.current.onResult?.(cached)
+      return
+    }
     const controller = new AbortController()
     const startedAt = Date.now()
     setLoading(true)
@@ -61,6 +75,7 @@ export function MayaGuidanceWorkspace({
       })
       .then(next => {
         if (!next || controller.signal.aborted) return
+        guidanceResultCache.set(requestKey, next)
         setResult(next)
         callbacksRef.current.onResult?.(next)
         recordMayaGuidanceServed(request.job, next.sourceRefs.length, Date.now() - startedAt)
