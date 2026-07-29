@@ -68,27 +68,14 @@ export default function FeedPostCard({
     if (savedMediaUrls.length < 2 || isSavingSlides) return
     setIsSavingSlides(true)
     try {
-      const { default: JSZip } = await import("jszip")
-      const zip = new JSZip()
-      await Promise.all(
-        savedMediaUrls.map(async (url, index) => {
-          const response = await fetch(url)
-          if (!response.ok) throw new Error("A slide could not be downloaded")
-          zip.file(`post-${post.position}-slide-${index + 1}.png`, await response.arrayBuffer())
-        })
-      )
-      const bundle = await zip.generateAsync({ type: "blob" })
-      const downloadUrl = URL.createObjectURL(bundle)
-      const link = document.createElement("a")
-      link.href = downloadUrl
-      link.download = `post-${post.position}-slides.zip`
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      URL.revokeObjectURL(downloadUrl)
+      // 2026-07-29 (Sandra): save each slide straight to the device — a .zip was a dead end
+      // on phones. Same behavior as the Maya result cards' "Download all".
+      const { downloadAllSlides } = await import("@/lib/app-v3/download-all-slides")
+      const allSaved = await downloadAllSlides(savedMediaUrls, `post-${post.position}`)
+      if (!allSaved) throw new Error("A slide could not be downloaded")
     } catch {
       toast({
-        title: "Couldn't save the slides",
+        title: "Some slides didn't save",
         description: "Please try again.",
         variant: "destructive",
       })

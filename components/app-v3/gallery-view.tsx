@@ -116,11 +116,14 @@ export function groupGalleryVersions(assets: AppV3GalleryAsset[]): AppV3GalleryA
   })
 }
 
-/** UX audit U5: all slides of one carousel/story generation share a prediction-ref prefix
- *  (`<requestRef>-<slideIndex>`), so the set can be rebuilt without a schema change. */
+/** UX audit U5: all slides of one carousel/story/photoshoot generation share a
+ *  prediction-ref prefix (`<requestRef>-<slideIndex>`), so the set can be rebuilt without a
+ *  schema change. */
+const SET_CONTENT_TYPES = new Set(["carousel", "story-slide", "photoshoot"])
+
 export function gallerySetKey(asset: AppV3GalleryAsset): string | null {
   if (asset.kind !== "image") return null
-  if (asset.contentType !== "carousel" && asset.contentType !== "story-slide") return null
+  if (!SET_CONTENT_TYPES.has(asset.contentType)) return null
   const ref = asset.generationRef
   if (!ref || !/-\d+$/.test(ref)) return null
   return `${asset.contentType}:${ref.replace(/-\d+$/, "")}`
@@ -129,6 +132,59 @@ export function gallerySetKey(asset: AppV3GalleryAsset): string | null {
 function slideOrder(asset: AppV3GalleryAsset): number {
   const match = asset.generationRef?.match(/-(\d+)$/)
   return match ? Number(match[1]) : 0
+}
+
+export interface GalleryDisplayEntry {
+  asset: AppV3GalleryAsset
+  setSlides?: AppV3GalleryAsset[]
+}
+
+/** One tile per creation: sets collapse to their cover; singles pass through. Shared by the
+ *  grid and the filter-chip counts so the numbers always match what the member sees. */
+export function buildGalleryDisplayEntries(
+  visibleAssets: AppV3GalleryAsset[],
+  scopeAssets: AppV3GalleryAsset[],
+  allAssets: AppV3GalleryAsset[]
+): GalleryDisplayEntry[] {
+  const byId = new Map(allAssets.map(asset => [asset.id, asset]))
+  const rootOf = (asset: AppV3GalleryAsset) => (asset.variantOf && byId.get(asset.variantOf)) || asset
+  const entries: GalleryDisplayEntry[] = []
+  const seenSets = new Set<string>()
+  for (const asset of visibleAssets) {
+    if (asset.kind !== "image") {
+      entries.push({ asset })
+      continue
+    }
+    const root = rootOf(asset)
+    const key = gallerySetKey(root)
+    if (!key) {
+      entries.push({ asset })
+      continue
+    }
+    if (seenSets.has(key)) continue
+    seenSets.add(key)
+    const roots: AppV3GalleryAsset[] = []
+    const seenRoots = new Set<string>()
+    for (const candidate of scopeAssets) {
+      if (candidate.kind !== "image") continue
+      const candidateRoot = rootOf(candidate)
+      if (gallerySetKey(candidateRoot) !== key || seenRoots.has(candidateRoot.id)) continue
+      seenRoots.add(candidateRoot.id)
+      roots.push(candidateRoot)
+    }
+    if (roots.length < 2) {
+      entries.push({ asset })
+      continue
+    }
+    roots.sort((a, b) => slideOrder(a) - slideOrder(b))
+    // Each slide displays as its newest variant (the text-baked version) when one exists.
+    const slides = roots.map(root => {
+      const variants = scopeAssets.filter(candidate => candidate.variantOf === root.id)
+      return variants.length > 0 ? variants[variants.length - 1] : root
+    })
+    entries.push({ asset: slides[0], setSlides: slides })
+  }
+  return entries
 }
 
 function versionMeta(asset: AppV3GalleryAsset, assets: AppV3GalleryAsset[]) {
@@ -271,7 +327,7 @@ const AssetTile = memo(function AssetTile({
             showLabel ? "top-8" : "top-2"
           }`}
         >
-          {setCount} slides
+          {setCount} {asset.contentType === "photoshoot" ? "photos" : "slides"}
         </span>
       ) : versionCount > 1 ? (
         <span
@@ -420,51 +476,27 @@ export function GalleryView({
     () => filteredAssets.slice(0, visibleAssetCount),
     [filteredAssets, visibleAssetCount],
   )
-  // UX audit U5: a carousel/story generation renders as ONE tile that opens as its own
-  // N-slide set (own counter, own "Download all N"), instead of N look-alike cards
+  // UX audit U5: a carousel/story/photoshoot generation renders as ONE tile that opens as
+  // its own N-slide set (own counter, own "Download all N"), instead of N look-alike cards
   // dissolving into the page-wide browse list.
-  const displayEntries = useMemo(() => {
-    const byId = new Map((assets ?? []).map(asset => [asset.id, asset]))
-    const rootOf = (asset: AppV3GalleryAsset) =>
-      (asset.variantOf && byId.get(asset.variantOf)) || asset
-    const entries: Array<{ asset: AppV3GalleryAsset; setSlides?: AppV3GalleryAsset[] }> = []
-    const seenSets = new Set<string>()
-    for (const asset of displayedAssets) {
-      if (asset.kind !== "image") {
-        entries.push({ asset })
-        continue
-      }
-      const root = rootOf(asset)
-      const key = gallerySetKey(root)
-      if (!key) {
-        entries.push({ asset })
-        continue
-      }
-      if (seenSets.has(key)) continue
-      seenSets.add(key)
-      const roots: AppV3GalleryAsset[] = []
-      const seenRoots = new Set<string>()
-      for (const candidate of filteredAssets) {
-        if (candidate.kind !== "image") continue
-        const candidateRoot = rootOf(candidate)
-        if (gallerySetKey(candidateRoot) !== key || seenRoots.has(candidateRoot.id)) continue
-        seenRoots.add(candidateRoot.id)
-        roots.push(candidateRoot)
-      }
-      if (roots.length < 2) {
-        entries.push({ asset })
-        continue
-      }
-      roots.sort((a, b) => slideOrder(a) - slideOrder(b))
-      // Each slide displays as its newest variant (the text-baked version) when one exists.
-      const slides = roots.map(root => {
-        const variants = filteredAssets.filter(candidate => candidate.variantOf === root.id)
-        return variants.length > 0 ? variants[variants.length - 1] : root
-      })
-      entries.push({ asset: slides[0], setSlides: slides })
+  const displayEntries = useMemo(
+    () => buildGalleryDisplayEntries(displayedAssets, filteredAssets, assets ?? []),
+    [assets, displayedAssets, filteredAssets]
+  )
+  // Filter-chip numbers must match the tiles the member will actually see — the server
+  // counts individual rows, which read as "Carousels 24" over a grid of 3 sets.
+  const displayCountForFilter = useMemo(() => {
+    if (!assets) return null
+    const cache = new Map<GalleryFilter, number>()
+    return (target: GalleryFilter) => {
+      const cached = cache.get(target)
+      if (cached !== undefined) return cached
+      const scoped = groupGalleryVersions(filterAssets(assets, target))
+      const count = buildGalleryDisplayEntries(scoped, scoped, assets).length
+      cache.set(target, count)
+      return count
     }
-    return entries
-  }, [assets, displayedAssets, filteredAssets])
+  }, [assets])
   const displayedImages = useMemo(
     () =>
       displayEntries.filter(entry => !entry.setSlides && entry.asset.kind === "image").map(entry => entry.asset),
@@ -676,7 +708,11 @@ export function GalleryView({
         <div className="flex min-w-max gap-2">
           {visibleFilters.map(option => {
             const active = filter === option.id
-            const count = countForFilter(option.id, counts)
+            // Once assets are loaded, count what the grid actually shows (sets = 1 tile);
+            // server row-counts only bridge the initial load.
+            const count = displayCountForFilter
+              ? displayCountForFilter(option.id)
+              : countForFilter(option.id, counts)
             return (
               <button
                 key={option.id}

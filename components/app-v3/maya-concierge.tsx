@@ -85,7 +85,7 @@ import {
 } from "@/lib/app-v3/text-overlay"
 import { getTextStyleExampleImage, textStyleSampleSpec } from "@/lib/app-v3/text-style-examples"
 import { salvageConceptsPayload } from "@/lib/app-v3/concept-salvage"
-import { downloadAllSlidesAsZip } from "@/lib/app-v3/download-all-slides"
+import { downloadAllSlides } from "@/lib/app-v3/download-all-slides"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 import {
   applyEditedConceptCopy,
@@ -682,7 +682,24 @@ export function MayaConcierge({
     if (!el) return
     el.scrollTo?.({ top: el.scrollHeight, behavior: "smooth" })
   }, [])
-  const composerRef = useRef<HTMLInputElement>(null)
+  const composerRef = useRef<HTMLTextAreaElement>(null)
+  // Chat-input best practice (2026-07-29 report): multiline composer. Desktop: Enter sends,
+  // Shift+Enter breaks the line. Touch: Enter breaks the line, the Send button sends —
+  // the same contract as every major mobile chat app.
+  const coarsePointerRef = useRef<boolean | null>(null)
+  const isCoarsePointer = () => {
+    if (coarsePointerRef.current === null) {
+      coarsePointerRef.current =
+        typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches === true
+    }
+    return coarsePointerRef.current
+  }
+  const resizeComposer = () => {
+    const el = composerRef.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${Math.min(el.scrollHeight, 144)}px`
+  }
   const drawerCloseRef = useRef<HTMLButtonElement>(null)
   const drawerRef = useRef<HTMLElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
@@ -744,6 +761,10 @@ export function MayaConcierge({
   const [uploadingSlot, setUploadingSlot] = useState<UploadSlot | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [input, setInput] = useState("")
+  // Collapse the composer back to one row once the message is sent (value cleared).
+  useEffect(() => {
+    if (input === "" && composerRef.current) composerRef.current.style.height = "auto"
+  }, [input])
   const [pendingClarifyKind, setPendingClarifyKind] = useState<"format" | "detail" | null>(null)
   const [generationSource, setGenerationSource] = useState<GenerationSource>(
     () => restoredDraft?.generationSource ?? "selfie"
@@ -5186,9 +5207,10 @@ export function MayaConcierge({
                       }
                     }}
                     onAddToCalendar={
-                      (conceptFormat === "photo" ||
-                        conceptFormat === "carousel" ||
-                        conceptFormat === "story-sequence") &&
+                      // Every image format lands in the plan (2026-07-29 report #4). Video
+                      // stays out until the planner can hold video posts — its grid,
+                      // preview, and publish flow are image-based today.
+                      conceptFormat !== "video" &&
                       !(operatingLayerEnabled && actionTarget)
                         ? async () => {
                             const current = genState[key]
@@ -5323,7 +5345,7 @@ export function MayaConcierge({
                     ) : isUser ? (
                       <div className="flex min-w-0 max-w-full flex-row-reverse items-end gap-2">
                         <Avatar src={userAvatar} fallback="You" />
-                        <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[18px] rounded-br-[6px] bg-[#0D0E10] px-4 py-3 text-[15px] leading-relaxed text-white [overflow-wrap:anywhere] sm:max-w-[80%]">
+                        <div className="min-w-0 max-w-[calc(100%-2.25rem)] whitespace-pre-wrap break-words rounded-[18px] rounded-br-[6px] bg-[#0D0E10] px-4 py-3 text-[15px] leading-relaxed text-white [overflow-wrap:anywhere] sm:max-w-[80%]">
                           {text}
                         </div>
                       </div>
@@ -5467,7 +5489,7 @@ export function MayaConcierge({
                                     const allUrls = urls.map(
                                       (url, i) => gen.bakedImageUrls?.[i] ?? url
                                     )
-                                    const started = await downloadAllSlidesAsZip(
+                                    const started = await downloadAllSlides(
                                       allUrls,
                                       shootTitle
                                     )
@@ -5823,14 +5845,19 @@ export function MayaConcierge({
                 {uploadingSlot === "inspiration" ? "…" : "+"}
               </button>
             )}
-            <input
+            <textarea
               ref={composerRef}
-              type="text"
+              rows={1}
               aria-label="Message Maya"
               value={input}
-              onChange={e => setInput(e.target.value)}
+              onChange={e => {
+                setInput(e.target.value)
+                resizeComposer()
+              }}
               onKeyDown={e => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                // Desktop: Enter sends, Shift+Enter breaks the line. Touch keyboards use
+                // Enter for line breaks and the Send button to send (standard chat UX).
+                if (e.key === "Enter" && !e.shiftKey && !isCoarsePointer()) {
                   e.preventDefault()
                   void handleSend()
                 }
@@ -5838,7 +5865,7 @@ export function MayaConcierge({
               placeholder={
                 textRefining ? "Maya is updating the text…" : "Want something different? Ask Maya…"
               }
-              className="h-12 min-w-0 flex-1 rounded-full border border-[#C5C6C8]/60 bg-white px-4 text-[15px] text-[#282728] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#0D0E10] focus:shadow-[0_0_0_3px_rgba(13,14,16,0.06)] min-[380px]:px-5"
+              className="max-h-36 min-h-12 min-w-0 flex-1 resize-none rounded-[24px] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[15px] leading-snug text-[#282728] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#0D0E10] focus:shadow-[0_0_0_3px_rgba(13,14,16,0.06)] min-[380px]:px-5"
             />
             <button
               type="button"

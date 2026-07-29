@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react"
 import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 import { initiateAssetDownload } from "@/lib/app-v3/download-asset"
-import { downloadAllSlidesAsZip } from "@/lib/app-v3/download-all-slides"
+import { downloadAllSlides } from "@/lib/app-v3/download-all-slides"
 import { FavoriteButton } from "./favorite-button"
 
 interface ImageLightboxProps {
@@ -297,7 +297,7 @@ export function ImageLightbox({
                 if (bulkDownloadStatus === "preparing") return
                 setBulkDownloadStatus("preparing")
                 const allUrls = images.map((imgUrl, i) => bakedImageUrls?.[i] ?? imgUrl)
-                const started = await downloadAllSlidesAsZip(
+                const started = await downloadAllSlides(
                   allUrls,
                   conceptTitle || "sselfie-slides"
                 )
@@ -327,7 +327,7 @@ export function ImageLightbox({
         </div>
         {bulkDownloadStatus === "error" && (
           <p role="alert" className="text-[11px] text-white/70">
-            Couldn&apos;t bundle the zip. Please try again.
+            Some photos didn&apos;t save. Please try again.
           </p>
         )}
       </div>

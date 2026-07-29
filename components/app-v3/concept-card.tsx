@@ -14,7 +14,7 @@ import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 import { retryGeneratedImageOnce } from "./image-retry"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
 import { initiateAssetDownload } from "@/lib/app-v3/download-asset"
-import { downloadAllSlidesAsZip } from "@/lib/app-v3/download-all-slides"
+import { downloadAllSlides } from "@/lib/app-v3/download-all-slides"
 import {
   getEditableConceptCopy,
   type EditableConceptCopy,
@@ -540,7 +540,7 @@ export function ConceptCard({
                       const allUrls = images.map(
                         (imgUrl, i) => gen.bakedImageUrls?.[i] ?? imgUrl
                       )
-                      const started = await downloadAllSlidesAsZip(allUrls, concept.title)
+                      const started = await downloadAllSlides(allUrls, concept.title)
                       if (!started) {
                         setBulkDownloadStatus("error")
                         return
@@ -596,7 +596,7 @@ export function ConceptCard({
             )}
             {bulkDownloadStatus === "error" && (
               <p role="alert" className="text-[12px] text-[#4F5052]">
-                Couldn&apos;t bundle the zip. Please try again.
+                Some photos didn&apos;t save. Please try again.
               </p>
             )}
             {/* UX audit U1: a finished creation is a POST, not a pile of images — the plan

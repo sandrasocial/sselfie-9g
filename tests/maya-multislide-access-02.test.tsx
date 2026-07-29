@@ -31,11 +31,15 @@ const read = (path: string) => readFileSync(path, "utf8")
 function stubZipEnvironment() {
   const originalCreateObjectURL = URL.createObjectURL
   const originalRevokeObjectURL = URL.revokeObjectURL
-  URL.createObjectURL = vi.fn(() => "blob:zip")
+  URL.createObjectURL = vi.fn(() => "blob:slide")
   URL.revokeObjectURL = vi.fn()
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) }))
+    vi.fn(async () => ({
+      ok: true,
+      arrayBuffer: async () => new ArrayBuffer(8),
+      blob: async () => new Blob([new ArrayBuffer(8)]),
+    }))
   )
   return () => {
     URL.createObjectURL = originalCreateObjectURL
@@ -96,10 +100,11 @@ describe("ImageLightbox: numbered slide navigation and bulk download", () => {
     expect(screen.queryByRole("button", { name: /download all/i })).not.toBeInTheDocument()
   })
 
-  it("bundles every slide into one zip on Download all", async () => {
+  it("saves every slide to the device as its own image on Download all", async () => {
+    // 2026-07-29 (Sandra): individual saves, never a .zip — one object URL per slide.
     render(<ImageLightbox images={carouselImages(3)} conceptTitle="My Carousel" onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole("button", { name: "Download all 3" }))
-    await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledOnce())
+    await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledTimes(3), { timeout: 4000 })
     expect(fetch).toHaveBeenCalledTimes(3)
     await waitFor(() =>
       expect(recordSuiteDownloadForReview).toHaveBeenCalledWith({
@@ -110,7 +115,7 @@ describe("ImageLightbox: numbered slide navigation and bulk download", () => {
     )
   })
 
-  it("prefers the baked render over the clean base when zipping", async () => {
+  it("prefers the baked render over the clean base when saving all", async () => {
     render(
       <ImageLightbox
         images={["https://example.com/clean-1.png", "https://example.com/clean-2.png"]}
@@ -124,12 +129,12 @@ describe("ImageLightbox: numbered slide navigation and bulk download", () => {
     expect(fetch).toHaveBeenCalledWith("https://example.com/clean-2.png")
   })
 
-  it("shows a plain retry state instead of a half-downloaded zip on fetch failure", async () => {
+  it("shows a plain retry state when a slide fails to save", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false })))
     render(<ImageLightbox images={carouselImages(2)} onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole("button", { name: "Download all 2" }))
     await waitFor(() =>
-      expect(screen.getByText("Couldn't bundle the zip. Please try again.")).toBeInTheDocument()
+      expect(screen.getByText("Some photos didn't save. Please try again.")).toBeInTheDocument()
     )
     expect(URL.createObjectURL).not.toHaveBeenCalled()
   })
@@ -209,10 +214,10 @@ describe("ConceptCard: inline slide access and bulk download for carousels", () 
     expect(onOpen).toHaveBeenCalledWith(carouselImages(4))
   })
 
-  it("bundles every slide into one zip on Download all, without leaving the chat", async () => {
+  it("saves every slide to the device on Download all, without leaving the chat", async () => {
     renderDoneCarousel()
     fireEvent.click(screen.getByRole("button", { name: "Download all 4" }))
-    await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledOnce())
+    await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledTimes(4), { timeout: 5000 })
     expect(fetch).toHaveBeenCalledTimes(4)
     await waitFor(() =>
       expect(recordSuiteDownloadForReview).toHaveBeenCalledWith({
@@ -256,7 +261,7 @@ describe("maya-concierge wires startIndex/conceptTitle and keeps the frozen asse
     const start = concierge.indexOf("const key = `${m.id}:photoshoot-set`")
     const block = concierge.slice(start, concierge.indexOf("})()}", start))
     expect(block).toContain("openPhotoshootLightbox(index)")
-    expect(block).toContain("downloadAllSlidesAsZip")
+    expect(block).toContain("downloadAllSlides")
     expect(block).toContain("View all")
   })
 })
