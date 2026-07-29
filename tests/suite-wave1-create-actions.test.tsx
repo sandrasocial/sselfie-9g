@@ -254,4 +254,18 @@ describe("Wave 1 Create actions", () => {
       expect(new Set(visibleSources).size).toBe(visibleSources.length)
     })
   })
+
+  it("keeps Maya's desktop recommendation face-safe and above the fixed navigation", async () => {
+    renderCreate()
+    await screen.findByText("Your next photo")
+
+    const recommendation = screen.getByRole("button", { name: /Your next photo/i })
+    const image = recommendation.querySelector("img")
+
+    expect(recommendation).toHaveAttribute("data-visual-card-layout", "editorial")
+    expect(recommendation.className).toContain("lg:min-h-[340px]")
+    expect(recommendation.className).toContain("lg:grid-cols-[minmax(0,1fr)_340px]")
+    expect(image?.className).toContain("object-[50%_18%]")
+    expect(image?.className).toContain("lg:object-[50%_0%]")
+  })
 })

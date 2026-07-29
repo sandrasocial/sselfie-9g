@@ -138,6 +138,7 @@ function VisualCard({
   priority = false,
   compact = false,
   disabled = false,
+  layout = "overlay",
 }: {
   image: string
   eyebrow: string
@@ -148,41 +149,87 @@ function VisualCard({
   priority?: boolean
   compact?: boolean
   disabled?: boolean
+  layout?: "overlay" | "editorial"
 }) {
+  const editorial = layout === "editorial"
+
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
+      data-visual-card-layout={layout}
       className={`group relative block w-full overflow-hidden rounded-[10px] bg-[color:var(--ss-night)] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2 ${
-        compact ? "min-h-[300px]" : "min-h-[430px] sm:min-h-[520px]"
+        editorial
+          ? "min-h-[430px] sm:min-h-[520px] lg:grid lg:min-h-[340px] lg:grid-cols-[minmax(0,1fr)_340px] lg:border lg:border-[color:var(--ss-silver)]/60 lg:bg-white lg:shadow-[0_16px_48px_rgba(13,14,16,0.06)] xl:min-h-[380px] xl:grid-cols-[minmax(0,1fr)_380px]"
+          : compact
+            ? "min-h-[300px]"
+            : "min-h-[430px] sm:min-h-[520px]"
       } disabled:cursor-not-allowed disabled:opacity-55`}
     >
-      {image ? (
-        <Image
-          src={image}
-          alt=""
-          fill
-          priority={priority}
-          sizes={compact ? "(max-width: 720px) 88vw, 28vw" : "(max-width: 1024px) 100vw, 54vw"}
-          className="object-cover object-center opacity-95 transition-transform duration-700 ease-out group-hover:scale-[1.025]"
+      <span
+        className={
+          editorial
+            ? "absolute inset-0 overflow-hidden lg:relative lg:inset-auto lg:col-start-2 lg:row-start-1 lg:block lg:min-h-[340px] xl:min-h-[380px]"
+            : "absolute inset-0 overflow-hidden"
+        }
+      >
+        {image ? (
+          <Image
+            src={image}
+            alt=""
+            fill
+            priority={priority}
+            sizes={
+              compact ? "(max-width: 720px) 88vw, 28vw" : "(max-width: 1024px) 100vw, 42vw"
+            }
+            className={`object-cover object-[50%_18%] opacity-95 transition-transform duration-700 ease-out group-hover:scale-[1.025] ${
+              editorial ? "lg:object-[50%_0%]" : ""
+            }`}
+          />
+        ) : null}
+        <span
+          className={`absolute inset-0 bg-gradient-to-t from-[color:var(--ss-night)]/90 via-[color:var(--ss-night)]/20 to-transparent ${
+            editorial ? "lg:hidden" : ""
+          }`}
         />
-      ) : null}
-      <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--ss-night)]/90 via-[color:var(--ss-night)]/20 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
-        <p className="text-[10px] uppercase tracking-[0.26em] text-white/75">{eyebrow}</p>
+      </span>
+      <span
+        className={
+          editorial
+            ? "absolute inset-x-0 bottom-0 p-5 sm:p-7 lg:relative lg:inset-auto lg:col-start-1 lg:row-start-1 lg:flex lg:min-h-[340px] lg:flex-col lg:justify-center lg:p-8 xl:min-h-[380px] xl:p-10"
+            : "absolute inset-x-0 bottom-0 p-5 sm:p-7"
+        }
+      >
+        <span
+          className={`block text-[10px] uppercase tracking-[0.26em] text-white/75 ${
+            editorial ? "lg:text-[color:var(--ss-gray)]" : ""
+          }`}
+        >
+          {eyebrow}
+        </span>
         <h3
           className={`mt-2 font-serif font-light leading-[1.04] text-white ${
             compact ? "text-[29px]" : "text-[34px] sm:text-[46px]"
-          }`}
+          } ${editorial ? "lg:text-[40px] lg:text-[color:var(--ss-night)]" : ""}`}
         >
           {title}
         </h3>
-        <p className="mt-2 max-w-lg text-[13px] leading-relaxed text-white/82">{body}</p>
-        <span className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-[5px] bg-white px-4 text-[10px] uppercase tracking-[0.17em] text-[color:var(--ss-night)]">
+        <span
+          className={`mt-2 block max-w-lg text-[13px] leading-relaxed text-white/82 ${
+            editorial ? "lg:text-[14px] lg:text-[color:var(--ss-davy)]" : ""
+          }`}
+        >
+          {body}
+        </span>
+        <span
+          className={`mt-4 inline-flex min-h-11 w-fit items-center gap-2 rounded-[5px] bg-white px-4 text-[10px] uppercase tracking-[0.17em] text-[color:var(--ss-night)] ${
+            editorial ? "lg:bg-[color:var(--ss-night)] lg:text-white" : ""
+          }`}
+        >
           {action} <ArrowUpRight size={14} aria-hidden />
         </span>
-      </div>
+      </span>
     </button>
   )
 }
@@ -499,6 +546,7 @@ export function VisualFrontDoor({
           action={shouldShowTrialFirstRun ? "Add my selfie" : "Add one selfie"}
           onClick={() => openSelfieManagerInMaya("add_selfie")}
           priority
+          layout="editorial"
         />
         {preSelfieChatEnabled ? (
           <button
@@ -637,6 +685,7 @@ export function VisualFrontDoor({
             onClick={openRecommendation}
             disabled={workspaceBusy}
             priority
+            layout="editorial"
           />
           {!operatingLayerEnabled ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
@@ -792,7 +841,7 @@ export function VisualFrontDoor({
                     alt=""
                     fill
                     sizes="(max-width: 640px) 48vw, 22vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.025]"
+                    className="object-cover object-[50%_18%] transition-transform duration-500 group-hover:scale-[1.025]"
                   />
                 </span>
                 <span className="mt-2 block text-[11px] text-[color:var(--ss-davy)]">
@@ -840,7 +889,7 @@ export function VisualFrontDoor({
                     alt=""
                     fill
                     sizes="220px"
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.025]"
+                    className="object-cover object-[50%_18%] transition-transform duration-500 group-hover:scale-[1.025]"
                   />
                 </span>
                 <span className="mt-2 flex items-center justify-between gap-2 text-[11px] text-[color:var(--ss-davy)]">
