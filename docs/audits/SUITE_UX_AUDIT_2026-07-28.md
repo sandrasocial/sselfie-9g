@@ -304,6 +304,18 @@ End of week: which of the top-10 did you reproduce; anything new → same eviden
 - `/login` → 308 → `/auth/login`, `/signup` → 308 → `/auth/sign-up` ✓ (previously 404)
 - Full test suite 1788 green; production build green; both commits authored ssa@ssasocial.com
 
+## Completion 2026-07-29 (commit e35f9795, verified live)
+
+All remaining approved items shipped and smoke-tested on production:
+- **U1** — "Add to my plan" is a first-class action on done cards, now including carousels and story sequences (all slides land as the post's media set); the plan slot's caption and date come back and render on the card with one-tap copy. Verified live on the CEO carousel card.
+- **U5** — carousel/story slides collapse into one "N slides" gallery tile that opens as its own set: verified live — "7 slides" tile → counter "1 / 7", "Download all 7" (previously "1/24"/"Download all 24").
+- **Memory brand prefill** — empty notes now surface a summary of Maya's real brand knowledge (verified live: business, audience, pillars populated from `user_personal_brand`).
+- **Bio** — empty state is one-tap "Draft my bio" (drafts from brand, opens for review); verified live.
+- **Home pick rotation** — a started pick rotates out for 7 days (localStorage), so home never re-prompts an idea already taken into Maya.
+- **Learn maturity** — guidance prompt now carries member activity (creations, ready posts) with an explicit rule against starter-step recommendations for active members; guidance responses also cache client-side per session.
+
+Still open (deliberately deferred, needs product decisions): true date-level scheduling in Calendar, organizing the gallery by post/project beyond sets, and a server-side guidance cache.
+
 ## Updated fix order (approved 2026-07-29)
 
 1. **B1** session-hijack + draft-race fix (stamp/invalidate restore on every open path; flush message PUT immediately, not only debounced)
