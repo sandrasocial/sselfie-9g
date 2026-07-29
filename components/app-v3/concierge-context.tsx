@@ -252,7 +252,10 @@ export function ConciergeProvider({
         startedAt: prev.startedAt,
       }
     })
-    setIsOpen(true)
+    // Deliberately does NOT open the drawer: every interactive caller already has it open,
+    // and the task-hydration effect calls this while the drawer is CLOSED on /app load —
+    // the unconditional setIsOpen(true) here was the real "stale drawer auto-opens on every
+    // load" bug (2026-07-29 live verification; survived e2a3445f, which only fixed restore).
   }, [claimSessionAuthority])
 
   const openForCalendarPost = useCallback(
