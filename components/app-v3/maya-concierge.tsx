@@ -5186,14 +5186,25 @@ export function MayaConcierge({
                       }
                     }}
                     onAddToCalendar={
-                      conceptFormat === "photo" && !(operatingLayerEnabled && actionTarget)
+                      (conceptFormat === "photo" ||
+                        conceptFormat === "carousel" ||
+                        conceptFormat === "story-sequence") &&
+                      !(operatingLayerEnabled && actionTarget)
                         ? async () => {
                             const current = genState[key]
-                            const url = (current?.imageUrls ?? [])[0]
+                            // Prefer the baked (text-carrying) slide over its clean base.
+                            const urls = (current?.imageUrls ?? []).map(
+                              (cleanUrl, index) => current?.bakedImageUrls?.[index] ?? cleanUrl
+                            )
+                            const url = urls[0]
                             if (!url) return null
                             const aiImageId = current?.aiImageIds?.[0] ?? current?.aiImageId ?? null
                             const selectedCalendarPost = session?.calendarTarget
-                            if (calendarSurfaceActive && selectedCalendarPost) {
+                            if (
+                              conceptFormat === "photo" &&
+                              calendarSurfaceActive &&
+                              selectedCalendarPost
+                            ) {
                               if (selectedCalendarPost.delivery?.imageUrl === url) {
                                 return {
                                   scheduledAt:
@@ -5218,6 +5229,7 @@ export function MayaConcierge({
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({
                                   imageUrl: url,
+                                  ...(urls.length > 1 ? { imageUrls: urls } : {}),
                                   aiImageId,
                                   conceptTitle: concept.title,
                                 }),
@@ -5225,7 +5237,14 @@ export function MayaConcierge({
                               if (res.status === 403) return "forbidden" as const
                               if (!res.ok) return null
                               const data = await res.json()
-                              return data?.scheduledAt ? { scheduledAt: data.scheduledAt } : null
+                              return data?.scheduledAt
+                                ? {
+                                    scheduledAt: data.scheduledAt,
+                                    position:
+                                      typeof data.position === "number" ? data.position : undefined,
+                                    caption: typeof data.caption === "string" ? data.caption : null,
+                                  }
+                                : null
                             } catch {
                               return null
                             }

@@ -69,10 +69,13 @@ interface ConceptCardProps {
   /** Feed Planner Phase 2c: Maya saves this photo to the member's content calendar herself,
    *  picking the slot - resolves with the day it landed on for the confirmation label.
    *  "forbidden" = this plan has no Calendar (403); the action and offer hide themselves. */
-  onAddToCalendar?: () => Promise<{ scheduledAt: string } | "forbidden" | null>
+  onAddToCalendar?: () => Promise<
+    { scheduledAt: string; position?: number; caption?: string | null } | "forbidden" | null
+  >
   /** Show Maya's spoken save-offer line above the actions. The concierge passes true for the
    *  FIRST finished photo only, so a 3-card batch doesn't repeat the same sentence 3 times -
    *  the "Add to calendar" button itself stays on every eligible card. */
+  /** Retained for callers; the plan action now always renders in the open (UX audit U1). */
   showCalendarOffer?: boolean
   /** Replaces the single idle button when a guided picker should own the next step. */
   idleAction?: ReactNode
@@ -177,6 +180,11 @@ export function ConceptCard({
     "idle" | "saving" | "saved" | "error" | "unavailable"
   >("idle")
   const [savedDateLabel, setSavedDateLabel] = useState<string | null>(null)
+  // The plan slot's caption comes back from the placement call — showing it here is what
+  // turns "7 images saved" into a publishable post (UX audit U1).
+  const [savedCaption, setSavedCaption] = useState<string | null>(null)
+  const [savedPosition, setSavedPosition] = useState<number | null>(null)
+  const [captionCopied, setCaptionCopied] = useState(false)
   const [textRetryStatus, setTextRetryStatus] = useState<"idle" | "retrying" | "error">("idle")
   const handleRetryText = async () => {
     if (!onRetryText || textRetryStatus === "retrying") return
@@ -210,6 +218,8 @@ export function ConceptCard({
       setSavedDateLabel(
         date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
       )
+      setSavedCaption(result.caption?.trim() ? result.caption : null)
+      setSavedPosition(typeof result.position === "number" ? result.position : null)
       setCalendarStatus("saved")
     } catch {
       setCalendarStatus("error")
@@ -589,6 +599,64 @@ export function ConceptCard({
                 Couldn&apos;t bundle the zip. Please try again.
               </p>
             )}
+            {/* UX audit U1: a finished creation is a POST, not a pile of images — the plan
+                action and its caption live here in the open, not behind the More expander. */}
+            {calendarAvailable &&
+              !isVideoDone &&
+              (calendarStatus === "saved" ? (
+                <div className="rounded-[10px] border border-[#C5C6C8]/50 bg-[#F8FAFA] p-3">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
+                    In your plan
+                    {savedPosition ? ` · Post ${savedPosition}` : ""}
+                    {savedDateLabel ? ` · ${savedDateLabel}` : ""}
+                  </p>
+                  {savedCaption ? (
+                    <>
+                      <div className="mt-2 flex items-center justify-between gap-3">
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
+                          Your caption
+                        </p>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              if (!navigator.clipboard) throw new Error("Clipboard unavailable")
+                              await navigator.clipboard.writeText(savedCaption)
+                              setCaptionCopied(true)
+                              window.setTimeout(() => setCaptionCopied(false), 1800)
+                            } catch {
+                              // Press-and-hold fallback is always available on the text itself.
+                            }
+                          }}
+                          className="inline-flex min-h-11 items-center text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                        >
+                          {captionCopied ? "Copied" : "Copy caption"}
+                        </button>
+                      </div>
+                      <pre className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap break-words font-sans text-[12px] leading-relaxed text-[#282728] [overflow-wrap:anywhere]">
+                        {savedCaption}
+                      </pre>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-[12px] leading-relaxed text-[#4F5052]">
+                      Open the post in your Calendar when you want to shape the caption.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleAddToCalendar}
+                  disabled={calendarStatus === "saving"}
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-[8px] border border-[#0D0E10] bg-white px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] transition-colors hover:bg-[#F1F2F2] disabled:opacity-50"
+                >
+                  {calendarStatus === "saving"
+                    ? "Adding to your plan…"
+                    : calendarStatus === "error"
+                      ? "Try adding to your plan again"
+                      : "Add to my plan"}
+                </button>
+              ))}
             {resultActions}
             <details className="group rounded-[8px] border border-[#C5C6C8]/55 bg-white">
               <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3.5 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0D0E10]">
@@ -607,29 +675,6 @@ export function ConceptCard({
                     Edit photo
                   </button>
                 )}
-                {calendarAvailable &&
-                  !isCarousel &&
-                  !isVideoDone &&
-                  (calendarStatus === "saved" ? (
-                    <span className="inline-flex min-h-11 items-center px-3.5 text-[11px] uppercase tracking-[0.12em] text-[#4F5052]">
-                      Added · {savedDateLabel}
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleAddToCalendar}
-                      disabled={calendarStatus === "saving"}
-                      className="inline-flex min-h-11 items-center rounded-[6px] border border-[#C5C6C8] px-3.5 text-[11px] uppercase tracking-[0.12em] text-[#4F5052] hover:border-[#0D0E10] disabled:opacity-50"
-                    >
-                      {calendarStatus === "saving"
-                        ? "Saving…"
-                        : calendarStatus === "error"
-                          ? "Try calendar again"
-                          : showCalendarOffer
-                            ? "Add to calendar"
-                            : "Save to calendar"}
-                    </button>
-                  ))}
                 {promptAssetId && !isVideoDone && (
                   <a
                     href={`/api/admin/app-v3/generation-prompt?id=${encodeURIComponent(promptAssetId)}`}

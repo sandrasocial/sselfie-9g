@@ -51,6 +51,62 @@ const clean = (v: string | undefined): string | null => {
 }
 
 /**
+ * A readable summary of what Maya actually knows about her brand. The Memory page used to
+ * show an EMPTY "Your brand" field while Maya's chat clearly knew her pillars and voice —
+ * they read different stores (UX audit 2026-07-28). This bridges them for display/prefill.
+ */
+export async function getBrandProfileSummary(
+  neonUserId: string | number
+): Promise<string | null> {
+  const rows = await sql`
+    SELECT business_type, target_audience, ideal_audience, transformation_story,
+           brand_voice, brand_vibe, content_pillars
+    FROM user_personal_brand
+    WHERE user_id = ${String(neonUserId)}
+    LIMIT 1
+  `
+  const profile = rows[0] as Record<string, unknown> | undefined
+  if (!profile) return null
+  const text = (value: unknown): string | null =>
+    typeof value === "string" && value.trim() ? value.trim() : null
+
+  let pillars: string | null = null
+  try {
+    const raw = profile.content_pillars
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw
+    const list = Array.isArray(parsed)
+      ? parsed
+      : parsed && typeof parsed === "object" && Array.isArray((parsed as any).pillars)
+        ? (parsed as any).pillars
+        : []
+    const names = list
+      .map((item: unknown) =>
+        typeof item === "string"
+          ? item.trim()
+          : item && typeof item === "object"
+            ? text((item as any).name) ?? text((item as any).title)
+            : null
+      )
+      .filter(Boolean)
+    pillars = names.length ? names.join(", ") : null
+  } catch {
+    pillars = text(profile.content_pillars)
+  }
+
+  const parts: string[] = []
+  const businessType = text(profile.business_type)
+  if (businessType) parts.push(`What you do: ${businessType}`)
+  const audience = text(profile.target_audience) ?? text(profile.ideal_audience)
+  if (audience) parts.push(`Who it's for: ${audience}`)
+  const voice = [text(profile.brand_voice), text(profile.brand_vibe)].filter(Boolean).join(", ")
+  if (voice) parts.push(`Voice & vibe: ${voice}`)
+  if (pillars) parts.push(`Content pillars: ${pillars}`)
+  const story = text(profile.transformation_story)
+  if (story) parts.push(`Your story: ${story.slice(0, 400)}`)
+  return parts.length > 0 ? parts.join("\n") : null
+}
+
+/**
  * Merge interview facts into user_personal_brand (COALESCE semantics - never blanks a field
  * she filled elsewhere). Marks the profile completed once the essentials exist, and
  * invalidates the Redis cache so Maya's very next reply already knows her.

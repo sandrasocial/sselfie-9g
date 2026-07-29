@@ -41,6 +41,42 @@ const FALLBACK_RECOMMENDATION: MayaRecommendation = {
   format: "photo",
 }
 
+// Started home picks rotate out for a week so the front door never re-prompts an idea she
+// already took into Maya (UX audit: the card kept saying "Create this" after creation).
+const STARTED_RECS_KEY = "sselfie.appV3.startedRecommendations.v1"
+const STARTED_REC_TTL_MS = 7 * 24 * 60 * 60 * 1000
+
+function readStartedRecommendations(): Set<string> {
+  try {
+    const raw = window.localStorage.getItem(STARTED_RECS_KEY)
+    const parsed = raw ? (JSON.parse(raw) as Record<string, number>) : {}
+    const now = Date.now()
+    return new Set(
+      Object.entries(parsed)
+        .filter(([, startedAt]) => typeof startedAt === "number" && now - startedAt < STARTED_REC_TTL_MS)
+        .map(([title]) => title)
+    )
+  } catch {
+    return new Set()
+  }
+}
+
+function markRecommendationStarted(title: string) {
+  try {
+    const raw = window.localStorage.getItem(STARTED_RECS_KEY)
+    const parsed = raw ? (JSON.parse(raw) as Record<string, number>) : {}
+    const now = Date.now()
+    const next: Record<string, number> = {}
+    for (const [key, startedAt] of Object.entries(parsed)) {
+      if (typeof startedAt === "number" && now - startedAt < STARTED_REC_TTL_MS) next[key] = startedAt
+    }
+    next[title] = now
+    window.localStorage.setItem(STARTED_RECS_KEY, JSON.stringify(next))
+  } catch {
+    // best effort; the card simply shows the same pick again
+  }
+}
+
 const MAYA_GENERAL: Aesthetic = {
   id: "maya-general",
   name: "SSELFIE",
@@ -199,7 +235,15 @@ export function VisualFrontDoor({
 
   const shouldShowTrialFirstRun = showTrialFirstRunStep && !hasSelfie && !firstRunAlreadySeen
   const fallbackImage = aesthetics[0]?.coverImage || AESTHETICS[0]?.coverImage || ""
-  const recommendation = recommendations[0] ?? FALLBACK_RECOMMENDATION
+  // UX audit: once she starts a pick, home must not keep re-prompting the same idea —
+  // the audit found the card still saying "Create this" for a carousel already made.
+  // Started picks rotate out for a week; if she started them all, the newest pick returns.
+  const [startedRecEpoch, setStartedRecEpoch] = useState(0)
+  const recommendation = useMemo(() => {
+    void startedRecEpoch
+    const started = readStartedRecommendations()
+    return recommendations.find(item => !started.has(item.title)) ?? recommendations[0] ?? FALLBACK_RECOMMENDATION
+  }, [recommendations, startedRecEpoch])
   const recommendationImage = recommendation.imageUrl || fallbackImage
   const alternateWorlds = useMemo(() => {
     const seenImages = new Set<string>([recommendationImage])
@@ -334,6 +378,8 @@ export function VisualFrontDoor({
   function openRecommendation() {
     const intent = intentForFormat(recommendation.format, "content_card")
     trackFirstAction("maya_recommendation")
+    markRecommendationStarted(recommendation.title)
+    setStartedRecEpoch(epoch => epoch + 1)
     openWithAesthetic(MAYA_DECIDES_AESTHETIC, {
       format: recommendation.format,
       seed: `Let's create this: ${recommendation.title}. ${recommendation.rationale}`,

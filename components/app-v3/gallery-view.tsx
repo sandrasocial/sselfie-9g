@@ -116,6 +116,21 @@ export function groupGalleryVersions(assets: AppV3GalleryAsset[]): AppV3GalleryA
   })
 }
 
+/** UX audit U5: all slides of one carousel/story generation share a prediction-ref prefix
+ *  (`<requestRef>-<slideIndex>`), so the set can be rebuilt without a schema change. */
+export function gallerySetKey(asset: AppV3GalleryAsset): string | null {
+  if (asset.kind !== "image") return null
+  if (asset.contentType !== "carousel" && asset.contentType !== "story-slide") return null
+  const ref = asset.generationRef
+  if (!ref || !/-\d+$/.test(ref)) return null
+  return `${asset.contentType}:${ref.replace(/-\d+$/, "")}`
+}
+
+function slideOrder(asset: AppV3GalleryAsset): number {
+  const match = asset.generationRef?.match(/-(\d+)$/)
+  return match ? Number(match[1]) : 0
+}
+
 function versionMeta(asset: AppV3GalleryAsset, assets: AppV3GalleryAsset[]) {
   const byId = new Map(assets.map(item => [item.id, item]))
   const rootId = asset.variantOf && byId.has(asset.variantOf) ? asset.variantOf : asset.id
@@ -170,6 +185,7 @@ const AssetTile = memo(function AssetTile({
   versionIndex,
   versionCount,
   favoritePending,
+  setCount,
 }: {
   asset: AppV3GalleryAsset
   index: number
@@ -186,6 +202,8 @@ const AssetTile = memo(function AssetTile({
   versionIndex: number
   versionCount: number
   favoritePending: boolean
+  /** Present when this tile represents a whole carousel/story set (UX audit U5). */
+  setCount?: number
 }) {
   const isVideo = asset.kind === "video"
   const title = safeAssetTitle(asset)
@@ -247,7 +265,15 @@ const AssetTile = memo(function AssetTile({
           {assetLabel(asset)}
         </span>
       )}
-      {versionCount > 1 && (
+      {setCount ? (
+        <span
+          className={`pointer-events-none absolute left-2 rounded-[3px] bg-[#0D0E10]/80 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.14em] text-white backdrop-blur-sm ${
+            showLabel ? "top-8" : "top-2"
+          }`}
+        >
+          {setCount} slides
+        </span>
+      ) : versionCount > 1 ? (
         <span
           className={`pointer-events-none absolute left-2 rounded-[3px] bg-white/85 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.14em] text-[color:var(--ss-charcoal)] backdrop-blur-sm ${
             showLabel ? "top-8" : "top-2"
@@ -255,7 +281,7 @@ const AssetTile = memo(function AssetTile({
         >
           {versionIndex === 0 ? "Original" : `Version ${versionIndex + 1}`} · {versionCount}
         </span>
-      )}
+      ) : null}
       {asset.title?.trim() && title === asset.title.trim() && (
         <span className="pointer-events-none absolute inset-x-2 bottom-12 line-clamp-2 rounded-[3px] bg-[color:var(--ss-night)]/45 px-2 py-1 text-[10px] leading-snug text-white backdrop-blur-sm">
           {title}
@@ -394,11 +420,59 @@ export function GalleryView({
     () => filteredAssets.slice(0, visibleAssetCount),
     [filteredAssets, visibleAssetCount],
   )
+  // UX audit U5: a carousel/story generation renders as ONE tile that opens as its own
+  // N-slide set (own counter, own "Download all N"), instead of N look-alike cards
+  // dissolving into the page-wide browse list.
+  const displayEntries = useMemo(() => {
+    const byId = new Map((assets ?? []).map(asset => [asset.id, asset]))
+    const rootOf = (asset: AppV3GalleryAsset) =>
+      (asset.variantOf && byId.get(asset.variantOf)) || asset
+    const entries: Array<{ asset: AppV3GalleryAsset; setSlides?: AppV3GalleryAsset[] }> = []
+    const seenSets = new Set<string>()
+    for (const asset of displayedAssets) {
+      if (asset.kind !== "image") {
+        entries.push({ asset })
+        continue
+      }
+      const root = rootOf(asset)
+      const key = gallerySetKey(root)
+      if (!key) {
+        entries.push({ asset })
+        continue
+      }
+      if (seenSets.has(key)) continue
+      seenSets.add(key)
+      const roots: AppV3GalleryAsset[] = []
+      const seenRoots = new Set<string>()
+      for (const candidate of filteredAssets) {
+        if (candidate.kind !== "image") continue
+        const candidateRoot = rootOf(candidate)
+        if (gallerySetKey(candidateRoot) !== key || seenRoots.has(candidateRoot.id)) continue
+        seenRoots.add(candidateRoot.id)
+        roots.push(candidateRoot)
+      }
+      if (roots.length < 2) {
+        entries.push({ asset })
+        continue
+      }
+      roots.sort((a, b) => slideOrder(a) - slideOrder(b))
+      // Each slide displays as its newest variant (the text-baked version) when one exists.
+      const slides = roots.map(root => {
+        const variants = filteredAssets.filter(candidate => candidate.variantOf === root.id)
+        return variants.length > 0 ? variants[variants.length - 1] : root
+      })
+      entries.push({ asset: slides[0], setSlides: slides })
+    }
+    return entries
+  }, [assets, displayedAssets, filteredAssets])
   const displayedImages = useMemo(
-    () => displayedAssets.filter(asset => asset.kind === "image"),
-    [displayedAssets]
+    () =>
+      displayEntries.filter(entry => !entry.setSlides && entry.asset.kind === "image").map(entry => entry.asset),
+    [displayEntries]
   )
   const lightboxImages = useMemo(() => displayedImages.map(asset => asset.url), [displayedImages])
+  // A tapped set opens as its own lightbox scope.
+  const [lightboxSet, setLightboxSet] = useState<AppV3GalleryAsset[] | null>(null)
   const comparison = useMemo(() => {
     if (!compareAsset || !assets) return null
     const byId = new Map(assets.map(asset => [asset.id, asset]))
@@ -465,10 +539,22 @@ export function GalleryView({
         setPreviewVideo(asset)
         return
       }
+      const entry = displayEntries.find(item => item.asset.id === asset.id)
+      if (entry?.setSlides) {
+        startTransition(() => {
+          setLightboxSet(entry.setSlides ?? null)
+          setLightboxIndex(0)
+        })
+        return
+      }
       const imageIndex = displayedImages.findIndex(item => item.id === asset.id)
-      if (imageIndex >= 0) startTransition(() => setLightboxIndex(imageIndex))
+      if (imageIndex >= 0)
+        startTransition(() => {
+          setLightboxSet(null)
+          setLightboxIndex(imageIndex)
+        })
     },
-    [displayedImages]
+    [displayEntries, displayedImages]
   )
 
   function toggleSelected(id: string) {
@@ -699,33 +785,33 @@ export function GalleryView({
         </div>
       )}
 
-      {displayedAssets.length > 0 && (
+      {displayEntries.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {displayedAssets.map((asset, i) => (
-            (() => {
-              const version = versionMeta(asset, filteredAssets)
-              return (
-                <AssetTile
-                  key={asset.id}
-                  asset={asset}
-                  index={i}
-                  selected={selectedIds.has(asset.id)}
-                  selectionMode={selectionMode}
-                  showLabel={filter === "all"}
-                  versionIndex={version.index}
-                  versionCount={version.count}
-                  favoritePending={favoritePendingIds.has(asset.id)}
-                  onOpen={openAsset}
-                  onToggleSelect={toggleSelected}
-                  onFavorite={toggleFavorite}
-                  onDelete={asset => setPendingDeleteIds([asset.id])}
-                  onDownload={downloadAsset}
-                  onMakeMotion={onMakeMotion}
-                  onCompare={setCompareAsset}
-                />
-              )
-            })()
-          ))}
+          {displayEntries.map((entry, i) => {
+            const asset = entry.asset
+            const version = entry.setSlides ? { index: 0, count: 1 } : versionMeta(asset, filteredAssets)
+            return (
+              <AssetTile
+                key={entry.setSlides ? `set-${asset.id}` : asset.id}
+                asset={asset}
+                index={i}
+                selected={selectedIds.has(asset.id)}
+                selectionMode={selectionMode}
+                showLabel={filter === "all"}
+                versionIndex={version.index}
+                versionCount={version.count}
+                favoritePending={favoritePendingIds.has(asset.id)}
+                setCount={entry.setSlides?.length}
+                onOpen={openAsset}
+                onToggleSelect={toggleSelected}
+                onFavorite={toggleFavorite}
+                onDelete={asset => setPendingDeleteIds([asset.id])}
+                onDownload={downloadAsset}
+                onMakeMotion={onMakeMotion}
+                onCompare={setCompareAsset}
+              />
+            )
+          })}
         </div>
       )}
 
@@ -739,36 +825,46 @@ export function GalleryView({
         </button>
       )}
 
-      {lightboxIndex !== null && lightboxImages.length > 0 && (
-        <ImageLightbox
-          images={lightboxImages}
-          assetIds={displayedImages.map(asset => asset.id)}
-          formats={displayedImages.map(asset => asset.contentType)}
-          favoriteStates={displayedImages.map(asset => asset.isFavorite)}
-          startIndex={lightboxIndex}
-          onClose={() => setLightboxIndex(null)}
-          onUseInCalendar={
-            operatingLayerEnabled && onUseInCalendar
-              ? index => {
-                  const asset = displayedImages[index]
-                  if (!asset) return
-                  setLightboxIndex(null)
-                  onUseInCalendar(asset)
-                }
-              : undefined
+      {lightboxIndex !== null &&
+        (() => {
+          // A set browses only its own slides; singles browse the page's single images.
+          const scope = lightboxSet ?? displayedImages
+          if (scope.length === 0) return null
+          const closeLightbox = () => {
+            setLightboxIndex(null)
+            setLightboxSet(null)
           }
-          onCreateVariation={
-            operatingLayerEnabled && onCreateVariation
-              ? index => {
-                  const asset = displayedImages[index]
-                  if (!asset) return
-                  setLightboxIndex(null)
-                  onCreateVariation(asset)
-                }
-              : undefined
-          }
-        />
-      )}
+          return (
+            <ImageLightbox
+              images={scope.map(asset => asset.url)}
+              assetIds={scope.map(asset => asset.id)}
+              formats={scope.map(asset => asset.contentType)}
+              favoriteStates={scope.map(asset => asset.isFavorite)}
+              startIndex={Math.min(lightboxIndex, scope.length - 1)}
+              onClose={closeLightbox}
+              onUseInCalendar={
+                operatingLayerEnabled && onUseInCalendar
+                  ? index => {
+                      const asset = scope[index]
+                      if (!asset) return
+                      closeLightbox()
+                      onUseInCalendar(asset)
+                    }
+                  : undefined
+              }
+              onCreateVariation={
+                operatingLayerEnabled && onCreateVariation
+                  ? index => {
+                      const asset = scope[index]
+                      if (!asset) return
+                      closeLightbox()
+                      onCreateVariation(asset)
+                    }
+                  : undefined
+              }
+            />
+          )
+        })()}
 
       {compareAsset && comparison ? (
         <div className="fixed inset-0 z-[72] flex items-end justify-center bg-[#0D0E10]/80 p-0 backdrop-blur-sm sm:items-center sm:p-5">

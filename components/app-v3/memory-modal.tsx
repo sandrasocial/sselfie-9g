@@ -54,7 +54,10 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
       })
       .then(d => {
         setName(d?.agentName ?? "")
-        setBrand(d?.brandNotes ?? "")
+        // Empty notes prefill from what Maya actually knows (user_personal_brand), so the
+        // page never claims she knows nothing while her chat plainly does. Saving persists
+        // the member's edited version as her notes.
+        setBrand(d?.brandNotes ?? d?.brandProfileSummary ?? "")
         setPrefs(d?.preferences ?? "")
         setAvatarUrl(d?.userAvatarUrl ?? null)
         setLikenessNotes(Array.isArray(d?.likenessNotes) ? d.likenessNotes : [])

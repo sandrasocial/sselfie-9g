@@ -60,8 +60,9 @@ describe("Calendar Instagram profile", () => {
 
     expect(screen.getByRole("heading", { name: "sandrasstudio" })).toBeInTheDocument()
     expect(screen.getByText("Sandra")).toBeInTheDocument()
-    expect(screen.getByText(/add a short bio so people know what you do/i)).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /create bio with maya/i })).toBeInTheDocument()
+    // 2026-07-29 (UX audit): the empty state offers a one-tap draft, not bio homework.
+    expect(screen.getByText(/maya can write your bio from your brand/i)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /draft my bio/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /create highlights with maya/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Plan a new grid" })).toHaveClass(
       "text-[color:var(--app-btn-primary-text)]"
@@ -73,7 +74,7 @@ describe("Calendar Instagram profile", () => {
     expect(screen.getByText("Work")).toBeInTheDocument()
     expect(screen.getByText("Life")).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: /create bio with maya/i }))
+    fireEvent.click(screen.getByRole("button", { name: /draft my bio/i }))
     fireEvent.click(screen.getByRole("button", { name: /create highlights with maya/i }))
     expect(createBio).toHaveBeenCalledTimes(1)
     expect(createHighlights).toHaveBeenCalledTimes(1)

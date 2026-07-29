@@ -47,11 +47,28 @@ export async function POST(request: Request) {
       accessibleProductIds,
       lessonProgress: registry.lessonProgress,
     })
+    // Cheap maturity signals so the advice matches where she already is (UX audit: an
+    // account with hundreds of creations was recommended day-one Branding Planner work).
+    let memberActivity: { creationCount: number; calendarReadyCount: number } | undefined
+    try {
+      const { sql } = await import("@/lib/db/client")
+      const [creations, ready] = await Promise.all([
+        sql`SELECT COUNT(*)::int AS n FROM ai_images WHERE user_id = ${neonUser.id} AND generation_status = 'completed'`,
+        sql`SELECT COUNT(*)::int AS n FROM feed_posts WHERE user_id = ${neonUser.id} AND image_url IS NOT NULL`,
+      ])
+      memberActivity = {
+        creationCount: Number((creations[0] as any)?.n ?? 0),
+        calendarReadyCount: Number((ready[0] as any)?.n ?? 0),
+      }
+    } catch {
+      /* guidance still works without the signal */
+    }
     const result = await generateMayaGuidance({
       request: guidanceRequest,
       sources: ranked.fragments,
       hasQuestionMatch: ranked.hasQuestionMatch,
       userId: String(neonUser.id),
+      memberActivity,
     })
     return NextResponse.json(result)
   } catch (error) {

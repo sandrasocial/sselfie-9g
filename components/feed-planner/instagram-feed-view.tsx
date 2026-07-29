@@ -274,6 +274,15 @@ export default function InstagramFeedView({
     setShowBioModal(true)
   }
 
+  // UX audit: with brand data on file, the empty state should not hand her homework.
+  // One tap drafts the bio from her brand and opens it already written, for review.
+  const handleDraftBio = () => {
+    if (!feedId) return
+    setBioText(feedData?.bio?.bio_text || "")
+    setShowBioModal(true)
+    if (!feedData?.bio?.bio_text) void handleGenerateBio()
+  }
+
   const handleGenerateBio = async () => {
     if (!feedId) return
 
@@ -1003,6 +1012,7 @@ export default function InstagramFeedView({
             access?.hasGalleryAccess ? () => setShowProfileGallery(true) : undefined
           }
           onWriteBio={handleOpenBio}
+          onDraftBio={handleDraftBio}
           onCreateHighlights={() => {
             setSelectedHighlightId(null)
             setInitialHighlightTitle(null)

@@ -33,10 +33,17 @@ export async function POST(req: Request) {
   const neonUser = await getUserByAuthId(user.id)
   if (!neonUser) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
-  const { imageUrl, aiImageId, conceptTitle } = await req.json()
+  const { imageUrl, imageUrls, aiImageId, conceptTitle } = await req.json()
   if (typeof imageUrl !== "string" || !imageUrl.trim()) {
     return NextResponse.json({ error: "imageUrl is required" }, { status: 400 })
   }
+  // UX audit U1: carousels and story sequences place ALL their slides as the post's media
+  // set, so what lands in the plan is the publishable post, not just the cover.
+  const mediaUrls = Array.isArray(imageUrls)
+    ? imageUrls
+        .filter((url: unknown): url is string => typeof url === "string" && /^https:\/\//.test(url))
+        .slice(0, 10)
+    : []
 
   try {
     // Same entitlement that gates the Calendar tab itself - a limited/free session must not
@@ -180,12 +187,21 @@ export async function POST(req: Request) {
       }
     }
 
-    await sql`
-      UPDATE feed_posts
-      SET image_url = ${imageUrl}, ai_image_id = ${aiImageId ?? null}, generation_status = 'completed',
-          caption = ${caption}
-      WHERE id = ${targetPostId}
-    `
+    if (mediaUrls.length > 1) {
+      await sql`
+        UPDATE feed_posts
+        SET image_url = ${imageUrl}, ai_image_id = ${aiImageId ?? null}, generation_status = 'completed',
+            caption = ${caption}, media_urls = ${JSON.stringify(mediaUrls)}::jsonb
+        WHERE id = ${targetPostId}
+      `
+    } else {
+      await sql`
+        UPDATE feed_posts
+        SET image_url = ${imageUrl}, ai_image_id = ${aiImageId ?? null}, generation_status = 'completed',
+            caption = ${caption}
+        WHERE id = ${targetPostId}
+      `
+    }
 
     return NextResponse.json({ position: targetPosition, scheduledAt, caption })
   } catch (error) {

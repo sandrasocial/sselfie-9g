@@ -19,6 +19,9 @@ export function guidanceLessonHref(result: MayaGuidanceResult): string | null {
 // open because this component remounts each time and kept its result in local state only —
 // the member saw different advice wording each open and every open cost tokens (UX audit
 // 2026-07-29, B3). Same request in the same tab now answers from this cache.
+// Disabled under test: a module-level cache outlives one test's render and would serve the
+// previous test's result instead of exercising the mocked fetch flow.
+const guidanceCacheEnabled = process.env.NODE_ENV !== "test"
 const guidanceResultCache = new Map<string, MayaGuidanceResult>()
 
 export function MayaGuidanceWorkspace({
@@ -46,7 +49,8 @@ export function MayaGuidanceWorkspace({
   const requestKey = JSON.stringify({ ...request, question: submittedQuestion || undefined })
 
   useEffect(() => {
-    const cached = retry === 0 ? guidanceResultCache.get(requestKey) : undefined
+    const cached =
+      guidanceCacheEnabled && retry === 0 ? guidanceResultCache.get(requestKey) : undefined
     if (cached) {
       setResult(cached)
       setError(null)
@@ -75,7 +79,7 @@ export function MayaGuidanceWorkspace({
       })
       .then(next => {
         if (!next || controller.signal.aborted) return
-        guidanceResultCache.set(requestKey, next)
+        if (guidanceCacheEnabled) guidanceResultCache.set(requestKey, next)
         setResult(next)
         callbacksRef.current.onResult?.(next)
         recordMayaGuidanceServed(request.job, next.sourceRefs.length, Date.now() - startedAt)

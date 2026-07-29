@@ -226,6 +226,9 @@ export async function generateMayaGuidance(input: {
   sources: MayaGuidanceSource[]
   hasQuestionMatch: boolean
   userId: string
+  /** UX audit: an account with hundreds of creations was told to "complete your Branding
+   *  Planner as your first concrete step". Real activity keeps the advice at her level. */
+  memberActivity?: { creationCount: number; calendarReadyCount: number }
 }): Promise<MayaGuidanceResult> {
   if (!input.sources.length) throw new Error("No Maya guidance sources are available")
   if (input.request.question && !input.hasQuestionMatch) {
@@ -241,6 +244,7 @@ export async function generateMayaGuidance(input: {
     "Return one practical recommendation, one short reason, and the IDs of the fragments that support the answer.",
     "Prefer one useful action over a list. If the fragments do not support the question, say that clearly.",
     "You cannot create images, spend credits, modify Calendar data, publish, or call any tool.",
+    "Match the step to where the member already is. When her activity shows real creation history, never recommend starter setup or 'first step' foundation work such as defining her identity or completing a planner. Choose the closest next step that builds on what she is already doing.",
     "Keep the answer warm, direct, and concise. Do not use an em dash.",
   ].join("\n")
   const fragmentText = input.sources
@@ -249,6 +253,9 @@ export async function generateMayaGuidance(input: {
   const prompt = [
     `Active job: ${input.request.job}`,
     input.request.memberGoal ? `Member goal: ${input.request.memberGoal}` : "",
+    input.memberActivity
+      ? `Member activity: ${input.memberActivity.creationCount} finished creations, ${input.memberActivity.calendarReadyCount} calendar posts ready.`
+      : "",
     input.request.question ? `Question: ${input.request.question}` : "",
     `Teaching fragments:\n${fragmentText}`,
   ]

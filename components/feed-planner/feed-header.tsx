@@ -15,6 +15,8 @@ interface FeedHeaderProps {
   onBack?: () => void
   onProfileImageClick?: () => void
   onWriteBio: () => void
+  /** One-tap draft-from-brand for the empty state (UX audit: never hand her bio homework). */
+  onDraftBio?: () => void
   onCreateHighlights?: () => void
   onCreateHighlight?: (title: string) => void
   onHighlightClick?: (highlight: any) => void
@@ -45,6 +47,7 @@ export default function FeedHeader({
   onBack,
   onProfileImageClick,
   onWriteBio,
+  onDraftBio,
   onCreateHighlights,
   onCreateHighlight,
   onHighlightClick,
@@ -636,15 +639,15 @@ export default function FeedHeader({
             ) : (
               <div className="mt-1 max-w-xl">
                 <p className="text-[13px] leading-relaxed text-[#6D6E70]">
-                  Add a short bio so people know what you do and who you help.
+                  Maya can write your bio from your brand — one tap, then review it.
                 </p>
                 {!access?.isFree ? (
                   <button
                     type="button"
-                    onClick={onWriteBio}
+                    onClick={onDraftBio ?? onWriteBio}
                     className="mt-1 min-h-11 text-[12px] font-medium text-[#0D0E10] underline underline-offset-4"
                   >
-                    Create bio with Maya
+                    Draft my bio
                   </button>
                 ) : null}
               </div>

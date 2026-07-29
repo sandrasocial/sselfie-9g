@@ -208,8 +208,11 @@ describe("App v3 stable asset analytics lineage", () => {
     const gallery = read("components/app-v3/gallery-view.tsx")
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
-    expect(gallery).toContain("assetIds={displayedImages.map(asset => asset.id)}")
-    expect(gallery).toContain("formats={displayedImages.map(asset => asset.contentType)}")
+    // 2026-07-29 (UX audit U5): the lightbox scope is either a carousel/story SET or the
+    // page's single images — ids and formats stay aligned per-image within that scope.
+    expect(gallery).toContain("const scope = lightboxSet ?? displayedImages")
+    expect(gallery).toContain("assetIds={scope.map(asset => asset.id)}")
+    expect(gallery).toContain("formats={scope.map(asset => asset.contentType)}")
     expect(concierge).toContain("assetIds={lightbox.assetIds}")
     expect(concierge).toContain("bakedAssetIds={lightbox.bakedAssetIds}")
     expect(concierge).toContain("formats={lightbox.formats}")

@@ -12,7 +12,10 @@ import {
   removeLikenessNote,
   saveMemory,
 } from "@/lib/app-v3/maya/memory-store"
-import { hasUsableBrandProfile } from "@/lib/app-v3/maya/brand-profile-store"
+import {
+  getBrandProfileSummary,
+  hasUsableBrandProfile,
+} from "@/lib/app-v3/maya/brand-profile-store"
 import {
   clearPreferredFeedStyle,
   getPreferredFeedStyle,
@@ -58,7 +61,17 @@ export async function GET() {
     } catch {
       /* leave true */
     }
-    return NextResponse.json({ ...mem, hasBrandProfile })
+    // When the manual notes are empty but Maya's real brand context exists, surface it —
+    // the page must never claim Maya knows nothing while her chat plainly does (UX audit).
+    let brandProfileSummary: string | null = null
+    if (!mem.brandNotes?.trim()) {
+      try {
+        brandProfileSummary = await getBrandProfileSummary(String(neonUserId))
+      } catch {
+        /* summary is best-effort */
+      }
+    }
+    return NextResponse.json({ ...mem, hasBrandProfile, brandProfileSummary })
   } catch (e) {
     console.error("[app-v3 memory] read failed:", e)
     return NextResponse.json({ error: "Could not load memory" }, { status: 500 })
