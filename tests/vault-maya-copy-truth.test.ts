@@ -2,6 +2,7 @@
 import fs from "fs"
 import path from "path"
 import { describe, expect, it } from "vitest"
+import { ALLOWED_ANALYTICS_EVENTS } from "@/lib/analytics/event-contract"
 
 // B5/B6 + decisions 1 & 5 (Sandra, 2026-07-30): vault surfaces may not promise chat,
 // inspo-image requests, or any speed claim, and must disclose monthly-credit expiry.
@@ -86,7 +87,7 @@ describe("B1: vault-only customers can reach billing/cancellation", () => {
 describe("B10: activation instrumentation is wired", () => {
   it("studio emits every measurement-plan event", () => {
     const studio = read("components/vault-maya/vault-maya-studio.tsx")
-    for (const event of [
+    const events = [
       "vault_maya_studio_viewed",
       "vault_maya_selfie_added",
       "vault_maya_generation_started",
@@ -94,9 +95,19 @@ describe("B10: activation instrumentation is wired", () => {
       "vault_maya_generation_failed",
       "vault_maya_photo_saved",
       "vault_maya_drop_request_sent",
-    ]) {
+    ]
+    for (const event of events) {
       expect(studio).toContain(event)
+      expect(ALLOWED_ANALYTICS_EVENTS).toContain(event)
     }
+  })
+
+  it("accepts the Vault checkout funnel events instead of rejecting them", () => {
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("vault_maya_checkout_email_capture_view")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("vault_maya_checkout_payment_entry_shown")
+    expect(read("app/checkout/page.tsx")).toContain(
+      'if (productType === "vault_maya") return "vault_maya_checkout_payment_entry_shown"'
+    )
   })
 })
 

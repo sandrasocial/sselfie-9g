@@ -10,7 +10,6 @@ import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import {
   addOrUpdateResendContact,
   updateContactTags as updateTags,
-  addContactToSegment,
 } from "@/lib/resend/manage-contact"
 import { isBrandEngineCheckoutProductType } from "@/lib/brand-engine/offer-checkout-config"
 import { handlePromptVaultCheckout } from "@/lib/payments/handlers/prompt-vault"
@@ -30,10 +29,7 @@ import { ensureExistingNeonPublicCheckoutAuth } from "@/lib/payments/public-chec
 import { handleTransformCheckout, isTransformProductType } from "@/lib/payments/handlers/transform"
 import { handleAcademyProductCheckout } from "@/lib/payments/handlers/academy-products"
 import { handleStudioMembershipSubscriptionCheckout } from "@/lib/payments/handlers/studio-membership"
-import {
-  markRevenueEnginePurchase,
-  markEmailLogConversionForCheckout,
-} from "@/lib/payments/shared"
+import { markRevenueEnginePurchase, markEmailLogConversionForCheckout } from "@/lib/payments/shared"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import {
   completeReferralForPurchase,
@@ -517,19 +513,6 @@ export async function handleCheckoutSessionCompleted(
         console.log(
           `[v0] Added paying customer ${customerEmail} to Resend audience with ID: ${resendResult.contactId}`
         )
-
-        if (process.env.RESEND_BETA_SEGMENT_ID) {
-          const segmentResult = await addContactToSegment(
-            customerEmail,
-            process.env.RESEND_BETA_SEGMENT_ID
-          )
-
-          if (segmentResult.success) {
-            console.log(`[v0] Added ${customerEmail} to Beta Customers segment`)
-          } else {
-            console.error(`[v0] Failed to add to Beta segment: ${segmentResult.error}`)
-          }
-        }
       } else {
         console.error(`[v0] Failed to add paying customer to Resend: ${resendResult.error}`)
       }
@@ -686,7 +669,8 @@ export async function handleCheckoutSessionCompleted(
           currency: session.currency ?? null,
           reason: "processing_error",
           rawMetadata: session.metadata as Record<string, unknown>,
-          notes: "Campaign payment could not be written to stripe_payments. Fulfillment was stopped so Stripe can retry.",
+          notes:
+            "Campaign payment could not be written to stripe_payments. Fulfillment was stopped so Stripe can retry.",
         })
         throw new Error(`Campaign revenue recording failed for ${session.id}`)
       }
@@ -1152,7 +1136,7 @@ export async function handleCheckoutSessionCompleted(
 
               authUserId = recoveredUser.id
               console.log(
-                `[v0] Recovered Supabase auth user ${recoveredUser.id} after create conflict`,
+                `[v0] Recovered Supabase auth user ${recoveredUser.id} after create conflict`
               )
             }
 
@@ -1180,28 +1164,28 @@ export async function handleCheckoutSessionCompleted(
                 ? "/academy/access/visibility-suite"
                 : productType === "selfie_visibility_bundle"
                   ? "/academy/access/one-selfie"
-                : academyMiniProductSlug
-                  ? `/academy/access/${academyMiniProductSlug}`
-                  : productType === "starter_kit"
-                    ? "/academy/access/starter-kit"
-                    : productType === "masterclass"
-                      ? "/academy/access/brand-strategy"
-                      : productType === "prompt_vault"
-                        ? "/prompt-vault"
-                        : productType === "selfie_ai_photos_kit"
-                          ? "/selfie-to-ai-photos-kit"
-                        : productType === "presets_single" || productType === "presets_bundle"
-                          ? "/presets"
-                          : productType === "selfie_to_brand_shoot_system"
-                            ? "/academy/access/selfie-to-brand-shoot"
-                            : productType === "work_with_me"
-                              ? "/academy/access/masterclass"
-                              : isTransformProductType(productType)
-                                ? "/transform/studio"
-                                : productType === "selfie_guide" ||
-                                    productType === "selfie_guide_bundle"
-                                  ? "/selfie-guide"
-                                  : "/app"
+                  : academyMiniProductSlug
+                    ? `/academy/access/${academyMiniProductSlug}`
+                    : productType === "starter_kit"
+                      ? "/academy/access/starter-kit"
+                      : productType === "masterclass"
+                        ? "/academy/access/brand-strategy"
+                        : productType === "prompt_vault"
+                          ? "/prompt-vault"
+                          : productType === "selfie_ai_photos_kit"
+                            ? "/selfie-to-ai-photos-kit"
+                            : productType === "presets_single" || productType === "presets_bundle"
+                              ? "/presets"
+                              : productType === "selfie_to_brand_shoot_system"
+                                ? "/academy/access/selfie-to-brand-shoot"
+                                : productType === "work_with_me"
+                                  ? "/academy/access/masterclass"
+                                  : isTransformProductType(productType)
+                                    ? "/transform/studio"
+                                    : productType === "selfie_guide" ||
+                                        productType === "selfie_guide_bundle"
+                                      ? "/selfie-guide"
+                                      : "/app"
             const { data: resetData, error: resetError } =
               await supabaseAdmin.auth.admin.generateLink({
                 type: "recovery",

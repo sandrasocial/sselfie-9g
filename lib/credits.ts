@@ -503,19 +503,89 @@ export async function grantMonthlyCredits(
           FROM user_credits
           WHERE user_id = ${userId}
         ),
-        purchased AS MATERIALIZED (
-          SELECT COALESCE(SUM(GREATEST(amount, 0)), 0)::int AS lifetime_purchased
+        previous_grant AS MATERIALIZED (
+          SELECT
+            id,
+            balance_after,
+            CASE
+              WHEN description LIKE 'Monthly Vault Maya reset%' THEN ${VAULT_MAYA_MONTHLY_CREDITS}
+              WHEN description LIKE 'Monthly Creator Studio reset%' THEN ${MONTHLY_MEMBERSHIP_CREDITS}
+              ELSE ${credits}
+            END::int AS included_at_grant
           FROM credit_transactions
           WHERE user_id = ${userId}
-            AND transaction_type = 'purchase'
+            AND transaction_type = 'subscription_grant'
+            AND stripe_payment_id IS DISTINCT FROM ${normalizedInvoiceId}
             AND COALESCE(is_test_mode, false) = ${isTestMode}
+          ORDER BY id DESC
+          LIMIT 1
+        ),
+        window_activity AS MATERIALIZED (
+          SELECT
+            COALESCE(
+              SUM(GREATEST(ct.amount, 0))
+                FILTER (WHERE ct.transaction_type = 'purchase'),
+              0
+            )::int AS purchased_added,
+            COALESCE(
+              SUM(GREATEST(ct.amount, 0))
+                FILTER (WHERE ct.transaction_type IN ('bonus', 'trial_grant')),
+              0
+            )::int AS expiring_added,
+            COALESCE(
+              SUM(GREATEST(-ct.amount, 0))
+                FILTER (WHERE ct.transaction_type IN ('training', 'image', 'animation')),
+              0
+            )::int AS usage_spent,
+            COALESCE(
+              SUM(GREATEST(ct.amount, 0))
+                FILTER (WHERE ct.transaction_type = 'refund'),
+              0
+            )::int AS usage_refunded
+          FROM credit_transactions ct
+          WHERE ct.user_id = ${userId}
+            AND COALESCE(ct.is_test_mode, false) = ${isTestMode}
+            AND (
+              NOT EXISTS (SELECT 1 FROM previous_grant)
+              OR ct.id > (SELECT id FROM previous_grant)
+            )
+        ),
+        credit_pools AS MATERIALIZED (
+          SELECT
+            GREATEST(
+              COALESCE(
+                (SELECT balance_after - included_at_grant FROM previous_grant),
+                0
+              ),
+              0
+            )::int + purchased_added AS purchased_available,
+            LEAST(
+              COALESCE((SELECT balance_after FROM previous_grant), 0),
+              COALESCE((SELECT included_at_grant FROM previous_grant), 0)
+            )::int + expiring_added AS expiring_available,
+            usage_spent,
+            usage_refunded
+          FROM window_activity
+        ),
+        purchased AS MATERIALIZED (
+          SELECT
+            GREATEST(
+              purchased_available
+                + GREATEST(usage_refunded - usage_spent, 0)
+                - GREATEST(
+                    usage_spent - usage_refunded - expiring_available,
+                    0
+                  ),
+              0
+            )::int AS purchased_remaining
+          FROM credit_pools
         ),
         reset_amounts AS MATERIALIZED (
           SELECT
             COALESCE((SELECT balance FROM wallet), 0)::int AS current_balance,
             LEAST(
               COALESCE((SELECT balance FROM wallet), 0),
-              COALESCE((SELECT lifetime_purchased FROM purchased), 0)
+              COALESCE((SELECT purchased_remaining FROM purchased), 0)
             )::int AS purchased_preserved
         ),
         balance_reset AS (

@@ -50,42 +50,39 @@ describe("B4: identity-reference ownership behavior", () => {
     const foreign = "https://one.public.blob.vercel-storage.com/foreign.png"
     mocks.sql.mockResolvedValue([{ image_url: owned }])
 
-    const { findUnownedIdentityReferences } = await import(
-      "@/lib/app-v3/identity-reference-ownership"
-    )
+    const { findUnownedIdentityReferences } =
+      await import("@/lib/app-v3/identity-reference-ownership")
     await expect(
       findUnownedIdentityReferences({
         neonUserId: "user-1",
         referenceUrls: [owned, foreign],
         admin: false,
-      }),
+      })
     ).resolves.toEqual([foreign])
   })
 
   it("does not query stored ownership for a self-supplied data URI", async () => {
-    const { findUnownedIdentityReferences } = await import(
-      "@/lib/app-v3/identity-reference-ownership"
-    )
+    const { findUnownedIdentityReferences } =
+      await import("@/lib/app-v3/identity-reference-ownership")
     await expect(
       findUnownedIdentityReferences({
         neonUserId: "user-1",
         referenceUrls: ["data:image/png;base64,abc"],
         admin: false,
-      }),
+      })
     ).resolves.toEqual([])
     expect(mocks.sql).not.toHaveBeenCalled()
   })
 
   it("preserves the explicit admin-tooling exemption", async () => {
-    const { findUnownedIdentityReferences } = await import(
-      "@/lib/app-v3/identity-reference-ownership"
-    )
+    const { findUnownedIdentityReferences } =
+      await import("@/lib/app-v3/identity-reference-ownership")
     await expect(
       findUnownedIdentityReferences({
         neonUserId: "admin-1",
         referenceUrls: ["https://one.public.blob.vercel-storage.com/customer.png"],
         admin: true,
-      }),
+      })
     ).resolves.toEqual([])
     expect(mocks.sql).not.toHaveBeenCalled()
   })
@@ -94,9 +91,17 @@ describe("B4: identity-reference ownership behavior", () => {
 describe("B3: duplicate checkout prevention behavior", () => {
   it("allows a cleanly confirmed anonymous checkout", async () => {
     mocks.getSupabaseUser.mockResolvedValue({ data: { user: null }, error: null })
-    const { assertVaultMayaCheckoutAllowed } = await import(
-      "@/lib/launch/vault-maya-checkout-guard"
-    )
+    const { assertVaultMayaCheckoutAllowed } =
+      await import("@/lib/launch/vault-maya-checkout-guard")
+    await expect(assertVaultMayaCheckoutAllowed()).resolves.toBeUndefined()
+  })
+
+  it("allows anonymous checkout when Supabase reports a missing auth session", async () => {
+    const missingSession = new Error("Auth session missing!")
+    missingSession.name = "AuthSessionMissingError"
+    mocks.getSupabaseUser.mockRejectedValue(missingSession)
+    const { assertVaultMayaCheckoutAllowed } =
+      await import("@/lib/launch/vault-maya-checkout-guard")
     await expect(assertVaultMayaCheckoutAllowed()).resolves.toBeUndefined()
   })
 
@@ -107,9 +112,8 @@ describe("B3: duplicate checkout prevention behavior", () => {
     })
     mocks.getUserIdFromSupabase.mockResolvedValue("member-1")
     mocks.getSuiteAccess.mockResolvedValue({ level: "member" })
-    const { assertVaultMayaCheckoutAllowed, VAULT_MAYA_ALREADY_INCLUDED } = await import(
-      "@/lib/launch/vault-maya-checkout-guard"
-    )
+    const { assertVaultMayaCheckoutAllowed, VAULT_MAYA_ALREADY_INCLUDED } =
+      await import("@/lib/launch/vault-maya-checkout-guard")
     await expect(assertVaultMayaCheckoutAllowed()).rejects.toThrow(VAULT_MAYA_ALREADY_INCLUDED)
   })
 
@@ -119,12 +123,9 @@ describe("B3: duplicate checkout prevention behavior", () => {
       error: null,
     })
     mocks.getUserIdFromSupabase.mockRejectedValue(new Error("database unavailable"))
-    const { assertVaultMayaCheckoutAllowed, VAULT_MAYA_ACCESS_CHECK_FAILED } = await import(
-      "@/lib/launch/vault-maya-checkout-guard"
-    )
-    await expect(assertVaultMayaCheckoutAllowed()).rejects.toThrow(
-      VAULT_MAYA_ACCESS_CHECK_FAILED,
-    )
+    const { assertVaultMayaCheckoutAllowed, VAULT_MAYA_ACCESS_CHECK_FAILED } =
+      await import("@/lib/launch/vault-maya-checkout-guard")
+    await expect(assertVaultMayaCheckoutAllowed()).rejects.toThrow(VAULT_MAYA_ACCESS_CHECK_FAILED)
   })
 })
 
@@ -155,7 +156,7 @@ describe("B8: selfie deletion behavior", () => {
     expect(mocks.del).toHaveBeenCalledWith(url)
     expect(mocks.sql).toHaveBeenCalledTimes(2)
     expect(mocks.del.mock.invocationCallOrder[0]).toBeLessThan(
-      mocks.sql.mock.invocationCallOrder[1],
+      mocks.sql.mock.invocationCallOrder[1]
     )
   })
 
@@ -178,9 +179,8 @@ describe("B1: billing portal behavior", () => {
     mocks.sql.mockResolvedValueOnce([{ stripe_customer_id: "cus_vault" }])
     mocks.stripeCustomerRetrieve.mockResolvedValue({ id: "cus_vault" })
     mocks.stripePortalCreate.mockResolvedValue({ url: "https://billing.stripe.test/session" })
-    const { handleCreatePortalSession } = await import(
-      "@/app/api/stripe/create-portal-session/route"
-    )
+    const { handleCreatePortalSession } =
+      await import("@/app/api/stripe/create-portal-session/route")
 
     const response = await handleCreatePortalSession({
       request: new Request("https://sselfie.ai/api/stripe/create-portal-session", {
@@ -196,7 +196,7 @@ describe("B1: billing portal behavior", () => {
       expect.objectContaining({
         customer: "cus_vault",
         return_url: "https://sselfie.ai/vault-maya/studio",
-      }),
+      })
     )
   })
 })

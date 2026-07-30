@@ -11,6 +11,7 @@ import { join } from "node:path"
 const sqlMock = vi.fn()
 const retrieveSubscriptionMock = vi.fn()
 const retrieveCustomerMock = vi.fn()
+const grantMonthlyCreditsMock = vi.fn()
 
 vi.mock("server-only", () => ({}))
 
@@ -27,8 +28,8 @@ vi.mock("@/lib/stripe", () => ({
 
 vi.mock("@/lib/credits", () => ({
   addCredits: vi.fn(),
-  grantMonthlyCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 100 }),
-  SUBSCRIPTION_CREDITS: { sselfie_studio_membership: 100 },
+  grantMonthlyCredits: grantMonthlyCreditsMock,
+  SUBSCRIPTION_CREDITS: { sselfie_studio_membership: 100, vault_maya: 30 },
 }))
 
 vi.mock("@/lib/email/send-email", () => ({
@@ -78,6 +79,8 @@ function buildInvoiceEvent(overrides: Record<string, unknown> = {}) {
 describe("handleInvoicePaid first-payment race", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    grantMonthlyCreditsMock.mockReset()
+    grantMonthlyCreditsMock.mockResolvedValue({ success: true, newBalance: 100 })
     // No subscriptions row and no users row exist yet (checkout fulfillment hasn't run).
     sqlMock.mockResolvedValue([])
     retrieveSubscriptionMock.mockResolvedValue({
@@ -123,6 +126,23 @@ describe("handleInvoicePaid first-payment race", () => {
     ])
     const { handleInvoicePaid } = await import("@/lib/payments/lifecycle/invoice-paid")
     await expect(handleInvoicePaid(buildInvoiceEvent())).resolves.toBeUndefined()
+  })
+
+  it("fails the webhook so Stripe retries when a paid monthly credit reset fails", async () => {
+    sqlMock.mockResolvedValueOnce([
+      { user_id: "user-1", product_type: "vault_maya", current_period_start: null },
+    ])
+    grantMonthlyCreditsMock.mockResolvedValue({
+      success: false,
+      newBalance: 0,
+      error: "temporary credit database failure",
+    })
+
+    const { handleInvoicePaid } = await import("@/lib/payments/lifecycle/invoice-paid")
+
+    await expect(handleInvoicePaid(buildInvoiceEvent({ amount_paid: 1900 }))).rejects.toThrow(
+      "temporary credit database failure"
+    )
   })
 
   it("keys the stripe_payments row on the invoice id even when legacy charge/payment_intent fields are present", async () => {

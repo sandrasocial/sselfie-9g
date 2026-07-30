@@ -20,13 +20,13 @@ function safeCreditAmount(value: number): number {
  */
 export function calculateMonthlyCreditReset({
   currentBalance,
-  lifetimePurchasedCredits,
+  purchasedCreditsRemaining,
 }: {
   currentBalance: number
-  lifetimePurchasedCredits: number
+  purchasedCreditsRemaining: number
 }): MonthlyCreditReset {
   const normalizedBalance = safeCreditAmount(currentBalance)
-  const normalizedPurchased = safeCreditAmount(lifetimePurchasedCredits)
+  const normalizedPurchased = safeCreditAmount(purchasedCreditsRemaining)
   const purchasedCreditsPreserved = Math.min(normalizedBalance, normalizedPurchased)
   const newBalance = purchasedCreditsPreserved + MONTHLY_MEMBERSHIP_CREDITS
 

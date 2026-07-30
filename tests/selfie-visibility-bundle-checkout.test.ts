@@ -128,15 +128,15 @@ describe("One Selfie Visibility Bundle checkout", () => {
       'const isSelfieVisibilityBundle = productType === "selfie_visibility_bundle"'
     )
     expect(checkout).toContain(
-      'const isVisualIdentityOffer = isPromptVault || isSelfieAiPhotosKit || isSelfieToBrandShoot'
+      "const isVisualIdentityOffer = isPromptVault || isSelfieAiPhotosKit || isSelfieToBrandShoot"
     )
-    expect(checkout).toContain('isSelfieVisibilityBundle ? "h-[132px] sm:h-[150px]"')
+    expect(checkout).toMatch(/isSelfieVisibilityBundle\s*\?\s*"h-\[132px\] sm:h-\[150px\]"/)
     expect(checkout).toContain("confidencePoints.length > 0 && !isSelfieVisibilityBundle")
     expect(checkout).toMatch(
       /<EmbeddedCheckout \/>[\s\S]*?isSelfieVisibilityBundle &&[\s\S]*?confidencePoints\.map/
     )
     expect(checkout).toContain(
-      "const fallbackType = productType ? `&type=${encodeURIComponent(productType)}` : \"\""
+      'const fallbackType = productType ? `&type=${encodeURIComponent(productType)}` : ""'
     )
   })
 })

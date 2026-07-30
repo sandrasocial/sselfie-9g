@@ -50,11 +50,17 @@ function checkoutAttributionProperties(searchParams: URLSearchParams) {
 function getPaymentEntryEvent(productType: string): string {
   if (productType === "campaign_outcome") return "campaign_checkout_start"
   if (productType === "prompt_vault") return "prompt_vault_checkout_payment_entry_shown"
+  if (productType === "vault_maya") return "vault_maya_checkout_payment_entry_shown"
   if (productType === "starter_kit") return "starter_kit_checkout_payment_entry_shown"
   if (productType === "masterclass") return "masterclass_checkout_payment_entry_shown"
-  if (productType === "selfie_to_brand_shoot_system") return "selfie_to_brand_shoot_checkout_payment_entry_shown"
-  if (productType === "presets_single" || productType === "presets_bundle") return "presets_checkout_payment_entry_shown"
-  if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") {
+  if (productType === "selfie_to_brand_shoot_system")
+    return "selfie_to_brand_shoot_checkout_payment_entry_shown"
+  if (productType === "presets_single" || productType === "presets_bundle")
+    return "presets_checkout_payment_entry_shown"
+  if (
+    productType === "sselfie_studio_membership" ||
+    productType === "sselfie_studio_membership_annual"
+  ) {
     return "studio_membership_checkout_payment_entry_shown"
   }
   return "checkout_payment_entry_shown"
@@ -81,22 +87,29 @@ const CHECKOUT_COPY: Record<
     heroTitle: "Complete your Starter Kit order",
     heroBody: "Make one source photo cleaner, stronger, and easier to use.",
     heading: "Secure checkout",
-    blurb: "You're getting the presets, posing help, captions, and 7-day starter for better phone photos.",
+    blurb:
+      "You're getting the presets, posing help, captions, and 7-day starter for better phone photos.",
     footer: "Your Starter Kit access is delivered right after payment.",
   },
   masterclass: {
     heroTitle: "Your photos are the start. Now build what they lead to.",
-    heroBody: "One clear method for your positioning, content, captions, offer bridge, and 30-day plan.",
+    heroBody:
+      "One clear method for your positioning, content, captions, offer bridge, and 30-day plan.",
     heading: "Selfie Branding Masterclass",
-    blurb: "One $147 payment gives you the complete course, instant access, and every current Masterclass resource. No subscription.",
-    footer: "Your receipt and course access are delivered to the email you entered. Start with Your Foundation.",
+    blurb:
+      "One $147 payment gives you the complete course, instant access, and every current Masterclass resource. No subscription.",
+    footer:
+      "Your receipt and course access are delivered to the email you entered. Start with Your Foundation.",
   },
   prompt_vault: {
     heroTitle: "Get the full shoot and future drops",
-    heroBody: "You tried the opening shot. Now get the full visual worlds, newest drops, and future SSELFIE photoshoots.",
+    heroBody:
+      "You tried the opening shot. Now get the full visual worlds, newest drops, and future SSELFIE photoshoots.",
     heading: "The AI Photo Prompt Vault",
-    blurb: "One $37 payment gives you full shoot sequences, example images, copy-paste prompts, newest drops, and future photoshoot collections.",
-    footer: "One-time payment. Instant access, yours to keep forever. Reply anytime if anything's off and I'll help.",
+    blurb:
+      "One $37 payment gives you full shoot sequences, example images, copy-paste prompts, newest drops, and future photoshoot collections.",
+    footer:
+      "One-time payment. Instant access, yours to keep forever. Reply anytime if anything's off and I'll help.",
   },
   selfie_ai_photos_kit: {
     heroTitle: "Complete your AI Photos Kit order",
@@ -122,14 +135,17 @@ const CHECKOUT_COPY: Record<
   },
   selfie_to_brand_shoot_system: {
     heroTitle: "Start your first AI brand shoot",
-    heroBody: "Use one clear selfie, one visual direction, and Sandra's step-by-step system to create brand images you can actually use.",
+    heroBody:
+      "Use one clear selfie, one visual direction, and Sandra's step-by-step system to create brand images you can actually use.",
     heading: "Selfie to Brand Shoot System",
-    blurb: "You're getting the guided $197 path for turning one selfie into a small brand shoot, with the full Prompt Vault included.",
+    blurb:
+      "You're getting the guided $197 path for turning one selfie into a small brand shoot, with the full Prompt Vault included.",
     footer: "Your System access link is delivered right after payment.",
   },
   selfie_visibility_bundle: {
     heroTitle: "Complete your One Selfie Bundle order",
-    heroBody: "Start with one real selfie and follow one clear path to photos and content you can use.",
+    heroBody:
+      "Start with one real selfie and follow one clear path to photos and content you can use.",
     heading: "One Selfie Visibility Bundle",
     blurb:
       "One $97 payment gives you five tools for life, plus 30 days of SUITE with Maya and 200 credits. No subscription.",
@@ -142,25 +158,31 @@ const CHECKOUT_COPY: Record<
     heading: "Your Next Campaign",
     blurb:
       "One $97 payment. You receive three coordinated posts with finished visuals, captions, calls to action, and the order to publish them.",
-    footer: "One-time payment. No subscription. Delivery within 48 hours after your intake is complete.",
+    footer:
+      "One-time payment. No subscription. Delivery within 48 hours after your intake is complete.",
   },
   vault_maya: {
     heroTitle: "Join Vault Maya",
     heroBody: "Add one selfie, choose a look, and Maya creates the photo for you.",
     heading: "Vault Maya",
-    blurb: "Every Vault look ready to create, new drops every Monday, 30 photo creations a month, and your own gallery.",
-    footer: "Your access opens after payment. Cancel anytime from your account. Founders keep the founder price for as long as their membership stays active.",
+    blurb:
+      "Every Vault look ready to create, new drops every Monday, 30 photo creations a month, and your own gallery.",
+    footer:
+      "Your access opens after payment. Cancel anytime from your account. Founders keep the founder price for as long as their membership stays active.",
   },
   sselfie_studio_membership: {
     heroTitle: "Join SSELFIE SUITE",
-    heroBody: "Start with one selfie. Create the visual, find the words, and plan what goes out next.",
+    heroBody:
+      "Start with one selfie. Create the visual, find the words, and plan what goes out next.",
     heading: "SSELFIE SUITE · €97 monthly",
-    blurb: "Maya, Create, Calendar, Learn, the SSELFIE library, and 100 credits that reset each month.",
+    blurb:
+      "Maya, Create, Calendar, Learn, the SSELFIE library, and 100 credits that reset each month.",
     footer: "Your access opens after payment. Manage or cancel the membership from your account.",
   },
   sselfie_studio_membership_annual: {
     heroTitle: "Join SSELFIE SUITE",
-    heroBody: "Maya helps you keep creating photos, covers, captions, and posts with one clear brand direction.",
+    heroBody:
+      "Maya helps you keep creating photos, covers, captions, and posts with one clear brand direction.",
     heading: "Secure checkout",
     blurb: "You're joining SSELFIE SUITE for the year.",
     footer: "Your access is delivered right after payment.",
@@ -278,7 +300,7 @@ function CheckoutContent() {
         "100 credits reset each month",
         "Cancel from your account",
       ]
-    : CHECKOUT_CONFIDENCE_POINTS[productType] ?? []
+    : (CHECKOUT_CONFIDENCE_POINTS[productType] ?? [])
 
   useEffect(() => {
     const secret = searchParams.get("client_secret")
@@ -302,7 +324,7 @@ function CheckoutContent() {
             checkout_session_id: secret.split("_secret_")[0] || null,
             ...checkoutAttributionProperties(searchParams),
           },
-        }),
+        })
       )
       .catch(() => {})
     if (productType === "prompt_vault") {
@@ -315,7 +337,7 @@ function CheckoutContent() {
               checkout_session_id: secret.split("_secret_")[0] || null,
               ...checkoutAttributionProperties(searchParams),
             },
-          }),
+          })
         )
         .catch(() => {})
     }
@@ -329,7 +351,7 @@ function CheckoutContent() {
               checkout_session_id: secret.split("_secret_")[0] || null,
               ...checkoutAttributionProperties(searchParams),
             },
-          }),
+          })
         )
         .catch(() => {})
     }
@@ -344,7 +366,7 @@ function CheckoutContent() {
               vault_credit_applied: hasVaultCredit,
               ...checkoutAttributionProperties(searchParams),
             },
-          }),
+          })
         )
         .catch(() => {})
     }
@@ -358,7 +380,7 @@ function CheckoutContent() {
               checkout_session_id: secret.split("_secret_")[0] || null,
               ...checkoutAttributionProperties(searchParams),
             },
-          }),
+          })
         )
         .catch(() => {})
     }
@@ -372,11 +394,14 @@ function CheckoutContent() {
               checkout_session_id: secret.split("_secret_")[0] || null,
               ...checkoutAttributionProperties(searchParams),
             },
-          }),
+          })
         )
         .catch(() => {})
     }
-    if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") {
+    if (
+      productType === "sselfie_studio_membership" ||
+      productType === "sselfie_studio_membership_annual"
+    ) {
       import("@/lib/analytics/client")
         .then(({ trackAnalyticsEvent }) =>
           trackAnalyticsEvent({
@@ -389,7 +414,7 @@ function CheckoutContent() {
                 : "non_production",
               ...checkoutAttributionProperties(searchParams),
             },
-          }),
+          })
         )
         .catch(() => {})
     }
@@ -411,9 +436,13 @@ function CheckoutContent() {
         const productTypeFromSession = sessionData.product_type || productTypeFromQuery
         const returnToFromQuery = searchParams.get("return_to")
         const returnToFromSession = sessionData.return_to || returnToFromQuery
-        const encodedReturnTo = returnToFromSession ? `&return_to=${encodeURIComponent(returnToFromSession)}` : ""
-        
-        const brandStrategyBumpParam = sessionData.has_brand_strategy_pack ? "&brand_strategy_bump=1" : ""
+        const encodedReturnTo = returnToFromSession
+          ? `&return_to=${encodeURIComponent(returnToFromSession)}`
+          : ""
+
+        const brandStrategyBumpParam = sessionData.has_brand_strategy_pack
+          ? "&brand_strategy_bump=1"
+          : ""
 
         const redirectUrl = `/checkout/success?session_id=${sessionId}${productTypeFromSession ? `&type=${encodeURIComponent(productTypeFromSession)}` : ""}${encodedReturnTo}${brandStrategyBumpParam}`
         router.push(redirectUrl)
@@ -453,7 +482,9 @@ function CheckoutContent() {
           <div className="mb-3 font-['Cormorant_Garamond'] text-xl font-light uppercase tracking-[0.28em] text-[#0D0E10] sm:text-2xl md:text-3xl lg:text-4xl">
             S S E L F I E
           </div>
-          <p className="text-sm font-light text-[#4F5052] sm:text-base">Preparing your secure checkout</p>
+          <p className="text-sm font-light text-[#4F5052] sm:text-base">
+            Preparing your secure checkout
+          </p>
         </div>
       </div>
     )
@@ -464,7 +495,11 @@ function CheckoutContent() {
       {/* Hero Image Section */}
       <div
         className={`${isPromptVault ? "hidden sm:block" : ""} relative overflow-hidden border-b border-[rgba(197,198,200,0.4)] ${
-          isSelfieVisibilityBundle ? "h-[132px] sm:h-[150px]" : isVisualIdentityOffer ? "h-[20vh] sm:h-[26vh] md:h-[30vh]" : "h-[28vh] sm:h-[34vh] md:h-[38vh]"
+          isSelfieVisibilityBundle
+            ? "h-[132px] sm:h-[150px]"
+            : isVisualIdentityOffer
+              ? "h-[20vh] sm:h-[26vh] md:h-[30vh]"
+              : "h-[28vh] sm:h-[34vh] md:h-[38vh]"
         }`}
       >
         <Image
@@ -487,9 +522,13 @@ function CheckoutContent() {
       </div>
 
       {/* Checkout Form Section */}
-      <div className={`max-w-3xl mx-auto px-4 sm:px-6 ${isPromptVault ? "py-4 sm:py-12" : isSelfieVisibilityBundle ? "py-4 sm:py-6" : "py-8 sm:py-12"}`}>
+      <div
+        className={`max-w-3xl mx-auto px-4 sm:px-6 ${isPromptVault ? "py-4 sm:py-12" : isSelfieVisibilityBundle ? "py-4 sm:py-6" : "py-8 sm:py-12"}`}
+      >
         {isVisualIdentityOffer && (
-          <div className={`${isPromptVault ? "hidden sm:block" : ""} mb-6 border border-[rgba(197,198,200,0.45)] bg-white p-4 shadow-[0_18px_60px_rgba(13,14,16,0.06)] sm:p-5`}>
+          <div
+            className={`${isPromptVault ? "hidden sm:block" : ""} mb-6 border border-[rgba(197,198,200,0.45)] bg-white p-4 shadow-[0_18px_60px_rgba(13,14,16,0.06)] sm:p-5`}
+          >
             <div className="mb-4 grid grid-cols-4 gap-2">
               {[
                 "/images/ai-prompts/dark-feminine-cafe-shot-3.jpg",
@@ -542,7 +581,9 @@ function CheckoutContent() {
         )}
 
         <div className={`text-center ${isSelfieVisibilityBundle ? "mb-4" : "mb-6 sm:mb-8"}`}>
-          <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#818283] mb-3">Secure Checkout</p>
+          <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#818283] mb-3">
+            Secure Checkout
+          </p>
           <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl text-[#0D0E10] tracking-wide mb-3">
             {checkoutCopy.heading}
           </h1>
@@ -555,7 +596,8 @@ function CheckoutContent() {
                 Instant access after payment
               </p>
               <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
-                Presets, setup guide, posing guide, caption templates, and the 7-day content starter are delivered right away.
+                Presets, setup guide, posing guide, caption templates, and the 7-day content starter
+                are delivered right away.
               </p>
             </div>
           )}
@@ -565,7 +607,8 @@ function CheckoutContent() {
                 What happens after payment
               </p>
               <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
-                Your course opens right away. Start with Your Foundation to clarify what you sell, who it helps, and what you want to be known for before you build the content rhythm.
+                Your course opens right away. Start with Your Foundation to clarify what you sell,
+                who it helps, and what you want to be known for before you build the content rhythm.
               </p>
             </div>
           )}
@@ -575,7 +618,8 @@ function CheckoutContent() {
                 What happens after payment
               </p>
               <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
-                Your access link opens the full Vault right away so you can copy the complete shoot prompts and use them in ChatGPT with your own selfie.
+                Your access link opens the full Vault right away so you can copy the complete shoot
+                prompts and use them in ChatGPT with your own selfie.
               </p>
             </div>
           )}
@@ -585,7 +629,8 @@ function CheckoutContent() {
                 What happens after payment
               </p>
               <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
-                Your access link opens the Kit right away. Start with the source selfie checklist, then copy the first AI photo prompt.
+                Your access link opens the Kit right away. Start with the source selfie checklist,
+                then copy the first AI photo prompt.
               </p>
             </div>
           )}
@@ -595,13 +640,17 @@ function CheckoutContent() {
                 What happens after payment
               </p>
               <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
-                Your access link opens the full course right away. Start with Module 1, choose your Signature Visual World, create your first three AI brand images, then turn them into content.
+                Your access link opens the full course right away. Start with Module 1, choose your
+                Signature Visual World, create your first three AI brand images, then turn them into
+                content.
               </p>
             </div>
           )}
           {confidencePoints.length > 0 && !isSelfieVisibilityBundle && (
-            <div className={`${isPromptVault ? "hidden sm:grid" : "grid"} mx-auto mt-4 max-w-xl gap-2 sm:grid-cols-2`}>
-              {confidencePoints.map((point) => (
+            <div
+              className={`${isPromptVault ? "hidden sm:grid" : "grid"} mx-auto mt-4 max-w-xl gap-2 sm:grid-cols-2`}
+            >
+              {confidencePoints.map(point => (
                 <div
                   key={point}
                   className="border border-[rgba(197,198,200,0.4)] bg-[#F8FAFA] px-3 py-2 text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#4F5052]"
@@ -627,7 +676,7 @@ function CheckoutContent() {
 
         {isSelfieVisibilityBundle && (
           <div className="mx-auto mt-4 grid max-w-xl gap-2 sm:grid-cols-2">
-            {confidencePoints.map((point) => (
+            {confidencePoints.map(point => (
               <div
                 key={point}
                 className="border border-[rgba(197,198,200,0.4)] bg-[#F8FAFA] px-3 py-2 text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#4F5052]"

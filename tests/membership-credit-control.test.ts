@@ -26,7 +26,9 @@ describe("membership credit control", () => {
 
     expect(joinPage).toContain("100 creation credits that reset each billing month")
     expect(joinPage).not.toContain("200 creation credits that refill monthly")
-    expect(account).toContain("Your included credits reset to 100 each billing month. Purchased top-ups stay.")
+    expect(account).toContain(
+      "Your included credits reset to 100 each billing month. Purchased top-ups stay."
+    )
     expect(account).not.toContain("Your plan refills monthly.")
     expect(freeGeneration).toContain("Free accounts include two welcome credits.")
     expect(freeGeneration).not.toContain("Free users can generate one image")
@@ -79,7 +81,7 @@ describe("membership credit control", () => {
     expect(
       calculateMonthlyCreditReset({
         currentBalance: 260,
-        lifetimePurchasedCredits: 40,
+        purchasedCreditsRemaining: 40,
       })
     ).toEqual({
       currentBalance: 260,
@@ -93,7 +95,7 @@ describe("membership credit control", () => {
     expect(
       calculateMonthlyCreditReset({
         currentBalance: 25,
-        lifetimePurchasedCredits: 80,
+        purchasedCreditsRemaining: 25,
       })
     ).toEqual({
       currentBalance: 25,
@@ -101,6 +103,25 @@ describe("membership credit control", () => {
       newBalance: 125,
       ledgerDelta: 100,
     })
+  })
+
+  it("does not resurrect a top-up that was fully used before a later renewal", () => {
+    expect(
+      calculateMonthlyCreditReset({
+        currentBalance: 30,
+        purchasedCreditsRemaining: 0,
+      })
+    ).toEqual({
+      currentBalance: 30,
+      purchasedCreditsPreserved: 0,
+      newBalance: 100,
+      ledgerDelta: 70,
+    })
+
+    const source = readFileSync("lib/credits.ts", "utf8")
+    expect(source).toContain("previous_grant")
+    expect(source).toContain("purchased_remaining")
+    expect(source).not.toContain("lifetime_purchased")
   })
 
   it("does not let the safety cron issue grants on a rolling day window", () => {

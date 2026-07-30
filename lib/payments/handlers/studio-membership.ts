@@ -20,6 +20,7 @@ import { getSubscriptionPeriod } from "../shared"
 import type { CheckoutFulfillmentContext } from "../types"
 import { getSubscriptionPlanFromMetadata } from "@/lib/launch/cash-launch-pricing"
 import { upsertStudioMembershipSubscription } from "@/lib/payments/lifecycle/upsert-studio-membership"
+import { findAuthUserByEmail } from "@/lib/supabase/find-auth-user-by-email"
 
 async function persistCheckoutMembership({
   session,
@@ -35,9 +36,7 @@ async function persistCheckoutMembership({
   productType?: "sselfie_studio_membership" | "vault_maya"
 }): Promise<void> {
   const subscriptionId =
-    typeof session.subscription === "string"
-      ? session.subscription
-      : session.subscription?.id
+    typeof session.subscription === "string" ? session.subscription : session.subscription?.id
   if (!subscriptionId) return
 
   const subscriptionData = (await stripe.subscriptions.retrieve(subscriptionId)) as any
@@ -65,14 +64,9 @@ async function persistCheckoutMembership({
 }
 
 export async function handleStudioMembershipSubscriptionCheckout(
-  ctx: CheckoutFulfillmentContext,
+  ctx: CheckoutFulfillmentContext
 ): Promise<void> {
-  const {
-    event,
-    session,
-    isPaymentPaid,
-    maybeTrackCheckoutReferralSignup = async () => {},
-  } = ctx
+  const { event, session, isPaymentPaid, maybeTrackCheckoutReferralSignup = async () => {} } = ctx
 
   const metadata = session.metadata || {}
   let userId = metadata.user_id
@@ -88,9 +82,7 @@ export async function handleStudioMembershipSubscriptionCheckout(
   const credits = Number.parseInt(metadata.credits || "250")
 
   if (!userId && customerEmail) {
-    console.log(
-      `[v0] New subscription purchase from ${customerEmail} - creating account...`
-    )
+    console.log(`[v0] New subscription purchase from ${customerEmail} - creating account...`)
 
     try {
       const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
@@ -98,14 +90,10 @@ export async function handleStudioMembershipSubscriptionCheckout(
 
       console.log(`[v0] Step 1: Checking if user already exists in Supabase auth...`)
 
-      const { data: existingUsers, error: listError } =
-        await supabaseAdmin.auth.admin.listUsers()
-
-      if (listError) {
-        console.error(`[v0] Error listing users:`, listError)
-      }
-
-      const existingUser = existingUsers?.users?.find(u => u.email === customerEmail)
+      const existingUser = await findAuthUserByEmail({
+        email: customerEmail,
+        listUsers: params => supabaseAdmin.auth.admin.listUsers(params),
+      })
 
       if (existingUser) {
         console.log(`[v0] User already exists in Supabase auth: ${existingUser.id}`)
@@ -143,15 +131,14 @@ export async function handleStudioMembershipSubscriptionCheckout(
       } else {
         console.log(`[v0] Step 2: Creating new user in Supabase auth (no email sent)...`)
 
-        const { data: createData, error: createError } =
-          await supabaseAdmin.auth.admin.createUser({
-            email: customerEmail,
-            email_confirm: true,
-            user_metadata: {
-              created_via: "stripe_subscription",
-              stripe_customer_id: session.customer,
-            },
-          })
+        const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email: customerEmail,
+          email_confirm: true,
+          user_metadata: {
+            created_via: "stripe_subscription",
+            stripe_customer_id: session.customer,
+          },
+        })
 
         if (createError) {
           console.error(`[v0] Supabase create user error details:`, {
@@ -173,14 +160,13 @@ export async function handleStudioMembershipSubscriptionCheckout(
         )
 
         console.log(`[v0] Step 4: Generating password reset link...`)
-        const { data: resetData, error: resetError } =
-          await supabaseAdmin.auth.admin.generateLink({
-            type: "recovery",
-            email: customerEmail,
-            options: {
-              redirectTo: `${productionUrl}/auth/setup-password`,
-            },
-          })
+        const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+          type: "recovery",
+          email: customerEmail,
+          options: {
+            redirectTo: `${productionUrl}/auth/setup-password`,
+          },
+        })
 
         if (resetError) {
           console.error(`[v0] Error generating password reset link:`, resetError)
@@ -218,10 +204,7 @@ export async function handleStudioMembershipSubscriptionCheckout(
 
         let passwordSetupLink = resetData.properties.action_link
 
-        if (
-          passwordSetupLink.includes("localhost") ||
-          passwordSetupLink.includes("supabase.co")
-        ) {
+        if (passwordSetupLink.includes("localhost") || passwordSetupLink.includes("supabase.co")) {
           const url = new URL(passwordSetupLink)
           const token = url.searchParams.get("token")
           const type = url.searchParams.get("type") || "recovery"
@@ -235,7 +218,11 @@ export async function handleStudioMembershipSubscriptionCheckout(
 
         const creditsGranted = credits
         const productName =
-          productType === "sselfie_studio_membership" ? "STUDIO MEMBERSHIP" : "SUBSCRIPTION"
+          productType === "sselfie_studio_membership"
+            ? "STUDIO MEMBERSHIP"
+            : productType === "vault_maya"
+              ? "VAULT MAYA"
+              : "SUBSCRIPTION"
         const welcomeCustomerName = getFirstNameForEmail({
           fullName: session.customer_details?.name,
           email: customerEmail,
@@ -250,6 +237,7 @@ export async function handleStudioMembershipSubscriptionCheckout(
         })
 
         const isMembershipWelcome = productType === "sselfie_studio_membership"
+        const isVaultMayaWelcome = productType === "vault_maya"
         const emailContent = isMembershipWelcome
           ? generateMembershipWelcomeEmail({
               variant: "new",
@@ -258,20 +246,20 @@ export async function handleStudioMembershipSubscriptionCheckout(
               passwordSetupUrl: passwordSetupLink,
             })
           : productType === "vault_maya"
-          ? generateVaultMayaWelcomeEmail({
-              variant: "new",
-              customerName: session.customer_details?.name,
-              customerEmail: customerEmail,
-              passwordSetupUrl: passwordSetupLink,
-            })
-          : generateWelcomeEmail({
-              customerName: welcomeCustomerName,
-              customerEmail: customerEmail,
-              creditsGranted: creditsGranted,
-              packageName: productName,
-              productType: "one_time_session",
-              passwordSetupUrl: passwordSetupLink,
-            })
+            ? generateVaultMayaWelcomeEmail({
+                variant: "new",
+                customerName: session.customer_details?.name,
+                customerEmail: customerEmail,
+                passwordSetupUrl: passwordSetupLink,
+              })
+            : generateWelcomeEmail({
+                customerName: welcomeCustomerName,
+                customerEmail: customerEmail,
+                creditsGranted: creditsGranted,
+                packageName: productName,
+                productType: "one_time_session",
+                passwordSetupUrl: passwordSetupLink,
+              })
 
         console.log("[v0] Email content generated:", {
           hasHtml: !!emailContent.html,
@@ -281,17 +269,26 @@ export async function handleStudioMembershipSubscriptionCheckout(
         })
 
         console.log(`[v0] Step 8: Sending welcome email via Resend...`)
-        const welcomeEmailLogType = isMembershipWelcome ? "membership_welcome" : "welcome"
+        const welcomeEmailLogType = isMembershipWelcome
+          ? "membership_welcome"
+          : isVaultMayaWelcome
+            ? "vault_maya_welcome"
+            : "welcome"
         const emailResult = await sendEmail({
           to: customerEmail,
           subject: isMembershipWelcome
             ? MEMBERSHIP_WELCOME_SUBJECTS.new
-            : "Welcome to SSelfie! Set up your account",
+            : isVaultMayaWelcome
+              ? VAULT_MAYA_WELCOME_SUBJECTS.new
+              : "Welcome to SSelfie! Set up your account",
           html: emailContent.html,
           text: emailContent.text,
+          emailType: welcomeEmailLogType,
           tags: isMembershipWelcome
             ? ["membership-welcome", "account-setup"]
-            : ["welcome", "account-setup"],
+            : isVaultMayaWelcome
+              ? ["vault-maya-welcome", "account-setup"]
+              : ["welcome", "account-setup"],
         })
 
         if (emailResult.success) {
@@ -337,23 +334,23 @@ export async function handleStudioMembershipSubscriptionCheckout(
         }
 
         await stripe.checkout.sessions.update(session.id, {
-        metadata: {
-          ...metadata,
-          user_id: userId,
-          auto_created: "true",
-        },
+          metadata: {
+            ...metadata,
+            user_id: userId,
+            auto_created: "true",
+          },
         })
 
         const subscription = (await stripe.subscriptions.retrieve(
           session.subscription as string
         )) as any
         await stripe.subscriptions.update(subscription.id, {
-        metadata: {
-          ...subscription.metadata,
-          user_id: userId,
-          product_type: productType,
-          credits: metadata.credits,
-        },
+          metadata: {
+            ...subscription.metadata,
+            user_id: userId,
+            product_type: productType,
+            credits: metadata.credits,
+          },
         })
 
         console.log(`[v0] Account created successfully for ${customerEmail}`)
@@ -376,6 +373,9 @@ export async function handleStudioMembershipSubscriptionCheckout(
       console.error(`[v0] Error message: ${error.message}`)
       console.error(`[v0] Error stack:`, error.stack)
       console.error(`[v0] Full error object:`, JSON.stringify(error, null, 2))
+      // Paid fulfillment is incomplete. Let the webhook return 500 so Stripe retries;
+      // acknowledging this event would strand a buyer without an account or entitlement.
+      throw error
     }
   } else {
     console.log("[v0] Subscription checkout completed for existing user")

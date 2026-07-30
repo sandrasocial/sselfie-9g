@@ -4,22 +4,35 @@ export const VAULT_MAYA_ALREADY_INCLUDED =
 export const VAULT_MAYA_ACCESS_CHECK_FAILED =
   "We couldn't confirm your current access. Please refresh and try again before checking out."
 
+function isAuthSessionMissing(error: unknown): boolean {
+  return error instanceof Error && error.name === "AuthSessionMissingError"
+}
+
 /**
  * Prevents a signed-in SUITE member from buying a subset of access they already own.
  *
- * Anonymous checkout is allowed only when Supabase successfully confirms there is no
- * signed-in user. Once a user is authenticated, mapping/access failures stop checkout
- * instead of risking a duplicate subscription.
+ * A missing Supabase session is the expected anonymous state and is allowed. Once a
+ * user is authenticated, mapping/access failures stop checkout instead of risking a
+ * duplicate subscription.
  */
 export async function assertVaultMayaCheckoutAllowed(): Promise<void> {
   try {
     const { createServerClient } = await import("@/lib/supabase/server")
     const supabase = await createServerClient()
+    let authResult
+    try {
+      authResult = await supabase.auth.getUser()
+    } catch (error) {
+      if (isAuthSessionMissing(error)) return
+      throw error
+    }
+
     const {
       data: { user: authUser },
       error: authError,
-    } = await supabase.auth.getUser()
+    } = authResult
 
+    if (isAuthSessionMissing(authError)) return
     if (authError) throw authError
     if (!authUser?.id) return
 

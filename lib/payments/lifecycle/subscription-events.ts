@@ -140,6 +140,7 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
 
   await upsertStudioMembershipSubscription({
     userId,
+    productType: productType === "vault_maya" ? "vault_maya" : "sselfie_studio_membership",
     plan: subscriptionPlan,
     status: subscription.status,
     stripeSubscriptionId: subscription.id,

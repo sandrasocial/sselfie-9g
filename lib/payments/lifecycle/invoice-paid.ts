@@ -580,8 +580,9 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
               // Don't fail webhook if email send fails
             }
           } else {
-            console.error(
-              `[v0] ❌ Failed to grant monthly credits to user ${sub.user_id}: ${result.error}`
+            throw new Error(
+              result.error ||
+                `Failed to grant monthly credits to user ${sub.user_id} for invoice ${invoiceId}`
             )
           }
         } catch (creditError: any) {
@@ -590,7 +591,9 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
             creditError.message
           )
           console.error(`[v0] Error stack:`, creditError.stack)
-          // Don't break the webhook - continue to update subscription period
+          // Revenue storage and the credit reset are invoice-idempotent. Fail the webhook so
+          // Stripe retries instead of acknowledging a paid invoice without customer credits.
+          throw creditError
         }
       }
     } else {
