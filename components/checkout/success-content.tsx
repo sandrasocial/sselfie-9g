@@ -147,7 +147,7 @@ function getSuccessActionConfig(productType: string | undefined): SuccessActionC
       href: "/vault-maya/studio",
       label: "Make your first photo",
       helper:
-        "Vault Maya is active. Add one selfie, tap a look, and your photo is ready in about 30 seconds.",
+        "Vault Maya is active. Add one selfie, choose a look, and Maya creates the photo for you.",
     }
   }
   if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") {

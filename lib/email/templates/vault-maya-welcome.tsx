@@ -16,9 +16,9 @@ export const VAULT_MAYA_WELCOME_SUBJECTS: Record<VaultMayaWelcomeVariant, string
   existing: "Vault Maya is open. Your first photo is one tap away",
 }
 
-const MEMBERSHIP_PANEL = `<p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">30 photo creations every month, refreshed on your billing date<br />Every Vault collection included, new drops every Monday<br />Need more photos? Top up anytime — your membership stays the same<br />Cancel anytime from your account</p>`
+const MEMBERSHIP_PANEL = `<p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">30 photo creations every month, refreshed on your billing date<br />Unused monthly photos expire when they refresh — top-up credits you purchase never expire<br />Every Vault collection included, new drops every Monday<br />Need more photos? Top up anytime — your membership stays the same<br />Cancel anytime from your account</p>`
 
-const FIRST_PHOTO_STEPS = `<p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">1. Add one clear selfie so Maya can learn what you look like<br />2. Choose a look you love and tap it<br />3. Your photo is normally ready in about 30 seconds — save it or create another</p>`
+const FIRST_PHOTO_STEPS = `<p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">1. Add one clear selfie so Maya can learn what you look like<br />2. Choose a look you love and tap it<br />3. Maya creates your photo — save it or create another</p>`
 
 // Voice pass 2026-07-30: warm, outcome-first, no technical framing.
 export function generateVaultMayaWelcomeEmail(params: VaultMayaWelcomeParams): {
@@ -71,10 +71,11 @@ Here's the one thing to do today: create your first photo. It takes about a minu
 Your first photo:
 1. Add one clear selfie so Maya can learn what you look like
 2. Choose a look you love and tap it
-3. Your photo is normally ready in about 30 seconds — save it or create another
+3. Maya creates your photo — save it or create another
 
 Your membership:
 30 photo creations every month, refreshed on your billing date
+Unused monthly photos expire when they refresh — top-up credits you purchase never expire
 Every Vault collection included, new drops every Monday
 Need more photos? Top up anytime — your membership stays the same
 Cancel anytime from your account
@@ -115,10 +116,11 @@ Vault Maya is open for you. Your first photo is one tap away.
 Your first photo:
 1. Add one clear selfie so Maya can learn what you look like
 2. Choose a look you love and tap it
-3. Your photo is normally ready in about 30 seconds — save it or create another
+3. Maya creates your photo — save it or create another
 
 Your membership:
 30 photo creations every month, refreshed on your billing date
+Unused monthly photos expire when they refresh — top-up credits you purchase never expire
 Every Vault collection included, new drops every Monday
 Need more photos? Top up anytime — your membership stays the same
 Cancel anytime from your account

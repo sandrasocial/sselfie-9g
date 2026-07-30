@@ -86,12 +86,12 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
       )
   `
 
+  // Entitlement precedence (Sandra, 2026-07-30): paid SUITE > active bundle pass >
+  // active trial > Vault Maya. A HIGHER temporary tier must never be downgraded by a
+  // vault_maya row, and when the temporary tier expires an active vault_maya keeps
+  // studio access instead of falling to "limited".
   if (rows.some((r) => r.product_type === "sselfie_studio_membership")) {
     return { level: "member", trialEndsAt: null, trialDaysLeft: null }
-  }
-
-  if (rows.some((r) => r.product_type === "vault_maya")) {
-    return { level: "vault", trialEndsAt: null, trialDaysLeft: null }
   }
 
   const bundlePass = rows.find((r) => r.product_type === "selfie_visibility_bundle_pass")
@@ -103,18 +103,24 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
   }
 
   const trial = rows.find((r) => r.product_type === "suite_trial")
-  if (trial?.trial_ends_at) {
-    const endsAt = new Date(trial.trial_ends_at)
-    const msLeft = endsAt.getTime() - Date.now()
-    if (trial.status === "active" && msLeft > 0) {
-      return {
-        level: "trial",
-        trialEndsAt: endsAt,
-        trialDaysLeft: Math.max(1, Math.ceil(msLeft / 86_400_000)),
-      }
+  const activeTrialEndsAt =
+    trial?.trial_ends_at && trial.status === "active" ? new Date(trial.trial_ends_at) : null
+  if (activeTrialEndsAt && activeTrialEndsAt.getTime() > Date.now()) {
+    const msLeft = activeTrialEndsAt.getTime() - Date.now()
+    return {
+      level: "trial",
+      trialEndsAt: activeTrialEndsAt,
+      trialDaysLeft: Math.max(1, Math.ceil(msLeft / 86_400_000)),
     }
+  }
+
+  if (rows.some((r) => r.product_type === "vault_maya")) {
+    return { level: "vault", trialEndsAt: null, trialDaysLeft: null }
+  }
+
+  if (trial?.trial_ends_at) {
     // Expired (or overdue-but-not-yet-flipped) trial → limited mode, photos stay hers.
-    return { level: "limited", trialEndsAt: endsAt, trialDaysLeft: 0 }
+    return { level: "limited", trialEndsAt: new Date(trial.trial_ends_at), trialDaysLeft: 0 }
   }
 
   // One-time owners with accounts also get the limited shell (Library shows what they own).

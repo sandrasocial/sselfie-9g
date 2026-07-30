@@ -37,7 +37,8 @@ recreations only. Next-drop requests included. Retire gate proposal: after 14 da
 
 ---
 
-## 1. Offer page copy — /vault-maya
+## 1. Offer page copy — SUPERSEDED (historical first draft; contains wording Sandra later
+banned. The live page at /vault-maya carries her approved rewrite and is the only truth.)
 
 **Eyebrow:** THE PROMPT VAULT, MADE FOR YOU
 
@@ -45,7 +46,7 @@ recreations only. Next-drop requests included. Retire gate proposal: after 14 da
 
 **Subhead:** You know the vault. You copy a prompt, open ChatGPT, upload your selfie,
 paste, wait, hope it still looks like you. Maya skips all of that. Upload your selfie
-once. Tap a look. Your photo is ready in about 30 seconds — and it's still you.
+once.
 
 **Section — what you get:**
 - Every vault collection, ready to tap. No more copy and paste.
@@ -116,8 +117,7 @@ But I wanted to make the whole experience even easier. No prompts to copy. No Ch
 Nothing to figure out.
 
 It's called Vault Maya. You add your selfie once. Every one of my looks shows up ready
-to create. Tap the one you love, and your photo is normally ready in about 30 seconds.
-Still completely you.
+to create. Tap the one you love, and Maya creates the photo. Still completely you.
 
 New drops land every Monday, and you can request the looks you want to see next.
 
@@ -149,7 +149,7 @@ whole experience even easier. Now you don't need to copy anything or figure out 
 type. You choose the photo you want, and Maya creates it for you.
 
 You add your selfie once. Every Vault look shows up ready to create. Tap the one you
-love, and your photo is normally ready in about 30 seconds. Still completely you.
+love, and Maya creates the photo. Still completely you.
 
 New drops land every Monday, and you can request the looks you want to see next.
 

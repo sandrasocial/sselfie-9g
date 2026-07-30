@@ -1831,6 +1831,11 @@ const VAULT_MAYA_FAQ = [
       "The Prompt Vault and Vault Maya are separate products. Your Prompt Vault gives you the prompts to use in ChatGPT. Vault Maya creates the photos for you without needing to copy or use the prompts yourself.",
   },
   {
+    question: "How do the 30 monthly photos work?",
+    answer:
+      "Your membership includes 30 photo creations every month. They refresh on your billing date, and unused ones from the previous month expire when they refresh. Photo credits you buy as top-ups are different — they never expire with the monthly refresh.",
+  },
+  {
     question: "What if 30 photos aren't enough?",
     answer:
       "You can purchase extra photo credits whenever you need them. Your monthly membership will stay the same.",
@@ -1843,7 +1848,7 @@ const VAULT_MAYA_FAQ = [
   {
     question: "What happens to my selfie?",
     answer:
-      "Your selfie is stored securely and used only to create your photos. You can replace it anytime in your studio. If you ever want it deleted completely, reply to any email and I'll remove it.",
+      "Your selfie is stored securely and used only to create your photos. You can replace it or delete it completely anytime in your studio. Photos you've already created are separate — they stay in your gallery until you remove them.",
   },
 ]
 
@@ -1910,7 +1915,7 @@ export function VaultMayaPageContent({
         <div className="grid gap-4 md:grid-cols-3">
           <FCard dark eyebrow="01" title="Add your selfie" body="Upload one clear selfie so Maya can learn what you look like." />
           <FCard dark eyebrow="02" title="Choose your look" body={`Explore more than ${shotCount} ready-to-create looks inside the Vault. See one you love? Just tap it.`} />
-          <FCard dark eyebrow="03" title="Get your photo" body="Your new photo is normally ready in about 30 seconds. Save it, share it or create another one." />
+          <FCard dark eyebrow="03" title="Get your photo" body="Maya creates it for you. Save it, share it or create another one." />
         </div>
         <p className="mf" style={{ ...ty("body", true), fontSize: "15px", color: C.onDarkMuted, marginTop: "32px" }}>
           No prompts. No complicated setup. Beautiful photos. Still completely you.

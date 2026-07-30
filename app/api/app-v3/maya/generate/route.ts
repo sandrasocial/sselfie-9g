@@ -704,6 +704,40 @@ export async function POST(request: NextRequest) {
       isTrialUser = access.level === "trial"
     }
 
+    // ── B4 (2026-07-30, HIGH): identity references must resolve to authenticated,
+    // user-owned database state. A client-supplied https URL on an allowed storage host is
+    // data, not authorization — every identity reference must exist in THIS user's
+    // user_avatar_images or the request is refused. data: URIs are self-supplied content
+    // (equivalent to an upload) and pass. Inspiration images steer style, never identity,
+    // and are attached separately. Admin emails are exempt (cross-account admin tooling). ──
+    if (!isAdminEmail(user.email) && Array.isArray(referenceUrls) && referenceUrls.length > 0) {
+      const httpsIdentityRefs = referenceUrls.filter(url => !url.startsWith("data:"))
+      if (httpsIdentityRefs.length > 0) {
+        const { sql: ownershipSql } = await import("@/lib/db/client")
+        const ownedRows = await ownershipSql`
+          SELECT image_url FROM user_avatar_images
+          WHERE user_id = ${String(neonUser.id)}
+            AND image_url = ANY(${httpsIdentityRefs})
+        `
+        const ownedUrls = new Set(ownedRows.map((row: any) => String(row.image_url)))
+        const foreignRefs = httpsIdentityRefs.filter(url => !ownedUrls.has(url))
+        if (foreignRefs.length > 0) {
+          console.warn(
+            "[app-v3 generate] rejected identity reference(s) not owned by user",
+            String(neonUser.id),
+            foreignRefs.map(url => url.slice(0, 90))
+          )
+          return NextResponse.json(
+            {
+              error: "That reference photo isn't one of your saved selfies. Add it in your studio first.",
+              code: "identity_reference_not_owned",
+            },
+            { status: 403 }
+          )
+        }
+      }
+    }
+
     // BRIDGE-01 Phase E: first trial generation is the activation signal (behavior only).
     if (isTrialUser) {
       try {

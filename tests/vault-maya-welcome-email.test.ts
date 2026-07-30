@@ -12,13 +12,26 @@ describe("Vault Maya welcome email", () => {
     "/vault-maya/studio",
     "Add one clear selfie",
     "Choose a look you love",
-    "about 30 seconds",
+    "Maya creates your photo",
     "30 photo creations every month, refreshed on your billing date",
+    // B6 disclosure: monthly credits expire at refresh; purchased top-ups never do.
+    "Unused monthly photos expire when they refresh",
+    "top-up credits you purchase never expire",
     "Top up anytime",
     "Cancel anytime from your account",
     "credit comes back automatically",
     "reply to this email",
   ]
+
+  // Decision 5 (Sandra, 2026-07-30): no speed claims until n>=20 measured generations.
+  it("carries no speed claim", () => {
+    const email = generateVaultMayaWelcomeEmail({
+      variant: "new",
+      customerEmail: "test@example.com",
+    })
+    expect(email.html).not.toMatch(/30 seconds|seconds later|in seconds/i)
+    expect(email.text).not.toMatch(/30 seconds|seconds later|in seconds/i)
+  })
 
   it("new-member variant contains every required detail in html and text", () => {
     const email = generateVaultMayaWelcomeEmail({

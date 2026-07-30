@@ -7,8 +7,11 @@ import {
   getCheckoutAttributionFromParams,
 } from "@/lib/revenue-engine/checkout-attribution"
 import { shouldShowCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
+import Link from "next/link"
 import { PromptVaultCheckoutEmailCapture } from "@/components/prompt-vault/prompt-vault-checkout-email-capture"
 import { getVaultMayaPriceDisplay } from "@/lib/launch/cash-launch-pricing"
+import { getUserIdFromSupabase } from "@/lib/user-mapping"
+import { getSuiteAccess } from "@/lib/trial/suite-trial"
 
 export const dynamic = "force-dynamic"
 
@@ -54,6 +57,44 @@ export default async function VaultMayaCheckoutPage({
   const checkoutEmail = authUser?.email ?? urlEmail ?? null
   const price = getVaultMayaPriceDisplay()
   const productId = "vault_maya"
+
+  // B3 (Sandra, 2026-07-30): active SUITE members must not pay again for a subset they
+  // already have. Signed-in members see the included message instead of a payment form.
+  // Known limitation: an anonymous checkout with a different email cannot be blocked.
+  if (authUser?.id) {
+    try {
+      const neonUserId = await getUserIdFromSupabase(authUser.id)
+      if (neonUserId) {
+        const access = await getSuiteAccess(String(neonUserId))
+        if (access.level === "member") {
+          return (
+            <main className="flex min-h-screen items-center justify-center bg-[#F8FAFA] px-5">
+              <div className="max-w-md rounded-lg border border-neutral-200 bg-white p-8 text-center">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
+                  Vault Maya
+                </p>
+                <h1 className="mt-3 font-serif text-3xl font-light leading-tight text-neutral-950">
+                  You already have this.
+                </h1>
+                <p className="mt-3 text-[15px] leading-relaxed text-neutral-600">
+                  Vault Maya is included in your SSELFIE SUITE membership — every Vault look,
+                  ready to create, no extra charge.
+                </p>
+                <Link
+                  href="/vault-maya/studio"
+                  className="mt-6 inline-flex min-h-11 items-center rounded-sm bg-neutral-950 px-7 text-xs uppercase tracking-[0.16em] text-white"
+                >
+                  Open Vault Maya
+                </Link>
+              </div>
+            </main>
+          )
+        }
+      }
+    } catch (error) {
+      console.error("[checkout/vault-maya] member guard check failed:", error)
+    }
+  }
 
   const captureParams = {
     ...params,

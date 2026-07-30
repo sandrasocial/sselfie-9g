@@ -28,14 +28,27 @@ export function resolvePromptVaultPriceId(env: EnvLike = process.env, now: Date 
   return env.STRIPE_PRICE_PROMPT_VAULT_AFTER_FLASH?.trim() || basePrice
 }
 
-export const VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT = "2026-08-06T21:59:00.000Z"
+// Decision (Sandra, 2026-07-30): there is NO Day 0 yet. The founder period runs 7 complete
+// days from the ACTUAL public launch, which starts only after fixes + independent QA pass.
+// The placeholder below is deliberately far-future; at launch, set the real moment via the
+// VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT env var (ISO timestamp) without a code change.
+export const VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT = "2027-01-01T00:00:00.000Z"
 
-export function isVaultMayaFounderPriceFlipped(now: Date = new Date()): boolean {
-  return now.getTime() >= Date.parse(VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT)
+export function resolveVaultMayaFlipMoment(env: EnvLike = process.env): number {
+  const override = env.VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT?.trim()
+  if (override) {
+    const parsed = Date.parse(override)
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return Date.parse(VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT)
 }
 
-export function getVaultMayaPriceDisplay(now: Date = new Date()) {
-  const flipped = isVaultMayaFounderPriceFlipped(now)
+export function isVaultMayaFounderPriceFlipped(now: Date = new Date(), env: EnvLike = process.env): boolean {
+  return now.getTime() >= resolveVaultMayaFlipMoment(env)
+}
+
+export function getVaultMayaPriceDisplay(now: Date = new Date(), env: EnvLike = process.env) {
+  const flipped = isVaultMayaFounderPriceFlipped(now, env)
   return {
     flipped,
     amountCents: flipped ? 2900 : 1900,
@@ -48,8 +61,12 @@ export function getVaultMayaPriceDisplay(now: Date = new Date()) {
 export function resolveVaultMayaPriceId(env: EnvLike = process.env, now: Date = new Date()): string | undefined {
   const founderPrice = env.STRIPE_VAULT_MAYA_FOUNDER_PRICE_ID?.trim()
   const standardPrice = env.STRIPE_VAULT_MAYA_PRICE_ID?.trim()
-  if (!isVaultMayaFounderPriceFlipped(now)) return founderPrice || standardPrice
-  return standardPrice || founderPrice
+  // Fail-safe (Sandra, 2026-07-30): a missing price id for the CURRENT window must fail
+  // loudly at checkout, never silently charge the other price. During the founder window a
+  // missing founder id previously fell through to the $29 standard price — that path is
+  // deliberately removed.
+  if (!isVaultMayaFounderPriceFlipped(now, env)) return founderPrice || undefined
+  return standardPrice || undefined
 }
 
 export function isFoundingAnnualWindowOpen(now: Date = new Date()): boolean {

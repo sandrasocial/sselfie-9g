@@ -93,6 +93,9 @@ async function handleCreatePortalSession({
     try {
       const body = (await request.json()) as { returnPath?: string } | null
       if (body?.returnPath === "/app") returnPath = "/app"
+      // B1 (2026-07-30): Vault Maya members manage billing from their studio and must
+      // return there, not to a surface their tier cannot open.
+      if (body?.returnPath === "/vault-maya/studio") returnPath = "/vault-maya/studio"
     } catch {
       // No/invalid JSON body - legacy caller, default return path stands.
     }

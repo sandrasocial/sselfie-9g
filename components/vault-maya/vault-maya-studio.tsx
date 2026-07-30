@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { downloadAllSlides } from "@/lib/app-v3/download-all-slides"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
+
+// B10 activation instrumentation: every funnel stage the measurement plan reads.
+function track(event: string, properties?: Record<string, unknown>) {
+  void trackAnalyticsEvent({ event, properties: { surface: "vault_maya_studio", ...properties } }).catch(() => {})
+}
 
 type Look = {
   cardKey: string
@@ -52,8 +58,57 @@ export function VaultMayaStudio({
   const [requestText, setRequestText] = useState("")
   const [requestState, setRequestState] = useState<"idle" | "sending" | "sent" | "error">("idle")
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([])
+  const [billingBusy, setBillingBusy] = useState(false)
+  const [billingError, setBillingError] = useState<string | null>(null)
+  const [deletingSelfie, setDeletingSelfie] = useState(false)
+
+  const deleteSelfie = useCallback(async () => {
+    if (
+      !window.confirm(
+        "Delete your selfie? Maya can't create new photos until you add one again. Photos you already made stay in your gallery.",
+      )
+    ) {
+      return
+    }
+    setDeletingSelfie(true)
+    setUploadError(null)
+    try {
+      const res = await fetch("/api/vault-maya/delete-selfie", { method: "DELETE" })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "Deleting didn't work. Try again.")
+      }
+      setSelfieUrl(null)
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : "Deleting didn't work. Try again.")
+    } finally {
+      setDeletingSelfie(false)
+    }
+  }, [])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const busyRef = useRef(false)
+
+  const openBillingPortal = useCallback(async () => {
+    setBillingBusy(true)
+    setBillingError(null)
+    try {
+      const res = await fetch("/api/stripe/create-portal-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ returnPath: "/vault-maya/studio" }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data?.url) {
+        throw new Error(data?.message || "Billing didn't open. Try again, or reply to any email and I'll help.")
+      }
+      window.location.href = data.url
+    } catch (e) {
+      setBillingError(
+        e instanceof Error ? e.message : "Billing didn't open. Try again, or reply to any email and I'll help.",
+      )
+      setBillingBusy(false)
+    }
+  }, [])
 
   const loadGallery = useCallback(() => {
     fetch("/api/app-v3/gallery")
@@ -75,6 +130,11 @@ export function VaultMayaStudio({
   useEffect(() => {
     loadGallery()
   }, [loadGallery])
+
+  useEffect(() => {
+    track("vault_maya_studio_viewed", { hasSelfie: Boolean(initialSelfieUrl) })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -104,6 +164,7 @@ export function VaultMayaStudio({
         throw new Error(data?.error || "That upload didn't work. Try another photo.")
       }
       setSelfieUrl(data.url)
+      track("vault_maya_selfie_added")
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : "That upload didn't work. Try another photo.")
     } finally {
@@ -116,6 +177,7 @@ export function VaultMayaStudio({
       if (!selfieUrl || busyRef.current) return
       busyRef.current = true
       setGen((prev) => ({ ...prev, [look.cardKey]: { status: "generating" } }))
+      track("vault_maya_generation_started", { cardKey: look.cardKey })
       try {
         const briefRes = await fetch("/api/vault-maya/brief", {
           method: "POST",
@@ -148,8 +210,13 @@ export function VaultMayaStudio({
         }
         if (typeof data.newBalance === "number") setCredits(data.newBalance)
         setGen((prev) => ({ ...prev, [look.cardKey]: { status: "done", imageUrl: data.imageUrl } }))
+        track("vault_maya_generation_completed", { cardKey: look.cardKey })
         loadGallery()
       } catch (e) {
+        track("vault_maya_generation_failed", {
+          cardKey: look.cardKey,
+          message: e instanceof Error ? e.message.slice(0, 120) : "unknown",
+        })
         setGen((prev) => ({
           ...prev,
           [look.cardKey]: {
@@ -177,6 +244,7 @@ export function VaultMayaStudio({
       if (!res.ok) throw new Error()
       setRequestState("sent")
       setRequestText("")
+      track("vault_maya_drop_request_sent")
     } catch {
       setRequestState("error")
     }
@@ -216,14 +284,24 @@ export function VaultMayaStudio({
               <p className="text-[14px] text-[color:var(--ss-night)]">
                 Your selfie is in. Maya uses it for every look.
               </p>
-              <button
-                type="button"
-                className="mt-1 text-[10px] uppercase tracking-[0.17em] text-[color:var(--ss-gray)] underline underline-offset-4 hover:text-[color:var(--ss-night)]"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                {uploading ? "Uploading…" : "Change selfie"}
-              </button>
+              <div className="mt-1 flex gap-4">
+                <button
+                  type="button"
+                  className="text-[10px] uppercase tracking-[0.17em] text-[color:var(--ss-gray)] underline underline-offset-4 hover:text-[color:var(--ss-night)]"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading || deletingSelfie}
+                >
+                  {uploading ? "Uploading…" : "Change selfie"}
+                </button>
+                <button
+                  type="button"
+                  className="text-[10px] uppercase tracking-[0.17em] text-[color:var(--ss-gray)] underline underline-offset-4 hover:text-[color:var(--ss-night)]"
+                  onClick={() => void deleteSelfie()}
+                  disabled={uploading || deletingSelfie}
+                >
+                  {deletingSelfie ? "Deleting…" : "Delete my selfie"}
+                </button>
+              </div>
             </div>
           </div>
         ) : (
@@ -308,7 +386,10 @@ export function VaultMayaStudio({
               <button
                 key={photo.id}
                 type="button"
-                onClick={() => void downloadAllSlides([photo.url], "sselfie-vault")}
+                onClick={() => {
+                  track("vault_maya_photo_saved", { from: "gallery" })
+                  void downloadAllSlides([photo.url], "sselfie-vault")
+                }}
                 className="group relative aspect-[3/4] overflow-hidden rounded-[8px] bg-white"
                 aria-label="Save this photo"
               >
@@ -381,7 +462,24 @@ export function VaultMayaStudio({
         </section>
       ) : null}
 
-      <p className="mt-10 text-center text-[11px] leading-relaxed text-[color:var(--ss-gray)]">
+      <section className="mt-8 flex flex-col items-center gap-2 border-t border-[color:var(--ss-silver)]/40 pt-6">
+        <button
+          type="button"
+          onClick={() => void openBillingPortal()}
+          disabled={billingBusy}
+          className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--ss-davy)] underline underline-offset-4 hover:text-[color:var(--ss-night)] disabled:opacity-60"
+        >
+          {billingBusy ? "Opening…" : "Account & billing"}
+        </button>
+        <p className="text-[11px] text-[color:var(--ss-gray)]">
+          Update your payment method or cancel your membership anytime.
+        </p>
+        {billingError ? (
+          <p className="text-[12px] text-[color:var(--ss-davy)]">{billingError}</p>
+        ) : null}
+      </section>
+
+      <p className="mt-6 text-center text-[11px] leading-relaxed text-[color:var(--ss-gray)]">
         Add this page to your home screen and it opens like an app — share button, then
         &ldquo;Add to Home Screen&rdquo;.
       </p>
@@ -443,7 +541,7 @@ function CollectionSection({
                 {state?.status === "generating" ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-white/75">
                     <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ss-davy)]">
-                      About 30 seconds…
+                      Maya is creating your photo…
                     </p>
                   </div>
                 ) : null}
@@ -454,7 +552,10 @@ function CollectionSection({
                   <div className="mt-2 flex gap-2">
                     <button
                       type="button"
-                      onClick={() => void downloadAllSlides([state.imageUrl], "sselfie-vault")}
+                      onClick={() => {
+                        track("vault_maya_photo_saved", { from: "result", cardKey: look.cardKey })
+                        void downloadAllSlides([state.imageUrl], "sselfie-vault")
+                      }}
                       className="flex-1 rounded-[5px] bg-[color:var(--ss-night)] py-2 text-[9px] uppercase tracking-[0.18em] text-white"
                     >
                       Save

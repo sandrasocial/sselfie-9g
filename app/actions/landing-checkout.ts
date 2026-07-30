@@ -85,6 +85,40 @@ export async function createLandingCheckoutSession(
     ? getSelfieVisibilityBundleCheckoutExpiresAt()
     : null
 
+  // B3 defense-in-depth (Sandra, 2026-07-30): even if a member reaches the action directly,
+  // never create a vault_maya session for an authenticated active SUITE member.
+  if (product.type === "vault_maya") {
+    try {
+      const { createServerClient } = await import("@/lib/supabase/server")
+      const supabase = await createServerClient()
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+      if (authUser?.id) {
+        const { getUserIdFromSupabase } = await import("@/lib/user-mapping")
+        const neonUserId = await getUserIdFromSupabase(authUser.id)
+        if (neonUserId) {
+          const { getSuiteAccess } = await import("@/lib/trial/suite-trial")
+          const access = await getSuiteAccess(String(neonUserId))
+          if (access.level === "member") {
+            throw new Error(
+              "Vault Maya is already included in your SSELFIE SUITE membership."
+            )
+          }
+        }
+      }
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes("already included in your SSELFIE SUITE")
+      ) {
+        throw error
+      }
+      // Auth resolution failures must not block anonymous checkouts.
+      console.warn("[landing-checkout] vault_maya member guard skipped:", error)
+    }
+  }
+
   const isSubscription =
     product.type === "sselfie_studio_membership" ||
     product.type === "sselfie_studio_membership_annual" ||
