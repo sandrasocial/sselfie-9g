@@ -1,7 +1,12 @@
 # Vault Maya Launch Pack
 
-Status: BUILD COMPLETE (pending QA + Sandra's copy approval) — the email does not send until
-Sandra approves the exact words.
+> **Historical working pack. Do not use this file as current readiness or send
+> authority.** Dates, speed claims, counts and draft wording below may be stale. The
+> current control record is
+> `docs/audits/VAULT_MAYA_TAKEOVER_STATUS_2026-07-30.md`. No email sends until Sandra
+> approves the exact current words.
+
+Status: HISTORICAL DRAFT, NOT APPROVED FOR SEND.
 
 Date: 2026-07-30
 
