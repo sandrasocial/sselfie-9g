@@ -77,7 +77,60 @@ folder are ideal. The page shows the looks on YOU.]
 
 ---
 
-## 2. Launch email draft — to commerce buyers (97 people: vault, starter kit, presets, bundle)
+## 1b. Full-list launch plan (Sandra's call 2026-07-30: entire list except SUITE)
+
+Verified segment counts (Neon, 2026-07-30, deduped across freebie + blueprint + imported
+subscribers; Resend broadcast suppression removes unsubscribes on top of these):
+
+- Total unique list: 8,460
+- Excluded (active SUITE members + trials + bundle passes): 18
+- Buyers segment (gets the buyer email, sent first): 88
+- Non-buyer segment (gets the intro email): 8,358
+
+Sequence (Claire Pelletreau coordinated-send pattern, all sends need Sandra's approval):
+- Day 0 morning: buyers email to the 88 (script, personal).
+- Day 0 afternoon: full-list announce via Resend BROADCAST (unsubscribe link + suppression
+  built in — never the per-email script for the big list).
+- Day 3: proof send — Sandra's own before/after from this week's drop.
+- Day 6: honest close — founder price ends tomorrow, then $29 for new members.
+- If approval lands later than Day 0 = 2026-07-31, shift VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT
+  so the list gets a real week (one-line change in lib/launch/cash-launch-pricing.ts +
+  redeploy).
+
+### Non-buyer email draft (intro version — same voice, one extra beat)
+
+**Subject options:**
+1. Maya makes the photo now. You just tap.
+2. One selfie. Thirty seconds. Still you.
+3. My vault shoots, made on you
+
+**Body:**
+
+Hi [name],
+
+Quick story. For months I've been sharing my AI photo prompts — full shoots you paste
+into ChatGPT with a selfie. Thousands of women use them. And I kept hearing the same
+thing: it works, but some days ChatGPT hands you a stranger with your haircut.
+
+So I built something better.
+
+It's called Vault Maya. You upload your selfie once. Every one of my shoots shows up as
+looks you just tap. Thirty seconds later the photo is there. My style. Your face. Still
+you.
+
+New drops land every Monday. And you can tell Maya what I should shoot next — your idea
+can be the next drop.
+
+30 photos a month. $19/month founder price, this week only. Founders keep $19 for as
+long as they stay. Next week it's $29 for new members.
+
+[BUTTON: MAKE MY FIRST PHOTO → https://sselfie.ai/vault-maya?utm_source=email&utm_medium=launch&utm_campaign=vault_maya_launch_list]
+
+One selfie. That's the whole setup.
+
+Sandra
+
+## 2. Launch email draft — to commerce buyers (88 after member exclusion: vault, starter kit, presets, bundle)
 
 **Subject options (pick one):**
 1. Maya can make your vault photos now
@@ -120,11 +173,14 @@ Sandra
 - No income promises anywhere.
 - Sandra Test: short sentences, coffee-table voice, one clear next step (one selfie).
 
-## 4. Open items for Sandra
+## 4. Open items for Sandra (updated 2026-07-30 after full-list decision)
 
-1. Approve/edit offer page copy above.
-2. Pick subject line + approve/edit email.
-3. Provide 6-12 example images (your own vault shots).
-4. Confirm retire gate (14 days, <15 founders or <1/3 week-2 return → stop selling,
-   founders keep access).
-5. Confirm exact founder-week end date (proposal: 7 days from launch email send).
+1. Approve/edit BOTH emails above (buyer version + non-buyer intro version) and pick
+   subject lines. Nothing sends before this.
+2. Confirm Day 0 (proposal: 2026-07-31). If later, I shift the founder price flip so the
+   list gets a real week.
+3. Confirm retire gate — now scaled to the full-list launch: after 14 days, <40 paying
+   founders or <1/3 back in week two → stop selling, founders keep access. (Old
+   buyers-only gate was 15.)
+4. DONE: offer page rebuilt in Sandra's voice inside the shared marketing system, live.
+5. DONE: studio restyled to app design tokens + voice pass, live.
