@@ -1,5 +1,18 @@
 # Completed releases
 
+## 2026-07-30 — Stabilization trust cleanup
+
+Preserved and finished the abandoned Calendar profile-photo work so a member can upload a profile
+photo even when her Gallery is empty. Repository verification now ignores local, Git-ignored tool
+metadata while still rejecting tracked agent orchestration, and Vitest uses a bounded two-worker
+pool so the full suite completes reliably on the local machine.
+
+Production proof: feature commit `236b6400`, Vercel deployment
+`dpl_9NSwjqmLb7RdiUoSXdvBAvYQgf2f`, 1,834 passing tests with 6 intentionally skipped, CI
+typecheck, repository invariants, production build, and diff checks. Authenticated desktop and
+390x844 production QA verified Upload and Gallery mode switching, mobile fit, and cancel/close
+without changing the saved profile photo.
+
 ## 2026-07-27 — Maya operating layer member rollout gate
 
 Opened the corrected Maya operating layer beyond Sandra-only dogfooding only for eligible Suite
