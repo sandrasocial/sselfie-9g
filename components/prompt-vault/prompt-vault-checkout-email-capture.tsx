@@ -206,6 +206,12 @@ export function PromptVaultCheckoutEmailCapture({
           background: rgb(248, 250, 250);
         }
 
+        .pv-email-shell,
+        .pv-email-shell * {
+          box-sizing: border-box;
+          min-width: 0;
+        }
+
         .pv-email-capture {
           min-height: 100svh;
           display: flex;
@@ -460,7 +466,15 @@ export function PromptVaultCheckoutEmailCapture({
 
           .pv-order {
             align-items: flex-start;
+            flex-direction: column;
+            gap: 12px;
             margin-bottom: 24px;
+          }
+
+          .pv-order-price {
+            max-width: 100%;
+            text-align: left;
+            white-space: normal;
           }
 
           .pv-title {
