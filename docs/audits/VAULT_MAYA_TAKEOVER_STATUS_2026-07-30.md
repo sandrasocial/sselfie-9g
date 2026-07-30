@@ -22,6 +22,20 @@ Vault Maya remediation is **built on a branch, not released**.
 - B11, the genuine vault-only lifecycle, is not complete because there has not yet been
   a real $19 purchase through the remediated production journey.
 
+## Production QA release
+
+- Remediation deployed from `main` at `65d56881`.
+- Mobile checkout repair deployed at `ee3e748a` after production QA found the fresh
+  email-entry screen widening beyond a 390px viewport.
+- Targeted checkout checks: 10 passed. Type-check passed. Vercel production build:
+  Ready.
+- Live 390px verification: document width 390px, no horizontal overflow, card and
+  long founder-price summary fully inside the viewport.
+- No 5xx responses were observed for the repaired deployment during QA.
+- No launch email was sent and no founder flip timestamp is present in the production
+  environment.
+- B11 remains open until the genuine paid lifecycle is completed.
+
 ## Decisions already encoded
 
 1. Tap-to-create is Vault Maya v1. No chat or inspiration-image promise.
