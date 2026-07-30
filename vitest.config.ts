@@ -50,6 +50,8 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
+    maxWorkers: 2,
+    minWorkers: 2,
     setupFiles: ["./tests/setup.ts"],
     include: ["**/*.{test,spec}.{js,ts,jsx,tsx}"],
     exclude: ["node_modules", ".next", "out", "build", ".claude", ...quarantinedSuites],
