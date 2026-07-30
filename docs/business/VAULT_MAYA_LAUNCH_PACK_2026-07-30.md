@@ -97,81 +97,89 @@ Sequence (Claire Pelletreau coordinated-send pattern, all sends need Sandra's ap
   so the list gets a real week (one-line change in lib/launch/cash-launch-pricing.ts +
   redeploy).
 
-### Non-buyer email draft (intro version — same voice, one extra beat)
+### Non-buyer email draft (intro version — voice pass 2026-07-30, outcome-first, no
+ChatGPT-failure framing, no banned fragments)
 
 **Subject options:**
-1. Maya makes the photo now. You just tap.
-2. One selfie. Thirty seconds. Still you.
-3. My vault shoots, made on you
+1. The easiest way to create AI photos that still look like you
+2. Add a selfie. Choose a look. Maya does the rest.
+3. Meet Vault Maya
 
 **Body:**
 
 Hi [name],
 
-Quick story. For months I've been sharing my AI photo prompts — full shoots you paste
-into ChatGPT with a selfie. Thousands of women use them. And I kept hearing the same
-thing: it works, but some days ChatGPT hands you a stranger with your haircut.
+For months I've been sharing my AI photo prompts — full shoots that thousands of women
+use to create beautiful, realistic photos of themselves.
 
-So I built something better.
+But I wanted to make the whole experience even easier. No prompts to copy. No ChatGPT.
+Nothing to figure out.
 
-It's called Vault Maya. You upload your selfie once. Every one of my shoots shows up as
-looks you just tap. Thirty seconds later the photo is there. My style. Your face. Still
-you.
+It's called Vault Maya. You add your selfie once. Every one of my looks shows up ready
+to create. Tap the one you love, and your photo is normally ready in about 30 seconds.
+Still completely you.
 
-New drops land every Monday. And you can tell Maya what I should shoot next — your idea
-can be the next drop.
+New drops land every Monday, and you can request the looks you want to see next.
 
-30 photos a month. $19/month founder price, this week only. Founders keep $19 for as
-long as they stay. Next week it's $29 for new members.
+30 photo creations a month. Founder price: $19/month, this week only. Join now and you
+keep $19 for as long as your membership stays active. After that it's $29/month for new
+members.
 
-[BUTTON: MAKE MY FIRST PHOTO → https://sselfie.ai/vault-maya?utm_source=email&utm_medium=launch&utm_campaign=vault_maya_launch_list]
+[BUTTON: CREATE MY FIRST PHOTO → https://sselfie.ai/vault-maya?utm_source=email&utm_medium=launch&utm_campaign=vault_maya_launch_list]
 
-One selfie. That's the whole setup.
+If you have questions, just reply — a real person answers. Usually me 🤍
 
 Sandra
 
 ## 2. Launch email draft — to commerce buyers (88 after member exclusion: vault, starter kit, presets, bundle)
 
 **Subject options (pick one):**
-1. Maya can make your vault photos now
-2. Stop pasting my prompts into ChatGPT
-3. Your vault just started working for you
+1. I made the Prompt Vault even easier
+2. Your Vault looks, created for you
+3. Meet Vault Maya
 
-**Body (voice pass 2026-07-30 — matches the live landing page):**
+**Body (voice pass 2026-07-30 — outcome-first, protects the Prompt Vault):**
 
 Hi [name],
 
-You bought my prompts. So you know the routine. Copy, open ChatGPT, upload the selfie,
-paste, wait. And some days it still hands you a stranger with your haircut.
+You have my prompts, so you know how good the photos can be.
 
-I built something better.
+I created the Prompt Vault to give you the exact prompts. But I wanted to make the
+whole experience even easier. Now you don't need to copy anything or figure out what to
+type. You choose the photo you want, and Maya creates it for you.
 
-Vault Maya. You upload your selfie once. Every vault collection shows up as looks you
-just tap. Thirty seconds later the photo is there. My style. Your face. Still you.
+You add your selfie once. Every Vault look shows up ready to create. Tap the one you
+love, and your photo is normally ready in about 30 seconds. Still completely you.
 
-New drops land every Monday. And you can tell Maya what I should shoot next — your idea
-can be the next drop.
+New drops land every Monday, and you can request the looks you want to see next.
 
-30 photos a month. $19/month founder price, this week only. Founders keep $19 for as
-long as they stay. Next week it's $29 for new members.
+30 photo creations a month. Founder price: $19/month, this week only. Join now and you
+keep $19 for as long as your membership stays active. After that it's $29/month for new
+members.
 
-[BUTTON: MAKE MY FIRST PHOTO → https://sselfie.ai/vault-maya?utm_source=email&utm_medium=launch&utm_campaign=vault_maya_launch]
+[BUTTON: CREATE YOUR FIRST PHOTO → https://sselfie.ai/vault-maya?utm_source=email&utm_medium=launch&utm_campaign=vault_maya_launch]
 
-One selfie. That's the whole setup.
+And your Prompt Vault isn't going anywhere — it's yours forever. Vault Maya is simply
+the easier way to create the same looks.
 
 Sandra
 
 ---
 
-## 3. Copy compliance notes
+## 3. Copy compliance notes (updated 2026-07-30 after Sandra's voice correction)
 
-- No-Fake doctrine: "still you", "your face stays your face", "she frames you" — no
-  "no one will know", no face-change promises. Face-comparison phrasing banned per
-  copy rule — avoided.
-- Truthful urgency only: the $19→$29 rise is real and will be enforced in Stripe on the
-  dated switch. No fake scarcity claims.
-- No income promises anywhere.
-- Sandra Test: short sentences, coffee-table voice, one clear next step (one selfie).
+- Lead with the outcome (beautiful, realistic photos she feels confident posting), never
+  the process or the technology.
+- Never weaken the Prompt Vault or lead with ChatGPT failure. Vault Maya = the easier way
+  to create the looks, not a fix for a bad product.
+- Banned fragments: "stranger with your haircut", "my style, your face", "ready to wear",
+  "the engine I built", "she frames you", and similar clever copywriting fragments.
+- Likeness honesty: "AI can never be perfect every single time, but keeping you
+  recognisable is at the heart of everything I've built."
+- Truthful urgency only: the $19→$29 rise is real and enforced in Stripe on the dated
+  switch. Founder framing always says "for as long as your membership stays active".
+- State price + cancellation once per surface, not repeated.
+- No income promises anywhere. Support line: a real person answers, usually Sandra.
 
 ## 4. Open items for Sandra (updated 2026-07-30 after full-list decision)
 
@@ -179,8 +187,23 @@ Sandra
    subject lines. Nothing sends before this.
 2. Confirm Day 0 (proposal: 2026-07-31). If later, I shift the founder price flip so the
    list gets a real week.
-3. Confirm retire gate — now scaled to the full-list launch: after 14 days, <40 paying
-   founders or <1/3 back in week two → stop selling, founders keep access. (Old
-   buyers-only gate was 15.)
-4. DONE: offer page rebuilt in Sandra's voice inside the shared marketing system, live.
-5. DONE: studio restyled to app design tokens + voice pass, live.
+3. DONE: offer page rebuilt with Sandra's own copy, truth-passed, live counts.
+4. DONE: studio restyled + "Your photos" gallery added; welcome email built, unit-tested,
+   [TEST] copy sent to Sandra's inbox; checkout + Stripe descriptions truth-passed.
+
+## 5. Measurement plan (replaces the old auto-retire gate, per Sandra 2026-07-30)
+
+No automatic stop. Each funnel stage is read separately, weekly, and retirement is
+Sandra's decision only after at least two mature cohorts:
+
+1. **Acquisition** — email opens/clicks → /vault-maya visits → checkout starts
+   (analytics events + Stripe sessions). Weak → messaging/traffic work, not retirement.
+2. **Checkout conversion** — checkout starts → paid founders (stripe_payments,
+   product_type vault_maya). Weak → checkout UX/pricing work.
+3. **Activation** — % of founders who add a selfie AND create ≥1 photo within 48h of
+   joining (user_avatar_images + ai_images per user). Weak → onboarding email/UX work.
+4. **Photo acceptance** — creations per active member, automatic-refund (failure) rate,
+   re-creation behavior, and qualitative replies. Weak → likeness QA before anything else.
+5. **Retention (cohort-based, not calendar)** — a member counts as week-2 retained if she
+   creates ≥1 photo in days 8–14 of HER OWN membership. Renewal rate is only read after a
+   cohort passes day 30. No verdicts on immature cohorts.

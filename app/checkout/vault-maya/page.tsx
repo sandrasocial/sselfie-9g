@@ -94,19 +94,19 @@ export default async function VaultMayaCheckoutPage({
         actionPath="/checkout/vault-maya"
         eyebrow="VAULT MAYA"
         title="Where should I send your access?"
-        copy="Add your email so your login, receipt, and Vault Maya access go to the right place. Maya makes the vault looks from your selfie — 30 photos a month, new drops every week."
+        copy="Add your email so your login, receipt, and Vault Maya access go to the right place. Add one selfie, choose a look, and Maya creates the photo for you."
         inputId="vault-maya-checkout-email"
         buttonLabel="Continue to secure payment"
         skipLabel="Skip and go straight to payment"
         productName="Vault Maya"
-        productMeta="Every vault collection, made from your selfie"
+        productMeta="Every Vault look, created for you by Maya"
         productPrice={
           price.flipped ? "$29/month" : "$19/month founder price · then $29/month for new members"
         }
         reassurance={
           price.flipped
-            ? "$29 billed monthly. Cancel from your account."
-            : "Founders keep $19/month for as long as they stay. Cancel from your account."
+            ? "$29 billed monthly. Cancel anytime from your account."
+            : "Founders keep $19/month for as long as their membership stays active. Cancel anytime from your account."
         }
         visuals={[
           {

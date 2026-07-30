@@ -8,6 +8,10 @@ import { getOrCreateNeonUser } from "@/lib/user-mapping"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import {
+  generateVaultMayaWelcomeEmail,
+  VAULT_MAYA_WELCOME_SUBJECTS,
+} from "@/lib/email/templates/vault-maya-welcome"
+import {
   generateMembershipWelcomeEmail,
   MEMBERSHIP_WELCOME_SUBJECTS,
 } from "@/lib/email/templates/membership-welcome"
@@ -253,6 +257,13 @@ export async function handleStudioMembershipSubscriptionCheckout(
               customerEmail: customerEmail,
               passwordSetupUrl: passwordSetupLink,
             })
+          : productType === "vault_maya"
+          ? generateVaultMayaWelcomeEmail({
+              variant: "new",
+              customerName: session.customer_details?.name,
+              customerEmail: customerEmail,
+              passwordSetupUrl: passwordSetupLink,
+            })
           : generateWelcomeEmail({
               customerName: welcomeCustomerName,
               customerEmail: customerEmail,
@@ -431,6 +442,59 @@ export async function handleStudioMembershipSubscriptionCheckout(
         } catch (welcomeError: any) {
           console.error(
             `[v0] Error sending membership welcome (existing user) to ${customerEmail}:`,
+            welcomeError?.message || welcomeError
+          )
+        }
+      }
+    } else if (userId && productType === "vault_maya") {
+      console.log(
+        `[v0] Vault Maya checkout completed. Credits will be granted when invoice.payment_succeeded fires.`
+      )
+      // Existing users who join Vault Maya get their welcome here, idempotent via email_logs.
+      if (event.livemode && isPaymentPaid && customerEmail) {
+        try {
+          const alreadyWelcomed = await sql`
+            SELECT 1 FROM email_logs
+            WHERE user_email = ${customerEmail}
+              AND email_type = 'vault_maya_welcome'
+              AND status IN ('sent', 'delivered')
+              AND sent_at > NOW() - INTERVAL '7 days'
+            LIMIT 1
+          `
+
+          if (alreadyWelcomed.length === 0) {
+            const emailContent = generateVaultMayaWelcomeEmail({
+              variant: "existing",
+              customerName: session.customer_details?.name,
+              customerEmail: customerEmail,
+            })
+
+            const emailResult = await sendEmail({
+              to: customerEmail,
+              subject: VAULT_MAYA_WELCOME_SUBJECTS.existing,
+              html: emailContent.html,
+              text: emailContent.text,
+              emailType: "vault_maya_welcome",
+              tags: ["vault-maya-welcome"],
+            })
+
+            if (emailResult.success) {
+              console.log(
+                `[v0] Vault Maya welcome (existing user) sent to ${customerEmail}, message ID: ${emailResult.messageId}`
+              )
+            } else {
+              console.error(
+                `[v0] Failed to send Vault Maya welcome to ${customerEmail}: ${emailResult.error}`
+              )
+            }
+          } else {
+            console.log(
+              `[v0] Vault Maya welcome already sent to ${customerEmail} in the last 7 days, skipping`
+            )
+          }
+        } catch (welcomeError: any) {
+          console.error(
+            `[v0] Error sending Vault Maya welcome to ${customerEmail}:`,
             welcomeError?.message || welcomeError
           )
         }

@@ -184,7 +184,7 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     name: "Vault Maya",
     displayName: "Vault Maya",
     description:
-      "Your own Maya chat for the Prompt Vault. Upload your selfie once, tap any vault look, and Maya makes the photo — still you — in about 30 seconds. New drops every week.",
+      "Vault Maya turns the SSELFIE Prompt Vault into a one-tap photo experience. Add one selfie, choose a look, and Maya creates the photo for you. New drops every Monday.",
     priceInCents: 1900, // $19/month founder price; $29/month standard after founder week
     type: "vault_maya",
     credits: VAULT_MAYA_MONTHLY_CREDITS,

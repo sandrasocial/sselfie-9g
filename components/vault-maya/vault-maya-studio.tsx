@@ -27,6 +27,12 @@ type GenState =
   | { status: "done"; imageUrl: string }
   | { status: "error"; message: string }
 
+type GalleryPhoto = {
+  id: string
+  url: string
+  createdAt: string
+}
+
 export function VaultMayaStudio({
   initialSelfieUrl,
   initialCredits,
@@ -45,8 +51,30 @@ export function VaultMayaStudio({
   const [gen, setGen] = useState<Record<string, GenState>>({})
   const [requestText, setRequestText] = useState("")
   const [requestState, setRequestState] = useState<"idle" | "sending" | "sent" | "error">("idle")
+  const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const busyRef = useRef(false)
+
+  const loadGallery = useCallback(() => {
+    fetch("/api/app-v3/gallery")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d) => {
+        const photos = (Array.isArray(d.assets) ? d.assets : [])
+          .filter((a: { kind?: string; url?: string }) => a?.kind === "image" && typeof a?.url === "string")
+          .slice(0, 18)
+          .map((a: { id: string; url: string; createdAt: string }) => ({
+            id: String(a.id),
+            url: a.url,
+            createdAt: a.createdAt,
+          }))
+        setGalleryPhotos(photos)
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    loadGallery()
+  }, [loadGallery])
 
   useEffect(() => {
     let cancelled = false
@@ -120,6 +148,7 @@ export function VaultMayaStudio({
         }
         if (typeof data.newBalance === "number") setCredits(data.newBalance)
         setGen((prev) => ({ ...prev, [look.cardKey]: { status: "done", imageUrl: data.imageUrl } }))
+        loadGallery()
       } catch (e) {
         setGen((prev) => ({
           ...prev,
@@ -265,6 +294,35 @@ export function VaultMayaStudio({
           onMake={makeLook}
         />
       ))}
+
+      {galleryPhotos.length > 0 ? (
+        <section className="mt-10">
+          <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">
+            Your photos
+          </p>
+          <p className="mt-2 font-serif text-[26px] font-light leading-tight text-[color:var(--ss-night)]">
+            Everything Maya has made you
+          </p>
+          <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {galleryPhotos.map((photo) => (
+              <button
+                key={photo.id}
+                type="button"
+                onClick={() => void downloadAllSlides([photo.url], "sselfie-vault")}
+                className="group relative aspect-[3/4] overflow-hidden rounded-[8px] bg-white"
+                aria-label="Save this photo"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photo.url} alt="Your photo" className="h-full w-full object-cover" />
+                <span className="absolute bottom-1.5 right-1.5 rounded-[4px] bg-[color:var(--ss-night)]/80 px-2 py-1 text-[8px] uppercase tracking-[0.16em] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  Save
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-[color:var(--ss-gray)]">Tap a photo to save it.</p>
+        </section>
+      ) : null}
 
       <section className="mt-10 rounded-[10px] border border-[color:var(--ss-silver)]/55 bg-white p-6">
         <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">

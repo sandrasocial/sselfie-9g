@@ -146,10 +146,10 @@ const CHECKOUT_COPY: Record<
   },
   vault_maya: {
     heroTitle: "Join Vault Maya",
-    heroBody: "Upload your selfie once. Tap a look. Your photo is ready in about 30 seconds — still you.",
+    heroBody: "Add one selfie, choose a look, and Maya creates the photo for you.",
     heading: "Vault Maya",
-    blurb: "Every vault collection made on you, new drops weekly, 30 photos a month, and a gallery that keeps everything.",
-    footer: "Your access opens after payment. Manage or cancel from your account. Founders keep the founder price for as long as they stay.",
+    blurb: "Every Vault look ready to create, new drops every Monday, 30 photo creations a month, and your own gallery.",
+    footer: "Your access opens after payment. Cancel anytime from your account. Founders keep the founder price for as long as their membership stays active.",
   },
   sselfie_studio_membership: {
     heroTitle: "Join SSELFIE SUITE",

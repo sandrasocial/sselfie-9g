@@ -636,11 +636,11 @@ export default async function PromptVaultAccessPage({
             New · Vault Maya
           </p>
           <p className={`mt-2 text-2xl text-neutral-950 ${cormorant.className}`}>
-            Maya makes these photos for you now.
+            Want these looks without doing the work?
           </p>
           <p className="mx-auto mt-2 max-w-md text-sm text-neutral-600">
-            No more pasting into ChatGPT. Upload your selfie once, tap any vault look, and your
-            photo is ready in about 30 seconds — still you.
+            Add one selfie, choose a look, and Maya creates the photo for you. Every Vault
+            collection included, new drops every Monday.
           </p>
           <Link
             href="/vault-maya?source=vault_access_banner&utm_source=prompt_vault&utm_medium=access_page&utm_campaign=vault_maya_launch"

@@ -7,13 +7,13 @@ import { getVaultMayaPriceDisplay } from "@/lib/launch/cash-launch-pricing"
 export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
-  title: "Vault Maya — your vault photos, made for you",
+  title: "Vault Maya — beautiful AI photos that still look like you",
   description:
-    "Upload your selfie once, tap any vault look, and Maya makes the photo — still you — in about 30 seconds. New drops every week.",
+    "The easiest way to create beautiful AI photos that still look like you. Add one selfie, choose a look from the SSELFIE Vault, and Maya creates the photo for you.",
   openGraph: {
-    title: "Vault Maya — your vault photos, made for you",
+    title: "Vault Maya — beautiful AI photos that still look like you",
     description:
-      "Upload your selfie once, tap any vault look, and Maya makes the photo — still you — in about 30 seconds. New drops every week.",
+      "The easiest way to create beautiful AI photos that still look like you. Add one selfie, choose a look from the SSELFIE Vault, and Maya creates the photo for you.",
     url: "https://www.sselfie.ai/vault-maya",
     images: ["/og-image.png"],
   },
@@ -34,7 +34,6 @@ export default async function VaultMayaOfferPage() {
       collectionCount={collectionCount}
       shotCount={shotCount}
       founderActive={!price.flipped}
-      ctaLabel={price.ctaLabel}
     />
   )
 }
