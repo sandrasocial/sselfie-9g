@@ -39,10 +39,11 @@ launch pack repairs.
 
 ## Suite state
 
-Full run on this branch: see scratchpad log referenced in session; expected ~1799 tests with
-the two known order-dependent flakes (maya-prompts-tab-actions, ig-reply-system-retired —
-both pass in isolation; noted in the audit as a suite-health finding, not vault-related).
-Production build: compiled successfully on this branch (2.1min).
+Full run on this branch (2026-07-30 night): **389 files passed / 6 skipped — 1815 tests
+passed, 0 failed** (the two order-dependent flakes noted in the audit happened to pass in
+this run; they remain a suite-health caveat, not a vault finding). Production build:
+compiled successfully on this branch (2.1min). The reviewer should re-run both:
+`pnpm vitest run` and `pnpm build`.
 
 ## Still open / not in this branch (by design)
 
