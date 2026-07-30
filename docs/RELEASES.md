@@ -1,5 +1,18 @@
 # Completed releases
 
+## 2026-07-30 — Vault Maya lifecycle stabilization
+
+Hardened Vault Maya checkout, account provisioning, Stripe retry behavior, welcome delivery,
+subscription entitlements, monthly credit resets, and funnel measurement so a failed dependency
+cannot silently strand a paid buyer or widen Vault access into SUITE.
+
+Production proof: feature commit `a8ca3b95`, Vercel deployment
+`dpl_Hg8rqieL7B8kk9Tybwpn3Wr3oxWn`, 1,843 passing tests with 6 intentionally skipped, CI
+typecheck, repository invariants, production build, and diff checks. Live desktop and 390px mobile
+QA verified the public journey, required email capture, embedded recurring Stripe checkout, access
+redirect, responsive fit, accepted funnel events, and zero Vault runtime errors. No payment,
+customer email, publishing, refund, or entitlement change was performed during verification.
+
 ## 2026-07-30 — Stabilization trust cleanup
 
 Preserved and finished the abandoned Calendar profile-photo work so a member can upload a profile
