@@ -22,11 +22,11 @@ const HTML = `
 <div style="max-width:560px;margin:0 auto;font-family:Georgia,'Times New Roman',serif;color:#282728;background:#ffffff;padding:32px 24px;">
   <p style="font-size:11px;letter-spacing:0.18em;color:#818283;text-transform:uppercase;margin:0 0 20px;">Vault Maya · new</p>
   <p style="font-size:16px;line-height:1.7;margin:0 0 16px;">Hi{{FIRST_NAME}},</p>
-  <p style="font-size:16px;line-height:1.7;margin:0 0 16px;">You bought my prompts. Which means you know the routine: copy the prompt, open ChatGPT, upload your selfie, paste, wait &mdash; and hope the photo still looks like you.</p>
+  <p style="font-size:16px;line-height:1.7;margin:0 0 16px;">You bought my prompts. So you know the routine. Copy, open ChatGPT, upload the selfie, paste, wait. And some days it still hands you a stranger with your haircut.</p>
   <p style="font-size:16px;line-height:1.7;margin:0 0 16px;">I built something better.</p>
-  <p style="font-size:16px;line-height:1.7;margin:0 0 16px;">It&rsquo;s called Vault Maya. You upload your selfie once. Every vault collection shows up as looks you just tap. About 30 seconds later, the photo is there &mdash; my style, your face, still you.</p>
-  <p style="font-size:16px;line-height:1.7;margin:0 0 16px;">New drops land every week, ready to tap. And you can tell Maya what I should create next &mdash; send her a message, and your idea can be the next drop.</p>
-  <p style="font-size:16px;line-height:1.7;margin:0 0 24px;">30 photos a month. $19/month &mdash; founder price, this week only, and founders keep $19 for as long as they stay. Next week it goes to $29 for new members.</p>
+  <p style="font-size:16px;line-height:1.7;margin:0 0 16px;">Vault Maya. You upload your selfie once. Every vault collection shows up as looks you just tap. Thirty seconds later the photo is there. My style. Your face. Still you.</p>
+  <p style="font-size:16px;line-height:1.7;margin:0 0 16px;">New drops land every Monday. And you can tell Maya what I should shoot next &mdash; your idea can be the next drop.</p>
+  <p style="font-size:16px;line-height:1.7;margin:0 0 24px;">30 photos a month. $19/month founder price, this week only. Founders keep $19 for as long as they stay. Next week it&rsquo;s $29 for new members.</p>
   <p style="text-align:center;margin:0 0 24px;">
     <a href="https://sselfie.ai/vault-maya?utm_source=email&utm_medium=launch&utm_campaign=vault_maya_launch" style="display:inline-block;background:#0D0E10;color:#ffffff;text-decoration:none;padding:14px 32px;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif;">Make my first photo</a>
   </p>

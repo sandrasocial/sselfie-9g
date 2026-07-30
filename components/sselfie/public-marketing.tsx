@@ -5,6 +5,7 @@ import Link from "next/link"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { appendReferralParam, buildReferralLoginHref } from "@/lib/referrals/routing"
 import { PromptVaultCheckoutLink } from "@/components/prompt-vault/prompt-vault-checkout-link"
+import { VaultMayaCheckoutLink } from "@/components/vault-maya/vault-maya-checkout-link"
 import { SuiteMultiFormatWalkthrough } from "@/components/sselfie/suite-multiformat-walkthrough"
 import { SuiteProductWalkthrough } from "@/components/sselfie/suite-product-walkthrough"
 
@@ -1805,6 +1806,151 @@ export function PromptVaultPageContent({
         <div className="mf flex flex-col items-center text-center" style={{ marginTop: "44px" }}>
           <PromptVaultCheckoutLink label={ctaLabel} />
           <VaultRiskLine dark />
+        </div>
+      </Section>
+
+      <PublicFooter />
+    </PublicPageShell>
+  )
+}
+
+// ─── Vault Maya · the vault, made for you ────────────────────────────────────
+const VAULT_MAYA_FAQ = [
+  {
+    question: "Will it still look like me?",
+    answer:
+      "That is the whole point. Maya uses your selfie for every look, and you check the result before you post. Recognizable, not a stranger.",
+  },
+  {
+    question: "Do I need ChatGPT?",
+    answer: "No. Everything happens right here. Your selfie, my shoots, Maya's engine.",
+  },
+  {
+    question: "I already own the Prompt Vault. Is this included?",
+    answer:
+      "The Vault is yours forever, prompts and all. Vault Maya is Maya doing the work for you — it's a separate membership, and the founder price is my thank-you for being an early buyer.",
+  },
+  {
+    question: "What if 30 photos a month isn't enough?",
+    answer: "Top up anytime. Most women post three or four times a week — 30 covers that with room to play.",
+  },
+]
+
+function VaultMayaRiskLine({ dark }: { dark: boolean }) {
+  return (
+    <p style={{ ...ty("body", dark), fontSize: "12px", color: dark ? C.onDarkMuted : C.onCreamMuted, margin: "12px 0 0", maxWidth: "420px" }}>
+      Cancel anytime from your account. Founders keep $19 for as long as they stay.
+      Reply to me and a real person, usually me, helps.
+    </p>
+  )
+}
+
+export function VaultMayaPageContent({
+  shotCount,
+  collectionCount,
+  founderActive,
+  ctaLabel,
+}: {
+  shotCount: number
+  collectionCount: number
+  founderActive: boolean
+  ctaLabel: string
+}) {
+  return (
+    <PublicPageShell>
+      <PublicNav />
+
+      {/* HERO - dark full-bleed */}
+      <Hero
+        eyebrow="Vault Maya · New"
+        title={<>Maya makes your vault photos now.</>}
+        body={
+          <>
+            <p style={{ marginBottom: "14px" }}>
+              You know the routine. Copy the prompt, open ChatGPT, upload the selfie, paste, wait.
+              Maya skips all of that. One selfie, once. Tap a look. Thirty seconds later you have
+              the photo. Not a stranger with your haircut.
+            </p>
+            <p style={{ fontSize: "13px", color: C.onDarkMuted }}>
+              Still you. Still recognizable. AI shouldn&apos;t erase you. It should frame you.
+            </p>
+          </>
+        }
+        primaryNode={<VaultMayaCheckoutLink label={ctaLabel} />}
+        secondary={{ href: "#how", label: "See how it works" }}
+        imageSrc="/images/ai-prompts/quiet-luxury-london-shot-1.jpg"
+      />
+
+      {/* THE PROBLEM - cream */}
+      <Section eyebrow="The part nobody tells you" title={<>The prompts work. The routine gets old.</>} dark={false} narrow>
+        <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
+          <p>
+            Every photo costs you the same five steps. And some days ChatGPT hands you someone
+            else&apos;s face anyway.
+          </p>
+          <p>
+            Maya runs my exact shoots on the engine I built for one thing: photos that still look
+            like you. She keeps your selfie. You just tap.
+          </p>
+        </div>
+      </Section>
+
+      {/* PROOF - dark */}
+      <Section eyebrow="Real customer words" title="What women say after their first shoot." dark>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {VAULT_PROOF.map((item) => (
+            <FCard key={item.quote} dark title={`“${item.quote}”`} body={item.who} />
+          ))}
+        </div>
+      </Section>
+
+      {/* HOW IT WORKS - cream */}
+      <Section id="how" eyebrow="How it works" title="One selfie. Then it's taps." dark={false}>
+        <div className="grid gap-4 md:grid-cols-3">
+          <FCard dark={false} eyebrow="01" title="Add your selfie" body="Once. Maya remembers it for every look." />
+          <FCard dark={false} eyebrow="02" title="Tap a look" body="Every vault collection is inside, ready. New drops every Monday." />
+          <FCard dark={false} eyebrow="03" title="Save it" body="About 30 seconds. Save it, post it, done." />
+        </div>
+        <p className="mf" style={{ ...ty("body", false), fontSize: "15px", color: C.onCreamMuted, marginTop: "32px" }}>
+          You bring the selfie. Maya does the rest.
+        </p>
+      </Section>
+
+      {/* EVERYTHING - dark */}
+      <Section eyebrow="Everything inside" title={<>{founderActive ? "Founder price. This week only." : "One membership. Every shoot, on you."}</>} dark narrow>
+        <ul className="mf" style={{ listStyle: "none", padding: 0, margin: "0 0 30px", display: "flex", flexDirection: "column", gap: "9px" }}>
+          {[
+            `All ${collectionCount} vault collections · ${shotCount} looks ready to tap`,
+            "New drops every week — you see them first",
+            "30 photos a month · top up when you want more",
+            "A gallery that keeps everything",
+            "Tell me what to shoot next — your idea can be the next drop",
+            founderActive
+              ? "$19/month founder price this week · then $29 for new members · founders keep $19"
+              : "$29/month · cancel anytime",
+          ].map((item) => (
+            <li key={item} style={{ ...ty("body", true), fontSize: "15px" }}>
+              <span style={{ color: C.onDarkMuted, marginRight: "10px" }}>·</span>
+              {item}
+            </li>
+          ))}
+        </ul>
+        <VaultMayaCheckoutLink label={ctaLabel} />
+        <VaultMayaRiskLine dark />
+      </Section>
+
+      {/* FAQ + final CTA - cream */}
+      <Section eyebrow="Quick answers" title="Before you start." dark={false} narrow>
+        <FaqAccordion items={VAULT_MAYA_FAQ} dark={false} />
+        <div className="mf flex flex-col items-center text-center" style={{ marginTop: "44px" }}>
+          <VaultMayaCheckoutLink label={ctaLabel} surface="cream" />
+          <VaultMayaRiskLine dark={false} />
+          <p style={{ ...ty("body", false), fontSize: "13px", color: C.onCreamMuted, marginTop: "28px", maxWidth: "440px" }}>
+            Want Maya to create from your own ideas, plan your feed, and write your captions?{" "}
+            <Link href="/checkout/membership?interval=month&source=vault_maya_offer_footer" style={{ textDecoration: "underline", textUnderlineOffset: "3px", color: "inherit" }}>
+              That&apos;s SSELFIE SUITE.
+            </Link>
+          </p>
         </div>
       </Section>
 

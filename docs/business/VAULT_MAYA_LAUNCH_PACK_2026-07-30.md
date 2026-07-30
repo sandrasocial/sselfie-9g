@@ -84,24 +84,23 @@ folder are ideal. The page shows the looks on YOU.]
 2. Stop pasting my prompts into ChatGPT
 3. Your vault just started working for you
 
-**Body:**
+**Body (voice pass 2026-07-30 — matches the live landing page):**
 
 Hi [name],
 
-You bought my prompts. Which means you know the routine: copy the prompt, open ChatGPT,
-upload your selfie, paste, wait — and hope the photo still looks like you.
+You bought my prompts. So you know the routine. Copy, open ChatGPT, upload the selfie,
+paste, wait. And some days it still hands you a stranger with your haircut.
 
 I built something better.
 
-It's called Vault Maya. You upload your selfie once. Every vault collection shows up as
-looks you just tap. About 30 seconds later, the photo is there — my style, your face,
-still you.
+Vault Maya. You upload your selfie once. Every vault collection shows up as looks you
+just tap. Thirty seconds later the photo is there. My style. Your face. Still you.
 
-New drops land every week, ready to tap. And you can tell Maya what I should create
-next — send her a message or an inspo image, and your idea can be the next drop.
+New drops land every Monday. And you can tell Maya what I should shoot next — your idea
+can be the next drop.
 
-30 photos a month. $19/month — founder price, this week only, and founders keep $19 for
-as long as they stay. Next week it goes to $29.
+30 photos a month. $19/month founder price, this week only. Founders keep $19 for as
+long as they stay. Next week it's $29 for new members.
 
 [BUTTON: MAKE MY FIRST PHOTO → https://sselfie.ai/vault-maya?utm_source=email&utm_medium=launch&utm_campaign=vault_maya_launch]
 
