@@ -47,4 +47,16 @@ describe("lib/ai/image-safety", () => {
     expect(softened).toContain("quiet moment")
     expect(softened).not.toContain("intimate")
   })
+
+  it("softens the fashion and pose phrases from the failed Photo dump shots", () => {
+    const softened = sanitizePromptForImageSafety(
+      "A sultry face-down pose in a string bikini, with a robe worn open over a lace bralette."
+    )
+    expect(softened).not.toMatch(/\bsultry\b/i)
+    expect(softened).not.toMatch(/face[-\s]down/i)
+    expect(softened).not.toMatch(/string\s+bikini/i)
+    expect(softened).not.toMatch(/\bbralette\b/i)
+    expect(softened).not.toMatch(/worn\s+open/i)
+    expect(softened).toContain("Keep the styling modest, fully clothed, elegant, and tasteful.")
+  })
 })

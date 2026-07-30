@@ -494,13 +494,83 @@ function validateShotSet(
   }
 }
 
-function toPromptShot({ imageUrl: _imageUrl, status: _status, ...rest }: ShootShot) {
+function toPromptShot({
+  imageUrl: _imageUrl,
+  renderStatus: _renderStatus,
+  renderErrorCode: _renderErrorCode,
+  renderErrorMessage: _renderErrorMessage,
+  renderAttempts: _renderAttempts,
+  lastRenderAttemptAt: _lastRenderAttemptAt,
+  status: _status,
+  ...rest
+}: ShootShot) {
   return rest
 }
 
 // ── Image generation ────────────────────────────────────────────────────────────
 
 type ImgQuality = "low" | "medium" | "high"
+
+export class InspirationModerationError extends Error {
+  readonly code = "inspiration_moderation_blocked"
+  readonly status = 422
+
+  constructor(message: string) {
+    super(message)
+    this.name = "InspirationModerationError"
+  }
+}
+
+export class ShootRenderError extends Error {
+  readonly status: number
+  readonly code: "moderation_blocked" | "generation_failed"
+  readonly retryable: boolean
+  readonly shoot: Shoot
+
+  constructor(input: {
+    message: string
+    code: "moderation_blocked" | "generation_failed"
+    retryable: boolean
+    shoot: Shoot
+  }) {
+    super(input.message)
+    this.name = "ShootRenderError"
+    this.status = input.code === "moderation_blocked" ? 422 : 500
+    this.code = input.code
+    this.retryable = input.retryable
+    this.shoot = input.shoot
+  }
+}
+
+async function assertSafeInspirationImages(inspirationUrls: string[]): Promise<void> {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey || inspirationUrls.length === 0) return
+  const openai = new OpenAI({ apiKey })
+  const checks = await Promise.all(
+    inspirationUrls.map(async (url, index) => {
+      try {
+        const response = await openai.moderations.create({
+          model: "omni-moderation-latest",
+          input: [{ type: "image_url", image_url: { url } }],
+        })
+        return response.results.some(result => result.flagged) ? index + 1 : null
+      } catch (error) {
+        // Moderation is an early warning, not a second availability dependency. The image
+        // endpoint still enforces policy, and regenerateShot persists that result per card.
+        console.warn(
+          `[shoot-studio] inspiration preflight unavailable for image ${index + 1}: ${getGenerationFailureSummary(error)}`
+        )
+        return null
+      }
+    })
+  )
+  const blocked = checks.filter((index): index is number => index !== null)
+  if (blocked.length === 0) return
+  const label = blocked.length === 1 ? `image ${blocked[0]}` : `images ${blocked.join(", ")}`
+  throw new InspirationModerationError(
+    `Replace inspiration ${label} before creating this shoot. It was marked as potentially sensitive and will not render reliably.`
+  )
+}
 
 export async function generateShotImage(input: {
   selfieUrls: string[]
@@ -587,58 +657,6 @@ export async function generateShotImage(input: {
     }
   )
   return blob.url
-}
-
-async function renderShotIndicesWithContinuity(input: {
-  shots: ShootShot[]
-  indices: number[]
-  selfieUrls: string[]
-  inspirationUrls: string[]
-  quality: ImgQuality
-}): Promise<{ shots: ShootShot[]; failures: Array<{ index: number; reason: unknown }> }> {
-  const shots = [...input.shots]
-  const indices = [...new Set(input.indices)]
-    .filter(index => index >= 0 && index < shots.length)
-    .sort((a, b) => a - b)
-  const failures: Array<{ index: number; reason: unknown }> = []
-  let continuityAnchorUrl =
-    shots[0]?.imageUrl && isAllowedUrl(shots[0].imageUrl) ? shots[0].imageUrl : null
-
-  const renderOne = async (index: number, continuityUrls: string[] = []) =>
-    generateShotImage({
-      selfieUrls: input.selfieUrls,
-      inspirationUrls: input.inspirationUrls,
-      continuityUrls,
-      prompt: shots[index].prompt,
-      shotRole: normalizeShotRole(shots[index].shotRole, index),
-      quality: input.quality,
-    })
-
-  if (indices.includes(0)) {
-    try {
-      const imageUrl = await renderOne(0)
-      shots[0] = { ...shots[0], imageUrl }
-      continuityAnchorUrl = imageUrl
-    } catch (reason) {
-      failures.push({ index: 0, reason })
-    }
-  }
-
-  const restIndices = indices.filter(index => index !== 0)
-  const continuityUrls = continuityAnchorUrl ? [continuityAnchorUrl] : []
-  const results = await Promise.allSettled(
-    restIndices.map(index => renderOne(index, continuityUrls))
-  )
-  results.forEach((result, resultIndex) => {
-    const shotIndex = restIndices[resultIndex]
-    if (result.status === "fulfilled") {
-      shots[shotIndex] = { ...shots[shotIndex], imageUrl: result.value }
-    } else {
-      failures.push({ index: shotIndex, reason: result.reason })
-    }
-  })
-
-  return { shots, failures }
 }
 
 // ── Row mapping + persistence ───────────────────────────────────────────────────
@@ -820,6 +838,7 @@ export async function createShootDraft(input: {
       "One or more selected selfies could not be used. Re-upload or reselect your selfies."
     )
   }
+  await assertSafeInspirationImages(inspirationUrls)
 
   let parsed: any = null
   let drafts: Omit<ShootShot, "id" | "status">[] = []
@@ -854,6 +873,7 @@ export async function createShootDraft(input: {
   const shots: ShootShot[] = drafts.map((shot, i) => ({
     ...shot,
     id: `shot-${i + 1}`,
+    renderStatus: "pending",
     status: "draft",
   }))
   const messages: ShootMessage[] = [
@@ -897,6 +917,16 @@ export async function refineShoot(id: number, message: string): Promise<Shoot> {
   if (!shoot) throw new Error("Shoot not found")
   const ask = message.trim()
   if (!ask) throw new Error("Say what you want changed")
+  const story = shoot.collectionType === "story"
+  const collectionRules = story
+    ? `STORY COLLECTION RULES:
+- Keep every shot tied to its existing inspiration image at the same index.
+- Every shot remains its own world. Do not introduce cross-shot outfit, location, pose, lighting, or color-grade continuity.
+- Preserve the current collection vibe: ${shoot.vibe || "editorial close recreation"}.
+- Keep phone-camera, mirror-selfie, photodump, or other preset camera language intact when present.`
+    : `COHESIVE SHOOT RULES:
+- Keep one consistent outfit family, hair, makeup, location mood, lighting world, and color grade.
+- Preserve the existing shot-role and camera-distance variety.`
 
   const raw = await callContentKitLlm(
     `You are SSELFIE's vault prompt writer, refining the photoshoot "${shoot.title}" for Sandra.
@@ -905,6 +935,8 @@ Current shots JSON:
 ${JSON.stringify(shoot.shots.map(toPromptShot), null, 2)}
 
 Sandra says: "${ask}"
+
+${collectionRules}
 
 ${buildVaultAnatomy(shoot.shots.length)}
 
@@ -915,7 +947,7 @@ ${noFakeBlock()}
 ${REFINE_CONTRACT}`
   )
   const parsed = extractJsonObject(raw)
-  const updated = sanitizeShots(parsed.shots)
+  const updated = sanitizeShots(parsed.shots, shoot.shots.length, { story })
   const reply = stripEmDashes(
     String(parsed.reply || "Done. Regenerating the changed shots now.")
   ).trim()
@@ -929,27 +961,11 @@ ${REFINE_CONTRACT}`
       ...existing,
       ...next,
       imageUrl: changed ? undefined : existing.imageUrl,
+      renderStatus: changed ? "pending" : existing.renderStatus,
+      renderErrorCode: changed ? null : existing.renderErrorCode,
+      renderErrorMessage: changed ? null : existing.renderErrorMessage,
       status: changed ? "draft" : existing.status,
     }
-  })
-
-  const changedIdx = nextShots
-    .map((shot, i) => (shot.imageUrl === undefined ? i : -1))
-    .filter(i => i >= 0)
-  const rendered =
-    changedIdx.length > 0
-      ? await renderShotIndicesWithContinuity({
-          shots: nextShots,
-          indices: changedIdx,
-          selfieUrls: shoot.selfieUrls,
-          inspirationUrls: shoot.inspirationUrls,
-          quality: DEFAULT_RENDER_QUALITY,
-        })
-      : { shots: nextShots, failures: [] }
-  rendered.failures.forEach(({ index, reason }) => {
-    console.error(
-      `[shoot-studio] refined shot ${nextShots[index]?.id || index + 1} generation failed for shoot ${shoot.id}: ${getGenerationFailureSummary(reason)}`
-    )
   })
 
   const messages: ShootMessage[] = [
@@ -957,8 +973,8 @@ ${REFINE_CONTRACT}`
     { role: "sandra", text: ask, at: new Date().toISOString() },
     { role: "agent", text: reply, at: new Date().toISOString() },
   ]
-  await saveShots(shoot.id, rendered.shots, messages)
-  return { ...shoot, shots: rendered.shots, messages }
+  await saveShots(shoot.id, nextShots, messages)
+  return { ...shoot, shots: nextShots, messages }
 }
 
 export async function regenerateShot(
@@ -973,30 +989,64 @@ export async function regenerateShot(
 
   const shotRole = normalizeShotRole(shoot.shots[idx].shotRole, idx)
   const isStory = shoot.collectionType === "story"
-  const imageUrl = await generateShotImage({
-    selfieUrls: shoot.selfieUrls,
-    // Story shots recreate their OWN inspiration (inspo idx); cohesive shots use all inspiration.
-    inspirationUrls: isStory
-      ? [shoot.inspirationUrls[idx] ?? shoot.inspirationUrls[0]]
-      : shoot.inspirationUrls,
-    // Story shots have no continuity anchor; cohesive shots anchor 2+ to shot 1.
-    continuityUrls:
-      !isStory && idx > 0 && shoot.shots[0]?.imageUrl && isAllowedUrl(shoot.shots[0].imageUrl)
-        ? [shoot.shots[0].imageUrl]
-        : [],
-    prompt: shoot.shots[idx].prompt,
-    shotRole,
-    quality,
-    closeRecreate: isStory,
-  })
-  const patch = {
-    shotRole,
-    imageUrl,
-    status: quality === "high" ? shoot.shots[idx].status : "draft",
+  const renderAttempts = (shoot.shots[idx].renderAttempts || 0) + 1
+  const lastRenderAttemptAt = new Date().toISOString()
+  try {
+    const imageUrl = await generateShotImage({
+      selfieUrls: shoot.selfieUrls,
+      // Story shots recreate their OWN inspiration (inspo idx); cohesive shots use all inspiration.
+      inspirationUrls: isStory
+        ? [shoot.inspirationUrls[idx] ?? shoot.inspirationUrls[0]]
+        : shoot.inspirationUrls,
+      // Story shots have no continuity anchor; cohesive shots anchor 2+ to shot 1.
+      continuityUrls:
+        !isStory && idx > 0 && shoot.shots[0]?.imageUrl && isAllowedUrl(shoot.shots[0].imageUrl)
+          ? [shoot.shots[0].imageUrl]
+          : [],
+      prompt: shoot.shots[idx].prompt,
+      shotRole,
+      quality,
+      closeRecreate: isStory,
+    })
+    const patch: Partial<ShootShot> = {
+      shotRole,
+      imageUrl,
+      renderStatus: "completed",
+      renderErrorCode: null,
+      renderErrorMessage: null,
+      renderAttempts,
+      lastRenderAttemptAt,
+      status: quality === "high" ? shoot.shots[idx].status : "draft",
+    }
+    shoot.shots[idx] = { ...shoot.shots[idx], ...patch }
+    await saveShotPatch(shoot.id, shoot.shots[idx].id, patch)
+    return shoot
+  } catch (error) {
+    const moderationBlocked = isContentPolicyError(error)
+    const code = moderationBlocked ? "moderation_blocked" : "generation_failed"
+    const message = moderationBlocked
+      ? "This inspiration could not be recreated safely as-is. Replace the inspiration image and create the collection again."
+      : "This photo hit a temporary rendering error. Re-roll this card to try again."
+    const patch: Partial<ShootShot> = {
+      shotRole,
+      renderStatus: moderationBlocked ? "moderation_blocked" : "failed",
+      renderErrorCode: moderationBlocked ? "moderation_blocked" : "generation_failed",
+      renderErrorMessage: message,
+      renderAttempts,
+      lastRenderAttemptAt,
+    }
+    shoot.shots[idx] = { ...shoot.shots[idx], ...patch }
+    await saveShotPatch(shoot.id, shoot.shots[idx].id, patch)
+    console.warn(
+      `[shoot-studio] shot ${shotId} render failed for shoot ${shoot.id}: ${getGenerationFailureSummary(error)}`
+    )
+    throw new ShootRenderError({
+      message,
+      code,
+      retryable: !moderationBlocked,
+      shoot,
+    })
   }
-  shoot.shots[idx] = { ...shoot.shots[idx], ...patch }
-  await saveShotPatch(shoot.id, shoot.shots[idx].id, patch)
-  return shoot
 }
 
 const EXTEND_CONTRACT = `Respond with ONLY a JSON object:
@@ -1016,6 +1066,11 @@ Return only the NEW shots. No em-dashes.`
 export async function extendShoot(id: number, count = 2): Promise<Shoot> {
   const shoot = await getShoot(id)
   if (!shoot) throw new Error("Shoot not found")
+  if (shoot.collectionType === "story") {
+    throw new Error(
+      "Story collections use one inspiration per image. Start a new collection with more inspiration images instead."
+    )
+  }
   const safeCount = Math.min(Math.max(Math.floor(count), 1), 4)
   const nextTotal = shoot.shots.length + safeCount
 
@@ -1043,22 +1098,11 @@ Exactly ${safeCount} new shots.`
   const newShots: ShootShot[] = drafts.map((shot, i) => ({
     ...shot,
     id: `shot-${start + i}`,
+    renderStatus: "pending",
     status: "draft",
   }))
 
   const combinedShots = [...shoot.shots, ...newShots]
-  const rendered = await renderShotIndicesWithContinuity({
-    shots: combinedShots,
-    indices: newShots.map((_, index) => shoot.shots.length + index),
-    selfieUrls: shoot.selfieUrls,
-    inspirationUrls: shoot.inspirationUrls,
-    quality: DEFAULT_RENDER_QUALITY,
-  })
-  rendered.failures.forEach(({ index, reason }) => {
-    console.error(
-      `[shoot-studio] extended shot ${combinedShots[index]?.id || index + 1} generation failed for shoot ${shoot.id}: ${getGenerationFailureSummary(reason)}`
-    )
-  })
   const reply = stripEmDashes(
     String(parsed.reply || `Added ${safeCount} more shots to the same world.`)
   ).trim()
@@ -1070,9 +1114,8 @@ Exactly ${safeCount} new shots.`
       at: new Date().toISOString(),
     },
   ]
-  const nextShots = rendered.shots
-  await saveShots(shoot.id, nextShots, messages)
-  return { ...shoot, shots: nextShots, messages }
+  await saveShots(shoot.id, combinedShots, messages)
+  return { ...shoot, shots: combinedShots, messages }
 }
 
 export async function setShotStatus(

@@ -101,7 +101,7 @@ describe("Shoot Studio publish pipeline", () => {
     expect(generator).toContain("ORIGINAL INSPIRATION REFERENCES ONLY")
     expect(generator).toContain("GENERATED SET CONTINUITY REFERENCES ONLY")
     expect(generator).toContain("extractShotRenderBrief")
-    expect(generator).toContain("renderShotIndicesWithContinuity")
+    expect(generator).not.toContain("renderShotIndicesWithContinuity")
     expect(generator).toContain("isContentPolicyError")
     expect(generator).toContain("parseJsonArray")
     expect(generator).toContain("return { ...mapRow(rows[0]), selfieUrls, inspirationUrls }")

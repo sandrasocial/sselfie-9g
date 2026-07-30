@@ -38,6 +38,7 @@ export function sanitizePromptForImageSafety(prompt: string): string {
   return (
     prompt
       // Neckline / cut / proportion euphemisms (Shoot Studio's proven, incident-tuned list).
+      .replace(/string\s+bikini(?:\s+top)?/gi, "modest sleeveless top")
       .replace(/deep\s+v\s+neckline/gi, "modest rounded neckline")
       .replace(/off[-\s]?shoulder(?:ed)?/gi, "covered bateau-neck")
       .replace(/strapless/gi, "covered sleeveless")
@@ -69,6 +70,10 @@ export function sanitizePromptForImageSafety(prompt: string): string {
       .replace(/\bchest\b/gi, "upper torso")
       .replace(/\bthigh\b/gi, "leg")
       .replace(/intimate/gi, "quiet")
+      .replace(/\bsultry\b/gi, "relaxed")
+      .replace(/\b(?:lying\s+)?face[-\s]down\b/gi, "resting comfortably")
+      .replace(/\bworn\s+open(?:\s+over)?\b/gi, "layered over")
+      .replace(/\bbralette\b/gi, "modest camisole")
       // Explicit wardrobe/state words (app-v3's original list).
       .replace(
         /\b(sheer|see-?through|lace|lingerie|bodysuit|bikini|swimsuit|underwear|undergarment|bra|cleavage|topless|nude|naked|bare(?:\s+(?:skin|legs))?|body-conscious|wet)\b/gi,

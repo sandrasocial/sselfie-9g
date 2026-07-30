@@ -153,6 +153,15 @@ export type ShootShot = {
   prompt: string
   /** Generated image (Vercel Blob URL). Absent until generation completes. */
   imageUrl?: string
+  /** Persisted render state so failed cards are not retried blindly after a reload. */
+  renderStatus?: "pending" | "completed" | "moderation_blocked" | "failed"
+  /** Stable machine-readable failure reason for the admin API and UI. */
+  renderErrorCode?: "moderation_blocked" | "generation_failed" | null
+  /** Safe admin-facing explanation. Never stores the raw provider error. */
+  renderErrorMessage?: string | null
+  /** Number of generation requests made for this shot. */
+  renderAttempts?: number
+  lastRenderAttemptAt?: string | null
   /** Global Prompt Vault number after this shot is published, used for reels/posts. */
   promptNumber?: string | null
   status: "draft" | "approved" | "killed"

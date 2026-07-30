@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const mocks = vi.hoisted(() => ({
   callContentKitVision: vi.fn(),
+  moderate: vi.fn(),
   sql: vi.fn(),
 }))
 
@@ -16,6 +17,15 @@ vi.mock("@/lib/content-kit/llm", () => ({
 
 vi.mock("@/lib/db/client", () => ({
   sql: (...args: unknown[]) => mocks.sql(...args),
+}))
+
+vi.mock("openai", () => ({
+  default: vi.fn().mockImplementation(() => ({
+    moderations: {
+      create: mocks.moderate,
+    },
+  })),
+  toFile: vi.fn(),
 }))
 
 vi.mock("@/lib/vault/published-collections", () => ({
@@ -50,6 +60,8 @@ function validPlan() {
 describe("Shoot Studio planning retry", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    process.env.OPENAI_API_KEY = "test-key"
+    mocks.moderate.mockResolvedValue({ results: [{ flagged: false }] })
     mocks.sql.mockImplementation(async (strings: TemplateStringsArray) => {
       const query = strings.join("?")
       if (!query.includes("INSERT INTO content_shoots")) return []
@@ -88,5 +100,18 @@ describe("Shoot Studio planning retry", () => {
 
     expect(mocks.callContentKitVision).toHaveBeenCalledTimes(2)
     expect(shoot.title).toBe("Recovered Editorial")
+  })
+
+  it("stops before planning when an inspiration image is already moderation-blocked", async () => {
+    mocks.moderate.mockResolvedValue({ results: [{ flagged: true }] })
+    const { createShootDraft } = await import("@/lib/content-kit/shoot-generator")
+
+    await expect(
+      createShootDraft({
+        inspirationUrls: [`${baseUrl}/inspiration.png`],
+        selfieUrls: [`${baseUrl}/selfie.png`],
+      })
+    ).rejects.toThrow("Replace inspiration image 1")
+    expect(mocks.callContentKitVision).not.toHaveBeenCalled()
   })
 })

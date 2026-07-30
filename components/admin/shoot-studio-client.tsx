@@ -84,6 +84,7 @@ function ShotCard({
   onPreview: (shot: ShootShot) => void
 }) {
   const working = busy === shot.id
+  const moderationBlocked = shot.renderStatus === "moderation_blocked"
   return (
     <div
       className={`w-56 shrink-0 overflow-hidden rounded-xl border bg-white ${
@@ -101,7 +102,12 @@ function ShotCard({
         </button>
       ) : (
         <div className="flex h-72 w-full items-center justify-center bg-stone-100 px-4 text-center text-xs text-stone-500">
-          {working ? "Rendering..." : "Didn't render. Hit regenerate."}
+          {working
+            ? "Rendering..."
+            : moderationBlocked
+              ? shot.renderErrorMessage ||
+                "Replace the inspiration image and create the collection again."
+              : shot.renderErrorMessage || "Didn't render. Hit re-roll."}
         </div>
       )}
       <div className="p-3">
@@ -113,7 +119,7 @@ function ShotCard({
         <p className="text-sm font-medium text-stone-950">{shot.title}</p>
         <p className="mt-1 line-clamp-2 text-xs text-stone-500">{shot.whenToUse}</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {shot.status !== "approved" && (
+          {shot.imageUrl && shot.status !== "approved" && (
             <button
               type="button"
               disabled={working}
@@ -133,14 +139,16 @@ function ShotCard({
               Kill
             </button>
           )}
-          <button
-            type="button"
-            disabled={working}
-            onClick={() => onAction("regenerate", shot)}
-            className="rounded-full border border-stone-300 px-3 py-1 text-[11px] uppercase tracking-wide text-stone-600 hover:border-stone-950 disabled:opacity-50"
-          >
-            {working ? "Working" : "Re-roll"}
-          </button>
+          {!moderationBlocked && (
+            <button
+              type="button"
+              disabled={working}
+              onClick={() => onAction("regenerate", shot)}
+              className="rounded-full border border-stone-300 px-3 py-1 text-[11px] uppercase tracking-wide text-stone-600 hover:border-stone-950 disabled:opacity-50"
+            >
+              {working ? "Working" : "Re-roll"}
+            </button>
+          )}
           {shot.status === "approved" && (
             <button
               type="button"
@@ -163,10 +171,12 @@ function ShootThread({
   shoot,
   onUpdate,
   onDelete,
+  onRenderDraftShots,
 }: {
   shoot: Shoot
   onUpdate: (shoot: Shoot) => void
   onDelete: (id: number) => void
+  onRenderDraftShots: (shoot: Shoot) => void
 }) {
   const [open, setOpen] = useState(shoot.status === "draft")
   const [message, setMessage] = useState("")
@@ -205,8 +215,8 @@ function ShootThread({
         }),
       })
       const data = await readJson(response)
+      if (data.shoot) onUpdate(data.shoot)
       if (!response.ok || !data.success) throw new Error(data.error || "Re-roll failed")
-      onUpdate(data.shoot)
     } catch (err: any) {
       setError(err?.message || "Re-roll failed")
     } finally {
@@ -228,6 +238,7 @@ function ShootThread({
       const data = await readJson(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Refine failed")
       onUpdate(data.shoot)
+      onRenderDraftShots(data.shoot)
       setMessage("")
     } catch (err: any) {
       setError(err?.message || "Refine failed")
@@ -258,6 +269,7 @@ function ShootThread({
       const data = await readJson(response)
       if (!response.ok || !data.success) throw new Error(data.error || "Extend failed")
       onUpdate(data.shoot)
+      onRenderDraftShots(data.shoot)
     } catch (err: any) {
       setError(err?.message || "Extend failed")
     } finally {
@@ -406,20 +418,24 @@ function ShootThread({
             </button>
           </div>
           {refining && (
-            <p className="mt-2 text-xs text-stone-400">Rewriting the prompts and re-rendering the changed shots (about 2 minutes).</p>
+            <p className="mt-2 text-xs text-stone-400">
+              Rewriting the prompts, then rendering each changed photo safely.
+            </p>
           )}
           {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
 
           {/* Shoot actions */}
           <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => extend(2)}
-              disabled={extending}
-              className="rounded-full border border-stone-300 px-4 py-1.5 text-xs uppercase tracking-wide text-stone-600 hover:border-stone-950 disabled:opacity-50"
-            >
-              {extending ? "Adding shots" : "Add 2 shots"}
-            </button>
+            {shoot.collectionType !== "story" && (
+              <button
+                type="button"
+                onClick={() => extend(2)}
+                disabled={extending}
+                className="rounded-full border border-stone-300 px-4 py-1.5 text-xs uppercase tracking-wide text-stone-600 hover:border-stone-950 disabled:opacity-50"
+              >
+                {extending ? "Adding shots" : "Add 2 shots"}
+              </button>
+            )}
             {shoot.status !== "approved" && (
               <button
                 type="button"
@@ -529,6 +545,7 @@ export function ShootStudioClient({
   const fileInput = useRef<HTMLInputElement>(null)
   const selfieInput = useRef<HTMLInputElement>(null)
   const renderingShootsRef = useRef<Set<number>>(new Set())
+  const cancelledShootIdsRef = useRef<Set<number>>(new Set())
 
   // The render queue lives in this tab, so a reload (or a tab closed mid-render) strands a
   // fresh shoot with empty cards. On mount, resume rendering for recent shoots that still
@@ -536,10 +553,14 @@ export function ShootStudioClient({
   useEffect(() => {
     const cutoff = Date.now() - 60 * 60 * 1000
     for (const shoot of initialShoots) {
-      const pending = shoot.shots.some((shot) => !shot.imageUrl)
+      const pending = shoot.shots.some(
+        (shot) =>
+          !shot.imageUrl &&
+          shot.renderStatus !== "moderation_blocked" &&
+          (shot.renderAttempts || 0) < 2
+      )
       const fresh = new Date(shoot.createdAt).getTime() > cutoff
       if (pending && fresh && !renderingShootsRef.current.has(shoot.id)) {
-        renderingShootsRef.current.add(shoot.id)
         void renderDraftShots(shoot)
       }
     }
@@ -667,7 +688,10 @@ export function ShootStudioClient({
   // The create response returns the planned shoot with no images. Render each shot through its
   // own regenerate request: a whole 6-9 shot batch outruns the server's time limit in a single
   // invocation, but one shot per request fits easily and each image persists as it finishes.
-  async function renderShotViaApi(shootId: number, shotId: string): Promise<ShootShot | null> {
+  async function renderShotViaApi(
+    shootId: number,
+    shotId: string
+  ): Promise<{ shot: ShootShot | null; error: string | null; moderationBlocked: boolean }> {
     try {
       const response = await fetch("/api/admin/content-kit/shoots", {
         method: "POST",
@@ -675,41 +699,78 @@ export function ShootStudioClient({
         body: JSON.stringify({ action: "regenerate", id: shootId, shotId, quality: "medium" }),
       })
       const data = await readJson(response)
-      if (!response.ok || !data.success) return null
       const rendered = (data.shoot as Shoot | undefined)?.shots.find((shot) => shot.id === shotId)
-      return rendered?.imageUrl ? rendered : null
-    } catch {
-      return null
+      if (!response.ok || !data.success) {
+        return {
+          shot: rendered || null,
+          error: data.error || "This photo hit a temporary rendering error.",
+          moderationBlocked: data.code === "moderation_blocked",
+        }
+      }
+      return {
+        shot: rendered?.imageUrl ? rendered : null,
+        error: rendered?.imageUrl ? null : "The image provider returned no photo.",
+        moderationBlocked: false,
+      }
+    } catch (error: any) {
+      return {
+        shot: null,
+        error: error?.message || "This photo hit a temporary rendering error.",
+        moderationBlocked: false,
+      }
     }
   }
 
   async function renderDraftShots(shoot: Shoot) {
+    if (
+      renderingShootsRef.current.has(shoot.id) ||
+      cancelledShootIdsRef.current.has(shoot.id)
+    ) {
+      return
+    }
     renderingShootsRef.current.add(shoot.id)
     let failed = 0
-    const applyShot = (rendered: ShootShot | null, shotId: string) => {
-      if (!rendered) {
+    let moderationBlocked = 0
+    const applyShot = (
+      result: { shot: ShootShot | null; error: string | null; moderationBlocked: boolean },
+      shotId: string
+    ) => {
+      if (cancelledShootIdsRef.current.has(shoot.id)) return
+      if (!result.shot) {
         failed += 1
         return
       }
+      if (result.moderationBlocked) moderationBlocked += 1
+      else if (result.error) failed += 1
       setShoots((current) =>
         current.map((item) =>
           item.id === shoot.id
             ? {
                 ...item,
-                shots: item.shots.map((s) => (s.id === shotId ? { ...s, ...rendered } : s)),
+                shots: item.shots.map((s) =>
+                  s.id === shotId ? { ...s, ...result.shot } : s
+                ),
               }
             : item
         )
       )
     }
-    const pending = shoot.shots.filter((shot) => !shot.imageUrl)
+    const pending = shoot.shots.filter(
+      (shot) =>
+        !shot.imageUrl &&
+        shot.renderStatus !== "moderation_blocked" &&
+        (shot.renderAttempts || 0) < 2
+    )
     // Cohesive shoots anchor shots 2+ to shot 1's image, so shot 1 renders before the rest.
     const [first, ...rest] = pending
-    if (first) applyShot(await renderShotViaApi(shoot.id, first.id), first.id)
+    if (first && !cancelledShootIdsRef.current.has(shoot.id)) {
+      applyShot(await renderShotViaApi(shoot.id, first.id), first.id)
+    }
     const queue = [...rest]
     await Promise.all(
       Array.from({ length: 3 }, async () => {
         while (queue.length > 0) {
+          if (cancelledShootIdsRef.current.has(shoot.id)) return
           const shot = queue.shift()
           if (!shot) return
           applyShot(await renderShotViaApi(shoot.id, shot.id), shot.id)
@@ -717,7 +778,12 @@ export function ShootStudioClient({
       })
     )
     renderingShootsRef.current.delete(shoot.id)
-    if (failed > 0) {
+    if (cancelledShootIdsRef.current.has(shoot.id)) return
+    if (moderationBlocked > 0) {
+      setError(
+        `${moderationBlocked} photo${moderationBlocked > 1 ? "s" : ""} could not use the selected inspiration. Replace the inspiration image${moderationBlocked > 1 ? "s" : ""} and create the collection again.`
+      )
+    } else if (failed > 0) {
       setError(
         `${failed} photo${failed > 1 ? "s" : ""} didn't render. Hit re-roll on the empty card${failed > 1 ? "s" : ""}.`
       )
@@ -729,6 +795,8 @@ export function ShootStudioClient({
   }
 
   async function deleteShoot(id: number) {
+    cancelledShootIdsRef.current.add(id)
+    renderingShootsRef.current.delete(id)
     setShoots((current) => current.filter((shoot) => shoot.id !== id))
     await fetch("/api/admin/content-kit/shoots", {
       method: "DELETE",
@@ -960,7 +1028,13 @@ export function ShootStudioClient({
           </p>
         ) : (
           shoots.map((shoot) => (
-            <ShootThread key={shoot.id} shoot={shoot} onUpdate={updateShoot} onDelete={deleteShoot} />
+            <ShootThread
+              key={shoot.id}
+              shoot={shoot}
+              onUpdate={updateShoot}
+              onDelete={deleteShoot}
+              onRenderDraftShots={(nextShoot) => void renderDraftShots(nextShoot)}
+            />
           ))
         )}
       </div>

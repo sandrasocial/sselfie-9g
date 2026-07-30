@@ -5,9 +5,11 @@ import {
   createShootDraft,
   extendShoot,
   getShoot,
+  InspirationModerationError,
   listShoots,
   refineShoot,
   regenerateShot,
+  ShootRenderError,
   setShootStatus,
   setShotStatus,
 } from "@/lib/content-kit/shoot-generator"
@@ -128,6 +130,24 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 })
   } catch (error: any) {
+    if (error instanceof ShootRenderError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message,
+          code: error.code,
+          retryable: error.retryable,
+          shoot: error.shoot,
+        },
+        { status: error.status },
+      )
+    }
+    if (error instanceof InspirationModerationError) {
+      return NextResponse.json(
+        { success: false, error: error.message, code: error.code, retryable: false },
+        { status: error.status },
+      )
+    }
     console.error("[shoot-studio] action failed:", error)
     return NextResponse.json(
       { success: false, error: error?.message || "Something broke. Try again." },
