@@ -421,8 +421,8 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
       `[v0] ⚠️ Skipping credit grant - this is a TEST MODE payment. Credits are only granted for real (production) payments.`
     )
   } else {
-    // Grant credits for studio membership subscriptions (Creator Studio)
-    if (sub.product_type === "sselfie_studio_membership") {
+    // Grant credits for recurring tiers with a monthly credit allowance
+    if (sub.product_type === "sselfie_studio_membership" || sub.product_type === "vault_maya") {
       // FIX B5: Payment-level idempotency using invoice ID
       // Check if we've already granted credits for THIS SPECIFIC INVOICE
       const invoiceId = invoice.id
@@ -476,7 +476,7 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
 
           const result = await grantMonthlyCredits(
             sub.user_id,
-            "sselfie_studio_membership",
+            sub.product_type === "vault_maya" ? "vault_maya" : "sselfie_studio_membership",
             false, // Always false for production payments
             invoiceId
           )
@@ -551,7 +551,10 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
                   await import("@/lib/email/templates/credit-renewal")
                 const emailContent = generateCreditRenewalEmail({
                   firstName: userRecord[0].display_name?.split(" ")[0] || undefined,
-                  creditsGranted: SUBSCRIPTION_CREDITS.sselfie_studio_membership,
+                  creditsGranted:
+                    sub.product_type === "vault_maya"
+                      ? SUBSCRIPTION_CREDITS.vault_maya
+                      : SUBSCRIPTION_CREDITS.sselfie_studio_membership,
                 })
 
                 const emailResult = await sendEmail({

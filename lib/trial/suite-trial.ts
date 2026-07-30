@@ -14,6 +14,7 @@ export const TRIAL_CREDITS = 20
 export type SuiteAccessLevel =
   | "member" // active paid membership — full app
   | "trial" // active trial — full app, badge + days left
+  | "vault" // active Vault Maya tier — generation allowed, scoped vault surface only, never the full app
   | "limited" // expired trial or one-time owner with an account — shell, no generation
   | "none" // no relationship — app gate decides limited shell vs rollback behavior
 
@@ -78,6 +79,7 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
       AND (is_test_mode = FALSE OR is_test_mode IS NULL)
       AND (
         (product_type = 'sselfie_studio_membership' AND status = 'active')
+        OR (product_type = 'vault_maya' AND status = 'active')
         OR product_type = 'suite_trial'
         OR product_type = 'selfie_visibility_bundle_pass'
         OR (product_type IN ('starter_kit', 'selfie_guide', 'brand_strategy_pack', 'paid_blueprint') AND status IN ('active', 'completed'))
@@ -86,6 +88,10 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
 
   if (rows.some((r) => r.product_type === "sselfie_studio_membership")) {
     return { level: "member", trialEndsAt: null, trialDaysLeft: null }
+  }
+
+  if (rows.some((r) => r.product_type === "vault_maya")) {
+    return { level: "vault", trialEndsAt: null, trialDaysLeft: null }
   }
 
   const bundlePass = rows.find((r) => r.product_type === "selfie_visibility_bundle_pass")
@@ -134,5 +140,5 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
 /** True when this user may call the generation APIs (member or active trial). */
 export async function canGenerate(userId: string): Promise<boolean> {
   const access = await getSuiteAccess(userId)
-  return access.level === "member" || access.level === "trial"
+  return access.level === "member" || access.level === "trial" || access.level === "vault"
 }

@@ -2,7 +2,7 @@
 
 import { sql } from "@/lib/db/client"
 import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
-import { MONTHLY_MEMBERSHIP_CREDITS } from "@/lib/credit-policy"
+import { MONTHLY_MEMBERSHIP_CREDITS, VAULT_MAYA_MONTHLY_CREDITS } from "@/lib/credit-policy"
 
 export const CREDIT_COSTS = {
   TRAINING: 20,
@@ -14,6 +14,7 @@ export const CREDIT_COSTS = {
 
 export const SUBSCRIPTION_CREDITS = {
   sselfie_studio_membership: MONTHLY_MEMBERSHIP_CREDITS,
+  vault_maya: VAULT_MAYA_MONTHLY_CREDITS,
   one_time_session: 50, // LEGACY_ACCESS_ONLY: one-time grant, 50 images
 } as const
 
@@ -461,7 +462,7 @@ export async function getCreditHistory(userId: string, limit = 50) {
  */
 export async function grantMonthlyCredits(
   userId: string,
-  productType: "sselfie_studio_membership",
+  productType: "sselfie_studio_membership" | "vault_maya",
   isTestMode = false,
   stripeInvoiceId?: string
 ): Promise<{ success: boolean; newBalance: number; granted?: boolean; error?: string }> {
@@ -479,7 +480,7 @@ export async function grantMonthlyCredits(
   }
 
   const credits = SUBSCRIPTION_CREDITS[productType]
-  const productName = "Creator Studio"
+  const productName = productType === "vault_maya" ? "Vault Maya" : "Creator Studio"
   const description = `Monthly ${productName} reset to ${credits} included credits`
 
   try {

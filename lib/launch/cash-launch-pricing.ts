@@ -28,6 +28,30 @@ export function resolvePromptVaultPriceId(env: EnvLike = process.env, now: Date 
   return env.STRIPE_PRICE_PROMPT_VAULT_AFTER_FLASH?.trim() || basePrice
 }
 
+export const VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT = "2026-08-06T21:59:00.000Z"
+
+export function isVaultMayaFounderPriceFlipped(now: Date = new Date()): boolean {
+  return now.getTime() >= Date.parse(VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT)
+}
+
+export function getVaultMayaPriceDisplay(now: Date = new Date()) {
+  const flipped = isVaultMayaFounderPriceFlipped(now)
+  return {
+    flipped,
+    amountCents: flipped ? 2900 : 1900,
+    label: flipped ? "$29" : "$19",
+    monthlyLabel: flipped ? "$29/month" : "$19/month",
+    ctaLabel: flipped ? "Start Vault Maya · $29/month" : "Founder price · $19/month",
+  }
+}
+
+export function resolveVaultMayaPriceId(env: EnvLike = process.env, now: Date = new Date()): string | undefined {
+  const founderPrice = env.STRIPE_VAULT_MAYA_FOUNDER_PRICE_ID?.trim()
+  const standardPrice = env.STRIPE_VAULT_MAYA_PRICE_ID?.trim()
+  if (!isVaultMayaFounderPriceFlipped(now)) return founderPrice || standardPrice
+  return standardPrice || founderPrice
+}
+
 export function isFoundingAnnualWindowOpen(now: Date = new Date()): boolean {
   return now.getTime() <= Date.parse(FOUNDING_ANNUAL_CLOSES_AT)
 }

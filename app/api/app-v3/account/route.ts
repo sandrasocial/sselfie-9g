@@ -17,6 +17,7 @@ function planLabel(raw: unknown): string | null {
   if (typeof raw !== "string" || raw.trim().length === 0) return null
   const key = raw.trim().toLowerCase()
   if (key === "sselfie_studio_membership") return "SSELFIE SUITE"
+  if (key === "vault_maya") return "Vault Maya"
   if (key === "paid_blueprint") return "Feed Planner Blueprint"
   // Fallback: humanize the raw value rather than leaking snake_case.
   return key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
@@ -63,6 +64,7 @@ export async function GET() {
         WHERE user_id = ${String(neonUserId)}
           AND product_type IN (
             'sselfie_studio_membership',
+            'vault_maya',
             'selfie_visibility_bundle_pass',
             'selfie_visibility_bundle'
           )

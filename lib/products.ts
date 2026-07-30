@@ -3,7 +3,7 @@
  * Part of the new simplified SSELFIE pricing model
  */
 
-import { MONTHLY_MEMBERSHIP_CREDITS } from "@/lib/credit-policy"
+import { MONTHLY_MEMBERSHIP_CREDITS, VAULT_MAYA_MONTHLY_CREDITS } from "@/lib/credit-policy"
 
 export interface CreditPackage {
   id: string
@@ -19,6 +19,7 @@ export type PricingProductId =
   | "one_time_session"
   | "sselfie_studio_membership"
   | "sselfie_studio_membership_annual"
+  | "vault_maya"
   | "credit_topup"
   | "paid_blueprint"
   | "brand_strategy_pack"
@@ -48,6 +49,7 @@ export interface PricingProduct {
     | "one_time_session"
     | "sselfie_studio_membership"
     | "sselfie_studio_membership_annual"
+    | "vault_maya"
     | "credit_topup"
     | "paid_blueprint"
     | "brand_strategy_pack"
@@ -176,6 +178,17 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     type: "sselfie_studio_membership_annual",
     credits: MONTHLY_MEMBERSHIP_CREDITS,
     popular: false,
+  },
+  {
+    id: "vault_maya",
+    name: "Vault Maya",
+    displayName: "Vault Maya",
+    description:
+      "Your own Maya chat for the Prompt Vault. Upload your selfie once, tap any vault look, and Maya makes the photo — still you — in about 30 seconds. New drops every week.",
+    priceInCents: 1900, // $19/month founder price; $29/month standard after founder week
+    type: "vault_maya",
+    credits: VAULT_MAYA_MONTHLY_CREDITS,
+    tag: "vault_maya_member",
   },
   {
     id: "starter_kit",
@@ -454,6 +467,13 @@ export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath>
     fulfillmentRule: "stripe_webhook.invoice.payment_succeeded:sselfie_studio_membership",
     successNextAction: "/app",
     lifecycleEmailEntryPoint: "app/api/cron/onboarding-sequence",
+  },
+  vault_maya: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/vault-maya",
+    fulfillmentRule: "stripe_webhook.invoice.payment_succeeded:vault_maya",
+    successNextAction: "/vault-maya/studio",
+    lifecycleEmailEntryPoint: "vault_maya_welcome",
   },
   credit_topup: {
     lifecycleStatus: "live",

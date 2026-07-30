@@ -629,6 +629,28 @@ export default async function PromptVaultAccessPage({
         <VaultPostPurchaseOffer vaultToken={token} serifClassName={cormorant.className} />
       )}
 
+      {/* ── VAULT MAYA LAUNCH BANNER ── */}
+      <section className="mx-auto max-w-2xl px-5 py-8">
+        <div className="rounded-lg border border-neutral-200 bg-white p-5 text-center">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
+            New · Vault Maya
+          </p>
+          <p className={`mt-2 text-2xl text-neutral-950 ${cormorant.className}`}>
+            Maya makes these photos for you now.
+          </p>
+          <p className="mx-auto mt-2 max-w-md text-sm text-neutral-600">
+            No more pasting into ChatGPT. Upload your selfie once, tap any vault look, and your
+            photo is ready in about 30 seconds — still you.
+          </p>
+          <Link
+            href="/vault-maya?source=vault_access_banner&utm_source=prompt_vault&utm_medium=access_page&utm_campaign=vault_maya_launch"
+            className="mt-4 inline-block rounded-sm bg-neutral-950 px-6 py-3 text-xs uppercase tracking-[0.14em] text-white"
+          >
+            See Vault Maya
+          </Link>
+        </div>
+      </section>
+
       {/* ── HOW TO USE ── */}
       <section className="pva-how-section">
         <div className="pva-how-inner">

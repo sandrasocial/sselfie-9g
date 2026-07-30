@@ -104,6 +104,9 @@ export default async function StudioV3Page({
             resolved = "full"
             // Recurring members and fixed bundle-pass holders both receive the Vault.
             hasVaultAccess = true
+          } else if (access.level === "vault") {
+            // Vault Maya tier: her home is the scoped studio, never the full app shell.
+            redirect("/vault-maya/studio")
           } else if (access.level === "trial") {
             resolved = "trial"
             trialDaysLeft = access.trialDaysLeft

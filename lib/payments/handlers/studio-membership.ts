@@ -22,11 +22,13 @@ async function persistCheckoutMembership({
   userId,
   plan,
   isTestMode,
+  productType,
 }: {
   session: CheckoutFulfillmentContext["session"]
   userId: string
   plan: string
   isTestMode: boolean
+  productType?: "sselfie_studio_membership" | "vault_maya"
 }): Promise<void> {
   const subscriptionId =
     typeof session.subscription === "string"
@@ -47,6 +49,7 @@ async function persistCheckoutMembership({
 
   await upsertStudioMembershipSubscription({
     userId,
+    productType,
     plan,
     status: subscriptionData.status,
     stripeSubscriptionId: subscriptionData.id,
@@ -76,6 +79,8 @@ export async function handleStudioMembershipSubscriptionCheckout(
       ? "sselfie_studio_membership"
       : rawProductType || "sselfie_studio_membership"
   const subscriptionPlan = getSubscriptionPlanFromMetadata(metadata, productType)
+  const subscriptionProductType: "sselfie_studio_membership" | "vault_maya" =
+    productType === "vault_maya" ? "vault_maya" : "sselfie_studio_membership"
   const credits = Number.parseInt(metadata.credits || "250")
 
   if (!userId && customerEmail) {
@@ -127,6 +132,7 @@ export async function handleStudioMembershipSubscriptionCheckout(
           userId,
           plan: subscriptionPlan,
           isTestMode: !event.livemode,
+          productType: subscriptionProductType,
         })
 
         console.log(`[v0] ✅ Membership record stored for existing user ${userId}`)
@@ -347,6 +353,7 @@ export async function handleStudioMembershipSubscriptionCheckout(
             userId,
             plan: subscriptionPlan,
             isTestMode: !event.livemode,
+            productType: subscriptionProductType,
           })
 
           console.log(`[v0] Membership record stored successfully for user ${userId}`)
@@ -367,6 +374,7 @@ export async function handleStudioMembershipSubscriptionCheckout(
       userId,
       plan: subscriptionPlan,
       isTestMode: !event.livemode,
+      productType: subscriptionProductType,
     })
 
     // ⚠️ IMPORTANT: Do NOT grant subscription credits here!

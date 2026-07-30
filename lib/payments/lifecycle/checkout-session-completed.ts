@@ -444,6 +444,8 @@ export async function handleCheckoutSessionCompleted(
         productTag = "one-time-session"
       } else if (productType === "sselfie_studio_membership") {
         productTag = "content-creator-studio"
+      } else if (productType === "vault_maya") {
+        productTag = "vault-maya"
       } else if (productType === "credit_topup") {
         productTag = "credit-topup"
       } else if (productType === "paid_blueprint") {

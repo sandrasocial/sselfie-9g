@@ -13,6 +13,7 @@ import {
   getFoundingAnnualPurchaseCount,
   resolveMembershipPriceId,
   resolvePromptVaultPriceId,
+  resolveVaultMayaPriceId,
 } from "@/lib/launch/cash-launch-pricing"
 import {
   SELFIE_VISIBILITY_BUNDLE_CLOSES_AT,
@@ -84,7 +85,10 @@ export async function createLandingCheckoutSession(
     ? getSelfieVisibilityBundleCheckoutExpiresAt()
     : null
 
-  const isSubscription = product.type === "sselfie_studio_membership" || product.type === "sselfie_studio_membership_annual"
+  const isSubscription =
+    product.type === "sselfie_studio_membership" ||
+    product.type === "sselfie_studio_membership_annual" ||
+    product.type === "vault_maya"
   const checkoutProductType =
     product.type === "sselfie_studio_membership_annual"
       ? "sselfie_studio_membership"
@@ -168,6 +172,7 @@ export async function createLandingCheckoutSession(
         ? "STRIPE_SSELFIE_STUDIO_FOUNDING_ANNUAL_PRICE_ID"
         : "STRIPE_SSELFIE_STUDIO_ANNUAL_PRICE_ID",
     sselfie_studio_membership: "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID",
+    vault_maya: "STRIPE_VAULT_MAYA_FOUNDER_PRICE_ID",
     prompt_vault: "STRIPE_PRICE_PROMPT_VAULT",
     presets_single: "STRIPE_PRICE_PRESETS_SINGLE",
     presets_bundle: "STRIPE_PRICE_PRESETS_BUNDLE",
@@ -196,6 +201,8 @@ export async function createLandingCheckoutSession(
     stripePriceId = process.env.STRIPE_PRICE_MASTERCLASS
   } else if (product.type === "visibility_suite") {
     stripePriceId = product.stripePriceId
+  } else if (product.type === "vault_maya") {
+    stripePriceId = resolveVaultMayaPriceId()
   } else if (product.type === "prompt_vault") {
     stripePriceId = resolvePromptVaultPriceId()
   } else if (product.type === "presets_single") {

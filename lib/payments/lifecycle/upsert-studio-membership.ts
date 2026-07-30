@@ -7,6 +7,9 @@ type MembershipDiscount = {
 
 export type StudioMembershipUpsert = {
   userId: string
+  // Subscription entitlement being stored. Only recurring tiers are valid here;
+  // vault_maya must never be widened into full studio membership.
+  productType?: "sselfie_studio_membership" | "vault_maya"
   plan: string
   status: string
   stripeSubscriptionId: string
@@ -28,6 +31,8 @@ export async function upsertStudioMembershipSubscription(
   const hasDiscountSnapshot = input.discount !== undefined
   const discountPercent = input.discount?.percent ?? null
   const discountCoupon = input.discount?.coupon ?? null
+  const productType =
+    input.productType === "vault_maya" ? "vault_maya" : "sselfie_studio_membership"
   const rows = await sql`
     WITH lock_guard AS MATERIALIZED (
       SELECT pg_advisory_xact_lock(
@@ -38,7 +43,7 @@ export async function upsertStudioMembershipSubscription(
       UPDATE subscriptions s
       SET
         user_id = ${input.userId},
-        product_type = 'sselfie_studio_membership',
+        product_type = ${productType},
         plan = ${input.plan},
         status = ${input.status},
         stripe_customer_id = ${input.stripeCustomerId},
@@ -76,7 +81,7 @@ export async function upsertStudioMembershipSubscription(
       )
       SELECT
         ${input.userId},
-        'sselfie_studio_membership',
+        ${productType},
         ${input.plan},
         ${input.status},
         ${input.stripeSubscriptionId},

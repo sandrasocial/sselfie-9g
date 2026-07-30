@@ -144,6 +144,13 @@ const CHECKOUT_COPY: Record<
       "One $97 payment. You receive three coordinated posts with finished visuals, captions, calls to action, and the order to publish them.",
     footer: "One-time payment. No subscription. Delivery within 48 hours after your intake is complete.",
   },
+  vault_maya: {
+    heroTitle: "Join Vault Maya",
+    heroBody: "Upload your selfie once. Tap a look. Your photo is ready in about 30 seconds — still you.",
+    heading: "Vault Maya",
+    blurb: "Every vault collection made on you, new drops weekly, 30 photos a month, and a gallery that keeps everything.",
+    footer: "Your access opens after payment. Manage or cancel from your account. Founders keep the founder price for as long as they stay.",
+  },
   sselfie_studio_membership: {
     heroTitle: "Join SSELFIE SUITE",
     heroBody: "Start with one selfie. Create the visual, find the words, and plan what goes out next.",

@@ -117,7 +117,11 @@ describe("bundle buyer annual membership safety", () => {
     expect(upsert).toContain("WHERE s.stripe_subscription_id")
     expect(upsert).toContain("WHERE NOT EXISTS (SELECT 1 FROM updated_membership)")
     expect(upsert).toContain("product_type")
-    expect(upsert).toContain("'sselfie_studio_membership'")
+    // Parametrized 2026-07-30 for the vault_maya tier: membership stays the hard default and
+    // vault_maya is the only other value the upsert can ever store.
+    expect(upsert).toContain(
+      'input.productType === "vault_maya" ? "vault_maya" : "sselfie_studio_membership"',
+    )
     expect(upsert).not.toContain("WHERE user_id")
     expect(upsert).not.toContain("ON CONFLICT (stripe_subscription_id)")
   })
@@ -151,12 +155,14 @@ describe("bundle buyer annual membership safety", () => {
       expect(mutation).toContain("pg_advisory_xact_lock")
       expect(mutation).toContain("WHERE s.stripe_subscription_id")
       expect(mutation).toContain("WHERE NOT EXISTS (SELECT 1 FROM updated_membership)")
-      expect(mutation).toContain("'sselfie_studio_membership'")
       expect(mutation).not.toContain("WHERE user_id")
       expect(mutation).not.toContain("ON CONFLICT (stripe_subscription_id)")
     }
     for (const call of mutationCalls) {
       expect(JSON.stringify(call.slice(1))).toContain("annual")
+      // product_type now travels as a bound parameter; a membership checkout must still
+      // store membership, never a widened or missing product type.
+      expect(JSON.stringify(call.slice(1))).toContain("sselfie_studio_membership")
     }
   })
 })

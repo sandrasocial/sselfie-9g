@@ -691,7 +691,7 @@ export async function POST(request: NextRequest) {
     if (!isAdminEmail(user.email)) {
       const { getSuiteAccess } = await import("@/lib/trial/suite-trial")
       const access = await getSuiteAccess(String(neonUser.id))
-      if (access.level !== "member" && access.level !== "trial") {
+      if (access.level !== "member" && access.level !== "trial" && access.level !== "vault") {
         return NextResponse.json(
           {
             error: "Photo-making is paused. Join the SUITE to keep creating.",

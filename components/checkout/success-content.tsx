@@ -39,6 +39,8 @@ function getProductLabel(productType: string | undefined) {
       return "Studio Membership"
     case "sselfie_studio_membership_annual":
       return "Studio Membership"
+    case "vault_maya":
+      return "Vault Maya"
     case "one_time_session":
       return "Legacy One-Time Session"
     case "credit_topup":
@@ -95,6 +97,7 @@ function getProductLabel(productType: string | undefined) {
 const CREDIT_GRANTING_TYPES = new Set([
   "sselfie_studio_membership",
   "sselfie_studio_membership_annual",
+  "vault_maya",
   "one_time_session",
   "paid_blueprint",
 ])
@@ -139,6 +142,14 @@ const SELFIE_TO_BRAND_SHOOT_INCLUDES = [
 ]
 
 function getSuccessActionConfig(productType: string | undefined): SuccessActionConfig {
+  if (productType === "vault_maya") {
+    return {
+      href: "/vault-maya/studio",
+      label: "Make your first photo",
+      helper:
+        "Vault Maya is active. Add one selfie, tap a look, and your photo is ready in about 30 seconds.",
+    }
+  }
   if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") {
     return {
       href: "/app",

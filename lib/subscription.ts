@@ -1,6 +1,13 @@
 import { sql } from "@/lib/db/client"
 
-export type ProductType = "sselfie_studio_membership" | "brand_studio_membership" | "pro" | "one_time_session" | "paid_blueprint" | "free_blueprint"
+export type ProductType =
+  | "sselfie_studio_membership"
+  | "brand_studio_membership"
+  | "pro"
+  | "vault_maya"
+  | "one_time_session"
+  | "paid_blueprint"
+  | "free_blueprint"
 export type SubscriptionStatus =
   | "active"
   | "trialing"
@@ -142,6 +149,35 @@ export async function hasStudioMembership(userId: string): Promise<boolean> {
     return isMembershipProduct(subscription?.product_type)
   } catch (error) {
     console.error("[v0] [hasStudioMembership] Error checking studio membership:", error)
+    return false
+  }
+}
+
+/**
+ * Check if user has access to the Vault Maya tier.
+ * True for an active vault_maya subscription, and for full Studio members
+ * (the vault surface is a subset of what membership already includes).
+ * vault_maya alone NEVER grants studio membership — it is not in MEMBERSHIP_PRODUCT_TYPES.
+ */
+export async function hasVaultMayaAccess(userId: string): Promise<boolean> {
+  try {
+    const subscriptions = await sql`
+      SELECT product_type, status, current_period_end, created_at, is_test_mode
+      FROM subscriptions
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+      LIMIT 20
+    `
+    const liveOnly = shouldEnforceLiveSubscriptionRows()
+    const rows = (subscriptions as SubscriptionRow[]).filter(
+      (row) => !liveOnly || row.is_test_mode !== true,
+    )
+    if (rows.some((row) => row.product_type === "vault_maya" && isSubscriptionAccessActive(row))) {
+      return true
+    }
+    return rows.some((row) => isMembershipProduct(row.product_type) && isSubscriptionAccessActive(row))
+  } catch (error) {
+    console.error("[v0] [hasVaultMayaAccess] Error checking vault maya access:", error)
     return false
   }
 }
