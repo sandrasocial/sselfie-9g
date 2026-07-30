@@ -23,31 +23,55 @@ export async function DELETE() {
 
   try {
     const rows = await sql`
-      DELETE FROM user_avatar_images
+      SELECT id, image_url FROM user_avatar_images
       WHERE user_id = ${String(neonUserId)} AND image_type = 'selfie'
-      RETURNING image_url
     `
 
     let blobsDeleted = 0
-    let blobFailures = 0
-    for (const row of rows as { image_url: string }[]) {
+    const failedBlobDeletes: string[] = []
+    for (const row of rows as { id: string | number; image_url: string }[]) {
       const url = String(row.image_url || "")
-      if (!/^https:\/\/[^/]+\.public\.blob\.vercel-storage\.com\//.test(url)) continue
+      if (!/^https:\/\/[^/]+\.public\.blob\.vercel-storage\.com\//.test(url)) {
+        failedBlobDeletes.push(url)
+        continue
+      }
       try {
         await del(url)
         blobsDeleted++
       } catch (e) {
-        // A failed blob delete must not be silent: the row is gone, the file may linger.
-        blobFailures++
+        // Keep the database row so the member can retry and we retain the exact file pointer.
+        failedBlobDeletes.push(url)
         console.error("[vault-maya delete-selfie] blob delete failed:", url.slice(0, 90), e)
       }
+    }
+
+    if (failedBlobDeletes.length > 0) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Deleting didn't finish, so your selfie is still listed in your studio. Please try again. If it still doesn't work, reply to any email and I'll help.",
+          blobsDeleted,
+          blobFailures: failedBlobDeletes.length,
+        },
+        { status: 502 },
+      )
+    }
+
+    const rowIds = (rows as { id: string | number }[]).map((row) => row.id)
+    if (rowIds.length > 0) {
+      await sql`
+        DELETE FROM user_avatar_images
+        WHERE user_id = ${String(neonUserId)}
+          AND id = ANY(${rowIds})
+      `
     }
 
     return NextResponse.json({
       ok: true,
       rowsDeleted: rows.length,
       blobsDeleted,
-      blobFailures,
+      blobFailures: 0,
     })
   } catch (e) {
     console.error("[vault-maya delete-selfie] failed:", e)

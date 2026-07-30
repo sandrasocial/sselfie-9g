@@ -60,58 +60,6 @@ function listUnusedPhotos(): { filename: string; mtimeMs: number }[] {
     .sort((a, b) => a.mtimeMs - b.mtimeMs)
 }
 
-// ------------------------------------------------------------- fresh stories
-// Sandra drops dated story/teaching/memory files into this Desktop folder so the
-// engine always has FRESH raw material in her real words — not just the fixed
-// brand docs, which go stale. One file per entry, named date-first (e.g.
-// "2026-07-30 marbella morning.md"). An optional "Photo: <filename>" line pairs
-// an image she drops in the SAME folder; that image becomes the email's hero
-// photo. Filenames starting with "_" are drafts/notes and are skipped until she
-// removes the underscore — her built-in "not ready / ready" toggle. Story text
-// and photos stay on the Desktop (personal data, never in the repo); only the
-// used-manifest is app state, mirroring the daily-life photo split above.
-const STORIES_DIR = join(homedir(), "Desktop", "SSELFIE Stories")
-const STORIES_MANIFEST = resolve(__dirname, "..", "content", "daily-email-stories", "used-manifest.json")
-const STORY_EXT = /\.(md|markdown|txt)$/i
-const DATE_PREFIX = /^(\d{4}-\d{2}-\d{2})/
-
-type Story = { filename: string; dateLabel: string; text: string; photo: string | null; mtimeMs: number }
-
-function readUsedStories(): string[] {
-  if (!existsSync(STORIES_MANIFEST)) return []
-  try { return JSON.parse(readFileSync(STORIES_MANIFEST, "utf8")) } catch { return [] }
-}
-function writeUsedStories(list: string[]) {
-  mkdirSync(resolve(__dirname, "..", "content", "daily-email-stories"), { recursive: true })
-  writeFileSync(STORIES_MANIFEST, JSON.stringify(list, null, 2))
-}
-function parseStory(filename: string): Story {
-  const raw = readFileSync(join(STORIES_DIR, filename), "utf8")
-  let photo: string | null = null
-  const bodyLines: string[] = []
-  for (const line of raw.split(/\r?\n/)) {
-    const m = line.match(/^\s*photo\s*:\s*(.+?)\s*$/i)
-    if (m && !photo) { photo = m[1].trim(); continue } // pull the "Photo:" line out of the story body
-    bodyLines.push(line)
-  }
-  return {
-    filename,
-    dateLabel: filename.match(DATE_PREFIX)?.[1] || "",
-    text: bodyLines.join("\n").trim(),
-    photo,
-    mtimeMs: statSync(join(STORIES_DIR, filename)).mtimeMs,
-  }
-}
-function listUnusedStories(): Story[] {
-  if (!existsSync(STORIES_DIR)) return []
-  const used = new Set(readUsedStories())
-  return readdirSync(STORIES_DIR)
-    .filter((f) => STORY_EXT.test(f) && !f.startsWith("_") && !used.has(f))
-    .map(parseStory)
-    // newest first: by the date in the filename when present, otherwise file mtime
-    .sort((a, b) => (b.dateLabel || "").localeCompare(a.dateLabel || "") || b.mtimeMs - a.mtimeMs)
-}
-
 // ------------------------------------------- approved public bridge history
 const DOORS = [
   { key: "vault", match: ["vault", "bathroom"], label: "Prompt Vault $37", url: "https://sselfie.ai/prompt-vault", temp: "cold" },
@@ -291,23 +239,6 @@ async function pullData() {
     for (const d of DOORS) console.log(`  - ${d.key} [${d.temp}]: ${d.label}${d.url ? " -> " + d.url : ""}`)
   })
 
-  await section("FRESH STORIES FROM SANDRA (her real words — pull from these FIRST, newest first)", async () => {
-    if (!existsSync(STORIES_DIR)) {
-      console.log(`  folder not created yet: ${STORIES_DIR}`)
-      console.log(`  drop dated files like "2026-07-30 marbella morning.md" here; add a "Photo: name.jpg" line to pair an image`)
-      return
-    }
-    const stories = listUnusedStories()
-    if (!stories.length) { console.log(`  no unused stories waiting in ${STORIES_DIR}`); return }
-    console.log(`  ${stories.length} fresh unused story(ies) — use one as today's backbone, then pass its filename as "storyUsed" to retire it:`)
-    for (const s of stories.slice(0, 6)) {
-      const excerpt = s.text.replace(/\s+/g, " ").slice(0, 320)
-      console.log(`\n  ── ${s.filename}${s.dateLabel ? ` (${s.dateLabel})` : ""}${s.photo ? ` | Photo: ${s.photo}` : " | no photo"}`)
-      console.log(`     ${excerpt}${s.text.length > 320 ? "…" : ""}`)
-    }
-    console.log(`\n  To use a story's paired photo, set "heroPhoto":"<that filename>". Files starting with "_" are drafts and are skipped until renamed.`)
-  })
-
   await section(`DAILY LIFE PHOTOS (drop new ones into ~/Desktop/SSELFIE Email Photos)`, async () => {
     const pool = listUnusedPhotos()
     console.log(`  ${pool.length} unused photo(s) waiting`)
@@ -356,8 +287,7 @@ type EmailContent = {
   ctaUrl: string
   ctaAfterIndex: number     // insert the CTA link after this paragraph (0-based)
   audienceId?: string       // defaults to Main Audience
-  heroPhoto?: string        // filename from the DAILY LIFE PHOTOS pool OR a story's "Photo:" line; omit = auto-pick oldest unused daily-life photo; "none" = skip
-  storyUsed?: string        // filename of the FRESH STORY this email drew from; marks it used so it won't be pulled again
+  heroPhoto?: string        // filename from the DAILY LIFE PHOTOS pool; omit = auto-pick oldest unused; "none" = skip
 }
 
 function buildHtml(c: EmailContent, heroImageUrl?: string | null): string {
@@ -376,25 +306,19 @@ function buildHtml(c: EmailContent, heroImageUrl?: string | null): string {
   return renderPersonalNote({ title: c.subject, bodyHtml: blocks.join("\n"), signoff: "" })
 }
 
-async function resolveHeroPhoto(c: EmailContent): Promise<{ url: string; filename: string; source: "photos" | "stories" } | null> {
+async function resolveHeroPhoto(c: EmailContent): Promise<{ url: string; filename: string } | null> {
   if (c.heroPhoto === "none") return null
   let filename = c.heroPhoto
-  let source: "photos" | "stories" = "photos"
   if (!filename) {
     const pool = listUnusedPhotos()
     if (!pool.length) return null
     filename = pool[0].filename
   }
-  // A daily-life photo lives in the Photos folder; a story's paired photo lives beside its story.
-  let full = join(PHOTOS_DIR, filename)
-  if (!existsSync(full)) {
-    const storyPath = join(STORIES_DIR, filename)
-    if (existsSync(storyPath)) { full = storyPath; source = "stories" }
-    else throw new Error(`heroPhoto "${filename}" not found in ${PHOTOS_DIR} or ${STORIES_DIR} — check the photo lists from 'data'`)
-  }
+  const full = join(PHOTOS_DIR, filename)
+  if (!existsSync(full)) throw new Error(`heroPhoto "${filename}" not found in ${PHOTOS_DIR} — check the DAILY LIFE PHOTOS list from 'data'`)
   const buffer = readFileSync(full)
   const blob = await put(`daily-email-photos/${Date.now()}-${filename}`, buffer, { access: "public" })
-  return { url: blob.url, filename, source }
+  return { url: blob.url, filename }
 }
 
 async function readStdin(): Promise<string> {
@@ -425,13 +349,9 @@ async function makeDraft() {
   console.log("DRAFT ->", id || JSON.stringify((b as any).error))
   if (id) {
     console.log(`\nTo send after Sandra approves:\n  npx tsx scripts/daily-email-prep.ts send ${id}`)
-    if (hero && hero.source === "photos") {
+    if (hero) {
       writeUsedManifest([...readUsedManifest(), hero.filename])
       console.log(`PHOTO USED -> ${hero.filename} (marked used, won't be reused)`)
-    }
-    if (c.storyUsed) {
-      writeUsedStories([...readUsedStories(), c.storyUsed])
-      console.log(`STORY USED -> ${c.storyUsed} (marked used, won't be pulled again — its photo retires with it)`)
     }
   }
 }

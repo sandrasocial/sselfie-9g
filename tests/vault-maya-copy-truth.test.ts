@@ -34,7 +34,7 @@ describe("vault surfaces: no unsupported v1 promises", () => {
       const text = file === "components/sselfie/public-marketing.tsx" ? vaultSlice(raw) : raw
       expect(text).not.toMatch(/chat with maya|message maya|maya chat/i)
       expect(text).not.toMatch(/inspo image/i)
-      expect(text).not.toMatch(/30 seconds|seconds later/i)
+      expect(text).not.toMatch(/30 seconds|seconds later|takes about a minute/i)
     })
   }
 })
@@ -60,11 +60,12 @@ describe("selfie privacy copy matches real deletion (B8)", () => {
     expect(page).not.toContain("reply to any email and I'll remove it")
   })
 
-  it("the deletion endpoint really deletes rows and blobs", () => {
+  it("the deletion endpoint is wired to remove rows and blobs", () => {
     const route = read("app/api/vault-maya/delete-selfie/route.ts")
-    expect(route).toContain("DELETE FROM user_avatar_images")
+    expect(route).toContain("SELECT id, image_url FROM user_avatar_images")
     expect(route).toContain("image_type = 'selfie'")
     expect(route).toContain("await del(url)")
+    expect(route).toContain("DELETE FROM user_avatar_images")
   })
 })
 
@@ -109,6 +110,6 @@ describe("B3: SUITE members cannot buy Vault Maya", () => {
 
   it("the checkout action refuses vault_maya sessions for members", () => {
     const action = read("app/actions/landing-checkout.ts")
-    expect(action).toContain("already included in your SSELFIE SUITE membership")
+    expect(action).toContain("assertVaultMayaCheckoutAllowed")
   })
 })

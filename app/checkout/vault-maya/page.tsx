@@ -93,6 +93,36 @@ export default async function VaultMayaCheckoutPage({
       }
     } catch (error) {
       console.error("[checkout/vault-maya] member guard check failed:", error)
+      return (
+        <main className="flex min-h-screen items-center justify-center bg-[#F8FAFA] px-5">
+          <div className="max-w-md rounded-lg border border-neutral-200 bg-white p-8 text-center">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
+              Vault Maya
+            </p>
+            <h1 className="mt-3 font-serif text-3xl font-light leading-tight text-neutral-950">
+              We couldn&apos;t confirm your access.
+            </h1>
+            <p className="mt-3 text-[15px] leading-relaxed text-neutral-600">
+              Refresh and try again before paying. If you already have the SUITE, Vault Maya is
+              included and you can open it from your studio.
+            </p>
+            <div className="mt-6 flex flex-col items-center gap-3">
+              <Link
+                href="/checkout/vault-maya"
+                className="inline-flex min-h-11 items-center rounded-sm bg-neutral-950 px-7 text-xs uppercase tracking-[0.16em] text-white"
+              >
+                Try again
+              </Link>
+              <Link
+                href="/vault-maya/studio"
+                className="text-xs text-neutral-600 underline underline-offset-4"
+              >
+                Open my studio
+              </Link>
+            </div>
+          </div>
+        </main>
+      )
     }
   }
 

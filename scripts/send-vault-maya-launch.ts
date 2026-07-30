@@ -26,7 +26,7 @@ const HTML = `
   <p style="font-size:16px;line-height:1.7;margin:0 0 16px;">I created the Prompt Vault to give you the exact prompts. But I wanted to make the whole experience even easier. Now you don&rsquo;t need to copy anything or figure out what to type. You choose the photo you want, and Maya creates it for you.</p>
   <p style="font-size:16px;line-height:1.7;margin:0 0 16px;">You add your selfie once. Every Vault look shows up ready to create. Tap the one you love, and Maya creates the photo. Still completely you.</p>
   <p style="font-size:16px;line-height:1.7;margin:0 0 16px;">New drops land every Monday, and you can request the looks you want to see next.</p>
-  <p style="font-size:16px;line-height:1.7;margin:0 0 24px;">30 photo creations a month. Founder price: $19/month, this week only. Join now and you keep $19 for as long as your membership stays active. After that it&rsquo;s $29/month for new members.</p>
+  <p style="font-size:16px;line-height:1.7;margin:0 0 24px;">30 photo creations a month. Founder price: $19/month for the first seven complete days after Vault Maya opens publicly. Join during that founder period and you keep $19 for as long as your membership stays active. After that it&rsquo;s $29/month for new members.</p>
   <p style="text-align:center;margin:0 0 24px;">
     <a href="https://sselfie.ai/vault-maya?utm_source=email&utm_medium=launch&utm_campaign=vault_maya_launch" style="display:inline-block;background:#0D0E10;color:#ffffff;text-decoration:none;padding:14px 32px;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif;">Create your first photo</a>
   </p>

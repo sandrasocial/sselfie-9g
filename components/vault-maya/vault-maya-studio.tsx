@@ -386,9 +386,9 @@ export function VaultMayaStudio({
               <button
                 key={photo.id}
                 type="button"
-                onClick={() => {
-                  track("vault_maya_photo_saved", { from: "gallery" })
-                  void downloadAllSlides([photo.url], "sselfie-vault")
+                onClick={async () => {
+                  const saved = await downloadAllSlides([photo.url], "sselfie-vault")
+                  if (saved) track("vault_maya_photo_saved", { from: "gallery" })
                 }}
                 className="group relative aspect-[3/4] overflow-hidden rounded-[8px] bg-white"
                 aria-label="Save this photo"
@@ -552,9 +552,11 @@ function CollectionSection({
                   <div className="mt-2 flex gap-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        track("vault_maya_photo_saved", { from: "result", cardKey: look.cardKey })
-                        void downloadAllSlides([state.imageUrl], "sselfie-vault")
+                      onClick={async () => {
+                        const saved = await downloadAllSlides([state.imageUrl], "sselfie-vault")
+                        if (saved) {
+                          track("vault_maya_photo_saved", { from: "result", cardKey: look.cardKey })
+                        }
                       }}
                       className="flex-1 rounded-[5px] bg-[color:var(--ss-night)] py-2 text-[9px] uppercase tracking-[0.18em] text-white"
                     >

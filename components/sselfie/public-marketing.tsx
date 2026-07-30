@@ -1843,12 +1843,12 @@ const VAULT_MAYA_FAQ = [
   {
     question: "What happens if a photo fails?",
     answer:
-      "Your credit comes back automatically — one credit only ever pays for a finished photo. If a photo doesn't feel like you, create the look again, and if something is really wrong, reply and I'll make it right.",
+      "If the creation fails before your photo is made, your credit comes back automatically. If a photo doesn't feel like you, create the look again, and if something is really wrong, reply and I'll make it right.",
   },
   {
     question: "What happens to my selfie?",
     answer:
-      "Your selfie is stored securely and used only to create your photos. You can replace it or delete it completely anytime in your studio. Photos you've already created are separate — they stay in your gallery until you remove them.",
+      "Your selfie is saved to your account and used to create your photos. You can replace it or delete it completely anytime in your studio. Photos you've already created are separate. They stay in your gallery until you remove them.",
   },
 ]
 

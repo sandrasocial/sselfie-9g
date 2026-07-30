@@ -28,19 +28,19 @@ export function resolvePromptVaultPriceId(env: EnvLike = process.env, now: Date 
   return env.STRIPE_PRICE_PROMPT_VAULT_AFTER_FLASH?.trim() || basePrice
 }
 
-// Decision (Sandra, 2026-07-30): there is NO Day 0 yet. The founder period runs 7 complete
-// days from the ACTUAL public launch, which starts only after fixes + independent QA pass.
-// The placeholder below is deliberately far-future; at launch, set the real moment via the
-// VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT env var (ISO timestamp) without a code change.
-export const VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT = "2027-01-01T00:00:00.000Z"
-
 export function resolveVaultMayaFlipMoment(env: EnvLike = process.env): number {
   const override = env.VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT?.trim()
-  if (override) {
-    const parsed = Date.parse(override)
-    if (Number.isFinite(parsed)) return parsed
+  // Decision (Sandra, 2026-07-30): there is NO Day 0 until the product passes QA and
+  // actually opens publicly. With no env value there is no hidden founder clock at all.
+  if (!override) return Number.POSITIVE_INFINITY
+
+  const parsed = Date.parse(override)
+  if (!Number.isFinite(parsed)) {
+    throw new Error(
+      "VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT must be a valid ISO timestamp before launch."
+    )
   }
-  return Date.parse(VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT)
+  return parsed
 }
 
 export function isVaultMayaFounderPriceFlipped(now: Date = new Date(), env: EnvLike = process.env): boolean {

@@ -4,7 +4,7 @@ import { sql } from "@/lib/db/client"
 import { withAuth } from "@/lib/auth/with-auth"
 import { buildStudioTabPath } from "@/lib/studio/tab-routing"
 
-async function handleCreatePortalSession({
+export async function handleCreatePortalSession({
   request,
   user: neonUser,
 }: {

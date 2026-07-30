@@ -32,7 +32,7 @@ export function generateVaultMayaWelcomeEmail(params: VaultMayaWelcomeParams): {
   const name = getFirstNameForEmail({ fullName: customerName, email: customerEmail })
 
   const supportLine = `If anything is confusing or a photo doesn't feel right, just reply to this email. A real person answers. Usually me.`
-  const creditNote = `If a photo ever fails to create, your credit comes back automatically — one credit only ever pays for a finished photo.`
+  const creditNote = `If the creation fails before your photo is made, your credit comes back automatically.`
 
   if (variant === "new") {
     const ctaUrl = passwordSetupUrl || studioUrl
@@ -41,7 +41,7 @@ export function generateVaultMayaWelcomeEmail(params: VaultMayaWelcomeParams): {
     const bodyHtml = `
       <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
       <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Welcome to Vault Maya. I'm so glad you're here.</p>
-      <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here's the one thing to do today: create your first photo. It takes about a minute.</p>
+      <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here's the one thing to do today: create your first photo.</p>
       ${renderStonePanel(FIRST_PHOTO_STEPS, "Your First Photo")}
       ${renderStonePanel(MEMBERSHIP_PANEL, "Your Membership")}
       <div style="margin:26px 0 12px;">${renderStoneButton(ctaLabel, ctaUrl)}</div>
@@ -66,7 +66,7 @@ Hey ${name},
 
 Welcome to Vault Maya. I'm so glad you're here.
 
-Here's the one thing to do today: create your first photo. It takes about a minute.
+Here's the one thing to do today: create your first photo.
 
 Your first photo:
 1. Add one clear selfie so Maya can learn what you look like

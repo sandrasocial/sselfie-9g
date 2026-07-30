@@ -110,9 +110,16 @@ describe("B7: founder pricing fails safely", () => {
     expect(isVaultMayaFounderPriceFlipped(new Date("2026-08-10T12:00:00.000Z"), env)).toBe(true)
   })
 
-  it("default placeholder flip is far-future (no Day 0 scheduled)", async () => {
-    const { VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT } = await import("@/lib/launch/cash-launch-pricing")
-    expect(Date.parse(VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT)).toBeGreaterThan(Date.parse("2026-12-01T00:00:00.000Z"))
+  it("has no flip clock at all until launch sets the env timestamp", async () => {
+    const { resolveVaultMayaFlipMoment } = await import("@/lib/launch/cash-launch-pricing")
+    expect(resolveVaultMayaFlipMoment({})).toBe(Number.POSITIVE_INFINITY)
+  })
+
+  it("fails loudly when a configured flip timestamp is invalid", async () => {
+    const { resolveVaultMayaFlipMoment } = await import("@/lib/launch/cash-launch-pricing")
+    expect(() =>
+      resolveVaultMayaFlipMoment({ VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT: "not-a-date" }),
+    ).toThrow("must be a valid ISO timestamp")
   })
 })
 
@@ -122,14 +129,14 @@ describe("B4: generation identity references are server-verified as user-owned",
     "utf8",
   )
 
-  it("verifies ownership against user_avatar_images before generating", () => {
+  it("wires the ownership verifier before generating", () => {
     expect(route).toContain("identity_reference_not_owned")
-    expect(route).toMatch(/FROM user_avatar_images\s+WHERE user_id = \$\{String\(neonUser\.id\)\}\s+AND image_url = ANY\(/)
+    expect(route).toContain("findUnownedIdentityReferences")
   })
 
-  it("keeps data: URIs as self-supplied content and exempts admin tooling", () => {
-    expect(route).toContain('url => !url.startsWith("data:")')
-    expect(route).toMatch(/!isAdminEmail\(user\.email\) && Array\.isArray\(referenceUrls\)/)
+  it("passes the authenticated account and admin status to the verifier", () => {
+    expect(route).toContain("neonUserId: String(neonUser.id)")
+    expect(route).toContain("admin: isAdminEmail(user.email)")
   })
 
   it("refuses with 403, never silently strips a foreign reference", () => {
