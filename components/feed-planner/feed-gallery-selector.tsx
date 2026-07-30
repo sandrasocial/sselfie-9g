@@ -265,34 +265,32 @@ export function FeedGallerySelector({
             >
               {isPost ? "Add photo to post" : "Choose profile photo"}
             </h2>
-            {isPost ? (
-              <div className="flex gap-2 mt-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("upload")}
-                  aria-pressed={activeTab === "upload"}
-                  className={`min-h-11 rounded-full border px-4 text-[10px] uppercase tracking-[0.16em] transition-colors ${
-                    activeTab === "upload"
-                      ? "border-[color:var(--ss-night)] bg-[color:var(--ss-night)] text-white"
-                      : "border-[color:var(--ss-silver)] bg-white text-[color:var(--ss-davy)] hover:border-[color:var(--ss-gray)]"
-                  }`}
-                >
-                  Upload
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("gallery")}
-                  aria-pressed={activeTab === "gallery"}
-                  className={`min-h-11 rounded-full border px-4 text-[10px] uppercase tracking-[0.16em] transition-colors ${
-                    activeTab === "gallery"
-                      ? "border-[color:var(--ss-night)] bg-[color:var(--ss-night)] text-white"
-                      : "border-[color:var(--ss-silver)] bg-white text-[color:var(--ss-davy)] hover:border-[color:var(--ss-gray)]"
-                  }`}
-                >
-                  Gallery
-                </button>
-              </div>
-            ) : null}
+            <div className="flex gap-2 mt-3">
+              <button
+                type="button"
+                onClick={() => setActiveTab("upload")}
+                aria-pressed={activeTab === "upload"}
+                className={`min-h-11 rounded-full border px-4 text-[10px] uppercase tracking-[0.16em] transition-colors ${
+                  activeTab === "upload"
+                    ? "border-[color:var(--ss-night)] bg-[color:var(--ss-night)] text-white"
+                    : "border-[color:var(--ss-silver)] bg-white text-[color:var(--ss-davy)] hover:border-[color:var(--ss-gray)]"
+                }`}
+              >
+                Upload
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("gallery")}
+                aria-pressed={activeTab === "gallery"}
+                className={`min-h-11 rounded-full border px-4 text-[10px] uppercase tracking-[0.16em] transition-colors ${
+                  activeTab === "gallery"
+                    ? "border-[color:var(--ss-night)] bg-[color:var(--ss-night)] text-white"
+                    : "border-[color:var(--ss-silver)] bg-white text-[color:var(--ss-davy)] hover:border-[color:var(--ss-gray)]"
+                }`}
+              >
+                Gallery
+              </button>
+            </div>
           </div>
           <button
             ref={initialFocusRef}
@@ -307,8 +305,8 @@ export function FeedGallerySelector({
 
         {/* Content */}
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
-          {/* Upload Tab - only show for posts */}
-          {isPost && activeTab === "upload" && (
+          {/* Upload Tab */}
+          {activeTab === "upload" && (
             <div className="flex min-h-[360px] flex-col items-center justify-center">
               <div className="w-full max-w-md space-y-6">
                 <label
@@ -365,7 +363,8 @@ export function FeedGallerySelector({
                         <div className="flex-1">
                           <p className="mb-1 text-sm text-[color:var(--ss-night)]">Photo ready</p>
                           <p className="text-xs text-[color:var(--app-text-secondary)]">
-                            Choose &quot;Use this photo&quot; to add it to the post.
+                            Choose &quot;Use this photo&quot; to add it to{" "}
+                            {isPost ? "the post" : "your profile"}.
                           </p>
                         </div>
                       </div>
@@ -376,7 +375,7 @@ export function FeedGallerySelector({
           )}
 
           {/* Gallery Tab */}
-          {(isPost && activeTab === "gallery") || !isPost ? (
+          {activeTab === "gallery" ? (
             <>
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
@@ -405,21 +404,11 @@ export function FeedGallerySelector({
                   </button>
                 </div>
               ) : images.length === 0 ? (
-                <div
-                  className={
-                    isPost ? "text-center py-12" : "flex items-center justify-center py-12"
-                  }
-                >
-                  {isPost ? (
-                    <>
-                      <p className="text-sm text-[color:var(--ss-davy)]">Your gallery is empty</p>
-                      <p className="mt-2 text-xs text-[color:var(--ss-gray)]">
-                        Upload a photo here or create one with Maya.
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-sm text-stone-600">No images found in your gallery</p>
-                  )}
+                <div className="py-12 text-center">
+                  <p className="text-sm text-[color:var(--ss-davy)]">Your gallery is empty</p>
+                  <p className="mt-2 text-xs text-[color:var(--ss-gray)]">
+                    Upload a photo here or create one with Maya.
+                  </p>
                 </div>
               ) : (
                 <div className={`grid ${gridCols} gap-3 sm:gap-4`}>

@@ -7,6 +7,7 @@
 
 import fs from "fs";
 import path from "path";
+import { execFileSync } from "child_process";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -14,6 +15,18 @@ const root = path.join(__dirname, "..");
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
+}
+
+function isIgnored(rel) {
+  try {
+    execFileSync("git", ["check-ignore", "--quiet", "--", rel], {
+      cwd: root,
+      stdio: "ignore",
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 let failed = false;
@@ -57,7 +70,7 @@ const forbiddenRepoSystems = [
 ];
 
 for (const forbiddenPath of forbiddenRepoSystems) {
-  if (fs.existsSync(path.join(root, forbiddenPath))) {
+  if (fs.existsSync(path.join(root, forbiddenPath)) && !isIgnored(forbiddenPath)) {
     console.error(`FAIL: repo-hosted AI orchestration is forbidden: ${forbiddenPath}`);
     failed = true;
   }

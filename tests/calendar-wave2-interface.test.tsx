@@ -1,7 +1,21 @@
+// @vitest-environment jsdom
+
 import { readFileSync } from "node:fs"
-import { describe, expect, it } from "vitest"
+import { cleanup, render, screen, waitFor } from "@testing-library/react"
+import { afterEach, describe, expect, it, vi } from "vitest"
+
+vi.mock("next/image", () => ({
+  default: ({ fill: _fill, alt = "", ...props }: Record<string, unknown>) => (
+    <img alt={String(alt)} {...props} />
+  ),
+}))
 
 const read = (path: string) => readFileSync(path, "utf8")
+
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
 
 describe("Calendar Wave 2 interface hardening", () => {
   it("keeps the photo picker light, uniquely labelled, and explicit about supported files", () => {
@@ -29,5 +43,32 @@ describe("Calendar Wave 2 interface hardening", () => {
     expect(screen).toContain('"Creating your blank grid"')
     expect(screen).toContain('"Maya is planning your month and drafting captions"')
     expect(canvas).not.toContain('["Planning", "Writing", "Styling"]')
+  })
+
+  it("lets a new member upload a profile photo when her Gallery is empty", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({ images: [], hasMore: false }),
+      }))
+    )
+    const { FeedGallerySelector } =
+      await import("@/components/feed-planner/feed-gallery-selector")
+
+    render(
+      <FeedGallerySelector
+        type="profile"
+        feedId={44}
+        onClose={vi.fn()}
+        onImageSelected={vi.fn()}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Upload" })).toBeInTheDocument()
+    })
+    expect(screen.getByRole("button", { name: "Gallery" })).toBeInTheDocument()
+    expect(screen.getByText("Upload from your device")).toBeInTheDocument()
   })
 })
