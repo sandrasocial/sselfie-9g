@@ -16,42 +16,42 @@ export function generatePromptVaultDay2FirstResultEmail({
     content: "open_vault",
     emailType: "prompt-vault-day2-first-result",
   })
-  const subject = "Did the first prompt work?"
+  const subject = "did you create your first Vault photo?"
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Quick check. Did you copy one prompt from the vault yet?</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you haven't started, use the first Coastal White prompt. It's simple, clean, and easy to judge.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Did you create your first photo from the Vault yet?</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If not, do not start by looking through everything. Choose the first photo that makes you think, I would use that.</p>
     ${renderStonePanel(
-      `<p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">Open ChatGPT, upload one clear selfie, paste the prompt, then run it once before you edit anything. The first result tells you what the AI is doing with your face, light, and pose.</p>`,
-      "First result rule"
+      `<p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">Open the Vault, tap Copy prompt, upload one clear selfie to ChatGPT, and paste the prompt. Try it once before you change any of the details.</p>`,
+      "Your first photo"
     )}
-    <div style="margin:26px 0 22px;">${renderStoneButton("Open the Vault", vaultUrl)}</div>
-    <p style="margin:0;font-size:16px;line-height:1.75;">If the result looked strange, don't panic. Reply with what happened. Weird outputs are usually fixable.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Open my Prompt Vault", vaultUrl)}</div>
+    <p style="margin:0;font-size:16px;line-height:1.75;">If the result did not feel like you, reply and tell me what changed. I&apos;ll help you work out what to try next.</p>
   `
 
   const html = renderStoneShell({
-    title: "Did the first prompt work?",
+    title: "Did you create your first Vault photo?",
     eyebrow: "Prompt Vault",
-    subtitle: "Start with one prompt. One selfie. One result.",
+    subtitle: "Choose one photo you love and start there.",
     bodyHtml,
-    footerLead: "One good result is enough to build from.",
+    footerLead: "You do not need to use the whole Vault today.",
     footerSignoff: "Sandra x",
   })
 
   const text = `Hi ${firstName},
 
-Quick check. Did you copy one prompt from the vault yet?
+Did you create your first photo from the Vault yet?
 
-If you haven't started, use the first Coastal White prompt. It's simple, clean, and easy to judge.
+If not, do not start by looking through everything. Choose the first photo that makes you think, I would use that.
 
-First result rule:
-Open ChatGPT, upload one clear selfie, paste the prompt, then run it once before you edit anything. The first result tells you what the AI is doing with your face, light, and pose.
+Your first photo:
+Open the Vault, tap Copy prompt, upload one clear selfie to ChatGPT, and paste the prompt. Try it once before you change any of the details.
 
-Open the Vault:
+Open my Prompt Vault:
 ${vaultUrl}
 
-If the result looked strange, don't panic. Reply with what happened. Weird outputs are usually fixable.
+If the result did not feel like you, reply and tell me what changed. I'll help you work out what to try next.
 
 Sandra x`
 
@@ -67,49 +67,43 @@ export function generatePromptVaultDay5FixBadResultEmail({
     content: "open_vault",
     emailType: "prompt-vault-day5-fix-bad-result",
   })
-  const subject = "If the AI changed your face too much"
+  const subject = "if your photo did not feel like you"
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The most common problem with AI photos isn't the prompt.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It's the source photo.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If ChatGPT made your face too smooth, too sharp, or not quite you, try this before you change the whole prompt:</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If ChatGPT changed your face too much, try a different selfie before you change the prompt.</p>
     ${renderStonePanel(
-      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Use a clearer selfie with soft window light.</p>
-       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Make sure your face is easy to see. No heavy shadows, sunglasses, or extreme angles.</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">Add the anchor line before the prompt if the AI keeps drifting.</p>`,
-      "The fix"
+      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Choose a clear photo in soft window light.</p>
+       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Make sure your face is easy to see, without sunglasses, heavy shadow, blur, or an extreme angle.</p>
+       <p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">Then try the same prompt again so you can see what the new selfie changes.</p>`,
+      "Try this first"
     )}
-    <div style="margin:26px 0 22px;">${renderStoneButton("Open the Vault", vaultUrl)}</div>
-    <p style="margin:0;font-size:16px;line-height:1.75;">The goal isn't a perfect fake photo. The goal is a photo that still feels like you.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Open my Prompt Vault", vaultUrl)}</div>
+    <p style="margin:0;font-size:16px;line-height:1.75;">AI can still get details wrong. Keep the photos that feel like you and try again when they do not.</p>
   `
 
   const html = renderStoneShell({
-    title: "Fix the weird result.",
+    title: "If your photo did not feel like you.",
     eyebrow: "Prompt Vault",
-    subtitle: "Most AI photo problems start with the source photo.",
+    subtitle: "Try a clearer selfie before you change the prompt.",
     bodyHtml,
-    footerLead: "Better input. Better output. Still you.",
+    footerLead: "Reply if you want help working out what changed.",
     footerSignoff: "Sandra x",
   })
 
   const text = `Hi ${firstName},
 
-The most common problem with AI photos isn't the prompt.
+If ChatGPT changed your face too much, try a different selfie before you change the prompt.
 
-It's the source photo.
+Try this first:
+- Choose a clear photo in soft window light.
+- Make sure your face is easy to see, without sunglasses, heavy shadow, blur, or an extreme angle.
+- Then try the same prompt again so you can see what the new selfie changes.
 
-If ChatGPT made your face too smooth, too sharp, or not quite you, try this before you change the whole prompt:
-
-The fix:
-- Use a clearer selfie with soft window light.
-- Make sure your face is easy to see. No heavy shadows, sunglasses, or extreme angles.
-- Add the anchor line before the prompt if the AI keeps drifting.
-
-Open the Vault:
+Open my Prompt Vault:
 ${vaultUrl}
 
-The goal isn't a perfect fake photo. The goal is a photo that still feels like you.
+AI can still get details wrong. Keep the photos that feel like you and try again when they do not.
 
 Sandra x`
 
@@ -125,49 +119,46 @@ export function generatePromptVaultDay10NextShootEmail({
     content: "open_vault",
     emailType: "prompt-vault-day10-next-shoot",
   })
-  const subject = "Your next shoot direction"
+  const subject = "try one complete shoot next"
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">By now you've probably seen what the vault can do.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The next question isn't "which prompt is prettiest?"</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The better question is: what do you need these photos to help you say?</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you have tried a few single photos, choose one complete collection next.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Create three photos from the same shoot. They are designed to work together, so you will have more than one image to use without starting from scratch each time.</p>
     ${renderStonePanel(
-      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Choose one collection for authority.</p>
-       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Choose one collection for softness and connection.</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">Choose one collection for your next offer or launch.</p>`,
-      "A simple content set"
+      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Choose one collection that feels useful for what you are sharing now.</p>
+       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;color:#5f5a52;">Create the first three photos.</p>
+       <p style="margin:0;font-size:15px;line-height:1.8;color:#5f5a52;">Save the ones you would actually post.</p>`,
+      "A simple way to use the Vault"
     )}
-    <div style="margin:26px 0 22px;">${renderStoneButton("Open the Vault", vaultUrl)}</div>
-    <p style="margin:0;font-size:16px;line-height:1.75;">Reply with the collection you used most. That's the signal I want before I build the next paid thing.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Choose my next shoot", vaultUrl)}</div>
+    <p style="margin:0;font-size:16px;line-height:1.75;">Reply and tell me which collection you chose. I want to know what you are actually using.</p>
   `
 
   const html = renderStoneShell({
-    title: "Your next shoot direction.",
+    title: "Try one complete shoot next.",
     eyebrow: "Prompt Vault",
-    subtitle: "Use the photos for a message, not just a pretty grid.",
+    subtitle: "Create three photos that are designed to work together.",
     bodyHtml,
-    footerLead: "Your best next product should come from what buyers actually use.",
+    footerLead: "One complete collection is more useful than ten unfinished ideas.",
     footerSignoff: "Sandra x",
   })
 
   const text = `Hi ${firstName},
 
-By now you've probably seen what the vault can do.
+If you have tried a few single photos, choose one complete collection next.
 
-The next question isn't "which prompt is prettiest?"
+Create three photos from the same shoot. They are designed to work together, so you will have more than one image to use without starting from scratch each time.
 
-The better question is: what do you need these photos to help you say?
+A simple way to use the Vault:
+- Choose one collection that feels useful for what you are sharing now.
+- Create the first three photos.
+- Save the ones you would actually post.
 
-A simple content set:
-- Choose one collection for authority.
-- Choose one collection for softness and connection.
-- Choose one collection for your next offer or launch.
-
-Open the Vault:
+Choose my next shoot:
 ${vaultUrl}
 
-Reply with the collection you used most. That's the signal I want before I build the next paid thing.
+Reply and tell me which collection you chose. I want to know what you are actually using.
 
 Sandra x`
 

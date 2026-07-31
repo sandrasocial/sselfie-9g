@@ -1,6 +1,6 @@
 import { buildRevenueEmailLink } from "./revenue-links"
 import { promptVaultCheckoutUrl } from "./selfie-education-links"
-import { renderStoneButton, renderStonePanel, renderStoneShell } from "./stone-email"
+import { renderStoneButton, renderStoneShell } from "./stone-email"
 
 export interface AiPromptsDay9Params {
   firstName: string
@@ -8,7 +8,6 @@ export interface AiPromptsDay9Params {
 }
 
 const EMAIL_TYPE = "ai-prompts-day9-prompt-vault-proof"
-const TESTIMONIAL = `"I am blown away. I'm so picky it's not even funny. But this? My God."`
 
 export function generateAiPromptsDay9PromptVaultProofEmail({
   recipientEmail,
@@ -24,47 +23,44 @@ export function generateAiPromptsDay9PromptVaultProofEmail({
     emailType: EMAIL_TYPE,
     checkoutEmail: recipientEmail,
   })
-  const subject = "will it still look like me?"
+  const subject = "is the Prompt Vault right for you?"
 
   const bodyHtml = `
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The question I get most about the Vault: "will it actually look like me, or some AI version of me?"</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The honest answer is that AI can get details wrong. A clear selfie and consistent direction give it more to work with, but you should still check every result.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The aim is not a different face. It is a photo where you still recognize yourself, in a setting you could not easily create alone.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The process is simple:<br />1. Open ChatGPT and upload one clear selfie.<br />2. Paste the prompt.<br />3. Check the result. Keep it if it feels like you. Try again if it does not.</p>
-    ${renderStonePanel(
-      `<p style="margin:0 0 10px;font-size:15px;line-height:1.7;">From a SSELFIE customer:</p>
-       <p style="margin:0;font-size:17px;line-height:1.7;font-style:italic;">${TESTIMONIAL}</p>`,
-      "Proof"
-    )}
-    <div style="margin:26px 0 20px;">${renderStoneButton("See the worlds · $37", promptVaultUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Prompt Vault is a good fit if you liked trying the free prompts and you want more complete shoots without writing the prompts yourself.</p>
+    <p style="margin:0 0 10px;font-size:16px;line-height:1.75;">You get:</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">• Every current Prompt Vault collection<br />• Complete photo sequences, not only one image<br />• An example photo for every prompt<br />• The new prompt drops I add later</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It is a one-time $37 purchase. It is not a subscription.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You will still copy the prompts into ChatGPT yourself. If you enjoy that process and want more photos to create, this is the next step.</p>
+    <div style="margin:26px 0 20px;">${renderStoneButton("Get the Prompt Vault · $37", promptVaultUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If not, keep the five free prompts. They are yours to use.</p>
     <p style="margin:0;font-size:16px;line-height:1.75;">Sandra x</p>
   `
 
   const html = renderStoneShell({
-    title: "Will it actually look like me?",
+    title: "Is the Prompt Vault right for you?",
     eyebrow: "Prompt Vault",
-    subtitle: "It's still you. That is the point.",
+    subtitle: "Here is exactly what you get and how it works.",
     bodyHtml,
-    footerLead: "AI should not erase you. It should frame you.",
+    footerLead: "One payment. Complete shoots. You still create the photos in ChatGPT.",
     footerSignoff: "",
   })
 
-  const text = `The question I get most about the Vault: "will it actually look like me, or some AI version of me?"
+  const text = `The Prompt Vault is a good fit if you liked trying the free prompts and you want more complete shoots without writing the prompts yourself.
 
-The honest answer is that AI can get details wrong. A clear selfie and consistent direction give it more to work with, but you should still check every result.
+You get:
+- Every current Prompt Vault collection
+- Complete photo sequences, not only one image
+- An example photo for every prompt
+- The new prompt drops I add later
 
-The aim is not a different face. It is a photo where you still recognize yourself, in a setting you could not easily create alone.
+It is a one-time $37 purchase. It is not a subscription.
 
-The process is simple:
-1. Open ChatGPT and upload one clear selfie.
-2. Paste the prompt.
-3. Check the result. Keep it if it feels like you. Try again if it does not.
+You will still copy the prompts into ChatGPT yourself. If you enjoy that process and want more photos to create, this is the next step.
 
-From a SSELFIE customer:
-${TESTIMONIAL}
-
-See the worlds · $37:
+Get the Prompt Vault · $37:
 ${promptVaultUrl}
+
+If not, keep the five free prompts. They are yours to use.
 
 Sandra x`
 

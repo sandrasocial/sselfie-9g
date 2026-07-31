@@ -100,8 +100,8 @@ export function CampaignLanding({
               Give Maya one selfie. Leave with your next campaign.
             </h1>
             <p className="mt-7 max-w-lg text-lg leading-8 text-white/82">
-              For the woman who knows what she's building and freezes when it's time to post. One
-              selfie becomes the campaign that finally shows people what you're building.
+              For the woman who knows what she&apos;s building and freezes when it&apos;s time to post. One
+              selfie becomes the campaign that finally shows people what you&apos;re building.
             </p>
             <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
               <Link
@@ -225,11 +225,11 @@ export function CampaignLanding({
         </h2>
         <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-[color:var(--app-text-secondary)]">
           Every photo starts from your real selfie, and Sandra checks the set before it reaches you.
-          If you don't recognize yourself in a photo, we redo it.
+          If you don&apos;t recognize yourself in a photo, we redo it.
         </p>
         <p className="mx-auto mt-10 max-w-2xl font-serif text-2xl leading-relaxed">
-          This was never about creating more content. It's about finally becoming visible for what
-          you're building.
+          This was never about creating more content. It&apos;s about finally becoming visible for what
+          you&apos;re building.
         </p>
         <Link
           href={checkoutHref}

@@ -15,11 +15,9 @@ import {
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateAiPromptsDay1VaultBridgeEmail } from "@/lib/email/templates/ai-prompts-day1-vault-bridge"
-import { generateAiPromptsDay2TryFirstPromptEmail } from "@/lib/email/templates/ai-prompts-day2-try-first-prompt"
 import { generateAiPromptsDay5EditMakesPostableEmail } from "@/lib/email/templates/ai-prompts-day5-edit-makes-postable"
 import { generateAiPromptsDay7PromptVaultOfferEmail } from "@/lib/email/templates/ai-prompts-day7-prompt-vault-offer"
 import { generateAiPromptsDay9PromptVaultProofEmail } from "@/lib/email/templates/ai-prompts-day9-prompt-vault-proof"
-import { generateAiPromptsDay11PromptVaultWhyNowEmail } from "@/lib/email/templates/ai-prompts-day11-prompt-vault-why-now"
 import {
   generatePromptVaultDay10NextShootEmail,
   generatePromptVaultDay2FirstResultEmail,
@@ -38,8 +36,9 @@ const DEFAULT_AI_PROMPTS_START_DATE = "2026-05-18"
 const DEFAULT_SEND_DELAY_MS = 650
 const MAX_PER_TOUCH_DEFAULT = 75
 // Leave enough room for suppression checks, Resend calls, logging, and retries inside the
-// 300-second Vercel budget. The previous 300-send ceiling timed out before cronLogger.success.
-const MAX_TOTAL_PER_RUN_DEFAULT = 120
+// 300-second Vercel budget. Production runs at 120 sends approached the timeout ceiling, so the
+// default stays at 100 unless an explicitly verified environment override is configured.
+const MAX_TOTAL_PER_RUN_DEFAULT = 100
 const MIN_TOUCH_GAP_HOURS_DEFAULT = 18
 
 interface AiPromptsCandidate {
@@ -253,8 +252,6 @@ function generateAiPromptsEmail(emailType: AiPromptsEmailType, candidate: AiProm
         recipientEmail: candidate.email,
         accessUrl,
       })
-    case "ai-prompts-day2-try-first-prompt":
-      return generateAiPromptsDay2TryFirstPromptEmail({ firstName, accessUrl })
     case "ai-prompts-day5-edit-makes-postable":
       return generateAiPromptsDay5EditMakesPostableEmail({
         firstName,
@@ -268,11 +265,6 @@ function generateAiPromptsEmail(emailType: AiPromptsEmailType, candidate: AiProm
       })
     case "ai-prompts-day9-prompt-vault-proof":
       return generateAiPromptsDay9PromptVaultProofEmail({
-        firstName,
-        recipientEmail: candidate.email,
-      })
-    case "ai-prompts-day11-prompt-vault-why-now":
-      return generateAiPromptsDay11PromptVaultWhyNowEmail({
         firstName,
         recipientEmail: candidate.email,
       })
@@ -414,7 +406,7 @@ export async function GET(request: Request) {
     // lead day-1 volume before anyone else got a turn, so PAYING Vault buyers received zero
     // onboarding since Jun 11 and deeper paid-offer touches never went out. Now:
     // 1. Vault BUYERS first (few people, highest trust, they just paid).
-    // 2. Lead touches deepest-first (day 11 -> day 1): conversion-critical sends beat
+    // 2. Lead touches deepest-first (day 9 -> day 1): conversion-critical sends beat
     //    top-of-funnel mass. Later touches gate on PAST sends, so reverse order is safe. ──
     if (promptVaultEnabled || dryRun) {
       for (const touch of PROMPT_VAULT_EMAIL_TOUCHES) {

@@ -93,7 +93,7 @@ describe("GET /api/cron/ai-photoshoot-nurture", () => {
     expect(sendEmailMock).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "buyer@example.com",
-        emailType: "ai-prompts-day11-prompt-vault-why-now",
+        emailType: "ai-prompts-day9-prompt-vault-proof",
         marketing: true,
         tags: expect.arrayContaining(["ai-prompts", "ai-photoshoot-nurture"]),
       }),

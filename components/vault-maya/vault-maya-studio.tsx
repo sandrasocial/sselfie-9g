@@ -438,7 +438,7 @@ export function VaultMayaStudio({
             <p className="text-[13px] text-[color:var(--ss-davy)]">Got it. I read every one.</p>
           ) : null}
           {requestState === "error" ? (
-            <p className="text-[13px] text-[color:var(--ss-davy)]">That didn't send. Try again.</p>
+            <p className="text-[13px] text-[color:var(--ss-davy)]">That didn&apos;t send. Try again.</p>
           ) : null}
         </div>
       </section>

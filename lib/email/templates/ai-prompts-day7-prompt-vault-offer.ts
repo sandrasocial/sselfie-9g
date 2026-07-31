@@ -1,4 +1,3 @@
-import { getEmailHeroImage } from "../email-image-assets"
 import { buildRevenueEmailLink } from "./revenue-links"
 import { promptVaultCheckoutUrl } from "./selfie-education-links"
 import { renderStoneButton, renderStoneShell } from "./stone-email"
@@ -25,50 +24,51 @@ export function generateAiPromptsDay7PromptVaultOfferEmail({
     emailType: EMAIL_TYPE,
     checkoutEmail: recipientEmail,
   })
-  const subject = "the free prompt was only the first photo"
-  const heroImage = getEmailHeroImage("starter_kit_ai_ready_selfie")
+  const subject = "the five free prompts are one photo from each shoot"
+  const heroImage = {
+    heroImageUrl:
+      "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/content-kit/shoots/1784653608406-382550.png",
+    heroImageAlt: "A warm editorial SSELFIE photo created with an AI photoshoot prompt.",
+  }
 
   const bodyHtml = `
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The free preview gave you a few looks to test. The half-light close-up. The clean-girl morning. The denim street.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Here&apos;s what most people don&apos;t realize. Each one is shot 1 of a whole story.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Take Quiet Luxury London. It&apos;s not one café photo. It&apos;s the whole day. The arrival. The coffee run. The seated hero shot. The reel-cover walk-away. All from one selfie.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Vault holds every one of those worlds, each a full shoot from start to finish. The aim is still you in every frame, with a new world every time I shoot one.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">No studio. No photographer. No perfect setup. One clear selfie, and direction the AI can actually work with.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It&apos;s $37, one time. Yours for good, every future drop included. If anything snags, just reply. A real person reads it, usually me.</p>
-    <div style="margin:26px 0 20px;">${renderStoneButton("Get the Vault · $37 · one time", promptVaultUrl)}</div>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Start with one world. See where it goes. 🤍</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The five free prompts give you five different photos to try.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Inside the Prompt Vault, each of those photos belongs to a complete collection. That means you can create several images that look like they came from the same shoot, instead of stopping after one photo.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">That is the difference.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The free prompts are for trying the method. The Vault is for when you want the complete shoots and more photos to choose from.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">It is $37 once. You get every current collection, an example photo for every prompt, and the new prompt drops I add later.</p>
+    <div style="margin:26px 0 20px;">${renderStoneButton("See the complete Prompt Vault · $37", promptVaultUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If the five free prompts are enough for you, keep using them. You do not need to buy anything today.</p>
     <p style="margin:0;font-size:16px;line-height:1.75;">Sandra x</p>
   `
 
   const html = renderStoneShell({
-    title: "One shot each. The Vault is the whole story.",
+    title: "Want the rest of the shoot?",
     eyebrow: "Prompt Vault",
-    subtitle: "The free pack opened the door. The Vault is the full shoot.",
+    subtitle: "The five free prompts are one photo from each complete collection.",
     bodyHtml,
     ...heroImage,
-    footerLead: "Start with one world. Use one clear selfie.",
+    footerLead: "Start with the free prompts. Choose the Vault when you want the complete shoots.",
     footerSignoff: "",
   })
 
-  const text = `${firstName},
+  const text = `Hi ${firstName},
 
-The free preview gave you a few looks to test. The half-light close-up. The clean-girl morning. The denim street.
+The five free prompts give you five different photos to try.
 
-Here's what most people don't realize. Each one is shot 1 of a whole story.
+Inside the Prompt Vault, each of those photos belongs to a complete collection. That means you can create several images that look like they came from the same shoot, instead of stopping after one photo.
 
-Take Quiet Luxury London. It's not one café photo. It's the whole day. The arrival. The coffee run. The seated hero shot. The reel-cover walk-away. All from one selfie.
+That is the difference.
 
-The Vault holds every one of those worlds, each a full shoot from start to finish. The aim is still you in every frame, with a new world every time I shoot one.
+The free prompts are for trying the method. The Vault is for when you want the complete shoots and more photos to choose from.
 
-No studio. No photographer. No perfect setup. One clear selfie, and direction the AI can actually work with.
+It is $37 once. You get every current collection, an example photo for every prompt, and the new prompt drops I add later.
 
-It's $37, one time. Yours for good, every future drop included. If anything snags, just reply. A real person reads it, usually me.
-
-Get the Vault · $37 · one time:
+See the complete Prompt Vault · $37:
 ${promptVaultUrl}
 
-Start with one world. See where it goes.
+If the five free prompts are enough for you, keep using them. You do not need to buy anything today.
 
 Sandra x`
 

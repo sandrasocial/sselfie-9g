@@ -4,15 +4,10 @@ import {
   renderPersonalLink,
   renderPersonalNote,
   renderStoneButton,
-  renderStonePanel,
   renderStoneShell,
 } from "./stone-email"
 
 export const PROMPT_VAULT_CHECKOUT_RECOVERY_EMAIL_TYPE = "prompt-vault-checkout-recovery"
-// Follow-up touches (EMAIL-02, 2026-06-11): 3-email recovery is the benchmark - Klaviyo data
-// shows 6.5x the recovered revenue of a single email. Stage 2 at +24h (what it feels like to
-// use it), stage 3 at +72h (a quiet last note). Personal-note format on purpose: recovery
-// converts best when it reads like Sandra, not like a brand.
 export const PROMPT_VAULT_CHECKOUT_RECOVERY_2_EMAIL_TYPE = "prompt-vault-checkout-recovery-2"
 export const PROMPT_VAULT_CHECKOUT_RECOVERY_3_EMAIL_TYPE = "prompt-vault-checkout-recovery-3"
 
@@ -34,48 +29,35 @@ export function generatePromptVaultCheckoutRecoveryEmail({
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You were looking at the Prompt Vault, so here's the link back.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The free prompt shows you what one selfie can become. The Vault is the full set, so you're never stuck on just one.</p>
-    ${renderStonePanel(
-      `<p style="margin:0 0 10px;font-size:15px;line-height:1.8;">For when one AI photo isn't enough anymore.</p>
-       <p style="margin:0 0 10px;font-size:15px;line-height:1.8;">Pick a photoshoot world, copy the prompt, upload your selfie, and see the version of you that actually feels exciting to post.</p>
-       <p style="margin:0;font-size:15px;line-height:1.8;">Simple. Visual. No overthinking.</p>`,
-      "What the Vault helps with"
-    )}
-    <div style="margin:26px 0 22px;">${renderStoneButton("Get the Prompt Vault", checkoutUrl)}</div>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If you were just browsing, that's completely fine.</p>
-    <p style="margin:0;font-size:16px;line-height:1.75;">But if you still want it, this is the easiest place to start.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You started checking out with the Prompt Vault but did not finish, so I am sending the link back in case something interrupted you.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">The Vault is $37 once. You get every current prompt collection, an example photo for every prompt, and the new prompt drops I add later.</p>
+    <div style="margin:26px 0 22px;">${renderStoneButton("Return to checkout", checkoutUrl)}</div>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">If checkout gave you trouble, reply and tell me what happened. I&apos;ll help.</p>
+    <p style="margin:0;font-size:16px;line-height:1.75;">If you were only looking, that is completely fine too.</p>
   `
 
   return {
-    subject: "you were one tap from your vault 👀",
+    subject: "here is your Prompt Vault link",
     html: renderStoneShell({
-      title: "Here is the Vault link.",
+      title: "Here is your Prompt Vault link.",
       eyebrow: "Prompt Vault",
-      subtitle: "A simple way back to the prompts you were looking at.",
+      subtitle: "Use it if you still want to finish your order.",
       bodyHtml,
       footerLead: "Reply if checkout gave you trouble.",
       footerSignoff: "Sandra x",
     }),
     text: `Hi ${firstName},
 
-You were looking at the Prompt Vault, so here's the link back.
+You started checking out with the Prompt Vault but did not finish, so I am sending the link back in case something interrupted you.
 
-The free prompt shows you what one selfie can become. The Vault is the full set, so you're never stuck on just one.
+The Vault is $37 once. You get every current prompt collection, an example photo for every prompt, and the new prompt drops I add later.
 
-What the Vault helps with:
-- For when one AI photo isn't enough anymore.
-- Pick a photoshoot world, copy the prompt, upload your selfie, and see the version of you that actually feels exciting to post.
-- Simple. Visual. No overthinking.
-
-Get the Prompt Vault:
+Return to checkout:
 ${checkoutUrl}
 
-If you were just browsing, that's completely fine.
+If checkout gave you trouble, reply and tell me what happened. I'll help.
 
-But if you still want it, this is the easiest place to start.
-
-Reply if checkout gave you trouble.
+If you were only looking, that is completely fine too.
 
 Sandra x`,
   }
@@ -92,35 +74,35 @@ export function generatePromptVaultRecovery2Email({
     source: "email",
     medium: "checkout_recovery",
     campaign: "prompt_vault_checkout_recovery",
-    content: "recovery_2_social_proof",
+    content: "recovery_2_product_truth",
     emailType: PROMPT_VAULT_CHECKOUT_RECOVERY_2_EMAIL_TYPE,
     checkoutEmail: recipientEmail,
   })
 
   const bodyHtml = `
     <p style="margin:0 0 18px;">Hi ${firstName},</p>
-    <p style="margin:0 0 18px;">Yesterday you were a click away from the Prompt Vault, so I'm sending the link back in case life got in the way.</p>
-    <p style="margin:0 0 18px;">Here's what usually happens next: you pick one photoshoot world, paste the prompt into ChatGPT, add one selfie. Ten minutes later you've got a set of photos that look like a quiet luxury morning in London or a dark balcony over the city. Still your real face. Still you. Just clearer.</p>
-    <p style="margin:0 0 18px;">AI should not erase you. It should frame you. That's the whole point of the Vault.</p>
-    <p style="margin:0 0 18px;">${renderPersonalLink("Get the Prompt Vault here", checkoutUrl)} ($37, once).</p>
-    <p style="margin:0;">Every new collection I add lands in your vault automatically.</p>
+    <p style="margin:0 0 18px;">Before you decide about the Prompt Vault, I want to make the difference clear.</p>
+    <p style="margin:0 0 18px;">The five free prompts give you five individual photos to try. The Vault gives you the complete collections, so you can create several photos that look like they came from the same shoot.</p>
+    <p style="margin:0 0 18px;">You still copy the prompts into ChatGPT yourself. The Vault gives you the finished prompts and an example photo for each one, so you do not have to work out what to ask for.</p>
+    <p style="margin:0 0 18px;">It is $37 once, not a subscription. ${renderPersonalLink("You can finish your order here", checkoutUrl)}.</p>
+    <p style="margin:0;">If that is not what you need, keep using the free prompts. They are yours.</p>
   `
 
   return {
-    subject: "what happens after one selfie",
-    html: renderPersonalNote({ title: "What happens after one selfie", bodyHtml }),
+    subject: "what you get inside the Prompt Vault",
+    html: renderPersonalNote({ title: "What you get inside the Prompt Vault", bodyHtml }),
     text: `Hi ${firstName},
 
-Yesterday you were a click away from the Prompt Vault, so I'm sending the link back in case life got in the way.
+Before you decide about the Prompt Vault, I want to make the difference clear.
 
-Here's what usually happens next: you pick one photoshoot world, paste the prompt into ChatGPT, add one selfie. Ten minutes later you've got a set of photos that look like a quiet luxury morning in London or a dark balcony over the city. Still your real face. Still you. Just clearer.
+The five free prompts give you five individual photos to try. The Vault gives you the complete collections, so you can create several photos that look like they came from the same shoot.
 
-AI should not erase you. It should frame you. That's the whole point of the Vault.
+You still copy the prompts into ChatGPT yourself. The Vault gives you the finished prompts and an example photo for each one, so you do not have to work out what to ask for.
 
-Get the Prompt Vault ($37, once):
+It is $37 once, not a subscription. You can finish your order here:
 ${checkoutUrl}
 
-Every new collection I add lands in your vault automatically.
+If that is not what you need, keep using the free prompts. They are yours.
 
 Sandra x`,
   }
@@ -144,28 +126,27 @@ export function generatePromptVaultRecovery3Email({
 
   const bodyHtml = `
     <p style="margin:0 0 18px;">Hi ${firstName},</p>
-    <p style="margin:0 0 18px;">Last note from me about the Prompt Vault, I promise.</p>
-    <p style="margin:0 0 18px;">If checkout gave you trouble, or the timing was just off, reply and tell me. A real person answers. Usually me.</p>
-    <p style="margin:0 0 18px;">And if you were just waiting for a simple next step: one selfie, every editorial collection, $37 once. New drops included forever.</p>
-    <p style="margin:0 0 18px;">${renderPersonalLink("Here's the link", checkoutUrl)}.</p>
-    <p style="margin:0;">Either way, I'm glad you're here.</p>
+    <p style="margin:0 0 18px;">This is my last email about the checkout you started.</p>
+    <p style="margin:0 0 18px;">If you still want the Prompt Vault, ${renderPersonalLink("your checkout link is here", checkoutUrl)}. It is $37 once, and the new prompt drops I add later are included.</p>
+    <p style="margin:0 0 18px;">If the timing is not right, leave it. There is no deadline and the five free prompts are still yours to use.</p>
+    <p style="margin:0;">If something went wrong at checkout, reply and I&apos;ll help.</p>
   `
 
   return {
-    subject: "last note about the vault",
-    html: renderPersonalNote({ title: "Last note about the vault", bodyHtml }),
+    subject: "last note about your Prompt Vault checkout",
+    html: renderPersonalNote({ title: "Last note about your Prompt Vault checkout", bodyHtml }),
     text: `Hi ${firstName},
 
-Last note from me about the Prompt Vault, I promise.
+This is my last email about the checkout you started.
 
-If checkout gave you trouble, or the timing was just off, reply and tell me. A real person answers. Usually me.
-
-And if you were just waiting for a simple next step: one selfie, every editorial collection, $37 once. New drops included forever.
-
-Here's the link:
+If you still want the Prompt Vault, your checkout link is here:
 ${checkoutUrl}
 
-Either way, I'm glad you're here.
+It is $37 once, and the new prompt drops I add later are included.
+
+If the timing is not right, leave it. There is no deadline and the five free prompts are still yours to use.
+
+If something went wrong at checkout, reply and I'll help.
 
 Sandra x`,
   }

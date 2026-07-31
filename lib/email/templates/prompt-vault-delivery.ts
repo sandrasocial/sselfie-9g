@@ -10,30 +10,49 @@ export function generatePromptVaultDeliveryEmail({
   passwordSetupUrl?: string
 }) {
   const fallbackUrl = promptVaultLandingUrl()
-  const vaultButton = `<div style="margin:20px 0 0;">${renderStoneButton("Open Your Prompt Vault", accessUrl)}</div>`
+  const vaultButton = `<div style="margin:20px 0 0;">${renderStoneButton("Open my Prompt Vault", accessUrl)}</div>`
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Your Prompt Vault is ready.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;"><strong>No login needed.</strong> This private link opens your Vault.</p>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Choose the visual world you want, paste the prompt, upload one clear selfie, and start with the first shot.</p>
-    <p style="margin:0 0 16px;font-size:15px;line-height:1.8;">Inside: every current editorial collection, from Quiet Luxury London to Dark Feminine Caf&eacute; to Denim Street. Full shot sequences, copy-paste prompts, and an example photo for each one, so you see the exact visual direction before you try it.</p>
-    <p style="margin:0 0 16px;font-size:15px;line-height:1.8;">And when I add a new collection, it shows up in your vault automatically. One payment. All of it.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">Thank you. Your Prompt Vault is ready.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;"><strong>Keep this email.</strong> The button below is your private access link, and you do not need to create a login.</p>
+    <p style="margin:0 0 10px;font-size:16px;line-height:1.8;">To create your first photo:</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.8;">1. Open the Vault and choose a photo you love.<br />2. Tap Copy prompt.<br />3. Upload one clear selfie to ChatGPT and paste the prompt.</p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.8;">Every collection includes a complete photo sequence and an example image for every prompt. When I add a new prompt collection, it will appear in your Vault automatically.</p>
     ${vaultButton}
-    <p style="margin:24px 0 0;font-size:14px;line-height:1.7;color:#a8a49c;">Can't find this email later? Access your vault anytime at: <a href="${fallbackUrl}" style="color:#a8a49c;">${fallbackUrl}</a></p>
-    <p style="margin:12px 0 0;font-size:14px;line-height:1.7;color:#8a8780;">Questions? Reply here or reach us at <a href="mailto:support@sselfie.ai" style="color:#8a8780;">support@sselfie.ai</a></p>
+    <p style="margin:24px 0 0;font-size:14px;line-height:1.7;color:#a8a49c;">If you cannot find this email later, start at <a href="${fallbackUrl}" style="color:#a8a49c;">${fallbackUrl}</a> and enter the email address you used at checkout.</p>
+    <p style="margin:12px 0 0;font-size:14px;line-height:1.7;color:#8a8780;">If you need help, reply here or email <a href="mailto:support@sselfie.ai" style="color:#8a8780;">support@sselfie.ai</a>.</p>
   `
 
   return {
-    subject: "your prompt vault is here",
+    subject: "your Prompt Vault is ready",
     html: renderStoneShell({
-      eyebrow: "AI Photo Prompt Vault",
-      title: "Your Vault is ready.",
-      subtitle: "One selfie. One visual world. A shoot you can build from.",
+      eyebrow: "Prompt Vault",
+      title: "Your Prompt Vault is ready.",
+      subtitle: "Choose one photo you love and start there.",
       bodyHtml,
-      footerLead: "One selfie. One world. Start there.",
+      footerLead: "You do not need to create everything today. One photo is enough to begin.",
       footerSignoff: "Sandra x",
     }),
-    text: `Hi ${firstName},\n\nYour Prompt Vault is ready.\n\nNo login needed. This private link opens your Vault.\n\nChoose the visual world you want, paste the prompt, upload one clear selfie, and start with the first shot.\n\nInside: every current editorial collection, from Quiet Luxury London to Dark Feminine Café to Denim Street. Full shot sequences, copy-paste prompts, and an example photo for each one, so you see the exact visual direction before you try it.\n\nAnd when I add a new collection, it shows up in your vault automatically. One payment. All of it.\n\nOpen your vault: ${accessUrl}\n\nNeed help? Reply here or email support@sselfie.ai\n\nSandra x`,
+    text: `Hi ${firstName},
+
+Thank you. Your Prompt Vault is ready.
+
+Keep this email. The link below is your private access link, and you do not need to create a login.
+
+To create your first photo:
+1. Open the Vault and choose a photo you love.
+2. Tap Copy prompt.
+3. Upload one clear selfie to ChatGPT and paste the prompt.
+
+Every collection includes a complete photo sequence and an example image for every prompt. When I add a new prompt collection, it will appear in your Vault automatically.
+
+Open my Prompt Vault: ${accessUrl}
+
+If you cannot find this email later, start at ${fallbackUrl} and enter the email address you used at checkout.
+
+If you need help, reply here or email support@sselfie.ai.
+
+Sandra x`,
   }
 }
