@@ -19,7 +19,11 @@ const FROZEN_PROMPT_SOURCES = {
   "lib/app-v3/prompt-compiler.ts":
     // Sandra-approved Track B carousel copy contract (2026-07-20).
     "7e8d25e36014eb0ba089c9b6290ad98e547345b2d0969bb187373e87be36cebc",
-  "lib/app-v3/maya/persona.ts": "874531e8afbabcbf2421fc5d345ad0310f89dfaeec215093a7c4ab72e23ee844",
+  "lib/app-v3/maya/persona.ts":
+    // Sandra-approved global Maya Hook Intelligence upgrade (2026-07-31).
+    "6d8edd4ae61588b6266d0e3eebcae00be6b1dbe60808b55896cf224f19e87ec2",
+  "lib/content/hook-intelligence.ts":
+    "9a995884f5cea518bd21a72527b279448b6c2b7918c0a23e8c5638dcb430d450",
   "lib/app-v3/maya/visual-rules.ts":
     "bd53cdf79d1e96dbc0a47cd2ca3e26140c2ffcad3daa369ce5e85d055cdabb27",
   "lib/app-v3/maya/ingredients.ts":
