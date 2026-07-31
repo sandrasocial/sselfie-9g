@@ -20,13 +20,14 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] }
 export const metadata: Metadata = {
   title: "Free AI Photo Prompts",
   description:
-    "Free AI photoshoot prompts for turning one selfie into editorial personal brand images that still look like you.",
+    "Five free AI photo prompts for turning one selfie into beautiful editorial images that still feel like you.",
   alternates: {
     canonical: "https://www.sselfie.ai/ai-prompts",
   },
   openGraph: {
     title: "Free AI Photo Prompts",
-    description: "Free AI photoshoot prompts for editorial personal brand images that still look like you.",
+    description:
+      "Turn one selfie into five beautiful AI photos with free prompts made for ChatGPT.",
     url: "https://www.sselfie.ai/ai-prompts",
     images: ["/og-image.png"],
   },
@@ -37,39 +38,28 @@ export const dynamic = "force-dynamic"
 // ── Dynamic hero + preview data ─────────────────────────────────────────────
 // Sourced from the same approved collection data that powers the Vault.
 // When new collections are added to VAULT_COLLECTION_META (newest-first),
-// the hero background and preview cards update automatically.
+// the preview cards update automatically.
 
 /** Two-word short label for the preview strip - e.g. "Dark Feminine" */
 function collectionShortLabel(fullName: string): string {
   return fullName.split(/\s+/).slice(0, 2).join(" ")
 }
 
-/**
- * Hero background: PINNED to a warm lifestyle image, intentionally NOT auto-swapped.
- * (Previously pulled the newest collection's 3rd thumbnail, which meant a dark
- * beauty close-up could land here. The opt-in hero should always be an
- * aspirational, lifestyle, full-body shot from a flagship collection.)
- *
- * To change it: swap the path below for any thumbnail in VAULT_COLLECTION_META.
- * Good lifestyle alternatives:
- *   "/images/ai-prompts/quiet-luxury-london-shot-1.jpg" (café arrival, full body)
- *   "/images/ai-prompts/dark-feminine-cafe-shot-3.jpg"  (seated hero)
- *   "/images/ai-prompts/coastal-white-shot-1.jpg"       (cliffside full body)
- */
-const HERO_IMAGE: string = "/images/ai-prompts/quiet-luxury-london-shot-3.jpg"
+const HERO_IMAGE =
+  "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/content-kit/shoots/1784653608406-382550.png"
 
 /**
  * Preview strip: the newest published drop preview + the curated starter looks.
  * Do not show cards without a valid image src.
  */
 function buildHeroPreviews(
-  freebiePreviews = getStaticVaultFreebieCollections().map(
-    collection => collection.freeCard
-  ),
+  freebiePreviews = getStaticVaultFreebieCollections().map(collection => collection.freeCard),
   vaultMeta = VAULT_COLLECTION_META
 ) {
+  const seenLabels = new Set<string>()
+  const seenSources = new Set<string>()
+
   return freebiePreviews
-    .slice(0, 3)
     .map(card => {
       const meta = vaultMeta.find(m => m.previewCardId === card.id)
       return {
@@ -77,31 +67,40 @@ function buildHeroPreviews(
         label: meta ? collectionShortLabel(meta.name) : card.title.split(" ").slice(0, 2).join(" "),
       }
     })
-    .filter(p => p.src !== "")
+    .filter(preview => {
+      if (!preview.src || seenLabels.has(preview.label) || seenSources.has(preview.src)) {
+        return false
+      }
+
+      seenLabels.add(preview.label)
+      seenSources.add(preview.src)
+      return true
+    })
+    .slice(0, 3)
 }
 
 const VALUE_ITEMS = [
-  "Free AI photoshoot prompts you can test with your own selfies.",
-  "Editorial looks for personal brand images, profile photos, and content.",
-  "Beginner-friendly instructions so you know what to paste and where.",
-  "The five newest SSELFIE shoot previews to test with your own selfies.",
+  "Five complete, ready-to-use AI photo prompts to try with your own selfie.",
+  "Five different editorial looks for your content, profile photo, or personal brand.",
+  "Simple instructions showing you what to upload, copy, and paste.",
+  "A simple selfie checklist to help you choose a photo that gives you a more realistic result.",
 ]
 
 const FUNNEL_STEPS = [
   {
     label: "01",
-    title: "Free Preview",
-    body: "Start with the five newest shoot previews and see what your own selfie can become.",
+    title: "Choose a clear selfie",
+    body: "Start with a photo where your face is visible and the light is soft. It does not need to be professional.",
   },
   {
     label: "02",
-    title: "The Vault",
-    body: "Unlock the full photoshoot collections, newest drops, and future visual worlds.",
+    title: "Copy one prompt",
+    body: "Upload your selfie to ChatGPT, then copy and paste the prompt for the look you want to try.",
   },
   {
     label: "03",
-    title: "Create",
-    body: "Paste a prompt into your AI tool of choice with your selfie, and your first shoot is ready.",
+    title: "Create your photo",
+    body: "Let ChatGPT create the image, check that it still feels like you, and try another look whenever you want.",
   },
 ]
 
@@ -130,18 +129,20 @@ export default async function AiPromptsOptInPage() {
             fill
             priority
             className="opt-hero-img"
-            style={{ objectFit: "cover", objectPosition: "50% 18%" }}
+            style={{ objectFit: "cover", objectPosition: "50% 36%" }}
           />
         </div>
         <div className="opt-hero-overlay" />
 
         <div className="opt-hero-content">
           <div className="opt-container">
-            <p className="opt-eyebrow">FREE DOWNLOAD</p>
-            <h1 className={`opt-headline ${cormorant.className}`}>One Selfie. Unlimited Photoshoots.</h1>
+            <p className="opt-eyebrow">FREE AI PHOTO PROMPTS</p>
+            <h1 className={`opt-headline ${cormorant.className}`}>
+              Turn One Selfie Into Five Beautiful AI Photos
+            </h1>
             <p className="opt-sub">
-              Get the free AI photo prompts to turn your own selfie into cinematic, editorial
-              images. No studio, no photographer, no perfect setup.
+              Get five free prompts to create realistic, editorial photos that still feel like you.
+              No studio. No photographer. No perfect setup.
             </p>
 
             <div className="opt-proof-strip" aria-label="Photoshoot prompt examples">
@@ -160,7 +161,7 @@ export default async function AiPromptsOptInPage() {
               ))}
             </div>
 
-            <div className="opt-form-card">
+            <div id="get-prompts" className="opt-form-card">
               <OptInForm />
             </div>
           </div>
@@ -171,14 +172,13 @@ export default async function AiPromptsOptInPage() {
       <section className="opt-value">
         <div className="opt-value-inner">
           <div className="opt-value-copy">
-            <p className="opt-value-label">WHAT YOU GET</p>
+            <p className="opt-value-label">ONE SELFIE. FIVE NEW LOOKS.</p>
             <h2 className={`opt-value-title ${cormorant.className}`}>
-              Your first step into the SSELFIE visual world.
+              Create photos you’ll actually feel excited to use.
             </h2>
             <p className="opt-value-body">
-              Upload your selfie, choose the look, and start creating editorial images that still
-              look like you. These five prompts are the free preview. The Prompt Vault is the full
-              library, every collection, every new drop.
+              These are the same kind of prompts I use to turn ordinary selfies into beautiful AI
+              photos for my content and personal brand.
             </p>
           </div>
           <div className="opt-value-list">
@@ -196,9 +196,9 @@ export default async function AiPromptsOptInPage() {
       <section className="opt-path">
         <div className="opt-path-inner">
           <div>
-            <p className="opt-value-label">THE SSELFIE PATH</p>
+            <p className="opt-value-label">HOW IT WORKS</p>
             <h2 className={`opt-value-title ${cormorant.className}`}>
-              Free preview today. The full Vault when you are ready.
+              You don’t need to be good at AI.
             </h2>
           </div>
           <div className="opt-path-list">
@@ -216,18 +216,22 @@ export default async function AiPromptsOptInPage() {
       {/* ── Bridge section ─────────────────────────────────────────────── */}
       <section className="opt-bridge">
         <div className="opt-container">
+          <p className="opt-value-label">WHEN YOU&apos;RE READY FOR MORE</p>
           <p className={`opt-bridge-headline ${cormorant.className}`}>
-            Your photo is the starting point.
+            This is only the beginning.
           </p>
           <p className="opt-bridge-body">
-            The better the selfie, the better the AI result. Start with a clear photo before you
-            create your shoot.
+            The five free prompts give you a simple way to try the SSELFIE method for yourself.
           </p>
-          <Link
-            href="/selfie-guide?utm_source=ai_prompts&utm_medium=landing_page&utm_campaign=ai_prompts_to_selfie_guide"
-            className="opt-bridge-link"
-          >
-            Get the Free Selfie Guide
+          <p className="opt-bridge-body">
+            If you love creating with them, the Prompt Vault gives you the complete collection of
+            SSELFIE photoshoot prompts.
+          </p>
+          <p className="opt-bridge-body">
+            But start here. Create your first photo and see what is possible with one selfie.
+          </p>
+          <Link href="#get-prompts" className="opt-bridge-link">
+            Send me the free prompts
           </Link>
         </div>
       </section>

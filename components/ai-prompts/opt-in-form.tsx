@@ -82,7 +82,7 @@ export function OptInForm() {
 
   return (
     <form onSubmit={handleSubmit} className="opt-form" noValidate>
-      <p className="opt-form-header">Where should I send them?</p>
+      <p className="opt-form-header">Where should I send your free prompts?</p>
       <div className="opt-fields">
         <div className="opt-field">
           <label htmlFor="ai-firstName" className="opt-label">
@@ -119,11 +119,12 @@ export function OptInForm() {
         {status === "loading" ? "Sending..." : "Send me the free prompts"}
       </button>
       {status === "error" && (
-        <p className="opt-error">
-          Something went wrong. Try again or email hello@sselfie.ai
-        </p>
+        <p className="opt-error">Something went wrong. Try again or email hello@sselfie.ai</p>
       )}
-      <p className="opt-trust">Use your own photo. No spam. Unsubscribe anytime.</p>
+      <p className="opt-trust">
+        You’ll also receive simple instructions showing you exactly how to use them. Unsubscribe
+        anytime.
+      </p>
     </form>
   )
 }
