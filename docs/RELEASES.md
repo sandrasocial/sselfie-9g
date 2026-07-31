@@ -1,5 +1,19 @@
 # Completed releases
 
+## 2026-07-31 — Free prompts email funnel
+
+Aligned the automated free-prompts and Prompt Vault buyer emails with the approved customer
+journey. New leads receive their five prompts and practical help before the first Vault offer;
+buyers receive clear private-access, first-result, troubleshooting, and next-shoot guidance.
+Removed two redundant lead touches and lowered the default cron batch ceiling from 120 to 100 so
+the automation stays within its production runtime budget. Vault Maya remains outside this funnel.
+
+Production proof: feature commit `93b1e312`, Vercel deployment
+`dpl_ARxisdJinkGfLc8nnoEBoSkK5G9k`, exact Git commit verified in the build log, full Vitest suite,
+CI typecheck, repository invariants, lint error check, production build, and diff checks. The live
+authenticated dry run confirmed both automations enabled, the 100-email ceiling, all expected lead
+and buyer touches, 78 currently eligible sends, zero sends, and zero failures during verification.
+
 ## 2026-07-31 — Global Maya Hook Intelligence
 
 Upgraded Maya for every SUITE member so Reel covers, carousels, Story slides, and Story sequences
