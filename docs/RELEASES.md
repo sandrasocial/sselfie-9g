@@ -1,5 +1,20 @@
 # Completed releases
 
+## 2026-07-31 — Global Maya Hook Intelligence
+
+Upgraded Maya for every SUITE member so Reel covers, carousels, Story slides, and Story sequences
+open from the audience's real situation, use the strongest natural hook approach, stay within the
+member's truthful proof, and make the following content deliver the opening promise. The method is
+invisible inside Maya's existing recommendation flow: no new setup, questionnaire, scorecard,
+feature flag, or member-facing hook system.
+
+Production proof: feature commit `0cf77551`, Vercel deployment
+`dpl_AMYSSL5oyKdCssNPgKAKr3DG9xPU`, 1,856 passing tests with 6 intentionally skipped, CI
+typecheck, changed-file lint, repository invariants, production build, and diff checks. Vercel was
+Ready for the exact feature SHA. Live desktop Create loaded the existing recommendation, composer,
+and navigation; the 390x844 production access boundary fit without horizontal overflow. No image
+was generated, no credit was used, and no content was published during verification.
+
 ## 2026-07-30 — Vault Maya lifecycle stabilization
 
 Hardened Vault Maya checkout, account provisioning, Stripe retry behavior, welcome delivery,
