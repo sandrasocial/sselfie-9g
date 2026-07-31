@@ -60,7 +60,7 @@ describe("growth machine funnel consolidation", () => {
   it("keeps the free AI Prompts access page in one identity", () => {
     const access = read("app/ai-prompts/access/[token]/page.tsx")
 
-    expect(access).toContain("SSELFIE · AI PROMPTS")
+    expect(access).toContain("YOUR FREE AI PHOTO PROMPTS")
     expect(access).not.toContain("SSELFIE · SELFIE TO BRAND SHOOT")
   })
 })

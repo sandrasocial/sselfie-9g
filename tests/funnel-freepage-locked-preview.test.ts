@@ -134,11 +134,8 @@ describe("AI prompts free page locked Vault previews", () => {
     })
 
     const selected = selectLatestFreebieShootCollections(
-      [
-        makePublishedPreview("published-1"),
-        makePublishedPreview("published-2"),
-      ],
-      getStaticVaultFreebieCollections(),
+      [makePublishedPreview("published-1"), makePublishedPreview("published-2")],
+      getStaticVaultFreebieCollections()
     )
 
     expect(selected).toHaveLength(FREEBIE_TOTAL_SHOOT_LIMIT)
@@ -149,12 +146,22 @@ describe("AI prompts free page locked Vault previews", () => {
     expect(selected.map(collection => collection.freeCard.id)).not.toContain("dark-balcony-shot-1")
   })
 
-  it("keeps the free prompt pack and paid Vault in separate lanes", () => {
+  it("delivers the five free prompts before making one paid Vault invitation", () => {
     const freePageContents = read("app/ai-prompts/access/[token]/page.tsx")
     const vaultLandingContents = read("app/prompt-vault/page.tsx")
     const vaultAccessContents = read("app/access/prompt-vault/[token]/page.tsx")
 
-    expect(freePageContents).toContain("The latest five shoot previews.")
+    expect(freePageContents).toContain("Your five free AI photo prompts are ready.")
+    expect(freePageContents).toContain("HOW IT WORKS")
+    expect(freePageContents).toContain("Choose your first look.")
+    expect(freePageContents).toContain("You have five complete prompts to try.")
+    expect(freePageContents).toContain("Get the complete SSELFIE Prompt Vault")
+    expect(freePageContents).not.toContain("The latest five shoot previews.")
+    expect(freePageContents).not.toContain("Newest Vault world")
+    expect(freePageContents).not.toContain("visual identity")
+    expect(freePageContents).not.toContain("which version of you")
+    expect(freePageContents).not.toContain("ap-locked-grid")
+    expect(freePageContents).not.toContain("ai_prompts_locked_vault_tile_click")
     expect(freePageContents).not.toContain("BONUS PROMPT LIBRARY")
     expect(freePageContents).not.toContain("MAIN_LOOKS.map")
     const vaultLandingComponent = read("components/sselfie/public-marketing.tsx")
@@ -171,13 +178,18 @@ describe("AI prompts free page locked Vault previews", () => {
     expect(vaultAccessContents).not.toContain("See the System · $170")
   })
 
-  it("keeps the after-copy CTA pointed at the Prompt Vault", () => {
+  it("keeps prompt copying focused on the free result instead of opening a sales card", () => {
     const freePageContents = read("app/ai-prompts/access/[token]/page.tsx")
 
-    expect(freePageContents).toContain("afterCopyViewEvent=\"ai_prompts_after_copy_vault_cta_view\"")
-    expect(freePageContents).toContain("afterCopyTrackEvent=\"ai_prompts_prompt_vault_click\"")
-    expect(freePageContents).toContain("checkout_source: \"after_copy_prompt_vault_cta\"")
-    expect(freePageContents).not.toContain("checkout_source: \"after_copy_prompt_kit_cta\"")
-    expect(freePageContents).not.toContain("afterCopyViewEvent=\"ai_prompts_after_copy_kit_cta_view\"")
+    expect(freePageContents).toContain('label="Copy prompt"')
+    expect(freePageContents).not.toContain(
+      'afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"'
+    )
+    expect(freePageContents).not.toContain('afterCopyTrackEvent="ai_prompts_prompt_vault_click"')
+    expect(freePageContents).not.toContain('checkout_source: "after_copy_prompt_vault_cta"')
+    expect(freePageContents).not.toContain('checkout_source: "after_copy_prompt_kit_cta"')
+    expect(freePageContents).not.toContain(
+      'afterCopyViewEvent="ai_prompts_after_copy_kit_cta_view"'
+    )
   })
 })

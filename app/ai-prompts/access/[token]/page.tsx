@@ -23,9 +23,9 @@ const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
 
 export const metadata: Metadata = {
-  title: "Your AI Photoshoot Preview · SSELFIE",
+  title: "Your Five Free AI Photo Prompts · SSELFIE",
   description:
-    "Your updated AI photoshoot preview: one selfie, cinematic transformations, and first shots from the SSELFIE Vault.",
+    "Choose one of your five free AI photo prompts, copy it, and create your photo in ChatGPT.",
   robots: { index: false, follow: false },
 }
 
@@ -68,15 +68,15 @@ function PreviewCardEl({
   card,
   collectionName,
   shotCount,
-  upgradeHref,
-  vaultPriceLabel,
 }: {
   card: PromptCard
   collectionName: string
   shotCount: number
-  upgradeHref?: string
-  vaultPriceLabel: string
 }) {
+  const displayTitle = card.title.startsWith(`${collectionName} · `)
+    ? card.title.slice(collectionName.length + 3)
+    : card.title
+
   return (
     <article id={card.id} className="ap-preview-card">
       {card.exampleImage && (
@@ -91,13 +91,9 @@ function PreviewCardEl({
         </div>
       )}
       <div className="ap-preview-body">
-        <span className="ap-preview-number">{card.number}</span>
-        <p className="ap-preview-gap">
-          Shot 1 of {shotCount} · {collectionName}
-        </p>
-        <h3 className={`ap-preview-title ${cormorant.className}`}>{card.title}</h3>
+        <p className="ap-preview-collection">{collectionName}</p>
+        <h3 className={`ap-preview-title ${cormorant.className}`}>{displayTitle}</h3>
         <p className="ap-preview-when">{card.whenToUse}</p>
-        <p className="ap-preview-mood">{card.mood}</p>
         <details className="ap-preview-prompt">
           <summary>Read prompt</summary>
           <p>{card.prompt}</p>
@@ -107,25 +103,12 @@ function PreviewCardEl({
             text={card.prompt}
             promptTitle={card.title}
             promptNumber={card.number}
-            afterCopyHref={upgradeHref}
-            afterCopyTitle="Want the rest of this shoot?"
-            afterCopyLabel={`Get the full Vault · ${vaultPriceLabel}`}
-            afterCopyNote="The free prompt lets you test Shot 1. The Vault gives you the remaining shots in this visual world, the full shoot library, and every new SSELFIE drop I add."
-            afterCopyFootnote="One selfie. One visual direction. No random prompt guessing."
-            afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
-            afterCopyTrackEvent="ai_prompts_prompt_vault_click"
-            afterCopyTrackProperties={{
-              source: "ai-prompts",
-              destination: "checkout-prompt-vault",
-              utm_campaign: "ai_prompts_to_prompt_vault",
-              utm_content: `copy_${card.id}`,
-              checkout_source: "after_copy_prompt_vault_cta",
-              cta_position: "after_copy",
-              prompt_id: card.id,
-              prompt_title: card.title,
-            }}
+            label="Copy prompt"
           />
         </div>
+        <p className="ap-preview-included">
+          This is one complete prompt from a {shotCount}-photo collection.
+        </p>
       </div>
     </article>
   )
@@ -153,10 +136,6 @@ export default async function AiPromptsAccessPage({
   const heroCollection = freebieCollections[0] ?? null
   const heroImageSrc = heroCollection?.freeCard.exampleImage ?? null
   const promptVaultPrice = getPromptVaultPriceDisplay()
-  const lockedTileCount = freebieCollections.reduce(
-    (total, collection) => total + collection.lockedShots.length,
-    0
-  )
 
   if (!result.valid && !adminOverride) {
     return (
@@ -238,26 +217,13 @@ export default async function AiPromptsAccessPage({
     },
   }).catch(() => {})
 
-  if (lockedTileCount > 0) {
-    logAnalyticsEvent({
-      eventName: "ai_prompts_locked_vault_tiles_view",
-      path: "/ai-prompts/access/[token]",
-      properties: {
-        source: "ai-prompts",
-        token_prefix: token.slice(0, 8),
-        collection_count: freebieCollections.length,
-        locked_tile_count: lockedTileCount,
-      },
-    }).catch(() => {})
-  }
-
   const vaultPreviewCheckoutHref = buildPromptVaultFreebieCheckoutHref({
     promptId: "vault_preview",
     accessToken: token,
   })
   return (
     <main className={`ap-page ${inter.className}`}>
-      {/* 1. Hero */}
+      {/* 1. Confirm delivery */}
       <section className={`ap-hero ${heroImageSrc ? "ap-hero-with-image" : ""}`}>
         {heroImageSrc && (
           <div className="ap-hero-image-wrap" aria-hidden="true">
@@ -273,226 +239,157 @@ export default async function AiPromptsAccessPage({
           </div>
         )}
         <div className="ap-hero-content">
-          <p className="ap-hero-eyebrow">SSELFIE · AI PROMPTS</p>
+          <p className="ap-hero-eyebrow">YOUR FREE AI PHOTO PROMPTS</p>
           <h1 className={`ap-hero-title ${cormorant.className}`}>
-            Your free shoot preview.
+            Your five free AI photo prompts are ready.
           </h1>
           <p className="ap-hero-sub">
-            Start with the newest SSELFIE shoot previews. Pick a visual identity, copy the prompt,
-            upload one selfie, and see which version of you feels most like you.
+            Choose a look, copy the prompt, and upload it to ChatGPT with your selfie.
           </p>
-          {heroCollection && (
-            <p className="ap-hero-current">Newest Vault world: {heroCollection.name}</p>
-          )}
+          <p className="ap-hero-start">
+            Start with the photo you would love to create for yourself.
+          </p>
           <div className="ap-hero-actions">
-            <a href="#vault-preview" className="ap-hero-cta">
-              Open the Preview
+            <a href="#how-it-works" className="ap-hero-cta">
+              Show me how
             </a>
           </div>
-          <p className="ap-hero-safety">
-            Use your own photo or a photo you have permission to edit. AI can still change small
-            facial details, so check the result before you post.
+        </div>
+      </section>
+
+      {/* 2. Put the first successful action before any upgrade invitation */}
+      <section id="how-it-works" className="ap-section ap-how">
+        <div className="ap-section-inner">
+          <p className="ap-eyebrow">HOW IT WORKS</p>
+          <h2 className={`ap-section-title ${cormorant.className}`}>
+            You don&apos;t need to be good at AI.
+          </h2>
+          <div className="ap-how-steps">
+            <div className="ap-how-step">
+              <span>01</span>
+              <div>
+                <h3>Choose a clear selfie</h3>
+                <p>
+                  Make sure your face is easy to see. Avoid sunglasses, heavy shadows, and blurry
+                  photos.
+                </p>
+              </div>
+            </div>
+            <div className="ap-how-step">
+              <span>02</span>
+              <div>
+                <h3>Choose one of the looks below</h3>
+                <p>Open the prompt you want to try and tap Copy prompt.</p>
+              </div>
+            </div>
+            <div className="ap-how-step">
+              <span>03</span>
+              <div>
+                <h3>Open ChatGPT</h3>
+                <p>Upload your selfie, paste the prompt, and create your photo. That&apos;s it.</p>
+              </div>
+            </div>
+          </div>
+          <a href="#free-prompts" className="ap-bridge-cta ap-bridge-cta-primary ap-how-cta">
+            Choose my first prompt
+          </a>
+          <p className="ap-how-safety">
+            Use your own photo or a photo you have permission to edit. AI can change small facial
+            details, so check the result before you post.
           </p>
         </div>
       </section>
 
-      {/* 2. Updated Vault preview - the core experience (moved directly under hero) */}
+      {/* 3. Deliver all five prompts without locked-image interruptions */}
       {freebieCollections.length > 0 && (
-        <section id="vault-preview" className="ap-section ap-vault-preview">
+        <section id="free-prompts" className="ap-section ap-vault-preview">
           <div className="ap-section-inner">
-            <p className="ap-eyebrow ap-eyebrow-new">UPDATED PREVIEW</p>
-            <h2 className={`ap-section-title ${cormorant.className}`}>
-              The latest five shoot previews.
-            </h2>
+            <p className="ap-eyebrow ap-eyebrow-new">YOUR FIVE FREE PROMPTS</p>
+            <h2 className={`ap-section-title ${cormorant.className}`}>Choose your first look.</h2>
             <p className="ap-workflow-note">
-              These are the newest free looks to test before you buy. Each one gives you a different
-              visual direction from one selfie. The complete shoot library lives inside the Vault.
+              You have five complete prompts to try. Start with the photo you love most.
             </p>
             <div className="ap-vault-grid">
               {freebieCollections.map(collection => {
                 const card = collection.freeCard
-                const upgradeHref = buildPromptVaultFreebieCheckoutHref({
-                  promptId: card.id,
-                  accessToken: token,
-                })
                 return (
                   <div key={card.id} className="ap-vault-item">
                     <PreviewCardEl
                       card={card}
                       collectionName={collection.name}
                       shotCount={collection.shotCount}
-                      upgradeHref={upgradeHref}
-                      vaultPriceLabel={promptVaultPrice.label}
                     />
-                    {collection.lockedShots.length > 0 && (
-                      <div className="ap-thumb-wrap">
-                        <p className="ap-thumb-note">
-                          <span className="ap-thumb-yours-label">
-                            Shot 1 of {collection.shotCount} is yours.
-                          </span>{" "}
-                          {collection.shotCount - 1} more shots are inside this collection.
-                        </p>
-                        <div
-                          className="ap-locked-grid"
-                          aria-label={`Locked shots in ${collection.name}`}
-                        >
-                          {collection.lockedShots.map((shot, index) => (
-                            <TrackedLink
-                              key={`${card.id}-${index}`}
-                              href={upgradeHref}
-                              className="ap-locked-tile"
-                              trackEvent="ai_prompts_locked_vault_tile_click"
-                              trackProperties={{
-                                source: "ai-prompts",
-                                destination: "checkout-prompt-vault",
-                                utm_campaign: "ai_prompts_to_prompt_vault",
-                                utm_content: `locked_${card.id}_${index + 2}`,
-                                checkout_source: "free_prompt_locked_tile",
-                                cta_position: "locked_tile",
-                                prompt_id: card.id,
-                                prompt_title: card.title,
-                                collection_name: collection.name,
-                                locked_shot_title: shot.title,
-                                locked_shot_number: String(index + 2),
-                              }}
-                            >
-                              <span className="ap-lock-badge">In the Vault</span>
-                              {shot.exampleImage && (
-                                <Image
-                                  src={shot.exampleImage}
-                                  alt=""
-                                  fill
-                                  sizes="(min-width: 900px) 120px, 42vw"
-                                  className="ap-locked-image"
-                                  aria-hidden
-                                />
-                              )}
-                              <span className="ap-locked-shade" />
-                              <span className="ap-locked-title">{shot.title}</span>
-                            </TrackedLink>
-                          ))}
-                        </div>
-                        <p className="ap-shoot-cta-note">
-                          One-time access to the rest of this shoot, the full Vault, and future
-                          photoshoots.
-                        </p>
-                      </div>
-                    )}
                   </div>
                 )
               })}
-            </div>
-            <div className="ap-vault-cta-row">
-              <TrackedLink
-                href={vaultPreviewCheckoutHref}
-                className="ap-bridge-cta ap-bridge-cta-primary"
-                trackEvent="ai_prompts_prompt_vault_click"
-                trackProperties={{
-                  source: "ai-prompts",
-                  destination: "checkout-prompt-vault",
-                  utm_campaign: "ai_prompts_to_prompt_vault",
-                  utm_content: "vault_preview_primary",
-                  checkout_source: "free_prompts_vault_bridge",
-                  cta_position: "vault_preview_primary",
-                }}
-              >
-                Get the full Vault · {promptVaultPrice.label}
-              </TrackedLink>
-              <p className="ap-vault-cta-note">
-                Start with the visual world that already worked. One payment, instant access, and
-                future shoot drops included.
-              </p>
             </div>
           </div>
         </section>
       )}
 
-      {/* 1b. Seven-minute value test */}
-      <section className="ap-section ap-first-test">
-        <div className="ap-section-inner">
-          <p className="ap-eyebrow">SELFIE TO BRAND SHOOT</p>
+      {/* 4. One paid invitation after the complete gift */}
+      <section className="ap-section ap-vault-offer">
+        <div className="ap-section-inner ap-vault-offer-inner">
+          <p className="ap-eyebrow">WHEN YOU&apos;RE READY FOR MORE</p>
           <h2 className={`ap-section-title ${cormorant.className}`}>
-            Try one opening shot before you decide.
+            Get the complete SSELFIE Prompt Vault
           </h2>
-          <p className="ap-workflow-note ap-first-test-note">
-            The free preview is meant to prove the transformation quickly. Pick one visual world
-            below, upload a clear selfie into ChatGPT, copy Shot 1, and see if you want the full
-            shoot sequence.
+          <p className="ap-vault-offer-body">
+            These five prompts let you try one photo from five different SSELFIE collections. Inside
+            the Prompt Vault, you get the complete collections so you can create photos that work
+            together, plus the new prompt drops I add.
           </p>
-          <div className="ap-test-steps">
-            <div className="ap-test-step">
-              <span>01</span>
-              <p>Choose the version of you that feels the most magnetic today.</p>
-            </div>
-            <div className="ap-test-step">
-              <span>02</span>
-              <p>Copy the opening-shot prompt and paste it into ChatGPT with your selfie.</p>
-            </div>
-            <div className="ap-test-step">
-              <span>03</span>
-              <p>
-                If the result works, unlock the remaining shots, newest drops, and future
-                photoshoots.
-              </p>
-            </div>
-          </div>
-          <a href="#vault-preview" className="ap-bridge-cta ap-bridge-cta-primary ap-test-cta">
-            Start With Shot 1
-          </a>
+          <TrackedLink
+            href={vaultPreviewCheckoutHref}
+            className="ap-bridge-cta ap-bridge-cta-primary"
+            trackEvent="ai_prompts_prompt_vault_click"
+            trackProperties={{
+              source: "ai-prompts",
+              destination: "checkout-prompt-vault",
+              utm_campaign: "ai_prompts_to_prompt_vault",
+              utm_content: "vault_preview_primary",
+              checkout_source: "free_prompts_vault_bridge",
+              cta_position: "after_free_prompts",
+            }}
+          >
+            Get the full Prompt Vault · {promptVaultPrice.label}
+          </TrackedLink>
+          <p className="ap-vault-offer-note">
+            One-time payment. Instant access. New prompt drops included.
+          </p>
         </div>
       </section>
 
-      {/* 2. Before you start */}
-      <section className="ap-section ap-before">
-        <div className="ap-section-inner">
-          <p className="ap-eyebrow">BEFORE YOU START</p>
-          <ul className="ap-before-list">
-            <li>Use your own photo or a photo you have permission to edit.</li>
-            <li>
-              Choose a clear selfie with your face visible. Sunglasses and heavy shadows give AI
-              less to work with.
-            </li>
-            <li>
-              Better light in the original means a better result. A blurry photo produces a blurry
-              AI version.
-            </li>
-            <li>Copy one prompt at a time. Run it. Check the result before posting.</li>
-            <li>
-              If the AI changes your face too much, start your next attempt with the Reusable
-              Starter Line below.
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      {/* 3. Reusable starter line */}
+      {/* 5. Troubleshooting is available, but never blocks the one-click default path */}
       <section className="ap-section ap-starter">
         <div className="ap-section-inner">
-          <p className="ap-eyebrow">PASTE THIS FIRST</p>
-          <h2 className={`ap-section-title ${cormorant.className}`}>Your anchor prompt.</h2>
+          <p className="ap-eyebrow">IF THE PHOTO DOESN&apos;T LOOK LIKE YOU</p>
+          <h2 className={`ap-section-title ${cormorant.className}`}>
+            Try this before you create again.
+          </h2>
           <p className="ap-starter-note">
-            Add this before any other prompt if the AI is drifting too far from your face. You can
-            also use it on its own.
+            AI can sometimes change small facial details. Copy this line and paste it before the
+            photo prompt on your next try. It reminds ChatGPT to use your selfie as the identity
+            reference.
           </p>
           <div className="ap-starter-card">
             <p className="ap-starter-text">{REUSABLE_STARTER}</p>
             <div className="pc-copy-row">
-              <CopyButton text={REUSABLE_STARTER} />
+              <CopyButton text={REUSABLE_STARTER} label="Copy identity line" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* 9. Bridge to Free Selfie Guide */}
+      {/* 6. The Selfie Guide is still a separate free opt-in */}
       <section className="ap-section ap-bridge">
         <div className="ap-section-inner ap-bridge-inner">
           <h2 className={`ap-bridge-title ${cormorant.className}`}>
-            The better the original selfie, the better the AI result.
+            Not getting the result you expected?
           </h2>
           <p className="ap-bridge-body">
-            If your photo is dark, blurry, or awkward, AI has less to work with. The Free Selfie
-            Guide shows you the light, angles, and simple setup that make every prompt work better.
-            It is free.
+            Your original selfie makes a big difference. My free Selfie Guide shows you the light,
+            angle, and simple setup that helps AI create a more realistic result.
           </p>
           <TrackedLink
             href="/selfie-guide?utm_source=ai_prompts&utm_medium=prompt_pack&utm_campaign=ai_prompts_to_selfie_guide"
@@ -538,7 +435,7 @@ export default async function AiPromptsAccessPage({
 
         .ap-hero-image {
           object-fit: cover;
-          object-position: center center;
+          object-position: 50% 16%;
         }
 
         .ap-hero-image-overlay {
@@ -581,12 +478,11 @@ export default async function AiPromptsAccessPage({
           max-width: 520px;
         }
 
-        .ap-hero-current {
-          margin: 0 0 32px;
-          font-size: 11px;
-          font-weight: 500;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
+        .ap-hero-start {
+          margin: 0 0 30px;
+          max-width: 480px;
+          font-size: 14px;
+          line-height: 1.7;
           color: #4F5052;
         }
 
@@ -609,14 +505,6 @@ export default async function AiPromptsAccessPage({
         }
 
         .ap-hero-cta:hover { opacity: 0.88; }
-
-        .ap-hero-safety {
-          margin: 0;
-          font-size: 12px;
-          line-height: 1.7;
-          color: #818283;
-          max-width: 460px;
-        }
 
         .ap-section {
           padding: 72px 24px;
@@ -648,26 +536,6 @@ export default async function AiPromptsAccessPage({
           color: #0D0E10;
         }
 
-        .ap-before-list {
-          margin: 0;
-          padding: 0;
-          list-style: none;
-          display: flex;
-          flex-direction: column;
-          gap: 0;
-        }
-
-        .ap-before-list li {
-          padding: 16px 0;
-          font-size: 15px;
-          line-height: 1.75;
-          color: #4F5052;
-          border-bottom: 1px solid rgba(197, 198, 200, 0.35);
-        }
-
-        .ap-before-list li:first-child { padding-top: 0; }
-        .ap-before-list li:last-child { border-bottom: none; }
-
         .ap-starter-note {
           margin: 0 0 24px;
           font-size: 15px;
@@ -682,95 +550,56 @@ export default async function AiPromptsAccessPage({
           background: #FFFFFF;
         }
 
-        .ap-first-test {
-          background: #f8fafa;
-        }
-
-        .ap-path {
-          background: #FFFFFF;
-        }
-
-        .ap-path-inner {
+        .ap-how-steps {
           display: grid;
-          gap: 28px;
+          gap: 0;
+          margin-bottom: 32px;
         }
 
-        .ap-path-steps {
+        .ap-how-step {
           display: grid;
-          gap: 1px;
-          background: rgba(197, 198, 200, 0.35);
-          border: 1px solid rgba(197, 198, 200, 0.35);
+          grid-template-columns: auto minmax(0, 1fr);
+          gap: 20px;
+          padding: 24px 0;
+          border-top: 1px solid rgba(13, 12, 11, 0.08);
         }
 
-        .ap-path-step {
-          background: #FFFFFF;
-          padding: 22px 20px;
+        .ap-how-step:last-child {
+          border-bottom: 1px solid rgba(13, 12, 11, 0.08);
         }
 
-        .ap-path-step span {
-          display: block;
-          margin-bottom: 22px;
+        .ap-how-step span {
           color: #818283;
           font-size: 10px;
           font-weight: 600;
-          letter-spacing: 0.22em;
+          letter-spacing: 0.24em;
         }
 
-        .ap-path-step h3 {
+        .ap-how-step h3 {
           margin: 0 0 8px;
           color: #0D0E10;
-          font-size: 12px;
-          font-weight: 600;
-          letter-spacing: 0.2em;
-          text-transform: uppercase;
+          font-size: 15px;
+          font-weight: 500;
+          line-height: 1.4;
         }
 
-        .ap-path-step p {
+        .ap-how-step p {
           margin: 0;
           color: #4F5052;
           font-size: 14px;
           line-height: 1.7;
         }
 
-        .ap-first-test-note {
-          margin-bottom: 28px;
+        .ap-how-cta {
+          margin-bottom: 18px;
         }
 
-        .ap-test-steps {
-          display: grid;
-          gap: 10px;
-          margin-bottom: 28px;
-        }
-
-        .ap-test-step {
-          display: grid;
-          grid-template-columns: auto 1fr;
-          gap: 16px;
-          align-items: start;
-          padding: 18px 0;
-          border-top: 1px solid rgba(13, 12, 11, 0.08);
-        }
-
-        .ap-test-step:last-child {
-          border-bottom: 1px solid rgba(13, 12, 11, 0.08);
-        }
-
-        .ap-test-step span {
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: 0.24em;
-          color: rgba(13, 12, 11, 0.42);
-        }
-
-        .ap-test-step p {
+        .ap-how-safety {
           margin: 0;
-          font-size: 14px;
+          max-width: 580px;
+          font-size: 12px;
           line-height: 1.7;
-          color: rgba(13, 12, 11, 0.66);
-        }
-
-        .ap-test-cta {
-          border-radius: 0;
+          color: #818283;
         }
 
         .ap-starter-text {
@@ -812,92 +641,11 @@ export default async function AiPromptsAccessPage({
           color: rgba(13, 14, 16, 0.72);
         }
 
-        .copy-after-cta {
-          width: 100%;
-          margin-top: 14px;
-          padding: 20px;
-          border: 1px solid #0D0E10;
-          background: #0D0E10;
-          border-radius: 8px;
-          text-align: left;
-        }
-
-        .copy-after-title {
-          margin: 0 0 8px;
-          color: #F8FAFA;
-          font-size: 15px;
-          font-weight: 500;
-          line-height: 1.35;
-        }
-
-        .copy-after-note {
-          margin: 0 0 14px;
-          font-size: 13px;
-          line-height: 1.6;
-          color: rgba(248, 250, 250, 0.72);
-        }
-
-        .copy-after-link {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 44px;
-          padding: 12px 16px;
-          background: #F8FAFA;
-          color: #0D0E10;
-          text-align: center;
-          text-decoration: none;
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: 0.18em;
-          line-height: 1.35;
-          text-transform: uppercase;
-        }
-
-        .copy-after-dismiss {
-          display: block;
-          margin: 10px auto 0;
-          padding: 4px 8px;
-          border: 0;
-          background: none;
-          color: rgba(248, 250, 250, 0.6);
-          font-size: 11px;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          text-decoration: underline;
-          text-underline-offset: 3px;
-          cursor: pointer;
-        }
-
-        .copy-after-dismiss:hover {
-          color: rgba(248, 250, 250, 0.85);
-        }
-
-        .copy-after-footnote {
-          margin: 10px 0 0;
-          color: rgba(248, 250, 250, 0.6);
-          font-size: 11px;
-          line-height: 1.55;
-        }
-
         .ap-workflow-note {
           margin: -24px 0 36px;
           font-size: 15px;
           line-height: 1.8;
           color: #818283;
-        }
-
-        .ap-vault-cta-row {
-          margin-top: 34px;
-          text-align: center;
-        }
-
-        .ap-vault-cta-note {
-          max-width: 520px;
-          margin: 14px auto 0;
-          color: #818283;
-          font-size: 12px;
-          line-height: 1.7;
         }
 
         .ap-bridge {
@@ -947,154 +695,35 @@ export default async function AiPromptsAccessPage({
           color: #F8FAFA;
         }
 
-        .ap-bridge-cta-secondary {
-          padding: 14px 28px;
-          border: 1px solid rgba(197, 198, 200, 0.55);
-          color: #4F5052;
-        }
-
-        .ap-kit-bridge {
-          border-top: 1px solid rgba(197, 198, 200, 0.35);
-        }
-
-        /* Vault grid */
+        /* Five complete prompts */
         .ap-vault-grid {
           display: flex;
           flex-direction: column;
           gap: 28px;
         }
 
-        /* Each vault item = prompt card + thumbnail strip stacked */
         .ap-vault-item {
           display: flex;
           flex-direction: column;
         }
 
-        .ap-thumb-wrap {
-          margin-top: 0;
-          padding: 18px 28px 22px;
-          background: #FFFFFF;
-          border: 1px solid rgba(197, 198, 200, 0.35);
-          border-top: none;
-          border-radius: 0 0 18px 18px;
+        .ap-vault-offer-inner {
+          text-align: center;
         }
 
-        .ap-thumb-note {
-          margin: 0 0 14px;
-          font-size: 11px;
-          line-height: 1.65;
-          color: #818283;
-          letter-spacing: 0.02em;
-        }
-
-        .ap-thumb-yours-label {
+        .ap-vault-offer-body {
+          max-width: 620px;
+          margin: -22px auto 30px;
           color: #4F5052;
-          font-weight: 500;
+          font-size: 15px;
+          line-height: 1.8;
         }
 
-        .ap-locked-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 8px;
-        }
-
-        .ap-locked-tile {
-          position: relative;
-          min-width: 0;
-          aspect-ratio: 4 / 5;
-          overflow: hidden;
-          border: 1px solid rgba(197, 198, 200, 0.42);
-          background: #F8FAFA;
-          color: #F8FAFA;
-          text-decoration: none;
-          isolation: isolate;
-        }
-
-        .ap-locked-image {
-          object-fit: cover;
-          object-position: center top;
-          filter: blur(1.5px) saturate(0.82);
-          transform: scale(1.04);
-        }
-
-        .ap-locked-shade {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            to bottom,
-            rgba(13, 14, 16, 0.28),
-            rgba(13, 14, 16, 0.74)
-          );
-          z-index: 1;
-        }
-
-        .ap-lock-badge {
-          position: absolute;
-          top: 8px;
-          left: 8px;
-          right: 8px;
-          z-index: 2;
-          width: fit-content;
-          max-width: calc(100% - 16px);
-          padding: 5px 7px;
-          border: 1px solid rgba(248, 250, 250, 0.52);
-          background: rgba(13, 14, 16, 0.48);
-          color: #F8FAFA;
-          font-size: 8px;
-          font-weight: 600;
-          letter-spacing: 0.16em;
-          line-height: 1.2;
-          text-transform: uppercase;
-        }
-
-        .ap-locked-title {
-          position: absolute;
-          left: 9px;
-          right: 9px;
-          bottom: 9px;
-          z-index: 2;
-          color: #F8FAFA;
-          font-size: 11px;
-          font-weight: 500;
-          line-height: 1.32;
-          overflow-wrap: anywhere;
-        }
-
-        .ap-locked-tile:hover .ap-locked-image {
-          filter: blur(0.5px) saturate(0.9);
-          transform: scale(1.02);
-        }
-
-        .ap-shoot-cta {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 48px;
-          margin-top: 16px;
-          padding: 13px 18px;
-          background: #0D0E10;
-          border: 1px solid #0D0E10;
-          color: #F8FAFA;
-          text-align: center;
-          text-decoration: none;
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: 0.18em;
-          line-height: 1.35;
-          text-transform: uppercase;
-          transition: opacity 0.15s ease;
-        }
-
-        .ap-shoot-cta:hover {
-          opacity: 0.84;
-        }
-
-        .ap-shoot-cta-note {
-          margin: 10px 0 0;
-          font-size: 11px;
-          line-height: 1.55;
+        .ap-vault-offer-note {
+          margin: 16px 0 0;
           color: #818283;
-          text-align: center;
+          font-size: 12px;
+          line-height: 1.7;
         }
 
         @media (min-width: 900px) {
@@ -1103,38 +732,20 @@ export default async function AiPromptsAccessPage({
             grid-template-columns: 1fr 1fr;
             gap: 20px;
           }
-          .ap-locked-grid {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-          }
-        }
-
-        .ap-kit-question {
-          margin: 0 0 10px;
-          font-size: 14px;
-          font-weight: 500;
-          color: #818283;
-        }
-
-        .ap-kit-body {
-          margin: 0 0 28px;
-          font-size: 15px;
-          line-height: 1.78;
-          color: #4F5052;
-          max-width: 520px;
         }
 
         @media (min-width: 640px) {
           .ap-hero {
             padding: 112px 48px 72px;
           }
+          .ap-hero-image {
+            object-position: 50% 20%;
+          }
           .ap-section {
             padding: 88px 48px;
           }
           .ap-bridge {
             padding: 88px 48px;
-          }
-          .ap-kit-bridge {
-            padding: 72px 48px;
           }
           .ap-bridge-inner {
             text-align: left;
@@ -1156,18 +767,6 @@ export default async function AiPromptsAccessPage({
           .ap-bridge {
             padding: 96px 72px;
           }
-          .ap-kit-bridge {
-            padding: 80px 72px;
-          }
-          .ap-path-inner {
-            max-width: 1080px;
-            grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-            align-items: start;
-            gap: 68px;
-          }
-          .ap-path-steps {
-            grid-template-columns: repeat(3, 1fr);
-          }
         }
 
         /* Editorial light refresh: the access page should feel like the email
@@ -1183,8 +782,7 @@ export default async function AiPromptsAccessPage({
           letter-spacing: 0;
         }
         .ap-section,
-        .ap-bridge,
-        .ap-kit-bridge {
+        .ap-bridge {
           border-top-color: rgba(13, 12, 11, 0.08);
         }
         .ap-section {
@@ -1193,9 +791,7 @@ export default async function AiPromptsAccessPage({
         .ap-vault-preview {
           background: #FFFFFF;
         }
-        .ap-before,
-        .ap-starter,
-        .ap-kit-bridge {
+        .ap-starter {
           background: #F8FAFA;
         }
         .ap-eyebrow {
@@ -1208,9 +804,7 @@ export default async function AiPromptsAccessPage({
         }
         .ap-workflow-note,
         .ap-starter-note,
-        .ap-before-list li,
-        .ap-bridge-body,
-        .ap-kit-body {
+        .ap-bridge-body {
           color: rgba(13, 12, 11, 0.64);
         }
         .ap-starter-card {
@@ -1221,18 +815,6 @@ export default async function AiPromptsAccessPage({
         .ap-starter-text {
           color: rgba(13, 12, 11, 0.74);
         }
-        .ap-thumb-note,
-        .ap-kit-question {
-          color: rgba(13, 12, 11, 0.48);
-        }
-        .ap-thumb-wrap {
-          background: #FFFFFF;
-          border-color: rgba(197, 198, 200, 0.35);
-          border-radius: 0 0 8px 8px;
-        }
-        .ap-thumb-yours-label {
-          color: rgba(13, 12, 11, 0.7);
-        }
         .copy-btn {
           color: #0D0E10;
           border-color: rgba(197, 198, 200, 0.6);
@@ -1242,26 +824,8 @@ export default async function AiPromptsAccessPage({
           color: #0D0E10;
           border-color: rgba(13, 14, 16, 0.42);
         }
-        .copy-after-cta {
-          border-color: #0D0E10;
-          background: #0D0E10;
-        }
-        .copy-after-note {
-          color: rgba(248, 250, 250, 0.72);
-        }
-        .copy-after-title {
-          color: #F8FAFA;
-        }
-        .copy-after-link {
-          background: #F8FAFA;
-          color: #0D0E10;
-        }
-        .copy-after-footnote {
-          color: rgba(248, 250, 250, 0.6);
-        }
         .ap-bridge-cta,
-        .ap-bridge-cta-primary,
-        .ap-bridge-cta-secondary {
+        .ap-bridge-cta-primary {
           background: #0D0E10;
           color: #F8FAFA;
           border-color: #0D0E10;
@@ -1273,7 +837,7 @@ export default async function AiPromptsAccessPage({
         .ap-preview-card {
           background: #FFFFFF;
           border: 1px solid rgba(197, 198, 200, 0.35);
-          border-radius: 8px 8px 0 0;
+          border-radius: 8px;
           overflow: hidden;
         }
         .ap-preview-image-wrap {
@@ -1290,13 +854,11 @@ export default async function AiPromptsAccessPage({
         .ap-preview-body {
           padding: 24px 22px 22px;
         }
-        .ap-preview-number,
-        .ap-preview-gap,
-        .ap-preview-mood,
+        .ap-preview-collection,
         .ap-preview-prompt summary {
           color: rgba(13, 12, 11, 0.42);
         }
-        .ap-preview-number,
+        .ap-preview-collection,
         .ap-preview-prompt summary {
           display: block;
           font-size: 9px;
@@ -1304,11 +866,8 @@ export default async function AiPromptsAccessPage({
           letter-spacing: 0.28em;
           text-transform: uppercase;
         }
-        .ap-preview-gap {
-          margin: 8px 0 0;
-          font-size: 11px;
-          line-height: 1.45;
-          color: rgba(13, 12, 11, 0.52);
+        .ap-preview-collection {
+          margin: 0;
         }
         .ap-preview-title {
           margin: 10px 0 12px;
@@ -1324,8 +883,11 @@ export default async function AiPromptsAccessPage({
           font-size: 14px;
           line-height: 1.7;
         }
-        .ap-preview-mood {
-          margin: 0 0 18px;
+        .ap-preview-included {
+          margin: 20px 0 0;
+          padding-top: 16px;
+          border-top: 1px solid rgba(13, 12, 11, 0.08);
+          color: rgba(13, 12, 11, 0.48);
           font-size: 11px;
           line-height: 1.6;
         }
