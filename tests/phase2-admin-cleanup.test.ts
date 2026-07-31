@@ -47,17 +47,18 @@ describe("PHASE2-CLEANUP-01 admin simplification", () => {
     expect(existsSync("app/api/admin/content-brief/route.ts")).toBe(false)
   })
 
-  it("renders exactly four top-level admin destinations and one Tools index", () => {
+  it("renders five top-level admin destinations and one Tools index", () => {
     const nav = read("components/admin/admin-nav.tsx")
     const toolsPage = read("app/admin/tools/page.tsx")
-    const navItems = nav.match(/\{ label: '[A-Z]+', href: '[^']+' \}/g) ?? []
+    const navItems = nav.match(/\{ label: ["'][A-Z]+["'], href: ["'][^"']+["'] \}/g) ?? []
 
-    expect(navItems).toHaveLength(4)
-    expect(nav).toContain("{ label: 'HOME', href: '/admin' }")
+    expect(navItems).toHaveLength(5)
+    expect(nav).toMatch(/\{ label: ["']HOME["'], href: ["']\/admin["'] \}/)
     expect(nav).not.toContain("INBOX")
-    expect(nav).toContain("{ label: 'CONTENT', href: '/admin/content-brief' }")
-    expect(nav).toContain("{ label: 'SUPPORT', href: '/admin/customer-support' }")
-    expect(nav).toContain("{ label: 'TOOLS', href: '/admin/tools' }")
+    expect(nav).toMatch(/\{ label: ["']MEMBERS["'], href: ["']\/admin\/members["'] \}/)
+    expect(nav).toMatch(/\{ label: ["']CONTENT["'], href: ["']\/admin\/content-brief["'] \}/)
+    expect(nav).toMatch(/\{ label: ["']SUPPORT["'], href: ["']\/admin\/customer-support["'] \}/)
+    expect(nav).toMatch(/\{ label: ["']TOOLS["'], href: ["']\/admin\/tools["'] \}/)
 
     for (const href of [
       "/admin/academy",
