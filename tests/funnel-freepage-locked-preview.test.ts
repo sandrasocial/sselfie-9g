@@ -179,8 +179,12 @@ describe("AI prompts free page locked Vault previews", () => {
     expect(vaultLandingContents).not.toContain("import { CopyButton }")
     expect(vaultLandingComponent).not.toContain("import { CopyButton }")
 
-    expect(vaultAccessContents).toContain("You unlocked the full SSELFIE shoot library")
-    expect(vaultAccessContents).toContain("Start with one full shoot")
+    expect(vaultAccessContents).toContain("YOUR PROMPT VAULT IS READY")
+    expect(vaultAccessContents).toContain("with this shoot.")
+    expect(vaultAccessContents).toContain('copyLabel="Copy the first prompt"')
+    expect(vaultAccessContents).toContain("Choose the photos you want next.")
+    expect(vaultAccessContents).not.toContain("Vault Maya")
+    expect(vaultAccessContents).not.toContain("visual world")
     expect(vaultAccessContents).not.toContain("See the System · $170")
   })
 

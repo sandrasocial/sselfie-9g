@@ -152,6 +152,9 @@ describe("MAYA-ARRIVAL-01 new-member experience", () => {
 
     expect(html).toContain("Open in Maya")
     expect(html).toContain("Copy text")
+    expect(html).toContain("YOUR PROMPT VAULT IS READY")
+    expect(html).toContain("start with this shoot.")
+    expect(html).toContain("DARK FEMININE CAFÉ · SIX MATCHING PHOTOS")
     expect(html).toContain("/app?view=create&amp;aesthetic=")
     expect(html).toContain("Open this look in Maya")
     expect(html).toContain('data-suite-door="true" href="/app"')
@@ -165,7 +168,11 @@ describe("MAYA-ARRIVAL-01 new-member experience", () => {
   ])("keeps the buyer page and defers the offer for a non-member session %#", async session => {
     const html = await renderVaultPage({ tokenValid: true, ...session })
 
+    expect(html).toContain("Copy the first prompt")
     expect(html).toContain(">Copy</button>")
+    expect(html).toContain("Need help choosing a selfie or fixing a result?")
+    expect(html).not.toContain("Vault Maya")
+    expect(html).not.toContain("visual world")
     expect(html).not.toContain("Open in Maya")
     expect(html).not.toContain("Copy text")
     expect(html).not.toContain("/join/studio?source=suite_door_vault_access")
