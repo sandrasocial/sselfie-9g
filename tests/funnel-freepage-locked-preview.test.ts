@@ -166,9 +166,15 @@ describe("AI prompts free page locked Vault previews", () => {
     expect(freePageContents).not.toContain("MAIN_LOOKS.map")
     const vaultLandingComponent = read("components/sselfie/public-marketing.tsx")
     expect(vaultLandingContents).toContain("PromptVaultPageContent")
-    expect(vaultLandingComponent).toContain("Pick a shoot. See the first photo free.")
-    expect(vaultLandingComponent).toContain("Shot 1 of")
-    expect(vaultLandingComponent).toContain("The rest is inside.")
+    expect(vaultLandingComponent).toContain("Turn one selfie into a complete AI photoshoot.")
+    expect(vaultLandingComponent).toContain("See how each photoshoot continues.")
+    expect(vaultLandingComponent).toContain("Here are three different photos from six")
+    expect(vaultLandingComponent).not.toContain("Turn one selfie into unlimited photoshoots.")
+    expect(vaultLandingComponent).not.toContain("A Vault prompt locks in your face and your body")
+    expect(vaultLandingComponent).not.toContain("Not a stranger with your haircut")
+    expect(vaultLandingComponent).not.toContain("Pick a shoot. See the first photo free.")
+    expect(vaultLandingContents).toContain("series.slice(1, 4)")
+    expect(vaultLandingContents).toContain("collection.cards.slice(1, 4)")
     expect(vaultLandingContents).not.toContain("Turn one<br />selfie into<br />unlimited")
     expect(vaultLandingContents).not.toContain("import { CopyButton }")
     expect(vaultLandingComponent).not.toContain("import { CopyButton }")
@@ -176,6 +182,14 @@ describe("AI prompts free page locked Vault previews", () => {
     expect(vaultAccessContents).toContain("You unlocked the full SSELFIE shoot library")
     expect(vaultAccessContents).toContain("Start with one full shoot")
     expect(vaultAccessContents).not.toContain("See the System · $170")
+  })
+
+  it("measures Prompt Vault landing CTA clicks separately from checkout", () => {
+    const checkoutLinkContents = read("components/prompt-vault/prompt-vault-checkout-link.tsx")
+
+    expect(isAllowedAnalyticsEventName("prompt_vault_landing_cta_clicked")).toBe(true)
+    expect(checkoutLinkContents).toContain('event: "prompt_vault_landing_cta_clicked"')
+    expect(checkoutLinkContents).toContain("properties: { placement }")
   })
 
   it("keeps prompt copying focused on the free result instead of opening a sales card", () => {

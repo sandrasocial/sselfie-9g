@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition, type ReactNode } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { appendReferralParam, buildReferralLoginHref } from "@/lib/referrals/routing"
 import { PromptVaultCheckoutLink } from "@/components/prompt-vault/prompt-vault-checkout-link"
@@ -527,6 +528,7 @@ export function PublicFooter() {
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 function Hero({
   eyebrow, title, body, primary, primaryNode, secondary, imageSrc, imageAlt = "",
+  minHeight = "100dvh", imagePosition = "50% 22%", contentPaddingBottom = "68px",
 }: {
   eyebrow:    string
   title:      ReactNode
@@ -536,21 +538,24 @@ function Hero({
   secondary?: { href: string; label: string }
   imageSrc:   string
   imageAlt?:  string
+  minHeight?: string
+  imagePosition?: string
+  contentPaddingBottom?: string
 }) {
   return (
     <section
       className="relative"
-      style={{ minHeight: "100dvh", overflow: "hidden", display: "flex", flexDirection: "column" }}
+      style={{ minHeight, overflow: "hidden", display: "flex", flexDirection: "column" }}
     >
       <img src={imageSrc} alt={imageAlt} aria-hidden={imageAlt ? undefined : true}
         fetchPriority="high" decoding="async"
         className="absolute inset-0 w-full h-full object-cover"
-        style={{ objectPosition: "50% 22%" }} />
+        style={{ objectPosition: imagePosition }} />
       <div className="absolute inset-0" style={{ background: C.heroGrad }} />
       <PaperTexture dark />
 
       <div className="relative flex flex-col items-center justify-end text-center flex-1"
-        style={{ padding: "0 20px 68px", paddingTop: "80px", zIndex: 2 }}>
+        style={{ padding: `0 20px ${contentPaddingBottom}`, paddingTop: "80px", zIndex: 2 }}>
         <div className="max-w-2xl mx-auto w-full">
           <span className="mf inline-block mb-5" style={ty("eyebrow", true)}>{eyebrow}</span>
           <h1 className="mf mb-5" style={{ ...ty("h1", true), transitionDelay: "0.05s" }}>{title}</h1>
@@ -1614,46 +1619,51 @@ export function InquiryForm() {
   )
 }
 
-// ─── Prompt Vault landing (copy + design approved by Sandra 2026-07-08) ───────
+// ─── Prompt Vault landing ────────────────────────────────────────────────────
 export type VaultCollectionCard = {
   id: string
-  number: string
   title: string
-  mood?: string
-  whenToUse?: string
-  image?: string
-  shotCount?: number
+  images: Array<{ src: string; alt: string }>
+  shotCount: number
 }
-
-const VAULT_PROOF = [
-  { quote: "Best one so far. I love that it looks real, and me.", who: "A SSELFIE member · 50 & fabulous" },
-  { quote: "I just took the best photo of myself in years.", who: "A SSELFIE member · One selfie" },
-  { quote: "I'm so picky it's not even funny. But this... my God. I'm blown away.", who: "A SSELFIE member · AI photoshoot" },
-  { quote: "I don't often have a good photo of myself. This solves that.", who: "A SSELFIE member · AI photoshoot" },
-  { quote: "I made the most beautiful selfie since I got my iPhone. Even in my pajamas.", who: "Medina C. · One selfie" },
-  { quote: "I used to hate taking photos. Now I feel like a queen.", who: "A SSELFIE member · AI photoshoot" },
-]
 
 const VAULT_FAQ = [
   {
-    question: "Will it still look like me?",
+    question: "Do I need ChatGPT?",
     answer:
-      "That is the goal. You use your own selfie, then check the result before you post. The image should feel recognizable, not like a stranger.",
+      "Yes. The Prompt Vault gives you ready-to-use prompts for ChatGPT. You upload your selfie, copy one prompt, and create the photo there. ChatGPT's image limits depend on the plan you use.",
   },
   {
-    question: "What if I only have my phone?",
-    answer: "That is enough to start. One clear selfie in soft light gives AI a much better base.",
+    question: "Does every prompt create one photo?",
+    answer:
+      "Yes. Each prompt creates one photo. A collection gives you a set of prompts for different angles, crops and moments from the same photoshoot.",
+  },
+  {
+    question: "Can I use the prompts more than once?",
+    answer:
+      "Yes. You can use a prompt again when you want another result, or try it with a different clear selfie.",
+  },
+  {
+    question: "What if a result does not look like me?",
+    answer:
+      "AI can change small details. Try again with a clear selfie where your face is easy to see, then check every result before you use it. The prompt gives ChatGPT more specific direction, but it cannot promise a perfect result every time.",
   },
   {
     question: "Is it really one payment?",
-    answer: "Yes. One payment, instant access, and every new collection I add lands in your Vault.",
+    answer:
+      "Yes. You pay once and receive your private access link by email. Every new Prompt Vault collection I add is included.",
+  },
+  {
+    question: "How do I find the Vault again?",
+    answer:
+      "Your private access link is sent to the email address you use at checkout. Keep that email and use the same link whenever you want to come back.",
   },
 ]
 
 function VaultRiskLine({ dark }: { dark: boolean }) {
   return (
     <p style={{ ...ty("body", dark), fontSize: "12px", color: dark ? C.onDarkMuted : C.onCreamMuted, margin: "12px 0 0", maxWidth: "420px" }}>
-      One payment. Instant access. Reply to me and a real person, usually me, helps.
+      One payment. No subscription. Your private access link arrives by email.
     </p>
   )
 }
@@ -1694,119 +1704,129 @@ export function PromptVaultPageContent({
       {/* HERO - dark full-bleed */}
       <Hero
         eyebrow="The AI Photo Prompt Vault"
-        title={<>Turn one selfie into unlimited photoshoots.</>}
+        title={<>Turn one selfie into a complete AI photoshoot.</>}
         body={
           <>
             <p style={{ marginBottom: "14px" }}>
-              Every prompt in the Vault is a full shoot: the outfit, the light, the mood, the angles.
-              You copy, you paste it into ChatGPT with one clear selfie, and you get photos of you.
-              Not a stranger with your haircut.
+              Choose a photoshoot you love, upload one clear selfie to ChatGPT and copy the prompts.
+              Each collection gives you a set of matching photos with different angles, crops and moments.
             </p>
-            <p style={{ fontSize: "13px", color: C.onDarkMuted }}>
-              Still you. Still recognizable. AI shouldn&apos;t erase you. It should frame you.
+            <p style={{ fontSize: "12px", color: C.onDarkMuted, letterSpacing: "0.04em" }}>
+              {collectionCount} collections · {shotCount} copy-and-paste prompts · New drops included · One payment
             </p>
           </>
         }
-        primaryNode={<PromptVaultCheckoutLink label={ctaLabel} />}
-        secondary={{ href: "#collections", label: "See the shoots" }}
+        primaryNode={<PromptVaultCheckoutLink label={`Get the complete Vault · ${priceLabel}`} placement="hero" />}
+        secondary={{ href: "#inside", label: "See what is inside" }}
         imageSrc="/images/ai-prompts/dark-feminine-cafe-shot-3.jpg"
+        imageAlt="Dark café editorial portrait from a Prompt Vault photoshoot"
+        minHeight="min(860px, 92dvh)"
+        imagePosition="50% 25%"
+        contentPaddingBottom="52px"
       />
 
-      {/* THE PROBLEM - cream */}
-      <Section eyebrow="The part nobody tells you" title={<>You tried an AI photo. It didn&apos;t look like you.</>} dark={false} narrow>
-        <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>
-            The tool matters less than the prompt. A vague prompt gives you a random woman.
-            A Vault prompt locks in your face and your body, and only upgrades the light,
-            the outfit, the location.
-          </p>
+      {/* HOW IT WORKS - cream */}
+      <Section eyebrow="How it works" title="Create your photoshoot in three simple steps." dark={false}>
+        <div className="grid gap-4 md:grid-cols-3">
+          <FCard dark={false} eyebrow="01" title="Choose a photoshoot" body="Start with the collection that gives you the photos you need right now." />
+          <FCard dark={false} eyebrow="02" title="Upload one clear selfie" body="Open ChatGPT and add a photo where your face is easy to see." />
+          <FCard dark={false} eyebrow="03" title="Copy and create" body="Use the prompts one by one to create a full set of matching photos." />
         </div>
       </Section>
 
-      {/* PROOF - dark */}
-      <Section eyebrow="Real customer words" title="What women say after their first shoot." dark>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {VAULT_PROOF.map((item) => (
-            <FCard key={item.quote} dark title={`“${item.quote}”`} body={item.who} />
+      {/* OFFER SUMMARY - dark */}
+      <Section id="inside" eyebrow="Everything inside" title="The complete Prompt Vault." dark>
+        <div className="grid gap-px md:grid-cols-2" style={{ background: C.divDark, border: `1px solid ${C.divDark}` }}>
+          {[
+            [`${collectionCount} complete collections`, "Full photoshoots with matching angles, crops and moments."],
+            [`${shotCount} ready-to-use prompts`, "Copy each prompt into ChatGPT with your own selfie."],
+            ["A finished example for every prompt", "See the photo you are creating before you start."],
+            ["Every new drop included", "New Prompt Vault collections are added to your access."],
+          ].map(([title, body]) => (
+            <div key={title} className="mf" style={{ background: C.ink, padding: "clamp(24px, 4vw, 38px)" }}>
+              <h3 style={{ ...ty("h3", true), marginBottom: "8px" }}>{title}</h3>
+              <p style={{ ...ty("body", true), fontSize: "14px", color: C.onDarkMuted }}>{body}</p>
+            </div>
           ))}
         </div>
+        <div className="mf" style={{ marginTop: "32px" }}>
+          <PromptVaultCheckoutLink label={`Get the complete Vault · ${priceLabel}`} placement="offer-summary" />
+          <VaultRiskLine dark />
+        </div>
       </Section>
 
-      {/* COLLECTIONS - cream */}
-      <Section id="collections" eyebrow="The full library" title="Pick a shoot. See the first photo free." dark={false}>
+      {/* CURATED COLLECTION PREVIEW - cream */}
+      <Section id="collections" eyebrow="A look inside the Vault" title="See how each photoshoot continues." dark={false}>
         <p className="mf max-w-3xl" style={{ ...ty("body", false), fontSize: "16px", marginBottom: "40px" }}>
-          Every collection is a full shoot with matching angles, outfits and moods.
-          Shot 1 is free to preview. The rest is inside.
+          The free prompts show you the first photo. Here are three different photos from six of the complete collections inside the Vault.
         </p>
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           {collections.map((card) => (
-            <article key={card.id} className="mf" style={{ ...cardSx(false), padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-              {card.image && (
-                <div className="relative overflow-hidden" style={{ aspectRatio: "4/5", flexShrink: 0 }}>
-                  <img src={card.image} alt={`${card.title} example`} loading="lazy" className="w-full h-full object-cover" style={{ objectPosition: "center top" }} />
-                  {card.shotCount ? (
-                    <span className="absolute bottom-4 left-4" style={{ ...ty("eyebrow", true), letterSpacing: "0.2em", color: C.onDark, background: "color-mix(in srgb, var(--color-obsidian) 62%, transparent)", padding: "5px 10px" }}>
-                      Shot 1 of {card.shotCount}
-                    </span>
-                  ) : null}
-                </div>
-              )}
-              <div style={{ padding: "24px 24px 26px", display: "flex", flexDirection: "column", flex: 1 }}>
-                <span style={{ ...ty("eyebrow", false), marginBottom: "8px" }}>{card.number}</span>
-                <h3 style={{ ...ty("h3", false), textShadow: "none", marginBottom: "8px" }}>{card.title}</h3>
-                {card.mood && <p style={{ ...ty("body", false), fontSize: "13px", fontStyle: "italic", color: C.onCreamMuted, marginBottom: "8px" }}>{card.mood}</p>}
-                {card.whenToUse && <p style={{ ...ty("body", false), fontSize: "14px", marginBottom: "18px" }}>{card.whenToUse}</p>}
-                {card.shotCount ? (
-                  <p style={{ ...ty("body", false), fontSize: "12px", color: C.onCreamMuted, margin: "auto 0 16px" }}>
-                    This is shot 1. The other {card.shotCount - 1} shots and their copy-paste prompts are in the Vault.
-                  </p>
-                ) : null}
-                <PromptVaultCheckoutLink label={`Get full sequence · ${priceLabel}`} surface="cream" />
-                <VaultRiskLine dark={false} />
+            <article key={card.id} className="mf" style={{ ...cardSx(false), padding: 0, overflow: "hidden" }}>
+              <div className="grid grid-cols-[1.35fr_1fr] grid-rows-2 gap-px" style={{ height: "clamp(320px, 55vw, 520px)", background: C.divCream }}>
+                {card.images.map((image, index) => (
+                  <div key={image.src} className={`relative overflow-hidden ${index === 0 ? "row-span-2" : ""}`}>
+                    <Image
+                      src={image.src}
+                      alt={image.alt}
+                      fill
+                      sizes={index === 0 ? "(min-width: 768px) 28vw, 62vw" : "(min-width: 768px) 20vw, 34vw"}
+                      className="object-cover"
+                      style={{ objectPosition: "center top" }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: "22px 24px 24px" }}>
+                <span style={{ ...ty("eyebrow", false), marginBottom: "8px" }}>{card.shotCount}-photo collection</span>
+                <h3 style={{ ...ty("h3", false), textShadow: "none" }}>{card.title}</h3>
               </div>
             </article>
           ))}
         </div>
-      </Section>
-
-      {/* HOW IT WORKS - dark */}
-      <Section eyebrow="How it works" title="Three steps. No learning curve." dark>
-        <div className="grid gap-4 md:grid-cols-3">
-          <FCard dark eyebrow="01" title="Pick a shoot" body="Browse the collections and pick the vibe you want." />
-          <FCard dark eyebrow="02" title="Copy the prompt" body="Paste it into ChatGPT with one clear selfie." />
-          <FCard dark eyebrow="03" title="Post it" body="You get a set of photos that match, not one random image." />
+        <div className="mf" style={{ marginTop: "36px" }}>
+          <p style={{ ...ty("body", false), fontSize: "14px", marginBottom: "18px", maxWidth: "620px" }}>
+            These are only six of the {collectionCount} collections. Your Vault access includes every current photoshoot and every new drop I add.
+          </p>
+          <PromptVaultCheckoutLink label={`Get all ${collectionCount} collections · ${priceLabel}`} surface="cream" placement="collection-preview" />
         </div>
-        <p className="mf" style={{ ...ty("body", true), fontSize: "15px", color: C.onDarkMuted, marginTop: "32px" }}>
-          You bring the selfie. The prompts do the rest.
-        </p>
       </Section>
 
-      {/* EVERYTHING - cream */}
-      <Section eyebrow="Everything in the Vault" title={<>One payment. Every shoot, forever.</>} dark={false} narrow>
+      {/* TRUST - dark */}
+      <Section eyebrow="Why the prompts help" title="The prompt makes a big difference." dark narrow>
+        <div className="mf space-y-4" style={{ ...ty("body", true), fontSize: "16px" }}>
+          <p>
+            Every prompt already includes the outfit, setting, lighting, composition and mood, so ChatGPT has less to guess.
+          </p>
+          <p>
+            You use your own selfie as the reference. AI can still change small details, so always check your result before you use it and try again with a clearer selfie when needed.
+          </p>
+        </div>
+      </Section>
+
+      {/* FAQ - cream */}
+      <Section eyebrow="Quick answers" title="Before you get the Vault." dark={false} narrow>
+        <FaqAccordion items={VAULT_FAQ} dark={false} />
+      </Section>
+
+      {/* FINAL CTA - dark */}
+      <Section eyebrow="The complete Prompt Vault" title={`${priceLabel} once. No subscription.`} dark narrow>
         <ul className="mf" style={{ listStyle: "none", padding: 0, margin: "0 0 30px", display: "flex", flexDirection: "column", gap: "9px" }}>
           {[
-            `All ${collectionCount} current collections · ${shotCount} copy-paste prompts`,
-            "Example photo for every prompt",
-            "Every future drop included",
-            `${priceLabel} once · instant access`,
+            `${collectionCount} complete photoshoot collections`,
+            `${shotCount} copy-and-paste prompts`,
+            "A finished example for every prompt",
+            "Every new Prompt Vault drop included",
+            "Private access link sent by email",
           ].map((item) => (
-            <li key={item} style={{ ...ty("body", false), fontSize: "15px" }}>
-              <span style={{ color: C.onCreamMuted, marginRight: "10px" }}>·</span>
+            <li key={item} style={{ ...ty("body", true), fontSize: "15px" }}>
+              <span style={{ color: C.onDarkMuted, marginRight: "10px" }}>·</span>
               {item}
             </li>
           ))}
         </ul>
-        <PromptVaultCheckoutLink label={ctaLabel} surface="cream" />
-        <VaultRiskLine dark={false} />
-      </Section>
-
-      {/* FAQ + final CTA - dark */}
-      <Section eyebrow="Quick answers" title="Before you get the Vault." dark narrow>
-        <FaqAccordion items={VAULT_FAQ} dark />
-        <div className="mf flex flex-col items-center text-center" style={{ marginTop: "44px" }}>
-          <PromptVaultCheckoutLink label={ctaLabel} />
-          <VaultRiskLine dark />
-        </div>
+        <PromptVaultCheckoutLink label={ctaLabel} placement="final" />
+        <VaultRiskLine dark />
       </Section>
 
       <PublicFooter />
@@ -1815,6 +1835,15 @@ export function PromptVaultPageContent({
 }
 
 // ─── Vault Maya · the vault, made for you ────────────────────────────────────
+const VAULT_MAYA_PROOF = [
+  { quote: "Best one so far. I love that it looks real, and me." },
+  { quote: "I just took the best photo of myself in years." },
+  { quote: "I'm so picky it's not even funny. But this... my God. I'm blown away." },
+  { quote: "I don't often have a good photo of myself. This solves that." },
+  { quote: "I made the most beautiful selfie since I got my iPhone. Even in my pajamas." },
+  { quote: "I used to hate taking photos. Now I feel like a queen." },
+]
+
 const VAULT_MAYA_FAQ = [
   {
     question: "Will the photos still look like me?",
@@ -1925,7 +1954,7 @@ export function VaultMayaPageContent({
       {/* PROOF - cream */}
       <Section eyebrow="Created by real women using SSELFIE" title="In their words." dark={false}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {VAULT_PROOF.map((item) => (
+          {VAULT_MAYA_PROOF.map((item) => (
             <FCard key={item.quote} dark={false} title={`“${item.quote}”`} />
           ))}
         </div>

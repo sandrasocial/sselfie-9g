@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
 const ATTRIBUTION_KEYS = [
   "source",
@@ -54,9 +55,11 @@ function buildCheckoutHref(searchParams: { get(name: string): string | null }): 
 export function PromptVaultCheckoutLink({
   label = "Get the Vault · $37",
   surface = "dark",
+  placement = "unspecified",
 }: {
   label?: string
   surface?: "dark" | "cream"
+  placement?: string
 }) {
   const searchParams = useSearchParams()
   const href = buildCheckoutHref(searchParams)
@@ -65,6 +68,12 @@ export function PromptVaultCheckoutLink({
   return (
     <Link
       href={href}
+      onClick={() => {
+        void trackAnalyticsEvent({
+          event: "prompt_vault_landing_cta_clicked",
+          properties: { placement },
+        })
+      }}
       style={{
         display: "inline-flex",
         alignItems: "center",

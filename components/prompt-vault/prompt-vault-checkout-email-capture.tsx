@@ -26,15 +26,15 @@ type CheckoutOrderBump = {
 
 const DEFAULT_VISUALS: CheckoutEmailCaptureVisual[] = [
   {
-    src: "/images/email/prompt-pack-hero.jpg",
-    alt: "Editorial AI photoshoot portrait from the Prompt Vault",
+    src: "/images/ai-prompts/mysterious-vogue-shot-2.png",
+    alt: "Mysterious editorial portrait from the Prompt Vault",
   },
   {
-    src: "/images/ai-prompts/quiet-luxury-london-shot-1.jpg",
+    src: "/images/ai-prompts/quiet-luxury-london-shot-2.jpg",
     alt: "Quiet luxury brand portrait example",
   },
   {
-    src: "/images/ai-prompts/clean-girl-morning-shot-1.jpg",
+    src: "/images/ai-prompts/clean-girl-morning-shot-3.jpg",
     alt: "Clean morning editorial portrait example",
   },
 ]
@@ -44,14 +44,14 @@ export function PromptVaultCheckoutEmailCapture({
   actionPath = "/checkout/prompt-vault",
   eyebrow = "AI PHOTO PROMPT VAULT",
   title = "Where should I send your Vault access?",
-  copy = "Add your email before checkout so your access link and receipt go to the right place. The Vault helps you choose one visual world and make images that still feel like you.",
+  copy = "Add your email before checkout so your private access link and receipt go to the right place. The Vault gives you complete photoshoots with matching prompts you can copy into ChatGPT.",
   proofQuote = "Best one so far. I love that it looks real, and me.",
   proofAuthor = "A SSELFIE member, 50 & fabulous",
   inputId = "prompt-vault-checkout-email",
   buttonLabel = "Continue to checkout",
   skipLabel = "Continue without email",
   productName = "Prompt Vault",
-  productMeta = "AI brand shoot worlds you can repeat",
+  productMeta = "31 photoshoots · 237 copy-and-paste prompts",
   productPrice = "$37 one-time",
   orderLabel = "You are joining",
   reassurance = "Your receipt and access link go to this inbox.",
