@@ -1,5 +1,21 @@
 # Completed releases
 
+## 2026-08-01 — Prompt Vault sales page
+
+Rebuilt the Prompt Vault landing page around the approved customer journey: a clear one-time
+$37 offer, three simple creation steps, current Vault totals, six curated collection previews,
+practical FAQs, and a shorter path to checkout. The collection previews use later shots rather
+than the first images already shown in the free-prompts journey. Added placement-aware landing CTA
+tracking without changing checkout, payment, fulfillment, access, or customer email behavior.
+
+Production proof: feature commit `0b15633b`, Vercel deployment
+`dpl_G2XmKaig9RARQP1PDbyTwBmpAhbg`, and the exact Git commit verified in the Vercel build log. CI
+typecheck, repository invariants, full Vitest, production build, targeted funnel tests, and diff
+checks passed. Live desktop and 390x844 mobile QA confirmed the approved copy, current 31-collection
+and 237-prompt totals, six curated collections, all 19 page images loaded, responsive fit without
+horizontal overflow, valid checkout links, and zero browser-console errors. No payment, email,
+fulfillment, entitlement, or customer record was changed during verification.
+
 ## 2026-07-31 — Free prompts email funnel
 
 Aligned the automated free-prompts and Prompt Vault buyer emails with the approved customer
