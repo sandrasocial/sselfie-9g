@@ -104,12 +104,11 @@ const CHECKOUT_COPY: Record<
   prompt_vault: {
     heroTitle: "Get the full shoot and future drops",
     heroBody:
-      "You tried the opening shot. Now get the full visual worlds, newest drops, and future SSELFIE photoshoots.",
+      "You tried the opening photo. Now get every complete collection and every new Prompt Vault drop.",
     heading: "The AI Photo Prompt Vault",
     blurb:
-      "One $37 payment gives you full shoot sequences, example images, copy-paste prompts, newest drops, and future photoshoot collections.",
-    footer:
-      "One-time payment. Instant access, yours to keep forever. Reply anytime if anything's off and I'll help.",
+      "31 complete photoshoots and 237 copy-and-paste prompts. One $37 payment. No subscription.",
+    footer: "Your private access link opens after payment and also arrives by email.",
   },
   selfie_ai_photos_kit: {
     heroTitle: "Complete your AI Photos Kit order",
@@ -494,7 +493,7 @@ function CheckoutContent() {
     <div className="min-h-screen bg-[#F8FAFA] text-[#0D0E10]">
       {/* Hero Image Section */}
       <div
-        className={`${isPromptVault ? "hidden sm:block" : ""} relative overflow-hidden border-b border-[rgba(197,198,200,0.4)] ${
+        className={`${isPromptVault ? "hidden" : ""} relative overflow-hidden border-b border-[rgba(197,198,200,0.4)] ${
           isSelfieVisibilityBundle
             ? "h-[132px] sm:h-[150px]"
             : isVisualIdentityOffer
@@ -523,9 +522,9 @@ function CheckoutContent() {
 
       {/* Checkout Form Section */}
       <div
-        className={`max-w-3xl mx-auto px-4 sm:px-6 ${isPromptVault ? "py-4 sm:py-12" : isSelfieVisibilityBundle ? "py-4 sm:py-6" : "py-8 sm:py-12"}`}
+        className={`max-w-3xl mx-auto px-4 sm:px-6 ${isPromptVault ? "py-6 sm:py-8" : isSelfieVisibilityBundle ? "py-4 sm:py-6" : "py-8 sm:py-12"}`}
       >
-        {isVisualIdentityOffer && (
+        {isVisualIdentityOffer && !isPromptVault && (
           <div
             className={`${isPromptVault ? "hidden sm:block" : ""} mb-6 border border-[rgba(197,198,200,0.45)] bg-white p-4 shadow-[0_18px_60px_rgba(13,14,16,0.06)] sm:p-5`}
           >
@@ -612,17 +611,6 @@ function CheckoutContent() {
               </p>
             </div>
           )}
-          {isPromptVault && (
-            <div className="mx-auto mt-5 hidden max-w-xl border border-[rgba(197,198,200,0.45)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(13,14,16,0.05)] sm:block sm:px-5">
-              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#818283]">
-                What happens after payment
-              </p>
-              <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
-                Your access link opens the full Vault right away so you can copy the complete shoot
-                prompts and use them in ChatGPT with your own selfie.
-              </p>
-            </div>
-          )}
           {isSelfieAiPhotosKit && (
             <div className="mx-auto mt-5 max-w-xl border border-[rgba(197,198,200,0.45)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(13,14,16,0.05)] sm:px-5">
               <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#818283]">
@@ -646,9 +634,9 @@ function CheckoutContent() {
               </p>
             </div>
           )}
-          {confidencePoints.length > 0 && !isSelfieVisibilityBundle && (
+          {confidencePoints.length > 0 && !isSelfieVisibilityBundle && !isPromptVault && (
             <div
-              className={`${isPromptVault ? "hidden sm:grid" : "grid"} mx-auto mt-4 max-w-xl gap-2 sm:grid-cols-2`}
+              className="mx-auto mt-4 grid max-w-xl gap-2 sm:grid-cols-2"
             >
               {confidencePoints.map(point => (
                 <div

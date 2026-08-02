@@ -30,4 +30,22 @@ describe("Prompt Vault checkout experience", () => {
     expect(capture).toContain("object-position: center 34%;")
     expect(capture).toContain("object-position: center 28%;")
   })
+
+  it("keeps the secure payment form ahead of repeated sales proof on every viewport", () => {
+    const checkout = fs.readFileSync(path.join(ROOT, "app/checkout/page.tsx"), "utf8")
+
+    expect(checkout).toContain('isPromptVault ? "hidden" : ""')
+    expect(checkout).toContain("isVisualIdentityOffer && !isPromptVault")
+    expect(checkout).toContain(
+      "confidencePoints.length > 0 && !isSelfieVisibilityBundle && !isPromptVault",
+    )
+    expect(checkout).toContain('isPromptVault ? "py-6 sm:py-8"')
+    expect(checkout).toContain(
+      "31 complete photoshoots and 237 copy-and-paste prompts. One $37 payment. No subscription.",
+    )
+    expect(checkout).toContain(
+      "Your private access link opens after payment and also arrives by email.",
+    )
+    expect(checkout).not.toContain("full visual worlds")
+  })
 })

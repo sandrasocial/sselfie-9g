@@ -130,12 +130,15 @@ describe("Prompt Vault commercial path", () => {
     expect(recoveryRoute).toContain('searchParams.get("dry_run") === "1"')
   })
 
-  it("puts the Prompt Vault payment form ahead of decorative proof on mobile", () => {
+  it("puts the Prompt Vault payment form ahead of decorative proof on every viewport", () => {
     const checkout = readFileSync("app/checkout/page.tsx", "utf8")
 
-    expect(checkout).toContain('isPromptVault ? "hidden sm:block"')
-    expect(checkout).toContain('isPromptVault ? "py-4 sm:py-12"')
-    expect(checkout).toContain('isPromptVault ? "hidden sm:grid"')
+    expect(checkout).toContain('isPromptVault ? "hidden" : ""')
+    expect(checkout).toContain('isPromptVault ? "py-6 sm:py-8"')
+    expect(checkout).toContain("isVisualIdentityOffer && !isPromptVault")
+    expect(checkout).toContain(
+      "confidencePoints.length > 0 && !isSelfieVisibilityBundle && !isPromptVault"
+    )
   })
 
   it("keeps the retired $197 Vault upgrade out of active runtime code", () => {
