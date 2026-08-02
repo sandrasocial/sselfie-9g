@@ -1,5 +1,20 @@
 # Completed releases
 
+## 2026-08-02 — Vault Maya post-purchase handoff
+
+Added the approved Vault Maya success and password-setup experience for both existing and new
+buyers. The welcome email now returns a buyer directly to Vault Maya, uses the approved copy and
+current Vault image, and is duplicate-safe for each Stripe Checkout Session. Temporary local review
+controls and routes were removed before release.
+
+Production proof: feature commit `a12a52b9`, Vercel deployment
+`dpl_2VfMFn5kDbSD4TrPknJuXuH9fRqN`, and the exact Git commit verified through Vercel deployment
+metadata. CI typecheck, repository invariants, lint with zero errors, 1,879 passing tests with 6
+intentionally skipped, production build, targeted post-purchase and email tests, and diff checks
+passed. Live production QA confirmed the Vault Maya landing page and embedded recurring checkout
+loaded with the approved offer and founder price. No payment was submitted and no customer email
+was sent; the success and delivery path remains test-verified rather than proven by a real purchase.
+
 ## 2026-08-02 — Vault Maya checkout
 
 Refined the Vault Maya checkout into one focused buying step with a current Vault image, compact
