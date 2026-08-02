@@ -103,8 +103,16 @@ describe("B10: activation instrumentation is wired", () => {
   })
 
   it("accepts the Vault checkout funnel events instead of rejecting them", () => {
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("vault_maya_landing_view")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("vault_maya_landing_cta_clicked")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("vault_maya_checkout_email_capture_view")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("vault_maya_checkout_payment_entry_shown")
+    expect(read("components/sselfie/public-marketing.tsx")).toContain(
+      'event: "vault_maya_landing_view"'
+    )
+    expect(read("components/vault-maya/vault-maya-checkout-link.tsx")).toContain(
+      'event: "vault_maya_landing_cta_clicked"'
+    )
     expect(read("app/checkout/page.tsx")).toContain(
       'if (productType === "vault_maya") return "vault_maya_checkout_payment_entry_shown"'
     )

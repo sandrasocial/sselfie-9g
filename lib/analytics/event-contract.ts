@@ -113,6 +113,8 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "studio_membership_page_cta_click",
   "studio_membership_payment_form_rendered",
   // Vault Maya launch funnel and first-value journey. Behavior only; Stripe remains money truth.
+  "vault_maya_landing_view",
+  "vault_maya_landing_cta_clicked",
   "vault_maya_checkout_email_capture_view",
   "vault_maya_checkout_payment_entry_shown",
   "vault_maya_studio_viewed",

@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { Suspense } from "react"
 import { useSearchParams } from "next/navigation"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
 const ATTRIBUTION_KEYS = [
   "source",
@@ -40,13 +41,7 @@ function buildCheckoutHref(searchParams: { get(name: string): string | null }): 
   return query ? `/checkout/vault-maya?${query}` : "/checkout/vault-maya"
 }
 
-function CheckoutLinkInner({
-  label,
-  surface,
-}: {
-  label: string
-  surface: "dark" | "cream"
-}) {
+function CheckoutLinkInner({ label, surface }: { label: string; surface: "dark" | "cream" }) {
   const searchParams = useSearchParams()
   const href = buildCheckoutHref(searchParams)
   const dark = surface === "dark"
@@ -54,6 +49,16 @@ function CheckoutLinkInner({
   return (
     <Link
       href={href}
+      onClick={() => {
+        void trackAnalyticsEvent({
+          event: "vault_maya_landing_cta_clicked",
+          properties: {
+            surface: "vault_maya_landing",
+            destination: "vault_maya_checkout",
+            label,
+          },
+        })
+      }}
       style={{
         display: "inline-flex",
         alignItems: "center",

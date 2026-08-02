@@ -7,15 +7,17 @@ import { getVaultMayaPriceDisplay } from "@/lib/launch/cash-launch-pricing"
 export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
-  title: "Vault Maya — beautiful AI photos that still look like you",
+  title: "Vault Maya — create AI photos without copying prompts",
   description:
-    "The easiest way to create beautiful AI photos that still look like you. Add one selfie, choose a look from the SSELFIE Vault, and Maya creates the photo for you.",
+    "Add one clear selfie, choose the photo you want, and let Maya create it for you inside SSELFIE. No ChatGPT or prompts to copy.",
   openGraph: {
-    title: "Vault Maya — beautiful AI photos that still look like you",
+    title: "Vault Maya — create AI photos without copying prompts",
     description:
-      "The easiest way to create beautiful AI photos that still look like you. Add one selfie, choose a look from the SSELFIE Vault, and Maya creates the photo for you.",
+      "Add one clear selfie, choose the photo you want, and let Maya create it for you inside SSELFIE.",
     url: "https://www.sselfie.ai/vault-maya",
-    images: ["/og-image.png"],
+    images: [
+      "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/content-kit/shoots/1785423447575-876892.png",
+    ],
   },
   alternates: {
     canonical: "https://www.sselfie.ai/vault-maya",
