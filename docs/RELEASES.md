@@ -1,5 +1,25 @@
 # Completed releases
 
+## 2026-08-02 — Vault Maya paid product experience
+
+Rebuilt the paid Vault Maya experience around three focused areas: Create, My photos, and Account.
+Members can now browse a compact editorial collection library, open each collection separately,
+preview a look full screen, create from that look, revisit Vault Maya photos in a dedicated gallery,
+and open finished photos full screen with download, favorite, and create-again actions. Account now
+keeps selfie, photos, requests, and membership controls in one reachable place. Added direct
+“Love this” and “Not quite” result feedback to the existing analytics and Member Pulse surfaces.
+Prompting, generation routing, pricing, entitlements, credits, billing mechanics, and SUITE behavior
+were not changed.
+
+Production proof: feature commit `f330aefd`, Vercel deployment
+`dpl_9TVyE9WChaMqPJz5cqo6MT6hRK6b`, and the exact Git commit verified through Vercel build metadata.
+CI typecheck, repository invariants, 1,889 passing tests, production build, targeted Vault Maya and
+shared-lightbox regression tests, changed-file lint with zero errors, and diff checks passed. Live
+signed-in production QA at the app's 595px browser-pane width confirmed Create, collection browsing,
+full-screen look preview, My photos, full-screen gallery controls, and Account with no horizontal
+overflow or browser-console errors. QA was read-only: no photo was generated, downloaded, favorited,
+or rated, and no selfie, request, billing, credit, or customer data was changed.
+
 ## 2026-08-02 — Vault Maya post-purchase handoff
 
 Added the approved Vault Maya success and password-setup experience for both existing and new
