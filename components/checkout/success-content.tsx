@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import LoadingSpinner from "@/components/sselfie/loading-spinner"
+import { VaultMayaSuccess } from "@/components/checkout/vault-maya-success"
 
 interface SuccessContentProps {
   initialUserInfo: any
@@ -1833,6 +1834,39 @@ export function SuccessContent({
           </button>
         </div>
       </div>
+    )
+  }
+
+  if (userInfo && resolvedProductType === "vault_maya") {
+    const needsAccountSetup = !userInfo.hasAccount && !isAuthenticated
+    const customerEmail = userInfo.email || initialEmail || "your email"
+
+    return (
+      <VaultMayaSuccess
+        email={customerEmail}
+        mode={needsAccountSetup ? "setup" : "ready"}
+        name={name}
+        password={password}
+        confirmPassword={confirmPassword}
+        error={error}
+        isSubmitting={isSubmitting}
+        primaryLabel={
+          !isAuthenticated && userInfo.hasAccount
+            ? "Log in to Vault Maya"
+            : "Create my first photo"
+        }
+        onNameChange={setName}
+        onPasswordChange={setPassword}
+        onConfirmPasswordChange={setConfirmPassword}
+        onSetupSubmit={handleCompleteAccount}
+        onPrimaryAction={() => {
+          if (!isAuthenticated && userInfo.hasAccount) {
+            router.push(`/auth/login?returnTo=${encodeURIComponent(successAction.href)}`)
+            return
+          }
+          router.push(successAction.href)
+        }}
+      />
     )
   }
 

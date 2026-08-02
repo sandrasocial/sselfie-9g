@@ -10,15 +10,15 @@ import {
 describe("Vault Maya welcome email", () => {
   const REQUIRED_LINES = [
     "/vault-maya/studio",
-    "Add one clear selfie",
-    "Choose a look you love",
-    "Maya creates your photo",
+    "Start with one clear selfie",
+    "Choose the photo you want",
+    "Maya will create it for you",
     "30 photo creations every month, refreshed on your billing date",
     // B6 disclosure: monthly credits expire at refresh; purchased top-ups never do.
     "Unused monthly photos expire when they refresh",
     "top-up credits you purchase never expire",
-    "Top up anytime",
-    "Cancel anytime from your account",
+    "You can top up, manage or cancel your membership",
+    "Account & billing",
     "credit comes back automatically",
     "reply to this email",
   ]
@@ -45,7 +45,7 @@ describe("Vault Maya welcome email", () => {
       expect(email.html).toContain(line)
       expect(email.text).toContain(line)
     }
-    expect(email.html).toContain("Set your password")
+    expect(email.html).toContain("Create my password")
   })
 
   it("existing-member variant links straight to the studio", () => {

@@ -160,11 +160,15 @@ export async function handleStudioMembershipSubscriptionCheckout(
         )
 
         console.log(`[v0] Step 4: Generating password reset link...`)
+        const passwordSetupPath =
+          productType === "vault_maya"
+            ? `/auth/setup-password?next=${encodeURIComponent("/vault-maya/studio")}`
+            : "/auth/setup-password"
         const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
           type: "recovery",
           email: customerEmail,
           options: {
-            redirectTo: `${productionUrl}/auth/setup-password`,
+            redirectTo: `${productionUrl}${passwordSetupPath}`,
           },
         })
 
@@ -210,7 +214,7 @@ export async function handleStudioMembershipSubscriptionCheckout(
           const type = url.searchParams.get("type") || "recovery"
 
           if (token) {
-            passwordSetupLink = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/auth/setup-password`
+            passwordSetupLink = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=${encodeURIComponent(passwordSetupPath)}`
           }
         }
 
@@ -284,6 +288,9 @@ export async function handleStudioMembershipSubscriptionCheckout(
           html: emailContent.html,
           text: emailContent.text,
           emailType: welcomeEmailLogType,
+          idempotencyKey: isVaultMayaWelcome
+            ? `vault-maya-welcome:${session.id}`
+            : undefined,
           tags: isMembershipWelcome
             ? ["membership-welcome", "account-setup"]
             : isVaultMayaWelcome
@@ -475,6 +482,7 @@ export async function handleStudioMembershipSubscriptionCheckout(
               html: emailContent.html,
               text: emailContent.text,
               emailType: "vault_maya_welcome",
+              idempotencyKey: `vault-maya-welcome:${session.id}`,
               tags: ["vault-maya-welcome"],
             })
 

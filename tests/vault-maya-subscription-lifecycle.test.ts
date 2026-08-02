@@ -202,8 +202,17 @@ describe("Vault Maya subscription lifecycle", () => {
       expect.objectContaining({
         subject: VAULT_MAYA_WELCOME_SUBJECTS.new,
         emailType: "vault_maya_welcome",
+        idempotencyKey: "vault-maya-welcome:cs_vault_1",
         tags: expect.arrayContaining(["vault-maya-welcome", "account-setup"]),
       })
+    )
+    expect(mocks.generateLink).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: {
+          redirectTo:
+            "https://sselfie.ai/auth/setup-password?next=%2Fvault-maya%2Fstudio",
+        },
+      }),
     )
     const emailLogCall = mocks.sql.mock.calls.find(call =>
       queryText(call).includes("INSERT INTO email_logs")

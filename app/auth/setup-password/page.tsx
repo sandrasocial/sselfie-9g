@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { LIVE_MEMBER_APP_PATH, normalizeLegacyStudioRedirect, sanitizeRedirect } from "@/lib/security/url-validator"
+import { VaultMayaSuccess } from "@/components/checkout/vault-maya-success"
 
 function SetupPasswordContent() {
   const router = useRouter()
@@ -142,6 +143,23 @@ function SetupPasswordContent() {
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <Loader2 className="h-8 w-8 animate-spin text-stone-900" />
       </div>
+    )
+  }
+
+  if (nextAfterSetup === "/vault-maya/studio") {
+    return (
+      <VaultMayaSuccess
+        email={userEmail || "your email"}
+        mode="setup"
+        showNameField={false}
+        password={password}
+        confirmPassword={confirmPassword}
+        error={error}
+        isSubmitting={loading}
+        onPasswordChange={setPassword}
+        onConfirmPasswordChange={setConfirmPassword}
+        onSetupSubmit={handleSubmit}
+      />
     )
   }
 
