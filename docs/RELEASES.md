@@ -1,5 +1,20 @@
 # Completed releases
 
+## 2026-08-02 — Prompt Vault post-purchase handoff
+
+Replaced the generic paid-success state with a calm Prompt Vault handoff that confirms payment,
+opens the buyer's private Vault automatically, and provides clear retry, access-recovery, and
+support paths when fulfillment is delayed. Corrected the delivery email's fallback destination and
+made its built-in retries duplicate-safe for each Stripe Checkout Session. Vault Maya remains
+outside this first-use journey.
+
+Production proof: feature commit `b3f6b525`, Vercel deployment
+`dpl_AGnAuZEeNc4n8u8J2AN9WTBycBdq`, and the exact Git commit verified through Vercel deployment
+metadata. Targeted handoff, payment-attribution, and email tests passed with CI typecheck,
+repository invariants, full Vitest, production build, lint with zero errors, and diff checks. Live
+390x844 QA confirmed the access-recovery form, zero horizontal overflow, and zero browser console
+errors. No purchase was made, no form was submitted, and no customer email was sent.
+
 ## 2026-08-02 — Prompt Vault buyer journey and first-copy bridge
 
 Redesigned the paid Prompt Vault around a premium, visual first-use experience; clarified the
