@@ -7,11 +7,16 @@ const ROOT = process.cwd()
 const read = (relativePath: string) => fs.readFileSync(path.join(ROOT, relativePath), "utf8")
 
 describe("Vault Maya fresh mobile checkout", () => {
-  it("contains the long founder-price summary without allowing it to widen the card", () => {
+  it("keeps the price compact and puts the email action before imagery on mobile", () => {
     const page = read("app/checkout/vault-maya/page.tsx")
     const capture = read("components/prompt-vault/prompt-vault-checkout-email-capture.tsx")
 
-    expect(page).toContain("$19/month founder price · then $29/month for new members")
+    expect(page).toContain('productPrice={price.flipped ? "$29/month" : "$19/month"}')
+    expect(page).toContain('proofQuote=""')
+    expect(page).toContain("mobileFormFirst")
+    expect(page).toContain("showSupportingVisuals={false}")
+    expect(page).not.toContain("quiet-luxury-london-shot-1.jpg")
+    expect(page).not.toContain("clean-girl-morning-shot-1.jpg")
     expect(capture).toContain(".pv-email-shell,")
     expect(capture).toContain(".pv-email-shell * {")
     expect(capture).toContain("box-sizing: border-box;")

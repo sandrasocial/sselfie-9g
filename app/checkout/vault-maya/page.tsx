@@ -164,29 +164,33 @@ export default async function VaultMayaCheckoutPage({
         params={captureParams}
         actionPath="/checkout/vault-maya"
         eyebrow="VAULT MAYA"
-        title="Where should I send your access?"
-        copy="Add your email so your login, receipt, and Vault Maya access go to the right place. Add one selfie, choose a look, and Maya creates the photo for you."
+        title="Where should I send your Vault Maya access?"
+        copy="Add your email, then continue to secure payment."
         inputId="vault-maya-checkout-email"
         buttonLabel="Continue to secure payment"
-        skipLabel="Skip and go straight to payment"
         productName="Vault Maya"
-        productMeta="Every Vault look, created for you by Maya"
-        productPrice={
-          price.flipped ? "$29/month" : "$19/month founder price · then $29/month for new members"
-        }
+        productMeta="30 photo creations each month · every Vault collection"
+        productPrice={price.flipped ? "$29/month" : "$19/month"}
         reassurance={
           price.flipped
             ? "$29 billed monthly. Cancel anytime from your account."
-            : "Founders keep $19/month for as long as their membership stays active. Cancel anytime from your account."
+            : "Founder price: $19 billed monthly. You keep this price while your membership stays active. Cancel anytime from your account."
         }
+        proofQuote=""
+        mobileFormFirst
+        showSupportingVisuals={false}
         visuals={[
           {
-            src: "/images/ai-prompts/quiet-luxury-london-shot-1.jpg",
-            alt: "Editorial vault look created from a selfie",
+            src: "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/content-kit/shoots/1785423447575-876892.png",
+            alt: "Golden-hour balcony portrait from Golden Hour Diary",
           },
           {
-            src: "/images/ai-prompts/clean-girl-morning-shot-1.jpg",
-            alt: "Clean personal brand portrait created from the vault",
+            src: "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/content-kit/shoots/1785427595205-824538.png",
+            alt: "Editorial mirror portrait from Golden Hour Diary",
+          },
+          {
+            src: "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/content-kit/shoots/1785419807908-245517.png",
+            alt: "Rooftop full-body portrait from Golden Hour Escape",
           },
         ]}
       />

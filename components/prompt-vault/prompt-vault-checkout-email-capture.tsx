@@ -60,6 +60,7 @@ export function PromptVaultCheckoutEmailCapture({
   proceedOnSubmit = false,
   allowSkip = false,
   mobileFormFirst = false,
+  showSupportingVisuals = true,
   orderBump,
 }: {
   params: CheckoutEmailCaptureParams
@@ -82,6 +83,7 @@ export function PromptVaultCheckoutEmailCapture({
   proceedOnSubmit?: boolean
   allowSkip?: boolean
   mobileFormFirst?: boolean
+  showSupportingVisuals?: boolean
   orderBump?: CheckoutOrderBump
 }) {
   const hiddenParams = buildCheckoutEmailCaptureHiddenParams(params).filter((item) => {
@@ -91,7 +93,11 @@ export function PromptVaultCheckoutEmailCapture({
   })
   const skipHref = allowSkip ? buildSkipCheckoutEmailCaptureHref(actionPath, params) : null
   const heroVisual = visuals[0] || DEFAULT_VISUALS[0]
-  const supportingVisuals = (visuals.length > 1 ? visuals.slice(1, 3) : DEFAULT_VISUALS.slice(1, 3))
+  const supportingVisuals = showSupportingVisuals
+    ? visuals.length > 1
+      ? visuals.slice(1, 3)
+      : DEFAULT_VISUALS.slice(1, 3)
+    : []
   const tierInputId = `${inputId}-tier`
   const bumpInputId = `${inputId}-bump`
   const orderNameId = `${inputId}-order-name`
@@ -101,18 +107,22 @@ export function PromptVaultCheckoutEmailCapture({
   return (
     <main className={inter.className}>
       <section className="pv-email-capture">
-        <div className={`pv-email-shell${mobileFormFirst ? " pv-mobile-form-first" : ""}`}>
+        <div
+          className={`pv-email-shell${mobileFormFirst ? " pv-mobile-form-first" : ""}${showSupportingVisuals ? "" : " pv-single-visual"}`}
+        >
           <aside className="pv-visual-panel" aria-label={`${productName} preview`}>
             <div className="pv-hero-visual">
               <Image src={heroVisual.src} alt={heroVisual.alt} fill priority sizes="(min-width: 900px) 44vw, 100vw" />
             </div>
-            <div className="pv-mini-row" aria-label="SSELFIE visual examples">
-              {supportingVisuals.map((visual) => (
-                <div className="pv-mini-visual" key={visual.src}>
-                  <Image src={visual.src} alt={visual.alt} fill sizes="120px" />
-                </div>
-              ))}
-            </div>
+            {supportingVisuals.length > 0 ? (
+              <div className="pv-mini-row" aria-label="SSELFIE visual examples">
+                {supportingVisuals.map((visual) => (
+                  <div className="pv-mini-visual" key={visual.src}>
+                    <Image src={visual.src} alt={visual.alt} fill sizes="120px" />
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </aside>
 
           <div className="pv-email-card">
@@ -435,6 +445,34 @@ export function PromptVaultCheckoutEmailCapture({
           font-size: 13px;
           text-decoration: underline;
           text-underline-offset: 4px;
+        }
+
+        @media (min-width: 900px) {
+          .pv-email-shell.pv-single-visual .pv-email-card {
+            padding: 34px clamp(34px, 4vw, 48px);
+          }
+
+          .pv-email-shell.pv-single-visual .pv-progress {
+            margin-bottom: 16px;
+          }
+
+          .pv-email-shell.pv-single-visual .pv-order {
+            margin-bottom: 22px;
+            padding-bottom: 18px;
+          }
+
+          .pv-email-shell.pv-single-visual .pv-eyebrow {
+            margin-bottom: 12px;
+          }
+
+          .pv-email-shell.pv-single-visual .pv-title {
+            margin-bottom: 14px;
+            font-size: clamp(40px, 4.4vw, 54px);
+          }
+
+          .pv-email-shell.pv-single-visual .pv-copy {
+            margin-bottom: 22px;
+          }
         }
 
         @media (max-width: 899px) {
