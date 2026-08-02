@@ -1,5 +1,20 @@
 # Completed releases
 
+## 2026-08-02 — Vault Maya checkout
+
+Refined the Vault Maya checkout into one focused buying step with a current Vault image, compact
+monthly pricing, clear founder-price terms, and the email action before imagery on mobile. Removed
+the generic testimonial and supporting-image strip without changing Stripe, fulfillment,
+entitlements, credits, generation, or customer email behavior.
+
+Production proof: feature commit `6b185f7d`, Vercel deployment
+`dpl_76XBHwHqfdUJxavhEMAptoka3N4Z`, and the exact Git commit verified through Vercel deployment
+metadata. CI typecheck, repository invariants, lint with zero errors, 1,874 passing tests with 6
+intentionally skipped, production build, targeted checkout tests, and diff checks passed. Live
+desktop and 390x844 mobile QA confirmed the approved copy and image, visible email CTA, form-first
+mobile order, responsive fit without horizontal overflow, and zero browser-console errors. No
+email or payment form was submitted and no charge or customer record was changed.
+
 ## 2026-08-02 — Vault Maya sales page
 
 Rebuilt the Vault Maya landing page as a premium, visual buying journey using later images from
