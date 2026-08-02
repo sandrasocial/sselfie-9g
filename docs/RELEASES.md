@@ -1,5 +1,20 @@
 # Completed releases
 
+## 2026-08-02 — Prompt Vault buyer journey and first-copy bridge
+
+Redesigned the paid Prompt Vault around a premium, visual first-use experience; clarified the
+$37 checkout and payment hierarchy; and added one calm Prompt Vault invitation after the first
+free prompt is copied. The other free prompts remain uninterrupted, and payment, fulfillment,
+entitlements, customer email behavior, and Vault Maya remain unchanged.
+
+Production proof: feature commit `7e9fb544`, Vercel deployment
+`dpl_7DrH93Gf7xbCLvpCrRnN44ND1Pyu`, and the exact Git commit verified through Vercel deployment
+metadata. CI typecheck, repository invariants, 1,869 passing tests with 6 intentionally skipped,
+production build, targeted funnel tests, changed-file lint with zero errors, and diff checks passed.
+Live QA confirmed the Prompt Vault landing page, checkout, private buyer Vault, and first-copy
+invitation on desktop and 390x844 mobile with no horizontal overflow or browser runtime errors. No
+payment, email, customer record, entitlement, credit, or generation was changed during verification.
+
 ## 2026-08-01 — Prompt Vault sales page
 
 Rebuilt the Prompt Vault landing page around the approved customer journey: a clear one-time
