@@ -1,7 +1,8 @@
 "use client"
 
 import { Cormorant_Garamond, Inter } from "next/font/google"
-import { FormEvent, useState } from "react"
+import Image from "next/image"
+import { type FormEvent, useState } from "react"
 import Link from "next/link"
 
 const cormorant = Cormorant_Garamond({
@@ -42,132 +43,125 @@ export default function AccessRecoveryPage() {
   }
 
   return (
-    <main className={`min-h-screen bg-[#0d0c0b] text-[#f0ede8] ${inter.className}`}>
-      <div className="mx-auto max-w-[480px] px-6 py-16 sm:py-24">
-        {/* Logo */}
-        <div className="mb-12">
-          <Link
-            href="https://sselfie.ai"
-            className={`${cormorant.className} text-[26px] font-light uppercase tracking-[0.28em] text-[#f0ede8]`}
-          >
-            SSELFIE
-          </Link>
+    <main className={`min-h-screen bg-brand-porcelain text-stone-dark ${inter.className}`}>
+      <section className="mx-auto grid min-h-screen max-w-[1440px] lg:grid-cols-[0.96fr_1.04fr]">
+        <div className="relative order-2 min-h-[38svh] overflow-hidden lg:order-1 lg:min-h-screen">
+          <Image
+            src="/images/ai-prompts/quiet-luxury-london-shot-2.jpg"
+            alt="Editorial SSELFIE portrait"
+            fill
+            priority
+            sizes="(min-width: 1024px) 48vw, 100vw"
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          <p className="absolute bottom-6 left-6 text-[10px] font-medium uppercase tracking-[0.3em] text-white/80 sm:bottom-9 sm:left-9">
+            Your purchases stay yours
+          </p>
         </div>
 
-        {status === "sent" ? (
-          <div className="space-y-6">
-            <p className="text-[10px] uppercase tracking-[0.42em] text-[#a8a49c]">Access Recovery</p>
-            <h1
-              className={`${cormorant.className} text-[clamp(40px,8vw,64px)] font-light uppercase leading-[0.92] tracking-[0.04em] text-[#f0ede8]`}
+        <div className="order-1 flex items-center px-6 py-12 sm:px-12 sm:py-16 lg:order-2 lg:px-16 xl:px-24">
+          <div className="w-full max-w-xl">
+            <Link
+              href="https://sselfie.ai"
+              className={`${cormorant.className} text-xl font-light uppercase tracking-[0.28em] text-stone-dark`}
             >
-              Check your inbox
-            </h1>
-            <p className="text-[15px] font-light leading-7 text-[rgba(240,237,232,0.74)]">
-              If that email has a purchase on file, we just sent you the access links. Check your inbox
-              and spam folder - it arrives within a minute.
-            </p>
-            <p className="text-[13px] font-light leading-6 text-[#8a8780]">
-              Still stuck?{" "}
+              SSELFIE
+            </Link>
+
+            {status === "sent" ? (
+              <div className="mt-12">
+                <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-brand-smoke">
+                  Access recovery
+                </p>
+                <h1
+                  className={`${cormorant.className} mt-5 text-[clamp(3.4rem,7vw,6.4rem)] font-light leading-[0.88] tracking-[-0.045em]`}
+                >
+                  Check your inbox.
+                </h1>
+                <p className="mt-7 max-w-lg text-[15px] font-light leading-7 text-stone-mid sm:text-base">
+                  If that email matches a purchase, your private access links are on their way.
+                  Check your spam folder too.
+                </p>
+                <button
+                  onClick={() => {
+                    setStatus("idle")
+                    setEmail("")
+                  }}
+                  className="mt-8 min-h-12 rounded-full border border-stone-pale px-7 text-xs font-medium uppercase tracking-[0.14em] text-stone-dark transition hover:bg-white"
+                >
+                  Try a different email
+                </button>
+              </div>
+            ) : (
+              <div className="mt-12">
+                <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-brand-smoke">
+                  Access recovery
+                </p>
+                <h1
+                  className={`${cormorant.className} mt-5 text-[clamp(3.4rem,7vw,6.4rem)] font-light leading-[0.88] tracking-[-0.045em]`}
+                >
+                  Recover your access.
+                </h1>
+                <p className="mt-7 max-w-lg text-[15px] font-light leading-7 text-stone-mid sm:text-base">
+                  Enter the email address you used when you purchased. I&apos;ll send your private
+                  access links to your inbox.
+                </p>
+
+                <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="email"
+                      className="block text-[10px] font-medium uppercase tracking-[0.26em] text-brand-smoke"
+                    >
+                      Purchase email
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={event => setEmail(event.target.value)}
+                      placeholder="you@example.com"
+                      required
+                      autoComplete="email"
+                      className="min-h-[54px] w-full rounded-full border border-stone-pale bg-white/60 px-5 text-[15px] font-light text-stone-dark outline-none transition placeholder:text-brand-smoke focus:border-stone-accent focus:bg-white"
+                    />
+                  </div>
+
+                  {status === "error" ? (
+                    <p className="text-[13px] text-red-700">
+                      Something went wrong. Please try again or email{" "}
+                      <a href="mailto:support@sselfie.ai" className="underline underline-offset-4">
+                        support@sselfie.ai
+                      </a>
+                      .
+                    </p>
+                  ) : null}
+
+                  <button
+                    type="submit"
+                    disabled={status === "loading"}
+                    className="min-h-[54px] w-full rounded-full bg-stone-dark px-6 text-[11px] font-medium uppercase tracking-[0.2em] text-white transition hover:bg-stone-mid disabled:opacity-60"
+                  >
+                    {status === "loading" ? "Sending..." : "Send my access links"}
+                  </button>
+                </form>
+              </div>
+            )}
+
+            <p className="mt-8 border-t border-stone-pale pt-6 text-xs leading-5 text-brand-smoke">
+              If you still need help, email{" "}
               <a
                 href="mailto:support@sselfie.ai?subject=Access%20recovery%20help"
-                className="underline text-[#a8a49c] hover:text-[#f0ede8] transition-colors"
+                className="underline underline-offset-4"
               >
-                Email support@sselfie.ai
-              </a>{" "}
-              and we&apos;ll sort it.
+                support@sselfie.ai
+              </a>
+              .
             </p>
-            <button
-              onClick={() => {
-                setStatus("idle")
-                setEmail("")
-              }}
-              className="text-[11px] font-medium uppercase tracking-[0.26em] text-[#8a8780] underline underline-offset-4 hover:text-[#f0ede8] transition-colors"
-            >
-              Try a different email
-            </button>
           </div>
-        ) : (
-          <div className="space-y-8">
-            <div className="space-y-4">
-              <p className="text-[10px] uppercase tracking-[0.42em] text-[#a8a49c]">Access Recovery</p>
-              <h1
-                className={`${cormorant.className} text-[clamp(40px,8vw,64px)] font-light uppercase leading-[0.92] tracking-[0.04em] text-[#f0ede8]`}
-              >
-                Recover your access
-              </h1>
-              <p className="text-[15px] font-light leading-7 text-[rgba(240,237,232,0.74)]">
-                Enter the email you used to purchase. We&apos;ll send your access links - presets,
-                guide, and everything else - straight to your inbox.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label
-                  htmlFor="email"
-                  className="block text-[10px] uppercase tracking-[0.34em] text-[#8a8780]"
-                >
-                  Purchase email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  autoComplete="email"
-                  className="w-full min-h-[52px] rounded-full border border-[rgba(240,237,232,0.16)] bg-[rgba(240,237,232,0.04)] px-5 text-[15px] font-light text-[#f0ede8] outline-none transition placeholder:text-[#8a8780] focus:border-[rgba(240,237,232,0.34)]"
-                />
-              </div>
-
-              {status === "error" && (
-                <p className="text-[13px] text-[#fca5a5]">
-                  Something went wrong. Please try again or email{" "}
-                  <a href="mailto:support@sselfie.ai" className="underline">
-                    support@sselfie.ai
-                  </a>
-                  .
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={status === "loading"}
-                className="w-full min-h-[52px] rounded-full bg-[#f0ede8] px-6 text-[11px] font-medium uppercase tracking-[0.26em] text-[#0d0c0b] transition hover:bg-white disabled:opacity-60"
-              >
-                {status === "loading" ? "Sending..." : "Send my access links"}
-              </button>
-            </form>
-
-            <div className="border-t border-[rgba(195,190,182,0.14)] pt-6 space-y-3">
-              <p className="text-[11px] uppercase tracking-[0.3em] text-[#8a8780]">
-                Or go straight to
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/starter-kit"
-                  className="inline-flex items-center rounded-full border border-[rgba(240,237,232,0.14)] px-4 py-2 text-[11px] font-medium uppercase tracking-[0.24em] text-[#a8a49c] transition hover:border-[rgba(240,237,232,0.32)] hover:text-[#f0ede8]"
-                >
-                  Starter Kit
-                </Link>
-                <Link
-                  href="/selfie-guide"
-                  className="inline-flex items-center rounded-full border border-[rgba(240,237,232,0.14)] px-4 py-2 text-[11px] font-medium uppercase tracking-[0.24em] text-[#a8a49c] transition hover:border-[rgba(240,237,232,0.32)] hover:text-[#f0ede8]"
-                >
-                  Selfie Guide
-                </Link>
-                <Link
-                  href="/auth/login"
-                  className="inline-flex items-center rounded-full border border-[rgba(240,237,232,0.14)] px-4 py-2 text-[11px] font-medium uppercase tracking-[0.24em] text-[#a8a49c] transition hover:border-[rgba(240,237,232,0.32)] hover:text-[#f0ede8]"
-                >
-                  Sign in
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      </section>
     </main>
   )
 }

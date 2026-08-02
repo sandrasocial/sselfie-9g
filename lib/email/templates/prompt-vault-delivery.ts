@@ -1,5 +1,5 @@
 import { renderStoneButton, renderStoneShell } from "./stone-email"
-import { promptVaultLandingUrl } from "./selfie-education-links"
+import { accessRecoveryUrl } from "./selfie-education-links"
 
 export function generatePromptVaultDeliveryEmail({
   firstName,
@@ -9,7 +9,7 @@ export function generatePromptVaultDeliveryEmail({
   accessUrl: string
   passwordSetupUrl?: string
 }) {
-  const fallbackUrl = promptVaultLandingUrl()
+  const fallbackUrl = accessRecoveryUrl()
   const vaultButton = `<div style="margin:20px 0 0;">${renderStoneButton("Open my Prompt Vault", accessUrl)}</div>`
 
   const bodyHtml = `

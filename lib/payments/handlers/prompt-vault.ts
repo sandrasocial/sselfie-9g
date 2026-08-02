@@ -283,6 +283,7 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
           text: email.text,
           emailType: "prompt_vault_delivery",
           tags: ["prompt-vault", "delivery"],
+          idempotencyKey: `prompt-vault-delivery:${session.id}`,
         })
 
         if (emailResult.success) {

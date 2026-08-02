@@ -26,6 +26,10 @@ export function academyStarterKitUrl() {
   return `${SITE_URL}/academy/access/starter-kit`
 }
 
+export function accessRecoveryUrl() {
+  return `${SITE_URL}/access`
+}
+
 export function studioLandingUrl() {
   return `${SITE_URL}/join/studio`
 }

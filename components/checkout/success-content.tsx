@@ -206,10 +206,10 @@ function getSuccessActionConfig(productType: string | undefined): SuccessActionC
 
   if (productType === "prompt_vault") {
     return {
-      href: "/prompt-vault",
-      label: "Check your email for access",
+      href: "/access",
+      label: "Recover my access",
       helper:
-        "Your Prompt Vault is ready. If this page does not open it automatically, use the access link in your inbox.",
+        "Your Prompt Vault is ready. If this page does not open it automatically, use the access link in your inbox or recover it with your purchase email.",
       secondaryHref: "mailto:support@sselfie.ai?subject=Prompt%20Vault%20access",
       secondaryLabel: "Need help? Email support",
     }
@@ -339,6 +339,83 @@ function getSuccessActionConfig(productType: string | undefined): SuccessActionC
   }
 }
 
+function PromptVaultHandoffShell({
+  title,
+  body,
+  status,
+  children,
+}: {
+  title: string
+  body: string
+  status: string
+  children?: React.ReactNode
+}) {
+  return (
+    <main className="min-h-screen bg-brand-porcelain text-stone-dark">
+      <section className="mx-auto grid min-h-screen max-w-[1440px] lg:grid-cols-[1.02fr_0.98fr]">
+        <div className="relative order-2 min-h-[38svh] overflow-hidden lg:order-1 lg:min-h-screen">
+          <Image
+            src="/images/ai-prompts/mysterious-vogue-shot-2.png"
+            alt="Editorial portrait from the SSELFIE Prompt Vault"
+            fill
+            priority
+            sizes="(min-width: 1024px) 51vw, 100vw"
+            className="object-cover object-[50%_24%]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-6 text-white sm:p-9">
+            <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-white/75">
+              The AI Photo Prompt Vault
+            </p>
+            <p className="mt-2 max-w-md font-['Cormorant_Garamond'] text-3xl font-light leading-tight sm:text-4xl">
+              Your complete photoshoots are ready for you.
+            </p>
+          </div>
+        </div>
+
+        <div className="order-1 flex items-center px-6 py-12 sm:px-12 sm:py-16 lg:order-2 lg:px-16 xl:px-24">
+          <div className="w-full max-w-xl">
+            <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-brand-smoke">
+              Payment confirmed
+            </p>
+            <h1 className="mt-5 font-['Cormorant_Garamond'] text-[clamp(3.2rem,7vw,6.7rem)] font-light leading-[0.88] tracking-[-0.045em] text-stone-dark">
+              {title}
+            </h1>
+            <p className="mt-7 max-w-lg text-[15px] font-light leading-7 text-stone-mid sm:text-base">
+              {body}
+            </p>
+
+            <div
+              className="mt-8 flex items-center gap-3 border-y border-stone-pale py-4"
+              role="status"
+              aria-live="polite"
+            >
+              <span
+                className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-brand-smoke"
+                aria-hidden="true"
+              />
+              <p className="text-sm text-stone-quarry">{status}</p>
+            </div>
+
+            {children ? <div className="mt-8">{children}</div> : null}
+
+            <p className="mt-8 text-xs leading-5 text-brand-smoke">
+              If you need help, email{" "}
+              <a
+                className="underline underline-offset-4"
+                href="mailto:support@sselfie.ai?subject=Prompt%20Vault%20access%20help"
+              >
+                support@sselfie.ai
+              </a>
+              .
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+  )
+}
+
 export function SuccessContent({
   initialUserInfo,
   initialEmail,
@@ -445,11 +522,11 @@ export function SuccessContent({
     "Your payment went through. Your guide access is still syncing.",
   )
   const [isPollingPromptVaultAccess, setIsPollingPromptVaultAccess] = useState(Boolean(isPromptVaultPurchase && sessionId))
-  const [promptVaultPollAttempts, setPromptVaultPollAttempts] = useState(0)
-  const [promptVaultStatus, setPromptVaultStatus] = useState("Preparing your Prompt Vault. This can take up to 2 minutes.")
+  const [, setPromptVaultPollAttempts] = useState(0)
+  const [promptVaultStatus, setPromptVaultStatus] = useState("Preparing your private access...")
   const [showPromptVaultTimeout, setShowPromptVaultTimeout] = useState(false)
   const [promptVaultRecoveryMessage, setPromptVaultRecoveryMessage] = useState(
-    "Your payment went through. Your Prompt Vault access is still syncing.",
+    "Your payment is confirmed. Your private access is taking longer than expected.",
   )
   const [isPollingSelfieAiPhotosKitAccess, setIsPollingSelfieAiPhotosKitAccess] = useState(Boolean(isSelfieAiPhotosKitPurchase && sessionId))
   const [selfieAiPhotosKitPollAttempts, setSelfieAiPhotosKitPollAttempts] = useState(0)
@@ -571,7 +648,7 @@ export function SuccessContent({
 
         if (response.ok && data.accessToken) {
           setIsPollingPromptVaultAccess(false)
-          setPromptVaultStatus("Prompt Vault ready. Opening now...")
+          setPromptVaultStatus("Your Prompt Vault is ready. Opening it now...")
 
           if (!promptVaultResolutionTrackedRef.current) {
             promptVaultResolutionTrackedRef.current = true
@@ -607,17 +684,17 @@ export function SuccessContent({
           const next = prev + 1
 
           if (next < 20) {
-            setPromptVaultStatus("Preparing your Prompt Vault. This can take up to 2 minutes.")
+            setPromptVaultStatus("Preparing your private access...")
           } else if (next < 40) {
-            setPromptVaultStatus("Payment confirmed. Finalizing your vault access...")
+            setPromptVaultStatus("Your payment is confirmed. I’m still opening the Vault for you.")
           } else {
-            setPromptVaultStatus("Almost there. Your vault link is still syncing.")
+            setPromptVaultStatus("Your private access is taking a little longer than expected.")
           }
 
           if (next >= MAX_POLL_ATTEMPTS) {
             setIsPollingPromptVaultAccess(false)
             setShowPromptVaultTimeout(true)
-            setPromptVaultRecoveryMessage("Your payment is confirmed. Your Prompt Vault access is taking longer than expected.")
+            setPromptVaultRecoveryMessage("Your payment is confirmed. Your private access is taking longer than expected.")
 
             if (!promptVaultFailureTrackedRef.current) {
               promptVaultFailureTrackedRef.current = true
@@ -638,7 +715,7 @@ export function SuccessContent({
           if (next >= MAX_POLL_ATTEMPTS) {
             setIsPollingPromptVaultAccess(false)
             setShowPromptVaultTimeout(true)
-            setPromptVaultRecoveryMessage("Your payment is confirmed. Your Prompt Vault access is taking longer than expected.")
+            setPromptVaultRecoveryMessage("Your payment is confirmed. Your private access is taking longer than expected.")
 
             if (!promptVaultFailureTrackedRef.current) {
               promptVaultFailureTrackedRef.current = true
@@ -1290,56 +1367,43 @@ export function SuccessContent({
 
   if (isPollingPromptVaultAccess && isPromptVaultPurchase) {
     return (
-      <div className="min-h-screen bg-brand-obsidian flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
-        <LoadingSpinner size="lg" />
-        <p className="text-lg font-medium text-brand-porcelain">{promptVaultStatus}</p>
-        <p className="text-sm text-brand-pearl">
-          Estimated time remaining: {Math.max(0, 120 - (promptVaultPollAttempts * 2))}s
-        </p>
-        <div className="w-64 bg-[color:var(--glass-bg)] rounded-full h-2">
-          <div
-            className="bg-brand-whisper h-2 rounded-full transition-all duration-1000"
-            style={{ width: `${(promptVaultPollAttempts / MAX_POLL_ATTEMPTS) * 100}%` }}
-          />
-        </div>
-      </div>
+      <PromptVaultHandoffShell
+        title="Your Prompt Vault is opening."
+        body="I’m preparing your private access now. Keep this page open for a moment. Your access link is also on its way to your inbox."
+        status={promptVaultStatus}
+      />
     )
   }
 
   if (showPromptVaultTimeout && isPromptVaultPurchase) {
     return (
-      <div className="min-h-screen bg-brand-obsidian flex flex-col items-center justify-center space-y-6 p-6">
-        <div className="bg-[color:var(--glass-bg)] backdrop-blur-[50px] border border-[color:var(--div-dark)] rounded-2xl p-8 max-w-md w-full text-center space-y-4">
-          <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-brand-porcelain">
-            Your vault is still syncing
-          </h2>
-          <p className="text-brand-pearl max-w-md">{promptVaultRecoveryMessage}</p>
-          <p className="text-sm text-brand-pearl">
-            Your access link is also sent by email after payment.
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-4">
+      <PromptVaultHandoffShell
+        title="Your purchase is safe."
+        body="Your Prompt Vault is taking a little longer to open. You can try again here, or recover your private link with the email address you used at checkout."
+        status={promptVaultRecoveryMessage}
+      >
+        <div className="flex flex-col gap-3 sm:flex-row">
           <Button
             onClick={() => {
               setShowPromptVaultTimeout(false)
               setPromptVaultPollAttempts(0)
-              setPromptVaultStatus("Preparing your Prompt Vault. This can take up to 2 minutes.")
+              setPromptVaultStatus("Preparing your private access...")
               setIsPollingPromptVaultAccess(true)
             }}
             variant="default"
-            className="bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-brand-porcelain transition-colors"
+            className="min-h-12 rounded-none bg-stone-dark px-6 text-[11px] font-medium uppercase tracking-[0.18em] text-white hover:bg-stone-mid"
           >
-            Try Again
+            Try opening again
           </Button>
           <Button
             asChild
             variant="outline"
-            className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
+            className="min-h-12 rounded-none border-stone-pale bg-transparent px-6 text-[11px] font-medium uppercase tracking-[0.18em] text-stone-dark hover:bg-stone-pale"
           >
-            <a href="mailto:support@sselfie.ai?subject=Prompt%20Vault%20access%20help">Email Support</a>
+            <a href="/access">Recover my access</a>
           </Button>
         </div>
-      </div>
+      </PromptVaultHandoffShell>
     )
   }
 

@@ -143,5 +143,13 @@ describe("Prompt Vault payment attribution storage", () => {
       "marble-cafe-reel",
       "lead",
     ]))
+
+    expect(sendEmailMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "buyer@example.com",
+        emailType: "prompt_vault_delivery",
+        idempotencyKey: "prompt-vault-delivery:cs_prompt_vault_attributed",
+      }),
+    )
   })
 })
