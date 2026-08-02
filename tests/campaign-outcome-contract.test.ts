@@ -144,9 +144,9 @@ describe("Your Next Campaign product contract", () => {
 
     expect(landing).toContain("For women building something of their own")
     expect(landing).toContain(
-      "For the woman who knows what she's building and freezes when it's time to post."
+      "For the woman who knows what she&apos;s building and freezes when it&apos;s time to post."
     )
-    expect(landing).toContain("If you don't recognize yourself in a photo, we redo it.")
+    expect(landing).toContain("If you don&apos;t recognize yourself in a photo, we redo it.")
     expect(landing).toContain("One reel, ready to assemble")
     expect(order).toContain("Tell Maya what you're promoting.")
     expect(order).toContain("Posted. That is exactly what this was for.")

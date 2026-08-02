@@ -157,7 +157,15 @@ export default async function PromptVaultCheckoutPage({
       }),
     })
 
-    return <PromptVaultCheckoutEmailCapture params={params} productPrice={promptVaultPrice.oneTimeLabel} />
+    return (
+      <PromptVaultCheckoutEmailCapture
+        params={params}
+        productPrice={promptVaultPrice.oneTimeLabel}
+        copy=""
+        proofQuote=""
+        mobileFormFirst
+      />
+    )
   }
 
   try {

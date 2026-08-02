@@ -59,6 +59,7 @@ export function PromptVaultCheckoutEmailCapture({
   prefillEmail = "",
   proceedOnSubmit = false,
   allowSkip = false,
+  mobileFormFirst = false,
   orderBump,
 }: {
   params: CheckoutEmailCaptureParams
@@ -80,6 +81,7 @@ export function PromptVaultCheckoutEmailCapture({
   prefillEmail?: string
   proceedOnSubmit?: boolean
   allowSkip?: boolean
+  mobileFormFirst?: boolean
   orderBump?: CheckoutOrderBump
 }) {
   const hiddenParams = buildCheckoutEmailCaptureHiddenParams(params).filter((item) => {
@@ -99,7 +101,7 @@ export function PromptVaultCheckoutEmailCapture({
   return (
     <main className={inter.className}>
       <section className="pv-email-capture">
-        <div className="pv-email-shell">
+        <div className={`pv-email-shell${mobileFormFirst ? " pv-mobile-form-first" : ""}`}>
           <aside className="pv-visual-panel" aria-label={`${productName} preview`}>
             <div className="pv-hero-visual">
               <Image src={heroVisual.src} alt={heroVisual.alt} fill priority sizes="(min-width: 900px) 44vw, 100vw" />
@@ -130,11 +132,11 @@ export function PromptVaultCheckoutEmailCapture({
 
             <p className="pv-eyebrow">{eyebrow}</p>
             <h1 className={`${cormorant.className} pv-title`}>{title}</h1>
-            <p className="pv-copy">{copy}</p>
+            {copy ? <p className="pv-copy">{copy}</p> : null}
             {proofQuote && (
               <p
                 className="pv-copy"
-                style={{ fontStyle: "italic", color: "#4F5052", margin: "10px 0 0" }}
+                style={{ fontStyle: "italic", color: "rgb(79, 80, 82)", margin: "10px 0 0" }}
               >
                 &ldquo;{proofQuote}&rdquo;{" "}
                 <span
@@ -142,7 +144,7 @@ export function PromptVaultCheckoutEmailCapture({
                     fontStyle: "normal",
                     fontSize: "12px",
                     letterSpacing: "0.04em",
-                    color: "#818283",
+                    color: "rgb(129, 130, 131)",
                   }}
                 >
                   {proofAuthor}
@@ -270,6 +272,10 @@ export function PromptVaultCheckoutEmailCapture({
 
         .pv-mini-visual {
           aspect-ratio: 1 / 1;
+        }
+
+        .pv-email-shell.pv-mobile-form-first .pv-hero-visual img {
+          object-position: center 34%;
         }
 
         .pv-email-card {
@@ -479,6 +485,30 @@ export function PromptVaultCheckoutEmailCapture({
 
           .pv-title {
             font-size: clamp(38px, 12vw, 52px);
+          }
+
+          .pv-email-shell.pv-mobile-form-first .pv-email-card {
+            order: 1;
+          }
+
+          .pv-email-shell.pv-mobile-form-first .pv-visual-panel {
+            order: 2;
+            border-top: 1px solid rgba(197,198,200,0.42);
+            border-bottom: 0;
+          }
+
+          .pv-email-shell.pv-mobile-form-first .pv-hero-visual img {
+            object-position: center 28%;
+          }
+
+          .pv-email-shell.pv-mobile-form-first .pv-order {
+            flex-direction: row;
+            gap: 16px;
+          }
+
+          .pv-email-shell.pv-mobile-form-first .pv-order-price {
+            text-align: right;
+            white-space: nowrap;
           }
         }
 

@@ -28,8 +28,8 @@ describe("expired purchase password link recovery", () => {
   it("delivers Prompt Vault with one direct action and no password setup", () => {
     const template = readFileSync("lib/email/templates/prompt-vault-delivery.ts", "utf8")
 
-    expect(template).toContain('renderStoneButton("Open Your Prompt Vault"')
-    expect(template).toContain("No login needed.")
+    expect(template).toContain('renderStoneButton("Open my Prompt Vault"')
+    expect(template).toContain("you do not need to create a login.")
     expect(template).not.toContain('renderStoneButton("Set Your Password"')
     expect(template).not.toContain("Set your password:")
 
@@ -39,8 +39,8 @@ describe("expired purchase password link recovery", () => {
       passwordSetupUrl: "https://sselfie.ai/auth/setup-password?secret=must-not-leak",
     })
 
-    expect(rendered.html).toContain("No login needed.")
-    expect(rendered.text).toContain("No login needed.")
+    expect(rendered.html).toContain("you do not need to create a login.")
+    expect(rendered.text).toContain("you do not need to create a login.")
     expect(rendered.html).not.toContain("must-not-leak")
     expect(rendered.text).not.toContain("must-not-leak")
   })
