@@ -1,5 +1,21 @@
 # Completed releases
 
+## 2026-08-02 — Vault Maya sales page
+
+Rebuilt the Vault Maya landing page as a premium, visual buying journey using later images from
+the newest Vault collections. Clarified the tap-to-create experience, monthly membership value,
+credit terms, cancellation path, and the difference between the Prompt Vault and Vault Maya.
+Added landing-view and checkout-click measurement without changing pricing, checkout,
+fulfillment, entitlements, credits, generation, or customer email behavior.
+
+Production proof: feature commit `9a65ce02`, Vercel deployment
+`dpl_DmC6fm2z2h1fPUEWnNqEftspHN2C`, and the exact Git commit verified through Vercel deployment
+metadata. CI typecheck, repository invariants, 1,874 passing tests with 6 intentionally skipped,
+production build, targeted Vault Maya truth tests, and diff checks passed. Live desktop and
+390x844 mobile QA confirmed the approved hero and copy, responsive fit without horizontal
+overflow, working attributed checkout links, loaded Vault imagery, and zero browser-console
+errors. No payment, email, entitlement, credit, generation, or customer record was changed.
+
 ## 2026-08-02 — Prompt Vault post-purchase handoff
 
 Replaced the generic paid-success state with a calm Prompt Vault handoff that confirms payment,
