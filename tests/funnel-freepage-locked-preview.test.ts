@@ -196,14 +196,21 @@ describe("AI prompts free page locked Vault previews", () => {
     expect(checkoutLinkContents).toContain("properties: { placement }")
   })
 
-  it("keeps prompt copying focused on the free result instead of opening a sales card", () => {
+  it("shows one calm Vault invitation after the first copied prompt", () => {
     const freePageContents = read("app/ai-prompts/access/[token]/page.tsx")
 
     expect(freePageContents).toContain('label="Copy prompt"')
-    expect(freePageContents).not.toContain(
+    expect(freePageContents).toContain("showAfterCopyOffer={index === 0}")
+    expect(freePageContents).toContain(
       'afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"'
     )
-    expect(freePageContents).not.toContain('afterCopyTrackEvent="ai_prompts_prompt_vault_click"')
+    expect(freePageContents).toContain('afterCopyTrackEvent="ai_prompts_prompt_vault_click"')
+    expect(freePageContents).toContain('checkout_source: "after_first_copy_prompt_vault_cta"')
+    expect(freePageContents).toContain("Want the rest of this photoshoot?")
+    expect(freePageContents).toContain("Get the complete Prompt Vault ·")
+    expect(freePageContents).toContain("One payment. No subscription.")
+    expect(freePageContents.match(/afterCopyViewEvent=/g)).toHaveLength(1)
+    expect(freePageContents.match(/afterCopyTrackEvent=/g)).toHaveLength(1)
     expect(freePageContents).not.toContain('checkout_source: "after_copy_prompt_vault_cta"')
     expect(freePageContents).not.toContain('checkout_source: "after_copy_prompt_kit_cta"')
     expect(freePageContents).not.toContain(

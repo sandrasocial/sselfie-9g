@@ -68,10 +68,16 @@ function PreviewCardEl({
   card,
   collectionName,
   shotCount,
+  showAfterCopyOffer,
+  upgradeHref,
+  vaultPriceLabel,
 }: {
   card: PromptCard
   collectionName: string
   shotCount: number
+  showAfterCopyOffer: boolean
+  upgradeHref: string
+  vaultPriceLabel: string
 }) {
   const displayTitle = card.title.startsWith(`${collectionName} · `)
     ? card.title.slice(collectionName.length + 3)
@@ -104,6 +110,37 @@ function PreviewCardEl({
             promptTitle={card.title}
             promptNumber={card.number}
             label="Copy prompt"
+            afterCopyHref={showAfterCopyOffer ? upgradeHref : undefined}
+            afterCopyTitle={
+              showAfterCopyOffer ? "Want the rest of this photoshoot?" : undefined
+            }
+            afterCopyNote={
+              showAfterCopyOffer
+                ? "This prompt is one photo from a complete collection. The Prompt Vault gives you the rest of this shoot, every collection, and the new prompt drops I add."
+                : undefined
+            }
+            afterCopyLabel={
+              showAfterCopyOffer
+                ? `Get the complete Prompt Vault · ${vaultPriceLabel}`
+                : undefined
+            }
+            afterCopyFootnote={showAfterCopyOffer ? "One payment. No subscription." : undefined}
+            afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
+            afterCopyTrackEvent="ai_prompts_prompt_vault_click"
+            afterCopyTrackProperties={
+              showAfterCopyOffer
+                ? {
+                    source: "ai-prompts",
+                    destination: "checkout-prompt-vault",
+                    utm_campaign: "ai_prompts_to_prompt_vault",
+                    utm_content: "after_first_copy",
+                    checkout_source: "after_first_copy_prompt_vault_cta",
+                    cta_position: "after_first_copy",
+                    prompt_id: card.id,
+                    prompt_title: card.title,
+                  }
+                : undefined
+            }
           />
         </div>
         <p className="ap-preview-included">
@@ -310,7 +347,7 @@ export default async function AiPromptsAccessPage({
               You have five complete prompts to try. Start with the photo you love most.
             </p>
             <div className="ap-vault-grid">
-              {freebieCollections.map(collection => {
+              {freebieCollections.map((collection, index) => {
                 const card = collection.freeCard
                 return (
                   <div key={card.id} className="ap-vault-item">
@@ -318,6 +355,9 @@ export default async function AiPromptsAccessPage({
                       card={card}
                       collectionName={collection.name}
                       shotCount={collection.shotCount}
+                      showAfterCopyOffer={index === 0}
+                      upgradeHref={vaultPreviewCheckoutHref}
+                      vaultPriceLabel={promptVaultPrice.label}
                     />
                   </div>
                 )
@@ -641,6 +681,91 @@ export default async function AiPromptsAccessPage({
           color: rgba(13, 14, 16, 0.72);
         }
 
+        .copy-after-cta {
+          width: 100%;
+          margin-top: 22px;
+          padding-top: 22px;
+          border-top: 1px solid rgba(13, 12, 11, 0.1);
+          text-align: left;
+          animation: ap-copy-offer-reveal 260ms ease-out both;
+        }
+
+        .copy-after-title {
+          margin: 0 0 10px;
+          color: #0D0E10;
+          font-size: 18px;
+          font-weight: 400;
+          line-height: 1.3;
+        }
+
+        .copy-after-note {
+          max-width: 520px;
+          margin: 0 0 18px;
+          color: rgba(13, 12, 11, 0.64);
+          font-size: 13px;
+          line-height: 1.7;
+        }
+
+        .copy-after-link {
+          display: flex;
+          width: 100%;
+          min-height: 46px;
+          align-items: center;
+          justify-content: center;
+          padding: 13px 18px;
+          background: #0D0E10;
+          color: #F8FAFA;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.16em;
+          line-height: 1.4;
+          text-align: center;
+          text-decoration: none;
+          text-transform: uppercase;
+          transition: opacity 0.15s ease;
+        }
+
+        .copy-after-link:hover {
+          opacity: 0.82;
+        }
+
+        .copy-after-dismiss {
+          margin: 14px 0 0;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          color: rgba(13, 12, 11, 0.48);
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 11px;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
+
+        .copy-after-footnote {
+          margin: 12px 0 0;
+          color: rgba(13, 12, 11, 0.42);
+          font-size: 11px;
+          line-height: 1.6;
+        }
+
+        @keyframes ap-copy-offer-reveal {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .copy-after-cta {
+            animation: none;
+          }
+        }
+
         .ap-workflow-note {
           margin: -24px 0 36px;
           font-size: 15px;
@@ -735,6 +860,10 @@ export default async function AiPromptsAccessPage({
         }
 
         @media (min-width: 640px) {
+          .copy-after-link {
+            display: inline-flex;
+            width: auto;
+          }
           .ap-hero {
             padding: 112px 48px 72px;
           }
