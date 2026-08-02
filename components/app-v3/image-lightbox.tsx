@@ -31,6 +31,7 @@ interface ImageLightboxProps {
   onDownloaded?: () => void
   onUseInCalendar?: (index: number) => void
   onCreateVariation?: (index: number) => void
+  variationLabel?: string
   onClose: () => void
 }
 
@@ -47,6 +48,7 @@ export function ImageLightbox({
   onDownloaded,
   onUseInCalendar,
   onCreateVariation,
+  variationLabel = "Create a variation",
   onClose,
 }: ImageLightboxProps) {
   const count = images.length
@@ -55,9 +57,7 @@ export function ImageLightbox({
   const thumbRailRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
-  const [rawIndex, setIndex] = useState(
-    Math.min(Math.max(startIndex, 0), Math.max(count - 1, 0))
-  )
+  const [rawIndex, setIndex] = useState(Math.min(Math.max(startIndex, 0), Math.max(count - 1, 0)))
   // Defensive clamp: if `images` ever shrinks under an index left over from a prior render
   // (a future caller passing a shorter array in place, without this component remounting),
   // this keeps the viewer showing a real slide instead of silently rendering nothing.
@@ -287,7 +287,7 @@ export function ImageLightbox({
               onClick={() => onCreateVariation(index)}
               className="inline-flex min-h-11 items-center px-3 py-2.5 text-[11px] text-white/80 underline underline-offset-4 hover:text-white"
             >
-              Create a variation
+              {variationLabel}
             </button>
           ) : null}
           {count > 1 && (
@@ -297,10 +297,7 @@ export function ImageLightbox({
                 if (bulkDownloadStatus === "preparing") return
                 setBulkDownloadStatus("preparing")
                 const allUrls = images.map((imgUrl, i) => bakedImageUrls?.[i] ?? imgUrl)
-                const started = await downloadAllSlides(
-                  allUrls,
-                  conceptTitle || "sselfie-slides"
-                )
+                const started = await downloadAllSlides(allUrls, conceptTitle || "sselfie-slides")
                 if (!started) {
                   setBulkDownloadStatus("error")
                   return

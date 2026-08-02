@@ -28,6 +28,8 @@ export interface MemberPulse {
   recoveriesShown: number
   chatAborts: number
   reviewsSubmitted: number
+  vaultMayaLoved: number
+  vaultMayaNotQuite: number
   /** rerolls / successful generation completions. Null when nothing was generated. */
   rerollRate: number | null
   topFormats: { format: string; count: number }[]
@@ -51,6 +53,8 @@ const PULSE_EVENTS = [
   "suite_maya_recovery_shown",
   "suite_chat_aborted",
   "suite_review_submitted",
+  "vault_maya_photo_loved",
+  "vault_maya_photo_not_quite",
 ]
 
 function anonymizeSnippet(value: string, maxLength = 180): string {
@@ -242,6 +246,8 @@ export async function buildMemberPulse(periodDays = 7): Promise<MemberPulse> {
     recoveriesShown: count("suite_maya_recovery_shown"),
     chatAborts: count("suite_chat_aborted"),
     reviewsSubmitted: count("suite_review_submitted"),
+    vaultMayaLoved: count("vault_maya_photo_loved"),
+    vaultMayaNotQuite: count("vault_maya_photo_not_quite"),
     rerollRate: generationCompletions > 0 ? rerolls / generationCompletions : null,
     topFormats: topFormats.map(f => ({ format: f.format, count: f.count })),
     topVibes: topVibes.map(v => ({ aestheticId: v.aesthetic_id, count: v.count })),

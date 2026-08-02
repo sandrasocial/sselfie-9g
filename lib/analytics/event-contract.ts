@@ -123,6 +123,8 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "vault_maya_generation_completed",
   "vault_maya_generation_failed",
   "vault_maya_photo_saved",
+  "vault_maya_photo_loved",
+  "vault_maya_photo_not_quite",
   "vault_maya_drop_request_sent",
   "prompt_vault_landing_view",
   "prompt_vault_landing_cta_clicked",

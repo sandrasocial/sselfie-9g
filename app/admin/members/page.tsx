@@ -78,7 +78,7 @@ function MemberWords({
 }
 
 function PulseContent({ pulse }: { pulse: MemberPulse }) {
-  const attentionCount = pulse.generationFailures + pulse.chatAborts
+  const attentionCount = pulse.generationFailures + pulse.chatAborts + pulse.vaultMayaNotQuite
 
   return (
     <>
@@ -92,9 +92,9 @@ function PulseContent({ pulse }: { pulse: MemberPulse }) {
                 : `${attentionCount} product problems were recorded.`}
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-stone-300">
-              This combines failed generations and chats that stopped before Maya finished. Recovery
-              prompts are shown separately because they can include expected guidance, such as low
-              credits.
+              This combines failed generations, chats that stopped before Maya finished and Vault
+              Maya photos marked “Not quite.” Recovery prompts are shown separately because they can
+              include expected guidance, such as low credits.
             </p>
           </div>
           <p className="font-serif text-6xl font-light text-white">{attentionCount}</p>
@@ -121,6 +121,19 @@ function PulseContent({ pulse }: { pulse: MemberPulse }) {
           label="Rerun share"
           value={percent(pulse.rerollRate)}
           note={`${pulse.rerolls} reruns across successful generation requests`}
+        />
+      </section>
+
+      <section className="mt-5 grid gap-px overflow-hidden border border-stone-300 bg-stone-300 sm:grid-cols-2">
+        <Stat
+          label="Vault Maya · Love this"
+          value={pulse.vaultMayaLoved}
+          note="Photos members explicitly said they loved"
+        />
+        <Stat
+          label="Vault Maya · Not quite"
+          value={pulse.vaultMayaNotQuite}
+          note="Photos that need a closer quality review"
         />
       </section>
 
