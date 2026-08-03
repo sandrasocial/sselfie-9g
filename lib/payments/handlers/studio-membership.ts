@@ -529,4 +529,26 @@ export async function handleStudioMembershipSubscriptionCheckout(
       referralError.message
     )
   }
+
+  // A successful real Vault Maya or SUITE purchase immediately suppresses every
+  // remaining Vault Maya sales touch. This is best-effort so Resend cannot
+  // interrupt paid fulfillment.
+  if (
+    ["vault_maya", "sselfie_studio_membership"].includes(productType) &&
+    event.livemode &&
+    isPaymentPaid &&
+    customerEmail
+  ) {
+    try {
+      const { removeVaultMayaLaunchSalesContact } = await import(
+        "@/lib/email/campaigns/vault-maya-launch-segments"
+      )
+      await removeVaultMayaLaunchSalesContact(customerEmail)
+    } catch (suppressionError) {
+      console.error("[v0] Vault Maya launch buyer suppression failed:", {
+        error:
+          suppressionError instanceof Error ? suppressionError.message : "unknown error",
+      })
+    }
+  }
 }

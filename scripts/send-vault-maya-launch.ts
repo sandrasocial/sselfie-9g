@@ -3,9 +3,9 @@
  *
  * SAFETY: does NOTHING without an explicit flag.
  *   npx tsx scripts/send-vault-maya-launch.ts            → dry run: prints recipient count + sample
- *   npx tsx scripts/send-vault-maya-launch.ts --send     → sends via Resend (requires Sandra's
- *                                                          approval of the copy in
- *                                                          docs/business/VAULT_MAYA_LAUNCH_PACK_2026-07-30.md)
+ * The historical direct-send path is deliberately disabled. Marketing sends must use Resend
+ * Broadcasts so global unsubscribes are honored, and must separate SUITE members, commerce buyers,
+ * and non-buyers. Review the current drafts at /email-review-draft locally.
  */
 
 import { neon } from "@neondatabase/serverless"
@@ -36,6 +36,11 @@ const HTML = `
 `
 
 async function main() {
+  if (LIVE) {
+    throw new Error(
+      "Direct Vault Maya launch sends are disabled. Prepare approved Resend Broadcast drafts with unsubscribe handling instead."
+    )
+  }
   const rows = await sql`
     SELECT DISTINCT LOWER(COALESCE(sp.customer_email, u.email)) AS email,
            MAX(COALESCE(u.display_name, '')) AS display_name
@@ -48,10 +53,16 @@ async function main() {
     GROUP BY 1
   `
   const recipients = (rows as { email: string; display_name: string }[]).filter(
-    (r) => r.email && r.email !== QA_EMAIL && r.email.includes("@"),
+    r => r.email && r.email !== QA_EMAIL && r.email.includes("@")
   )
   console.log(`Recipients: ${recipients.length}`)
-  console.log("Sample:", recipients.slice(0, 5).map((r) => r.email.replace(/(.{2}).+(@.+)/, "$1***$2")).join(", "))
+  console.log(
+    "Sample:",
+    recipients
+      .slice(0, 5)
+      .map(r => r.email.replace(/(.{2}).+(@.+)/, "$1***$2"))
+      .join(", ")
+  )
 
   if (!LIVE) {
     console.log("\nDRY RUN — no emails sent. Re-run with --send after Sandra approves the copy.")
@@ -69,19 +80,25 @@ async function main() {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to: r.email, reply_to: "hello@sselfie.ai", subject: SUBJECT, html }),
+      body: JSON.stringify({
+        from: FROM,
+        to: r.email,
+        reply_to: "hello@sselfie.ai",
+        subject: SUBJECT,
+        html,
+      }),
     })
     if (res.ok) sent++
     else {
       failed++
       console.error(`Failed for ${r.email}: ${res.status} ${await res.text().catch(() => "")}`)
     }
-    await new Promise((resolve) => setTimeout(resolve, 600))
+    await new Promise(resolve => setTimeout(resolve, 600))
   }
   console.log(`Sent ${sent}, failed ${failed}`)
 }
 
-main().catch((e) => {
+main().catch(e => {
   console.error(e.message)
   process.exit(1)
 })

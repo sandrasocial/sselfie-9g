@@ -24,7 +24,7 @@ export const EMAIL_CONFIG = {
 
 export const EMAIL_ENV = {
   resendAudienceId: readNormalizedEnv("RESEND_AUDIENCE_ID"),
-  dryRun: process.env.EMAIL_DRY_RUN === "true",
+  dryRun: String(process.env.EMAIL_DRY_RUN || "").trim().toLowerCase() === "true",
   maxBroadcastRecipients: Number.parseInt(process.env.EMAIL_BROADCAST_MAX_RECIPIENTS || "10000", 10),
   allowLargeBroadcasts: process.env.EMAIL_ALLOW_LARGE_BROADCASTS === "true",
 } as const

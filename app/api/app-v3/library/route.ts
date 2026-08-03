@@ -116,6 +116,15 @@ export async function GET() {
           ctaLabel: p.ctaLabel,
         })),
       drops: [
+        ...vaultDrops.map(d => ({
+          id: `vault-${d.slug}`,
+          title: d.title,
+          description: d.moodLine,
+          thumbnailUrl: d.heroImage,
+          month: d.publishedAt.slice(0, 7),
+          category: "Prompt Vault",
+          publishedAt: d.publishedAt,
+        })),
         ...drops.map(d => ({
           id: d.id,
           title: d.title,

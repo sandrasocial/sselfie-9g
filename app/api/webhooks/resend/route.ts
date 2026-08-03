@@ -3,6 +3,10 @@ import { Resend } from "resend"
 import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { envNumber } from "@/lib/env-flags"
+import {
+  addVaultMayaLaunchHighIntent,
+  isVaultMayaLaunchCampaignKey,
+} from "@/lib/email/campaigns/vault-maya-launch-segments"
 
 const WEBHOOK_EVENT_TYPES = new Set([
   "email.sent",
@@ -696,6 +700,18 @@ export async function POST(request: NextRequest) {
     const result = await updateEmailLog(context)
     await updateABTestIfNeeded(result.rows, context.eventType)
     await maybeSendDeliverabilityAlert(context.eventType)
+
+    if (
+      context.eventType === "email.clicked" &&
+      context.recipientEmail &&
+      isVaultMayaLaunchCampaignKey(context.resolvedEmailType)
+    ) {
+      await addVaultMayaLaunchHighIntent(context.recipientEmail).catch((intentError) => {
+        console.error("[v0] [Resend Webhook] Vault Maya intent sync failed:", {
+          error: intentError instanceof Error ? intentError.message : "unknown error",
+        })
+      })
+    }
 
     const eventStatus = result.matched ? "processed" : "unmatched"
     await updateEmailEventStatus(eventRowId, eventStatus)

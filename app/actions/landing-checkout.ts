@@ -399,6 +399,21 @@ export async function createLandingCheckoutSession(
       userEmail: normalizedCustomerEmail,
       stripeCustomerId: typeof session.customer === "string" ? session.customer : null,
     })
+
+    // Launch intent is intentionally best-effort. A Resend outage must never block
+    // Stripe checkout, and the helper re-checks paid/SUITE exclusions before adding.
+    if (product.type === "vault_maya" && normalizedCustomerEmail) {
+      try {
+        const { addVaultMayaLaunchHighIntent } = await import(
+          "@/lib/email/campaigns/vault-maya-launch-segments"
+        )
+        await addVaultMayaLaunchHighIntent(normalizedCustomerEmail)
+      } catch (intentError) {
+        console.error("[landing-checkout] Vault Maya launch intent sync failed:", {
+          error: intentError instanceof Error ? intentError.message : "unknown error",
+        })
+      }
+    }
     return session.client_secret
   } catch (error: any) {
     console.error("[landing-checkout] Stripe API error creating checkout session:", {

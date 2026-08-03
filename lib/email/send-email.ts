@@ -335,7 +335,7 @@ export async function sendEmail(
   }
 
   // Dry-run mode (no send, log only)
-  if (process.env.EMAIL_DRY_RUN === "true") {
+  if (String(process.env.EMAIL_DRY_RUN || "").trim().toLowerCase() === "true") {
     console.log(`[v0] [EMAIL_DRY_RUN] Skipping send to ${recipient}`, {
       subject: options.subject,
       htmlLength: options.html?.length || 0,

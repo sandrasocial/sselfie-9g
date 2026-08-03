@@ -1,8 +1,11 @@
 // SUITE month-one habit system cron (copy approved 2026-06-10).
-// Runs daily. Three jobs, all deduped via email_logs and gated by SUITE_HABIT_EMAILS_ENABLED:
+// Runs daily. SUITE jobs are gated by SUITE_HABIT_EMAILS_ENABLED; the paid Vault Maya
+// first-photo nudge is independently gated by VAULT_MAYA_LIFECYCLE_EMAILS_ENABLED.
+// All jobs are deduped via email_logs:
 //   1. Day 0  - new members (joined < 7 days) get the first-shoot welcome once.
 //   2. +48h   - members 2-30 days in who have generated NOTHING get one gentle nudge.
 //   3. Monday - every active member gets the weekly drop (one look, rotates by ISO week).
+//   4. Vault +24h - a new paid Vault Maya member with no completed photo gets one activation nudge.
 // Older zero-usage members are deliberately excluded - they get Sandra's personal rescue email.
 // Test accounts (sselfie.ai addresses, smoke users) are always excluded.
 
@@ -23,6 +26,10 @@ import {
   SUITE_NUDGE_EMAIL_TYPE,
   SUITE_WEEKLY_DROP_EMAIL_TYPE,
 } from "@/lib/email/templates/suite-habit-emails"
+import {
+  generateVaultMayaFirstPhotoNudgeEmail,
+  VAULT_MAYA_FIRST_PHOTO_NUDGE_EMAIL_TYPE,
+} from "@/lib/email/templates/vault-maya-marketing"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 300
@@ -38,6 +45,27 @@ interface MemberRow {
   user_id: string
   email: string
   first_name: string
+}
+
+async function activeNewVaultMembers(): Promise<MemberRow[]> {
+  return (await sql`
+    SELECT
+      s.user_id,
+      LOWER(u.email) AS email,
+      COALESCE(NULLIF(u.first_name, ''), NULLIF(u.display_name, ''), SPLIT_PART(u.email, '@', 1)) AS first_name
+    FROM subscriptions s
+    JOIN users u ON u.id::text = s.user_id
+    WHERE s.product_type = 'vault_maya'
+      AND s.status = 'active'
+      AND COALESCE(s.is_test_mode, FALSE) = FALSE
+      AND s.created_at <= NOW() - INTERVAL '24 hours'
+      AND s.created_at > NOW() - INTERVAL '7 days'
+      AND u.email IS NOT NULL
+      AND u.email NOT ILIKE '%@sselfie.ai'
+      AND COALESCE(u.display_name, '') <> 'Smoke User'
+    ORDER BY s.created_at ASC
+    LIMIT ${BATCH_LIMIT}
+  `) as unknown as MemberRow[]
 }
 
 /** Active, real (non-test) members. firstName falls back to the email prefix. */
@@ -93,6 +121,17 @@ async function hasGeneratedAnything(userId: string): Promise<boolean> {
   return rows.length > 0
 }
 
+async function hasCompletedVaultMayaPhoto(userId: string): Promise<boolean> {
+  const rows = await sql`
+    SELECT 1
+    FROM analytics_events
+    WHERE user_id::text = ${userId}
+      AND event_name = 'vault_maya_generation_completed'
+    LIMIT 1
+  `
+  return rows.length > 0
+}
+
 export async function GET(request: Request) {
   const cronLogger = createCronLogger("suite-habit-emails")
   await cronLogger.start()
@@ -114,16 +153,38 @@ export async function GET(request: Request) {
       }
     }
 
-    if (!envFlag("SUITE_HABIT_EMAILS_ENABLED")) {
-      const summary = { enabled: false, day0: 0, nudges: 0, weekly: 0 }
+    const suiteEnabled = envFlag("SUITE_HABIT_EMAILS_ENABLED")
+    const vaultEnabled = envFlag("VAULT_MAYA_LIFECYCLE_EMAILS_ENABLED")
+
+    if (!suiteEnabled && !vaultEnabled) {
+      const summary = {
+        enabled: false,
+        suiteEnabled,
+        vaultEnabled,
+        day0: 0,
+        nudges: 0,
+        weekly: 0,
+        vaultFirstPhoto: 0,
+      }
       await cronLogger.success(summary)
       return NextResponse.json({ success: true, ...summary })
     }
 
-    const members = await activeMembers()
+    const members = suiteEnabled ? await activeMembers() : []
     const now = new Date()
     const isMonday = now.getUTCDay() === 1
-    const results = { enabled: true, members: members.length, day0: 0, nudges: 0, weekly: 0, failed: 0 }
+    const results = {
+      enabled: true,
+      suiteEnabled,
+      vaultEnabled,
+      members: members.length,
+      vaultMembers: 0,
+      day0: 0,
+      nudges: 0,
+      weekly: 0,
+      vaultFirstPhoto: 0,
+      failed: 0,
+    }
 
     for (const m of members) {
       try {
@@ -201,6 +262,44 @@ export async function GET(request: Request) {
           email: m.email.replace(/(.{2}).*(@.*)/, "$1***$2"),
           error: memberError,
         })
+      }
+    }
+
+    if (vaultEnabled) {
+      const vaultMembers = await activeNewVaultMembers()
+      results.vaultMembers = vaultMembers.length
+
+      for (const member of vaultMembers) {
+        try {
+          if (
+            !(await hasCompletedVaultMayaPhoto(member.user_id)) &&
+            !(await alreadySent(member.email, VAULT_MAYA_FIRST_PHOTO_NUDGE_EMAIL_TYPE, 3650))
+          ) {
+            const email = generateVaultMayaFirstPhotoNudgeEmail({
+              firstName: member.first_name,
+            })
+            const sent = await sendEmail({
+              to: member.email,
+              from: FROM_EMAIL,
+              replyTo: REPLY_TO_EMAIL,
+              subject: email.subject,
+              html: email.html,
+              text: email.text,
+              emailType: VAULT_MAYA_FIRST_PHOTO_NUDGE_EMAIL_TYPE,
+              idempotencyKey: `vault-maya-first-photo:${member.user_id}`,
+              tags: ["vault-maya", "first-photo"],
+            })
+            if (sent.success) results.vaultFirstPhoto += 1
+            else results.failed += 1
+            await sleep(SEND_DELAY_MS)
+          }
+        } catch (memberError) {
+          results.failed += 1
+          console.error("[suite-habit-emails] Vault Maya member processing failed:", {
+            email: member.email.replace(/(.{2}).*(@.*)/, "$1***$2"),
+            error: memberError,
+          })
+        }
       }
     }
 

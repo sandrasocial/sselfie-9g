@@ -247,6 +247,7 @@ export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
     execute: () =>
       resend.broadcasts.create({
         ...(segmentId ? { segmentId } : { audienceId }),
+        name: input.campaignKey,
         from: EMAIL_CONFIG.marketing.from,
         replyTo: EMAIL_CONFIG.marketing.replyTo,
         subject: input.subject,
