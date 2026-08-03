@@ -58,7 +58,10 @@ import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/may
 import { validatePhotoshootBriefs } from "@/lib/app-v3/maya/semantic-plan-validation"
 import type { OutputFormat } from "@/components/app-v3/types"
 import { findUnownedIdentityReferences } from "@/lib/app-v3/identity-reference-ownership"
-import { resolveVaultMayaInspirationMode } from "@/lib/vault-maya/reference-recreation"
+import {
+  resolveVaultMayaInspirationMode,
+  VAULT_MAYA_IDENTITY_PRESERVATION,
+} from "@/lib/vault-maya/reference-recreation"
 
 // gpt-image edit calls (1024x1536, medium quality, reference selfie attached) routinely
 // run 60-120s. 60s was killing them with a 504. Match the Pro image route's 300s ceiling.
@@ -802,6 +805,7 @@ export async function POST(request: NextRequest) {
       /^[a-zA-Z0-9_-]{1,120}$/.test(body.vaultMayaCardKey)
         ? body.vaultMayaCardKey
         : null
+    const vaultIdentityInstruction = vaultMayaCardKey ? VAULT_MAYA_IDENTITY_PRESERVATION : ""
     const imageStyle = vaultMayaCardKey ? `vault-maya:${vaultMayaCardKey}` : null
     // CREDIT-INTEGRITY-01: one requestRef ties this charge, every stored image, and any refund
     // together (charge reference_id, ai_images prediction_id prefix, refund reference_id). The
@@ -912,15 +916,23 @@ export async function POST(request: NextRequest) {
       process.env.APP_V3_REF_LABELING === "true"
     const referenceRoleLabels = new WeakMap<object, string>()
     if (REF_LABELING_ENABLED) {
-      const identityLine =
-        selfieFiles.length > 1
+      const identityLine = vaultMayaCardKey
+        ? selfieFiles.length > 1
+          ? `Attached images: Images 1-${selfieFiles.length} are identity photos of the same woman. Image 1 is primary; the others add truthful angles and body information. Her full identity, face, and body always come from these photos.`
+          : "Attached images: Image 1 is her identity photo - the only source for her face and body."
+        : selfieFiles.length > 1
           ? `Attached images: Image 1 is her primary selfie - the only source for her face. Images 2-${selfieFiles.length} are more identity photos of the same woman (angles / full body). Her face and body always come from these photos.`
           : "Attached images: Image 1 is her selfie - the only source for her face and body."
-      referenceRoleLabels.set(selfieFiles, identityLine)
+      const identityAndBodyLine = [identityLine, vaultIdentityInstruction]
+        .filter(Boolean)
+        .join("\n")
+      referenceRoleLabels.set(selfieFiles, identityAndBodyLine)
       if (inspirationFiles.length > 0) {
         referenceRoleLabels.set(
           selfieAndInspirationFiles,
-          `${identityLine} The LAST attached image is inspiration only: take styling, light, mood, or pose energy from it - never her face or body.`
+          vaultMayaCardKey
+            ? `${identityAndBodyLine}\nThe LAST attached image is inspiration only: recreate its pose, outfit, setting, crop, composition, and light around the member - never its face or body.`
+            : `${identityAndBodyLine} The LAST attached image is inspiration only: take styling, light, mood, or pose energy from it - never her face or body.`
         )
       }
     }

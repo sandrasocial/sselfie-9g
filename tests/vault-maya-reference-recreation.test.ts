@@ -5,6 +5,7 @@ import path from "path"
 import { describe, expect, it } from "vitest"
 import {
   resolveVaultMayaInspirationMode,
+  VAULT_MAYA_IDENTITY_PRESERVATION,
   VAULT_MAYA_REFERENCE_MODE,
 } from "@/lib/vault-maya/reference-recreation"
 
@@ -52,5 +53,19 @@ describe("Vault Maya reference recreation", () => {
     expect(studio).toContain("inspirationImageUrl: briefData.inspirationImageUrl")
     expect(studio).toContain("referenceMode: briefData.referenceMode")
     expect(generateRoute).toContain("resolveVaultMayaInspirationMode")
+  })
+
+  it("preserves the member's real face and body without changing the shared SUITE prompt", () => {
+    const generateRoute = read("app/api/app-v3/maya/generate/route.ts")
+    const sharedIngredients = read("lib/app-v3/maya/ingredients.ts")
+
+    expect(VAULT_MAYA_IDENTITY_PRESERVATION).toContain("natural body shape and build")
+    expect(VAULT_MAYA_IDENTITY_PRESERVATION).toContain("shoulder width")
+    expect(VAULT_MAYA_IDENTITY_PRESERVATION).toContain("waist-to-hip relationship")
+    expect(VAULT_MAYA_IDENTITY_PRESERVATION).toContain("Do not slim")
+    expect(generateRoute).toContain("VAULT_MAYA_IDENTITY_PRESERVATION")
+    expect(generateRoute).toContain("vaultMayaCardKey ? VAULT_MAYA_IDENTITY_PRESERVATION")
+    expect(generateRoute).toContain("Image 1 is her primary selfie - the only source for her face.")
+    expect(sharedIngredients).not.toContain("VAULT_MAYA_IDENTITY_PRESERVATION")
   })
 })

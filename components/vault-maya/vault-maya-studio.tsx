@@ -64,6 +64,7 @@ type LatestPhotosByCardKey = Record<string, GalleryPhoto>
 type StudioTab = "create" | "gallery" | "account"
 
 const MAX_IDENTITY_SELFIES = 4
+const LOW_CREDIT_THRESHOLD = 5
 
 const TAB_LABELS: Array<{ id: StudioTab; label: string }> = [
   { id: "create", label: "Create" },
@@ -117,12 +118,16 @@ export function VaultMayaStudio({
   const [credits, setCredits] = useState(initialCredits)
   const [gen, setGen] = useState<Record<string, GenState>>({})
   const [requestText, setRequestText] = useState("")
+  const [requestInspiration, setRequestInspiration] = useState<File | null>(null)
   const [requestState, setRequestState] = useState<"idle" | "sending" | "sent" | "error">("idle")
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([])
   const [galleryLoading, setGalleryLoading] = useState(true)
   const [billingBusy, setBillingBusy] = useState(false)
   const [billingError, setBillingError] = useState<string | null>(null)
   const [deletingSelfie, setDeletingSelfie] = useState(false)
+  const [selfieManagerOpen, setSelfieManagerOpen] = useState(false)
+  const [creditModalOpen, setCreditModalOpen] = useState(false)
+  const [creditModalDismissed, setCreditModalDismissed] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const busyRef = useRef(false)
 
@@ -186,6 +191,17 @@ export function VaultMayaStudio({
   }, [])
 
   useEffect(() => {
+    if (credits > LOW_CREDIT_THRESHOLD) {
+      setCreditModalDismissed(false)
+      setCreditModalOpen(false)
+      return
+    }
+    if (credits >= 0 && !creditModalDismissed) {
+      setCreditModalOpen(true)
+    }
+  }, [creditModalDismissed, credits])
+
+  useEffect(() => {
     let cancelled = false
     fetch("/api/vault-maya/looks")
       .then(response =>
@@ -243,35 +259,48 @@ export function VaultMayaStudio({
     window.scrollTo({ top: 0, behavior: "smooth" })
   }, [])
 
-  const uploadSelfie = useCallback(
-    async (file: File) => {
+  const uploadSelfies = useCallback(
+    async (files: File[]) => {
+      const selectedFiles = files.slice(0, Math.max(0, MAX_IDENTITY_SELFIES - selfies.length))
+      if (selectedFiles.length === 0) {
+        setUploadError("Remove one of your four selfies before adding another.")
+        return
+      }
       setUploading(true)
       setUploadError(null)
+      const errors: string[] = []
+      let addedCount = 0
       try {
-        const form = new FormData()
-        form.append("file", file)
-        form.append("slot", "face")
-        const response = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
-        const data = await response.json().catch(() => ({}))
-        if (!response.ok || !data?.url) {
-          throw new Error(data?.error || "That upload didn't work. Try another photo.")
+        for (const file of selectedFiles) {
+          try {
+            const form = new FormData()
+            form.append("file", file)
+            form.append("slot", "face")
+            const response = await fetch("/api/app-v3/upload-selfie", {
+              method: "POST",
+              body: form,
+            })
+            const data = await response.json().catch(() => ({}))
+            if (!response.ok || !data?.url) {
+              throw new Error(data?.error || `${file.name} didn't upload.`)
+            }
+            if (data?.avatarImageId == null) {
+              throw new Error(`${file.name} uploaded, but Maya couldn't save it.`)
+            }
+            const addedSelfie = { id: String(data.avatarImageId), url: String(data.url) }
+            setSelfies(previous => [addedSelfie, ...previous].slice(0, MAX_IDENTITY_SELFIES))
+            addedCount += 1
+          } catch (error) {
+            errors.push(error instanceof Error ? error.message : `${file.name} didn't upload.`)
+          }
         }
-        if (data?.avatarImageId == null) {
-          throw new Error("That photo uploaded, but Maya couldn't save it. Please try again.")
+        if (addedCount > 0) {
+          track("vault_maya_selfie_added", {
+            addedCount,
+            selfieCount: Math.min(selfies.length + addedCount, MAX_IDENTITY_SELFIES),
+          })
         }
-        setSelfies(previous =>
-          [{ id: String(data.avatarImageId), url: String(data.url) }, ...previous].slice(
-            0,
-            MAX_IDENTITY_SELFIES
-          )
-        )
-        track("vault_maya_selfie_added", {
-          selfieCount: Math.min(selfies.length + 1, MAX_IDENTITY_SELFIES),
-        })
-      } catch (error) {
-        setUploadError(
-          error instanceof Error ? error.message : "That upload didn't work. Try another photo."
-        )
+        if (errors.length > 0) setUploadError(errors[0])
       } finally {
         setUploading(false)
       }
@@ -341,7 +370,7 @@ export function VaultMayaStudio({
     async (look: Look) => {
       if (selfies.length === 0) {
         setPreviewLook(null)
-        switchTab("account")
+        setSelfieManagerOpen(true)
         return
       }
       if (busyRef.current) return
@@ -381,6 +410,8 @@ export function VaultMayaStudio({
         const data = await response.json().catch(() => ({}))
         if (!response.ok || !data?.imageUrl) {
           if (response.status === 402 || /credit/i.test(String(data?.error || ""))) {
+            if (typeof data.current === "number") setCredits(data.current)
+            setCreditModalOpen(true)
             throw new Error("You're out of photos this month. Top up and keep going.")
           }
           throw new Error(data?.error || "That one didn't come out. Tap to try again.")
@@ -416,27 +447,30 @@ export function VaultMayaStudio({
         busyRef.current = false
       }
     },
-    [loadGallery, selfies, switchTab]
+    [loadGallery, selfies]
   )
 
   const sendDropRequest = useCallback(async () => {
     const message = requestText.trim()
-    if (!message || requestState === "sending") return
+    if ((!message && !requestInspiration) || requestState === "sending") return
     setRequestState("sending")
     try {
+      const form = new FormData()
+      form.append("message", message)
+      if (requestInspiration) form.append("inspiration", requestInspiration)
       const response = await fetch("/api/vault-maya/drop-requests", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: form,
       })
       if (!response.ok) throw new Error()
       setRequestState("sent")
       setRequestText("")
-      track("vault_maya_drop_request_sent")
+      setRequestInspiration(null)
+      track("vault_maya_drop_request_sent", { hasInspiration: Boolean(requestInspiration) })
     } catch {
       setRequestState("error")
     }
-  }, [requestState, requestText])
+  }, [requestInspiration, requestState, requestText])
 
   const createAgainFromGallery = useCallback(
     (index: number) => {
@@ -518,7 +552,7 @@ export function VaultMayaStudio({
                 })
               }}
               onMake={look => void makeLook(look)}
-              onAddSelfie={() => switchTab("account")}
+              onAddSelfie={() => setSelfieManagerOpen(true)}
             />
           ) : (
             <CreateHome
@@ -529,7 +563,7 @@ export function VaultMayaStudio({
               selfieUrl={selfies[0]?.url ?? null}
               selfieCount={selfies.length}
               uploading={uploading}
-              onAddSelfie={() => switchTab("account")}
+              onAddSelfie={() => setSelfieManagerOpen(true)}
               onOpenCollection={openCollection}
               hasMoreCollections={!showAllCollections && rest.length > visibleCollections.length}
               totalCollections={rest.length}
@@ -558,6 +592,7 @@ export function VaultMayaStudio({
             billingBusy={billingBusy}
             billingError={billingError}
             requestText={requestText}
+            requestInspiration={requestInspiration}
             requestState={requestState}
             showSuiteBridge={showSuiteBridge}
             includedWithSuite={includedWithSuite}
@@ -565,6 +600,10 @@ export function VaultMayaStudio({
             onDeleteSelfie={selfie => void deleteSelfie(selfie)}
             onRequestTextChange={value => {
               setRequestText(value)
+              if (requestState === "sent" || requestState === "error") setRequestState("idle")
+            }}
+            onRequestInspirationChange={file => {
+              setRequestInspiration(file)
               if (requestState === "sent" || requestState === "error") setRequestState("idle")
             }}
             onSendRequest={() => void sendDropRequest()}
@@ -577,10 +616,11 @@ export function VaultMayaStudio({
         ref={fileInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
+        multiple
         className="hidden"
         onChange={event => {
-          const file = event.target.files?.[0]
-          if (file) void uploadSelfie(file)
+          const files = Array.from(event.target.files ?? [])
+          if (files.length > 0) void uploadSelfies(files)
           event.target.value = ""
         }}
       />
@@ -608,6 +648,28 @@ export function VaultMayaStudio({
           generating={gen[previewLook.look.cardKey]?.status === "generating"}
           onClose={() => setPreviewLook(null)}
           onMake={() => void makeLook(previewLook.look)}
+        />
+      ) : null}
+
+      {selfieManagerOpen ? (
+        <SelfieManagerModal
+          selfies={selfies}
+          uploading={uploading}
+          deletingSelfie={deletingSelfie}
+          uploadError={uploadError}
+          onAdd={() => fileInputRef.current?.click()}
+          onDelete={selfie => void deleteSelfie(selfie)}
+          onClose={() => setSelfieManagerOpen(false)}
+        />
+      ) : null}
+
+      {creditModalOpen ? (
+        <VaultMayaCreditModal
+          credits={credits}
+          onClose={() => {
+            setCreditModalDismissed(true)
+            setCreditModalOpen(false)
+          }}
         />
       ) : null}
 
@@ -722,7 +784,12 @@ function CreateHome({
           </h1>
         </div>
         {selfieUrl ? (
-          <div className="flex items-center gap-3 border-l border-[color:var(--ss-silver)]/60 pl-4">
+          <button
+            type="button"
+            onClick={onAddSelfie}
+            className="group flex min-h-12 items-center gap-3 border-l border-[color:var(--ss-silver)]/60 pl-4 text-left"
+            aria-label="Change selfies"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={selfieUrl}
@@ -731,8 +798,11 @@ function CreateHome({
             />
             <p className="max-w-32 text-[12px] leading-5 text-[color:var(--ss-davy)]">
               {selfieCount === 1 ? "Your selfie is ready." : `${selfieCount} selfies are ready.`}
+              <span className="block text-[9px] uppercase tracking-[0.14em] text-[color:var(--ss-gray)] underline underline-offset-4 group-hover:text-[color:var(--ss-night)]">
+                Change selfies
+              </span>
             </p>
-          </div>
+          </button>
         ) : (
           <button
             type="button"
@@ -966,7 +1036,18 @@ function CollectionDetail({
             {collection.moodLine}
           </p>
         </div>
-        <p className="text-[12px] text-[color:var(--ss-gray)]">Choose one photo to create</p>
+        <div className="text-left sm:text-right">
+          <p className="text-[12px] text-[color:var(--ss-gray)]">Choose one photo to create</p>
+          {selfieReady ? (
+            <button
+              type="button"
+              onClick={onAddSelfie}
+              className="mt-2 min-h-9 text-[9px] uppercase tracking-[0.17em] text-[color:var(--ss-night)] underline underline-offset-4"
+            >
+              Change selfies
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {!selfieReady ? (
@@ -1141,12 +1222,14 @@ function Account({
   billingBusy,
   billingError,
   requestText,
+  requestInspiration,
   requestState,
   showSuiteBridge,
   includedWithSuite,
   onAddSelfie,
   onDeleteSelfie,
   onRequestTextChange,
+  onRequestInspirationChange,
   onSendRequest,
   onOpenBilling,
 }: {
@@ -1158,15 +1241,29 @@ function Account({
   billingBusy: boolean
   billingError: string | null
   requestText: string
+  requestInspiration: File | null
   requestState: "idle" | "sending" | "sent" | "error"
   showSuiteBridge: boolean
   includedWithSuite: boolean
   onAddSelfie: () => void
   onDeleteSelfie: (selfie: IdentitySelfie) => void
   onRequestTextChange: (value: string) => void
+  onRequestInspirationChange: (file: File | null) => void
   onSendRequest: () => void
   onOpenBilling: () => void
 }) {
+  const [requestInspirationPreview, setRequestInspirationPreview] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!requestInspiration) {
+      setRequestInspirationPreview(null)
+      return
+    }
+    const previewUrl = URL.createObjectURL(requestInspiration)
+    setRequestInspirationPreview(previewUrl)
+    return () => URL.revokeObjectURL(previewUrl)
+  }, [requestInspiration])
+
   return (
     <section className="mx-auto max-w-3xl">
       <div className="border-b border-[color:var(--ss-silver)]/55 pb-7">
@@ -1274,10 +1371,48 @@ function Account({
           className="mt-4 w-full resize-none rounded-[5px] border border-[color:var(--ss-silver)]/75 bg-[color:var(--ss-seasalt)] p-4 text-[14px] text-[color:var(--ss-night)] outline-none focus:border-[color:var(--ss-night)]"
         />
         <div className="mt-3 flex flex-wrap items-center gap-3">
+          <label className="inline-flex min-h-11 cursor-pointer items-center rounded-[5px] border border-[color:var(--ss-silver)] px-4 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-night)] hover:border-[color:var(--ss-night)]">
+            Attach inspiration
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={event => {
+                onRequestInspirationChange(event.target.files?.[0] ?? null)
+                event.target.value = ""
+              }}
+            />
+          </label>
+          {requestInspiration ? (
+            <div className="flex min-w-0 items-center gap-3 rounded-[7px] bg-[color:var(--ss-seasalt)] p-2 pr-3">
+              {requestInspirationPreview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={requestInspirationPreview}
+                  alt="Your inspiration"
+                  className="h-14 w-12 shrink-0 rounded-[5px] object-cover"
+                />
+              ) : null}
+              <div className="min-w-0">
+                <p className="max-w-[220px] truncate text-[12px] text-[color:var(--ss-davy)]">
+                  {requestInspiration.name}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onRequestInspirationChange(null)}
+                  className="mt-1 min-h-7 text-[9px] uppercase tracking-[0.14em] text-[color:var(--ss-gray)] underline underline-offset-3"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={onSendRequest}
-            disabled={requestState === "sending" || !requestText.trim()}
+            disabled={requestState === "sending" || (!requestText.trim() && !requestInspiration)}
             className="min-h-11 rounded-[5px] border border-[color:var(--ss-night)] px-5 text-[10px] uppercase tracking-[0.2em] text-[color:var(--ss-night)] disabled:opacity-50"
           >
             {requestState === "sending" ? "Sending…" : "Send to Sandra"}
@@ -1368,6 +1503,170 @@ function AccountCard({
       </h2>
       {children}
     </section>
+  )
+}
+
+function SelfieManagerModal({
+  selfies,
+  uploading,
+  deletingSelfie,
+  uploadError,
+  onAdd,
+  onDelete,
+  onClose,
+}: {
+  selfies: IdentitySelfie[]
+  uploading: boolean
+  deletingSelfie: boolean
+  uploadError: string | null
+  onAdd: () => void
+  onDelete: (selfie: IdentitySelfie) => void
+  onClose: () => void
+}) {
+  useDialogLock(onClose)
+  const canAdd = selfies.length < MAX_IDENTITY_SELFIES
+  return (
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-[color:var(--ss-night)]/45 p-3 backdrop-blur-sm sm:items-center sm:p-6">
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="selfie-manager-title"
+        className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-[14px] bg-white p-5 shadow-[0_28px_100px_rgba(13,14,16,0.24)] sm:p-8"
+      >
+        <div className="flex items-start justify-between gap-5 border-b border-[color:var(--ss-silver)]/55 pb-5">
+          <div>
+            <p className="text-[9px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">
+              Your selfies
+            </p>
+            <h2
+              id="selfie-manager-title"
+              className="mt-2 font-serif text-[36px] font-light leading-none text-[color:var(--ss-night)] sm:text-[44px]"
+            >
+              Help Maya keep you looking like you
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            autoFocus
+            className="min-h-11 shrink-0 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-gray)] hover:text-[color:var(--ss-night)]"
+          >
+            Close
+          </button>
+        </div>
+
+        <p className="mt-5 max-w-xl text-[13px] leading-6 text-[color:var(--ss-davy)]">
+          Add up to four clear photos. A front photo, another angle and a full-body photo help Maya
+          keep both your face and your natural features consistent.
+        </p>
+
+        {selfies.length > 0 ? (
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {selfies.map((selfie, index) => (
+              <div
+                key={selfie.id}
+                className="relative overflow-hidden rounded-[9px] bg-[color:var(--ss-seasalt)]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={selfie.url}
+                  alt={`Your selfie ${index + 1}`}
+                  className="aspect-[4/5] w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => onDelete(selfie)}
+                  disabled={uploading || deletingSelfie}
+                  className="absolute bottom-2 right-2 min-h-9 rounded-full bg-white/92 px-3 text-[9px] uppercase tracking-[0.14em] text-[color:var(--ss-night)] shadow-sm disabled:opacity-60"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-5 rounded-[10px] bg-[color:var(--ss-seasalt)] px-5 py-10 text-center text-[13px] text-[color:var(--ss-davy)]">
+            Start with a clear photo where your face is easy to see.
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          {canAdd ? (
+            <button
+              type="button"
+              onClick={onAdd}
+              disabled={uploading || deletingSelfie}
+              className="min-h-12 rounded-[5px] bg-[color:var(--ss-night)] px-6 text-[10px] uppercase tracking-[0.2em] text-white disabled:opacity-60"
+            >
+              {uploading
+                ? "Uploading…"
+                : selfies.length > 0
+                  ? "Add more selfies"
+                  : "Choose selfies"}
+            </button>
+          ) : (
+            <p className="text-[12px] leading-5 text-[color:var(--ss-gray)]">
+              Four selfies added. Remove one if you want to replace it.
+            </p>
+          )}
+          {selfies.length > 0 ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-12 px-3 text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-night)] underline underline-offset-4"
+            >
+              Keep creating
+            </button>
+          ) : null}
+        </div>
+        {uploadError ? (
+          <p className="mt-3 text-[12px] leading-5 text-[color:var(--ss-davy)]">{uploadError}</p>
+        ) : null}
+      </section>
+    </div>
+  )
+}
+
+function VaultMayaCreditModal({ credits, onClose }: { credits: number; onClose: () => void }) {
+  useDialogLock(onClose)
+  return (
+    <div className="fixed inset-0 z-[85] flex items-end justify-center bg-[color:var(--ss-night)]/45 p-3 backdrop-blur-sm sm:items-center sm:p-6">
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="vault-credit-title"
+        className="w-full max-w-md rounded-[14px] bg-white p-6 shadow-[0_28px_100px_rgba(13,14,16,0.24)] sm:p-8"
+      >
+        <p className="text-[9px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">
+          Running low
+        </p>
+        <h2
+          id="vault-credit-title"
+          className="mt-3 font-serif text-[38px] font-light leading-[0.98] text-[color:var(--ss-night)]"
+        >
+          {credits === 0 ? "You’re out of photos." : `You have ${credits} photos left.`}
+        </h2>
+        <p className="mt-4 text-[13px] leading-6 text-[color:var(--ss-davy)]">
+          Top up now and keep creating. Extra photos stay in your account until you use them.
+        </p>
+        <div className="mt-6 flex flex-col gap-2">
+          <Link
+            href="/checkout/credits"
+            className="inline-flex min-h-12 items-center justify-center rounded-[5px] bg-[color:var(--ss-night)] px-6 text-[10px] uppercase tracking-[0.2em] text-white"
+          >
+            Top up photos
+          </Link>
+          <button
+            type="button"
+            onClick={onClose}
+            autoFocus
+            className="min-h-11 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ss-gray)] hover:text-[color:var(--ss-night)]"
+          >
+            Not now
+          </button>
+        </div>
+      </section>
+    </div>
   )
 }
 

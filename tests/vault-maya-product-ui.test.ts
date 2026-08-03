@@ -45,4 +45,34 @@ describe("Vault Maya paid product shell", () => {
     expect(studio).toContain("Your selfies")
     expect(studio).toContain("imageId")
   })
+
+  it("lets members manage selfies without leaving Create and select a batch from their device", () => {
+    expect(studio).toContain("SelfieManagerModal")
+    expect(studio).toContain("setSelfieManagerOpen(true)")
+    expect(studio).toContain("Change selfies")
+    expect(studio).toContain("multiple")
+    expect(studio).toContain("Array.from(event.target.files ?? [])")
+    expect(studio).toContain("uploadSelfies")
+    expect(studio).not.toContain('onAddSelfie={() => switchTab("account")}')
+  })
+
+  it("accepts an inspiration image with Sandra's next-drop request", () => {
+    const route = read("app/api/vault-maya/drop-requests/route.ts")
+
+    expect(studio).toContain("requestInspiration")
+    expect(studio).toContain('form.append("inspiration", requestInspiration)')
+    expect(studio).toContain("Attach inspiration")
+    expect(route).toContain('request.headers.get("content-type")')
+    expect(route).toContain("request.formData()")
+    expect(route).toContain("vault-maya/drop-request-inspiration/")
+    expect(route).toContain("inspo_image_url")
+  })
+
+  it("offers a focused top-up prompt when a member has five photos or fewer", () => {
+    expect(studio).toContain("LOW_CREDIT_THRESHOLD = 5")
+    expect(studio).toContain("VaultMayaCreditModal")
+    expect(studio).toContain("setCreditModalOpen(true)")
+    expect(studio).toContain("Top up photos")
+    expect(studio).toContain('href="/checkout/credits"')
+  })
 })
