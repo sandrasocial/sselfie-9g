@@ -25,6 +25,8 @@ export type AppV3GalleryAsset = {
   status?: string | null
   /** Internal generation correlation key used for exact lost-response recovery. */
   generationRef?: string | null
+  /** Exact Vault Maya look that produced this image, when applicable. */
+  vaultMayaCardKey?: string | null
   canFavorite: boolean
   canDelete: boolean
   canDownload: boolean
@@ -69,6 +71,11 @@ function createdAtString(value: unknown): string {
   if (value instanceof Date) return value.toISOString()
   if (typeof value === "string" && value.trim()) return value
   return new Date(0).toISOString()
+}
+
+function vaultMayaCardKeyFromStyle(value: unknown): string | null {
+  const style = cleanString(value)
+  return style.startsWith("vault-maya:") ? style.slice("vault-maya:".length) || null : null
 }
 
 export function parseGalleryAssetId(assetId: unknown): ParsedGalleryAssetId | null {
@@ -142,6 +149,7 @@ export function imageToGalleryAsset(image: GalleryImage): AppV3GalleryAsset | nu
     motionPrompt: null,
     status: null,
     generationRef: cleanString(image.prediction_id) || null,
+    vaultMayaCardKey: vaultMayaCardKeyFromStyle(image.style),
     canFavorite: image.id.startsWith("ai_") || image.id.startsWith("gen_"),
     canDelete: image.id.startsWith("ai_") || image.id.startsWith("gen_"),
     canDownload: true,

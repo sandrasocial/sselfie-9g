@@ -20,6 +20,7 @@ import { isVideoGenerationEnabled } from "@/lib/app-v3/video-flag"
 import type { AppV3AnalyticsCohort } from "@/components/app-v3/types"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
 import { isMayaOperatingLayerEnabled } from "@/lib/app-v3/maya/operating-layer-rollout"
+import { hasStudioMembership } from "@/lib/subscription"
 
 export const metadata = {
   title: "SSELFIE Studio",
@@ -86,18 +87,21 @@ export default async function StudioV3Page({
   let primarySelfieUrl: string | null = null
   let trialHasSeenFirstRunStep = false
   let hasVaultAccess = true
+  let vaultMayaIncluded = true
   // Whether this member has a completed, non-test trained LoRA model. When true, App v3
   // surfaces a quiet "use my trained model" entry into legacy /studio?legacy=1. Never-trained
   // members never see it. Admins resolve this separately below.
   let hasTrainedModel = false
   if (!isAdminEmail(user.email)) {
     hasVaultAccess = false
+    vaultMayaIncluded = false
     let resolved: "full" | "trial" | "limited" | "none" = "none"
     if (process.env.APP_V3_MEMBERS_ENABLED === "true") {
       try {
         const { getUserIdFromSupabase } = await import("@/lib/user-mapping")
         const neonUserId = await getUserIdFromSupabase(user.id)
         if (neonUserId) {
+          vaultMayaIncluded = await hasStudioMembership(String(neonUserId))
           const { getSuiteAccess } = await import("@/lib/trial/suite-trial")
           const access = await getSuiteAccess(String(neonUserId))
           if (access.level === "member") {
@@ -228,6 +232,7 @@ export default async function StudioV3Page({
       initialAestheticId={initialAestheticId}
       hasTrainedModel={hasTrainedModel}
       hasVaultAccess={hasVaultAccess}
+      vaultMayaIncluded={vaultMayaIncluded}
       preSelfieChatEnabled={preSelfieChatEnabled}
       trialHasGeneratedImages={trialHasGeneratedImages}
       trialHasSavedSelfie={trialHasSavedSelfie}

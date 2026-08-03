@@ -58,6 +58,7 @@ import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/may
 import { validatePhotoshootBriefs } from "@/lib/app-v3/maya/semantic-plan-validation"
 import type { OutputFormat } from "@/components/app-v3/types"
 import { findUnownedIdentityReferences } from "@/lib/app-v3/identity-reference-ownership"
+import { resolveVaultMayaInspirationMode } from "@/lib/vault-maya/reference-recreation"
 
 // gpt-image edit calls (1024x1536, medium quality, reference selfie attached) routinely
 // run 60-120s. 60s was killing them with a 504. Match the Pro image route's 300s ceiling.
@@ -345,10 +346,9 @@ function withPhotoshootCohesionInstruction(
   }
 }
 
-// Style-led sessions (a chosen Vault collection) get inspiration as an ACCENT, never as a
-// competing world: close-recreation/set-variation both let the inspiration image define the
-// scene, which fought the detailed collection brief and made the inspiration look ignored
-// (Sandra QA 2026-07-06). The brief owns the world; the inspiration steers the human moment.
+// Regular style-led SUITE sessions use inspiration as an ACCENT, never as a competing world.
+// Vault Maya is the deliberate exception: its tapped look is the promised visual target, so the
+// resolver below selects the already-frozen close-recreation contract for that one photo flow.
 const SSELFIE_INSPIRATION_STYLE_ACCENT = [
   "TASK TYPE: STYLED SHOT WITH INSPIRATION ACCENT.",
   "The scene, wardrobe world, and setting come from the shot brief above - do NOT copy the inspiration image's location, background, or outfit.",
@@ -592,9 +592,11 @@ export async function POST(request: NextRequest) {
         typeof body.aestheticId === "string" &&
         body.aestheticId.length > 0 &&
         !body.aestheticId.startsWith("maya-")
-      const leadInspirationMode: "style-accent" | "close-recreation" = styleLedSession
-        ? "style-accent"
-        : "close-recreation"
+      const leadInspirationMode = resolveVaultMayaInspirationMode({
+        format,
+        requestedMode: body.referenceMode,
+        styleLedSession,
+      })
       if (format === "photoshoot") {
         const shootBriefs = normalizeShootBriefs(body.shootBriefs, brief)
         const validationErrors = validatePhotoshootBriefs(shootBriefs)
@@ -725,7 +727,8 @@ export async function POST(request: NextRequest) {
         )
         return NextResponse.json(
           {
-            error: "That reference photo isn't one of your saved selfies. Add it in your studio first.",
+            error:
+              "That reference photo isn't one of your saved selfies. Add it in your studio first.",
             code: "identity_reference_not_owned",
           },
           { status: 403 }
@@ -794,6 +797,12 @@ export async function POST(request: NextRequest) {
       typeof body.conceptTitle === "string" && body.conceptTitle.trim()
         ? body.conceptTitle.trim().slice(0, 120)
         : String(label).trim().slice(0, 120) || `${format} concept`
+    const vaultMayaCardKey =
+      typeof body.vaultMayaCardKey === "string" &&
+      /^[a-zA-Z0-9_-]{1,120}$/.test(body.vaultMayaCardKey)
+        ? body.vaultMayaCardKey
+        : null
+    const imageStyle = vaultMayaCardKey ? `vault-maya:${vaultMayaCardKey}` : null
     // CREDIT-INTEGRITY-01: one requestRef ties this charge, every stored image, and any refund
     // together (charge reference_id, ai_images prediction_id prefix, refund reference_id). The
     // reconcile cron uses it to prove "charged but nothing reached her gallery" and return
@@ -898,7 +907,9 @@ export async function POST(request: NextRequest) {
     // by the exact file-array so runEdit needs no signature change; unknown arrays
     // (prior-pass buffers) simply get no label.
     const REF_LABELING_ENABLED =
-      process.env.APP_V3_REF_LABELING === "on" || process.env.APP_V3_REF_LABELING === "true"
+      Boolean(body.vaultMayaCardKey) ||
+      process.env.APP_V3_REF_LABELING === "on" ||
+      process.env.APP_V3_REF_LABELING === "true"
     const referenceRoleLabels = new WeakMap<object, string>()
     if (REF_LABELING_ENABLED) {
       const identityLine =
@@ -1065,10 +1076,10 @@ export async function POST(request: NextRequest) {
             const inserted = await sql`
               INSERT INTO ai_images (
                 user_id, image_url, title, variant_of, prompt, generated_prompt, prediction_id,
-                generation_status, source, category, created_at
+                generation_status, source, category, style, created_at
               ) VALUES (
                 ${neonUser.id}, ${blob.url}, ${imageTitle}, ${null}, ${storedPrompt}, ${storedPrompt},
-                ${requestRef + "-" + i}, 'completed', 'openai', ${format}, NOW()
+                ${requestRef + "-" + i}, 'completed', 'openai', ${format}, ${imageStyle}, NOW()
               ) RETURNING id
             `
             return inserted[0]?.id ?? null
@@ -1321,9 +1332,7 @@ export async function POST(request: NextRequest) {
         // Each slide keeps its own planned visual role. Reusing slide 1 as the reference for every
         // later slide made inspiration-led carousels collapse into near-identical backgrounds.
         // The approved style and the member's original inspiration still bind the set together.
-        buffers = await Promise.all(
-          graphicJobs.map((job, index) => renderGraphicJob(job, index))
-        )
+        buffers = await Promise.all(graphicJobs.map((job, index) => renderGraphicJob(job, index)))
       } else if (photoshootJobs.length > 0) {
         buffers = await runPhotoshootHeroAnchoredJobs(photoshootJobs)
       } else {

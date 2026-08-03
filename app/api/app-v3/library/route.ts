@@ -10,6 +10,8 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { sql } from "@/lib/db/client"
 import { getAcademyHomeState } from "@/app/academy/_lib/course-library"
 import { getPublishedVaultCollections } from "@/lib/vault/published-collections"
+import { hasStudioMembership } from "@/lib/subscription"
+import { isAdminEmail } from "@/lib/admin-feature-flags"
 
 export const dynamic = "force-dynamic"
 
@@ -31,6 +33,9 @@ export async function GET() {
     }
 
     const state = await getAcademyHomeState(String(neonUser.id))
+    const vaultMayaIncluded =
+      isAdminEmail(user.email) || (await hasStudioMembership(String(neonUser.id)))
+    const membershipActive = state.membershipActive || vaultMayaIncluded
 
     const [learningPlan] = await sql`
       SELECT goal, recommendation, status, updated_at
@@ -42,7 +47,7 @@ export async function GET() {
     // Weekly drops are a membership collection; non-members see the locked empty state.
     let drops: Array<Record<string, unknown>> = []
     let vaultDrops: Awaited<ReturnType<typeof getPublishedVaultCollections>> = []
-    if (state.membershipActive) {
+    if (membershipActive) {
       ;[drops, vaultDrops] = await Promise.all([
         sql`
           SELECT id, title, description, thumbnail_url, month, category, created_at
@@ -56,9 +61,9 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      membershipActive: state.membershipActive,
+      membershipActive,
       learningPlan: learningPlan ?? null,
-      courses: state.courses.map((c) => ({
+      courses: state.courses.map(c => ({
         id: c.id,
         title: c.title,
         description: c.description,
@@ -70,19 +75,38 @@ export async function GET() {
           ? `/academy/courses/${c.id}/lessons/${c.firstIncompleteLessonId}`
           : `/academy/courses/${c.id}`,
       })),
-      ownedProducts: state.ownedProducts.map((p) => ({
-        id: p.id,
-        name: p.name,
-        tagline: p.tagline,
-        eyebrow: p.eyebrow,
-        actionLabel: p.actionLabel,
-        thumbnailUrl: p.thumbnailUrl,
-        accessUrl: p.accessUrl,
-      })),
+      ownedProducts: [
+        ...(vaultMayaIncluded
+          ? [
+              {
+                id: "vault_maya",
+                name: "Vault Maya",
+                tagline: "Choose a Vault look, add one selfie and let Maya create it for you.",
+                eyebrow: "Included with your SUITE",
+                actionLabel: "Open Vault Maya",
+                thumbnailUrl:
+                  vaultDrops[0]?.heroImage ||
+                  "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/content-kit/shoots/1785423447575-876892.png",
+                accessUrl: "/vault-maya/studio",
+              },
+            ]
+          : []),
+        ...state.ownedProducts
+          .filter(p => p.id !== "vault_maya")
+          .map(p => ({
+            id: p.id,
+            name: p.name,
+            tagline: p.tagline,
+            eyebrow: p.eyebrow,
+            actionLabel: p.actionLabel,
+            thumbnailUrl: p.thumbnailUrl,
+            accessUrl: p.accessUrl,
+          })),
+      ],
       // The membership tile is excluded: the Library's single upgrade CTA covers it.
       lockedProducts: state.lockedProducts
-        .filter((p) => p.id !== "studio")
-        .map((p) => ({
+        .filter(p => p.id !== "studio")
+        .map(p => ({
           id: p.id,
           eyebrow: p.eyebrow,
           title: p.title,
@@ -92,16 +116,7 @@ export async function GET() {
           ctaLabel: p.ctaLabel,
         })),
       drops: [
-        ...vaultDrops.map((d) => ({
-          id: `vault-${d.slug}`,
-          title: d.title,
-          description: d.moodLine,
-          thumbnailUrl: d.heroImage,
-          month: d.publishedAt.slice(0, 7),
-          category: "Prompt Vault",
-          publishedAt: d.publishedAt,
-        })),
-        ...drops.map((d) => ({
+        ...drops.map(d => ({
           id: d.id,
           title: d.title,
           description: d.description,

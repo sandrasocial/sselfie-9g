@@ -6,6 +6,7 @@ import { ImageLightbox } from "@/components/app-v3/image-lightbox"
 import { FavoriteButton } from "@/components/app-v3/favorite-button"
 import { initiateAssetDownload } from "@/lib/app-v3/download-asset"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import { indexLatestVaultPhotosByCardKey } from "@/lib/vault-maya/personal-vault"
 
 function track(event: string, properties?: Record<string, unknown>) {
   void trackAnalyticsEvent({
@@ -50,9 +51,19 @@ type GalleryPhoto = {
   isFavorite: boolean
   title: string | null
   generationRef: string
+  vaultMayaCardKey: string | null
 }
 
+type IdentitySelfie = {
+  id: string
+  url: string
+}
+
+type LatestPhotosByCardKey = Record<string, GalleryPhoto>
+
 type StudioTab = "create" | "gallery" | "account"
+
+const MAX_IDENTITY_SELFIES = 4
 
 const TAB_LABELS: Array<{ id: StudioTab; label: string }> = [
   { id: "create", label: "Create" },
@@ -79,13 +90,15 @@ function useDialogLock(onClose: () => void) {
 }
 
 export function VaultMayaStudio({
-  initialSelfieUrl,
+  initialSelfies,
   initialCredits,
   showSuiteBridge,
+  includedWithSuite,
 }: {
-  initialSelfieUrl: string | null
+  initialSelfies: IdentitySelfie[]
   initialCredits: number
   showSuiteBridge: boolean
+  includedWithSuite: boolean
 }) {
   const [activeTab, setActiveTab] = useState<StudioTab>("create")
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null)
@@ -96,7 +109,7 @@ export function VaultMayaStudio({
   const [galleryStartIndex, setGalleryStartIndex] = useState<number | null>(null)
   const [activeResult, setActiveResult] = useState<GeneratedResult | null>(null)
   const [resultFeedback, setResultFeedback] = useState<"loved" | "not_quite" | null>(null)
-  const [selfieUrl, setSelfieUrl] = useState<string | null>(initialSelfieUrl)
+  const [selfies, setSelfies] = useState<IdentitySelfie[]>(initialSelfies)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [collections, setCollections] = useState<Collection[] | null>(null)
@@ -122,11 +135,17 @@ export function VaultMayaStudio({
       .then(data => {
         const photos = (Array.isArray(data.assets) ? data.assets : [])
           .filter(
-            (asset: { kind?: string; url?: string; generationRef?: string }) =>
+            (asset: {
+              kind?: string
+              url?: string
+              generationRef?: string
+              vaultMayaCardKey?: string | null
+            }) =>
               asset?.kind === "image" &&
               typeof asset?.url === "string" &&
-              typeof asset?.generationRef === "string" &&
-              asset.generationRef.includes("-vault-maya-")
+              ((typeof asset?.vaultMayaCardKey === "string" && asset.vaultMayaCardKey.length > 0) ||
+                (typeof asset?.generationRef === "string" &&
+                  asset.generationRef.includes("-vault-maya-")))
           )
           .map(
             (asset: {
@@ -135,14 +154,17 @@ export function VaultMayaStudio({
               createdAt: string
               isFavorite?: boolean
               title?: string | null
-              generationRef: string
+              generationRef?: string | null
+              vaultMayaCardKey?: string | null
             }) => ({
               id: String(asset.id),
               url: asset.url,
               createdAt: asset.createdAt,
               isFavorite: Boolean(asset.isFavorite),
               title: typeof asset.title === "string" ? asset.title : null,
-              generationRef: asset.generationRef,
+              generationRef: typeof asset.generationRef === "string" ? asset.generationRef : "",
+              vaultMayaCardKey:
+                typeof asset.vaultMayaCardKey === "string" ? asset.vaultMayaCardKey : null,
             })
           )
         setGalleryPhotos(photos)
@@ -156,7 +178,10 @@ export function VaultMayaStudio({
   }, [loadGallery])
 
   useEffect(() => {
-    track("vault_maya_studio_viewed", { hasSelfie: Boolean(initialSelfieUrl) })
+    track("vault_maya_studio_viewed", {
+      hasSelfie: initialSelfies.length > 0,
+      selfieCount: initialSelfies.length,
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -188,6 +213,18 @@ export function VaultMayaStudio({
       ),
     [collections]
   )
+  const latestPhotosByCardKey = useMemo(
+    () =>
+      indexLatestVaultPhotosByCardKey(
+        galleryPhotos,
+        allLooks.map(({ look, collection }) => ({
+          cardKey: look.cardKey,
+          title: look.title,
+          collectionTitle: collection.title,
+        }))
+      ),
+    [allLooks, galleryPhotos]
+  )
 
   const switchTab = useCallback((tab: StudioTab) => {
     setActiveTab(tab)
@@ -206,52 +243,73 @@ export function VaultMayaStudio({
     window.scrollTo({ top: 0, behavior: "smooth" })
   }, [])
 
-  const uploadSelfie = useCallback(async (file: File) => {
-    setUploading(true)
-    setUploadError(null)
-    try {
-      const form = new FormData()
-      form.append("file", file)
-      form.append("slot", "face")
-      const response = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
-      const data = await response.json().catch(() => ({}))
-      if (!response.ok || !data?.url) {
-        throw new Error(data?.error || "That upload didn't work. Try another photo.")
+  const uploadSelfie = useCallback(
+    async (file: File) => {
+      setUploading(true)
+      setUploadError(null)
+      try {
+        const form = new FormData()
+        form.append("file", file)
+        form.append("slot", "face")
+        const response = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
+        const data = await response.json().catch(() => ({}))
+        if (!response.ok || !data?.url) {
+          throw new Error(data?.error || "That upload didn't work. Try another photo.")
+        }
+        if (data?.avatarImageId == null) {
+          throw new Error("That photo uploaded, but Maya couldn't save it. Please try again.")
+        }
+        setSelfies(previous =>
+          [{ id: String(data.avatarImageId), url: String(data.url) }, ...previous].slice(
+            0,
+            MAX_IDENTITY_SELFIES
+          )
+        )
+        track("vault_maya_selfie_added", {
+          selfieCount: Math.min(selfies.length + 1, MAX_IDENTITY_SELFIES),
+        })
+      } catch (error) {
+        setUploadError(
+          error instanceof Error ? error.message : "That upload didn't work. Try another photo."
+        )
+      } finally {
+        setUploading(false)
       }
-      setSelfieUrl(data.url)
-      track("vault_maya_selfie_added")
-    } catch (error) {
-      setUploadError(
-        error instanceof Error ? error.message : "That upload didn't work. Try another photo."
-      )
-    } finally {
-      setUploading(false)
-    }
-  }, [])
+    },
+    [selfies.length]
+  )
 
-  const deleteSelfie = useCallback(async () => {
-    if (
-      !window.confirm(
-        "Delete your selfie? Maya can't create new photos until you add one again. Photos you already made stay in My photos."
-      )
-    ) {
-      return
-    }
-    setDeletingSelfie(true)
-    setUploadError(null)
-    try {
-      const response = await fetch("/api/vault-maya/delete-selfie", { method: "DELETE" })
-      const data = await response.json().catch(() => ({}))
-      if (!response.ok || !data?.ok) {
-        throw new Error(data?.error || "Deleting didn't work. Try again.")
+  const deleteSelfie = useCallback(
+    async (selfie: IdentitySelfie) => {
+      if (
+        !window.confirm(
+          selfies.length === 1
+            ? "Delete this selfie? Maya can't create new photos until you add another one. Photos you already made stay in My photos."
+            : "Delete this selfie? Maya will keep using the other photos you added."
+        )
+      ) {
+        return
       }
-      setSelfieUrl(null)
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Deleting didn't work. Try again.")
-    } finally {
-      setDeletingSelfie(false)
-    }
-  }, [])
+      setDeletingSelfie(true)
+      setUploadError(null)
+      try {
+        const response = await fetch(
+          `/api/vault-maya/delete-selfie?imageId=${encodeURIComponent(selfie.id)}`,
+          { method: "DELETE" }
+        )
+        const data = await response.json().catch(() => ({}))
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error || "Deleting didn't work. Try again.")
+        }
+        setSelfies(previous => previous.filter(item => item.id !== selfie.id))
+      } catch (error) {
+        setUploadError(error instanceof Error ? error.message : "Deleting didn't work. Try again.")
+      } finally {
+        setDeletingSelfie(false)
+      }
+    },
+    [selfies.length]
+  )
 
   const openBillingPortal = useCallback(async () => {
     setBillingBusy(true)
@@ -281,7 +339,7 @@ export function VaultMayaStudio({
 
   const makeLook = useCallback(
     async (look: Look) => {
-      if (!selfieUrl) {
+      if (selfies.length === 0) {
         setPreviewLook(null)
         switchTab("account")
         return
@@ -309,9 +367,13 @@ export function VaultMayaStudio({
           body: JSON.stringify({
             brief: briefData.brief,
             format: "photo",
-            referenceSelfieUrl: selfieUrl,
+            referenceSelfieUrl: selfies[0].url,
+            referenceSelfieUrls: selfies.map(selfie => selfie.url),
+            inspirationImageUrl: briefData.inspirationImageUrl,
+            referenceMode: briefData.referenceMode,
             aestheticId: briefData.aestheticId,
             conceptTitle: briefData.title,
+            vaultMayaCardKey: look.cardKey,
             clientRequestId: `vault-maya-${look.cardKey}-${Date.now()}`,
             stream: false,
           }),
@@ -354,7 +416,7 @@ export function VaultMayaStudio({
         busyRef.current = false
       }
     },
-    [loadGallery, selfieUrl, switchTab]
+    [loadGallery, selfies, switchTab]
   )
 
   const sendDropRequest = useCallback(async () => {
@@ -442,10 +504,19 @@ export function VaultMayaStudio({
           selectedCollection ? (
             <CollectionDetail
               collection={selectedCollection}
-              selfieReady={Boolean(selfieUrl)}
+              selfieReady={selfies.length > 0}
               gen={gen}
+              latestPhotosByCardKey={latestPhotosByCardKey}
               onBack={closeCollection}
               onPreview={look => setPreviewLook({ look, collection: selectedCollection })}
+              onOpenCreated={(look, photo) => {
+                setResultFeedback(null)
+                setActiveResult({
+                  imageUrl: photo.url,
+                  assetId: photo.id,
+                  look,
+                })
+              }}
               onMake={look => void makeLook(look)}
               onAddSelfie={() => switchTab("account")}
             />
@@ -455,13 +526,15 @@ export function VaultMayaStudio({
               collections={visibleCollections}
               loading={!collections && !loadError}
               loadError={loadError}
-              selfieUrl={selfieUrl}
+              selfieUrl={selfies[0]?.url ?? null}
+              selfieCount={selfies.length}
               uploading={uploading}
-              onAddSelfie={() => fileInputRef.current?.click()}
+              onAddSelfie={() => switchTab("account")}
               onOpenCollection={openCollection}
               hasMoreCollections={!showAllCollections && rest.length > visibleCollections.length}
               totalCollections={rest.length}
               onShowAllCollections={() => setShowAllCollections(true)}
+              latestPhotosByCardKey={latestPhotosByCardKey}
             />
           )
         ) : null}
@@ -477,7 +550,7 @@ export function VaultMayaStudio({
 
         {activeTab === "account" ? (
           <Account
-            selfieUrl={selfieUrl}
+            selfies={selfies}
             credits={credits}
             uploading={uploading}
             deletingSelfie={deletingSelfie}
@@ -487,8 +560,9 @@ export function VaultMayaStudio({
             requestText={requestText}
             requestState={requestState}
             showSuiteBridge={showSuiteBridge}
+            includedWithSuite={includedWithSuite}
             onAddSelfie={() => fileInputRef.current?.click()}
-            onDeleteSelfie={() => void deleteSelfie()}
+            onDeleteSelfie={selfie => void deleteSelfie(selfie)}
             onRequestTextChange={value => {
               setRequestText(value)
               if (requestState === "sent" || requestState === "error") setRequestState("idle")
@@ -530,7 +604,7 @@ export function VaultMayaStudio({
         <LookPreview
           look={previewLook.look}
           collection={previewLook.collection}
-          selfieReady={Boolean(selfieUrl)}
+          selfieReady={selfies.length > 0}
           generating={gen[previewLook.look.cardKey]?.status === "generating"}
           onClose={() => setPreviewLook(null)}
           onMake={() => void makeLook(previewLook.look)}
@@ -613,24 +687,28 @@ function CreateHome({
   loading,
   loadError,
   selfieUrl,
+  selfieCount,
   uploading,
   onAddSelfie,
   onOpenCollection,
   hasMoreCollections,
   totalCollections,
   onShowAllCollections,
+  latestPhotosByCardKey,
 }: {
   weekly: Collection | null
   collections: Collection[]
   loading: boolean
   loadError: string | null
   selfieUrl: string | null
+  selfieCount: number
   uploading: boolean
   onAddSelfie: () => void
   onOpenCollection: (collection: Collection) => void
   hasMoreCollections: boolean
   totalCollections: number
   onShowAllCollections: () => void
+  latestPhotosByCardKey: LatestPhotosByCardKey
 }) {
   return (
     <div>
@@ -652,7 +730,7 @@ function CreateHome({
               className="h-11 w-11 rounded-full object-cover"
             />
             <p className="max-w-32 text-[12px] leading-5 text-[color:var(--ss-davy)]">
-              Your selfie is ready.
+              {selfieCount === 1 ? "Your selfie is ready." : `${selfieCount} selfies are ready.`}
             </p>
           </div>
         ) : (
@@ -675,7 +753,11 @@ function CreateHome({
       {loadError ? <p className="mt-10 text-sm text-[color:var(--ss-davy)]">{loadError}</p> : null}
 
       {weekly ? (
-        <WeeklyFeature collection={weekly} onOpen={() => onOpenCollection(weekly)} />
+        <WeeklyFeature
+          collection={weekly}
+          latestPhotosByCardKey={latestPhotosByCardKey}
+          onOpen={() => onOpenCollection(weekly)}
+        />
       ) : null}
 
       {collections.length > 0 ? (
@@ -699,6 +781,7 @@ function CreateHome({
               <CollectionCard
                 key={collection.slug}
                 collection={collection}
+                latestPhotosByCardKey={latestPhotosByCardKey}
                 onOpen={() => onOpenCollection(collection)}
               />
             ))}
@@ -721,8 +804,19 @@ function CreateHome({
   )
 }
 
-function WeeklyFeature({ collection, onOpen }: { collection: Collection; onOpen: () => void }) {
-  const images = collection.looks.map(look => look.exampleImage).filter(Boolean) as string[]
+function WeeklyFeature({
+  collection,
+  latestPhotosByCardKey,
+  onOpen,
+}: {
+  collection: Collection
+  latestPhotosByCardKey: LatestPhotosByCardKey
+  onOpen: () => void
+}) {
+  const images = collection.looks
+    .map(look => latestPhotosByCardKey[look.cardKey]?.url ?? look.exampleImage)
+    .filter(Boolean) as string[]
+  const createdCount = collection.looks.filter(look => latestPhotosByCardKey[look.cardKey]).length
 
   return (
     <section className="mt-10 overflow-hidden rounded-[14px] bg-white shadow-[0_18px_60px_rgba(13,14,16,0.08)] sm:mt-14">
@@ -739,7 +833,9 @@ function WeeklyFeature({ collection, onOpen }: { collection: Collection; onOpen:
             {collection.moodLine}
           </p>
           <p className="mt-3 text-[12px] text-[color:var(--ss-gray)]">
-            {collection.looks.length} photos to choose from
+            {createdCount > 0
+              ? `${createdCount} of ${collection.looks.length} created by you`
+              : `${collection.looks.length} photos to choose from`}
           </p>
           <button
             type="button"
@@ -789,8 +885,19 @@ function ContactSheet({
   )
 }
 
-function CollectionCard({ collection, onOpen }: { collection: Collection; onOpen: () => void }) {
-  const images = collection.looks.map(look => look.exampleImage).filter(Boolean) as string[]
+function CollectionCard({
+  collection,
+  latestPhotosByCardKey,
+  onOpen,
+}: {
+  collection: Collection
+  latestPhotosByCardKey: LatestPhotosByCardKey
+  onOpen: () => void
+}) {
+  const images = collection.looks
+    .map(look => latestPhotosByCardKey[look.cardKey]?.url ?? look.exampleImage)
+    .filter(Boolean) as string[]
+  const createdCount = collection.looks.filter(look => latestPhotosByCardKey[look.cardKey]).length
 
   return (
     <button
@@ -807,7 +914,9 @@ function CollectionCard({ collection, onOpen }: { collection: Collection; onOpen
           {collection.moodLine}
         </span>
         <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-[color:var(--ss-gray)] group-hover:text-[color:var(--ss-night)]">
-          {collection.looks.length} photos · Open collection
+          {createdCount > 0
+            ? `${createdCount} of ${collection.looks.length} created · Open collection`
+            : `${collection.looks.length} photos · Open collection`}
         </span>
       </span>
     </button>
@@ -818,16 +927,20 @@ function CollectionDetail({
   collection,
   selfieReady,
   gen,
+  latestPhotosByCardKey,
   onBack,
   onPreview,
+  onOpenCreated,
   onMake,
   onAddSelfie,
 }: {
   collection: Collection
   selfieReady: boolean
   gen: Record<string, GenState>
+  latestPhotosByCardKey: LatestPhotosByCardKey
   onBack: () => void
   onPreview: (look: Look) => void
+  onOpenCreated: (look: Look, photo: { id: string | number | null; url: string }) => void
   onMake: (look: Look) => void
   onAddSelfie: () => void
 }) {
@@ -874,18 +987,25 @@ function CollectionDetail({
       <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-5">
         {collection.looks.map(look => {
           const state = gen[look.cardKey]
+          const savedPhoto = latestPhotosByCardKey[look.cardKey]
+          const createdPhoto =
+            state?.status === "done"
+              ? { id: state.assetId, url: state.imageUrl }
+              : savedPhoto
+                ? { id: savedPhoto.id, url: savedPhoto.url }
+                : null
           return (
             <article key={look.cardKey} className="min-w-0">
               <button
                 type="button"
-                onClick={() => onPreview(look)}
+                onClick={() => (createdPhoto ? onOpenCreated(look, createdPhoto) : onPreview(look))}
                 className="group relative block aspect-[3/4] w-full overflow-hidden rounded-[10px] bg-white shadow-[0_8px_26px_rgba(13,14,16,0.07)]"
-                aria-label={`Open ${look.title}`}
+                aria-label={`Open ${createdPhoto ? "your " : ""}${look.title}`}
               >
-                {state?.status === "done" ? (
+                {createdPhoto ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={state.imageUrl}
+                    src={createdPhoto.url}
                     alt={look.title}
                     className="h-full w-full object-cover"
                   />
@@ -906,6 +1026,11 @@ function CollectionDetail({
                     Making your photo…
                   </span>
                 ) : null}
+                {createdPhoto && state?.status !== "generating" ? (
+                  <span className="absolute left-2 top-2 rounded-full bg-white/92 px-2.5 py-1 text-[8px] uppercase tracking-[0.17em] text-[color:var(--ss-night)] shadow-sm">
+                    Your photo
+                  </span>
+                ) : null}
               </button>
               <div className="px-1 pb-2 pt-3">
                 <p className="truncate text-[13px] text-[color:var(--ss-night)]">{look.title}</p>
@@ -917,7 +1042,7 @@ function CollectionDetail({
                 >
                   {state?.status === "generating"
                     ? "Making it…"
-                    : state?.status === "done"
+                    : createdPhoto
                       ? "Create again"
                       : "Create this photo"}
                 </button>
@@ -1008,7 +1133,7 @@ function Gallery({
 }
 
 function Account({
-  selfieUrl,
+  selfies,
   credits,
   uploading,
   deletingSelfie,
@@ -1018,13 +1143,14 @@ function Account({
   requestText,
   requestState,
   showSuiteBridge,
+  includedWithSuite,
   onAddSelfie,
   onDeleteSelfie,
   onRequestTextChange,
   onSendRequest,
   onOpenBilling,
 }: {
-  selfieUrl: string | null
+  selfies: IdentitySelfie[]
   credits: number
   uploading: boolean
   deletingSelfie: boolean
@@ -1034,8 +1160,9 @@ function Account({
   requestText: string
   requestState: "idle" | "sending" | "sent" | "error"
   showSuiteBridge: boolean
+  includedWithSuite: boolean
   onAddSelfie: () => void
-  onDeleteSelfie: () => void
+  onDeleteSelfie: (selfie: IdentitySelfie) => void
   onRequestTextChange: (value: string) => void
   onSendRequest: () => void
   onOpenBilling: () => void
@@ -1047,42 +1174,60 @@ function Account({
           Account
         </p>
         <h1 className="mt-3 font-serif text-[48px] font-light leading-[0.95] text-[color:var(--ss-night)] sm:text-[64px]">
-          Your Vault Maya membership
+          {includedWithSuite ? "Included with your SUITE" : "Your Vault Maya membership"}
         </h1>
       </div>
 
       <div className="mt-7 grid gap-5 sm:grid-cols-2">
         <AccountCard
-          eyebrow="Your selfie"
-          title={selfieUrl ? "Ready to create" : "Add one clear selfie"}
+          eyebrow="Your selfies"
+          title={selfies.length > 0 ? `${selfies.length} ready to create` : "Add one clear selfie"}
         >
-          {selfieUrl ? (
-            <div className="mt-5 flex items-center gap-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={selfieUrl}
-                alt="Your selfie"
-                className="h-20 w-20 rounded-full object-cover"
-              />
-              <div className="flex flex-col items-start gap-2">
+          {selfies.length > 0 ? (
+            <>
+              <p className="mt-3 text-[13px] leading-6 text-[color:var(--ss-davy)]">
+                Maya uses these together to keep your face and features consistent. A clear front
+                photo plus one or two different angles works best.
+              </p>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                {selfies.map((selfie, index) => (
+                  <div
+                    key={selfie.id}
+                    className="group relative overflow-hidden rounded-[8px] bg-[color:var(--ss-seasalt)]"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={selfie.url}
+                      alt={`Your selfie ${index + 1}`}
+                      className="aspect-[4/5] w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onDeleteSelfie(selfie)}
+                      disabled={uploading || deletingSelfie}
+                      className="absolute bottom-2 right-2 min-h-9 rounded-full bg-white/92 px-3 text-[9px] uppercase tracking-[0.14em] text-[color:var(--ss-night)] shadow-sm backdrop-blur-sm disabled:opacity-60"
+                      aria-label={`Remove selfie ${index + 1}`}
+                    >
+                      {deletingSelfie ? "Removing…" : "Remove"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {selfies.length < MAX_IDENTITY_SELFIES ? (
                 <button
                   type="button"
                   onClick={onAddSelfie}
                   disabled={uploading || deletingSelfie}
-                  className="min-h-9 text-[10px] uppercase tracking-[0.17em] text-[color:var(--ss-davy)] underline underline-offset-4"
+                  className="mt-5 min-h-11 rounded-[5px] border border-[color:var(--ss-night)] px-5 text-[10px] uppercase tracking-[0.2em] text-[color:var(--ss-night)] disabled:opacity-60"
                 >
-                  {uploading ? "Uploading…" : "Change selfie"}
+                  {uploading ? "Uploading…" : "Add another selfie"}
                 </button>
-                <button
-                  type="button"
-                  onClick={onDeleteSelfie}
-                  disabled={uploading || deletingSelfie}
-                  className="min-h-9 text-[10px] uppercase tracking-[0.17em] text-[color:var(--ss-gray)] underline underline-offset-4"
-                >
-                  {deletingSelfie ? "Deleting…" : "Delete my selfie"}
-                </button>
-              </div>
-            </div>
+              ) : (
+                <p className="mt-4 text-[12px] leading-5 text-[color:var(--ss-gray)]">
+                  You have added the maximum of four selfies. Remove one if you want to replace it.
+                </p>
+              )}
+            </>
           ) : (
             <>
               <p className="mt-3 text-[13px] leading-6 text-[color:var(--ss-davy)]">
@@ -1148,9 +1293,15 @@ function Account({
         </div>
       </AccountCard>
 
-      <AccountCard eyebrow="Membership" title="Account & billing" className="mt-5">
+      <AccountCard
+        eyebrow={includedWithSuite ? "SSELFIE SUITE" : "Membership"}
+        title="Account & billing"
+        className="mt-5"
+      >
         <p className="mt-3 text-[13px] leading-6 text-[color:var(--ss-davy)]">
-          Update your payment method, see your billing details or cancel your membership.
+          {includedWithSuite
+            ? "Vault Maya is part of your SUITE. Manage your SUITE payment and membership here."
+            : "Update your payment method, see your billing details or cancel your membership."}
         </p>
         <button
           type="button"

@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { NextRequest } from "next/server"
 
 const mocks = vi.hoisted(() => ({
   sql: vi.fn(),
@@ -171,6 +172,23 @@ describe("B8: selfie deletion behavior", () => {
     expect(response.status).toBe(502)
     expect(await response.json()).toMatchObject({ ok: false, blobFailures: 1 })
     expect(mocks.sql).toHaveBeenCalledTimes(1)
+  })
+
+  it("deletes only the selected user-owned selfie", async () => {
+    const url = "https://one.public.blob.vercel-storage.com/selected-selfie.png"
+    mocks.sql.mockResolvedValueOnce([{ id: 12, image_url: url }]).mockResolvedValueOnce([])
+    mocks.del.mockResolvedValue(undefined)
+    const { DELETE } = await import("@/app/api/vault-maya/delete-selfie/route")
+
+    const response = await DELETE(
+      new NextRequest("https://sselfie.ai/api/vault-maya/delete-selfie?imageId=12")
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ ok: true, rowsDeleted: 1 })
+    expect(mocks.del).toHaveBeenCalledWith(url)
+    expect(mocks.sql).toHaveBeenCalledTimes(2)
+    expect(mocks.sql.mock.calls[0]).toContain("12")
   })
 })
 

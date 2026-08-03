@@ -164,6 +164,8 @@ export interface MayaGenerateConceptRequest {
   referenceSelfieUrls?: string[]
   /** Optional pose/style reference. Never identity; attached after selfie references. */
   inspirationImageUrl?: string | null
+  /** Vault Maya only: the tapped look is the exact visual target, not a loose style accent. */
+  referenceMode?: "vault-look-recreation" | null
   /** Front-door aesthetic id, so the compiler injects the vision-extracted look. */
   aestheticId?: string
   conceptTitle?: string

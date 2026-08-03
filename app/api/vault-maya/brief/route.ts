@@ -4,6 +4,7 @@ import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { getSuiteAccess } from "@/lib/trial/suite-trial"
 import { buildVaultMayaBrief, findVaultMayaCard } from "@/lib/vault-maya/looks"
+import { VAULT_MAYA_REFERENCE_MODE } from "@/lib/vault-maya/reference-recreation"
 
 export const dynamic = "force-dynamic"
 
@@ -42,5 +43,7 @@ export async function POST(request: Request) {
     aestheticId: resolved.aestheticId,
     title: resolved.card.title,
     collectionTitle: resolved.collectionTitle,
+    inspirationImageUrl: resolved.card.exampleImage || null,
+    referenceMode: resolved.card.exampleImage ? VAULT_MAYA_REFERENCE_MODE : null,
   })
 }

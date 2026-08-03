@@ -31,6 +31,7 @@ import { buildStoredSectionHref, readStoredAppSection, saveStoredAppSection } fr
 import { intentForFormat } from "@/lib/app-v3/maya/intent-router"
 import type { MayaSurface } from "@/lib/app-v3/maya/context-envelope"
 import { PostSuccessReviewPrompt } from "@/components/testimonials/post-success-review-prompt"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import {
   CalendarDays,
   Images,
@@ -55,6 +56,8 @@ export interface AppV3ShellProps {
   initialAestheticId?: string | null
   /** True for recurring members, active passes, or active trials that own the Vault. */
   hasVaultAccess?: boolean
+  /** True when Vault Maya is included through an active paid SUITE membership. */
+  vaultMayaIncluded?: boolean
   /** Server-owned feature flag. Defaults false and never reads public client env. */
   preSelfieChatEnabled?: boolean
   /** True when the member has a completed, non-test trained model (legacy /studio entry point). */
@@ -107,6 +110,80 @@ function mayaSurfaceForSection(section: AppV3Section): MayaSurface {
   return section
 }
 
+const VAULT_MAYA_NOTICE_KEY = "sselfie:vault-maya-included:v1"
+
+function VaultMayaIncludedNotice() {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    try {
+      setVisible(window.localStorage.getItem(VAULT_MAYA_NOTICE_KEY) !== "dismissed")
+    } catch {
+      setVisible(true)
+    }
+  }, [])
+
+  const dismiss = (action: "open" | "later") => {
+    try {
+      window.localStorage.setItem(VAULT_MAYA_NOTICE_KEY, "dismissed")
+    } catch {
+      // The invitation can still be dismissed for this page view when storage is unavailable.
+    }
+    setVisible(false)
+    void trackAnalyticsEvent({
+      event: "vault_maya_suite_invitation_clicked",
+      properties: { action, surface: "app_v3" },
+    }).catch(() => {})
+  }
+
+  if (!visible) return null
+
+  return (
+    <section
+      className="mx-auto w-full max-w-3xl px-4 pt-4 sm:px-5 sm:pt-5"
+      aria-label="New in your SUITE"
+    >
+      <div className="grid overflow-hidden rounded-[14px] border border-[#C5C6C8]/65 bg-white shadow-[0_12px_35px_rgba(13,14,16,.05)] sm:grid-cols-[132px_minmax(0,1fr)]">
+        <div className="relative hidden min-h-[150px] overflow-hidden bg-[#F1F2F2] sm:block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/content-kit/shoots/1785423447575-876892.png"
+            alt="Golden-hour portrait from Vault Maya"
+            className="absolute inset-0 h-full w-full object-cover object-[50%_32%]"
+          />
+        </div>
+        <div className="flex flex-col justify-center p-5 sm:p-6">
+          <p className="text-[9px] uppercase tracking-[0.23em] text-[#818283]">
+            New · Included with your SUITE
+          </p>
+          <h2 className="mt-2 font-serif text-[27px] font-light leading-tight text-[#0D0E10]">
+            Vault Maya is ready for you
+          </h2>
+          <p className="mt-2 max-w-xl text-[13px] leading-5 text-[#4F5052]">
+            Choose a Vault look, add one selfie and let Maya create the photo for you.
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-4">
+            <a
+              href="/vault-maya/studio"
+              onClick={() => dismiss("open")}
+              className="inline-flex min-h-11 items-center justify-center rounded-[6px] bg-[#0D0E10] px-5 text-[10px] uppercase tracking-[0.17em] text-white"
+            >
+              Try Vault Maya
+            </a>
+            <button
+              type="button"
+              onClick={() => dismiss("later")}
+              className="min-h-11 text-[11px] text-[#4F5052] underline underline-offset-4"
+            >
+              Not now
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function ShellInner({
   firstName,
   accessLevel = "full",
@@ -119,6 +196,7 @@ function ShellInner({
   initialSection = "create",
   initialAestheticId = null,
   hasVaultAccess = false,
+  vaultMayaIncluded = false,
   preSelfieChatEnabled = false,
   hasTrainedModel = false,
   videoEnabled = true,
@@ -307,6 +385,8 @@ function ShellInner({
         </div>
       )}
 
+      {vaultMayaIncluded ? <VaultMayaIncludedNotice /> : null}
+
       {section === "create" &&
         (limited ? (
           <div className="mx-auto flex min-h-[60dvh] w-full max-w-3xl items-start px-5 pt-10 sm:items-center sm:py-16">
@@ -467,6 +547,7 @@ export function AppV3Shell({
   initialSection,
   initialAestheticId,
   hasVaultAccess,
+  vaultMayaIncluded,
   preSelfieChatEnabled,
   hasTrainedModel,
   videoEnabled,
@@ -490,6 +571,7 @@ export function AppV3Shell({
         initialSection={initialSection}
         initialAestheticId={initialAestheticId}
         hasVaultAccess={hasVaultAccess}
+        vaultMayaIncluded={vaultMayaIncluded}
         preSelfieChatEnabled={preSelfieChatEnabled}
         hasTrainedModel={hasTrainedModel}
         videoEnabled={videoEnabled}

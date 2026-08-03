@@ -40,18 +40,20 @@ export default async function VaultMayaStudioPage() {
     redirect("/vault-maya")
   }
 
-  let primarySelfieUrl: string | null = null
+  let initialSelfies: Array<{ id: string; url: string }> = []
   try {
     const rows = await sql`
-      SELECT image_url
+      SELECT id, image_url
       FROM user_avatar_images
       WHERE user_id = ${neonUserId}
         AND is_active = ${true}
         AND image_type = 'selfie'
       ORDER BY uploaded_at DESC
-      LIMIT 1
+      LIMIT 4
     `
-    primarySelfieUrl = typeof rows[0]?.image_url === "string" ? rows[0].image_url : null
+    initialSelfies = rows
+      .filter(row => row.id != null && typeof row.image_url === "string")
+      .map(row => ({ id: String(row.id), url: String(row.image_url) }))
   } catch (e) {
     console.error("[vault-maya/studio] selfie lookup failed:", e)
   }
@@ -61,9 +63,10 @@ export default async function VaultMayaStudioPage() {
   return (
     <main className="min-h-screen bg-[#F8FAFA]">
       <VaultMayaStudio
-        initialSelfieUrl={primarySelfieUrl}
+        initialSelfies={initialSelfies}
         initialCredits={credits}
         showSuiteBridge={level === "vault"}
+        includedWithSuite={level === "member"}
       />
     </main>
   )

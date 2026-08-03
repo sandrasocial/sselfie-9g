@@ -37,9 +37,23 @@ describe("B2: getSuiteAccess precedence with vault_maya", () => {
     expect(access.level).toBe("member")
   })
 
+  it.each(["brand_studio_membership", "pro"])(
+    "treats the existing %s SUITE product as full Vault Maya access",
+    async productType => {
+      const access = await accessFor([
+        { product_type: productType, status: "active", trial_ends_at: null },
+      ])
+      expect(access.level).toBe("member")
+    }
+  )
+
   it("active bundle pass beats vault_maya", async () => {
     const access = await accessFor([
-      { product_type: "selfie_visibility_bundle_pass", status: "active", trial_ends_at: futureIso(10) },
+      {
+        product_type: "selfie_visibility_bundle_pass",
+        status: "active",
+        trial_ends_at: futureIso(10),
+      },
       { product_type: "vault_maya", status: "active", trial_ends_at: null },
     ])
     expect(access.level).toBe("member")
@@ -64,7 +78,11 @@ describe("B2: getSuiteAccess precedence with vault_maya", () => {
 
   it("expired bundle pass with active vault_maya keeps vault access", async () => {
     const access = await accessFor([
-      { product_type: "selfie_visibility_bundle_pass", status: "active", trial_ends_at: futureIso(-1) },
+      {
+        product_type: "selfie_visibility_bundle_pass",
+        status: "active",
+        trial_ends_at: futureIso(-1),
+      },
       { product_type: "vault_maya", status: "active", trial_ends_at: null },
     ])
     expect(access.level).toBe("vault")
@@ -118,7 +136,7 @@ describe("B7: founder pricing fails safely", () => {
   it("fails loudly when a configured flip timestamp is invalid", async () => {
     const { resolveVaultMayaFlipMoment } = await import("@/lib/launch/cash-launch-pricing")
     expect(() =>
-      resolveVaultMayaFlipMoment({ VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT: "not-a-date" }),
+      resolveVaultMayaFlipMoment({ VAULT_MAYA_FOUNDER_PRICE_FLIPS_AT: "not-a-date" })
     ).toThrow("must be a valid ISO timestamp")
   })
 })
@@ -126,7 +144,7 @@ describe("B7: founder pricing fails safely", () => {
 describe("B4: generation identity references are server-verified as user-owned", () => {
   const route = fs.readFileSync(
     path.join(process.cwd(), "app/api/app-v3/maya/generate/route.ts"),
-    "utf8",
+    "utf8"
   )
 
   it("wires the ownership verifier before generating", () => {
@@ -140,7 +158,10 @@ describe("B4: generation identity references are server-verified as user-owned",
   })
 
   it("refuses with 403, never silently strips a foreign reference", () => {
-    const guard = route.slice(route.indexOf("identity_reference_not_owned") - 900, route.indexOf("identity_reference_not_owned") + 200)
+    const guard = route.slice(
+      route.indexOf("identity_reference_not_owned") - 900,
+      route.indexOf("identity_reference_not_owned") + 200
+    )
     expect(guard).toContain("status: 403")
     expect(guard).not.toContain("filter(url => ownedUrls.has(url))")
   })

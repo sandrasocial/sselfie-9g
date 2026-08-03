@@ -8,6 +8,7 @@ const read = (file: string) => fs.readFileSync(path.join(ROOT, file), "utf8")
 
 describe("Vault Maya paid product shell", () => {
   const studio = read("components/vault-maya/vault-maya-studio.tsx")
+  const page = read("app/vault-maya/studio/page.tsx")
 
   it("separates creating, the photo library, and account management", () => {
     expect(studio).toContain('type StudioTab = "create" | "gallery" | "account"')
@@ -33,5 +34,15 @@ describe("Vault Maya paid product shell", () => {
     expect(studio).toContain("vault_maya_photo_not_quite")
     expect(studio).toContain("Love this")
     expect(studio).toContain("Not quite")
+  })
+
+  it("manages up to four identity selfies from Account and sends all of them to Maya", () => {
+    expect(page).toContain("initialSelfies")
+    expect(page).toContain("LIMIT 4")
+    expect(studio).toContain("const MAX_IDENTITY_SELFIES = 4")
+    expect(studio).toContain("referenceSelfieUrls: selfies.map(selfie => selfie.url)")
+    expect(studio).toContain("Add another selfie")
+    expect(studio).toContain("Your selfies")
+    expect(studio).toContain("imageId")
   })
 })

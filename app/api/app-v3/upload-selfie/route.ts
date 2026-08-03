@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
 
   let file: File | null = null
   let slot = "face"
+  let avatarImageId: string | number | null = null
   try {
     const form = await request.formData()
     const candidate = form.get("file")
@@ -55,7 +56,10 @@ export async function POST(request: NextRequest) {
     const rawSlot = form.get("slot")
     if (typeof rawSlot === "string" && rawSlot in SLOT_TO_TYPE) slot = rawSlot
   } catch {
-    return NextResponse.json({ error: "Expected multipart form-data with a 'file' field" }, { status: 400 })
+    return NextResponse.json(
+      { error: "Expected multipart form-data with a 'file' field" },
+      { status: 400 }
+    )
   }
 
   if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 })
@@ -116,16 +120,18 @@ export async function POST(request: NextRequest) {
           WHERE user_id = ${String(neonUserId)} AND image_type = ${imageType} AND is_active = true
         `
       }
-      await sql`
+      const inserted = await sql`
         INSERT INTO user_avatar_images (user_id, image_url, image_type, is_active, uploaded_at)
         VALUES (${String(neonUserId)}, ${blob.url}, ${imageType}, ${true}, NOW())
+        RETURNING id
       `
+      avatarImageId = inserted[0]?.id ?? null
     }
   } catch (e) {
     console.error("[app-v3 upload] user_avatar_images insert skipped:", e)
   }
 
-  return NextResponse.json({ url: blob.url })
+  return NextResponse.json({ url: blob.url, avatarImageId })
 }
 
 // Clears an optional slot (side profile, full body, inspiration) so "Remove" sticks across

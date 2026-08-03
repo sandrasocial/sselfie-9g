@@ -90,7 +90,7 @@ describe("generation robustness (2026-07-06 gap closure)", () => {
     expect(route).toMatch(
       /Promise\.all\(\s*graphicJobs\.map\(\(job, index\) => renderGraphicJob\(job, index\)\)\s*\)/
     )
-    expect(route).not.toContain("data:image/png;base64,${heroBuffer.toString(\"base64\")}")
+    expect(route).not.toContain('data:image/png;base64,${heroBuffer.toString("base64")}')
     expect(route).not.toContain("graphic-hero-${Date.now()}")
     expect(route).not.toContain("inspirationOverrideUrl")
   })
@@ -109,12 +109,15 @@ describe("generation robustness (2026-07-06 gap closure)", () => {
     expect(route).toContain('code: "image_too_small"')
     expect(route).toContain("IDENTITY_TYPES.has(imageType)")
     // Inspiration steers style, not likeness — it must not be resolution-gated.
-    expect(route).not.toContain('IDENTITY_TYPES = new Set(["selfie", "three-quarter", "side-profile", "full-body", "inspiration"])')
+    expect(route).not.toContain(
+      'IDENTITY_TYPES = new Set(["selfie", "three-quarter", "side-profile", "full-body", "inspiration"])'
+    )
   })
 
-  it("labels attached reference roles only behind the APP_V3_REF_LABELING flag", () => {
+  it("labels attached reference roles for Vault Maya and behind the wider rollout flag", () => {
     const route = read("app/api/app-v3/maya/generate/route.ts")
     expect(route).toContain("APP_V3_REF_LABELING")
+    expect(route).toContain("Boolean(body.vaultMayaCardKey)")
     expect(route).toContain("referenceRoleLabels")
     expect(route).toContain("only source for her face")
   })
@@ -134,9 +137,7 @@ describe("generation robustness (2026-07-06 gap closure)", () => {
       format: "reel-cover",
     })
     expect(runaway.headline.split(" ").length).toBe(12)
-    expect(runaway.headline).toBe(
-      "This is a very long headline that keeps going and going far"
-    )
+    expect(runaway.headline).toBe("This is a very long headline that keeps going and going far")
   })
 })
 

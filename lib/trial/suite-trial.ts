@@ -78,7 +78,7 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
     WHERE user_id = ${userId}
       AND (is_test_mode = FALSE OR is_test_mode IS NULL)
       AND (
-        (product_type = 'sselfie_studio_membership' AND status = 'active')
+        (product_type IN ('sselfie_studio_membership', 'brand_studio_membership', 'pro') AND status = 'active')
         OR (product_type = 'vault_maya' AND status = 'active')
         OR product_type = 'suite_trial'
         OR product_type = 'selfie_visibility_bundle_pass'
@@ -90,11 +90,15 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
   // active trial > Vault Maya. A HIGHER temporary tier must never be downgraded by a
   // vault_maya row, and when the temporary tier expires an active vault_maya keeps
   // studio access instead of falling to "limited".
-  if (rows.some((r) => r.product_type === "sselfie_studio_membership")) {
+  if (
+    rows.some(r =>
+      ["sselfie_studio_membership", "brand_studio_membership", "pro"].includes(r.product_type)
+    )
+  ) {
     return { level: "member", trialEndsAt: null, trialDaysLeft: null }
   }
 
-  const bundlePass = rows.find((r) => r.product_type === "selfie_visibility_bundle_pass")
+  const bundlePass = rows.find(r => r.product_type === "selfie_visibility_bundle_pass")
   if (bundlePass?.trial_ends_at) {
     const endsAt = new Date(bundlePass.trial_ends_at)
     if (bundlePass.status === "active" && endsAt.getTime() > Date.now()) {
@@ -102,7 +106,7 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
     }
   }
 
-  const trial = rows.find((r) => r.product_type === "suite_trial")
+  const trial = rows.find(r => r.product_type === "suite_trial")
   const activeTrialEndsAt =
     trial?.trial_ends_at && trial.status === "active" ? new Date(trial.trial_ends_at) : null
   if (activeTrialEndsAt && activeTrialEndsAt.getTime() > Date.now()) {
@@ -114,7 +118,7 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
     }
   }
 
-  if (rows.some((r) => r.product_type === "vault_maya")) {
+  if (rows.some(r => r.product_type === "vault_maya")) {
     return { level: "vault", trialEndsAt: null, trialDaysLeft: null }
   }
 
