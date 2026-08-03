@@ -1,5 +1,28 @@
 # Completed releases
 
+## 2026-08-03 — Vault Maya launch emails
+
+Launched the approved Vault Maya email sequence with a later image from the newest Golden Hour
+Diary collection. The audience is split between included SUITE access, existing commerce buyers,
+and eligible nonbuyers. Every sales follow-up removes current Vault Maya buyers and all higher
+access immediately before sending. The founder price closes on 11 August 2026 at 10:00 Oslo time.
+
+The first attended small-wave run exposed an observability and idempotency defect: the provider
+accepted the send while `email_events` rejected the audit row because `email_type` was missing.
+Three verification runs therefore sent the SUITE message three times to 11 contacts and the buyer
+message three times to 85 contacts. The main audience was paused before sending. All six provider
+sends were reconciled into the audit table, the missing field was repaired, and broadcasts now
+check Resend directly and use one provider-idempotent create-and-send operation. A live guard test
+confirmed that rerunning an existing campaign did not create or send another broadcast.
+
+Production proof: launch commit `3f0afbcd`, safety commit `01632d12`, Vercel deployment
+`dpl_9AP7BhYdQkFXrvwcefyVaXtWezaA`, and exact commit `01632d1` verified in the Vercel build log.
+Repository invariants, CI typecheck, targeted email tests, a successful production build, and diff
+checks passed. The full suite passed 1,934 tests with 6 intentionally skipped and one unrelated
+Calendar timeout that passed immediately in isolation. Resend accepted the main announcement once
+for 7,170 reconciled nonbuyers as broadcast `8be23986-311c-4661-94c7-c9090d120a13`; matching
+`broadcast_created` and `broadcast_sent` audit rows were verified.
+
 ## 2026-08-03 — Vault Maya member controls and identity accuracy
 
 Finished the approved Vault Maya member experience without changing SUITE generation. Members can
