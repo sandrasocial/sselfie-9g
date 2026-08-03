@@ -27,7 +27,6 @@ interface ContactSyncInput {
 const CONTACT_UPDATE_DELAY_MS = 650
 const RESEND_RETRY_MAX_ATTEMPTS = Number.parseInt(process.env.RESEND_RETRY_MAX_ATTEMPTS || "5", 10)
 const RESEND_RETRY_BASE_DELAY_MS = Number.parseInt(process.env.RESEND_RETRY_BASE_DELAY_MS || "700", 10)
-const RESEND_BROADCAST_SEND_DELAY_MS = Number.parseInt(process.env.RESEND_BROADCAST_SEND_DELAY_MS || "1200", 10)
 
 async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms))
@@ -181,6 +180,7 @@ async function logEmailEvent(input: {
   try {
     await sql`
       INSERT INTO email_events (
+        email_type,
         event_type,
         campaign_key,
         provider_broadcast_id,
@@ -191,6 +191,7 @@ async function logEmailEvent(input: {
         created_at
       )
       VALUES (
+        ${input.campaignKey},
         ${input.eventType},
         ${input.campaignKey},
         ${input.providerId || null},
@@ -204,6 +205,57 @@ async function logEmailEvent(input: {
   } catch (error) {
     console.error("[v0] Failed to log email event:", error)
   }
+}
+
+type ExistingBroadcast = {
+  id: string
+  name: string
+  status: "draft" | "sent" | "queued"
+  created_at: string
+}
+
+async function findExistingBroadcastByCampaignKey(
+  resend: ReturnType<typeof requireResendClient>,
+  campaignKey: string,
+): Promise<{ broadcast: ExistingBroadcast; matchCount: number } | null> {
+  let after: string | undefined
+
+  do {
+    const listed = await withResendRetry({
+      label: "broadcast.list.idempotency",
+      execute: () => resend.broadcasts.list({ limit: 100, ...(after ? { after } : {}) }),
+    })
+    if (listed.error) {
+      throw new Error(
+        listed.error.message || "Could not verify existing Resend broadcasts; send aborted",
+      )
+    }
+
+    const page = listed.data as
+      | { data?: ExistingBroadcast[]; has_more?: boolean }
+      | undefined
+    const broadcasts = page?.data || []
+    const matches = broadcasts
+      .filter((broadcast) => broadcast.name === campaignKey)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    const alreadyAccepted = matches.find(
+      (broadcast) => broadcast.status === "sent" || broadcast.status === "queued",
+    )
+
+    if (alreadyAccepted) {
+      return { broadcast: alreadyAccepted, matchCount: matches.length }
+    }
+    if (matches.length > 0) {
+      throw new Error(
+        `Resend already contains a draft for ${campaignKey}; send aborted for manual review`,
+      )
+    }
+
+    if (!page?.has_more || broadcasts.length === 0) return null
+    after = broadcasts[broadcasts.length - 1]?.id
+  } while (after)
+
+  return null
 }
 
 export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
@@ -242,8 +294,33 @@ export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
     return { success: true, dryRun: true }
   }
 
+  // Database observability is useful, but provider state is the final send truth.
+  // Fail closed if Resend already accepted this deterministic campaign key.
+  const existing = await findExistingBroadcastByCampaignKey(resend, input.campaignKey)
+  if (existing) {
+    await logEmailEvent({
+      eventType: "broadcast_sent",
+      campaignKey: input.campaignKey,
+      providerId: existing.broadcast.id,
+      status: "success",
+      recipientCount,
+      metadata: {
+        source: "provider_idempotency_guard",
+        providerStatus: existing.broadcast.status,
+        providerMatchCount: existing.matchCount,
+      },
+    })
+    return {
+      success: true,
+      broadcastId: existing.broadcast.id,
+      alreadySent: true,
+    }
+  }
+
+  const broadcastCreateIdempotencyKey = `broadcast:${input.campaignKey}:create-and-send`
+
   const broadcast = await withResendRetry({
-    label: "broadcast.create",
+    label: "broadcast.create-and-send",
     execute: () =>
       resend.broadcasts.create({
         ...(segmentId ? { segmentId } : { audienceId }),
@@ -253,6 +330,10 @@ export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
         subject: input.subject,
         html,
         ...(text ? { text } : {}),
+        send: true,
+        ...(input.scheduledAt ? { scheduledAt: input.scheduledAt } : {}),
+      }, {
+        headers: { "Idempotency-Key": broadcastCreateIdempotencyKey },
       }),
   })
 
@@ -281,39 +362,6 @@ export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
     status: "success",
     recipientCount,
   })
-
-  // Resend's API limit is strict (2 req/s). Creating and sending immediately can
-  // occasionally burst over limit when multiple flows run close together.
-  if (RESEND_BROADCAST_SEND_DELAY_MS > 0) {
-    await sleep(RESEND_BROADCAST_SEND_DELAY_MS)
-  }
-
-  const sendResult = await withResendRetry({
-    label: "broadcast.send",
-    execute: () =>
-      resend.broadcasts.send(
-        broadcastId!,
-        input.scheduledAt ? { scheduledAt: input.scheduledAt } : {},
-      ),
-  })
-
-  if (sendResult.error) {
-    const errorMessage = sendResult.error.message || "Failed to send broadcast"
-    await logEmailEvent({
-      eventType: "broadcast_failed",
-      campaignKey: input.campaignKey,
-      providerId: broadcastId,
-      status: "failed",
-      recipientCount,
-      errorMessage,
-      metadata: {
-        phase: "send",
-        segmentId: segmentId || null,
-        audienceId: audienceId || null,
-      },
-    })
-    throw new Error(errorMessage)
-  }
 
   await logEmailEvent({
     eventType: "broadcast_sent",

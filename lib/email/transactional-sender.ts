@@ -80,6 +80,7 @@ export async function sendTransactionalEmail(input: TransactionalEmailInput) {
   try {
     await sql`
       INSERT INTO email_events (
+        email_type,
         event_type,
         campaign_key,
         provider_broadcast_id,
@@ -90,6 +91,7 @@ export async function sendTransactionalEmail(input: TransactionalEmailInput) {
         created_at
       )
       VALUES (
+        ${input.emailType},
         'transactional_sent',
         ${input.emailType},
         ${result?.data?.id || null},
