@@ -1,5 +1,23 @@
 # Completed releases
 
+## 2026-08-03 — Vault Maya member controls and identity accuracy
+
+Finished the approved Vault Maya member experience without changing SUITE generation. Members can
+now open and manage their selfies directly from Create, choose several selfies in one device picker,
+and keep the same controls in Account. Vault Maya now adds a product-scoped instruction that keeps
+the member's real face, body shape, build, and proportions separate from the selected Vault
+inspiration image. Next-drop requests can include a JPG, PNG, or WebP inspiration image, and members
+with five photos or fewer receive a dismissible top-up prompt.
+
+Production proof: feature commit `2fb7b06a`, Vercel deployment
+`dpl_Ec6d3SfRLpJPzE6Ts2FbXk1dLZwG`, and the exact Git commit verified in Vercel build logs. CI
+typecheck, repository invariants, full Vitest, production build, targeted multipart-upload and Vault
+prompt tests, changed-file lint with zero errors, and diff checks passed. Live signed-in QA at the
+app's 595px browser-pane width and 390px mobile confirmed the Create selfie manager, native
+multi-select input, Account inspiration control, zero horizontal overflow, and zero browser-console
+errors. QA was read-only: no selfie, request, credit, payment, or generation was changed. The revised
+body-preservation result remains for Sandra to evaluate with the clean member's next generated photo.
+
 ## 2026-08-02 — Vault Maya paid product experience
 
 Rebuilt the paid Vault Maya experience around three focused areas: Create, My photos, and Account.
