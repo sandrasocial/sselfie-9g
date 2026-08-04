@@ -1,5 +1,21 @@
 # Completed releases
 
+## 2026-08-04 — Private campaign engine QA hardening
+
+Kept the dormant Campaign Takeover offer closed while repairing the existing generation engine from
+a real internal test. The planner now uses a provider-compatible structured-output schema, enforces
+the complete campaign shape after generation, and rejects invented CTA keywords, unsupported
+identity or body guarantees, and urgency that was not supplied in the brief before paid images run.
+Reel generation now waits for the existing provider job instead of starting a duplicate paid job,
+and Replicate credentials are no longer partially logged.
+
+Production proof: feature commit `a84abc80`, Vercel deployment
+`dpl_7yRCtZwtCboeVxBsniwE8jtWgQs4`, and the exact commit reached Ready on the production aliases.
+CI typecheck, repository invariants, 1,947 tests with 6 intentionally skipped, targeted campaign and
+secret-safety tests, an optimized production build, and diff checks passed. Live health returned 200
+and `/campaign` remained fail-closed with “This private test is not open yet.” No customer email,
+payment, campaign order, or public offer was created.
+
 ## 2026-08-04 — Vault Maya launch conversion and email reliability
 
 Removed the extra Vault Maya email-capture gate so new buyers now move directly from the approved
