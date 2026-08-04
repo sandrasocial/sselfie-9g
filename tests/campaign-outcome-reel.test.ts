@@ -154,7 +154,7 @@ describe("campaign reel layer", () => {
     ).toThrow(/overlay placement/i)
   })
 
-  it("retries a failed clip once and then delivers the reel with an honest unavailable note", async () => {
+  it("does not create duplicate paid video jobs when one clip fails", async () => {
     startVideoMock.mockRejectedValue(new Error("provider unavailable"))
     const { generateCampaignReelClips } = await import("@/lib/campaign-outcome/reel")
     const result = await generateCampaignReelClips({
@@ -170,7 +170,7 @@ describe("campaign reel layer", () => {
       photoUrls: { attention: "https://blob.example.com/photo.png" },
     })
 
-    expect(startVideoMock).toHaveBeenCalledTimes(2)
+    expect(startVideoMock).toHaveBeenCalledTimes(1)
     expect(result).toEqual([
       expect.objectContaining({
         id: "clip-1",
@@ -202,6 +202,10 @@ describe("campaign reel layer", () => {
         billingMode: "business",
         billingReference: "campaign-order-51:clip-1",
       })
+    )
+    expect(pollPredictionMock).toHaveBeenCalledWith(
+      "prediction-10",
+      expect.objectContaining({ timeout: 180_000 })
     )
   })
 })

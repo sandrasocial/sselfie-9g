@@ -2,9 +2,11 @@
 
 import { existsSync, readFileSync } from "node:fs"
 import { afterEach, describe, expect, it } from "vitest"
+import { zodToJsonSchema } from "zod-to-json-schema"
 
 import { ALLOWED_ANALYTICS_EVENTS } from "@/lib/analytics/event-contract"
 import { isCampaignOutcomeEnabled } from "@/lib/campaign-outcome/feature"
+import { campaignPlanSchema } from "@/lib/campaign-outcome/plan-schema"
 import { getProductById, PRODUCT_REVENUE_PATHS } from "@/lib/products"
 
 const read = (path: string) => readFileSync(path, "utf8")
@@ -16,6 +18,40 @@ afterEach(() => {
 })
 
 describe("Your Next Campaign product contract", () => {
+  it("keeps the planner schema compatible with current Anthropic structured output", () => {
+    const schema = zodToJsonSchema(campaignPlanSchema) as Record<string, unknown>
+    const unsupportedMinItems: number[] = []
+    const unsupportedMaxItems: number[] = []
+    const unsupportedIntegerBounds: string[] = []
+
+    function visit(value: unknown) {
+      if (!value || typeof value !== "object") return
+      if (Array.isArray(value)) {
+        value.forEach(visit)
+        return
+      }
+      const record = value as Record<string, unknown>
+      if (typeof record.minItems === "number" && record.minItems > 1) {
+        unsupportedMinItems.push(record.minItems)
+      }
+      if (typeof record.maxItems === "number") {
+        unsupportedMaxItems.push(record.maxItems)
+      }
+      if (
+        record.type === "integer" &&
+        (typeof record.minimum === "number" || typeof record.maximum === "number")
+      ) {
+        unsupportedIntegerBounds.push("integer bounds")
+      }
+      Object.values(record).forEach(visit)
+    }
+
+    visit(schema)
+    expect(unsupportedMinItems).toEqual([])
+    expect(unsupportedMaxItems).toEqual([])
+    expect(unsupportedIntegerBounds).toEqual([])
+  })
+
   it("fails closed until the held feature is deliberately enabled", () => {
     delete process.env.CAMPAIGN_OUTCOME_DISABLED
     expect(isCampaignOutcomeEnabled()).toBe(false)
@@ -70,11 +106,12 @@ describe("Your Next Campaign product contract", () => {
 
   it("keeps one promotion complete and records every decision gate", () => {
     const generator = read("lib/campaign-outcome/generator.ts")
-    expect(generator).toContain('z.enum(["attention", "trust", "offer"])')
-    expect(generator).toContain("alternatePhotos")
-    expect(generator).toContain(".length(7)")
-    expect(generator).toContain('z.enum(["warmup", "offer"])')
-    expect(generator).toContain(".length(5)")
+    const planSchema = read("lib/campaign-outcome/plan-schema.ts")
+    expect(planSchema).toContain('z.enum(["attention", "trust", "offer"])')
+    expect(planSchema).toContain("alternatePhotos")
+    expect(planSchema).toContain('z.enum(["warmup", "offer"])')
+    expect(generator).toContain("object.carousel.slides.length !== 7")
+    expect(generator).toContain("sequence.slides.length !== 5")
     expect(generator).toContain("Use exact facial features from the reference image.")
     expect(generator).toContain("Never invent a personal story")
 

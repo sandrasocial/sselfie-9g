@@ -10,10 +10,6 @@ export function getReplicateClient() {
 
   const apiToken = process.env.REPLICATE_API_TOKEN
 
-  const tokenPreview = apiToken ? `${apiToken.substring(0, 8)}...${apiToken.substring(apiToken.length - 4)}` : "none"
-  console.log("[v0] Replicate API token preview:", tokenPreview)
-  console.log("[v0] Replicate API token length:", apiToken?.length || 0)
-
   if (!apiToken) {
     throw new Error("REPLICATE_API_TOKEN environment variable is not set")
   }

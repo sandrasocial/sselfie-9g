@@ -137,11 +137,24 @@ export function validateCampaignReelPlan(
   if (!/\b\d{1,2}\s*seconds?\b/i.test(plan.selfFilmedClipInstruction)) {
     throw new Error("Campaign reel failed QA: self-filmed direction needs a clear length")
   }
-  if (plan.overlayLines.length < 2 || plan.overlayLines.some(line => !line.trim())) {
+  if (
+    !Number.isInteger(plan.assembly.targetLengthSeconds) ||
+    plan.assembly.targetLengthSeconds < 15 ||
+    plan.assembly.targetLengthSeconds > 30
+  ) {
+    throw new Error("Campaign reel failed QA: target length must be 15 to 30 seconds")
+  }
+  if (
+    plan.overlayLines.length < 2 ||
+    plan.overlayLines.length > 6 ||
+    plan.overlayLines.some(line => !line.trim())
+  ) {
     throw new Error("Campaign reel failed QA: overlay sequence is incomplete")
   }
   const allowedClipIds = new Set([...plan.brollClips.map(clip => clip.id), "self_filmed"])
   if (
+    plan.assembly.clipOrder.length < 2 ||
+    plan.assembly.clipOrder.length > 6 ||
     !plan.assembly.clipOrder.includes("self_filmed") ||
     plan.assembly.clipOrder.some(clipId => !allowedClipIds.has(clipId))
   ) {
@@ -215,45 +228,43 @@ async function generateOneClip(input: {
   sourcePhotoUrl: string
 }): Promise<CampaignReelClip> {
   let finalError = "Video provider unavailable"
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
-    try {
-      const started = await startVideoGeneration({
-        userId: input.businessVideoUserId,
-        imageUrl: input.sourcePhotoUrl,
-        motionPrompt: input.plan.motionPrompt,
-        imageDescription: "A campaign brand photo. Animate only what is already visible.",
-        category: "campaign-outcome",
-        source: "campaign-outcome",
-        billingMode: "business",
-        billingReference: `campaign-order-${input.orderId}:${input.plan.id}`,
-      })
-      const prediction = await pollPrediction(started.predictionId, {
-        maxAttempts: 35,
-        initialDelay: 1500,
-        maxDelay: 6000,
-        timeout: 100_000,
-      })
-      if (prediction.status !== "succeeded") {
-        throw new Error(typeof prediction.error === "string" ? prediction.error : "Video failed")
-      }
-      const checked = await checkVideoGeneration({
-        userId: input.businessVideoUserId,
-        predictionId: started.predictionId,
-        videoId: started.videoId,
-      })
-      if (checked.status !== "succeeded") {
-        throw new Error(checked.status === "failed" ? checked.error : "Video did not finish")
-      }
-      return {
-        ...input.plan,
-        sourcePhotoUrl: input.sourcePhotoUrl,
-        status: "ready",
-        videoUrl: checked.videoUrl,
-        note: null,
-      }
-    } catch (error) {
-      finalError = error instanceof Error ? error.message : String(error)
+  try {
+    const started = await startVideoGeneration({
+      userId: input.businessVideoUserId,
+      imageUrl: input.sourcePhotoUrl,
+      motionPrompt: input.plan.motionPrompt,
+      imageDescription: "A campaign brand photo. Animate only what is already visible.",
+      category: "campaign-outcome",
+      source: "campaign-outcome",
+      billingMode: "business",
+      billingReference: `campaign-order-${input.orderId}:${input.plan.id}`,
+    })
+    const prediction = await pollPrediction(started.predictionId, {
+      maxAttempts: 60,
+      initialDelay: 1500,
+      maxDelay: 6000,
+      timeout: 180_000,
+    })
+    if (prediction.status !== "succeeded") {
+      throw new Error(typeof prediction.error === "string" ? prediction.error : "Video failed")
     }
+    const checked = await checkVideoGeneration({
+      userId: input.businessVideoUserId,
+      predictionId: started.predictionId,
+      videoId: started.videoId,
+    })
+    if (checked.status !== "succeeded") {
+      throw new Error(checked.status === "failed" ? checked.error : "Video did not finish")
+    }
+    return {
+      ...input.plan,
+      sourcePhotoUrl: input.sourcePhotoUrl,
+      status: "ready",
+      videoUrl: checked.videoUrl,
+      note: null,
+    }
+  } catch (error) {
+    finalError = error instanceof Error ? error.message : String(error)
   }
 
   console.warn(`[campaign-outcome] Reel clip ${input.plan.id} unavailable: ${finalError}`)

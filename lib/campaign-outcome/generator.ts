@@ -2,9 +2,10 @@ import "server-only"
 
 import { put } from "@vercel/blob"
 import { generateObject } from "ai"
-import { z } from "zod"
 
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { campaignPlanSchema } from "@/lib/campaign-outcome/plan-schema"
+import { validateCampaignPlanTruth } from "@/lib/campaign-outcome/plan-validation"
 import { renderCampaignSlide } from "@/lib/campaign-outcome/slide-renderer"
 import { ensureCampaignOutcomeSchema } from "@/lib/campaign-outcome/schema"
 import {
@@ -25,91 +26,6 @@ import type {
 import { sql } from "@/lib/db/client"
 import { generateFeedImageWithOpenAI } from "@/lib/feed-planner/openai-image"
 import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
-
-const shortSlideSchema = z.object({
-  headline: z.string().min(2).max(80),
-  body: z.string().min(2).max(240),
-})
-
-const planSchema = z.object({
-  visualDirection: z.string().min(20).max(500),
-  firstPostReason: z.string().min(10).max(300),
-  posts: z
-    .array(
-      z.object({
-        role: z.enum(["attention", "trust", "offer"]),
-        headline: z.string().min(3).max(120),
-        caption: z.string().min(40).max(1800),
-        cta: z.string().min(2).max(220),
-        visualPrompt: z.string().min(40).max(1800),
-        whyThisPost: z.string().min(10).max(300),
-      })
-    )
-    .length(3),
-  alternatePhotos: z
-    .array(
-      z.object({
-        label: z.string().min(2).max(80),
-        visualPrompt: z.string().min(40).max(1800),
-        whyThisPhoto: z.string().min(10).max(300),
-      })
-    )
-    .length(3),
-  carousel: z.object({
-    title: z.string().min(3).max(100),
-    slides: z.array(shortSlideSchema).length(7),
-  }),
-  storySequences: z
-    .array(
-      z.object({
-        role: z.enum(["warmup", "offer"]),
-        title: z.string().min(3).max(100),
-        slides: z.array(shortSlideSchema).length(5),
-      })
-    )
-    .length(2),
-  publishPlan: z
-    .array(
-      z.object({
-        day: z.number().int().min(1).max(5),
-        asset: z.enum(["attention_post", "warmup_stories", "carousel", "trust_post", "offer_post"]),
-        instruction: z.string().min(5).max(300),
-      })
-    )
-    .length(5),
-  reel: z.object({
-    hook: z.string().min(12).max(180),
-    script: z.string().min(40).max(900),
-    selfFilmedClipInstruction: z.string().min(20).max(300),
-    brollClips: z
-      .array(
-        z.object({
-          id: z.enum(["clip-1", "clip-2", "clip-3"]),
-          sourcePhotoId: z.enum(["attention", "trust", "offer"]),
-          motionPrompt: z.string().min(20).max(500),
-        })
-      )
-      .length(3),
-    overlayLines: z.array(z.string().min(2).max(100)).min(2).max(6),
-    assembly: z.object({
-      clipOrder: z.array(z.string().min(2).max(50)).min(2).max(6),
-      overlayPlacements: z
-        .array(
-          z.object({
-            overlayLine: z.string().min(2).max(100),
-            overClipId: z.enum(["clip-1", "clip-2", "clip-3", "self_filmed"]),
-          })
-        )
-        .min(2)
-        .max(6),
-      targetLengthSeconds: z.number().int().min(15).max(30),
-      audioType: z.string().min(5).max(100),
-    }),
-    caption: z.string().min(40).max(1800),
-    cta: z.string().min(2).max(220),
-    corpusPatternId: z.string().min(3).max(100),
-  }),
-})
 
 type ClaimedCampaignOrder = {
   id: number
@@ -185,7 +101,7 @@ export async function generateCampaignOrder(
       .join("\n")
     const { object } = await generateObject({
       model: createMayaOpenRouterModel("feed_planner"),
-      schema: planSchema,
+      schema: campaignPlanSchema,
       prompt: `You are Maya, Sandra's practical personal-brand creative director.
 
 Complete one coherent campaign for one promotion. Return every field in the schema.
@@ -224,6 +140,15 @@ Rules:
 - Never invent a personal story, customer result, price, deadline, guarantee, credential, link, keyword, or product detail.
 - If a claim is not present in the input, keep it general and editable.
 - Each CTA must connect to what she is promoting without inventing a keyword or link.
+- The intake does not contain an approved DM keyword or link. Never write "comment", "DM", or
+  "message" followed by a keyword. Never say "link in bio". Use a plain invitation to see, read,
+  or join the named promotion instead.
+- Never make an absolute identity or body promise. Do not say "nothing gets replaced", "your face
+  stays your face", "your real body", "no reshaping", or guarantee that AI will not change a
+  detail. It is truthful to say the product is designed to preserve natural features and that AI
+  can still vary small details.
+- Do not invent urgency such as "last chance", "today only", "this week only", a deadline, or
+  limited spots unless those exact facts are present in the intake.
 - Make every asset feel like one campaign, not a pile of unrelated content.
 - Keep carousel and Story text short enough to read on a phone. One idea per slide.
 - The first post should be the easiest useful thing to publish first.
@@ -240,9 +165,33 @@ Rules:
     })
 
     const planPosts = orderedPosts(object.posts)
-    if (planPosts.length !== 3) throw new Error("Maya did not return all three campaign roles")
+    if (object.posts.length !== 3 || planPosts.length !== 3)
+      throw new Error("Maya did not return exactly the three campaign roles")
+    if (object.alternatePhotos.length !== 3)
+      throw new Error("Maya did not return all three alternate photos")
+    if (object.carousel.slides.length !== 7)
+      throw new Error("Maya did not return all seven carousel slides")
     const storyPlans = orderedStorySequences(object.storySequences)
-    if (storyPlans.length !== 2) throw new Error("Maya did not return both Story sequences")
+    if (object.storySequences.length !== 2 || storyPlans.length !== 2)
+      throw new Error("Maya did not return exactly both Story sequences")
+    if (storyPlans.some(sequence => sequence.slides.length !== 5))
+      throw new Error("Maya did not return five slides for each Story sequence")
+    if (object.publishPlan.length !== 5)
+      throw new Error("Maya did not return the complete five-day publishing plan")
+    const publishDays = object.publishPlan.map(item => item.day)
+    if (
+      new Set(publishDays).size !== 5 ||
+      publishDays.some(day => !Number.isInteger(day) || day < 1 || day > 5)
+    ) {
+      throw new Error("Maya did not return one valid publishing step for each day")
+    }
+    if (object.reel.brollClips.length !== 3)
+      throw new Error("Maya did not return all three reel b-roll clips")
+    validateCampaignPlanTruth(object, {
+      whatSheSells: order.what_she_sells,
+      promotion: order.promotion,
+      targetAudience: order.target_audience,
+    })
     const reelPlan = validateCampaignReelPlan(object.reel, {
       whatSheSells: order.what_she_sells,
       promotion: order.promotion,
