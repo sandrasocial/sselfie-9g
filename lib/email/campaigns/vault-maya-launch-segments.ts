@@ -15,7 +15,7 @@ type SegmentActionResult = {
   reason?: string
 }
 
-const RESEND_REQUEST_DELAY_MS = 560
+export const RESEND_REQUEST_DELAY_MS = 560
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 function normalizeEmail(email: string): string | null {
@@ -39,6 +39,21 @@ export function isVaultMayaLaunchCampaignKey(value?: string | null): boolean {
     .startsWith("vault_maya_launch_")
 }
 
+export function isVaultMayaOfferClickUrl(value?: string | null): boolean {
+  if (!value) return false
+
+  try {
+    const url = new URL(value)
+    const hostname = url.hostname.toLowerCase()
+    if (hostname !== "sselfie.ai" && hostname !== "www.sselfie.ai") return false
+
+    const pathname = url.pathname.replace(/\/+$/, "") || "/"
+    return pathname === "/vault-maya" || pathname === "/checkout/vault-maya"
+  } catch {
+    return false
+  }
+}
+
 async function hasVaultMayaSalesExclusion(email: string): Promise<boolean> {
   const rows = await sql`
     SELECT 1
@@ -58,26 +73,30 @@ async function hasVaultMayaSalesExclusion(email: string): Promise<boolean> {
   return rows.length > 0
 }
 
-async function runSegmentRequest(
-  request: () => Promise<{ error: { message?: string } | null }>,
+export async function runResendRequest<T extends { error: { message?: string } | null }>(
+  request: () => Promise<T>,
   allowMissing: boolean,
-): Promise<void> {
+  wait: (ms: number) => Promise<unknown> = sleep,
+): Promise<T> {
   for (let attempt = 1; attempt <= 6; attempt += 1) {
-    const { error } = await request()
-    if (!error) return
+    const result = await request()
+    const { error } = result
+    if (!error) return result
 
     const message = String(error.message || "")
-    if (allowMissing && /not found|does not exist|404/i.test(message)) return
+    if (allowMissing && /not found|does not exist|404/i.test(message)) return result
     if (!/429|rate|too many/i.test(message) || attempt === 6) {
       throw new Error(message || "Resend segment request failed")
     }
-    await sleep(Math.min(10_000, 800 * 2 ** (attempt - 1)))
+    await wait(Math.min(10_000, 800 * 2 ** (attempt - 1)))
   }
+
+  throw new Error("Resend segment request exhausted retries")
 }
 
 async function addToSegment(email: string, segmentId: string): Promise<void> {
   const resend = requireResendClient()
-  await runSegmentRequest(
+  await runResendRequest(
     () => resend.contacts.segments.add({ email, segmentId }),
     false,
   )
@@ -85,7 +104,7 @@ async function addToSegment(email: string, segmentId: string): Promise<void> {
 
 async function removeFromSegment(email: string, segmentId: string): Promise<void> {
   const resend = requireResendClient()
-  await runSegmentRequest(
+  await runResendRequest(
     () => resend.contacts.segments.remove({ email, segmentId }),
     true,
   )

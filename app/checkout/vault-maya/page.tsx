@@ -1,15 +1,11 @@
 import { redirect } from "next/navigation"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
-import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { createServerClient } from "@/lib/supabase/server"
 import {
   buildCheckoutRedirectUrl,
   getCheckoutAttributionFromParams,
 } from "@/lib/revenue-engine/checkout-attribution"
-import { shouldShowCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
 import Link from "next/link"
-import { PromptVaultCheckoutEmailCapture } from "@/components/prompt-vault/prompt-vault-checkout-email-capture"
-import { getVaultMayaPriceDisplay } from "@/lib/launch/cash-launch-pricing"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getSuiteAccess } from "@/lib/trial/suite-trial"
 
@@ -55,7 +51,6 @@ export default async function VaultMayaCheckoutPage({
   } = await supabase.auth.getUser()
   const urlEmail = normalizeCheckoutEmail(params.checkout_email || params.email)
   const checkoutEmail = authUser?.email ?? urlEmail ?? null
-  const price = getVaultMayaPriceDisplay()
   const productId = "vault_maya"
 
   // B3 (Sandra, 2026-07-30): active SUITE members must not pay again for a subset they
@@ -124,77 +119,6 @@ export default async function VaultMayaCheckoutPage({
         </main>
       )
     }
-  }
-
-  const captureParams = {
-    ...params,
-    checkout_source: params.checkout_source || "vault_maya_email_capture",
-  }
-  const shouldCaptureEmail = shouldShowCheckoutEmailCapture({
-    params,
-    hasRecoverableEmail: Boolean(checkoutEmail),
-    hasAuthUser: Boolean(authUser?.id),
-    hasFreebieToken: false,
-  })
-
-  if (shouldCaptureEmail) {
-    await logAnalyticsEvent({
-      eventName: "vault_maya_checkout_email_capture_view",
-      userId: authUser?.id || null,
-      path: "/checkout/vault-maya",
-      utm: {
-        source: attribution.utmSource,
-        medium: attribution.utmMedium,
-        campaign: attribution.utmCampaign,
-        content: attribution.utmContent,
-      },
-      properties: {
-        product_type: productId,
-        source: attribution.source,
-        has_auth_user: Boolean(authUser?.id),
-        checkout_source: captureParams.checkout_source,
-        buyer_stage: attribution.buyerStage || null,
-        cta_keyword: attribution.ctaKeyword || null,
-        entry_post_slug: attribution.entryPostSlug || null,
-      },
-    })
-
-    return (
-      <PromptVaultCheckoutEmailCapture
-        params={captureParams}
-        actionPath="/checkout/vault-maya"
-        eyebrow="VAULT MAYA"
-        title="Where should I send your Vault Maya access?"
-        copy="Add your email, then continue to secure payment."
-        inputId="vault-maya-checkout-email"
-        buttonLabel="Continue to secure payment"
-        productName="Vault Maya"
-        productMeta="30 photo creations each month · every Vault collection"
-        productPrice={price.flipped ? "$29/month" : "$19/month"}
-        reassurance={
-          price.flipped
-            ? "$29 billed monthly. Cancel anytime from your account."
-            : "Founder price: $19 billed monthly. You keep this price while your membership stays active. Cancel anytime from your account."
-        }
-        proofQuote=""
-        mobileFormFirst
-        showSupportingVisuals={false}
-        visuals={[
-          {
-            src: "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/content-kit/shoots/1785423447575-876892.png",
-            alt: "Golden-hour balcony portrait from Golden Hour Diary",
-          },
-          {
-            src: "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/content-kit/shoots/1785427595205-824538.png",
-            alt: "Editorial mirror portrait from Golden Hour Diary",
-          },
-          {
-            src: "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/content-kit/shoots/1785419807908-245517.png",
-            alt: "Rooftop full-body portrait from Golden Hour Escape",
-          },
-        ]}
-      />
-    )
   }
 
   try {

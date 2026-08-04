@@ -5,8 +5,10 @@ import { sendEmail } from "@/lib/email/send-email"
 import { envNumber } from "@/lib/env-flags"
 import {
   addVaultMayaLaunchHighIntent,
+  isVaultMayaOfferClickUrl,
   isVaultMayaLaunchCampaignKey,
 } from "@/lib/email/campaigns/vault-maya-launch-segments"
+import { assessDeliverabilityWindow } from "@/lib/email/deliverability-alerts"
 
 const WEBHOOK_EVENT_TYPES = new Set([
   "email.sent",
@@ -536,15 +538,31 @@ async function updateABTestIfNeeded(rows: any[], eventType: string) {
 async function maybeSendDeliverabilityAlert(eventType: string) {
   if (eventType !== "email.bounced" && eventType !== "email.complained") return
 
-  const threshold = envNumber("EMAIL_BOUNCE_ALERT_THRESHOLD", 10)
+  const minimumVolume = envNumber("EMAIL_DELIVERABILITY_ALERT_MINIMUM_VOLUME", 100)
+  const bounceRateThreshold = envNumber("EMAIL_BOUNCE_ALERT_RATE_PERCENT", 2)
+  const complaintRateThreshold = envNumber("EMAIL_COMPLAINT_ALERT_RATE_PERCENT", 0.1)
   const rows = await sql`
-    SELECT COUNT(*)::int AS damage_count
+    SELECT
+      COUNT(*) FILTER (WHERE status = 'delivered')::int AS delivered_count,
+      COUNT(*) FILTER (WHERE status = 'sent')::int AS sent_count,
+      COUNT(*) FILTER (WHERE status = 'bounced')::int AS bounced_count,
+      COUNT(*) FILTER (WHERE status = 'complained')::int AS complained_count
     FROM email_logs
-    WHERE status IN ('bounced', 'complained')
+    WHERE status IN ('sent', 'delivered', 'bounced', 'complained')
       AND COALESCE(sent_at, created_at) > NOW() - INTERVAL '24 hours'
   `
-  const damageCount = Number(rows?.[0]?.damage_count || 0)
-  if (damageCount < threshold) return
+  const stats = {
+    delivered: Number(rows?.[0]?.delivered_count || 0),
+    sent: Number(rows?.[0]?.sent_count || 0),
+    bounced: Number(rows?.[0]?.bounced_count || 0),
+    complained: Number(rows?.[0]?.complained_count || 0),
+  }
+  const assessment = assessDeliverabilityWindow(stats, {
+    minimumVolume,
+    bounceRatePercent: bounceRateThreshold,
+    complaintRatePercent: complaintRateThreshold,
+  })
+  if (!assessment.shouldAlert) return
 
   const alertId = `resend-deliverability-${new Date().toISOString().slice(0, 10)}`
   const existing = await sql`
@@ -556,38 +574,62 @@ async function maybeSendDeliverabilityAlert(eventType: string) {
   `
   if (existing.length > 0) return
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS deliverability_alert_claims (
+      alert_id TEXT PRIMARY KEY,
+      claimed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `
+  const claim = await sql`
+    INSERT INTO deliverability_alert_claims (alert_id, claimed_at)
+    VALUES (${alertId}, NOW())
+    ON CONFLICT (alert_id) DO NOTHING
+    RETURNING alert_id
+  `
+  if (claim.length === 0) return
+
   const to = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
   const subject = "SSELFIE alert: email deliverability needs review"
+  const bounceRate = assessment.bounceRatePercent.toFixed(2)
+  const complaintRate = assessment.complaintRatePercent.toFixed(3)
   const html = `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.6;color:#111;">
       <h1 style="font-family:Georgia,serif;font-weight:400;">Email deliverability needs review</h1>
-      <p>${damageCount} bounces or complaints were logged in the last 24 hours.</p>
-      <p>Threshold: ${threshold}. Source: <code>email_logs</code> via Resend webhook.</p>
+      <p>${stats.bounced} bounces (${bounceRate}%) and ${stats.complained} complaints (${complaintRate}%) were logged across ${assessment.total} emails in the last 24 hours.</p>
+      <p>Alert reason: ${assessment.reason}. Thresholds: ${bounceRateThreshold}% bounces or ${complaintRateThreshold}% complaints after ${minimumVolume} emails. Source: <code>email_logs</code> via Resend webhook.</p>
       <p>Review recent broadcasts and lifecycle sends before sending more volume.</p>
     </div>`
-  const text = `Email deliverability needs review\n\n${damageCount} bounces or complaints were logged in the last 24 hours.\nThreshold: ${threshold}. Source: email_logs via Resend webhook.\n\nReview recent broadcasts and lifecycle sends before sending more volume.`
+  const text = `Email deliverability needs review\n\n${stats.bounced} bounces (${bounceRate}%) and ${stats.complained} complaints (${complaintRate}%) were logged across ${assessment.total} emails in the last 24 hours.\nAlert reason: ${assessment.reason}. Thresholds: ${bounceRateThreshold}% bounces or ${complaintRateThreshold}% complaints after ${minimumVolume} emails. Source: email_logs via Resend webhook.\n\nReview recent broadcasts and lifecycle sends before sending more volume.`
 
-  const result = await sendEmail({
-    to,
-    from: "SSELFIE Alerts <hello@sselfie.ai>",
-    subject,
-    html,
-    text,
-    emailType: "email_deliverability_alert",
-    tags: ["admin-alert", "deliverability"],
-  })
+  try {
+    const result = await sendEmail({
+      to,
+      from: "SSELFIE Alerts <hello@sselfie.ai>",
+      subject,
+      html,
+      text,
+      emailType: "email_deliverability_alert",
+      tags: ["admin-alert", "deliverability"],
+    })
 
-  if (result.success) {
+    if (!result.success) {
+      await sql`DELETE FROM deliverability_alert_claims WHERE alert_id = ${alertId}`
+      return
+    }
+
     await sql`
       INSERT INTO admin_alert_sent (alert_id, alert_type, sent_at, alert_data)
       VALUES (
         ${alertId},
         'email_deliverability',
         NOW(),
-        ${JSON.stringify({ damageCount, threshold, eventType })}::jsonb
+        ${JSON.stringify({ stats, assessment, minimumVolume, bounceRateThreshold, complaintRateThreshold, eventType })}::jsonb
       )
       ON CONFLICT DO NOTHING
     `
+  } catch (error) {
+    await sql`DELETE FROM deliverability_alert_claims WHERE alert_id = ${alertId}`.catch(() => {})
+    throw error
   }
 }
 
@@ -704,7 +746,8 @@ export async function POST(request: NextRequest) {
     if (
       context.eventType === "email.clicked" &&
       context.recipientEmail &&
-      isVaultMayaLaunchCampaignKey(context.resolvedEmailType)
+      isVaultMayaLaunchCampaignKey(context.resolvedEmailType) &&
+      isVaultMayaOfferClickUrl(context.eventData?.click?.link || context.eventData?.link)
     ) {
       await addVaultMayaLaunchHighIntent(context.recipientEmail).catch((intentError) => {
         console.error("[v0] [Resend Webhook] Vault Maya intent sync failed:", {

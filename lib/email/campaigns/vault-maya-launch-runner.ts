@@ -7,6 +7,8 @@ import {
 } from "./vault-maya-launch-plan"
 import {
   removeVaultMayaLaunchSalesContact,
+  RESEND_REQUEST_DELAY_MS,
+  runResendRequest,
   VAULT_MAYA_LAUNCH_SEGMENT_ENV,
 } from "./vault-maya-launch-segments"
 import {
@@ -31,6 +33,7 @@ interface FollowupJob {
 }
 
 const firstName = "{{{contact.first_name|there}}}"
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 export const VAULT_MAYA_LAUNCH_FOLLOWUPS: FollowupJob[] = [
   {
@@ -112,16 +115,20 @@ async function listSegmentCount(id: string): Promise<number> {
   let after: string | undefined
   let count = 0
   do {
-    const { data, error } = await resend.contacts.list({
-      segmentId: id,
-      limit: 100,
-      ...(after ? { after } : {}),
-    })
-    if (error) throw new Error(error.message || `Failed to list segment ${id}`)
+    const { data } = await runResendRequest(
+      () =>
+        resend.contacts.list({
+          segmentId: id,
+          limit: 100,
+          ...(after ? { after } : {}),
+        }),
+      false,
+    )
     const contacts = data?.data || []
     count += contacts.filter(contact => !contact.unsubscribed).length
     if (!data?.has_more || contacts.length === 0) break
     after = contacts[contacts.length - 1]?.id
+    await sleep(RESEND_REQUEST_DELAY_MS)
   } while (after)
   return count
 }

@@ -78,12 +78,14 @@ describe("EMPLOYEE-01 roster and dormant cron visibility", () => {
     expect(adminPage).not.toContain("DM bridge truth")
   })
 
-  it("alerts once when bounces or complaints cross the configured threshold", () => {
+  it("alerts once when bounce or complaint rates cross their configured thresholds", () => {
     const webhook = read("app/api/webhooks/resend/route.ts")
 
     expect(webhook).toContain("maybeSendDeliverabilityAlert")
     expect(webhook).toContain('eventType !== "email.bounced" && eventType !== "email.complained"')
-    expect(webhook).toContain("EMAIL_BOUNCE_ALERT_THRESHOLD")
+    expect(webhook).toContain("EMAIL_BOUNCE_ALERT_RATE_PERCENT")
+    expect(webhook).toContain("EMAIL_COMPLAINT_ALERT_RATE_PERCENT")
+    expect(webhook).toContain("deliverability_alert_claims")
     expect(webhook).toContain("admin_alert_sent")
     expect(webhook).toContain("email_deliverability_alert")
   })
