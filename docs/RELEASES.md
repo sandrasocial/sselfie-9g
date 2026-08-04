@@ -1,5 +1,21 @@
 # Completed releases
 
+## 2026-08-04 — Vault Maya launch conversion and email reliability
+
+Removed the extra Vault Maya email-capture gate so new buyers now move directly from the approved
+offer page into Stripe's secure email and payment form. Hardened the launch follow-up runner with
+paced Resend pagination and retry/backoff, limited high-intent membership to real Vault Maya offer
+clicks or identified checkout starters, and replaced duplicate absolute-count deliverability alerts
+with atomic, minimum-volume percentage alerts. No approved email or sales-page copy changed.
+
+Production proof: feature commit `2add6e62`, Vercel deployment
+`dpl_2q4Ucuhe17ax31GqfzEbXuJfhyaJ`, and the exact commit passed GitHub's Vercel status check. CI
+typecheck, repository invariants, 1,941 tests with 6 intentionally skipped, targeted repair tests,
+an optimized production build, and diff checks passed. Live desktop and 390x844 mobile QA reached
+Stripe directly with no payment submitted. The failed 07:00 UTC follow-up recovered on the first
+post-deploy run: Resend accepted the nonbuyer broadcast once for 7,110 contacts, and the next cron
+reported both audiences `already_sent`. The active high-intent segment contained no invalid links.
+
 ## 2026-08-03 — Vault Maya launch emails
 
 Launched the approved Vault Maya email sequence with a later image from the newest Golden Hour
