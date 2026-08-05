@@ -59,12 +59,16 @@ function proofBlock(proof?: SuiteProofAsset): string {
 export function generateSuiteProofSprintEmail(params: {
   firstName?: string
   proof?: SuiteProofAsset
+  recipientContext?: "buyer" | "subscriber-or-buyer"
 } = {}): SuiteProofSprintEmail {
   const firstName = params.firstName?.trim() || "there"
   const checkoutUrl = getSuiteProofSprintCheckoutUrl()
   const proofReady = isSuiteProofApproved(params.proof)
   const subject = "I'm 40. Why am I trying to create content like I'm 20?"
   const tutorialUrl = params.proof?.tutorialUrl?.trim()
+  const permissionReminder = params.recipientContext === "subscriber-or-buyer"
+    ? "You are receiving this because you joined the SSELFIE email list or previously bought a SSELFIE product."
+    : "You are receiving this because you previously bought a SSELFIE product."
 
   const bodyHtml = [
     paragraph(`Hey ${escapeHtml(firstName)},`),
@@ -102,7 +106,7 @@ export function generateSuiteProofSprintEmail(params: {
           `P.S. If you want to try the starting selfie first, <a href="${escapeHtml(tutorialUrl)}" style="color:#1F2021;text-decoration:underline;">this is the exact Instagram tutorial I used for photo one</a>.`
         )
       : "",
-    `<p style="margin:30px 0 0;padding-top:22px;border-top:1px solid #D8D9DA;color:#818283;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.7;">You are receiving this because you previously bought a SSELFIE product.<br /><a href="${RESEND_UNSUBSCRIBE_URL}" style="color:#4F5052;text-decoration:underline;">Unsubscribe</a></p>`,
+    `<p style="margin:30px 0 0;padding-top:22px;border-top:1px solid #D8D9DA;color:#818283;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.7;">${permissionReminder}<br /><a href="${RESEND_UNSUBSCRIBE_URL}" style="color:#4F5052;text-decoration:underline;">Unsubscribe</a></p>`,
   ].join("")
 
   const proofText = proofReady

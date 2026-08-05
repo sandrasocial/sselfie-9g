@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { readFileSync } from "node:fs"
 
 import { classifySuiteProofSprintAudience } from "@/lib/email/campaigns/suite-proof-sprint-audience"
+import { classifySuiteProofSprintFullAudience } from "@/lib/email/campaigns/suite-proof-sprint-full-audience"
 import {
   getSuiteProofSprintCheckoutUrl,
   SUITE_PROOF_SPRINT,
@@ -54,6 +55,21 @@ describe("SUITE proof sprint", () => {
     expect(SUITE_PROOF_CAROUSEL_CAPTION_DRAFT).toContain("Consistency beats perfect")
     expect(SUITE_PROOF_CAROUSEL_CAPTION_DRAFT).toContain("annual SSELFIE SUITE is €970")
     expect(SUITE_PROOF_CAROUSEL_CAPTION_DRAFT.length).toBeLessThan(2200)
+  })
+
+  it("uses a truthful permission reminder for the approved full-list version", () => {
+    const draft = generateSuiteProofSprintEmail({
+      firstName: "Lovely",
+      proof: SUITE_PROOF_SPRINT_REVIEW_PROOF,
+      recipientContext: "subscriber-or-buyer",
+    })
+
+    expect(draft.html).toContain(
+      "joined the SSELFIE email list or previously bought a SSELFIE product"
+    )
+    expect(draft.html).not.toContain(
+      "because you previously bought a SSELFIE product"
+    )
   })
 
   it("uses the existing annual price and tracked annual checkout", () => {
@@ -116,5 +132,27 @@ describe("SUITE proof sprint", () => {
 
     expect(result.eligible.map(candidate => candidate.email)).toEqual(["newer@example.com"])
     expect(result.excluded.audience_cap).toBe(1)
+  })
+
+  it("builds the full-list cohort for the scheduled window without protected or recently mailed contacts", () => {
+    const scheduledAt = new Date("2026-08-06T08:15:00.000Z")
+    const result = classifySuiteProofSprintFullAudience({
+      scheduledAt,
+      cooldownHours: 48,
+      maxAudience: 10_000,
+      candidates: [
+        { email: "cleared@example.com", hasProtectedAccess: false, lastMarketingDeliveryAt: "2026-08-04T08:03:00.000Z" },
+        { email: "too-recent@example.com", hasProtectedAccess: false, lastMarketingDeliveryAt: "2026-08-04T09:00:00.000Z" },
+        { email: "member@example.com", hasProtectedAccess: true },
+        { email: "unsubscribed@example.com", hasProtectedAccess: false, unsubscribed: true },
+        { email: "bounced@example.com", hasProtectedAccess: false, latestDeliveryStatus: "bounced" },
+      ],
+    })
+
+    expect(result.eligible.map(candidate => candidate.email)).toEqual(["cleared@example.com"])
+    expect(result.excluded.marketing_cooldown).toBe(1)
+    expect(result.excluded.protected_access).toBe(1)
+    expect(result.excluded.unsubscribed).toBe(1)
+    expect(result.excluded.bounced_or_suppressed).toBe(1)
   })
 })
