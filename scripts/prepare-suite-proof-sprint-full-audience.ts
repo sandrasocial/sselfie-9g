@@ -189,7 +189,7 @@ async function mutateMembershipWithRetry(input: {
   for (let attempt = 1; attempt <= 6; attempt++) {
     const response = input.action === "add"
       ? await input.resend.contacts.segments.add({ contactId: input.contactId, segmentId: input.segmentId })
-      : await input.resend.contacts.segments.remove({ id: input.contactId, segmentId: input.segmentId })
+      : await input.resend.contacts.segments.remove({ contactId: input.contactId, segmentId: input.segmentId })
     if (!response.error || /already|exists|not found|404|409/i.test(String(response.error.message || ""))) {
       return
     }
