@@ -1,5 +1,22 @@
 # Completed releases
 
+## 2026-08-05 — Proof-led annual SUITE conversion sprint
+
+Prepared the approved proof-led annual SUITE campaign around Sandra's real source selfie, selected
+Marbella results, and eight-slide consistency carousel. Added the approved email as a review-only
+draft, kept the Instagram tutorial as a P.S. link after the paid call to action, and added a read-only
+audience audit that excludes verified buyers, active access, unsubscribes, and contacts inside the
+48-hour email cooldown. The internal review route remains unavailable in production, and the draft
+is not connected to a sender, cron, or social publishing path.
+
+Production proof: feature commit `55104d84`, Vercel deployment
+`dpl_Bpo4iqBam7fJZdjHXsVfJF5N93na`, and the exact commit reached Ready on `sselfie.ai`. CI typecheck,
+repository invariants, 1,953 tests with 6 intentionally skipped, lint, production build, and diff
+checks passed. Live desktop and 390x844 mobile QA confirmed the €970 annual checkout, correct campaign
+tracking, and no horizontal overflow; the private review route returned 404. The post-deploy audit
+found 2 currently eligible contacts out of the 200-person test cap. No email was sent, no social post
+was published, and no checkout or payment was submitted.
+
 ## 2026-08-04 — Private campaign engine QA hardening
 
 Kept the dormant Campaign Takeover offer closed while repairing the existing generation engine from
