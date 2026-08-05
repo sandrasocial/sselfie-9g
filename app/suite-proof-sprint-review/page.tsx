@@ -1,11 +1,14 @@
 import { notFound } from "next/navigation"
+import Image from "next/image"
 
 import { generateSuiteProofSprintEmail } from "@/lib/email/templates/suite-proof-sprint"
 import {
+  createSuiteProofSprintReviewProof,
   SUITE_PROOF_REQUIREMENTS,
   SUITE_PROOF_SPRINT,
 } from "@/lib/email/campaigns/suite-proof-sprint-plan"
 import {
+  SUITE_PROOF_CAROUSEL_CAPTION_DRAFT,
   SUITE_PROOF_REEL_DRAFT,
   SUITE_PROOF_STORY_DRAFT,
 } from "@/lib/email/campaigns/suite-proof-sprint-content"
@@ -15,7 +18,12 @@ export const dynamic = "force-dynamic"
 export default function SuiteProofSprintReviewPage() {
   if (process.env.NODE_ENV === "production") notFound()
 
-  const email = generateSuiteProofSprintEmail({ firstName: "Lovely" })
+  const reviewProof = createSuiteProofSprintReviewProof()
+  const localProof = createSuiteProofSprintReviewProof("")
+  const email = generateSuiteProofSprintEmail({
+    firstName: "Lovely",
+    proof: localProof,
+  })
 
   return (
     <main className="min-h-screen bg-brand-pearl px-5 py-10 text-brand-obsidian md:px-10">
@@ -27,8 +35,8 @@ export default function SuiteProofSprintReviewPage() {
           One transformation before another funnel rebuild.
         </h1>
         <p className="mt-5 max-w-2xl text-sm leading-7 text-stone-dark md:text-base">
-          Nothing on this page sends or publishes. The campaign stays blocked until Sandra adds and
-          approves the real proof.
+          Nothing on this page sends or publishes. The real proof is in place, but the campaign
+          stays blocked until Sandra approves the exact words and image selection.
         </p>
 
         <section className="mt-10 grid gap-px bg-brand-whisper md:grid-cols-4">
@@ -59,18 +67,50 @@ export default function SuiteProofSprintReviewPage() {
               ))}
             </ol>
             <p className="mt-5 border-l-2 border-brand-obsidian bg-white px-5 py-4 text-sm leading-6">
-              Status: {email.status}. Even after proof is added, Sandra approves the exact email,
-              Reel and Stories before anything goes out.
+              Status: {email.status}. The real proof is now in place. Sandra still approves the
+              exact email, Reel and Stories before anything goes out.
             </p>
+            <div className="mt-5 bg-white px-5 py-5 text-sm leading-6 text-stone-dark">
+              <strong className="block text-brand-obsidian">Tutorial decision</strong>
+              The Instagram tutorial is linked in the P.S. after the paid invitation. It is not
+              embedded because playback is unreliable inside email and the tutorial should support,
+              not interrupt, the proof.
+            </div>
           </div>
 
           <div className="overflow-x-auto bg-brand-whisper p-3 md:p-8">
             <iframe
               title="Suite proof sprint email preview"
               srcDoc={email.html}
-              className="mx-auto block min-h-[1220px] w-[390px] max-w-full border-0 bg-white shadow-xl"
+              className="mx-auto block min-h-[3100px] w-[390px] max-w-full border-0 bg-white shadow-xl"
             />
           </div>
+        </section>
+
+        <section className="mt-14">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-brand-smoke">
+            Sandra&apos;s complete carousel · supplied proof
+          </p>
+          <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+            {reviewProof.carouselImages?.map(image => (
+              <Image
+                key={image.imageUrl}
+                src={image.imageUrl.replace("https://sselfie.ai", "")}
+                alt={image.imageAlt}
+                width={1024}
+                height={1280}
+                className="h-auto w-full"
+              />
+            ))}
+          </div>
+          <article className="mt-6 bg-white p-6 md:p-8">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-brand-smoke">
+              Caption draft
+            </p>
+            <div className="mt-5 whitespace-pre-line text-sm leading-7 text-stone-dark">
+              {SUITE_PROOF_CAROUSEL_CAPTION_DRAFT}
+            </div>
+          </article>
         </section>
 
         <section className="mt-14 grid gap-8 lg:grid-cols-2">

@@ -5,26 +5,55 @@ import { classifySuiteProofSprintAudience } from "@/lib/email/campaigns/suite-pr
 import {
   getSuiteProofSprintCheckoutUrl,
   SUITE_PROOF_SPRINT,
+  SUITE_PROOF_SPRINT_REVIEW_PROOF,
 } from "@/lib/email/campaigns/suite-proof-sprint-plan"
 import { generateSuiteProofSprintEmail } from "@/lib/email/templates/suite-proof-sprint"
+import { SUITE_PROOF_CAROUSEL_CAPTION_DRAFT } from "@/lib/email/campaigns/suite-proof-sprint-content"
 
 describe("SUITE proof sprint", () => {
   it("cannot become approval-ready without real proof", () => {
     const draft = generateSuiteProofSprintEmail({ firstName: "Lovely" })
     expect(draft.status).toBe("needs-proof")
-    expect(draft.html).toContain("add one approved before-and-after proof image")
+    expect(draft.html).toContain("add one approved source selfie")
 
     const ready = generateSuiteProofSprintEmail({
       firstName: "Lovely",
       proof: {
-        imageUrl: "https://example.com/approved-proof.jpg",
-        imageAlt: "One source selfie beside three connected finished photos",
+        sourceImage: {
+          imageUrl: "https://example.com/source.jpg",
+          imageAlt: "One source selfie",
+        },
+        resultImages: [1, 2, 3].map(index => ({
+          imageUrl: `https://example.com/result-${index}.jpg`,
+          imageAlt: `Connected finished photo ${index}`,
+        })),
         useContext: "I used these three photos together for one real week of content.",
       },
     })
     expect(ready.status).toBe("ready-for-approval")
-    expect(ready.html).toContain("https://example.com/approved-proof.jpg")
+    expect(ready.html).toContain("https://example.com/source.jpg")
+    expect(ready.html).toContain("https://example.com/result-3.jpg")
     expect(ready.text).toContain("one real week of content")
+  })
+
+  it("uses Sandra's supplied selfie, results, carousel and tutorial in the approval draft", () => {
+    const draft = generateSuiteProofSprintEmail({
+      firstName: "Lovely",
+      proof: SUITE_PROOF_SPRINT_REVIEW_PROOF,
+    })
+
+    expect(draft.status).toBe("ready-for-approval")
+    expect(draft.subject).toBe("I'm 40. Why am I trying to create content like I'm 20?")
+    expect(draft.html).toContain("https://sselfie.ai/campaigns/suite-proof-sprint/source-selfie.jpg")
+    expect(draft.html).toContain("marbella-result-3.jpg")
+    expect(draft.html).toContain("carousel-1.jpg")
+    expect(draft.html).not.toContain("carousel-8.jpg")
+    expect(SUITE_PROOF_SPRINT_REVIEW_PROOF.carouselImages).toHaveLength(8)
+    expect(draft.html).toContain("https://www.instagram.com/reel/DaWJo4hoB8n/")
+    expect(draft.html).not.toContain("instagram-media")
+    expect(SUITE_PROOF_CAROUSEL_CAPTION_DRAFT).toContain("Consistency beats perfect")
+    expect(SUITE_PROOF_CAROUSEL_CAPTION_DRAFT).toContain("annual SSELFIE SUITE is €970")
+    expect(SUITE_PROOF_CAROUSEL_CAPTION_DRAFT.length).toBeLessThan(2200)
   })
 
   it("uses the existing annual price and tracked annual checkout", () => {
