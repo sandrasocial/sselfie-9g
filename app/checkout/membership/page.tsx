@@ -152,6 +152,7 @@ export default async function MembershipCheckoutPage({
             : isApprovedVaultOffer
               ? "€49 today, then €97 monthly. Cancel from your account."
               : "€97 billed monthly. Cancel from your account."}
+          mobileFormFirst
           visuals={[
             {
               src: "/images/email/studio-visual-workspace.jpg",

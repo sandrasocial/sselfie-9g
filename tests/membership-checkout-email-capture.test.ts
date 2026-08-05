@@ -61,5 +61,6 @@ describe("membership checkout email capture", () => {
     expect(membershipPage).toContain("SSELFIE SUITE")
     expect(membershipPage).toContain("€97/month")
     expect(membershipPage).toContain("/images/email/studio-visual-workspace.jpg")
+    expect(membershipPage).toContain("mobileFormFirst")
   })
 })

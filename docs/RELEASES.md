@@ -13,9 +13,12 @@ Production proof: feature commit `55104d84`, Vercel deployment
 `dpl_Bpo4iqBam7fJZdjHXsVfJF5N93na`, and the exact commit reached Ready on `sselfie.ai`. CI typecheck,
 repository invariants, 1,953 tests with 6 intentionally skipped, lint, production build, and diff
 checks passed. Live desktop and 390x844 mobile QA confirmed the €970 annual checkout, correct campaign
-tracking, and no horizontal overflow; the private review route returned 404. The post-deploy audit
-found 2 currently eligible contacts out of the 200-person test cap. No email was sent, no social post
-was published, and no checkout or payment was submitted.
+tracking, and no horizontal overflow; the private review route returned 404. After explicit approval,
+an attended Resend Marketing pilot broadcast (`39fa1419-c3db-4055-8533-13e23eda09ef`) was sent to the
+2 currently eligible contacts. Resend suppressed one address and the other bounced, so the pilot had
+zero inbox deliveries and no retry or suppression bypass was attempted. The mobile checkout was then
+changed to put its email action before the supporting image. No social post was published, and no
+checkout or payment was submitted.
 
 ## 2026-08-04 — Private campaign engine QA hardening
 
