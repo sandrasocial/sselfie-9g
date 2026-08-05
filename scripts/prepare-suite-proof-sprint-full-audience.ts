@@ -48,11 +48,18 @@ async function listAllContacts(resend: Resend, segmentId: string): Promise<Conta
   const contacts: Contact[] = []
   let after: string | undefined
   do {
-    const { data, error } = await resend.contacts.list({
-      segmentId,
-      limit: 100,
-      ...(after ? { after } : {}),
-    })
+    let response: Awaited<ReturnType<typeof resend.contacts.list>> | null = null
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      response = await resend.contacts.list({
+        segmentId,
+        limit: 100,
+        ...(after ? { after } : {}),
+      })
+      const message = String(response.error?.message || "")
+      if (!response.error || !/429|rate|too many/i.test(message) || attempt === 6) break
+      await sleep(Math.min(10_000, 800 * 2 ** (attempt - 1)))
+    }
+    const { data, error } = response || {}
     if (error) throw new Error(error.message || "Failed to list Resend contacts")
     const page = data?.data || []
     contacts.push(...page)
@@ -66,10 +73,17 @@ async function listAllSegments(resend: Resend): Promise<Segment[]> {
   const segments: Segment[] = []
   let after: string | undefined
   do {
-    const { data, error } = await resend.segments.list({
-      limit: 100,
-      ...(after ? { after } : {}),
-    })
+    let response: Awaited<ReturnType<typeof resend.segments.list>> | null = null
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      response = await resend.segments.list({
+        limit: 100,
+        ...(after ? { after } : {}),
+      })
+      const message = String(response.error?.message || "")
+      if (!response.error || !/429|rate|too many/i.test(message) || attempt === 6) break
+      await sleep(Math.min(10_000, 800 * 2 ** (attempt - 1)))
+    }
+    const { data, error } = response || {}
     if (error) throw new Error(error.message || "Failed to list Resend segments")
     const page = data?.data || []
     segments.push(...page)
@@ -240,8 +254,12 @@ async function reconcileSegment(input: {
   const finalContacts = (await listAllContacts(input.resend, input.segment.id))
     .filter(contact => !contact.unsubscribed)
   const finalEmails = new Set(finalContacts.map(contact => contact.email.trim().toLowerCase()))
-  if (finalEmails.size !== desiredEmails.size || [...desiredEmails].some(email => !finalEmails.has(email))) {
-    throw new Error("Full-list segment did not reconcile exactly; broadcast blocked")
+  const missing = [...desiredEmails].filter(email => !finalEmails.has(email)).length
+  const extra = [...finalEmails].filter(email => !desiredEmails.has(email)).length
+  if (finalEmails.size !== desiredEmails.size || missing > 0 || extra > 0) {
+    throw new Error(
+      `Full-list segment mismatch: desired=${desiredEmails.size}, actual=${finalEmails.size}, missing=${missing}, extra=${extra}; broadcast blocked`,
+    )
   }
   return finalEmails.size
 }
