@@ -20,6 +20,11 @@ zero inbox deliveries and no retry or suppression bypass was attempted. The mobi
 changed to put its email action before the supporting image. No social post was published, and no
 checkout or payment was submitted.
 
+Mobile checkout proof: commit `76c3c757`, Vercel deployment
+`dpl_6RtYUCw3mRHz7Qt1B2idt71d3puz`, and the exact commit reached Ready on the production aliases.
+Live 390x844 QA placed the €970 price, email field, and payment action before the supporting image;
+desktop retained the approved visual layout.
+
 ## 2026-08-04 — Private campaign engine QA hardening
 
 Kept the dormant Campaign Takeover offer closed while repairing the existing generation engine from
