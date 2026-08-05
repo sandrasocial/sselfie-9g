@@ -35,6 +35,11 @@ Oslo), broadcast `7e5a3fc6-23f6-425d-93ea-e7477361b890`. Provider verification s
 full-list permission reminder. This is scheduled provider state, not a sent or delivered claim;
 delivery outcomes still require verification after the send window.
 
+Full-list sender release proof: commit `3889f96b`, Vercel deployment
+`dpl_9cWmNw5868AP5vX8p8qszF2si1bZ`, and the exact commit reached Ready on `sselfie.ai` and
+`www.sselfie.ai`. Typecheck, repository invariants, 1,955 tests with 6 intentionally skipped,
+changed-file lint, production build, and diff checks passed.
+
 ## 2026-08-04 — Private campaign engine QA hardening
 
 Kept the dormant Campaign Takeover offer closed while repairing the existing generation engine from
