@@ -55,6 +55,9 @@ describe("Resend contact unsubscribe webhook", () => {
     const response = await POST(signedRequest(payload) as any)
     const json = await response.json()
     const sqlValues = mockSql.mock.calls.flatMap(call => call.slice(1))
+    const sqlText = mockSql.mock.calls
+      .map(call => Array.from(call[0] as TemplateStringsArray).join("?"))
+      .join("\n")
 
     expect(response.status).toBe(200)
     expect(json).toMatchObject({
@@ -63,5 +66,6 @@ describe("Resend contact unsubscribe webhook", () => {
       unsubscribedTracked: true,
     })
     expect(sqlValues).toContain("email.unsubscribed")
+    expect(sqlText).toContain("::timestamptz")
   })
 })

@@ -242,6 +242,7 @@ async function resolveLatestBroadcastBeforeContactUpdate(
   campaignId: number | null
 } | null> {
   if (!recipientEmail) return null
+  const eventTimestampIso = eventTimestamp.toISOString()
 
   const rows = await sql`
     SELECT
@@ -253,8 +254,8 @@ async function resolveLatestBroadcastBeforeContactUpdate(
     WHERE provider_broadcast_id IS NOT NULL
       AND event_type IN ('email.sent', 'email.delivered')
       AND LOWER(metadata->>'recipient_email') = ${recipientEmail}
-      AND created_at <= ${eventTimestamp}
-      AND created_at >= ${eventTimestamp} - INTERVAL '14 days'
+      AND created_at <= ${eventTimestampIso}::timestamptz
+      AND created_at >= (${eventTimestampIso}::timestamptz - INTERVAL '14 days')
     ORDER BY created_at DESC
     LIMIT 1
   `
