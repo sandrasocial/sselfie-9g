@@ -45,7 +45,9 @@ describe("SUITE proof sprint", () => {
 
     expect(draft.status).toBe("ready-for-approval")
     expect(draft.subject).toBe("I'm 40. Why am I trying to create content like I'm 20?")
-    expect(draft.html).toContain("https://sselfie.ai/campaigns/suite-proof-sprint/source-selfie.jpg")
+    expect(draft.html).toContain(
+      "https://sselfie.ai/campaigns/suite-proof-sprint/source-selfie.jpg"
+    )
     expect(draft.html).toContain("marbella-result-3.jpg")
     expect(draft.html).toContain("carousel-1.jpg")
     expect(draft.html).not.toContain("carousel-8.jpg")
@@ -67,9 +69,7 @@ describe("SUITE proof sprint", () => {
     expect(draft.html).toContain(
       "joined the SSELFIE email list or previously bought a SSELFIE product"
     )
-    expect(draft.html).not.toContain(
-      "because you previously bought a SSELFIE product"
-    )
+    expect(draft.html).not.toContain("because you previously bought a SSELFIE product")
   })
 
   it("uses the existing annual price and tracked annual checkout", () => {
@@ -85,10 +85,7 @@ describe("SUITE proof sprint", () => {
 
   it("stays review-only until Sandra approves the proof and exact words", () => {
     const vercel = readFileSync("vercel.json", "utf8")
-    const launchRunner = readFileSync(
-      "lib/email/campaigns/vault-maya-launch-runner.ts",
-      "utf8"
-    )
+    const launchRunner = readFileSync("lib/email/campaigns/vault-maya-launch-runner.ts", "utf8")
     expect(vercel).not.toContain("suite-proof-sprint")
     expect(launchRunner).not.toContain("suite_proof_sprint_high_intent")
 
@@ -104,10 +101,25 @@ describe("SUITE proof sprint", () => {
       cooldownHours: 48,
       maxAudience: 2,
       candidates: [
-        { email: "eligible@example.com", isCommerceBuyer: true, hasProtectedAccess: false, lastPurchaseAt: "2026-08-04T12:00:00.000Z" },
+        {
+          email: "eligible@example.com",
+          isCommerceBuyer: true,
+          hasProtectedAccess: false,
+          lastPurchaseAt: "2026-08-04T12:00:00.000Z",
+        },
         { email: "member@example.com", isCommerceBuyer: true, hasProtectedAccess: true },
-        { email: "unsubscribed@example.com", isCommerceBuyer: true, hasProtectedAccess: false, unsubscribed: true },
-        { email: "cooldown@example.com", isCommerceBuyer: true, hasProtectedAccess: false, lastMarketingDeliveryAt: "2026-08-04T12:00:00.000Z" },
+        {
+          email: "unsubscribed@example.com",
+          isCommerceBuyer: true,
+          hasProtectedAccess: false,
+          unsubscribed: true,
+        },
+        {
+          email: "cooldown@example.com",
+          isCommerceBuyer: true,
+          hasProtectedAccess: false,
+          lastMarketingDeliveryAt: "2026-08-04T12:00:00.000Z",
+        },
         { email: "not-a-buyer@example.com", isCommerceBuyer: false, hasProtectedAccess: false },
       ],
     })
@@ -125,8 +137,18 @@ describe("SUITE proof sprint", () => {
       cooldownHours: 48,
       maxAudience: 1,
       candidates: [
-        { email: "older@example.com", isCommerceBuyer: true, hasProtectedAccess: false, lastPurchaseAt: "2026-06-01T00:00:00.000Z" },
-        { email: "newer@example.com", isCommerceBuyer: true, hasProtectedAccess: false, lastPurchaseAt: "2026-08-01T00:00:00.000Z" },
+        {
+          email: "older@example.com",
+          isCommerceBuyer: true,
+          hasProtectedAccess: false,
+          lastPurchaseAt: "2026-06-01T00:00:00.000Z",
+        },
+        {
+          email: "newer@example.com",
+          isCommerceBuyer: true,
+          hasProtectedAccess: false,
+          lastPurchaseAt: "2026-08-01T00:00:00.000Z",
+        },
       ],
     })
 
@@ -141,17 +163,35 @@ describe("SUITE proof sprint", () => {
       cooldownHours: 48,
       maxAudience: 10_000,
       candidates: [
-        { email: "cleared@example.com", hasProtectedAccess: false, lastMarketingDeliveryAt: "2026-08-04T08:03:00.000Z" },
-        { email: "too-recent@example.com", hasProtectedAccess: false, lastMarketingDeliveryAt: "2026-08-04T09:00:00.000Z" },
+        {
+          email: "cleared@example.com",
+          hasProtectedAccess: false,
+          lastMarketingDeliveryAt: "2026-08-04T08:03:00.000Z",
+        },
+        {
+          email: "too-recent@example.com",
+          hasProtectedAccess: false,
+          lastMarketingDeliveryAt: "2026-08-04T09:00:00.000Z",
+        },
         { email: "member@example.com", hasProtectedAccess: true },
+        {
+          email: "internal@sselfie.ai",
+          hasProtectedAccess: false,
+          isMarketingTestOrInternal: true,
+        },
         { email: "unsubscribed@example.com", hasProtectedAccess: false, unsubscribed: true },
-        { email: "bounced@example.com", hasProtectedAccess: false, latestDeliveryStatus: "bounced" },
+        {
+          email: "bounced@example.com",
+          hasProtectedAccess: false,
+          latestDeliveryStatus: "bounced",
+        },
       ],
     })
 
     expect(result.eligible.map(candidate => candidate.email)).toEqual(["cleared@example.com"])
     expect(result.excluded.marketing_cooldown).toBe(1)
     expect(result.excluded.protected_access).toBe(1)
+    expect(result.excluded.test_or_internal).toBe(1)
     expect(result.excluded.unsubscribed).toBe(1)
     expect(result.excluded.bounced_or_suppressed).toBe(1)
   })

@@ -103,9 +103,10 @@ async function getSegment(resend: Resend, create: boolean): Promise<Segment | nu
 
 async function buildSnapshot(resend: Resend, sql: ReturnType<typeof neon>) {
   const mainAudienceId = requiredEnv("RESEND_AUDIENCE_ID")
-  const [contacts, protectedRows, latestStatusRows, lastMarketingDeliveryRows] = await Promise.all([
-    listAllContacts(resend, mainAudienceId),
-    sql`
+  const [contacts, protectedRows, testSourceRows, latestStatusRows, lastMarketingDeliveryRows] =
+    await Promise.all([
+      listAllContacts(resend, mainAudienceId),
+      sql`
       SELECT DISTINCT LOWER(BTRIM(u.email)) AS email
       FROM users u
       JOIN subscriptions s ON s.user_id::text = u.id::text
@@ -119,7 +120,16 @@ async function buildSnapshot(resend: Resend, sql: ReturnType<typeof neon>) {
             AND s.trial_ends_at > NOW())
         )
     `,
-    sql`
+      sql`
+      SELECT DISTINCT LOWER(BTRIM(email)) AS email
+      FROM freebie_subscribers
+      WHERE email IS NOT NULL
+        AND (
+          source = 'funnel-test'
+          OR source LIKE 'codex-%'
+        )
+    `,
+      sql`
       SELECT DISTINCT ON (LOWER(BTRIM(user_email)))
         LOWER(BTRIM(user_email)) AS email,
         status
@@ -127,7 +137,7 @@ async function buildSnapshot(resend: Resend, sql: ReturnType<typeof neon>) {
       WHERE user_email IS NOT NULL
       ORDER BY LOWER(BTRIM(user_email)), COALESCE(sent_at, created_at) DESC, created_at DESC
     `,
-    sql`
+      sql`
       SELECT
         LOWER(BTRIM(user_email)) AS email,
         (EXTRACT(EPOCH FROM MAX(COALESCE(sent_at, created_at))) * 1000)::bigint::text AS last_delivery_ms
@@ -136,24 +146,57 @@ async function buildSnapshot(resend: Resend, sql: ReturnType<typeof neon>) {
         AND status IN ('sent', 'delivered')
       GROUP BY LOWER(BTRIM(user_email))
     `,
-  ])
+    ])
 
   const protectedEmails = new Set(
     (protectedRows as Array<{ email?: string | null }>)
-      .map(row => String(row.email || "").trim().toLowerCase())
-      .filter(Boolean),
+      .map(row =>
+        String(row.email || "")
+          .trim()
+          .toLowerCase()
+      )
+      .filter(Boolean)
+  )
+  const testSourceEmails = new Set(
+    (testSourceRows as Array<{ email?: string | null }>)
+      .map(row =>
+        String(row.email || "")
+          .trim()
+          .toLowerCase()
+      )
+      .filter(Boolean)
   )
   const latestStatus = new Map(
-    (latestStatusRows as Array<{
-      email?: string | null
-      status?: string | null
-    }>).map(row => [String(row.email || "").trim().toLowerCase(), row] as const),
+    (
+      latestStatusRows as Array<{
+        email?: string | null
+        status?: string | null
+      }>
+    ).map(
+      row =>
+        [
+          String(row.email || "")
+            .trim()
+            .toLowerCase(),
+          row,
+        ] as const
+    )
   )
   const lastMarketingDelivery = new Map(
-    (lastMarketingDeliveryRows as Array<{
-      email?: string | null
-      last_delivery_ms?: string | null
-    }>).map(row => [String(row.email || "").trim().toLowerCase(), row.last_delivery_ms] as const),
+    (
+      lastMarketingDeliveryRows as Array<{
+        email?: string | null
+        last_delivery_ms?: string | null
+      }>
+    ).map(
+      row =>
+        [
+          String(row.email || "")
+            .trim()
+            .toLowerCase(),
+          row.last_delivery_ms,
+        ] as const
+    )
   )
 
   const result = classifySuiteProofSprintFullAudience({
@@ -166,6 +209,7 @@ async function buildSnapshot(resend: Resend, sql: ReturnType<typeof neon>) {
         firstName: contact.first_name,
         unsubscribed: contact.unsubscribed,
         hasProtectedAccess: protectedEmails.has(email),
+        isMarketingTestOrInternal: email.endsWith("@sselfie.ai") || testSourceEmails.has(email),
         latestDeliveryStatus: deliveryStatus,
         lastMarketingDeliveryAt: Number.isFinite(lastDeliveryMs)
           ? new Date(lastDeliveryMs).toISOString()
@@ -187,10 +231,20 @@ async function mutateMembershipWithRetry(input: {
   segmentId: string
 }) {
   for (let attempt = 1; attempt <= 6; attempt++) {
-    const response = input.action === "add"
-      ? await input.resend.contacts.segments.add({ contactId: input.contactId, segmentId: input.segmentId })
-      : await input.resend.contacts.segments.remove({ contactId: input.contactId, segmentId: input.segmentId })
-    if (!response.error || /already|exists|not found|404|409/i.test(String(response.error.message || ""))) {
+    const response =
+      input.action === "add"
+        ? await input.resend.contacts.segments.add({
+            contactId: input.contactId,
+            segmentId: input.segmentId,
+          })
+        : await input.resend.contacts.segments.remove({
+            contactId: input.contactId,
+            segmentId: input.segmentId,
+          })
+    if (
+      !response.error ||
+      /already|exists|not found|404|409/i.test(String(response.error.message || ""))
+    ) {
       return
     }
     const message = String(response.error.message || "")
@@ -211,12 +265,16 @@ async function runBatches(input: {
   for (let offset = 0; offset < input.contacts.length; offset += CONTACT_BATCH_SIZE) {
     const startedAt = Date.now()
     const batch = input.contacts.slice(offset, offset + CONTACT_BATCH_SIZE)
-    await Promise.all(batch.map(contact => mutateMembershipWithRetry({
-      resend: input.resend,
-      action: input.action,
-      contactId: contact.id,
-      segmentId: input.segmentId,
-    })))
+    await Promise.all(
+      batch.map(contact =>
+        mutateMembershipWithRetry({
+          resend: input.resend,
+          action: input.action,
+          contactId: contact.id,
+          segmentId: input.segmentId,
+        })
+      )
+    )
     completed += batch.length
     if (completed % PROGRESS_EVERY === 0 || completed === input.contacts.length) {
       console.log(`[suite-proof-full] ${input.action}: ${completed}/${input.contacts.length}`)
@@ -256,7 +314,9 @@ async function reconcileSegment(input: {
     .flatMap(email => primaryMainContactByEmail.get(email) || [])
   const toRemove = [
     ...segmentContacts.filter(contact => !desiredEmails.has(contact.email.trim().toLowerCase())),
-    ...duplicateSegmentContacts.filter(contact => desiredEmails.has(contact.email.trim().toLowerCase())),
+    ...duplicateSegmentContacts.filter(contact =>
+      desiredEmails.has(contact.email.trim().toLowerCase())
+    ),
   ]
 
   console.log("[suite-proof-full] segment reconciliation", {
@@ -266,11 +326,22 @@ async function reconcileSegment(input: {
     toAdd: toAdd.length,
     toRemove: toRemove.length,
   })
-  await runBatches({ resend: input.resend, action: "remove", contacts: toRemove, segmentId: input.segment.id })
-  await runBatches({ resend: input.resend, action: "add", contacts: toAdd, segmentId: input.segment.id })
+  await runBatches({
+    resend: input.resend,
+    action: "remove",
+    contacts: toRemove,
+    segmentId: input.segment.id,
+  })
+  await runBatches({
+    resend: input.resend,
+    action: "add",
+    contacts: toAdd,
+    segmentId: input.segment.id,
+  })
 
-  const finalContacts = (await listAllContacts(input.resend, input.segment.id))
-    .filter(contact => !contact.unsubscribed)
+  const finalContacts = (await listAllContacts(input.resend, input.segment.id)).filter(
+    contact => !contact.unsubscribed
+  )
   const finalEmails = new Set(finalContacts.map(contact => contact.email.trim().toLowerCase()))
   const missing = [...desiredEmails].filter(email => !finalEmails.has(email)).length
   const extra = [...finalEmails].filter(email => !desiredEmails.has(email)).length
@@ -281,7 +352,7 @@ async function reconcileSegment(input: {
     extra > 0
   ) {
     throw new Error(
-      `Full-list segment mismatch: desired=${desiredEmails.size}, records=${finalContacts.length}, unique=${finalEmails.size}, missing=${missing}, extra=${extra}; broadcast blocked`,
+      `Full-list segment mismatch: desired=${desiredEmails.size}, records=${finalContacts.length}, unique=${finalEmails.size}, missing=${missing}, extra=${extra}; broadcast blocked`
     )
   }
   return finalEmails.size
@@ -302,7 +373,9 @@ async function main() {
   const shouldSchedule = args.has("--schedule")
   const approved = process.env.SUITE_PROOF_SPRINT_FULL_SEND_APPROVED === "1"
   if ((shouldPrepare || shouldSchedule) && !approved) {
-    throw new Error("SUITE_PROOF_SPRINT_FULL_SEND_APPROVED=1 is required for mutation or scheduling")
+    throw new Error(
+      "SUITE_PROOF_SPRINT_FULL_SEND_APPROVED=1 is required for mutation or scheduling"
+    )
   }
   if (SCHEDULED_AT.getTime() <= Date.now() + 30 * 60 * 1000 && shouldSchedule) {
     throw new Error("Scheduled send window is too close or has passed; broadcast blocked")
@@ -342,7 +415,8 @@ async function main() {
     proof: SUITE_PROOF_SPRINT_REVIEW_PROOF,
     recipientContext: "subscriber-or-buyer",
   })
-  if (email.status !== "ready-for-approval") throw new Error("Approved proof is missing; broadcast blocked")
+  if (email.status !== "ready-for-approval")
+    throw new Error("Approved proof is missing; broadcast blocked")
 
   process.env.EMAIL_DRY_RUN = "false"
   const { sendMarketingBroadcast } = await import("../lib/email/marketing-sender")
@@ -355,7 +429,8 @@ async function main() {
     scheduledAt: SCHEDULED_AT.toISOString(),
     estimatedRecipientCount: finalCount,
   })
-  if (result.dryRun || !result.broadcastId) throw new Error("Resend did not accept the scheduled broadcast")
+  if (result.dryRun || !result.broadcastId)
+    throw new Error("Resend did not accept the scheduled broadcast")
   console.log("[suite-proof-full] provider accepted scheduled broadcast", {
     broadcastId: result.broadcastId,
     scheduledAt: SCHEDULED_AT.toISOString(),

@@ -44,6 +44,7 @@ interface ResendEventContext {
   resolvedEmailType: string | null
   resendEventId: string | null
   eventTimestamp: Date
+  attributionMethod: "provider" | "latest_broadcast_before_contact_update" | null
 }
 
 function resolveBroadcastId(eventData: any): string | null {
@@ -54,12 +55,14 @@ function resolveEmailTypeFromTags(eventData: any): string | null {
   const tags = eventData?.tags
   if (!Array.isArray(tags)) return null
 
-  const typeTag = tags.find((entry) => entry?.name === "type")
+  const typeTag = tags.find(entry => entry?.name === "type")
   if (typeTag?.value) return String(typeTag.value)
 
   // Most app sends currently pass tags as { name: tag, value: tag }. Prefer the
   // lifecycle-looking tag when present so fallback matching is as narrow as possible.
-  const lifecycleTag = tags.find((entry) => typeof entry?.name === "string" && entry.name.includes("-"))
+  const lifecycleTag = tags.find(
+    entry => typeof entry?.name === "string" && entry.name.includes("-")
+  )
   return lifecycleTag?.name || null
 }
 
@@ -78,7 +81,9 @@ function resolveBroadcastEmailType(eventData: any, broadcastId: string | null): 
   if (!broadcastId) return null
 
   const idPart = broadcastId.slice(0, 8)
-  const subjectSlug = slugifyEmailSubject(typeof eventData?.subject === "string" ? eventData.subject : null)
+  const subjectSlug = slugifyEmailSubject(
+    typeof eventData?.subject === "string" ? eventData.subject : null
+  )
   const base = subjectSlug ? `broadcast-${idPart}-${subjectSlug}` : `broadcast-${idPart}`
 
   return base.slice(0, 50)
@@ -114,9 +119,12 @@ function normalizeRecipientEmail(raw: any): string | null {
   }
 
   if (typeof raw === "object") {
-    if (typeof raw.email === "string" && looksLikeEmail(raw.email)) return raw.email.trim().toLowerCase()
-    if (typeof raw.address === "string" && looksLikeEmail(raw.address)) return raw.address.trim().toLowerCase()
-    if (typeof raw.value === "string" && looksLikeEmail(raw.value)) return raw.value.trim().toLowerCase()
+    if (typeof raw.email === "string" && looksLikeEmail(raw.email))
+      return raw.email.trim().toLowerCase()
+    if (typeof raw.address === "string" && looksLikeEmail(raw.address))
+      return raw.address.trim().toLowerCase()
+    if (typeof raw.value === "string" && looksLikeEmail(raw.value))
+      return raw.value.trim().toLowerCase()
 
     const keys = Object.keys(raw)
     if (keys.length === 1 && looksLikeEmail(keys[0])) return keys[0].toLowerCase()
@@ -138,7 +146,14 @@ function maskEmail(email: string | null): string | null {
 }
 
 function resolveMessageId(eventData: any, body: any): string | null {
-  return eventData?.email_id || eventData?.message_id || eventData?.id || body?.email_id || body?.message_id || null
+  return (
+    eventData?.email_id ||
+    eventData?.message_id ||
+    eventData?.id ||
+    body?.email_id ||
+    body?.message_id ||
+    null
+  )
 }
 
 function resolveResendEventId(body: any): string | null {
@@ -151,6 +166,7 @@ function resolveEventTimestamp(eventData: any, body: any): Date {
     eventData?.open?.timestamp ||
     eventData?.click?.timestamp ||
     eventData?.bounce?.timestamp ||
+    eventData?.updated_at ||
     eventData?.created_at ||
     body?.created_at ||
     body?.timestamp
@@ -164,14 +180,20 @@ function resolveEventTimestamp(eventData: any, body: any): Date {
 function eventErrorMessage(eventType: string, eventData: any): string | null {
   if (eventType === "email.bounced") {
     const bounceType = eventData?.bounce_type || eventData?.type || "unknown"
-    const bounceReason = eventData?.bounce_reason || eventData?.reason || eventData?.message || "Unknown bounce reason"
+    const bounceReason =
+      eventData?.bounce_reason || eventData?.reason || eventData?.message || "Unknown bounce reason"
     return `Bounced: ${bounceType} - ${bounceReason}`
   }
 
   if (eventType === "email.complained") return "User marked email as spam"
-  if (eventType === "email.failed") return eventData?.reason || eventData?.message || eventData?.error || "Resend marked email as failed"
-  if (eventType === "email.delivery_delayed") return eventData?.reason || eventData?.message || "Delivery delayed"
-  if (eventType === "email.suppressed") return eventData?.reason || eventData?.message || "Recipient suppressed by Resend"
+  if (eventType === "email.failed")
+    return (
+      eventData?.reason || eventData?.message || eventData?.error || "Resend marked email as failed"
+    )
+  if (eventType === "email.delivery_delayed")
+    return eventData?.reason || eventData?.message || "Delivery delayed"
+  if (eventType === "email.suppressed")
+    return eventData?.reason || eventData?.message || "Recipient suppressed by Resend"
   return null
 }
 
@@ -210,6 +232,43 @@ async function resolveCampaignKeyByBroadcastId(broadcastId: string | null): Prom
   return String(rows?.[0]?.campaign_key || "").trim() || null
 }
 
+async function resolveLatestBroadcastBeforeContactUpdate(
+  recipientEmail: string | null,
+  eventTimestamp: Date
+): Promise<{
+  providerBroadcastId: string | null
+  campaignKey: string | null
+  emailType: string | null
+  campaignId: number | null
+} | null> {
+  if (!recipientEmail) return null
+
+  const rows = await sql`
+    SELECT
+      provider_broadcast_id,
+      campaign_key,
+      email_type,
+      campaign_id
+    FROM email_events
+    WHERE provider_broadcast_id IS NOT NULL
+      AND event_type IN ('email.sent', 'email.delivered')
+      AND LOWER(metadata->>'recipient_email') = ${recipientEmail}
+      AND created_at <= ${eventTimestamp}
+      AND created_at >= ${eventTimestamp} - INTERVAL '14 days'
+    ORDER BY created_at DESC
+    LIMIT 1
+  `
+  const row = rows?.[0]
+  if (!row) return null
+
+  return {
+    providerBroadcastId: row.provider_broadcast_id || null,
+    campaignKey: row.campaign_key || null,
+    emailType: row.email_type || null,
+    campaignId: row.campaign_id ? Number(row.campaign_id) : null,
+  }
+}
+
 async function persistEmailEvent(context: ResendEventContext): Promise<number | null> {
   const metadata = {
     provider: "resend",
@@ -221,6 +280,7 @@ async function persistEmailEvent(context: ResendEventContext): Promise<number | 
     event_data: context.eventData,
     raw_event: context.body,
     received_at: new Date().toISOString(),
+    attribution_method: context.attributionMethod,
   }
 
   if (context.resendEventId) {
@@ -261,7 +321,11 @@ async function persistEmailEvent(context: ResendEventContext): Promise<number | 
   return inserted?.[0]?.id ? Number(inserted[0].id) : null
 }
 
-async function updateEmailEventStatus(eventRowId: number | null, status: string, errorMessage?: string | null) {
+async function updateEmailEventStatus(
+  eventRowId: number | null,
+  status: string,
+  errorMessage?: string | null
+) {
   if (!eventRowId) return
   await sql`
     UPDATE email_events
@@ -476,7 +540,8 @@ async function updateEmailLog(context: ResendEventContext) {
   }
 
   const status = statusByEvent[context.eventType]
-  if (!status && !openedAt && !clickedAt) return { matched: false, matchCount: 0, rows: [] as any[] }
+  if (!status && !openedAt && !clickedAt)
+    return { matched: false, matchCount: 0, rows: [] as any[] }
 
   let rows: any[] = []
   if (context.messageId) {
@@ -636,19 +701,32 @@ async function maybeSendDeliverabilityAlert(eventType: string) {
 async function buildContext(body: any): Promise<ResendEventContext> {
   const eventType = String(body?.type || "unknown")
   const eventData = body?.data || {}
+  const eventTimestamp = resolveEventTimestamp(eventData, body)
   const recipientEmail =
     normalizeRecipientEmail(eventData?.email) ||
     normalizeRecipientEmail(eventData?.to) ||
     normalizeRecipientEmail(eventData?.recipient) ||
     normalizeRecipientEmail(eventData?.delivered_to)
   const messageId = resolveMessageId(eventData, body)
-  const broadcastId = resolveBroadcastId(eventData)
-  const campaignId = await resolveCampaignId(broadcastId)
+  const providerBroadcastId = resolveBroadcastId(eventData)
+  const inferredAttribution =
+    eventType === "contact.updated" && eventData?.unsubscribed === true && !providerBroadcastId
+      ? await resolveLatestBroadcastBeforeContactUpdate(recipientEmail, eventTimestamp)
+      : null
+  const broadcastId = providerBroadcastId || inferredAttribution?.providerBroadcastId || null
+  const campaignId = inferredAttribution?.campaignId || (await resolveCampaignId(broadcastId))
   const campaignType = await resolveCampaignTypeById(campaignId)
-  const campaignKeyFromEvents = await resolveCampaignKeyByBroadcastId(broadcastId)
+  const campaignKeyFromEvents =
+    inferredAttribution?.campaignKey || (await resolveCampaignKeyByBroadcastId(broadcastId))
   const emailTypeFromTags = resolveEmailTypeFromTags(eventData)
   const broadcastEmailType = resolveBroadcastEmailType(eventData, broadcastId)
-  const resolvedEmailType = emailTypeFromTags || campaignType || campaignKeyFromEvents || broadcastEmailType || null
+  const resolvedEmailType =
+    inferredAttribution?.emailType ||
+    emailTypeFromTags ||
+    campaignType ||
+    campaignKeyFromEvents ||
+    broadcastEmailType ||
+    null
 
   return {
     body,
@@ -660,20 +738,28 @@ async function buildContext(body: any): Promise<ResendEventContext> {
     campaignId,
     resolvedEmailType,
     resendEventId: resolveResendEventId(body),
-    eventTimestamp: resolveEventTimestamp(eventData, body),
+    eventTimestamp,
+    attributionMethod: providerBroadcastId
+      ? "provider"
+      : inferredAttribution
+        ? "latest_broadcast_before_contact_update"
+        : null,
   }
 }
 
 function verifyWebhook(request: NextRequest, payload: string) {
   const webhookSecret = process.env.RESEND_WEBHOOK_SECRET?.trim()
-  const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
+  const isProduction =
+    process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
 
   if (!webhookSecret) {
     if (isProduction) {
       throw new Error("RESEND_WEBHOOK_SECRET is required in production")
     }
 
-    console.warn("[v0] [Resend Webhook] RESEND_WEBHOOK_SECRET not set; parsing unverified webhook in non-production")
+    console.warn(
+      "[v0] [Resend Webhook] RESEND_WEBHOOK_SECRET not set; parsing unverified webhook in non-production"
+    )
     return JSON.parse(payload)
   }
 
@@ -713,11 +799,16 @@ export async function POST(request: NextRequest) {
     try {
       body = verifyWebhook(request, payload)
     } catch (error) {
-      console.error("[v0] [Resend Webhook] Signature verification failed:", error instanceof Error ? error.message : "unknown")
+      console.error(
+        "[v0] [Resend Webhook] Signature verification failed:",
+        error instanceof Error ? error.message : "unknown"
+      )
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
     }
 
     const context = await buildContext(body)
+    const isProviderUnsubscribe =
+      context.eventType === "contact.updated" && context.eventData?.unsubscribed === true
 
     console.log("[v0] [Resend Webhook] Event received", {
       eventType: context.eventType,
@@ -726,16 +817,34 @@ export async function POST(request: NextRequest) {
       receivedAt,
     })
 
-    eventRowId = await persistEmailEvent(context)
+    eventRowId = await persistEmailEvent(
+      isProviderUnsubscribe
+        ? { ...context, eventType: "email.unsubscribed", resolvedEmailType: "unsubscribe" }
+        : context
+    )
     console.log("[v0] [Resend Webhook] Event persisted", {
       eventType: context.eventType,
       eventRowId,
       messageId: context.messageId,
     })
 
+    if (context.eventType === "contact.updated") {
+      const eventStatus = isProviderUnsubscribe ? "processed" : "ignored"
+      await updateEmailEventStatus(eventRowId, eventStatus)
+      return NextResponse.json({
+        received: true,
+        eventType: context.eventType,
+        unsubscribedTracked: isProviderUnsubscribe,
+        attributionMethod: context.attributionMethod,
+      })
+    }
+
     if (!WEBHOOK_EVENT_TYPES.has(context.eventType)) {
       await updateEmailEventStatus(eventRowId, "ignored")
-      console.log("[v0] [Resend Webhook] Unknown event ignored", { eventType: context.eventType, eventRowId })
+      console.log("[v0] [Resend Webhook] Unknown event ignored", {
+        eventType: context.eventType,
+        eventRowId,
+      })
       return NextResponse.json({ received: true, eventType: context.eventType, ignored: true })
     }
 
@@ -749,7 +858,7 @@ export async function POST(request: NextRequest) {
       isVaultMayaLaunchCampaignKey(context.resolvedEmailType) &&
       isVaultMayaOfferClickUrl(context.eventData?.click?.link || context.eventData?.link)
     ) {
-      await addVaultMayaLaunchHighIntent(context.recipientEmail).catch((intentError) => {
+      await addVaultMayaLaunchHighIntent(context.recipientEmail).catch(intentError => {
         console.error("[v0] [Resend Webhook] Vault Maya intent sync failed:", {
           error: intentError instanceof Error ? intentError.message : "unknown error",
         })

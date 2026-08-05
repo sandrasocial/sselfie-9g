@@ -3,6 +3,7 @@ export type SuiteProofSprintFullAudienceCandidate = {
   firstName?: string | null
   unsubscribed?: boolean
   hasProtectedAccess: boolean
+  isMarketingTestOrInternal?: boolean
   latestDeliveryStatus?: string | null
   lastMarketingDeliveryAt?: string | null
 }
@@ -10,6 +11,7 @@ export type SuiteProofSprintFullAudienceCandidate = {
 export type SuiteProofSprintFullAudienceExclusionReason =
   | "invalid_email"
   | "protected_access"
+  | "test_or_internal"
   | "unsubscribed"
   | "bounced_or_suppressed"
   | "marketing_cooldown"
@@ -37,6 +39,7 @@ export function classifySuiteProofSprintFullAudience(input: {
   const excluded: SuiteProofSprintFullAudienceResult["excluded"] = {
     invalid_email: 0,
     protected_access: 0,
+    test_or_internal: 0,
     unsubscribed: 0,
     bounced_or_suppressed: 0,
     marketing_cooldown: 0,
@@ -61,6 +64,10 @@ export function classifySuiteProofSprintFullAudience(input: {
       excluded.protected_access += 1
       continue
     }
+    if (candidate.isMarketingTestOrInternal) {
+      excluded.test_or_internal += 1
+      continue
+    }
     if (/^(bounced|suppressed)$/i.test(String(candidate.latestDeliveryStatus || ""))) {
       excluded.bounced_or_suppressed += 1
       continue
@@ -69,10 +76,7 @@ export function classifySuiteProofSprintFullAudience(input: {
     const lastDelivery = candidate.lastMarketingDeliveryAt
       ? new Date(candidate.lastMarketingDeliveryAt).getTime()
       : Number.NaN
-    if (
-      Number.isFinite(lastDelivery) &&
-      input.scheduledAt.getTime() - lastDelivery < cooldownMs
-    ) {
+    if (Number.isFinite(lastDelivery) && input.scheduledAt.getTime() - lastDelivery < cooldownMs) {
       excluded.marketing_cooldown += 1
       continue
     }
