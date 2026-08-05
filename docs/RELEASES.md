@@ -40,6 +40,24 @@ Full-list sender release proof: commit `3889f96b`, Vercel deployment
 `www.sselfie.ai`. Typecheck, repository invariants, 1,955 tests with 6 intentionally skipped,
 changed-file lint, production build, and diff checks passed.
 
+Before the scheduled send, the live audience was cleaned without deleting master contacts or
+overriding any suppression. Fifteen ineligible segment memberships were removed, including confirmed
+test/internal records. Five identities were proven to exist only as synthetic funnel tests with no
+SSELFIE account, Stripe payment, or protected access; one was already unsubscribed and the remaining
+four were globally unsubscribed in Resend. The final segment reconciled twice at 6,784 records, 6,784
+unique eligible recipients, zero duplicates, zero missing contacts, and zero extras. Broadcast
+`7e5a3fc6-23f6-425d-93ea-e7477361b890` remains scheduled unchanged for 2026-08-06 08:15 UTC.
+
+Resend's existing production webhook now listens for `contact.updated` and stores global unsubscribe
+changes as processed `email.unsubscribed` events, with recent-broadcast attribution when provider data
+does not include a broadcast ID. Live provider-generated contact updates were verified in the
+production event table after deployment. No customer email was sent during the cleanup or verification.
+
+Email hygiene release proof: feature commits `1f72f78b` and `f1d1abbb`, Vercel deployment
+`dpl_2py879fFpUaYJHV7kXJxdSzNCDz4`, and the exact final commit reached Ready on the production aliases.
+CI typecheck, repository invariants, 1,956 passing tests with zero failures, lint with zero errors,
+focused unsubscribe tests, two optimized production builds, and diff checks passed.
+
 ## 2026-08-04 — Private campaign engine QA hardening
 
 Kept the dormant Campaign Takeover offer closed while repairing the existing generation engine from
