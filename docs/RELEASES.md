@@ -25,6 +25,16 @@ Mobile checkout proof: commit `76c3c757`, Vercel deployment
 Live 390x844 QA placed the €970 price, email field, and payment action before the supporting image;
 desktop retained the approved visual layout.
 
+After Sandra approved the corrected full-list path, a fresh audit found 8,922 Resend contacts. The
+scheduled cohort excludes 1,666 unsubscribed contacts, 16 protected active-access customers, 184
+addresses whose latest provider state is bounced or suppressed, 248 contacts still inside the
+48-hour cooldown at send time, and 9 invalid or duplicate records. The approved proof email is
+scheduled through Resend for 6,799 unique subscribed recipients at 2026-08-06 08:15 UTC (10:15
+Oslo), broadcast `7e5a3fc6-23f6-425d-93ea-e7477361b890`. Provider verification showed status
+`scheduled`, 6,799 segment records, 6,799 unique addresses, the approved subject and the truthful
+full-list permission reminder. This is scheduled provider state, not a sent or delivered claim;
+delivery outcomes still require verification after the send window.
+
 ## 2026-08-04 — Private campaign engine QA hardening
 
 Kept the dormant Campaign Takeover offer closed while repairing the existing generation engine from

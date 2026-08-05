@@ -238,13 +238,31 @@ async function reconcileSegment(input: {
     listAllContacts(input.resend, input.segment.id),
   ])
   const desiredEmails = new Set(input.desired.map(contact => contact.email.trim().toLowerCase()))
-  const segmentEmails = new Set(segmentContacts.map(contact => contact.email.trim().toLowerCase()))
-  const toAdd = mainContacts.filter(contact => desiredEmails.has(contact.email.trim().toLowerCase()) && !segmentEmails.has(contact.email.trim().toLowerCase()))
-  const toRemove = segmentContacts.filter(contact => !desiredEmails.has(contact.email.trim().toLowerCase()))
+  const primaryMainContactByEmail = new Map<string, Contact>()
+  for (const contact of mainContacts) {
+    const email = contact.email.trim().toLowerCase()
+    if (!primaryMainContactByEmail.has(email)) primaryMainContactByEmail.set(email, contact)
+  }
+  const primarySegmentContactByEmail = new Map<string, Contact>()
+  const duplicateSegmentContacts: Contact[] = []
+  for (const contact of segmentContacts) {
+    const email = contact.email.trim().toLowerCase()
+    if (primarySegmentContactByEmail.has(email)) duplicateSegmentContacts.push(contact)
+    else primarySegmentContactByEmail.set(email, contact)
+  }
+  const segmentEmails = new Set(primarySegmentContactByEmail.keys())
+  const toAdd = [...desiredEmails]
+    .filter(email => !segmentEmails.has(email))
+    .flatMap(email => primaryMainContactByEmail.get(email) || [])
+  const toRemove = [
+    ...segmentContacts.filter(contact => !desiredEmails.has(contact.email.trim().toLowerCase())),
+    ...duplicateSegmentContacts.filter(contact => desiredEmails.has(contact.email.trim().toLowerCase())),
+  ]
 
   console.log("[suite-proof-full] segment reconciliation", {
     desired: desiredEmails.size,
     existing: segmentEmails.size,
+    duplicateRecords: duplicateSegmentContacts.length,
     toAdd: toAdd.length,
     toRemove: toRemove.length,
   })
@@ -256,9 +274,14 @@ async function reconcileSegment(input: {
   const finalEmails = new Set(finalContacts.map(contact => contact.email.trim().toLowerCase()))
   const missing = [...desiredEmails].filter(email => !finalEmails.has(email)).length
   const extra = [...finalEmails].filter(email => !desiredEmails.has(email)).length
-  if (finalEmails.size !== desiredEmails.size || missing > 0 || extra > 0) {
+  if (
+    finalContacts.length !== desiredEmails.size ||
+    finalEmails.size !== desiredEmails.size ||
+    missing > 0 ||
+    extra > 0
+  ) {
     throw new Error(
-      `Full-list segment mismatch: desired=${desiredEmails.size}, actual=${finalEmails.size}, missing=${missing}, extra=${extra}; broadcast blocked`,
+      `Full-list segment mismatch: desired=${desiredEmails.size}, records=${finalContacts.length}, unique=${finalEmails.size}, missing=${missing}, extra=${extra}; broadcast blocked`,
     )
   }
   return finalEmails.size
