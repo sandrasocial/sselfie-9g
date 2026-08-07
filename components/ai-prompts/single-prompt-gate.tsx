@@ -93,6 +93,7 @@ export function SinglePromptGate({
   const [email, setEmail] = useState("")
   const [status, setStatus] = useState<"idle" | "loading" | "revealed" | "error">("idle")
   const [copied, setCopied] = useState(false)
+  const [showAfterCopyVault, setShowAfterCopyVault] = useState(false)
   const [promptIntent, setPromptIntent] = useState<PromptIntent>("brand_photos")
 
   useEffect(() => {
@@ -169,6 +170,7 @@ export function SinglePromptGate({
   function copyPrompt() {
     const markCopied = () => {
       setCopied(true)
+      setShowAfterCopyVault(true)
       const attribution = readAttributionParams(promptNumber)
       trackAnalyticsEvent({
         event: "ai_prompts_prompt_copied",
@@ -296,6 +298,37 @@ export function SinglePromptGate({
             <button type="button" className="sp-copy" onClick={copyPrompt}>
               {copied ? "Copied" : "Copy prompt"}
             </button>
+            {showAfterCopyVault && (
+              <div className="sp-after-copy-vault">
+                <p className="sp-after-copy-eyebrow">YOU HAVE THE FIRST PHOTO</p>
+                <h2>You have the first photo. Want the rest of the shoot?</h2>
+                <p>
+                  The free prompt gives you one photo. The Prompt Vault gives you complete
+                  collections so you can create a set that works together without writing every
+                  prompt yourself.
+                </p>
+                <Link
+                  href={checkoutHrefWithIntent}
+                  onClick={() => {
+                    trackAnalyticsEvent({
+                      event: "ai_prompts_prompt_vault_click",
+                      properties: {
+                        source: "single-prompt-page",
+                        prompt_id: promptId,
+                        prompt_title: promptTitle,
+                        prompt_number: promptNumber,
+                        quiz_result: promptIntent,
+                        cta_position: "after_prompt_copy",
+                        ...readAttributionParams(promptNumber),
+                      },
+                    })
+                  }}
+                >
+                  Get every complete shoot · $37
+                </Link>
+                <p className="sp-after-copy-footnote">One payment. No subscription.</p>
+              </div>
+            )}
             <p className="sp-tip">
               Start with a clear, well-lit selfie. After you generate, nudge the exposure to match
               your light. You finish it.
@@ -309,11 +342,11 @@ export function SinglePromptGate({
 
         <div className="sp-vault">
           <p className="sp-vault-eyebrow">NEXT STEP</p>
-          <h2>Want the whole shoot world?</h2>
+          <h2>Want more than one photo?</h2>
           <p>
-            This is one exact prompt. The Vault gives you the full collection around it:
-            hero shots, close-ups, outfit angles, street scenes, café moments, and new drops
-            when your content needs to feel fresh again.
+            The Vault gives you complete photo collections, not random one-off prompts. Choose a
+            shoot, copy the prompts into ChatGPT, and build a set you can use for posts, Stories,
+            and carousel covers.
           </p>
           <p>
             One selfie can become a full editorial shoot library you actually want to post.
@@ -335,7 +368,7 @@ export function SinglePromptGate({
               })
             }}
           >
-            Get the full Vault
+            Get every complete shoot · $37
           </Link>
           <p className="sp-heart">
             You don&apos;t need a photographer or a perfect day. You need one selfie and somewhere

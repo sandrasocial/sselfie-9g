@@ -379,6 +379,59 @@ export default async function NumberedPromptPage({ params, searchParams }: Promp
           margin: 14px 0 12px;
         }
 
+        .sp-after-copy-vault {
+          margin: 10px 0 18px;
+          border: 1px solid #DAD7D1;
+          background: #FFFFFF;
+          padding: 22px;
+        }
+
+        .sp-after-copy-vault .sp-after-copy-eyebrow {
+          margin: 0 0 10px;
+          color: #8B8882;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.28em;
+        }
+
+        .sp-after-copy-vault h2 {
+          margin: 0 0 12px;
+          color: #0D0E10;
+          font-family: ${cormorant.style.fontFamily};
+          font-size: clamp(2rem, 5vw, 3.2rem);
+          font-weight: 300;
+          line-height: 0.98;
+        }
+
+        .sp-after-copy-vault p {
+          margin: 0 0 16px;
+        }
+
+        .sp-after-copy-vault a {
+          display: flex;
+          min-height: 48px;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          border: 1px solid #0D0E10;
+          background: #0D0E10;
+          color: #FFFFFF;
+          padding: 0 18px;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.14em;
+          text-align: center;
+          text-decoration: none;
+          text-transform: uppercase;
+        }
+
+        .sp-after-copy-vault .sp-after-copy-footnote {
+          margin: 10px 0 0;
+          color: #8B8882;
+          font-size: 11px;
+          text-align: center;
+        }
+
         .sp-vault {
           margin-top: 24px;
           padding: 24px;

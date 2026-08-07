@@ -68,14 +68,12 @@ function PreviewCardEl({
   card,
   collectionName,
   shotCount,
-  showAfterCopyOffer,
   upgradeHref,
   vaultPriceLabel,
 }: {
   card: PromptCard
   collectionName: string
   shotCount: number
-  showAfterCopyOffer: boolean
   upgradeHref: string
   vaultPriceLabel: string
 }) {
@@ -110,37 +108,23 @@ function PreviewCardEl({
             promptTitle={card.title}
             promptNumber={card.number}
             label="Copy prompt"
-            afterCopyHref={showAfterCopyOffer ? upgradeHref : undefined}
-            afterCopyTitle={
-              showAfterCopyOffer ? "Want the rest of this photoshoot?" : undefined
-            }
-            afterCopyNote={
-              showAfterCopyOffer
-                ? "This prompt is one photo from a complete collection. The Prompt Vault gives you the rest of this shoot, every collection, and the new prompt drops I add."
-                : undefined
-            }
-            afterCopyLabel={
-              showAfterCopyOffer
-                ? `Get the complete Prompt Vault · ${vaultPriceLabel}`
-                : undefined
-            }
-            afterCopyFootnote={showAfterCopyOffer ? "One payment. No subscription." : undefined}
+            afterCopyHref={upgradeHref}
+            afterCopyTitle="You have the first photo. Want the rest of the shoot?"
+            afterCopyNote="The free prompt gives you one photo. The Prompt Vault gives you complete collections so you can create a set that works together without writing every prompt yourself."
+            afterCopyLabel={`Get every complete shoot · ${vaultPriceLabel}`}
+            afterCopyFootnote="One payment. No subscription."
             afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
             afterCopyTrackEvent="ai_prompts_prompt_vault_click"
-            afterCopyTrackProperties={
-              showAfterCopyOffer
-                ? {
-                    source: "ai-prompts",
-                    destination: "checkout-prompt-vault",
-                    utm_campaign: "ai_prompts_to_prompt_vault",
-                    utm_content: "after_first_copy",
-                    checkout_source: "after_first_copy_prompt_vault_cta",
-                    cta_position: "after_first_copy",
-                    prompt_id: card.id,
-                    prompt_title: card.title,
-                  }
-                : undefined
-            }
+            afterCopyTrackProperties={{
+              source: "ai-prompts",
+              destination: "checkout-prompt-vault",
+              utm_campaign: "ai_prompts_to_prompt_vault",
+              utm_content: `after_prompt_${card.id}_copy`,
+              checkout_source: "after_prompt_copy_vault_cta",
+              cta_position: "after_prompt_copy",
+              prompt_id: card.id,
+              prompt_title: card.title,
+            }}
           />
         </div>
         <p className="ap-preview-included">
@@ -347,7 +331,7 @@ export default async function AiPromptsAccessPage({
               You have five complete prompts to try. Start with the photo you love most.
             </p>
             <div className="ap-vault-grid">
-              {freebieCollections.map((collection, index) => {
+              {freebieCollections.map(collection => {
                 const card = collection.freeCard
                 return (
                   <div key={card.id} className="ap-vault-item">
@@ -355,8 +339,10 @@ export default async function AiPromptsAccessPage({
                       card={card}
                       collectionName={collection.name}
                       shotCount={collection.shotCount}
-                      showAfterCopyOffer={index === 0}
-                      upgradeHref={vaultPreviewCheckoutHref}
+                      upgradeHref={buildPromptVaultFreebieCheckoutHref({
+                        promptId: card.id,
+                        accessToken: token,
+                      })}
                       vaultPriceLabel={promptVaultPrice.label}
                     />
                   </div>
