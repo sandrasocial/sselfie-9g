@@ -1,5 +1,19 @@
 # Completed releases
 
+## 2026-08-07 — Prompt Vault proof recovery handoff
+
+Moved the $37 Prompt Vault offer directly behind every copied free prompt on both the five-prompt
+access page and the Instagram single-prompt path. Added a proof-led recovery email template and a
+read-only audience audit that excludes verified buyers, unsubscribes, delivery-risk contacts,
+internal/test addresses, duplicates, and recent Vault-offer recipients. A reconciled 662-contact
+Resend segment and review-only broadcast draft were prepared; no customer email was sent.
+
+Production proof: feature commit `51fdb28e`, Vercel deployment
+`dpl_3e6YtqcCd3MwXVrtbaMq2VvyXbqi`, and the exact commit reached Ready on the production aliases.
+CI typecheck, repository invariants, 1,958 tests with 6 intentionally skipped, an optimized
+production build, diff checks, and live desktop plus 390x844 mobile QA passed. The live copied-prompt
+offers reached the attributed $37 email checkout with no payment submitted and no console errors.
+
 ## 2026-08-05 — Proof-led annual SUITE conversion sprint
 
 Prepared the approved proof-led annual SUITE campaign around Sandra's real source selfie, selected
