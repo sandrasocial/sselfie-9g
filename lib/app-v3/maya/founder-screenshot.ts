@@ -13,6 +13,28 @@ export type FounderScreenshotDecryption = Pick<
   "key" | "iv" | "authTag"
 >
 
+export type FounderScreenshotContentType = "image/jpeg" | "image/png" | "image/webp"
+
+function hasSignature(input: Uint8Array, signature: number[], offset = 0) {
+  return signature.every((byte, index) => input[offset + index] === byte)
+}
+
+export function detectFounderScreenshotContentType(
+  input: Uint8Array
+): FounderScreenshotContentType | null {
+  if (hasSignature(input, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) {
+    return "image/png"
+  }
+  if (hasSignature(input, [0xff, 0xd8, 0xff])) return "image/jpeg"
+  if (
+    hasSignature(input, [0x52, 0x49, 0x46, 0x46]) &&
+    hasSignature(input, [0x57, 0x45, 0x42, 0x50], 8)
+  ) {
+    return "image/webp"
+  }
+  return null
+}
+
 export function encryptFounderScreenshot(
   input: Uint8Array,
   contentType: string

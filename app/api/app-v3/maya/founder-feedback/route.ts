@@ -11,7 +11,10 @@ import {
   type FounderFeedbackReportType,
 } from "@/lib/app-v3/maya/founder-feedback"
 import { isMayaHomeEnabled } from "@/lib/app-v3/maya/operating-layer-rollout"
-import { encryptFounderScreenshot } from "@/lib/app-v3/maya/founder-screenshot"
+import {
+  detectFounderScreenshotContentType,
+  encryptFounderScreenshot,
+} from "@/lib/app-v3/maya/founder-screenshot"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
 
 export const dynamic = "force-dynamic"
@@ -152,13 +155,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Screenshot is too large (max 8MB)" }, { status: 400 })
       }
 
+      const screenshotBytes = new Uint8Array(await screenshot.arrayBuffer())
+      const screenshotContentType = detectFounderScreenshotContentType(screenshotBytes)
+      if (!screenshotContentType) {
+        return NextResponse.json({ error: "Screenshot is not a supported image" }, { status: 400 })
+      }
       const extension =
-        screenshot.type === "image/png" ? "png" : screenshot.type === "image/webp" ? "webp" : "jpg"
+        screenshotContentType === "image/png"
+          ? "png"
+          : screenshotContentType === "image/webp"
+            ? "webp"
+            : "jpg"
       try {
-        screenshotEncryption = encryptFounderScreenshot(
-          new Uint8Array(await screenshot.arrayBuffer()),
-          screenshot.type
-        )
+        screenshotEncryption = encryptFounderScreenshot(screenshotBytes, screenshotContentType)
         const uploaded = await put(
           `founder-feedback/${identity.neonUser.id}/${payload.clientReportId}.${extension}.enc`,
           screenshotEncryption.body,

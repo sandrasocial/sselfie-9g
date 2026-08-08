@@ -1,7 +1,10 @@
-import { get } from "@vercel/blob"
+import { head } from "@vercel/blob"
 import { type NextRequest, NextResponse } from "next/server"
 
-import { decryptFounderScreenshot } from "@/lib/app-v3/maya/founder-screenshot"
+import {
+  decryptFounderScreenshot,
+  detectFounderScreenshotContentType,
+} from "@/lib/app-v3/maya/founder-screenshot"
 import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 
@@ -52,21 +55,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Attachment not found" }, { status: 404 })
     }
 
-    const attachment = await get(pathname, { access: "public", useCache: false })
-    if (!attachment || attachment.statusCode !== 200 || !attachment.stream) {
+    const attachment = await head(pathname)
+    const attachmentUrl = new URL(attachment.url)
+    if (
+      attachmentUrl.protocol !== "https:" ||
+      !attachmentUrl.hostname.endsWith(".blob.vercel-storage.com")
+    ) {
       return NextResponse.json({ error: "Attachment not found" }, { status: 404 })
     }
-    const encrypted = new Uint8Array(await new Response(attachment.stream).arrayBuffer())
+    const encryptedResponse = await fetch(attachment.url, { cache: "no-store" })
+    if (!encryptedResponse.ok) {
+      return NextResponse.json({ error: "Attachment not found" }, { status: 404 })
+    }
+    const encrypted = new Uint8Array(await encryptedResponse.arrayBuffer())
     const decrypted = decryptFounderScreenshot(encrypted, {
       key: row.founder_screenshot_key,
       iv: row.founder_screenshot_iv,
       authTag: row.founder_screenshot_auth_tag,
     })
+    const contentType = detectFounderScreenshotContentType(decrypted)
+    if (!contentType) {
+      return NextResponse.json({ error: "Attachment unavailable" }, { status: 500 })
+    }
 
     return new Response(decrypted, {
       status: 200,
       headers: {
-        "Content-Type": row.founder_screenshot_content_type || "application/octet-stream",
+        "Content-Type": contentType,
         "Content-Disposition": "inline",
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
