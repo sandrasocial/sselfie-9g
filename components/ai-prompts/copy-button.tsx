@@ -3,6 +3,8 @@
 import { useState } from "react"
 import Link from "next/link"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import type { VaultLockedShotPreview } from "@/lib/ai-prompts/prompt-data"
+import { ShootPreviewStrip } from "@/components/ai-prompts/shoot-preview-strip"
 
 export function CopyButton({
   text,
@@ -15,6 +17,10 @@ export function CopyButton({
   afterCopyLabel,
   afterCopyNote,
   afterCopyFootnote,
+  afterCopyPreviewImage,
+  afterCopyLockedShots = [],
+  afterCopyCollectionName,
+  afterCopyShotCount,
   afterCopyViewEvent,
   afterCopyTrackEvent,
   afterCopyTrackProperties,
@@ -34,6 +40,10 @@ export function CopyButton({
   afterCopyLabel?: string
   afterCopyNote?: string
   afterCopyFootnote?: string
+  afterCopyPreviewImage?: string
+  afterCopyLockedShots?: VaultLockedShotPreview[]
+  afterCopyCollectionName?: string
+  afterCopyShotCount?: number
   afterCopyViewEvent?: string
   afterCopyTrackEvent?: string
   afterCopyTrackProperties?: Record<string, string>
@@ -130,6 +140,15 @@ export function CopyButton({
       </button>
       {showAfterCopyCta && !ctaDismissed && afterCopyHref && (
         <div className="copy-after-cta">
+          {afterCopyCollectionName && afterCopyShotCount ? (
+            <ShootPreviewStrip
+              collectionName={afterCopyCollectionName}
+              firstImage={afterCopyPreviewImage}
+              firstImageAlt={`${promptTitle || afterCopyCollectionName} free prompt result`}
+              lockedShots={afterCopyLockedShots}
+              shotCount={afterCopyShotCount}
+            />
+          ) : null}
           {afterCopyTitle && <p className="copy-after-title">{afterCopyTitle}</p>}
           {afterCopyNote && <p className="copy-after-note">{afterCopyNote}</p>}
           <Link href={afterCopyHref} className="copy-after-link" onClick={handleAfterCopyClick}>

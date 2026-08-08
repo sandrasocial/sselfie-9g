@@ -15,6 +15,7 @@ import {
   getStaticVaultFreebieCollections,
   selectLatestFreebieShootCollections,
   type PromptCard,
+  type VaultLockedShotPreview,
 } from "@/lib/ai-prompts/prompt-data"
 import { getPublishedFreebieCollectionPreviews } from "@/lib/vault/published-collections"
 import { getPromptVaultPriceDisplay } from "@/lib/launch/cash-launch-pricing"
@@ -68,12 +69,14 @@ function PreviewCardEl({
   card,
   collectionName,
   shotCount,
+  lockedShots,
   upgradeHref,
   vaultPriceLabel,
 }: {
   card: PromptCard
   collectionName: string
   shotCount: number
+  lockedShots: VaultLockedShotPreview[]
   upgradeHref: string
   vaultPriceLabel: string
 }) {
@@ -113,6 +116,10 @@ function PreviewCardEl({
             afterCopyNote="The free prompt gives you one photo. The Prompt Vault gives you complete collections so you can create a set that works together without writing every prompt yourself."
             afterCopyLabel={`Get every complete shoot · ${vaultPriceLabel}`}
             afterCopyFootnote="One payment. No subscription."
+            afterCopyPreviewImage={card.exampleImage}
+            afterCopyLockedShots={lockedShots}
+            afterCopyCollectionName={collectionName}
+            afterCopyShotCount={shotCount}
             afterCopyViewEvent="ai_prompts_after_copy_vault_cta_view"
             afterCopyTrackEvent="ai_prompts_prompt_vault_click"
             afterCopyTrackProperties={{
@@ -339,6 +346,7 @@ export default async function AiPromptsAccessPage({
                       card={card}
                       collectionName={collection.name}
                       shotCount={collection.shotCount}
+                      lockedShots={collection.lockedShots}
                       upgradeHref={buildPromptVaultFreebieCheckoutHref({
                         promptId: card.id,
                         accessToken: token,
@@ -674,6 +682,79 @@ export default async function AiPromptsAccessPage({
           border-top: 1px solid rgba(13, 12, 11, 0.1);
           text-align: left;
           animation: ap-copy-offer-reveal 260ms ease-out both;
+        }
+
+        .shoot-preview {
+          margin: 0 0 20px;
+        }
+
+        .shoot-preview-meta {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 16px;
+          margin: 0 0 8px;
+          color: rgba(13, 12, 11, 0.52);
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.14em;
+          line-height: 1.5;
+          text-transform: uppercase;
+        }
+
+        .shoot-preview-meta span:first-child {
+          min-width: 0;
+          overflow: hidden;
+          color: #0D0E10;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .shoot-preview-frames {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 4px;
+          overflow: hidden;
+          background: #0D0E10;
+          padding: 4px;
+        }
+
+        .shoot-preview-frame {
+          position: relative;
+          aspect-ratio: 4 / 5;
+          min-width: 0;
+          overflow: hidden;
+          background: #DAD7D1;
+        }
+
+        .shoot-preview-frame img {
+          object-fit: cover;
+          object-position: center;
+        }
+
+        .shoot-preview-frame::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, transparent 54%, rgba(13, 14, 16, 0.82));
+        }
+
+        .shoot-preview-frame-locked img {
+          filter: saturate(0.72) brightness(0.74);
+        }
+
+        .shoot-preview-frame span {
+          position: absolute;
+          z-index: 1;
+          right: 5px;
+          bottom: 6px;
+          left: 5px;
+          color: #FFFFFF;
+          font-size: clamp(6px, 1.7vw, 8px);
+          font-weight: 600;
+          letter-spacing: 0.11em;
+          line-height: 1.25;
+          text-align: center;
         }
 
         .copy-after-title {

@@ -139,6 +139,7 @@ async function getAiPromptsCandidates(input: {
         AND fs.created_at >= ${input.startDate}::date
         AND fs.email IS NOT NULL
         AND BTRIM(fs.email) <> ''
+        AND BTRIM(fs.email) ~* '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$'
         AND (
           fs.source = 'ai-prompts'
           OR 'ai-prompts-subscriber' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
@@ -167,6 +168,13 @@ async function getAiPromptsCandidates(input: {
           WHERE LOWER(el.user_email) = LOWER(fs.email)
             AND el.email_type = ANY(${sentEmailTypes}::text[])
             AND el.status IN ('sent', 'delivered', 'suppressed')
+        )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM email_logs invalid_recipient
+          WHERE LOWER(invalid_recipient.user_email) = LOWER(fs.email)
+            AND invalid_recipient.status = 'failed'
+            AND invalid_recipient.error_message LIKE 'Invalid recipient email:%'
         )
         AND (
           ${input.previousEmailType}::text IS NULL
@@ -209,6 +217,7 @@ async function getPromptVaultCandidates(input: {
       WHERE COALESCE(fs.converted_at, fs.updated_at, fs.created_at) <= NOW() - (${`${input.days} days`}::interval)
         AND fs.email IS NOT NULL
         AND BTRIM(fs.email) <> ''
+        AND BTRIM(fs.email) ~* '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$'
         AND (
           fs.source = 'prompt-vault-paid'
           OR 'prompt-vault-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
@@ -219,6 +228,13 @@ async function getPromptVaultCandidates(input: {
           WHERE LOWER(el.user_email) = LOWER(fs.email)
             AND el.email_type = ${input.emailType}
             AND el.status IN ('sent', 'delivered', 'suppressed')
+        )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM email_logs invalid_recipient
+          WHERE LOWER(invalid_recipient.user_email) = LOWER(fs.email)
+            AND invalid_recipient.status = 'failed'
+            AND invalid_recipient.error_message LIKE 'Invalid recipient email:%'
         )
         AND (
           ${input.previousEmailType}::text IS NULL

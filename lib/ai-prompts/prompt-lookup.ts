@@ -7,7 +7,9 @@ import {
   getStaticPromptByNumber,
   getStaticVaultPromptCards,
   normalizePromptNumber,
+  STATIC_VAULT_COLLECTION_SERIES,
   type PromptCard,
+  type VaultLockedShotPreview,
 } from "@/lib/ai-prompts/prompt-data"
 import {
   ensurePublishedVaultPromptNumbers,
@@ -19,6 +21,20 @@ export type NumberedPrompt = {
   number: string
   sourceCollection: string
   source: "static" | "published"
+  lockedShots: VaultLockedShotPreview[]
+  shotCount: number
+}
+
+type PublishedPromptRow = {
+  number: string
+  card_id: string
+  title: string
+  when_to_use: string
+  mood: string
+  prompt: string
+  example_image: string | null
+  collection_title: string
+  locked_shots: VaultLockedShotPreview[] | null
 }
 
 export function siteUrl(): string {
@@ -111,20 +127,14 @@ export async function getLiveVaultPromptCount(): Promise<number> {
   return getStaticVaultPromptCards().length + publishedCount
 }
 
-function mapPublishedPromptRow(row: {
-  number: string
-  card_id: string
-  title: string
-  when_to_use: string
-  mood: string
-  prompt: string
-  example_image: string | null
-  collection_title: string
-}): NumberedPrompt {
+function mapPublishedPromptRow(row: PublishedPromptRow): NumberedPrompt {
+  const lockedShots = Array.isArray(row.locked_shots) ? row.locked_shots : []
   return {
     number: row.number,
     source: "published",
     sourceCollection: row.collection_title,
+    lockedShots,
+    shotCount: lockedShots.length + 1,
     card: {
       number: row.number,
       id: row.card_id,
@@ -134,6 +144,27 @@ function mapPublishedPromptRow(row: {
       prompt: row.prompt,
       exampleImage: row.example_image || undefined,
     },
+  }
+}
+
+function mapStaticPrompt(
+  staticPrompt: { card: PromptCard; collectionName: string },
+  number: string,
+): NumberedPrompt {
+  const series = STATIC_VAULT_COLLECTION_SERIES.find(collection =>
+    collection.some(card => card.id === staticPrompt.card.id)
+  ) ?? [staticPrompt.card]
+  const lockedShots = series
+    .filter(card => card.id !== staticPrompt.card.id)
+    .map(card => ({ title: card.title, exampleImage: card.exampleImage }))
+
+  return {
+    card: staticPrompt.card,
+    number,
+    sourceCollection: staticPrompt.collectionName,
+    source: "static",
+    lockedShots,
+    shotCount: lockedShots.length + 1,
   }
 }
 
@@ -150,7 +181,17 @@ async function getNewestPublishedFreePrompt(): Promise<NumberedPrompt | null> {
         p.mood,
         p.prompt,
         p.example_image,
-        c.title AS collection_title
+        c.title AS collection_title,
+        COALESCE((
+          SELECT JSONB_AGG(
+            JSONB_BUILD_OBJECT('title', sibling.title, 'exampleImage', sibling.example_image)
+            ORDER BY sibling.sort_order ASC, sibling.id ASC
+          )
+          FROM vault_prompts sibling
+          WHERE sibling.collection_id = p.collection_id
+            AND sibling.status = 'published'
+            AND sibling.id <> p.id
+        ), '[]'::jsonb) AS locked_shots
       FROM vault_prompts p
       INNER JOIN vault_collections c ON c.id = p.collection_id
       WHERE p.status = 'published'
@@ -165,16 +206,7 @@ async function getNewestPublishedFreePrompt(): Promise<NumberedPrompt | null> {
         p.sort_order ASC,
         p.id ASC
       LIMIT 1
-    `) as Array<{
-      number: string
-      card_id: string
-      title: string
-      when_to_use: string
-      mood: string
-      prompt: string
-      example_image: string | null
-      collection_title: string
-    }>
+    `) as PublishedPromptRow[]
 
     const row = rows[0]
     return row ? mapPublishedPromptRow(row) : null
@@ -203,12 +235,10 @@ export async function getCurrentFreePrompt(): Promise<NumberedPrompt | null> {
   const staticPrompt = staticNumber ? getStaticPromptByNumber(staticNumber) : null
   if (!staticPrompt) return null
 
-  return {
-    card: staticPrompt.card,
-    number: normalizePromptNumber(staticPrompt.card.number) || staticPrompt.card.number,
-    sourceCollection: staticPrompt.collectionName,
-    source: "static",
-  }
+  return mapStaticPrompt(
+    staticPrompt,
+    normalizePromptNumber(staticPrompt.card.number) || staticPrompt.card.number,
+  )
 }
 
 export async function getPromptByNumber(value: string | number): Promise<NumberedPrompt | null> {
@@ -217,12 +247,7 @@ export async function getPromptByNumber(value: string | number): Promise<Numbere
 
   const staticPrompt = getStaticPromptByNumber(number)
   if (staticPrompt) {
-    return {
-      card: staticPrompt.card,
-      number,
-      sourceCollection: staticPrompt.collectionName,
-      source: "static",
-    }
+    return mapStaticPrompt(staticPrompt, number)
   }
 
   try {
@@ -237,23 +262,24 @@ export async function getPromptByNumber(value: string | number): Promise<Numbere
         p.mood,
         p.prompt,
         p.example_image,
-        c.title AS collection_title
+        c.title AS collection_title,
+        COALESCE((
+          SELECT JSONB_AGG(
+            JSONB_BUILD_OBJECT('title', sibling.title, 'exampleImage', sibling.example_image)
+            ORDER BY sibling.sort_order ASC, sibling.id ASC
+          )
+          FROM vault_prompts sibling
+          WHERE sibling.collection_id = p.collection_id
+            AND sibling.status = 'published'
+            AND sibling.id <> p.id
+        ), '[]'::jsonb) AS locked_shots
       FROM vault_prompts p
       INNER JOIN vault_collections c ON c.id = p.collection_id
       WHERE p.status = 'published'
         AND c.status = 'published'
         AND p.number = ${number}
       LIMIT 1
-    `) as Array<{
-      number: string
-      card_id: string
-      title: string
-      when_to_use: string
-      mood: string
-      prompt: string
-      example_image: string | null
-      collection_title: string
-    }>
+    `) as PublishedPromptRow[]
 
     const row = rows[0]
     if (!row) return null

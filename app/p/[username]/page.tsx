@@ -104,6 +104,9 @@ export default async function NumberedPromptPage({ params, searchParams }: Promp
         promptPageUrl={buildPromptPageUrl(prompt.number)}
         checkoutHref={checkoutHref}
         vaultCount={vaultCount}
+        collectionName={prompt.sourceCollection}
+        lockedShots={prompt.lockedShots}
+        shotCount={prompt.shotCount}
       />
 
       <style>{`
@@ -384,6 +387,79 @@ export default async function NumberedPromptPage({ params, searchParams }: Promp
           border: 1px solid #DAD7D1;
           background: #FFFFFF;
           padding: 22px;
+        }
+
+        .shoot-preview {
+          margin: 0 0 20px;
+        }
+
+        .shoot-preview-meta {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 16px;
+          margin: 0 0 8px;
+          color: #8B8882;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.14em;
+          line-height: 1.5;
+          text-transform: uppercase;
+        }
+
+        .shoot-preview-meta span:first-child {
+          min-width: 0;
+          overflow: hidden;
+          color: #0D0E10;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .shoot-preview-frames {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 4px;
+          overflow: hidden;
+          background: #0D0E10;
+          padding: 4px;
+        }
+
+        .shoot-preview-frame {
+          position: relative;
+          aspect-ratio: 4 / 5;
+          min-width: 0;
+          overflow: hidden;
+          background: #DAD7D1;
+        }
+
+        .shoot-preview-frame img {
+          object-fit: cover;
+          object-position: center;
+        }
+
+        .shoot-preview-frame::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, transparent 54%, rgba(13, 14, 16, 0.82));
+        }
+
+        .shoot-preview-frame-locked img {
+          filter: saturate(0.72) brightness(0.74);
+        }
+
+        .shoot-preview-frame span {
+          position: absolute;
+          z-index: 1;
+          right: 5px;
+          bottom: 6px;
+          left: 5px;
+          color: #FFFFFF;
+          font-size: clamp(6px, 1.7vw, 8px);
+          font-weight: 600;
+          letter-spacing: 0.11em;
+          line-height: 1.25;
+          text-align: center;
         }
 
         .sp-after-copy-vault .sp-after-copy-eyebrow {

@@ -198,6 +198,8 @@ describe("AI prompts free page locked Vault previews", () => {
 
   it("shows the calm Vault invitation after whichever free prompt she copies", () => {
     const freePageContents = read("app/ai-prompts/access/[token]/page.tsx")
+    const copyButtonContents = read("components/ai-prompts/copy-button.tsx")
+    const shootPreviewContents = read("components/ai-prompts/shoot-preview-strip.tsx")
 
     expect(freePageContents).toContain('label="Copy prompt"')
     expect(freePageContents).not.toContain("showAfterCopyOffer={index === 0}")
@@ -211,6 +213,15 @@ describe("AI prompts free page locked Vault previews", () => {
     expect(freePageContents).toContain("You have the first photo. Want the rest of the shoot?")
     expect(freePageContents).toContain("Get every complete shoot ·")
     expect(freePageContents).toContain("One payment. No subscription.")
+    expect(freePageContents).toContain("afterCopyPreviewImage={card.exampleImage}")
+    expect(freePageContents).toContain("afterCopyLockedShots={lockedShots}")
+    expect(freePageContents).toContain("afterCopyCollectionName={collectionName}")
+    expect(freePageContents).toContain("afterCopyShotCount={shotCount}")
+    expect(copyButtonContents).toContain("<ShootPreviewStrip")
+    expect(copyButtonContents).toContain("firstImage={afterCopyPreviewImage}")
+    expect(shootPreviewContents).toContain("1 OF {shotCount} UNLOCKED")
+    expect(shootPreviewContents).toContain("IN THE VAULT")
+    expect(shootPreviewContents).not.toContain("prompt:")
     expect(freePageContents.match(/afterCopyViewEvent=/g)).toHaveLength(1)
     expect(freePageContents.match(/afterCopyTrackEvent=/g)).toHaveLength(1)
     expect(freePageContents).not.toContain('checkout_source: "after_copy_prompt_vault_cta"')

@@ -4,6 +4,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import type { VaultLockedShotPreview } from "@/lib/ai-prompts/prompt-data"
+import { ShootPreviewStrip } from "@/components/ai-prompts/shoot-preview-strip"
 
 type SinglePromptGateProps = {
   promptNumber: string
@@ -16,6 +18,9 @@ type SinglePromptGateProps = {
   promptPageUrl: string
   checkoutHref: string
   vaultCount: number
+  collectionName: string
+  lockedShots: VaultLockedShotPreview[]
+  shotCount: number
 }
 
 const PROMPT_INTENT_OPTIONS = [
@@ -89,6 +94,9 @@ export function SinglePromptGate({
   promptPageUrl,
   checkoutHref,
   vaultCount,
+  collectionName,
+  lockedShots,
+  shotCount,
 }: SinglePromptGateProps) {
   const [email, setEmail] = useState("")
   const [status, setStatus] = useState<"idle" | "loading" | "revealed" | "error">("idle")
@@ -300,6 +308,13 @@ export function SinglePromptGate({
             </button>
             {showAfterCopyVault && (
               <div className="sp-after-copy-vault">
+                <ShootPreviewStrip
+                  collectionName={collectionName}
+                  firstImage={exampleImage}
+                  firstImageAlt={`${promptTitle} free prompt result`}
+                  lockedShots={lockedShots}
+                  shotCount={shotCount}
+                />
                 <p className="sp-after-copy-eyebrow">YOU HAVE THE FIRST PHOTO</p>
                 <h2>You have the first photo. Want the rest of the shoot?</h2>
                 <p>

@@ -104,6 +104,9 @@ describe("GET /api/cron/ai-photoshoot-nurture", () => {
 
     expect(queries.length).toBeGreaterThan(0)
     expect(queries.join("\n")).toContain("fs.source = 'ai-prompts'")
+    expect(queries.join("\n")).toContain("BTRIM(fs.email) ~*")
+    expect(queries.join("\n")).toContain("invalid_recipient.status = 'failed'")
+    expect(queries.join("\n")).toContain("Invalid recipient email:%")
     expect(queries.join("\n")).not.toContain("freebie-guide-day1-light-tip")
   })
 })
