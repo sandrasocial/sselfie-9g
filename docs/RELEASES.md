@@ -571,3 +571,14 @@ Repaired the separate SSELFIE account recovery journey. Reset emails now return 
 password page, the browser waits for the Supabase recovery session before showing the form, completed
 password setup is recorded against the authenticated member, and expired or malformed callbacks lead
 to a useful recovery page instead of the homepage.
+
+## 2026-08-08 — Revenue control recovery handoff
+
+Added an exact-shoot preview immediately after a free prompt is copied: the free image stays visible
+beside three matching locked Vault frames, with the existing $37 Prompt Vault next step. Hardened the
+existing nurture lifecycle so malformed recipient records are filtered and are not retried every day.
+
+Why: live evidence showed healthy free-prompt use but almost no click-through to checkout, while the
+checkout itself remained healthy. Production proof: commit `da594276`, Vercel deployment
+`dpl_J5Nav7VCDEz88cXG2qaGMdzeA2XV`, full typecheck and build, 1,957 passing tests plus 6 intentional
+skips, responsive desktop and 390px buyer-flow verification, and no affected-route runtime errors.
