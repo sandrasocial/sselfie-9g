@@ -620,3 +620,22 @@ Why: live evidence showed healthy free-prompt use but almost no click-through to
 checkout itself remained healthy. Production proof: commit `da594276`, Vercel deployment
 `dpl_J5Nav7VCDEz88cXG2qaGMdzeA2XV`, full typecheck and build, 1,957 passing tests plus 6 intentional
 skips, responsive desktop and 390px buyer-flow verification, and no affected-route runtime errors.
+
+## 2026-08-08 — Maya founder test mode
+
+Added a founder-only report-and-continue workflow inside Maya. Sandra can describe an issue by text
+or voice, optionally attach the current Maya screen, save it with the active task and recent relevant
+turns, and continue testing. Reports have one durable workflow from Received through Ready to retest;
+only Sandra can mark the final result Fixed. A pinned Maya Test Lab task and quiet queue heartbeat now
+keep product fixes separate from the strategy conversation.
+
+Screenshots are encrypted with AES-256-GCM before they enter the public-only Blob store. The key stays
+in the live database, and the image is decrypted only through an authenticated admin route. Uploads
+and downloads validate the real image signature instead of trusting the filename or claimed MIME type.
+No member access, entitlement, price, payment, subscription, or credit behavior changed.
+
+Production proof: feature commit `c76c9c7e`, encryption commit `987a00ca`, final viewer commit
+`3fbc7e27`, and exact Ready deployment `dpl_7BepGbirtSxnALaLLmjpqgSXqVKE`. The repository passed
+typecheck, invariants, production build, and 1,984 tests with 6 intentional skips. Authenticated live
+QA passed report capture, context, encrypted storage, queue state, a decrypted 1280x720 attachment,
+desktop and 390px mobile usability, and zero runtime errors on the final deployment.
