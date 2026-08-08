@@ -14,6 +14,7 @@ import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { resolveFeedStyleForUser } from "@/lib/feed-planner/resolve-feed-style"
 import { getUserPersonalBrand } from "@/lib/data/maya"
 import { CURATED_FEED_STYLE_MAP, type CuratedFeedStyleName } from "@/lib/style-presets"
+import { resolveWeeklyPackageCalendarCopy } from "@/lib/app-v3/maya/weekly-package-context"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 30
@@ -33,7 +34,8 @@ export async function POST(req: Request) {
   const neonUser = await getUserByAuthId(user.id)
   if (!neonUser) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
-  const { imageUrl, imageUrls, aiImageId, conceptTitle } = await req.json()
+  const { imageUrl, imageUrls, aiImageId, conceptTitle, captionContext, weeklyPackage } =
+    await req.json()
   if (typeof imageUrl !== "string" || !imageUrl.trim()) {
     return NextResponse.json({ error: "imageUrl is required" }, { status: 400 })
   }
@@ -96,6 +98,27 @@ export async function POST(req: Request) {
 
     const feedLayoutId = Number(feedLayout.id)
 
+    // Retry boundary: the Calendar update may commit even when its HTTP response is lost.
+    // A second tap must return the original receipt instead of consuming the next empty slot.
+    const normalizedAiImageId =
+      typeof aiImageId === "number" && Number.isInteger(aiImageId) ? aiImageId : -1
+    const [existingPlacement] = await sql`
+      SELECT position, scheduled_at, caption
+      FROM feed_posts
+      WHERE feed_layout_id = ${feedLayoutId}
+        AND (ai_image_id = ${normalizedAiImageId} OR image_url = ${imageUrl.trim()})
+      ORDER BY scheduled_at ASC, position ASC
+      LIMIT 1
+    `
+    if (existingPlacement) {
+      return NextResponse.json({
+        position: Number(existingPlacement.position),
+        scheduledAt: new Date(existingPlacement.scheduled_at).toISOString().slice(0, 10),
+        caption: typeof existingPlacement.caption === "string" ? existingPlacement.caption : null,
+        alreadyPlaced: true,
+      })
+    }
+
     // Only today or future days count as open - never quietly fill a day that already passed.
     // GRID DESIGN INTEGRITY (2026-07-07): chat photos carry her face, so they land on PERSON
     // slots only - flatlay/detail slots are face-free object scenes by the curated grid's
@@ -122,6 +145,15 @@ export async function POST(req: Request) {
       scheduledAt = new Date(openSlot.scheduled_at).toISOString().slice(0, 10)
       contentPillar = openSlot.content_pillar
       caption = openSlot.caption
+      const weeklyCopy = resolveWeeklyPackageCalendarCopy({
+        weeklyPackage: weeklyPackage === true,
+        conceptTitle,
+        captionContext,
+        slotContentPillar: contentPillar,
+        slotCaption: caption,
+      })
+      contentPillar = weeklyCopy.contentPillar
+      caption = weeklyCopy.caption
     } else {
       // No open future day - extend the plan by one day past the latest scheduled post, but
       // never into the past (a stub or an old plan may have its latest post days ago).
@@ -140,6 +172,14 @@ export async function POST(req: Request) {
           ? conceptTitle.trim()
           : "From your chat"
       caption = null
+      const weeklyCopy = resolveWeeklyPackageCalendarCopy({
+        weeklyPackage: weeklyPackage === true,
+        conceptTitle,
+        captionContext,
+        slotContentPillar: contentPillar,
+        slotCaption: caption,
+      })
+      contentPillar = weeklyCopy.contentPillar
 
       // The photo being placed comes from chat, so it IS a person shot - the new day is
       // 'selfie' regardless of what the grid pattern would put at this position (the pattern
@@ -191,14 +231,15 @@ export async function POST(req: Request) {
       await sql`
         UPDATE feed_posts
         SET image_url = ${imageUrl}, ai_image_id = ${aiImageId ?? null}, generation_status = 'completed',
-            caption = ${caption}, media_urls = ${JSON.stringify(mediaUrls)}::jsonb
+            caption = ${caption}, content_pillar = ${contentPillar},
+            media_urls = ${JSON.stringify(mediaUrls)}::jsonb
         WHERE id = ${targetPostId}
       `
     } else {
       await sql`
         UPDATE feed_posts
         SET image_url = ${imageUrl}, ai_image_id = ${aiImageId ?? null}, generation_status = 'completed',
-            caption = ${caption}
+            caption = ${caption}, content_pillar = ${contentPillar}
         WHERE id = ${targetPostId}
       `
     }

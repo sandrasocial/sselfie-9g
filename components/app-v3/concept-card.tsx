@@ -52,6 +52,13 @@ export interface ConceptGenState {
     format: OutputFormat
     expectedCount: number
   }
+  /** Durable receipt for a finished result already placed in Calendar. Keeping it with the
+   *  generated result prevents a reload from offering the same placement twice. */
+  calendarPlacement?: {
+    scheduledAt: string
+    position?: number
+    caption?: string | null
+  }
 }
 
 interface ConceptCardProps {
@@ -72,6 +79,11 @@ interface ConceptCardProps {
   onAddToCalendar?: () => Promise<
     { scheduledAt: string; position?: number; caption?: string | null } | "forbidden" | null
   >
+  initialCalendarPlacement?: {
+    scheduledAt: string
+    position?: number
+    caption?: string | null
+  } | null
   /** Show Maya's spoken save-offer line above the actions. The concierge passes true for the
    *  FIRST finished photo only, so a 3-card batch doesn't repeat the same sentence 3 times -
    *  the "Add to calendar" button itself stays on every eligible card. */
@@ -134,6 +146,7 @@ export function ConceptCard({
   onOpen,
   onEdit,
   onAddToCalendar,
+  initialCalendarPlacement = null,
   showCalendarOffer = true,
   idleAction,
   resultActions,
@@ -178,12 +191,22 @@ export function ConceptCard({
   )
   const [calendarStatus, setCalendarStatus] = useState<
     "idle" | "saving" | "saved" | "error" | "unavailable"
-  >("idle")
-  const [savedDateLabel, setSavedDateLabel] = useState<string | null>(null)
+  >(initialCalendarPlacement ? "saved" : "idle")
+  const [savedDateLabel, setSavedDateLabel] = useState<string | null>(() => {
+    if (!initialCalendarPlacement) return null
+    const date = new Date(initialCalendarPlacement.scheduledAt)
+    return Number.isNaN(date.getTime())
+      ? null
+      : date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+  })
   // The plan slot's caption comes back from the placement call — showing it here is what
   // turns "7 images saved" into a publishable post (UX audit U1).
-  const [savedCaption, setSavedCaption] = useState<string | null>(null)
-  const [savedPosition, setSavedPosition] = useState<number | null>(null)
+  const [savedCaption, setSavedCaption] = useState<string | null>(
+    initialCalendarPlacement?.caption?.trim() || null
+  )
+  const [savedPosition, setSavedPosition] = useState<number | null>(
+    initialCalendarPlacement?.position ?? null
+  )
   const [captionCopied, setCaptionCopied] = useState(false)
   const [textRetryStatus, setTextRetryStatus] = useState<"idle" | "retrying" | "error">("idle")
   const handleRetryText = async () => {
@@ -214,9 +237,11 @@ export function ConceptCard({
         return
       }
       if (!result) throw new Error("no result")
-      const date = new Date(`${result.scheduledAt}T00:00:00Z`)
+      const date = new Date(result.scheduledAt)
       setSavedDateLabel(
-        date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+        Number.isNaN(date.getTime())
+          ? null
+          : date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
       )
       setSavedCaption(result.caption?.trim() ? result.caption : null)
       setSavedPosition(typeof result.position === "number" ? result.position : null)
@@ -363,8 +388,8 @@ export function ConceptCard({
               )}
             </div>
             <p className="text-[12px] leading-relaxed text-[#6D6E70]">
-              These exact words get printed on the images. Edit them here, or just tell Maya
-              what to change.
+              These exact words get printed on the images. Edit them here, or just tell Maya what to
+              change.
             </p>
             <div className="space-y-3">
               {editedCopy.map(entry => (
@@ -537,9 +562,7 @@ export function ConceptCard({
                     onClick={async () => {
                       if (bulkDownloadStatus === "downloading") return
                       setBulkDownloadStatus("downloading")
-                      const allUrls = images.map(
-                        (imgUrl, i) => gen.bakedImageUrls?.[i] ?? imgUrl
-                      )
+                      const allUrls = images.map((imgUrl, i) => gen.bakedImageUrls?.[i] ?? imgUrl)
                       const started = await downloadAllSlides(allUrls, concept.title)
                       if (!started) {
                         setBulkDownloadStatus("error")

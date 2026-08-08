@@ -267,6 +267,10 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "suite_maya_job_finished",
   "suite_maya_context_mismatch",
   "suite_maya_guidance_served",
+  // MAYA WEEKLY OUTCOME — the member started the one-piece weekly flow / placed its
+  // core piece in Calendar. Behavior only; revenue truth never lives here.
+  "suite_weekly_package_started",
+  "suite_weekly_package_planned",
 ] as const
 
 export type AnalyticsEventName = (typeof ALLOWED_ANALYTICS_EVENTS)[number]

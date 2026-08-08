@@ -17,6 +17,7 @@ if (!runPlaywright) {
       const calendarMutations: string[] = []
       const calendarMutationKeys: string[] = []
       const chatHistoryLookups: string[] = []
+      const weeklyPlacementPayloads: any[] = []
       const chatStore = new Map<string, any>()
       let activeDraft: any = null
       let generationAttempts = 0
@@ -29,6 +30,7 @@ if (!runPlaywright) {
       ;(page as any).__mayaOperatingLayerCalendarMutations = calendarMutations
       ;(page as any).__mayaOperatingLayerCalendarMutationKeys = calendarMutationKeys
       ;(page as any).__mayaOperatingLayerChatHistoryLookups = chatHistoryLookups
+      ;(page as any).__mayaWeeklyPlacementPayloads = weeklyPlacementPayloads
       ;(page as any).__enableMayaActionJourney = () => {
         actionJourneyEnabled = true
       }
@@ -146,6 +148,9 @@ if (!runPlaywright) {
             : "Maya QA response for the Create task."
           const messageId = `assistant-${Date.now()}`
           const textId = `text-${Date.now()}`
+          const weeklyPackageRequest = /finish one useful piece of content for this week/i.test(
+            userText
+          )
           const conceptPayload = carouselJourneyEnabled
             ? {
                 format: "carousel",
@@ -215,18 +220,25 @@ if (!runPlaywright) {
                 }
               : null
           const toolCallId = `tool-${Date.now()}`
+          const formatPayload = weeklyPackageRequest ? { format: "carousel" } : null
           const streamParts = [
             `data: ${JSON.stringify({ type: "start", messageId })}`,
             `data: ${JSON.stringify({ type: "text-start", id: textId })}`,
             `data: ${JSON.stringify({ type: "text-delta", id: textId, delta: answer })}`,
             `data: ${JSON.stringify({ type: "text-end", id: textId })}`,
-            ...(conceptPayload
+            ...(formatPayload
               ? [
-                  `data: ${JSON.stringify({ type: "tool-input-start", toolCallId, toolName: "emit_concepts" })}`,
-                  `data: ${JSON.stringify({ type: "tool-input-available", toolCallId, toolName: "emit_concepts", input: conceptPayload })}`,
-                  `data: ${JSON.stringify({ type: "tool-output-available", toolCallId, output: conceptPayload })}`,
+                  `data: ${JSON.stringify({ type: "tool-input-start", toolCallId, toolName: "set_format" })}`,
+                  `data: ${JSON.stringify({ type: "tool-input-available", toolCallId, toolName: "set_format", input: formatPayload })}`,
+                  `data: ${JSON.stringify({ type: "tool-output-available", toolCallId, output: formatPayload })}`,
                 ]
-              : []),
+              : conceptPayload
+                ? [
+                    `data: ${JSON.stringify({ type: "tool-input-start", toolCallId, toolName: "emit_concepts" })}`,
+                    `data: ${JSON.stringify({ type: "tool-input-available", toolCallId, toolName: "emit_concepts", input: conceptPayload })}`,
+                    `data: ${JSON.stringify({ type: "tool-output-available", toolCallId, output: conceptPayload })}`,
+                  ]
+                : []),
             `data: ${JSON.stringify({ type: "finish", finishReason: "stop" })}`,
             "data: [DONE]",
           ]
@@ -320,6 +332,13 @@ if (!runPlaywright) {
             userAvatarUrl: null,
             preferredOverlayStyle: null,
             hasBrandProfile: true,
+          }
+        } else if (pathname === "/api/app-v3/maya/feed-plan/place-photo") {
+          weeklyPlacementPayloads.push(request.postDataJSON?.() ?? {})
+          body = {
+            scheduledAt: "2026-08-11T08:00:00.000Z",
+            position: 7,
+            caption: "A ready caption for this week's visibility piece.",
           }
         } else if (pathname === "/api/app-v3/reference-library") {
           body = {
@@ -513,6 +532,54 @@ if (!runPlaywright) {
       await expect(page.getByText("Maya QA response for the Create task.")).toBeVisible()
       await page.getByRole("button", { name: "Menu" }).click()
       await expect(page.getByRole("button", { name: "What Maya knows" })).toBeVisible()
+    })
+
+    test("turns the weekly outcome into one Maya-decided creation path", async ({
+      page,
+    }: {
+      page: any
+    }) => {
+      await (page as any).__enableMayaCarouselJourney()
+      const maya = page.locator("aside[data-maya-task-id]")
+
+      await page.getByRole("button", { name: "Finish this week's content" }).click()
+
+      await expect(
+        page.getByText(/help me finish one useful piece of content for this week/i)
+      ).toBeVisible()
+      await expect(maya).toHaveAttribute("data-maya-format", "carousel")
+      await expect(page.getByText("Choose your style")).toHaveCount(0)
+      await expect(page.getByText("Three-part visibility carousel")).toBeVisible()
+
+      await page.getByRole("button", { name: /Create this · 3 credits/i }).click()
+      await expect(page.getByText("Core piece ready")).toBeVisible()
+      await expect(page.getByText(/Add it to your plan for the caption/i)).toBeVisible()
+      await page.getByRole("button", { name: "Add to my plan" }).click()
+      await expect(page.getByText(/In your plan · Post 7/i)).toBeVisible()
+      await expect(
+        page.getByText("A ready caption for this week's visibility piece.")
+      ).toBeVisible()
+      expect((page as any).__mayaWeeklyPlacementPayloads).toMatchObject([
+        {
+          weeklyPackage: true,
+          conceptTitle: "Three-part visibility carousel",
+        },
+      ])
+      expect((page as any).__mayaWeeklyPlacementPayloads[0].captionContext).toContain(
+        "Three distinct scenes in one consistent visual world"
+      )
+
+      await page.waitForTimeout(900)
+      await page.goto("/e2e/maya-operating-layer", { waitUntil: "domcontentloaded" })
+      const resume = page.getByRole("button", { name: /Resume/i })
+      await expect(resume).toBeVisible()
+      await resume.click()
+      await expect(maya).toHaveAttribute("data-maya-format", "carousel")
+      await expect(page.getByText(/In your plan · Post 7/i)).toBeVisible()
+      await expect(
+        page.getByText("A ready caption for this week's visibility piece.")
+      ).toBeVisible()
+      await expect(page.getByRole("button", { name: "Add to my plan" })).toHaveCount(0)
     })
 
     test("keeps existing operating-layer members on their current Create experience", async ({

@@ -714,11 +714,19 @@ export async function POST(req: Request) {
         if (!isLikenessMemoryEnabled()) memory = { ...memory, likenessNotes: [] }
         const chats = await listChats(String(neonUserId))
         recentActivity = chats
-          .map(c => c.title)
-          .filter((t): t is string => !!t && t.trim().length > 0)
+          .filter(c => !!c.title && c.title.trim().length > 0)
           // Drop the generic format-phrase titles ("Let's create photos") so only real signal remains.
-          .filter(t => !/^(let's|actually,\s*let's)\b/i.test(t.trim()))
+          .filter(c => !/^(let's|actually,\s*let's)\b/i.test(c.title!.trim()))
           .slice(0, 6)
+          .map(c => {
+            const status =
+              c.taskStatus === "ready"
+                ? `ready with ${c.outputCount} result${c.outputCount === 1 ? "" : "s"}`
+                : c.taskStatus === "creating"
+                  ? "still creating"
+                  : "unfinished"
+            return `[${status}] ${c.title!.trim()}`
+          })
       }
     } catch (e) {
       console.error("[app-v3 maya chat] memory/activity load skipped:", e)

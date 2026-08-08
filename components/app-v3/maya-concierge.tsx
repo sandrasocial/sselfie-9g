@@ -112,6 +112,21 @@ import {
 /** Maya's profile image (one of Sandra's editorial portraits). Swap freely. */
 const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
 
+const WEEKLY_VISIBILITY_PACKAGE_REQUEST =
+  "Help me finish one useful piece of content for this week. Use what you know about my current priorities and unfinished work. Choose the strongest idea, format, and visual direction for me. Ask only one question if it would materially change the result."
+
+function isWeeklyVisibilityPackage(messages: any[]): boolean {
+  return messages.some(message => {
+    if (message?.role !== "user" || !Array.isArray(message.parts)) return false
+    return message.parts.some(
+      (part: any) =>
+        part?.type === "text" &&
+        typeof part.text === "string" &&
+        part.text.includes("finish one useful piece of content for this week")
+    )
+  })
+}
+
 /** Small round avatar for the chat thread (texting-a-friend feel). */
 function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
   return (
@@ -1095,6 +1110,10 @@ export function MayaConcierge({
     transport,
     messages: (restoredDraft?.messages ?? []) as any[],
   })
+  const weeklyVisibilityPackageActive = useMemo(
+    () => isWeeklyVisibilityPackage(messages as any[]),
+    [messages]
+  )
 
   const isThinking = status === "submitted" || status === "streaming"
   const workspaceBusy =
@@ -1882,7 +1901,10 @@ export function MayaConcierge({
         textStyleSelected: Boolean(textStyleChoice),
       })
     ) {
-      const intent = intentForFormat(latest, "gallery_action")
+      const intent = intentForFormat(
+        latest,
+        weeklyVisibilityPackageActive ? "starter_chip" : "gallery_action"
+      )
       setLocalCreationIntent(intent)
       extrasRef.current = { ...extrasRef.current, format: latest, creationIntent: intent }
       // The format and any required text choice are already committed. Mark this recovery pull
@@ -1897,15 +1919,21 @@ export function MayaConcierge({
       // here, a stale session creationIntent (the previous format, high confidence) outranks
       // extras.format on the server, Maya answers the pull in the OLD format and calls
       // set_format again: the "On it, switching to carousels" dead end she reported.
-      const intent = intentForFormat(latest, "gallery_action")
+      const intent = intentForFormat(
+        latest,
+        weeklyVisibilityPackageActive ? "starter_chip" : "gallery_action"
+      )
       setLocalCreationIntent(intent)
       extrasRef.current = { ...extrasRef.current, format: latest, creationIntent: intent }
-      if (isGraphicOutputFormat(latest) && rememberedOverlayStyle) {
+      if (
+        isGraphicOutputFormat(latest) &&
+        (rememberedOverlayStyle || weeklyVisibilityPackageActive)
+      ) {
         // She asked for this format in words and already owns a remembered text style, so
         // continue hands-free with it (the style chip above the concept cards still swaps
         // it before any credit is spent). First-timers keep the explicit text-choice cards.
         setTextOverlayMode("with-text")
-        setTextStyleChoice(rememberedOverlayStyle)
+        setTextStyleChoice(rememberedOverlayStyle ?? "editorial-serif-center")
       } else {
         setTextOverlayMode(null)
         setTextStyleChoice(null)
@@ -1915,7 +1943,16 @@ export function MayaConcierge({
       // Re-arm the auto-pull too: if this format was already pulled earlier in the thread,
       // a stale lastPulledFormatRef blocks both the pull and the inline text-choice cards.
       lastPulledFormatRef.current = null
-      setOutputFormat(latest)
+      if (weeklyVisibilityPackageActive) {
+        updateCurrentSession(MAYA_DECIDES_AESTHETIC, {
+          format: latest,
+          referenceSelfieUrl: session?.referenceSelfieUrl ?? null,
+          videoSourceUrl: session?.videoSourceUrl ?? null,
+          creationIntent: intent,
+        })
+      } else {
+        setOutputFormat(latest)
+      }
     }
   }, [
     messages,
@@ -1926,6 +1963,8 @@ export function MayaConcierge({
     setOutputFormat,
     textOverlayMode,
     textStyleChoice,
+    updateCurrentSession,
+    weeklyVisibilityPackageActive,
   ])
 
   useEffect(() => {
@@ -2516,6 +2555,15 @@ export function MayaConcierge({
   function sendHomeSuggestion(text: string) {
     if (isThinking || textRefining) return
     homeTaskInitiatedRef.current = true
+    if (text === WEEKLY_VISIBILITY_PACKAGE_REQUEST) {
+      void trackAnalyticsEvent({
+        event: "suite_weekly_package_started",
+        properties: {
+          cohort,
+          taskId: session?.mayaContext?.taskId ?? chatId,
+        },
+      })
+    }
     commitDetectedIntent(text, "starter_chip", { suppressAutoPull: true })
     sendMessage({ text })
   }
@@ -5138,6 +5186,19 @@ export function MayaConcierge({
                           </span>
                         </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => sendHomeSuggestion(WEEKLY_VISIBILITY_PACKAGE_REQUEST)}
+                        disabled={isThinking}
+                        className="group min-h-20 w-full rounded-[8px] border border-[#0D0E10]/20 bg-[#F8FAFA] px-4 py-3.5 text-left transition-colors hover:border-[#0D0E10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10] disabled:opacity-40"
+                      >
+                        <span className="block font-serif text-[20px] font-light leading-tight text-[#0D0E10]">
+                          Finish this week&apos;s content
+                        </span>
+                        <span className="mt-1.5 block text-[12px] leading-relaxed text-[#4F5052]">
+                          Maya chooses one useful idea and turns it into something ready to use.
+                        </span>
+                      </button>
                       <div className="flex flex-wrap gap-2" aria-label="Ways Maya can help">
                         {[
                           "What should I focus on today?",
@@ -5447,13 +5508,32 @@ export function MayaConcierge({
                                         ...(urls.length > 1 ? { imageUrls: urls } : {}),
                                         aiImageId,
                                         conceptTitle: concept.title,
+                                        ...(weeklyVisibilityPackageActive
+                                          ? {
+                                              weeklyPackage: true,
+                                              captionContext: [
+                                                concept.description,
+                                                ...(
+                                                  concept.brief.graphic?.creativePlan?.outputs ?? []
+                                                )
+                                                  .flatMap(output => [output.title, output.body])
+                                                  .filter(
+                                                    (line): line is string =>
+                                                      typeof line === "string" &&
+                                                      line.trim().length > 0
+                                                  ),
+                                              ]
+                                                .join(". ")
+                                                .slice(0, 840),
+                                            }
+                                          : {}),
                                       }),
                                     }
                                   )
                                   if (res.status === 403) return "forbidden" as const
                                   if (!res.ok) return null
                                   const data = await res.json()
-                                  return data?.scheduledAt
+                                  const placement = data?.scheduledAt
                                     ? {
                                         scheduledAt: data.scheduledAt,
                                         position:
@@ -5464,6 +5544,28 @@ export function MayaConcierge({
                                           typeof data.caption === "string" ? data.caption : null,
                                       }
                                     : null
+                                  if (placement) {
+                                    setGenState(current => ({
+                                      ...current,
+                                      [key]: {
+                                        ...current[key],
+                                        calendarPlacement: placement,
+                                      },
+                                    }))
+                                  }
+                                  if (weeklyVisibilityPackageActive && data?.scheduledAt) {
+                                    void trackAnalyticsEvent({
+                                      event: "suite_weekly_package_planned",
+                                      properties: {
+                                        cohort,
+                                        taskId: actionTaskId,
+                                        format: conceptFormat,
+                                        position:
+                                          typeof data.position === "number" ? data.position : null,
+                                      },
+                                    })
+                                  }
+                                  return placement
                                 } catch {
                                   return null
                                 }
@@ -5480,6 +5582,7 @@ export function MayaConcierge({
                             ? "Choose the photo you want to animate first."
                             : "Add a selfie first so it still looks like you."
                         }
+                        initialCalendarPlacement={gen.calendarPlacement ?? null}
                         showCalendarOffer={key === firstDonePhotoKey}
                         resultActions={
                           <div className="space-y-3">
@@ -5506,6 +5609,7 @@ export function MayaConcierge({
                             <InlineResultActions
                               format={conceptFormat}
                               completedFormats={Array.from(completedFormats)}
+                              weeklyPackage={weeklyVisibilityPackageActive}
                               onNextFormat={(nextFormat, kind, selection) =>
                                 handleNextFormat(
                                   nextFormat,

@@ -229,6 +229,11 @@ describe("App v3 stable asset analytics lineage", () => {
           imageUrls: ["https://example.com/clean.png"],
           bakedImageUrls: ["https://example.com/baked.png"],
           bakedAiImageIds: [702],
+          calendarPlacement: {
+            scheduledAt: "2026-08-11T08:00:00.000Z",
+            position: 7,
+            caption: "Ready to publish.",
+          },
         },
         video: {
           status: "done",
@@ -237,7 +242,14 @@ describe("App v3 stable asset analytics lineage", () => {
         },
       })
     ).toMatchObject({
-      image: { bakedAiImageIds: [702] },
+      image: {
+        bakedAiImageIds: [702],
+        calendarPlacement: {
+          scheduledAt: "2026-08-11T08:00:00.000Z",
+          position: 7,
+          caption: "Ready to publish.",
+        },
+      },
       video: { videoAssetId: "video_703" },
     })
 

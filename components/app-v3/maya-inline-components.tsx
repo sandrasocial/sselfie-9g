@@ -460,11 +460,13 @@ const RECOMMENDED_NEXT: Record<
 export function InlineResultActions({
   format,
   completedFormats = [],
+  weeklyPackage = false,
   onNextFormat,
   onOpenCalendar,
 }: {
   format: OutputFormat
   completedFormats?: OutputFormat[]
+  weeklyPackage?: boolean
   onNextFormat: (
     format: OutputFormat,
     kind: InlineActionKind,
@@ -513,13 +515,15 @@ export function InlineResultActions({
   return (
     <div className="rounded-[8px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3.5">
       <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-gray)]">
-        Maya recommends next
+        {weeklyPackage ? "Your weekly package" : "Maya recommends next"}
       </p>
       <p className="mt-1.5 font-serif text-[19px] font-light leading-tight text-[color:var(--ss-night)]">
-        {recommendation.label}
+        {weeklyPackage ? "Core piece ready" : recommendation.label}
       </p>
       <p className="mt-1 text-[12px] leading-relaxed text-[color:var(--ss-davy)]">
-        {recommendation.reason}
+        {weeklyPackage
+          ? `Add it to your plan for the caption. Then, if it helps, Maya can ${recommendation.label.toLowerCase()}.`
+          : recommendation.reason}
       </p>
       <button
         type="button"

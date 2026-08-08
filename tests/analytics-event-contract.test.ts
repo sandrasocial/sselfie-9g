@@ -118,6 +118,13 @@ describe("analytics event contract", () => {
     expect(isAllowedAnalyticsEventName("suite_generation_path_completed")).toBe(true)
   })
 
+  it("allows the Maya weekly outcome funnel", () => {
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_weekly_package_started")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_weekly_package_planned")
+    expect(isAllowedAnalyticsEventName("suite_weekly_package_started")).toBe(true)
+    expect(isAllowedAnalyticsEventName("suite_weekly_package_planned")).toBe(true)
+  })
+
   it("labels every suite intent event so intent is queryable", () => {
     const concierge = readFileSync("components/app-v3/maya-concierge.tsx", "utf8")
     const frontDoor = readFileSync("components/app-v3/visual-front-door.tsx", "utf8")

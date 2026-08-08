@@ -36,9 +36,9 @@ const FROZEN_PROMPT_SOURCES = {
     "c6670ec5a543a36c1f99804300e6e7b57e25505c65026c2bc7277e3ce2fc9c96",
   "lib/app-v3/text-bake.ts": "a6783e82ba930b38c69fe8c447aab01a6ce8cd5da7a55fb6591d019e177af1e4",
   "app/api/app-v3/maya/chat/route.ts":
-    // Sandra-approved Maya Home (2026-08-08): neutral turns use the paid-quality general
-    // assistant while committed creative formats retain the frozen creative prompt system.
-    "c8b1b4c1decc188c171392eeb642bd5831ddc39046586a0ca7a4fd51df88ad45",
+    // Sandra-approved Maya weekly outcome (2026-08-08): recent work now carries finished/open
+    // status so neutral Maya can choose one useful piece without changing the creative engine.
+    "963c728a69ae762aad1dd7bd160faf4421257a81251fc267b4883588c9226d86",
   "app/api/app-v3/maya/calendar-agent/route.ts":
     // Sandra-approved API cost controls (2026-07-21): use Haiku and omit repeated captions
     // while preserving the selected post context and existing system prompt.

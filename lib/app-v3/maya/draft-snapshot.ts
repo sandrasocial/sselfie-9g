@@ -136,6 +136,11 @@ export type ServerConceptGenState = {
     format: ServerOutputFormat
     expectedCount: number
   }
+  calendarPlacement?: {
+    scheduledAt: string
+    position?: number
+    caption?: string | null
+  }
 }
 
 export type ServerMayaDraftSnapshot = {
@@ -508,6 +513,25 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
         typeof state.aiImageId === "number" && Number.isInteger(state.aiImageId)
           ? state.aiImageId
           : null
+      const rawPlacement =
+        state.calendarPlacement && typeof state.calendarPlacement === "object"
+          ? (state.calendarPlacement as Record<string, unknown>)
+          : null
+      const calendarPlacement =
+        rawPlacement && typeof rawPlacement.scheduledAt === "string"
+          ? {
+              scheduledAt: rawPlacement.scheduledAt.slice(0, 80),
+              ...(typeof rawPlacement.position === "number" &&
+              Number.isInteger(rawPlacement.position) &&
+              rawPlacement.position > 0
+                ? { position: rawPlacement.position }
+                : {}),
+              caption:
+                typeof rawPlacement.caption === "string"
+                  ? rawPlacement.caption.slice(0, 5000)
+                  : null,
+            }
+          : null
       out[key] = {
         status: "done",
         imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),
@@ -516,6 +540,7 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
         ...(bakedAiImageIds?.some(id => id != null) ? { bakedAiImageIds } : {}),
         ...(aiImageId != null ? { aiImageId } : {}),
         ...(aiImageIds?.some(id => id != null) ? { aiImageIds } : {}),
+        ...(calendarPlacement ? { calendarPlacement } : {}),
       }
     } else if (
       state.status === "generating" &&

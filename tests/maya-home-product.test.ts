@@ -45,6 +45,28 @@ describe("founder-only Maya Home", () => {
     expect(prompt).toContain("set_format with the matching format")
   })
 
+  it("owns one finished weekly outcome instead of presenting another tool menu", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    const prompt = read("lib/maya/general-assistant-persona.ts")
+    const inline = read("components/app-v3/maya-inline-components.tsx")
+    const route = read("app/api/app-v3/maya/chat/route.ts")
+    const placementRoute = read("app/api/app-v3/maya/feed-plan/place-photo/route.ts")
+
+    expect(concierge).toContain("Finish this week&apos;s content")
+    expect(concierge).toContain("WEEKLY_VISIBILITY_PACKAGE_REQUEST")
+    expect(concierge).toContain("suite_weekly_package_started")
+    expect(concierge).toContain("suite_weekly_package_planned")
+    expect(prompt).toContain("WEEKLY VISIBILITY OUTCOME")
+    expect(prompt).toContain("call set_format in the same turn")
+    expect(prompt).toContain("Do not give her a content plan and stop")
+    expect(inline).toContain("Your weekly package")
+    expect(inline).toContain("Core piece ready")
+    expect(inline).toContain("Add it to your plan for the caption")
+    expect(route).toContain('"unfinished"')
+    expect(concierge).toContain("weeklyPackage: true")
+    expect(placementRoute).toContain("resolveWeeklyPackageCalendarCopy")
+  })
+
   it("keeps the public member experience behind the existing server-owned allowlist", () => {
     const rollout = read("lib/app-v3/maya/operating-layer-rollout.ts")
     const page = read("app/app/page.tsx")
