@@ -41,6 +41,11 @@ interface CustomerData {
     subject: string
     message: string
     status: string
+    founder_test_status?: string | null
+    feedback_context?: Record<string, unknown> | null
+    source_path?: string | null
+    app_commit_sha?: string | null
+    resolution_commit_sha?: string | null
     images?: string[]
     admin_reply?: string | null
     replied_at?: string | null
@@ -421,18 +426,34 @@ export default function CustomerSupportPage() {
                         >
                           {f.status}
                         </span>
-                        <span className="text-xs text-stone-400">
-                          {formatDate(f.created_at)}
-                        </span>
+                        {f.founder_test_status && (
+                          <span className="rounded-full bg-stone-900 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-white">
+                            Maya test · {f.founder_test_status.replaceAll("_", " ")}
+                          </span>
+                        )}
+                        <span className="text-xs text-stone-400">{formatDate(f.created_at)}</span>
                       </div>
                       <p className="font-medium text-stone-900">{f.subject}</p>
                       <p className="mt-2 whitespace-pre-wrap text-stone-700">{f.message}</p>
+                      {f.founder_test_status && (
+                        <p className="mt-2 text-xs text-stone-500">
+                          Reported from {f.source_path || "Maya"}
+                          {f.app_commit_sha ? ` · app ${f.app_commit_sha.slice(0, 8)}` : ""}
+                          {f.resolution_commit_sha
+                            ? ` · fix ${f.resolution_commit_sha.slice(0, 8)}`
+                            : ""}
+                        </p>
+                      )}
                       {(f.images || []).length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-2">
                           {(f.images || []).map((url) => (
                             <a
                               key={url}
-                              href={url}
+                              href={
+                                f.founder_test_status
+                                  ? `/api/admin/customer-support/feedback-attachment?id=${encodeURIComponent(f.id)}`
+                                  : url
+                              }
                               target="_blank"
                               rel="noreferrer"
                               className="rounded border border-stone-200 bg-stone-50 px-2 py-1 text-xs text-stone-600 underline"
@@ -445,7 +466,8 @@ export default function CustomerSupportPage() {
                       {f.admin_reply && (
                         <div className="mt-4 rounded-lg border border-green-100 bg-green-50 p-3">
                           <p className="mb-1 text-[10px] uppercase tracking-[0.16em] text-green-700">
-                            Reply sent {f.replied_at ? `· ${formatDate(f.replied_at)}` : ""}
+                            {f.founder_test_status ? "Progress note" : "Reply sent"}{" "}
+                            {f.replied_at ? `· ${formatDate(f.replied_at)}` : ""}
                           </p>
                           <p className="whitespace-pre-wrap text-xs leading-6 text-green-900">
                             {f.admin_reply}

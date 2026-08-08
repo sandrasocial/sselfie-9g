@@ -18,6 +18,7 @@ if (!runPlaywright) {
       const calendarMutationKeys: string[] = []
       const chatHistoryLookups: string[] = []
       const weeklyPlacementPayloads: any[] = []
+      const founderReports: any[] = []
       const chatStore = new Map<string, any>()
       let activeDraft: any = null
       let generationAttempts = 0
@@ -31,6 +32,7 @@ if (!runPlaywright) {
       ;(page as any).__mayaOperatingLayerCalendarMutationKeys = calendarMutationKeys
       ;(page as any).__mayaOperatingLayerChatHistoryLookups = chatHistoryLookups
       ;(page as any).__mayaWeeklyPlacementPayloads = weeklyPlacementPayloads
+      ;(page as any).__mayaFounderReports = founderReports
       ;(page as any).__enableMayaActionJourney = () => {
         actionJourneyEnabled = true
       }
@@ -132,7 +134,24 @@ if (!runPlaywright) {
           return
         }
 
-        if (pathname === "/api/app-v3/maya/chat") {
+        if (pathname === "/api/app-v3/maya/founder-feedback") {
+          if (method === "POST") {
+            const report = {
+              id: `founder-feedback-${founderReports.length + 1}`,
+              reportType: "quality",
+              message: "The answer is useful but still sounds generic.",
+              status: "new",
+              statusLabel: "Received",
+              createdAt: "2026-08-08T12:00:00.000Z",
+            }
+            founderReports.unshift(report)
+            body = { report }
+          } else if (method === "PATCH") {
+            body = { report: founderReports[0] }
+          } else {
+            body = { reports: founderReports }
+          }
+        } else if (pathname === "/api/app-v3/maya/chat") {
           const payload = request.postDataJSON?.() ?? {}
           const messages = Array.isArray(payload.messages) ? payload.messages : []
           const lastMessage = messages[messages.length - 1]
@@ -582,6 +601,30 @@ if (!runPlaywright) {
       await expect(page.getByRole("button", { name: "Add to my plan" })).toHaveCount(0)
     })
 
+    test("saves founder feedback without interrupting the Maya test session", async ({
+      page,
+    }: {
+      page: any
+    }) => {
+      const composer = page.getByRole("textbox", { name: "Message Maya" })
+      await expect(composer).toBeVisible()
+      await page.getByRole("button", { name: "Report", exact: true }).click()
+      await expect(page.getByRole("dialog", { name: "Report what felt wrong" })).toBeVisible()
+      await page.getByRole("button", { name: "Not good enough" }).click()
+      await page
+        .getByRole("textbox", { name: "What happened?" })
+        .fill("The answer is useful but still sounds generic.")
+      await page.getByRole("button", { name: "Save and keep testing" }).click()
+
+      await expect(page.getByRole("status")).toContainText("Saved. Keep testing Maya.")
+      await expect(composer).toBeVisible()
+      await page.getByRole("button", { name: "Report", exact: true }).click()
+      await page.getByRole("button", { name: "Reports" }).click()
+      await expect(page.getByText("The answer is useful but still sounds generic.")).toBeVisible()
+      await expect(page.getByText("Received")).toBeVisible()
+      expect((page as any).__mayaFounderReports).toHaveLength(1)
+    })
+
     test("keeps existing operating-layer members on their current Create experience", async ({
       page,
     }: {
@@ -598,6 +641,7 @@ if (!runPlaywright) {
       ).toBeVisible()
       await expect(page.getByRole("region", { name: /what do you need/i })).toHaveCount(0)
       await expect(page.getByRole("button", { name: "Open Maya" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "Report", exact: true })).toHaveCount(0)
     })
 
     test("returning members land with Maya even when their last saved tab was Calendar", async ({

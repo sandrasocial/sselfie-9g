@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
+import dynamic from "next/dynamic"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { useConcierge } from "./concierge-context"
@@ -111,6 +112,14 @@ import {
 
 /** Maya's profile image (one of Sandra's editorial portraits). Swap freely. */
 const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
+
+const MayaFounderTestMode = dynamic(
+  () =>
+    import("./maya-founder-test-mode").then(module => ({
+      default: module.MayaFounderTestMode,
+    })),
+  { ssr: false }
+)
 
 const WEEKLY_VISIBILITY_PACKAGE_REQUEST =
   "Help me finish one useful piece of content for this week. Use what you know about my current priorities and unfinished work. Choose the strongest idea, format, and visual direction for me. Ask only one question if it would materially change the result."
@@ -4502,6 +4511,23 @@ export function MayaConcierge({
             )}
           </div>
           <div className="relative flex shrink-0 items-center gap-4">
+            {homeMode && (
+              <MayaFounderTestMode
+                messages={messages}
+                context={{
+                  surface: session.mayaContext?.surface ?? "create",
+                  taskId: session.mayaContext?.taskId ?? null,
+                  job: session.mayaContext?.job ?? null,
+                  chatId,
+                  outputFormat: session.outputFormat ?? null,
+                  feedId: session.mayaContext?.feedId ?? null,
+                  postId: session.mayaContext?.postId ?? null,
+                  postPosition: session.mayaContext?.postPosition ?? null,
+                  courseId: session.mayaContext?.lessonRef?.courseId ?? null,
+                  lessonId: session.mayaContext?.lessonRef?.lessonId ?? null,
+                }}
+              />
+            )}
             <button
               type="button"
               onClick={() => {
