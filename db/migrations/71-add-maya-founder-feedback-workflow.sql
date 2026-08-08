@@ -7,6 +7,10 @@ ALTER TABLE feedback
   ADD COLUMN IF NOT EXISTS source_path TEXT,
   ADD COLUMN IF NOT EXISTS app_commit_sha TEXT,
   ADD COLUMN IF NOT EXISTS resolution_commit_sha TEXT,
+  ADD COLUMN IF NOT EXISTS founder_screenshot_key TEXT,
+  ADD COLUMN IF NOT EXISTS founder_screenshot_iv TEXT,
+  ADD COLUMN IF NOT EXISTS founder_screenshot_auth_tag TEXT,
+  ADD COLUMN IF NOT EXISTS founder_screenshot_content_type TEXT,
   ADD COLUMN IF NOT EXISTS client_report_id TEXT;
 
 DO $$

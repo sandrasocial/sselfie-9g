@@ -11,6 +11,7 @@ import {
   type FounderFeedbackReportType,
 } from "@/lib/app-v3/maya/founder-feedback"
 import { isMayaHomeEnabled } from "@/lib/app-v3/maya/operating-layer-rollout"
+import { encryptFounderScreenshot } from "@/lib/app-v3/maya/founder-screenshot"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
 
 export const dynamic = "force-dynamic"
@@ -141,6 +142,7 @@ export async function POST(request: NextRequest) {
     }
 
     let screenshotPathname: string | null = null
+    let screenshotEncryption: ReturnType<typeof encryptFounderScreenshot> | null = null
     let screenshotError: string | null = null
     if (screenshot) {
       if (!ALLOWED_SCREENSHOT_TYPES.has(screenshot.type)) {
@@ -153,18 +155,25 @@ export async function POST(request: NextRequest) {
       const extension =
         screenshot.type === "image/png" ? "png" : screenshot.type === "image/webp" ? "webp" : "jpg"
       try {
+        screenshotEncryption = encryptFounderScreenshot(
+          new Uint8Array(await screenshot.arrayBuffer()),
+          screenshot.type
+        )
         const uploaded = await put(
-          `founder-feedback/${identity.neonUser.id}/${payload.clientReportId}.${extension}`,
-          screenshot,
+          `founder-feedback/${identity.neonUser.id}/${payload.clientReportId}.${extension}.enc`,
+          screenshotEncryption.body,
           {
-            access: "private",
-            contentType: screenshot.type,
+            // This Vercel Blob store is public-only. The object is AES-256-GCM ciphertext;
+            // only the authenticated admin proxy can read its database-held key.
+            access: "public",
+            contentType: "application/octet-stream",
             addRandomSuffix: true,
           }
         )
         screenshotPathname = uploaded.pathname
       } catch (error) {
         console.error("[maya founder feedback] screenshot upload failed:", error)
+        screenshotEncryption = null
         screenshotError = "upload_failed"
       }
     }
@@ -195,6 +204,10 @@ export async function POST(request: NextRequest) {
         source_path,
         app_commit_sha,
         client_report_id,
+        founder_screenshot_key,
+        founder_screenshot_iv,
+        founder_screenshot_auth_tag,
+        founder_screenshot_content_type,
         images,
         created_at,
         updated_at
@@ -212,6 +225,10 @@ export async function POST(request: NextRequest) {
         ${sourcePath},
         ${appCommitSha},
         ${payload.clientReportId},
+        ${screenshotEncryption?.key || null},
+        ${screenshotEncryption?.iv || null},
+        ${screenshotEncryption?.authTag || null},
+        ${screenshotEncryption?.contentType || null},
         ${screenshotPathname ? [screenshotPathname] : null},
         NOW(),
         NOW()
