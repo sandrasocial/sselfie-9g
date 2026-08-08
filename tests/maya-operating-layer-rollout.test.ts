@@ -4,16 +4,22 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("server-only", () => ({}))
 
-import { isMayaOperatingLayerEnabled } from "@/lib/app-v3/maya/operating-layer-rollout"
+import {
+  isMayaHomeEnabled,
+  isMayaOperatingLayerEnabled,
+} from "@/lib/app-v3/maya/operating-layer-rollout"
 
 const originalGlobal = process.env.FEATURE_MAYA_OPERATING_LAYER
 const originalAllowlist = process.env.MAYA_OPERATING_LAYER_ALLOWLIST
+const originalHomeAllowlist = process.env.MAYA_HOME_ALLOWLIST
 
 afterEach(() => {
   if (originalGlobal === undefined) delete process.env.FEATURE_MAYA_OPERATING_LAYER
   else process.env.FEATURE_MAYA_OPERATING_LAYER = originalGlobal
   if (originalAllowlist === undefined) delete process.env.MAYA_OPERATING_LAYER_ALLOWLIST
   else process.env.MAYA_OPERATING_LAYER_ALLOWLIST = originalAllowlist
+  if (originalHomeAllowlist === undefined) delete process.env.MAYA_HOME_ALLOWLIST
+  else process.env.MAYA_HOME_ALLOWLIST = originalHomeAllowlist
 })
 
 describe("Maya operating layer rollout", () => {
@@ -37,15 +43,21 @@ describe("Maya operating layer rollout", () => {
     process.env.FEATURE_MAYA_OPERATING_LAYER = "true"
     delete process.env.MAYA_OPERATING_LAYER_ALLOWLIST
 
-    expect(isMayaOperatingLayerEnabled({ email: "member@example.com", accessLevel: "full" })).toBe(true)
-    expect(isMayaOperatingLayerEnabled({ email: "trial@example.com", accessLevel: "trial" })).toBe(true)
+    expect(isMayaOperatingLayerEnabled({ email: "member@example.com", accessLevel: "full" })).toBe(
+      true
+    )
+    expect(isMayaOperatingLayerEnabled({ email: "trial@example.com", accessLevel: "trial" })).toBe(
+      true
+    )
   })
 
   it("keeps limited shell users out of the global rollout", () => {
     process.env.FEATURE_MAYA_OPERATING_LAYER = "true"
     delete process.env.MAYA_OPERATING_LAYER_ALLOWLIST
 
-    expect(isMayaOperatingLayerEnabled({ email: "limited@example.com", accessLevel: "limited" })).toBe(false)
+    expect(
+      isMayaOperatingLayerEnabled({ email: "limited@example.com", accessLevel: "limited" })
+    ).toBe(false)
     expect(isMayaOperatingLayerEnabled({ email: "unknown@example.com" })).toBe(false)
   })
 
@@ -53,6 +65,29 @@ describe("Maya operating layer rollout", () => {
     process.env.FEATURE_MAYA_OPERATING_LAYER = "false"
     process.env.MAYA_OPERATING_LAYER_ALLOWLIST = " sandra@example.com "
 
-    expect(isMayaOperatingLayerEnabled({ email: "sandra@example.com", accessLevel: "limited" })).toBe(true)
+    expect(
+      isMayaOperatingLayerEnabled({ email: "sandra@example.com", accessLevel: "limited" })
+    ).toBe(true)
+  })
+
+  it("never widens Maya Home through the global operating-layer flag", () => {
+    process.env.FEATURE_MAYA_OPERATING_LAYER = "true"
+    process.env.MAYA_OPERATING_LAYER_ALLOWLIST = "sandra@example.com"
+    delete process.env.MAYA_HOME_ALLOWLIST
+
+    expect(isMayaHomeEnabled({ email: "sandra@example.com", accessLevel: "full" })).toBe(true)
+    expect(isMayaHomeEnabled({ email: "member@example.com", accessLevel: "full" })).toBe(false)
+    expect(isMayaHomeEnabled({ email: "trial@example.com", accessLevel: "trial" })).toBe(false)
+  })
+
+  it("supports a dedicated Maya Home allowlist without changing the operating cohort", () => {
+    process.env.FEATURE_MAYA_OPERATING_LAYER = "true"
+    process.env.MAYA_OPERATING_LAYER_ALLOWLIST = "legacy-preview@example.com"
+    process.env.MAYA_HOME_ALLOWLIST = " founder@example.com "
+
+    expect(isMayaHomeEnabled({ email: "founder@example.com", accessLevel: "full" })).toBe(true)
+    expect(isMayaHomeEnabled({ email: "legacy-preview@example.com", accessLevel: "full" })).toBe(
+      false
+    )
   })
 })

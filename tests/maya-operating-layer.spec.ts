@@ -253,13 +253,15 @@ if (!runPlaywright) {
         } else if (pathname === "/api/app-v3/maya/chats") {
           if (method === "GET") {
             body = {
-              chats: Array.from(chatStore.values()).map(chat => ({
-                id: chat.id,
-                title: chat.title,
-                updatedAt: new Date(chat.savedAt).toISOString(),
-                taskStatus: chat.taskStatus,
-                outputCount: chat.outputCount,
-              })),
+              chats: Array.from(chatStore.values())
+                .sort((left, right) => right.savedAt - left.savedAt)
+                .map(chat => ({
+                  id: chat.id,
+                  title: chat.title,
+                  updatedAt: new Date(chat.savedAt).toISOString(),
+                  taskStatus: chat.taskStatus,
+                  outputCount: chat.outputCount,
+                })),
             }
           } else if (method === "POST") {
             const chat = request.postDataJSON?.()
@@ -488,18 +490,98 @@ if (!runPlaywright) {
       expect((page as any).__mayaOperatingLayerErrors).toEqual([])
     })
 
-    test("Create content starts from the current Create surface", async ({
+    test("Maya Home starts as one neutral conversation above the fold", async ({
       page,
     }: {
       page: any
     }) => {
-      await expect(page.getByRole("button", { name: "Create", exact: true })).toBeVisible()
-      await expect(page.getByText(/Maya recommends · Photo/i)).toBeVisible()
-      await expect(page.getByRole("button", { name: "Start with Maya" })).toBeVisible()
-      await expect(page.getByRole("button", { name: "My selfies" })).toHaveCount(0)
-      await page.getByRole("button", { name: "More creation options" }).click()
-      await expect(page.getByRole("button", { name: "My selfies" })).toBeVisible()
-      await expect(page.getByRole("button", { name: "History", exact: true })).toBeVisible()
+      await expect(page.getByRole("button", { name: "Maya", exact: true })).toBeVisible()
+      await expect(page.getByRole("region", { name: /what do you need/i })).toBeVisible()
+      const composer = page.getByRole("textbox", { name: "Message Maya" })
+      await expect(composer).toBeVisible()
+      await expect(composer).toHaveAttribute("placeholder", "Ask Maya anything…")
+
+      const composerBox = await composer.boundingBox()
+      const viewport = page.viewportSize()
+      expect(composerBox).not.toBeNull()
+      expect(viewport).not.toBeNull()
+      expect((composerBox?.y ?? 0) + (composerBox?.height ?? 0)).toBeLessThan(
+        (viewport?.height ?? 0) - 55
+      )
+
+      await page.getByRole("button", { name: "What should I focus on today?" }).click()
+      await expect(page.getByText("Maya QA response for the Create task.")).toBeVisible()
+      await page.getByRole("button", { name: "Menu" }).click()
+      await expect(page.getByRole("button", { name: "What Maya knows" })).toBeVisible()
+    })
+
+    test("keeps existing operating-layer members on their current Create experience", async ({
+      page,
+    }: {
+      page: any
+    }) => {
+      await page.goto("/e2e/maya-operating-layer?home=0", { waitUntil: "domcontentloaded" })
+
+      await expect(page.getByRole("button", { name: "Create", exact: true })).toHaveAttribute(
+        "aria-current",
+        "page"
+      )
+      await expect(
+        page.getByRole("heading", { name: "Maya QA, what are we making?" })
+      ).toBeVisible()
+      await expect(page.getByRole("region", { name: /what do you need/i })).toHaveCount(0)
+      await expect(page.getByRole("button", { name: "Open Maya" })).toBeVisible()
+    })
+
+    test("returning members land with Maya even when their last saved tab was Calendar", async ({
+      page,
+    }: {
+      page: any
+    }) => {
+      await expect(page.getByRole("region", { name: /what do you need/i })).toBeVisible()
+      await page.evaluate(() =>
+        window.localStorage.setItem("sselfie.appV3.section.v1", JSON.stringify("calendar"))
+      )
+      await expect
+        .poll(() => page.evaluate(() => window.localStorage.getItem("sselfie.appV3.section.v1")))
+        .toBe('"calendar"')
+      await page.goto("/e2e/maya-operating-layer", { waitUntil: "domcontentloaded" })
+
+      await expect
+        .poll(() => page.evaluate(() => window.localStorage.getItem("sselfie.appV3.section.v1")))
+        .toBe('"create"')
+
+      await expect(page.getByRole("button", { name: "Maya", exact: true })).toHaveAttribute(
+        "aria-current",
+        "page"
+      )
+      await expect(page.getByRole("region", { name: /what do you need/i })).toBeVisible()
+      await expect(page.getByPlaceholder("Ask Maya anything…")).toBeVisible()
+    })
+
+    test("ordinary writing help stays in the same neutral conversation", async ({
+      page,
+    }: {
+      page: any
+    }) => {
+      const maya = page.locator("aside[data-maya-task-id]")
+      const composer = page.getByRole("textbox", { name: "Message Maya" })
+
+      await composer.fill("Help me write a warm reply to a customer who feels stuck")
+      await page.getByRole("button", { name: "Send" }).click()
+
+      await expect(
+        page.getByText("Help me write a warm reply to a customer who feels stuck")
+      ).toBeVisible()
+      await expect(page.getByText("Maya QA response for the Create task.")).toBeVisible()
+      await expect(maya).toHaveAttribute("data-maya-format", "none")
+      await expect(page.getByText("Choose your style")).toHaveCount(0)
+
+      await composer.fill("Can you explain why this photo feels off?")
+      await page.getByRole("button", { name: "Send" }).click()
+      await expect(page.getByText("Can you explain why this photo feels off?")).toBeVisible()
+      await expect(maya).toHaveAttribute("data-maya-format", "none")
+      await expect(page.getByText("Choose your style")).toHaveCount(0)
     })
 
     test("Decide what to post and Finish a selected Calendar post start in Calendar", async ({
@@ -559,10 +641,12 @@ if (!runPlaywright) {
       await expect(page.getByRole("button", { name: "Preview" })).toBeVisible()
       await expect(page.getByRole("button", { name: "Attach an inspiration image" })).toHaveCount(0)
 
-      await page.waitForTimeout(300)
-      // App v3 canonicalizes section URLs to /app. Return to the auth-free E2E host
-      // while preserving browser storage, matching the established reload journey below.
-      await page.goto("/e2e/maya-operating-layer")
+      await page.waitForTimeout(900)
+      // Founder-cohort reloads deliberately return to Maya Home. The exact Learn task remains
+      // one visible action away instead of forcing the member back into the Learn library.
+      await page.goto("/e2e/maya-operating-layer", { waitUntil: "domcontentloaded" })
+      await expect(page.getByRole("region", { name: /what do you need/i })).toBeVisible()
+      await page.getByRole("button", { name: /Resume/i }).click()
       await expect(maya).toHaveAttribute("data-maya-job", "learn_next")
       await expect(maya).toHaveAttribute("data-maya-course-id", "14")
       await expect(maya).toHaveAttribute("data-maya-lesson-id", "140")
@@ -605,7 +689,7 @@ if (!runPlaywright) {
       expect((page as any).__mayaOperatingLayerCalendarMutations).toEqual([])
     })
 
-    test("routes Calendar caption improvement through preview, confirmation, result, and undo", async ({
+    test("routes a free Calendar caption improvement through one action, result, and undo", async ({
       page,
     }: {
       page: any
@@ -621,10 +705,8 @@ if (!runPlaywright) {
       await expect(page.getByRole("heading", { name: "Post 7 · Maya Phase QA" })).toBeVisible()
       const action = page.locator('section[data-maya-action-kind="improve_caption"]')
       await expect(action).toHaveAttribute("data-maya-action-status", "recommended")
-      await action.getByRole("button", { name: "Preview" }).click()
-      await action.getByRole("button", { name: "Continue" }).click()
-      await expect(action).toContainText("No credits")
-      await action.getByRole("button", { name: "Confirm and improve" }).click()
+      await expect(action).toContainText(/can undo/i)
+      await action.getByRole("button", { name: "Rewrite caption" }).click()
       await expect(action).toHaveAttribute("data-maya-action-status", "succeeded")
       await action.getByRole("button", { name: "Undo" }).click()
       await expect(action).toHaveAttribute("data-maya-action-status", "undone")
@@ -643,10 +725,9 @@ if (!runPlaywright) {
     }) => {
       const maya = page.locator("aside[data-maya-task-id]")
 
-      await page
-        .getByPlaceholder("A launch photo, a full shoot, a Reel cover…")
-        .fill("Phase one Create task")
-      await page.getByRole("button", { name: "Start with Maya" }).click()
+      const homeComposer = page.getByRole("textbox", { name: "Message Maya" })
+      await homeComposer.fill("Phase one Create task")
+      await page.getByRole("button", { name: "Send" }).click()
       await expect(maya).toHaveAttribute("data-maya-job", "create_content")
       await expect(maya).toHaveAttribute("data-maya-surface", "create")
       await expect(maya).toHaveAttribute("data-maya-inspiration", "none")
@@ -654,7 +735,6 @@ if (!runPlaywright) {
       expect(firstCreateTask).toMatch(/^maya-/)
       await expect(page.getByText("Maya QA response for the Create task.")).toBeVisible()
       expect((page as any).__mayaOperatingLayerChatHistoryLookups).not.toContain(firstCreateTask)
-      await page.getByRole("button", { name: "Close", exact: true }).click()
 
       await page.getByRole("button", { name: "Calendar" }).click()
       await page.getByRole("button", { name: /finish post 7 next/i }).click()
@@ -708,8 +788,7 @@ if (!runPlaywright) {
       await page.getByRole("button", { name: "Close", exact: true }).click()
       // Keyboard activation avoids the local Next.js dev badge, which overlaps the bottom-left
       // tab at 390 px but is not present in production, and verifies the same control is usable.
-      await page.getByRole("button", { name: "Create", exact: true }).press("Enter")
-      await page.getByRole("button", { name: "Open Maya" }).click()
+      await page.getByRole("button", { name: "Maya", exact: true }).press("Enter")
       await expect(maya).toHaveAttribute("data-maya-job", "create_content")
       await expect(maya).toHaveAttribute("data-maya-surface", "create")
       expect(await maya.getAttribute("data-maya-post-id")).toBeNull()
@@ -722,11 +801,11 @@ if (!runPlaywright) {
 
       // The production shell intentionally canonicalizes section URLs to /app. Return to the
       // auth-free E2E host after a full navigation while preserving browser storage.
-      await page.goto("/e2e/maya-operating-layer")
-      await page.getByRole("button", { name: "Open Maya" }).click()
-      await expect(maya).toHaveAttribute("data-maya-task-id", cleanCreateTask as string)
+      await page.goto("/e2e/maya-operating-layer", { waitUntil: "domcontentloaded" })
+      await expect(page.getByRole("region", { name: /what do you need/i })).toBeVisible()
       await expect(maya).toHaveAttribute("data-maya-job", "create_content")
       await expect(maya).toHaveAttribute("data-maya-surface", "create")
+      await expect(maya).toHaveAttribute("data-maya-format", "none")
       await expect(maya).toHaveAttribute("data-maya-inspiration", "none")
 
       const composer = page.getByRole("textbox", { name: "Message Maya" })
@@ -759,7 +838,9 @@ if (!runPlaywright) {
       // Reloading a completed Calendar task must restore its exact thread without re-running
       // the generic photo pull (which would append a new "Let's create photos." turn).
       await expect(page.getByText("Let's create photos.", { exact: true })).toHaveCount(0)
-      await page.goto("/e2e/maya-operating-layer")
+      await page.goto("/e2e/maya-operating-layer", { waitUntil: "domcontentloaded" })
+      await expect(page.getByRole("region", { name: /what do you need/i })).toBeVisible()
+      await page.getByRole("button", { name: /Resume/i }).click()
       await expect(maya).toHaveAttribute("data-maya-task-id", "maya-calendar-v1-101-707")
       await expect(maya).toHaveAttribute("data-maya-post-id", "707")
       await page.waitForTimeout(900)
@@ -788,12 +869,9 @@ if (!runPlaywright) {
     }) => {
       ;(page as any).__enableMayaCarouselJourney()
 
-      await page
-        .getByPlaceholder("A launch photo, a full shoot, a Reel cover…")
-        .fill("Create a three-slide visibility carousel")
-      await page.getByRole("button", { name: "Start with Maya" }).click()
-      await page.getByRole("button", { name: "Show me carousel ideas" }).click()
-      await page.getByRole("button", { name: "No text, just the visual" }).click()
+      const composer = page.getByRole("textbox", { name: "Message Maya" })
+      await composer.fill("Create a three-slide visibility carousel")
+      await page.getByRole("button", { name: "Send" }).click()
 
       await expect(page.getByText("Three-part visibility carousel")).toBeVisible()
       await expect(page.getByRole("button", { name: "Preview" })).toHaveCount(0)
@@ -850,8 +928,7 @@ if (!runPlaywright) {
       const applyAction = page.locator('section[data-maya-action-kind="apply_to_post"]')
       await expect(applyAction).toHaveAttribute("data-maya-action-status", "recommended")
       await applyAction.getByRole("button", { name: "Preview" }).click()
-      await applyAction.getByRole("button", { name: "Continue" }).click()
-      await expect(applyAction).toContainText("No credits")
+      await expect(applyAction).toContainText("Free")
       await applyAction.getByRole("button", { name: "Confirm and apply" }).click()
       await expect(applyAction).toHaveAttribute("data-maya-action-status", "failed")
       await expect(applyAction.getByRole("alert")).toContainText(
@@ -870,7 +947,17 @@ if (!runPlaywright) {
       expect(mutationKeys[1]).toBe(mutationKeys[0])
 
       await page.waitForTimeout(900)
-      await page.goto("/e2e/maya-operating-layer")
+      await page.goto("/e2e/maya-operating-layer", { waitUntil: "domcontentloaded" })
+      await expect(maya).toBeVisible()
+      // Maya Home stays neutral while keeping the exact completed Calendar task one action away.
+      await expect
+        .poll(() =>
+          page.evaluate(() => window.localStorage.getItem("sselfie.maya.last-active-task.v1"))
+        )
+        .toBe("maya-calendar-v1-101-708")
+      const resume = page.getByRole("button", { name: /Resume/i })
+      await expect(resume).toContainText(/post 8/i)
+      await resume.click()
       await expect(maya).toHaveAttribute("data-maya-task-id", "maya-calendar-v1-101-708")
       const restoredApplyAction = page.locator('section[data-maya-action-kind="apply_to_post"]')
       await expect(restoredApplyAction).toHaveAttribute("data-maya-action-status", "succeeded")

@@ -28,7 +28,8 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(concierge).toContain("{guidedFirstPhoto && (")
     expect(concierge).toContain("Maya is choosing one strong direction")
     expect(concierge).toContain('guidedFirstPhoto ? "hidden" : ""')
-    expect(concierge).toContain("const workspaceTitle = learningTaskActive")
+    expect(concierge).toContain("const workspaceTitle = generalHomeConversation")
+    expect(concierge).toContain('"What do you need today?"')
     expect(concierge).toContain('? "Learn with Maya"')
     expect(concierge).toContain('? "Create with Maya"')
     expect(concierge).toContain("{workspaceTitle}")
@@ -69,7 +70,7 @@ describe("Maya Invisible AI: first result and return integrity", () => {
 
     expect(types).toContain('kind?: "format" | "detail"')
     expect(route).toMatch(/\.enum\(\[\s*"format",\s*"detail"\s*\]\)/)
-    expect(route).toContain('kind: \\"format\\"')
+    expect(route).toContain("Use format only when no output format is committed")
     expect(concierge).toContain("function sendInlineAnswer(answer: string, kind:")
     expect(concierge).toContain('if (kind === "format")')
     expect(concierge).toContain("preserveCommittedFormat")
@@ -131,7 +132,7 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(card).toContain('eyebrow = "Maya\'s idea"')
     expect(concierge).toContain('eyebrow={recommended ? "Maya recommends" : "Another direction"}')
     expect(concierge).toContain("See more ideas")
-    expect(concierge).toContain("conceptPart.slice(1)")
+    expect(concierge).toMatch(/conceptPart\s*\.slice\(1\)/)
   })
 
   it("makes download real and moves result extras behind More", () => {

@@ -54,7 +54,7 @@ export default defineConfig({
     minWorkers: 2,
     setupFiles: ["./tests/setup.ts"],
     include: ["**/*.{test,spec}.{js,ts,jsx,tsx}"],
-    exclude: ["node_modules", ".next", "out", "build", ".claude", ...quarantinedSuites],
+    exclude: ["node_modules", ".next", "out", "build", ".claude", "tmp", ...quarantinedSuites],
   },
   resolve: {
     alias: {

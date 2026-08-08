@@ -14,6 +14,7 @@ import { z } from "zod"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import { getAppV3MayaSystemPrompt } from "@/lib/app-v3/maya/persona"
+import { getMayaGeneralAssistantPrompt } from "@/lib/maya/general-assistant-persona"
 import { getVaultStyleGuide, getVaultOverviewGuide } from "@/lib/app-v3/maya/vault-styles-server"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getMemory, saveMemory } from "@/lib/app-v3/maya/memory-store"
@@ -28,10 +29,7 @@ import type { CreationIntent, CreationIntentSource, OutputFormat } from "@/compo
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { shouldStopAppV3MayaToolLoop } from "@/lib/app-v3/maya/tool-loop-policy"
-import {
-  getAppV3ChatMaxOutputTokens,
-  getAppV3ChatTask,
-} from "@/lib/app-v3/maya/cost-controls"
+import { getAppV3ChatMaxOutputTokens, getAppV3ChatTask } from "@/lib/app-v3/maya/cost-controls"
 
 export const maxDuration = 300
 
@@ -110,9 +108,7 @@ const creativePlanOutputSchema = z.object({
   body: z
     .string()
     .optional()
-    .describe(
-      "Optional exact supporting line baked under the title, spelled as it should render."
-    ),
+    .describe("Optional exact supporting line baked under the title, spelled as it should render."),
   purpose: z.string().describe("Why this output exists in the creative arc."),
   visualConcept: z.string().describe("Specific visual concept for this output."),
   imagePromptDirection: z
@@ -193,7 +189,9 @@ const graphicSpec = z
     subline: z
       .string()
       .optional()
-      .describe("The exact supporting line rendered under the headline, spelled as it should appear."),
+      .describe(
+        "The exact supporting line rendered under the headline, spelled as it should appear."
+      ),
     motionPrompt: z
       .string()
       .optional()
@@ -679,13 +677,19 @@ export async function POST(req: Request) {
     const requestedFormat = isOutputFormat(body?.format) ? body.format : null
     const intentFormat = creationIntent?.format ?? null
     const committedFormat = intentFormat ?? requestedFormat
+    const generalConversation = !committedFormat
     const format: OutputFormat = committedFormat ?? "photo"
-    const needsFormatClarification = creationIntent?.confidence === "needs_clarify" || !committedFormat
-    const mayaChatTask = getAppV3ChatTask({ needsFormatClarification })
-    const mayaMaxOutputTokens = getAppV3ChatMaxOutputTokens(
-      committedFormat,
-      needsFormatClarification
-    )
+    const needsFormatClarification =
+      creationIntent?.confidence === "needs_clarify" || !committedFormat
+    // Maya Home is the paid relationship, not a cheap classifier. Neutral conversation uses
+    // the same high-quality Sonnet route as committed creative work; the smaller clarification
+    // route remains only for legacy/guided format questions.
+    const mayaChatTask = generalConversation
+      ? "chat_pro"
+      : getAppV3ChatTask({ needsFormatClarification })
+    const mayaMaxOutputTokens = generalConversation
+      ? 3000
+      : getAppV3ChatMaxOutputTokens(committedFormat, needsFormatClarification)
 
     // Her authoritative brand profile from the EXISTING SSELFIE system (reuse, don't rebuild).
     // This is what makes Maya know the creator (not just the look). Best-effort; never blocks chat.
@@ -720,34 +724,36 @@ export async function POST(req: Request) {
       console.error("[app-v3 maya chat] memory/activity load skipped:", e)
     }
 
-    const vaultStyleGuide =
-      (await getVaultStyleGuide(body?.aestheticId, shotDirector?.requestedShotCount ?? 8)) ??
-      (await getVaultOverviewGuide())
-    const selectedShotGuide = selectedShotContext(body?.selectedShot ?? null, shotDirector)
-    let system = getAppV3MayaSystemPrompt({
-      aestheticName: body?.aestheticName?.trim() || "SSELFIE editorial",
-      aestheticIntent:
-        body?.aestheticIntent?.trim() ||
-        "An editorial brand-shoot look: cohesive styling, refined light, brand-shoot quality.",
-      format,
-      brandKit: body?.brandKit ?? null,
-      memory,
-      recentActivity,
-      brandContext,
-      // The real Vault shots for the chosen vibe - Maya's styling source of truth. General
-      // sessions (a Content idea, "maya-general") fall back to the all-collections overview so
-      // EVERY generation path carries Vault DNA, never a generic posed-studio default.
-      vaultStyleGuide,
-      selectedShotGuide,
-    })
+    let system: string
+    if (generalConversation) {
+      system = getMayaGeneralAssistantPrompt({ memory, recentActivity, brandContext })
+    } else {
+      const vaultStyleGuide =
+        (await getVaultStyleGuide(body?.aestheticId, shotDirector?.requestedShotCount ?? 8)) ??
+        (await getVaultOverviewGuide())
+      const selectedShotGuide = selectedShotContext(body?.selectedShot ?? null, shotDirector)
+      system = getAppV3MayaSystemPrompt({
+        aestheticName: body?.aestheticName?.trim() || "SSELFIE editorial",
+        aestheticIntent:
+          body?.aestheticIntent?.trim() ||
+          "An editorial brand-shoot look: cohesive styling, refined light, brand-shoot quality.",
+        format,
+        brandKit: body?.brandKit ?? null,
+        memory,
+        recentActivity,
+        brandContext,
+        // The real Vault shots for the chosen vibe - Maya's styling source of truth. General
+        // sessions never reach this frozen creative path; every actual generation still does.
+        vaultStyleGuide,
+        selectedShotGuide,
+      })
+    }
 
-    if (needsFormatClarification) {
-      system = `${system}\n\n## MAYA-FIRST ROUTING\nNo output format has been committed yet. Do not assume this is a photo request. Ask exactly one inline clarifying question with ask_clarify using kind: \"format\" and short tappable choices such as \"A photo\", \"A full shoot\", \"A reel cover\", \"A carousel\", \"Stories\", or \"Motion\". Do not call emit_concepts until she chooses.`
-    } else if (creationIntent) {
+    if (!generalConversation && creationIntent) {
       system = `${system}\n\n## MAYA-FIRST ROUTING\nCommitted format: ${format}. Intent source: ${creationIntent.source}. Intent confidence: ${creationIntent.confidence}. Treat this as the creation path unless the user clearly changes it.`
     }
 
-    if (shotDirector) {
+    if (!generalConversation && shotDirector) {
       const directorLine =
         shotDirector.mode === "recreate-shot"
           ? "She chose Recreate this shot. Emit 1 close concept direction for the selected Vault shot. Keep the composition close, but preserve her real face from her selfie."
@@ -761,14 +767,14 @@ export async function POST(req: Request) {
 
     // Invisible AI: choosing Maya means delegating the visual decision, not opening another
     // menu. She still explains the selected Vault world in one short line before the concept.
-    if (body?.aestheticId === "maya-decides") {
+    if (!generalConversation && body?.aestheticId === "maya-decides") {
       system = `${system}\n\n## MAYA CHOOSES THE LOOK\nShe asked you to make the visual decision. Choose the single strongest SSELFIE Vault world using her request, brand profile, memory, recent activity, and content calendar. Do not ask her to choose a style. Briefly name why your choice fits, then emit one strongest concept unless she explicitly asked for options or a multi-shot format. Keep the concept inside that real Vault world and never drift into generic studio posing.`
     }
 
     // Structured session context (2026 UX contract): the idea travels with every request
     // instead of being replayed as a user message when a style tap opens a fresh thread.
     const creationIdea = clampText(body?.creationIdea, 400)
-    if (creationIdea) {
+    if (!generalConversation && creationIdea) {
       system = `${system}\n\n## SESSION IDEA (carried from an earlier step)\nShe already told the app what this session is about: "${creationIdea}". Carry that idea through every suggestion and concept. Do not ask her to restate it, and do not treat the thread's first message as her full request.`
     }
 
@@ -785,7 +791,11 @@ export async function POST(req: Request) {
       system = `${system}\n\n## AUTHORITATIVE SESSION STATE\nMost recent completed render in this session: ${parts.join(", ")}. Treat this as ground truth over anything implied earlier in the thread. If she asks for a change, it is a delta on THIS render unless she clearly starts something new.`
     }
 
-    if (format === "video" && isAllowedInspirationUrl(body?.videoSourceUrl)) {
+    if (
+      !generalConversation &&
+      format === "video" &&
+      isAllowedInspirationUrl(body?.videoSourceUrl)
+    ) {
       system = `${system}\n\nVIDEO SOURCE CONTEXT: The user has already selected the still image she wants to animate. Create motion directions for that exact selected image. Do not ask her for another selfie or a new photo unless she asks to replace it.`
     }
 
@@ -799,7 +809,7 @@ export async function POST(req: Request) {
     // matching them. So Maya gets the actual approved template for the next open slot and is
     // told to build her briefs FROM it - adapt wardrobe/colors/story to the member, keep the
     // template's composition, lighting, and scene craft.
-    if (memoryUserId) {
+    if (memoryUserId && !generalConversation) {
       try {
         const [planLayout] = await sql`
           SELECT id, feed_style, feed_style_variation_id FROM feed_layouts
@@ -837,15 +847,17 @@ export async function POST(req: Request) {
           let templateBlock = ""
           if (nextPersonSlot && planLayout.feed_style) {
             try {
-              const { getFeedStyleV2ByName } = await import("@/lib/feed-planner/feed-style-prompt-loader")
-              const { selectPromptForPosition } = await import("@/lib/feed-planner/feed-style-generation")
+              const { getFeedStyleV2ByName } =
+                await import("@/lib/feed-planner/feed-style-prompt-loader")
+              const { selectPromptForPosition } =
+                await import("@/lib/feed-planner/feed-style-generation")
               const style = await getFeedStyleV2ByName(planLayout.feed_style)
               if (style?.enabled) {
                 const templatePosition = ((Number(nextPersonSlot.position) - 1) % 9) + 1
                 const scene = await selectPromptForPosition(
                   style.id,
                   templatePosition,
-                  planLayout.feed_style_variation_id ?? null,
+                  planLayout.feed_style_variation_id ?? null
                 )
                 if (scene?.prompt_text) {
                   templateBlock = `\n\nPROVEN SCENE TEMPLATE for that slot (hand-approved, the quality bar for her grid):\n"""\n${scene.prompt_text}\n"""\nWhen she creates a photo for her feed: copy this template text EXACTLY into each concept's brief.sceneTemplate field (character for character - never paraphrase, shorten, or rewrite it; it goes straight to the image model). Then use the OTHER brief fields (outfit, setting, mood, pose) for your member-specific adjustments: her wardrobe, her brand colors, her story. The template is the craft foundation; your brief fields are the personal layer on top.\nGRID DESIGN RULES:\n- KEEP the template's framing and shot type (full body, half body, close-up, seated, walking) - never flatten every shot into the same eye-level portrait.\n- Rotate the scene's vibe across her days WITHIN her feed style world (different rooms, streets, moments, props, energy) so consecutive photos never feel like duplicates - and never default to a generic business portrait.`
@@ -996,7 +1008,11 @@ export async function POST(req: Request) {
             await savePreferredFeedStyle(memoryUserId, feedStyle).catch(() => {})
             logBehavior("suite_feed_style_saved", { feedStyle })
           }
-          if ((postingCadencePerWeek != null || feedStyle) && !brandNote?.trim() && !preference?.trim()) {
+          if (
+            (postingCadencePerWeek != null || feedStyle) &&
+            !brandNote?.trim() &&
+            !preference?.trim()
+          ) {
             return { saved: true }
           }
           const current = await getMemory(memoryUserId)
@@ -1032,11 +1048,23 @@ export async function POST(req: Request) {
         "Quietly save what she just told you about her brand during your get-to-know-you questions: her business, who it's for, her story, her goals. Call it after EACH answer with only the fields she gave - never announce the save. Also saves the name she gives you (agentName) if she names you.",
       inputSchema: z.object({
         name: z.string().optional().describe("Her name, if she shares it."),
-        businessType: z.string().optional().describe("What she does, e.g. 'Pilates studio for new moms'."),
+        businessType: z
+          .string()
+          .optional()
+          .describe("What she does, e.g. 'Pilates studio for new moms'."),
         targetAudience: z.string().optional().describe("Who it's for, in her words."),
-        transformationStory: z.string().optional().describe("Her story: what she was doing before, what changed, in her words."),
-        goals: z.string().optional().describe("What showing up online should get her in the next ~90 days."),
-        futureVision: z.string().optional().describe("The bigger picture she's building toward, if she shares it."),
+        transformationStory: z
+          .string()
+          .optional()
+          .describe("Her story: what she was doing before, what changed, in her words."),
+        goals: z
+          .string()
+          .optional()
+          .describe("What showing up online should get her in the next ~90 days."),
+        futureVision: z
+          .string()
+          .optional()
+          .describe("The bigger picture she's building toward, if she shares it."),
         brandVoice: z.string().optional().describe("How she talks/wants to sound, if it comes up."),
         agentName: z.string().optional().describe("The name she gives YOU, if she names you."),
       }),
@@ -1048,7 +1076,10 @@ export async function POST(req: Request) {
           if (agentName?.trim()) {
             await saveMemory(String(memoryUserId), { agentName: agentName.trim() }).catch(() => {})
           }
-          if (saved) logBehavior("suite_brand_interview_saved", { fields: Object.keys(facts).filter(k => (facts as any)[k]) })
+          if (saved)
+            logBehavior("suite_brand_interview_saved", {
+              fields: Object.keys(facts).filter(k => (facts as any)[k]),
+            })
           return { saved: saved || Boolean(agentName?.trim()) }
         } catch (error) {
           console.error("[app-v3 maya chat] brand profile save failed:", error)
@@ -1057,14 +1088,22 @@ export async function POST(req: Request) {
       },
     })
 
-    const tools = {
-      emit_concepts: emitConcepts,
-      ask_clarify: askClarify,
-      set_format: setFormat,
-      show_feed_plan: showFeedPlan,
-      remember,
-      save_brand_profile: saveBrandProfile,
-    }
+    const tools = generalConversation
+      ? {
+          ask_clarify: askClarify,
+          set_format: setFormat,
+          show_feed_plan: showFeedPlan,
+          remember,
+          save_brand_profile: saveBrandProfile,
+        }
+      : {
+          emit_concepts: emitConcepts,
+          ask_clarify: askClarify,
+          set_format: setFormat,
+          show_feed_plan: showFeedPlan,
+          remember,
+          save_brand_profile: saveBrandProfile,
+        }
 
     const result = streamText({
       model: createMayaOpenRouterModel(mayaChatTask, {
@@ -1269,9 +1308,8 @@ export async function POST(req: Request) {
                   // Persist the failure shape where we can actually read it (analytics_events)
                   // - Vercel runtime logs are gone within the hour and the 2026-07-03 failures
                   // were undiagnosable because only console.error had the payload.
-                  const salvaged = salvageConceptsPayload(
-                    (call as { input?: unknown }).input
-                  )?.concepts.length
+                  const salvaged = salvageConceptsPayload((call as { input?: unknown }).input)
+                    ?.concepts.length
                   logBehavior("suite_concepts_emitted", {
                     format,
                     count,

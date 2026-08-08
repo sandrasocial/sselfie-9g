@@ -136,14 +136,16 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).not.toContain('accept="image/*"')
   })
 
-  it("keeps the server from defaulting unclear requests into photo concepts", () => {
+  it("keeps neutral Maya Home questions out of the creative concept pipeline", () => {
     const route = read("app/api/app-v3/maya/chat/route.ts")
+    const general = read("lib/maya/general-assistant-persona.ts")
 
     expect(route).toContain("normalizeCreationIntent")
-    expect(route).toContain("needsFormatClarification")
-    expect(route).toContain("No output format has been committed yet")
-    expect(route).toContain("Do not assume this is a photo request")
-    expect(route).toContain("Do not call emit_concepts until she chooses")
+    expect(route).toContain("const generalConversation = !committedFormat")
+    expect(route).toContain("getMayaGeneralAssistantPrompt")
+    expect(route).toContain('generalConversation\n      ? "chat_pro"')
+    expect(general).toContain("Answer normal questions directly in conversation")
+    expect(general).toContain("When she clearly asks to make a photo")
   })
 
   it("stores creation intent in local and server draft snapshots", () => {
@@ -173,7 +175,7 @@ describe("Maya-first Suite creation UX", () => {
     expect(shell).not.toContain('"--sselfie-bottom-nav-height"')
     expect(shell).toContain("pb-[calc(4.75rem+env(safe-area-inset-bottom))]")
 
-    expect(shell).toContain('section === "create" || section === "calendar"')
+    expect(shell).toContain('section === "calendar" || (section === "create" && !mayaHomeEnabled)')
     expect(shell).toContain('mayaOpen && mayaUsesSideWorkspace ? "lg:pr-[27rem]"')
     expect(concierge).toContain("h-[94dvh]")
     expect(concierge).not.toContain("h-[62dvh]")

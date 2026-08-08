@@ -181,7 +181,11 @@ export function MayaActionCard({
               type="button"
               onClick={() => {
                 if (directExecute && action.creditCost === 0 && action.canUndo) {
-                  void execute(action)
+                  // Keep the shared lifecycle strict even when the UI intentionally skips
+                  // the visible preview step for free, undoable actions.
+                  const previewed = mayaActionReducer(action, { type: "preview" })
+                  dispatch({ type: "preview" })
+                  void execute(previewed)
                 } else {
                   dispatch({ type: "preview" })
                 }

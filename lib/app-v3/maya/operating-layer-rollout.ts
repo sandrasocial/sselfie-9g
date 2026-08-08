@@ -32,3 +32,14 @@ export function isMayaOperatingLayerEnabled(identity?: MayaOperatingLayerIdentit
 
   return identity?.accessLevel === "full" || identity?.accessLevel === "trial"
 }
+
+/** Maya Home is a narrower founder-preview cohort than the existing operating layer.
+ * The global operating-layer flag must never widen this UI rollout. */
+export function isMayaHomeEnabled(identity?: MayaOperatingLayerIdentity): boolean {
+  const allowlist = normalizedEntries(
+    process.env.MAYA_HOME_ALLOWLIST || process.env.MAYA_OPERATING_LAYER_ALLOWLIST
+  )
+  const email = identity?.email?.trim().toLowerCase()
+  const userId = identity?.userId?.trim().toLowerCase()
+  return Boolean((email && allowlist.has(email)) || (userId && allowlist.has(userId)))
+}

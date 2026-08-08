@@ -10,9 +10,10 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
 
     expect(shell).toContain("const [section, setSection] = useState<AppV3Section>(initialSection)")
-    expect(shell).toContain('if (params.has("view")) return')
+    expect(shell).toContain('if (params.has("view")) {')
     expect(shell).toContain("const stored = readStoredAppSection(initialSection)")
-    expect(shell).toContain('if (initialSection !== "create") return')
+    expect(shell).toContain('if (initialSection !== "create") {')
+    expect(shell).toContain("setSectionReady(true)")
     expect(shell).not.toContain("useState<AppV3Section>(() =>")
   })
 
@@ -93,12 +94,18 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
     expect(uploadRoute).toContain("app-v3/identity-references")
     expect(uploadRoute).toContain("app-v3/inspiration-references")
     expect(libraryRoute).toContain("AND image_type = 'selfie'")
-    expect(libraryRoute).toContain("image_type IN ('three-quarter', 'side-profile', 'full-body', 'inspiration')")
+    expect(libraryRoute).toContain(
+      "image_type IN ('three-quarter', 'side-profile', 'full-body', 'inspiration')"
+    )
     expect(libraryRoute).toContain("extras.threeQuarter")
     expect(types).toContain("inspirationImageUrl?: string | null")
-    expect(types).toContain("Optional extra identity angles (three-quarter, side profile, full body)")
+    expect(types).toContain(
+      "Optional extra identity angles (three-quarter, side profile, full body)"
+    )
     expect(concierge).toContain("inspirationImageUrl: inspirationUrl")
-    expect(concierge).toContain("referenceSelfieUrls: [threeQuarterUrl, sideProfileUrl, fullBodyUrl]")
+    expect(concierge).toContain(
+      "referenceSelfieUrls: [threeQuarterUrl, sideProfileUrl, fullBodyUrl]"
+    )
     expect(generateRoute).toContain("withInspirationReferenceInstruction")
     expect(generateRoute).toContain("body.inspirationImageUrl")
     expect(generateRoute).toContain("const identityReferenceUrls = referenceUrls")

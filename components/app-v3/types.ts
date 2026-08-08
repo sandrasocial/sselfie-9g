@@ -228,6 +228,8 @@ export interface ConciergeContextValue {
   hasSavedSession: boolean
   /** Reopen the current conversation, or start a blank general Maya session if none exists. */
   open: () => void
+  /** Open a deterministic neutral Maya Home while preserving previous tasks for Resume. */
+  openHome: () => void
   /** Start a clean guided Maya thread instead of restoring the active draft. */
   openFresh: (opts?: Pick<OpenConciergeOptions, "referenceSelfieUrl">) => void
   /** Open the drawer WITH the chat-history list showing: "continue" means picking a real

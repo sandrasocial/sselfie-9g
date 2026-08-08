@@ -27,7 +27,12 @@ import { AccountView } from "./account-view"
 import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
 import type { AppV3GalleryAsset } from "@/lib/app-v3/gallery-assets"
 import type { AppV3Section } from "@/lib/app-v3/navigation"
-import { buildStoredSectionHref, readStoredAppSection, saveStoredAppSection } from "./continuity"
+import {
+  buildStoredSectionHref,
+  readStoredAppSection,
+  saveMayaLastActiveTaskId,
+  saveStoredAppSection,
+} from "./continuity"
 import { intentForFormat } from "@/lib/app-v3/maya/intent-router"
 import type { MayaSurface } from "@/lib/app-v3/maya/context-envelope"
 import { PostSuccessReviewPrompt } from "@/components/testimonials/post-success-review-prompt"
@@ -38,6 +43,7 @@ import {
   PlusCircle,
   UserRound,
   LibraryBig,
+  MessageCircle,
   type LucideIcon,
 } from "lucide-react"
 
@@ -66,6 +72,8 @@ export interface AppV3ShellProps {
   videoEnabled?: boolean
   /** Server-owned Phase 0 rollout decision. Inert until the Phase 1 context path exists. */
   mayaOperatingLayerEnabled?: boolean
+  /** Server-owned founder preview. Never inherits the global operating-layer rollout. */
+  mayaHomeEnabled?: boolean
 }
 
 // Nav rename (Sandra, 2026-07-07): Photos -> Gallery, Library -> Learn, and the Content tab
@@ -80,6 +88,45 @@ const NAV: { id: AppV3Section; label: string; icon: LucideIcon }[] = [
   { id: "library", label: "Learn", icon: LibraryBig },
   { id: "account", label: "Account", icon: UserRound },
 ]
+
+function MayaHomeWorkspace() {
+  const { isOpen, session, open, openHome } = useConcierge()
+  const initializedRef = useRef(false)
+  const sessionSurface = session?.mayaContext?.surface
+  const sessionTaskId = session?.mayaContext?.taskId
+  const sessionOutputFormat = session?.outputFormat
+  const sessionCreationIdea = session?.creationIdea
+
+  useEffect(() => {
+    if (initializedRef.current) return
+    const alreadyNeutral =
+      sessionSurface === "create" && !sessionOutputFormat && !sessionCreationIdea
+
+    initializedRef.current = true
+    if (isOpen && alreadyNeutral) return
+    if (alreadyNeutral) {
+      open()
+      return
+    }
+
+    // A specific previous Create task stays in History. Home always opens as a neutral
+    // relationship with Maya, while preserving the member's saved selfie for a later visual ask.
+    if (sessionTaskId && sessionSurface !== "create") {
+      saveMayaLastActiveTaskId(sessionTaskId)
+    }
+    openHome()
+  }, [
+    isOpen,
+    open,
+    openHome,
+    sessionCreationIdea,
+    sessionOutputFormat,
+    sessionSurface,
+    sessionTaskId,
+  ])
+
+  return null
+}
 
 // A general session so Maya can start from a content idea (not a specific look) and still guide.
 const MAYA_GENERAL: Aesthetic = {
@@ -201,8 +248,10 @@ function ShellInner({
   hasTrainedModel = false,
   videoEnabled = true,
   mayaOperatingLayerEnabled = false,
+  mayaHomeEnabled = false,
 }: AppV3ShellProps) {
   const [section, setSection] = useState<AppV3Section>(initialSection)
+  const [sectionReady, setSectionReady] = useState(!mayaHomeEnabled)
   const [galleryFilter, setGalleryFilter] = useState<GalleryFilter>("all")
   const {
     isOpen: mayaOpen,
@@ -218,14 +267,29 @@ function ShellInner({
     (accessLevel === "trial" ? "trial" : accessLevel === "limited" ? "limited" : "member")
 
   useEffect(() => {
-    if (initialSection !== "create") return
+    if (initialSection !== "create") {
+      setSectionReady(true)
+      return
+    }
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search)
-      if (params.has("view")) return
+      if (params.has("view")) {
+        setSectionReady(true)
+        return
+      }
+    }
+    // Maya Home is the default relationship for the founder cohort, including returning
+    // members whose previous visit ended in Calendar or Gallery. Explicit ?view= deep links
+    // above still open the requested destination.
+    if (mayaHomeEnabled) {
+      setSection("create")
+      setSectionReady(true)
+      return
     }
     const stored = readStoredAppSection(initialSection)
     if (stored !== initialSection) setSection(stored)
-  }, [initialSection])
+    setSectionReady(true)
+  }, [initialSection, mayaHomeEnabled])
 
   function goToSection(next: AppV3Section) {
     close()
@@ -233,6 +297,16 @@ function ShellInner({
     saveStoredAppSection(next)
     if (typeof window !== "undefined") {
       window.history.replaceState(null, "", buildStoredSectionHref(next))
+    }
+  }
+
+  // History restores a Calendar task as the active Maya workspace in one action. Other
+  // navigation still uses goToSection and closes Maya; result handoffs close explicitly.
+  function showCalendarAlongsideMaya() {
+    setSection("calendar")
+    saveStoredAppSection("calendar")
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", buildStoredSectionHref("calendar"))
     }
   }
 
@@ -348,11 +422,17 @@ function ShellInner({
     })
   }
 
-  const mayaUsesSideWorkspace = section === "create" || section === "calendar"
+  const mayaUsesSideWorkspace = section === "calendar" || (section === "create" && !mayaHomeEnabled)
+  const nav = mayaHomeEnabled
+    ? NAV.map(item =>
+        item.id === "create" ? { ...item, label: "Maya", icon: MessageCircle } : item
+      )
+    : NAV
 
   return (
     <main
       data-maya-operating-layer={mayaOperatingLayerEnabled ? "enabled" : "legacy"}
+      data-maya-home={mayaHomeEnabled ? "enabled" : "legacy"}
       className={`min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10] transition-[padding] duration-300 [overflow-x:clip] ${
         mayaOpen && mayaUsesSideWorkspace ? "lg:pr-[27rem]" : ""
       }`}
@@ -385,7 +465,7 @@ function ShellInner({
         </div>
       )}
 
-      {vaultMayaIncluded ? <VaultMayaIncludedNotice /> : null}
+      {vaultMayaIncluded && !mayaHomeEnabled ? <VaultMayaIncludedNotice /> : null}
 
       {section === "create" &&
         (limited ? (
@@ -409,6 +489,8 @@ function ShellInner({
               </a>
             </div>
           </div>
+        ) : mayaHomeEnabled && sectionReady ? (
+          <MayaHomeWorkspace />
         ) : (
           <VisualFrontDoor
             firstName={firstName}
@@ -495,22 +577,28 @@ function ShellInner({
         />
       )}
 
-      {!limited && (
+      {!limited && (!mayaHomeEnabled || section !== "create" || mayaOpen) && (
         <MayaConcierge
           operatingLayerEnabled={mayaOperatingLayerEnabled}
+          homeMode={mayaHomeEnabled && section === "create"}
+          firstName={firstName}
           hasTrainedModel={hasTrainedModel}
           analyticsCohort={cohort}
-          onOpenCalendar={() => goToSection("calendar")}
+          onOpenCalendar={
+            mayaHomeEnabled ? showCalendarAlongsideMaya : () => goToSection("calendar")
+          }
           calendarSurfaceActive={section === "calendar"}
         />
       )}
-      {!limited && <MayaFloatingLauncher operatingLayerEnabled={mayaOperatingLayerEnabled} />}
+      {!limited && !(mayaHomeEnabled && section === "create") && (
+        <MayaFloatingLauncher operatingLayerEnabled={mayaOperatingLayerEnabled} />
+      )}
       <PostSuccessReviewPrompt />
 
       {/* Bottom product navigation (text-only, on-brand, thumb-friendly for a phone-first audience) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 w-full max-w-[100dvw] overscroll-x-none border-t border-[#C5C6C8]/50 bg-[#F8FAFA]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur [overflow-x:clip]">
         <div className="mx-auto flex max-w-3xl items-stretch justify-around px-2">
-          {NAV.map(n => {
+          {nav.map(n => {
             const active = n.id === section
             const Icon = n.icon
             return (
@@ -552,6 +640,7 @@ export function AppV3Shell({
   hasTrainedModel,
   videoEnabled,
   mayaOperatingLayerEnabled,
+  mayaHomeEnabled,
 }: AppV3ShellProps) {
   return (
     <ConciergeProvider
@@ -576,6 +665,7 @@ export function AppV3Shell({
         hasTrainedModel={hasTrainedModel}
         videoEnabled={videoEnabled}
         mayaOperatingLayerEnabled={mayaOperatingLayerEnabled}
+        mayaHomeEnabled={mayaHomeEnabled}
       />
     </ConciergeProvider>
   )

@@ -3,8 +3,13 @@ import { AppV3Shell } from "@/components/app-v3/app-v3-shell"
 
 export const dynamic = "force-dynamic"
 
-export default function MayaOperatingLayerE2EPage() {
+export default async function MayaOperatingLayerE2EPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ home?: string }>
+}) {
   if (process.env.PLAYWRIGHT_TEST !== "1") notFound()
+  const params = await searchParams
 
   return (
     <AppV3Shell
@@ -16,6 +21,7 @@ export default function MayaOperatingLayerE2EPage() {
       trialHasSavedSelfie
       primarySelfieUrl="https://example.com/maya-qa-selfie.jpg"
       mayaOperatingLayerEnabled
+      mayaHomeEnabled={params.home !== "0"}
     />
   )
 }

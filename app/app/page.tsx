@@ -19,7 +19,10 @@ import {
 import { isVideoGenerationEnabled } from "@/lib/app-v3/video-flag"
 import type { AppV3AnalyticsCohort } from "@/components/app-v3/types"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
-import { isMayaOperatingLayerEnabled } from "@/lib/app-v3/maya/operating-layer-rollout"
+import {
+  isMayaHomeEnabled,
+  isMayaOperatingLayerEnabled,
+} from "@/lib/app-v3/maya/operating-layer-rollout"
 import { hasStudioMembership } from "@/lib/subscription"
 
 export const metadata = {
@@ -221,6 +224,11 @@ export default async function StudioV3Page({
     email: user.email,
     accessLevel,
   })
+  const mayaHomeEnabled = isMayaHomeEnabled({
+    userId: user.id,
+    email: user.email,
+    accessLevel,
+  })
 
   return (
     <AppV3Shell
@@ -240,6 +248,7 @@ export default async function StudioV3Page({
       trialHasSeenFirstRunStep={trialHasSeenFirstRunStep}
       videoEnabled={isVideoGenerationEnabled()}
       mayaOperatingLayerEnabled={mayaOperatingLayerEnabled}
+      mayaHomeEnabled={mayaHomeEnabled}
     />
   )
 }

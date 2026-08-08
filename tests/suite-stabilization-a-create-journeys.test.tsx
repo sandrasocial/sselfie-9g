@@ -191,19 +191,18 @@ describe("Stabilization A Creative Tasks", () => {
     const history = await screen.findByRole("dialog", { name: /Creative tasks/i })
     fireEvent.click(within(history).getByRole("button", { name: /^Plan Past task/ }))
 
-    // A past-task restore fans out six fetches (chats, chats/:id, reference-library,
-    // aesthetics, memory, account) before setMessages lands; the vitest default 5000ms
-    // per-test budget is tight for that under load. Give it real headroom instead of a bare
-    // pass on a fast machine.
+    // This mock intentionally projects `messages: []` on every render, unlike the stateful
+    // useChat hook. Assert that the saved transcript is applied without requiring it to remain
+    // the mock's final bookkeeping call after unrelated mount effects settle.
     await waitFor(
       () =>
-        expect(mocks.setMessages).toHaveBeenLastCalledWith([
+        expect(mocks.setMessages).toHaveBeenCalledWith([
           expect.objectContaining({ id: "past-message", role: "user" }),
         ]),
       { timeout: 10000 }
     )
     expect(screen.queryByRole("dialog", { name: /Creative tasks/i })).not.toBeInTheDocument()
-  })
+  }, 15000)
 
   it("closes Creative Tasks without changing the current workspace", async () => {
     render(

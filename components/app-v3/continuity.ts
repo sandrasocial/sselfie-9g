@@ -24,6 +24,7 @@ export const APP_SECTION_STORAGE_KEY = "sselfie.appV3.section.v1"
 export const CONCIERGE_STORAGE_KEY = "sselfie.appV3.concierge.v1"
 export const MAYA_DRAFT_STORAGE_KEY = "sselfie.appV3.mayaDraft.v1"
 export const MAYA_TASK_DRAFTS_STORAGE_KEY = "sselfie.appV3.mayaTasks.v1"
+export const MAYA_LAST_ACTIVE_TASK_STORAGE_KEY = "sselfie.maya.last-active-task.v1"
 
 const VALID_SECTIONS: AppV3Section[] = [
   "create",
@@ -110,6 +111,25 @@ function writeJson(key: string, value: unknown) {
   if (typeof window === "undefined") return
   try {
     window.localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    /* storage may be full or disabled */
+  }
+}
+
+export function readMayaLastActiveTaskId(): string | null {
+  if (typeof window === "undefined") return null
+  try {
+    const value = window.localStorage.getItem(MAYA_LAST_ACTIVE_TASK_STORAGE_KEY)
+    return value?.trim() || null
+  } catch {
+    return null
+  }
+}
+
+export function saveMayaLastActiveTaskId(taskId: string) {
+  if (typeof window === "undefined" || !taskId.trim()) return
+  try {
+    window.localStorage.setItem(MAYA_LAST_ACTIVE_TASK_STORAGE_KEY, taskId)
   } catch {
     /* storage may be full or disabled */
   }
@@ -261,10 +281,7 @@ function sanitizeCalendarPostTarget(value: unknown): CalendarPostTarget | null {
       target.requestedAction === "redo_caption" || target.requestedAction === "improve_caption"
         ? target.requestedAction
         : "create",
-    actionPreviousCaption: Object.prototype.hasOwnProperty.call(
-      target,
-      "actionPreviousCaption"
-    )
+    actionPreviousCaption: Object.prototype.hasOwnProperty.call(target, "actionPreviousCaption")
       ? cleanText(target.actionPreviousCaption, 2200)
       : undefined,
     captionActionStatus:
@@ -612,9 +629,8 @@ export function saveMayaTaskDraft(snapshot: ServerMayaDraftSnapshot) {
 
   const retained = Object.entries(drafts)
     .map(([id, value]) => ({ id, snapshot: sanitizeServerMayaDraftSnapshot(value) }))
-    .filter(
-      (entry): entry is { id: string; snapshot: ServerMayaDraftSnapshot } =>
-        Boolean(entry.snapshot)
+    .filter((entry): entry is { id: string; snapshot: ServerMayaDraftSnapshot } =>
+      Boolean(entry.snapshot)
     )
     .sort((a, b) => b.snapshot.savedAt - a.snapshot.savedAt)
     .slice(0, 30)

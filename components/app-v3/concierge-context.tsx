@@ -96,13 +96,13 @@ function createCleanSession({
     mayaContext: context,
     aesthetic,
     outputFormat: options?.format ?? calendarTarget?.plannedFormat ?? null,
-    referenceSelfieUrl:
-      options?.referenceSelfieUrl ?? previous?.referenceSelfieUrl ?? null,
+    referenceSelfieUrl: options?.referenceSelfieUrl ?? previous?.referenceSelfieUrl ?? null,
     videoSourceUrl: options?.videoSourceUrl ?? null,
     inspirationImageUrl: options?.inspirationImageUrl ?? null,
     graphicText: null,
     seedPrompt: options?.seed ?? null,
-    creationIdea: options?.creationIdea ?? (calendarTarget ? calendarCreationIdea(calendarTarget) : null),
+    creationIdea:
+      options?.creationIdea ?? (calendarTarget ? calendarCreationIdea(calendarTarget) : null),
     creationIntent:
       options?.creationIntent ??
       (calendarTarget
@@ -220,43 +220,46 @@ export function ConciergeProvider({
     [activeSurface, claimSessionAuthority, operatingLayerEnabled, workspaceBusy]
   )
 
-  const updateCurrentSession = useCallback((aesthetic: Aesthetic, opts?: OpenConciergeOptions) => {
-    claimSessionAuthority()
-    setSession(prev => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        aesthetic,
-        outputFormat: opts?.format ?? prev.outputFormat,
-        referenceSelfieUrl:
-          opts?.referenceSelfieUrl !== undefined
-            ? opts.referenceSelfieUrl
-            : prev.referenceSelfieUrl,
-        videoSourceUrl:
-          opts?.videoSourceUrl !== undefined ? opts.videoSourceUrl : prev.videoSourceUrl,
-        inspirationImageUrl:
-          opts?.inspirationImageUrl !== undefined
-            ? opts.inspirationImageUrl
-            : prev.inspirationImageUrl,
-        seedPrompt: opts?.seed ?? prev.seedPrompt,
-        creationIntent: opts?.creationIntent ?? prev.creationIntent,
-        shotDirector: opts?.shotDirector ?? prev.shotDirector,
-        generationSource: opts?.generationSource ?? prev.generationSource,
-        initialSetupAction:
-          opts && Object.prototype.hasOwnProperty.call(opts, "initialSetupAction")
-            ? (opts.initialSetupAction ?? null)
-            : prev.initialSetupAction,
-        creationIdea: opts?.creationIdea ?? prev.creationIdea,
-        // Keep the same workspace identity. Normal style/shot choices must never wipe the
-        // visible conversation or generated cards.
-        startedAt: prev.startedAt,
-      }
-    })
-    // Deliberately does NOT open the drawer: every interactive caller already has it open,
-    // and the task-hydration effect calls this while the drawer is CLOSED on /app load —
-    // the unconditional setIsOpen(true) here was the real "stale drawer auto-opens on every
-    // load" bug (2026-07-29 live verification; survived e2a3445f, which only fixed restore).
-  }, [claimSessionAuthority])
+  const updateCurrentSession = useCallback(
+    (aesthetic: Aesthetic, opts?: OpenConciergeOptions) => {
+      claimSessionAuthority()
+      setSession(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          aesthetic,
+          outputFormat: opts?.format ?? prev.outputFormat,
+          referenceSelfieUrl:
+            opts?.referenceSelfieUrl !== undefined
+              ? opts.referenceSelfieUrl
+              : prev.referenceSelfieUrl,
+          videoSourceUrl:
+            opts?.videoSourceUrl !== undefined ? opts.videoSourceUrl : prev.videoSourceUrl,
+          inspirationImageUrl:
+            opts?.inspirationImageUrl !== undefined
+              ? opts.inspirationImageUrl
+              : prev.inspirationImageUrl,
+          seedPrompt: opts?.seed ?? prev.seedPrompt,
+          creationIntent: opts?.creationIntent ?? prev.creationIntent,
+          shotDirector: opts?.shotDirector ?? prev.shotDirector,
+          generationSource: opts?.generationSource ?? prev.generationSource,
+          initialSetupAction:
+            opts && Object.prototype.hasOwnProperty.call(opts, "initialSetupAction")
+              ? (opts.initialSetupAction ?? null)
+              : prev.initialSetupAction,
+          creationIdea: opts?.creationIdea ?? prev.creationIdea,
+          // Keep the same workspace identity. Normal style/shot choices must never wipe the
+          // visible conversation or generated cards.
+          startedAt: prev.startedAt,
+        }
+      })
+      // Deliberately does NOT open the drawer: every interactive caller already has it open,
+      // and the task-hydration effect calls this while the drawer is CLOSED on /app load —
+      // the unconditional setIsOpen(true) here was the real "stale drawer auto-opens on every
+      // load" bug (2026-07-29 live verification; survived e2a3445f, which only fixed restore).
+    },
+    [claimSessionAuthority]
+  )
 
   const openForCalendarPost = useCallback(
     (target: CalendarPostTarget) => {
@@ -530,42 +533,45 @@ export function ConciergeProvider({
     [activeSurface, claimSessionAuthority, operatingLayerEnabled]
   )
 
-  const resetCurrentSession = useCallback((taskId?: string) => {
-    if (workspaceBusy) {
-      setIsOpen(true)
-      return
-    }
-    claimSessionAuthority()
-    if (operatingLayerEnabled) {
-      setSession(previous =>
-        createCleanSession({
-          previous,
-          context: newSurfaceContext(activeSurface, taskId ?? newMayaTaskId()),
-        })
+  const resetCurrentSession = useCallback(
+    (taskId?: string) => {
+      if (workspaceBusy) {
+        setIsOpen(true)
+        return
+      }
+      claimSessionAuthority()
+      if (operatingLayerEnabled) {
+        setSession(previous =>
+          createCleanSession({
+            previous,
+            context: newSurfaceContext(activeSurface, taskId ?? newMayaTaskId()),
+          })
+        )
+        setIsOpen(true)
+        return
+      }
+      setSession(prev =>
+        prev
+          ? {
+              ...prev,
+              outputFormat: null,
+              graphicText: null,
+              seedPrompt: null,
+              creationIntent: null,
+              shotDirector: null,
+              generationSource: null,
+              inspirationImageUrl: null,
+              initialSetupAction: null,
+              creationIdea: null,
+              calendarTarget: null,
+              startedAt: Date.now(),
+            }
+          : prev
       )
       setIsOpen(true)
-      return
-    }
-    setSession(prev =>
-      prev
-        ? {
-            ...prev,
-            outputFormat: null,
-            graphicText: null,
-            seedPrompt: null,
-            creationIntent: null,
-            shotDirector: null,
-            generationSource: null,
-            inspirationImageUrl: null,
-            initialSetupAction: null,
-            creationIdea: null,
-            calendarTarget: null,
-            startedAt: Date.now(),
-          }
-        : prev
-    )
-    setIsOpen(true)
-  }, [activeSurface, claimSessionAuthority, operatingLayerEnabled, workspaceBusy])
+    },
+    [activeSurface, claimSessionAuthority, operatingLayerEnabled, workspaceBusy]
+  )
 
   const setGraphicText = useCallback((spec: GraphicTextSpec) => {
     setSession(prev => (prev ? { ...prev, graphicText: spec } : prev))
@@ -661,8 +667,32 @@ export function ConciergeProvider({
         setIsOpen(true)
       })
     },
-    [activeSurface, claimSessionAuthority, operatingLayerEnabled, session?.referenceSelfieUrl, workspaceBusy]
+    [
+      activeSurface,
+      claimSessionAuthority,
+      operatingLayerEnabled,
+      session?.referenceSelfieUrl,
+      workspaceBusy,
+    ]
   )
+
+  // Maya Home is a deterministic neutral front door. It preserves the member's selfie while
+  // retiring any restored format, seed, target, or stale busy flag; the previous task remains
+  // available through chat history and the visible Resume action.
+  const openHome = useCallback(() => {
+    const startedAt = Date.now()
+    claimSessionAuthority()
+    setWorkspaceBusy(false)
+    setActiveSurfaceState("create")
+    const context = createMayaContextEnvelope({
+      taskId: newMayaTaskId(),
+      job: "create_content",
+      surface: "create",
+      startedAt: new Date(startedAt).toISOString(),
+    })
+    setSession(previous => createCleanSession({ previous, context }))
+    setIsOpen(true)
+  }, [claimSessionAuthority])
 
   const close = useCallback(() => setIsOpen(false), [])
 
@@ -671,29 +701,27 @@ export function ConciergeProvider({
   const [historyRequestId, setHistoryRequestId] = useState(0)
   const openHistory = useCallback(() => {
     claimSessionAuthority()
-    setSession(
-      prev => {
-        if (prev) return prev
-        if (operatingLayerEnabled) {
-          return createCleanSession({ previous: null, context: newSurfaceContext(activeSurface) })
-        }
-        return {
-          aesthetic: GENERAL_MAYA_AESTHETIC,
-          outputFormat: null,
-          referenceSelfieUrl: null,
-          videoSourceUrl: null,
-          inspirationImageUrl: null,
-          graphicText: null,
-          seedPrompt: null,
-          creationIntent: null,
-          shotDirector: null,
-          generationSource: null,
-          initialSetupAction: null,
-          creationIdea: null,
-          startedAt: Date.now(),
-        }
+    setSession(prev => {
+      if (prev) return prev
+      if (operatingLayerEnabled) {
+        return createCleanSession({ previous: null, context: newSurfaceContext(activeSurface) })
       }
-    )
+      return {
+        aesthetic: GENERAL_MAYA_AESTHETIC,
+        outputFormat: null,
+        referenceSelfieUrl: null,
+        videoSourceUrl: null,
+        inspirationImageUrl: null,
+        graphicText: null,
+        seedPrompt: null,
+        creationIntent: null,
+        shotDirector: null,
+        generationSource: null,
+        initialSetupAction: null,
+        creationIdea: null,
+        startedAt: Date.now(),
+      }
+    })
     setIsOpen(true)
     setHistoryRequestId(n => n + 1)
   }, [activeSurface, claimSessionAuthority, operatingLayerEnabled])
@@ -706,7 +734,9 @@ export function ConciergeProvider({
     if (suppressRestore) return
 
     const local = readConciergeSnapshot()
-    if (local) {
+    // Child surfaces can claim a fresh session during their mount effect before this provider
+    // restore effect runs. That explicit choice outranks both local and server snapshots.
+    if (local && !explicitSessionRef.current) {
       restoredSavedAtRef.current = local.savedAt
       const localDraft = readMayaDraftForSession(local.session.startedAt)
       setSession(
@@ -759,6 +789,7 @@ export function ConciergeProvider({
       restoreHistoryTask,
       hasSavedSession,
       open,
+      openHome,
       openFresh,
       openHistory,
       historyRequestId,
@@ -785,6 +816,7 @@ export function ConciergeProvider({
       restoreHistoryTask,
       hasSavedSession,
       open,
+      openHome,
       openFresh,
       openHistory,
       historyRequestId,

@@ -36,6 +36,21 @@ describe("app-v3 Maya intent router", () => {
     expect(detectCreationIntent("I need help").confidence).toBe("needs_clarify")
   })
 
+  it("keeps questions and advice about formats in Maya's neutral conversation", () => {
+    for (const question of [
+      "Can you explain why this photo feels off?",
+      "What makes a carousel work well?",
+      "Help me think through whether video is right for this launch",
+    ]) {
+      const intent = detectCreationIntent(question)
+      expect(intent.format).toBeNull()
+      expect(intent.confidence).toBe("needs_clarify")
+    }
+
+    expect(detectCreationIntent("Can you create a photo for this launch?").format).toBe("photo")
+    expect(detectCreationIntent("Create a three-slide visibility carousel").format).toBe("carousel")
+  })
+
   it("recognizes when the member explicitly asks Maya to choose the format", () => {
     expect(memberDelegatesFormatChoice("I don't know what to post. Maya, choose for me.")).toBe(
       true

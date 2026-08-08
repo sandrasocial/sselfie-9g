@@ -14,10 +14,21 @@ describe("Maya task history hydration", () => {
     ).toBe(true)
   })
 
+  it("treats a Maya Home task created just before workspace mount as brand new", () => {
+    expect(
+      shouldSkipMayaTaskHistoryLookup({
+        taskId: "maya-task-home",
+        sessionStartedAt: 9_998,
+        conciergeMountedAt: 10_000,
+        hasLocalSnapshot: false,
+      })
+    ).toBe(true)
+  })
+
   it("still hydrates restored, Calendar, learning, and locally saved tasks", () => {
     const base = {
       sessionStartedAt: 500,
-      conciergeMountedAt: 1_000,
+      conciergeMountedAt: 10_000,
       hasLocalSnapshot: false,
     }
 

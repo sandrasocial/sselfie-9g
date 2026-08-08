@@ -46,6 +46,28 @@ describe("MayaActionCard", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Done")
   })
 
+  it("executes a free undoable action in one tap without breaking the strict lifecycle", async () => {
+    const onExecute = vi.fn().mockResolvedValue(undefined)
+    const direct = {
+      ...descriptor(),
+      kind: "improve_caption" as const,
+      requiresConfirmation: false,
+    }
+    render(
+      <MayaActionCard
+        descriptor={direct}
+        preview="Improve this caption."
+        onExecute={onExecute}
+        directExecute
+      />
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Rewrite caption" }))
+
+    await waitFor(() => expect(onExecute).toHaveBeenCalledTimes(1))
+    expect(screen.getByRole("status")).toHaveTextContent("Done")
+  })
+
   it("cancels without executing and reports the real credit cost", () => {
     const paid = { ...descriptor(), kind: "create_both" as const, creditCost: 3 }
     const onExecute = vi.fn()

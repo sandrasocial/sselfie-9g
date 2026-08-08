@@ -26,13 +26,7 @@ const PATTERNS: IntentPattern[] = [
   },
   {
     format: "carousel",
-    patterns: [
-      /\bcarousel\b/i,
-      /\bslides?\b/i,
-      /\bteach\s+this\b/i,
-      /\bteach\b/i,
-      /\bhow\s+to\b/i,
-    ],
+    patterns: [/\bcarousel\b/i, /\bslides?\b/i, /\bteach\s+this\b/i, /\bteach\b/i, /\bhow\s+to\b/i],
   },
   {
     format: "photoshoot",
@@ -72,6 +66,21 @@ function normalize(input: string): string {
     .trim()
 }
 
+function isNeutralFormatDiscussion(text: string): boolean {
+  const explicitCreationAction =
+    /\b(create|make|generate|build|design|produce|recreate|animate|turn\s+(?:this|it|that)\s+into)\b/i.test(
+      text
+    )
+  if (explicitCreationAction) return false
+
+  return (
+    /^(can|could|would|will|do|does|did|is|are|should|what|why|how|when|where)\b/i.test(text) ||
+    /\b(explain|understand|analy[sz]e|review|critique|feedback|feels?\s+off|what\s+makes|think\s+through|whether|right\s+for)\b/i.test(
+      text
+    )
+  )
+}
+
 export function memberDelegatesFormatChoice(input: string): boolean {
   const text = normalize(input)
   if (!text) return false
@@ -98,6 +107,11 @@ export function detectCreationIntent(
 ): CreationIntent {
   const text = normalize(input)
   if (!text) return needsClarificationIntent(source)
+
+  // Maya Home is also a general assistant. Mentioning a format while asking for an
+  // explanation or advice must not silently turn the conversation into a creation job.
+  // Explicit verbs such as "create", "make", and "animate" still route immediately.
+  if (isNeutralFormatDiscussion(text)) return needsClarificationIntent(source)
 
   const matches = PATTERNS.filter(group => group.patterns.some(pattern => pattern.test(text))).map(
     group => group.format

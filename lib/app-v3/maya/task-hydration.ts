@@ -4,6 +4,7 @@ type MayaTaskHistoryLookupInput = {
   conciergeMountedAt: number
   hasLocalSnapshot: boolean
 }
+const FRESH_TASK_MOUNT_GRACE_MS = 5_000
 
 /**
  * A Create task born after this concierge mounted cannot have server history yet.
@@ -19,6 +20,8 @@ export function shouldSkipMayaTaskHistoryLookup({
   return (
     !hasLocalSnapshot &&
     taskId.startsWith("maya-task-") &&
-    sessionStartedAt >= conciergeMountedAt
+    // Maya Home intentionally creates the neutral task just before mounting its workspace.
+    // Treat that same-event task as fresh too; it cannot have server history yet.
+    sessionStartedAt >= conciergeMountedAt - FRESH_TASK_MOUNT_GRACE_MS
   )
 }
