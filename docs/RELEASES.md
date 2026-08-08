@@ -1,5 +1,25 @@
 # Completed releases
 
+## 2026-08-08 — Founder-only Maya Home
+
+Made Maya the founder's default SUITE relationship: one above-fold conversation for questions,
+writing, planning, and visual creation, with silent format routing, personalized context, and a
+one-tap resume path for unfinished Calendar, Learn, and Create work. The new Home uses the paid
+quality chat route for ordinary help while preserving the frozen creative system for photos,
+shoots, carousels, stories, covers, and motion. Maya Home has its own allowlist-only gate, so the
+existing global operating-layer cohort keeps its current Create experience. No price, checkout,
+credit, entitlement, subscription, or customer promise changed.
+
+Production proof: feature commit `a2dc238e`, Vercel deployment
+`dpl_HbMob1QkLDfuYqdPyuoffpDzNUsw`, and the exact commit reached Ready on `sselfie.ai` and
+`www.sselfie.ai`. CI typecheck, repository invariants, 1,967 tests with 6 intentionally skipped,
+changed-file lint with zero errors, an optimized production build, diff and formatting checks, and
+28 desktop/mobile Maya browser journeys passed. Live founder QA confirmed personalized neutral
+help, silent photo handoff without generation or credit spend, one-tap resume after reload, a
+390x844 above-fold composer with no horizontal overflow, and zero browser errors. This release is
+ready for founder dogfood; public €97 willingness-to-pay remains unproven pending a seven-day
+target-member comparison against ChatGPT.
+
 ## 2026-08-07 — Prompt Vault proof recovery handoff
 
 Moved the $37 Prompt Vault offer directly behind every copied free prompt on both the five-prompt
