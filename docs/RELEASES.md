@@ -1,5 +1,23 @@
 # Completed releases
 
+## 2026-08-08 — Maya weekly outcome
+
+Made Maya own one repeatable weekly job: she uses the member's current priorities and unfinished
+work to choose one useful idea, format, and remembered visual direction, then carries the same idea
+through the core asset, matching caption, Calendar placement, reload, and one-tap Resume. The phone
+home now leads with “Finish this week's content.” Calendar placement is retry-safe, and the weekly
+funnel is measured. Maya Home remains founder-allowlisted; no price, checkout, credits, entitlement,
+subscription, or current-member rollout changed.
+
+Production proof: feature commit `b3a4e9f5`, Vercel deployment
+`dpl_3KT9fZJRPG9bqUWGayPHXoFQq7ME`, and the exact commit reached Ready on `sselfie.ai` and
+`www.sselfie.ai`. Typecheck, repository invariants, 1,972 tests with 6 intentionally skipped, an
+optimized production build, diff checks, 15 desktop and 15 mobile operating-layer journeys, and
+focused weekly retry/continuity checks passed. Live founder QA confirmed Maya first, the weekly
+action and composer above the fold at 390x844, personalized idea/format/style selection without a
+menu, and zero browser errors. This is ready for founder dogfood; public €97 price-fit remains
+unproven until real members repeatedly prefer the finished weekly outcome to cheaper alternatives.
+
 ## 2026-08-08 — Founder-only Maya Home
 
 Made Maya the founder's default SUITE relationship: one above-fold conversation for questions,
