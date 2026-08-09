@@ -6,6 +6,8 @@ a source for unverified live business metrics.
 ## Current sources
 
 - `../AS-BUILT.md` — stable repository and deployment facts
+- `business/SSELFIE_COMPANY_KERNEL_2026-07-16.md` — current portfolio, commercial strategy, and operating sequence
+- `business/SSELFIE_COMEBACK_EXECUTION_PACK_2026-08-09.md` — bounded 30-day execution pack; not a commercial authority or send approval
 - `brand/SSELFIE_BRAND_CONSTITUTION.md` — purpose and ethical line
 - `brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md` — audience, story, and expertise
 - `brand/SANDRA_VOICE_OS_2026-07-16.md` — current voice

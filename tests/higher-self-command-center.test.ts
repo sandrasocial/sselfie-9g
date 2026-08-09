@@ -46,7 +46,7 @@ function input(overrides: Partial<HigherSelfCommandCenterInput> = {}): HigherSel
 }
 
 describe("Higher Self Command Center", () => {
-  it("turns a quiet 48h sales window into a private partnership move without changing public content", () => {
+  it("keeps a quiet 48h sales window on the approved Prompt Vault comeback instead of drifting", () => {
     const center = buildHigherSelfCommandCenter(
       input({
         money: {
@@ -57,9 +57,10 @@ describe("Higher Self Command Center", () => {
       })
     )
 
-    expect(center.headline).toContain("private-revenue")
-    expect(center.moneyMove.id).toBe("move-private-revenue-pipeline")
-    expect(center.moneyMove.action).toContain("Tutorial Partnership")
+    expect(center.headline).toContain("comeback")
+    expect(center.moneyMove.id).toBe("run-owned-commerce-engine")
+    expect(center.moneyMove.action).toContain("Prompt Vault")
+    expect(center.moneyMove.action).not.toContain("Tutorial Partnership")
     expect(center.offerBridge.title).toBe("Keep private offers private")
     expect(center.storyMove.bridge).toContain("reply PROMPT")
     expect(center.storyMove.bridge).not.toContain("WORK")
@@ -110,7 +111,7 @@ describe("Higher Self Command Center", () => {
     expect(center.moneyMove.id).toBe("legacy-attended-follow-up")
     expect(center.moneyMove.action).toContain("3 existing attended inquiries")
     expect(center.moneyMove.action).not.toContain("before building anything new")
-    expect(center.ceoRule).toContain("Do the money move")
+    expect(center.ceoRule).toContain("One owner, one weekly priority")
   })
 
   it("repairs a checkout bridge when starts have no purchases", () => {

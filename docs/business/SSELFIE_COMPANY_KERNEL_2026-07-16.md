@@ -2,7 +2,7 @@
 
 Status: **CURRENT CONTROLLING BUSINESS AUTHORITY**
 
-Updated: 2026-07-19
+Updated: 2026-08-09
 
 Owner: Sandra
 
@@ -13,6 +13,11 @@ verified from live systems.
 
 Historical files are evidence. They do not silently reactivate an old offer, funnel, campaign, or
 operating model.
+
+If any strategy note, offer map, campaign plan, admin recommendation, generated brief, automation,
+or historical product plan conflicts with this file, this file wins. Technical product contracts
+may define how a protected capability works. They do not decide what SSELFIE currently sells,
+promotes, prioritizes, or treats as commercial proof.
 
 ## The company
 
@@ -28,6 +33,31 @@ Earning power creates choices. Freedom is the destination. AI is not the hero. T
 Sandra is the public voice. Agents may think, challenge, research, recommend, draft, build, verify,
 organize, and prepare. They may not impersonate Sandra, invent proof, promise income, or cross an
 external-action boundary without the required approval.
+
+## Approved comeback architecture
+
+Sandra approved this commercial architecture on 2026-08-09 after a fresh review of live payments,
+audience, product inventory, fulfillment, customer paths, and current external creator-business
+models. It controls the current operating sequence. Quiet sales, a new AI capability, or an agent's
+preferred specialty does not reset it.
+
+The company now develops exactly three connected revenue engines:
+
+1. **Owned-product commerce.** Prompt Vault is the current paid front door. Starter Kit, presets,
+   and existing learning assets support the customer job without becoming a rotating catalog.
+2. **Maya recurring membership.** Maya must repeatedly turn one selfie and one rough idea into one
+   beautiful, personal, usable post with words and a next step. The focused job is validated before
+   a cheaper public tier or broader product scope is introduced.
+3. **Creator media, partnerships, and licensing.** Relevant partnerships, affiliates, usage rights,
+   workshops, and licensing can add leveraged revenue after buyer-specific research. They remain
+   unproven until cleared payment and completed delivery exist.
+
+Broad Maya expansion is paused. Public tier expansion is paused. Current members, prices, discounts,
+credits, access, and historical buyers stay protected.
+
+One owner, one weekly priority. That prevents drift. Agents finish safe preparation and
+implementation. Sandra supplies lived creative judgment and approves the exact outward promise,
+price, send, publication, or relationship message.
 
 ## The current portfolio
 
@@ -98,6 +128,7 @@ mass outreach as a personal message.
 | Offer or capability | Status | Working rule |
 |---|---|---|
 | SSELFIE SUITE | ACTIVE RECURRING PRODUCT | Protect truth, first value, repeat value, and renewal |
+| Vault Maya | LEGACY PAID TIER / MAYA CAPABILITY | Preserve every current buyer's billing, credits, access, gallery, cancellation path, and fulfillment. No new separate-product growth routing during the 30-day lock. |
 | Prompt Vault / Starter Kit / presets | ACTIVE COMMERCE BASE | Useful entry products, not the whole company |
 | Tutorial Partnership | UNPROVEN BACKGROUND PIPELINE | Monitor existing conversations; no default routing |
 | Visibility Partner | UNVALIDATED HYPOTHESIS | Explore only with a real buyer job and bounded delivery evidence |
@@ -106,6 +137,103 @@ mass outreach as a personal message.
 | One Selfie Visibility Bundle | CLOSED EVENT | Preserve buyer access and evidence |
 | Your Next Campaign | DORMANT CAPABILITY | Public path stays fail-closed; preserve private paid fulfillment |
 | New idea | EXPLORATION UNTIL DECIDED | May be researched and proposed; no silent build, price, or launch |
+
+## Product and IP inventory
+
+| Asset | Status | Current job |
+|---|---|---|
+| Free AI prompt library and 2 published prompt guides | **Free acquisition / bridge** | Teach one useful result, then bridge naturally to the paid Prompt Vault |
+| Free Selfie Guide | **Free acquisition / bridge** | Bring phone-photo and selfie learners into the Starter Kit path |
+| Prompt Vault | **Sell now** | Proven paid entry and complete-shoot visual proof |
+| Starter Kit | **Sell now** | Better source selfies, posing, captions, and first-week activation |
+| Presets | **Sell now / support** | Fast phone editing and a natural tutorial-led purchase |
+| Masterclass bundle | **Include in Maya Pro / preserve buyer access** | Container for Branded by SSELFIE and Editing Masterclass; no separate relaunch now |
+| Branded by SSELFIE | **Include in Maya Pro / refresh later** | Fourteen lessons used as just-in-time brand, message, and content guidance |
+| Editing Masterclass | **Include in Maya Pro / refresh later** | Six lessons used as just-in-time editing and finishing guidance |
+| Selfie to Brand Shoot System | **Include in Maya Pro / hold as public lead offer** | Guided first-shoot support and member activation, not the current paid front door |
+| Brand Strategy tool | **Include in Maya Pro / support** | Structured intake and strategy support, not a separate current growth campaign |
+| Visibility workbook trio: What to Say, Show Up, Get Paid | **Include in Maya Pro / hold standalone** | On-demand workbook support inside the recurring customer job |
+| Maya and SUITE | **Validate focused job** | Recurring finished-post outcome and continuity |
+| One Selfie Visibility Bundle | **Closed** | Preserve buyers and evidence; do not silently reactivate |
+| Vault Maya separate product | **Hold** | Preserve buyers; do not promote as another product while Maya membership is validated |
+| Your Next Campaign | **Dormant** | Preserve paid fulfillment; founder-capacity promise is not a scale path |
+| Work With Me / Visibility To Paid | **Legacy, attended only** | Fulfill commitments; do not route unattended public demand here |
+| Selfie AI Photos Kit | **Hold challenger** | Test only against the proven Prompt Vault path when evidence justifies it |
+| Templates, monthly drops, and Academy support assets | **Include / merchandise behind the job** | Increase member activation and retention without becoming separate launches |
+| New product idea | **Explore only** | Build only when a measured customer job is missing |
+
+## 30-day execution sequence
+
+### Days 1-3 — lock and prepare
+
+- Reconcile the human and machine Company Kernel.
+- Protect live prices, access, credits, subscriptions, and historical buyers.
+- Complete the product inventory above and retire conflicting agent instructions.
+- Repair aggregate revenue reporting so it exposes no customer identity and invents no MRR.
+- Prepare one founder approval pack instead of separate reviews.
+
+### Days 4-10 — activate owned commerce
+
+- Use one approved transformation or tutorial as the campaign source.
+- Prepare the Reel, Story sequence, sales email sequence, landing and checkout links, attribution,
+  and fulfillment checks around Prompt Vault.
+- Keep all outward copy in one approval pack. Nothing schedules or publishes itself.
+- Measure tutorial or DM or email -> Vault view -> checkout start -> qualifying payment -> access open.
+
+### Days 11-21 — run the bounded Maya value test
+
+- Reconcile the eligible cohort immediately before approval.
+- Invite no more than 20 qualified commerce buyers without active protected access.
+- Keep the existing EUR 97 monthly price for the first value test.
+- Measure purchase -> Maya start -> finished post -> useful export or Calendar placement -> second
+  outcome within ten days.
+- Do not introduce a public Essential tier or annual campaign during this test.
+
+Success means at least three qualifying monthly purchases, two publish-ready first outcomes within
+48 hours, and two second outcomes within ten days. If women repeat the job but standard-price
+purchase resistance remains, a controlled Essential tier can be tested next. If they do not repeat,
+fix the recurring job before changing price.
+
+### Days 1-30 — prepare leveraged opportunity
+
+- Build a small, qualified partnership, affiliate, and licensing pipeline.
+- Prepare one reusable proof page, rate and rights logic, and buyer-specific drafts.
+- Sandra approves each real relationship message before it is sent.
+
+### Day 30 — decide from cleared evidence
+
+- Repeat the commerce campaign, repair it, or replace its message.
+- Keep EUR 97 only, test an Essential tier, or keep improving the Maya job.
+- Advance, hold, or stop the partnership lane.
+- Choose the next single weekly priority. Do not open a fourth engine.
+
+## AI takeover contract
+
+The AI team owns research, live aggregate checks, inventory, campaign assembly, segmentation logic,
+drafts, pages, links, QA, measurement, issue capture, retesting, documentation, and the weekly
+recommendation. It returns one decision pack, not a stream of technical questions.
+
+Sandra does not manage code, databases, queues, agents, dashboards, test suites, or strategy
+documents. Sandra owns the source thought or video, aesthetic judgment, real relationships, and the
+exact approval of an outward promise, price, send, publication, charge, or refund.
+
+If an action does not need Sandra's identity, legal authority, customer promise, or aesthetic
+judgment, the team finishes it before reporting back.
+
+## Weekly Revenue Operator contract
+
+The operator reports only:
+
+1. Cleared money by currency and product.
+2. The one largest leak between attention and payment or between payment and repeat value.
+3. The one action the AI team completed.
+4. The one current weekly priority.
+5. At most one Sandra approval, only when an outward action is ready.
+
+Unavailable data is labeled unavailable, never zero. Analytics is behavior evidence; Stripe or
+qualifying `stripe_payments` is money truth. No customer identity appears in the report. The prior
+weekly priority remains active until its review date, success, failure, or a customer or money
+safety incident overrides it.
 
 ## The AI company team
 

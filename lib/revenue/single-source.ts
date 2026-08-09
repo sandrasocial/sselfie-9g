@@ -146,6 +146,11 @@ async function fetchSingleSourceMetrics(): Promise<SingleSourceRevenueMetrics> {
   }
 }
 
+/** Live read-only path for deterministic operator reports. Never reads or writes app cache. */
+export async function getSingleSourceRevenueMetricsReadOnly(): Promise<SingleSourceRevenueMetrics> {
+  return fetchSingleSourceMetrics()
+}
+
 export async function getSingleSourceRevenueMetrics(): Promise<SingleSourceRevenueMetrics> {
   const cached = await getCache<SingleSourceRevenueMetrics>(CACHE_KEY)
   if (cached) {

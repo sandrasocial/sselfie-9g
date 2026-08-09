@@ -262,36 +262,20 @@ async function auditRevenueSources() {
     console.log('   ERROR:', error.message)
   }
   
-  // 7. Revenue breakdown by source
-  console.log('\n7. REVENUE BREAKDOWN (estimated):')
-  try {
-    // Note: We can't calculate exact revenue without Stripe API, but we can estimate
-    // This assumes $29/month for subscriptions and estimates based on credits for purchases
-    const activeSubs = await sql`
-      SELECT COUNT(*) as count
-      FROM subscriptions
-      WHERE status = 'active'
-        AND (is_test_mode = FALSE OR is_test_mode IS NULL)
-    `
-    
-    const mrr = activeSubs[0].count * 29 // Assuming $29/month
-    console.log(`   Monthly Recurring Revenue (MRR): $${mrr} (${activeSubs[0].count} active subscriptions × $29)`)
-    console.log(`   Note: One-time revenue requires Stripe API integration for exact amounts`)
-  } catch (error: any) {
-    console.log('   ERROR:', error.message)
-  }
+  // 7. Revenue truth boundary
+  console.log('\n7. REVENUE TRUTH BOUNDARY:')
+  console.log('   MRR is unavailable from credit_transactions. Use the live Stripe subscription audit.')
+  console.log('   One-time money truth comes from qualifying stripe_payments, not credit estimates.')
   
   // 8. Users who bought but don't have subscriptions
   console.log('\n8. USERS WHO BOUGHT ONE-TIME BUT NO SUBSCRIPTION:')
   try {
     const oneTimeOnly = await sql`
-      SELECT 
+      SELECT
         ct.user_id,
-        u.email,
         COUNT(ct.id) as purchase_count,
         SUM(ct.amount) as total_credits_purchased
       FROM credit_transactions ct
-      INNER JOIN users u ON u.id = ct.user_id
       WHERE ct.transaction_type = 'purchase'
         AND ct.stripe_payment_id IS NOT NULL
         AND (ct.is_test_mode = FALSE OR ct.is_test_mode IS NULL)
@@ -301,16 +285,15 @@ async function auditRevenueSources() {
           AND s.status = 'active'
           AND (s.is_test_mode = FALSE OR s.is_test_mode IS NULL)
         )
-      GROUP BY ct.user_id, u.email
+      GROUP BY ct.user_id
       ORDER BY purchase_count DESC
       LIMIT 10
     `
     console.log(`   Found ${oneTimeOnly.length} users who bought one-time but have no active subscription`)
     if (oneTimeOnly.length > 0) {
-      console.log('   Top examples:')
-      oneTimeOnly.slice(0, 5).forEach((row: any) => {
-        console.log(`   - ${row.email}: ${row.purchase_count} purchase(s), ${row.total_credits_purchased} credits`)
-      })
+      const purchases = oneTimeOnly.reduce((sum: number, row: any) => sum + Number(row.purchase_count || 0), 0)
+      const credits = oneTimeOnly.reduce((sum: number, row: any) => sum + Number(row.total_credits_purchased || 0), 0)
+      console.log(`   Aggregate top-cohort activity: ${purchases} purchase(s), ${credits} credits`)
     }
   } catch (error: any) {
     console.log('   ERROR:', error.message)

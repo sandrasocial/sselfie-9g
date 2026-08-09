@@ -1,7 +1,4 @@
-import {
-  SSELFIE_COMPANY_KERNEL_PATH,
-  SSELFIE_REVENUE_PORTFOLIO,
-} from "@/lib/business/company-kernel"
+import { SSELFIE_COMPANY_KERNEL_PATH } from "@/lib/business/company-kernel"
 
 export type HigherSelfCommandLink = {
   label: string
@@ -133,12 +130,12 @@ function buildMoneyMove(input: HigherSelfCommandCenterInput): HigherSelfCommandM
 
   if (moneyQuiet(input)) {
     return {
-      id: "move-private-revenue-pipeline",
-      title: "Move the private revenue pipeline",
-      action: `Move the active ${SSELFIE_REVENUE_PORTFOLIO.media.currentOffer} and ${SSELFIE_REVENUE_PORTFOLIO.ip.currentOffer} pipeline: follow up approved buyers, prepare the next buyer-specific proposals, and record replies. Do not turn public content into a brand pitch.`,
-      reason: "With 0 payments in the last 48 hours, the fastest credible cash path is the approved private media and IP pipeline—not another low-ticket build.",
+      id: "run-owned-commerce-engine",
+      title: "Keep the comeback on its proven front door",
+      action: "Move the coordinated Prompt Vault campaign forward: one useful visual tutorial, one complete-shoot result and one clear $37 next step. Do not open another product build.",
+      reason: "Prompt Vault has current paid demand and automatic fulfillment. Quiet sales are a reason to improve the connected campaign, not reset the company strategy.",
       source: `stripe_payments + ${SSELFIE_COMPANY_KERNEL_PATH}`,
-      link: { label: "Stay in the command center", href: "/admin" },
+      link: { label: "Open content", href: "/admin/content-brief" },
     }
   }
 
@@ -277,17 +274,17 @@ export function buildHigherSelfCommandCenter(
     categoryLock: CATEGORY_LOCK,
     coreLock: CORE_LOCK,
     headline: quiet
-      ? "Today is a private-revenue and customer-trust day."
+      ? "Today is a comeback execution and customer-trust day."
       : "Today is a focused money-and-message day.",
     truth: quiet
-      ? "When sales are quiet, move the approved private media and IP pipeline while public content keeps building expertise and trust."
-      : "Keep each revenue engine pointed at its own buyer: money truth, private pipeline, public expertise, and customer retention.",
+      ? "Quiet sales do not reset the plan. Improve the proven commerce bridge, protect customers and keep Maya validation separate from public tier expansion."
+      : "Keep the three approved engines connected: owned commerce creates buyers, Maya earns repeat use, and media or licensing adds leveraged upside.",
     moneyMove: buildMoneyMove(input),
     storyMove: buildStoryMove(input),
     offerBridge: buildOfferBridge(input),
     followUpMove: buildFollowUpMove(input),
     systemMove: buildSystemMove(input),
     ceoRule:
-      "Do the money move before opening a new build thread. One story, one offer bridge, one follow-up loop, one system improvement.",
+      "One owner, one weekly priority. Finish the approved money move before opening another product, campaign or strategy thread.",
   }
 }
