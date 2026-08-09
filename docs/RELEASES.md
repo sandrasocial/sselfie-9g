@@ -639,3 +639,18 @@ Production proof: feature commit `c76c9c7e`, encryption commit `987a00ca`, final
 typecheck, invariants, production build, and 1,984 tests with 6 intentional skips. Authenticated live
 QA passed report capture, context, encrypted storage, queue state, a decrypted 1280x720 attachment,
 desktop and 390px mobile usability, and zero runtime errors on the final deployment.
+
+## 2026-08-09 — Cool SUITE depth
+
+Added a cool porcelain, smoke, mist, steel, slate, and graphite depth layer across Maya, Gallery,
+Calendar, Learn, Account, and the shared navigation. The SUITE keeps its quiet editorial restraint,
+but large white surfaces now separate clearly through cool tonal bands, stronger borders, selected
+navigation, and restrained shadows. No access, entitlement, credit, price, payment, or rollout
+behavior changed.
+
+Why: founder testing showed that the approved minimal interface had become too flat and
+black-and-white across the whole SUITE. Production proof: feature commit `61ae562d`, exact Ready
+Vercel deployment `dpl_81GrJnh867MrEmd9iiBAqcTTcbvS`, CI typecheck, repository invariants, changed-file
+lint with zero errors, a successful Turbopack production build, and 1,986 passing tests with 6
+intentional skips. Authenticated live QA loaded all five SUITE tabs on desktop and at 390px with the
+new cool palette, no horizontal overflow, and no framework error overlay.
