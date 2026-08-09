@@ -122,7 +122,7 @@ const MayaFounderTestMode = dynamic(
 )
 
 const WEEKLY_VISIBILITY_PACKAGE_REQUEST =
-  "Help me finish one useful piece of content for this week. Use what you know about my current priorities and unfinished work. Choose the strongest idea, format, and visual direction for me. Ask only one question if it would materially change the result."
+  "Help me create one finished post I can publish. Start with one of my saved selfies and use what you know about my current priority or unfinished work. Choose one strong idea, the format, and a SSELFIE visual direction for me. Include the words I need so the result is ready to use. Ask only one question if it would materially change the post."
 
 function isWeeklyVisibilityPackage(messages: any[]): boolean {
   return messages.some(message => {
@@ -131,7 +131,8 @@ function isWeeklyVisibilityPackage(messages: any[]): boolean {
       (part: any) =>
         part?.type === "text" &&
         typeof part.text === "string" &&
-        part.text.includes("finish one useful piece of content for this week")
+        (part.text.includes("create one finished post I can publish") ||
+          part.text.includes("finish one useful piece of content for this week"))
     )
   })
 }
@@ -5219,30 +5220,13 @@ export function MayaConcierge({
                         className="group min-h-20 w-full rounded-[8px] border border-[#0D0E10]/20 bg-[#F8FAFA] px-4 py-3.5 text-left transition-colors hover:border-[#0D0E10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10] disabled:opacity-40"
                       >
                         <span className="block font-serif text-[20px] font-light leading-tight text-[#0D0E10]">
-                          Finish this week&apos;s content
+                          Create my next post
                         </span>
                         <span className="mt-1.5 block text-[12px] leading-relaxed text-[#4F5052]">
-                          Maya chooses one useful idea and turns it into something ready to use.
+                          One selfie. One idea. One finished post. Maya chooses the visual direction
+                          and writes the words.
                         </span>
                       </button>
-                      <div className="flex flex-wrap gap-2" aria-label="Ways Maya can help">
-                        {[
-                          "What should I focus on today?",
-                          "Help me write something",
-                          "Create a photo",
-                          "Plan what I should post",
-                        ].map(suggestion => (
-                          <button
-                            key={suggestion}
-                            type="button"
-                            onClick={() => sendHomeSuggestion(suggestion)}
-                            disabled={isThinking}
-                            className="min-h-11 rounded-full border border-[#C5C6C8]/70 bg-[#F8FAFA] px-3.5 py-2 text-left text-[12px] leading-snug text-[#4F5052] transition-colors hover:border-[#0D0E10]/40 hover:text-[#0D0E10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10] disabled:opacity-40"
-                          >
-                            {suggestion}
-                          </button>
-                        ))}
-                      </div>
                     </div>
                   )}
                 </div>

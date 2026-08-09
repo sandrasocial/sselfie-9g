@@ -251,7 +251,10 @@ function ShellInner({
   mayaHomeEnabled = false,
 }: AppV3ShellProps) {
   const [section, setSection] = useState<AppV3Section>(initialSection)
-  const [sectionReady, setSectionReady] = useState(!mayaHomeEnabled)
+  // The server already resolved both the requested section and the Maya Home cohort.
+  // Render that known Home immediately so returning members never flash the retired
+  // Visual Front Door while client-side storage reconciliation runs.
+  const [sectionReady, setSectionReady] = useState(true)
   const [galleryFilter, setGalleryFilter] = useState<GalleryFilter>("all")
   const {
     isOpen: mayaOpen,
@@ -283,6 +286,7 @@ function ShellInner({
     // above still open the requested destination.
     if (mayaHomeEnabled) {
       setSection("create")
+      saveStoredAppSection("create")
       setSectionReady(true)
       return
     }

@@ -41,7 +41,11 @@ if (!runPlaywright) {
       }
       page.on("pageerror", (error: Error) => browserErrors.push(error.message))
       page.on("console", (message: any) => {
-        if (message.type() === "error") browserErrors.push(message.text())
+        const text = message.text()
+        const isSentryTransportNoise =
+          text.startsWith("Sentry Logger [error]: Encountered error running transport request") ||
+          text.startsWith("Sentry Logger [error]: Error while sending envelope")
+        if (message.type() === "error" && !isSentryTransportNoise) browserErrors.push(text)
       })
       const posts = Array.from({ length: 9 }, (_, index) => {
         const position = index + 1
@@ -547,13 +551,14 @@ if (!runPlaywright) {
         (viewport?.height ?? 0) - 55
       )
 
-      await page.getByRole("button", { name: "What should I focus on today?" }).click()
+      await composer.fill("What should I focus on today?")
+      await page.getByRole("button", { name: "Send", exact: true }).click()
       await expect(page.getByText("Maya QA response for the Create task.")).toBeVisible()
       await page.getByRole("button", { name: "Menu" }).click()
       await expect(page.getByRole("button", { name: "What Maya knows" })).toBeVisible()
     })
 
-    test("turns the weekly outcome into one Maya-decided creation path", async ({
+    test("turns the next-post outcome into one Maya-decided creation path", async ({
       page,
     }: {
       page: any
@@ -561,18 +566,19 @@ if (!runPlaywright) {
       await (page as any).__enableMayaCarouselJourney()
       const maya = page.locator("aside[data-maya-task-id]")
 
-      await page.getByRole("button", { name: "Finish this week's content" }).click()
+      await page.getByRole("button", { name: "Create my next post" }).click()
 
       await expect(
-        page.getByText(/help me finish one useful piece of content for this week/i)
+        page.getByText(/help me create one finished post i can publish/i)
       ).toBeVisible()
       await expect(maya).toHaveAttribute("data-maya-format", "carousel")
       await expect(page.getByText("Choose your style")).toHaveCount(0)
       await expect(page.getByText("Three-part visibility carousel")).toBeVisible()
 
       await page.getByRole("button", { name: /Create this · 3 credits/i }).click()
-      await expect(page.getByText("Core piece ready")).toBeVisible()
-      await expect(page.getByText(/Add it to your plan for the caption/i)).toBeVisible()
+      await expect(page.getByRole("button", { name: "Add to my plan" })).toBeVisible()
+      await expect(page.getByRole("button", { name: /Turn this into Stories/i })).toHaveCount(0)
+      await expect(page.getByText("More things Maya can make")).toHaveCount(0)
       await page.getByRole("button", { name: "Add to my plan" }).click()
       await expect(page.getByText(/In your plan · Post 7/i)).toBeVisible()
       await expect(
@@ -591,7 +597,9 @@ if (!runPlaywright) {
       await page.waitForTimeout(900)
       await page.goto("/e2e/maya-operating-layer", { waitUntil: "domcontentloaded" })
       const resume = page.getByRole("button", { name: /Resume/i })
-      await expect(resume).toBeVisible()
+      // A cold local Next compile can finish hydration after the default 5s assertion window.
+      // Production serves the built bundle; keep the journey strict while allowing dev startup.
+      await expect(resume).toBeVisible({ timeout: 15_000 })
       await resume.click()
       await expect(maya).toHaveAttribute("data-maya-format", "carousel")
       await expect(page.getByText(/In your plan · Post 7/i)).toBeVisible()

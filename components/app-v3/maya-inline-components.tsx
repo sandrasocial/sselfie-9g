@@ -474,6 +474,8 @@ export function InlineResultActions({
   ) => void
   onOpenCalendar?: () => void
 }) {
+  if (weeklyPackage) return null
+
   const campaignComplete =
     format === "story-sequence" &&
     completedFormats.includes("photo") &&
@@ -515,15 +517,13 @@ export function InlineResultActions({
   return (
     <div className="rounded-[8px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3.5">
       <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-gray)]">
-        {weeklyPackage ? "Your weekly package" : "Maya recommends next"}
+        Maya recommends next
       </p>
       <p className="mt-1.5 font-serif text-[19px] font-light leading-tight text-[color:var(--ss-night)]">
-        {weeklyPackage ? "Core piece ready" : recommendation.label}
+        {recommendation.label}
       </p>
       <p className="mt-1 text-[12px] leading-relaxed text-[color:var(--ss-davy)]">
-        {weeklyPackage
-          ? `Add it to your plan for the caption. Then, if it helps, Maya can ${recommendation.label.toLowerCase()}.`
-          : recommendation.reason}
+        {recommendation.reason}
       </p>
       <button
         type="button"
