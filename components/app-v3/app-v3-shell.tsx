@@ -433,7 +433,7 @@ function ShellInner({
     <main
       data-maya-operating-layer={mayaOperatingLayerEnabled ? "enabled" : "legacy"}
       data-maya-home={mayaHomeEnabled ? "enabled" : "legacy"}
-      className={`min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10] transition-[padding] duration-300 [overflow-x:clip] ${
+      className={`suite-canvas min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10] transition-[padding] duration-300 [overflow-x:clip] ${
         mayaOpen && mayaUsesSideWorkspace ? "lg:pr-[27rem]" : ""
       }`}
     >
@@ -596,7 +596,7 @@ function ShellInner({
       <PostSuccessReviewPrompt />
 
       {/* Bottom product navigation (text-only, on-brand, thumb-friendly for a phone-first audience) */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 w-full max-w-[100dvw] overscroll-x-none border-t border-[#C5C6C8]/50 bg-[#F8FAFA]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur [overflow-x:clip]">
+      <nav className="suite-bottom-nav fixed inset-x-0 bottom-0 z-40 w-full max-w-[100dvw] overscroll-x-none border-t border-[#C5C6C8]/50 bg-[#F8FAFA]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur [overflow-x:clip]">
         <div className="mx-auto flex max-w-3xl items-stretch justify-around px-2">
           {nav.map(n => {
             const active = n.id === section
@@ -608,8 +608,10 @@ function ShellInner({
                 onClick={() => (n.id === "photos" ? openGallery("all") : goToSection(n.id))}
                 aria-current={active ? "page" : undefined}
                 aria-label={n.label}
-                className={`flex min-h-[60px] flex-1 flex-col items-center justify-center gap-1 px-0.5 py-1.5 text-[10px] font-medium transition-colors ${
-                  active ? "text-[#0D0E10]" : "text-[#4F5052] hover:text-[#282728]"
+                className={`suite-bottom-nav-item flex min-h-[60px] flex-1 flex-col items-center justify-center gap-1 px-0.5 py-1.5 text-[10px] font-medium transition-colors ${
+                  active
+                    ? "suite-bottom-nav-item--active text-[#0D0E10]"
+                    : "text-[#4F5052] hover:text-[#282728]"
                 }`}
               >
                 <Icon size={21} strokeWidth={active ? 2.2 : 1.7} aria-hidden="true" />

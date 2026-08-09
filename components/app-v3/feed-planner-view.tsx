@@ -126,7 +126,7 @@ export function FeedPlannerView({
 
   return (
     <FeedNavContext.Provider value={nav}>
-      <div className="min-h-[calc(100dvh-3.5rem)] bg-[#F8FAFA] pb-24">
+      <div className="suite-page min-h-[calc(100dvh-3.5rem)] bg-[#F8FAFA] pb-24">
         {/* The Instagram canvas is the Calendar front door. Guidance stays contextual inside Maya. */}
         <FeedPlannerClient />
       </div>

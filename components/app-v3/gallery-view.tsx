@@ -265,7 +265,7 @@ const AssetTile = memo(function AssetTile({
   const title = safeAssetTitle(asset)
   return (
     <div
-      className={`group relative overflow-hidden rounded-[6px] border bg-[#F1F2F2] transition-shadow ${
+      className={`suite-card group relative overflow-hidden rounded-[6px] border bg-[#F1F2F2] transition-shadow ${
         selected ? "border-[#0D0E10] ring-1 ring-[#0D0E10]" : "border-[#C5C6C8]/50"
       }`}
     >
@@ -682,7 +682,7 @@ export function GalleryView({
     filteredAssets.length > 0 && selectedIds.size >= filteredAssets.length
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-5 sm:py-8">
+    <div className="suite-page mx-auto max-w-3xl px-4 py-6 sm:px-5 sm:py-8">
       <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Photos</p>

@@ -4477,7 +4477,7 @@ export function MayaConcierge({
         }
         className={
           homeMode
-            ? "pointer-events-auto relative flex h-full w-full min-w-0 max-w-[58rem] flex-col overflow-hidden border-x border-[#C5C6C8]/40 bg-[#F8FAFA] shadow-[0_18px_65px_rgba(13,14,16,0.06)] sm:rounded-[18px] sm:border"
+            ? "suite-maya-panel pointer-events-auto relative flex h-full w-full min-w-0 max-w-[58rem] flex-col overflow-hidden border-x border-[#C5C6C8]/40 bg-[#F8FAFA] shadow-[0_18px_65px_rgba(13,14,16,0.06)] sm:rounded-[18px] sm:border"
             : "pointer-events-auto relative flex h-[94dvh] w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden rounded-t-[18px] border border-[#C5C6C8]/55 bg-[#F8FAFA] shadow-[0_-18px_60px_rgba(13,14,16,0.16)] animate-in slide-in-from-bottom-4 duration-300 ease-out motion-reduce:animate-none lg:h-[100dvh] lg:w-[27rem] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-[-18px_0_60px_rgba(13,14,16,0.10)] lg:slide-in-from-right"
         }
       >
@@ -5177,7 +5177,7 @@ export function MayaConcierge({
               {/* Static opener */}
               <div className="flex min-w-0 max-w-full items-end gap-2">
                 <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
-                <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728] [overflow-wrap:anywhere] sm:max-w-[80%]">
+                <div className="suite-card min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728] [overflow-wrap:anywhere] sm:max-w-[80%]">
                   <p>
                     {generalHomeConversation
                       ? "I'm here."

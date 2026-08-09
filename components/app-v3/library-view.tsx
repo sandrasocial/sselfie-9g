@@ -161,7 +161,7 @@ function recommendationFor(data: LibraryData, goal: LearnGoal): LearnRecommendat
   return null
 }
 
-const card = "rounded-[8px] border border-[#C5C6C8]/60 bg-white"
+const card = "suite-card rounded-[8px] border border-[#C5C6C8]/60 bg-white"
 
 function ProductTile({
   title,
@@ -379,7 +379,7 @@ export function LibraryView({
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-7 px-4 py-6 sm:px-5 sm:py-8">
+    <div className="suite-page mx-auto max-w-3xl space-y-7 px-4 py-6 sm:px-5 sm:py-8">
       <header>
         <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Library</p>
         <h1 className="mt-2 font-serif text-[30px] font-light leading-tight text-[#0D0E10]">
@@ -409,7 +409,7 @@ export function LibraryView({
         <>
           <section
             aria-labelledby="maya-coach-title"
-            className="overflow-hidden rounded-[14px] border border-[#C5C6C8]/65 bg-white shadow-[0_12px_35px_rgba(13,14,16,.05)]"
+            className="suite-card overflow-hidden rounded-[14px] border border-[#C5C6C8]/65 bg-white shadow-[0_12px_35px_rgba(13,14,16,.05)]"
           >
             <div className="border-b border-[#C5C6C8]/45 p-4 sm:p-5">
               <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">

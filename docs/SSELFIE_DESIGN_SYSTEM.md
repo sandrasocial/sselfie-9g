@@ -1,6 +1,6 @@
 # SSELFIE Design System
 
-Last updated: 2026-05-21
+Last updated: 2026-08-09
 
 This is the official design authority for SSELFIE product UI, public pages, lifecycle emails, and future Codex implementation work.
 
@@ -54,6 +54,20 @@ Approved base:
 - Davy's Gray `#4F5052`
 - Raisin Black `#282728`
 - Night `#0D0E10`
+
+Approved Studio 3.0 depth layer (Sandra, 2026-08-09):
+
+- Cool Porcelain `#F4F7F8` — primary app canvas
+- Paper `#FCFDFD` — elevated cards and conversation surfaces
+- Cool Smoke `#E3E8EB` — secondary sections and inset panels
+- Mist `#D7E0E5` — selected navigation and stronger tonal bands
+- Steel `#AEB9C1` — visible borders and frames
+- Slate `#5D6A73` — cool-toned labels and secondary contrast
+- Graphite `#252C31` — body and premium anchor contrast
+
+These Studio colors add depth through tonal bands, frames, and restrained shadows. They stay cool
+and desaturated. Do not reinterpret them as blue feature colors, gradients, warm taupe, beige, or a
+colorful dashboard. Existing Night CTAs and light editorial image-first layouts remain the anchor.
 
 Use Night/Raisin Black carefully. It can be a button, headline contrast, thin frame, premium accent, or image overlay. It should not become the dominant page background or make the product feel heavy/dark by default.
 
