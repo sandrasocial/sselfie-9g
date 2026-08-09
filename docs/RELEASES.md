@@ -1,5 +1,25 @@
 # Completed releases
 
+## 2026-08-09 — SSELFIE comeback Revenue Operator
+
+Locked the comeback into one evidence-gated operating system with exactly three engines: owned-product
+commerce, Maya recurring membership, and creator media/partnerships/licensing. Added a complete
+existing-product inventory, a 30-day execution pack, live Stripe/payment/funnel/source reconciliation,
+refund-safe cash reporting, persistent campaign gates, and one quiet Revenue Operator. The current
+priority remains the already-approved $37 Prompt Vault proof event; its three existing broadcasts are
+provider-verified as scheduled, and the full response window is reviewed on 2026-08-18. Maya's next
+paid-value test is bounded to at most 20 audited existing buyers and remains fail-closed until cohort,
+access, checkout, founder-defect, and invitation gates are all ready. No price, billing, entitlement,
+credit, customer-access, or existing-member promise changed, and no new customer campaign was sent.
+
+Production proof: feature commit `6e46d078`, Vercel deployment
+`dpl_9x453GtGzVVVuEbbRjmydtEwzmBa`, and the exact commit reached Ready on production. Typecheck,
+repository invariants, 2,018 passing tests with 6 intentionally skipped, changed-file lint with zero
+errors, an optimized production build, and diff checks passed. A post-deploy live run reported all
+seven required sources healthy, 11 active memberships, no payment-review or protected-job failures,
+and the Prompt Vault decision safely in progress. The provider guard independently confirmed all
+three approved broadcasts remain scheduled without mutation.
+
 ## 2026-08-08 — Maya weekly outcome
 
 Made Maya own one repeatable weekly job: she uses the member's current priorities and unfinished
