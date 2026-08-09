@@ -654,3 +654,19 @@ Vercel deployment `dpl_81GrJnh867MrEmd9iiBAqcTTcbvS`, CI typecheck, repository i
 lint with zero errors, a successful Turbopack production build, and 1,986 passing tests with 6
 intentional skips. Authenticated live QA loaded all five SUITE tabs on desktop and at 390px with the
 new cool palette, no horizontal overflow, and no framework error overlay.
+
+## 2026-08-09 — Maya one-job founder preview
+
+Focused Maya's first product job on turning one saved selfie and one idea into one finished,
+ready-to-post piece with its visual and caption together. Maya now opens with one primary
+`Create my next post` action, silently chooses a selfie-led photo or a short teaching carousel, and
+removes competing next-format actions until the post is placed in Calendar. Ordinary questions still
+start from the same composer, and existing saved tasks remain compatible. No member access,
+entitlement, credit, price, payment, subscription, or checkout behavior changed.
+
+Production proof: feature commit `8331259a`, exact Ready Vercel deployment
+`dpl_FppMSAa2RBs8ZiJedUpsmWLmhoeG`, typecheck, repository invariants, changed-file lint with zero
+errors, a successful production build, and 1,986 passing tests with 6 intentional skips. Independent
+target-member journeys passed the narrowed creation, Calendar placement, exact reload/Resume, and
+retry-safe no-duplicate boundaries on desktop and 390px mobile. Authenticated live QA confirmed Maya
+Home first, the one-job action and composer above the fold at 390x844, and zero browser console errors.
