@@ -8,6 +8,7 @@ export const SSELFIE_COMEBACK_PHASE = {
   primaryEngine: "owned-commerce",
   mayaBroadExpansion: "paused",
   publicTierExpansion: "paused",
+  backgroundPreparation: "allowed-without-outward-action",
   outwardApproval: "required",
 } as const
 
@@ -22,7 +23,7 @@ export const SSELFIE_COMEBACK_ENGINES = [
     id: "maya-recurring",
     name: "Maya recurring membership",
     role: "compounding-revenue engine",
-    currentMove: "Prove the one-selfie-to-finished-post job with 20 qualified buyers before expanding tiers.",
+    currentMove: "Prepare a private max-20 Essential-versus-Pro evidence test around the one-selfie-to-finished-post job without making a public tier.",
   },
   {
     id: "media-ip",

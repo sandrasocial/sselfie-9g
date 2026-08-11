@@ -23,7 +23,8 @@ import {
   isMayaHomeEnabled,
   isMayaOperatingLayerEnabled,
 } from "@/lib/app-v3/maya/operating-layer-rollout"
-import { hasStudioMembership } from "@/lib/subscription"
+import { getUserSubscription, hasStudioMembership } from "@/lib/subscription"
+import { isMayaEssentialPlan } from "@/lib/business/maya-tier-pilot"
 
 export const metadata = {
   title: "SSELFIE Studio",
@@ -91,6 +92,7 @@ export default async function StudioV3Page({
   let trialHasSeenFirstRunStep = false
   let hasVaultAccess = true
   let vaultMayaIncluded = true
+  let mayaEssential = false
   // Whether this member has a completed, non-test trained LoRA model. When true, App v3
   // surfaces a quiet "use my trained model" entry into legacy /studio?legacy=1. Never-trained
   // members never see it. Admins resolve this separately below.
@@ -104,13 +106,18 @@ export default async function StudioV3Page({
         const { getUserIdFromSupabase } = await import("@/lib/user-mapping")
         const neonUserId = await getUserIdFromSupabase(user.id)
         if (neonUserId) {
-          vaultMayaIncluded = await hasStudioMembership(String(neonUserId))
+          const [subscription, studioMembership] = await Promise.all([
+            getUserSubscription(String(neonUserId)),
+            hasStudioMembership(String(neonUserId)),
+          ])
+          mayaEssential = isMayaEssentialPlan(subscription?.plan)
+          vaultMayaIncluded = studioMembership && !mayaEssential
           const { getSuiteAccess } = await import("@/lib/trial/suite-trial")
           const access = await getSuiteAccess(String(neonUserId))
           if (access.level === "member") {
             resolved = "full"
             // Recurring members and fixed bundle-pass holders both receive the Vault.
-            hasVaultAccess = true
+            hasVaultAccess = !mayaEssential
           } else if (access.level === "vault") {
             // Vault Maya tier: her home is the scoped studio, never the full app shell.
             redirect("/vault-maya/studio")
@@ -219,12 +226,12 @@ export default async function StudioV3Page({
     (user.user_metadata?.first_name as string | undefined) ||
     (user.user_metadata?.name as string | undefined) ||
     null
-  const mayaOperatingLayerEnabled = isMayaOperatingLayerEnabled({
+  const mayaOperatingLayerEnabled = mayaEssential || isMayaOperatingLayerEnabled({
     userId: user.id,
     email: user.email,
     accessLevel,
   })
-  const mayaHomeEnabled = isMayaHomeEnabled({
+  const mayaHomeEnabled = mayaEssential || isMayaHomeEnabled({
     userId: user.id,
     email: user.email,
     accessLevel,
@@ -236,7 +243,7 @@ export default async function StudioV3Page({
       accessLevel={accessLevel}
       analyticsCohort={analyticsCohort}
       trialDaysLeft={trialDaysLeft}
-      initialSection={initialSection}
+      initialSection={mayaEssential ? "create" : initialSection}
       initialAestheticId={initialAestheticId}
       hasTrainedModel={hasTrainedModel}
       hasVaultAccess={hasVaultAccess}
@@ -249,6 +256,7 @@ export default async function StudioV3Page({
       videoEnabled={isVideoGenerationEnabled()}
       mayaOperatingLayerEnabled={mayaOperatingLayerEnabled}
       mayaHomeEnabled={mayaHomeEnabled}
+      mayaEssential={mayaEssential}
     />
   )
 }

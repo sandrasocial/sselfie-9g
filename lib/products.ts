@@ -36,6 +36,7 @@ export type PricingProductId =
   | "selfie_visibility_bundle"
   | "campaign_outcome"
   | "selfie_to_brand_shoot_system"
+  | "maya_essential_pilot"
 
 export type ProductLifecycleStatus = "live" | "archived" | "legacy_access_only"
 
@@ -446,6 +447,22 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
   ...ARCHIVED_PRICING_PRODUCTS,
 ]
 
+// Deliberately excluded from PRICING_PRODUCTS: this is a max-20 private test contract,
+// not a public product or navigation destination. The checkout action applies a second,
+// fail-closed email allowlist before Stripe can be called.
+export const PRIVATE_PILOT_PRICING_PRODUCTS: PricingProduct[] = [
+  {
+    id: "maya_essential_pilot",
+    name: "Maya Essential Pilot",
+    displayName: "Maya Essential",
+    description: "Bring Maya one selfie and one rough idea. Leave with one personal post ready to use.",
+    priceInCents: 2900,
+    type: "sselfie_studio_membership",
+    credits: VAULT_MAYA_MONTHLY_CREDITS,
+    lifecycleStatus: "live",
+  },
+]
+
 export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath> = {
   one_time_session: {
     lifecycleStatus: "live",
@@ -465,6 +482,13 @@ export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath>
     lifecycleStatus: "live",
     checkoutPath: "/checkout/membership?interval=year",
     fulfillmentRule: "stripe_webhook.invoice.payment_succeeded:sselfie_studio_membership",
+    successNextAction: "/app",
+    lifecycleEmailEntryPoint: "app/api/cron/onboarding-sequence",
+  },
+  maya_essential_pilot: {
+    lifecycleStatus: "live",
+    checkoutPath: "/checkout/membership?interval=month&pilot_tier=essential (private allowlist only)",
+    fulfillmentRule: "stripe_webhook.invoice.payment_succeeded:sselfie_studio_membership plan=maya_essential_pilot",
     successNextAction: "/app",
     lifecycleEmailEntryPoint: "app/api/cron/onboarding-sequence",
   },
@@ -739,6 +763,10 @@ export type AcademyProductId = keyof typeof ACADEMY_PRODUCTS
 
 export function getProductById(productId: string): PricingProduct | undefined {
   return PRICING_PRODUCTS.find((p) => p.id === productId)
+}
+
+export function getCheckoutProductById(productId: string): PricingProduct | undefined {
+  return getProductById(productId) || PRIVATE_PILOT_PRICING_PRODUCTS.find(p => p.id === productId)
 }
 
 export function getCreditPackageById(packageId: string): CreditPackage | undefined {

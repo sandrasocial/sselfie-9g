@@ -9,6 +9,8 @@ import { sql } from "@/lib/db/client"
 import { getUserCredits } from "@/lib/credits"
 import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
+import { MAYA_ESSENTIAL_PILOT_PLAN } from "@/lib/business/maya-tier-pilot"
+import { MAYA_ESSENTIAL_MONTHLY_CREDITS, MONTHLY_MEMBERSHIP_CREDITS } from "@/lib/credit-policy"
 
 export const dynamic = "force-dynamic"
 
@@ -17,6 +19,7 @@ function planLabel(raw: unknown): string | null {
   if (typeof raw !== "string" || raw.trim().length === 0) return null
   const key = raw.trim().toLowerCase()
   if (key === "sselfie_studio_membership") return "SSELFIE SUITE"
+  if (key === MAYA_ESSENTIAL_PILOT_PLAN) return "Maya Essential"
   if (key === "vault_maya") return "Vault Maya"
   if (key === "paid_blueprint") return "Feed Planner Blueprint"
   // Fallback: humanize the raw value rather than leaking snake_case.
@@ -45,6 +48,7 @@ export async function GET() {
     accessEndsAt: null,
     billingKind: null,
     credits: null,
+    includedMonthlyCredits: null,
     creditsUnlimited,
     email: user.email ?? null,
   }
@@ -97,6 +101,10 @@ export async function GET() {
         accessEndsAt: null,
         billingKind: "recurring",
         credits,
+        includedMonthlyCredits:
+          recurringMembership.plan === MAYA_ESSENTIAL_PILOT_PLAN
+            ? MAYA_ESSENTIAL_MONTHLY_CREDITS
+            : MONTHLY_MEMBERSHIP_CREDITS,
         creditsUnlimited,
         email: user.email ?? null,
       })
@@ -110,6 +118,7 @@ export async function GET() {
         accessEndsAt: passEndsAt,
         billingKind: "fixed_pass",
         credits,
+        includedMonthlyCredits: null,
         creditsUnlimited,
         email: user.email ?? null,
       })
@@ -123,6 +132,7 @@ export async function GET() {
         accessEndsAt: passEndsAt,
         billingKind: "one_time",
         credits,
+        includedMonthlyCredits: null,
         creditsUnlimited,
         email: user.email ?? null,
       })

@@ -45,8 +45,15 @@ describe("SSELFIE comeback strategy lock", () => {
     expect(execution).toContain("NOT A COMMERCIAL AUTHORITY OR SEND APPROVAL")
     expect(execution).toMatch(/No second email\s+campaign is added/)
     expect(execution).toContain("Maximum cohort: 20")
-    expect(execution).toContain("All three must pass before Maya pricing or scope broadens")
+    expect(execution).toContain("Private two-price evidence test")
+    expect(execution).toContain("Maya Essential · EUR 29/month")
+    expect(execution).toContain("Maya Pro · EUR 97/month")
+    expect(execution).toContain("Annual · EUR 970 · held")
+    expect(execution).toContain("does not change the public Prompt Vault priority")
     expect(execution).toContain("ShiftCam")
+    expect(read("docs/business/SSELFIE_PARTNERSHIP_PILOT_PACK_2026-08-11.md")).toContain(
+      "DRAFT ONLY — NO OUTREACH OR PUBLICATION AUTHORITY"
+    )
   })
 
   it("keeps the legacy revenue audit aggregate-only and refuses invented MRR", () => {

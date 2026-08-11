@@ -13,6 +13,7 @@ import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { completeReferralForPurchase, isReferralPurchaseEligible } from "@/lib/referrals/service"
 import { markRevenueEnginePurchase } from "../shared"
 import { getSubscriptionPlanFromMetadata } from "@/lib/launch/cash-launch-pricing"
+import { creditGrantProductForMayaPlan } from "@/lib/business/maya-tier-pilot"
 
 type SubscriptionCheckoutAttribution = {
   session_id: string | null
@@ -58,7 +59,7 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
 
   // Try to find subscription in database
   let [sub] = await sql`
-    SELECT user_id, product_type, current_period_start
+    SELECT user_id, product_type, plan, current_period_start
     FROM subscriptions
     WHERE stripe_subscription_id = ${subscriptionId}
   `
@@ -130,7 +131,7 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
 
           // Re-fetch subscription
           const result = await sql`
-            SELECT user_id, product_type, current_period_start
+            SELECT user_id, product_type, plan, current_period_start
             FROM subscriptions
             WHERE stripe_subscription_id = ${subscriptionId}
           `
@@ -474,9 +475,10 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
           console.log(`[v0] Invoice billing_reason: ${invoice.billing_reason || "N/A"}`)
           console.log(`[v0] Invoice period_start: ${invoicePeriodStart?.toISOString() || "N/A"}`)
 
+          const creditProduct = creditGrantProductForMayaPlan(sub.plan, sub.product_type)
           const result = await grantMonthlyCredits(
             sub.user_id,
-            sub.product_type === "vault_maya" ? "vault_maya" : "sselfie_studio_membership",
+            creditProduct,
             false, // Always false for production payments
             invoiceId
           )
@@ -552,9 +554,7 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
                 const emailContent = generateCreditRenewalEmail({
                   firstName: userRecord[0].display_name?.split(" ")[0] || undefined,
                   creditsGranted:
-                    sub.product_type === "vault_maya"
-                      ? SUBSCRIPTION_CREDITS.vault_maya
-                      : SUBSCRIPTION_CREDITS.sselfie_studio_membership,
+                    SUBSCRIPTION_CREDITS[creditProduct],
                 })
 
                 const emailResult = await sendEmail({

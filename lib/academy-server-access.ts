@@ -5,7 +5,7 @@ import {
   userHasAcademyProductAccess,
 } from "@/lib/academy-entitlements"
 import { createServerClient } from "@/lib/supabase/server"
-import { hasStudioMembership } from "@/lib/subscription"
+import { hasFullStudioMembership } from "@/lib/subscription"
 import { getUserByAuthId } from "@/lib/user-mapping"
 
 export class AcademyRouteError extends Error {
@@ -87,7 +87,7 @@ export async function requireAcademyProductAccess(productId: string) {
 
 export async function requireAcademyMembershipCollectionAccess(collectionKey: string) {
   const user = await requireAcademyUser()
-  const hasAccess = await hasStudioMembership(user.neonUser.id)
+  const hasAccess = await hasFullStudioMembership(user.neonUser.id)
 
   if (!hasAccess) {
     throw new AcademyRouteError(403, {

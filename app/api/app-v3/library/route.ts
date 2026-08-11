@@ -10,7 +10,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { sql } from "@/lib/db/client"
 import { getAcademyHomeState } from "@/app/academy/_lib/course-library"
 import { getPublishedVaultCollections } from "@/lib/vault/published-collections"
-import { hasStudioMembership } from "@/lib/subscription"
+import { hasFullStudioMembership } from "@/lib/subscription"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 
 export const dynamic = "force-dynamic"
@@ -32,9 +32,14 @@ export async function GET() {
       })
     }
 
+    const fullMembership = isAdminEmail(user.email) || (await hasFullStudioMembership(String(neonUser.id)))
+    if (!fullMembership) {
+      return NextResponse.json({ error: "Maya Pro membership required" }, { status: 403 })
+    }
+
     const state = await getAcademyHomeState(String(neonUser.id))
     const vaultMayaIncluded =
-      isAdminEmail(user.email) || (await hasStudioMembership(String(neonUser.id)))
+      fullMembership
     const membershipActive = state.membershipActive || vaultMayaIncluded
 
     const [learningPlan] = await sql`

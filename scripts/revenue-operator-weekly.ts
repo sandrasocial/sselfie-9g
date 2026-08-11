@@ -17,6 +17,8 @@ import * as dotenv from "dotenv"
 import { Resend } from "resend"
 import Stripe from "stripe"
 
+import { MAYA_TIER_PILOT } from "../lib/business/maya-tier-pilot"
+
 import {
   reconcileCash,
   type CashReconciliation,
@@ -53,7 +55,7 @@ const PROMPT_VAULT_BROADCASTS = [
   { id: "8d6e9101-c4fd-468a-8d16-ea197fc56a1b", scheduledAt: "2026-08-15T09:00:00.000Z" },
 ] as const
 const PROMPT_VAULT_RESPONSE_WINDOW_MS = 72 * 60 * 60 * 1000
-const MAYA_VALUE_TEST_CAMPAIGN_KEY = "maya_value_test_2026_08"
+const MAYA_VALUE_TEST_CAMPAIGN_KEY = MAYA_TIER_PILOT.campaignKey
 const PROTECTED_JOB_MAX_AGE_HOURS: Record<string, number> = {
   "resolve-pending-payments": 2,
   "reconcile-subscriptions": 2,

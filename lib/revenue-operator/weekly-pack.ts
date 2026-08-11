@@ -141,10 +141,18 @@ export type LargestLeak = {
   evidence: string
 }
 
+export type BackgroundPreparation = {
+  id: "maya-tier-pilot" | "partnership-pilot"
+  status: "prepared-internal"
+  evidence: string
+  outwardActionAllowed: false
+}
+
 export type RevenueOperatorPack = RevenueOperatorInput & {
   windows: ComparisonWindows
   decision: RevenueOperatorDecision
   largestLeak: LargestLeak
+  backgroundPreparation: BackgroundPreparation[]
   completedWork: string
   outwardApprovalReady: boolean
   sandraActions: Array<{ title: string; reason: string }>
@@ -724,6 +732,23 @@ function mayaApprovalReady(input: RevenueOperatorInput): boolean {
   return hasCompletedGate(input, "owned-commerce-scored") && Object.values(input.mayaTestReadiness).every(Boolean)
 }
 
+function deriveBackgroundPreparation(): BackgroundPreparation[] {
+  return [
+    {
+      id: "maya-tier-pilot",
+      status: "prepared-internal",
+      evidence: "The capped two-price contract, cost guard, aggregate cohort audit, and held invitation are prepared. Checkout, access, allowlist, and send remain closed.",
+      outwardActionAllowed: false,
+    },
+    {
+      id: "partnership-pilot",
+      status: "prepared-internal",
+      evidence: "The proof-page draft, rights floor, and five buyer-specific briefs are prepared. No application, outreach, or publication is authorized.",
+      outwardActionAllowed: false,
+    },
+  ]
+}
+
 export function buildRevenueOperatorPack(input: RevenueOperatorInput): RevenueOperatorPack {
   const asOf = new Date(input.asOf)
   if (!Number.isFinite(asOf.getTime())) throw new Error("A valid as-of date is required")
@@ -745,6 +770,7 @@ export function buildRevenueOperatorPack(input: RevenueOperatorInput): RevenueOp
     windows: createComparisonWindows(asOf, input.windowDays),
     decision: currentDecision,
     largestLeak: deriveLargestLeak(normalized),
+    backgroundPreparation: deriveBackgroundPreparation(),
     completedWork: deriveCompletedWork(normalized),
     outwardApprovalReady,
     sandraActions,
@@ -809,6 +835,10 @@ export function renderRevenueOperatorMarkdown(pack: RevenueOperatorPack): string
     "",
     "## Work completed",
     `- ${pack.completedWork}`,
+    "",
+    "## Background preparation",
+    "- This does not change the one public weekly priority.",
+    ...pack.backgroundPreparation.map(item => `- ${item.id}: ${item.evidence}`),
     "",
     "## One decision",
     `- Priority: ${pack.decision.priority}`,

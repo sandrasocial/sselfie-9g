@@ -18,6 +18,7 @@ interface AccountData {
   accessEndsAt: string | null
   billingKind: "recurring" | "fixed_pass" | "one_time" | null
   credits: number | null
+  includedMonthlyCredits?: number | null
   creditsUnlimited?: boolean
   email: string | null
 }
@@ -286,7 +287,7 @@ export function AccountView({
             {typeof trialDaysLeft === "number"
               ? "Each image is one credit. Trial credits do not refill."
               : isRecurringMembership
-                ? "Each image is one credit. Your included credits reset to 100 each billing month. Purchased top-ups stay."
+                ? `Each image is one credit. Your included credits reset to ${data?.includedMonthlyCredits ?? 100} each billing month. Purchased top-ups stay.`
                 : isFixedBundlePass
                   ? "Each image is one credit. Your bundle included 200 credits. It does not refill or renew."
                   : isOwnedBundle

@@ -74,6 +74,8 @@ export interface AppV3ShellProps {
   mayaOperatingLayerEnabled?: boolean
   /** Server-owned founder preview. Never inherits the global operating-layer rollout. */
   mayaHomeEnabled?: boolean
+  /** Private pilot: focused Maya + Account only; Pro Calendar, Gallery, and Learn stay excluded. */
+  mayaEssential?: boolean
 }
 
 // Nav rename (Sandra, 2026-07-07): Photos -> Gallery, Library -> Learn, and the Content tab
@@ -249,6 +251,7 @@ function ShellInner({
   videoEnabled = true,
   mayaOperatingLayerEnabled = false,
   mayaHomeEnabled = false,
+  mayaEssential = false,
 }: AppV3ShellProps) {
   const [section, setSection] = useState<AppV3Section>(initialSection)
   // The server already resolved both the requested section and the Maya Home cohort.
@@ -427,11 +430,14 @@ function ShellInner({
   }
 
   const mayaUsesSideWorkspace = section === "calendar" || (section === "create" && !mayaHomeEnabled)
+  const visibleNav = mayaEssential
+    ? NAV.filter(item => item.id === "create" || item.id === "account")
+    : NAV
   const nav = mayaHomeEnabled
-    ? NAV.map(item =>
+    ? visibleNav.map(item =>
         item.id === "create" ? { ...item, label: "Maya", icon: MessageCircle } : item
       )
-    : NAV
+    : visibleNav
 
   return (
     <main
@@ -514,7 +520,7 @@ function ShellInner({
             operatingLayerEnabled={mayaOperatingLayerEnabled}
           />
         ))}
-      {section === "photos" && (
+      {section === "photos" && !mayaEssential && (
         <GalleryView
           initialFilter={galleryFilter}
           onMakeMotion={videoEnabled ? createMotionFromImage : undefined}
@@ -532,7 +538,7 @@ function ShellInner({
           onBrowse={() => openGallery("all")}
         />
       )}
-      {section === "calendar" &&
+      {section === "calendar" && !mayaEssential &&
         (limited ? (
           <div className="mx-auto max-w-3xl px-5 py-10">
             <div className="rounded-[8px] border border-[#0D0E10] bg-white p-5 shadow-sm">
@@ -561,7 +567,7 @@ function ShellInner({
             onConsumePendingApplyImage={() => setPendingCalendarImageUrl(null)}
           />
         ))}
-      {section === "library" && (
+      {section === "library" && !mayaEssential && (
         <LibraryView
           operatingLayerEnabled={mayaOperatingLayerEnabled}
           onOpenMaya={target =>
@@ -573,7 +579,7 @@ function ShellInner({
       {section === "account" && (
         <AccountView
           firstName={firstName}
-          onOpenLibrary={() => goToSection("library")}
+          onOpenLibrary={mayaEssential ? undefined : () => goToSection("library")}
           onUseTrainedModel={createWithTrainedModel}
           trialDaysLeft={accessLevel === "trial" ? trialDaysLeft : null}
           hasTrainedModel={hasTrainedModel}

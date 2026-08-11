@@ -1,5 +1,6 @@
 export const MONTHLY_MEMBERSHIP_CREDITS = 100
 export const VAULT_MAYA_MONTHLY_CREDITS = 30
+export const MAYA_ESSENTIAL_MONTHLY_CREDITS = 30
 
 export type MonthlyCreditReset = {
   currentBalance: number

@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers"
 import { stripe } from "@/lib/stripe"
-import { getProductById } from "@/lib/products"
+import { getCheckoutProductById } from "@/lib/products"
 import { sql } from "@/lib/db/client"
 import type Stripe from "stripe"
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
@@ -15,6 +15,13 @@ import {
   resolvePromptVaultPriceId,
   resolveVaultMayaPriceId,
 } from "@/lib/launch/cash-launch-pricing"
+import {
+  MAYA_ESSENTIAL_PILOT_PLAN,
+  MAYA_PRO_PILOT_PLAN,
+  assertMayaTierPilotCheckoutAllowed,
+  isMayaTierPilotPlan,
+  type MayaTierPilotPlan,
+} from "@/lib/business/maya-tier-pilot"
 import {
   SELFIE_VISIBILITY_BUNDLE_CLOSES_AT,
   SELFIE_VISIBILITY_BUNDLE_OPENS_AT,
@@ -31,7 +38,7 @@ import { assertVaultMayaCheckoutAllowed } from "@/lib/launch/vault-maya-checkout
 
 type LandingCheckoutOptions = {
   bonusCredits?: number
-  membershipPlan?: "founding" | null
+  membershipPlan?: "founding" | MayaTierPilotPlan | null
   presetTier?: "single" | "bundle"
   presetCollectionSlug?: string | null
   repeatOrderToken?: string | null
@@ -54,7 +61,7 @@ export async function createLandingCheckoutSession(
 ) {
   console.log("[landing-checkout] Creating checkout session for product:", productId, promoCode ? `with promo: ${promoCode}` : "")
 
-  const product = getProductById(productId)
+  const product = getCheckoutProductById(productId)
   if (!product) {
     console.error("[landing-checkout] Product not found:", productId)
     throw new Error(`Product with id "${productId}" not found`)
@@ -111,6 +118,24 @@ export async function createLandingCheckoutSession(
     product.type !== "campaign_outcome"
   const checkoutSource = options?.source?.trim() || "landing_page"
   const normalizedCustomerEmail = normalizeStripeCustomerEmail(customerEmail)
+  const requestedTierPilotPlan = isMayaTierPilotPlan(options?.membershipPlan)
+    ? options.membershipPlan
+    : null
+  if (productId === "maya_essential_pilot" && requestedTierPilotPlan !== MAYA_ESSENTIAL_PILOT_PLAN) {
+    throw new Error("The private Maya Essential checkout requires its approved pilot plan.")
+  }
+  if (requestedTierPilotPlan) {
+    assertMayaTierPilotCheckoutAllowed({
+      email: normalizedCustomerEmail,
+      plan: requestedTierPilotPlan,
+    })
+    if (
+      (requestedTierPilotPlan === MAYA_ESSENTIAL_PILOT_PLAN && productId !== "maya_essential_pilot") ||
+      (requestedTierPilotPlan === MAYA_PRO_PILOT_PLAN && productId !== "sselfie_studio_membership")
+    ) {
+      throw new Error("The private Maya pilot tier does not match this checkout product.")
+    }
+  }
   const bonusCredits =
     typeof options?.bonusCredits === "number" && Number.isFinite(options.bonusCredits) && options.bonusCredits > 0
       ? Math.floor(options.bonusCredits)
@@ -124,7 +149,10 @@ export async function createLandingCheckoutSession(
     source: checkoutSource,
     referralCode,
   })
-  const requestedMembershipPlan = options?.membershipPlan === "founding" ? "founding" : null
+  const requestedMembershipPlan =
+    options?.membershipPlan === "founding" || isMayaTierPilotPlan(options?.membershipPlan)
+      ? options.membershipPlan
+      : null
   const foundingCount =
     product.type === "sselfie_studio_membership_annual" && requestedMembershipPlan
       ? await getFoundingAnnualPurchaseCount()
@@ -186,7 +214,10 @@ export async function createLandingCheckoutSession(
     selfie_visibility_bundle: "STRIPE_PRICE_SELFIE_VISIBILITY_BUNDLE",
     selfie_to_brand_shoot_system: "STRIPE_PRICE_SELFIE_TO_BRAND_SHOOT_SYSTEM",
   }
-  const envVarName = envVarByProductType[product.type] || "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
+  const envVarName =
+    membershipPrice?.envVarName ||
+    envVarByProductType[product.type] ||
+    "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
   
   if (product.type === "one_time_session") {
     stripePriceId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID

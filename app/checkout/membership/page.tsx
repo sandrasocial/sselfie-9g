@@ -18,6 +18,12 @@ import {
   PROMPT_VAULT_SUITE_COUPON_ID,
   PROMPT_VAULT_SUITE_OFFER_SLUG,
 } from "@/lib/revenue-engine/prompt-vault-commercial-path"
+import {
+  MAYA_ESSENTIAL_PILOT_PLAN,
+  MAYA_PRO_PILOT_PLAN,
+  isMayaTierPilotCheckoutPrepared,
+  type MayaTierPilotPlan,
+} from "@/lib/business/maya-tier-pilot"
 
 export const dynamic = "force-dynamic"
 
@@ -36,6 +42,7 @@ export default async function MembershipCheckoutPage({
     vault_token?: string
     interval?: string
     plan?: string
+    pilot_tier?: string
     fallback?: string
     bonus?: string
     source?: string
@@ -79,13 +86,24 @@ export default async function MembershipCheckoutPage({
 
   if (params.interval) {
     const isAnnual = params.interval === "year" || params.interval === "annual"
+    const requestedPilotPlan: MayaTierPilotPlan | null =
+      !isAnnual && params.pilot_tier === "essential"
+        ? MAYA_ESSENTIAL_PILOT_PLAN
+        : !isAnnual && params.pilot_tier === "pro"
+          ? MAYA_PRO_PILOT_PLAN
+          : null
+    if (params.pilot_tier && (!requestedPilotPlan || !isMayaTierPilotCheckoutPrepared())) {
+      redirect("/checkout/failure?product=maya_private_pilot")
+    }
     const wantsFounding = isAnnual && params.plan === "founding"
     const foundingCount = wantsFounding ? await getFoundingAnnualPurchaseCount() : 0
     const foundingStatus = wantsFounding ? getFoundingAnnualOfferStatus(foundingCount) : null
     const foundingAvailable = Boolean(foundingStatus?.available)
-    const productId = isAnnual
-      ? "sselfie_studio_membership_annual"
-      : "sselfie_studio_membership"
+    const productId = requestedPilotPlan === MAYA_ESSENTIAL_PILOT_PLAN
+      ? "maya_essential_pilot"
+      : isAnnual
+        ? "sselfie_studio_membership_annual"
+        : "sselfie_studio_membership"
     const captureParams = {
       ...params,
       checkout_source: params.checkout_source || "membership_email_capture",
@@ -126,20 +144,32 @@ export default async function MembershipCheckoutPage({
         <PromptVaultCheckoutEmailCapture
           params={captureParams}
           actionPath="/checkout/membership"
-          eyebrow="SSELFIE SUITE"
+          eyebrow={requestedPilotPlan ? "PRIVATE MAYA PILOT" : "SSELFIE SUITE"}
           title="Where should I send your access?"
-          copy={isAnnual
+          copy={requestedPilotPlan === MAYA_ESSENTIAL_PILOT_PLAN
+            ? "Add the approved email from your invitation. Maya Essential is the focused 30-credit test: one selfie and one rough idea into one personal post ready to use."
+            : requestedPilotPlan === MAYA_PRO_PILOT_PLAN
+              ? "Add the approved email from your invitation. Maya Pro includes the focused Maya job, higher usage, Calendar, Gallery, and the member library."
+            : isAnnual
             ? "Add your email so your login, receipt, and SUITE access go to the right place. You are joining Maya, Create, Calendar, Learn, and the SSELFIE library for the year."
             : "Add your email so your login, receipt, and SUITE access go to the right place. You are joining Maya, Create, Calendar, Learn, the SSELFIE library, and 100 credits that reset each month."}
           inputId="membership-checkout-email"
           buttonLabel="Continue to secure payment"
           skipLabel="Skip and go straight to payment"
-          productName="SSELFIE SUITE"
-          productMeta={isAnnual
+          productName={requestedPilotPlan === MAYA_ESSENTIAL_PILOT_PLAN ? "Maya Essential" : requestedPilotPlan === MAYA_PRO_PILOT_PLAN ? "Maya Pro" : "SSELFIE SUITE"}
+          productMeta={requestedPilotPlan === MAYA_ESSENTIAL_PILOT_PLAN
+            ? "Focused Maya job · 30 monthly credits"
+            : requestedPilotPlan === MAYA_PRO_PILOT_PLAN
+              ? "Maya, Calendar, Gallery, Learn · 100 monthly credits"
+            : isAnnual
             ? "Maya, Create, Calendar, Learn, and the SSELFIE library"
             : "Maya, Create, Calendar, Learn, and 100 monthly credits"}
           productPrice={
-            foundingAvailable
+            requestedPilotPlan === MAYA_ESSENTIAL_PILOT_PLAN
+              ? "€29/month · private test"
+              : requestedPilotPlan === MAYA_PRO_PILOT_PLAN
+                ? "€97/month · private test"
+              : foundingAvailable
               ? "697 EUR / year · founding"
               : isAnnual
                 ? "970 EUR / year"
@@ -147,7 +177,9 @@ export default async function MembershipCheckoutPage({
                   ? "€49 first month · then €97/month"
                   : "€97/month"
           }
-          reassurance={isAnnual
+          reassurance={requestedPilotPlan
+            ? "Only the approved invitation email can continue. Billed monthly; cancel from your account."
+            : isAnnual
             ? "Used only for your login, receipt, and access link."
             : isApprovedVaultOffer
               ? "€49 today, then €97 monthly. Cancel from your account."
@@ -179,7 +211,7 @@ export default async function MembershipCheckoutPage({
         {
           bonusCredits,
           ...attribution,
-          membershipPlan: wantsFounding ? "founding" : null,
+          membershipPlan: requestedPilotPlan || (wantsFounding ? "founding" : null),
           offerSlug: foundingAvailable
             ? "founding_annual"
             : isApprovedVaultOffer

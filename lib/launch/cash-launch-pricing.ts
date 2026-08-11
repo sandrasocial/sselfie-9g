@@ -1,4 +1,9 @@
 import { sql } from "@/lib/db/client"
+import {
+  MAYA_ESSENTIAL_PILOT_PLAN,
+  MAYA_PRO_PILOT_PLAN,
+  isMayaTierPilotPlan,
+} from "@/lib/business/maya-tier-pilot"
 
 export const PROMPT_VAULT_FLASH_PRICE_FLIPS_AT = "2026-06-26T22:01:00.000Z"
 export const FOUNDING_ANNUAL_CLOSES_AT = "2026-07-05T21:59:00.000Z"
@@ -111,7 +116,7 @@ export function resolveMembershipPriceId(input: {
 }): {
   stripePriceId?: string
   envVarName: string
-  appliedPlan: typeof FOUNDING_ANNUAL_PLAN | null
+  appliedPlan: typeof FOUNDING_ANNUAL_PLAN | typeof MAYA_ESSENTIAL_PILOT_PLAN | typeof MAYA_PRO_PILOT_PLAN | null
   foundingStatus: ReturnType<typeof getFoundingAnnualOfferStatus> | null
 } {
   const env = input.env || process.env
@@ -121,6 +126,24 @@ export function resolveMembershipPriceId(input: {
   const foundingStatus = wantsFounding
     ? getFoundingAnnualOfferStatus(input.foundingCount || 0, now)
     : null
+
+  if (input.requestedPlan === MAYA_ESSENTIAL_PILOT_PLAN) {
+    return {
+      stripePriceId: env.STRIPE_MAYA_ESSENTIAL_PILOT_PRICE_ID?.trim(),
+      envVarName: "STRIPE_MAYA_ESSENTIAL_PILOT_PRICE_ID",
+      appliedPlan: MAYA_ESSENTIAL_PILOT_PLAN,
+      foundingStatus: null,
+    }
+  }
+
+  if (input.requestedPlan === MAYA_PRO_PILOT_PLAN) {
+    return {
+      stripePriceId: env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID?.trim(),
+      envVarName: "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID",
+      appliedPlan: MAYA_PRO_PILOT_PLAN,
+      foundingStatus: null,
+    }
+  }
 
   if (wantsFounding && foundingStatus?.available) {
     return {
@@ -149,6 +172,7 @@ export function resolveMembershipPriceId(input: {
 }
 
 export function getSubscriptionPlanFromMetadata(metadata?: Record<string, unknown> | null, fallback = "sselfie_studio_membership") {
+  if (isMayaTierPilotPlan(metadata?.plan)) return metadata.plan
   if (metadata?.plan === FOUNDING_ANNUAL_PLAN) return FOUNDING_ANNUAL_PLAN
   if (
     metadata?.plan === "annual" ||

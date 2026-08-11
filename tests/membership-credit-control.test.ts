@@ -26,9 +26,8 @@ describe("membership credit control", () => {
 
     expect(joinPage).toContain("100 creation credits that reset each billing month")
     expect(joinPage).not.toContain("200 creation credits that refill monthly")
-    expect(account).toContain(
-      "Your included credits reset to 100 each billing month. Purchased top-ups stay."
-    )
+    expect(account).toContain("data?.includedMonthlyCredits ?? 100")
+    expect(account).toContain("each billing month. Purchased top-ups stay.")
     expect(account).not.toContain("Your plan refills monthly.")
     expect(freeGeneration).toContain("Free accounts include two welcome credits.")
     expect(freeGeneration).not.toContain("Free users can generate one image")

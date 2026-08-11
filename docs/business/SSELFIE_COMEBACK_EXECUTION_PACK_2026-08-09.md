@@ -2,7 +2,7 @@
 
 Status: **INTERNAL EXECUTION PACK — NOT A COMMERCIAL AUTHORITY OR SEND APPROVAL**
 
-Updated: 2026-08-09
+Updated: 2026-08-11
 
 Controlling authority: `docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md`
 
@@ -69,7 +69,9 @@ event has been measured and the operator returns it as the single priority.
 
 ## Gate 2 — bounded Maya paid-value test
 
-This test starts only after Gate 1 is scored and its customer-protection checks are green.
+Preparation starts now in the background. It does not change the public Prompt Vault priority,
+interrupt its response window, or authorize a Maya invitation. The paid test starts only after Gate
+1 is scored, every customer-protection gate is green, and Sandra approves the exact invitation.
 
 Before the invitation can be approved, the AI team must select the bounded cohort, prove that every
 eligible purchaser receives Maya Home rather than the legacy SUITE front door, exercise the exact
@@ -88,20 +90,52 @@ defect queue must also contain zero unresolved Maya release blockers.
 > Bring Maya one selfie and one rough idea. Leave with one beautiful, personal post, the words, and
 > the next step ready to use.
 
-### Test contract
+### Private two-price evidence test
 
-- Campaign key: `maya_value_test_2026_08`.
+- Campaign key: `maya_tier_choice_pilot_2026_08`.
 - Maximum cohort: 20 recent commerce buyers with no active or protected Maya/SUITE access.
-- Offer: the existing EUR 97 monthly membership checkout. No new price, Essential tier, annual
-  promise, or entitlement change is part of this test.
+- **Maya Essential · EUR 29/month:** the same focused one-selfie-to-finished-post job, 30 monthly
+  credits, and controlled usage. It is a private evidence offer, not a public product.
+- **Maya Pro · EUR 97/month:** the focused job with 100 monthly credits, Calendar, Gallery, and the
+  current member product library.
+- **Annual · EUR 970 · held:** do not offer it until weekly repeat use and renewal intent are proven.
 - Exclude current or trialing members, historical protected access, unsubscribed/suppressed
   contacts, internal/test records, recent overlapping marketing, and anyone whose access state is
   unavailable.
 - Reconcile the cohort again immediately before the exact send approval.
 
+The tier test measures willingness to pay before building a public Essential architecture. A
+hidden, fail-closed checkout and plan-aware entitlement contract may be deployed during preparation,
+but it is excluded from the public product registry and cannot call Stripe unless the pilot flag,
+an allowlist of no more than 20 approved emails, and the missing Essential Stripe price are all
+configured. No Stripe price, environment flag, invitation, customer access, or current-member
+change is made during preparation. Both private choices still require working checkout and
+fulfillment verification before the invitation can become approval-ready.
+
+### Read-only cohort snapshot verified 2026-08-11
+
+- The aggregate audit found exactly 20 currently eligible commerce buyers after protections.
+- Excluded: 8 protected-access buyers, 9 unsubscribed contacts, 2 bounced/suppressed contacts, 12
+  within the marketing cooldown, and 51 beyond the audience cap.
+- No identities were printed and no records were mutated. The aggregate cohort fingerprint is
+  `cd8ba376ff735f5a9494ed42ba07e26a41a969d1a725c081a24b8d798c2e2483`.
+- This is preparation evidence, not send authority. The cohort must be reconciled again after Gate
+  1 and immediately before Sandra sees the one exact invitation approval.
+
+### Cost guard verified 2026-08-11
+
+- The focused three-slide weekly carousel costs 3 product credits.
+- The current image route uses medium-quality `gpt-image-2`; the measured code note is roughly USD
+  0.06 per image at that setting.
+- Thirty Essential credits therefore support about ten three-image weekly outcomes before top-ups,
+  while keeping image-output cost bounded. Actual provider spend remains a release gate because
+  reference-image tokens and premium chat turns vary by job.
+- Live 30-day text telemetry showed premium Maya chat averaging about USD 0.11 per completed call;
+  the pilot must measure calls and image spend by purchaser rather than promise unlimited AI.
+
 ### Exact value gates
 
-All three must pass before Maya pricing or scope broadens:
+All three must pass before Maya pricing or scope broadens publicly:
 
 1. At least 3 net qualifying monthly purchases attributed to the test.
 2. At least 2 purchasers complete a publish-ready first outcome within 48 hours. Score only
@@ -109,17 +143,20 @@ All three must pass before Maya pricing or scope broadens:
 3. At least 2 purchasers complete a second distinct outcome within 10 days. Score only purchasers
    whose ten-day window has matured.
 
-If the women repeat but resist EUR 97, prepare a controlled Essential-tier test. If they buy but do
-not repeat, improve the one job before changing price. If they neither buy nor repeat, stop public
-tier work and return to the buyer problem and proof.
+Tier selection and repeat use are separate evidence:
+
+- If Essential is selected and those buyers repeat, validate Essential as the public-tier candidate.
+- If Pro is selected and those buyers repeat, keep Pro as the recurring offer.
+- If women buy either tier but do not repeat, improve the one job before changing price.
+- If they neither buy nor repeat, stop public tier work and return to the buyer problem and proof.
 
 ### Invitation draft held for the later approval pack
 
-Subject: `bring Maya one selfie and one rough idea`
+Subject: `I made Maya simpler`
 
 > Hi {{first_name}},
 >
-> I have been simplifying Maya around one job.
+> I have been simplifying Maya around one job because, honestly, there was too much to learn.
 >
 > You bring her one selfie and one rough idea. She helps you turn it into one personal post, the
 > words, and the next step, without making you learn a whole system first.
@@ -127,17 +164,25 @@ Subject: `bring Maya one selfie and one rough idea`
 > I am opening this to a very small group because I want to see whether it becomes genuinely useful
 > more than once, not just exciting once.
 >
-> It is the existing SSELFIE membership at EUR 97/month. Cancel anytime. I am not adding a deadline,
-> discount, or promise that the product has already proved.
+> I am testing two simple monthly choices with a very small group:
 >
-> See the focused Maya membership
+> Maya Essential is EUR 29/month for the focused job with controlled monthly use.
+>
+> Maya Pro is EUR 97/month for more use, Calendar, Gallery, and everything already inside the
+> member library.
+>
+> Both are monthly and cancel anytime. There is no deadline. I want to learn which version is
+> actually useful enough to keep using.
+>
+> Choose the version that fits you
 >
 > If this is not what you need, you do not need to join.
 >
 > Sandra x
 
-This is a draft only. The AI team owns cohort audit, tracked link, checkout test, fulfillment test,
-measurement, and retest. Sandra receives one exact send approval only when the gate opens.
+This is a draft only. The AI team owns cohort audit, separate tracked links, checkout test,
+fulfillment test, measurement, and retest. Sandra receives one exact send approval only when both
+private choices work end to end and the Gate 1 review is complete.
 
 ## Gate 3 — leveraged opportunity pipeline
 
@@ -148,9 +193,9 @@ of budget.
 | Rank | Opportunity | Bounded first mechanism | SSELFIE-specific proof angle | Condition before action |
 |---:|---|---|---|---|
 | 1 | ShiftCam | Affiliate proof, then paid tutorial | One window, one phone, one small room: lens versus no lens | Confirm Norway eligibility, fee, deliverables, and usage rights. [Official program](https://affiliate.shiftcam.com/shiftcam-us/register) |
-| 2 | Picsart | Current performance-paid creator campaign | One ordinary selfie into three useful launch visuals | Keep Maya as the system; disclose tool use and confirm payment rules. [Official program](https://picsart.com/earn/) |
+| 2 | ghd Norway | Validate a paid tutorial route | Hair that photographs beautifully on an iPhone, taught by a working hairdresser | Confirm the Norwegian buyer, budget, product claims, and rights before making content. [Official program](https://www.ghdhair.com/no/affiliates) |
 | 3 | SANDMARC | Affiliate/gifting proof, then paid tutorial proposal | Bathroom to editorial with a phone light, grip, and lens | No valuable UGC for product-only compensation; confirm phone and shipping fit. [Official program](https://www.sandmarc.com/pages/community) |
-| 4 | ghd Norway | Validate affiliate or paid tutorial route | Hair that photographs beautifully on an iPhone, taught by a working hairdresser | Confirm the Norwegian commercial route before making content. [Official program](https://www.ghdhair.com/no/affiliates) |
+| 4 | Picsart | Current performance-paid creator campaign | One ordinary selfie into three useful launch visuals | Treat this as a bounded performance test, not a premium partnership; confirm payout and rights. [Official program](https://picsart.com/earn/) |
 | 5 | Canva Creators | One licensed template collection | Selfie to carousel through SSELFIE's visual method | Submit only a tight collection; do not turn SSELFIE into generic templates. [Official program](https://www.canva.com/creators/templates/) |
 
 Secondary researched fits: Facetune, Photoroom, Adobe Express, Ulanzi, LTK, Skillshare, Metricool,
@@ -165,9 +210,10 @@ document.
 
 | Date/gate | AI team owns | Sandra owns | Advance only when |
 |---|---|---|---|
-| Aug 9-18 | Provider preflight, exclusions, checkout/access checks, attribution, monitoring, then the full 72-hour response window | Nothing unless a safety stop needs an outward decision | All three Resend broadcasts are sent and Gate 1 evidence is mature |
+| Aug 9-18 | Provider preflight, exclusions, checkout/access checks, attribution, monitoring, then the full 72-hour response window; prepare Maya and partnership packs internally | Nothing unless a safety stop needs an outward decision | All three Resend broadcasts are sent and Gate 1 evidence is mature |
 | Aug 18 | Net revenue and full funnel score; one decision | At most one proof/publication approval if the measured leak requires it | Gate 1 is scored from complete provider-verified exposure |
-| Aug 19-21 | Audit max-20 Maya cohort, tracked monthly link, invitation pack, Maya Home access, checkout/fulfillment QA, relevant defect gate | One exact invitation-send approval | Every eligible purchaser reaches the focused Maya job and the customer path is green |
+| Aug 11-18 background | Audit the max-20 Maya cohort, lock the two-price contract, cost guard, drafts, and QA plan | Nothing | Preparation remains internal and cannot change price, access, or send |
+| Aug 19-21 | Reconcile the cohort, create and verify both private checkout/fulfillment paths, Maya Home access, desktop/mobile path, and defect gate | One exact invitation-send approval | Every eligible purchaser reaches the focused Maya job and both payment paths are green |
 | Aug 22-31 | Maya first-outcome support, exact task continuity, mature cohort tracking | Founder testing and aesthetic judgment only | 48-hour and ten-day cohorts mature |
 | Background | Top-five commercial research and one buyer-specific pilot pack | One relationship approval only when compensation and rights are clear | Gate 1 and Maya work do not need interruption |
 | Day 30 | Evidence pack: repeat, repair, tier test, hold, or stop | One company-level commercial decision | Cleared money and mature customer outcomes support it |
@@ -178,7 +224,8 @@ Until the Day-30 decision:
 
 - No new standalone low-ticket offer is built because sales are quiet.
 - No generic Maya capability is added because a competitor launched it.
-- No Essential or annual campaign is launched from curiosity.
+- No public Essential or annual campaign is launched from curiosity; the approved private tier test
+  stays capped at 20 and behind an exact send approval.
 - No partnership is counted before cleared payment and completed delivery.
 - No agent opens a second weekly revenue plan.
 - Unavailable evidence is never reported as zero.

@@ -372,11 +372,17 @@ describe("weekly Revenue Operator", () => {
   })
 
   it("reports the largest measurable leak and one completed action", () => {
-    const markdown = renderRevenueOperatorMarkdown(buildRevenueOperatorPack(input()))
+    const pack = buildRevenueOperatorPack(input())
+    const markdown = renderRevenueOperatorMarkdown(pack)
     expect(markdown).toContain("## Largest measurable leak")
     expect(markdown).toContain("checkout -> payment")
     expect(markdown).toContain("## Work completed")
     expect(markdown).toContain("Refreshed and reconciled the aggregate money")
+    expect(markdown).toContain("## Background preparation")
+    expect(pack.backgroundPreparation).toHaveLength(2)
+    expect(pack.backgroundPreparation.every(item => item.outwardActionAllowed === false)).toBe(true)
+    expect(pack.decision.id).toBe("activate-owned-commerce")
+    expect(pack.outwardApprovalReady).toBe(false)
   })
 
   it("accepts only a closed prior-decision schema and ignores arbitrary copy", () => {

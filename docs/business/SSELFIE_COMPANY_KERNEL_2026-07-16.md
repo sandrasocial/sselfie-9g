@@ -2,7 +2,7 @@
 
 Status: **CURRENT CONTROLLING BUSINESS AUTHORITY**
 
-Updated: 2026-08-09
+Updated: 2026-08-11
 
 Owner: Sandra
 
@@ -46,14 +46,17 @@ The company now develops exactly three connected revenue engines:
 1. **Owned-product commerce.** Prompt Vault is the current paid front door. Starter Kit, presets,
    and existing learning assets support the customer job without becoming a rotating catalog.
 2. **Maya recurring membership.** Maya must repeatedly turn one selfie and one rough idea into one
-   beautiful, personal, usable post with words and a next step. The focused job is validated before
-   a cheaper public tier or broader product scope is introduced.
+   beautiful, personal, usable post with words and a next step. A private, maximum-20-buyer
+   Essential-versus-Pro evidence test may be prepared while commerce is measured. It does not make
+   Essential public, widen Maya's job, or authorize an invitation on its own.
 3. **Creator media, partnerships, and licensing.** Relevant partnerships, affiliates, usage rights,
    workshops, and licensing can add leveraged revenue after buyer-specific research. They remain
    unproven until cleared payment and completed delivery exist.
 
 Broad Maya expansion is paused. Public tier expansion is paused. Current members, prices, discounts,
-credits, access, and historical buyers stay protected.
+credits, access, and historical buyers stay protected. One public weekly priority may coexist with
+safe internal preparation for the next gate; preparation never becomes a second campaign or an
+outward approval.
 
 One owner, one weekly priority. That prevents drift. Agents finish safe preparation and
 implementation. Sandra supplies lived creative judgment and approves the exact outward promise,
@@ -180,19 +183,29 @@ mass outreach as a personal message.
 - Keep all outward copy in one approval pack. Nothing schedules or publishes itself.
 - Measure tutorial or DM or email -> Vault view -> checkout start -> qualifying payment -> access open.
 
-### Days 11-21 — run the bounded Maya value test
+### Days 4-18 — prepare the bounded Maya tier-choice test in parallel
+
+- Keep Prompt Vault as the only public weekly priority and do not interrupt its measurement window.
+- Audit a maximum of 20 recent commerce buyers with no current or protected access.
+- Prepare two private monthly choices around the same one job: Maya Essential at EUR 29 with
+  controlled usage, and Maya Pro at EUR 97 with higher usage and the complete member system.
+- Keep the EUR 970 annual option held until repeat weekly use and renewal intent exist.
+- Do not add a public product, customer access, Stripe price, invitation, or campaign during
+  preparation.
+
+### Days 19-30 — run the bounded Maya value test after approval
 
 - Reconcile the eligible cohort immediately before approval.
 - Invite no more than 20 qualified commerce buyers without active protected access.
-- Keep the existing EUR 97 monthly price for the first value test.
+- Present the two private monthly choices without fake urgency and record the selected tier.
 - Measure purchase -> Maya start -> finished post -> useful export or Calendar placement -> second
   outcome within ten days.
 - Do not introduce a public Essential tier or annual campaign during this test.
 
 Success means at least three qualifying monthly purchases, two publish-ready first outcomes within
-48 hours, and two second outcomes within ten days. If women repeat the job but standard-price
-purchase resistance remains, a controlled Essential tier can be tested next. If they do not repeat,
-fix the recurring job before changing price.
+48 hours, and two second outcomes within ten days. Tier choice is price evidence; repeat use is
+product evidence. If Essential buyers repeat, validate it as a public-tier candidate. If Pro buyers
+repeat, keep Pro. If buyers do not repeat, fix the recurring job before changing price.
 
 ### Days 1-30 — prepare leveraged opportunity
 

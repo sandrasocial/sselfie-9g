@@ -434,6 +434,7 @@ export async function hasActiveStudioMembership(userId: string): Promise<boolean
       FROM subscriptions
       WHERE user_id = ${userId}
         AND product_type = ANY(${MEMBERSHIP_PRODUCT_TYPES})
+        AND COALESCE(plan, '') <> 'maya_essential_pilot'
         AND (
           status IN ('active', 'trialing')
           OR (

@@ -19,6 +19,7 @@ export type SubscriptionStatus =
 
 type SubscriptionRow = {
   product_type: ProductType | string
+  plan?: string | null
   status: SubscriptionStatus | null
   stripe_subscription_id?: string | null
   stripe_customer_id?: string | null
@@ -116,6 +117,7 @@ export async function getUserSubscription(userId: string) {
     const subscriptions = await sql`
       SELECT 
         product_type,
+        plan,
         status,
         stripe_subscription_id,
         stripe_customer_id,
@@ -153,6 +155,18 @@ export async function hasStudioMembership(userId: string): Promise<boolean> {
   }
 }
 
+/** Full Pro/library access. Essential remains a Studio subscription for Maya generation,
+ * but it never inherits the member product library merely through product_type. */
+export async function hasFullStudioMembership(userId: string): Promise<boolean> {
+  try {
+    const subscription = await getUserSubscription(userId)
+    return isMembershipProduct(subscription?.product_type) && subscription?.plan !== "maya_essential_pilot"
+  } catch (error) {
+    console.error("[v0] [hasFullStudioMembership] Error checking full studio membership:", error)
+    return false
+  }
+}
+
 /**
  * Check if user has access to the Vault Maya tier.
  * True for an active vault_maya subscription, and for full Studio members
@@ -162,7 +176,7 @@ export async function hasStudioMembership(userId: string): Promise<boolean> {
 export async function hasVaultMayaAccess(userId: string): Promise<boolean> {
   try {
     const subscriptions = await sql`
-      SELECT product_type, status, current_period_end, created_at, is_test_mode
+      SELECT product_type, plan, status, current_period_end, created_at, is_test_mode
       FROM subscriptions
       WHERE user_id = ${userId}
       ORDER BY created_at DESC
@@ -175,7 +189,12 @@ export async function hasVaultMayaAccess(userId: string): Promise<boolean> {
     if (rows.some((row) => row.product_type === "vault_maya" && isSubscriptionAccessActive(row))) {
       return true
     }
-    return rows.some((row) => isMembershipProduct(row.product_type) && isSubscriptionAccessActive(row))
+    return rows.some(
+      row =>
+        isMembershipProduct(row.product_type) &&
+        row.plan !== "maya_essential_pilot" &&
+        isSubscriptionAccessActive(row),
+    )
   } catch (error) {
     console.error("[v0] [hasVaultMayaAccess] Error checking vault maya access:", error)
     return false
@@ -185,7 +204,10 @@ export async function hasVaultMayaAccess(userId: string): Promise<boolean> {
 export async function hasFullAccess(userId: string): Promise<boolean> {
   try {
     const subscription = await getUserSubscription(userId)
-    return ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(subscription?.product_type || "")
+    return (
+      ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(subscription?.product_type || "") &&
+      subscription?.plan !== "maya_essential_pilot"
+    )
   } catch (error) {
     console.error("[v0] [hasFullAccess] Error checking full access:", error)
     return false
@@ -227,7 +249,7 @@ export async function getUserProductAccess(userId: string): Promise<ProductType 
  * Only Studio Membership users have access
  */
 export async function hasAcademyAccess(userId: string): Promise<boolean> {
-  return await hasStudioMembership(userId)
+  return await hasFullStudioMembership(userId)
 }
 
 /**
