@@ -1,5 +1,25 @@
 # Completed releases
 
+## 2026-08-11 — Maya simplified member journey
+
+Made Maya own one visible job: turn one selfie and one real idea into a finished personal-brand post
+that looks and sounds like the member. Standard member navigation is now Create, Gallery, and Account;
+Calendar and Learn remain intact behind the journey instead of competing as primary products. The
+archived founder Home can only return through a new explicit preview flag. Create now leads with one
+recommendation, one idea field, and three optional starts, while a finished result has one dominant
+`Finish this post` action that uses the preserved Calendar engine for the caption and placement. No
+price, checkout, entitlement, subscription, credit, customer data, or frozen creative prompt changed.
+
+Why: current paid-member behavior showed creation and downloads carrying substantially more use than
+Calendar or Learn, while the five-destination interface obscured the outcome members are paying for.
+Production proof: feature commit `53091b30`, exact Ready Vercel deployment
+`dpl_9AWseLi6DpZ7CL19HuhKBMffBCTS`, 2,032 passing tests with 6 intentional skips, CI typecheck,
+repository invariants, changed-file lint with zero errors, a successful optimized production build,
+and clean diff checks. Authenticated desktop and 390px mobile QA confirmed the three-destination
+navigation, focused Create journey, no horizontal overflow, preserved direct Calendar access, and no
+`/app` runtime errors. The exact-SHA redeploy reached Ready after the first Vercel build hit a transient
+internal font-resolver error.
+
 ## 2026-08-11 — Two-speed comeback preparation
 
 Prepared the evidence-gated comeback without opening a second public campaign. Added a read-only,
