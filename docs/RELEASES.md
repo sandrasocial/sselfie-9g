@@ -1,5 +1,24 @@
 # Completed releases
 
+## 2026-08-11 — Two-speed comeback preparation
+
+Prepared the evidence-gated comeback without opening a second public campaign. Added a read-only,
+max-20 Maya Essential-versus-Pro cohort audit; a hidden, fail-closed EUR 29 Essential checkout and
+30-credit entitlement contract; plan-aware Maya-only versus Pro access; exact purchase, first-outcome,
+and repeat-use gates; and a five-target partnership pilot pack with one scoped EUR 3,000 tutorial
+offer. The Revenue Operator can now finish safe Maya and partnership preparation in the background
+while Prompt Vault remains the only public priority. No Stripe price or pilot flag was enabled, no
+customer access or current membership changed, and no invitation, email, application, publication,
+or brand outreach was sent.
+
+Production proof: feature commit `42524f6a`, Vercel deployment
+`dpl_EHER4taMpyemv4NQma3TZyizt29Y`, and the exact commit reached Ready on `sselfie.ai` and
+`www.sselfie.ai`. The full Vitest suite, typecheck, repository invariants, targeted payment and
+entitlement regression tests, the exact optimized production build, and diff checks passed. Live
+smoke checks returned health 200, preserved the public monthly membership checkout, redirected the
+private Essential URL to the failure path while the pilot remains disabled, and found no error or
+fatal runtime logs for the deployment.
+
 ## 2026-08-09 — SSELFIE comeback Revenue Operator
 
 Locked the comeback into one evidence-gated operating system with exactly three engines: owned-product
