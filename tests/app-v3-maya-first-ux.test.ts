@@ -10,7 +10,7 @@ describe("Maya-first Suite creation UX", () => {
     const frontDoor = read("components/app-v3/visual-front-door.tsx")
 
     expect(frontDoor).toContain("Your world")
-    expect(frontDoor).toContain("Maya&apos;s pick, with room to wander.")
+    expect(frontDoor).toContain("Maya&apos;s strongest place to start.")
     expect(frontDoor).toContain("Recreate this look")
     expect(frontDoor).toContain("Saved looks")
     expect(frontDoor).toContain("Recent shoots")

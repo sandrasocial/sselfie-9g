@@ -195,10 +195,10 @@ describe("Wave 1 Create actions", () => {
       expect.objectContaining({ referenceSelfieUrl: "https://example.com/member-selfie.jpg" })
     )
 
-    fireEvent.change(screen.getByLabelText("Tell Maya what you need"), {
+    fireEvent.change(screen.getByLabelText("Or start with your idea"), {
       target: { value: "A launch photo" },
     })
-    fireEvent.click(screen.getByRole("button", { name: "Start with Maya" }))
+    fireEvent.click(screen.getByRole("button", { name: "Create my post" }))
     expect(mocks.openWithAesthetic).toHaveBeenLastCalledWith(
       expect.objectContaining({ id: "maya-decides" }),
       expect.objectContaining({ referenceSelfieUrl: "https://example.com/member-selfie.jpg" })
@@ -209,10 +209,10 @@ describe("Wave 1 Create actions", () => {
     renderCreate()
     await screen.findByText("Your next photo")
 
-    fireEvent.change(screen.getByLabelText("Tell Maya what you need"), {
+    fireEvent.change(screen.getByLabelText("Or start with your idea"), {
       target: { value: "I don't know what to post today. Maya, choose for me." },
     })
-    fireEvent.click(screen.getByRole("button", { name: "Start with Maya" }))
+    fireEvent.click(screen.getByRole("button", { name: "Create my post" }))
 
     expect(mocks.openWithAesthetic).toHaveBeenLastCalledWith(
       expect.objectContaining({ id: "maya-decides" }),
@@ -233,7 +233,7 @@ describe("Wave 1 Create actions", () => {
     await screen.findByText("Your next photo")
 
     expect(screen.getByText(/Maya is finishing your current task/i)).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Start with Maya" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Create my post" })).toBeDisabled()
     expect(screen.getByRole("button", { name: "New" })).toBeDisabled()
   })
 

@@ -14,14 +14,16 @@ describe("Maya Operating Layer Phase 4 surface contract", () => {
     expect(shell).toContain("operatingLayerEnabled={mayaOperatingLayerEnabled}")
     expect(create).toContain("operatingLayerEnabled = false")
     expect(create).toContain('aria-controls="maya-create-more"')
-    expect(create).toContain("More creation options")
+    expect(create).toContain("Other ways to start")
     expect(create).toContain("operatingLayerEnabled && moreOpen")
   })
 
-  it("keeps the five member surfaces primary and leaves Content behind the rollback flag", () => {
+  it("keeps Calendar, Learn, and Content available without making them primary navigation", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
 
     expect(shell).not.toContain('{ id: "content", label:')
+    expect(shell).toContain('section === "calendar"')
+    expect(shell).toContain('section === "library"')
     expect(shell).toContain('{section === "content" && (')
   })
 
@@ -34,7 +36,7 @@ describe("Maya Operating Layer Phase 4 surface contract", () => {
     expect(shell).toContain("onCreateVariation")
     expect(gallery).toContain("onUseInCalendar")
     expect(gallery).toContain("onCreateVariation")
-    expect(lightbox).toContain("Use in Calendar")
+    expect(lightbox).toContain("Finish as a post")
     expect(lightbox).toContain("Create a variation")
   })
 

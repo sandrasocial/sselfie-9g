@@ -21,6 +21,7 @@ vi.mock("@/lib/user-mapping", () => ({
 
 vi.mock("@/lib/subscription", () => ({
   hasStudioMembership: mockHasStudioMembership,
+  hasFullStudioMembership: mockHasStudioMembership,
   getUserProductAccess: mockGetUserProductAccess,
 }))
 

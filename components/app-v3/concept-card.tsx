@@ -508,6 +508,65 @@ export function ConceptCard({
                 )}
               </div>
             )}
+            {/* The membership promise ends at a usable post, so this is the one dominant action.
+                Calendar stays underneath as the delivery engine without becoming a second tool
+                the member has to understand before she has a result. */}
+            {calendarAvailable &&
+              !isVideoDone &&
+              (calendarStatus === "saved" ? (
+                <div className="rounded-[10px] border border-[#C5C6C8]/50 bg-[#F8FAFA] p-3">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
+                    Post finished
+                    {savedPosition ? ` · Post ${savedPosition}` : ""}
+                    {savedDateLabel ? ` · ${savedDateLabel}` : ""}
+                  </p>
+                  {savedCaption ? (
+                    <>
+                      <div className="mt-2 flex items-center justify-between gap-3">
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
+                          Your caption
+                        </p>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              if (!navigator.clipboard) throw new Error("Clipboard unavailable")
+                              await navigator.clipboard.writeText(savedCaption)
+                              setCaptionCopied(true)
+                              window.setTimeout(() => setCaptionCopied(false), 1800)
+                            } catch {
+                              // Press-and-hold fallback is always available on the text itself.
+                            }
+                          }}
+                          className="inline-flex min-h-11 items-center text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                        >
+                          {captionCopied ? "Copied" : "Copy caption"}
+                        </button>
+                      </div>
+                      <pre className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap break-words font-sans text-[12px] leading-relaxed text-[#282728] [overflow-wrap:anywhere]">
+                        {savedCaption}
+                      </pre>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-[12px] leading-relaxed text-[#4F5052]">
+                      Your image is placed in your plan. Open it when you want to shape the caption.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleAddToCalendar}
+                  disabled={calendarStatus === "saving"}
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-[8px] bg-[#0D0E10] px-5 py-3.5 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728] disabled:opacity-50"
+                >
+                  {calendarStatus === "saving"
+                    ? "Finishing your post…"
+                    : calendarStatus === "error"
+                      ? "Try finishing this post again"
+                      : "Finish this post"}
+                </button>
+              ))}
             <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 min-[380px]:gap-3">
               {!isVideoDone && firstDownloadAssetId ? (
                 <FavoriteButton assetId={firstDownloadAssetId} />
@@ -622,64 +681,6 @@ export function ConceptCard({
                 Some photos didn&apos;t save. Please try again.
               </p>
             )}
-            {/* UX audit U1: a finished creation is a POST, not a pile of images — the plan
-                action and its caption live here in the open, not behind the More expander. */}
-            {calendarAvailable &&
-              !isVideoDone &&
-              (calendarStatus === "saved" ? (
-                <div className="rounded-[10px] border border-[#C5C6C8]/50 bg-[#F8FAFA] p-3">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
-                    In your plan
-                    {savedPosition ? ` · Post ${savedPosition}` : ""}
-                    {savedDateLabel ? ` · ${savedDateLabel}` : ""}
-                  </p>
-                  {savedCaption ? (
-                    <>
-                      <div className="mt-2 flex items-center justify-between gap-3">
-                        <p className="text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
-                          Your caption
-                        </p>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              if (!navigator.clipboard) throw new Error("Clipboard unavailable")
-                              await navigator.clipboard.writeText(savedCaption)
-                              setCaptionCopied(true)
-                              window.setTimeout(() => setCaptionCopied(false), 1800)
-                            } catch {
-                              // Press-and-hold fallback is always available on the text itself.
-                            }
-                          }}
-                          className="inline-flex min-h-11 items-center text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
-                        >
-                          {captionCopied ? "Copied" : "Copy caption"}
-                        </button>
-                      </div>
-                      <pre className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap break-words font-sans text-[12px] leading-relaxed text-[#282728] [overflow-wrap:anywhere]">
-                        {savedCaption}
-                      </pre>
-                    </>
-                  ) : (
-                    <p className="mt-1 text-[12px] leading-relaxed text-[#4F5052]">
-                      Open the post in your Calendar when you want to shape the caption.
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleAddToCalendar}
-                  disabled={calendarStatus === "saving"}
-                  className="inline-flex min-h-11 w-full items-center justify-center rounded-[8px] border border-[#0D0E10] bg-white px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] transition-colors hover:bg-[#F1F2F2] disabled:opacity-50"
-                >
-                  {calendarStatus === "saving"
-                    ? "Adding to your plan…"
-                    : calendarStatus === "error"
-                      ? "Try adding to your plan again"
-                      : "Add to my plan"}
-                </button>
-              ))}
             {resultActions}
             <details className="group rounded-[8px] border border-[#C5C6C8]/55 bg-white">
               <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3.5 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0D0E10]">

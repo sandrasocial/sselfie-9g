@@ -568,19 +568,17 @@ if (!runPlaywright) {
 
       await page.getByRole("button", { name: "Create my next post" }).click()
 
-      await expect(
-        page.getByText(/help me create one finished post i can publish/i)
-      ).toBeVisible()
+      await expect(page.getByText(/help me create one finished post i can publish/i)).toBeVisible()
       await expect(maya).toHaveAttribute("data-maya-format", "carousel")
       await expect(page.getByText("Choose your style")).toHaveCount(0)
       await expect(page.getByText("Three-part visibility carousel")).toBeVisible()
 
       await page.getByRole("button", { name: /Create this · 3 credits/i }).click()
-      await expect(page.getByRole("button", { name: "Add to my plan" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "Finish this post" })).toBeVisible()
       await expect(page.getByRole("button", { name: /Turn this into Stories/i })).toHaveCount(0)
       await expect(page.getByText("More things Maya can make")).toHaveCount(0)
-      await page.getByRole("button", { name: "Add to my plan" }).click()
-      await expect(page.getByText(/In your plan · Post 7/i)).toBeVisible()
+      await page.getByRole("button", { name: "Finish this post" }).click()
+      await expect(page.getByText(/Post finished · Post 7/i)).toBeVisible()
       await expect(
         page.getByText("A ready caption for this week's visibility piece.")
       ).toBeVisible()
@@ -602,11 +600,11 @@ if (!runPlaywright) {
       await expect(resume).toBeVisible({ timeout: 15_000 })
       await resume.click()
       await expect(maya).toHaveAttribute("data-maya-format", "carousel")
-      await expect(page.getByText(/In your plan · Post 7/i)).toBeVisible()
+      await expect(page.getByText(/Post finished · Post 7/i)).toBeVisible()
       await expect(
         page.getByText("A ready caption for this week's visibility piece.")
       ).toBeVisible()
-      await expect(page.getByRole("button", { name: "Add to my plan" })).toHaveCount(0)
+      await expect(page.getByRole("button", { name: "Finish this post" })).toHaveCount(0)
     })
 
     test("saves founder feedback without interrupting the Maya test session", async ({
@@ -645,7 +643,7 @@ if (!runPlaywright) {
         "page"
       )
       await expect(
-        page.getByRole("heading", { name: "Maya QA, what are we making?" })
+        page.getByRole("heading", { name: "Maya QA, your next finished post starts here." })
       ).toBeVisible()
       await expect(page.getByRole("region", { name: /what do you need/i })).toHaveCount(0)
       await expect(page.getByRole("button", { name: "Open Maya" })).toBeVisible()
@@ -791,7 +789,7 @@ if (!runPlaywright) {
       const lightbox = page.getByRole("dialog", { name: "Your finished creation" })
       await expect(lightbox).toBeVisible()
       await expect(lightbox.getByRole("button", { name: "Download", exact: true })).toBeVisible()
-      await expect(lightbox.getByRole("button", { name: "Use in Calendar" })).toBeVisible()
+      await expect(lightbox.getByRole("button", { name: "Finish as a post" })).toBeVisible()
       await lightbox.getByRole("button", { name: "Create a variation" }).click()
 
       await expect(maya).toHaveAttribute("data-maya-surface", "gallery")
@@ -799,7 +797,7 @@ if (!runPlaywright) {
       await page.getByRole("button", { name: "Close", exact: true }).click()
 
       await page.getByRole("button", { name: /Open Founder portrait/i }).click()
-      await page.getByRole("button", { name: "Use in Calendar" }).click()
+      await page.getByRole("button", { name: "Finish as a post" }).click()
       await expect(page.getByRole("button", { name: "Calendar", exact: true })).toHaveAttribute(
         "aria-current",
         "page"

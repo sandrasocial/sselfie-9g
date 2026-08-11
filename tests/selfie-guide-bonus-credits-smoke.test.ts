@@ -160,7 +160,7 @@ describe("selfie guide bonus credits smoke", () => {
       if (query.includes("INSERT INTO webhook_events") && query.includes("RETURNING id")) {
         return [{ id: 1 }]
       }
-      if (query.includes("SELECT user_id, product_type, current_period_start") && query.includes("FROM subscriptions")) {
+      if (query.includes("SELECT user_id, product_type") && query.includes("FROM subscriptions")) {
         return [
           {
             user_id: "user_bonus_1",
@@ -262,7 +262,7 @@ describe("selfie guide bonus credits smoke", () => {
       if (query.includes("INSERT INTO webhook_events") && query.includes("RETURNING id")) {
         return [{ id: 1 }]
       }
-      if (query.includes("SELECT user_id, product_type, current_period_start") && query.includes("FROM subscriptions")) {
+      if (query.includes("SELECT user_id, product_type") && query.includes("FROM subscriptions")) {
         return [
           {
             user_id: "user_bonus_1",

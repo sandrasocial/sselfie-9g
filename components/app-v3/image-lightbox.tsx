@@ -278,7 +278,7 @@ export function ImageLightbox({
               onClick={() => onUseInCalendar(index)}
               className="inline-flex min-h-11 items-center rounded-full border border-white/40 px-5 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:border-white"
             >
-              Use in Calendar
+              Finish as a post
             </button>
           ) : null}
           {onCreateVariation ? (

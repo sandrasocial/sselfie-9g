@@ -27,6 +27,7 @@ import { AccountView } from "./account-view"
 import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
 import type { AppV3GalleryAsset } from "@/lib/app-v3/gallery-assets"
 import type { AppV3Section } from "@/lib/app-v3/navigation"
+import { isPrimaryMemberSection } from "@/lib/app-v3/member-navigation"
 import {
   buildStoredSectionHref,
   readStoredAppSection,
@@ -432,7 +433,9 @@ function ShellInner({
   const mayaUsesSideWorkspace = section === "calendar" || (section === "create" && !mayaHomeEnabled)
   const visibleNav = mayaEssential
     ? NAV.filter(item => item.id === "create" || item.id === "account")
-    : NAV
+    : mayaHomeEnabled
+      ? NAV
+      : NAV.filter(item => isPrimaryMemberSection(item.id))
   const nav = mayaHomeEnabled
     ? visibleNav.map(item =>
         item.id === "create" ? { ...item, label: "Maya", icon: MessageCircle } : item
@@ -538,7 +541,8 @@ function ShellInner({
           onBrowse={() => openGallery("all")}
         />
       )}
-      {section === "calendar" && !mayaEssential &&
+      {section === "calendar" &&
+        !mayaEssential &&
         (limited ? (
           <div className="mx-auto max-w-3xl px-5 py-10">
             <div className="rounded-[8px] border border-[#0D0E10] bg-white p-5 shadow-sm">

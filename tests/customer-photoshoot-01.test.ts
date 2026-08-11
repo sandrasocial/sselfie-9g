@@ -9,9 +9,6 @@ describe("CUSTOMER-PHOTOSHOOT-01 format contract", () => {
   it("adds Photoshoot as a first-class customer format", () => {
     expect(read("components/app-v3/types.ts")).toContain('"photoshoot"')
     expect(read("components/app-v3/visual-front-door.tsx")).toContain('photoshoot: "Full shoot"')
-    expect(read("components/app-v3/visual-front-door.tsx")).toContain(
-      "A launch photo, a full shoot"
-    )
     expect(read("components/app-v3/maya-concierge.tsx")).toContain('id: "photoshoot"')
     expect(read("lib/app-v3/maya/draft-snapshot.ts")).toContain('"photoshoot"')
   })

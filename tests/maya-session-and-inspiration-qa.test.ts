@@ -144,7 +144,7 @@ describe("QA open-list build (2026-07-06)", () => {
     // typed start / chips column must not render at all until she has one saved.
     expect(frontDoor).toContain("if (!hasSelfie)")
     expect(frontDoor).toContain("Maya recommends ·")
-    expect(frontDoor).toContain("Tell Maya what you need")
+    expect(frontDoor).toContain("Or start with your idea")
   })
 })
 

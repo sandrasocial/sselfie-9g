@@ -53,7 +53,9 @@ function readStartedRecommendations(): Set<string> {
     const now = Date.now()
     return new Set(
       Object.entries(parsed)
-        .filter(([, startedAt]) => typeof startedAt === "number" && now - startedAt < STARTED_REC_TTL_MS)
+        .filter(
+          ([, startedAt]) => typeof startedAt === "number" && now - startedAt < STARTED_REC_TTL_MS
+        )
         .map(([title]) => title)
     )
   } catch {
@@ -68,7 +70,8 @@ function markRecommendationStarted(title: string) {
     const now = Date.now()
     const next: Record<string, number> = {}
     for (const [key, startedAt] of Object.entries(parsed)) {
-      if (typeof startedAt === "number" && now - startedAt < STARTED_REC_TTL_MS) next[key] = startedAt
+      if (typeof startedAt === "number" && now - startedAt < STARTED_REC_TTL_MS)
+        next[key] = startedAt
     }
     next[title] = now
     window.localStorage.setItem(STARTED_RECS_KEY, JSON.stringify(next))
@@ -180,9 +183,7 @@ function VisualCard({
             alt=""
             fill
             priority={priority}
-            sizes={
-              compact ? "(max-width: 720px) 88vw, 28vw" : "(max-width: 1024px) 100vw, 42vw"
-            }
+            sizes={compact ? "(max-width: 720px) 88vw, 28vw" : "(max-width: 1024px) 100vw, 42vw"}
             className={`object-cover object-[50%_18%] opacity-95 transition-transform duration-700 ease-out group-hover:scale-[1.025] ${
               editorial ? "lg:object-[50%_0%]" : ""
             }`}
@@ -289,7 +290,11 @@ export function VisualFrontDoor({
   const recommendation = useMemo(() => {
     void startedRecEpoch
     const started = readStartedRecommendations()
-    return recommendations.find(item => !started.has(item.title)) ?? recommendations[0] ?? FALLBACK_RECOMMENDATION
+    return (
+      recommendations.find(item => !started.has(item.title)) ??
+      recommendations[0] ??
+      FALLBACK_RECOMMENDATION
+    )
   }, [recommendations, startedRecEpoch])
   const recommendationImage = recommendation.imageUrl || fallbackImage
   const alternateWorlds = useMemo(() => {
@@ -520,6 +525,11 @@ export function VisualFrontDoor({
       action: () => openFresh({ referenceSelfieUrl: primarySelfieUrl }),
     },
   ]
+  // The focused member surface keeps only setup controls here. "For you" is already the hero,
+  // while saved looks and recent shoots have their own visual sections below.
+  const focusedQuickActions = quickActions.filter(({ label }) =>
+    ["My selfies", "Inspiration", "New"].includes(label)
+  )
 
   if (!hasSelfie) {
     return (
@@ -571,33 +581,35 @@ export function VisualFrontDoor({
       <header className="flex flex-col gap-5 border-b border-[color:var(--ss-silver)]/55 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] uppercase tracking-[0.34em] text-[color:var(--ss-gray)]">
-            Your world
+            Your next post
           </p>
           <h1 className="mt-2 font-serif text-[38px] font-light leading-none text-[color:var(--ss-night)] sm:text-[56px]">
-            {firstName ? `${firstName}, what are we making?` : "What are we making?"}
+            {firstName
+              ? `${firstName}, your next finished post starts here.`
+              : "Your next finished post starts here."}
           </h1>
           <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-[color:var(--ss-davy)]">
-            Explore a direction, continue a shoot, or tell Maya what you need. Your identity stays
-            with you across every path.
+            One selfie. One idea. One finished post that looks and sounds like you. Maya chooses a
+            strong direction, creates the visual, and helps you finish the words.
           </p>
         </div>
         {!operatingLayerEnabled ? (
           <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={openHistory}
-          disabled={workspaceBusy}
-          className="inline-flex min-h-11 items-center gap-2 self-start rounded-[5px] border border-[color:var(--ss-silver)] bg-white px-4 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ss-night)] sm:self-auto"
-        >
-          <History size={15} aria-hidden /> Creative tasks
-        </button>
-        <button
-          type="button"
-          onClick={() => setMemoryOpen(true)}
-          className="inline-flex min-h-11 items-center self-start px-2 text-[11px] text-[color:var(--ss-davy)] underline underline-offset-4 sm:self-auto"
-        >
-          What Maya knows
-        </button>
+            <button
+              type="button"
+              onClick={openHistory}
+              disabled={workspaceBusy}
+              className="inline-flex min-h-11 items-center gap-2 self-start rounded-[5px] border border-[color:var(--ss-silver)] bg-white px-4 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ss-night)] sm:self-auto"
+            >
+              <History size={15} aria-hidden /> Creative tasks
+            </button>
+            <button
+              type="button"
+              onClick={() => setMemoryOpen(true)}
+              className="inline-flex min-h-11 items-center self-start px-2 text-[11px] text-[color:var(--ss-davy)] underline underline-offset-4 sm:self-auto"
+            >
+              What Maya knows
+            </button>
           </div>
         ) : null}
       </header>
@@ -609,24 +621,24 @@ export function VisualFrontDoor({
       ) : null}
 
       {!operatingLayerEnabled ? (
-      <nav
-        aria-label="Create shortcuts"
-        className="-mx-4 overflow-x-auto px-4 py-5 sm:-mx-8 sm:px-8"
-      >
-        <div className="flex min-w-max gap-2">
-          {quickActions.map(({ label, icon: Icon, action }) => (
-            <button
-              key={label}
-              type="button"
-              onClick={action}
-              disabled={workspaceBusy}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[color:var(--ss-silver)]/70 bg-white px-4 text-[11px] text-[color:var(--ss-davy)] transition-colors hover:border-[color:var(--ss-night)] hover:text-[color:var(--ss-night)]"
-            >
-              <Icon size={14} strokeWidth={1.7} aria-hidden /> {label}
-            </button>
-          ))}
-        </div>
-      </nav>
+        <nav
+          aria-label="Create shortcuts"
+          className="-mx-4 overflow-x-auto px-4 py-5 sm:-mx-8 sm:px-8"
+        >
+          <div className="flex min-w-max gap-2">
+            {quickActions.map(({ label, icon: Icon, action }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={action}
+                disabled={workspaceBusy}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[color:var(--ss-silver)]/70 bg-white px-4 text-[11px] text-[color:var(--ss-davy)] transition-colors hover:border-[color:var(--ss-night)] hover:text-[color:var(--ss-night)]"
+              >
+                <Icon size={14} strokeWidth={1.7} aria-hidden /> {label}
+              </button>
+            ))}
+          </div>
+        </nav>
       ) : null}
 
       <section ref={forYouRef} aria-labelledby="for-you-heading" className="scroll-mt-5 pt-2">
@@ -639,7 +651,7 @@ export function VisualFrontDoor({
               id="for-you-heading"
               className="mt-1 font-serif text-[30px] font-light text-[color:var(--ss-night)] sm:text-[38px]"
             >
-              Maya&apos;s pick, with room to wander.
+              Maya&apos;s strongest place to start.
             </h2>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-4">
@@ -688,21 +700,21 @@ export function VisualFrontDoor({
             layout="editorial"
           />
           {!operatingLayerEnabled ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            {alternateWorlds.map(world => (
-              <VisualCard
-                key={world.id}
-                image={world.coverImage}
-                eyebrow="Another direction"
-                title={world.name}
-                body={world.blurb}
-                action="Recreate this look"
-                onClick={() => openWorld(world)}
-                compact
-                disabled={workspaceBusy}
-              />
-            ))}
-          </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              {alternateWorlds.map(world => (
+                <VisualCard
+                  key={world.id}
+                  image={world.coverImage}
+                  eyebrow="Another direction"
+                  title={world.name}
+                  body={world.blurb}
+                  action="Recreate this look"
+                  onClick={() => openWorld(world)}
+                  compact
+                  disabled={workspaceBusy}
+                />
+              ))}
+            </div>
           ) : null}
         </div>
       </section>
@@ -711,14 +723,14 @@ export function VisualFrontDoor({
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <label className="block min-w-0">
             <span className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">
-              Tell Maya what you need
+              Or start with your idea
             </span>
             <textarea
               value={startText}
               onChange={event => setStartText(event.target.value)}
               disabled={workspaceBusy}
               rows={2}
-              placeholder="A launch photo, a full shoot, a Reel cover…"
+              placeholder="What do you want this post to say?"
               className="mt-3 min-h-[92px] w-full resize-none border-0 border-b border-[color:var(--ss-silver)] bg-transparent px-0 py-3 font-serif text-[24px] font-light leading-tight text-[color:var(--ss-night)] outline-none placeholder:text-[color:var(--ss-gray)] focus:border-[color:var(--ss-night)]"
             />
           </label>
@@ -728,7 +740,7 @@ export function VisualFrontDoor({
             disabled={workspaceBusy}
             className="min-h-12 rounded-[5px] bg-[color:var(--ss-night)] px-6 text-[11px] uppercase tracking-[0.18em] text-white"
           >
-            Start with Maya
+            Create my post
           </button>
         </div>
         {hasVaultAccess ? (
@@ -747,15 +759,15 @@ export function VisualFrontDoor({
             aria-controls="maya-create-more"
             className="inline-flex min-h-11 items-center rounded-[5px] border border-[color:var(--ss-silver)] bg-white px-4 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ss-night)]"
           >
-            {moreOpen ? "Hide creation options" : "More creation options"}
+            {moreOpen ? "Hide other ways to start" : "Other ways to start"}
           </button>
         </div>
       ) : null}
 
       {operatingLayerEnabled && moreOpen ? (
         <div id="maya-create-more" className="border-t border-[color:var(--ss-silver)]/55 pt-6">
-          <div className="flex flex-wrap gap-2" aria-label="More creation options">
-            {quickActions.map(({ label, icon: Icon, action }) => (
+          <div className="flex flex-wrap gap-2" aria-label="Other ways to start">
+            {focusedQuickActions.map(({ label, icon: Icon, action }) => (
               <button
                 key={label}
                 type="button"
@@ -767,154 +779,122 @@ export function VisualFrontDoor({
               </button>
             ))}
           </div>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            {alternateWorlds.map(world => (
-              <VisualCard
-                key={world.id}
-                image={world.coverImage}
-                eyebrow="Another direction"
-                title={world.name}
-                body={world.blurb}
-                action="Recreate this look"
-                onClick={() => openWorld(world)}
-                compact
-                disabled={workspaceBusy}
-              />
-            ))}
-          </div>
-          <div className="mt-5 flex flex-wrap gap-4">
-            <button
-              type="button"
-              onClick={openHistory}
-              disabled={workspaceBusy}
-              className="min-h-11 text-[11px] text-[color:var(--ss-davy)] underline underline-offset-4"
-            >
-              History
-            </button>
-            <button
-              type="button"
-              onClick={() => setMemoryOpen(true)}
-              className="min-h-11 text-[11px] text-[color:var(--ss-davy)] underline underline-offset-4"
-            >
-              What Maya knows
-            </button>
-          </div>
         </div>
       ) : null}
 
-      {!operatingLayerEnabled || moreOpen ? (
+      {!operatingLayerEnabled ? (
         <>
-      <section
-        ref={savedRef}
-        aria-labelledby="saved-heading"
-        className="scroll-mt-5 border-t border-[color:var(--ss-silver)]/55 py-10"
-      >
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">
-              Saved looks
-            </p>
-            <h2
-              id="saved-heading"
-              className="mt-1 font-serif text-[30px] font-light text-[color:var(--ss-night)]"
-            >
-              The directions you kept.
-            </h2>
-          </div>
-          <span className="text-[11px] text-[color:var(--ss-gray)]">
-            {savedLooks.length || 0} saved
-          </span>
-        </div>
-        {savedLooks.length ? (
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {savedLooks.map(asset => (
-              <button
-                key={asset.id}
-                type="button"
-                onClick={() => continueFromAsset(asset)}
-                disabled={workspaceBusy}
-                className="group text-left"
-              >
-                <span className="relative block aspect-[4/5] overflow-hidden rounded-[7px] bg-[color:var(--ss-silver)]/30">
-                  <Image
-                    src={asset.url}
-                    alt=""
-                    fill
-                    sizes="(max-width: 640px) 48vw, 22vw"
-                    className="object-cover object-[50%_18%] transition-transform duration-500 group-hover:scale-[1.025]"
-                  />
-                </span>
-                <span className="mt-2 block text-[11px] text-[color:var(--ss-davy)]">
-                  Continue this shoot
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-5 rounded-[8px] border border-dashed border-[color:var(--ss-silver)] p-6 text-[13px] leading-relaxed text-[color:var(--ss-gray)]">
-            Keep a result in Maya or tap the heart in Gallery and it will appear here.
-          </div>
-        )}
-      </section>
-
-      <section
-        ref={recentRef}
-        aria-labelledby="recent-heading"
-        className="scroll-mt-5 border-t border-[color:var(--ss-silver)]/55 py-10"
-      >
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">
-            Recent shoots
-          </p>
-          <h2
-            id="recent-heading"
-            className="mt-1 font-serif text-[30px] font-light text-[color:var(--ss-night)]"
+          <section
+            ref={savedRef}
+            aria-labelledby="saved-heading"
+            className="scroll-mt-5 border-t border-[color:var(--ss-silver)]/55 py-10"
           >
-            Pick up where you left off.
-          </h2>
-        </div>
-        {recentShoots.length ? (
-          <div className="-mx-4 mt-5 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
-            {recentShoots.map(asset => (
-              <button
-                key={asset.id}
-                type="button"
-                onClick={() => continueFromAsset(asset)}
-                disabled={workspaceBusy}
-                className="group w-[190px] shrink-0 snap-start text-left sm:w-[220px]"
-              >
-                <span className="relative block aspect-[4/5] overflow-hidden rounded-[7px] bg-[color:var(--ss-silver)]/30">
-                  <Image
-                    src={asset.url}
-                    alt=""
-                    fill
-                    sizes="220px"
-                    className="object-cover object-[50%_18%] transition-transform duration-500 group-hover:scale-[1.025]"
-                  />
-                </span>
-                <span className="mt-2 flex items-center justify-between gap-2 text-[11px] text-[color:var(--ss-davy)]">
-                  Continue this shoot <ArrowUpRight size={13} aria-hidden />
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => openFresh({ referenceSelfieUrl: primarySelfieUrl })}
-            disabled={workspaceBusy}
-            className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-[5px] border border-[color:var(--ss-night)] px-5 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-night)]"
-          >
-            <Images size={15} aria-hidden /> Start your first shoot
-          </button>
-        )}
-      </section>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">
+                  Saved looks
+                </p>
+                <h2
+                  id="saved-heading"
+                  className="mt-1 font-serif text-[30px] font-light text-[color:var(--ss-night)]"
+                >
+                  The directions you kept.
+                </h2>
+              </div>
+              <span className="text-[11px] text-[color:var(--ss-gray)]">
+                {savedLooks.length || 0} saved
+              </span>
+            </div>
+            {savedLooks.length ? (
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {savedLooks.map(asset => (
+                  <button
+                    key={asset.id}
+                    type="button"
+                    onClick={() => continueFromAsset(asset)}
+                    disabled={workspaceBusy}
+                    className="group text-left"
+                  >
+                    <span className="relative block aspect-[4/5] overflow-hidden rounded-[7px] bg-[color:var(--ss-silver)]/30">
+                      <Image
+                        src={asset.url}
+                        alt=""
+                        fill
+                        sizes="(max-width: 640px) 48vw, 22vw"
+                        className="object-cover object-[50%_18%] transition-transform duration-500 group-hover:scale-[1.025]"
+                      />
+                    </span>
+                    <span className="mt-2 block text-[11px] text-[color:var(--ss-davy)]">
+                      Continue this shoot
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-5 rounded-[8px] border border-dashed border-[color:var(--ss-silver)] p-6 text-[13px] leading-relaxed text-[color:var(--ss-gray)]">
+                Keep a result in Maya or tap the heart in Gallery and it will appear here.
+              </div>
+            )}
+          </section>
 
-      <footer className="border-t border-[color:var(--ss-silver)]/55 py-6 text-[11px] text-[color:var(--ss-gray)]">
-        {referenceCount > 0
-          ? `${referenceCount} identity ${referenceCount === 1 ? "reference" : "references"} ready for Maya.`
-          : "Your saved identity will appear here when it is ready."}
-      </footer>
+          <section
+            ref={recentRef}
+            aria-labelledby="recent-heading"
+            className="scroll-mt-5 border-t border-[color:var(--ss-silver)]/55 py-10"
+          >
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">
+                Recent shoots
+              </p>
+              <h2
+                id="recent-heading"
+                className="mt-1 font-serif text-[30px] font-light text-[color:var(--ss-night)]"
+              >
+                Pick up where you left off.
+              </h2>
+            </div>
+            {recentShoots.length ? (
+              <div className="-mx-4 mt-5 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
+                {recentShoots.map(asset => (
+                  <button
+                    key={asset.id}
+                    type="button"
+                    onClick={() => continueFromAsset(asset)}
+                    disabled={workspaceBusy}
+                    className="group w-[190px] shrink-0 snap-start text-left sm:w-[220px]"
+                  >
+                    <span className="relative block aspect-[4/5] overflow-hidden rounded-[7px] bg-[color:var(--ss-silver)]/30">
+                      <Image
+                        src={asset.url}
+                        alt=""
+                        fill
+                        sizes="220px"
+                        className="object-cover object-[50%_18%] transition-transform duration-500 group-hover:scale-[1.025]"
+                      />
+                    </span>
+                    <span className="mt-2 flex items-center justify-between gap-2 text-[11px] text-[color:var(--ss-davy)]">
+                      Continue this shoot <ArrowUpRight size={13} aria-hidden />
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => openFresh({ referenceSelfieUrl: primarySelfieUrl })}
+                disabled={workspaceBusy}
+                className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-[5px] border border-[color:var(--ss-night)] px-5 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-night)]"
+              >
+                <Images size={15} aria-hidden /> Start your first shoot
+              </button>
+            )}
+          </section>
+
+          <footer className="border-t border-[color:var(--ss-silver)]/55 py-6 text-[11px] text-[color:var(--ss-gray)]">
+            {referenceCount > 0
+              ? `${referenceCount} identity ${referenceCount === 1 ? "reference" : "references"} ready for Maya.`
+              : "Your saved identity will appear here when it is ready."}
+          </footer>
         </>
       ) : null}
       <MemoryModal

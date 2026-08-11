@@ -45,6 +45,10 @@ export function isMayaOperatingLayerEnabled(identity?: MayaOperatingLayerIdentit
 /** Maya Home is a narrower founder-preview cohort than the existing operating layer.
  * The global operating-layer flag must never widen this UI rollout. */
 export function isMayaHomeEnabled(identity?: MayaOperatingLayerIdentity): boolean {
+  // The founder Home experiment is archived by default. Keeping the code and cohort intact
+  // makes the decision reversible without letting an old allowlist silently reactivate it.
+  if (!isEnabled(process.env.FEATURE_MAYA_HOME_PREVIEW)) return false
+
   const previewAllowlist = normalizedEntries(
     process.env.MAYA_HOME_ALLOWLIST || process.env.MAYA_OPERATING_LAYER_ALLOWLIST
   )
