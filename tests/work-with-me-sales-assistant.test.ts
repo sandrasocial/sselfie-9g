@@ -35,7 +35,10 @@ describe("Work With Me sales assistant", () => {
     expect(draft).toContain("two weeks of preparation")
     expect(draft).toContain("four weekly 45-minute calls")
     expect(draft).toContain("https://checkout.stripe.com/c/pay/cs_live_example")
-    expect(draft).toContain("one clear offer")
+    expect(draft).toContain("one client-ready online path")
+    expect(draft).toContain("offer page copy")
+    expect(draft).toContain("inquiry path")
+    expect(draft).not.toContain("guarantee")
   })
 
   it("turns the application into a compact call brief", () => {

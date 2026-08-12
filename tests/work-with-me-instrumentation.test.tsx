@@ -58,7 +58,7 @@ describe("Work With Me instrumentation", () => {
     } as Response)
     render(<InquiryForm />)
 
-    const submit = screen.getByRole("button", { name: "Apply for the Sprint" })
+    const submit = screen.getByRole("button", { name: "Apply to Work With Me" })
     fireEvent.submit(submit.closest("form")!)
 
     await waitFor(() => {
@@ -77,7 +77,7 @@ describe("Work With Me instrumentation", () => {
     } as Response)
     render(<InquiryForm />)
 
-    const submit = screen.getByRole("button", { name: "Apply for the Sprint" })
+    const submit = screen.getByRole("button", { name: "Apply to Work With Me" })
     fireEvent.submit(submit.closest("form")!)
 
     await waitFor(() => {

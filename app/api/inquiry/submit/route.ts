@@ -189,15 +189,15 @@ export async function POST(req: NextRequest) {
           <p style="margin: 0 0 12px;"><strong>Email:</strong> ${safeEmail}</p>
           <p style="margin: 0 0 24px;"><strong>Instagram:</strong> ${safeHandle || "Not provided"}</p>
           <div style="margin: 0 0 20px;">
-            <p style="margin: 0 0 8px; font-weight: 600;">What makes the offer hard to explain or sell right now?</p>
+            <p style="margin: 0 0 8px; font-weight: 600;">What is happening online right now that is not working?</p>
             <p style="margin: 0; line-height: 1.7;">${safeChallenge}</p>
           </div>
           <div>
-            <p style="margin: 0 0 8px; font-weight: 600;">What do they want this one clear offer to make possible?</p>
+            <p style="margin: 0 0 8px; font-weight: 600;">What do they want the right clients to understand, trust, or do next?</p>
             <p style="margin: 0; line-height: 1.7;">${safeOutcome}</p>
           </div>
           <div style="margin: 20px 0 0;">
-            <p style="margin: 0 0 8px; font-weight: 600;">What skill or service do they already want to sell?</p>
+            <p style="margin: 0 0 8px; font-weight: 600;">What service are they already selling, and what result does it create?</p>
             <p style="margin: 0; line-height: 1.7;">${safeCurrentOffer}</p>
           </div>
           <div style="margin: 20px 0 0;">
@@ -224,13 +224,13 @@ export async function POST(req: NextRequest) {
         `Email: ${email}`,
         `Instagram: ${instagramHandle || "Not provided"}`,
         "",
-        "What makes the offer hard to explain or sell right now?",
+        "What is happening online right now that is not working?",
         currentChallenge,
         "",
-        "What do they want this one clear offer to make possible?",
+        "What do they want the right clients to understand, trust, or do next?",
         desiredOutcome,
         "",
-        "What skill or service do they already want to sell?",
+        "What service are they already selling, and what result does it create?",
         currentOffer,
         "",
         "Sprint focus",
@@ -261,7 +261,7 @@ export async function POST(req: NextRequest) {
         <div style="font-family: Inter, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color: #1c1917;">
           <p>Hi ${safeName},</p>
           <p>I have your application. Thank you for trusting me with it.</p>
-          <p>I will look at the skill or service you want to sell and whether I can genuinely help you make that one offer clearer.</p>
+          <p>I will look at the service you already deliver and whether I can genuinely help you turn it into a clearer online path to the right clients.</p>
           <p>If it looks like the right fit, I will reply with the next step. That usually means a short fit call first. No payment has been taken.</p>
           <p>Sandra x</p>
         </div>
@@ -270,7 +270,7 @@ export async function POST(req: NextRequest) {
         `Hi ${name},`,
         "",
         "I have your application. Thank you for trusting me with it.",
-        "I will look at the skill or service you want to sell and whether I can genuinely help you make that one offer clearer.",
+        "I will look at the service you already deliver and whether I can genuinely help you turn it into a clearer online path to the right clients.",
         "If it looks like the right fit, I will reply with the next step. That usually means a short fit call first. No payment has been taken.",
         "",
         "Sandra x",
