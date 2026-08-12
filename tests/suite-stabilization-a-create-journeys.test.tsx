@@ -177,7 +177,7 @@ describe("Stabilization A Creative Tasks", () => {
     )
   })
 
-  it("reopens a past Creative Task and restores its conversation", async () => {
+  it("reopens a past post project and restores its conversation", async () => {
     render(
       <ConciergeProvider suppressRestore>
         <OpenMaya />
@@ -187,9 +187,9 @@ describe("Stabilization A Creative Tasks", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Open Maya" }))
     fireEvent.click(await screen.findByRole("button", { name: "Menu" }))
-    fireEvent.click(screen.getByRole("button", { name: "History" }))
-    const history = await screen.findByRole("dialog", { name: /Creative tasks/i })
-    fireEvent.click(within(history).getByRole("button", { name: /^Plan Past task/ }))
+    fireEvent.click(screen.getByRole("button", { name: "Work" }))
+    const history = await screen.findByRole("dialog", { name: /Your post projects/i })
+    fireEvent.click(within(history).getByRole("button", { name: /^Past task ·/ }))
 
     // This mock intentionally projects `messages: []` on every render, unlike the stateful
     // useChat hook. Assert that the saved transcript is applied without requiring it to remain
@@ -201,10 +201,10 @@ describe("Stabilization A Creative Tasks", () => {
         ]),
       { timeout: 10000 }
     )
-    expect(screen.queryByRole("dialog", { name: /Creative tasks/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("dialog", { name: /Your post projects/i })).not.toBeInTheDocument()
   }, 15000)
 
-  it("closes Creative Tasks without changing the current workspace", async () => {
+  it("closes post projects without changing the current workspace", async () => {
     render(
       <ConciergeProvider suppressRestore>
         <OpenMaya />
@@ -214,15 +214,15 @@ describe("Stabilization A Creative Tasks", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Open Maya" }))
     fireEvent.click(await screen.findByRole("button", { name: "Menu" }))
-    fireEvent.click(screen.getByRole("button", { name: "History" }))
-    const history = await screen.findByRole("dialog", { name: /Creative tasks/i })
+    fireEvent.click(screen.getByRole("button", { name: "Work" }))
+    const history = await screen.findByRole("dialog", { name: /Your post projects/i })
     fireEvent.click(within(history).getByRole("button", { name: "Close" }))
 
-    expect(screen.queryByRole("dialog", { name: /Creative tasks/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("dialog", { name: /Your post projects/i })).not.toBeInTheDocument()
     expect(screen.getByRole("dialog", { name: /SSELFIE/i })).toBeInTheDocument()
   })
 
-  it("keeps the Creative Tasks layer clickable inside Maya's pointer-safe shell", async () => {
+  it("keeps the post projects layer clickable inside Maya's pointer-safe shell", async () => {
     render(
       <ChatHistoryModal
         open
@@ -232,7 +232,7 @@ describe("Stabilization A Creative Tasks", () => {
       />
     )
 
-    const history = await screen.findByRole("dialog", { name: /Creative tasks/i })
+    const history = await screen.findByRole("dialog", { name: /Your post projects/i })
     expect(history.parentElement).toHaveClass("pointer-events-auto")
   })
 
@@ -244,8 +244,8 @@ describe("Stabilization A Creative Tasks", () => {
       <ChatHistoryModal open currentChatId="current-task" onClose={onClose} onSelect={onSelect} />
     )
 
-    const history = await screen.findByRole("dialog", { name: /Creative tasks/i })
-    fireEvent.click(within(history).getByRole("button", { name: /^Plan Past task/ }))
+    const history = await screen.findByRole("dialog", { name: /Your post projects/i })
+    fireEvent.click(within(history).getByRole("button", { name: /^Past task ·/ }))
 
     await waitFor(() => expect(onSelect).toHaveBeenCalledWith("past-task"))
     expect(onClose).toHaveBeenCalledTimes(1)

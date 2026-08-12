@@ -22,7 +22,9 @@ describe("start-new chat integrity", () => {
     expect(concierge).toContain("draftSeededRef")
     expect(concierge).toContain("!draftSeededRef.current && session?.startedAt")
     // The old always-re-seed condition must not come back.
-    expect(concierge).not.toContain("if (restoredDraftRef.current === null && session?.startedAt) {")
+    expect(concierge).not.toContain(
+      "if (restoredDraftRef.current === null && session?.startedAt) {"
+    )
   })
 
   it("never saves a stale thread under a new session key (the save-race that resurrected old chats)", () => {
@@ -106,7 +108,7 @@ describe("QA open-list build (2026-07-06)", () => {
     expect(concierge).toContain('fetch("/api/app-v3/account")')
     expect(concierge).toContain("credits`")
     // Every generation response refreshes it via the shared depletion handler.
-    expect(concierge).toContain("if (typeof balance === \"number\") setCreditBalance(balance)")
+    expect(concierge).toContain('if (typeof balance === "number") setCreditBalance(balance)')
   })
 
   it("Continue history opens the real chat list, not just the in-memory drawer", () => {
@@ -119,8 +121,8 @@ describe("QA open-list build (2026-07-06)", () => {
     expect(launcher).toContain("Saved sessions resume directly")
     expect(concierge).toContain("lastHistoryRequestRef")
     expect(concierge).toContain("setHistoryOpen(true)")
-    expect(concierge).toContain("New chat")
-    expect(concierge).toContain("History")
+    expect(concierge).toContain("New post")
+    expect(concierge).toContain("Work")
   })
 
   it("Maya chooses one strongest look before planning anything", () => {

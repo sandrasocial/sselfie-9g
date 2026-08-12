@@ -41,11 +41,16 @@ if (!runPlaywright) {
       }
       page.on("pageerror", (error: Error) => browserErrors.push(error.message))
       page.on("console", (message: any) => {
-        const text = message.text()
+        const messageText = message.text()
         const isSentryTransportNoise =
-          text.startsWith("Sentry Logger [error]: Encountered error running transport request") ||
-          text.startsWith("Sentry Logger [error]: Error while sending envelope")
-        if (message.type() === "error" && !isSentryTransportNoise) browserErrors.push(text)
+          messageText.startsWith(
+            "Sentry Logger [error]: Encountered error running transport request"
+          ) || messageText.startsWith("Sentry Logger [error]: Error while sending envelope")
+        const sourceUrl = message.location?.().url
+        const isExternalFontNoise = sourceUrl?.startsWith("https://fonts.gstatic.com/")
+        if (message.type() === "error" && !isSentryTransportNoise && !isExternalFontNoise) {
+          browserErrors.push(sourceUrl ? `${messageText} (${sourceUrl})` : messageText)
+        }
       })
       const posts = Array.from({ length: 9 }, (_, index) => {
         const position = index + 1
@@ -555,7 +560,7 @@ if (!runPlaywright) {
       await page.getByRole("button", { name: "Send", exact: true }).click()
       await expect(page.getByText("Maya QA response for the Create task.")).toBeVisible()
       await page.getByRole("button", { name: "Menu" }).click()
-      await expect(page.getByRole("button", { name: "What Maya knows" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "Brand profile" })).toBeVisible()
     })
 
     test("turns the next-post outcome into one Maya-decided creation path", async ({
@@ -631,14 +636,14 @@ if (!runPlaywright) {
       expect((page as any).__mayaFounderReports).toHaveLength(1)
     })
 
-    test("keeps existing operating-layer members on their current Create experience", async ({
+    test("keeps existing operating-layer members on their focused Today experience", async ({
       page,
     }: {
       page: any
     }) => {
       await page.goto("/e2e/maya-operating-layer?home=0", { waitUntil: "domcontentloaded" })
 
-      await expect(page.getByRole("button", { name: "Create", exact: true })).toHaveAttribute(
+      await expect(page.getByRole("button", { name: "Today", exact: true })).toHaveAttribute(
         "aria-current",
         "page"
       )
@@ -646,7 +651,7 @@ if (!runPlaywright) {
         page.getByRole("heading", { name: "Maya QA, your next finished post starts here." })
       ).toBeVisible()
       await expect(page.getByRole("region", { name: /what do you need/i })).toHaveCount(0)
-      await expect(page.getByRole("button", { name: "Open Maya" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "Open Maya" })).toHaveCount(0)
       await expect(page.getByRole("button", { name: "Report", exact: true })).toHaveCount(0)
     })
 
@@ -771,11 +776,12 @@ if (!runPlaywright) {
     })
 
     test("keeps the current member shell inside the viewport", async ({ page }: { page: any }) => {
+      await page.goto("/e2e/maya-operating-layer?home=0", { waitUntil: "domcontentloaded" })
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth
       )
       expect(overflow).toBe(false)
-      await expect(page.getByRole("button", { name: "Account" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "You", exact: true })).toBeVisible()
     })
 
     test("keeps Gallery assets stored while offering one explicit Calendar or variation handoff", async ({
@@ -784,7 +790,14 @@ if (!runPlaywright) {
       page: any
     }) => {
       const maya = page.locator("aside[data-maya-task-id]")
-      await page.getByRole("button", { name: "Gallery" }).click()
+      await page.goto("/e2e/maya-operating-layer?home=0&view=photos", {
+        waitUntil: "domcontentloaded",
+      })
+      await expect(page.getByRole("button", { name: "Work", exact: true })).toHaveAttribute(
+        "aria-current",
+        "page"
+      )
+      await expect(page.getByRole("heading", { name: "Everything you're making" })).toBeVisible()
       await page.getByRole("button", { name: /Open Founder portrait/i }).click()
       const lightbox = page.getByRole("dialog", { name: "Your finished creation" })
       await expect(lightbox).toBeVisible()
@@ -798,11 +811,9 @@ if (!runPlaywright) {
 
       await page.getByRole("button", { name: /Open Founder portrait/i }).click()
       await page.getByRole("button", { name: "Finish as a post" }).click()
-      await expect(page.getByRole("button", { name: "Calendar", exact: true })).toHaveAttribute(
-        "aria-current",
-        "page"
-      )
-      await expect(page.getByRole("button", { name: "Gallery", exact: true })).toBeVisible()
+      await expect(page.getByRole("region", { name: "What needs me" })).toBeVisible()
+      await expect(page).toHaveURL(/view=calendar/)
+      await expect(page.getByRole("button", { name: "Work", exact: true })).toBeVisible()
       expect((page as any).__mayaOperatingLayerCalendarMutations).toEqual([])
     })
 
@@ -895,11 +906,11 @@ if (!runPlaywright) {
       await expect(page.getByText("Let's create photos.", { exact: true })).toHaveCount(0)
 
       await page.getByRole("button", { name: "Menu" }).click()
-      await page.getByRole("button", { name: "History" }).click()
-      await expect(page.getByRole("dialog", { name: "Creative tasks" })).toBeVisible()
+      await page.getByRole("button", { name: "Work", exact: true }).click()
+      await expect(page.getByRole("dialog", { name: "Your post projects" })).toBeVisible()
       await expect(page.getByRole("dialog")).toHaveCount(1)
       await page.keyboard.press("Escape")
-      await expect(page.getByRole("dialog", { name: "Creative tasks" })).toHaveCount(0)
+      await expect(page.getByRole("dialog", { name: "Your post projects" })).toHaveCount(0)
       await expect(maya).toBeVisible()
 
       await page.getByRole("button", { name: "Close", exact: true }).click()
@@ -937,10 +948,10 @@ if (!runPlaywright) {
       expect(viewport).toEqual({ rootOverflow: false, drawerOverflow: false })
 
       await page.getByRole("button", { name: "Menu" }).click()
-      await page.getByRole("button", { name: "History" }).click()
-      const history = page.getByRole("dialog", { name: "Creative tasks" })
+      await page.getByRole("button", { name: "Work", exact: true }).click()
+      const history = page.getByRole("dialog", { name: "Your post projects" })
       await expect(history).toBeVisible()
-      await history.getByRole("button", { name: /^Plan .*post 7/i }).click()
+      await history.getByRole("button", { name: /post 7.*Keep working/i }).click()
       await expect(history).toHaveCount(0)
       await expect(maya).toHaveAttribute("data-maya-task-id", "maya-calendar-v1-101-707")
       await expect(maya).toHaveAttribute("data-maya-surface", "calendar")
@@ -966,16 +977,8 @@ if (!runPlaywright) {
 
       await page.keyboard.press("Escape")
       await expect(maya).toHaveCount(0)
-      await expect
-        .poll(() =>
-          page.evaluate(
-            () =>
-              document.activeElement?.getAttribute("aria-label") ??
-              document.activeElement?.textContent?.trim() ??
-              document.activeElement?.tagName
-          )
-        )
-        .toBe("Open Maya")
+      await expect(page.getByRole("button", { name: "Open Maya" })).toHaveCount(0)
+      await expect(page.getByRole("button", { name: "Maya", exact: true })).toBeVisible()
       expect((page as any).__mayaOperatingLayerPaidRequests).toEqual([])
     })
 

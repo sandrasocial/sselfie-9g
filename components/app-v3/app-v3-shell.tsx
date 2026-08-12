@@ -1,10 +1,9 @@
 "use client"
 
-// SSELFIE Studio 3.0 - app shell + product navigation (MAYA-REBUILD-05 Phase H.2).
-// Maya is the product, not a tab. She is woven through every surface. The nav is the six
-// places content lives: Create · Photos · Content · Calendar · Library · Account (BRIDGE-01
-// Phase C: the photo gallery became "Photos" and "Library" is now everything she owns -
-// courses, products, drops). No standalone "Maya" tab.
+// SSELFIE Studio 3.0 - focused member shell.
+// The standard app has one creation front door and three understandable places: Today, Work,
+// and You. Calendar, Learn, and the existing Maya engine remain intact behind contextual
+// actions and direct links instead of competing in primary navigation.
 // Calendar (2026-07-06, Feed Planner Phase 2): the live Feed Planner product now lives here
 // too, in the same visual language as the rest of the shell, gated the same way Create is
 // (!limited - Suite members already have full Feed Planner entitlement via the existing
@@ -18,7 +17,6 @@ import { ConciergeProvider, useConcierge } from "./concierge-context"
 import { VisualFrontDoor } from "./visual-front-door"
 import { AESTHETICS, MAYA_DECIDES_AESTHETIC } from "./aesthetics"
 import { MayaConcierge } from "./maya-concierge"
-import { MayaFloatingLauncher } from "./maya-floating-launcher"
 import { GalleryView, type GalleryFilter } from "./gallery-view"
 import { ContentView } from "./content-view"
 import { FeedPlannerView } from "./feed-planner-view"
@@ -40,8 +38,9 @@ import { PostSuccessReviewPrompt } from "@/components/testimonials/post-success-
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import {
   CalendarDays,
+  FolderOpen,
   Images,
-  PlusCircle,
+  Sparkles,
   UserRound,
   LibraryBig,
   MessageCircle,
@@ -79,13 +78,11 @@ export interface AppV3ShellProps {
   mayaEssential?: boolean
 }
 
-// Nav rename (Sandra, 2026-07-07): Photos -> Gallery, Library -> Learn, and the Content tab
-// is removed from the nav - it duplicated Maya's chat (her recommendations + the format
-// chips both live there). Internal section ids are unchanged; the "content" section renderer
-// stays so any stale saved state degrades gracefully. The freed slot is reserved for a
-// member-facing weekly content-trends surface (direction pending Sandra's pick).
+// The stored section ids stay unchanged so existing deep links and remembered member state
+// remain valid. The standard member navigation presents those stable surfaces as Today, Work,
+// and You; Calendar and Learn remain available through contextual actions and direct links.
 const NAV: { id: AppV3Section; label: string; icon: LucideIcon }[] = [
-  { id: "create", label: "Create", icon: PlusCircle },
+  { id: "create", label: "Create", icon: Sparkles },
   { id: "photos", label: "Gallery", icon: Images },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "library", label: "Learn", icon: LibraryBig },
@@ -264,6 +261,7 @@ function ShellInner({
     isOpen: mayaOpen,
     openWithAesthetic,
     openForLesson,
+    openHistory,
     setActiveSurface,
     close,
   } = useConcierge()
@@ -304,7 +302,11 @@ function ShellInner({
     setSection(next)
     saveStoredAppSection(next)
     if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", buildStoredSectionHref(next))
+      window.history.replaceState(
+        null,
+        "",
+        buildStoredSectionHref(next, window.location.pathname, window.location.search)
+      )
     }
   }
 
@@ -314,7 +316,11 @@ function ShellInner({
     setSection("calendar")
     saveStoredAppSection("calendar")
     if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", buildStoredSectionHref("calendar"))
+      window.history.replaceState(
+        null,
+        "",
+        buildStoredSectionHref("calendar", window.location.pathname, window.location.search)
+      )
     }
   }
 
@@ -440,7 +446,15 @@ function ShellInner({
     ? visibleNav.map(item =>
         item.id === "create" ? { ...item, label: "Maya", icon: MessageCircle } : item
       )
-    : visibleNav
+    : visibleNav.map(item =>
+        item.id === "create"
+          ? { ...item, label: "Today", icon: Sparkles }
+          : item.id === "photos"
+            ? { ...item, label: "Work", icon: FolderOpen }
+            : item.id === "account"
+              ? { ...item, label: "You", icon: UserRound }
+              : item
+      )
 
   return (
     <main
@@ -526,6 +540,7 @@ function ShellInner({
       {section === "photos" && !mayaEssential && (
         <GalleryView
           initialFilter={galleryFilter}
+          onOpenProjects={limited ? undefined : openHistory}
           onMakeMotion={videoEnabled ? createMotionFromImage : undefined}
           onStartCreate={limited ? undefined : createFirstPhotoFromGallery}
           operatingLayerEnabled={mayaOperatingLayerEnabled}
@@ -603,9 +618,6 @@ function ShellInner({
           }
           calendarSurfaceActive={section === "calendar"}
         />
-      )}
-      {!limited && !(mayaHomeEnabled && section === "create") && (
-        <MayaFloatingLauncher operatingLayerEnabled={mayaOperatingLayerEnabled} />
       )}
       <PostSuccessReviewPrompt />
 

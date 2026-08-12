@@ -9,14 +9,7 @@ describe("Maya Create visual studio contract", () => {
   it("renders an image-first world with six working navigation paths", () => {
     const frontDoor = read("components/app-v3/visual-front-door.tsx")
 
-    for (const label of [
-      "My selfies",
-      "For you",
-      "Saved looks",
-      "Inspiration",
-      "Recent shoots",
-      "New",
-    ]) {
+    for (const label of ["My selfies", "For you", "Saved looks", "Inspiration", "Recent shoots"]) {
       expect(frontDoor).toContain(label)
     }
     expect(frontDoor).toContain("openHistory")

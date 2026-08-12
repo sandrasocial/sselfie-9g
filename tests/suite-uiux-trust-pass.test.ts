@@ -35,14 +35,14 @@ describe("Suite UI/UX trust pass", () => {
     expect(gallery).toContain('aria-modal="true"')
   })
 
-  it("keeps long archives manageable and never deletes a chat in one tap", () => {
+  it("keeps long project archives manageable and never archives in one tap", () => {
     const history = read("components/app-v3/chat-history-modal.tsx")
 
     expect(history).toContain("CHAT_PAGE_SIZE")
     expect(history).toContain("visibleChatCount")
-    expect(history).toContain("Show older chats")
+    expect(history).toContain("Show older projects")
     expect(history).toContain("pendingDeleteId")
-    expect(history).toContain("Confirm delete")
+    expect(history).toContain("Confirm archive")
     expect(history).toContain("if (!response.ok)")
   })
 

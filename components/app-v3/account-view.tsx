@@ -161,20 +161,28 @@ export function AccountView({
   const hasSuiteAccess = accessLevel === "full" || accessLevel === "trial"
   const membershipLabel = data?.creditsUnlimited
     ? "Admin access"
-    : data?.plan ?? (hasSuiteAccess ? "SSELFIE SUITE" : "No active membership")
+    : (data?.plan ?? (hasSuiteAccess ? "SSELFIE SUITE" : "No active membership"))
 
   return (
     <div className="suite-page mx-auto max-w-3xl px-4 py-6 sm:px-5 sm:py-8">
-      <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Account</p>
+      <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">You</p>
       <h1 className="mt-2 font-serif text-[30px] font-light leading-tight text-[#0D0E10]">
         {firstName ? `Hi ${firstName}` : "Your account"}
       </h1>
       {data?.email && <p className="mt-1 break-all text-[13px] text-[#4F5052]">{data.email}</p>}
+      <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-[#6D6E70]">
+        Your membership, brand memory, selfies, and everything you own.
+      </p>
 
       {loadError && (
-        <div role="alert" className="mt-5 flex items-center justify-between gap-3 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4">
+        <div
+          role="alert"
+          className="mt-5 flex items-center justify-between gap-3 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4"
+        >
           <p className="text-[13px] text-[#282728]">{loadError}</p>
-          <button type="button" onClick={() => void loadAccount()} className={quietBtn}>Retry</button>
+          <button type="button" onClick={() => void loadAccount()} className={quietBtn}>
+            Retry
+          </button>
         </div>
       )}
 
@@ -252,9 +260,13 @@ export function AccountView({
                     >
                       {billingBusy ? "Opening…" : "Manage billing"}
                     </button>
-                    <span className="text-[12px] text-[#818283]">Payment method, invoices, plan.</span>
+                    <span className="text-[12px] text-[#818283]">
+                      Payment method, invoices, plan.
+                    </span>
                   </div>
-                  {billingError && <p className="mt-2 text-[12px] text-[#282728]">{billingError}</p>}
+                  {billingError && (
+                    <p className="mt-2 text-[12px] text-[#282728]">{billingError}</p>
+                  )}
                 </>
               ) : isFixedBundlePass || isOwnedBundle ? (
                 <div className="mt-4">
@@ -264,7 +276,10 @@ export function AccountView({
                 </div>
               ) : data !== null && !hasSuiteAccess ? (
                 <div className="mt-4">
-                  <a href="/checkout/membership?interval=month&source=account" className={primaryBtn}>
+                  <a
+                    href="/checkout/membership?interval=month&source=account"
+                    className={primaryBtn}
+                  >
                     Explore SUITE
                   </a>
                 </div>
@@ -307,7 +322,7 @@ export function AccountView({
         {onOpenLibrary && (
           <div className={card}>
             <p className={cardTitle}>Your SSELFIE</p>
-          <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
+            <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
               Every product you own, your courses, and your weekly drops live in Learn.
             </p>
             <div className="mt-4">
@@ -335,7 +350,8 @@ export function AccountView({
         <div className={card}>
           <p className={cardTitle}>Your selfies</p>
           <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
-            The selfies Maya can use to keep you recognizable. Your newest one is used automatically.
+            The selfies Maya can use to keep you recognizable. Your newest one is used
+            automatically.
           </p>
           {selfies && selfies.length > 0 && (
             <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-6">
@@ -409,11 +425,15 @@ export function AccountView({
         </div>
 
         {/* Logout (legacy Studio entry now lives in the gated "Your trained model" card above). */}
-        <div className="flex flex-col gap-1 px-1 pr-20 pt-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-end min-[420px]:gap-3">
+        <div className="flex flex-col gap-1 px-1 pt-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-end min-[420px]:gap-3">
           <button type="button" onClick={handleLogout} disabled={loggingOut} className={quietBtn}>
             {loggingOut ? "Logging out…" : "Log out"}
           </button>
-          {logoutError && <p role="alert" className="text-[12px] text-[#282728]">{logoutError}</p>}
+          {logoutError && (
+            <p role="alert" className="text-[12px] text-[#282728]">
+              {logoutError}
+            </p>
+          )}
         </div>
       </div>
 

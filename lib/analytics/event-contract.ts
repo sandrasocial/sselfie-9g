@@ -223,6 +223,10 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "suite_generation_path_completed",
   "suite_next_action_selected",
   "suite_maya_recovery_shown",
+  // MAYA POST PROJECTS — continuity behavior only; no member-authored content is captured.
+  "suite_post_project_list_opened",
+  "suite_post_project_resumed",
+  "suite_post_project_archived",
   // App v3 generation reliability + trial-cap conversion moments (behavior only).
   "suite_generation_failed",
   // STORY-GENERATION round 3 (2026-07-03): a malformed emit_concepts call was repaired

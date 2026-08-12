@@ -28,6 +28,24 @@ describe("Maya simplified member journey", () => {
     expect(resolveAppV3InitialSection("library")).toBe("library")
   })
 
+  it("presents the three member places as Today, Work, and You without moving stored data", () => {
+    const shell = readFileSync(resolve(process.cwd(), "components/app-v3/app-v3-shell.tsx"), "utf8")
+    const gallery = readFileSync(
+      resolve(process.cwd(), "components/app-v3/gallery-view.tsx"),
+      "utf8"
+    )
+
+    expect(shell).toContain('label: "Today"')
+    expect(shell).toContain('label: "Work"')
+    expect(shell).toContain('label: "You"')
+    expect(gallery).toContain("Post projects")
+    expect(gallery).toContain("Continue where you left off.")
+    expect(shell).toContain("onOpenProjects={limited ? undefined : openHistory}")
+    expect(shell).not.toContain(
+      "<MayaFloatingLauncher operatingLayerEnabled={mayaOperatingLayerEnabled} />"
+    )
+  })
+
   it("makes the finished post the explicit Create promise", () => {
     const source = readFileSync(
       resolve(process.cwd(), "components/app-v3/visual-front-door.tsx"),
@@ -40,6 +58,7 @@ describe("Maya simplified member journey", () => {
     expect(source).toContain("{!operatingLayerEnabled ? (")
     expect(source).not.toContain("!operatingLayerEnabled || moreOpen")
     expect(source).not.toContain("what are we making?")
+    expect(source).not.toContain('"My selfies", "Inspiration", "New"')
   })
 
   it("makes finishing the post the dominant result action and returns the caption", async () => {

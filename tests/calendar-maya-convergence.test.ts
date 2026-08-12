@@ -33,8 +33,7 @@ describe("Calendar and Create share one Maya workspace", () => {
     )
     expect(calendar).toContain("feedNav?.navigateToMaya?.(target)")
     expect(shell).toContain('section === "calendar" || (section === "create" && !mayaHomeEnabled)')
-    expect(shell).toContain('!(mayaHomeEnabled && section === "create")')
-    expect(shell).not.toContain('section !== "calendar" && <MayaFloatingLauncher')
+    expect(shell).not.toContain("MayaFloatingLauncher")
   })
 
   it("persists the selected Calendar post through close, reopen, and reload", () => {

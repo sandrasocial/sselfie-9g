@@ -2,16 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
-import {
-  ArrowUpRight,
-  Heart,
-  History,
-  Images,
-  Lightbulb,
-  Plus,
-  Sparkles,
-  UserRound,
-} from "lucide-react"
+import { ArrowUpRight, Heart, History, Images, Lightbulb, Sparkles, UserRound } from "lucide-react"
 
 import { AESTHETICS, MAYA_DECIDES_AESTHETIC } from "./aesthetics"
 import { useConcierge } from "./concierge-context"
@@ -519,16 +510,11 @@ export function VisualFrontDoor({
       icon: History,
       action: () => recentRef.current?.scrollIntoView({ behavior: "smooth" }),
     },
-    {
-      label: "New",
-      icon: Plus,
-      action: () => openFresh({ referenceSelfieUrl: primarySelfieUrl }),
-    },
   ]
   // The focused member surface keeps only setup controls here. "For you" is already the hero,
   // while saved looks and recent shoots have their own visual sections below.
   const focusedQuickActions = quickActions.filter(({ label }) =>
-    ["My selfies", "Inspiration", "New"].includes(label)
+    ["My selfies", "Inspiration"].includes(label)
   )
 
   if (!hasSelfie) {
@@ -581,7 +567,7 @@ export function VisualFrontDoor({
       <header className="flex flex-col gap-5 border-b border-[color:var(--ss-silver)]/55 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] uppercase tracking-[0.34em] text-[color:var(--ss-gray)]">
-            Your next post
+            Today
           </p>
           <h1 className="mt-2 font-serif text-[38px] font-light leading-none text-[color:var(--ss-night)] sm:text-[56px]">
             {firstName

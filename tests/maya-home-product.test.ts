@@ -20,7 +20,7 @@ describe("founder-only Maya Home", () => {
     expect(concierge).toContain('role={homeMode ? "region" : "dialog"}')
     expect(concierge).toContain("Ask Maya anything…")
     expect(concierge).toContain("One selfie. One idea. One finished post.")
-    expect(concierge).toContain("What Maya knows")
+    expect(concierge).toContain("Brand profile")
   })
 
   it("starts neutral instead of reopening an unrelated format task", () => {

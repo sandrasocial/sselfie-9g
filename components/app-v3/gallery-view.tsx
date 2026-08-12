@@ -6,6 +6,7 @@
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import {
+  ArrowUpRight,
   Check,
   Download,
   Film,
@@ -147,7 +148,8 @@ export function buildGalleryDisplayEntries(
   allAssets: AppV3GalleryAsset[]
 ): GalleryDisplayEntry[] {
   const byId = new Map(allAssets.map(asset => [asset.id, asset]))
-  const rootOf = (asset: AppV3GalleryAsset) => (asset.variantOf && byId.get(asset.variantOf)) || asset
+  const rootOf = (asset: AppV3GalleryAsset) =>
+    (asset.variantOf && byId.get(asset.variantOf)) || asset
   const entries: GalleryDisplayEntry[] = []
   const seenSets = new Set<string>()
   for (const asset of visibleAssets) {
@@ -427,6 +429,7 @@ const AssetTile = memo(function AssetTile({
 const CORE_FILTERS = new Set<GalleryFilter>(["all", "favorites", "photos", "video"])
 
 export function GalleryView({
+  onOpenProjects,
   onMakeMotion,
   onStartCreate,
   onUseInCalendar,
@@ -434,6 +437,7 @@ export function GalleryView({
   operatingLayerEnabled = false,
   initialFilter = "all",
 }: {
+  onOpenProjects?: () => void
   onMakeMotion?: (url: string) => void
   onStartCreate?: () => void
   onUseInCalendar?: (asset: AppV3GalleryAsset) => void
@@ -457,15 +461,15 @@ export function GalleryView({
   const [favoritePendingIds, setFavoritePendingIds] = useState<Set<string>>(new Set())
   const { dialogRef: deleteDialogRef, initialFocusRef: cancelDeleteRef } = useAccessibleModal(
     pendingDeleteIds !== null,
-    () => setPendingDeleteIds(null),
+    () => setPendingDeleteIds(null)
   )
   const { dialogRef: videoDialogRef, initialFocusRef: closeVideoRef } = useAccessibleModal(
     previewVideo !== null,
-    () => setPreviewVideo(null),
+    () => setPreviewVideo(null)
   )
   const { dialogRef: compareDialogRef, initialFocusRef: closeCompareRef } = useAccessibleModal(
     compareAsset !== null,
-    () => setCompareAsset(null),
+    () => setCompareAsset(null)
   )
 
   const filteredAssets = useMemo(
@@ -474,7 +478,7 @@ export function GalleryView({
   )
   const displayedAssets = useMemo(
     () => filteredAssets.slice(0, visibleAssetCount),
-    [filteredAssets, visibleAssetCount],
+    [filteredAssets, visibleAssetCount]
   )
   // UX audit U5: a carousel/story/photoshoot generation renders as ONE tile that opens as
   // its own N-slide set (own counter, own "Download all N"), instead of N look-alike cards
@@ -499,7 +503,9 @@ export function GalleryView({
   }, [assets])
   const displayedImages = useMemo(
     () =>
-      displayEntries.filter(entry => !entry.setSlides && entry.asset.kind === "image").map(entry => entry.asset),
+      displayEntries
+        .filter(entry => !entry.setSlides && entry.asset.kind === "image")
+        .map(entry => entry.asset),
     [displayEntries]
   )
   const lightboxImages = useMemo(() => displayedImages.map(asset => asset.url), [displayedImages])
@@ -508,19 +514,25 @@ export function GalleryView({
   const comparison = useMemo(() => {
     if (!compareAsset || !assets) return null
     const byId = new Map(assets.map(asset => [asset.id, asset]))
-    const rootId = compareAsset.variantOf && byId.has(compareAsset.variantOf)
-      ? compareAsset.variantOf
-      : compareAsset.id
+    const rootId =
+      compareAsset.variantOf && byId.has(compareAsset.variantOf)
+        ? compareAsset.variantOf
+        : compareAsset.id
     const original = byId.get(rootId) ?? compareAsset
     const versions = groupGalleryVersions(
       assets.filter(asset => asset.id === rootId || asset.variantOf === rootId)
     )
-    const selected = compareAsset.id === rootId
-      ? [...versions].reverse().find(asset => asset.id !== rootId) ?? null
-      : compareAsset
+    const selected =
+      compareAsset.id === rootId
+        ? ([...versions].reverse().find(asset => asset.id !== rootId) ?? null)
+        : compareAsset
     if (!selected) return null
     const versionIndex = versions.findIndex(asset => asset.id === selected.id)
-    return { original, selected, versionLabel: `Version ${Math.max(2, versionIndex + 1)} of ${versions.length}` }
+    return {
+      original,
+      selected,
+      versionLabel: `Version ${Math.max(2, versionIndex + 1)} of ${versions.length}`,
+    }
   }, [assets, compareAsset])
 
   const loadGallery = useCallback(() => {
@@ -555,10 +567,11 @@ export function GalleryView({
     const syncFavorite = (event: Event) => {
       const detail = (event as CustomEvent<FavoriteUpdatedDetail>).detail
       if (!detail?.assetId) return
-      setAssets(current =>
-        current?.map(asset =>
-          asset.id === detail.assetId ? { ...asset, isFavorite: detail.isFavorite } : asset
-        ) ?? current
+      setAssets(
+        current =>
+          current?.map(asset =>
+            asset.id === detail.assetId ? { ...asset, isFavorite: detail.isFavorite } : asset
+          ) ?? current
       )
     }
     window.addEventListener(FAVORITE_UPDATED_EVENT, syncFavorite)
@@ -678,16 +691,15 @@ export function GalleryView({
     if (CORE_FILTERS.has(option.id)) return true
     return (countForFilter(option.id, counts) ?? 0) > 0
   })
-  const allVisibleSelected =
-    filteredAssets.length > 0 && selectedIds.size >= filteredAssets.length
+  const allVisibleSelected = filteredAssets.length > 0 && selectedIds.size >= filteredAssets.length
 
   return (
     <div className="suite-page mx-auto max-w-3xl px-4 py-6 sm:px-5 sm:py-8">
       <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Photos</p>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Work</p>
           <h1 className="mt-2 font-serif text-[28px] font-light leading-tight text-[#0D0E10] sm:text-[30px]">
-            Everything you&apos;ve made
+            Everything you&apos;re making
           </h1>
         </div>
         {hasAssets && (
@@ -703,6 +715,36 @@ export function GalleryView({
           </button>
         )}
       </header>
+
+      {onOpenProjects && (
+        <button
+          type="button"
+          onClick={onOpenProjects}
+          className="mb-7 flex min-h-28 w-full items-center justify-between gap-5 rounded-[10px] border border-[#C5C6C8]/65 bg-white p-5 text-left shadow-[0_10px_30px_rgba(13,14,16,0.04)] transition-colors hover:border-[#0D0E10]/35 sm:p-6"
+        >
+          <span className="min-w-0">
+            <span className="block text-[10px] uppercase tracking-[0.24em] text-[#818283]">
+              Post projects
+            </span>
+            <span className="mt-2 block font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
+              Continue where you left off.
+            </span>
+            <span className="mt-1.5 block max-w-lg text-[13px] leading-relaxed text-[#4F5052]">
+              Your idea, conversation, directions, and finished versions stay together.
+            </span>
+          </span>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0D0E10] text-white">
+            <ArrowUpRight size={17} aria-hidden />
+          </span>
+        </button>
+      )}
+
+      <div className="mb-4">
+        <p className="text-[10px] uppercase tracking-[0.24em] text-[#818283]">Finished visuals</p>
+        <h2 className="mt-1 font-serif text-[24px] font-light text-[#0D0E10]">
+          Your visual library
+        </h2>
+      </div>
 
       <div className="-mx-4 mb-5 overflow-x-auto px-4 [scrollbar-width:none]">
         <div className="flex min-w-max gap-2">
@@ -790,9 +832,18 @@ export function GalleryView({
         <p className="text-[13px] text-[#818283]">Loading your gallery...</p>
       )}
       {error && (
-        <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-[6px] border border-[#C5C6C8] bg-white px-3 py-2">
+        <div
+          role="alert"
+          className="mb-4 flex items-center justify-between gap-3 rounded-[6px] border border-[#C5C6C8] bg-white px-3 py-2"
+        >
           <p className="text-[13px] text-[#282728]">{error}</p>
-          <button type="button" onClick={loadGallery} className="min-h-11 shrink-0 px-2 text-[10px] uppercase tracking-[0.14em] text-[#0D0E10] underline underline-offset-2">Retry</button>
+          <button
+            type="button"
+            onClick={loadGallery}
+            className="min-h-11 shrink-0 px-2 text-[10px] uppercase tracking-[0.14em] text-[#0D0E10] underline underline-offset-2"
+          >
+            Retry
+          </button>
         </div>
       )}
       {assets && assets.length === 0 && (
@@ -825,7 +876,9 @@ export function GalleryView({
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {displayEntries.map((entry, i) => {
             const asset = entry.asset
-            const version = entry.setSlides ? { index: 0, count: 1 } : versionMeta(asset, filteredAssets)
+            const version = entry.setSlides
+              ? { index: 0, count: 1 }
+              : versionMeta(asset, filteredAssets)
             return (
               <AssetTile
                 key={entry.setSlides ? `set-${asset.id}` : asset.id}
@@ -904,22 +957,56 @@ export function GalleryView({
 
       {compareAsset && comparison ? (
         <div className="fixed inset-0 z-[72] flex items-end justify-center bg-[#0D0E10]/80 p-0 backdrop-blur-sm sm:items-center sm:p-5">
-          <div ref={compareDialogRef} role="dialog" aria-modal="true" aria-labelledby="compare-versions-title" className="max-h-[94dvh] w-full max-w-5xl overflow-y-auto rounded-t-[16px] bg-[#F8FAFA] p-4 shadow-2xl sm:rounded-[10px] sm:p-6">
+          <div
+            ref={compareDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="compare-versions-title"
+            className="max-h-[94dvh] w-full max-w-5xl overflow-y-auto rounded-t-[16px] bg-[#F8FAFA] p-4 shadow-2xl sm:rounded-[10px] sm:p-6"
+          >
             <header className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.24em] text-[#6D6E70]">Version history</p>
-                <h2 id="compare-versions-title" className="mt-1 font-serif text-[30px] font-light text-[#0D0E10]">Compare versions.</h2>
-                <p className="mt-1 text-[12px] leading-relaxed text-[#4F5052]">The original stays untouched. Edits and text versions are saved separately.</p>
+                <p className="text-[10px] uppercase tracking-[0.24em] text-[#6D6E70]">
+                  Version history
+                </p>
+                <h2
+                  id="compare-versions-title"
+                  className="mt-1 font-serif text-[30px] font-light text-[#0D0E10]"
+                >
+                  Compare versions.
+                </h2>
+                <p className="mt-1 text-[12px] leading-relaxed text-[#4F5052]">
+                  The original stays untouched. Edits and text versions are saved separately.
+                </p>
               </div>
-              <button ref={closeCompareRef} type="button" onClick={() => setCompareAsset(null)} aria-label="Close version comparison" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#4F5052] hover:bg-white"><X size={18} aria-hidden /></button>
+              <button
+                ref={closeCompareRef}
+                type="button"
+                onClick={() => setCompareAsset(null)}
+                aria-label="Close version comparison"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#4F5052] hover:bg-white"
+              >
+                <X size={18} aria-hidden />
+              </button>
             </header>
             <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-5">
-              {[{ asset: comparison.original, label: "Original" }, { asset: comparison.selected, label: comparison.versionLabel }].map(item => (
+              {[
+                { asset: comparison.original, label: "Original" },
+                { asset: comparison.selected, label: comparison.versionLabel },
+              ].map(item => (
                 <figure key={`${item.label}:${item.asset.id}`} className="min-w-0">
                   <div className="relative aspect-[4/5] overflow-hidden rounded-[7px] bg-[#C5C6C8]/30">
-                    <Image src={item.asset.url} alt={item.label} fill sizes="(max-width: 640px) 48vw, 440px" className="object-cover" />
+                    <Image
+                      src={item.asset.url}
+                      alt={item.label}
+                      fill
+                      sizes="(max-width: 640px) 48vw, 440px"
+                      className="object-cover"
+                    />
                   </div>
-                  <figcaption className="mt-2 text-[10px] uppercase tracking-[0.18em] text-[#4F5052]">{item.label}</figcaption>
+                  <figcaption className="mt-2 text-[10px] uppercase tracking-[0.18em] text-[#4F5052]">
+                    {item.label}
+                  </figcaption>
                 </figure>
               ))}
             </div>
@@ -975,8 +1062,13 @@ export function GalleryView({
             aria-labelledby="delete-assets-title"
             className="w-full max-w-sm rounded-[10px] bg-[#F8FAFA] p-5 shadow-xl"
           >
-            <h2 id="delete-assets-title" className="font-serif text-[23px] font-light text-[#0D0E10]">
-              {pendingDeleteIds.length === 1 ? "Delete this photo?" : `Delete ${pendingDeleteIds.length} items?`}
+            <h2
+              id="delete-assets-title"
+              className="font-serif text-[23px] font-light text-[#0D0E10]"
+            >
+              {pendingDeleteIds.length === 1
+                ? "Delete this photo?"
+                : `Delete ${pendingDeleteIds.length} items?`}
             </h2>
             <p className="mt-2 text-[13px] leading-relaxed text-[#4F5052]">
               This removes it from your Photos and can&apos;t be undone.

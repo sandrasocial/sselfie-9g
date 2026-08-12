@@ -205,8 +205,8 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(launcher).not.toContain("Start new")
     expect(launcher).not.toContain("View past chats")
     expect(context).toContain("const open = useCallback")
-    expect(history).toContain("direction cards, and finished versions")
-    expect(history).toContain("Creative tasks")
+    expect(history).toContain("conversation, directions, and finished versions")
+    expect(history).toContain("Your post projects")
 
     for (const source of [localDraft, serverDraft]) {
       expect(source).toContain("lastGeneration")

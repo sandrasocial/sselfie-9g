@@ -67,9 +67,10 @@ describe("App v3 shell overflow containment", () => {
     expect(conceptCard).toContain("[overflow-x:clip]")
   })
 
-  it("keeps account actions clear of the fixed Maya button", () => {
+  it("does not reserve account space for the removed floating Maya button", () => {
     const account = read("components/app-v3/account-view.tsx")
 
-    expect(account).toContain("px-1 pr-20 pt-2")
+    expect(account).toContain("px-1 pt-2")
+    expect(account).not.toContain("px-1 pr-20 pt-2")
   })
 })

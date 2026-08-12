@@ -4576,7 +4576,7 @@ export function MayaConcierge({
                     disabled={workspaceBusy}
                     className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10] disabled:opacity-40"
                   >
-                    {newChatConfirming ? "Confirm new chat" : "New chat"}
+                    {newChatConfirming ? "Confirm new post" : "New post"}
                   </button>
                   {newChatConfirming && (
                     <button
@@ -4584,7 +4584,7 @@ export function MayaConcierge({
                       onClick={() => setNewChatConfirming(false)}
                       className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
                     >
-                      Keep this chat
+                      Keep this post
                     </button>
                   )}
                   <button
@@ -4597,7 +4597,7 @@ export function MayaConcierge({
                     disabled={workspaceBusy}
                     className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10] disabled:opacity-40"
                   >
-                    History
+                    Work
                   </button>
                   <button
                     type="button"
@@ -4608,7 +4608,7 @@ export function MayaConcierge({
                     }}
                     className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
                   >
-                    {homeMode ? "What Maya knows" : "Memory"}
+                    Brand profile
                   </button>
                 </div>
               </>

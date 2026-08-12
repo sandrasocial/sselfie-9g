@@ -352,8 +352,17 @@ export function saveStoredAppSection(section: AppV3Section) {
   writeJson(APP_SECTION_STORAGE_KEY, section)
 }
 
-export function buildStoredSectionHref(section: AppV3Section): string {
-  return section === "create" ? "/app" : `/app?view=${section}`
+export function buildStoredSectionHref(
+  section: AppV3Section,
+  pathname = "/app",
+  currentSearch = ""
+): string {
+  const params = new URLSearchParams(currentSearch)
+  params.delete("view")
+  params.delete("aesthetic")
+  if (section !== "create") params.set("view", section)
+  const query = params.toString()
+  return query ? `${pathname}?${query}` : pathname
 }
 
 function sanitizeSession(value: unknown): ConciergeSession | null {

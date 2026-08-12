@@ -1,12 +1,13 @@
 "use client"
 
 // SSELFIE Studio 3.0 - chat history (MAYA-REBUILD-05 Phase C).
-// Lists the admin's saved conversations, with select + soft-delete. New Chat lives in the
-// concierge header. Loads from /api/app-v3/maya/chats.
+// Presents existing saved conversations as resumable post projects. Archive stays the same
+// reversible server-side soft delete; no member chat data is migrated or rewritten.
 
 import { useCallback, useEffect, useState } from "react"
 import Image from "next/image"
 import { useAccessibleModal } from "./use-accessible-modal"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
 const CHAT_PAGE_SIZE = 20
 
@@ -64,6 +65,10 @@ export function ChatHistoryModal({
   useEffect(() => {
     if (!open) return
     loadChats()
+    void trackAnalyticsEvent({
+      event: "suite_post_project_list_opened",
+      properties: { surface: "work" },
+    }).catch(() => {})
   }, [loadChats, open])
 
   async function select(id: string) {
@@ -71,7 +76,15 @@ export function ChatHistoryModal({
     setBusyId(id)
     setError(null)
     try {
+      const project = chats?.find(chat => chat.id === id)
       await onSelect(id)
+      void trackAnalyticsEvent({
+        event: "suite_post_project_resumed",
+        properties: {
+          status: project?.taskStatus ?? "unknown",
+          output_count: project?.outputCount ?? 0,
+        },
+      }).catch(() => {})
       onClose()
     } catch {
       setError("Couldn't open that chat. Please try again.")
@@ -86,10 +99,15 @@ export function ChatHistoryModal({
     try {
       const response = await fetch(`/api/app-v3/maya/chats/${id}`, { method: "DELETE" })
       if (!response.ok) throw new Error(`Delete returned ${response.status}`)
+      const project = chats?.find(chat => chat.id === id)
       setChats(c => (c ? c.filter(x => x.id !== id) : c))
       setPendingDeleteId(null)
+      void trackAnalyticsEvent({
+        event: "suite_post_project_archived",
+        properties: { status: project?.taskStatus ?? "unknown" },
+      }).catch(() => {})
     } catch {
-      setError("Couldn't delete that chat. Please try again.")
+      setError("Couldn't archive that project. Please try again.")
     } finally {
       setBusyId(null)
     }
@@ -108,15 +126,16 @@ export function ChatHistoryModal({
       >
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-[#6D6E70]">History</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[#6D6E70]">Work</p>
             <h3
               id="chat-history-title"
               className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]"
             >
-              Creative tasks
+              Your post projects
             </h3>
             <p className="mt-2 max-w-xs text-[12px] leading-relaxed text-[#6D6E70]">
-              Reopen the conversation, direction cards, and finished versions from a past shoot.
+              Your conversation, directions, and finished versions stay together until you are ready
+              to continue.
             </p>
           </div>
           <button
@@ -147,14 +166,14 @@ export function ChatHistoryModal({
           )}
           {chats && chats.length === 0 && (
             <p className="text-[13px] text-[#6D6E70]">
-              No saved creative tasks yet. Start one and it&apos;ll show up here.
+              No post projects yet. Start with one idea in Today and it&apos;ll show up here.
             </p>
           )}
           {chats && chats.length > 0 && (
             <ul className="max-h-[55vh] divide-y divide-[#C5C6C8]/40 overflow-y-auto">
               {chats.slice(0, visibleChatCount).map(c => {
                 const isCurrent = c.id === currentChatId
-                const title = c.title?.trim() || "Untitled chat"
+                const title = c.title?.trim() || "New post project"
                 return (
                   <li key={c.id} className="flex items-center justify-between gap-3 py-3">
                     <button
@@ -162,6 +181,13 @@ export function ChatHistoryModal({
                       onClick={() => (isCurrent ? onClose() : void select(c.id))}
                       disabled={busyId !== null}
                       aria-current={isCurrent ? "true" : undefined}
+                      aria-label={`${title} · ${
+                        c.taskStatus === "ready"
+                          ? "Ready to use"
+                          : c.taskStatus === "creating"
+                            ? "Maya is creating"
+                            : "Keep working"
+                      }${isCurrent ? " · Open now" : ""}`}
                       className="flex min-h-14 min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-50"
                     >
                       {c.thumbnailUrl ? (
@@ -176,7 +202,11 @@ export function ChatHistoryModal({
                         </span>
                       ) : (
                         <span className="flex h-14 w-11 shrink-0 items-center justify-center rounded-[5px] bg-[#E7E8E8] text-[9px] uppercase tracking-[0.1em] text-[#6D6E70]">
-                          {c.taskStatus === "creating" ? "Making" : "Plan"}
+                          {c.taskStatus === "ready"
+                            ? "Ready"
+                            : c.taskStatus === "creating"
+                              ? "Making"
+                              : "Idea"}
                         </span>
                       )}
                       <span className="min-w-0 flex-1">
@@ -188,11 +218,11 @@ export function ChatHistoryModal({
                         <span className="mt-0.5 block text-[11px] text-[#6D6E70]">
                           {formatWhen(c.updatedAt)}
                           {c.taskStatus === "creating"
-                            ? " · creating"
+                            ? " · Maya is creating"
                             : c.taskStatus === "ready"
-                              ? ` · ${c.outputCount || 1} ready`
-                              : " · planning"}
-                          {isCurrent ? " · current" : ""}
+                              ? ` · Ready to use${(c.outputCount || 0) > 1 ? ` · ${c.outputCount} versions` : ""}`
+                              : " · Keep working"}
+                          {isCurrent ? " · Open now" : ""}
                         </span>
                       </span>
                     </button>
@@ -206,10 +236,10 @@ export function ChatHistoryModal({
                           type="button"
                           disabled={busyId === c.id}
                           onClick={() => void remove(c.id)}
-                          aria-label={`Confirm delete ${title}`}
+                          aria-label={`Confirm archive ${title}`}
                           className="inline-flex min-h-11 items-center px-2 text-[10px] uppercase tracking-[0.12em] text-[#0D0E10] disabled:opacity-40"
                         >
-                          {busyId === c.id ? "Deleting…" : "Confirm delete"}
+                          {busyId === c.id ? "Archiving…" : "Confirm archive"}
                         </button>
                         <button
                           type="button"
@@ -224,10 +254,10 @@ export function ChatHistoryModal({
                         type="button"
                         disabled={busyId !== null}
                         onClick={() => setPendingDeleteId(c.id)}
-                        aria-label={`Delete ${title}`}
+                        aria-label={`Archive ${title}`}
                         className="inline-flex min-h-11 shrink-0 items-center px-2 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#282728] disabled:opacity-40"
                       >
-                        Delete
+                        Archive
                       </button>
                     )}
                   </li>
@@ -241,7 +271,7 @@ export function ChatHistoryModal({
               onClick={() => setVisibleChatCount(count => count + CHAT_PAGE_SIZE)}
               className="mt-3 min-h-11 w-full text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-4"
             >
-              Show older chats
+              Show older projects
             </button>
           )}
         </div>

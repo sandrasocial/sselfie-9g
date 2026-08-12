@@ -60,6 +60,24 @@ describe("Wave 1 Create history", () => {
     await waitFor(() => expect(onSelect).toHaveBeenCalledWith("past-task"))
   })
 
+  it("presents saved conversations as resumable post projects", async () => {
+    render(
+      <ChatHistoryModal
+        open
+        currentChatId="current-task"
+        onClose={vi.fn()}
+        onSelect={vi.fn().mockResolvedValue(undefined)}
+      />
+    )
+
+    expect(await screen.findByRole("dialog", { name: "Your post projects" })).toBeInTheDocument()
+    expect(screen.getByText(/Ready to use/)).toBeInTheDocument()
+    expect(screen.getByText(/Keep working/)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Archive Past task" })).toBeInTheDocument()
+    expect(screen.queryByText("Creative tasks")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Delete Past task" })).not.toBeInTheDocument()
+  })
+
   it("dismisses history when the current task row is pressed", async () => {
     const onClose = vi.fn()
     render(

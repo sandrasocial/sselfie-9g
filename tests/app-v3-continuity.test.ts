@@ -16,6 +16,9 @@ describe("App v3 refresh continuity", () => {
 
     expect(buildStoredSectionHref("create")).toBe("/app")
     expect(buildStoredSectionHref("library")).toBe("/app?view=library")
+    expect(buildStoredSectionHref("photos", "/e2e/maya", "?home=0&view=create")).toBe(
+      "/e2e/maya?home=0&view=photos"
+    )
   })
 
   it("restores only a valid open Maya concierge session", () => {

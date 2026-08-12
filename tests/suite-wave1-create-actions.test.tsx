@@ -166,14 +166,9 @@ describe("Wave 1 Create actions", () => {
     expect(mocks.openFavorites).toHaveBeenCalledTimes(1)
   })
 
-  it("starts New and Inspiration with the returning member's saved identity", async () => {
+  it("starts Inspiration with the returning member's saved identity", async () => {
     renderCreate()
     await screen.findByText("Your next photo")
-
-    fireEvent.click(screen.getByRole("button", { name: "New" }))
-    expect(mocks.openFresh).toHaveBeenCalledWith({
-      referenceSelfieUrl: "https://example.com/member-selfie.jpg",
-    })
 
     fireEvent.click(screen.getByRole("button", { name: "Inspiration" }))
     expect(mocks.openWithAesthetic).toHaveBeenLastCalledWith(
@@ -234,7 +229,7 @@ describe("Wave 1 Create actions", () => {
 
     expect(screen.getByText(/Maya is finishing your current task/i)).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Create my post" })).toBeDisabled()
-    expect(screen.getByRole("button", { name: "New" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Inspiration" })).toBeDisabled()
   })
 
   it("opens the existing readable memory surface directly from Create", async () => {
