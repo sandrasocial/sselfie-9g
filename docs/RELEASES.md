@@ -1,5 +1,25 @@
 # Completed releases
 
+## 2026-08-12 | Work With Me client-ready promise
+
+Rebuilt the Work With Me messaging around one specific problem: an experienced service provider is
+trusted in real life, but her online presence does not make that value easy for the right client to
+understand, trust, and choose. Kept the approved page structure, imagery, visual design, EUR 2,000
+price, five-place limit, application flow, and customer protections intact. Aligned the application,
+applicant confirmation, private sales-assistant drafts, and paid welcome copy with the same
+client-ready online path. No customer email was sent and no price, checkout, entitlement, billing,
+or existing-customer access changed.
+
+Why: the previous page sold broad offer clarity and visibility language instead of vividly naming
+the audience's current pain, desired client journey, exact fit, and concrete deliverables. Production
+proof: feature commit `aa910d44`, exact Ready Vercel deployment
+`dpl_Ghb9nZSg4tH4P6iZeW6qRo8PzhLB`, CI typecheck, repository invariants, 23 focused journey tests,
+an optimized production build, and clean diff checks. The full repository run reached 2,040 passing
+tests with 6 intentional skips; its only failure was the restricted sandbox blocking an existing
+local tsx socket, and that exact 8-test check passed when rerun with the required local permission.
+Live desktop and 390px mobile QA confirmed the new promise, repeated application actions, updated
+questions, zero console errors, and no horizontal overflow on `www.sselfie.ai/work-with-me`.
+
 ## 2026-08-12 — Maya finish without Feed Planner
 
 Corrected the Maya result journey so `Finish this post` now creates and displays the member's
