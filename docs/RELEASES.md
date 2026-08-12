@@ -1,5 +1,19 @@
 # Completed releases
 
+## 2026-08-12 | Work With Me short-copy pass
+
+Shortened the Work With Me page without changing its approved visuals, images, section structure,
+EUR 2,000 price, five-place limit, or application journey. Each section now carries one idea, the
+offer is readable from the headings, deliverables are scannable, and the application questions use
+shorter everyday language. No email or social content was sent.
+
+Why: the first client-ready rewrite was clear but too text heavy. Production proof: feature commit
+`6e959068`, exact Ready Vercel deployment `dpl_EwgMb5uhsR9p4Yg6458tEYmyxfYB`, CI typecheck,
+repository invariants, 24 focused tests, and clean diff checks. The visible page now has about 582
+words before FAQ data and 15 short paragraphs instead of 27. Live desktop and 390px mobile QA
+confirmed the shortened headline, price, application path, zero console errors, and no horizontal
+overflow on `www.sselfie.ai/work-with-me`.
+
 ## 2026-08-12 | Work With Me client-ready promise
 
 Rebuilt the Work With Me messaging around one specific problem: an experienced service provider is
