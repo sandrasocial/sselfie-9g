@@ -729,3 +729,17 @@ errors, a successful production build, and 1,986 passing tests with 6 intentiona
 target-member journeys passed the narrowed creation, Calendar placement, exact reload/Resume, and
 retry-safe no-duplicate boundaries on desktop and 390px mobile. Authenticated live QA confirmed Maya
 Home first, the one-job action and composer above the fold at 390x844, and zero browser console errors.
+
+## 2026-08-12: Work With Me one-clear-offer lane
+
+Focused the private four-week Work With Me sprint on one result: turn one existing skill or service
+into one clear offer, one message people understand, and a four-week visibility plan. Removed the
+unsupported payment-plan and SUITE promises, tightened the application, made the kickoff call the
+primary buyer next step, and added attended sales-assistant drafts that never send automatically.
+
+Why: live evidence showed warm Work With Me interest but no paid clients, while the page and follow-up
+path asked the buyer to understand too many outcomes at once. Production proof: feature commit
+`fb75f7c5`, exact Ready Vercel deployment `dpl_DDFiCUKNubfttECJW8pYqZ6mMqoZ`, typecheck, repository
+invariants, a successful production build, 2,036 passing tests with 6 intentional skips, and focused
+post-rebase coverage. Live desktop and 390px mobile QA confirmed the focused promise, six required
+application fields, the €2,000 paid-in-full price, and no old payment-plan or SUITE promise.
