@@ -1,5 +1,21 @@
 # Completed releases
 
+## 2026-08-12 — Maya finish without Feed Planner
+
+Corrected the Maya result journey so `Finish this post` now creates and displays the member's
+caption inside Maya instead of silently creating a Feed Planner placement. Finished captions persist
+with the Maya draft across return and reload. Calendar placement remains available only when a member
+explicitly starts from an existing Calendar post; existing Calendar data, direct access, member
+entitlements, credits, and historical buyers remain unchanged.
+
+Why: the simplified label still called the old `/feed-plan/place-photo` action underneath, so Create
+unexpectedly ended in a separate tool members had not chosen. Production proof: feature commit
+`8f961cb2`, exact Ready Vercel deployment `dpl_8k7TeN9M6i1dnNogmBdHjzG1G9xx`, 2,041 passing tests
+with 6 intentional skips, 32 desktop/mobile operating-layer journeys, CI typecheck, repository
+invariants, changed-file lint with zero errors, a successful optimized production build, and clean
+diff checks. Authenticated production QA confirmed Today opens the `Create with Maya` dialog while
+remaining on `/app`.
+
 ## 2026-08-11 — Maya simplified member journey
 
 Made Maya own one visible job: turn one selfie and one real idea into a finished personal-brand post
