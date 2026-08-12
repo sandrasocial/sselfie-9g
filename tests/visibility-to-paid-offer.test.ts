@@ -11,8 +11,8 @@ describe("Visibility To Paid locked offer", () => {
     const page = read("components/sselfie/public-marketing.tsx")
 
     expect(page).toContain("Five private places. &euro;2,000 paid in full.")
-    expect(page).toContain("make it easier for the right clients to take the next step")
-    expect(page).toContain("one client-ready online path")
+    expect(page).toContain("Your work is good. Your online presence should make that clear.")
+    expect(page).toContain("one clear path from finding you to contacting you")
     expect(page).toContain("offer page copy")
     expect(page).toContain("simple inquiry path")
     expect(page).toContain("We are not rebuilding your whole business")
@@ -21,8 +21,19 @@ describe("Visibility To Paid locked offer", () => {
     expect(page).not.toContain("inside your own SUITE account")
     expect(page).toContain("No payment is taken here.")
     expect(page).toContain("short fit call first")
-    expect(page).toContain("If it is a fit, are you ready to invest €2,000 paid in full?")
+    expect(page).toContain("Are you ready to invest €2,000 if it is a fit?")
     expect(page).not.toContain("All of it")
+  })
+
+  it("keeps the public page short enough to scan", () => {
+    const page = read("components/sselfie/public-marketing.tsx")
+    const start = page.indexOf("export function WorkWithMePageContent()")
+    const end = page.indexOf("\n}\n", start)
+    const workWithMe = page.slice(start, end)
+    const paragraphCount = (workWithMe.match(/<p(?:\s|>)/g) ?? []).length
+
+    expect(paragraphCount).toBeLessThanOrEqual(15)
+    expect(workWithMe).not.toContain("space-y-4")
   })
 
   it("requires an existing paid service before accepting an application", () => {
@@ -30,8 +41,8 @@ describe("Visibility To Paid locked offer", () => {
     const route = read("app/api/inquiry/submit/route.ts")
 
     expect(page).toContain("What service are you already selling")
-    expect(page).toContain("what result do you help clients achieve")
-    expect(page).toContain("what does a good client currently pay")
+    expect(page).toContain("What result does it create")
+    expect(page).toContain("what does a client usually pay")
     expect(route).toContain("!currentOffer")
     expect(route).toContain("!investmentReadiness")
   })
