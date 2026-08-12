@@ -62,9 +62,7 @@ describe("Maya simplified member journey", () => {
   })
 
   it("makes finishing the post the dominant result action and returns the caption", async () => {
-    const onAddToCalendar = vi.fn(async () => ({
-      scheduledAt: "2026-08-12T08:00:00.000Z",
-      position: 1,
+    const onFinishPost = vi.fn(async () => ({
       caption: "A ready-to-use caption.",
     }))
 
@@ -77,7 +75,7 @@ describe("Maya simplified member journey", () => {
           imageUrls: ["https://example.com/photo.png"],
         }}
         onGenerate={vi.fn()}
-        onAddToCalendar={onAddToCalendar}
+        onFinishPost={onFinishPost}
       />
     )
 
@@ -86,7 +84,18 @@ describe("Maya simplified member journey", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Finish this post" }))
 
-    await waitFor(() => expect(onAddToCalendar).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(onFinishPost).toHaveBeenCalledTimes(1))
     expect(await screen.findByText("A ready-to-use caption.")).toBeInTheDocument()
+  })
+
+  it("finishes a Maya post without creating or opening a Feed Planner slot", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "components/app-v3/maya-concierge.tsx"),
+      "utf8"
+    )
+
+    expect(source).toContain('fetch("/api/app-v3/maya/finish-post"')
+    expect(source).not.toContain('fetch("/api/app-v3/maya/feed-plan/place-photo"')
+    expect(source).toContain("calendarSurfaceActive && onOpenCalendar")
   })
 })

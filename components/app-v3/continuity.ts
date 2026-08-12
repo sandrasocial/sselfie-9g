@@ -492,6 +492,18 @@ function sanitizeGenState(value: unknown): Record<string, ConceptGenState> {
         typeof state.aiImageId === "number" && Number.isInteger(state.aiImageId)
           ? state.aiImageId
           : null
+      const rawFinishedPost =
+        state.finishedPost && typeof state.finishedPost === "object"
+          ? (state.finishedPost as Record<string, unknown>)
+          : null
+      const finishedPost = rawFinishedPost
+        ? {
+            caption:
+              typeof rawFinishedPost.caption === "string"
+                ? rawFinishedPost.caption.slice(0, 5000)
+                : null,
+          }
+        : null
       out[key] = {
         status: "done",
         imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),
@@ -500,6 +512,7 @@ function sanitizeGenState(value: unknown): Record<string, ConceptGenState> {
         ...(bakedAiImageIds?.some(id => id != null) ? { bakedAiImageIds } : {}),
         ...(aiImageId != null ? { aiImageId } : {}),
         ...(aiImageIds?.some(id => id != null) ? { aiImageIds } : {}),
+        ...(finishedPost ? { finishedPost } : {}),
       }
     } else if (
       state.status === "generating" &&

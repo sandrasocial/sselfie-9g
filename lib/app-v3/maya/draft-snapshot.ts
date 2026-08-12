@@ -141,6 +141,9 @@ export type ServerConceptGenState = {
     position?: number
     caption?: string | null
   }
+  finishedPost?: {
+    caption?: string | null
+  }
 }
 
 export type ServerMayaDraftSnapshot = {
@@ -532,6 +535,18 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
                   : null,
             }
           : null
+      const rawFinishedPost =
+        state.finishedPost && typeof state.finishedPost === "object"
+          ? (state.finishedPost as Record<string, unknown>)
+          : null
+      const finishedPost = rawFinishedPost
+        ? {
+            caption:
+              typeof rawFinishedPost.caption === "string"
+                ? rawFinishedPost.caption.slice(0, 5000)
+                : null,
+          }
+        : null
       out[key] = {
         status: "done",
         imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),
@@ -541,6 +556,7 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
         ...(aiImageId != null ? { aiImageId } : {}),
         ...(aiImageIds?.some(id => id != null) ? { aiImageIds } : {}),
         ...(calendarPlacement ? { calendarPlacement } : {}),
+        ...(finishedPost ? { finishedPost } : {}),
       }
     } else if (
       state.status === "generating" &&

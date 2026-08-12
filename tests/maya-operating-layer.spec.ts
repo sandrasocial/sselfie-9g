@@ -17,7 +17,7 @@ if (!runPlaywright) {
       const calendarMutations: string[] = []
       const calendarMutationKeys: string[] = []
       const chatHistoryLookups: string[] = []
-      const weeklyPlacementPayloads: any[] = []
+      const finishedPostPayloads: any[] = []
       const founderReports: any[] = []
       const chatStore = new Map<string, any>()
       let activeDraft: any = null
@@ -31,7 +31,7 @@ if (!runPlaywright) {
       ;(page as any).__mayaOperatingLayerCalendarMutations = calendarMutations
       ;(page as any).__mayaOperatingLayerCalendarMutationKeys = calendarMutationKeys
       ;(page as any).__mayaOperatingLayerChatHistoryLookups = chatHistoryLookups
-      ;(page as any).__mayaWeeklyPlacementPayloads = weeklyPlacementPayloads
+      ;(page as any).__mayaFinishedPostPayloads = finishedPostPayloads
       ;(page as any).__mayaFounderReports = founderReports
       ;(page as any).__enableMayaActionJourney = () => {
         actionJourneyEnabled = true
@@ -361,11 +361,9 @@ if (!runPlaywright) {
             preferredOverlayStyle: null,
             hasBrandProfile: true,
           }
-        } else if (pathname === "/api/app-v3/maya/feed-plan/place-photo") {
-          weeklyPlacementPayloads.push(request.postDataJSON?.() ?? {})
+        } else if (pathname === "/api/app-v3/maya/finish-post") {
+          finishedPostPayloads.push(request.postDataJSON?.() ?? {})
           body = {
-            scheduledAt: "2026-08-11T08:00:00.000Z",
-            position: 7,
             caption: "A ready caption for this week's visibility piece.",
           }
         } else if (pathname === "/api/app-v3/reference-library") {
@@ -583,19 +581,19 @@ if (!runPlaywright) {
       await expect(page.getByRole("button", { name: /Turn this into Stories/i })).toHaveCount(0)
       await expect(page.getByText("More things Maya can make")).toHaveCount(0)
       await page.getByRole("button", { name: "Finish this post" }).click()
-      await expect(page.getByText(/Post finished · Post 7/i)).toBeVisible()
+      await expect(page.getByText("Post ready", { exact: true })).toBeVisible()
       await expect(
         page.getByText("A ready caption for this week's visibility piece.")
       ).toBeVisible()
-      expect((page as any).__mayaWeeklyPlacementPayloads).toMatchObject([
+      expect((page as any).__mayaFinishedPostPayloads).toMatchObject([
         {
-          weeklyPackage: true,
           conceptTitle: "Three-part visibility carousel",
         },
       ])
-      expect((page as any).__mayaWeeklyPlacementPayloads[0].captionContext).toContain(
+      expect((page as any).__mayaFinishedPostPayloads[0].captionContext).toContain(
         "Three distinct scenes in one consistent visual world"
       )
+      expect((page as any).__mayaOperatingLayerCalendarMutations).toEqual([])
 
       await page.waitForTimeout(900)
       await page.goto("/e2e/maya-operating-layer", { waitUntil: "domcontentloaded" })
@@ -605,7 +603,7 @@ if (!runPlaywright) {
       await expect(resume).toBeVisible({ timeout: 15_000 })
       await resume.click()
       await expect(maya).toHaveAttribute("data-maya-format", "carousel")
-      await expect(page.getByText(/Post finished · Post 7/i)).toBeVisible()
+      await expect(page.getByText("Post ready", { exact: true })).toBeVisible()
       await expect(
         page.getByText("A ready caption for this week's visibility piece.")
       ).toBeVisible()

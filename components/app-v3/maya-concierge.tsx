@@ -5467,10 +5467,12 @@ export function MayaConcierge({
                           }
                         }}
                         onAddToCalendar={
-                          // Every image format lands in the plan (2026-07-29 report #4). Video
-                          // stays out until the planner can hold video posts — its grid,
-                          // preview, and publish flow are image-based today.
-                          conceptFormat !== "video" && !(operatingLayerEnabled && actionTarget)
+                          // Calendar placement is only a Calendar-originated job. General Maya
+                          // creation finishes in place through onFinishPost below.
+                          conceptFormat !== "video" &&
+                          calendarSurfaceActive &&
+                          session?.calendarTarget &&
+                          !(operatingLayerEnabled && actionTarget)
                             ? async () => {
                                 const current = genState[key]
                                 // Prefer the baked (text-carrying) slide over its clean base.
@@ -5481,12 +5483,8 @@ export function MayaConcierge({
                                 if (!url) return null
                                 const aiImageId =
                                   current?.aiImageIds?.[0] ?? current?.aiImageId ?? null
-                                const selectedCalendarPost = session?.calendarTarget
-                                if (
-                                  conceptFormat === "photo" &&
-                                  calendarSurfaceActive &&
-                                  selectedCalendarPost
-                                ) {
+                                const selectedCalendarPost = session.calendarTarget
+                                if (conceptFormat === "photo") {
                                   if (selectedCalendarPost.delivery?.imageUrl === url) {
                                     return {
                                       scheduledAt:
@@ -5507,75 +5505,51 @@ export function MayaConcierge({
                                       }
                                     : null
                                 }
+                                return null
+                              }
+                            : undefined
+                        }
+                        onFinishPost={
+                          conceptFormat !== "video" &&
+                          !calendarSurfaceActive &&
+                          !(operatingLayerEnabled && actionTarget)
+                            ? async () => {
+                                const current = genState[key]
+                                const urls = (current?.imageUrls ?? []).map(
+                                  (cleanUrl, index) => current?.bakedImageUrls?.[index] ?? cleanUrl
+                                )
+                                if (!urls[0]) return null
                                 try {
-                                  const res = await fetch(
-                                    "/api/app-v3/maya/feed-plan/place-photo",
-                                    {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({
-                                        imageUrl: url,
-                                        ...(urls.length > 1 ? { imageUrls: urls } : {}),
-                                        aiImageId,
-                                        conceptTitle: concept.title,
-                                        ...(weeklyVisibilityPackageActive
-                                          ? {
-                                              weeklyPackage: true,
-                                              captionContext: [
-                                                concept.description,
-                                                ...(
-                                                  concept.brief.graphic?.creativePlan?.outputs ?? []
-                                                )
-                                                  .flatMap(output => [output.title, output.body])
-                                                  .filter(
-                                                    (line): line is string =>
-                                                      typeof line === "string" &&
-                                                      line.trim().length > 0
-                                                  ),
-                                              ]
-                                                .join(". ")
-                                                .slice(0, 840),
-                                            }
-                                          : {}),
-                                      }),
-                                    }
-                                  )
-                                  if (res.status === 403) return "forbidden" as const
-                                  if (!res.ok) return null
-                                  const data = await res.json()
-                                  const placement = data?.scheduledAt
-                                    ? {
-                                        scheduledAt: data.scheduledAt,
-                                        position:
-                                          typeof data.position === "number"
-                                            ? data.position
-                                            : undefined,
-                                        caption:
-                                          typeof data.caption === "string" ? data.caption : null,
-                                      }
-                                    : null
-                                  if (placement) {
-                                    setGenState(current => ({
-                                      ...current,
-                                      [key]: {
-                                        ...current[key],
-                                        calendarPlacement: placement,
-                                      },
-                                    }))
+                                  const response = await fetch("/api/app-v3/maya/finish-post", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                      conceptTitle: concept.title,
+                                      conceptDescription: concept.description,
+                                      format: conceptFormat,
+                                      captionContext: [
+                                        concept.description,
+                                        ...(concept.brief.graphic?.creativePlan?.outputs ?? [])
+                                          .flatMap(output => [output.title, output.body])
+                                          .filter(
+                                            (line): line is string =>
+                                              typeof line === "string" && line.trim().length > 0
+                                          ),
+                                      ]
+                                        .join(". ")
+                                        .slice(0, 1200),
+                                    }),
+                                  })
+                                  if (!response.ok) return null
+                                  const data = await response.json()
+                                  const finishedPost = {
+                                    caption: typeof data.caption === "string" ? data.caption : null,
                                   }
-                                  if (weeklyVisibilityPackageActive && data?.scheduledAt) {
-                                    void trackAnalyticsEvent({
-                                      event: "suite_weekly_package_planned",
-                                      properties: {
-                                        cohort,
-                                        taskId: actionTaskId,
-                                        format: conceptFormat,
-                                        position:
-                                          typeof data.position === "number" ? data.position : null,
-                                      },
-                                    })
-                                  }
-                                  return placement
+                                  setGenState(state => ({
+                                    ...state,
+                                    [key]: { ...state[key], finishedPost },
+                                  }))
+                                  return finishedPost
                                 } catch {
                                   return null
                                 }
@@ -5593,6 +5567,7 @@ export function MayaConcierge({
                             : "Add a selfie first so it still looks like you."
                         }
                         initialCalendarPlacement={gen.calendarPlacement ?? null}
+                        initialFinishedPost={gen.finishedPost ?? null}
                         showCalendarOffer={key === firstDonePhotoKey}
                         resultActions={
                           <div className="space-y-3">
@@ -5629,7 +5604,7 @@ export function MayaConcierge({
                                 )
                               }
                               onOpenCalendar={
-                                onOpenCalendar
+                                calendarSurfaceActive && onOpenCalendar
                                   ? () => {
                                       close()
                                       onOpenCalendar()

@@ -52,7 +52,7 @@ describe("founder-only Maya Home", () => {
     const prompt = read("lib/maya/general-assistant-persona.ts")
     const inline = read("components/app-v3/maya-inline-components.tsx")
     const route = read("app/api/app-v3/maya/chat/route.ts")
-    const placementRoute = read("app/api/app-v3/maya/feed-plan/place-photo/route.ts")
+    const finishRoute = read("app/api/app-v3/maya/finish-post/route.ts")
 
     expect(concierge).toContain("Create my next post")
     expect(concierge).toContain("One selfie. One idea. One finished post.")
@@ -60,7 +60,8 @@ describe("founder-only Maya Home", () => {
     expect(concierge).toContain("WEEKLY_VISIBILITY_PACKAGE_REQUEST")
     expect(concierge).toContain("finish one useful piece of content for this week")
     expect(concierge).toContain("suite_weekly_package_started")
-    expect(concierge).toContain("suite_weekly_package_planned")
+    expect(concierge).toContain('fetch("/api/app-v3/maya/finish-post"')
+    expect(concierge).not.toContain('fetch("/api/app-v3/maya/feed-plan/place-photo"')
     expect(prompt).toContain("NEXT POST OUTCOME")
     expect(prompt).toContain("call set_format in the same turn")
     expect(prompt).toContain("Prefer a selfie-led photo post")
@@ -68,8 +69,8 @@ describe("founder-only Maya Home", () => {
     expect(inline).toContain("if (weeklyPackage) return null")
     expect(inline).toContain("More things Maya can make")
     expect(route).toContain('"unfinished"')
-    expect(concierge).toContain("weeklyPackage: true")
-    expect(placementRoute).toContain("resolveWeeklyPackageCalendarCopy")
+    expect(finishRoute).toContain("generateInstagramCaption")
+    expect(finishRoute).not.toContain("resolveWeeklyPackageCalendarCopy")
   })
 
   it("keeps the public member experience behind the existing server-owned allowlist", () => {

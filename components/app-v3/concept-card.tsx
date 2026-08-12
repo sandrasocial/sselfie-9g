@@ -59,6 +59,10 @@ export interface ConceptGenState {
     position?: number
     caption?: string | null
   }
+  /** Ready-to-publish copy created in Maya without adding the asset to Feed Planner. */
+  finishedPost?: {
+    caption?: string | null
+  }
 }
 
 interface ConceptCardProps {
@@ -79,9 +83,14 @@ interface ConceptCardProps {
   onAddToCalendar?: () => Promise<
     { scheduledAt: string; position?: number; caption?: string | null } | "forbidden" | null
   >
+  /** Completes the post inside Maya. This must not create or update Calendar rows. */
+  onFinishPost?: () => Promise<{ caption?: string | null } | null>
   initialCalendarPlacement?: {
     scheduledAt: string
     position?: number
+    caption?: string | null
+  } | null
+  initialFinishedPost?: {
     caption?: string | null
   } | null
   /** Show Maya's spoken save-offer line above the actions. The concierge passes true for the
@@ -146,7 +155,9 @@ export function ConceptCard({
   onOpen,
   onEdit,
   onAddToCalendar,
+  onFinishPost,
   initialCalendarPlacement = null,
+  initialFinishedPost = null,
   showCalendarOffer = true,
   idleAction,
   resultActions,
@@ -192,6 +203,13 @@ export function ConceptCard({
   const [calendarStatus, setCalendarStatus] = useState<
     "idle" | "saving" | "saved" | "error" | "unavailable"
   >(initialCalendarPlacement ? "saved" : "idle")
+  const [finishStatus, setFinishStatus] = useState<"idle" | "finishing" | "finished" | "error">(
+    initialFinishedPost ? "finished" : "idle"
+  )
+  const [finishedCaption, setFinishedCaption] = useState<string | null>(
+    initialFinishedPost?.caption?.trim() || null
+  )
+  const [finishedCaptionCopied, setFinishedCaptionCopied] = useState(false)
   const [savedDateLabel, setSavedDateLabel] = useState<string | null>(() => {
     if (!initialCalendarPlacement) return null
     const date = new Date(initialCalendarPlacement.scheduledAt)
@@ -250,6 +268,19 @@ export function ConceptCard({
       setCalendarStatus("error")
     }
   }
+  const handleFinishPost = async () => {
+    if (!onFinishPost || finishStatus === "finishing" || finishStatus === "finished") return
+    setFinishStatus("finishing")
+    try {
+      const result = await onFinishPost()
+      if (!result) throw new Error("no result")
+      setFinishedCaption(result.caption?.trim() || null)
+      setFinishStatus("finished")
+    } catch {
+      setFinishStatus("error")
+    }
+  }
+  const postFinishAvailable = !!onFinishPost
   const calendarAvailable = !!onAddToCalendar && calendarStatus !== "unavailable"
   const requestedBakedText = gen.textOverlayMode === "with-text"
   const hasAnyBakedText = Boolean(gen.bakedImageUrls?.some(Boolean))
@@ -508,15 +539,70 @@ export function ConceptCard({
                 )}
               </div>
             )}
-            {/* The membership promise ends at a usable post, so this is the one dominant action.
-                Calendar stays underneath as the delivery engine without becoming a second tool
-                the member has to understand before she has a result. */}
+            {/* The membership promise ends at a usable post. Finishing creates the caption here
+                in Maya; it never creates a hidden Feed Planner slot. */}
+            {postFinishAvailable &&
+              !isVideoDone &&
+              (finishStatus === "finished" ? (
+                <div className="rounded-[10px] border border-[#C5C6C8]/50 bg-[#F8FAFA] p-3">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
+                    Post ready
+                  </p>
+                  {finishedCaption ? (
+                    <>
+                      <div className="mt-2 flex items-center justify-between gap-3">
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
+                          Your caption
+                        </p>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              if (!navigator.clipboard) throw new Error("Clipboard unavailable")
+                              await navigator.clipboard.writeText(finishedCaption)
+                              setFinishedCaptionCopied(true)
+                              window.setTimeout(() => setFinishedCaptionCopied(false), 1800)
+                            } catch {
+                              // Press-and-hold fallback remains available on the text itself.
+                            }
+                          }}
+                          className="inline-flex min-h-11 items-center text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                        >
+                          {finishedCaptionCopied ? "Copied" : "Copy caption"}
+                        </button>
+                      </div>
+                      <pre className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap break-words font-sans text-[12px] leading-relaxed text-[#282728] [overflow-wrap:anywhere]">
+                        {finishedCaption}
+                      </pre>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-[12px] leading-relaxed text-[#4F5052]">
+                      Your visual is ready. Ask Maya to help shape the words if you want a caption.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleFinishPost}
+                  disabled={finishStatus === "finishing"}
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-[8px] bg-[#0D0E10] px-5 py-3.5 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728] disabled:opacity-50"
+                >
+                  {finishStatus === "finishing"
+                    ? "Finishing your post…"
+                    : finishStatus === "error"
+                      ? "Try finishing this post again"
+                      : "Finish this post"}
+                </button>
+              ))}
+            {/* Calendar placement remains explicit only when Maya was opened from an existing
+                Calendar post. It is not part of the normal creation journey. */}
             {calendarAvailable &&
               !isVideoDone &&
               (calendarStatus === "saved" ? (
                 <div className="rounded-[10px] border border-[#C5C6C8]/50 bg-[#F8FAFA] p-3">
                   <p className="text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
-                    Post finished
+                    Added to calendar
                     {savedPosition ? ` · Post ${savedPosition}` : ""}
                     {savedDateLabel ? ` · ${savedDateLabel}` : ""}
                   </p>
@@ -561,10 +647,10 @@ export function ConceptCard({
                   className="inline-flex min-h-12 w-full items-center justify-center rounded-[8px] bg-[#0D0E10] px-5 py-3.5 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728] disabled:opacity-50"
                 >
                   {calendarStatus === "saving"
-                    ? "Finishing your post…"
+                    ? "Adding to calendar…"
                     : calendarStatus === "error"
-                      ? "Try finishing this post again"
-                      : "Finish this post"}
+                      ? "Try adding to calendar again"
+                      : "Add to calendar"}
                 </button>
               ))}
             <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 min-[380px]:gap-3">
