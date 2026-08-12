@@ -7,14 +7,27 @@ function read(path: string) {
 }
 
 describe("Visibility To Paid locked offer", () => {
-  it("keeps the public offer private, priced, and application-first", () => {
+  it("keeps the private offer focused, priced, and application-first", () => {
     const page = read("components/sselfie/public-marketing.tsx")
 
-    expect(page).toContain("Private 4-week sprint. &euro;2,000.")
-    expect(page).toContain("2 &times; &euro;1,100")
+    expect(page).toContain("Five private places. &euro;2,000 paid in full.")
+    expect(page).toContain("one clear offer people can understand and buy")
+    expect(page).toContain("We are not rebuilding your whole business")
+    expect(page).not.toContain("2 &times; &euro;1,100")
+    expect(page).not.toContain("inside your own SUITE account")
     expect(page).toContain("No payment is taken here.")
     expect(page).toContain("short fit call first")
-    expect(page).toContain("Are you open to a private €2,000 sprint if it is the right fit?")
+    expect(page).toContain("If it is a fit, are you ready to invest €2,000 paid in full?")
+    expect(page).not.toContain("All of it")
+  })
+
+  it("requires an existing skill or service before accepting an application", () => {
+    const page = read("components/sselfie/public-marketing.tsx")
+    const route = read("app/api/inquiry/submit/route.ts")
+
+    expect(page).toContain("What skill or service do you already want to turn into a clear paid offer?")
+    expect(route).toContain("!currentOffer")
+    expect(route).toContain("!investmentReadiness")
   })
 
   it("routes every application through the tracked fit-call pipeline", () => {

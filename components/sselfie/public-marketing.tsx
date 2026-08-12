@@ -752,18 +752,20 @@ const FAQS = {
       answer: "Yes. You can cancel from your account. Your membership stays open until the end of the period you already paid for." },
   ],
   visibilityToPaid: [
-    { question: "What if I don't know what my offer is yet?",
-      answer: "That's normal, and it's honestly most of why people apply. You don't need to arrive with a finished offer. You do need something real to work with: a skill, a service, a story, or an idea people already ask you about. Part of the two-week prep is helping you see what that can become." },
+    { question: "Do I need to have an offer already?",
+      answer: "You need something real to work with: a skill or service you already know you want to sell. It does not need to be packaged perfectly. That is the problem we solve together." },
     { question: "Is this business coaching?",
-      answer: "Not really. I'm not sending you away with homework and a generic framework. I spend two weeks researching your niche and building the first version of your system myself, then we refine it together on the calls. It's closer to being built with than being taught." },
+      answer: "It is a focused offer and visibility sprint. I build the first version before our first call, then we refine it together. We are not rebuilding every part of your business." },
     { question: "Is this mainly about AI photos?",
-      answer: "No. AI helps with the visual side, but it was never the point. The real work is your message, your content, and your offer, so people actually understand you and know what they can buy from you." },
-    { question: "What if I pay and still don't use it?",
-      answer: "I get why that's scary. A lot of women have bought things they never finished. This is different because I'm not handing you a course and disappearing. I'm actively building your system with you. But I can't do the showing up for you. You'll still need to post it, say it, and use it." },
+      answer: "No. AI helps me research, draft, and build faster. The point is one clear offer, a message people understand, and content that leads back to it." },
+    { question: "What do I leave with?",
+      answer: "One clear offer, one sentence that explains it, and a four-week visibility plan built around that offer. You will still need to show up and use it. I cannot promise income, but I will make sure you are not leaving with another pile of vague ideas." },
+    { question: "How does payment work?",
+      answer: "The private sprint is €2,000 paid in full after a fit call. No payment is taken when you apply." },
     { question: "Why is there an application instead of instant checkout?",
       answer: "Because this is personal, hands-on work, and I read every application myself. I'd rather tell you honestly if I don't think it's a fit than take your money for something that isn't." },
     { question: "Why should I trust a new offer like this?",
-      answer: "The offer is new. The experience behind it isn't. I've built my own audience, content, offers, and visual identity from nothing, using exactly what I teach. This sprint is the closest way to work with me directly, before you're running it yourself inside SUITE." },
+      answer: "The offer is new. The experience behind it is not. I have built my own audience, content, offers, and visual identity from nothing. This is the closest way to work with me directly, with one clear result holding the whole sprint together." },
   ],
 }
 
@@ -1448,7 +1450,6 @@ export function InquiryForm() {
   const [currentBlock, setCurrentBlock] = useState("")
   const [goal,         setGoal]         = useState("")
   const [currentOffer, setCurrentOffer] = useState("")
-  const [helpFocus,    setHelpFocus]    = useState("")
   const [investmentReadiness, setInvestmentReadiness] = useState("")
   const [error,        setError]        = useState("")
   const [success,      setSuccess]      = useState(false)
@@ -1504,7 +1505,7 @@ export function InquiryForm() {
             currentChallenge: currentBlock,
             desiredOutcome: goal,
             currentOffer,
-            helpFocus,
+            helpFocus: "Clarify one existing offer",
             investmentReadiness,
           }),
         })
@@ -1522,7 +1523,7 @@ export function InquiryForm() {
           properties: { source: "work_with_me_form" },
         })
         setSuccess(true)
-        setName(""); setEmail(""); setInstagram(""); setCurrentBlock(""); setGoal(""); setCurrentOffer(""); setHelpFocus(""); setInvestmentReadiness("")
+        setName(""); setEmail(""); setInstagram(""); setCurrentBlock(""); setGoal(""); setCurrentOffer(""); setInvestmentReadiness("")
       } catch {
         void trackAnalyticsEvent({
           event: "work_with_me_application_failed",
@@ -1537,7 +1538,7 @@ export function InquiryForm() {
     return (
       <div style={{ ...cardSx(true), textAlign: "center", padding: "40px 28px" }}>
         <p style={{ ...ty("h3", true), marginBottom: "12px" }}>Your application has been sent.</p>
-        <p style={ty("body", true)}>I read every application myself. If it looks like the right fit, you&apos;ll hear back with the next step. Usually that means a short fit call first.</p>
+        <p style={ty("body", true)}>I read every application myself. If I believe I can help make this one offer clear and easier to sell, you&apos;ll hear back with the next step. Usually that means a short fit call first.</p>
         <p className="mt-4" style={{ ...ty("body", true), color: C.onDarkMuted }}>No payment has been taken.</p>
       </div>
     )
@@ -1562,35 +1563,23 @@ export function InquiryForm() {
         </label>
       ))}
       <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
-        <span>What feels unclear or stuck online right now?</span>
+        <span>What makes this offer hard to explain or sell right now?</span>
         <textarea value={currentBlock} onChange={(e) => setCurrentBlock(e.target.value)} rows={4} required
           style={{ ...inputStyle, minHeight: "110px", resize: "vertical" }} onFocus={onFocus} onBlur={onBlur} />
       </label>
       <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
-        <span>What do you want people to understand, trust, or buy from you in the next 6 months?</span>
+        <span>If this one offer became clear, what would you want to happen next?</span>
         <textarea value={goal} onChange={(e) => setGoal(e.target.value)} rows={4} required
           style={{ ...inputStyle, minHeight: "110px", resize: "vertical" }} onFocus={onFocus} onBlur={onBlur} />
       </label>
       <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
-        <span>What skill, service, offer, story, or idea do you already have?</span>
-        <textarea value={currentOffer} onChange={(e) => setCurrentOffer(e.target.value)} rows={3}
+        <span>What skill or service do you already want to turn into a clear paid offer?</span>
+        <textarea value={currentOffer} onChange={(e) => setCurrentOffer(e.target.value)} rows={3} required
           style={{ ...inputStyle, minHeight: "86px", resize: "vertical" }} onFocus={onFocus} onBlur={onBlur} />
       </label>
       <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
-        <span>What do you want help with most?</span>
-        <select value={helpFocus} onChange={(e) => setHelpFocus(e.target.value)} style={inputStyle} onFocus={onFocus} onBlur={onBlur}>
-          <option value="">Choose one</option>
-          <option value="Message">What to say</option>
-          <option value="Content">What to post</option>
-          <option value="Offer">What to sell first</option>
-          <option value="Profile direction">Making my profile make sense</option>
-          <option value="Visual direction">Photos and visuals that feel like me</option>
-          <option value="All of it">All of it</option>
-        </select>
-      </label>
-      <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
-        <span>Are you open to a private €2,000 sprint if it is the right fit?</span>
-        <select value={investmentReadiness} onChange={(e) => setInvestmentReadiness(e.target.value)} style={inputStyle} onFocus={onFocus} onBlur={onBlur}>
+        <span>If it is a fit, are you ready to invest €2,000 paid in full?</span>
+        <select required value={investmentReadiness} onChange={(e) => setInvestmentReadiness(e.target.value)} style={inputStyle} onFocus={onFocus} onBlur={onBlur}>
           <option value="">Choose one</option>
           <option value="Yes">Yes</option>
           <option value="Maybe, I have questions">Maybe, I have questions</option>
@@ -2211,31 +2200,29 @@ export function WorkWithMePageContent() {
 
       {/* HERO - dark, full-bleed */}
       <Hero
-        eyebrow="Work With Me · Private 4-Week Sprint"
-        title={<>You&apos;re not confused. You&apos;re just carrying it all in your head.</>}
+        eyebrow="Work With Me · Five Private Places"
+        title={<>Let&apos;s turn what you already know into one clear offer people can understand and buy.</>}
         body={
           <div className="space-y-3">
-            <p>You have the experience. The ideas. The story. The thing people always ask you about.</p>
-            <p>But online, none of it connects. So people scroll past. Not because you&apos;re not good enough. Because they don&apos;t understand you yet. And when people don&apos;t understand you, they don&apos;t buy.</p>
+            <p>You do not need a new business. You need the right people to understand what you do, who it is for, and what they can buy from you.</p>
+            <p>If your experience, ideas, and content are all there but none of it connects, this is the work we do together.</p>
           </div>
         }
-        primary={{ href: "#inquiry",       label: "Apply for the Sprint" }}
-        secondary={{ href: "/join/studio", label: "See SSELFIE SUITE" }}
+        primary={{ href: "#inquiry", label: "Apply for the Sprint" }}
         imageSrc={IMG.wwmHero}
       />
 
       {/* RECOGNITION - cream */}
       <Section
-        eyebrow="Why this keeps happening"
-        title={<>You&apos;re probably closer than you think.</>}
+        eyebrow="The real problem"
+        title={<>The problem is not that you have nothing to sell. People just cannot see the offer yet.</>}
         dark={false}
         narrow
       >
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>People already ask you for advice. You already know things. You&apos;ve already lived through things, and helped people with them.</p>
-          <p>You just haven&apos;t turned it into something people can understand fast enough to remember.</p>
-          <p>Every week you tell yourself you&apos;ll figure it out this weekend. Then another month goes by, and your profile still doesn&apos;t say who you are.</p>
-          <p style={{ color: C.onCream }}>Your Instagram isn&apos;t empty. It&apos;s just unclear.</p>
+          <p>People already ask you for advice. You have experience, results, and a real way of helping. But it is still spread across too many ideas, captions, services, and half-finished plans.</p>
+          <p>So when someone finds you, they have to work too hard to understand what you do. Most people will not do that work. They leave.</p>
+          <p style={{ color: C.onCream }}>Your business is not empty. The offer is simply unclear.</p>
         </div>
       </Section>
 
@@ -2261,25 +2248,25 @@ export function WorkWithMePageContent() {
 
       {/* TRANSFORMATION - dark */}
       <Section
-        eyebrow="What actually changes"
-        title={<>This isn&apos;t about a clearer brand. It&apos;s about finally building something that&apos;s yours.</>}
+        eyebrow="The one result"
+        title={<>One clear offer. One clear message. Four weeks of content that leads back to it.</>}
         dark
       >
         <div className="mf space-y-4" style={{ ...ty("body", true), fontSize: "16px" }}>
-          <p>A clearer brand was never really what you wanted. You want your own income. You want to stop depending on everyone else to notice you first. You want to become someone people remember, so opportunities start coming to you instead of you chasing them.</p>
-          <p>That&apos;s what changes: you become the woman who knows what to post, knows what to say, gets the DM instead of sending it, and feels proud sending people to her own profile.</p>
+          <p>We choose the skill or service you are ready to sell now. Then we make it easy to explain, shape the message around it, and build a month of visibility that keeps pointing the right people toward the same next step.</p>
+          <p>This is not a promise that five posts will fix your business. It is the foundation you need before content, sales, or AI can work properly for you.</p>
         </div>
       </Section>
 
       {/* HOW I WORK - cream */}
       <Split
         eyebrow="How I work"
-        title={<>Before we ever speak, I&apos;ve already been inside your business.</>}
+        title={<>I build the first version before our first call.</>}
         body={
           <div className="space-y-4">
-            <p>I don&apos;t want to spend our first call trying to figure out who you are. I want you looking at a version of yourself you&apos;ve never been able to see clearly before.</p>
-            <p>So before we talk, I spend two weeks inside your business. I research your niche and what&apos;s actually working in it right now. I look at your Instagram and figure out exactly why people aren&apos;t getting you yet.</p>
-            <p>Then I build the first version of it: your one-line identity, your first batch of brand photos, captions that sound like you instead of a template, and a real weekly plan.</p>
+            <p>I do not want to spend our first call staring at a blank page. Before we talk, I spend two weeks inside your current business, offer, audience, and content.</p>
+            <p>I research the market, look for the language your customer already understands, and find the gap between what you know and what people can actually buy from you.</p>
+            <p>Then I build the first version of your offer message and your four-week visibility plan. AI helps me move faster. My judgment, experience, and eye decide what is actually right for you.</p>
             <p>By the time we get on our first call, you&apos;re not staring at a blank page. You&apos;re reacting to something real.</p>
           </div>
         }
@@ -2291,13 +2278,13 @@ export function WorkWithMePageContent() {
 
       {/* WHY THIS IS DIFFERENT - dark */}
       <Split
-        eyebrow="Why this is different"
-        title={<>I&apos;m not teaching you a system. I built one for myself, from nothing.</>}
+        eyebrow="What we are not doing"
+        title={<>We are not rebuilding your whole business.</>}
         body={
           <div className="space-y-4">
-            <p>I started with my phone, in a bathroom with bad light, trying to become visible again after everything fell apart.</p>
-            <p>I&apos;ve built my own audience, content, offers, and visual identity from scratch, using exactly what I still teach.</p>
-            <p style={{ color: C.onDark }}>You&apos;re not paying for six separate services. You&apos;re paying for one person who can see the full picture of your business and build it with you.</p>
+            <p>We choose one existing skill or service and make that offer easier to understand and sell. Your website, photos, profile, and content only change when they help that one result.</p>
+            <p>Anything else waits. That boundary is what lets us move quickly without turning four weeks into another overwhelming business makeover.</p>
+            <p style={{ color: C.onDark }}>You are paying for focused judgment, real preparation, and a clear path forward. Not six disconnected services and a pile of homework.</p>
           </div>
         }
         imgSrc={IMG.wwmEditorial}
@@ -2310,12 +2297,12 @@ export function WorkWithMePageContent() {
       {/* THE SPRINT / OFFER - cream */}
       <Split
         eyebrow="The sprint"
-        title={<>Private 4-week sprint. &euro;2,000.</>}
+        title={<>Five private places. &euro;2,000 paid in full.</>}
         body={
           <div className="space-y-4">
-            <p><span style={{ color: C.onCream }}>Payment plan:</span> 2 &times; &euro;1,100. No payment is taken when you apply.</p>
-            <p>Apply, and if it&apos;s a fit, we do a short call first. Then two weeks where I build your system before we speak again. Then four weeks of calls where we refine it against your real business, and you leave running it inside your own SUITE account.</p>
-            <p style={{ color: C.onCreamMuted }}>This isn&apos;t a promise of income. It&apos;s a focused private sprint to make you clear on who you are and what you sell, with a system that keeps that clarity working after we&apos;re done.</p>
+            <p>No payment is taken when you apply. If I believe I can help, we do a short fit call first. The €2,000 payment is only sent after that conversation.</p>
+            <p>Then I take two weeks to research and build the first version. We follow that with four weekly 45-minute calls where we refine it against your real business and your real customer.</p>
+            <p style={{ color: C.onCreamMuted }}>You leave with one clear offer, one sentence that explains it, and a four-week visibility plan you can keep using. This is not a promise of income.</p>
           </div>
         }
         imgSrc={IMG.wwmApplication}
@@ -2335,8 +2322,8 @@ export function WorkWithMePageContent() {
         <div className="max-w-5xl mx-auto grid gap-14 md:grid-cols-2 md:items-start relative" style={{ zIndex: 2 }}>
           <div className="mf">
             <span style={{ ...ty("eyebrow", true), marginBottom: "14px" }}>Application</span>
-            <h2 style={{ ...ty("h2", true), marginBottom: "16px" }}>Apply for Visibility To Paid</h2>
-            <p style={{ ...ty("body", true), fontSize: "16px" }}>Keep it simple. I only need enough to understand what you already have, what feels unclear, and whether I can help you make it visible and easier to buy from.</p>
+            <h2 style={{ ...ty("h2", true), marginBottom: "16px" }}>Apply to make your offer clear</h2>
+            <p style={{ ...ty("body", true), fontSize: "16px" }}>Keep it simple. Tell me what skill or service you already want to sell, why it feels hard to explain, and what you want this one offer to make possible.</p>
             <div className="mt-8" style={{ ...cardSx(true), padding: "20px" }}>
               <p style={{ ...ty("body", true), fontSize: "13px", color: C.onDarkMuted }}>
                 <span style={{ color: C.onDarkSub }}>No payment is taken here.</span> If your application looks like the right fit, I&apos;ll reply with the next step. Usually that means a short fit call first.

@@ -3,6 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { readAdminJson } from "@/lib/admin/safe-fetch-json"
+import {
+  buildWorkWithMeContactDraft,
+  buildWorkWithMeOfferDraft,
+  buildWorkWithMeSalesBrief,
+} from "@/lib/work-with-me/sales-assistant"
 
 type WorkWithMeApplication = {
   id: number
@@ -66,6 +71,16 @@ async function copyText(text: string) {
   fallback.select()
   document.execCommand("copy")
   fallback.remove()
+}
+
+function salesInput(application: WorkWithMeApplication) {
+  return {
+    name: application.name,
+    currentChallenge: application.current_challenge,
+    desiredOutcome: application.desired_outcome,
+    currentOffer: application.current_offer,
+    investmentReadiness: application.readiness,
+  }
 }
 
 export function WorkWithMePipeline() {
@@ -140,28 +155,40 @@ export function WorkWithMePipeline() {
     }
   }
 
-  async function createCheckout(applicationId: number) {
-    setBusyId(applicationId)
+  async function createCheckout(application: WorkWithMeApplication) {
+    setBusyId(application.id)
     setError("")
     try {
       const response = await fetch("/api/admin/work-with-me", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ applicationId, action: "create_checkout" }),
+        body: JSON.stringify({ applicationId: application.id, action: "create_checkout" }),
       })
       const data = await readAdminJson(response)
       if (!response.ok) throw new Error(data?.error || "Could not create the payment link.")
       await load()
       try {
-        await copyText(data.checkoutUrl)
-        showCopied(applicationId)
+        await copyText(buildWorkWithMeOfferDraft({
+          ...salesInput(application),
+          checkoutUrl: data.checkoutUrl,
+        }))
+        showCopied(application.id)
       } catch {
-        setError("The payment link was checked, but your browser could not copy it. Try the copy button again.")
+        setError("The payment link was checked, but your browser could not copy the offer message. Try again.")
       }
     } catch (checkoutError) {
       setError(checkoutError instanceof Error ? checkoutError.message : "Could not create the payment link.")
     } finally {
       setBusyId(null)
+    }
+  }
+
+  async function copyContactDraft(application: WorkWithMeApplication) {
+    try {
+      await copyText(buildWorkWithMeContactDraft(salesInput(application)))
+      showCopied(application.id)
+    } catch {
+      setError("Your browser could not copy the prepared message. Try again.")
     }
   }
 
@@ -260,6 +287,18 @@ export function WorkWithMePipeline() {
                   </div>
                 </details>
 
+                <div className="mt-5 rounded-xl border border-stone-200 bg-stone-950 px-4 py-4 text-white">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-400">
+                    Sales assistant
+                  </p>
+                  <pre className="mt-3 whitespace-pre-wrap font-sans text-sm leading-6 text-stone-200">
+                    {buildWorkWithMeSalesBrief(salesInput(application))}
+                  </pre>
+                  <p className="mt-3 text-xs leading-5 text-stone-400">
+                    The assistant prepares the next message. Nothing sends from this page.
+                  </p>
+                </div>
+
                 <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-stone-500" htmlFor={`notes-${application.id}`}>
                   Notes
                 </label>
@@ -285,6 +324,16 @@ export function WorkWithMePipeline() {
                     <button
                       type="button"
                       disabled={isBusy}
+                      onClick={() => copyContactDraft(application)}
+                      className="rounded-full bg-stone-950 px-4 py-2 text-xs font-medium text-white hover:bg-stone-800 disabled:opacity-40"
+                    >
+                      {copiedId === application.id ? "Copied" : "Copy personal fit-call message"}
+                    </button>
+                  ) : null}
+                  {canContact ? (
+                    <button
+                      type="button"
+                      disabled={isBusy}
                       onClick={() => updateApplication(application.id, "contacted")}
                       className="rounded-full border border-stone-300 px-4 py-2 text-xs font-medium text-stone-700 hover:border-stone-950 disabled:opacity-40"
                     >
@@ -305,14 +354,14 @@ export function WorkWithMePipeline() {
                     <button
                       type="button"
                       disabled={isBusy}
-                      onClick={() => createCheckout(application.id)}
+                      onClick={() => createCheckout(application)}
                       className="rounded-full bg-stone-950 px-4 py-2 text-xs font-medium text-white hover:bg-stone-800 disabled:opacity-40"
                     >
                       {copiedId === application.id
                         ? "Copied"
                         : application.checkout_url
-                          ? "Copy €2,000 link"
-                          : "Create €2,000 link"}
+                          ? "Copy €2,000 offer message"
+                          : "Create €2,000 offer message"}
                     </button>
                   ) : null}
                   {!isClosed ? (

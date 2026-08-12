@@ -19,7 +19,7 @@ describe("Work With Me fulfillment", () => {
     expect(handler).toContain('bought_prompt_vault: "true"')
   })
 
-  it("includes all client access links and Calendly in the welcome email", () => {
+  it("makes the booking call the one primary next step and keeps the supporting library", () => {
     const email = generateWorkWithMeWelcomeEmail({
       firstName: "Harmony",
       passwordSetupUrl: "https://sselfie.ai/auth/setup-password?next=%2Facademy%2Faccess%2Fmasterclass",
@@ -27,7 +27,6 @@ describe("Work With Me fulfillment", () => {
       selfieToBrandShootUrl: "https://sselfie.ai/academy/access/selfie-to-brand-shoot",
       promptVaultUrl: "https://sselfie.ai/access/prompt-vault/preview-token",
       bookingUrl: "https://calendly.com/sandrasocial/work-with-me-session-45-min",
-      appUrl: "https://sselfie.ai/app",
     })
 
     expect(email.html).toContain("https://sselfie.ai/academy/access/masterclass")
@@ -37,5 +36,8 @@ describe("Work With Me fulfillment", () => {
     expect(email.text).toContain("Open Selfie to Brand Shoot")
     expect(email.text).toContain("Open Prompt Vault")
     expect(email.text).toContain("weekly 45-minute sessions")
+    expect(email.text).toContain("ONE CLEAR OFFER")
+    expect(email.text).not.toContain("Start your photos")
+    expect(email.html).not.toContain("https://sselfie.ai/app")
   })
 })

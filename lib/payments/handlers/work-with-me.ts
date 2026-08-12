@@ -44,7 +44,6 @@ export async function handleWorkWithMeCheckout(ctx: CheckoutFulfillmentContext):
   const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
   const masterclassUrl = `${productionUrl}/academy/access/masterclass`
   const selfieToBrandShootUrl = `${productionUrl}/academy/access/selfie-to-brand-shoot`
-  const appUrl = `${productionUrl}/app`
   const firstName = getFirstNameForEmail({
     fullName: session.customer_details?.name,
     email: customerEmail,
@@ -114,7 +113,6 @@ export async function handleWorkWithMeCheckout(ctx: CheckoutFulfillmentContext):
     masterclassUrl,
     selfieToBrandShootUrl,
     promptVaultUrl,
-    appUrl,
   })
 
   const emailResult = await sendEmail({
