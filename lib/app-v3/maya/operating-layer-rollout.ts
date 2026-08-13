@@ -42,21 +42,11 @@ export function isMayaOperatingLayerEnabled(identity?: MayaOperatingLayerIdentit
   return identity?.accessLevel === "full" || identity?.accessLevel === "trial"
 }
 
-/** Maya Home is a narrower founder-preview cohort than the existing operating layer.
- * The global operating-layer flag must never widen this UI rollout. */
+/**
+ * Maya is the member creation home. The earlier founder-only preview gate is retired: keeping
+ * the normal member entry behind an allowlist recreated the old Today dashboard for most people.
+ * Limited accounts still receive the protected limited shell.
+ */
 export function isMayaHomeEnabled(identity?: MayaOperatingLayerIdentity): boolean {
-  // The founder Home experiment is archived by default. Keeping the code and cohort intact
-  // makes the decision reversible without letting an old allowlist silently reactivate it.
-  if (!isEnabled(process.env.FEATURE_MAYA_HOME_PREVIEW)) return false
-
-  const previewAllowlist = normalizedEntries(
-    process.env.MAYA_HOME_ALLOWLIST || process.env.MAYA_OPERATING_LAYER_ALLOWLIST
-  )
-  const valueTestAllowlist = valueTestEntries()
-  const email = identity?.email?.trim().toLowerCase()
-  const userId = identity?.userId?.trim().toLowerCase()
-  return Boolean(
-    (email && (previewAllowlist.has(email) || valueTestAllowlist.has(email))) ||
-    (userId && (previewAllowlist.has(userId) || valueTestAllowlist.has(userId)))
-  )
+  return identity?.accessLevel === "full" || identity?.accessLevel === "trial"
 }

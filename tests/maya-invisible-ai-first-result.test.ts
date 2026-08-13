@@ -29,7 +29,7 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(concierge).toContain("Maya is choosing one strong direction")
     expect(concierge).toContain('guidedFirstPhoto ? "hidden" : ""')
     expect(concierge).toContain("const workspaceTitle = generalHomeConversation")
-    expect(concierge).toContain('"What do you need today?"')
+    expect(concierge).toContain('"What do you want to say?"')
     expect(concierge).toContain('? "Learn with Maya"')
     expect(concierge).toContain('? "Create with Maya"')
     expect(concierge).toContain("{workspaceTitle}")
@@ -158,10 +158,12 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(galleryDownloadBody.indexOf("await initiateAssetDownload")).toBeLessThan(
       galleryDownloadBody.indexOf("recordSuiteDownloadForReview")
     )
-    expect(resultActions).toContain("Maya recommends next")
-    expect(resultActions).toContain("More things Maya can make")
-    expect(resultActions).toContain('"next_action", "recommended"')
-    expect(resultActions).toContain('"next_action", "more"')
+    expect(resultActions).toContain("Make it more like me")
+    expect(resultActions).not.toContain("Photos")
+    expect(resultActions).not.toContain("Slides")
+    expect(resultActions).not.toContain("Motion")
+    expect(resultActions).not.toContain("Maya recommends next")
+    expect(resultActions).not.toContain("More things Maya can make")
   })
 
   it("measures whether members follow Maya's recommendation or choose an alternative", () => {

@@ -10,20 +10,14 @@ import {
 } from "@/lib/app-v3/maya/operating-layer-rollout"
 
 const originalGlobal = process.env.FEATURE_MAYA_OPERATING_LAYER
-const originalHomePreview = process.env.FEATURE_MAYA_HOME_PREVIEW
 const originalAllowlist = process.env.MAYA_OPERATING_LAYER_ALLOWLIST
-const originalHomeAllowlist = process.env.MAYA_HOME_ALLOWLIST
 const originalValueTestAllowlist = process.env.MAYA_VALUE_TEST_ALLOWLIST
 
 afterEach(() => {
   if (originalGlobal === undefined) delete process.env.FEATURE_MAYA_OPERATING_LAYER
   else process.env.FEATURE_MAYA_OPERATING_LAYER = originalGlobal
-  if (originalHomePreview === undefined) delete process.env.FEATURE_MAYA_HOME_PREVIEW
-  else process.env.FEATURE_MAYA_HOME_PREVIEW = originalHomePreview
   if (originalAllowlist === undefined) delete process.env.MAYA_OPERATING_LAYER_ALLOWLIST
   else process.env.MAYA_OPERATING_LAYER_ALLOWLIST = originalAllowlist
-  if (originalHomeAllowlist === undefined) delete process.env.MAYA_HOME_ALLOWLIST
-  else process.env.MAYA_HOME_ALLOWLIST = originalHomeAllowlist
   if (originalValueTestAllowlist === undefined) delete process.env.MAYA_VALUE_TEST_ALLOWLIST
   else process.env.MAYA_VALUE_TEST_ALLOWLIST = originalValueTestAllowlist
 })
@@ -76,57 +70,13 @@ describe("Maya operating layer rollout", () => {
     ).toBe(true)
   })
 
-  it("archives Maya Home by default even for the previous founder allowlist", () => {
-    process.env.FEATURE_MAYA_OPERATING_LAYER = "true"
-    process.env.MAYA_OPERATING_LAYER_ALLOWLIST = "sandra@example.com"
-    delete process.env.MAYA_HOME_ALLOWLIST
+  it("makes Maya Home the default for members and trials without a founder allowlist", () => {
     delete process.env.FEATURE_MAYA_HOME_PREVIEW
-
-    expect(isMayaHomeEnabled({ email: "sandra@example.com", accessLevel: "full" })).toBe(false)
-    expect(isMayaHomeEnabled({ email: "member@example.com", accessLevel: "full" })).toBe(false)
-    expect(isMayaHomeEnabled({ email: "trial@example.com", accessLevel: "trial" })).toBe(false)
-  })
-
-  it("can deliberately restore the archived preview without changing the operating cohort", () => {
-    process.env.FEATURE_MAYA_OPERATING_LAYER = "true"
-    process.env.FEATURE_MAYA_HOME_PREVIEW = "true"
-    process.env.MAYA_OPERATING_LAYER_ALLOWLIST = "legacy-preview@example.com"
-    process.env.MAYA_HOME_ALLOWLIST = " founder@example.com "
-
-    expect(isMayaHomeEnabled({ email: "founder@example.com", accessLevel: "full" })).toBe(true)
-    expect(isMayaHomeEnabled({ email: "legacy-preview@example.com", accessLevel: "full" })).toBe(
-      false
-    )
-  })
-
-  it("supports a bounded paid-value cohort without enabling every member", () => {
-    process.env.FEATURE_MAYA_HOME_PREVIEW = "true"
     delete process.env.MAYA_HOME_ALLOWLIST
-    delete process.env.MAYA_OPERATING_LAYER_ALLOWLIST
-    process.env.MAYA_VALUE_TEST_ALLOWLIST = " test-buyer@example.com, test-user-id "
 
-    expect(isMayaHomeEnabled({ email: "test-buyer@example.com", accessLevel: "full" })).toBe(true)
-    expect(
-      isMayaOperatingLayerEnabled({ email: "test-buyer@example.com", accessLevel: "full" })
-    ).toBe(true)
-    expect(isMayaHomeEnabled({ userId: "TEST-USER-ID", accessLevel: "full" })).toBe(true)
-    expect(isMayaHomeEnabled({ email: "other-member@example.com", accessLevel: "full" })).toBe(
-      false
-    )
-  })
-
-  it("fails closed when the paid-value cohort exceeds twenty identities", () => {
-    process.env.FEATURE_MAYA_HOME_PREVIEW = "true"
-    delete process.env.MAYA_HOME_ALLOWLIST
-    delete process.env.MAYA_OPERATING_LAYER_ALLOWLIST
-    process.env.MAYA_VALUE_TEST_ALLOWLIST = Array.from(
-      { length: 21 },
-      (_, index) => `buyer-${index + 1}@example.com`
-    ).join(",")
-
-    expect(isMayaHomeEnabled({ email: "buyer-1@example.com", accessLevel: "full" })).toBe(false)
-    expect(isMayaOperatingLayerEnabled({ email: "buyer-1@example.com", accessLevel: "full" })).toBe(
-      false
-    )
+    expect(isMayaHomeEnabled({ email: "member@example.com", accessLevel: "full" })).toBe(true)
+    expect(isMayaHomeEnabled({ email: "trial@example.com", accessLevel: "trial" })).toBe(true)
+    expect(isMayaHomeEnabled({ email: "limited@example.com", accessLevel: "limited" })).toBe(false)
+    expect(isMayaHomeEnabled({ email: "unknown@example.com" })).toBe(false)
   })
 })

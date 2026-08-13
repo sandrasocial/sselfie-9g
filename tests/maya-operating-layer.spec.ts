@@ -7,6 +7,16 @@ if (!runPlaywright) {
 } else {
   const { test, expect } = require("@playwright/test")
 
+  async function captureMayaProof(page: any, name: string) {
+    const proofDir = process.env.MAYA_VISUAL_PROOF_DIR
+    if (!proofDir) return
+    await page.waitForTimeout(350)
+    await page.screenshot({
+      path: `${proofDir}/${test.info().project.name}-${name}.png`,
+      fullPage: true,
+    })
+  }
+
   test.describe("Maya operating layer Phase 0 member-job baseline", () => {
     test.describe.configure({ mode: "serial", timeout: 60_000 })
 
@@ -176,7 +186,7 @@ if (!runPlaywright) {
             : "Maya QA response for the Create task."
           const messageId = `assistant-${Date.now()}`
           const textId = `text-${Date.now()}`
-          const weeklyPackageRequest = /finish one useful piece of content for this week/i.test(
+          const nextPostRequest = /i want to share why showing up before you feel ready matters/i.test(
             userText
           )
           const conceptPayload = carouselJourneyEnabled
@@ -248,7 +258,7 @@ if (!runPlaywright) {
                 }
               : null
           const toolCallId = `tool-${Date.now()}`
-          const formatPayload = weeklyPackageRequest ? { format: "carousel" } : null
+          const formatPayload = nextPostRequest ? { format: "carousel" } : null
           const streamParts = [
             `data: ${JSON.stringify({ type: "start", messageId })}`,
             `data: ${JSON.stringify({ type: "text-start", id: textId })}`,
@@ -541,10 +551,11 @@ if (!runPlaywright) {
       page: any
     }) => {
       await expect(page.getByRole("button", { name: "Maya", exact: true })).toBeVisible()
-      await expect(page.getByRole("region", { name: /what do you need/i })).toBeVisible()
+      await expect(page.getByRole("region", { name: /what do you want to say/i })).toBeVisible()
       const composer = page.getByRole("textbox", { name: "Message Maya" })
       await expect(composer).toBeVisible()
-      await expect(composer).toHaveAttribute("placeholder", "Ask Maya anything…")
+      await expect(composer).toHaveAttribute("placeholder", "Tell Maya the messy version…")
+      await captureMayaProof(page, "new-member-home")
 
       const composerBox = await composer.boundingBox()
       const viewport = page.viewportSize()
@@ -569,9 +580,13 @@ if (!runPlaywright) {
       await (page as any).__enableMayaCarouselJourney()
       const maya = page.locator("aside[data-maya-task-id]")
 
-      await page.getByRole("button", { name: "Create my next post" }).click()
+      const composer = page.getByRole("textbox", { name: "Message Maya" })
+      await composer.fill("I want to share why showing up before you feel ready matters")
+      await page.getByRole("button", { name: "Send", exact: true }).click()
 
-      await expect(page.getByText(/help me create one finished post i can publish/i)).toBeVisible()
+      await expect(
+        page.getByText("I want to share why showing up before you feel ready matters")
+      ).toBeVisible()
       await expect(maya).toHaveAttribute("data-maya-format", "carousel")
       await expect(page.getByText("Choose your style")).toHaveCount(0)
       await expect(page.getByText("Three-part visibility carousel")).toBeVisible()
@@ -582,6 +597,13 @@ if (!runPlaywright) {
       await expect(page.getByText("More things Maya can make")).toHaveCount(0)
       await page.getByRole("button", { name: "Finish this post" }).click()
       await expect(page.getByText("Post ready", { exact: true })).toBeVisible()
+      await expect(page.getByRole("button", { name: /Make it more like me/i })).toBeVisible()
+      await page.getByRole("button", { name: /Make it more like me/i }).click()
+      await expect(composer).toHaveValue("Make this more like me by ")
+      await expect(page.getByText("Photos", { exact: true })).toHaveCount(0)
+      await expect(page.getByText("Slides", { exact: true })).toHaveCount(0)
+      await expect(page.getByText("Motion", { exact: true })).toHaveCount(0)
+      await captureMayaProof(page, "finished-post")
       await expect(
         page.getByText("A ready caption for this week's visibility piece.")
       ).toBeVisible()
@@ -601,12 +623,14 @@ if (!runPlaywright) {
       // A cold local Next compile can finish hydration after the default 5s assertion window.
       // Production serves the built bundle; keep the journey strict while allowing dev startup.
       await expect(resume).toBeVisible({ timeout: 15_000 })
+      await captureMayaProof(page, "returning-member-saved-work")
       await resume.click()
       await expect(maya).toHaveAttribute("data-maya-format", "carousel")
       await expect(page.getByText("Post ready", { exact: true })).toBeVisible()
       await expect(
         page.getByText("A ready caption for this week's visibility piece.")
       ).toBeVisible()
+      await expect(page.getByRole("button", { name: /Make it more like me/i })).toBeVisible()
       await expect(page.getByRole("button", { name: "Finish this post" })).toHaveCount(0)
     })
 
@@ -648,9 +672,30 @@ if (!runPlaywright) {
       await expect(
         page.getByRole("heading", { name: "Maya QA, your next finished post starts here." })
       ).toBeVisible()
-      await expect(page.getByRole("region", { name: /what do you need/i })).toHaveCount(0)
+      await expect(page.getByRole("region", { name: /what do you want to say/i })).toHaveCount(0)
       await expect(page.getByRole("button", { name: "Open Maya" })).toHaveCount(0)
       await expect(page.getByRole("button", { name: "Report", exact: true })).toHaveCount(0)
+      await captureMayaProof(page, "current-returning-member-today")
+    })
+
+    test("a first-time current member sees the real member-facing Today experience", async ({
+      page,
+    }: {
+      page: any
+    }) => {
+      await page.goto("/e2e/maya-operating-layer?home=0&member=new", {
+        waitUntil: "domcontentloaded",
+      })
+
+      await expect(page.getByRole("button", { name: "Today", exact: true })).toHaveAttribute(
+        "aria-current",
+        "page"
+      )
+      await expect(
+        page.getByRole("heading", { name: "Maya QA, your next finished post starts here." })
+      ).toBeVisible()
+      await expect(page.getByRole("button", { name: "Report", exact: true })).toHaveCount(0)
+      await captureMayaProof(page, "current-first-time-member-today")
     })
 
     test("returning members land with Maya even when their last saved tab was Calendar", async ({
@@ -658,14 +703,19 @@ if (!runPlaywright) {
     }: {
       page: any
     }) => {
-      await expect(page.getByRole("region", { name: /what do you need/i })).toBeVisible()
+      await page.goto("/e2e/maya-operating-layer?cohort=member", {
+        waitUntil: "domcontentloaded",
+      })
+      await expect(page.getByRole("region", { name: /what do you want to say/i })).toBeVisible()
       await page.evaluate(() =>
         window.localStorage.setItem("sselfie.appV3.section.v1", JSON.stringify("calendar"))
       )
       await expect
         .poll(() => page.evaluate(() => window.localStorage.getItem("sselfie.appV3.section.v1")))
         .toBe('"calendar"')
-      await page.goto("/e2e/maya-operating-layer", { waitUntil: "domcontentloaded" })
+      await page.goto("/e2e/maya-operating-layer?cohort=member", {
+        waitUntil: "domcontentloaded",
+      })
 
       await expect
         .poll(() => page.evaluate(() => window.localStorage.getItem("sselfie.appV3.section.v1")))
@@ -675,8 +725,30 @@ if (!runPlaywright) {
         "aria-current",
         "page"
       )
-      await expect(page.getByRole("region", { name: /what do you need/i })).toBeVisible()
-      await expect(page.getByPlaceholder("Ask Maya anything…")).toBeVisible()
+      await expect(page.getByRole("region", { name: /what do you want to say/i })).toBeVisible()
+      await expect(page.getByPlaceholder("Tell Maya the messy version…")).toBeVisible()
+      await expect(page.getByRole("button", { name: "Report", exact: true })).toHaveCount(0)
+      await captureMayaProof(page, "returning-member-home")
+    })
+
+    test("a first-time member gets one clear starting action without format switches", async ({
+      page,
+    }: {
+      page: any
+    }) => {
+      await page.goto("/e2e/maya-operating-layer?member=new&cohort=member", {
+        waitUntil: "domcontentloaded",
+      })
+
+      await expect(page.getByRole("heading", { name: /what do you want to say/i })).toBeVisible()
+      await expect(page.getByPlaceholder("Tell Maya the messy version…")).toBeVisible()
+      await expect(page.getByRole("button", { name: "Create my next post" })).toHaveCount(0)
+      await expect(page.getByRole("button", { name: "Report", exact: true })).toHaveCount(0)
+      await expect(page.getByText("Start with one real idea.")).toHaveCount(0)
+      await expect(page.getByText("Photos", { exact: true })).toHaveCount(0)
+      await expect(page.getByText("Slides", { exact: true })).toHaveCount(0)
+      await expect(page.getByText("Motion", { exact: true })).toHaveCount(0)
+      await captureMayaProof(page, "first-time-member-home")
     })
 
     test("ordinary writing help stays in the same neutral conversation", async ({
@@ -765,7 +837,7 @@ if (!runPlaywright) {
       // Founder-cohort reloads deliberately return to Maya Home. The exact Learn task remains
       // one visible action away instead of forcing the member back into the Learn library.
       await page.goto("/e2e/maya-operating-layer", { waitUntil: "domcontentloaded" })
-      await expect(page.getByRole("region", { name: /what do you need/i })).toBeVisible()
+      await expect(page.getByRole("region", { name: /what do you want to say/i })).toBeVisible()
       await page.getByRole("button", { name: /Resume/i }).click()
       await expect(maya).toHaveAttribute("data-maya-job", "learn_next")
       await expect(maya).toHaveAttribute("data-maya-course-id", "14")
@@ -928,7 +1000,7 @@ if (!runPlaywright) {
       // The production shell intentionally canonicalizes section URLs to /app. Return to the
       // auth-free E2E host after a full navigation while preserving browser storage.
       await page.goto("/e2e/maya-operating-layer", { waitUntil: "domcontentloaded" })
-      await expect(page.getByRole("region", { name: /what do you need/i })).toBeVisible()
+      await expect(page.getByRole("region", { name: /what do you want to say/i })).toBeVisible()
       await expect(maya).toHaveAttribute("data-maya-job", "create_content")
       await expect(maya).toHaveAttribute("data-maya-surface", "create")
       await expect(maya).toHaveAttribute("data-maya-format", "none")
@@ -965,7 +1037,7 @@ if (!runPlaywright) {
       // the generic photo pull (which would append a new "Let's create photos." turn).
       await expect(page.getByText("Let's create photos.", { exact: true })).toHaveCount(0)
       await page.goto("/e2e/maya-operating-layer", { waitUntil: "domcontentloaded" })
-      await expect(page.getByRole("region", { name: /what do you need/i })).toBeVisible()
+      await expect(page.getByRole("region", { name: /what do you want to say/i })).toBeVisible()
       await page.getByRole("button", { name: /Resume/i }).click()
       await expect(maya).toHaveAttribute("data-maya-task-id", "maya-calendar-v1-101-707")
       await expect(maya).toHaveAttribute("data-maya-post-id", "707")

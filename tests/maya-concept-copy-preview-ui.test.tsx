@@ -168,7 +168,7 @@ describe("ConceptCard: editable baked-text preview", () => {
     expect(screen.queryByLabelText("Headline")).not.toBeInTheDocument()
   })
 
-  it("makes a repeat generation explicit about the credit cost and keeps her edited words", () => {
+  it("keeps her edited words for generation without offering an automatic repeat", () => {
     const onGenerate = vi.fn()
     const { rerender } = render(
       <ConceptCard
@@ -192,10 +192,8 @@ describe("ConceptCard: editable baked-text preview", () => {
         onGenerate={onGenerate}
       />
     )
-    fireEvent.click(screen.getByRole("button", { name: "Create another · 1 credit" }))
-    expect(onGenerate).toHaveBeenLastCalledWith([
-      { index: 0, heading: "Edited headline", body: "There is a simpler way" },
-    ])
+    expect(screen.queryByRole("button", { name: /Create another/ })).not.toBeInTheDocument()
+    expect(onGenerate).toHaveBeenCalledTimes(1)
   })
 
   it("disables the fields while generating, matching the Create button's disabled state", () => {

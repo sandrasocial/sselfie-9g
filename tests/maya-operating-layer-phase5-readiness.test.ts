@@ -17,7 +17,7 @@ describe("Maya operating layer Phase 5 readiness", () => {
     expect(conceptCard).toContain(
       '`Create this · ${estimatedCredits} ${estimatedCredits === 1 ? "credit" : "credits"}`'
     )
-    expect(conceptCard).toContain("Create another · ${estimatedCredits}")
+    expect(conceptCard).not.toContain("Create another · ${estimatedCredits}")
     expect(concierge).toContain('kind: "apply_to_post"')
     expect(shell).toContain("close()")
   })

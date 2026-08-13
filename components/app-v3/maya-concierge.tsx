@@ -24,7 +24,7 @@ import { TypingDots } from "./loading"
 import { ImageLightbox } from "./image-lightbox"
 import { TextOverlayLayer } from "./text-overlay-layer"
 import {
-  InlineFormatChoice,
+  InlineProjectStart,
   InlineResultActions,
   InlineSelfieUpload,
   InlineShotDirectorCard,
@@ -121,21 +121,8 @@ const MayaFounderTestMode = dynamic(
   { ssr: false }
 )
 
-const WEEKLY_VISIBILITY_PACKAGE_REQUEST =
+const NEXT_POST_REQUEST =
   "Help me create one finished post I can publish. Start with one of my saved selfies and use what you know about my current priority or unfinished work. Choose one strong idea, the format, and a SSELFIE visual direction for me. Include the words I need so the result is ready to use. Ask only one question if it would materially change the post."
-
-function isWeeklyVisibilityPackage(messages: any[]): boolean {
-  return messages.some(message => {
-    if (message?.role !== "user" || !Array.isArray(message.parts)) return false
-    return message.parts.some(
-      (part: any) =>
-        part?.type === "text" &&
-        typeof part.text === "string" &&
-        (part.text.includes("create one finished post I can publish") ||
-          part.text.includes("finish one useful piece of content for this week"))
-    )
-  })
-}
 
 /** Small round avatar for the chat thread (texting-a-friend feel). */
 function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
@@ -669,7 +656,7 @@ export function MayaConcierge({
   calendarSurfaceActive = false,
 }: {
   operatingLayerEnabled?: boolean
-  /** Founder-only Maya Home: the conversation is the page, not a modal over the page. */
+  /** Member Maya Home: the conversation is the page, not a modal over the page. */
   homeMode?: boolean
   firstName?: string | null
   hasTrainedModel?: boolean
@@ -1120,11 +1107,6 @@ export function MayaConcierge({
     transport,
     messages: (restoredDraft?.messages ?? []) as any[],
   })
-  const weeklyVisibilityPackageActive = useMemo(
-    () => isWeeklyVisibilityPackage(messages as any[]),
-    [messages]
-  )
-
   const isThinking = status === "submitted" || status === "streaming"
   const workspaceBusy =
     editBusy ||
@@ -1913,7 +1895,7 @@ export function MayaConcierge({
     ) {
       const intent = intentForFormat(
         latest,
-        weeklyVisibilityPackageActive ? "starter_chip" : "gallery_action"
+        homeMode ? "starter_chip" : "gallery_action"
       )
       setLocalCreationIntent(intent)
       extrasRef.current = { ...extrasRef.current, format: latest, creationIntent: intent }
@@ -1931,13 +1913,13 @@ export function MayaConcierge({
       // set_format again: the "On it, switching to carousels" dead end she reported.
       const intent = intentForFormat(
         latest,
-        weeklyVisibilityPackageActive ? "starter_chip" : "gallery_action"
+        homeMode ? "starter_chip" : "gallery_action"
       )
       setLocalCreationIntent(intent)
       extrasRef.current = { ...extrasRef.current, format: latest, creationIntent: intent }
       if (
         isGraphicOutputFormat(latest) &&
-        (rememberedOverlayStyle || weeklyVisibilityPackageActive)
+        (rememberedOverlayStyle || homeMode)
       ) {
         // She asked for this format in words and already owns a remembered text style, so
         // continue hands-free with it (the style chip above the concept cards still swaps
@@ -1953,7 +1935,7 @@ export function MayaConcierge({
       // Re-arm the auto-pull too: if this format was already pulled earlier in the thread,
       // a stale lastPulledFormatRef blocks both the pull and the inline text-choice cards.
       lastPulledFormatRef.current = null
-      if (weeklyVisibilityPackageActive) {
+      if (homeMode) {
         updateCurrentSession(MAYA_DECIDES_AESTHETIC, {
           format: latest,
           referenceSelfieUrl: session?.referenceSelfieUrl ?? null,
@@ -1974,7 +1956,7 @@ export function MayaConcierge({
     textOverlayMode,
     textStyleChoice,
     updateCurrentSession,
-    weeklyVisibilityPackageActive,
+    homeMode,
   ])
 
   useEffect(() => {
@@ -2330,7 +2312,7 @@ export function MayaConcierge({
   const hasSpecificVisualWorld = mayaChoosesVisualWorld || aesthetic.id !== "maya-general"
   const needsInitialVisualWorld =
     Boolean(outputFormat) && outputFormat !== "video" && !hasStarted && !hasSpecificVisualWorld
-  const shouldShowFormatChoice = !outputFormat || (threadVisible && setupOpen)
+  const shouldShowProjectStart = !outputFormat
   const shouldShowVibeChoice =
     Boolean(outputFormat) &&
     outputFormat !== "video" &&
@@ -2354,8 +2336,8 @@ export function MayaConcierge({
     session.mayaContext.surface === "learn"
   const workspaceTitle = generalHomeConversation
     ? firstName?.trim()
-      ? `${firstName.trim()}, what do you need?`
-      : "What do you need today?"
+      ? `${firstName.trim()}, what do you want to say?`
+      : "What do you want to say?"
     : learningTaskActive
       ? "Learn with Maya"
       : calendarSurfaceActive && session.calendarTarget
@@ -2450,7 +2432,7 @@ export function MayaConcierge({
     )
   }
   const openerLine = generalHomeConversation
-    ? "You can ask a question, think something through, write, plan, or create. Start exactly where you are."
+    ? "Tell me what you want to say, share, or sell. Give me the messy version and I'll help you turn it into a finished post that feels like you."
     : outputFormat
       ? activeGenerationSource === "trained-model" && outputFormat === "photo"
         ? "Your trained model is ready. Hit create and pick the direction that feels most like you."
@@ -2562,20 +2544,19 @@ export function MayaConcierge({
     setPendingClarifyKind(null)
   }
 
-  function sendHomeSuggestion(text: string) {
-    if (isThinking || textRefining) return
-    homeTaskInitiatedRef.current = true
-    if (text === WEEKLY_VISIBILITY_PACKAGE_REQUEST) {
-      void trackAnalyticsEvent({
-        event: "suite_weekly_package_started",
-        properties: {
-          cohort,
-          taskId: session?.mayaContext?.taskId ?? chatId,
-        },
-      })
-    }
-    commitDetectedIntent(text, "starter_chip", { suppressAutoPull: true })
-    sendMessage({ text })
+  function startFinishedPostRefinement(format: OutputFormat) {
+    const starter = "Make this more like me by "
+    setInput(starter)
+    void trackAnalyticsEvent({
+      event: "suite_post_refinement_started",
+      properties: { cohort, format },
+    })
+    window.requestAnimationFrame(() => {
+      composerRef.current?.focus()
+      composerRef.current?.setSelectionRange(starter.length, starter.length)
+      resizeComposer()
+      scrollThreadToBottom()
+    })
   }
 
   function handleNewChat() {
@@ -3764,6 +3745,27 @@ export function MayaConcierge({
     }
   }
 
+  function handleProjectStart() {
+    if (isThinking || !session) return
+    homeTaskInitiatedRef.current = true
+    const intent = intentForFormat("photo", "starter_chip")
+    setLocalCreationIntent(intent)
+    extrasRef.current = { ...extrasRef.current, format: "photo", creationIntent: intent }
+    trackInlineChoice("start_project", intent)
+    setTextOverlayMode(null)
+    setTextStyleChoice(null)
+    setTextStyleAdjustments(null)
+    setStyleSwapOpen(false)
+    setSetupOpen(false)
+    updateCurrentSession(MAYA_DECIDES_AESTHETIC, {
+      format: "photo",
+      seed: NEXT_POST_REQUEST,
+      creationIdea: NEXT_POST_REQUEST,
+      referenceSelfieUrl,
+      creationIntent: intent,
+    })
+  }
+
   function intentForCurrentVibeChoice(source: "manual" | "vault_shot"): CreationIntent {
     const currentFormat = activeCreationIntent.format ?? outputFormat ?? null
     if (!currentFormat) return needsClarificationIntent(source)
@@ -4036,7 +4038,6 @@ export function MayaConcierge({
       event: "suite_generation_path_completed",
       properties: { cohort, format: targetFormat, source },
     })
-    finishMayaJob({ job: "create_content", outcome: "completed" })
   }
 
   function trackRecoveryShown(targetFormat: OutputFormat, reason: string) {
@@ -4497,7 +4498,7 @@ export function MayaConcierge({
             </h2>
             {homeMode && generalHomeConversation && (
               <p className="mt-0.5 truncate text-[11px] leading-snug text-[#6D6E70]">
-                Ask, create, plan, or pick up where you left off.
+                One idea in. One finished post out.
               </p>
             )}
             {selectedShot && (
@@ -4512,7 +4513,7 @@ export function MayaConcierge({
             )}
           </div>
           <div className="relative flex shrink-0 items-center gap-4">
-            {homeMode && (
+            {homeMode && cohort === "admin" && (
               <MayaFounderTestMode
                 messages={messages}
                 context={{
@@ -4784,8 +4785,8 @@ export function MayaConcierge({
                   </div>
                 )}
 
-                {!guidedFirstPhoto && shouldShowFormatChoice && (
-                  <InlineFormatChoice disabled={isThinking} onPick={handlePickFormat} />
+                {!guidedFirstPhoto && shouldShowProjectStart && (
+                  <InlineProjectStart disabled={isThinking} onStart={handleProjectStart} />
                 )}
 
                 {!guidedFirstPhoto && shouldShowVibeChoice && (
@@ -5181,7 +5182,7 @@ export function MayaConcierge({
                 <div className="suite-card min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728] [overflow-wrap:anywhere] sm:max-w-[80%]">
                   <p>
                     {generalHomeConversation
-                      ? "I'm here."
+                      ? "Start exactly where you are."
                       : selectedShot
                         ? `${aesthetic.name}. Starting from ${selectedShot.title}.`
                         : `${aesthetic.name}. ${aesthetic.blurb}`}
@@ -5202,7 +5203,7 @@ export function MayaConcierge({
                         >
                           <span className="min-w-0">
                             <span className="block text-[10px] uppercase tracking-[0.16em] text-white/65">
-                              Pick up where you left off
+                              Continue your post about
                             </span>
                             <span className="block truncate text-[13px] leading-snug">
                               {latestResumeTask.title}
@@ -5213,20 +5214,6 @@ export function MayaConcierge({
                           </span>
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => sendHomeSuggestion(WEEKLY_VISIBILITY_PACKAGE_REQUEST)}
-                        disabled={isThinking}
-                        className="group min-h-20 w-full rounded-[8px] border border-[#0D0E10]/20 bg-[#F8FAFA] px-4 py-3.5 text-left transition-colors hover:border-[#0D0E10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10] disabled:opacity-40"
-                      >
-                        <span className="block font-serif text-[20px] font-light leading-tight text-[#0D0E10]">
-                          Create my next post
-                        </span>
-                        <span className="mt-1.5 block text-[12px] leading-relaxed text-[#4F5052]">
-                          One selfie. One idea. One finished post. Maya chooses the visual direction
-                          and writes the words.
-                        </span>
-                      </button>
                     </div>
                   )}
                 </div>
@@ -5311,11 +5298,8 @@ export function MayaConcierge({
                 )}
 
               {(() => {
-                // Feed Planner Phase 2c: Maya's save-offer sentence appears under the FIRST
-                // finished photo only. The same pass records every completed format so the result
-                // actions can recognize a connected Photo -> Reel cover -> Stories campaign.
+                // Preserve the first finished-photo marker for existing result-card behavior.
                 let firstDonePhotoKey: string | null = null
-                const completedFormats = new Set<OutputFormat>()
                 for (const m of messages as any[]) {
                   if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
                   const msgConcepts = m.parts.map(extractConcepts).find(Boolean) as
@@ -5331,7 +5315,6 @@ export function MayaConcierge({
                       genState[k]?.status === "done" &&
                       ((genState[k]?.imageUrls?.length ?? 0) > 0 || Boolean(genState[k]?.videoUrl))
                     if (!completed) continue
-                    completedFormats.add(msgFormat)
                     if (!firstDonePhotoKey && msgFormat === "photo") firstDonePhotoKey = k
                   }
                 }
@@ -5549,6 +5532,11 @@ export function MayaConcierge({
                                     ...state,
                                     [key]: { ...state[key], finishedPost },
                                   }))
+                                  void trackAnalyticsEvent({
+                                    event: "suite_post_finished",
+                                    properties: { cohort, format: conceptFormat },
+                                  })
+                                  finishMayaJob({ job: "create_content", outcome: "completed" })
                                   return finishedPost
                                 } catch {
                                   return null
@@ -5592,25 +5580,7 @@ export function MayaConcierge({
                               />
                             ) : null}
                             <InlineResultActions
-                              format={conceptFormat}
-                              completedFormats={Array.from(completedFormats)}
-                              weeklyPackage={weeklyVisibilityPackageActive}
-                              onNextFormat={(nextFormat, kind, selection) =>
-                                handleNextFormat(
-                                  nextFormat,
-                                  kind,
-                                  latestStyleReferenceUrl,
-                                  selection
-                                )
-                              }
-                              onOpenCalendar={
-                                calendarSurfaceActive && onOpenCalendar
-                                  ? () => {
-                                      close()
-                                      onOpenCalendar()
-                                    }
-                                  : undefined
-                              }
+                              onRefine={() => startFinishedPostRefinement(conceptFormat)}
                             />
                           </div>
                         }
@@ -5799,18 +5769,18 @@ export function MayaConcierge({
                                     </button>
                                   </div>
                                 )}
-                                <button
-                                  type="button"
-                                  onClick={() => void generatePhotoshootSet(key, conceptPart)}
-                                  disabled={gen.status === "generating" || !referenceSelfieUrl}
-                                  className="inline-flex min-h-11 items-center rounded-full bg-[#0D0E10] px-5 text-[11px] uppercase tracking-[0.16em] text-white disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  {gen.status === "generating"
-                                    ? "Creating shoot..."
-                                    : urls.length > 0
-                                      ? "Create another set"
+                                {urls.length === 0 ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => void generatePhotoshootSet(key, conceptPart)}
+                                    disabled={gen.status === "generating" || !referenceSelfieUrl}
+                                    className="inline-flex min-h-11 items-center rounded-full bg-[#0D0E10] px-5 text-[11px] uppercase tracking-[0.16em] text-white disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    {gen.status === "generating"
+                                      ? "Creating shoot..."
                                       : `Create full photoshoot · ${conceptPart.length} credits`}
-                                </button>
+                                  </button>
+                                ) : null}
                               </div>
                             )
                           })()}
@@ -6168,7 +6138,7 @@ export function MayaConcierge({
                     textRefining
                       ? "Maya is updating the text…"
                       : generalHomeConversation
-                        ? "Ask Maya anything…"
+                        ? "Tell Maya the messy version…"
                         : "Want something different? Ask Maya…"
                   }
                   className="max-h-36 min-h-12 min-w-0 flex-1 resize-none rounded-[24px] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[15px] leading-snug text-[#282728] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#0D0E10] focus:shadow-[0_0_0_3px_rgba(13,14,16,0.06)] min-[380px]:px-5"

@@ -2,6 +2,7 @@ import { put } from "@vercel/blob"
 import { type NextRequest, NextResponse } from "next/server"
 
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { sql } from "@/lib/db/client"
 import {
   buildFounderFeedbackSubject,
@@ -10,7 +11,6 @@ import {
   normalizeFounderFeedbackPayload,
   type FounderFeedbackReportType,
 } from "@/lib/app-v3/maya/founder-feedback"
-import { isMayaHomeEnabled } from "@/lib/app-v3/maya/operating-layer-rollout"
 import {
   detectFounderScreenshotContentType,
   encryptFounderScreenshot,
@@ -35,7 +35,7 @@ type FeedbackRow = {
 async function requireFounder() {
   const { user, error } = await getAuthenticatedUser()
   if (error || !user?.email) return { error: "Unauthorized" as const, status: 401 as const }
-  if (!isMayaHomeEnabled({ userId: user.id, email: user.email })) {
+  if (!isAdminEmail(user.email)) {
     return { error: "Not available" as const, status: 404 as const }
   }
 

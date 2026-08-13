@@ -6,8 +6,8 @@ import { describe, expect, it } from "vitest"
 
 const read = (file: string) => fs.readFileSync(path.join(process.cwd(), file), "utf8")
 
-describe("founder-only Maya Home", () => {
-  it("makes the allowlisted Create destination an always-ready Maya conversation", () => {
+describe("member Maya Home", () => {
+  it("makes the member Create destination an always-ready Maya conversation", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
@@ -18,8 +18,9 @@ describe("founder-only Maya Home", () => {
     expect(shell).toContain('homeMode={mayaHomeEnabled && section === "create"}')
     expect(shell).toContain("vaultMayaIncluded && !mayaHomeEnabled")
     expect(concierge).toContain('role={homeMode ? "region" : "dialog"}')
-    expect(concierge).toContain("Ask Maya anything…")
-    expect(concierge).toContain("One selfie. One idea. One finished post.")
+    expect(concierge).toContain("Tell Maya the messy version…")
+    expect(concierge).toContain("One idea in. One finished post out.")
+    expect(concierge).toContain("what do you want to say?")
     expect(concierge).toContain("Brand profile")
   })
 
@@ -42,9 +43,9 @@ describe("founder-only Maya Home", () => {
     expect(route).toContain(
       "getMayaGeneralAssistantPrompt({ memory, recentActivity, brandContext })"
     )
-    expect(prompt).toContain("Start by helping with the actual request")
+    expect(prompt).toContain("Start with the actual thought, even when it is messy")
     expect(prompt).toContain("For writing, give her usable words in the chat")
-    expect(prompt).toContain("set_format with the matching format")
+    expect(prompt).toContain("choose the strongest format and call set_format")
   })
 
   it("owns one selfie-led finished post instead of presenting another tool menu", () => {
@@ -54,30 +55,43 @@ describe("founder-only Maya Home", () => {
     const route = read("app/api/app-v3/maya/chat/route.ts")
     const finishRoute = read("app/api/app-v3/maya/finish-post/route.ts")
 
-    expect(concierge).toContain("Create my next post")
-    expect(concierge).toContain("One selfie. One idea. One finished post.")
+    expect(concierge).toContain("Tell me what you want to say, share, or sell")
     expect(concierge).not.toContain('aria-label="Ways Maya can help"')
-    expect(concierge).toContain("WEEKLY_VISIBILITY_PACKAGE_REQUEST")
-    expect(concierge).toContain("finish one useful piece of content for this week")
-    expect(concierge).toContain("suite_weekly_package_started")
+    expect(concierge).toContain("NEXT_POST_REQUEST")
+    expect(concierge).toContain('homeMode ? "starter_chip" : "gallery_action"')
+    expect(concierge).not.toContain("suite_weekly_package_started")
     expect(concierge).toContain('fetch("/api/app-v3/maya/finish-post"')
     expect(concierge).not.toContain('fetch("/api/app-v3/maya/feed-plan/place-photo"')
     expect(prompt).toContain("NEXT POST OUTCOME")
     expect(prompt).toContain("call set_format in the same turn")
     expect(prompt).toContain("Prefer a selfie-led photo post")
     expect(prompt).toContain("Do not give her a content plan and stop")
-    expect(inline).toContain("if (weeklyPackage) return null")
-    expect(inline).toContain("More things Maya can make")
+    expect(inline).toContain("Make it more like me")
+    expect(inline).not.toContain("Photos")
+    expect(inline).not.toContain("Slides")
+    expect(inline).not.toContain("Motion")
+    expect(inline).not.toContain("More things Maya can make")
     expect(route).toContain('"unfinished"')
     expect(finishRoute).toContain("generateInstagramCaption")
     expect(finishRoute).not.toContain("resolveWeeklyPackageCalendarCopy")
   })
 
-  it("keeps the public member experience behind the existing server-owned allowlist", () => {
+  it("keeps Maya Home to Maya, Work, and You while preserving direct legacy routes", () => {
+    const shell = read("components/app-v3/app-v3-shell.tsx")
+
+    expect(shell).toContain('label: "Maya", icon: MessageCircle')
+    expect(shell).toContain('label: "Work", icon: FolderOpen')
+    expect(shell).toContain('label: "You", icon: UserRound')
+    expect(shell).toContain("NAV.filter(item => isPrimaryMemberSection(item.id))")
+  })
+
+  it("retires the founder allowlist and keeps limited accounts protected", () => {
     const rollout = read("lib/app-v3/maya/operating-layer-rollout.ts")
     const page = read("app/app/page.tsx")
 
-    expect(rollout).toContain("MAYA_HOME_ALLOWLIST || process.env.MAYA_OPERATING_LAYER_ALLOWLIST")
+    expect(rollout).toContain('identity?.accessLevel === "full"')
+    expect(rollout).toContain('identity?.accessLevel === "trial"')
+    expect(rollout).not.toContain("MAYA_HOME_ALLOWLIST")
     expect(rollout).not.toContain("NEXT_PUBLIC")
     expect(page).toContain("isMayaHomeEnabled")
     expect(page).toContain("isMayaOperatingLayerEnabled")
@@ -92,11 +106,12 @@ describe("founder-only Maya Home", () => {
     const migration = read("db/migrations/71-add-maya-founder-feedback-workflow.sql")
 
     expect(concierge).toContain("MayaFounderTestMode")
+    expect(concierge).toContain('homeMode && cohort === "admin"')
     expect(concierge).toContain("messages={messages}")
     expect(capture).toContain("Save and keep testing")
     expect(feedbackContract).toContain("Not good enough")
     expect(capture).toContain("Reports")
-    expect(route).toContain("isMayaHomeEnabled")
+    expect(route).toContain("isAdminEmail")
     expect(route).toContain("client_report_id")
     expect(route).toContain("VERCEL_GIT_COMMIT_SHA")
     expect(route).toContain("encryptFounderScreenshot")

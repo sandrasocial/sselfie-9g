@@ -129,7 +129,7 @@ describe("MAYA-ARRIVAL-01 new-member experience", () => {
 
     const worldGate = concierge.slice(
       concierge.indexOf("const mayaChoosesVisualWorld"),
-      concierge.indexOf("const shouldShowFormatChoice")
+      concierge.indexOf("const shouldShowProjectStart")
     )
     expect(worldGate).toContain("mayaChoosesVisualWorld ||")
     expect(worldGate).not.toContain('aesthetic.id === "maya-general"')

@@ -5,80 +5,39 @@ import Image from "next/image"
 import type {
   Aesthetic,
   AestheticShot,
-  InlineActionKind,
-  OutputFormat,
   ShotDirectorMode,
 } from "./types"
 
-export type InlineFormatOption = {
-  format: OutputFormat
-  label: string
-  description: string
-}
-
-export const SIMPLE_FORMAT_OPTIONS: InlineFormatOption[] = [
-  {
-    format: "photo",
-    label: "A photo",
-    description: "One image you can use for your profile, post, or page.",
-  },
-  {
-    format: "photoshoot",
-    label: "A full shoot",
-    description: "A connected set with the same style.",
-  },
-  {
-    format: "reel-cover",
-    label: "A reel cover",
-    description: "A clear cover image for one idea.",
-  },
-  {
-    format: "carousel",
-    label: "A carousel",
-    description: "Turn one idea into a simple slide flow.",
-  },
-  {
-    format: "story-sequence",
-    label: "Stories",
-    description: "A short sequence for a thought, offer, or moment.",
-  },
-  {
-    format: "video",
-    label: "Motion",
-    description: "Make one finished photo move.",
-  },
-]
-
-export function InlineFormatChoice({
-  options = SIMPLE_FORMAT_OPTIONS,
+export function InlineProjectStart({
   disabled,
-  onPick,
+  onStart,
 }: {
-  options?: InlineFormatOption[]
   disabled?: boolean
-  onPick: (format: OutputFormat) => void
+  onStart: () => void
 }) {
   return (
-    <div className="min-w-0 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4 [overflow-x:clip]">
-      <p className="text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">Choose one path</p>
-      <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
-        Pick what you need. Maya will only ask for the next detail.
-      </p>
-      <div className="mt-3 grid grid-cols-1 gap-2">
-        {options.map(option => (
-          <button
-            key={option.format}
-            type="button"
-            disabled={disabled}
-            onClick={() => onPick(option.format)}
-            className="min-h-14 rounded-[6px] border border-[#C5C6C8]/70 bg-[#F8FAFA] px-3.5 py-3 text-left transition-colors hover:border-[#0D0E10] disabled:opacity-45"
-          >
-            <span className="block text-[13px] font-medium text-[#0D0E10]">{option.label}</span>
-            <span className="mt-1 block text-[12px] leading-relaxed text-[#6D6E70]">
-              {option.description}
-            </span>
-          </button>
-        ))}
+    <div className="min-w-0 overflow-hidden rounded-[12px] border border-[#AEB9C1]/70 bg-[#FCFDFD] shadow-[0_16px_40px_rgba(37,44,49,0.08)]">
+      <div className="border-b border-[#E3E8EB] bg-[#F4F7F8] px-5 py-3.5">
+        <p className="text-[10px] uppercase tracking-[0.22em] text-[#5D6A73]">Your next post</p>
+      </div>
+      <div className="p-5">
+        <p className="font-serif text-[25px] font-light leading-[1.05] text-[color:var(--ss-night)]">
+          Start with one real idea.
+        </p>
+        <p className="mt-2 max-w-md text-[14px] leading-relaxed text-[color:var(--ss-davy)]">
+          Maya chooses the strongest format, creates the visual, and helps you finish the words.
+        </p>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onStart}
+          className="mt-4 min-h-12 w-full rounded-[7px] bg-[color:var(--ss-night)] px-5 py-3 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[color:var(--ss-raisin)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2 disabled:opacity-45"
+        >
+          Create my next post
+        </button>
+        <p className="mt-3 text-[12px] leading-relaxed text-[#5D6A73]">
+          Already know what you want? Tell Maya in your own words.
+        </p>
       </div>
     </div>
   )
@@ -406,151 +365,23 @@ export function InlineShotDirectorCard({
   )
 }
 
-const NEXT_FORMAT_LABELS: Record<OutputFormat, string> = {
-  photo: "Photo",
-  photoshoot: "Full shoot",
-  "reel-cover": "Reel cover",
-  carousel: "Carousel",
-  "story-slide": "Story",
-  "story-sequence": "Stories",
-  video: "Motion",
-}
-
-const RECOMMENDED_NEXT: Record<
-  OutputFormat,
-  { format: OutputFormat; label: string; reason: string }
-> = {
-  photo: {
-    format: "reel-cover",
-    label: "Make a matching Reel cover",
-    reason: "Turn this visual world into something you can publish next.",
-  },
-  photoshoot: {
-    format: "reel-cover",
-    label: "Make the shoot's Reel cover",
-    reason: "Give the full shoot one clear entry point for your audience.",
-  },
-  "reel-cover": {
-    format: "story-sequence",
-    label: "Create the supporting Stories",
-    reason: "Carry the same message into a short sequence that builds trust.",
-  },
-  carousel: {
-    format: "story-sequence",
-    label: "Turn this into Stories",
-    reason: "Reuse the idea in a faster format without starting over.",
-  },
-  "story-slide": {
-    format: "reel-cover",
-    label: "Make the matching Reel cover",
-    reason: "Keep the same message visible in your main feed.",
-  },
-  "story-sequence": {
-    format: "reel-cover",
-    label: "Make the matching Reel cover",
-    reason: "Give the story one recognizable cover for your feed.",
-  },
-  video: {
-    format: "story-sequence",
-    label: "Create Stories for this video",
-    reason: "Add the context that helps your audience understand why it matters.",
-  },
-}
-
 export function InlineResultActions({
-  format,
-  completedFormats = [],
-  weeklyPackage = false,
-  onNextFormat,
-  onOpenCalendar,
+  onRefine,
 }: {
-  format: OutputFormat
-  completedFormats?: OutputFormat[]
-  weeklyPackage?: boolean
-  onNextFormat: (
-    format: OutputFormat,
-    kind: InlineActionKind,
-    selection: "recommended" | "more"
-  ) => void
-  onOpenCalendar?: () => void
+  onRefine: () => void
 }) {
-  if (weeklyPackage) return null
-
-  const campaignComplete =
-    format === "story-sequence" &&
-    completedFormats.includes("photo") &&
-    completedFormats.includes("reel-cover")
-
-  if (campaignComplete && onOpenCalendar) {
-    return (
-      <div className="rounded-[8px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3.5">
-        <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-gray)]">
-          Campaign complete
-        </p>
-        <p className="mt-1.5 font-serif text-[19px] font-light leading-tight text-[color:var(--ss-night)]">
-          Your photo, Reel cover, and Stories are ready.
-        </p>
-        <p className="mt-1 text-[12px] leading-relaxed text-[color:var(--ss-davy)]">
-          Everything works together. Open Calendar when you&apos;re ready to plan what goes out
-          next.
-        </p>
-        <button
-          type="button"
-          onClick={onOpenCalendar}
-          className="mt-3 min-h-11 w-full rounded-[6px] bg-[color:var(--ss-night)] px-4 py-2.5 text-[11px] uppercase tracking-[0.14em] text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2"
-        >
-          Open Calendar
-        </button>
-      </div>
-    )
-  }
-
-  const recommendation = RECOMMENDED_NEXT[format]
-  const actions = SIMPLE_FORMAT_OPTIONS.map(option => ({
-    format: option.format,
-    label:
-      option.format === format
-        ? `Another ${NEXT_FORMAT_LABELS[option.format].toLowerCase()}`
-        : NEXT_FORMAT_LABELS[option.format],
-  }))
-
   return (
-    <div className="rounded-[8px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3.5">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ss-gray)]">
-        Maya recommends next
-      </p>
-      <p className="mt-1.5 font-serif text-[19px] font-light leading-tight text-[color:var(--ss-night)]">
-        {recommendation.label}
-      </p>
-      <p className="mt-1 text-[12px] leading-relaxed text-[color:var(--ss-davy)]">
-        {recommendation.reason}
-      </p>
-      <button
-        type="button"
-        onClick={() => onNextFormat(recommendation.format, "next_action", "recommended")}
-        className="mt-3 min-h-11 w-full rounded-[6px] bg-[color:var(--ss-night)] px-4 py-2.5 text-[11px] uppercase tracking-[0.14em] text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2"
-      >
-        {recommendation.label}
-      </button>
-      <details className="group mt-2">
-        <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-[11px] uppercase tracking-[0.13em] text-[color:var(--ss-davy)] underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]">
-          More things Maya can make
-        </summary>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {actions
-            .filter(action => action.format !== recommendation.format)
-            .map(action => (
-              <button
-                key={action.format}
-                type="button"
-                onClick={() => onNextFormat(action.format, "next_action", "more")}
-                className="min-h-11 rounded-[4px] border border-[#C5C6C8]/70 bg-white px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-[#4F5052] transition-colors hover:border-[#0D0E10] hover:text-[#0D0E10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10]"
-              >
-                {action.label}
-              </button>
-            ))}
-        </div>
-      </details>
-    </div>
+    <button
+      type="button"
+      onClick={onRefine}
+      className="min-h-12 w-full rounded-[8px] border border-[#AEB9C1]/70 bg-white px-4 py-3 text-left transition-colors hover:border-[color:var(--ss-night)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]"
+    >
+      <span className="block text-[11px] uppercase tracking-[0.14em] text-[color:var(--ss-night)]">
+        Make it more like me
+      </span>
+      <span className="mt-1 block text-[12px] leading-relaxed text-[#5D6A73]">
+        Tell Maya what feels off. Your finished version stays safe while you refine it.
+      </span>
+    </button>
   )
 }

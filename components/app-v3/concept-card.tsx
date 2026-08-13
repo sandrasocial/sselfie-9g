@@ -657,16 +657,6 @@ export function ConceptCard({
               {!isVideoDone && firstDownloadAssetId ? (
                 <FavoriteButton assetId={firstDownloadAssetId} />
               ) : null}
-              <button
-                type="button"
-                onClick={() => onGenerate(hasEditableCopy ? editedCopy : undefined)}
-                disabled={disabled}
-                className="inline-flex min-h-11 items-center justify-center rounded-[8px] border border-[#0D0E10] bg-white px-4 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#0D0E10] transition-colors hover:bg-[#F1F2F2] disabled:opacity-40"
-              >
-                {`Create another · ${estimatedCredits} ${
-                  estimatedCredits === 1 ? "credit" : "credits"
-                }`}
-              </button>
               {isVideoDone ? (
                 <button
                   type="button"
@@ -767,7 +757,7 @@ export function ConceptCard({
                 Some photos didn&apos;t save. Please try again.
               </p>
             )}
-            {resultActions}
+            {finishStatus === "finished" ? resultActions : null}
             <details className="group rounded-[8px] border border-[#C5C6C8]/55 bg-white">
               <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3.5 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0D0E10]">
                 More

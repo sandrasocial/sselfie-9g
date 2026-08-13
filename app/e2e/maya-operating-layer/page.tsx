@@ -7,20 +7,26 @@ export const dynamic = "force-dynamic"
 export default async function MayaOperatingLayerE2EPage({
   searchParams,
 }: {
-  searchParams: Promise<{ home?: string; view?: string | string[] }>
+  searchParams: Promise<{
+    home?: string
+    member?: string
+    cohort?: string
+    view?: string | string[]
+  }>
 }) {
   if (process.env.PLAYWRIGHT_TEST !== "1") notFound()
   const params = await searchParams
+  const isNewMember = params.member === "new"
 
   return (
     <AppV3Shell
       firstName="Maya QA"
       accessLevel="full"
-      analyticsCohort="admin"
+      analyticsCohort={params.cohort === "member" ? "member" : "admin"}
       initialSection={resolveAppV3InitialSection(params.view)}
       hasVaultAccess
-      trialHasSavedSelfie
-      primarySelfieUrl="https://example.com/maya-qa-selfie.jpg"
+      trialHasSavedSelfie={!isNewMember}
+      primarySelfieUrl={isNewMember ? null : "https://example.com/maya-qa-selfie.jpg"}
       mayaOperatingLayerEnabled
       mayaHomeEnabled={params.home !== "0"}
     />

@@ -1,7 +1,7 @@
 "use client"
 
 // SSELFIE Studio 3.0 - focused member shell.
-// The standard app has one creation front door and three understandable places: Today, Work,
+// The standard app has one creation front door and three understandable places: Maya, Work,
 // and You. Calendar, Learn, and the existing Maya engine remain intact behind contextual
 // actions and direct links instead of competing in primary navigation.
 // Calendar (2026-07-06, Feed Planner Phase 2): the live Feed Planner product now lives here
@@ -72,14 +72,14 @@ export interface AppV3ShellProps {
   videoEnabled?: boolean
   /** Server-owned Phase 0 rollout decision. Inert until the Phase 1 context path exists. */
   mayaOperatingLayerEnabled?: boolean
-  /** Server-owned founder preview. Never inherits the global operating-layer rollout. */
+  /** Server-owned member Maya home decision. */
   mayaHomeEnabled?: boolean
   /** Private pilot: focused Maya + Account only; Pro Calendar, Gallery, and Learn stay excluded. */
   mayaEssential?: boolean
 }
 
 // The stored section ids stay unchanged so existing deep links and remembered member state
-// remain valid. The standard member navigation presents those stable surfaces as Today, Work,
+// remain valid. The standard member navigation presents those stable surfaces as Maya, Work,
 // and You; Calendar and Learn remain available through contextual actions and direct links.
 const NAV: { id: AppV3Section; label: string; icon: LucideIcon }[] = [
   { id: "create", label: "Create", icon: Sparkles },
@@ -283,7 +283,7 @@ function ShellInner({
         return
       }
     }
-    // Maya Home is the default relationship for the founder cohort, including returning
+    // Maya Home is the default relationship for members, including returning
     // members whose previous visit ended in Calendar or Gallery. Explicit ?view= deep links
     // above still open the requested destination.
     if (mayaHomeEnabled) {
@@ -439,12 +439,16 @@ function ShellInner({
   const mayaUsesSideWorkspace = section === "calendar" || (section === "create" && !mayaHomeEnabled)
   const visibleNav = mayaEssential
     ? NAV.filter(item => item.id === "create" || item.id === "account")
-    : mayaHomeEnabled
-      ? NAV
-      : NAV.filter(item => isPrimaryMemberSection(item.id))
+    : NAV.filter(item => isPrimaryMemberSection(item.id))
   const nav = mayaHomeEnabled
     ? visibleNav.map(item =>
-        item.id === "create" ? { ...item, label: "Maya", icon: MessageCircle } : item
+        item.id === "create"
+          ? { ...item, label: "Maya", icon: MessageCircle }
+          : item.id === "photos"
+            ? { ...item, label: "Work", icon: FolderOpen }
+            : item.id === "account"
+              ? { ...item, label: "You", icon: UserRound }
+              : item
       )
     : visibleNav.map(item =>
         item.id === "create"

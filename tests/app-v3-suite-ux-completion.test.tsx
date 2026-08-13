@@ -22,31 +22,27 @@ describe("App v3 Suite UX completion", () => {
     expect(gallery).not.toMatch(/<Film[^>]*\/>\s*Move\s*<\/button>/)
   })
 
-  it("celebrates a completed photo, Reel cover, and Stories campaign", () => {
-    const onOpenCalendar = vi.fn()
+  it("keeps refinement conversational instead of reopening format choices", () => {
+    const onRefine = vi.fn()
 
-    render(
-      <InlineResultActions
-        format="story-sequence"
-        completedFormats={["photo", "reel-cover", "story-sequence"]}
-        onNextFormat={vi.fn()}
-        onOpenCalendar={onOpenCalendar}
-      />
-    )
+    render(<InlineResultActions onRefine={onRefine} />)
 
-    expect(screen.getByText("Campaign complete")).toBeInTheDocument()
-    expect(screen.queryByText("Make the matching Reel cover")).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole("button", { name: "Open Calendar" }))
-    expect(onOpenCalendar).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByRole("button", { name: /Make it more like me/ }))
+    expect(onRefine).toHaveBeenCalledOnce()
+    expect(screen.queryByText("Photos")).not.toBeInTheDocument()
+    expect(screen.queryByText("Slides")).not.toBeInTheDocument()
+    expect(screen.queryByText("Motion")).not.toBeInTheDocument()
   })
 
-  it("wires completed formats and Calendar navigation through Maya", () => {
+  it("keeps Maya focused on one post and the three-place member navigation", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
-    expect(shell).toContain('onOpenCalendar={() => goToSection("calendar")}')
-    expect(concierge).toContain("completedFormats={Array.from(completedFormats)}")
-    expect(concierge).toContain("onOpenCalendar={")
+    expect(shell).toContain('{ ...item, label: "Maya", icon: MessageCircle }')
+    expect(shell).toContain('{ ...item, label: "Work", icon: FolderOpen }')
+    expect(shell).toContain('{ ...item, label: "You", icon: UserRound }')
+    expect(concierge).toContain("suite_post_finished")
+    expect(concierge).toContain("suite_post_refinement_started")
+    expect(concierge).not.toContain("completedFormats={Array.from(completedFormats)}")
   })
 })
