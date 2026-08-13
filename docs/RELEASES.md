@@ -793,3 +793,20 @@ path asked the buyer to understand too many outcomes at once. Production proof: 
 invariants, a successful production build, 2,036 passing tests with 6 intentional skips, and focused
 post-rebase coverage. Live desktop and 390px mobile QA confirmed the focused promise, six required
 application fields, the €2,000 paid-in-full price, and no old payment-plan or SUITE promise.
+
+## 2026-08-13 — Maya one finished-post experience
+
+Made Maya the creation home for full and trial members and reduced the primary member app to Maya,
+Work, and You. Members now begin with what they want to say, share, or sell; Maya quietly chooses the
+strongest format and moves one idea toward one finished post. The finished result keeps its visual and
+caption together, removes the format-room and create-another menus, and offers one refinement action:
+`Make it more like me`. Existing work, conversations, selfies, Gallery, Calendar deep links, credits,
+entitlements, and limited-account protections remain intact. Founder reporting remains admin-only.
+
+Why: founder testing showed that format switches and repeated choices made Maya feel like several
+tools mixed together instead of one dependable creative partner. Production proof: feature commit
+`a0d09768`, exact Ready Vercel deployment `dpl_Cd6yATcMmiJCpHdWiGw3WeHhhQBe`, CI typecheck,
+repository invariants, lint with zero errors, successful local and Vercel production builds, 2,039
+passing tests with 6 intentional skips, 24 post-integration regressions, and 10 desktop/mobile browser
+journeys covering first-time members, returning members, saved work, finished posts, and founder
+report protection. The production app and health routes returned successfully on desktop and mobile.
