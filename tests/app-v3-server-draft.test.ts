@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest"
-import { sanitizeServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
+import {
+  sanitizeServerMayaDraftSnapshot,
+  sanitizeStoredMayaWorkspaceSnapshot,
+} from "@/lib/app-v3/maya/draft-snapshot"
 
 describe("App v3 server-backed Maya drafts", () => {
   it("keeps the full active workspace needed to resume on another device", () => {
@@ -84,6 +87,54 @@ describe("App v3 server-backed Maya drafts", () => {
         session: { ...base.session, outputFormat: "newsletter" },
       })
     ).toBeNull()
+  })
+
+  it("keeps an older saved project workspace available when the member deliberately reopens it", () => {
+    const snapshot = sanitizeStoredMayaWorkspaceSnapshot({
+      isOpen: false,
+      savedAt: Date.now() - 1000 * 60 * 60 * 24 * 21,
+      chatId: "chat_returning_member",
+      session: {
+        aesthetic: {
+          id: "maya-blank",
+          name: "Maya",
+          blurb: "Blank session.",
+          coverImage: "",
+          thumbnails: [],
+          shotCount: 0,
+          intent: "Blank.",
+        },
+        outputFormat: "photo",
+        referenceSelfieUrl: "https://example.com/selfie.png",
+        graphicText: null,
+        startedAt: 123,
+      },
+      messages: [{ id: "m1", role: "assistant", parts: [{ type: "text", text: "Done." }] }],
+      genState: {
+        "m1:concept-1": {
+          status: "done",
+          imageUrls: ["https://blob.vercel-storage.com/finished.png"],
+          finishedPost: { caption: "The finished caption." },
+        },
+      },
+      generatedOnce: true,
+      setupOpen: false,
+      lastGeneration: {
+        format: "photo",
+        imageCount: 1,
+        styleName: "Natural editorial",
+        conceptTitle: "Showing up",
+        usedInspiration: false,
+        usedTrainedModel: false,
+      },
+    })
+
+    expect(snapshot?.chatId).toBe("chat_returning_member")
+    expect(snapshot?.genState["m1:concept-1"]?.status).toBe("done")
+    expect(snapshot?.genState["m1:concept-1"]?.finishedPost?.caption).toBe(
+      "The finished caption."
+    )
+    expect(snapshot?.lastGeneration?.conceptTitle).toBe("Showing up")
   })
 
   it("never restores initialSetupAction: a one-shot launch instruction must not re-open the selfie manager on reload", () => {

@@ -3,9 +3,10 @@ const BASE_TOOL_NAMES = new Set([
   "ask_clarify",
   "set_format",
   "remember",
-  "show_feed_plan",
   "save_brand_profile",
 ])
+
+const CALENDAR_TOOL_NAMES = new Set(["show_feed_plan"])
 
 const ADMIN_TOOL_NAMES = new Set([
   "show_admin_content_sources",
@@ -19,6 +20,7 @@ const ADMIN_TOOL_NAMES = new Set([
 
 type SanitizeOptions = {
   admin?: boolean
+  calendar?: boolean
   maxMessages?: number
 }
 
@@ -30,14 +32,21 @@ function toolNameFromPart(part: Record<string, unknown>): string | null {
   return null
 }
 
-function isAllowedToolPart(part: Record<string, unknown>, admin: boolean): boolean {
+function isAllowedToolPart(
+  part: Record<string, unknown>,
+  { admin, calendar }: Required<Pick<SanitizeOptions, "admin" | "calendar">>
+): boolean {
   const toolName = toolNameFromPart(part)
   if (!toolName) return false
   if (BASE_TOOL_NAMES.has(toolName)) return true
+  if (calendar && CALENDAR_TOOL_NAMES.has(toolName)) return true
   return admin && ADMIN_TOOL_NAMES.has(toolName)
 }
 
-function sanitizePart(part: unknown, admin: boolean): unknown | null {
+function sanitizePart(
+  part: unknown,
+  permissions: Required<Pick<SanitizeOptions, "admin" | "calendar">>
+): unknown | null {
   if (!part || typeof part !== "object") return null
   const item = part as Record<string, unknown>
   const type = item.type
@@ -45,9 +54,9 @@ function sanitizePart(part: unknown, admin: boolean): unknown | null {
   if (type === "text") return typeof item.text === "string" ? item : null
   if (type === "file") return item
   if (type === "step-start") return item
-  if (type === "dynamic-tool") return isAllowedToolPart(item, admin) ? item : null
+  if (type === "dynamic-tool") return isAllowedToolPart(item, permissions) ? item : null
   if (typeof type === "string" && type.startsWith("tool-")) {
-    return isAllowedToolPart(item, admin) ? item : null
+    return isAllowedToolPart(item, permissions) ? item : null
   }
 
   // Image/file parts from user messages have changed names across AI SDK releases.
@@ -55,14 +64,17 @@ function sanitizePart(part: unknown, admin: boolean): unknown | null {
   return item
 }
 
-function sanitizeMessage(message: unknown, admin: boolean): unknown | null {
+function sanitizeMessage(
+  message: unknown,
+  permissions: Required<Pick<SanitizeOptions, "admin" | "calendar">>
+): unknown | null {
   if (!message || typeof message !== "object") return null
   const item = message as Record<string, unknown>
   const role = item.role
   if (role !== "user" && role !== "assistant" && role !== "system" && role !== "tool") return null
 
   if (Array.isArray(item.parts)) {
-    const parts = item.parts.map(part => sanitizePart(part, admin)).filter(Boolean)
+    const parts = item.parts.map(part => sanitizePart(part, permissions)).filter(Boolean)
     if (parts.length === 0 && typeof item.content !== "string") return null
     return { ...item, parts }
   }
@@ -73,9 +85,10 @@ function sanitizeMessage(message: unknown, admin: boolean): unknown | null {
 
 export function sanitizeMayaMessages(
   messages: unknown[],
-  { admin = false, maxMessages = 24 }: SanitizeOptions = {}
+  { admin = false, calendar = false, maxMessages = 24 }: SanitizeOptions = {}
 ): unknown[] {
-  const cleaned = messages.map(message => sanitizeMessage(message, admin)).filter(Boolean)
+  const permissions = { admin, calendar }
+  const cleaned = messages.map(message => sanitizeMessage(message, permissions)).filter(Boolean)
   if (cleaned.length <= maxMessages) return cleaned
   return cleaned.slice(-maxMessages)
 }

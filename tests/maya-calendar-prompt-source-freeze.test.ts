@@ -36,9 +36,10 @@ const FROZEN_PROMPT_SOURCES = {
     "c6670ec5a543a36c1f99804300e6e7b57e25505c65026c2bc7277e3ce2fc9c96",
   "lib/app-v3/text-bake.ts": "a6783e82ba930b38c69fe8c447aab01a6ce8cd5da7a55fb6591d019e177af1e4",
   "app/api/app-v3/maya/chat/route.ts":
-    // Sandra-approved creative-control rollback (2026-08-14): neutral Maya keeps message,
-    // audience, offer, and voice facts while legacy automatic visual instructions stay out.
-    "19bce19a90dc4005911a4bd10b5ade2d0d19f5bcf81da14ed7d5c0ac775aa1bd",
+    // Sandra-approved dormant Calendar boundary (2026-08-14): neutral Maya keeps message,
+    // audience, offer, and voice facts while saved Calendar styling is available only to an
+    // explicit Calendar task.
+    "95aa61bf9bb7df240076f2d3ee05ef35322c409be28cd9559f64da2f33b11ee4",
   "app/api/app-v3/maya/calendar-agent/route.ts":
     // Sandra-approved API cost controls (2026-07-21): use Haiku and omit repeated captions
     // while preserving the selected post context and existing system prompt.

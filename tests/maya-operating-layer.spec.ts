@@ -190,74 +190,75 @@ if (!runPlaywright) {
             /yes, make that carousel/i.test(userText) ||
             /create a three-slide visibility carousel/i.test(userText)
           const carouselPull = /let's make a carousel/i.test(userText)
-          const conceptPayload = carouselJourneyEnabled && carouselPull
-            ? {
-                format: "carousel",
-                concepts: [
-                  {
-                    id: "qa-carousel",
-                    title: "Three-part visibility carousel",
-                    description: "Three distinct scenes in one consistent visual world.",
-                    brief: {
-                      outfit: "Black knit and tailored trousers",
-                      setting: "Editorial founder world",
-                      mood: "Calm and assured",
-                      pose: "Natural movement",
-                      cameraSpec: "Hasselblad X2D 100C, 55mm",
-                      lighting: "Soft directional window light",
-                      graphic: {
-                        carouselTitle: "Visibility creates choices",
-                        slides: [
-                          {
-                            number: 1,
-                            heading: "Visibility creates choices",
-                            body: "Start before you feel ready.",
-                            purpose: "hook",
-                            visualConcept: "Founder portrait beside a bright studio window",
-                            imagePromptDirection: "Medium portrait beside a bright studio window",
-                          },
-                          {
-                            number: 2,
-                            heading: "Your story is the strategy",
-                            body: "Let people understand what shaped your work.",
-                            purpose: "value",
-                            visualConcept: "Overhead notebook and coffee detail",
-                            imagePromptDirection: "Overhead notebook and coffee detail",
-                          },
-                          {
-                            number: 3,
-                            heading: "Take one visible step",
-                            body: "Share the useful thing today.",
-                            purpose: "cta",
-                            visualConcept: "Walking full-body frame outside the studio",
-                            imagePromptDirection: "Walking full-body frame outside the studio",
-                          },
-                        ],
-                      },
-                    },
-                  },
-                ],
-              }
-            : post && actionJourneyEnabled
+          const conceptPayload =
+            carouselJourneyEnabled && carouselPull
               ? {
-                  format: "photo",
+                  format: "carousel",
                   concepts: [
                     {
-                      id: `qa-post-${post}`,
-                      title: `Editorial direction for post ${post}`,
-                      description: "A clear, grounded founder portrait for this Calendar post.",
+                      id: "qa-carousel",
+                      title: "Three-part visibility carousel",
+                      description: "Three distinct scenes in one consistent visual world.",
                       brief: {
                         outfit: "Black knit and tailored trousers",
-                        setting: "Window-lit studio",
+                        setting: "Editorial founder world",
                         mood: "Calm and assured",
-                        pose: "Standing naturally beside a desk",
+                        pose: "Natural movement",
                         cameraSpec: "Hasselblad X2D 100C, 55mm",
-                        lighting: "Soft north-facing window light",
+                        lighting: "Soft directional window light",
+                        graphic: {
+                          carouselTitle: "Visibility creates choices",
+                          slides: [
+                            {
+                              number: 1,
+                              heading: "Visibility creates choices",
+                              body: "Start before you feel ready.",
+                              purpose: "hook",
+                              visualConcept: "Founder portrait beside a bright studio window",
+                              imagePromptDirection: "Medium portrait beside a bright studio window",
+                            },
+                            {
+                              number: 2,
+                              heading: "Your story is the strategy",
+                              body: "Let people understand what shaped your work.",
+                              purpose: "value",
+                              visualConcept: "Overhead notebook and coffee detail",
+                              imagePromptDirection: "Overhead notebook and coffee detail",
+                            },
+                            {
+                              number: 3,
+                              heading: "Take one visible step",
+                              body: "Share the useful thing today.",
+                              purpose: "cta",
+                              visualConcept: "Walking full-body frame outside the studio",
+                              imagePromptDirection: "Walking full-body frame outside the studio",
+                            },
+                          ],
+                        },
                       },
                     },
                   ],
                 }
-              : null
+              : post && actionJourneyEnabled
+                ? {
+                    format: "photo",
+                    concepts: [
+                      {
+                        id: `qa-post-${post}`,
+                        title: `Editorial direction for post ${post}`,
+                        description: "A clear, grounded founder portrait for this Calendar post.",
+                        brief: {
+                          outfit: "Black knit and tailored trousers",
+                          setting: "Window-lit studio",
+                          mood: "Calm and assured",
+                          pose: "Standing naturally beside a desk",
+                          cameraSpec: "Hasselblad X2D 100C, 55mm",
+                          lighting: "Soft north-facing window light",
+                        },
+                      },
+                    ],
+                  }
+                : null
           const toolCallId = `tool-${Date.now()}`
           const formatPayload = confirmedCarousel ? { format: "carousel" } : null
           const streamParts = [
@@ -783,7 +784,8 @@ if (!runPlaywright) {
       await expect(page.getByText("Choose your style")).toHaveCount(0)
     })
 
-    test("Decide what to post and Finish a selected Calendar post start in Calendar", async ({
+    // Archived compatibility journey: Calendar is dormant and is not a current member beta job.
+    test.skip("Decide what to post and Finish a selected Calendar post start in Calendar", async ({
       page,
     }: {
       page: any
@@ -796,14 +798,14 @@ if (!runPlaywright) {
       await expect(page.getByRole("button", { name: "AI Create with Maya" })).toBeVisible()
     })
 
-    test("Improve a grid starts from Visual direction", async ({ page }: { page: any }) => {
+    test.skip("Improve a grid starts from Visual direction", async ({ page }: { page: any }) => {
       await page.getByRole("button", { name: "Calendar" }).click()
       await page.getByRole("button", { name: "Visual direction" }).click()
       await expect(page.getByRole("dialog")).toBeVisible()
     })
 
-    // Member job: Learn the next useful thing.
-    test("Learn starts with one source-backed Maya recommendation", async ({
+    // Archived compatibility journeys: Learn is not part of the current Maya / Work / You beta.
+    test.skip("Learn starts with one source-backed Maya recommendation", async ({
       page,
     }: {
       page: any
@@ -822,7 +824,7 @@ if (!runPlaywright) {
       await expect(page.getByText("Branded by SSELFIE", { exact: true })).toBeVisible()
     })
 
-    test("keeps a source-backed lesson bound through the Learn to Maya handoff and reload", async ({
+    test.skip("keeps a source-backed lesson bound through the Learn to Maya handoff and reload", async ({
       page,
     }: {
       page: any
@@ -861,7 +863,7 @@ if (!runPlaywright) {
       await expect(page.getByRole("button", { name: "You", exact: true })).toBeVisible()
     })
 
-    test("keeps Gallery assets stored while offering one explicit Calendar or variation handoff", async ({
+    test("keeps Gallery assets stored and offers one clear variation handoff", async ({
       page,
     }: {
       page: any
@@ -879,22 +881,15 @@ if (!runPlaywright) {
       const lightbox = page.getByRole("dialog", { name: "Your finished creation" })
       await expect(lightbox).toBeVisible()
       await expect(lightbox.getByRole("button", { name: "Download", exact: true })).toBeVisible()
-      await expect(lightbox.getByRole("button", { name: "Finish as a post" })).toBeVisible()
+      await expect(lightbox.getByRole("button", { name: "Finish as a post" })).toHaveCount(0)
       await lightbox.getByRole("button", { name: "Create a variation" }).click()
 
       await expect(maya).toHaveAttribute("data-maya-surface", "gallery")
       await expect(maya).toHaveAttribute("data-maya-inspiration", "present")
-      await page.getByRole("button", { name: "Close", exact: true }).click()
-
-      await page.getByRole("button", { name: /Open Founder portrait/i }).click()
-      await page.getByRole("button", { name: "Finish as a post" }).click()
-      await expect(page.getByRole("region", { name: "What needs me" })).toBeVisible()
-      await expect(page).toHaveURL(/view=calendar/)
-      await expect(page.getByRole("button", { name: "Work", exact: true })).toBeVisible()
       expect((page as any).__mayaOperatingLayerCalendarMutations).toEqual([])
     })
 
-    test("routes a free Calendar caption improvement through one action, result, and undo", async ({
+    test.skip("routes a free Calendar caption improvement through one action, result, and undo", async ({
       page,
     }: {
       page: any
@@ -923,7 +918,7 @@ if (!runPlaywright) {
       expect((page as any).__mayaOperatingLayerPaidRequests).toEqual([])
     })
 
-    test("keeps Create and Calendar tasks isolated across post switches, History, and reload", async ({
+    test.skip("keeps Create and Calendar tasks isolated across post switches, History, and reload", async ({
       page,
     }: {
       page: any
@@ -1089,7 +1084,7 @@ if (!runPlaywright) {
       expect((page as any).__mayaOperatingLayerPaidRequestIds).toHaveLength(1)
     })
 
-    test("runs one-step create, apply, reload, and undo with retry-safe boundaries", async ({
+    test.skip("runs one-step create, apply, reload, and undo with retry-safe boundaries", async ({
       page,
     }: {
       page: any

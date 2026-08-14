@@ -574,27 +574,23 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
         ) {
           contextParts.push(`- CTA: ${latestOfferBrief.callToAction}`)
         }
-        contextParts.push(
-          "If the user asks for a content calendar, use this brief before asking repeated questions."
-        )
       }
 
-      if (activeAssetContext) {
+      // Calendar is dormant in the current member experience. Its old active-workspace memory
+      // must not steer an ordinary Maya conversation or creative request. The explicit legacy
+      // Calendar task receives fresh, owned feed context in the app-v3 chat route instead.
+      if (activeAssetContext && activeAssetContext.assetType !== "calendar") {
         const activeAssetType =
-          activeAssetContext.assetType === "page" ||
-          activeAssetContext.assetType === "calendar" ||
-          activeAssetContext.assetType === "pdf"
+          activeAssetContext.assetType === "page" || activeAssetContext.assetType === "pdf"
             ? activeAssetContext.assetType
             : "page"
         const activeAssetLabel =
           typeof activeAssetContext.assetLabel === "string" &&
           activeAssetContext.assetLabel.trim().length > 0
             ? activeAssetContext.assetLabel
-            : activeAssetType === "calendar"
-              ? "Content Calendar"
-              : activeAssetType === "pdf"
-                ? "Workbook"
-                : "Landing Page"
+            : activeAssetType === "pdf"
+              ? "Workbook"
+              : "Landing Page"
         contextParts.push(`Active editing workspace: ${activeAssetLabel} (${activeAssetType})`)
         if (
           typeof activeAssetContext.lastInstruction === "string" &&

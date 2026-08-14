@@ -9,23 +9,16 @@ import { sanitizeMayaJobAnalyticsProperties } from "@/lib/app-v3/maya/job-analyt
 const read = (file: string) => fs.readFileSync(path.join(process.cwd(), file), "utf8")
 
 describe("Maya operating layer Phase 0 contract", () => {
-  it("defines the five member jobs and records their current baselines", () => {
-    const contract = read("docs/product/MAYA_INVISIBLE_AI_FIRST_RESULT_2026-07-13.md")
+  it("takes the current Maya product and browser journeys as the beta contract", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+    const spec = read("tests/maya-operating-layer.spec.ts")
 
-    for (const job of [
-      "Decide what to post",
-      "Create content",
-      "Finish a selected Calendar post",
-      "Improve a grid",
-      "Learn the next useful thing",
-    ]) {
-      expect(contract).toContain(job)
-    }
-
-    expect(contract).toContain("Phase 0 member-job baseline")
-    expect(contract).toContain("Primary decisions")
-    expect(contract).toContain("Context repairs")
-    expect(contract).toContain("Provider wait")
+    expect(concierge).toContain("One idea in. One finished post out.")
+    expect(spec).toContain("Maya Home starts as one neutral conversation above the fold")
+    expect(spec).toContain("turns the next-post outcome into one confirmed creation path")
+    expect(spec).toContain("ordinary writing help stays in the same neutral conversation")
+    expect(spec).toContain("returning members land with Maya")
+    expect(spec).toContain("creates a multi-slide concept")
   })
 
   it("allows only the four privacy-safe operating-layer events", () => {
@@ -89,12 +82,10 @@ describe("Maya operating layer Phase 0 contract", () => {
     expect(config).toContain("maya-operating-layer-mobile")
     expect(config).toContain("width: 390")
     expect(config).toContain("height: 844")
-    expect(spec).toContain("Decide what to post")
     expect(spec).toContain("Maya Home starts as one neutral conversation above the fold")
     expect(spec).toContain("Create a three-slide visibility carousel")
-    expect(spec).toContain("Finish a selected Calendar post")
-    expect(spec).toContain("Improve a grid")
-    expect(spec).toContain("Learn the next useful thing")
+    expect(spec).toContain('test.skip("Decide what to post and Finish a selected Calendar post')
+    expect(spec).toContain('test.skip("Learn starts with one source-backed Maya recommendation')
     expect(fixture).toContain('process.env.PLAYWRIGHT_TEST !== "1"')
   })
 })

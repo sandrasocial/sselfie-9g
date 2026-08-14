@@ -600,10 +600,17 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
   return out
 }
 
-export function sanitizeServerMayaDraftSnapshot(value: unknown): ServerMayaDraftSnapshot | null {
+function sanitizeMayaDraftSnapshot(
+  value: unknown,
+  options: { requireFresh: boolean }
+): ServerMayaDraftSnapshot | null {
   if (!value || typeof value !== "object") return null
   const draft = value as Record<string, unknown>
-  if (!nowish(draft.savedAt)) return null
+  if (options.requireFresh) {
+    if (!nowish(draft.savedAt)) return null
+  } else if (typeof draft.savedAt !== "number" || !Number.isFinite(draft.savedAt)) {
+    return null
+  }
   if (typeof draft.chatId !== "string" || draft.chatId.length === 0) return null
   if (!Array.isArray(draft.messages)) return null
   const session = sanitizeSession(draft.session)
@@ -625,4 +632,16 @@ export function sanitizeServerMayaDraftSnapshot(value: unknown): ServerMayaDraft
     generationSource: sanitizeGenerationSource(draft.generationSource),
     valueUsed: draft.valueUsed === true,
   }
+}
+
+/** Active drafts expire so Maya does not unexpectedly reopen abandoned work. */
+export function sanitizeServerMayaDraftSnapshot(value: unknown): ServerMayaDraftSnapshot | null {
+  return sanitizeMayaDraftSnapshot(value, { requireFresh: true })
+}
+
+/** Deliberately reopened Work projects keep their complete creative result beyond 14 days. */
+export function sanitizeStoredMayaWorkspaceSnapshot(
+  value: unknown
+): ServerMayaDraftSnapshot | null {
+  return sanitizeMayaDraftSnapshot(value, { requireFresh: false })
 }

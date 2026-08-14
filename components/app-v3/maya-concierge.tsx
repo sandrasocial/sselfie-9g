@@ -1072,6 +1072,8 @@ export function MayaConcierge({
     creationIdea: string | null
     /** Ground truth about the most recent completed render in this session. */
     lastGeneration: LastGenerationSnapshot | null
+    /** Explicit task context; Calendar styling must never be inferred for ordinary Maya work. */
+    mayaContext: ConciergeSession["mayaContext"]
   }>({
     aestheticName: "",
     aestheticIntent: "",
@@ -1085,6 +1087,7 @@ export function MayaConcierge({
     inspirationImageUrl: null,
     creationIdea: null,
     lastGeneration: null,
+    mayaContext: null,
   })
 
   const transport = useMemo(
@@ -2479,6 +2482,7 @@ export function MayaConcierge({
     inspirationImageUrl: inspirationUrl,
     creationIdea: session.creationIdea ?? null,
     lastGeneration,
+    mayaContext: session.mayaContext ?? null,
   }
 
   async function handleUpload(slot: UploadSlot, file: File) {

@@ -7,7 +7,7 @@ import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 const read = (path: string) => readFileSync(path, "utf8")
 
 describe("Maya chat trust pass", () => {
-  it("keeps every active App v3 tool needed to restore a real conversation", () => {
+  it("keeps Calendar history only for an explicit Calendar conversation", () => {
     const messages = [
       {
         id: "assistant-1",
@@ -19,7 +19,14 @@ describe("Maya chat trust pass", () => {
       },
     ]
 
-    expect(sanitizeMayaMessages(messages)).toEqual(messages)
+    expect(sanitizeMayaMessages(messages)).toEqual([
+      {
+        id: "assistant-1",
+        role: "assistant",
+        parts: [{ type: "tool-save_brand_profile", output: { saved: true } }],
+      },
+    ])
+    expect(sanitizeMayaMessages(messages, { calendar: true })).toEqual(messages)
   })
 
   it("does not turn persistence outages into destructive empty states", () => {

@@ -8,7 +8,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { listChats, saveChat } from "@/lib/app-v3/maya/chat-store"
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
-import { sanitizeServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
+import { sanitizeStoredMayaWorkspaceSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
 
 export const dynamic = "force-dynamic"
 
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       title,
       savedAt,
       {
-        workspace: sanitizeServerMayaDraftSnapshot(body?.workspace),
+        workspace: sanitizeStoredMayaWorkspaceSnapshot(body?.workspace),
         status:
           body?.taskStatus === "creating" || body?.taskStatus === "ready"
             ? body.taskStatus

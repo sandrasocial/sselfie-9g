@@ -548,7 +548,7 @@ function ShellInner({
           onMakeMotion={videoEnabled ? createMotionFromImage : undefined}
           onStartCreate={limited ? undefined : createFirstPhotoFromGallery}
           operatingLayerEnabled={mayaOperatingLayerEnabled}
-          onUseInCalendar={useAssetInCalendar}
+          onUseInCalendar={mayaOperatingLayerEnabled ? undefined : useAssetInCalendar}
           onCreateVariation={asset => createVariationFromGallery(asset.url)}
         />
       )}

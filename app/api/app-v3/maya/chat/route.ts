@@ -31,6 +31,7 @@ import { NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { shouldStopAppV3MayaToolLoop } from "@/lib/app-v3/maya/tool-loop-policy"
 import { getAppV3ChatMaxOutputTokens, getAppV3ChatTask } from "@/lib/app-v3/maya/cost-controls"
+import { getExplicitCalendarCreativeContext } from "@/lib/app-v3/maya/calendar-context-policy"
 
 export const maxDuration = 300
 
@@ -335,7 +336,7 @@ const conceptSchema = z.object({
       .string()
       .optional()
       .describe(
-        "When your context contains a PROVEN SCENE TEMPLATE and this concept is for her feed calendar, copy that template text here EXACTLY as given - character for character, no paraphrasing, no shortening. Your member-specific adjustments go in the other brief fields; this field carries the template's craft language straight to the image model."
+        "When your context contains a PROVEN SCENE TEMPLATE, copy that template text here EXACTLY as given - character for character, no paraphrasing, no shortening. Your member-specific adjustments go in the other brief fields; this field carries the template's craft language straight to the image model."
       ),
     graphic: graphicSpec,
   }),
@@ -480,6 +481,8 @@ interface ChatBody {
     usedInspiration?: unknown
     usedTrainedModel?: unknown
   } | null
+  /** Explicit operating-layer task. Dormant Calendar context is never inferred from saved data. */
+  mayaContext?: unknown
 }
 
 function clampText(value: unknown, max = 900): string {
@@ -672,6 +675,7 @@ export async function POST(req: Request) {
     if (!Array.isArray(uiMessages) || uiMessages.length === 0) {
       return NextResponse.json({ error: "messages is required" }, { status: 400 })
     }
+    const calendarCreativeContext = getExplicitCalendarCreativeContext(body?.mayaContext)
 
     const creationIntent = normalizeCreationIntent(body?.creationIntent ?? null)
     const shotDirector = normalizeShotDirector(body?.shotDirector ?? null)
@@ -785,7 +789,7 @@ export async function POST(req: Request) {
     // Invisible AI: choosing Maya means delegating the visual decision, not opening another
     // menu. She still explains the selected Vault world in one short line before the concept.
     if (!generalConversation && body?.aestheticId === "maya-decides") {
-      system = `${system}\n\n## MAYA CHOOSES THE LOOK\nShe asked you to make the visual decision. Choose the single strongest SSELFIE Vault world using her request, brand profile, memory, recent activity, and content calendar. Do not ask her to choose a style. Briefly name why your choice fits, then emit one strongest concept unless she explicitly asked for options or a multi-shot format. Keep the concept inside that real Vault world and never drift into generic studio posing.`
+      system = `${system}\n\n## MAYA CHOOSES THE LOOK\nShe asked you to make the visual decision. Choose the single strongest SSELFIE Vault world using her request, brand profile, memory, and recent activity. Do not ask her to choose a style. Briefly name why your choice fits, then emit one strongest concept unless she explicitly asked for options or a multi-shot format. Keep the concept inside that real Vault world and never drift into generic studio posing.`
     }
 
     // Structured session context (2026 UX contract): the idea travels with every request
@@ -826,12 +830,11 @@ export async function POST(req: Request) {
     // matching them. So Maya gets the actual approved template for the next open slot and is
     // told to build her briefs FROM it - adapt wardrobe/colors/story to the member, keep the
     // template's composition, lighting, and scene craft.
-    if (memoryUserId && !generalConversation) {
+    if (memoryUserId && !generalConversation && calendarCreativeContext) {
       try {
         const [planLayout] = await sql`
           SELECT id, feed_style, feed_style_variation_id FROM feed_layouts
-          WHERE user_id = ${memoryUserId}
-          ORDER BY created_at DESC
+          WHERE user_id = ${memoryUserId} AND id = ${calendarCreativeContext.feedId}
           LIMIT 1
         `
         if (planLayout) {
@@ -885,7 +888,7 @@ export async function POST(req: Request) {
             }
           }
 
-          system = `${system}\n\n## HER CONTENT CALENDAR\nShe has a content calendar you drafted for her${planLayout.feed_style ? ` in the "${planLayout.feed_style}" feed style` : ""}. ${slotLine} When she creates a single photo without a specific ask, lean your concepts toward that theme and keep the feed style world consistent so her grid stays cohesive. If she expresses a different visual direction for her feed (warmer, darker, more minimal, beachy), quietly call remember with the matching feedStyle - her whole calendar's template world switches to it. If she asks what the calendar is or how it works, explain it simply and warmly: you plan her month for her (a theme and a ready caption for every posting day), she creates the photos with you right here in chat, and each finished photo has an Add to calendar button that drops it on her next open day. Nothing to set up, nothing to configure. When a photo she loves is done, the card under it shows an "Add to calendar" button - if she asks you to save or schedule a photo, tell her to tap that button (you cannot place it yourself). To SHOW her the plan, call show_feed_plan.${templateBlock}`
+          system = `${system}\n\n## HER CONTENT CALENDAR\nShe has a content calendar you drafted for her${planLayout.feed_style ? ` in the "${planLayout.feed_style}" feed style` : ""}. ${slotLine} When she creates a single photo without a specific ask, lean your concepts toward that theme and keep the feed style world consistent so her grid stays cohesive. If she asks what the calendar is or how it works, explain it simply and warmly: you plan her month for her (a theme and a ready caption for every posting day), she creates the photos with you right here in chat, and each finished photo has an Add to calendar button that drops it on her next open day. Nothing to set up, nothing to configure. When a photo she loves is done, the card under it shows an "Add to calendar" button - if she asks you to save or schedule a photo, tell her to tap that button (you cannot place it yourself). To SHOW her the plan, call show_feed_plan.${templateBlock}`
         }
       } catch (e) {
         console.error("[app-v3 maya chat] calendar context skipped:", e)
@@ -906,7 +909,10 @@ export async function POST(req: Request) {
         .catch(() => {})
     }
 
-    const cleanUiMessages = sanitizeMayaMessages(uiMessages, { maxMessages: 16 }) as UIMessage[]
+    const cleanUiMessages = sanitizeMayaMessages(uiMessages, {
+      calendar: Boolean(calendarCreativeContext),
+      maxMessages: 16,
+    }) as UIMessage[]
     if (cleanUiMessages.length === 0) {
       return NextResponse.json({ error: "messages is required" }, { status: 400 })
     }
@@ -969,7 +975,7 @@ export async function POST(req: Request) {
     // silently, no announcement (persona rule). Dedup + 2000-char cap keep notes sane.
     const remember = tool({
       description:
-        "Quietly save a LASTING fact about the user's brand or a style preference/aversion they just expressed, so future sessions already know it. Also capture how often she wants to post (postingCadencePerWeek) when she mentions it, and her feed style world (feedStyle) when she expresses a clear visual direction - warmer, darker, more minimal, beachy - so her whole calendar's template world follows her taste. Never announce the save in your reply.",
+        "Quietly save a LASTING fact about the user's brand or a style preference/aversion they just expressed, so future sessions already know it. Never announce the save in your reply.",
       inputSchema: z.object({
         brandNote: z
           .string()
@@ -983,55 +989,12 @@ export async function POST(req: Request) {
           .describe(
             "Short lasting style preference or aversion, e.g. 'Hates studio backdrops; loves warm window light'."
           ),
-        postingCadencePerWeek: z
-          .number()
-          .int()
-          .min(1)
-          .max(7)
-          .optional()
-          .describe(
-            "Posts per week she wants, when she says it ('I post twice a week' -> 2). Drives her auto-drafted content calendar."
-          ),
-        feedStyle: z
-          .enum([
-            "Dark & Moody",
-            "Beige Aesthetic",
-            "Light & Minimalistic",
-            "Luxury Future Self",
-            "Casual Bohemian",
-            "Athletic & Wellness",
-            "Coastal Aesthetics",
-          ])
-          .optional()
-          .describe(
-            "Her feed's style world, when she expresses a clear direction: 'I want warmer, creamier vibes' -> Beige Aesthetic; 'more minimal and clean' -> Light & Minimalistic; 'beachy summer feel' -> Coastal Aesthetics. Switches the scene templates her whole calendar uses, effective immediately."
-          ),
       }),
-      execute: async ({ brandNote, preference, postingCadencePerWeek, feedStyle }) => {
-        if (
-          !memoryUserId ||
-          (!brandNote?.trim() && !preference?.trim() && postingCadencePerWeek == null && !feedStyle)
-        ) {
+      execute: async ({ brandNote, preference }) => {
+        if (!memoryUserId || (!brandNote?.trim() && !preference?.trim())) {
           return { saved: false }
         }
         try {
-          if (postingCadencePerWeek != null) {
-            const { savePostingCadence } = await import("@/lib/feed-planner/cadence")
-            await savePostingCadence(memoryUserId, postingCadencePerWeek).catch(() => {})
-            logBehavior("suite_posting_cadence_saved", { cadence: postingCadencePerWeek })
-          }
-          if (feedStyle) {
-            const { savePreferredFeedStyle } = await import("@/lib/feed-planner/resolve-feed-style")
-            await savePreferredFeedStyle(memoryUserId, feedStyle).catch(() => {})
-            logBehavior("suite_feed_style_saved", { feedStyle })
-          }
-          if (
-            (postingCadencePerWeek != null || feedStyle) &&
-            !brandNote?.trim() &&
-            !preference?.trim()
-          ) {
-            return { saved: true }
-          }
           const current = await getMemory(memoryUserId)
           const append = (cur: string | null, add?: string): string | undefined => {
             const a = add?.trim()
@@ -1105,21 +1068,22 @@ export async function POST(req: Request) {
       },
     })
 
+    const calendarTools = calendarCreativeContext ? { show_feed_plan: showFeedPlan } : {}
     const tools = generalConversation
       ? {
           ask_clarify: askClarify,
           set_format: setFormat,
-          show_feed_plan: showFeedPlan,
           remember,
           save_brand_profile: saveBrandProfile,
+          ...calendarTools,
         }
       : {
           emit_concepts: emitConcepts,
           ask_clarify: askClarify,
           set_format: setFormat,
-          show_feed_plan: showFeedPlan,
           remember,
           save_brand_profile: saveBrandProfile,
+          ...calendarTools,
         }
 
     const result = streamText({
