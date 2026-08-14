@@ -45,7 +45,8 @@ describe("member Maya Home", () => {
     )
     expect(prompt).toContain("Start with the actual thought, even when it is messy")
     expect(prompt).toContain("For writing, give her usable words in the chat")
-    expect(prompt).toContain("choose the strongest format and call set_format")
+    expect(prompt).toContain("recommend one format in plain language")
+    expect(prompt).toContain("Do not call set_format until")
   })
 
   it("owns one selfie-led finished post instead of presenting another tool menu", () => {
@@ -63,7 +64,7 @@ describe("member Maya Home", () => {
     expect(concierge).toContain('fetch("/api/app-v3/maya/finish-post"')
     expect(concierge).not.toContain('fetch("/api/app-v3/maya/feed-plan/place-photo"')
     expect(prompt).toContain("NEXT POST OUTCOME")
-    expect(prompt).toContain("call set_format in the same turn")
+    expect(prompt).toContain("wait for her confirmation")
     expect(prompt).toContain("Prefer a selfie-led photo post")
     expect(prompt).toContain("Do not give her a content plan and stop")
     expect(inline).toContain("Make it more like me")

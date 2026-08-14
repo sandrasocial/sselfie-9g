@@ -21,14 +21,14 @@ describe("conversational set_format continues instead of stalling (maya-concierg
   it("refreshes the creation intent so the pull runs as the switched format", () => {
     expect(concierge).toContain("The pull that follows must run AS the switched format")
     const start = concierge.indexOf("Conversational format switching")
-    const effect = concierge.slice(start, concierge.indexOf("setOutputFormat(latest)", start))
+    const effect = concierge.slice(start, concierge.indexOf("}, [\n    messages", start))
     expect(effect).toContain("setLocalCreationIntent(intent)")
     expect(effect).toContain("creationIntent: intent")
   })
 
   it("auto-continues with her remembered text style; first-timers keep the choice cards", () => {
     const start = concierge.indexOf("Conversational format switching")
-    const effect = concierge.slice(start, concierge.indexOf("setOutputFormat(latest)", start))
+    const effect = concierge.slice(start, concierge.indexOf("}, [\n    messages", start))
     expect(effect).toContain("rememberedOverlayStyle")
     expect(effect).toContain('setTextOverlayMode("with-text")')
     expect(effect).toContain("setTextOverlayMode(null)")

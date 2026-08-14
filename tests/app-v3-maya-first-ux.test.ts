@@ -143,7 +143,8 @@ describe("Maya-first Suite creation UX", () => {
     expect(route).toContain("getMayaGeneralAssistantPrompt")
     expect(route).toContain('generalConversation\n      ? "chat_pro"')
     expect(general).toContain("Start with the actual thought, even when it is messy")
-    expect(general).toContain("choose the strongest format and call set_format")
+    expect(general).toContain("recommend one format in plain language")
+    expect(general).toContain("Do not call set_format until")
   })
 
   it("stores creation intent in local and server draft snapshots", () => {

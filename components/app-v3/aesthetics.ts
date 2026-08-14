@@ -5,6 +5,18 @@
 import { VAULT_COLLECTION_META } from "@/lib/ai-prompts/prompt-data"
 import type { Aesthetic } from "./types"
 
+/** Neutral creative state: no Vault world or typography has been chosen yet. */
+export const MAYA_GENERAL_AESTHETIC: Aesthetic = {
+  id: "maya-general",
+  name: "SSELFIE",
+  blurb: "Let's make something that's truly you.",
+  coverImage: "",
+  thumbnails: [],
+  shotCount: 0,
+  intent:
+    "A general SSELFIE editorial brand session. Help her decide the look from her brand, then create.",
+}
+
 /**
  * The quiet default for Maya-first creation. This is intentionally not a
  * synthetic visual style: it tells the chat route to choose one real Vault

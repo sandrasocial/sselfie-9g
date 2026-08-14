@@ -38,7 +38,11 @@ import { retryGeneratedImageOnce } from "./image-retry"
 import { ChatHistoryModal } from "./chat-history-modal"
 import { MemoryModal, type Memory } from "./memory-modal"
 import { EditMode } from "./edit-mode"
-import { AESTHETICS, MAYA_DECIDES_AESTHETIC } from "./aesthetics"
+import {
+  AESTHETICS,
+  MAYA_DECIDES_AESTHETIC,
+  MAYA_GENERAL_AESTHETIC,
+} from "./aesthetics"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { finishMayaJob, recordMayaJobDecision } from "@/lib/app-v3/maya/job-analytics"
 import { newMayaTaskId } from "@/lib/app-v3/maya/context-envelope"
@@ -1885,6 +1889,22 @@ export function MayaConcierge({
     }
     if (!latest) return
 
+    const intent = intentForFormat(latest, homeMode ? "starter_chip" : "gallery_action")
+    const commitSwitchedFormat = () => {
+      if (homeMode && session?.aesthetic.id === MAYA_DECIDES_AESTHETIC.id) {
+        // "Maya decides" belongs to the earlier asset, not every future format in the thread.
+        // Retire that automatic world while preserving a world the member chose herself.
+        updateCurrentSession(MAYA_GENERAL_AESTHETIC, {
+          format: latest,
+          referenceSelfieUrl: session?.referenceSelfieUrl ?? null,
+          videoSourceUrl: session?.videoSourceUrl ?? null,
+          creationIntent: intent,
+        })
+      } else {
+        setOutputFormat(latest)
+      }
+    }
+
     if (
       shouldContinueCompletedFormatSwitch({
         selectedFormat: session?.outputFormat ?? null,
@@ -1893,10 +1913,6 @@ export function MayaConcierge({
         textStyleSelected: Boolean(textStyleChoice),
       })
     ) {
-      const intent = intentForFormat(
-        latest,
-        homeMode ? "starter_chip" : "gallery_action"
-      )
       setLocalCreationIntent(intent)
       extrasRef.current = { ...extrasRef.current, format: latest, creationIntent: intent }
       // The format and any required text choice are already committed. Mark this recovery pull
@@ -1906,26 +1922,37 @@ export function MayaConcierge({
       return
     }
 
+    // A typed confirmation can commit the format before Maya's set_format acknowledgement
+    // arrives. Graphic formats are still incomplete at that point: expose the text decision
+    // instead of leaving the thread parked with neither concepts nor a visible next action.
+    if (session?.outputFormat === latest) {
+      setLocalCreationIntent(intent)
+      extrasRef.current = { ...extrasRef.current, format: latest, creationIntent: intent }
+      commitSwitchedFormat()
+      if (isGraphicOutputFormat(latest) && rememberedOverlayStyle) {
+        setTextOverlayMode("with-text")
+        setTextStyleChoice(rememberedOverlayStyle)
+        lastPulledFormatRef.current = latest
+        sendMessage({ text: "Continue with what we already created." })
+      } else {
+        lastPulledFormatRef.current = null
+      }
+      return
+    }
+
     if (session?.outputFormat !== latest) {
       // The pull that follows must run AS the switched format. Without refreshing the intent
       // here, a stale session creationIntent (the previous format, high confidence) outranks
       // extras.format on the server, Maya answers the pull in the OLD format and calls
       // set_format again: the "On it, switching to carousels" dead end she reported.
-      const intent = intentForFormat(
-        latest,
-        homeMode ? "starter_chip" : "gallery_action"
-      )
       setLocalCreationIntent(intent)
       extrasRef.current = { ...extrasRef.current, format: latest, creationIntent: intent }
-      if (
-        isGraphicOutputFormat(latest) &&
-        (rememberedOverlayStyle || homeMode)
-      ) {
-        // She asked for this format in words and already owns a remembered text style, so
-        // continue hands-free with it (the style chip above the concept cards still swaps
-        // it before any credit is spent). First-timers keep the explicit text-choice cards.
+      if (isGraphicOutputFormat(latest) && rememberedOverlayStyle) {
+        // A style she deliberately saved can continue with her. Without that evidence,
+        // changing format must reveal the text/no-text choice instead of silently baking
+        // the same template into every slide.
         setTextOverlayMode("with-text")
-        setTextStyleChoice(rememberedOverlayStyle ?? "editorial-serif-center")
+        setTextStyleChoice(rememberedOverlayStyle)
       } else {
         setTextOverlayMode(null)
         setTextStyleChoice(null)
@@ -1935,16 +1962,7 @@ export function MayaConcierge({
       // Re-arm the auto-pull too: if this format was already pulled earlier in the thread,
       // a stale lastPulledFormatRef blocks both the pull and the inline text-choice cards.
       lastPulledFormatRef.current = null
-      if (homeMode) {
-        updateCurrentSession(MAYA_DECIDES_AESTHETIC, {
-          format: latest,
-          referenceSelfieUrl: session?.referenceSelfieUrl ?? null,
-          videoSourceUrl: session?.videoSourceUrl ?? null,
-          creationIntent: intent,
-        })
-      } else {
-        setOutputFormat(latest)
-      }
+      commitSwitchedFormat()
     }
   }, [
     messages,
@@ -3757,7 +3775,7 @@ export function MayaConcierge({
     setTextStyleAdjustments(null)
     setStyleSwapOpen(false)
     setSetupOpen(false)
-    updateCurrentSession(MAYA_DECIDES_AESTHETIC, {
+    updateCurrentSession(MAYA_GENERAL_AESTHETIC, {
       format: "photo",
       seed: NEXT_POST_REQUEST,
       creationIdea: NEXT_POST_REQUEST,
