@@ -1,5 +1,24 @@
 # Completed releases
 
+## 2026-08-14 | Maya creative-control rollback
+
+Kept Maya as one conversation, but stopped neutral Home requests from silently committing a format,
+Vault world, palette, outfit, typography, or text treatment. Maya now recommends one format, waits
+for the member's approval, and carries only message, audience, offer, story, and voice facts into a
+neutral handoff. A visual world the member deliberately chose still keeps the established creative
+context. The image compiler, image model, identity protections, credits, member access, saved work,
+and historical conversations were not replaced.
+
+Why: a signed-in production test showed that legacy profile commands such as auto-applying a
+lookbook were still forcing `Cozy & Textured` / old-money styling into a new post. Production proof:
+feature commits `359c82e9` and `58f00055`, exact Ready Vercel deployment
+`dpl_7nLcidSPn41Cxyf3csgowW8kk7jj`, CI typecheck, repository invariants, changed-file lint with zero
+errors, an optimized production build, and clean diff checks. The comprehensive run passed 2,051 of
+2,052 tests; the only stop was the deliberately changed creative-freeze checksum, which was updated
+under Sandra's approved rollback and then passed with the focused freeze and rollback suites. Live
+signed-in desktop and 390px mobile QA confirmed one recommendation, one human question, no automatic
+named visual world, no image/credit generation, no console errors, and no horizontal overflow.
+
 ## 2026-08-12 | Work With Me short-copy pass
 
 Shortened the Work With Me page without changing its approved visuals, images, section structure,
