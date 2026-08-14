@@ -1,5 +1,22 @@
 # Completed releases
 
+## 2026-08-14 | Maya dormant-Calendar isolation and durable Work
+
+Kept Maya as one member conversation while removing dormant Calendar wording, tools, saved workspace
+context, and Gallery handoffs from ordinary Maya creation. Explicit legacy Calendar tasks remain
+fail-closed and bound to the exact owned feed. Saved Work projects now retain their finished visual,
+caption, conversation, and generation state beyond 14 days; only abandoned active drafts expire.
+
+Why: current-code beta testing found that hidden Calendar context could still steer ordinary image
+directions and that older Work projects could reopen without their completed result. Production
+proof: feature commit `a63cbd9b`, exact Ready Vercel deployment
+`dpl_5q5evnMTTBZJ666QW4xubeVjuvJz`, 2,054 passing repository tests with 6 intentional skips, 22
+active desktop/mobile member journeys with 14 dormant Calendar/Learn journeys archived, CI typecheck,
+lint with zero errors, repository invariants, an optimized 352-page production build, and clean diff
+checks. Signed-in production QA confirmed Maya / Work / You, durable saved work, no Gallery Calendar
+handoff, zero browser errors, and no horizontal overflow at 390px. No image was generated, no credits
+were spent, and no price, checkout, entitlement, billing, or customer access changed.
+
 ## 2026-08-14 | Maya creative-control rollback
 
 Kept Maya as one conversation, but stopped neutral Home requests from silently committing a format,
