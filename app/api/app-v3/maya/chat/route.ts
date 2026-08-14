@@ -23,6 +23,7 @@ import { salvageConceptsPayload } from "@/lib/app-v3/concept-salvage"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
+import { getMayaHomeBrandContext } from "@/lib/maya/home-brand-context"
 import { validateEmittedConceptPlan } from "@/lib/app-v3/maya/semantic-plan-validation"
 import { repairSemanticPlan } from "@/lib/app-v3/maya/semantic-plan-repair"
 import type { CreationIntent, CreationIntentSource, OutputFormat } from "@/components/app-v3/types"
@@ -733,8 +734,13 @@ export async function POST(req: Request) {
     }
 
     let system: string
+    const neutralBrandContext = getMayaHomeBrandContext(brandContext)
     if (generalConversation) {
-      system = getMayaGeneralAssistantPrompt({ memory, recentActivity, brandContext })
+      system = getMayaGeneralAssistantPrompt({
+        memory,
+        recentActivity,
+        brandContext: neutralBrandContext,
+      })
     } else {
       const vaultStyleGuide =
         (await getVaultStyleGuide(body?.aestheticId, shotDirector?.requestedShotCount ?? 8)) ??
@@ -749,7 +755,10 @@ export async function POST(req: Request) {
         brandKit: body?.brandKit ?? null,
         memory,
         recentActivity,
-        brandContext,
+        // A neutral Maya Home handoff must carry the member's topic and audience without
+        // reviving legacy instructions that automatically assign a lookbook, palette, or outfit.
+        // A look she deliberately chose keeps the full established creative context.
+        brandContext: body?.aestheticId === "maya-general" ? neutralBrandContext : brandContext,
         // The real Vault shots for the chosen vibe - Maya's styling source of truth. General
         // sessions never reach this frozen creative path; every actual generation still does.
         vaultStyleGuide,

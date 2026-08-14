@@ -35,6 +35,17 @@ describe("Maya creative control rollback", () => {
     expect(generalPrompt).toContain("recommend one format in plain language")
     expect(generalPrompt).toContain("Do not call set_format until")
     expect(generalPrompt).toContain("she confirms.")
+    expect(generalPrompt).toContain("Never present a saved aesthetic as already chosen")
     expect(generalPrompt).not.toContain("choose the strongest format and call set_format")
+  })
+
+  it("removes legacy automatic visual instructions from neutral Home handoffs only", () => {
+    const route = read("app/api/app-v3/maya/chat/route.ts")
+
+    expect(route).toContain("const neutralBrandContext = getMayaHomeBrandContext(brandContext)")
+    expect(route).toContain("brandContext: neutralBrandContext")
+    expect(route).toContain(
+      'brandContext: body?.aestheticId === "maya-general" ? neutralBrandContext : brandContext'
+    )
   })
 })

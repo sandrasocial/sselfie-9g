@@ -40,9 +40,8 @@ describe("member Maya Home", () => {
 
     expect(route).toContain("const generalConversation = !committedFormat")
     expect(route).toContain('generalConversation\n      ? "chat_pro"')
-    expect(route).toContain(
-      "getMayaGeneralAssistantPrompt({ memory, recentActivity, brandContext })"
-    )
+    expect(route).toContain("getMayaGeneralAssistantPrompt({")
+    expect(route).toContain("brandContext: neutralBrandContext")
     expect(prompt).toContain("Start with the actual thought, even when it is messy")
     expect(prompt).toContain("For writing, give her usable words in the chat")
     expect(prompt).toContain("recommend one format in plain language")
