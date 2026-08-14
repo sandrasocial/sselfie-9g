@@ -23,6 +23,7 @@ type WorkWithMeApplication = {
   current_challenge: string | null
   desired_outcome: string | null
   current_offer: string | null
+  source_detail?: string | null
   checkout_url: string | null
   checkout_created_at: string | null
   created_at: string
@@ -79,6 +80,7 @@ function salesInput(application: WorkWithMeApplication) {
     currentChallenge: application.current_challenge,
     desiredOutcome: application.desired_outcome,
     currentOffer: application.current_offer,
+    aiAttempts: application.source_detail?.match(/ai_attempts:([^|]+)/)?.[1]?.trim() || null,
     investmentReadiness: application.readiness,
   }
 }
@@ -101,7 +103,11 @@ export function WorkWithMePipeline() {
       if (!response.ok) throw new Error(data?.error || "Could not load applications.")
       const nextApplications = (data?.applications || []) as WorkWithMeApplication[]
       setApplications(nextApplications)
-      setNotes(Object.fromEntries(nextApplications.map(application => [application.id, application.notes || ""])))
+      setNotes(
+        Object.fromEntries(
+          nextApplications.map(application => [application.id, application.notes || ""])
+        )
+      )
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load applications.")
     } finally {
@@ -117,11 +123,11 @@ export function WorkWithMePipeline() {
     () => () => {
       if (copiedTimer.current !== null) window.clearTimeout(copiedTimer.current)
     },
-    [],
+    []
   )
 
   const openCount = applications.filter(
-    application => !["closed_won", "closed_lost"].includes(application.pipeline_stage),
+    application => !["closed_won", "closed_lost"].includes(application.pipeline_stage)
   ).length
 
   function showCopied(applicationId: number) {
@@ -135,7 +141,7 @@ export function WorkWithMePipeline() {
 
   async function updateApplication(
     applicationId: number,
-    action: "contacted" | "call_booked" | "lost" | "save_notes",
+    action: "contacted" | "call_booked" | "call_completed" | "lost" | "save_notes"
   ) {
     setBusyId(applicationId)
     setError("")
@@ -149,7 +155,9 @@ export function WorkWithMePipeline() {
       if (!response.ok) throw new Error(data?.error || "Could not update the application.")
       await load()
     } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : "Could not update the application.")
+      setError(
+        updateError instanceof Error ? updateError.message : "Could not update the application."
+      )
     } finally {
       setBusyId(null)
     }
@@ -168,16 +176,24 @@ export function WorkWithMePipeline() {
       if (!response.ok) throw new Error(data?.error || "Could not create the payment link.")
       await load()
       try {
-        await copyText(buildWorkWithMeOfferDraft({
-          ...salesInput(application),
-          checkoutUrl: data.checkoutUrl,
-        }))
+        await copyText(
+          buildWorkWithMeOfferDraft({
+            ...salesInput(application),
+            checkoutUrl: data.checkoutUrl,
+          })
+        )
         showCopied(application.id)
       } catch {
-        setError("The payment link was checked, but your browser could not copy the offer message. Try again.")
+        setError(
+          "The payment link was checked, but your browser could not copy the offer message. Try again."
+        )
       }
     } catch (checkoutError) {
-      setError(checkoutError instanceof Error ? checkoutError.message : "Could not create the payment link.")
+      setError(
+        checkoutError instanceof Error
+          ? checkoutError.message
+          : "Could not create the payment link."
+      )
     } finally {
       setBusyId(null)
     }
@@ -201,12 +217,13 @@ export function WorkWithMePipeline() {
           </p>
           <h1 className="mt-2 font-serif text-4xl font-light text-stone-950">Work With Me</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
-            Move each application from personal contact to a copied €2,000 payment link. Nothing is
-            emailed automatically from this page.
+            Move each application through a real fit call before a private €2,000 payment link.
+            Nothing is emailed automatically from this page.
           </p>
         </div>
         <div className="rounded-2xl border border-stone-200 bg-white px-5 py-3 text-sm text-stone-600">
-          <strong className="text-stone-950">{openCount}</strong> open application{openCount === 1 ? "" : "s"}
+          <strong className="text-stone-950">{openCount}</strong> open application
+          {openCount === 1 ? "" : "s"}
         </div>
       </div>
 
@@ -221,25 +238,39 @@ export function WorkWithMePipeline() {
       ) : applications.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-stone-200 bg-white p-8 text-center">
           <p className="font-serif text-2xl text-stone-950">No applications yet</p>
-          <p className="mt-2 text-sm text-stone-500">New Work With Me applications will appear here.</p>
+          <p className="mt-2 text-sm text-stone-500">
+            New Work With Me applications will appear here.
+          </p>
         </div>
       ) : (
         <div className="mt-8 space-y-5">
           {applications.map(application => {
             const isBusy = busyId === application.id
             const isClosed = ["closed_won", "closed_lost"].includes(application.pipeline_stage)
-            const canContact = ["applied", "qualified_queue", "contacted"].includes(application.pipeline_stage)
-            const canBook = ["qualified_queue", "contacted", "call_booked"].includes(application.pipeline_stage)
-            const canCreateCheckout = ["contacted", "call_booked", "call_completed", "offer_sent"].includes(
-              application.pipeline_stage,
+            const canContact = ["applied", "qualified_queue", "contacted"].includes(
+              application.pipeline_stage
+            )
+            const canBook = ["qualified_queue", "contacted", "call_booked"].includes(
+              application.pipeline_stage
+            )
+            const canCompleteCall = ["call_booked", "call_completed"].includes(
+              application.pipeline_stage
+            )
+            const canCreateCheckout = ["call_completed", "offer_sent"].includes(
+              application.pipeline_stage
             )
 
             return (
-              <article key={application.id} className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
+              <article
+                key={application.id}
+                className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6"
+              >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-serif text-2xl font-light text-stone-950">{application.name}</h2>
+                      <h2 className="font-serif text-2xl font-light text-stone-950">
+                        {application.name}
+                      </h2>
                       <span className="rounded-full bg-stone-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
                         {stageLabel(application.pipeline_stage)}
                       </span>
@@ -250,7 +281,10 @@ export function WorkWithMePipeline() {
                       ) : null}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-stone-600">
-                      <a className="underline underline-offset-2 hover:text-stone-950" href={`mailto:${application.email}`}>
+                      <a
+                        className="underline underline-offset-2 hover:text-stone-950"
+                        href={`mailto:${application.email}`}
+                      >
                         {application.email}
                       </a>
                       {application.instagram_handle ? (
@@ -268,22 +302,41 @@ export function WorkWithMePipeline() {
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-center text-xs sm:min-w-48">
                     <div className="rounded-xl bg-stone-50 px-3 py-2">
-                      <span className="block text-[10px] uppercase tracking-wide text-stone-500">Score</span>
-                      <strong className="mt-1 block text-base text-stone-950">{application.qualification_score}/100</strong>
+                      <span className="block text-[10px] uppercase tracking-wide text-stone-500">
+                        Score
+                      </span>
+                      <strong className="mt-1 block text-base text-stone-950">
+                        {application.qualification_score}/100
+                      </strong>
                     </div>
                     <div className="rounded-xl bg-stone-50 px-3 py-2">
-                      <span className="block text-[10px] uppercase tracking-wide text-stone-500">Readiness</span>
-                      <strong className="mt-1 block text-base capitalize text-stone-950">{application.readiness || "Unknown"}</strong>
+                      <span className="block text-[10px] uppercase tracking-wide text-stone-500">
+                        Readiness
+                      </span>
+                      <strong className="mt-1 block text-base capitalize text-stone-950">
+                        {application.readiness || "Unknown"}
+                      </strong>
                     </div>
                   </div>
                 </div>
 
                 <details className="mt-5 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3">
-                  <summary className="cursor-pointer text-sm font-medium text-stone-700">Application answers</summary>
+                  <summary className="cursor-pointer text-sm font-medium text-stone-700">
+                    Application answers
+                  </summary>
                   <div className="mt-4 grid gap-4 text-sm leading-6 text-stone-600 md:grid-cols-3">
-                    <div><strong className="block text-stone-950">What feels stuck</strong>{application.current_challenge || "Not provided"}</div>
-                    <div><strong className="block text-stone-950">Desired outcome</strong>{application.desired_outcome || "Not provided"}</div>
-                    <div><strong className="block text-stone-950">Current offer</strong>{application.current_offer || "Not provided"}</div>
+                    <div>
+                      <strong className="block text-stone-950">What feels stuck</strong>
+                      {application.current_challenge || "Not provided"}
+                    </div>
+                    <div>
+                      <strong className="block text-stone-950">Desired outcome</strong>
+                      {application.desired_outcome || "Not provided"}
+                    </div>
+                    <div>
+                      <strong className="block text-stone-950">Current offer</strong>
+                      {application.current_offer || "Not provided"}
+                    </div>
                   </div>
                 </details>
 
@@ -299,13 +352,18 @@ export function WorkWithMePipeline() {
                   </p>
                 </div>
 
-                <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-stone-500" htmlFor={`notes-${application.id}`}>
+                <label
+                  className="mt-5 block text-xs font-semibold uppercase tracking-wide text-stone-500"
+                  htmlFor={`notes-${application.id}`}
+                >
                   Notes
                 </label>
                 <textarea
                   id={`notes-${application.id}`}
                   value={notes[application.id] || ""}
-                  onChange={event => setNotes(current => ({ ...current, [application.id]: event.target.value }))}
+                  onChange={event =>
+                    setNotes(current => ({ ...current, [application.id]: event.target.value }))
+                  }
                   rows={3}
                   className="mt-2 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-950"
                   placeholder="Add call notes or the next follow-up."
@@ -350,6 +408,16 @@ export function WorkWithMePipeline() {
                       Mark call booked
                     </button>
                   ) : null}
+                  {canCompleteCall ? (
+                    <button
+                      type="button"
+                      disabled={isBusy}
+                      onClick={() => updateApplication(application.id, "call_completed")}
+                      className="rounded-full border border-stone-300 px-4 py-2 text-xs font-medium text-stone-700 hover:border-stone-950 disabled:opacity-40"
+                    >
+                      Mark call complete
+                    </button>
+                  ) : null}
                   {canCreateCheckout ? (
                     <button
                       type="button"
@@ -379,7 +447,8 @@ export function WorkWithMePipeline() {
                 {application.checkout_url ? (
                   <div className="mt-3">
                     <p className="text-xs text-stone-500">
-                      Payment link created {dateLabel(application.checkout_created_at)}. The copy button checks that it is still active before copying it.
+                      Payment link created {dateLabel(application.checkout_created_at)}. The copy
+                      button checks that it is still active before copying it.
                     </p>
                   </div>
                 ) : null}

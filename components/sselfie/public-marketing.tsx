@@ -14,109 +14,131 @@ import vaultMayaStyles from "@/components/vault-maya/vault-maya-landing.module.c
 // ─── Vercel Blob images ───────────────────────────────────────────────────────
 const BLOB = "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com"
 const IMG = {
-  hero:        `${BLOB}/sandra-portrait-after.jpg`,
-  homeHero:    "/academy/visibility-suite/sandra-hero.webp",
+  hero: `${BLOB}/sandra-portrait-after.jpg`,
+  homeHero: "/academy/visibility-suite/sandra-hero.webp",
   homeFounder: "/academy/visibility-suite/sandra-founder.webp",
-  homeStudio:  "/academy/visibility-suite/hero.webp",
-  homeSelfie:  "/images/selfie-guide/img-editorial-dark.webp",
-  before:      `${BLOB}/sandra-portrait-before.jpg`,
-  after:       `${BLOB}/sandra-portrait-after.jpg`,
-  founder:     `${BLOB}/maya-pro-generations/c8cjbbd6ehrmt0cvhqasfj7q30-CVfFXH8JOv3NtYQFMbPU0opeNPo6De.png`,
-  feed:        `${BLOB}/maya-pro-generations/6sb8n7v1g9rmr0cvhyjr95kg5g-5IoNZKlXP8Umw6U040gkJeTer43jLY.png`,
-  dark:        `${BLOB}/maya-generations/8227-Y8Hi0TmnDBrZmgOGBbRXt1jk4eigZR.png`,
-  pricingBg:   `${BLOB}/maya-pro-generations/xjn21cxbtdrmt0cvdxpsx38cnw-Z4oXOAZDQKa9g4KGDjiEYtRGQl5moM.png`,
-  whoItsFor:   `${BLOB}/tmpbmq4nfg7.png`,
+  homeStudio: "/academy/visibility-suite/hero.webp",
+  homeSelfie: "/images/selfie-guide/img-editorial-dark.webp",
+  before: `${BLOB}/sandra-portrait-before.jpg`,
+  after: `${BLOB}/sandra-portrait-after.jpg`,
+  founder: `${BLOB}/maya-pro-generations/c8cjbbd6ehrmt0cvhqasfj7q30-CVfFXH8JOv3NtYQFMbPU0opeNPo6De.png`,
+  feed: `${BLOB}/maya-pro-generations/6sb8n7v1g9rmr0cvhyjr95kg5g-5IoNZKlXP8Umw6U040gkJeTer43jLY.png`,
+  dark: `${BLOB}/maya-generations/8227-Y8Hi0TmnDBrZmgOGBbRXt1jk4eigZR.png`,
+  pricingBg: `${BLOB}/maya-pro-generations/xjn21cxbtdrmt0cvdxpsx38cnw-Z4oXOAZDQKa9g4KGDjiEYtRGQl5moM.png`,
+  whoItsFor: `${BLOB}/tmpbmq4nfg7.png`,
   presetBeige: `${BLOB}/Beige%20Aesthetic.png`,
   presetLight: `${BLOB}/Light%20%26%20Minimalistic.png`,
-  presetDark:  `${BLOB}/darkandmoody.png`,
+  presetDark: `${BLOB}/darkandmoody.png`,
   // Starter Kit local assets
-  skHero:          "/images/starter-kit/hero.png",
-  skMockup:        "/images/starter-kit/starter-kit-product-mockup-v3.webp",
-  skPresetColl:    "/images/starter-kit/preset-collection-vertical-v3.webp",
-  skLifestyle:     "/images/starter-kit/lifestyle.png",
+  skHero: "/images/starter-kit/hero.png",
+  skMockup: "/images/starter-kit/starter-kit-product-mockup-v3.webp",
+  skPresetColl: "/images/starter-kit/preset-collection-vertical-v3.webp",
+  skLifestyle: "/images/starter-kit/lifestyle.png",
   skBaLightDreamy: "/images/starter-kit/ba-light-dreamy.png",
-  skBaNordicDeep:  "/images/starter-kit/ba-nordic-deep.png",
-  skBaDarkMoody:   "/images/starter-kit/ba-dark-moody.png",
+  skBaNordicDeep: "/images/starter-kit/ba-nordic-deep.png",
+  skBaDarkMoody: "/images/starter-kit/ba-dark-moody.png",
   // Work With Me sprint assets
-  wwmHero:        "/images/work-with-me/sprint-hero-new.webp",
-  wwmFounder:     "/images/work-with-me/sandra-founder-new.webp",
-  wwmHowIWork:    "/images/work-with-me/sandra-how-i-work-new.webp",
-  wwmEditorial:   "/images/work-with-me/sprint-editorial-new.webp",
+  wwmHero: "/images/work-with-me/sprint-hero-new.webp",
+  wwmFounder: "/images/work-with-me/sandra-founder-new.webp",
+  wwmHowIWork: "/images/work-with-me/sandra-how-i-work-new.webp",
+  wwmEditorial: "/images/work-with-me/sprint-editorial-new.webp",
   wwmApplication: "/images/work-with-me/sprint-application-new.webp",
 }
 
 // SUITE landing assets - Sandra-approved vault collection images (BRIDGE-01 Phase B)
 const SUITE_IMG = {
-  honest:      "/images/ai-prompts/clean-girl-morning-shot-1.jpg",
+  honest: "/images/ai-prompts/clean-girl-morning-shot-1.jpg",
 }
 
 // ─── Design tokens - SSELFIE workbook system ─────────────────────────────────
 const C = {
   // Core surfaces
-  ink:          "var(--color-obsidian)",
-  inkSoft:      "var(--stone-dark)",
-  inkLift:      "var(--stone-dark)",
-  cream:        "var(--color-porcelain)",
-  creamWarm:    "var(--color-pearl)",
-  creamDeep:    "var(--color-whisper)",
-  stone:        "var(--stone)",
+  ink: "var(--color-obsidian)",
+  inkSoft: "var(--stone-dark)",
+  inkLift: "var(--stone-dark)",
+  cream: "var(--color-porcelain)",
+  creamWarm: "var(--color-pearl)",
+  creamDeep: "var(--color-whisper)",
+  stone: "var(--stone)",
   // Text on dark
-  onDark:       "var(--color-porcelain)",
-  onDarkSub:    "var(--color-whisper)",
-  onDarkMuted:  "var(--stone)",
+  onDark: "var(--color-porcelain)",
+  onDarkSub: "var(--color-whisper)",
+  onDarkMuted: "var(--stone)",
   // Text on cream
-  onCream:      "var(--color-obsidian)",
-  onCreamSub:   "var(--color-smoke)",
+  onCream: "var(--color-obsidian)",
+  onCreamSub: "var(--color-smoke)",
   onCreamMuted: "var(--stone)",
   // Dividers
-  divDark:      "color-mix(in srgb, var(--color-whisper) 16%, transparent)",
-  divDarkSoft:  "color-mix(in srgb, var(--color-whisper) 9%, transparent)",
-  divDarkStrong:"color-mix(in srgb, var(--color-whisper) 26%, transparent)",
-  divCream:     "color-mix(in srgb, var(--color-obsidian) 10%, transparent)",
+  divDark: "color-mix(in srgb, var(--color-whisper) 16%, transparent)",
+  divDarkSoft: "color-mix(in srgb, var(--color-whisper) 9%, transparent)",
+  divDarkStrong: "color-mix(in srgb, var(--color-whisper) 26%, transparent)",
+  divCream: "color-mix(in srgb, var(--color-obsidian) 10%, transparent)",
   // Hero overlay
-  heroGrad:     "linear-gradient(to bottom, color-mix(in srgb, var(--color-obsidian) 34%, transparent) 0%, color-mix(in srgb, var(--color-obsidian) 10%, transparent) 38%, color-mix(in srgb, var(--color-obsidian) 90%, transparent) 100%)",
+  heroGrad:
+    "linear-gradient(to bottom, color-mix(in srgb, var(--color-obsidian) 34%, transparent) 0%, color-mix(in srgb, var(--color-obsidian) 10%, transparent) 38%, color-mix(in srgb, var(--color-obsidian) 90%, transparent) 100%)",
 }
 
 const F = {
   serif: "'Cormorant Garamond', Georgia, serif",
-  sans:  "var(--font-inter, Inter, -apple-system, sans-serif)",
+  sans: "var(--font-inter, Inter, -apple-system, sans-serif)",
 }
 
 // ─── Letterpress text shadows ─────────────────────────────────────────────────
 const LP = {
-  dark:  "0 2px 8px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06), 1px 1px 0 rgba(0,0,0,0.5)",
+  dark: "0 2px 8px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06), 1px 1px 0 rgba(0,0,0,0.5)",
   cream: "1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(10,10,10,0.08)",
 }
 
 // ─── Typography ───────────────────────────────────────────────────────────────
-function ty(
-  variant: "eyebrow" | "h1" | "h2" | "h3" | "body",
-  dark: boolean,
-): React.CSSProperties {
+function ty(variant: "eyebrow" | "h1" | "h2" | "h3" | "body", dark: boolean): React.CSSProperties {
   const d = dark
   switch (variant) {
-    case "eyebrow": return {
-      fontFamily: F.sans, fontSize: "10px", letterSpacing: "0.5em",
-      textTransform: "uppercase", color: d ? C.onDarkMuted : C.onCreamMuted, display: "block",
-    }
-    case "h1": return {
-      fontFamily: F.serif, fontWeight: 300, fontSize: "clamp(36px, 7vw, 70px)",
-      lineHeight: 1.03, letterSpacing: "-0.02em",
-      color: d ? C.onDark : C.onCream, textShadow: d ? LP.dark : LP.cream,
-    }
-    case "h2": return {
-      fontFamily: F.serif, fontWeight: 300, fontSize: "clamp(28px, 4.5vw, 48px)",
-      lineHeight: 1.07, letterSpacing: "-0.015em",
-      color: d ? C.onDark : C.onCream, textShadow: d ? LP.dark : LP.cream,
-    }
-    case "h3": return {
-      fontFamily: F.serif, fontWeight: 300, fontSize: "clamp(19px, 2.5vw, 26px)",
-      lineHeight: 1.18, color: d ? C.onDark : C.onCream, textShadow: d ? LP.dark : LP.cream,
-    }
-    case "body": return {
-      fontFamily: F.sans, fontSize: "15px", lineHeight: 1.78,
-      fontWeight: 400, color: d ? C.onDarkSub : C.onCreamSub,
-    }
+    case "eyebrow":
+      return {
+        fontFamily: F.sans,
+        fontSize: "10px",
+        letterSpacing: "0.5em",
+        textTransform: "uppercase",
+        color: d ? C.onDarkMuted : C.onCreamMuted,
+        display: "block",
+      }
+    case "h1":
+      return {
+        fontFamily: F.serif,
+        fontWeight: 300,
+        fontSize: "clamp(36px, 7vw, 70px)",
+        lineHeight: 1.03,
+        letterSpacing: "-0.02em",
+        color: d ? C.onDark : C.onCream,
+        textShadow: d ? LP.dark : LP.cream,
+      }
+    case "h2":
+      return {
+        fontFamily: F.serif,
+        fontWeight: 300,
+        fontSize: "clamp(28px, 4.5vw, 48px)",
+        lineHeight: 1.07,
+        letterSpacing: "-0.015em",
+        color: d ? C.onDark : C.onCream,
+        textShadow: d ? LP.dark : LP.cream,
+      }
+    case "h3":
+      return {
+        fontFamily: F.serif,
+        fontWeight: 300,
+        fontSize: "clamp(19px, 2.5vw, 26px)",
+        lineHeight: 1.18,
+        color: d ? C.onDark : C.onCream,
+        textShadow: d ? LP.dark : LP.cream,
+      }
+    case "body":
+      return {
+        fontFamily: F.sans,
+        fontSize: "15px",
+        lineHeight: 1.78,
+        fontWeight: 400,
+        color: d ? C.onDarkSub : C.onCreamSub,
+      }
   }
 }
 
@@ -126,11 +148,21 @@ function SvgPaperDefs() {
     <svg width="0" height="0" style={{ position: "absolute", pointerEvents: "none" }} aria-hidden>
       <defs>
         <filter id="sa-noise-dark" x="0%" y="0%" width="100%" height="100%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="4" stitchTiles="stitch" />
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.65"
+            numOctaves="4"
+            stitchTiles="stitch"
+          />
           <feColorMatrix type="saturate" values="0" />
         </filter>
         <filter id="sa-noise-cream" x="0%" y="0%" width="100%" height="100%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="4" stitchTiles="stitch" />
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.65"
+            numOctaves="4"
+            stitchTiles="stitch"
+          />
           <feColorMatrix type="saturate" values="0" />
         </filter>
       </defs>
@@ -143,11 +175,14 @@ function PaperTexture({ dark }: { dark: boolean }) {
     <svg
       aria-hidden
       style={{
-        position:       "absolute", inset: 0, width: "100%", height: "100%",
-        pointerEvents:  "none",
-        opacity:        dark ? 0.055 : 0.18,
-        mixBlendMode:   (dark ? "screen" : "multiply") as React.CSSProperties["mixBlendMode"],
-        zIndex:         1,
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none",
+        opacity: dark ? 0.055 : 0.18,
+        mixBlendMode: (dark ? "screen" : "multiply") as React.CSSProperties["mixBlendMode"],
+        zIndex: 1,
       }}
     >
       <rect width="100%" height="100%" filter={`url(#sa-noise-${dark ? "dark" : "cream"})`} />
@@ -159,9 +194,9 @@ function PaperTexture({ dark }: { dark: boolean }) {
 function cardSx(dark: boolean, padded = true): React.CSSProperties {
   return {
     background: dark ? C.inkLift : C.creamWarm,
-    border:     `1px solid ${dark ? C.divDark : C.divCream}`,
-    padding:    padded ? "28px" : "16px",
-    boxShadow:  dark
+    border: `1px solid ${dark ? C.divDark : C.divCream}`,
+    padding: padded ? "28px" : "16px",
+    boxShadow: dark
       ? "inset 0 1px 0 rgba(255,255,255,0.035)"
       : "inset 0 1px 0 rgba(255,255,255,0.7), 0 2px 12px rgba(0,0,0,0.05)",
   }
@@ -169,9 +204,15 @@ function cardSx(dark: boolean, padded = true): React.CSSProperties {
 
 // ─── Before / After drag slider ──────────────────────────────────────────────
 function BeforeAfterSlider({
-  before, after, beforeLabel = "Before", afterLabel = "After",
+  before,
+  after,
+  beforeLabel = "Before",
+  afterLabel = "After",
 }: {
-  before: string; after: string; beforeLabel?: string; afterLabel?: string
+  before: string
+  after: string
+  beforeLabel?: string
+  afterLabel?: string
 }) {
   const [pos, setPos] = useState(50)
   return (
@@ -179,93 +220,152 @@ function BeforeAfterSlider({
       className="mf relative overflow-hidden select-none"
       style={{ aspectRatio: "3/4", cursor: "ew-resize", touchAction: "none" }}
     >
-      <img src={after} alt={afterLabel} className="absolute inset-0 w-full h-full object-cover" draggable={false} />
+      <img
+        src={after}
+        alt={afterLabel}
+        className="absolute inset-0 w-full h-full object-cover"
+        draggable={false}
+      />
       <div className="absolute inset-0 overflow-hidden" style={{ width: `${pos}%` }}>
-        <img src={before} alt={beforeLabel} className="absolute inset-0 h-full object-cover"
-          style={{ width: `${10000 / pos}%`, maxWidth: "none" }} draggable={false} />
+        <img
+          src={before}
+          alt={beforeLabel}
+          className="absolute inset-0 h-full object-cover"
+          style={{ width: `${10000 / pos}%`, maxWidth: "none" }}
+          draggable={false}
+        />
       </div>
       {/* Divider line + handle */}
-      <div className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none"
-        style={{ left: `${pos}%`, transform: "translateX(-50%)", zIndex: 10 }}>
-        <div className="w-px h-full" style={{ background: "color-mix(in srgb, var(--color-porcelain) 65%, transparent)" }} />
-        <div className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center"
+      <div
+        className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none"
+        style={{ left: `${pos}%`, transform: "translateX(-50%)", zIndex: 10 }}
+      >
+        <div
+          className="w-px h-full"
+          style={{ background: "color-mix(in srgb, var(--color-porcelain) 65%, transparent)" }}
+        />
+        <div
+          className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center"
           style={{
-            width: "34px", height: "34px", borderRadius: "50%",
+            width: "34px",
+            height: "34px",
+            borderRadius: "50%",
             background: "color-mix(in srgb, var(--color-porcelain) 95%, transparent)",
             boxShadow: "0 2px 10px rgba(0,0,0,0.45)",
-          }}>
+          }}
+        >
           <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
-            <path d="M1 5h12M1 5L4 2M1 5l3 3M13 5l-3-3M13 5l-3 3" stroke={C.ink} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path
+              d="M1 5h12M1 5L4 2M1 5l3 3M13 5l-3-3M13 5l-3 3"
+              stroke={C.ink}
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </div>
       </div>
       {/* Labels */}
-      <span className="absolute top-4 left-4 pointer-events-none"
-        style={{ ...ty("eyebrow", true), color: "color-mix(in srgb, var(--color-porcelain) 85%, transparent)", background: "color-mix(in srgb, var(--color-obsidian) 50%, transparent)", padding: "4px 10px" }}>
+      <span
+        className="absolute top-4 left-4 pointer-events-none"
+        style={{
+          ...ty("eyebrow", true),
+          color: "color-mix(in srgb, var(--color-porcelain) 85%, transparent)",
+          background: "color-mix(in srgb, var(--color-obsidian) 50%, transparent)",
+          padding: "4px 10px",
+        }}
+      >
         {beforeLabel}
       </span>
-      <span className="absolute top-4 right-4 pointer-events-none"
-        style={{ ...ty("eyebrow", true), color: "color-mix(in srgb, var(--color-porcelain) 85%, transparent)", background: "color-mix(in srgb, var(--color-obsidian) 50%, transparent)", padding: "4px 10px" }}>
+      <span
+        className="absolute top-4 right-4 pointer-events-none"
+        style={{
+          ...ty("eyebrow", true),
+          color: "color-mix(in srgb, var(--color-porcelain) 85%, transparent)",
+          background: "color-mix(in srgb, var(--color-obsidian) 50%, transparent)",
+          padding: "4px 10px",
+        }}
+      >
         {afterLabel}
       </span>
-      <input type="range" min={2} max={98} value={pos}
-        onChange={(e) => setPos(Number(e.target.value))}
+      <input
+        type="range"
+        min={2}
+        max={98}
+        value={pos}
+        onChange={e => setPos(Number(e.target.value))}
         className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize"
-        style={{ zIndex: 20 }} />
+        style={{ zIndex: 20 }}
+      />
     </div>
   )
 }
 
 // ─── Button ───────────────────────────────────────────────────────────────────
 function Btn({
-  href, onClick, children, ghost = false, full = false, disabled = false, surface = "dark",
+  href,
+  onClick,
+  children,
+  ghost = false,
+  full = false,
+  disabled = false,
+  surface = "dark",
 }: {
-  href?:     string
-  onClick?:  () => void
-  children:  ReactNode
-  ghost?:    boolean
-  full?:     boolean
+  href?: string
+  onClick?: () => void
+  children: ReactNode
+  ghost?: boolean
+  full?: boolean
   disabled?: boolean
-  surface?:  "dark" | "cream"
+  surface?: "dark" | "cream"
 }) {
   const dark = surface === "dark"
   // Solid: cream button on dark bg; ink button on cream bg
-  const solidBg     = dark ? C.cream    : C.ink
-  const solidText   = dark ? C.ink      : C.cream
+  const solidBg = dark ? C.cream : C.ink
+  const solidText = dark ? C.ink : C.cream
   const solidShadow = dark
     ? "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)"
     : "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -2px 0 rgba(0,0,0,0.45), 0 1px 5px rgba(0,0,0,0.25)"
   const ghostBorder = dark
     ? "color-mix(in srgb, var(--color-whisper) 22%, transparent)"
     : "color-mix(in srgb, var(--color-obsidian) 22%, transparent)"
-  const ghostText   = dark ? C.onDarkSub : C.onCreamSub
+  const ghostText = dark ? C.onDarkSub : C.onCreamSub
 
   const base: React.CSSProperties = {
-    display:         "inline-flex",
-    alignItems:      "center",
-    justifyContent:  "center",
-    padding:         "13px 32px",
-    minHeight:       "46px",
-    background:      ghost ? "transparent" : solidBg,
-    color:           ghost ? ghostText : solidText,
-    fontSize:        "10px",
-    fontFamily:      F.sans,
-    fontWeight:      600,
-    letterSpacing:   "0.22em",
-    textTransform:   "uppercase",
-    textDecoration:  "none",
-    border:          `1px solid ${ghost ? ghostBorder : "transparent"}`,
-    boxShadow:       ghost ? "none" : solidShadow,
-    cursor:          disabled ? "not-allowed" : "pointer",
-    transition:      "opacity 0.2s, box-shadow 0.2s",
-    width:           full ? "100%" : "fit-content",
-    opacity:         disabled ? 0.5 : 1,
-    whiteSpace:      "nowrap",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "13px 32px",
+    minHeight: "46px",
+    background: ghost ? "transparent" : solidBg,
+    color: ghost ? ghostText : solidText,
+    fontSize: "10px",
+    fontFamily: F.sans,
+    fontWeight: 600,
+    letterSpacing: "0.22em",
+    textTransform: "uppercase",
+    textDecoration: "none",
+    border: `1px solid ${ghost ? ghostBorder : "transparent"}`,
+    boxShadow: ghost ? "none" : solidShadow,
+    cursor: disabled ? "not-allowed" : "pointer",
+    transition: "opacity 0.2s, box-shadow 0.2s",
+    width: full ? "100%" : "fit-content",
+    opacity: disabled ? 0.5 : 1,
+    whiteSpace: "nowrap",
     // Zero border-radius - SSELFIE Agents system
   }
 
-  if (href) return <Link href={href} style={base} onClick={onClick}>{children}</Link>
-  return <button onClick={onClick} style={base} disabled={disabled}>{children}</button>
+  if (href)
+    return (
+      <Link href={href} style={base} onClick={onClick}>
+        {children}
+      </Link>
+    )
+  return (
+    <button onClick={onClick} style={base} disabled={disabled}>
+      {children}
+    </button>
+  )
 }
 
 const ATTRIBUTION_PARAMS_TO_PRESERVE = [
@@ -293,7 +393,7 @@ function usePreservedAttributionHref(href: string) {
   const [path, rawQuery = ""] = href.split("?")
   const nextParams = new URLSearchParams(rawQuery)
 
-  ATTRIBUTION_PARAMS_TO_PRESERVE.forEach((key) => {
+  ATTRIBUTION_PARAMS_TO_PRESERVE.forEach(key => {
     const value = searchParams.get(key)
     if (value && !nextParams.has(key)) {
       nextParams.set(key, value)
@@ -325,19 +425,20 @@ export function PublicPageShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const io = new IntersectionObserver(
-      (entries) => entries.forEach((e) => {
-        if (e.isIntersecting) {
-          const el = e.target as HTMLElement
-          el.style.opacity   = "1"
-          el.style.transform = "translateY(0)"
-        }
-      }),
-      { threshold: 0.08 },
+      entries =>
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            const el = e.target as HTMLElement
+            el.style.opacity = "1"
+            el.style.transform = "translateY(0)"
+          }
+        }),
+      { threshold: 0.08 }
     )
-    document.querySelectorAll(".mf").forEach((el) => {
+    document.querySelectorAll(".mf").forEach(el => {
       const h = el as HTMLElement
-      h.style.opacity    = "0"
-      h.style.transform  = "translateY(20px)"
+      h.style.opacity = "0"
+      h.style.transform = "translateY(20px)"
       h.style.transition = "opacity 0.7s ease, transform 0.7s ease"
       io.observe(h)
     })
@@ -345,7 +446,15 @@ export function PublicPageShell({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <div style={{ minHeight: "100vh", background: C.ink, overflowX: "hidden", color: C.onDark, fontFamily: F.sans }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: C.ink,
+        overflowX: "hidden",
+        color: C.onDark,
+        fontFamily: F.sans,
+      }}
+    >
       <SvgPaperDefs />
       {showIntro ? <IntroScreen /> : null}
       {children}
@@ -432,29 +541,48 @@ export function PublicNav({ loginHref = "/auth/login" }: { loginHref?: string })
     <header
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 md:px-8"
       style={{
-        height:     "58px",
+        height: "58px",
         background: "color-mix(in srgb, var(--color-obsidian) 88%, transparent)",
         backdropFilter: "blur(16px)",
         borderBottom: `1px solid ${C.divDark}`,
       }}
     >
-      <Link href="/"
-        style={{ fontFamily: F.serif, fontSize: "18px", color: C.onDark, letterSpacing: "0.35em", textTransform: "uppercase", fontWeight: 300, textDecoration: "none" }}>
+      <Link
+        href="/"
+        style={{
+          fontFamily: F.serif,
+          fontSize: "18px",
+          color: C.onDark,
+          letterSpacing: "0.35em",
+          textTransform: "uppercase",
+          fontWeight: 300,
+          textDecoration: "none",
+        }}
+      >
         SSELFIE
       </Link>
 
       <nav aria-label="Main navigation" className="hidden lg:flex items-center gap-7">
-        {links.map((l) => (
-          <Link key={l.href} href={l.href}
-            style={{ ...ty("eyebrow", true), textDecoration: "none" }}>
+        {links.map(l => (
+          <Link
+            key={l.href}
+            href={l.href}
+            style={{ ...ty("eyebrow", true), textDecoration: "none" }}
+          >
             {l.label}
           </Link>
         ))}
       </nav>
 
       <div className="flex items-center gap-4">
-        <Link href={loginHref} style={{ ...ty("eyebrow", true), textDecoration: "none" }}>Login</Link>
-        <span className="hidden lg:block"><Btn href="/ai-prompts" surface="dark">Start Free</Btn></span>
+        <Link href={loginHref} style={{ ...ty("eyebrow", true), textDecoration: "none" }}>
+          Login
+        </Link>
+        <span className="hidden lg:block">
+          <Btn href="/ai-prompts" surface="dark">
+            Start Free
+          </Btn>
+        </span>
         <button
           type="button"
           aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -495,9 +623,20 @@ export function PublicNav({ loginHref = "/auth/login" }: { loginHref?: string })
 // ─── Footer ───────────────────────────────────────────────────────────────────
 export function PublicFooter() {
   return (
-    <footer style={{ background: C.ink, borderTop: `1px solid ${C.divDark}`, padding: "56px 24px 40px" }}>
+    <footer
+      style={{ background: C.ink, borderTop: `1px solid ${C.divDark}`, padding: "56px 24px 40px" }}
+    >
       <div className="max-w-5xl mx-auto flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-        <p style={{ fontFamily: F.serif, fontSize: "19px", color: C.onDark, letterSpacing: "0.35em", textTransform: "uppercase", fontWeight: 300 }}>
+        <p
+          style={{
+            fontFamily: F.serif,
+            fontSize: "19px",
+            color: C.onDark,
+            letterSpacing: "0.35em",
+            textTransform: "uppercase",
+            fontWeight: 300,
+          }}
+        >
           SSELFIE
         </p>
         <div className="flex flex-wrap gap-6">
@@ -505,21 +644,32 @@ export function PublicFooter() {
             "/ai-prompts:Free AI Prompts",
             "/prompt-vault:Prompt Vault",
             "/join/studio:SSELFIE SUITE",
-          ].map((s) => {
+          ].map(s => {
             const [href, label] = s.split(":")
             return (
-              <Link key={href} href={href} style={{ ...ty("eyebrow", true), textDecoration: "none" }}>
+              <Link
+                key={href}
+                href={href}
+                style={{ ...ty("eyebrow", true), textDecoration: "none" }}
+              >
                 {label}
               </Link>
             )
           })}
         </div>
       </div>
-      <div className="max-w-5xl mx-auto mt-8 pt-5 flex gap-6" style={{ borderTop: `1px solid ${C.divDark}` }}>
+      <div
+        className="max-w-5xl mx-auto mt-8 pt-5 flex gap-6"
+        style={{ borderTop: `1px solid ${C.divDark}` }}
+      >
         <span style={ty("eyebrow", true)}>© 2026 SSELFIE Studio</span>
-        {["/terms:Terms", "/privacy:Privacy"].map((s) => {
+        {["/terms:Terms", "/privacy:Privacy"].map(s => {
           const [href, label] = s.split(":")
-          return <Link key={href} href={href} style={{ ...ty("eyebrow", true), textDecoration: "none" }}>{label}</Link>
+          return (
+            <Link key={href} href={href} style={{ ...ty("eyebrow", true), textDecoration: "none" }}>
+              {label}
+            </Link>
+          )
         })}
       </div>
     </footer>
@@ -528,17 +678,26 @@ export function PublicFooter() {
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 function Hero({
-  eyebrow, title, body, primary, primaryNode, secondary, imageSrc, imageAlt = "",
-  minHeight = "100dvh", imagePosition = "50% 22%", contentPaddingBottom = "68px",
+  eyebrow,
+  title,
+  body,
+  primary,
+  primaryNode,
+  secondary,
+  imageSrc,
+  imageAlt = "",
+  minHeight = "100dvh",
+  imagePosition = "50% 22%",
+  contentPaddingBottom = "68px",
 }: {
-  eyebrow:    string
-  title:      ReactNode
-  body:       ReactNode
-  primary?:   { href: string; label: string; onClick?: () => void }
+  eyebrow: string
+  title: ReactNode
+  body: ReactNode
+  primary?: { href: string; label: string; onClick?: () => void }
   primaryNode?: ReactNode
   secondary?: { href: string; label: string }
-  imageSrc:   string
-  imageAlt?:  string
+  imageSrc: string
+  imageAlt?: string
   minHeight?: string
   imagePosition?: string
   contentPaddingBottom?: string
@@ -548,24 +707,55 @@ function Hero({
       className="relative"
       style={{ minHeight, overflow: "hidden", display: "flex", flexDirection: "column" }}
     >
-      <img src={imageSrc} alt={imageAlt} aria-hidden={imageAlt ? undefined : true}
-        fetchPriority="high" decoding="async"
+      <img
+        src={imageSrc}
+        alt={imageAlt}
+        aria-hidden={imageAlt ? undefined : true}
+        fetchPriority="high"
+        decoding="async"
         className="absolute inset-0 w-full h-full object-cover"
-        style={{ objectPosition: imagePosition }} />
+        style={{ objectPosition: imagePosition }}
+      />
       <div className="absolute inset-0" style={{ background: C.heroGrad }} />
       <PaperTexture dark />
 
-      <div className="relative flex flex-col items-center justify-end text-center flex-1"
-        style={{ padding: `0 20px ${contentPaddingBottom}`, paddingTop: "80px", zIndex: 2 }}>
+      <div
+        className="relative flex flex-col items-center justify-end text-center flex-1"
+        style={{ padding: `0 20px ${contentPaddingBottom}`, paddingTop: "80px", zIndex: 2 }}
+      >
         <div className="max-w-2xl mx-auto w-full">
-          <span className="mf inline-block mb-5" style={ty("eyebrow", true)}>{eyebrow}</span>
-          <h1 className="mf mb-5" style={{ ...ty("h1", true), transitionDelay: "0.05s" }}>{title}</h1>
-          <div className="mf mb-8 mx-auto" style={{ ...ty("body", true), color: C.onDarkSub, maxWidth: "480px", transitionDelay: "0.1s" }}>
+          <span className="mf inline-block mb-5" style={ty("eyebrow", true)}>
+            {eyebrow}
+          </span>
+          <h1 className="mf mb-5" style={{ ...ty("h1", true), transitionDelay: "0.05s" }}>
+            {title}
+          </h1>
+          <div
+            className="mf mb-8 mx-auto"
+            style={{
+              ...ty("body", true),
+              color: C.onDarkSub,
+              maxWidth: "480px",
+              transitionDelay: "0.1s",
+            }}
+          >
             {body}
           </div>
-          <div className="mf flex flex-col sm:flex-row gap-3 items-center justify-center" style={{ transitionDelay: "0.15s" }}>
-            {primaryNode ?? (primary && <Btn href={primary.href} onClick={primary.onClick} surface="dark">{primary.label}</Btn>)}
-            {secondary && <Btn href={secondary.href} ghost surface="dark">{secondary.label}</Btn>}
+          <div
+            className="mf flex flex-col sm:flex-row gap-3 items-center justify-center"
+            style={{ transitionDelay: "0.15s" }}
+          >
+            {primaryNode ??
+              (primary && (
+                <Btn href={primary.href} onClick={primary.onClick} surface="dark">
+                  {primary.label}
+                </Btn>
+              ))}
+            {secondary && (
+              <Btn href={secondary.href} ghost surface="dark">
+                {secondary.label}
+              </Btn>
+            )}
           </div>
         </div>
       </div>
@@ -575,22 +765,47 @@ function Hero({
 
 // ─── Section ──────────────────────────────────────────────────────────────────
 function Section({
-  eyebrow, title, children, dark = true, narrow = false, id,
+  eyebrow,
+  title,
+  children,
+  dark = true,
+  narrow = false,
+  id,
 }: {
   eyebrow?: string
-  title?:   ReactNode
+  title?: ReactNode
   children: ReactNode
-  dark?:    boolean
-  narrow?:  boolean
-  id?:      string
+  dark?: boolean
+  narrow?: boolean
+  id?: string
 }) {
   const surface = dark ? C.ink : C.cream
   return (
-    <section id={id} style={{ position: "relative", background: surface, padding: "clamp(60px, 8vw, 88px) clamp(18px, 4vw, 24px)", overflow: "hidden", scrollMarginTop: "60px" }}>
+    <section
+      id={id}
+      style={{
+        position: "relative",
+        background: surface,
+        padding: "clamp(60px, 8vw, 88px) clamp(18px, 4vw, 24px)",
+        overflow: "hidden",
+        scrollMarginTop: "60px",
+      }}
+    >
       <PaperTexture dark={dark} />
-      <div className={`mx-auto relative ${narrow ? "max-w-3xl" : "max-w-6xl"}`} style={{ zIndex: 2 }}>
-        {eyebrow && <span className="mf block mb-4" style={ty("eyebrow", dark)}>{eyebrow}</span>}
-        {title   && <h2 className="mf mb-10" style={ty("h2", dark)}>{title}</h2>}
+      <div
+        className={`mx-auto relative ${narrow ? "max-w-3xl" : "max-w-6xl"}`}
+        style={{ zIndex: 2 }}
+      >
+        {eyebrow && (
+          <span className="mf block mb-4" style={ty("eyebrow", dark)}>
+            {eyebrow}
+          </span>
+        )}
+        {title && (
+          <h2 className="mf mb-10" style={ty("h2", dark)}>
+            {title}
+          </h2>
+        )}
         {children}
       </div>
     </section>
@@ -599,40 +814,77 @@ function Section({
 
 // ─── Split (text + image) ────────────────────────────────────────────────────
 function Split({
-  eyebrow, title, body, imgSrc, imgAlt = "", imgFirst = false, dark = true, cta,
+  eyebrow,
+  title,
+  body,
+  imgSrc,
+  imgAlt = "",
+  imgFirst = false,
+  dark = true,
+  cta,
 }: {
-  eyebrow?:  string
-  title?:    ReactNode
-  body:      ReactNode
-  imgSrc:    string
-  imgAlt?:   string
+  eyebrow?: string
+  title?: ReactNode
+  body: ReactNode
+  imgSrc: string
+  imgAlt?: string
   imgFirst?: boolean
-  dark?:     boolean
-  cta?:      ReactNode
+  dark?: boolean
+  cta?: ReactNode
 }) {
   const surface = dark ? C.ink : C.cream
   const img = (
     <div className="mf relative overflow-hidden" style={{ aspectRatio: "4/5" }}>
-      <img src={imgSrc} alt={imgAlt} loading="lazy" decoding="async" className="w-full h-full object-cover" />
-      <div className="absolute inset-0"
-        style={{ background: dark
-          ? "linear-gradient(to bottom, color-mix(in srgb, var(--color-obsidian) 4%, transparent) 0%, color-mix(in srgb, var(--color-obsidian) 30%, transparent) 100%)"
-          : "linear-gradient(to bottom, color-mix(in srgb, var(--color-porcelain) 4%, transparent) 0%, color-mix(in srgb, var(--color-whisper) 20%, transparent) 100%)" }} />
+      <img
+        src={imgSrc}
+        alt={imgAlt}
+        loading="lazy"
+        decoding="async"
+        className="w-full h-full object-cover"
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background: dark
+            ? "linear-gradient(to bottom, color-mix(in srgb, var(--color-obsidian) 4%, transparent) 0%, color-mix(in srgb, var(--color-obsidian) 30%, transparent) 100%)"
+            : "linear-gradient(to bottom, color-mix(in srgb, var(--color-porcelain) 4%, transparent) 0%, color-mix(in srgb, var(--color-whisper) 20%, transparent) 100%)",
+        }}
+      />
     </div>
   )
   const txt = (
     <div className="mf flex flex-col justify-center gap-5" style={{ transitionDelay: "0.05s" }}>
       {eyebrow && <span style={ty("eyebrow", dark)}>{eyebrow}</span>}
-      {title   && <h2 style={{ ...ty("h2", dark), marginBottom: "4px" }}>{title}</h2>}
+      {title && <h2 style={{ ...ty("h2", dark), marginBottom: "4px" }}>{title}</h2>}
       <div style={{ ...ty("body", dark), fontSize: "16px" }}>{body}</div>
       {cta && <div className="mt-1">{cta}</div>}
     </div>
   )
   return (
-    <section style={{ position: "relative", background: surface, padding: "clamp(60px, 8vw, 88px) clamp(18px, 4vw, 24px)", overflow: "hidden" }}>
+    <section
+      style={{
+        position: "relative",
+        background: surface,
+        padding: "clamp(60px, 8vw, 88px) clamp(18px, 4vw, 24px)",
+        overflow: "hidden",
+      }}
+    >
       <PaperTexture dark={dark} />
-      <div className="max-w-6xl mx-auto grid gap-14 md:grid-cols-2 md:items-center relative" style={{ zIndex: 2 }}>
-        {imgFirst ? <>{img}{txt}</> : <>{txt}{img}</>}
+      <div
+        className="max-w-6xl mx-auto grid gap-14 md:grid-cols-2 md:items-center relative"
+        style={{ zIndex: 2 }}
+      >
+        {imgFirst ? (
+          <>
+            {img}
+            {txt}
+          </>
+        ) : (
+          <>
+            {txt}
+            {img}
+          </>
+        )}
       </div>
     </section>
   )
@@ -640,24 +892,51 @@ function Split({
 
 // ─── CTA close ────────────────────────────────────────────────────────────────
 function CtaClose({
-  title, body, primary, secondary, dark = true,
+  title,
+  body,
+  primary,
+  secondary,
+  dark = true,
 }: {
-  title:      ReactNode
-  body?:      ReactNode
-  primary:    { href: string; label: string; onClick?: () => void }
+  title: ReactNode
+  body?: ReactNode
+  primary: { href: string; label: string; onClick?: () => void }
   secondary?: { href: string; label: string }
-  dark?:      boolean
+  dark?: boolean
 }) {
   const surface = dark ? C.ink : C.cream
   return (
-    <section style={{ position: "relative", background: surface, padding: "clamp(72px, 9vw, 100px) clamp(18px, 4vw, 24px)", borderTop: `1px solid ${dark ? C.divDark : C.divCream}`, overflow: "hidden" }}>
+    <section
+      style={{
+        position: "relative",
+        background: surface,
+        padding: "clamp(72px, 9vw, 100px) clamp(18px, 4vw, 24px)",
+        borderTop: `1px solid ${dark ? C.divDark : C.divCream}`,
+        overflow: "hidden",
+      }}
+    >
       <PaperTexture dark={dark} />
       <div className="max-w-xl mx-auto text-center relative" style={{ zIndex: 2 }}>
-        <h2 className="mf" style={{ ...ty("h2", dark), marginBottom: body ? "16px" : "36px" }}>{title}</h2>
-        {body && <div className="mf" style={{ ...ty("body", dark), marginBottom: "34px" }}>{body}</div>}
-        <div className="mf flex flex-col sm:flex-row gap-3 items-center justify-center" style={{ transitionDelay: "0.05s" }}>
-          <Btn href={primary.href} onClick={primary.onClick} surface={dark ? "dark" : "cream"}>{primary.label}</Btn>
-          {secondary && <Btn href={secondary.href} ghost surface={dark ? "dark" : "cream"}>{secondary.label}</Btn>}
+        <h2 className="mf" style={{ ...ty("h2", dark), marginBottom: body ? "16px" : "36px" }}>
+          {title}
+        </h2>
+        {body && (
+          <div className="mf" style={{ ...ty("body", dark), marginBottom: "34px" }}>
+            {body}
+          </div>
+        )}
+        <div
+          className="mf flex flex-col sm:flex-row gap-3 items-center justify-center"
+          style={{ transitionDelay: "0.05s" }}
+        >
+          <Btn href={primary.href} onClick={primary.onClick} surface={dark ? "dark" : "cream"}>
+            {primary.label}
+          </Btn>
+          {secondary && (
+            <Btn href={secondary.href} ghost surface={dark ? "dark" : "cream"}>
+              {secondary.label}
+            </Btn>
+          )}
         </div>
       </div>
     </section>
@@ -665,7 +944,17 @@ function CtaClose({
 }
 
 // ─── Feature card ─────────────────────────────────────────────────────────────
-function FCard({ eyebrow, title, body, dark = true }: { eyebrow?: string; title: string; body?: string; dark?: boolean }) {
+function FCard({
+  eyebrow,
+  title,
+  body,
+  dark = true,
+}: {
+  eyebrow?: string
+  title: string
+  body?: string
+  dark?: boolean
+}) {
   return (
     <article className="mf" style={cardSx(dark)}>
       {eyebrow && <span style={{ ...ty("eyebrow", dark), marginBottom: "10px" }}>{eyebrow}</span>}
@@ -676,7 +965,13 @@ function FCard({ eyebrow, title, body, dark = true }: { eyebrow?: string; title:
 }
 
 // ─── FAQ accordion ────────────────────────────────────────────────────────────
-function FaqAccordion({ items, dark }: { items: Array<{ question: string; answer: string }>; dark: boolean }) {
+function FaqAccordion({
+  items,
+  dark,
+}: {
+  items: Array<{ question: string; answer: string }>
+  dark: boolean
+}) {
   const [open, setOpen] = useState<number | null>(null)
   const div = dark ? C.divDark : C.divCream
   return (
@@ -686,15 +981,31 @@ function FaqAccordion({ items, dark }: { items: Array<{ question: string; answer
           <button
             onClick={() => setOpen(open === i ? null : i)}
             style={{
-              width: "100%", display: "flex", justifyContent: "space-between",
-              alignItems: "center", padding: "22px 0",
-              background: "none", border: "none", cursor: "pointer", textAlign: "left", gap: "20px",
+              width: "100%",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "22px 0",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              textAlign: "left",
+              gap: "20px",
             }}
           >
             <span style={{ ...ty("h3", dark), fontSize: "17px", textShadow: "none", margin: 0 }}>
               {q.question}
             </span>
-            <span style={{ color: dark ? C.onDarkMuted : C.onCreamMuted, flexShrink: 0, fontSize: "22px", lineHeight: 1, fontFamily: F.serif, fontWeight: 300 }}>
+            <span
+              style={{
+                color: dark ? C.onDarkMuted : C.onCreamMuted,
+                flexShrink: 0,
+                fontSize: "22px",
+                lineHeight: 1,
+                fontFamily: F.serif,
+                fontWeight: 300,
+              }}
+            >
               {open === i ? "−" : "+"}
             </span>
           </button>
@@ -712,58 +1023,127 @@ function FaqAccordion({ items, dark }: { items: Array<{ question: string; answer
 // ─── FAQ data ─────────────────────────────────────────────────────────────────
 const FAQS = {
   starterKit: [
-    { question: "Do I need Lightroom already?",
-      answer: "No. Lightroom is included as a simple support tool for cleaning up the source selfie. You can still use the AI prompt path without becoming an editing person." },
-    { question: "Will this work on my iPhone?",
-      answer: "Yes. The kit is built for phone photos. No camera, no desktop software, no complicated setup." },
-    { question: "Will this help my AI photos look less fake?",
-      answer: "Yes. Better AI results start with a better original selfie. The kit helps you choose the right source photo, write a clearer prompt, and fix the result without changing your whole face." },
-    { question: "What apps do I need?",
-      answer: "You can use ChatGPT or your preferred AI image tool for the prompts. Lightroom Mobile, Hypic, and CapCut are optional support tools if you want to clean up the source photo or use the result in content." },
-    { question: "Is this just presets?",
-      answer: "No. The presets are included, but the main point is the selfie-to-AI-photo path: source selfie, starter prompts, still-you fix prompts, and a small 3-image shoot you can actually use." },
-    { question: "What if I'm a complete beginner?",
-      answer: "Good. Start with the source selfie checklist, then use the first prompt. You do not need to understand AI. You just need one clear photo and the next small step." },
+    {
+      question: "Do I need Lightroom already?",
+      answer:
+        "No. Lightroom is included as a simple support tool for cleaning up the source selfie. You can still use the AI prompt path without becoming an editing person.",
+    },
+    {
+      question: "Will this work on my iPhone?",
+      answer:
+        "Yes. The kit is built for phone photos. No camera, no desktop software, no complicated setup.",
+    },
+    {
+      question: "Will this help my AI photos look less fake?",
+      answer:
+        "Yes. Better AI results start with a better original selfie. The kit helps you choose the right source photo, write a clearer prompt, and fix the result without changing your whole face.",
+    },
+    {
+      question: "What apps do I need?",
+      answer:
+        "You can use ChatGPT or your preferred AI image tool for the prompts. Lightroom Mobile, Hypic, and CapCut are optional support tools if you want to clean up the source photo or use the result in content.",
+    },
+    {
+      question: "Is this just presets?",
+      answer:
+        "No. The presets are included, but the main point is the selfie-to-AI-photo path: source selfie, starter prompts, still-you fix prompts, and a small 3-image shoot you can actually use.",
+    },
+    {
+      question: "What if I'm a complete beginner?",
+      answer:
+        "Good. Start with the source selfie checklist, then use the first prompt. You do not need to understand AI. You just need one clear photo and the next small step.",
+    },
   ],
   masterclass: [
-    { question: "Do I need the Starter Kit first?",
-      answer: "No. Starter Kit is the first practical implementation step. Masterclass goes deeper so you build from a clearer offer and content direction." },
-    { question: "Is this a photography course?",
-      answer: "It starts with your camera confidence. Getting comfortable showing up and taking selfies that actually feel like you. Then it goes into your brand, your message, your content system, and your first real offer. The selfie is the door. This is what's behind it." },
-    { question: "How long does it take?",
-      answer: "Start with the strategy foundation, then move through the core lessons and the implementation modules at your own pace. Most pieces are designed to be short and usable right away." },
-    { question: "How is this different from SSELFIE SUITE?",
-      answer: "The Masterclass is the education. You do the work once and it's yours. SSELFIE SUITE is the AI layer for when you want the tools to keep running it weekly." },
-    { question: "What if I've never posted consistently?",
-      answer: "That's exactly who this is for. The course is built around getting you from scattered to a system you can actually follow." },
+    {
+      question: "Do I need the Starter Kit first?",
+      answer:
+        "No. Starter Kit is the first practical implementation step. Masterclass goes deeper so you build from a clearer offer and content direction.",
+    },
+    {
+      question: "Is this a photography course?",
+      answer:
+        "It starts with your camera confidence. Getting comfortable showing up and taking selfies that actually feel like you. Then it goes into your brand, your message, your content system, and your first real offer. The selfie is the door. This is what's behind it.",
+    },
+    {
+      question: "How long does it take?",
+      answer:
+        "Start with the strategy foundation, then move through the core lessons and the implementation modules at your own pace. Most pieces are designed to be short and usable right away.",
+    },
+    {
+      question: "How is this different from SSELFIE SUITE?",
+      answer:
+        "The Masterclass is the education. You do the work once and it's yours. SSELFIE SUITE is the AI layer for when you want the tools to keep running it weekly.",
+    },
+    {
+      question: "What if I've never posted consistently?",
+      answer:
+        "That's exactly who this is for. The course is built around getting you from scattered to a system you can actually follow.",
+    },
   ],
   studio: [
-    { question: "What do I get each month?",
-      answer: "You get Maya, Create, Calendar, Learn, the SSELFIE library, and 100 credits that reset each month. Different creations can use different amounts of credits, so the exact number of finished images depends on what you make." },
-    { question: "Do I need to learn prompts?",
-      answer: "No. Tell Maya what you are trying to create in normal words. She helps with the direction and the prompt, and you decide what to use." },
-    { question: "Will every photo look exactly like me?",
-      answer: "That is the goal, but AI can still get things wrong. Start with clear reference selfies, review every result, and tell Maya what feels off so your next direction can get closer." },
-    { question: "Is Maya just ChatGPT inside another app?",
-      answer: "No. Maya works beside your SSELFIE tools, brand context, images, learning, and Calendar. The value is not another chat box. It is having one place that helps you create, decide what to say, and plan what goes out next." },
-    { question: "Who is SUITE best for?",
-      answer: "It is for a woman building a personal brand who wants ongoing help creating content around her own face, story, and work. If you only want one quick image or a done-for-you service, a monthly membership may not be the right fit." },
-    { question: "Can I cancel?",
-      answer: "Yes. You can cancel from your account. Your membership stays open until the end of the period you already paid for." },
+    {
+      question: "What do I get each month?",
+      answer:
+        "You get Maya, Create, Calendar, Learn, the SSELFIE library, and 100 credits that reset each month. Different creations can use different amounts of credits, so the exact number of finished images depends on what you make.",
+    },
+    {
+      question: "Do I need to learn prompts?",
+      answer:
+        "No. Tell Maya what you are trying to create in normal words. She helps with the direction and the prompt, and you decide what to use.",
+    },
+    {
+      question: "Will every photo look exactly like me?",
+      answer:
+        "That is the goal, but AI can still get things wrong. Start with clear reference selfies, review every result, and tell Maya what feels off so your next direction can get closer.",
+    },
+    {
+      question: "Is Maya just ChatGPT inside another app?",
+      answer:
+        "No. Maya works beside your SSELFIE tools, brand context, images, learning, and Calendar. The value is not another chat box. It is having one place that helps you create, decide what to say, and plan what goes out next.",
+    },
+    {
+      question: "Who is SUITE best for?",
+      answer:
+        "It is for a woman building a personal brand who wants ongoing help creating content around her own face, story, and work. If you only want one quick image or a done-for-you service, a monthly membership may not be the right fit.",
+    },
+    {
+      question: "Can I cancel?",
+      answer:
+        "Yes. You can cancel from your account. Your membership stays open until the end of the period you already paid for.",
+    },
   ],
   visibilityToPaid: [
-    { question: "Who is this for?",
-      answer: "This is for an experienced service provider who does good work, often gets clients through referrals, and wants her online presence to make that value easier to understand. If you have not delivered the service yet, this is probably too early." },
-    { question: "What will I leave with?",
-      answer: "One service positioned for one specific client, your core message, offer page copy, Instagram profile copy, a simple inquiry path, four weeks of content drafts, and four private calls with me." },
-    { question: "Is this mainly about AI photos?",
-      answer: "No. Your visuals matter, but AI photos are not the product. AI helps me work faster. You are paying for my research, judgment, writing, visual direction, and the first version I build around your real service." },
-    { question: "Will this get me clients?",
-      answer: "I cannot promise clients or income. Your service, market, proof, and follow-through matter too. I can remove the unclear message and missing next step that may be making the right people leave." },
-    { question: "Why does it cost €2,000?",
-      answer: "This is not a course or one call. I spend two weeks researching and building before we meet. Then we use four private calls to make the work right for your real business." },
-    { question: "What happens after I apply?",
-      answer: "I read every application myself. If it looks like the right fit, I will invite you to a short call. No payment is taken when you apply. The €2,000 payment is only sent after that conversation." },
+    {
+      question: "Who is this for?",
+      answer:
+        "This is for a woman with a real business, a service people already buy, and clients she understands. Marketing keeps falling back on her, and the AI tools she has tried have not become a system she can actually use.",
+    },
+    {
+      question: "What exactly will we build?",
+      answer:
+        "One Business Brain that teaches AI about your business, plus a research assistant, content director, and writer. We connect them in one simple weekly flow from your idea or voice note to useful drafts you can review and publish.",
+    },
+    {
+      question: "Do I need to be technical?",
+      answer:
+        "No. I am not a technical person either. I build the first version with you, show you what to say, and keep the setup as simple as possible around tools you can continue using.",
+    },
+    {
+      question: "Will the team post for me?",
+      answer:
+        "No. It will research, plan, write, and repurpose with you. You stay in control of what is published. This does not include automatic posting, inbox access, customer service, or a full business automation.",
+    },
+    {
+      question: "Will this make me more money?",
+      answer:
+        "I cannot promise clients, income, or growth. I can build a personal AI content system that removes the blank page, saves repeated work, and helps you show up without carrying every step alone.",
+    },
+    {
+      question: "What happens after I apply?",
+      answer:
+        "I read every application myself. If I believe I can genuinely help, I invite you to a short fit call. No payment is taken when you apply. The €2,000 private payment link is only shared after that conversation.",
+    },
   ],
 }
 
@@ -772,10 +1152,14 @@ const FAQS = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function HomePageContent({ referralCode }: { referralCode?: string | null } = {}) {
-  const r     = (href: string) => appendReferralParam(href, referralCode)
+  const r = (href: string) => appendReferralParam(href, referralCode)
   const login = buildReferralLoginHref({ returnTo: "/app", referralCode })
-  const freePrompts = r("/ai-prompts?utm_source=website&utm_medium=homepage&utm_campaign=vault_to_suite_path")
-  const vault = r("/prompt-vault?source=homepage&utm_source=website&utm_medium=homepage&utm_campaign=vault_to_suite_path")
+  const freePrompts = r(
+    "/ai-prompts?utm_source=website&utm_medium=homepage&utm_campaign=vault_to_suite_path"
+  )
+  const vault = r(
+    "/prompt-vault?source=homepage&utm_source=website&utm_medium=homepage&utm_campaign=vault_to_suite_path"
+  )
   const suite = r("/join/studio?source=homepage")
 
   return (
@@ -787,7 +1171,11 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         eyebrow="Start with what you already have"
         title={<>Start with one selfie. See what you can build from there.</>}
         body={
-          <p>Turn one normal selfie into photos that still feel like you, something useful to post, and one clear next step. Begin with the Prompt Vault. Keep building with Maya inside SSELFIE SUITE.</p>
+          <p>
+            Turn one normal selfie into photos that still feel like you, something useful to post,
+            and one clear next step. Begin with the Prompt Vault. Keep building with Maya inside
+            SSELFIE SUITE.
+          </p>
         }
         primary={{ href: vault, label: "Explore the Prompt Vault" }}
         secondary={{ href: suite, label: "See SSELFIE SUITE" }}
@@ -803,23 +1191,49 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         narrow
       >
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>You have the phone, the idea, and probably hundreds of things saved for later. But later keeps moving.</p>
-          <p>SSELFIE starts smaller. One photo you like enough to use. Then help turning it into something real, without opening five more tools or starting another course.</p>
+          <p>
+            You have the phone, the idea, and probably hundreds of things saved for later. But later
+            keeps moving.
+          </p>
+          <p>
+            SSELFIE starts smaller. One photo you like enough to use. Then help turning it into
+            something real, without opening five more tools or starting another course.
+          </p>
         </div>
       </Section>
 
       {/* CURRENT PRODUCT DEMO - cream */}
-      <Section id="how-it-works" eyebrow="One small beginning" title={<>The photo is the door. What you do with it is the point.</>} dark={false}>
+      <Section
+        id="how-it-works"
+        eyebrow="One small beginning"
+        title={<>The photo is the door. What you do with it is the point.</>}
+        dark={false}
+      >
         <div className="mf mb-8 max-w-3xl">
-          <p style={{ ...ty("body", false), fontSize: "16px" }}>Inside SUITE, Maya works beside your photos and Calendar. She helps you choose a direction, make the pieces, and keep the next step visible.</p>
+          <p style={{ ...ty("body", false), fontSize: "16px" }}>
+            Inside SUITE, Maya works beside your photos and Calendar. She helps you choose a
+            direction, make the pieces, and keep the next step visible.
+          </p>
         </div>
         <SuiteProductWalkthrough />
         <ol className="mt-14 grid gap-8 md:grid-cols-3">
           {[
-            { step: "01", title: "See yourself", body: "Start with one clear selfie and a visual direction that still feels recognizable." },
-            { step: "02", title: "Make something useful", body: "Create a photo or post you can actually use, instead of another idea sitting in a folder." },
-            { step: "03", title: "Keep moving", body: "Bring the visual, the words, and the plan together so you can see what comes next." },
-          ].map((item) => (
+            {
+              step: "01",
+              title: "See yourself",
+              body: "Start with one clear selfie and a visual direction that still feels recognizable.",
+            },
+            {
+              step: "02",
+              title: "Make something useful",
+              body: "Create a photo or post you can actually use, instead of another idea sitting in a folder.",
+            },
+            {
+              step: "03",
+              title: "Keep moving",
+              body: "Bring the visual, the words, and the plan together so you can see what comes next.",
+            },
+          ].map(item => (
             <li key={item.step} className="mf border-t border-stone-300 pt-5">
               <span style={{ ...ty("eyebrow", false), marginBottom: "14px" }}>{item.step}</span>
               <h3 style={{ ...ty("h3", false), marginBottom: "10px" }}>{item.title}</h3>
@@ -830,64 +1244,115 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
       </Section>
 
       {/* TWO CLEAR DOORS - cream */}
-      <Section eyebrow="Start where you are" title={<>Choose the help that fits today.</>} dark={false}>
+      <Section
+        eyebrow="Start where you are"
+        title={<>Choose the help that fits today.</>}
+        dark={false}
+      >
         <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-          <article className="mf min-w-0 flex min-h-[310px] flex-col justify-between" style={cardSx(false)}>
+          <article
+            className="mf min-w-0 flex min-h-[310px] flex-col justify-between"
+            style={cardSx(false)}
+          >
             <div>
-              <span style={{ ...ty("eyebrow", false), marginBottom: "14px" }}>One payment · yours to keep</span>
-              <h3 style={{ ...ty("h2", false), fontSize: "clamp(28px, 4vw, 42px)", marginBottom: "14px" }}>
+              <span style={{ ...ty("eyebrow", false), marginBottom: "14px" }}>
+                One payment · yours to keep
+              </span>
+              <h3
+                style={{
+                  ...ty("h2", false),
+                  fontSize: "clamp(28px, 4vw, 42px)",
+                  marginBottom: "14px",
+                }}
+              >
                 Start with the Prompt Vault.
               </h3>
               <p style={{ ...ty("body", false), fontSize: "15px", maxWidth: "460px" }}>
-                Pick a complete photoshoot, copy the prompts, and turn one clear selfie into a set of images that still feel like you.
+                Pick a complete photoshoot, copy the prompts, and turn one clear selfie into a set
+                of images that still feel like you.
               </p>
             </div>
             <div className="mt-8">
-              <Btn href={vault} surface="cream">Explore the Prompt Vault</Btn>
+              <Btn href={vault} surface="cream">
+                Explore the Prompt Vault
+              </Btn>
             </div>
           </article>
 
           <article className="mf min-w-0 flex min-h-[310px] flex-col justify-between bg-stone-950 p-7 text-white sm:p-9">
             <div>
-              <span style={{ ...ty("eyebrow", true), marginBottom: "14px" }}>Ongoing help · €97 a month</span>
-              <h3 style={{ ...ty("h2", true), fontSize: "clamp(28px, 4vw, 42px)", marginBottom: "14px" }}>
+              <span style={{ ...ty("eyebrow", true), marginBottom: "14px" }}>
+                Ongoing help · €97 a month
+              </span>
+              <h3
+                style={{
+                  ...ty("h2", true),
+                  fontSize: "clamp(28px, 4vw, 42px)",
+                  marginBottom: "14px",
+                }}
+              >
                 Maya helps you create, write, and plan what goes out next.
               </h3>
               <p style={{ ...ty("body", true), fontSize: "15px", maxWidth: "520px" }}>
-                One membership. Maya, Create, Calendar, Learn, and the SSELFIE library together. €97 a month.
+                One membership. Maya, Create, Calendar, Learn, and the SSELFIE library together. €97
+                a month.
               </p>
             </div>
             <div className="mt-8">
-              <Btn href={suite} surface="dark">See SSELFIE SUITE</Btn>
+              <Btn href={suite} surface="dark">
+                See SSELFIE SUITE
+              </Btn>
             </div>
           </article>
         </div>
         <p className="mf mt-6 text-sm leading-6 text-stone-500">
-          Want to try one look first? <Link className="underline underline-offset-4" href={freePrompts}>Get the free AI prompt previews.</Link>
+          Want to try one look first?{" "}
+          <Link className="underline underline-offset-4" href={freePrompts}>
+            Get the free AI prompt previews.
+          </Link>
         </p>
       </Section>
 
       {/* FROM SANDRA - cream */}
       <Split
         eyebrow="From Sandra"
-        title={<>I built my visibility with my phone, my story, and a lot of figuring it out as I went.</>}
+        title={
+          <>
+            I built my visibility with my phone, my story, and a lot of figuring it out as I went.
+          </>
+        }
         body={
           <div className="space-y-4">
-            <p>Not because everything was perfect. Because I needed a way back to myself, my voice, and my own income.</p>
-            <p>I am still building too. But I know how much changes when you can see the next version of yourself before the rest of your life has caught up.</p>
+            <p>
+              Not because everything was perfect. Because I needed a way back to myself, my voice,
+              and my own income.
+            </p>
+            <p>
+              I am still building too. But I know how much changes when you can see the next version
+              of yourself before the rest of your life has caught up.
+            </p>
           </div>
         }
         imgSrc={IMG.homeFounder}
         imgAlt="Sandra Aamodt, founder of SSELFIE"
         imgFirst
         dark={false}
-        cta={<Btn href={suite} surface="cream">See SSELFIE SUITE</Btn>}
+        cta={
+          <Btn href={suite} surface="cream">
+            See SSELFIE SUITE
+          </Btn>
+        }
       />
 
       {/* CTA CLOSE - dark */}
       <CtaClose
         title={<>Start with one photo. Build from there.</>}
-        body={<p>You do not need everything figured out. You need one useful beginning and a next step you can see.</p>}
+        body={
+          <p>
+            You do not need everything figured out. You need one useful beginning and a next step
+            you can see.
+          </p>
+        }
         primary={{ href: vault, label: "Explore the Prompt Vault" }}
         secondary={{ href: suite, label: "See SSELFIE SUITE" }}
         dark
@@ -930,7 +1395,8 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
             <div style={{ minWidth: "240px", flex: "1 1 420px" }}>
               <p style={{ ...ty("eyebrow", false), marginBottom: "6px" }}>Checkout</p>
               <p style={{ ...ty("body", false), margin: 0, fontSize: "14px" }}>
-                Your payment form did not open cleanly. Try once more and keep this page open while Stripe loads.
+                Your payment form did not open cleanly. Try once more and keep this page open while
+                Stripe loads.
               </p>
             </div>
             <Link
@@ -960,17 +1426,34 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
       <Hero
         eyebrow="Starter Kit · $37"
         title={<>Stop fighting with every photo of yourself.</>}
-        body={<p>If the source photo feels off, everything after it feels harder too. The Starter Kit helps you take, edit, and use one clear selfie so your content has a better place to start.</p>}
+        body={
+          <p>
+            If the source photo feels off, everything after it feels harder too. The Starter Kit
+            helps you take, edit, and use one clear selfie so your content has a better place to
+            start.
+          </p>
+        }
         primary={{ href: starterKitCheckoutHref, label: "Get the Starter Kit · $37" }}
-        secondary={{ href: "/selfie-guide",        label: "Start with the free guide" }}
+        secondary={{ href: "/selfie-guide", label: "Start with the free guide" }}
         imageSrc={IMG.skHero}
       />
 
       {/* THE SYSTEM - cream */}
-      <Section eyebrow="Why it works" title={<>The problem is not your face. It is the photo you are starting from.</>} dark={false} narrow>
+      <Section
+        eyebrow="Why it works"
+        title={<>The problem is not your face. It is the photo you are starting from.</>}
+        dark={false}
+        narrow
+      >
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>If the original photo is dark, awkward, blurry, or unfinished, the AI result usually feels random too.</p>
-          <p>The Starter Kit shows you how to take, edit, pose, and post AI-ready selfies so your visuals stop feeling fake, flat, or disconnected from you.</p>
+          <p>
+            If the original photo is dark, awkward, blurry, or unfinished, the AI result usually
+            feels random too.
+          </p>
+          <p>
+            The Starter Kit shows you how to take, edit, pose, and post AI-ready selfies so your
+            visuals stop feeling fake, flat, or disconnected from you.
+          </p>
           <p>One clearer photo. One cleaner edit. One week of content. No starting from zero.</p>
         </div>
       </Section>
@@ -982,19 +1465,42 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         body={
           <div>
             {[
-              { label: "SSELFIE Lightroom Presets",    note: "A clean starting point for selfies, AI input photos, and everyday brand visuals." },
-              { label: "Selfie Guide",                 note: "Light, angles, phone setup, and simple rules for photos that look stronger before editing." },
-              { label: "Posing And Editing Guidance",  note: "Mirror poses, full body, profile, phone edits, Hypic, CapCut, and Lightroom Mobile." },
-              { label: "Caption Templates",            note: "30 ready-to-edit captions for women who have the photo but do not know what to say." },
-              { label: "Storytelling Guide",           note: "Five post types that turn one photo session into content people can understand." },
-              { label: "7-Day Content Starter",        note: "One session. Seven posts. A full week of content planned and ready to use." },
+              {
+                label: "SSELFIE Lightroom Presets",
+                note: "A clean starting point for selfies, AI input photos, and everyday brand visuals.",
+              },
+              {
+                label: "Selfie Guide",
+                note: "Light, angles, phone setup, and simple rules for photos that look stronger before editing.",
+              },
+              {
+                label: "Posing And Editing Guidance",
+                note: "Mirror poses, full body, profile, phone edits, Hypic, CapCut, and Lightroom Mobile.",
+              },
+              {
+                label: "Caption Templates",
+                note: "30 ready-to-edit captions for women who have the photo but do not know what to say.",
+              },
+              {
+                label: "Storytelling Guide",
+                note: "Five post types that turn one photo session into content people can understand.",
+              },
+              {
+                label: "7-Day Content Starter",
+                note: "One session. Seven posts. A full week of content planned and ready to use.",
+              },
             ].map((item, i) => (
-              <div key={item.label} style={{
-                borderTop: `1px solid ${C.divDark}`,
-                padding: "13px 0",
-                ...(i === 5 ? { borderBottom: `1px solid ${C.divDark}` } : {}),
-              }}>
-                <p style={{ ...ty("h3", true), fontSize: "15px", marginBottom: "3px" }}>{item.label}</p>
+              <div
+                key={item.label}
+                style={{
+                  borderTop: `1px solid ${C.divDark}`,
+                  padding: "13px 0",
+                  ...(i === 5 ? { borderBottom: `1px solid ${C.divDark}` } : {}),
+                }}
+              >
+                <p style={{ ...ty("h3", true), fontSize: "15px", marginBottom: "3px" }}>
+                  {item.label}
+                </p>
                 <p style={{ ...ty("body", true), fontSize: "13px" }}>{item.note}</p>
               </div>
             ))}
@@ -1004,35 +1510,74 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         imgAlt="The Selfie Starter Kit with SSELFIE presets, selfie and posing guides, caption templates, storytelling guide, and seven-day content starter"
         imgFirst
         dark
-        cta={<Btn href={starterKitCheckoutHref} surface="dark">Get the Starter Kit · $37</Btn>}
+        cta={
+          <Btn href={starterKitCheckoutHref} surface="dark">
+            Get the Starter Kit · $37
+          </Btn>
+        }
       />
 
       {/* BEFORE AND AFTER - cream */}
       <Section eyebrow="Preset results" title={<>Three styles. See them in use.</>} dark={false}>
         <div className="grid gap-6 md:grid-cols-3">
           {[
-            { img: IMG.skBaLightDreamy, alt: "Scandinavian Light and Dreamy preset before and after" },
-            { img: IMG.skBaNordicDeep,  alt: "Nordic Deep Urban preset before and after" },
-            { img: IMG.skBaDarkMoody,   alt: "Scandinavian Dark and Moody preset before and after" },
-          ].map((s) => (
+            {
+              img: IMG.skBaLightDreamy,
+              alt: "Scandinavian Light and Dreamy preset before and after",
+            },
+            { img: IMG.skBaNordicDeep, alt: "Nordic Deep Urban preset before and after" },
+            { img: IMG.skBaDarkMoody, alt: "Scandinavian Dark and Moody preset before and after" },
+          ].map(s => (
             <div key={s.alt} className="mf">
-              <img src={s.img} alt={s.alt} style={{ width: "100%", height: "auto", display: "block" }} />
+              <img
+                src={s.img}
+                alt={s.alt}
+                style={{ width: "100%", height: "auto", display: "block" }}
+              />
             </div>
           ))}
         </div>
       </Section>
 
       {/* EDITING WALKTHROUGHS - dark */}
-      <Section eyebrow="The editing walkthrough" title={<>Make the original photo easier to use.</>} dark>
+      <Section
+        eyebrow="The editing walkthrough"
+        title={<>Make the original photo easier to use.</>}
+        dark
+      >
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {[
-            { num: "01", title: "Lightroom with presets",   body: "Import the collection, apply it, and adjust the strength for your specific photo and skin tone." },
-            { num: "02", title: "iPhone native editing",    body: "Exposure, brilliance, highlights, shadows, and vignette. Clean up the photo before you use it anywhere." },
-            { num: "03", title: "Hypic for portraits",      body: "Get a polished portrait feel without smoothing your face into someone else." },
-            { num: "04", title: "CapCut for video",         body: "Use the same clean visual direction on simple video clips and reels." },
-            { num: "05", title: "Save a custom preset",     body: "Create your own repeatable edit so future selfies start from the right look." },
-            { num: "06", title: "Apply edits in bulk",      body: "Copy one edit and paste it to every photo in your session. Your camera roll gets cleaner fast." },
-          ].map((m) => (
+            {
+              num: "01",
+              title: "Lightroom with presets",
+              body: "Import the collection, apply it, and adjust the strength for your specific photo and skin tone.",
+            },
+            {
+              num: "02",
+              title: "iPhone native editing",
+              body: "Exposure, brilliance, highlights, shadows, and vignette. Clean up the photo before you use it anywhere.",
+            },
+            {
+              num: "03",
+              title: "Hypic for portraits",
+              body: "Get a polished portrait feel without smoothing your face into someone else.",
+            },
+            {
+              num: "04",
+              title: "CapCut for video",
+              body: "Use the same clean visual direction on simple video clips and reels.",
+            },
+            {
+              num: "05",
+              title: "Save a custom preset",
+              body: "Create your own repeatable edit so future selfies start from the right look.",
+            },
+            {
+              num: "06",
+              title: "Apply edits in bulk",
+              body: "Copy one edit and paste it to every photo in your session. Your camera roll gets cleaner fast.",
+            },
+          ].map(m => (
             <article key={m.num} className="mf" style={{ ...cardSx(true), padding: "22px 26px" }}>
               <p style={{ ...ty("eyebrow", true), marginBottom: "12px" }}>{m.num}</p>
               <p style={{ ...ty("h3", true), fontSize: "16px", marginBottom: "8px" }}>{m.title}</p>
@@ -1048,16 +1593,33 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         title={<>Cleaner phone photos. Better starting points.</>}
         body={
           <div className="space-y-4">
-            <p>Presets do not replace a good photo. They help you make the photo cleaner, more consistent, and easier to use as personal brand content.</p>
-            <p>Use them before posting, before building a carousel, or before sending the image into an AI tool.</p>
+            <p>
+              Presets do not replace a good photo. They help you make the photo cleaner, more
+              consistent, and easier to use as personal brand content.
+            </p>
+            <p>
+              Use them before posting, before building a carousel, or before sending the image into
+              an AI tool.
+            </p>
             <div className="grid gap-2 mt-2">
               {[
-                { name: "Scandinavian Light and Dreamy", desc: "Bright, airy, soft tones. Timeless natural light." },
-                { name: "Nordic Deep Urban",             desc: "Cool, desaturated, cinematic. Urban edge." },
-                { name: "Scandinavian Dark and Moody",   desc: "Deep, warm, dramatic. Moody and timeless." },
-              ].map((p) => (
-                <div key={p.name} style={{ borderBottom: `1px solid ${C.divCream}`, paddingBottom: "10px" }}>
-                  <p style={{ ...ty("h3", false), fontSize: "14px", marginBottom: "2px" }}>{p.name}</p>
+                {
+                  name: "Scandinavian Light and Dreamy",
+                  desc: "Bright, airy, soft tones. Timeless natural light.",
+                },
+                { name: "Nordic Deep Urban", desc: "Cool, desaturated, cinematic. Urban edge." },
+                {
+                  name: "Scandinavian Dark and Moody",
+                  desc: "Deep, warm, dramatic. Moody and timeless.",
+                },
+              ].map(p => (
+                <div
+                  key={p.name}
+                  style={{ borderBottom: `1px solid ${C.divCream}`, paddingBottom: "10px" }}
+                >
+                  <p style={{ ...ty("h3", false), fontSize: "14px", marginBottom: "2px" }}>
+                    {p.name}
+                  </p>
                   <p style={{ ...ty("body", false), fontSize: "13px" }}>{p.desc}</p>
                 </div>
               ))}
@@ -1073,12 +1635,36 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
       {/* ALSO INCLUDED - dark */}
       <Section eyebrow="Also included" title={<>The rest of the kit.</>} dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <FCard dark title="Selfie Posing Guide" body="Mirror poses, full body, profile, and simple direction so your input photo looks intentional before AI touches it." />
-          <FCard dark title="Caption Templates" body="30 ready-to-edit captions for the moment when the photo is ready but your brain goes blank." />
-          <FCard dark title="Storytelling Guide" body="Five post types that turn one photo session into a full content arc: proof, story, teaching, behind the scenes, and invitation." />
-          <FCard dark title="7-Day Content Starter" body="Turn one session into seven posts. A full week of content from a single afternoon." />
-          <FCard dark title="Camera Settings Cheat Sheet" body="The exact iPhone settings for every shoot. Grid, mirroring, HDR, Live Photos. One page. Keep it on your phone." />
-          <FCard dark title="Instant Access" body="Start right after checkout with the presets, guides, caption templates, and your 7-day starter." />
+          <FCard
+            dark
+            title="Selfie Posing Guide"
+            body="Mirror poses, full body, profile, and simple direction so your input photo looks intentional before AI touches it."
+          />
+          <FCard
+            dark
+            title="Caption Templates"
+            body="30 ready-to-edit captions for the moment when the photo is ready but your brain goes blank."
+          />
+          <FCard
+            dark
+            title="Storytelling Guide"
+            body="Five post types that turn one photo session into a full content arc: proof, story, teaching, behind the scenes, and invitation."
+          />
+          <FCard
+            dark
+            title="7-Day Content Starter"
+            body="Turn one session into seven posts. A full week of content from a single afternoon."
+          />
+          <FCard
+            dark
+            title="Camera Settings Cheat Sheet"
+            body="The exact iPhone settings for every shoot. Grid, mirroring, HDR, Live Photos. One page. Keep it on your phone."
+          />
+          <FCard
+            dark
+            title="Instant Access"
+            body="Start right after checkout with the presets, guides, caption templates, and your 7-day starter."
+          />
         </div>
       </Section>
 
@@ -1091,7 +1677,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
       <CtaClose
         title={<>Start with one photo you can actually use.</>}
         primary={{ href: starterKitCheckoutHref, label: "Get the Starter Kit · $37" }}
-        secondary={{ href: "/ai-prompts",          label: "Try the free AI prompts" }}
+        secondary={{ href: "/ai-prompts", label: "Try the free AI prompts" }}
         dark
       />
 
@@ -1113,31 +1699,70 @@ export function MasterclassPageContent() {
       <Hero
         eyebrow="Masterclass · $147"
         title={<>You showed up. You took the selfie. Now build what comes next.</>}
-        body={<p>Content direction, captions, offer clarity, and a 30-day plan so your photos have somewhere to lead. Sandra&apos;s full method, one time.</p>}
+        body={
+          <p>
+            Content direction, captions, offer clarity, and a 30-day plan so your photos have
+            somewhere to lead. Sandra&apos;s full method, one time.
+          </p>
+        }
         primary={{ href: masterclassCheckoutHref, label: "Enroll · $147" }}
-        secondary={{ href: "/starter-kit",        label: "Start with the Starter Kit" }}
+        secondary={{ href: "/starter-kit", label: "Start with the Starter Kit" }}
         imageSrc={IMG.pricingBg}
       />
 
       {/* CLARITY - cream */}
-      <Section eyebrow="What's actually happening" title={<>It&apos;s not that you need more motivation. You need positioning before content.</>} dark={false} narrow>
+      <Section
+        eyebrow="What's actually happening"
+        title={
+          <>It&apos;s not that you need more motivation. You need positioning before content.</>
+        }
+        dark={false}
+        narrow
+      >
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>So you post something, it doesn&apos;t land, and you tell yourself you&apos;re not consistent enough.</p>
+          <p>
+            So you post something, it doesn&apos;t land, and you tell yourself you&apos;re not
+            consistent enough.
+          </p>
           <p>But consistency isn&apos;t the problem. Clarity is.</p>
-          <p>That is why Masterclass now starts with your foundation. Know what you sell, who it helps, and what you want to be known for before you build the content rhythm.</p>
+          <p>
+            That is why Masterclass now starts with your foundation. Know what you sell, who it
+            helps, and what you want to be known for before you build the content rhythm.
+          </p>
         </div>
       </Section>
 
       {/* MODULES - dark */}
-      <Section eyebrow="Inside the course" title="Start with clarity. Then content, confidence, and execution." dark>
+      <Section
+        eyebrow="Inside the course"
+        title="Start with clarity. Then content, confidence, and execution."
+        dark
+      >
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           {[
-            { title: "Your Foundation", body: "Your positioning, audience, core themes, and next content ideas before the lessons begin." },
-            { title: "How You Show Up",     body: "Camera confidence, presence, the energy that makes someone stop scrolling. This is a skill, not a trait." },
-            { title: "Your Visual Brand",   body: "Colours, aesthetic, feed design, and the visual identity that makes your content recognisable before they even see your name." },
-            { title: "Content-To-Cash",     body: "Weekly rhythm, calls to action, DM follow-up, and simple sales conversations without income guarantees." },
-            { title: "30-Day Sprint",       body: "A practical calendar and tracker so you can publish, invite, follow up, and measure conversations." },
-          ].map((m) => <FCard key={m.title} title={m.title} body={m.body} dark />)}
+            {
+              title: "Your Foundation",
+              body: "Your positioning, audience, core themes, and next content ideas before the lessons begin.",
+            },
+            {
+              title: "How You Show Up",
+              body: "Camera confidence, presence, the energy that makes someone stop scrolling. This is a skill, not a trait.",
+            },
+            {
+              title: "Your Visual Brand",
+              body: "Colours, aesthetic, feed design, and the visual identity that makes your content recognisable before they even see your name.",
+            },
+            {
+              title: "Content-To-Cash",
+              body: "Weekly rhythm, calls to action, DM follow-up, and simple sales conversations without income guarantees.",
+            },
+            {
+              title: "30-Day Sprint",
+              body: "A practical calendar and tracker so you can publish, invite, follow up, and measure conversations.",
+            },
+          ].map(m => (
+            <FCard key={m.title} title={m.title} body={m.body} dark />
+          ))}
         </div>
       </Section>
 
@@ -1146,23 +1771,28 @@ export function MasterclassPageContent() {
         <div className="grid gap-0 md:grid-cols-2">
           {[
             { num: "01", title: "Start Here: Welcome to Branded By SSELFIE" },
-            { num: "02", title: "Building Unshakable Selfie Confidence"    },
-            { num: "03", title: "Start Showing Up"                         },
-            { num: "04", title: "The Power Selfies Challenge"              },
-            { num: "05", title: "The Confidence Camera Hack"               },
-            { num: "06", title: "Brand Energy 101"                         },
-            { num: "07", title: "Design Your Brand"                        },
-            { num: "08", title: "Glow Up Your Bio + First Impressions"     },
-            { num: "09", title: "Creating Your Brand Pillars"              },
-            { num: "10", title: "Post Before You Feel Ready"               },
-            { num: "11", title: "Confidence Posting Formula"               },
-            { num: "12", title: "The Selfie CEO Shooting System"           },
-            { num: "13", title: "Real Reels Walkthrough"                   },
-            { num: "14", title: "CEO Content Planning"                     },
-          ].map((l) => (
-            <div key={l.num} className="mf flex items-baseline gap-5 py-4"
-              style={{ borderBottom: `1px solid ${C.divCream}` }}>
-              <span style={{ ...ty("eyebrow", false), minWidth: "28px", flexShrink: 0 }}>{l.num}</span>
+            { num: "02", title: "Building Unshakable Selfie Confidence" },
+            { num: "03", title: "Start Showing Up" },
+            { num: "04", title: "The Power Selfies Challenge" },
+            { num: "05", title: "The Confidence Camera Hack" },
+            { num: "06", title: "Brand Energy 101" },
+            { num: "07", title: "Design Your Brand" },
+            { num: "08", title: "Glow Up Your Bio + First Impressions" },
+            { num: "09", title: "Creating Your Brand Pillars" },
+            { num: "10", title: "Post Before You Feel Ready" },
+            { num: "11", title: "Confidence Posting Formula" },
+            { num: "12", title: "The Selfie CEO Shooting System" },
+            { num: "13", title: "Real Reels Walkthrough" },
+            { num: "14", title: "CEO Content Planning" },
+          ].map(l => (
+            <div
+              key={l.num}
+              className="mf flex items-baseline gap-5 py-4"
+              style={{ borderBottom: `1px solid ${C.divCream}` }}
+            >
+              <span style={{ ...ty("eyebrow", false), minWidth: "28px", flexShrink: 0 }}>
+                {l.num}
+              </span>
               <span style={{ ...ty("body", false), fontSize: "14px" }}>{l.title}</span>
             </div>
           ))}
@@ -1171,11 +1801,23 @@ export function MasterclassPageContent() {
 
       {/* FOUNDER SPLIT - dark */}
       <Split
-        title={<>I built a 100K+ personal brand without a photographer, a studio, or a clue about what I was doing at the start.</>}
+        title={
+          <>
+            I built a 100K+ personal brand without a photographer, a studio, or a clue about what I
+            was doing at the start.
+          </>
+        }
         body={
           <div className="space-y-4">
-            <p>I figured it out over years. The positioning. The pillars. The content system that actually holds up when life gets messy.</p>
-            <p>This course is everything I wish someone had put in front of me in the first six months, including the part where you stop hiding behind content and clarify what you actually sell.</p>
+            <p>
+              I figured it out over years. The positioning. The pillars. The content system that
+              actually holds up when life gets messy.
+            </p>
+            <p>
+              This course is everything I wish someone had put in front of me in the first six
+              months, including the part where you stop hiding behind content and clarify what you
+              actually sell.
+            </p>
             <p>One time. Then it&apos;s yours.</p>
           </div>
         }
@@ -1185,13 +1827,17 @@ export function MasterclassPageContent() {
       />
 
       {/* WHO IT'S FOR - cream */}
-      <Section eyebrow="Who this is for" title="You want to build something. You just haven't had a clear starting point." dark={false}>
+      <Section
+        eyebrow="Who this is for"
+        title="You want to build something. You just haven't had a clear starting point."
+        dark={false}
+      >
         <div className="grid gap-4 md:grid-cols-3">
           {[
             "You show up when inspiration hits. And disappear for weeks when it doesn't. You need a system.",
             "You know what you want to build but every time you sit down to post, it feels like starting from zero.",
             "You want to be known for something specific. You just haven't figured out exactly what that is yet.",
-          ].map((line) => (
+          ].map(line => (
             <article key={line} className="mf" style={cardSx(false)}>
               <p style={{ ...ty("body", false), fontSize: "15px" }}>{line}</p>
             </article>
@@ -1202,13 +1848,34 @@ export function MasterclassPageContent() {
       {/* WHAT YOU LEAVE WITH - dark */}
       <Section eyebrow="After the course" title="What you'll have that you don't have now." dark>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          <FCard dark title="Your Foundation" body="A clearer positioning, audience, voice, and content direction before you move into the lessons." />
-          <FCard dark title="Your core themes"     body="The three topics you always come back to. Every content idea filters through these." />
-          <FCard dark title="Your content-to-cash system" body="What you post, where it leads, and how to invite the right people into a simple conversation." />
-          <FCard dark title="A 30-day action plan"  body="You won't finish this course with notes. You'll finish it with posts, scripts, and a tracking rhythm." />
+          <FCard
+            dark
+            title="Your Foundation"
+            body="A clearer positioning, audience, voice, and content direction before you move into the lessons."
+          />
+          <FCard
+            dark
+            title="Your core themes"
+            body="The three topics you always come back to. Every content idea filters through these."
+          />
+          <FCard
+            dark
+            title="Your content-to-cash system"
+            body="What you post, where it leads, and how to invite the right people into a simple conversation."
+          />
+          <FCard
+            dark
+            title="A 30-day action plan"
+            body="You won't finish this course with notes. You'll finish it with posts, scripts, and a tracking rhythm."
+          />
         </div>
-        <p className="mf mt-8 max-w-3xl" style={{ ...ty("body", true), fontSize: "13px", color: C.onDarkMuted }}>
-          This training is educational and implementation-focused. Results depend on your offer, audience, consistency, pricing, market demand, effort, and timing. SSELFIE does not guarantee income or specific business results.
+        <p
+          className="mf mt-8 max-w-3xl"
+          style={{ ...ty("body", true), fontSize: "13px", color: C.onDarkMuted }}
+        >
+          This training is educational and implementation-focused. Results depend on your offer,
+          audience, consistency, pricing, market demand, effort, and timing. SSELFIE does not
+          guarantee income or specific business results.
         </p>
       </Section>
 
@@ -1221,7 +1888,7 @@ export function MasterclassPageContent() {
       <CtaClose
         title="Do this once. Then you'll know exactly what you're building."
         primary={{ href: masterclassCheckoutHref, label: "Enroll · $147" }}
-        secondary={{ href: "/join/studio",          label: "See SSELFIE SUITE" }}
+        secondary={{ href: "/join/studio", label: "See SSELFIE SUITE" }}
         dark
       />
 
@@ -1239,7 +1906,8 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
   const sourceBottom = checkoutSource ? `${checkoutSource}_bottom` : "studio_page_bottom"
   const pageViewTrackedRef = useRef(false)
   const analyticsEnvironment =
-    typeof window !== "undefined" && ["sselfie.ai", "www.sselfie.ai"].includes(window.location.hostname)
+    typeof window !== "undefined" &&
+    ["sselfie.ai", "www.sselfie.ai"].includes(window.location.hostname)
       ? "production"
       : "non_production"
 
@@ -1256,7 +1924,10 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
     })
   }, [analyticsEnvironment, checkoutSource])
 
-  const trackMembershipCheckoutClick = (placement: "hero" | "pricing" | "closing", destination: string) => {
+  const trackMembershipCheckoutClick = (
+    placement: "hero" | "pricing" | "closing",
+    destination: string
+  ) => {
     void trackAnalyticsEvent({
       event: "studio_membership_page_cta_click",
       properties: {
@@ -1279,7 +1950,12 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       <Hero
         eyebrow="SSELFIE SUITE · €97/mo"
         title={<>Start with one selfie. Maya helps with the rest.</>}
-        body={<p>Create photos that still feel like you. Know what to say. Plan what goes out next. Maya, Create, Calendar, and Learn work together in one monthly membership.</p>}
+        body={
+          <p>
+            Create photos that still feel like you. Know what to say. Plan what goes out next. Maya,
+            Create, Calendar, and Learn work together in one monthly membership.
+          </p>
+        }
         primary={{
           href: heroCheckoutHref,
           label: "Join SSELFIE SUITE",
@@ -1297,8 +1973,14 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         narrow
       >
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>You need a photo that feels like you. Words that sound like you. And a plan that does not disappear the second life gets busy.</p>
-          <p>So you open five different tools, save more ideas, and still do not know what should go out first.</p>
+          <p>
+            You need a photo that feels like you. Words that sound like you. And a plan that does
+            not disappear the second life gets busy.
+          </p>
+          <p>
+            So you open five different tools, save more ideas, and still do not know what should go
+            out first.
+          </p>
           <p>SUITE brings the photo, the words, and the plan into one place.</p>
         </div>
       </Section>
@@ -1311,33 +1993,85 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         dark={false}
       >
         <p className="mf mb-10 max-w-3xl" style={{ ...ty("body", false), fontSize: "16px" }}>
-          Maya works beside your content plan. She helps you choose a direction, create the pieces, and move them into a week you can actually see and change.
+          Maya works beside your content plan. She helps you choose a direction, create the pieces,
+          and move them into a week you can actually see and change.
         </p>
         <SuiteProductWalkthrough />
         <SuiteMultiFormatWalkthrough />
       </Section>
 
       {/* THREE JOBS - dark */}
-      <Section eyebrow="What SUITE helps you do" title={<>Create. Say it clearly. Plan what comes next.</>} dark>
+      <Section
+        eyebrow="What SUITE helps you do"
+        title={<>Create. Say it clearly. Plan what comes next.</>}
+        dark
+      >
         <div className="grid gap-4 md:grid-cols-3">
-          <FCard dark eyebrow="01 · Create" title="Make the visual" body="Start with your own selfie. Build photos, covers, and content pieces around a direction that feels like you." />
-          <FCard dark eyebrow="02 · Say" title="Find the words" body="Use Maya to shape captions, hooks, and ideas in plain language, then keep the parts that sound like you." />
-          <FCard dark eyebrow="03 · Plan" title="See the week" body="Move your ideas into Calendar, change the order, and know what you are creating next." />
+          <FCard
+            dark
+            eyebrow="01 · Create"
+            title="Make the visual"
+            body="Start with your own selfie. Build photos, covers, and content pieces around a direction that feels like you."
+          />
+          <FCard
+            dark
+            eyebrow="02 · Say"
+            title="Find the words"
+            body="Use Maya to shape captions, hooks, and ideas in plain language, then keep the parts that sound like you."
+          />
+          <FCard
+            dark
+            eyebrow="03 · Plan"
+            title="See the week"
+            body="Move your ideas into Calendar, change the order, and know what you are creating next."
+          />
         </div>
-        <p className="mf mt-8 max-w-3xl" style={{ ...ty("body", true), fontSize: "14px", color: C.onDarkMuted }}>
-          Maya suggests. You review, change, and choose. Nothing has to go out just because AI made it.
+        <p
+          className="mf mt-8 max-w-3xl"
+          style={{ ...ty("body", true), fontSize: "14px", color: C.onDarkMuted }}
+        >
+          Maya suggests. You review, change, and choose. Nothing has to go out just because AI made
+          it.
         </p>
       </Section>
 
       {/* EVERYTHING INCLUDED - cream */}
-      <Section eyebrow="One membership" title={<>The full working space. €97 a month.</>} dark={false}>
+      <Section
+        eyebrow="One membership"
+        title={<>The full working space. €97 a month.</>}
+        dark={false}
+      >
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <FCard dark={false} title="Maya" body="Your AI creative director, working with your brand context and the tools inside SUITE." />
-          <FCard dark={false} title="Create + 100 monthly credits" body="Create photos and visual content. Credits reset each month; different creations can use different amounts." />
-          <FCard dark={false} title="Calendar" body="Plan your grid and your week, move posts around, and keep the next step visible." />
-          <FCard dark={false} title="Learn" body="Personalized help and the deeper SSELFIE lessons when you need more than a quick answer." />
-          <FCard dark={false} title="The SSELFIE library" body="Prompt collections, Starter Kit resources, the Masterclass, and current member drops in one place." />
-          <FCard dark={false} title="Your account" body="Access after payment, monthly billing, and cancellation from your account when you need it." />
+          <FCard
+            dark={false}
+            title="Maya"
+            body="Your AI creative director, working with your brand context and the tools inside SUITE."
+          />
+          <FCard
+            dark={false}
+            title="Create + 100 monthly credits"
+            body="Create photos and visual content. Credits reset each month; different creations can use different amounts."
+          />
+          <FCard
+            dark={false}
+            title="Calendar"
+            body="Plan your grid and your week, move posts around, and keep the next step visible."
+          />
+          <FCard
+            dark={false}
+            title="Learn"
+            body="Personalized help and the deeper SSELFIE lessons when you need more than a quick answer."
+          />
+          <FCard
+            dark={false}
+            title="The SSELFIE library"
+            body="Prompt collections, Starter Kit resources, the Masterclass, and current member drops in one place."
+          />
+          <FCard
+            dark={false}
+            title="Your account"
+            body="Access after payment, monthly billing, and cancellation from your account when you need it."
+          />
         </div>
         <p className="mf" style={{ ...ty("body", false), fontSize: "16px", marginTop: "32px" }}>
           One public plan. No feature maze. No three tiers to compare.
@@ -1350,8 +2084,14 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         title={<>The goal is recognizable. Not a perfect AI stranger.</>}
         body={
           <div className="space-y-4">
-            <p>Maya works from your reference selfies and the direction you give her. Clear selfies and clear feedback usually give AI a better chance of keeping you recognizable.</p>
-            <p>AI can still get things wrong. Review every result. Change what feels off. You stay the decision-maker.</p>
+            <p>
+              Maya works from your reference selfies and the direction you give her. Clear selfies
+              and clear feedback usually give AI a better chance of keeping you recognizable.
+            </p>
+            <p>
+              AI can still get things wrong. Review every result. Change what feels off. You stay
+              the decision-maker.
+            </p>
           </div>
         }
         imgSrc={SUITE_IMG.honest}
@@ -1360,7 +2100,11 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       />
 
       {/* FIT - cream */}
-      <Section eyebrow="Is this for you?" title={<>A monthly tool should earn its place in your week.</>} dark={false}>
+      <Section
+        eyebrow="Is this for you?"
+        title={<>A monthly tool should earn its place in your week.</>}
+        dark={false}
+      >
         <div className="grid gap-4 md:grid-cols-2">
           <article className="mf" style={cardSx(false)}>
             <span style={{ ...ty("eyebrow", false), marginBottom: "14px" }}>SUITE may fit if</span>
@@ -1385,9 +2129,18 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       <Section eyebrow="Real customer words" title={<>Still you. And they feel it.</>} dark={false}>
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            { quote: "Best one so far. I love that it looks real, and me.", who: "A SSELFIE member · 50 & fabulous" },
-            { quote: "I asked Maya to make adjustments and WOW. It's so good.", who: "A SSELFIE member" },
-            { quote: "I'm so picky it's not even funny. But this, my God, I'm blown away.", who: "A SSELFIE member" },
+            {
+              quote: "Best one so far. I love that it looks real, and me.",
+              who: "A SSELFIE member · 50 & fabulous",
+            },
+            {
+              quote: "I asked Maya to make adjustments and WOW. It's so good.",
+              who: "A SSELFIE member",
+            },
+            {
+              quote: "I'm so picky it's not even funny. But this, my God, I'm blown away.",
+              who: "A SSELFIE member",
+            },
           ].map(t => (
             <article key={t.quote} className="mf" style={cardSx(false)}>
               <p style={{ ...ty("body", false), fontSize: "16px", marginBottom: "14px" }}>
@@ -1400,10 +2153,20 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
       </Section>
 
       {/* PRICING - cream */}
-      <Section eyebrow="One simple plan" title={<>€97 a month. Everything works together.</>} dark={false} narrow>
+      <Section
+        eyebrow="One simple plan"
+        title={<>€97 a month. Everything works together.</>}
+        dark={false}
+        narrow
+      >
         <div className="mf space-y-4" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>Maya, Create, Calendar, Learn, the SSELFIE library, and 100 credits that reset each month. Different creations can use different amounts of credits.</p>
-          <p className="text-sm text-stone-500">Billed monthly in EUR. Access opens after payment. Cancel from your account.</p>
+          <p>
+            Maya, Create, Calendar, Learn, the SSELFIE library, and 100 credits that reset each
+            month. Different creations can use different amounts of credits.
+          </p>
+          <p className="text-sm text-stone-500">
+            Billed monthly in EUR. Access opens after payment. Cancel from your account.
+          </p>
         </div>
         <div className="mf" style={{ marginTop: "32px" }}>
           <Btn
@@ -1442,34 +2205,39 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
 
 // ─── Inline inquiry form ──────────────────────────────────────────────────────
 export function InquiryForm() {
-  const [name,         setName]         = useState("")
-  const [email,        setEmail]        = useState("")
-  const [instagram,    setInstagram]    = useState("")
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [instagram, setInstagram] = useState("")
   const [currentBlock, setCurrentBlock] = useState("")
-  const [goal,         setGoal]         = useState("")
+  const [goal, setGoal] = useState("")
   const [currentOffer, setCurrentOffer] = useState("")
+  const [aiAttempts, setAiAttempts] = useState("")
   const [investmentReadiness, setInvestmentReadiness] = useState("")
-  const [error,        setError]        = useState("")
-  const [success,      setSuccess]      = useState(false)
-  const [pending,      startTransition] = useTransition()
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
+  const [pending, startTransition] = useTransition()
   const applicationStartedRef = useRef(false)
 
   const inputStyle: React.CSSProperties = {
-    width:      "100%",
-    border:     `1px solid ${C.divDark}`,
+    width: "100%",
+    border: `1px solid ${C.divDark}`,
     background: C.inkSoft,
-    color:      C.onDark,
-    padding:    "12px 16px",
-    fontSize:   "14px",
+    color: C.onDark,
+    padding: "12px 16px",
+    fontSize: "14px",
     fontFamily: F.sans,
-    outline:    "none",
+    outline: "none",
     transition: "border-color 0.2s",
     // Keep this form flat for its editorial section while product UI stays rounded elsewhere.
   }
-  const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const onFocus = (
+    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     e.target.style.borderColor = "color-mix(in srgb, var(--color-whisper) 28%, transparent)"
   }
-  const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const onBlur = (
+    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     e.target.style.borderColor = C.divDark
   }
   const trackApplicationStart = () => {
@@ -1493,8 +2261,8 @@ export function InquiryForm() {
     setSuccess(false)
     startTransition(async () => {
       try {
-        const res     = await fetch("/api/inquiry/submit", {
-          method:  "POST",
+        const res = await fetch("/api/inquiry/submit", {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name,
@@ -1503,7 +2271,8 @@ export function InquiryForm() {
             currentChallenge: currentBlock,
             desiredOutcome: goal,
             currentOffer,
-            helpFocus: "Build one client-ready online path",
+            aiAttempts,
+            helpFocus: "Build my personal AI content team",
             investmentReadiness,
           }),
         })
@@ -1521,7 +2290,14 @@ export function InquiryForm() {
           properties: { source: "work_with_me_form" },
         })
         setSuccess(true)
-        setName(""); setEmail(""); setInstagram(""); setCurrentBlock(""); setGoal(""); setCurrentOffer(""); setInvestmentReadiness("")
+        setName("")
+        setEmail("")
+        setInstagram("")
+        setCurrentBlock("")
+        setGoal("")
+        setCurrentOffer("")
+        setAiAttempts("")
+        setInvestmentReadiness("")
       } catch {
         void trackAnalyticsEvent({
           event: "work_with_me_application_failed",
@@ -1536,8 +2312,13 @@ export function InquiryForm() {
     return (
       <div style={{ ...cardSx(true), textAlign: "center", padding: "40px 28px" }}>
         <p style={{ ...ty("h3", true), marginBottom: "12px" }}>Your application has been sent.</p>
-        <p style={ty("body", true)}>I read every application myself. If I believe I can help turn your existing expertise into a clearer path to the right clients, you&apos;ll hear back with the next step. Usually that means a short fit call first.</p>
-        <p className="mt-4" style={{ ...ty("body", true), color: C.onDarkMuted }}>No payment has been taken.</p>
+        <p style={ty("body", true)}>
+          I read every application myself. If I believe I can help build the right AI content team
+          around your business, you&apos;ll hear back with an invitation to a short fit call.
+        </p>
+        <p className="mt-4" style={{ ...ty("body", true), color: C.onDarkMuted }}>
+          No payment has been taken.
+        </p>
       </div>
     )
   }
@@ -1549,35 +2330,139 @@ export function InquiryForm() {
       style={{ ...cardSx(true), display: "grid", gap: "18px" }}
     >
       {[
-        { label: "Name",             value: name,      set: setName,      type: "text",  required: true  },
-        { label: "Email",            value: email,     set: setEmail,     type: "email", required: true  },
-        { label: "Instagram handle", value: instagram, set: setInstagram, type: "text",  required: false },
+        { label: "Name", value: name, set: setName, type: "text", required: true },
+        { label: "Email", value: email, set: setEmail, type: "email", required: true },
+        {
+          label: "Instagram handle",
+          value: instagram,
+          set: setInstagram,
+          type: "text",
+          required: false,
+        },
       ].map(({ label, value, set, type, required }) => (
-        <label key={label} style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
+        <label
+          key={label}
+          style={{
+            display: "grid",
+            gap: "7px",
+            fontSize: "13px",
+            color: C.onDarkMuted,
+            fontFamily: F.sans,
+          }}
+        >
           <span>{label}</span>
-          <input type={type} value={value} required={required}
-            onChange={(e) => set(e.target.value)}
-            style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
+          <input
+            type={type}
+            value={value}
+            required={required}
+            onChange={e => set(e.target.value)}
+            style={inputStyle}
+            onFocus={onFocus}
+            onBlur={onBlur}
+          />
         </label>
       ))}
-      <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
-        <span>What is not working online right now?</span>
-        <textarea value={currentBlock} onChange={(e) => setCurrentBlock(e.target.value)} rows={4} required
-          style={{ ...inputStyle, minHeight: "110px", resize: "vertical" }} onFocus={onFocus} onBlur={onBlur} />
+      <label
+        style={{
+          display: "grid",
+          gap: "7px",
+          fontSize: "13px",
+          color: C.onDarkMuted,
+          fontFamily: F.sans,
+        }}
+      >
+        <span>What marketing work keeps falling back on you?</span>
+        <textarea
+          value={currentBlock}
+          onChange={e => setCurrentBlock(e.target.value)}
+          rows={4}
+          required
+          style={{ ...inputStyle, minHeight: "110px", resize: "vertical" }}
+          onFocus={onFocus}
+          onBlur={onBlur}
+        />
       </label>
-      <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
-        <span>What would you like the right client to do next?</span>
-        <textarea value={goal} onChange={(e) => setGoal(e.target.value)} rows={4} required
-          style={{ ...inputStyle, minHeight: "110px", resize: "vertical" }} onFocus={onFocus} onBlur={onBlur} />
+      <label
+        style={{
+          display: "grid",
+          gap: "7px",
+          fontSize: "13px",
+          color: C.onDarkMuted,
+          fontFamily: F.sans,
+        }}
+      >
+        <span>What would you need help creating every week?</span>
+        <textarea
+          value={goal}
+          onChange={e => setGoal(e.target.value)}
+          rows={4}
+          required
+          style={{ ...inputStyle, minHeight: "110px", resize: "vertical" }}
+          onFocus={onFocus}
+          onBlur={onBlur}
+        />
       </label>
-      <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
-        <span>What service are you already selling? What result does it create, and what does a client usually pay?</span>
-        <textarea value={currentOffer} onChange={(e) => setCurrentOffer(e.target.value)} rows={3} required
-          style={{ ...inputStyle, minHeight: "86px", resize: "vertical" }} onFocus={onFocus} onBlur={onBlur} />
+      <label
+        style={{
+          display: "grid",
+          gap: "7px",
+          fontSize: "13px",
+          color: C.onDarkMuted,
+          fontFamily: F.sans,
+        }}
+      >
+        <span>
+          What service are you already selling? What result does it create, and what does a client
+          usually pay?
+        </span>
+        <textarea
+          value={currentOffer}
+          onChange={e => setCurrentOffer(e.target.value)}
+          rows={3}
+          required
+          style={{ ...inputStyle, minHeight: "86px", resize: "vertical" }}
+          onFocus={onFocus}
+          onBlur={onBlur}
+        />
       </label>
-      <label style={{ display: "grid", gap: "7px", fontSize: "13px", color: C.onDarkMuted, fontFamily: F.sans }}>
+      <label
+        style={{
+          display: "grid",
+          gap: "7px",
+          fontSize: "13px",
+          color: C.onDarkMuted,
+          fontFamily: F.sans,
+        }}
+      >
+        <span>What have you tried with ChatGPT or AI, and where did you get stuck?</span>
+        <textarea
+          value={aiAttempts}
+          onChange={e => setAiAttempts(e.target.value)}
+          rows={3}
+          required
+          style={{ ...inputStyle, minHeight: "86px", resize: "vertical" }}
+          onFocus={onFocus}
+          onBlur={onBlur}
+        />
+      </label>
+      <label
+        style={{
+          display: "grid",
+          gap: "7px",
+          fontSize: "13px",
+          color: C.onDarkMuted,
+          fontFamily: F.sans,
+        }}
+      >
         <span>Are you ready to invest €2,000 if it is a fit?</span>
-        <select required value={investmentReadiness} onChange={(e) => setInvestmentReadiness(e.target.value)} style={inputStyle} onFocus={onFocus} onBlur={onBlur}>
+        <select
+          required
+          value={investmentReadiness}
+          onChange={e => setInvestmentReadiness(e.target.value)}
+          style={inputStyle}
+          onFocus={onFocus}
+          onBlur={onBlur}
+        >
           <option value="">Choose one</option>
           <option value="Yes">Yes</option>
           <option value="Maybe, I have questions">Maybe, I have questions</option>
@@ -1585,16 +2470,27 @@ export function InquiryForm() {
         </select>
       </label>
       <button
-        type="submit" disabled={pending}
+        type="submit"
+        disabled={pending}
         style={{
-          display: "inline-flex", alignItems: "center", justifyContent: "center",
-          padding: "13px 32px", minHeight: "46px",
-          background: pending ? "color-mix(in srgb, var(--color-whisper) 35%, transparent)" : C.cream,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "13px 32px",
+          minHeight: "46px",
+          background: pending
+            ? "color-mix(in srgb, var(--color-whisper) 35%, transparent)"
+            : C.cream,
           color: C.ink,
-          fontSize: "10px", fontFamily: F.sans, fontWeight: 600, letterSpacing: "0.22em",
+          fontSize: "10px",
+          fontFamily: F.sans,
+          fontWeight: 600,
+          letterSpacing: "0.22em",
           textTransform: "uppercase",
           border: "1px solid transparent",
-          boxShadow: pending ? "none" : "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
+          boxShadow: pending
+            ? "none"
+            : "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
           cursor: pending ? "not-allowed" : "pointer",
           width: "100%",
           // Zero border-radius - SSELFIE Agents system
@@ -1650,7 +2546,15 @@ const VAULT_FAQ = [
 
 function VaultRiskLine({ dark }: { dark: boolean }) {
   return (
-    <p style={{ ...ty("body", dark), fontSize: "12px", color: dark ? C.onDarkMuted : C.onCreamMuted, margin: "12px 0 0", maxWidth: "420px" }}>
+    <p
+      style={{
+        ...ty("body", dark),
+        fontSize: "12px",
+        color: dark ? C.onDarkMuted : C.onCreamMuted,
+        margin: "12px 0 0",
+        maxWidth: "420px",
+      }}
+    >
       One payment. No subscription. Your private access link arrives by email.
     </p>
   )
@@ -1676,12 +2580,30 @@ export function PromptVaultPageContent({
       <PublicNav />
 
       {checkoutFailed && (
-        <section className="mf" style={{ background: C.cream, borderBottom: `1px solid ${C.divCream}`, padding: "18px 22px" }}>
-          <div style={{ maxWidth: "1120px", margin: "0 auto", display: "flex", flexWrap: "wrap", gap: "14px", alignItems: "center", justifyContent: "space-between" }}>
+        <section
+          className="mf"
+          style={{
+            background: C.cream,
+            borderBottom: `1px solid ${C.divCream}`,
+            padding: "18px 22px",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: "1120px",
+              margin: "0 auto",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "14px",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
             <div style={{ minWidth: "240px", flex: "1 1 420px" }}>
               <p style={{ ...ty("eyebrow", false), marginBottom: "6px" }}>Checkout</p>
               <p style={{ ...ty("body", false), margin: 0, fontSize: "14px" }}>
-                Your payment form did not open cleanly. Try once more and keep this page open while Stripe loads.
+                Your payment form did not open cleanly. Try once more and keep this page open while
+                Stripe loads.
               </p>
             </div>
             <PromptVaultCheckoutLink label="Retry checkout" surface="cream" />
@@ -1697,14 +2619,21 @@ export function PromptVaultPageContent({
           <>
             <p style={{ marginBottom: "14px" }}>
               Choose a photoshoot you love, upload one clear selfie to ChatGPT and copy the prompts.
-              Each collection gives you a set of matching photos with different angles, crops and moments.
+              Each collection gives you a set of matching photos with different angles, crops and
+              moments.
             </p>
             <p style={{ fontSize: "12px", color: C.onDarkMuted, letterSpacing: "0.04em" }}>
-              {collectionCount} collections · {shotCount} copy-and-paste prompts · New drops included · One payment
+              {collectionCount} collections · {shotCount} copy-and-paste prompts · New drops
+              included · One payment
             </p>
           </>
         }
-        primaryNode={<PromptVaultCheckoutLink label={`Get the complete Vault · ${priceLabel}`} placement="hero" />}
+        primaryNode={
+          <PromptVaultCheckoutLink
+            label={`Get the complete Vault · ${priceLabel}`}
+            placement="hero"
+          />
+        }
         secondary={{ href: "#inside", label: "See what is inside" }}
         imageSrc="/images/ai-prompts/dark-feminine-cafe-shot-3.jpg"
         imageAlt="Dark café editorial portrait from a Prompt Vault photoshoot"
@@ -1714,51 +2643,112 @@ export function PromptVaultPageContent({
       />
 
       {/* HOW IT WORKS - cream */}
-      <Section eyebrow="How it works" title="Create your photoshoot in three simple steps." dark={false}>
+      <Section
+        eyebrow="How it works"
+        title="Create your photoshoot in three simple steps."
+        dark={false}
+      >
         <div className="grid gap-4 md:grid-cols-3">
-          <FCard dark={false} eyebrow="01" title="Choose a photoshoot" body="Start with the collection that gives you the photos you need right now." />
-          <FCard dark={false} eyebrow="02" title="Upload one clear selfie" body="Open ChatGPT and add a photo where your face is easy to see." />
-          <FCard dark={false} eyebrow="03" title="Copy and create" body="Use the prompts one by one to create a full set of matching photos." />
+          <FCard
+            dark={false}
+            eyebrow="01"
+            title="Choose a photoshoot"
+            body="Start with the collection that gives you the photos you need right now."
+          />
+          <FCard
+            dark={false}
+            eyebrow="02"
+            title="Upload one clear selfie"
+            body="Open ChatGPT and add a photo where your face is easy to see."
+          />
+          <FCard
+            dark={false}
+            eyebrow="03"
+            title="Copy and create"
+            body="Use the prompts one by one to create a full set of matching photos."
+          />
         </div>
       </Section>
 
       {/* OFFER SUMMARY - dark */}
       <Section id="inside" eyebrow="Everything inside" title="The complete Prompt Vault." dark>
-        <div className="grid gap-px md:grid-cols-2" style={{ background: C.divDark, border: `1px solid ${C.divDark}` }}>
+        <div
+          className="grid gap-px md:grid-cols-2"
+          style={{ background: C.divDark, border: `1px solid ${C.divDark}` }}
+        >
           {[
-            [`${collectionCount} complete collections`, "Full photoshoots with matching angles, crops and moments."],
-            [`${shotCount} ready-to-use prompts`, "Copy each prompt into ChatGPT with your own selfie."],
-            ["A finished example for every prompt", "See the photo you are creating before you start."],
+            [
+              `${collectionCount} complete collections`,
+              "Full photoshoots with matching angles, crops and moments.",
+            ],
+            [
+              `${shotCount} ready-to-use prompts`,
+              "Copy each prompt into ChatGPT with your own selfie.",
+            ],
+            [
+              "A finished example for every prompt",
+              "See the photo you are creating before you start.",
+            ],
             ["Every new drop included", "New Prompt Vault collections are added to your access."],
           ].map(([title, body]) => (
-            <div key={title} className="mf" style={{ background: C.ink, padding: "clamp(24px, 4vw, 38px)" }}>
+            <div
+              key={title}
+              className="mf"
+              style={{ background: C.ink, padding: "clamp(24px, 4vw, 38px)" }}
+            >
               <h3 style={{ ...ty("h3", true), marginBottom: "8px" }}>{title}</h3>
               <p style={{ ...ty("body", true), fontSize: "14px", color: C.onDarkMuted }}>{body}</p>
             </div>
           ))}
         </div>
         <div className="mf" style={{ marginTop: "32px" }}>
-          <PromptVaultCheckoutLink label={`Get the complete Vault · ${priceLabel}`} placement="offer-summary" />
+          <PromptVaultCheckoutLink
+            label={`Get the complete Vault · ${priceLabel}`}
+            placement="offer-summary"
+          />
           <VaultRiskLine dark />
         </div>
       </Section>
 
       {/* CURATED COLLECTION PREVIEW - cream */}
-      <Section id="collections" eyebrow="A look inside the Vault" title="See how each photoshoot continues." dark={false}>
-        <p className="mf max-w-3xl" style={{ ...ty("body", false), fontSize: "16px", marginBottom: "40px" }}>
-          The free prompts show you the first photo. Here are three different photos from six of the complete collections inside the Vault.
+      <Section
+        id="collections"
+        eyebrow="A look inside the Vault"
+        title="See how each photoshoot continues."
+        dark={false}
+      >
+        <p
+          className="mf max-w-3xl"
+          style={{ ...ty("body", false), fontSize: "16px", marginBottom: "40px" }}
+        >
+          The free prompts show you the first photo. Here are three different photos from six of the
+          complete collections inside the Vault.
         </p>
         <div className="grid gap-6 md:grid-cols-2">
-          {collections.map((card) => (
-            <article key={card.id} className="mf" style={{ ...cardSx(false), padding: 0, overflow: "hidden" }}>
-              <div className="grid grid-cols-[1.35fr_1fr] grid-rows-2 gap-px" style={{ height: "clamp(320px, 55vw, 520px)", background: C.divCream }}>
+          {collections.map(card => (
+            <article
+              key={card.id}
+              className="mf"
+              style={{ ...cardSx(false), padding: 0, overflow: "hidden" }}
+            >
+              <div
+                className="grid grid-cols-[1.35fr_1fr] grid-rows-2 gap-px"
+                style={{ height: "clamp(320px, 55vw, 520px)", background: C.divCream }}
+              >
                 {card.images.map((image, index) => (
-                  <div key={image.src} className={`relative overflow-hidden ${index === 0 ? "row-span-2" : ""}`}>
+                  <div
+                    key={image.src}
+                    className={`relative overflow-hidden ${index === 0 ? "row-span-2" : ""}`}
+                  >
                     <Image
                       src={image.src}
                       alt={image.alt}
                       fill
-                      sizes={index === 0 ? "(min-width: 768px) 28vw, 62vw" : "(min-width: 768px) 20vw, 34vw"}
+                      sizes={
+                        index === 0
+                          ? "(min-width: 768px) 28vw, 62vw"
+                          : "(min-width: 768px) 20vw, 34vw"
+                      }
                       className="object-cover"
                       style={{ objectPosition: "center top" }}
                     />
@@ -1766,28 +2756,49 @@ export function PromptVaultPageContent({
                 ))}
               </div>
               <div style={{ padding: "22px 24px 24px" }}>
-                <span style={{ ...ty("eyebrow", false), marginBottom: "8px" }}>{card.shotCount}-photo collection</span>
+                <span style={{ ...ty("eyebrow", false), marginBottom: "8px" }}>
+                  {card.shotCount}-photo collection
+                </span>
                 <h3 style={{ ...ty("h3", false), textShadow: "none" }}>{card.title}</h3>
               </div>
             </article>
           ))}
         </div>
         <div className="mf" style={{ marginTop: "36px" }}>
-          <p style={{ ...ty("body", false), fontSize: "14px", marginBottom: "18px", maxWidth: "620px" }}>
-            These are only six of the {collectionCount} collections. Your Vault access includes every current photoshoot and every new drop I add.
+          <p
+            style={{
+              ...ty("body", false),
+              fontSize: "14px",
+              marginBottom: "18px",
+              maxWidth: "620px",
+            }}
+          >
+            These are only six of the {collectionCount} collections. Your Vault access includes
+            every current photoshoot and every new drop I add.
           </p>
-          <PromptVaultCheckoutLink label={`Get all ${collectionCount} collections · ${priceLabel}`} surface="cream" placement="collection-preview" />
+          <PromptVaultCheckoutLink
+            label={`Get all ${collectionCount} collections · ${priceLabel}`}
+            surface="cream"
+            placement="collection-preview"
+          />
         </div>
       </Section>
 
       {/* TRUST - dark */}
-      <Section eyebrow="Why the prompts help" title="The prompt makes a big difference." dark narrow>
+      <Section
+        eyebrow="Why the prompts help"
+        title="The prompt makes a big difference."
+        dark
+        narrow
+      >
         <div className="mf space-y-4" style={{ ...ty("body", true), fontSize: "16px" }}>
           <p>
-            Every prompt already includes the outfit, setting, lighting, composition and mood, so ChatGPT has less to guess.
+            Every prompt already includes the outfit, setting, lighting, composition and mood, so
+            ChatGPT has less to guess.
           </p>
           <p>
-            You use your own selfie as the reference. AI can still change small details, so always check your result before you use it and try again with a clearer selfie when needed.
+            You use your own selfie as the reference. AI can still change small details, so always
+            check your result before you use it and try again with a clearer selfie when needed.
           </p>
         </div>
       </Section>
@@ -1798,15 +2809,30 @@ export function PromptVaultPageContent({
       </Section>
 
       {/* FINAL CTA - dark */}
-      <Section eyebrow="The complete Prompt Vault" title={`${priceLabel} once. No subscription.`} dark narrow>
-        <ul className="mf" style={{ listStyle: "none", padding: 0, margin: "0 0 30px", display: "flex", flexDirection: "column", gap: "9px" }}>
+      <Section
+        eyebrow="The complete Prompt Vault"
+        title={`${priceLabel} once. No subscription.`}
+        dark
+        narrow
+      >
+        <ul
+          className="mf"
+          style={{
+            listStyle: "none",
+            padding: 0,
+            margin: "0 0 30px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "9px",
+          }}
+        >
           {[
             `${collectionCount} complete photoshoot collections`,
             `${shotCount} copy-and-paste prompts`,
             "A finished example for every prompt",
             "Every new Prompt Vault drop included",
             "Private access link sent by email",
-          ].map((item) => (
+          ].map(item => (
             <li key={item} style={{ ...ty("body", true), fontSize: "15px" }}>
               <span style={{ color: C.onDarkMuted, marginRight: "10px" }}>·</span>
               {item}
@@ -2095,8 +3121,8 @@ export function VaultMayaPageContent({
 
       <Section eyebrow="Your membership" title="New photos to create every week." dark={false}>
         <p className={`mf ${vaultMayaStyles.sectionIntro}`}>
-          I add new Vault looks every Monday, so there is always something new waiting when you
-          need fresh photos.
+          I add new Vault looks every Monday, so there is always something new waiting when you need
+          fresh photos.
         </p>
         <div className={vaultMayaStyles.membershipGrid}>
           {[
@@ -2190,120 +3216,194 @@ export function VaultMayaPageContent({
   )
 }
 
-// ─── Work With Me · Private 4-Week Sprint ────────────────────────────────────
+// ─── Work With Me · Your AI Content Team ─────────────────────────────────────
 export function WorkWithMePageContent() {
+  const trackPrimaryCta = (location: string) => {
+    void trackAnalyticsEvent({
+      event: "work_with_me_primary_cta_clicked",
+      properties: { source: "work_with_me_page", location },
+    })
+  }
+
   return (
     <PublicPageShell>
       <PublicNav />
 
       {/* HERO - dark, full-bleed */}
       <Hero
-        eyebrow="Work With Me · Five Private Places"
-        title={<>Your work is good. Your online presence should make that clear.</>}
+        eyebrow="Work With Me · Six Weeks"
+        title={<>You should not have to run your business and be the whole marketing team too.</>}
         body={
-          <p>I help experienced women turn a service they already sell into one clear path from finding you to contacting you.</p>
+          <p>
+            In six weeks, I help established women build and train a personal AI content team that
+            understands their business, voice, customers, and way of working.
+          </p>
         }
-        primary={{ href: "#inquiry", label: "Apply to Work With Me" }}
+        primary={{
+          href: "#inquiry",
+          label: "Apply to Work Together",
+          onClick: () => trackPrimaryCta("hero"),
+        }}
         imageSrc={IMG.wwmHero}
       />
 
       {/* RECOGNITION - cream */}
       <Section
         eyebrow="Maybe this is you"
-        title={<>People trust you in person. Online, it feels harder.</>}
+        title={<>Every post still starts with you.</>}
         dark={false}
         narrow
       >
         <div className="mf space-y-3" style={{ ...ty("body", false), fontSize: "16px" }}>
-          <p>Maybe most of your clients come through referrals. When someone talks to you, they understand why your work matters.</p>
-          <p>But online, your bio feels vague, your content feels scattered, and people cannot see why they should choose you. That is the problem we fix.</p>
+          <p>
+            You finish the client work, open Instagram, and your brain goes everywhere. The post,
+            the email, the research, and the plan all wait for you.
+          </p>
+          <p>
+            Maybe you have tried ChatGPT. It sounded generic, gave you too much, or became another
+            thing you stopped using. You do not need more prompts. You need help that knows your
+            business.
+          </p>
         </div>
       </Section>
 
       {/* THE STORY - dark */}
       <Split
         eyebrow="From Sandra"
-        title={<>I built SSELFIE the same way.</>}
+        title={<>I built the team I could not afford to hire.</>}
         body={
           <div className="space-y-3">
-            <p>I did not start with a team or a perfect plan. I started with my phone, learned how to be seen, and connected my photos and story to work people could understand and buy.</p>
-            <p>Now I help you do that with the experience you already have. You do not need to become someone else. You need a clearer way to show what is already there.</p>
+            <p>
+              I am not a technical person. I learned how to direct AI because I could not hire a
+              researcher, content director, writer, and technical team every time I needed help.
+            </p>
+            <p>
+              Today I use it to research, plan, write, build SSELFIE, and keep moving when my own
+              brain is everywhere. I will help you build the simpler version around your business.
+            </p>
           </div>
         }
         imgSrc={IMG.wwmFounder}
         imgAlt="Sandra, founder of SSELFIE"
         imgFirst
         dark
-        cta={<Btn href="#inquiry" surface="dark" ghost>Apply to Work With Me</Btn>}
+        cta={
+          <Btn href="#inquiry" onClick={() => trackPrimaryCta("proof")} surface="dark" ghost>
+            Apply to Work Together
+          </Btn>
+        }
       />
 
       {/* TRANSFORMATION - dark */}
-      <Section
-        eyebrow="The result"
-        title={<>One clear path to the right client.</>}
-        dark
-      >
+      <Section eyebrow="The result" title={<>Your marketing no longer starts from zero.</>} dark>
         <div className="mf space-y-3" style={{ ...ty("body", true), fontSize: "16px" }}>
-          <p>We choose one service, one client, and one problem she already wants help with. Then we connect your message, profile, offer page, content, and inquiry path.</p>
-          <p>The goal is simple: she finds you, understands you, trusts you, and knows how to contact you. I cannot promise clients or income, but I can remove the confusion that makes good people leave.</p>
+          <p>
+            You bring one idea or voice note. Your team helps research it, decide what matters, plan
+            the week, and draft the words. You still make the final decisions, but you are not
+            carrying every step alone.
+          </p>
+          <p>
+            This is not a promise of clients or income. It is a working content system built around
+            you, not a pile of generic prompts.
+          </p>
         </div>
       </Section>
 
       {/* HOW I WORK - cream */}
       <Split
         eyebrow="How I work"
-        title={<>I do the first round before we meet.</>}
+        title={<>We build it, use it, and make it sound like you.</>}
         body={
           <div className="space-y-3">
-            <p>I spend two weeks researching your service, clients, message, and online presence. Then I build the first version, so our first call starts with something real.</p>
-            <p>Together, we refine it through four weekly calls. You get thoughtful work built for your business, not another workbook or pile of prompts.</p>
+            <p>
+              <strong>1. I learn your business.</strong> Your offers, customers, voice, visuals, and
+              the work that keeps landing back on you.
+            </p>
+            <p>
+              <strong>2. I build and train your team.</strong> One Business Brain, a research
+              assistant, content director, and writer that share the same context.
+            </p>
+            <p>
+              <strong>3. We use it together.</strong> We create your first month of marketing, fix
+              what feels generic, and leave you with a weekly flow you can keep using.
+            </p>
           </div>
         }
         imgSrc={IMG.wwmHowIWork}
         imgAlt="Sandra researching and building inside a client's business"
         dark={false}
-        cta={<Btn href="#inquiry" surface="cream">Apply to Work With Me</Btn>}
+        cta={
+          <Btn href="#inquiry" onClick={() => trackPrimaryCta("plan")} surface="cream">
+            Apply to Work Together
+          </Btn>
+        }
       />
 
       {/* WHY THIS IS DIFFERENT - dark */}
       <Split
         eyebrow="Keeping it simple"
-        title={<>We are not rebuilding your whole business.</>}
+        title={<>One job: take the weekly marketing work off your shoulders.</>}
         body={
           <div className="space-y-3">
-            <p>We are not chasing more followers or fixing every offer. We focus on the path that helps the right client understand your value and reach out.</p>
-            <p style={{ color: C.onDark }}>If it does not help that path, it waits.</p>
+            <p>
+              We are not automating your whole business. This does not include your inbox, customer
+              service, CRM, automatic posting, or a promise of leads.
+            </p>
+            <p style={{ color: C.onDark }}>
+              We build one useful team for research, planning, writing, and repurposing. Everything
+              else can wait.
+            </p>
           </div>
         }
         imgSrc={IMG.wwmEditorial}
         imgAlt="Editorial AI-assisted brand photo used in the SSELFIE visual system"
         imgFirst
         dark
-        cta={<Btn href="#inquiry" surface="dark" ghost>Apply to Work With Me</Btn>}
+        cta={
+          <Btn href="#inquiry" onClick={() => trackPrimaryCta("scope")} surface="dark" ghost>
+            Apply to Work Together
+          </Btn>
+        }
       />
 
       {/* THE SPRINT / OFFER - cream */}
       <Split
-        eyebrow="The sprint"
-        title={<>Five private places. &euro;2,000 paid in full.</>}
+        eyebrow="Your AI Content Team"
+        title={<>Six weeks together. &euro;2,000.</>}
         body={
           <div className="space-y-3">
-            <p>No payment is taken when you apply. If it looks like a good fit, we have a short call first. Payment is only sent after that conversation.</p>
-            <ul className="space-y-2" style={{ ...ty("body", false), paddingLeft: "20px", listStyle: "disc" }}>
-              <li>Two weeks of research and preparation</li>
-              <li>Positioning for one service and one client</li>
-              <li>Offer page and Instagram profile copy</li>
-              <li>A simple inquiry path</li>
-              <li>Four weeks of content drafts</li>
+            <p>
+              I am starting with two women before opening the remaining three places. No payment is
+              taken when you apply. If I believe I can genuinely help, we have a short fit call
+              first.
+            </p>
+            <ul
+              className="space-y-2"
+              style={{ ...ty("body", false), paddingLeft: "20px", listStyle: "disc" }}
+            >
+              <li>Your AI Business Brain</li>
+              <li>Your research assistant</li>
+              <li>Your content director</li>
+              <li>Your writer and repurposer</li>
+              <li>A weekly idea or voice note to draft workflow</li>
+              <li>Your first 30 days of marketing</li>
               <li>Four weekly 45-minute calls</li>
+              <li>Training, handover, and a system you can keep using</li>
             </ul>
-            <p style={{ color: C.onCreamMuted }}>Best for an experienced service provider with a real offer. This is not a promise of clients or income.</p>
+            <p style={{ color: C.onCreamMuted }}>
+              For a woman with a real business, a service people already buy, and clients she
+              understands. This is not for starting a business from zero.
+            </p>
           </div>
         }
         imgSrc={IMG.wwmApplication}
         imgAlt="Applying to work with Sandra"
         dark={false}
-        cta={<Btn href="#inquiry" surface="cream">Apply to Work With Me</Btn>}
+        cta={
+          <Btn href="#inquiry" onClick={() => trackPrimaryCta("offer")} surface="cream">
+            Apply to Work Together
+          </Btn>
+        }
       />
 
       {/* FAQ - cream */}
@@ -2312,16 +3412,35 @@ export function WorkWithMePageContent() {
       </Section>
 
       {/* INQUIRY FORM - dark */}
-      <section id="inquiry" style={{ position: "relative", background: C.ink, padding: "clamp(60px, 8vw, 88px) clamp(18px, 4vw, 24px)", overflow: "hidden", scrollMarginTop: "60px" }}>
+      <section
+        id="inquiry"
+        style={{
+          position: "relative",
+          background: C.ink,
+          padding: "clamp(60px, 8vw, 88px) clamp(18px, 4vw, 24px)",
+          overflow: "hidden",
+          scrollMarginTop: "60px",
+        }}
+      >
         <PaperTexture dark />
-        <div className="max-w-5xl mx-auto grid gap-14 md:grid-cols-2 md:items-start relative" style={{ zIndex: 2 }}>
+        <div
+          className="max-w-5xl mx-auto grid gap-14 md:grid-cols-2 md:items-start relative"
+          style={{ zIndex: 2 }}
+        >
           <div className="mf">
             <span style={{ ...ty("eyebrow", true), marginBottom: "14px" }}>Application</span>
-            <h2 style={{ ...ty("h2", true), marginBottom: "16px" }}>Tell me about your business.</h2>
-            <p style={{ ...ty("body", true), fontSize: "16px" }}>Share what you sell, what feels unclear online, and what you want the right client to do next.</p>
+            <h2 style={{ ...ty("h2", true), marginBottom: "16px" }}>
+              Tell me what keeps falling back on you.
+            </h2>
+            <p style={{ ...ty("body", true), fontSize: "16px" }}>
+              This is for a woman who already has a real business, service, and clients. Tell me
+              what you sell, what marketing is taking too much time, and where AI has not helped
+              yet.
+            </p>
             <div className="mt-8" style={{ ...cardSx(true), padding: "20px" }}>
               <p style={{ ...ty("body", true), fontSize: "13px", color: C.onDarkMuted }}>
-                <span style={{ color: C.onDarkSub }}>No payment is taken here.</span> If it looks like a good fit, I&apos;ll invite you to a short call.
+                <span style={{ color: C.onDarkSub }}>No payment is taken here.</span> If it looks
+                like a good fit, I&apos;ll invite you to a short call.
               </p>
             </div>
           </div>

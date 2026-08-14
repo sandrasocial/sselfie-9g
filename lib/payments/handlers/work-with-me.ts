@@ -7,6 +7,7 @@ import { updateContactTags as updateTags } from "@/lib/resend/manage-contact"
 import { sql } from "@/lib/db/client"
 import { ensurePaidSelfieToBrandShootSubscriber } from "@/lib/freebie/selfie-to-brand-shoot-access"
 import { closeWorkWithMeApplicationForPayment } from "@/lib/work-with-me/pipeline"
+import { upsertPaidWorkWithMeProject } from "@/lib/work-with-me/client-project"
 import { generatePasswordSetupLinkForPurchase } from "../shared"
 import type { CheckoutFulfillmentContext } from "../types"
 
@@ -22,7 +23,7 @@ export async function handleWorkWithMeCheckout(ctx: CheckoutFulfillmentContext):
 
   const applicationId = Number.parseInt(
     String(session.metadata?.brand_engine_application_id || ""),
-    10,
+    10
   )
   const applicationClosure = await closeWorkWithMeApplicationForPayment(sql, {
     applicationId,
@@ -53,8 +54,25 @@ export async function handleWorkWithMeCheckout(ctx: CheckoutFulfillmentContext):
     session.customer_details?.name
   )
   const promptVaultUrl = `${productionUrl}/access/prompt-vault/${selfieToBrandShootSubscriber.accessToken}`
+  const welcomeUrl = `${productionUrl}/work-with-me/welcome`
 
   if (userId) {
+    await upsertPurchaseEntitlement({
+      userId: String(userId),
+      productId: "work_with_me",
+      sourceRef: `${paymentIdForStorage}:work_with_me`,
+      metadata: {
+        source: "stripe_webhook:work_with_me",
+        stripe_session_id: session.id,
+      },
+      throwOnError: true,
+    })
+
+    await upsertPaidWorkWithMeProject({
+      userId: String(userId),
+      applicationId: Number.isFinite(applicationId) && applicationId > 0 ? applicationId : null,
+    })
+
     await upsertPurchaseEntitlement({
       userId: String(userId),
       productId: "masterclass",
@@ -102,14 +120,11 @@ export async function handleWorkWithMeCheckout(ctx: CheckoutFulfillmentContext):
 
   const passwordSetupUrl =
     ctx.purchasePasswordSetupLink ||
-    (await generatePasswordSetupLinkForPurchase(
-      userId,
-      customerEmail,
-      "/academy/access/masterclass"
-    ))
+    (await generatePasswordSetupLinkForPurchase(userId, customerEmail, "/work-with-me/welcome"))
   const email = generateWorkWithMeWelcomeEmail({
     firstName,
     passwordSetupUrl,
+    welcomeUrl,
     masterclassUrl,
     selfieToBrandShootUrl,
     promptVaultUrl,
@@ -121,7 +136,7 @@ export async function handleWorkWithMeCheckout(ctx: CheckoutFulfillmentContext):
     html: email.html,
     text: email.text,
     emailType: "work_with_me_welcome",
-    tags: ["work-with-me", "private-sprint", "welcome"],
+    tags: ["work-with-me", "ai-content-team", "welcome"],
   })
 
   if (!emailResult.success) {

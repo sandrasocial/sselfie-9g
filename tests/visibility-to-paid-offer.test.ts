@@ -6,21 +6,23 @@ function read(path: string) {
   return readFileSync(join(process.cwd(), path), "utf8")
 }
 
-describe("Visibility To Paid locked offer", () => {
-  it("keeps the private offer focused on a client-ready online path", () => {
+describe("Your AI Content Team locked offer", () => {
+  it("keeps the private offer focused on one personal AI content team", () => {
     const page = read("components/sselfie/public-marketing.tsx")
 
-    expect(page).toContain("Five private places. &euro;2,000 paid in full.")
-    expect(page).toContain("Your work is good. Your online presence should make that clear.")
-    expect(page).toContain("one clear path from finding you to contacting you")
-    expect(page).toContain("offer page copy")
-    expect(page).toContain("simple inquiry path")
-    expect(page).toContain("We are not rebuilding your whole business")
-    expect(page).toContain("This is not a promise of clients or income")
+    expect(page).toContain("Six weeks together. &euro;2,000.")
+    expect(page).toContain("You should not have to run your business")
+    expect(page).toContain("personal AI content team")
+    expect(page).toContain("Your AI Business Brain")
+    expect(page).toContain("Your research assistant")
+    expect(page).toContain("Your content director")
+    expect(page).toContain("Your writer and repurposer")
+    expect(page).toContain("We are not automating your whole business")
+    expect(page).toContain("not a promise of clients or income")
     expect(page).not.toContain("2 &times; &euro;1,100")
     expect(page).not.toContain("inside your own SUITE account")
     expect(page).toContain("No payment is taken here.")
-    expect(page).toContain("short fit call first")
+    expect(page).toContain("short fit call\n")
     expect(page).toContain("Are you ready to invest €2,000 if it is a fit?")
     expect(page).not.toContain("All of it")
   })
@@ -32,7 +34,7 @@ describe("Visibility To Paid locked offer", () => {
     const workWithMe = page.slice(start, end)
     const paragraphCount = (workWithMe.match(/<p(?:\s|>)/g) ?? []).length
 
-    expect(paragraphCount).toBeLessThanOrEqual(15)
+    expect(paragraphCount).toBeLessThanOrEqual(16)
     expect(workWithMe).not.toContain("space-y-4")
   })
 
@@ -42,8 +44,10 @@ describe("Visibility To Paid locked offer", () => {
 
     expect(page).toContain("What service are you already selling")
     expect(page).toContain("What result does it create")
-    expect(page).toContain("what does a client usually pay")
+    expect(page).toContain("what does a client")
+    expect(page).toContain("usually pay?")
     expect(route).toContain("!currentOffer")
+    expect(route).toContain("!aiAttempts")
     expect(route).toContain("!investmentReadiness")
   })
 
@@ -54,7 +58,7 @@ describe("Visibility To Paid locked offer", () => {
     expect(route).toContain('${"fit_call"}')
     expect(route).toContain('${"none"}')
     expect(route).toContain('${200000}')
-    expect(route).toContain("private_sprint_requires_human_fit_call")
+    expect(route).toContain("private_ai_content_team_requires_human_fit_call")
     for (const stage of [
       "qualified_queue",
       "call_booked",

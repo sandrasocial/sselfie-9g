@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic"
 function unauthorized(error?: string) {
   return NextResponse.json(
     { error: error || "Admin access required" },
-    { status: error === "Not authenticated" ? 401 : 403 },
+    { status: error === "Not authenticated" ? 401 : 403 }
   )
 }
 
@@ -51,6 +51,7 @@ export async function GET() {
         biggest_bottleneck AS current_challenge,
         why_interested AS desired_outcome,
         business_description AS current_offer,
+        source_detail,
         checkout_session_id,
         checkout_url,
         checkout_created_at,
@@ -80,7 +81,10 @@ export async function GET() {
     return NextResponse.json({ applications })
   } catch (error) {
     console.error("[Work With Me Admin] Failed to list applications:", error)
-    return NextResponse.json({ error: "Failed to load Work With Me applications." }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to load Work With Me applications." },
+      { status: 500 }
+    )
   }
 }
 
@@ -141,6 +145,24 @@ export async function PATCH(request: NextRequest) {
           AND pipeline_stage IN ('qualified_queue', 'contacted', 'call_booked')
         RETURNING id, pipeline_stage, status, notes, updated_at
       `
+    } else if (action === "call_completed") {
+      rows = await sql`
+        UPDATE brand_engine_applications
+        SET
+          pipeline_stage = 'call_completed',
+          status = 'call_completed',
+          next_action = 'send_offer',
+          notes = CASE WHEN ${notes !== null} THEN ${notes} ELSE notes END,
+          updated_at = NOW()
+        WHERE id = ${applicationId}
+          AND (
+            offer_type = 'work_with_me'
+            OR source_channel IN ('work_with_me', 'work-with-me')
+            OR lead_tags ? 'work-with-me'
+          )
+          AND pipeline_stage IN ('call_booked', 'call_completed')
+        RETURNING id, pipeline_stage, status, notes, updated_at
+      `
     } else if (action === "lost") {
       rows = await sql`
         UPDATE brand_engine_applications
@@ -178,7 +200,7 @@ export async function PATCH(request: NextRequest) {
     if (rows.length === 0) {
       return NextResponse.json(
         { error: "That action is not available from the application's current stage." },
-        { status: 409 },
+        { status: 409 }
       )
     }
 
@@ -217,11 +239,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Work With Me application not found." }, { status: 404 })
     }
 
-    const allowedStages = new Set(["contacted", "call_booked", "call_completed", "offer_sent"])
+    const allowedStages = new Set(["call_completed", "offer_sent"])
     if (!allowedStages.has(String(application.pipeline_stage || ""))) {
       return NextResponse.json(
-        { error: "Contact the applicant before creating her payment link." },
-        { status: 409 },
+        { error: "Complete the fit call before creating her payment link." },
+        { status: 409 }
       )
     }
 
@@ -266,7 +288,7 @@ export async function POST(request: NextRequest) {
           OR source_channel IN ('work_with_me', 'work-with-me')
           OR lead_tags ? 'work-with-me'
         )
-        AND pipeline_stage IN ('contacted', 'call_booked', 'call_completed', 'offer_sent')
+        AND pipeline_stage IN ('call_completed', 'offer_sent')
         AND (
           checkout_session_id IS NOT DISTINCT FROM ${previousSessionId}
           OR checkout_session_id = ${checkout.sessionId}
@@ -275,7 +297,10 @@ export async function POST(request: NextRequest) {
     `
 
     if (updatedRows.length === 0) {
-      return NextResponse.json({ error: "The application changed before the link was saved." }, { status: 409 })
+      return NextResponse.json(
+        { error: "The application changed before the link was saved." },
+        { status: 409 }
+      )
     }
 
     return NextResponse.json({
@@ -286,6 +311,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("[Work With Me Admin] Failed to create checkout:", error)
-    return NextResponse.json({ error: "Failed to create the €2,000 checkout link." }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to create the €2,000 checkout link." },
+      { status: 500 }
+    )
   }
 }

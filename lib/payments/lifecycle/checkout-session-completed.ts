@@ -1179,7 +1179,7 @@ export async function handleCheckoutSessionCompleted(
                               : productType === "selfie_to_brand_shoot_system"
                                 ? "/academy/access/selfie-to-brand-shoot"
                                 : productType === "work_with_me"
-                                  ? "/academy/access/masterclass"
+                                  ? "/work-with-me/welcome"
                                   : isTransformProductType(productType)
                                     ? "/transform/studio"
                                     : productType === "selfie_guide" ||

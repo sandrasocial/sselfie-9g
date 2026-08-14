@@ -38,7 +38,7 @@ function checkoutSetupNext(productType: string | null, productId: string | null)
   if (productType === "selfie_to_brand_shoot_system") {
     return "/academy/access/selfie-to-brand-shoot"
   }
-  if (productType === "work_with_me") return "/academy/access/masterclass"
+  if (productType === "work_with_me") return "/work-with-me/welcome"
   if (productType === "transform_starter" || productType === "transform_topup") {
     return "/transform/studio"
   }
@@ -73,7 +73,7 @@ function normalizedEmail(value: string | null | undefined): string {
  * email unless this exact checkout created the account marker used by the success page.
  */
 export async function ensureExistingNeonPublicCheckoutAuth(
-  params: ProvisionExistingCheckoutAccountParams,
+  params: ProvisionExistingCheckoutAccountParams
 ): Promise<ProvisionExistingCheckoutAccountResult> {
   const email = normalizedEmail(params.email)
   if (!email) throw new Error("Cannot provision checkout account without an email")

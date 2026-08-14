@@ -11,6 +11,7 @@ const application = {
   currentChallenge: "I have a real estate business, but people do not understand what makes me different.",
   desiredOutcome: "More qualified buyer and seller conversations.",
   currentOffer: "Private help for buyers and sellers in my local market.",
+  aiAttempts: "I tried ChatGPT, but the writing felt generic.",
   investmentReadiness: "yes",
 }
 
@@ -32,12 +33,12 @@ describe("Work With Me sales assistant", () => {
     })
 
     expect(draft).toContain("€2,000 paid in full")
-    expect(draft).toContain("two weeks of preparation")
-    expect(draft).toContain("four weekly 45-minute calls")
+    expect(draft).toContain("Over six weeks")
+    expect(draft).toContain("four private 45-minute calls")
     expect(draft).toContain("https://checkout.stripe.com/c/pay/cs_live_example")
-    expect(draft).toContain("one client-ready online path")
-    expect(draft).toContain("offer page copy")
-    expect(draft).toContain("inquiry path")
+    expect(draft).toContain("personal AI content team")
+    expect(draft).toContain("Business Brain")
+    expect(draft).toContain("first 30 days of marketing")
     expect(draft).not.toContain("guarantee")
   })
 
@@ -45,8 +46,9 @@ describe("Work With Me sales assistant", () => {
     const brief = buildWorkWithMeSalesBrief(application)
 
     expect(brief).toContain("Offer now:")
-    expect(brief).toContain("What feels stuck:")
-    expect(brief).toContain("What she wants next:")
+    expect(brief).toContain("Marketing burden:")
+    expect(brief).toContain("Weekly help wanted:")
+    expect(brief).toContain("AI attempts:")
     expect(brief).toContain("Investment readiness: yes")
   })
 })

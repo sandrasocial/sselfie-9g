@@ -3,7 +3,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { addOrUpdateResendContact, updateContactTags } from "@/lib/resend/manage-contact"
-import { ensureBrandEngineApplicationsSchema, scoreWorkWithMeLead } from "@/lib/brand-engine/applications"
+import {
+  ensureBrandEngineApplicationsSchema,
+  scoreWorkWithMeLead,
+} from "@/lib/brand-engine/applications"
 
 type InquiryPayload = {
   name?: string
@@ -12,6 +15,7 @@ type InquiryPayload = {
   currentChallenge?: string
   desiredOutcome?: string
   currentOffer?: string
+  aiAttempts?: string
   helpFocus?: string
   investmentReadiness?: string
 }
@@ -40,10 +44,19 @@ export async function POST(req: NextRequest) {
     const currentChallenge = body.currentChallenge?.trim() || ""
     const desiredOutcome = body.desiredOutcome?.trim() || ""
     const currentOffer = body.currentOffer?.trim() || ""
+    const aiAttempts = body.aiAttempts?.trim() || ""
     const helpFocus = body.helpFocus?.trim() || ""
     const investmentReadiness = body.investmentReadiness?.trim() || ""
 
-    if (!name || !email || !currentChallenge || !desiredOutcome || !currentOffer || !investmentReadiness) {
+    if (
+      !name ||
+      !email ||
+      !currentChallenge ||
+      !desiredOutcome ||
+      !currentOffer ||
+      !aiAttempts ||
+      !investmentReadiness
+    ) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -57,13 +70,16 @@ export async function POST(req: NextRequest) {
     const safeChallenge = escapeHtml(currentChallenge).replaceAll("\n", "<br />")
     const safeOutcome = escapeHtml(desiredOutcome).replaceAll("\n", "<br />")
     const safeCurrentOffer = escapeHtml(currentOffer).replaceAll("\n", "<br />")
+    const safeAiAttempts = escapeHtml(aiAttempts).replaceAll("\n", "<br />")
     const safeHelpFocus = escapeHtml(helpFocus)
     const safeInvestmentReadiness = escapeHtml(investmentReadiness)
-    const adminEmail = process.env.WORK_WITH_ME_INQUIRY_EMAIL || process.env.ADMIN_EMAIL || "hello@sselfie.ai"
+    const adminEmail =
+      process.env.WORK_WITH_ME_INQUIRY_EMAIL || process.env.ADMIN_EMAIL || "hello@sselfie.ai"
     const leadScore = scoreWorkWithMeLead({
       currentChallenge,
       desiredOutcome,
       currentOffer,
+      aiAttempts,
       helpFocus,
       investmentReadiness,
       instagramHandle,
@@ -74,9 +90,9 @@ export async function POST(req: NextRequest) {
       "source:work_with_me",
       leadScore.qualified ? "qualified" : "needs_follow_up",
       leadScore.hasExistingBusiness ? "has_existing_business" : null,
-      leadScore.wantsLeadGen ? "wants_lead_generation" : null,
-      leadScore.timeConstrained ? "time_constrained" : null,
-      leadScore.clearVisibilityGap ? "visibility_gap" : null,
+      leadScore.marketingDependsOnFounder ? "marketing_depends_on_founder" : null,
+      leadScore.hasTriedAi ? "tried_ai" : null,
+      leadScore.clearWeeklyOutcome ? "needs_weekly_content_system" : null,
       `investment:${leadScore.ready}`,
       `next_action:${leadScore.nextAction}`,
     ].filter(Boolean)
@@ -137,14 +153,19 @@ export async function POST(req: NextRequest) {
         ${leadScore.nextAction},
         ${true},
         ${"work_with_me"},
-        ${[
-          instagramHandle ? `instagram:${instagramHandle}` : null,
-          helpFocus ? `help_focus:${helpFocus}` : null,
-        ].filter(Boolean).join(" | ") || null},
+        ${
+          [
+            instagramHandle ? `instagram:${instagramHandle}` : null,
+            helpFocus ? `help_focus:${helpFocus}` : null,
+            aiAttempts ? `ai_attempts:${aiAttempts}` : null,
+          ]
+            .filter(Boolean)
+            .join(" | ") || null
+        },
         ${JSON.stringify(leadTags)}::jsonb,
         ${200000},
         ${"none"},
-        ${"private_sprint_requires_human_fit_call"},
+        ${"private_ai_content_team_requires_human_fit_call"},
         ${true},
         ${`Work With Me application. ${leadScore.notes}`},
         NOW(),
@@ -158,24 +179,24 @@ export async function POST(req: NextRequest) {
     await addOrUpdateResendContact(email, name, {
       source: "work-with-me-inquiry",
       status: "lead",
-      inquiry_type: "visibility_to_paid_private_sprint",
+      inquiry_type: "work_with_me_ai_content_team",
       help_focus: helpFocus,
       investment_readiness: investmentReadiness,
       lead_score: String(leadScore.score),
       lead_status: leadScore.status,
-    }).catch((error) => {
+    }).catch(error => {
       console.error("[v0] Failed to sync inquiry contact to Resend:", error)
     })
 
     await updateContactTags(email, {
-      inquiry_type: "visibility_to_paid_private_sprint",
+      inquiry_type: "work_with_me_ai_content_team",
       inquiry_status: "new",
       journey: "high_intent",
       help_focus: helpFocus,
       investment_readiness: investmentReadiness,
       lead_score: String(leadScore.score),
       next_action: leadScore.nextAction,
-    }).catch((error) => {
+    }).catch(error => {
       console.error("[v0] Failed to update inquiry tags:", error)
     })
 
@@ -189,12 +210,16 @@ export async function POST(req: NextRequest) {
           <p style="margin: 0 0 12px;"><strong>Email:</strong> ${safeEmail}</p>
           <p style="margin: 0 0 24px;"><strong>Instagram:</strong> ${safeHandle || "Not provided"}</p>
           <div style="margin: 0 0 20px;">
-            <p style="margin: 0 0 8px; font-weight: 600;">What is happening online right now that is not working?</p>
+            <p style="margin: 0 0 8px; font-weight: 600;">What marketing work keeps falling back on her?</p>
             <p style="margin: 0; line-height: 1.7;">${safeChallenge}</p>
           </div>
           <div>
-            <p style="margin: 0 0 8px; font-weight: 600;">What do they want the right clients to understand, trust, or do next?</p>
+            <p style="margin: 0 0 8px; font-weight: 600;">What does she need help creating every week?</p>
             <p style="margin: 0; line-height: 1.7;">${safeOutcome}</p>
+          </div>
+          <div style="margin: 20px 0 0;">
+            <p style="margin: 0 0 8px; font-weight: 600;">What has she tried with AI?</p>
+            <p style="margin: 0; line-height: 1.7;">${safeAiAttempts}</p>
           </div>
           <div style="margin: 20px 0 0;">
             <p style="margin: 0 0 8px; font-weight: 600;">What service are they already selling, and what result does it create?</p>
@@ -224,14 +249,17 @@ export async function POST(req: NextRequest) {
         `Email: ${email}`,
         `Instagram: ${instagramHandle || "Not provided"}`,
         "",
-        "What is happening online right now that is not working?",
+        "What marketing work keeps falling back on her?",
         currentChallenge,
         "",
-        "What do they want the right clients to understand, trust, or do next?",
+        "What does she need help creating every week?",
         desiredOutcome,
         "",
         "What service are they already selling, and what result does it create?",
         currentOffer,
+        "",
+        "What has she tried with AI?",
+        aiAttempts,
         "",
         "Sprint focus",
         helpFocus || "Not provided",
@@ -247,11 +275,14 @@ export async function POST(req: NextRequest) {
         leadScore.notes,
       ].join("\n"),
       emailType: "work_with_me_inquiry_admin",
-      tags: ["work-with-me", "private-sprint", "application"],
+      tags: ["work-with-me", "ai-content-team", "application"],
     })
 
     if (!adminEmailResult.success) {
-      return NextResponse.json({ error: adminEmailResult.error || "Failed to submit inquiry" }, { status: 500 })
+      console.error(
+        "[Work With Me] Application saved but admin notification failed:",
+        adminEmailResult.error
+      )
     }
 
     await sendEmail({
@@ -261,7 +292,7 @@ export async function POST(req: NextRequest) {
         <div style="font-family: Inter, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color: #1c1917;">
           <p>Hi ${safeName},</p>
           <p>I have your application. Thank you for trusting me with it.</p>
-          <p>I will look at the service you already deliver and whether I can genuinely help you turn it into a clearer online path to the right clients.</p>
+          <p>I will look at your business, the marketing work that keeps falling back on you, and whether I can genuinely help build the right AI content team around it.</p>
           <p>If it looks like the right fit, I will reply with the next step. That usually means a short fit call first. No payment has been taken.</p>
           <p>Sandra x</p>
         </div>
@@ -270,14 +301,14 @@ export async function POST(req: NextRequest) {
         `Hi ${name},`,
         "",
         "I have your application. Thank you for trusting me with it.",
-        "I will look at the service you already deliver and whether I can genuinely help you turn it into a clearer online path to the right clients.",
+        "I will look at your business, the marketing work that keeps falling back on you, and whether I can genuinely help build the right AI content team around it.",
         "If it looks like the right fit, I will reply with the next step. That usually means a short fit call first. No payment has been taken.",
         "",
         "Sandra x",
       ].join("\n"),
       emailType: "work_with_me_inquiry_confirmation",
-      tags: ["work-with-me", "private-sprint", "application-confirmation"],
-    }).catch((error) => {
+      tags: ["work-with-me", "ai-content-team", "application-confirmation"],
+    }).catch(error => {
       console.error("[v0] Failed to send inquiry confirmation email:", error)
     })
 

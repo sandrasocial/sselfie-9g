@@ -1,6 +1,7 @@
 export const WORK_WITH_ME_ADMIN_ACTIONS = [
   "contacted",
   "call_booked",
+  "call_completed",
   "lost",
   "save_notes",
 ] as const
@@ -39,7 +40,7 @@ export async function ensureWorkWithMePipelineSchema(sql: Sql) {
 
 export async function closeWorkWithMeApplicationForPayment(
   sql: Sql,
-  input: CloseWorkWithMeApplicationInput,
+  input: CloseWorkWithMeApplicationInput
 ) {
   if (!Number.isInteger(input.applicationId) || input.applicationId <= 0) {
     return { updated: false, applicationId: null }

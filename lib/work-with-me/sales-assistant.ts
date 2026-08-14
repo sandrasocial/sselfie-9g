@@ -3,6 +3,7 @@ type WorkWithMeSalesInput = {
   currentChallenge?: string | null
   desiredOutcome?: string | null
   currentOffer?: string | null
+  aiAttempts?: string | null
   investmentReadiness?: string | null
 }
 
@@ -15,10 +16,12 @@ function firstName(value: string) {
 }
 
 function compact(value: string | null | undefined, fallback: string, maxLength = 180) {
-  const normalized = String(value || "").replace(/\s+/g, " ").trim()
+  const normalized = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
   if (!normalized) return fallback
   if (normalized.length <= maxLength) return normalized
-  return `${normalized.slice(0, maxLength - 1).trimEnd()}…`
+  return `${normalized.slice(0, maxLength - 3).trimEnd()}...`
 }
 
 export function buildWorkWithMeContactDraft(input: WorkWithMeSalesInput) {
@@ -26,9 +29,9 @@ export function buildWorkWithMeContactDraft(input: WorkWithMeSalesInput) {
 
   return `Hi ${firstName(input.name)},
 
-I read your application, and I keep coming back to the service you want the right clients to understand: ${offer}
+I read your application, and I keep coming back to the marketing work that is still falling back on you around ${offer}.
 
-I think the useful next step is a short fit call, so I can understand where your online presence is losing that value and be honest about whether I can help.
+I think the useful next step is a short fit call. I want to understand what you need every week, what you have already tried with AI, and be honest about whether I can build the right team around your business.
 
 Would you like me to send you the booking link?
 
@@ -40,9 +43,11 @@ export function buildWorkWithMeOfferDraft(input: WorkWithMeOfferInput) {
 
   return `Hi ${firstName(input.name)},
 
-Thank you for the conversation. I believe the work is to turn ${offer} into one client-ready online path, so the right people can understand your value, trust your expertise, and know how to ask for help.
+Thank you for the conversation. I believe I can help you build a personal AI content team around ${offer}, so your weekly marketing no longer has to start from you and a blank page.
 
-If you want to do that together, the private sprint is €2,000 paid in full. It includes two weeks of preparation before we begin, where I build the first version of your positioning, offer page copy, profile copy, inquiry path, and four weeks of content. We follow that with four weekly 45-minute calls where we refine the work against your real customer.
+If you want to do that together, Your AI Content Team is €2,000 paid in full. Over six weeks, I build your Business Brain, research assistant, content director, writer and repurposer, weekly workflow, and first 30 days of marketing. We use four private 45-minute calls to train it around your real voice and make sure you can keep using it.
+
+This is not automatic posting or a promise of clients or income. You stay in control of every final decision.
 
 Here is your private payment link: ${input.checkoutUrl}
 
@@ -54,8 +59,9 @@ Sandra x`
 export function buildWorkWithMeSalesBrief(input: WorkWithMeSalesInput) {
   return [
     `Offer now: ${compact(input.currentOffer, "Not provided")}`,
-    `What feels stuck: ${compact(input.currentChallenge, "Not provided")}`,
-    `What she wants next: ${compact(input.desiredOutcome, "Not provided")}`,
+    `Marketing burden: ${compact(input.currentChallenge, "Not provided")}`,
+    `Weekly help wanted: ${compact(input.desiredOutcome, "Not provided")}`,
+    `AI attempts: ${compact(input.aiAttempts, "Not provided")}`,
     `Investment readiness: ${compact(input.investmentReadiness, "unknown", 60)}`,
   ].join("\n")
 }

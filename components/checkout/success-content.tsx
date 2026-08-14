@@ -68,6 +68,8 @@ function getProductLabel(productType: string | undefined) {
       return "Selfie to Brand Shoot System"
     case "masterclass":
       return "Selfie Masterclass"
+    case "work_with_me":
+      return "Your AI Content Team"
     case "visibility_suite":
       return "Legacy Visibility Suite"
     case "what_to_say":
@@ -143,6 +145,17 @@ const SELFIE_TO_BRAND_SHOOT_INCLUDES = [
 ]
 
 function getSuccessActionConfig(productType: string | undefined): SuccessActionConfig {
+  if (productType === "work_with_me") {
+    return {
+      href: "/work-with-me/welcome",
+      label: "Start your six weeks",
+      helper:
+        "Your private client home is ready. Complete the intake, then book your kickoff call with Sandra.",
+      secondaryHref: "mailto:hello@sselfie.ai?subject=Work%20With%20Me%20access",
+      secondaryLabel: "Need help? Email Sandra",
+    }
+  }
+
   if (productType === "vault_maya") {
     return {
       href: "/vault-maya/studio",
@@ -151,7 +164,10 @@ function getSuccessActionConfig(productType: string | undefined): SuccessActionC
         "Vault Maya is active. Add one selfie, choose a look, and Maya creates the photo for you.",
     }
   }
-  if (productType === "sselfie_studio_membership" || productType === "sselfie_studio_membership_annual") {
+  if (
+    productType === "sselfie_studio_membership" ||
+    productType === "sselfie_studio_membership_annual"
+  ) {
     return {
       href: "/app",
       label: "Plan your first week",
@@ -188,7 +204,8 @@ function getSuccessActionConfig(productType: string | undefined): SuccessActionC
     return {
       href: "/campaign",
       label: "Return to the campaign page",
-      helper: "Your private intake link is being sent to the email used at checkout. No account or password is required.",
+      helper:
+        "Your private intake link is being sent to the email used at checkout. No account or password is required.",
       secondaryHref: "mailto:hello@sselfie.ai?subject=Campaign%20order%20help",
       secondaryLabel: "Need help? Email Sandra",
     }
@@ -254,8 +271,7 @@ function getSuccessActionConfig(productType: string | undefined): SuccessActionC
     return {
       href: "/academy/access/visibility-suite",
       label: "Open your legacy access",
-      helper:
-        "Your legacy academy access is ready. Open it from your Academy library any time.",
+      helper: "Your legacy academy access is ready. Open it from your Academy library any time.",
     }
   }
 
@@ -329,7 +345,8 @@ function getSuccessActionConfig(productType: string | undefined): SuccessActionC
     return {
       href: "/app",
       label: "Open Studio",
-      helper: "Your visual credits are ready. Open Studio and continue from the current AI workspace.",
+      helper:
+        "Your visual credits are ready. Open Studio and continue from the current AI workspace.",
     }
   }
 
@@ -427,7 +444,8 @@ export function SuccessContent({
 }: SuccessContentProps) {
   const router = useRouter()
   const [userInfo, setUserInfo] = useState(initialUserInfo)
-  const isSelfieGuidePurchase = purchaseType === "selfie_guide" || purchaseType === "selfie_guide_bundle"
+  const isSelfieGuidePurchase =
+    purchaseType === "selfie_guide" || purchaseType === "selfie_guide_bundle"
   const isPromptVaultPurchase = purchaseType === "prompt_vault"
   const isSelfieAiPhotosKitPurchase = purchaseType === "selfie_ai_photos_kit"
   const isPresetsPurchase = purchaseType === "presets_single" || purchaseType === "presets_bundle"
@@ -452,7 +470,12 @@ export function SuccessContent({
     // Decision 2: Paid blueprint now uses same flow as other products
     // User info polling is only needed for unauthenticated users (account creation)
 
-    if (sessionId && !isBrandEnginePurchase && !isSelfieGuidePurchase && !isCampaignOutcomePurchase) {
+    if (
+      sessionId &&
+      !isBrandEnginePurchase &&
+      !isSelfieGuidePurchase &&
+      !isCampaignOutcomePurchase
+    ) {
       setUserStatusTimedOut(false)
       let attempts = 0
       const MAX_ATTEMPTS = 40 // Increased to 80 seconds total
@@ -464,7 +487,9 @@ export function SuccessContent({
         console.log(`[v0] Polling attempt ${attempts}/${MAX_ATTEMPTS}`)
 
         try {
-          const response = await fetch(`/api/checkout/user-status?session_id=${encodeURIComponent(sessionId)}`)
+          const response = await fetch(
+            `/api/checkout/user-status?session_id=${encodeURIComponent(sessionId)}`
+          )
 
           if (response.status === 202) {
             if (attempts >= MAX_ATTEMPTS) {
@@ -506,49 +531,74 @@ export function SuccessContent({
         clearInterval(pollInterval)
       }
     }
-  }, [isBrandEnginePurchase, isCampaignOutcomePurchase, isSelfieGuidePurchase, purchaseType, sessionId, userStatusRetryKey])
+  }, [
+    isBrandEnginePurchase,
+    isCampaignOutcomePurchase,
+    isSelfieGuidePurchase,
+    purchaseType,
+    sessionId,
+    userStatusRetryKey,
+  ])
 
   // FIX 3: Poll access status before redirecting (wait for webhook to complete)
   const [isPollingAccess, setIsPollingAccess] = useState(false)
   const [pollAttempts, setPollAttempts] = useState(0)
   const MAX_POLL_ATTEMPTS = 60 // 60 attempts × 2s = 120s timeout
-  const [pollingMessage, setPollingMessage] = useState("Processing your payment. This can take up to 2 minutes.")
+  const [pollingMessage, setPollingMessage] = useState(
+    "Processing your payment. This can take up to 2 minutes."
+  )
   const [timeRemaining, setTimeRemaining] = useState(120)
   const [showTimeoutActions, setShowTimeoutActions] = useState(false)
-  const [isPollingSelfieGuideAccess, setIsPollingSelfieGuideAccess] = useState(Boolean(isSelfieGuidePurchase && sessionId))
+  const [isPollingSelfieGuideAccess, setIsPollingSelfieGuideAccess] = useState(
+    Boolean(isSelfieGuidePurchase && sessionId)
+  )
   const [selfieGuidePollAttempts, setSelfieGuidePollAttempts] = useState(0)
-  const [selfieGuideStatus, setSelfieGuideStatus] = useState("Preparing your guide. This can take up to 2 minutes.")
+  const [selfieGuideStatus, setSelfieGuideStatus] = useState(
+    "Preparing your guide. This can take up to 2 minutes."
+  )
   const [showSelfieGuideTimeout, setShowSelfieGuideTimeout] = useState(false)
   const [selfieGuideRecoveryMessage, setSelfieGuideRecoveryMessage] = useState(
-    "Your payment went through. Your guide access is still syncing.",
+    "Your payment went through. Your guide access is still syncing."
   )
-  const [isPollingPromptVaultAccess, setIsPollingPromptVaultAccess] = useState(Boolean(isPromptVaultPurchase && sessionId))
+  const [isPollingPromptVaultAccess, setIsPollingPromptVaultAccess] = useState(
+    Boolean(isPromptVaultPurchase && sessionId)
+  )
   const [, setPromptVaultPollAttempts] = useState(0)
   const [promptVaultStatus, setPromptVaultStatus] = useState("Preparing your private access...")
   const [showPromptVaultTimeout, setShowPromptVaultTimeout] = useState(false)
   const [promptVaultRecoveryMessage, setPromptVaultRecoveryMessage] = useState(
-    "Your payment is confirmed. Your private access is taking longer than expected.",
+    "Your payment is confirmed. Your private access is taking longer than expected."
   )
-  const [isPollingSelfieAiPhotosKitAccess, setIsPollingSelfieAiPhotosKitAccess] = useState(Boolean(isSelfieAiPhotosKitPurchase && sessionId))
+  const [isPollingSelfieAiPhotosKitAccess, setIsPollingSelfieAiPhotosKitAccess] = useState(
+    Boolean(isSelfieAiPhotosKitPurchase && sessionId)
+  )
   const [selfieAiPhotosKitPollAttempts, setSelfieAiPhotosKitPollAttempts] = useState(0)
-  const [selfieAiPhotosKitStatus, setSelfieAiPhotosKitStatus] = useState("Preparing your AI Photos Kit. This can take up to 2 minutes.")
+  const [selfieAiPhotosKitStatus, setSelfieAiPhotosKitStatus] = useState(
+    "Preparing your AI Photos Kit. This can take up to 2 minutes."
+  )
   const [showSelfieAiPhotosKitTimeout, setShowSelfieAiPhotosKitTimeout] = useState(false)
   const [selfieAiPhotosKitRecoveryMessage, setSelfieAiPhotosKitRecoveryMessage] = useState(
-    "Your payment went through. Your AI Photos Kit access is still syncing.",
+    "Your payment went through. Your AI Photos Kit access is still syncing."
   )
-  const [isPollingPresetsAccess, setIsPollingPresetsAccess] = useState(Boolean(isPresetsPurchase && sessionId))
+  const [isPollingPresetsAccess, setIsPollingPresetsAccess] = useState(
+    Boolean(isPresetsPurchase && sessionId)
+  )
   const [presetsPollAttempts, setPresetsPollAttempts] = useState(0)
-  const [presetsStatus, setPresetsStatus] = useState("Preparing your SSELFIE Presets. This can take up to 2 minutes.")
+  const [presetsStatus, setPresetsStatus] = useState(
+    "Preparing your SSELFIE Presets. This can take up to 2 minutes."
+  )
   const [showPresetsTimeout, setShowPresetsTimeout] = useState(false)
   const [presetsRecoveryMessage, setPresetsRecoveryMessage] = useState(
-    "Your payment went through. Your SSELFIE Presets access is still syncing.",
+    "Your payment went through. Your SSELFIE Presets access is still syncing."
   )
   const [isPollingSelfieToBrandShootAccess, setIsPollingSelfieToBrandShootAccess] = useState(false)
   const [selfieToBrandShootPollAttempts, setSelfieToBrandShootPollAttempts] = useState(0)
-  const [selfieToBrandShootStatus, setSelfieToBrandShootStatus] = useState("Preparing your Selfie to Brand Shoot System. This can take up to 2 minutes.")
+  const [selfieToBrandShootStatus, setSelfieToBrandShootStatus] = useState(
+    "Preparing your Selfie to Brand Shoot System. This can take up to 2 minutes."
+  )
   const [showSelfieToBrandShootTimeout, setShowSelfieToBrandShootTimeout] = useState(false)
   const [selfieToBrandShootRecoveryMessage, setSelfieToBrandShootRecoveryMessage] = useState(
-    "Your payment went through. Your Selfie to Brand Shoot access is still syncing.",
+    "Your payment went through. Your Selfie to Brand Shoot access is still syncing."
   )
   const selfieGuideResolutionTrackedRef = useRef(false)
   const selfieGuideFailureTrackedRef = useRef(false)
@@ -632,7 +682,16 @@ export function SuccessContent({
       }
     }
     checkAuth()
-  }, [isPresetsPurchase, isPromptVaultPurchase, isSelfieAiPhotosKitPurchase, isSelfieGuidePurchase, isSelfieToBrandShootPurchase, purchaseType, router, sessionId])
+  }, [
+    isPresetsPurchase,
+    isPromptVaultPurchase,
+    isSelfieAiPhotosKitPurchase,
+    isSelfieGuidePurchase,
+    isSelfieToBrandShootPurchase,
+    purchaseType,
+    router,
+    sessionId,
+  ])
 
   useEffect(() => {
     if (!isPollingPromptVaultAccess || !isPromptVaultPurchase || !sessionId) {
@@ -643,7 +702,7 @@ export function SuccessContent({
       try {
         const response = await fetch(
           `/api/prompt-vault/access-token?session_id=${encodeURIComponent(sessionId)}`,
-          { cache: "no-store" },
+          { cache: "no-store" }
         )
         const data = await response.json()
 
@@ -660,7 +719,9 @@ export function SuccessContent({
           }
 
           setTimeout(() => {
-            router.push(`/access/prompt-vault/${encodeURIComponent(data.accessToken)}?checkout_session=${encodeURIComponent(sessionId)}`)
+            router.push(
+              `/access/prompt-vault/${encodeURIComponent(data.accessToken)}?checkout_session=${encodeURIComponent(sessionId)}`
+            )
           }, 400)
           return
         }
@@ -668,7 +729,9 @@ export function SuccessContent({
         if (response.status >= 400 && response.status < 500 && response.status !== 409) {
           setIsPollingPromptVaultAccess(false)
           setShowPromptVaultTimeout(true)
-          setPromptVaultRecoveryMessage(data.error || "We couldn't verify your Prompt Vault access yet.")
+          setPromptVaultRecoveryMessage(
+            data.error || "We couldn't verify your Prompt Vault access yet."
+          )
 
           if (!promptVaultFailureTrackedRef.current) {
             promptVaultFailureTrackedRef.current = true
@@ -681,7 +744,7 @@ export function SuccessContent({
           return
         }
 
-        setPromptVaultPollAttempts((prev) => {
+        setPromptVaultPollAttempts(prev => {
           const next = prev + 1
 
           if (next < 20) {
@@ -695,7 +758,9 @@ export function SuccessContent({
           if (next >= MAX_POLL_ATTEMPTS) {
             setIsPollingPromptVaultAccess(false)
             setShowPromptVaultTimeout(true)
-            setPromptVaultRecoveryMessage("Your payment is confirmed. Your private access is taking longer than expected.")
+            setPromptVaultRecoveryMessage(
+              "Your payment is confirmed. Your private access is taking longer than expected."
+            )
 
             if (!promptVaultFailureTrackedRef.current) {
               promptVaultFailureTrackedRef.current = true
@@ -711,12 +776,14 @@ export function SuccessContent({
         })
       } catch (error) {
         console.error("[SUCCESS PAGE] Prompt Vault polling error:", error)
-        setPromptVaultPollAttempts((prev) => {
+        setPromptVaultPollAttempts(prev => {
           const next = prev + 1
           if (next >= MAX_POLL_ATTEMPTS) {
             setIsPollingPromptVaultAccess(false)
             setShowPromptVaultTimeout(true)
-            setPromptVaultRecoveryMessage("Your payment is confirmed. Your private access is taking longer than expected.")
+            setPromptVaultRecoveryMessage(
+              "Your payment is confirmed. Your private access is taking longer than expected."
+            )
 
             if (!promptVaultFailureTrackedRef.current) {
               promptVaultFailureTrackedRef.current = true
@@ -747,7 +814,7 @@ export function SuccessContent({
       try {
         const response = await fetch(
           `/api/selfie-to-ai-photos-kit/access-token?session_id=${encodeURIComponent(sessionId)}`,
-          { cache: "no-store" },
+          { cache: "no-store" }
         )
         const data = await response.json()
 
@@ -764,7 +831,9 @@ export function SuccessContent({
           }
 
           setTimeout(() => {
-            router.push(`/access/selfie-to-ai-photos-kit/${encodeURIComponent(data.accessToken)}?checkout_session=${encodeURIComponent(sessionId)}`)
+            router.push(
+              `/access/selfie-to-ai-photos-kit/${encodeURIComponent(data.accessToken)}?checkout_session=${encodeURIComponent(sessionId)}`
+            )
           }, 400)
           return
         }
@@ -772,7 +841,9 @@ export function SuccessContent({
         if (response.status >= 400 && response.status < 500 && response.status !== 409) {
           setIsPollingSelfieAiPhotosKitAccess(false)
           setShowSelfieAiPhotosKitTimeout(true)
-          setSelfieAiPhotosKitRecoveryMessage(data.error || "We couldn't verify your AI Photos Kit access yet.")
+          setSelfieAiPhotosKitRecoveryMessage(
+            data.error || "We couldn't verify your AI Photos Kit access yet."
+          )
 
           if (!selfieAiPhotosKitFailureTrackedRef.current) {
             selfieAiPhotosKitFailureTrackedRef.current = true
@@ -785,11 +856,13 @@ export function SuccessContent({
           return
         }
 
-        setSelfieAiPhotosKitPollAttempts((prev) => {
+        setSelfieAiPhotosKitPollAttempts(prev => {
           const next = prev + 1
 
           if (next < 20) {
-            setSelfieAiPhotosKitStatus("Preparing your AI Photos Kit. This can take up to 2 minutes.")
+            setSelfieAiPhotosKitStatus(
+              "Preparing your AI Photos Kit. This can take up to 2 minutes."
+            )
           } else if (next < 40) {
             setSelfieAiPhotosKitStatus("Payment confirmed. Finalizing your Kit access...")
           } else {
@@ -799,7 +872,9 @@ export function SuccessContent({
           if (next >= MAX_POLL_ATTEMPTS) {
             setIsPollingSelfieAiPhotosKitAccess(false)
             setShowSelfieAiPhotosKitTimeout(true)
-            setSelfieAiPhotosKitRecoveryMessage("Your payment is confirmed. Your AI Photos Kit access is taking longer than expected.")
+            setSelfieAiPhotosKitRecoveryMessage(
+              "Your payment is confirmed. Your AI Photos Kit access is taking longer than expected."
+            )
 
             if (!selfieAiPhotosKitFailureTrackedRef.current) {
               selfieAiPhotosKitFailureTrackedRef.current = true
@@ -815,12 +890,14 @@ export function SuccessContent({
         })
       } catch (error) {
         console.error("[SUCCESS PAGE] AI Photos Kit polling error:", error)
-        setSelfieAiPhotosKitPollAttempts((prev) => {
+        setSelfieAiPhotosKitPollAttempts(prev => {
           const next = prev + 1
           if (next >= MAX_POLL_ATTEMPTS) {
             setIsPollingSelfieAiPhotosKitAccess(false)
             setShowSelfieAiPhotosKitTimeout(true)
-            setSelfieAiPhotosKitRecoveryMessage("Your payment is confirmed. Your AI Photos Kit access is taking longer than expected.")
+            setSelfieAiPhotosKitRecoveryMessage(
+              "Your payment is confirmed. Your AI Photos Kit access is taking longer than expected."
+            )
 
             if (!selfieAiPhotosKitFailureTrackedRef.current) {
               selfieAiPhotosKitFailureTrackedRef.current = true
@@ -840,7 +917,13 @@ export function SuccessContent({
     pollSelfieAiPhotosKitAccess()
 
     return () => clearInterval(interval)
-  }, [isPollingSelfieAiPhotosKitAccess, isSelfieAiPhotosKitPurchase, purchaseType, router, sessionId])
+  }, [
+    isPollingSelfieAiPhotosKitAccess,
+    isSelfieAiPhotosKitPurchase,
+    purchaseType,
+    router,
+    sessionId,
+  ])
 
   useEffect(() => {
     if (!isPollingPresetsAccess || !isPresetsPurchase || !sessionId) {
@@ -851,7 +934,7 @@ export function SuccessContent({
       try {
         const response = await fetch(
           `/api/presets/access-token?session_id=${encodeURIComponent(sessionId)}`,
-          { cache: "no-store" },
+          { cache: "no-store" }
         )
         const data = await response.json()
 
@@ -868,7 +951,9 @@ export function SuccessContent({
           }
 
           setTimeout(() => {
-            router.push(`/access/presets/${encodeURIComponent(data.accessToken)}?checkout_session=${encodeURIComponent(sessionId)}`)
+            router.push(
+              `/access/presets/${encodeURIComponent(data.accessToken)}?checkout_session=${encodeURIComponent(sessionId)}`
+            )
           }, 400)
           return
         }
@@ -876,7 +961,9 @@ export function SuccessContent({
         if (response.status >= 400 && response.status < 500 && response.status !== 409) {
           setIsPollingPresetsAccess(false)
           setShowPresetsTimeout(true)
-          setPresetsRecoveryMessage(data.error || "We couldn't verify your SSELFIE Presets access yet.")
+          setPresetsRecoveryMessage(
+            data.error || "We couldn't verify your SSELFIE Presets access yet."
+          )
 
           if (!presetsFailureTrackedRef.current) {
             presetsFailureTrackedRef.current = true
@@ -889,7 +976,7 @@ export function SuccessContent({
           return
         }
 
-        setPresetsPollAttempts((prev) => {
+        setPresetsPollAttempts(prev => {
           const next = prev + 1
 
           if (next < 20) {
@@ -903,7 +990,9 @@ export function SuccessContent({
           if (next >= MAX_POLL_ATTEMPTS) {
             setIsPollingPresetsAccess(false)
             setShowPresetsTimeout(true)
-            setPresetsRecoveryMessage("Your payment is confirmed. Your SSELFIE Presets access is taking longer than expected.")
+            setPresetsRecoveryMessage(
+              "Your payment is confirmed. Your SSELFIE Presets access is taking longer than expected."
+            )
 
             if (!presetsFailureTrackedRef.current) {
               presetsFailureTrackedRef.current = true
@@ -919,12 +1008,14 @@ export function SuccessContent({
         })
       } catch (error) {
         console.error("[SUCCESS PAGE] SSELFIE Presets polling error:", error)
-        setPresetsPollAttempts((prev) => {
+        setPresetsPollAttempts(prev => {
           const next = prev + 1
           if (next >= MAX_POLL_ATTEMPTS) {
             setIsPollingPresetsAccess(false)
             setShowPresetsTimeout(true)
-            setPresetsRecoveryMessage("Your payment is confirmed. Your SSELFIE Presets access is taking longer than expected.")
+            setPresetsRecoveryMessage(
+              "Your payment is confirmed. Your SSELFIE Presets access is taking longer than expected."
+            )
 
             if (!presetsFailureTrackedRef.current) {
               presetsFailureTrackedRef.current = true
@@ -955,7 +1046,7 @@ export function SuccessContent({
       try {
         const response = await fetch(
           `/api/selfie-to-brand-shoot/access-token?session_id=${encodeURIComponent(sessionId)}`,
-          { cache: "no-store" },
+          { cache: "no-store" }
         )
         const data = await response.json()
 
@@ -972,7 +1063,9 @@ export function SuccessContent({
           }
 
           setTimeout(() => {
-            router.push(`/academy/access/selfie-to-brand-shoot?checkout_session=${encodeURIComponent(sessionId)}`)
+            router.push(
+              `/academy/access/selfie-to-brand-shoot?checkout_session=${encodeURIComponent(sessionId)}`
+            )
           }, 400)
           return
         }
@@ -980,7 +1073,9 @@ export function SuccessContent({
         if (response.status >= 400 && response.status < 500 && response.status !== 409) {
           setIsPollingSelfieToBrandShootAccess(false)
           setShowSelfieToBrandShootTimeout(true)
-          setSelfieToBrandShootRecoveryMessage(data.error || "We couldn't verify your Selfie to Brand Shoot access yet.")
+          setSelfieToBrandShootRecoveryMessage(
+            data.error || "We couldn't verify your Selfie to Brand Shoot access yet."
+          )
 
           if (!selfieToBrandShootFailureTrackedRef.current) {
             selfieToBrandShootFailureTrackedRef.current = true
@@ -993,11 +1088,13 @@ export function SuccessContent({
           return
         }
 
-        setSelfieToBrandShootPollAttempts((prev) => {
+        setSelfieToBrandShootPollAttempts(prev => {
           const next = prev + 1
 
           if (next < 20) {
-            setSelfieToBrandShootStatus("Preparing your Selfie to Brand Shoot System. This can take up to 2 minutes.")
+            setSelfieToBrandShootStatus(
+              "Preparing your Selfie to Brand Shoot System. This can take up to 2 minutes."
+            )
           } else if (next < 40) {
             setSelfieToBrandShootStatus("Payment confirmed. Finalizing your system access...")
           } else {
@@ -1007,7 +1104,9 @@ export function SuccessContent({
           if (next >= MAX_POLL_ATTEMPTS) {
             setIsPollingSelfieToBrandShootAccess(false)
             setShowSelfieToBrandShootTimeout(true)
-            setSelfieToBrandShootRecoveryMessage("Your payment is confirmed. Your Selfie to Brand Shoot access is taking longer than expected.")
+            setSelfieToBrandShootRecoveryMessage(
+              "Your payment is confirmed. Your Selfie to Brand Shoot access is taking longer than expected."
+            )
 
             if (!selfieToBrandShootFailureTrackedRef.current) {
               selfieToBrandShootFailureTrackedRef.current = true
@@ -1023,12 +1122,14 @@ export function SuccessContent({
         })
       } catch (error) {
         console.error("[SUCCESS PAGE] Selfie to Brand Shoot polling error:", error)
-        setSelfieToBrandShootPollAttempts((prev) => {
+        setSelfieToBrandShootPollAttempts(prev => {
           const next = prev + 1
           if (next >= MAX_POLL_ATTEMPTS) {
             setIsPollingSelfieToBrandShootAccess(false)
             setShowSelfieToBrandShootTimeout(true)
-            setSelfieToBrandShootRecoveryMessage("Your payment is confirmed. Your Selfie to Brand Shoot access is taking longer than expected.")
+            setSelfieToBrandShootRecoveryMessage(
+              "Your payment is confirmed. Your Selfie to Brand Shoot access is taking longer than expected."
+            )
 
             if (!selfieToBrandShootFailureTrackedRef.current) {
               selfieToBrandShootFailureTrackedRef.current = true
@@ -1048,7 +1149,13 @@ export function SuccessContent({
     pollSelfieToBrandShootAccess()
 
     return () => clearInterval(interval)
-  }, [isPollingSelfieToBrandShootAccess, isSelfieToBrandShootPurchase, purchaseType, router, sessionId])
+  }, [
+    isPollingSelfieToBrandShootAccess,
+    isSelfieToBrandShootPurchase,
+    purchaseType,
+    router,
+    sessionId,
+  ])
 
   useEffect(() => {
     if (!isPollingSelfieGuideAccess || !isSelfieGuidePurchase || (!sessionId && !isAuthenticated)) {
@@ -1061,7 +1168,7 @@ export function SuccessContent({
           sessionId
             ? `/api/selfie-guide/access-token?session_id=${encodeURIComponent(sessionId)}`
             : "/api/selfie-guide/access-token",
-          { cache: "no-store" },
+          { cache: "no-store" }
         )
         const data = await response.json()
 
@@ -1086,7 +1193,9 @@ export function SuccessContent({
               qs.set("brand_strategy_bump", "1")
             }
             const search = qs.toString()
-            router.push(`/selfie-guide/access/${encodeURIComponent(data.accessToken)}${search ? `?${search}` : ""}`)
+            router.push(
+              `/selfie-guide/access/${encodeURIComponent(data.accessToken)}${search ? `?${search}` : ""}`
+            )
           }, 400)
           return
         }
@@ -1107,7 +1216,7 @@ export function SuccessContent({
           return
         }
 
-        setSelfieGuidePollAttempts((prev) => {
+        setSelfieGuidePollAttempts(prev => {
           const next = prev + 1
 
           if (next < 20) {
@@ -1121,7 +1230,9 @@ export function SuccessContent({
           if (next >= MAX_POLL_ATTEMPTS) {
             setIsPollingSelfieGuideAccess(false)
             setShowSelfieGuideTimeout(true)
-            setSelfieGuideRecoveryMessage("Your payment is confirmed. Your guide access is taking longer than expected.")
+            setSelfieGuideRecoveryMessage(
+              "Your payment is confirmed. Your guide access is taking longer than expected."
+            )
 
             if (!selfieGuideFailureTrackedRef.current) {
               selfieGuideFailureTrackedRef.current = true
@@ -1137,12 +1248,14 @@ export function SuccessContent({
         })
       } catch (error) {
         console.error("[SUCCESS PAGE] Selfie guide polling error:", error)
-        setSelfieGuidePollAttempts((prev) => {
+        setSelfieGuidePollAttempts(prev => {
           const next = prev + 1
           if (next >= MAX_POLL_ATTEMPTS) {
             setIsPollingSelfieGuideAccess(false)
             setShowSelfieGuideTimeout(true)
-            setSelfieGuideRecoveryMessage("Your payment is confirmed. Your guide access is taking longer than expected.")
+            setSelfieGuideRecoveryMessage(
+              "Your payment is confirmed. Your guide access is taking longer than expected."
+            )
 
             if (!selfieGuideFailureTrackedRef.current) {
               selfieGuideFailureTrackedRef.current = true
@@ -1190,6 +1303,7 @@ export function SuccessContent({
       campaign_outcome: 97,
       selfie_to_brand_shoot_system: 197,
       masterclass: 147,
+      work_with_me: 2000,
       visibility_suite: 97,
       what_to_say: 47,
       show_up: 67,
@@ -1220,7 +1334,10 @@ export function SuccessContent({
         "caption_sprint",
         "feed_reset_9grid",
         "ai_photo_refresh",
-      ].includes(resolvedType) ? "EUR" : "USD",
+        "work_with_me",
+      ].includes(resolvedType)
+        ? "EUR"
+        : "USD",
       items: [
         {
           item_id: resolvedType,
@@ -1230,7 +1347,11 @@ export function SuccessContent({
         },
       ],
     })
-    console.log("[GA4] Purchase event fired:", { transaction_id: sessionId, value, type: resolvedType })
+    console.log("[GA4] Purchase event fired:", {
+      transaction_id: sessionId,
+      value,
+      type: resolvedType,
+    })
   }, [sessionId, purchaseType])
 
   // Poll access status for paid blueprint purchases
@@ -1241,29 +1362,29 @@ export function SuccessContent({
 
     const pollAccessStatus = async () => {
       try {
-        const response = await fetch('/api/feed-planner/access')
+        const response = await fetch("/api/feed-planner/access")
         const data = await response.json()
 
-        console.log('[SUCCESS PAGE] Polling access:', {
+        console.log("[SUCCESS PAGE] Polling access:", {
           attempt: pollAttempts + 1,
           isPaidBlueprint: data.isPaidBlueprint,
         })
 
         if (data.isPaidBlueprint) {
           // Webhook completed! Redirect to Feed Planner
-          console.log('[SUCCESS PAGE] Paid access confirmed, redirecting to feed planner...')
+          console.log("[SUCCESS PAGE] Paid access confirmed, redirecting to feed planner...")
           setIsPollingAccess(false)
           setPollingMessage("Access granted! Redirecting...")
           setTimeout(() => {
-            router.push('/feed-planner?purchase=success')
+            router.push("/feed-planner?purchase=success")
           }, 500)
         } else {
           // Webhook not done yet, continue polling
-          setPollAttempts((prev) => {
+          setPollAttempts(prev => {
             const newAttempts = prev + 1
-            
+
             // Update message based on progress (using new attempt count)
-            const remaining = 120 - (newAttempts * 2)
+            const remaining = 120 - newAttempts * 2
             setTimeRemaining(Math.max(0, remaining))
 
             if (newAttempts < 20) {
@@ -1276,22 +1397,22 @@ export function SuccessContent({
 
             if (newAttempts >= MAX_POLL_ATTEMPTS) {
               // Timeout - show manual actions
-              console.log('[SUCCESS PAGE] Polling timeout after 120 seconds')
+              console.log("[SUCCESS PAGE] Polling timeout after 120 seconds")
               setIsPollingAccess(false)
               setShowTimeoutActions(true)
               setPollingMessage("Payment confirmed. Access is still syncing.")
             }
-            
+
             return newAttempts
           })
         }
       } catch (error) {
-        console.error('[SUCCESS PAGE] Polling error:', error)
-        setPollAttempts((prev) => {
+        console.error("[SUCCESS PAGE] Polling error:", error)
+        setPollAttempts(prev => {
           const newAttempts = prev + 1
-          
+
           // Update message based on progress
-          const remaining = 120 - (newAttempts * 2)
+          const remaining = 120 - newAttempts * 2
           setTimeRemaining(Math.max(0, remaining))
 
           if (newAttempts >= MAX_POLL_ATTEMPTS) {
@@ -1299,7 +1420,7 @@ export function SuccessContent({
             setShowTimeoutActions(true)
             setPollingMessage("Payment confirmed. Access is still syncing.")
           }
-          
+
           return newAttempts
         })
       }
@@ -1320,7 +1441,7 @@ export function SuccessContent({
         <LoadingSpinner size="lg" />
         <p className="text-lg font-medium text-brand-porcelain">{selfieGuideStatus}</p>
         <p className="text-sm text-brand-pearl">
-          Estimated time remaining: {Math.max(0, 120 - (selfieGuidePollAttempts * 2))}s
+          Estimated time remaining: {Math.max(0, 120 - selfieGuidePollAttempts * 2)}s
         </p>
         <div className="w-64 bg-[color:var(--glass-bg)] rounded-full h-2">
           <div
@@ -1359,7 +1480,9 @@ export function SuccessContent({
             variant="outline"
             className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
           >
-            <a href="mailto:support@sselfie.ai?subject=Selfie%20Guide%20access%20help">Email Support</a>
+            <a href="mailto:support@sselfie.ai?subject=Selfie%20Guide%20access%20help">
+              Email Support
+            </a>
           </Button>
         </div>
       </div>
@@ -1414,7 +1537,7 @@ export function SuccessContent({
         <LoadingSpinner size="lg" />
         <p className="text-lg font-medium text-brand-porcelain">{selfieAiPhotosKitStatus}</p>
         <p className="text-sm text-brand-pearl">
-          Estimated time remaining: {Math.max(0, 120 - (selfieAiPhotosKitPollAttempts * 2))}s
+          Estimated time remaining: {Math.max(0, 120 - selfieAiPhotosKitPollAttempts * 2)}s
         </p>
         <div className="w-64 bg-[color:var(--glass-bg)] rounded-full h-2">
           <div
@@ -1443,7 +1566,9 @@ export function SuccessContent({
             onClick={() => {
               setShowSelfieAiPhotosKitTimeout(false)
               setSelfieAiPhotosKitPollAttempts(0)
-              setSelfieAiPhotosKitStatus("Preparing your AI Photos Kit. This can take up to 2 minutes.")
+              setSelfieAiPhotosKitStatus(
+                "Preparing your AI Photos Kit. This can take up to 2 minutes."
+              )
               setIsPollingSelfieAiPhotosKitAccess(true)
             }}
             variant="default"
@@ -1456,7 +1581,9 @@ export function SuccessContent({
             variant="outline"
             className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
           >
-            <a href="mailto:support@sselfie.ai?subject=AI%20Photos%20Kit%20access%20help">Email Support</a>
+            <a href="mailto:support@sselfie.ai?subject=AI%20Photos%20Kit%20access%20help">
+              Email Support
+            </a>
           </Button>
         </div>
       </div>
@@ -1469,7 +1596,7 @@ export function SuccessContent({
         <LoadingSpinner size="lg" />
         <p className="text-lg font-medium text-brand-porcelain">{presetsStatus}</p>
         <p className="text-sm text-brand-pearl">
-          Estimated time remaining: {Math.max(0, 120 - (presetsPollAttempts * 2))}s
+          Estimated time remaining: {Math.max(0, 120 - presetsPollAttempts * 2)}s
         </p>
         <div className="w-64 bg-[color:var(--glass-bg)] rounded-full h-2">
           <div
@@ -1511,7 +1638,9 @@ export function SuccessContent({
             variant="outline"
             className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
           >
-            <a href="mailto:support@sselfie.ai?subject=SSELFIE%20Presets%20access%20help">Email Support</a>
+            <a href="mailto:support@sselfie.ai?subject=SSELFIE%20Presets%20access%20help">
+              Email Support
+            </a>
           </Button>
         </div>
       </div>
@@ -1524,7 +1653,7 @@ export function SuccessContent({
         <LoadingSpinner size="lg" />
         <p className="text-lg font-medium text-brand-porcelain">{selfieToBrandShootStatus}</p>
         <p className="text-sm text-brand-pearl">
-          Estimated time remaining: {Math.max(0, 120 - (selfieToBrandShootPollAttempts * 2))}s
+          Estimated time remaining: {Math.max(0, 120 - selfieToBrandShootPollAttempts * 2)}s
         </p>
         <div className="w-64 bg-[color:var(--glass-bg)] rounded-full h-2">
           <div
@@ -1553,7 +1682,9 @@ export function SuccessContent({
             onClick={() => {
               setShowSelfieToBrandShootTimeout(false)
               setSelfieToBrandShootPollAttempts(0)
-              setSelfieToBrandShootStatus("Preparing your Selfie to Brand Shoot System. This can take up to 2 minutes.")
+              setSelfieToBrandShootStatus(
+                "Preparing your Selfie to Brand Shoot System. This can take up to 2 minutes."
+              )
               setIsPollingSelfieToBrandShootAccess(true)
             }}
             variant="default"
@@ -1566,7 +1697,9 @@ export function SuccessContent({
             variant="outline"
             className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
           >
-            <a href="mailto:support@sselfie.ai?subject=Selfie%20to%20Brand%20Shoot%20access%20help">Email Support</a>
+            <a href="mailto:support@sselfie.ai?subject=Selfie%20to%20Brand%20Shoot%20access%20help">
+              Email Support
+            </a>
           </Button>
         </div>
       </div>
@@ -1579,16 +1712,22 @@ export function SuccessContent({
       <div className="min-h-screen bg-[#f7f8f8] px-5 py-16 text-[#0d0e10] sm:px-8 sm:py-24">
         <div className="mx-auto max-w-2xl border border-[#d8d9da] bg-white px-7 py-12 text-center sm:px-14 sm:py-16">
           <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Payment confirmed</p>
-          <h1 className="mt-5 font-serif text-4xl leading-tight sm:text-5xl">Your campaign order is in.</h1>
+          <h1 className="mt-5 font-serif text-4xl leading-tight sm:text-5xl">
+            Your campaign order is in.
+          </h1>
           <p className="mx-auto mt-6 max-w-lg text-base leading-8 text-[#606164]">
-            Check the email used at checkout. Your private link asks for one selfie, what you sell, and what you want to promote.
+            Check the email used at checkout. Your private link asks for one selfie, what you sell,
+            and what you want to promote.
           </p>
           <div className="mt-8 border-y border-[#e9eaeb] py-6 text-sm leading-7 text-[#606164]">
             <p>One $97 payment</p>
             <p>No subscription</p>
             <p>Delivery within 48 hours after intake</p>
           </div>
-          <a href="/campaign" className="mt-8 inline-flex min-h-12 items-center bg-[#0d0e10] px-7 text-[10px] font-semibold uppercase tracking-[0.2em] text-white">
+          <a
+            href="/campaign"
+            className="mt-8 inline-flex min-h-12 items-center bg-[#0d0e10] px-7 text-[10px] font-semibold uppercase tracking-[0.2em] text-white"
+          >
             Return to campaign page
           </a>
           <p className="mt-5 text-xs text-[#818283]">No account or password is required.</p>
@@ -1640,7 +1779,7 @@ export function SuccessContent({
             Refresh Status
           </Button>
           <Button
-            onClick={() => router.push('/feed-planner?purchase=success')}
+            onClick={() => router.push("/feed-planner?purchase=success")}
             variant="outline"
             className="border-[color:var(--div-dark)] text-brand-porcelain tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[color:var(--glass-bg)] transition-colors"
           >
@@ -1649,7 +1788,10 @@ export function SuccessContent({
         </div>
         <p className="text-sm text-brand-pearl">
           If access is not available after 5 minutes, please{" "}
-          <a href="mailto:support@sselfie.ai" className="underline text-brand-pearl hover:text-white">
+          <a
+            href="mailto:support@sselfie.ai"
+            className="underline text-brand-pearl hover:text-white"
+          >
             contact support
           </a>
         </p>
@@ -1773,7 +1915,9 @@ export function SuccessContent({
       <div className="min-h-screen bg-brand-obsidian flex items-center justify-center p-6">
         <div className="w-full max-w-md border border-[color:var(--div-dark)] bg-[color:var(--glass-bg)] p-7 text-center sm:p-9">
           <h1 className="font-['Cormorant_Garamond'] text-3xl font-light text-brand-porcelain">
-            {isSelfieVisibilityBundlePurchase ? "Your payment is confirmed" : "Your purchase is still syncing"}
+            {isSelfieVisibilityBundlePurchase
+              ? "Your payment is confirmed"
+              : "Your purchase is still syncing"}
           </h1>
           <p className="mt-4 text-sm font-light leading-6 text-brand-pearl">
             {isSelfieVisibilityBundlePurchase
@@ -1785,7 +1929,7 @@ export function SuccessContent({
               type="button"
               onClick={() => {
                 setUserStatusTimedOut(false)
-                setUserStatusRetryKey((current) => current + 1)
+                setUserStatusRetryKey(current => current + 1)
               }}
               className="min-h-11 bg-brand-whisper px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-brand-obsidian"
             >
@@ -1810,7 +1954,9 @@ export function SuccessContent({
           <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-brand-porcelain mb-4 animate-pulse">
             PREPARING YOUR PURCHASE
           </div>
-          <div className="text-xs sm:text-sm text-brand-pearl font-light">Finalizing everything for you...</div>
+          <div className="text-xs sm:text-sm text-brand-pearl font-light">
+            Finalizing everything for you...
+          </div>
         </div>
       </div>
     )
@@ -1851,9 +1997,7 @@ export function SuccessContent({
         error={error}
         isSubmitting={isSubmitting}
         primaryLabel={
-          !isAuthenticated && userInfo.hasAccount
-            ? "Log in to Vault Maya"
-            : "Create my first photo"
+          !isAuthenticated && userInfo.hasAccount ? "Log in to Vault Maya" : "Create my first photo"
         }
         onNameChange={setName}
         onPasswordChange={setPassword}
@@ -1887,7 +2031,9 @@ export function SuccessContent({
             <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-brand-porcelain mb-3 sm:mb-4">
               S S E L F I E
             </div>
-            <p className="text-sm sm:text-base md:text-lg text-brand-whisper font-light max-w-md">You&apos;re in</p>
+            <p className="text-sm sm:text-base md:text-lg text-brand-whisper font-light max-w-md">
+              You&apos;re in
+            </p>
           </div>
         </div>
 
@@ -1901,7 +2047,7 @@ export function SuccessContent({
                 ? "Your purchase is ready. Create your password so you can access your legacy academy purchase anytime."
                 : resolvedProductType === "selfie_visibility_bundle"
                   ? "Your bundle is ready. Create your password once, then everything opens from one simple start page."
-                : "Add your password so you can open everything inside SSELFIE. This takes less than a minute."}
+                  : "Add your password so you can open everything inside SSELFIE. This takes less than a minute."}
             </p>
           </div>
 
@@ -1918,7 +2064,7 @@ export function SuccessContent({
                   type="text"
                   id="name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={e => setName(e.target.value)}
                   required
                   className="w-full px-4 py-3 sm:py-4 bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl focus:border-stone focus:outline-none transition-colors text-sm sm:text-base text-brand-porcelain font-light placeholder:text-white/40"
                   placeholder="What should we call you?"
@@ -1952,7 +2098,7 @@ export function SuccessContent({
                   type="password"
                   id="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   required
                   minLength={8}
                   className="w-full px-4 py-3 sm:py-4 bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl focus:border-stone focus:outline-none transition-colors text-sm sm:text-base text-brand-porcelain font-light placeholder:text-white/40"
@@ -1971,7 +2117,7 @@ export function SuccessContent({
                   type="password"
                   id="confirmPassword"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={e => setConfirmPassword(e.target.value)}
                   required
                   minLength={8}
                   className="w-full px-4 py-3 sm:py-4 bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl focus:border-stone focus:outline-none transition-colors text-sm sm:text-base text-brand-porcelain font-light placeholder:text-white/40"
@@ -1996,7 +2142,7 @@ export function SuccessContent({
                     ? "CREATE PASSWORD AND OPEN MY SUITE"
                     : resolvedProductType === "selfie_visibility_bundle"
                       ? "CREATE PASSWORD AND OPEN MY BUNDLE"
-                    : "LET'S GO"}
+                      : "LET'S GO"}
               </button>
 
               <p className="text-[10px] sm:text-xs text-brand-pearl font-light text-center leading-relaxed">
@@ -2045,7 +2191,8 @@ export function SuccessContent({
                 LET&apos;S GET YOU STARTED
               </h1>
               <p className="text-sm sm:text-base text-brand-pearl font-light leading-relaxed max-w-xl mx-auto px-4">
-                Add your password so you can open everything inside SSELFIE. This takes less than a minute.
+                Add your password so you can open everything inside SSELFIE. This takes less than a
+                minute.
               </p>
             </div>
 
@@ -2062,7 +2209,7 @@ export function SuccessContent({
                     type="text"
                     id="name"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={e => setName(e.target.value)}
                     required
                     className="w-full px-4 py-3 sm:py-4 bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl focus:border-stone focus:outline-none transition-colors text-sm sm:text-base text-brand-porcelain font-light placeholder:text-white/40"
                     placeholder="What should we call you?"
@@ -2096,7 +2243,7 @@ export function SuccessContent({
                     type="password"
                     id="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={e => setPassword(e.target.value)}
                     required
                     minLength={8}
                     className="w-full px-4 py-3 sm:py-4 bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl focus:border-stone focus:outline-none transition-colors text-sm sm:text-base text-brand-porcelain font-light placeholder:text-white/40"
@@ -2115,7 +2262,7 @@ export function SuccessContent({
                     type="password"
                     id="confirmPassword"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={e => setConfirmPassword(e.target.value)}
                     required
                     minLength={8}
                     className="w-full px-4 py-3 sm:py-4 bg-[color:var(--glass-bg)] border border-[color:var(--div-dark)] rounded-xl focus:border-stone focus:outline-none transition-colors text-sm sm:text-base text-brand-porcelain font-light placeholder:text-white/40"
@@ -2170,27 +2317,43 @@ export function SuccessContent({
               </h2>
               <div className="space-y-4 sm:space-y-5">
                 <div className="flex justify-between items-center pb-4 border-b border-[color:var(--div-dark)]">
-                  <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Product</span>
+                  <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">
+                    Product
+                  </span>
                   <span className="text-sm sm:text-base text-brand-porcelain font-light">
                     {getProductLabel(resolvedProductType)}
                   </span>
                 </div>
                 {resolvedProductType === "visibility_suite" && (
                   <div className="flex justify-between items-start pb-4 border-b border-[color:var(--div-dark)]">
-                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
+                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">
+                      Included
+                    </span>
                     <div className="text-right space-y-1">
                       {VISIBILITY_SUITE_INCLUDES.map(item => (
-                        <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
+                        <p
+                          key={item}
+                          className="text-sm sm:text-base text-brand-porcelain font-light"
+                        >
+                          {item}
+                        </p>
                       ))}
                     </div>
                   </div>
                 )}
                 {resolvedProductType === "starter_kit" && (
                   <div className="flex justify-between items-start pb-4 border-b border-[color:var(--div-dark)]">
-                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
+                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">
+                      Included
+                    </span>
                     <div className="text-right space-y-1">
                       {STARTER_KIT_INCLUDES.map(item => (
-                        <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
+                        <p
+                          key={item}
+                          className="text-sm sm:text-base text-brand-porcelain font-light"
+                        >
+                          {item}
+                        </p>
                       ))}
                     </div>
                   </div>
@@ -2198,75 +2361,125 @@ export function SuccessContent({
                 {resolvedProductType === "selfie_visibility_bundle" && (
                   <>
                     <div className="flex justify-between items-start pb-4 border-b border-[color:var(--div-dark)]">
-                      <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
+                      <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">
+                        Included
+                      </span>
                       <div className="text-right space-y-1">
                         {SELFIE_VISIBILITY_BUNDLE_INCLUDES.map(item => (
-                          <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
+                          <p
+                            key={item}
+                            className="text-sm sm:text-base text-brand-porcelain font-light"
+                          >
+                            {item}
+                          </p>
                         ))}
                       </div>
                     </div>
                     <div className="flex justify-between items-center pb-4 border-b border-[color:var(--div-dark)]">
-                      <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Paid</span>
-                      <span className="text-sm sm:text-base text-brand-porcelain font-light">$97 one-time</span>
+                      <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">
+                        Paid
+                      </span>
+                      <span className="text-sm sm:text-base text-brand-porcelain font-light">
+                        $97 one-time
+                      </span>
                     </div>
                   </>
                 )}
                 {resolvedProductType === "prompt_vault" && (
                   <div className="flex justify-between items-start pb-4 border-b border-[color:var(--div-dark)]">
-                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
+                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">
+                      Included
+                    </span>
                     <div className="text-right space-y-1">
                       {PROMPT_VAULT_INCLUDES.map(item => (
-                        <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
+                        <p
+                          key={item}
+                          className="text-sm sm:text-base text-brand-porcelain font-light"
+                        >
+                          {item}
+                        </p>
                       ))}
                     </div>
                   </div>
                 )}
                 {resolvedProductType === "selfie_ai_photos_kit" && (
                   <div className="flex justify-between items-start pb-4 border-b border-[color:var(--div-dark)]">
-                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
+                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">
+                      Included
+                    </span>
                     <div className="text-right space-y-1">
                       {SELFIE_AI_PHOTOS_KIT_INCLUDES.map(item => (
-                        <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
+                        <p
+                          key={item}
+                          className="text-sm sm:text-base text-brand-porcelain font-light"
+                        >
+                          {item}
+                        </p>
                       ))}
                     </div>
                   </div>
                 )}
-                {(resolvedProductType === "presets_single" || resolvedProductType === "presets_bundle") && (
+                {(resolvedProductType === "presets_single" ||
+                  resolvedProductType === "presets_bundle") && (
                   <div className="flex justify-between items-start pb-4 border-b border-[color:var(--div-dark)]">
-                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
+                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">
+                      Included
+                    </span>
                     <div className="text-right space-y-1">
                       {PRESETS_INCLUDES.map(item => (
-                        <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
+                        <p
+                          key={item}
+                          className="text-sm sm:text-base text-brand-porcelain font-light"
+                        >
+                          {item}
+                        </p>
                       ))}
                     </div>
                   </div>
                 )}
                 {resolvedProductType === "selfie_to_brand_shoot_system" && (
                   <div className="flex justify-between items-start pb-4 border-b border-[color:var(--div-dark)]">
-                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Included</span>
+                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">
+                      Included
+                    </span>
                     <div className="text-right space-y-1">
                       {SELFIE_TO_BRAND_SHOOT_INCLUDES.map(item => (
-                        <p key={item} className="text-sm sm:text-base text-brand-porcelain font-light">{item}</p>
+                        <p
+                          key={item}
+                          className="text-sm sm:text-base text-brand-porcelain font-light"
+                        >
+                          {item}
+                        </p>
                       ))}
                     </div>
                   </div>
                 )}
-                {userInfo.credits && Number(userInfo.credits) > 0 && CREDIT_GRANTING_TYPES.has(resolvedProductType) && (
-                  <div className="flex justify-between items-center pb-4 border-b border-[color:var(--div-dark)]">
-                    <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">
-                      {resolvedProductType === "sselfie_studio_membership" ? "Monthly Credits" : "Credits Included"}
-                    </span>
-                    <span className="text-sm sm:text-base text-brand-porcelain font-light">{userInfo.credits} credits</span>
-                  </div>
-                )}
+                {userInfo.credits &&
+                  Number(userInfo.credits) > 0 &&
+                  CREDIT_GRANTING_TYPES.has(resolvedProductType) && (
+                    <div className="flex justify-between items-center pb-4 border-b border-[color:var(--div-dark)]">
+                      <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">
+                        {resolvedProductType === "sselfie_studio_membership"
+                          ? "Monthly Credits"
+                          : "Credits Included"}
+                      </span>
+                      <span className="text-sm sm:text-base text-brand-porcelain font-light">
+                        {userInfo.credits} credits
+                      </span>
+                    </div>
+                  )}
                 <div className="flex justify-between items-center pb-4 border-b border-[color:var(--div-dark)]">
-                  <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Email</span>
+                  <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">
+                    Email
+                  </span>
                   <span className="text-sm sm:text-base text-brand-porcelain font-light">
                     {userInfo.email || initialEmail}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">Status</span>
+                  <span className="text-xs sm:text-sm text-brand-pearl font-light tracking-[0.3em] uppercase">
+                    Status
+                  </span>
                   <span className="text-sm sm:text-base text-brand-pearl font-light">Active</span>
                 </div>
               </div>
@@ -2289,7 +2502,9 @@ export function SuccessContent({
                 }}
                 className="bg-brand-whisper text-brand-obsidian font-medium tracking-[0.15em] uppercase text-xs px-8 sm:px-12 py-3 sm:py-4 rounded-full hover:bg-brand-porcelain transition-colors min-h-[44px]"
               >
-                {!isAuthenticated && userInfo?.hasAccount ? "Log in to open your products" : successAction.label}
+                {!isAuthenticated && userInfo?.hasAccount
+                  ? "Log in to open your products"
+                  : successAction.label}
               </button>
               {successAction.secondaryHref && successAction.secondaryLabel ? (
                 <div className="mt-4">

@@ -15,7 +15,12 @@ export type BrandEnginePipelineStage = (typeof BRAND_ENGINE_PIPELINE_STAGES)[num
 export const BRAND_ENGINE_ROUTING_PATHS = ["direct_offer", "fit_call", "nurture"] as const
 export type BrandEngineRoutingPath = (typeof BRAND_ENGINE_ROUTING_PATHS)[number]
 
-export const BRAND_ENGINE_NEXT_ACTIONS = ["send_offer", "book_call", "follow_up", "nurture_followup"] as const
+export const BRAND_ENGINE_NEXT_ACTIONS = [
+  "send_offer",
+  "book_call",
+  "follow_up",
+  "nurture_followup",
+] as const
 export type BrandEngineNextAction = (typeof BRAND_ENGINE_NEXT_ACTIONS)[number]
 
 export const BRAND_ENGINE_CHECKOUT_MODES = ["embedded_checkout", "payment_link", "none"] as const
@@ -72,6 +77,7 @@ export type WorkWithMeLeadScoreInput = {
   currentChallenge: string
   desiredOutcome: string
   currentOffer: string
+  aiAttempts?: string
   helpFocus: string
   investmentReadiness: string
   instagramHandle: string
@@ -80,9 +86,9 @@ export type WorkWithMeLeadScoreInput = {
 export type WorkWithMeLeadScore = {
   ready: string
   hasExistingBusiness: boolean
-  wantsLeadGen: boolean
-  timeConstrained: boolean
-  clearVisibilityGap: boolean
+  marketingDependsOnFounder: boolean
+  hasTriedAi: boolean
+  clearWeeklyOutcome: boolean
   score: number
   qualified: boolean
   status: "qualified" | "needs_follow_up"
@@ -161,7 +167,9 @@ function scoreTextIntent(...parts: string[]): number {
 }
 
 function normalize(value: string | undefined | null) {
-  return String(value || "").trim().toLowerCase()
+  return String(value || "")
+    .trim()
+    .toLowerCase()
 }
 
 function normalizeReadiness(value: string) {
@@ -174,7 +182,7 @@ function normalizeReadiness(value: string) {
 
 function includesAny(text: string, signals: string[]) {
   const haystack = text.toLowerCase()
-  return signals.some((signal) => haystack.includes(signal))
+  return signals.some(signal => haystack.includes(signal))
 }
 
 const SOURCE_CHANNEL_ALIASES: Record<string, string> = {
@@ -219,7 +227,9 @@ type SourceAwareRoutingDecision = {
   checkoutModeReason: string | null
 }
 
-export function enforceSourceAwareRouting(input: SourceAwareRoutingInput): SourceAwareRoutingDecision {
+export function enforceSourceAwareRouting(
+  input: SourceAwareRoutingInput
+): SourceAwareRoutingDecision {
   if (!isDmBridgeSource(input.sourceChannel)) {
     return {
       routingPath: input.routingPath,
@@ -273,7 +283,9 @@ export function deriveLaunchRoutingDecision(input: RoutingDecisionInput): Routin
   }
 }
 
-export function deriveCheckoutExperienceDecision(input: CheckoutExperienceInput): CheckoutExperienceDecision {
+export function deriveCheckoutExperienceDecision(
+  input: CheckoutExperienceInput
+): CheckoutExperienceDecision {
   if (input.routingPath !== "direct_offer") {
     return {
       checkoutMode: "none",
@@ -300,6 +312,7 @@ export function scoreWorkWithMeLead(input: WorkWithMeLeadScoreInput): WorkWithMe
     input.currentChallenge,
     input.desiredOutcome,
     input.currentOffer,
+    input.aiAttempts || "",
     input.helpFocus,
     input.investmentReadiness,
     input.instagramHandle,
@@ -321,21 +334,7 @@ export function scoreWorkWithMeLead(input: WorkWithMeLeadScoreInput): WorkWithMe
     "consult",
     "shop",
   ])
-  const wantsLeadGen = includesAny(fullText, [
-    "lead",
-    "leads",
-    "client",
-    "clients",
-    "sales",
-    "sell",
-    "selling",
-    "inquiries",
-    "book",
-    "booking",
-    "convert",
-    "conversion",
-  ])
-  const timeConstrained = includesAny(fullText, [
+  const marketingDependsOnFounder = includesAny(fullText, [
     "no time",
     "don't have time",
     "dont have time",
@@ -343,38 +342,56 @@ export function scoreWorkWithMeLead(input: WorkWithMeLeadScoreInput): WorkWithMe
     "overwhelmed",
     "all of it",
     "everything",
+    "on me",
+    "depends on me",
+    "i do all",
+    "doing it myself",
+    "blank page",
+    "keep up",
   ])
-  const clearVisibilityGap = includesAny(fullText, [
-    "online presence",
-    "visibility",
-    "visible",
-    "instagram",
-    "content",
-    "post",
-    "posting",
-    "brand",
-    "personal brand",
-    "show up",
+  const hasTriedAi = includesAny(input.aiAttempts || fullText, [
+    "ai",
+    "chatgpt",
+    "chat gpt",
+    "claude",
+    "gemini",
+    "prompt",
+    "generic",
   ])
+  const clearWeeklyOutcome = includesAny(
+    `${input.desiredOutcome} ${input.currentChallenge} ${input.helpFocus}`,
+    [
+      "content",
+      "post",
+      "posting",
+      "email",
+      "newsletter",
+      "research",
+      "plan",
+      "write",
+      "repurpose",
+      "weekly",
+      "consistent",
+    ]
+  )
 
   const score =
-    (hasExistingBusiness ? 25 : 0) +
-    (wantsLeadGen ? 25 : 0) +
-    (timeConstrained ? 15 : 0) +
-    (clearVisibilityGap ? 20 : 0) +
-    (ready === "yes" ? 20 : ready === "maybe" ? 8 : 0) +
-    (input.instagramHandle ? 5 : 0)
+    (hasExistingBusiness ? 30 : 0) +
+    (marketingDependsOnFounder ? 20 : 0) +
+    (hasTriedAi ? 15 : 0) +
+    (clearWeeklyOutcome ? 15 : 0) +
+    (ready === "yes" ? 20 : ready === "maybe" ? 8 : 0)
   const boundedScore = Math.max(0, Math.min(100, score))
-  const qualified = boundedScore >= 55 && ready !== "no"
+  const qualified = hasExistingBusiness && boundedScore >= 65 && ready !== "no"
   const status = qualified ? "qualified" : "needs_follow_up"
-  const pipelineStage = qualified ? "qualified_queue" : "contacted"
-  const nextAction = qualified ? "book_call" : "follow_up"
+  const pipelineStage = qualified ? "qualified_queue" : "nurture"
+  const nextAction = qualified ? "book_call" : "nurture_followup"
   const priorityTier = boundedScore >= 80 ? "high" : boundedScore >= 55 ? "medium" : "low"
   const notes = [
     `has_existing_business=${hasExistingBusiness}`,
-    `wants_lead_generation=${wantsLeadGen}`,
-    `time_constrained=${timeConstrained}`,
-    `clear_visibility_gap=${clearVisibilityGap}`,
+    `marketing_depends_on_founder=${marketingDependsOnFounder}`,
+    `has_tried_ai=${hasTriedAi}`,
+    `clear_weekly_outcome=${clearWeeklyOutcome}`,
     `ready_to_invest=${ready}`,
     `score=${boundedScore}`,
     `next_action=${nextAction}`,
@@ -383,9 +400,9 @@ export function scoreWorkWithMeLead(input: WorkWithMeLeadScoreInput): WorkWithMe
   return {
     ready,
     hasExistingBusiness,
-    wantsLeadGen,
-    timeConstrained,
-    clearVisibilityGap,
+    marketingDependsOnFounder,
+    hasTriedAi,
+    clearWeeklyOutcome,
     score: boundedScore,
     qualified,
     status,
@@ -404,7 +421,7 @@ export function calculateQualificationScore(input: QualificationInput): Qualific
   const intentScore = scoreTextIntent(
     input.biggestBottleneck,
     input.businessDescription,
-    input.whyInterested,
+    input.whyInterested
   )
   const offerFitBonus = input.offerType === "cohort" ? 8 : input.offerType === "both" ? 5 : 0
 
@@ -452,7 +469,10 @@ export function calculateQualificationScore(input: QualificationInput): Qualific
   }
 }
 
-export function resolveLeadSource(sourceChannel?: string, sourceDetail?: string): {
+export function resolveLeadSource(
+  sourceChannel?: string,
+  sourceDetail?: string
+): {
   channel: string
   detail: string | null
 } {

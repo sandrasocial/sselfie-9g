@@ -46,12 +46,13 @@ describe("brand-engine qualification scoring", () => {
 })
 
 describe("Work With Me lead scoring", () => {
-  it("routes established visibility-to-leads applicants to a fit call", () => {
+  it("routes established founder-led marketing applicants to a fit call", () => {
     const result = scoreWorkWithMeLead({
       currentChallenge: "I have a service business but my Instagram does not bring leads.",
-      desiredOutcome: "I want more client inquiries and a clearer online presence.",
+      desiredOutcome: "I want help creating posts, emails, and a weekly content plan.",
       currentOffer: "Consulting offer for business owners",
-      helpFocus: "All of it. I am busy and do not have time to figure out content alone.",
+      aiAttempts: "I tried ChatGPT but the content sounded generic.",
+      helpFocus: "My marketing depends on me. I am busy and do not have time to write it alone.",
       investmentReadiness: "Yes",
       instagramHandle: "@sandra",
     })
@@ -68,6 +69,7 @@ describe("Work With Me lead scoring", () => {
       currentChallenge: "I am just curious.",
       desiredOutcome: "Maybe make prettier photos one day.",
       currentOffer: "",
+      aiAttempts: "",
       helpFocus: "",
       investmentReadiness: "No",
       instagramHandle: "",
@@ -75,8 +77,8 @@ describe("Work With Me lead scoring", () => {
 
     expect(result.qualified).toBe(false)
     expect(result.status).toBe("needs_follow_up")
-    expect(result.pipelineStage).toBe("contacted")
-    expect(result.nextAction).toBe("follow_up")
+    expect(result.pipelineStage).toBe("nurture")
+    expect(result.nextAction).toBe("nurture_followup")
   })
 })
 
