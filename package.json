@@ -31,6 +31,7 @@
     "revenue-engine:weekly": "pnpm revenue:weekly",
     "revenue:weekly": "tsx scripts/revenue-operator-weekly.ts",
     "revenue:proof-event-guard": "tsx scripts/guard-prompt-vault-proof-event.ts",
+    "revenue:work-with-me-audience": "tsx scripts/audit-work-with-me-audience.ts",
     "cleanup-legacy-generation-trackers": "node scripts/cleanup-legacy-generation-trackers.mjs",
     "backfill-payment-ids": "tsx scripts/backfill-payment-ids.ts",
     "migrate-015": "tsx scripts/run-migration-015.ts",
