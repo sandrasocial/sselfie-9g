@@ -877,3 +877,20 @@ repository invariants, lint with zero errors, successful local and Vercel produc
 passing tests with 6 intentional skips, 24 post-integration regressions, and 10 desktop/mobile browser
 journeys covering first-time members, returning members, saved work, finished posts, and founder
 report protection. The production app and health routes returned successfully on desktop and mobile.
+
+## 2026-08-18 — Maya recommends before choosing a format
+
+Maya now follows one clear control rule: if a member names a format, she uses it; if the member asks
+Maya to decide, she decides; otherwise Maya recommends one format, explains why, and waits for a
+visible confirmation before committing it. Member-facing `Maya decides` language is now `Maya
+recommends`, and ordinary Maya no longer receives stale Calendar wording through the automatic visual
+direction. The image compiler, model routing, Vault retrieval, identity rules, and render settings did
+not change.
+
+Why: founder testing showed that silently choosing photo, carousel, Story, or video could feel
+unpredictable even inside the simplified one-project experience. Production proof: feature commit
+`a29a4c6f`, exact Ready Vercel deployment `dpl_FSxkoiBCGRuSUNi49y4wPb3Svb1P`, CI typecheck,
+repository invariants, lint with zero errors, a successful Vercel production build, 2,057 passing
+tests with 6 intentional skips, 81 focused Maya regressions, and desktop/mobile browser verification
+of the visible two-choice recommendation, confirmed creation, saved-work resume, responsive layout,
+and zero new browser or selected-route runtime errors.
