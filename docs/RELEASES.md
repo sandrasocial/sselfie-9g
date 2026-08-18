@@ -1,5 +1,20 @@
 # Completed releases
 
+## 2026-08-18 | Work With Me positive promise
+
+Removed the public lines about not promising clients, income, growth, or leads from the Work With Me
+page and its aligned follow-up, welcome, and launch drafts. Replaced them with useful buying
+information about the shared Business Brain, the weekly work the team handles, how it differs from
+a blank ChatGPT window, and the decisions the client keeps. The internal truth guardrails remain in
+place. No email was sent or scheduled.
+
+Why: the disclaimers introduced doubt without helping the woman understand or want the offer.
+Production proof: feature commit `f990c61a`, exact Ready Vercel deployment
+`dpl_2eVBhvVr7Ny6SqLyWTdmn9eumUco`, 2,063 passing tests, CI typecheck, repository invariants,
+lint with zero errors, an optimized 352-page production build, and clean diff checks. Live desktop
+and 390px mobile QA confirmed the revised result and FAQ copy, zero console errors, and no horizontal
+overflow.
+
 ## 2026-08-18 | Your AI Content Team founding journey
 
 Replaced the generic Work With Me promise with a private six-week AI content-team implementation
