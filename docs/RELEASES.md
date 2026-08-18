@@ -1,5 +1,23 @@
 # Completed releases
 
+## 2026-08-18 | Maya format and generation reliability
+
+Stopped ordinary phrases such as “cover three mistakes,” “client story,” or “set goals” from
+silently switching Maya into a content format. Direct format requests still route immediately.
+Maya now validates carousel plans before returning them, keeps every Create action locked until the
+server-approved plan is complete, and records safe recovery diagnostics without storing member
+prompt text. Image prompting, model routing, Vault retrieval, Calendar, credits, pricing, access, and
+saved member work were unchanged.
+
+Why: broad word matching and clickable streamed plans made Maya feel unpredictable and could spend
+credits on incomplete work. Production proof: feature commit `a3634390`, exact Ready Vercel
+deployment `dpl_2D9HujbNN2n1CxuGG62AKT8fcCHP`, 2,069 passing tests with the sole sandbox-blocked
+fixture rerun 8/8 outside the restriction, 22 desktop/mobile member journeys with 14 intentional
+legacy skips, CI typecheck, repository invariants, lint with zero errors, and an optimized 352-page
+production build. Signed-in production QA confirmed Maya / Work / You, no Calendar or Feed Planner,
+no horizontal overflow at desktop or 390px mobile, and no new browser errors after the deployed
+bundle reloaded. No Maya prompt was sent, no image was generated, and no credits were spent.
+
 ## 2026-08-18 | Work With Me positive promise
 
 Removed the public lines about not promising clients, income, growth, or leads from the Work With Me
