@@ -53,6 +53,7 @@ describe("Member Pulse admin restoration", () => {
     expect(page).toContain("Would post it")
     expect(page).toContain("Almost ready")
     expect(page).toContain("Would not post")
+    expect(page).toContain("and finished posts members marked as")
     expect(page).toContain("Vault Maya · Love this")
     expect(page).toContain("Vault Maya · Not quite")
     expect(pulse).not.toContain("downloadRate")

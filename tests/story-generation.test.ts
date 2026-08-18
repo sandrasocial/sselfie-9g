@@ -281,9 +281,10 @@ describe("generate route story wiring (app/api/app-v3/maya/generate)", () => {
   it("logs a suite_generation_failed event on the (formerly silent) plan-validation 400s", () => {
     expect(route).toContain("function logPlanInvalid")
     expect(route).toContain('eventName: "suite_generation_failed"')
+    expect(route).toContain("userId")
     expect(route).toContain('reason: "plan_invalid"')
     // Both silent 400 paths are covered: multi-slide graphic + photoshoot.
-    expect(route.match(/logPlanInvalid\(format, validationErrors\)/g)).toHaveLength(2)
+    expect(route.match(/logPlanInvalid\(user\.id, format, validationErrors\)/g)).toHaveLength(2)
   })
 
   it("grounds a member story slide as an identity scene (reel-cover), never overlay-only", () => {

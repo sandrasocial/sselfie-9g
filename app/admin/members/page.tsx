@@ -95,9 +95,10 @@ function PulseContent({ pulse }: { pulse: MemberPulse }) {
                 : `${attentionCount} product problems were recorded.`}
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-stone-300">
-              This combines failed generations, chats that stopped before Maya finished and Vault
-              Maya photos marked “Not quite.” Recovery prompts are shown separately because they can
-              include expected guidance, such as low credits.
+              This combines failed generations, chats that stopped before Maya finished, Vault Maya
+              photos marked “Not quite,” and finished posts members marked as “Would not post.”
+              Recovery prompts are shown separately because they can include expected guidance, such
+              as low credits.
             </p>
           </div>
           <p className="font-serif text-6xl font-light text-white">{attentionCount}</p>

@@ -197,13 +197,15 @@ function fallbackCategoryForGraphicFormat(
 /**
  * A plan-validation 400 is a member-facing generation failure too. These returns were
  * console-silent, which is why 3 days of live story failures produced ZERO analytics rows.
- * No user id yet at this point in the route - visibility beats attribution here.
+ * Authentication has already resolved the member before validation, so keep attribution. This lets
+ * Member Pulse exclude admin QA and distinguish repeated failures from one person's retries.
  */
-function logPlanInvalid(format: OutputFormat, details: string[]): void {
+function logPlanInvalid(userId: string, format: OutputFormat, details: string[]): void {
   import("@/lib/analytics/events")
     .then(({ logAnalyticsEvent }) =>
       logAnalyticsEvent({
         eventName: "suite_generation_failed",
+        userId,
         properties: {
           source: "app-v3-generate",
           format,
@@ -540,7 +542,7 @@ export async function POST(request: NextRequest) {
           mode: format === "story-sequence" ? "story_sequence" : "carousel",
         })
         if (validationErrors.length > 0) {
-          logPlanInvalid(format, validationErrors)
+          logPlanInvalid(user.id, format, validationErrors)
           return NextResponse.json(
             {
               error:
@@ -604,7 +606,7 @@ export async function POST(request: NextRequest) {
         const shootBriefs = normalizeShootBriefs(body.shootBriefs, brief)
         const validationErrors = validatePhotoshootBriefs(shootBriefs)
         if (validationErrors.length > 0) {
-          logPlanInvalid(format, validationErrors)
+          logPlanInvalid(user.id, format, validationErrors)
           return NextResponse.json(
             {
               error: "That photoshoot plan was too thin. Ask Maya for a fuller shoot plan.",
