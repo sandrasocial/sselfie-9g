@@ -1117,12 +1117,12 @@ const FAQS = {
     {
       question: "Who is this for?",
       answer:
-        "This is for a woman with a real business, a service people already buy, and clients she understands. Marketing keeps falling back on her, and the AI tools she has tried have not become a system she can actually use.",
+        "This is for a woman with a real business, a service people already buy, and clients she understands. Too much of the work still depends on her, and the AI tools she has tried have not become reliable help she can actually use.",
     },
     {
       question: "What exactly will we build?",
       answer:
-        "One Business Brain that teaches AI about your business, plus a research assistant, content director, and writer. We connect them in one simple weekly flow from your idea or voice note to useful drafts you can review and publish.",
+        "One Business Brain, three personal AI roles, and three repeatable workflows built around the work that takes too much of your time. The roles are chosen for your business, so we are not giving every woman the same setup.",
     },
     {
       question: "Do I need to be technical?",
@@ -1130,14 +1130,14 @@ const FAQS = {
         "No. I am not a technical person either. I build the first version with you, show you what to say, and keep the setup as simple as possible around tools you can continue using.",
     },
     {
-      question: "Will the team post for me?",
+      question: "Will the team run my business for me?",
       answer:
-        "No. It will research, plan, write, and repurpose with you. You stay in control of what is published. This does not include automatic posting, inbox access, customer service, or a full business automation.",
+        "You stay in control of your clients and every final decision. Your team prepares the research, plans, drafts, and repeatable work we train it to handle, so more is ready before it reaches you.",
     },
     {
       question: "How is this different from using ChatGPT?",
       answer:
-        "You are not starting with a blank chat every time. We build one Business Brain around your real offers, customers, voice, and ideas. Your team works from that shared knowledge, so the help becomes more useful and more like you.",
+        "You are not starting with a blank chat every time. We build one Business Brain around your real offers, customers, voice, decisions, and way of working. Your team works from that shared knowledge, so you do not have to explain the business again and again.",
     },
     {
       question: "What happens after I apply?",
@@ -2272,7 +2272,7 @@ export function InquiryForm() {
             desiredOutcome: goal,
             currentOffer,
             aiAttempts,
-            helpFocus: "Build my personal AI content team",
+            helpFocus: "Build my personal AI team",
             investmentReadiness,
           }),
         })
@@ -2313,7 +2313,7 @@ export function InquiryForm() {
       <div style={{ ...cardSx(true), textAlign: "center", padding: "40px 28px" }}>
         <p style={{ ...ty("h3", true), marginBottom: "12px" }}>Your application has been sent.</p>
         <p style={ty("body", true)}>
-          I read every application myself. If I believe I can help build the right AI content team
+          I read every application myself. If I believe I can help build the right personal AI team
           around your business, you&apos;ll hear back with an invitation to a short fit call.
         </p>
         <p className="mt-4" style={{ ...ty("body", true), color: C.onDarkMuted }}>
@@ -2371,7 +2371,7 @@ export function InquiryForm() {
           fontFamily: F.sans,
         }}
       >
-        <span>What marketing work keeps falling back on you?</span>
+        <span>What work in your business keeps coming back to you?</span>
         <textarea
           value={currentBlock}
           onChange={e => setCurrentBlock(e.target.value)}
@@ -2391,7 +2391,7 @@ export function InquiryForm() {
           fontFamily: F.sans,
         }}
       >
-        <span>What would you need help creating every week?</span>
+        <span>If you had reliable help every week, what would you hand over first?</span>
         <textarea
           value={goal}
           onChange={e => setGoal(e.target.value)}
@@ -3216,7 +3216,7 @@ export function VaultMayaPageContent({
   )
 }
 
-// ─── Work With Me · Your AI Content Team ─────────────────────────────────────
+// Work With Me: Your Personal AI Team
 export function WorkWithMePageContent() {
   const trackPrimaryCta = (location: string) => {
     void trackAnalyticsEvent({
@@ -3232,11 +3232,11 @@ export function WorkWithMePageContent() {
       {/* HERO - dark, full-bleed */}
       <Hero
         eyebrow="Work With Me · Six Weeks"
-        title={<>You should not have to run your business and be the whole marketing team too.</>}
+        title={<>Your business has grown. Your support has not.</>}
         body={
           <p>
-            In six weeks, I help established women build and train a personal AI content team that
-            understands their business, voice, customers, and way of working.
+            In six weeks, I build and train a personal AI team around your business, so the
+            research, planning, content, and repeatable work do not keep landing back on you.
           </p>
         }
         primary={{
@@ -3250,19 +3250,18 @@ export function WorkWithMePageContent() {
       {/* RECOGNITION - cream */}
       <Section
         eyebrow="Maybe this is you"
-        title={<>Every post still starts with you.</>}
+        title={<>Everything still comes back to you.</>}
         dark={false}
         narrow
       >
         <div className="mf space-y-3" style={{ ...ty("body", false), fontSize: "16px" }}>
           <p>
-            You finish the client work, open Instagram, and your brain goes everywhere. The post,
-            the email, the research, and the plan all wait for you.
+            The ideas, research, plans, writing, and small jobs all wait for your brain and your
+            time. Even when you finally open ChatGPT, you have to explain the business again.
           </p>
           <p>
-            Maybe you have tried ChatGPT. It sounded generic, gave you too much, or became another
-            thing you stopped using. You do not need more prompts. You need help that knows your
-            business.
+            You do not need another tool to manage. You need reliable help that already knows how
+            your business works.
           </p>
         </div>
       </Section>
@@ -3270,16 +3269,17 @@ export function WorkWithMePageContent() {
       {/* THE STORY - dark */}
       <Split
         eyebrow="From Sandra"
-        title={<>I built the team I could not afford to hire.</>}
+        title={<>I built the support I needed.</>}
         body={
           <div className="space-y-3">
             <p>
-              I am not a technical person. I learned how to direct AI because I could not hire a
-              researcher, content director, writer, and technical team every time I needed help.
+              I am not a technical person. I learned how to direct AI because I was running SSELFIE
+              and could not keep doing every piece of research, planning, writing, and preparation
+              myself.
             </p>
             <p>
-              Today I use it to research, plan, write, build SSELFIE, and keep moving when my own
-              brain is everywhere. I will help you build the simpler version around your business.
+              Today my AI team helps me think, organize, create, and keep moving. I will build a
+              simpler version around the work that keeps falling back on you.
             </p>
           </div>
         }
@@ -3295,17 +3295,17 @@ export function WorkWithMePageContent() {
       />
 
       {/* TRANSFORMATION - dark */}
-      <Section eyebrow="The result" title={<>Your marketing no longer starts from zero.</>} dark>
+      <Section eyebrow="The result" title={<>The work can move without starting from you.</>} dark>
         <div className="mf space-y-3" style={{ ...ty("body", true), fontSize: "16px" }}>
           <p>
-            You bring one idea or voice note. Your team helps research it, decide what matters, plan
-            the week, and draft the words. You still make the final decisions, but you are not
-            carrying every step alone.
+            Your team helps prepare the research, plans, drafts, and repeatable work before it
+            reaches you. You still make the decisions only you can make, but you are not carrying
+            every step alone.
           </p>
           <p>
-            Everything starts from the same Business Brain, so the work stays connected to your
-            voice, customers, and real offer. You have a working content system built around you,
-            not a pile of generic prompts.
+            Everything starts from the same Business Brain, so the help stays connected to your
+            offers, customers, voice, and way of working. You do not have to start over or explain
+            the business again every time.
           </p>
         </div>
       </Section>
@@ -3318,15 +3318,15 @@ export function WorkWithMePageContent() {
           <div className="space-y-3">
             <p>
               <strong>1. I learn your business.</strong> Your offers, customers, voice, visuals, and
-              the work that keeps landing back on you.
+              the work that keeps coming back to you.
             </p>
             <p>
-              <strong>2. I build and train your team.</strong> One Business Brain, a research
-              assistant, content director, and writer that share the same context.
+              <strong>2. I build and train your team.</strong> One Business Brain and three personal
+              AI roles chosen around your real workload.
             </p>
             <p>
-              <strong>3. We use it together.</strong> We create your first month of marketing, fix
-              what feels generic, and leave you with a weekly flow you can keep using.
+              <strong>3. We use it together.</strong> We test the team on real work, fix what feels
+              generic, and leave you with three workflows and a 30-day working plan.
             </p>
           </div>
         }
@@ -3343,17 +3343,17 @@ export function WorkWithMePageContent() {
       {/* WHY THIS IS DIFFERENT - dark */}
       <Split
         eyebrow="Keeping it simple"
-        title={<>One job: take the weekly marketing work off your shoulders.</>}
+        title={<>One problem: too much of the business still depends on you.</>}
         body={
           <div className="space-y-3">
             <p>
-              Your team is built for the weekly marketing work: research, planning, writing, and
-              repurposing. You stay in control of your inbox, customers, systems, and everything
-              you publish.
+              We choose three recurring areas where trained AI support can genuinely help. This
+              might include research, planning, content, writing, organizing ideas, or preparing
+              repeatable work.
             </p>
             <p style={{ color: C.onDark }}>
-              One useful team, trained around the business you already have. Everything else can
-              wait.
+              I am not giving you a folder of prompts. I am building support around the business you
+              already run.
             </p>
           </div>
         }
@@ -3370,7 +3370,7 @@ export function WorkWithMePageContent() {
 
       {/* THE SPRINT / OFFER - cream */}
       <Split
-        eyebrow="Your AI Content Team"
+        eyebrow="Your Personal AI Team"
         title={<>Six weeks together. &euro;2,000.</>}
         body={
           <div className="space-y-3">
@@ -3384,13 +3384,12 @@ export function WorkWithMePageContent() {
               style={{ ...ty("body", false), paddingLeft: "20px", listStyle: "disc" }}
             >
               <li>Your AI Business Brain</li>
-              <li>Your research assistant</li>
-              <li>Your content director</li>
-              <li>Your writer and repurposer</li>
-              <li>A weekly idea or voice note to draft workflow</li>
-              <li>Your first 30 days of marketing</li>
+              <li>Your founder workload map</li>
+              <li>Three personal AI roles trained around your real business</li>
+              <li>Three repeatable workflows using your real work</li>
+              <li>Your 30-day working plan</li>
               <li>Four weekly 45-minute calls</li>
-              <li>Training, handover, and a system you can keep using</li>
+              <li>Training and handover so you can keep using your team</li>
             </ul>
             <p style={{ color: C.onCreamMuted }}>
               For a woman with a real business, a service people already buy, and clients she
@@ -3436,8 +3435,7 @@ export function WorkWithMePageContent() {
             </h2>
             <p style={{ ...ty("body", true), fontSize: "16px" }}>
               This is for a woman who already has a real business, service, and clients. Tell me
-              what you sell, what marketing is taking too much time, and where AI has not helped
-              yet.
+              what you sell, what keeps coming back to you, and where AI has not helped yet.
             </p>
             <div className="mt-8" style={{ ...cardSx(true), padding: "20px" }}>
               <p style={{ ...ty("body", true), fontSize: "13px", color: C.onDarkMuted }}>

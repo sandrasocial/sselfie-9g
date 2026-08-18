@@ -1,8 +1,9 @@
 export const WORK_WITH_ME_TIMELINE = [
   {
     week: 1,
-    title: "Kickoff and intake",
-    detail: "We choose the weekly marketing work your team needs to carry.",
+    title: "Learn the real business",
+    detail:
+      "We map what keeps coming back to you and choose the three areas your team will support.",
   },
   {
     week: 2,
@@ -12,12 +13,12 @@ export const WORK_WITH_ME_TIMELINE = [
   {
     week: 3,
     title: "Build and train",
-    detail: "I build your researcher, content director, writer, and repurposer.",
+    detail: "I build three personal AI roles around your real workload and way of working.",
   },
   {
     week: 4,
     title: "Use it on real work",
-    detail: "We turn your ideas into the first week of useful marketing drafts.",
+    detail: "We run real research, plans, drafts, and repeatable work through your new team.",
   },
   {
     week: 5,
@@ -27,6 +28,6 @@ export const WORK_WITH_ME_TIMELINE = [
   {
     week: 6,
     title: "Handover",
-    detail: "You leave with your first 30 days and a weekly flow you can run.",
+    detail: "You leave with three working workflows and a 30-day plan you can keep using.",
   },
 ] as const

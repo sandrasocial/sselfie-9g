@@ -46,13 +46,13 @@ describe("brand-engine qualification scoring", () => {
 })
 
 describe("Work With Me lead scoring", () => {
-  it("routes established founder-led marketing applicants to a fit call", () => {
+  it("routes established founder-bottleneck applicants to a fit call", () => {
     const result = scoreWorkWithMeLead({
-      currentChallenge: "I have a service business but my Instagram does not bring leads.",
-      desiredOutcome: "I want help creating posts, emails, and a weekly content plan.",
+      currentChallenge: "I have a service business but every plan and follow-up depends on me.",
+      desiredOutcome: "I want reliable help with research, planning, writing, and repeatable work.",
       currentOffer: "Consulting offer for business owners",
-      aiAttempts: "I tried ChatGPT but the content sounded generic.",
-      helpFocus: "My marketing depends on me. I am busy and do not have time to write it alone.",
+      aiAttempts: "I tried ChatGPT but it forgets my business and sounds generic.",
+      helpFocus: "Too much of the business depends on me. I need help that knows how it works.",
       investmentReadiness: "Yes",
       instagramHandle: "@sandra",
     })
@@ -62,6 +62,8 @@ describe("Work With Me lead scoring", () => {
     expect(result.pipelineStage).toBe("qualified_queue")
     expect(result.nextAction).toBe("book_call")
     expect(result.priorityTier).toBe("high")
+    expect(result.workDependsOnFounder).toBe(true)
+    expect(result.clearRecurringWork).toBe(true)
   })
 
   it("keeps low-readiness curiosity applications out of the payment-link path", () => {

@@ -13,9 +13,9 @@ const INTAKE_FIELDS = [
   "businessSummary",
   "idealCustomer",
   "currentOffer",
-  "marketingBurden",
+  "founderBottleneck",
   "aiAttempts",
-  "weeklyOutput",
+  "workToHandOver",
   "voiceExamples",
   "visualDirection",
   "businessLinks",
@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
     !values.businessSummary ||
     !values.idealCustomer ||
     !values.currentOffer ||
-    !values.marketingBurden ||
-    !values.weeklyOutput
+    !values.founderBottleneck ||
+    !values.workToHandOver
   ) {
     return NextResponse.json({ error: "Please complete the required questions." }, { status: 400 })
   }
@@ -67,9 +67,9 @@ export async function POST(request: NextRequest) {
       business_summary = ${values.businessSummary},
       ideal_customer = ${values.idealCustomer},
       current_offer = ${values.currentOffer},
-      marketing_burden = ${values.marketingBurden},
+      marketing_burden = ${values.founderBottleneck},
       ai_attempts = ${values.aiAttempts || null},
-      weekly_output = ${values.weeklyOutput},
+      weekly_output = ${values.workToHandOver},
       voice_examples = ${values.voiceExamples || null},
       visual_direction = ${values.visualDirection || null},
       business_links = ${values.businessLinks || null},

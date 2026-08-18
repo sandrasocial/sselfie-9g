@@ -90,9 +90,9 @@ export async function POST(req: NextRequest) {
       "source:work_with_me",
       leadScore.qualified ? "qualified" : "needs_follow_up",
       leadScore.hasExistingBusiness ? "has_existing_business" : null,
-      leadScore.marketingDependsOnFounder ? "marketing_depends_on_founder" : null,
+      leadScore.workDependsOnFounder ? "work_depends_on_founder" : null,
       leadScore.hasTriedAi ? "tried_ai" : null,
-      leadScore.clearWeeklyOutcome ? "needs_weekly_content_system" : null,
+      leadScore.clearRecurringWork ? "clear_recurring_work" : null,
       `investment:${leadScore.ready}`,
       `next_action:${leadScore.nextAction}`,
     ].filter(Boolean)
@@ -165,7 +165,7 @@ export async function POST(req: NextRequest) {
         ${JSON.stringify(leadTags)}::jsonb,
         ${200000},
         ${"none"},
-        ${"private_ai_content_team_requires_human_fit_call"},
+        ${"private_personal_ai_team_requires_human_fit_call"},
         ${true},
         ${`Work With Me application. ${leadScore.notes}`},
         NOW(),
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
     await addOrUpdateResendContact(email, name, {
       source: "work-with-me-inquiry",
       status: "lead",
-      inquiry_type: "work_with_me_ai_content_team",
+      inquiry_type: "work_with_me_personal_ai_team",
       help_focus: helpFocus,
       investment_readiness: investmentReadiness,
       lead_score: String(leadScore.score),
@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
     })
 
     await updateContactTags(email, {
-      inquiry_type: "work_with_me_ai_content_team",
+      inquiry_type: "work_with_me_personal_ai_team",
       inquiry_status: "new",
       journey: "high_intent",
       help_focus: helpFocus,
@@ -210,11 +210,11 @@ export async function POST(req: NextRequest) {
           <p style="margin: 0 0 12px;"><strong>Email:</strong> ${safeEmail}</p>
           <p style="margin: 0 0 24px;"><strong>Instagram:</strong> ${safeHandle || "Not provided"}</p>
           <div style="margin: 0 0 20px;">
-            <p style="margin: 0 0 8px; font-weight: 600;">What marketing work keeps falling back on her?</p>
+            <p style="margin: 0 0 8px; font-weight: 600;">What work in her business keeps coming back to her?</p>
             <p style="margin: 0; line-height: 1.7;">${safeChallenge}</p>
           </div>
           <div>
-            <p style="margin: 0 0 8px; font-weight: 600;">What does she need help creating every week?</p>
+            <p style="margin: 0 0 8px; font-weight: 600;">What would she hand over first if she had reliable help?</p>
             <p style="margin: 0; line-height: 1.7;">${safeOutcome}</p>
           </div>
           <div style="margin: 20px 0 0;">
@@ -226,7 +226,7 @@ export async function POST(req: NextRequest) {
             <p style="margin: 0; line-height: 1.7;">${safeCurrentOffer}</p>
           </div>
           <div style="margin: 20px 0 0;">
-            <p style="margin: 0 0 8px; font-weight: 600;">Sprint focus</p>
+            <p style="margin: 0 0 8px; font-weight: 600;">Team focus</p>
             <p style="margin: 0; line-height: 1.7;">${safeHelpFocus || "Not provided"}</p>
           </div>
           <div style="margin: 20px 0 0;">
@@ -249,10 +249,10 @@ export async function POST(req: NextRequest) {
         `Email: ${email}`,
         `Instagram: ${instagramHandle || "Not provided"}`,
         "",
-        "What marketing work keeps falling back on her?",
+        "What work in her business keeps coming back to her?",
         currentChallenge,
         "",
-        "What does she need help creating every week?",
+        "What would she hand over first if she had reliable help?",
         desiredOutcome,
         "",
         "What service are they already selling, and what result does it create?",
@@ -261,7 +261,7 @@ export async function POST(req: NextRequest) {
         "What has she tried with AI?",
         aiAttempts,
         "",
-        "Sprint focus",
+        "Team focus",
         helpFocus || "Not provided",
         "",
         "Ready to invest €2,000 paid in full if it is a fit?",
@@ -275,7 +275,7 @@ export async function POST(req: NextRequest) {
         leadScore.notes,
       ].join("\n"),
       emailType: "work_with_me_inquiry_admin",
-      tags: ["work-with-me", "ai-content-team", "application"],
+      tags: ["work-with-me", "personal-ai-team", "application"],
     })
 
     if (!adminEmailResult.success) {
@@ -292,7 +292,7 @@ export async function POST(req: NextRequest) {
         <div style="font-family: Inter, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color: #1c1917;">
           <p>Hi ${safeName},</p>
           <p>I have your application. Thank you for trusting me with it.</p>
-          <p>I will look at your business, the marketing work that keeps falling back on you, and whether I can genuinely help build the right AI content team around it.</p>
+          <p>I will look at your business, the work that keeps coming back to you, and whether I can genuinely help build the right personal AI team around it.</p>
           <p>If it looks like the right fit, I will reply with the next step. That usually means a short fit call first. No payment has been taken.</p>
           <p>Sandra x</p>
         </div>
@@ -301,13 +301,13 @@ export async function POST(req: NextRequest) {
         `Hi ${name},`,
         "",
         "I have your application. Thank you for trusting me with it.",
-        "I will look at your business, the marketing work that keeps falling back on you, and whether I can genuinely help build the right AI content team around it.",
+        "I will look at your business, the work that keeps coming back to you, and whether I can genuinely help build the right personal AI team around it.",
         "If it looks like the right fit, I will reply with the next step. That usually means a short fit call first. No payment has been taken.",
         "",
         "Sandra x",
       ].join("\n"),
       emailType: "work_with_me_inquiry_confirmation",
-      tags: ["work-with-me", "ai-content-team", "application-confirmation"],
+      tags: ["work-with-me", "personal-ai-team", "application-confirmation"],
     }).catch(error => {
       console.error("[v0] Failed to send inquiry confirmation email:", error)
     })

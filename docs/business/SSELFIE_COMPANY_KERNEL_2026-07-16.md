@@ -136,7 +136,7 @@ mass outreach as a personal message.
 | Tutorial Partnership | UNPROVEN BACKGROUND PIPELINE | Monitor existing conversations; no default routing |
 | Visibility Partner | UNVALIDATED HYPOTHESIS | Explore only with a real buyer job and bounded delivery evidence |
 | AI Visibility Lab / keynote / license | UNVALIDATED CAPABILITY | Explore from a named buyer context |
-| Your AI Content Team / Work With Me | PRIVATE FOUNDING VALIDATION | Six-week, EUR 2,000 attended implementation. Validate two paid clients before opening the remaining three places. No unattended checkout or mass routing. |
+| Your Personal AI Team / Work With Me | PRIVATE FOUNDING VALIDATION | Six-week, EUR 2,000 attended implementation. Validate two paid clients before opening the remaining three places. No unattended checkout or mass routing. |
 | One Selfie Visibility Bundle | CLOSED EVENT | Preserve buyer access and evidence |
 | Your Next Campaign | DORMANT CAPABILITY | Public path stays fail-closed; preserve private paid fulfillment |
 | New idea | EXPLORATION UNTIL DECIDED | May be researched and proposed; no silent build, price, or launch |
@@ -160,7 +160,7 @@ mass outreach as a personal message.
 | One Selfie Visibility Bundle | **Closed** | Preserve buyers and evidence; do not silently reactivate |
 | Vault Maya separate product | **Hold** | Preserve buyers; do not promote as another product while Maya membership is validated |
 | Your Next Campaign | **Dormant** | Preserve paid fulfillment; founder-capacity promise is not a scale path |
-| Your AI Content Team / Work With Me | **Private founding validation** | One personal AI content team for an established business. Application, fit call, then private checkout only. Stop after two paid clients to verify delivery quality and founder load before the remaining three places. |
+| Your Personal AI Team / Work With Me | **Private founding validation** | One Business Brain, three personal AI roles, and three repeatable workflows for an established business where too much recurring work depends on the founder. Application, fit call, then private checkout only. Stop after two paid clients to verify delivery quality and founder load before the remaining three places. |
 | Selfie AI Photos Kit | **Hold challenger** | Test only against the proven Prompt Vault path when evidence justifies it |
 | Templates, monthly drops, and Academy support assets | **Include / merchandise behind the job** | Increase member activation and retention without becoming separate launches |
 | New product idea | **Explore only** | Build only when a measured customer job is missing |

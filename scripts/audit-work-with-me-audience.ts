@@ -1,5 +1,5 @@
 /**
- * Aggregate-only, read-only audit for the private Your AI Content Team audience.
+ * Aggregate-only, read-only audit for the private Your Personal AI Team audience.
  *
  * Usage:
  *   pnpm revenue:work-with-me-audience
@@ -93,8 +93,8 @@ async function main() {
           AS existing_business_signal,
         LOWER(CONCAT_WS(' ', upb.current_situation, upb.business_goals, upb.content_goals,
           upb.photo_goals, upb.audience_challenge)) ~
-          '(content|post|posting|instagram|social media|marketing|visible|visibility|consistent|overwhelm|time|plan|write|caption)'
-          AS marketing_burden_signal,
+          '(content|post|posting|instagram|social media|marketing|visible|visibility|consistent|overwhelm|time|plan|write|caption|admin|operation|follow.?up|organize|research|prepare|task|everything|on me|depends on me)'
+          AS founder_bottleneck_signal,
         EXISTS (
           SELECT 1 FROM brand_engine_applications application
           WHERE LOWER(BTRIM(application.email)) = LOWER(BTRIM(u.email))
@@ -177,7 +177,7 @@ async function main() {
         active90d: Boolean(row.active_90d),
         activeMember: Boolean(row.active_member),
         existingBusinessSignal: Boolean(row.existing_business_signal),
-        marketingBurdenSignal: Boolean(row.marketing_burden_signal),
+        founderBottleneckSignal: Boolean(row.founder_bottleneck_signal),
         audienceDefined: Boolean(row.audience_defined),
         publicBusiness: Boolean(row.public_business),
         usedAiContent: Boolean(row.used_ai_content),
@@ -193,7 +193,7 @@ async function main() {
     .filter(
       candidate =>
         candidate.existingBusinessSignal &&
-        candidate.marketingBurdenSignal &&
+        candidate.founderBottleneckSignal &&
         scoreWorkWithMeCandidate(candidate) >= WORK_WITH_ME_PRIVATE_AUDIENCE.minFitScore
     )
 

@@ -3,9 +3,9 @@ import { WorkWithMePageContent } from "@/components/sselfie/public-marketing"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 
 export const metadata: Metadata = {
-  title: "Your AI Content Team | Work With Sandra",
+  title: "Your Personal AI Team | Work With Sandra",
   description:
-    "A private six-week implementation for established women who want a personal AI team to research, plan, write, and repurpose their weekly marketing.",
+    "A private six-week implementation for established women who want a personal AI team to help carry research, planning, content, and repeatable work.",
   robots: {
     index: false,
     follow: false,

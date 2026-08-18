@@ -5,7 +5,7 @@ export const WORK_WITH_ME_PRIVATE_AUDIENCE = {
   marketingCooldownHours: 72,
   firstPaidGate: 2,
   totalFoundingPlaces: 5,
-  job: "Build a personal AI content team around an established business so weekly marketing no longer starts from the founder and a blank page.",
+  job: "Build a personal AI team around an established business so recurring work no longer depends on the founder for every first step.",
 } as const
 
 export type WorkWithMeAudienceCandidate = {
@@ -16,7 +16,7 @@ export type WorkWithMeAudienceCandidate = {
   active90d: boolean
   activeMember: boolean
   existingBusinessSignal: boolean
-  marketingBurdenSignal: boolean
+  founderBottleneckSignal: boolean
   audienceDefined: boolean
   publicBusiness: boolean
   usedAiContent: boolean
@@ -49,7 +49,7 @@ export function scoreWorkWithMeCandidate(candidate: WorkWithMeAudienceCandidate)
     (candidate.active90d ? 1 : 0) +
     (candidate.activeMember ? 1 : 0) +
     (candidate.existingBusinessSignal ? 2 : 0) +
-    (candidate.marketingBurdenSignal ? 2 : 0) +
+    (candidate.founderBottleneckSignal ? 2 : 0) +
     (candidate.audienceDefined ? 1 : 0) +
     (candidate.publicBusiness ? 1 : 0) +
     (candidate.usedAiContent ? 1 : 0)
@@ -111,7 +111,7 @@ export function classifyWorkWithMeAudience(input: {
       excluded.not_existing_buyer += 1
       continue
     }
-    if (!candidate.existingBusinessSignal || !candidate.marketingBurdenSignal) {
+    if (!candidate.existingBusinessSignal || !candidate.founderBottleneckSignal) {
       excluded.missing_problem_fit += 1
       continue
     }

@@ -27,16 +27,19 @@ describe("Work With Me client home", () => {
     expect(route).toContain("Work With Me access required")
     expect(route).toContain("work_with_me_intake_completed")
     expect(home).toContain("Your Business Brain")
-    expect(home).toContain("What marketing work keeps falling back on you?")
+    expect(home).toContain("What work in your business keeps coming back to you?")
+    expect(home).toContain("what would you hand over first?")
     expect(home).toContain("What have you tried with AI")
     expect(home).toContain("Book your kickoff call")
   })
 
   it("locks the six-week delivery promise and the two-client quality gate", () => {
-    const delivery = read("docs/business/WORK_WITH_ME_AI_CONTENT_TEAM_DELIVERY_2026-08-14.md")
+    const delivery = read("docs/business/WORK_WITH_ME_PERSONAL_AI_TEAM_DELIVERY_2026-08-18.md")
     const kernel = read("docs/business/SSELFIE_COMPANY_KERNEL_2026-07-16.md")
 
     expect(delivery).toContain("Capacity gate: accept two cleared buyers")
+    expect(delivery).toContain("three personal AI roles")
+    expect(delivery).toContain("three repeatable workflows")
     expect(delivery).toContain("### Week 6: Handover")
     expect(delivery).toContain("No agent may expand the promise")
     expect(kernel).toContain("PRIVATE FOUNDING VALIDATION")

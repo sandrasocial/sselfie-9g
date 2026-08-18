@@ -6,18 +6,18 @@ function read(path: string) {
   return readFileSync(join(process.cwd(), path), "utf8")
 }
 
-describe("Your AI Content Team locked offer", () => {
-  it("keeps the private offer focused on one personal AI content team", () => {
+describe("Your Personal AI Team locked offer", () => {
+  it("keeps the private offer focused on the founder bottleneck", () => {
     const page = read("components/sselfie/public-marketing.tsx")
 
     expect(page).toContain("Six weeks together. &euro;2,000.")
-    expect(page).toContain("You should not have to run your business")
-    expect(page).toContain("personal AI content team")
+    expect(page).toContain("Your business has grown. Your support has not.")
+    expect(page).toContain("personal AI team")
     expect(page).toContain("Your AI Business Brain")
-    expect(page).toContain("Your research assistant")
-    expect(page).toContain("Your content director")
-    expect(page).toContain("Your writer and repurposer")
-    expect(page).toContain("Your team is built for the weekly marketing work")
+    expect(page).toContain("Your founder workload map")
+    expect(page).toContain("Three personal AI roles")
+    expect(page).toContain("Three repeatable workflows")
+    expect(page).toContain("too much of the business still depends on you")
     expect(page).toContain("Everything starts from the same Business Brain")
     expect(page).toContain("How is this different from using ChatGPT?")
     expect(page).not.toContain("promise of clients or income")
@@ -60,8 +60,8 @@ describe("Your AI Content Team locked offer", () => {
 
     expect(route).toContain('${"fit_call"}')
     expect(route).toContain('${"none"}')
-    expect(route).toContain('${200000}')
-    expect(route).toContain("private_ai_content_team_requires_human_fit_call")
+    expect(route).toContain("${200000}")
+    expect(route).toContain("private_personal_ai_team_requires_human_fit_call")
     for (const stage of [
       "qualified_queue",
       "call_booked",
@@ -71,6 +71,25 @@ describe("Your AI Content Team locked offer", () => {
       "closed_lost",
     ]) {
       expect(pipeline).toContain(`"${stage}"`)
+    }
+  })
+
+  it("keeps every active customer journey on the same personal AI team promise", () => {
+    const publicPage = read("components/sselfie/public-marketing.tsx")
+    const activeSources = [
+      publicPage.slice(publicPage.indexOf("export function WorkWithMePageContent()")),
+      read("components/work-with-me/client-home.tsx"),
+      read("lib/work-with-me/sales-assistant.ts"),
+      read("lib/email/templates/work-with-me-welcome.ts"),
+      read("docs/business/WORK_WITH_ME_PERSONAL_AI_TEAM_DELIVERY_2026-08-18.md"),
+      read("docs/business/WORK_WITH_ME_LAUNCH_EMAILS_2026-08-14.md"),
+    ]
+
+    for (const source of activeSources) {
+      expect(source).not.toContain("Your AI Content Team")
+      expect(source).not.toContain("personal AI content team")
+      expect(source).not.toContain("weekly marketing")
+      expect(source).not.toMatch(/[–—]/)
     }
   })
 })

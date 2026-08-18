@@ -136,7 +136,7 @@ export async function handleWorkWithMeCheckout(ctx: CheckoutFulfillmentContext):
     html: email.html,
     text: email.text,
     emailType: "work_with_me_welcome",
-    tags: ["work-with-me", "ai-content-team", "welcome"],
+    tags: ["work-with-me", "personal-ai-team", "welcome"],
   })
 
   if (!emailResult.success) {

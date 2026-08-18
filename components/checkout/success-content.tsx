@@ -69,7 +69,7 @@ function getProductLabel(productType: string | undefined) {
     case "masterclass":
       return "Selfie Masterclass"
     case "work_with_me":
-      return "Your AI Content Team"
+      return "Your Personal AI Team"
     case "visibility_suite":
       return "Legacy Visibility Suite"
     case "what_to_say":

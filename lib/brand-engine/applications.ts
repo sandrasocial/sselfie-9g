@@ -86,9 +86,9 @@ export type WorkWithMeLeadScoreInput = {
 export type WorkWithMeLeadScore = {
   ready: string
   hasExistingBusiness: boolean
-  marketingDependsOnFounder: boolean
+  workDependsOnFounder: boolean
   hasTriedAi: boolean
-  clearWeeklyOutcome: boolean
+  clearRecurringWork: boolean
   score: number
   qualified: boolean
   status: "qualified" | "needs_follow_up"
@@ -334,7 +334,7 @@ export function scoreWorkWithMeLead(input: WorkWithMeLeadScoreInput): WorkWithMe
     "consult",
     "shop",
   ])
-  const marketingDependsOnFounder = includesAny(fullText, [
+  const workDependsOnFounder = includesAny(fullText, [
     "no time",
     "don't have time",
     "dont have time",
@@ -358,7 +358,7 @@ export function scoreWorkWithMeLead(input: WorkWithMeLeadScoreInput): WorkWithMe
     "prompt",
     "generic",
   ])
-  const clearWeeklyOutcome = includesAny(
+  const clearRecurringWork = includesAny(
     `${input.desiredOutcome} ${input.currentChallenge} ${input.helpFocus}`,
     [
       "content",
@@ -372,14 +372,24 @@ export function scoreWorkWithMeLead(input: WorkWithMeLeadScoreInput): WorkWithMe
       "repurpose",
       "weekly",
       "consistent",
+      "organize",
+      "admin",
+      "operations",
+      "follow-up",
+      "follow up",
+      "prepare",
+      "proposal",
+      "project",
+      "customer",
+      "task",
     ]
   )
 
   const score =
     (hasExistingBusiness ? 30 : 0) +
-    (marketingDependsOnFounder ? 20 : 0) +
+    (workDependsOnFounder ? 20 : 0) +
     (hasTriedAi ? 15 : 0) +
-    (clearWeeklyOutcome ? 15 : 0) +
+    (clearRecurringWork ? 15 : 0) +
     (ready === "yes" ? 20 : ready === "maybe" ? 8 : 0)
   const boundedScore = Math.max(0, Math.min(100, score))
   const qualified = hasExistingBusiness && boundedScore >= 65 && ready !== "no"
@@ -389,9 +399,9 @@ export function scoreWorkWithMeLead(input: WorkWithMeLeadScoreInput): WorkWithMe
   const priorityTier = boundedScore >= 80 ? "high" : boundedScore >= 55 ? "medium" : "low"
   const notes = [
     `has_existing_business=${hasExistingBusiness}`,
-    `marketing_depends_on_founder=${marketingDependsOnFounder}`,
+    `work_depends_on_founder=${workDependsOnFounder}`,
     `has_tried_ai=${hasTriedAi}`,
-    `clear_weekly_outcome=${clearWeeklyOutcome}`,
+    `clear_recurring_work=${clearRecurringWork}`,
     `ready_to_invest=${ready}`,
     `score=${boundedScore}`,
     `next_action=${nextAction}`,
@@ -400,9 +410,9 @@ export function scoreWorkWithMeLead(input: WorkWithMeLeadScoreInput): WorkWithMe
   return {
     ready,
     hasExistingBusiness,
-    marketingDependsOnFounder,
+    workDependsOnFounder,
     hasTriedAi,
-    clearWeeklyOutcome,
+    clearRecurringWork,
     score: boundedScore,
     qualified,
     status,

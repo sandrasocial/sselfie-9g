@@ -24,7 +24,8 @@ describe("Work With Me fulfillment", () => {
   it("makes the client home the primary next step and keeps the supporting library", () => {
     const email = generateWorkWithMeWelcomeEmail({
       firstName: "Harmony",
-      passwordSetupUrl: "https://sselfie.ai/auth/setup-password?next=%2Facademy%2Faccess%2Fmasterclass",
+      passwordSetupUrl:
+        "https://sselfie.ai/auth/setup-password?next=%2Facademy%2Faccess%2Fmasterclass",
       masterclassUrl: "https://sselfie.ai/academy/access/masterclass",
       selfieToBrandShootUrl: "https://sselfie.ai/academy/access/selfie-to-brand-shoot",
       promptVaultUrl: "https://sselfie.ai/access/prompt-vault/preview-token",
@@ -41,11 +42,13 @@ describe("Work With Me fulfillment", () => {
     expect(email.text).toContain("Open your client home")
     expect(email.text).toContain("YOUR SIX WEEKS")
     expect(email.text).toContain("Business Brain")
-    expect(email.text).toContain("research assistant")
-    expect(email.text).toContain("writer, and repurposer")
+    expect(email.text).toContain("three personal AI roles")
+    expect(email.text).toContain("three repeatable workflows")
+    expect(email.text).toContain("30-day working plan")
     expect(email.text).toContain("YOU STAY IN CONTROL")
     expect(email.text).not.toContain("promise of clients or income")
     expect(email.text).not.toContain("Start your photos")
     expect(email.html).not.toContain("https://sselfie.ai/app")
+    expect(email.subject).toContain("personal AI team")
   })
 })

@@ -33,9 +33,9 @@ const FIELDS = [
     rows: 4,
   },
   {
-    key: "marketingBurden",
+    key: "founderBottleneck",
     db: "marketing_burden",
-    label: "What marketing work keeps falling back on you?",
+    label: "What work in your business keeps coming back to you?",
     required: true,
     rows: 4,
   },
@@ -47,9 +47,9 @@ const FIELDS = [
     rows: 4,
   },
   {
-    key: "weeklyOutput",
+    key: "workToHandOver",
     db: "weekly_output",
-    label: "What would you love your team to help create every week?",
+    label: "If you had reliable help every week, what would you hand over first?",
     required: true,
     rows: 4,
   },
@@ -114,11 +114,11 @@ export function WorkWithMeClientHome({ initialProject }: { initialProject: Proje
             Work With Me
           </p>
           <h1 className="mt-5 max-w-3xl font-serif text-5xl font-light leading-none sm:text-7xl">
-            Your AI Content Team
+            Your Personal AI Team
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-7 text-stone-300">
-            We have six weeks to build a team that knows your business and helps carry the weekly
-            marketing work. Start with the intake below, then book our kickoff call.
+            We have six weeks to build a team that knows your business and helps carry the work that
+            keeps coming back to you. Start with the intake below, then book our kickoff call.
           </p>
           <a
             href={BOOKING_URL}

@@ -17,7 +17,7 @@ const strongCandidate = {
   active90d: true,
   activeMember: false,
   existingBusinessSignal: true,
-  marketingBurdenSignal: true,
+  founderBottleneckSignal: true,
   audienceDefined: true,
   publicBusiness: true,
   usedAiContent: true,
@@ -30,7 +30,7 @@ const strongCandidate = {
 }
 
 describe("Work With Me private audience", () => {
-  it("requires real business, the exact marketing burden, and prior buying behavior", () => {
+  it("requires real business, a founder bottleneck, and prior buying behavior", () => {
     expect(WORK_WITH_ME_PRIVATE_AUDIENCE.maxCandidates).toBe(10)
     expect(WORK_WITH_ME_PRIVATE_AUDIENCE.minFitScore).toBe(8)
     expect(scoreWorkWithMeCandidate(strongCandidate)).toBeGreaterThanOrEqual(8)
@@ -43,7 +43,7 @@ describe("Work With Me private audience", () => {
     ).toHaveLength(0)
     expect(
       classifyWorkWithMeAudience({
-        candidates: [{ ...strongCandidate, marketingBurdenSignal: false }],
+        candidates: [{ ...strongCandidate, founderBottleneckSignal: false }],
         now: new Date("2026-08-18T12:00:00.000Z"),
       }).eligible
     ).toHaveLength(0)
