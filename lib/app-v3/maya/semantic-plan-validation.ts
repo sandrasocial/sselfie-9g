@@ -1,15 +1,13 @@
+import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
+import { validateCustomerCarouselBrief } from "@/lib/app-v3/prompt-compiler"
+
 type PhotoshootBriefForValidation = {
   shotRole?: string | null
 }
 
 type EmittedConcept = {
-  brief: PhotoshootBriefForValidation & {
-    graphic?: {
-      creativePlan?: {
-        outputCount: number
-      }
-    }
-  }
+  title?: string
+  brief: CreativeBrief
 }
 
 export type EmittedConceptPlan = {
@@ -55,6 +53,12 @@ export function validateEmittedConceptPlan(plan: EmittedConceptPlan): string[] {
       if (!creativePlan) return [`story_sequence concept ${index + 1} needs a creativePlan`]
       return validateStorySequenceOutputCount(creativePlan)
     })
+  }
+
+  if (plan.format === "carousel") {
+    return plan.concepts.flatMap(concept =>
+      validateCustomerCarouselBrief(concept.brief, concept.title, { mode: "carousel" })
+    )
   }
 
   return []

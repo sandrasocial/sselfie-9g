@@ -18,11 +18,26 @@ describe("app-v3 Maya intent router", () => {
     expect(detectCreationIntent("animate this photo").format).toBe("video")
   })
 
-  it("routes fuzzy everyday phrases", () => {
+  it("routes everyday requests only when the member names a real format", () => {
     expect(detectCreationIntent("I want a headshot for my bio").format).toBe("photo")
-    expect(detectCreationIntent("I want a series in one vibe").format).toBe("photoshoot")
     expect(detectCreationIntent("teach this idea in slides").format).toBe("carousel")
     expect(detectCreationIntent("make it move").format).toBe("video")
+  })
+
+  it("does not turn ordinary topic words into a hidden format choice", () => {
+    for (const request of [
+      "I want to set goals for September",
+      "I need a post about my new coaching series",
+      "I need to cover three mistakes in my next post",
+      "Write a post about my client story",
+      "I want to tell the story of starting my business",
+      "I want to teach women how to price their work",
+      "I need a post about a picture-perfect life",
+    ]) {
+      const intent = detectCreationIntent(request)
+      expect(intent.format, request).toBeNull()
+      expect(intent.confidence, request).toBe("needs_clarify")
+    }
   })
 
   it("asks one clarifying question when the request conflicts", () => {

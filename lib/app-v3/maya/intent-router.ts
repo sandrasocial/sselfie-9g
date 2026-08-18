@@ -11,37 +11,34 @@ const PATTERNS: IntentPattern[] = [
     patterns: [
       /\bstory\s+sequence\b/i,
       /\bstory\s+series\b/i,
-      /\bstories\b/i,
-      /\bsequence\b/i,
-      /\bmultiple\s+story\b/i,
+      /\binstagram\s+stories\b/i,
+      /\bmultiple\s+story\s+(?:slides?|frames?)\b/i,
     ],
   },
   {
     format: "story-slide",
-    patterns: [/\bstory\s+slide\b/i, /\bstory\s+frame\b/i, /\bone\s+story\b/i, /\bstory\b/i],
-  },
-  {
-    format: "reel-cover",
-    patterns: [/\breel\s+cover\b/i, /\bcover\b/i, /\bcarousel\s+cover\b/i, /\bpost\s+cover\b/i],
-  },
-  {
-    format: "carousel",
-    patterns: [/\bcarousel\b/i, /\bslides?\b/i, /\bteach\s+this\b/i, /\bteach\b/i, /\bhow\s+to\b/i],
-  },
-  {
-    format: "photoshoot",
     patterns: [
-      /\bfull\s+shoot\b/i,
-      /\bphoto\s*shoot\b/i,
-      /\bphotoshoot\b/i,
-      /\bshoot\b/i,
-      /\bseries\b/i,
-      /\bset\b/i,
+      /\bstory\s+slide\b/i,
+      /\bstory\s+frame\b/i,
+      /\bone\s+story\s+(?:slide|frame)\b/i,
+      /\binstagram\s+story\b/i,
     ],
   },
   {
+    format: "reel-cover",
+    patterns: [/\breel\s+cover\b/i, /\bcarousel\s+cover\b/i, /\bpost\s+cover\b/i],
+  },
+  {
+    format: "carousel",
+    patterns: [/\bcarousel\b/i, /\bslides?\b/i],
+  },
+  {
+    format: "photoshoot",
+    patterns: [/\bfull\s+shoot\b/i, /\bphoto\s*shoot\b/i, /\bphotoshoot\b/i, /\bbrand\s+shoot\b/i],
+  },
+  {
     format: "video",
-    patterns: [/\bmotion\b/i, /\bvideo\b/i, /\banimate\b/i, /\bmake\s+it\s+move\b/i],
+    patterns: [/\bvideo\b/i, /\banimate\b/i, /\bmake\s+it\s+move\b/i],
   },
   {
     format: "photo",
@@ -52,10 +49,18 @@ const PATTERNS: IntentPattern[] = [
       /\bportrait\b/i,
       /\bbrand\s+photo\b/i,
       /\bphoto\b/i,
-      /\bpicture\b/i,
     ],
   },
 ]
+
+const DIRECT_CREATION_ACTION =
+  /\b(create|make|generate|build|design|produce|write|animate|turn\s+(?:this|it|that)\s+into)\b/i
+
+const CREATION_REQUEST =
+  /\b(create|make|generate|build|design|produce|write|animate|teach|turn\s+(?:this|it|that)\s+into|i\s+(?:want|need|would\s+like)|please|help\s+me)\b/i
+
+const BARE_FORMAT_SELECTION =
+  /^(?:actually\s+)?(?:just\s+)?(?:a\s+|an\s+|one\s+)?(?:photo|profile\s+photo|headshot|portrait|photoshoot|photo\s+shoot|brand\s+shoot|reel\s+cover|carousel|story\s+slide|story\s+frame|story\s+sequence|instagram\s+story|instagram\s+stories|video)$/i
 
 function normalize(input: string): string {
   return input
@@ -68,9 +73,7 @@ function normalize(input: string): string {
 
 function isNeutralFormatDiscussion(text: string): boolean {
   const explicitCreationAction =
-    /\b(create|make|generate|build|design|produce|recreate|animate|turn\s+(?:this|it|that)\s+into)\b/i.test(
-      text
-    )
+    DIRECT_CREATION_ACTION.test(text) || BARE_FORMAT_SELECTION.test(text)
   if (explicitCreationAction) return false
 
   return (
@@ -108,10 +111,17 @@ export function detectCreationIntent(
   const text = normalize(input)
   if (!text) return needsClarificationIntent(source)
 
-  // Maya Home is also a general assistant. Mentioning a format while asking for an
-  // explanation or advice must not silently turn the conversation into a creation job.
-  // Explicit verbs such as "create", "make", and "animate" still route immediately.
+  // Maya Home is also a general assistant. Advice/questions stay conversational even if
+  // they mention a format; a direct creation verb still routes the request immediately.
   if (isNeutralFormatDiscussion(text)) return needsClarificationIntent(source)
+
+  // Topic words are not format choices. A member can talk about her story, a coaching
+  // series, what to cover, or how to teach something without silently entering a graphic
+  // pipeline. Route only a real creation request that also names a concrete format, or a
+  // short direct answer such as "Carousel" to Maya's visible format question.
+  if (!CREATION_REQUEST.test(text) && !BARE_FORMAT_SELECTION.test(text)) {
+    return needsClarificationIntent(source)
+  }
 
   const matches = PATTERNS.filter(group => group.patterns.some(pattern => pattern.test(text))).map(
     group => group.format
@@ -121,7 +131,9 @@ export function detectCreationIntent(
   if (
     unique.includes("story-sequence") &&
     unique.includes("story-slide") &&
-    /\b(story\s+(sequence|series)|stories|sequence|multiple\s+story)\b/i.test(text)
+    /\b(story\s+(sequence|series)|instagram\s+stories|multiple\s+story\s+(?:slides?|frames?))\b/i.test(
+      text
+    )
   ) {
     return intentForFormat("story-sequence", source)
   }
@@ -129,7 +141,7 @@ export function detectCreationIntent(
   if (
     unique.includes("story-slide") &&
     unique.includes("carousel") &&
-    /\b(story\s+(slide|frame)|one\s+story)\b/i.test(text)
+    /\b(story\s+(slide|frame)|one\s+story\s+(?:slide|frame)|instagram\s+story)\b/i.test(text)
   ) {
     return intentForFormat("story-slide", source)
   }

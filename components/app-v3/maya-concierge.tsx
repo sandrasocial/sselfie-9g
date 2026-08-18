@@ -38,11 +38,7 @@ import { retryGeneratedImageOnce } from "./image-retry"
 import { ChatHistoryModal } from "./chat-history-modal"
 import { MemoryModal, type Memory } from "./memory-modal"
 import { EditMode } from "./edit-mode"
-import {
-  AESTHETICS,
-  MAYA_DECIDES_AESTHETIC,
-  MAYA_GENERAL_AESTHETIC,
-} from "./aesthetics"
+import { AESTHETICS, MAYA_DECIDES_AESTHETIC, MAYA_GENERAL_AESTHETIC } from "./aesthetics"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { finishMayaJob, recordMayaJobDecision } from "@/lib/app-v3/maya/job-analytics"
 import { newMayaTaskId } from "@/lib/app-v3/maya/context-envelope"
@@ -79,6 +75,7 @@ import {
   intentForFormat,
   needsClarificationIntent,
 } from "@/lib/app-v3/maya/intent-router"
+import { isConceptPlanReady } from "@/lib/app-v3/maya/concept-plan-readiness"
 import { shouldContinueCompletedFormatSwitch } from "@/lib/app-v3/maya/next-action"
 import { shouldSkipMayaTaskHistoryLookup } from "@/lib/app-v3/maya/task-hydration"
 import {
@@ -2992,7 +2989,10 @@ export function MayaConcierge({
     const canUseCustomModel = activeGenerationSource === "trained-model" && targetFormat === "photo"
 
     if (targetFormat === "video" && !videoSourceUrl) {
-      trackRecoveryShown(targetFormat, "missing_video_source")
+      trackRecoveryShown(targetFormat, "missing_video_source", {
+        phase: "generate_request",
+        planState: "blocked",
+      })
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: "Choose or upload the photo you want to animate first." },
@@ -3002,7 +3002,10 @@ export function MayaConcierge({
       return
     }
     if (targetFormat !== "video" && !referenceSelfieUrl && !canUseCustomModel) {
-      trackRecoveryShown(targetFormat, "missing_selfie")
+      trackRecoveryShown(targetFormat, "missing_selfie", {
+        phase: "generate_request",
+        planState: "blocked",
+      })
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: "Add a selfie first so it still looks like you." },
@@ -3082,6 +3085,7 @@ export function MayaConcierge({
       }
     }
     let generationResponseStatus: number | null = null
+    let generationServerCode: string | null = null
     let streamResponseStarted = false
     let generationServerVerdict = false
     const isSingleImageRequest =
@@ -3143,10 +3147,16 @@ export function MayaConcierge({
           current?: number
           newBalance?: number
         } | null
+        generationResponseStatus = startRes.status
+        generationServerCode = startData?.code ?? null
 
         if (startRes.status === 402 || startData?.code === "insufficient_credits") {
           setGenState(s => ({ ...s, [key]: { status: "idle" } }))
-          trackRecoveryShown(targetFormat, "insufficient_credits")
+          trackRecoveryShown(targetFormat, "insufficient_credits", {
+            phase: "generate_request",
+            responseStatus: startRes.status,
+            serverCode: startData?.code,
+          })
           showCreditBlock(typeof startData?.current === "number" ? startData.current : null)
           return
         }
@@ -3194,10 +3204,16 @@ export function MayaConcierge({
           code?: string
           current?: number
         } | null
+        generationResponseStatus = startRes.status
+        generationServerCode = startData?.code ?? null
 
         if (startRes.status === 402 || startData?.code === "insufficient_credits") {
           setGenState(s => ({ ...s, [key]: { status: "idle" } }))
-          trackRecoveryShown(targetFormat, "insufficient_credits")
+          trackRecoveryShown(targetFormat, "insufficient_credits", {
+            phase: "generate_request",
+            responseStatus: startRes.status,
+            serverCode: startData?.code,
+          })
           showCreditBlock(typeof startData?.current === "number" ? startData.current : null)
           return
         }
@@ -3281,6 +3297,7 @@ export function MayaConcierge({
               aiImageId?: number | null
               aiImageIds?: Array<number | null>
               error?: string
+              code?: string
               newBalance?: number
             } | null = null
             try {
@@ -3359,7 +3376,12 @@ export function MayaConcierge({
               generationServerVerdict = true
               settled = true
             } else if (evt?.type === "error") {
-              trackRecoveryShown(targetFormat, "stream_error")
+              generationServerCode = evt.code ?? "stream_error"
+              trackRecoveryShown(targetFormat, "stream_error", {
+                phase: "stream",
+                responseStatus: generationResponseStatus,
+                serverCode: generationServerCode,
+              })
               setGenState(s => ({
                 ...s,
                 [key]: { status: "error", error: evt!.error || "Generation failed" },
@@ -3373,7 +3395,11 @@ export function MayaConcierge({
         if (!settled) {
           const recovered = await restorePaidSingleImage("stream_recovered", 3)
           if (!recovered) {
-            trackRecoveryShown(targetFormat, "stream_unsettled")
+            trackRecoveryShown(targetFormat, "stream_unsettled", {
+              phase: "stream",
+              responseStatus: generationResponseStatus,
+              serverCode: "stream_unsettled",
+            })
             setGenState(s => ({
               ...s,
               [key]: {
@@ -3407,10 +3433,15 @@ export function MayaConcierge({
         newBalance?: number
       } | null
       generationServerVerdict = data !== null
+      generationServerCode = data?.code ?? null
       if (res.status === 402 || data?.code === "insufficient_credits") {
         // Graceful path: reset the card and open the right offer instead of a raw error.
         setGenState(s => ({ ...s, [key]: { status: "idle" } }))
-        trackRecoveryShown(targetFormat, "insufficient_credits")
+        trackRecoveryShown(targetFormat, "insufficient_credits", {
+          phase: "generate_request",
+          responseStatus: res.status,
+          serverCode: data?.code,
+        })
         showCreditBlock(typeof data?.current === "number" ? data.current : null)
         if (actionRequestId) throw new Error(data?.error || "Not enough credits")
         return
@@ -3495,7 +3526,11 @@ export function MayaConcierge({
             ? 3
             : 0
       if (await restorePaidSingleImage("request_recovered", recoveryAttempts)) return
-      trackRecoveryShown(targetFormat, "exception")
+      trackRecoveryShown(targetFormat, "exception", {
+        phase: "generate_request",
+        responseStatus: generationResponseStatus,
+        serverCode: generationServerCode,
+      })
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: e instanceof Error ? e.message : "Generation failed" },
@@ -3561,7 +3596,10 @@ export function MayaConcierge({
 
   async function generatePhotoshootSet(key: string, concepts: ConceptCardData[]) {
     if (!referenceSelfieUrl) {
-      trackRecoveryShown("photoshoot", "missing_selfie")
+      trackRecoveryShown("photoshoot", "missing_selfie", {
+        phase: "generate_request",
+        planState: "blocked",
+      })
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: "Add a selfie first so it still looks like you." },
@@ -3570,7 +3608,10 @@ export function MayaConcierge({
     }
     const shootConcepts = concepts.slice(0, 9)
     if (shootConcepts.length < 6) {
-      trackRecoveryShown("photoshoot", "thin_shoot_plan")
+      trackRecoveryShown("photoshoot", "thin_shoot_plan", {
+        phase: "chat_plan",
+        planState: "invalid",
+      })
       setGenState(s => ({
         ...s,
         [key]: {
@@ -3603,6 +3644,7 @@ export function MayaConcierge({
     // true once we parsed a real server reply; false means the response was lost in transit
     let gotServerVerdict = false
     let responseStatus: number | null = null
+    let responseCode: string | null = null
     try {
       const res = await fetch("/api/app-v3/maya/generate", {
         method: "POST",
@@ -3633,9 +3675,14 @@ export function MayaConcierge({
         newBalance?: number
       } | null
       gotServerVerdict = data !== null
+      responseCode = data?.code ?? null
       if (res.status === 402 || data?.code === "insufficient_credits") {
         setGenState(s => ({ ...s, [key]: { status: "idle" } }))
-        trackRecoveryShown("photoshoot", "insufficient_credits")
+        trackRecoveryShown("photoshoot", "insufficient_credits", {
+          phase: "generate_request",
+          responseStatus: res.status,
+          serverCode: data?.code,
+        })
         showCreditBlock(typeof data?.current === "number" ? data.current : null)
         return
       }
@@ -3689,7 +3736,11 @@ export function MayaConcierge({
           trackGenerationCompleted("photoshoot", "photoshoot_set_recovered")
           return
         }
-        trackRecoveryShown("photoshoot", "lost_response")
+        trackRecoveryShown("photoshoot", "lost_response", {
+          phase: "stream",
+          responseStatus,
+          serverCode: responseCode ?? "lost_response",
+        })
         setGenState(s => ({
           ...s,
           [key]: {
@@ -3700,7 +3751,11 @@ export function MayaConcierge({
         }))
         return
       }
-      trackRecoveryShown("photoshoot", "exception")
+      trackRecoveryShown("photoshoot", "exception", {
+        phase: "generate_request",
+        responseStatus,
+        serverCode: responseCode,
+      })
       setGenState(s => ({
         ...s,
         [key]: { status: "error", error: e instanceof Error ? e.message : "Generation failed" },
@@ -4062,10 +4117,27 @@ export function MayaConcierge({
     })
   }
 
-  function trackRecoveryShown(targetFormat: OutputFormat, reason: string) {
+  function trackRecoveryShown(
+    targetFormat: OutputFormat,
+    reason: string,
+    diagnostics: {
+      phase: "chat_plan" | "generate_request" | "stream" | "finish_post"
+      responseStatus?: number | null
+      serverCode?: string | null
+      planState?: "ready" | "invalid" | "blocked" | null
+    }
+  ) {
     void trackAnalyticsEvent({
       event: "suite_maya_recovery_shown",
-      properties: { cohort, format: targetFormat, reason },
+      properties: {
+        cohort,
+        format: targetFormat,
+        reason,
+        phase: diagnostics.phase,
+        response_status: diagnostics.responseStatus ?? null,
+        server_code: diagnostics.serverCode ?? null,
+        plan_state: diagnostics.planState ?? null,
+      },
     })
   }
 
@@ -5347,12 +5419,16 @@ export function MayaConcierge({
                     .filter((p: any) => p?.type === "text" && typeof p.text === "string")
                     .map((p: any) => p.text)
                     .join("")
-                  const conceptPart = parts.map(extractConcepts).find(Boolean) as
-                    | ConceptCardData[]
-                    | undefined
+                  const conceptToolPart = parts.find((part: any) => Boolean(extractConcepts(part)))
+                  const conceptPart = conceptToolPart
+                    ? (extractConcepts(conceptToolPart) as ConceptCardData[] | null)
+                    : null
                   const conceptFormat =
                     (parts.map(extractConceptFormat).find(Boolean) as OutputFormat | undefined) ??
                     format
+                  const conceptPlanReady = conceptToolPart
+                    ? isConceptPlanReady(conceptToolPart, conceptFormat, isThinking)
+                    : false
                   const clarifyPart = parts.map(extractClarify).find(Boolean) as
                     | ClarifyPrompt
                     | undefined
@@ -5567,14 +5643,17 @@ export function MayaConcierge({
                             : undefined
                         }
                         disabled={
-                          conceptFormat === "video"
+                          !conceptPlanReady ||
+                          (conceptFormat === "video"
                             ? !videoSourceUrl
-                            : !referenceSelfieUrl && activeGenerationSource !== "trained-model"
+                            : !referenceSelfieUrl && activeGenerationSource !== "trained-model")
                         }
                         disabledReason={
-                          conceptFormat === "video"
-                            ? "Choose the photo you want to animate first."
-                            : "Add a selfie first so it still looks like you."
+                          !conceptPlanReady
+                            ? null
+                            : conceptFormat === "video"
+                              ? "Choose the photo you want to animate first."
+                              : "Add a selfie first so it still looks like you."
                         }
                         initialCalendarPlacement={gen.calendarPlacement ?? null}
                         initialFinishedPost={gen.finishedPost ?? null}
@@ -5671,6 +5750,25 @@ export function MayaConcierge({
                           >
                             Try again
                           </button>
+                        </div>
+                      )}
+
+                      {conceptPart && conceptPart.length > 0 && !conceptPlanReady && (
+                        <div className="min-w-0 max-w-full rounded-[10px] bg-[#282728]/5 px-4 py-3 [overflow-x:clip]">
+                          <p role="status" className="text-[13px] text-[#282728]">
+                            {isThinking
+                              ? "Maya is finishing this plan. Create will unlock when it is ready."
+                              : "That plan needs one quick fix before you create it."}
+                          </p>
+                          {!isThinking && (
+                            <button
+                              type="button"
+                              onClick={() => sendMessage({ text: FORMAT_PHRASE[conceptFormat] })}
+                              className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#0D0E10] underline underline-offset-2 hover:opacity-70"
+                            >
+                              Ask Maya to fix it
+                            </button>
+                          )}
                         </div>
                       )}
 
@@ -5795,7 +5893,11 @@ export function MayaConcierge({
                                   <button
                                     type="button"
                                     onClick={() => void generatePhotoshootSet(key, conceptPart)}
-                                    disabled={gen.status === "generating" || !referenceSelfieUrl}
+                                    disabled={
+                                      !conceptPlanReady ||
+                                      gen.status === "generating" ||
+                                      !referenceSelfieUrl
+                                    }
                                     className="inline-flex min-h-11 items-center rounded-full bg-[#0D0E10] px-5 text-[11px] uppercase tracking-[0.16em] text-white disabled:cursor-not-allowed disabled:opacity-50"
                                   >
                                     {gen.status === "generating"

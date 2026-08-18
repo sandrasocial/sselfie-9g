@@ -118,9 +118,12 @@ describe("app-v3 generation credit integrity", () => {
     expect(concierge).toContain(
       'trackGenerationCompleted("photoshoot", "photoshoot_set_recovered")'
     )
-    expect(concierge).toContain('trackRecoveryShown("photoshoot", "lost_response")')
+    expect(concierge).toContain('trackRecoveryShown("photoshoot", "lost_response", {')
     // a real server verdict (content policy, refund already issued) still shows the real error
-    expect(concierge).toContain('trackRecoveryShown("photoshoot", "exception")')
+    expect(concierge).toContain('trackRecoveryShown("photoshoot", "exception", {')
+    expect(concierge).toContain('phase: "stream"')
+    expect(concierge).toContain("responseStatus")
+    expect(concierge).toContain("serverCode")
     // honest no-uncertainty copy: her credits come back on their own
     expect(concierge).toContain("come back on their own")
   })

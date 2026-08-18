@@ -106,6 +106,29 @@ describe("shared Maya semantic plan validation", () => {
       "story_sequence outputCount must be 3, 5, or 7, got 1"
     )
   })
+
+  it("rejects a thin educational carousel before a card can become actionable", () => {
+    const carousel = shootConcept(undefined, 0)
+    carousel.title = "How to price your work"
+    carousel.brief.graphic = {
+      carouselTitle: "How to price your work",
+      contentType: "educational",
+      slideCount: 1,
+      slides: [
+        {
+          heading: "Price with confidence",
+          purpose: "teach the opening step",
+          visualConcept: "founder reviewing her offer at a desk",
+          imagePrompt: "same woman at a desk with clear text-safe space",
+          visualReason: "the working scene supports the lesson",
+        },
+      ],
+    }
+
+    expect(validateEmittedConceptPlan({ format: "carousel", concepts: [carousel] })).toContain(
+      "educational carousel needs at least 6 slides, got 1"
+    )
+  })
 })
 
 describe("Maya semantic plan repair loop", () => {
