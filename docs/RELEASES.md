@@ -1,5 +1,21 @@
 # Completed releases
 
+## 2026-08-18 | Your AI Content Team founding journey
+
+Replaced the generic Work With Me promise with a private six-week AI content-team implementation
+for established women whose weekly marketing still depends on them. Added qualified application
+capture, fit-call gating, private EUR 2,000 checkout support, paid-client onboarding and workspace,
+welcome fulfillment, and one aligned delivery contract. Existing buyers, prices, memberships, and
+customer access were unchanged.
+
+Why: the previous page did not name the urgent problem strongly enough and three earlier inquiries
+had no dependable follow-up pipeline. Production proof: feature commit `22c5628c`, exact Ready
+Vercel deployment `dpl_3Tu6r9gwxvoVupqbi9xocchgyW97`, 27 focused tests, clean diff checks, verified
+production tables, and live desktop plus mobile checks of the new hero and eight-field application.
+The incomplete-form endpoint correctly returned 400 without creating a lead. No previous applicant
+was contacted because the only clearly qualified prior applicant was unsubscribed. Sandra received
+the requested private completion notification.
+
 ## 2026-08-14 | Maya dormant-Calendar isolation and durable Work
 
 Kept Maya as one member conversation while removing dormant Calendar wording, tools, saved workspace
