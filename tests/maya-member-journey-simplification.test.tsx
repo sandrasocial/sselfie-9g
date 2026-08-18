@@ -74,7 +74,8 @@ describe("Maya simplified member journey", () => {
     expect(concierge).toContain("<InlineProjectStart")
     expect(concierge).not.toContain("<InlineFormatChoice")
     expect(inline).toContain("Create my next post")
-    expect(inline).toContain("Maya chooses the strongest format")
+    expect(inline).toContain("Maya recommends one format")
+    expect(inline).toContain("You confirm it")
     expect(inline).not.toContain("Choose one path")
   })
 

@@ -427,7 +427,11 @@ const askClarify = tool({
     "content (e.g. the reel topic, the carousel teaching angle, the story objective). Use this " +
     "INSTEAD of generating something generic. Offer 3 to 5 short tappable options drawn from what " +
     "you know about HER brand (never generic), and set allowFreeText so she can answer in her own " +
-    "words. Ask only the single most important missing thing, never a list, never for a plain photo. " +
+    "words. Exception: when general Maya recommends an unnamed output format, use kind=format, " +
+    "put the one recommendation and its reason in the question, and offer exactly two options: " +
+    "Create the [format] and Choose something else. Ask only the single most important missing " +
+    "thing, never a list. Do not ask a plain-photo detail question; the format confirmation " +
+    "exception above still applies. " +
     "After she answers, call emit_concepts.",
   inputSchema: z.object({
     kind: z

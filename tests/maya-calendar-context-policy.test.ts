@@ -72,6 +72,7 @@ describe("Maya Calendar context policy", () => {
   it("carries explicit task context to the server instead of inferring Calendar use", () => {
     const concierge = readFileSync("components/app-v3/maya-concierge.tsx", "utf8")
     const route = readFileSync("app/api/app-v3/maya/chat/route.ts", "utf8")
+    const aesthetics = readFileSync("components/app-v3/aesthetics.ts", "utf8")
 
     expect(concierge).toContain("mayaContext: session.mayaContext ?? null")
     expect(route).toContain("getExplicitCalendarCreativeContext(body?.mayaContext)")
@@ -84,6 +85,7 @@ describe("Maya Calendar context policy", () => {
     expect(route).not.toContain("recent activity, and content calendar")
     expect(route).not.toContain("postingCadencePerWeek")
     expect(route).not.toContain("feedStyle) when she expresses")
+    expect(aesthetics).not.toContain("recent activity, and content calendar")
 
     const persona = readFileSync("lib/maya/general-assistant-persona.ts", "utf8")
     expect(persona).not.toContain("and Calendar when it is relevant")

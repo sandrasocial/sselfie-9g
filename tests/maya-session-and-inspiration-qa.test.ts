@@ -131,7 +131,7 @@ describe("QA open-list build (2026-07-06)", () => {
     expect(route).toContain('body?.aestheticId === "maya-decides"')
     expect(route).toContain("Do not ask her to choose a style")
     const inline = read("components/app-v3/maya-inline-components.tsx")
-    expect(inline).toContain("Not sure? Let Maya choose")
+    expect(inline).toContain("Get Maya&apos;s recommendation")
   })
 
   it("keeps legacy trained-model selection out of Maya Create", () => {

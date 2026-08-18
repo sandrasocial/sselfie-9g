@@ -147,9 +147,9 @@ describe("Maya style chooser slice", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
     expect(inline).toContain("Use my inspiration")
-    // Maya chooses the strongest real Vault world when the member does not want to browse.
-    expect(inline).toContain("Not sure? Let Maya choose")
-    expect(inline).toContain("She chooses the strongest SSELFIE look")
+    // Maya recommends the strongest real Vault world when the member does not want to browse.
+    expect(inline).toContain("Get Maya&apos;s recommendation")
+    expect(inline).toContain("Maya recommends the strongest SSELFIE look")
     expect(inline).toContain("onUseInspiration")
     expect(inline).toContain("onLetMayaDecide")
 

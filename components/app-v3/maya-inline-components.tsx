@@ -25,7 +25,8 @@ export function InlineProjectStart({
           Start with one real idea.
         </p>
         <p className="mt-2 max-w-md text-[14px] leading-relaxed text-[color:var(--ss-davy)]">
-          Maya chooses the strongest format, creates the visual, and helps you finish the words.
+          Maya recommends one format. You confirm it, then she creates the visual and helps you
+          finish the words.
         </p>
         <button
           type="button"
@@ -139,10 +140,10 @@ export function InlineVibePicker({
               className="min-h-16 rounded-[6px] border border-[color:var(--ss-night)]/30 bg-white px-3 py-3 text-left transition-colors hover:border-[color:var(--ss-night)] disabled:opacity-45"
             >
               <span className="block text-[12px] font-medium text-[color:var(--ss-night)]">
-                Not sure? Let Maya choose
+                Get Maya&apos;s recommendation
               </span>
               <span className="mt-1 block text-[11px] leading-relaxed text-[color:var(--ss-davy)]">
-                She chooses the strongest SSELFIE look for what you&apos;re making.
+                Maya recommends the strongest SSELFIE look for what you&apos;re making.
               </span>
             </button>
           )}

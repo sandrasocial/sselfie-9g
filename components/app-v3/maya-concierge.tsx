@@ -4790,8 +4790,8 @@ export function MayaConcierge({
                         </p>
                         <p className="mt-1 text-[13px] leading-relaxed text-[#6D6E70]">
                           {referenceSelfieUrl
-                            ? "Maya is choosing one strong direction for you."
-                            : "Add one clear selfie. Maya will choose the strongest direction and guide the rest."}
+                            ? "Maya is preparing one strong recommendation for you."
+                            : "Add one clear selfie. Maya will recommend the strongest direction and guide the rest."}
                         </p>
                       </div>
                     </div>

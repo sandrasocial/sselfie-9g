@@ -24,13 +24,13 @@ export const MAYA_GENERAL_AESTHETIC: Aesthetic = {
  */
 export const MAYA_DECIDES_AESTHETIC: Aesthetic = {
   id: "maya-decides",
-  name: "Maya decides",
-  blurb: "Maya chooses the strongest SSELFIE look for what you need today.",
+  name: "Maya recommends",
+  blurb: "Maya recommends the strongest SSELFIE look for what you need today.",
   coverImage: "",
   thumbnails: [],
   shotCount: 0,
   intent:
-    "Choose the single strongest SSELFIE Vault world using her request, memory, brand profile, recent activity, and content calendar. Explain the choice simply, then keep the result inside that real Vault world.",
+    "Recommend the single strongest SSELFIE Vault world using her request, memory, brand profile, and recent activity. Explain the recommendation simply, then keep the result inside that real Vault world.",
 }
 
 /** Turn a collection name like "Quiet Luxury London Editorial" into a stable id. */

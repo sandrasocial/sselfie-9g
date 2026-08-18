@@ -188,8 +188,20 @@ if (!runPlaywright) {
           const textId = `text-${Date.now()}`
           const confirmedCarousel =
             /yes, make that carousel/i.test(userText) ||
+            /create the carousel/i.test(userText) ||
             /create a three-slide visibility carousel/i.test(userText)
+          const recommendsCarousel =
+            /I want to share why showing up before you feel ready matters/i.test(userText)
           const carouselPull = /let's make a carousel/i.test(userText)
+          const clarifyPayload = recommendsCarousel
+            ? {
+                kind: "format",
+                question:
+                  "I recommend a carousel because this idea needs a short teaching sequence. Shall I create it?",
+                options: ["Create the carousel", "Choose something else"],
+                allowFreeText: true,
+              }
+            : null
           const conceptPayload =
             carouselJourneyEnabled && carouselPull
               ? {
@@ -266,7 +278,13 @@ if (!runPlaywright) {
             `data: ${JSON.stringify({ type: "text-start", id: textId })}`,
             `data: ${JSON.stringify({ type: "text-delta", id: textId, delta: answer })}`,
             `data: ${JSON.stringify({ type: "text-end", id: textId })}`,
-            ...(formatPayload
+            ...(clarifyPayload
+              ? [
+                  `data: ${JSON.stringify({ type: "tool-input-start", toolCallId, toolName: "ask_clarify" })}`,
+                  `data: ${JSON.stringify({ type: "tool-input-available", toolCallId, toolName: "ask_clarify", input: clarifyPayload })}`,
+                  `data: ${JSON.stringify({ type: "tool-output-available", toolCallId, output: clarifyPayload })}`,
+                ]
+              : formatPayload
               ? [
                   `data: ${JSON.stringify({ type: "tool-input-start", toolCallId, toolName: "set_format" })}`,
                   `data: ${JSON.stringify({ type: "tool-input-available", toolCallId, toolName: "set_format", input: formatPayload })}`,
@@ -590,9 +608,16 @@ if (!runPlaywright) {
         page.getByText("I want to share why showing up before you feel ready matters")
       ).toBeVisible()
       await expect(maya).toHaveAttribute("data-maya-format", "none")
+      await expect(
+        page.getByText(
+          "I recommend a carousel because this idea needs a short teaching sequence. Shall I create it?"
+        )
+      ).toBeVisible()
+      await expect(page.getByRole("button", { name: "Create the carousel" })).toBeVisible()
+      await page.locator("summary").filter({ hasText: "Other options" }).click()
+      await expect(page.getByRole("button", { name: "Choose something else" })).toBeVisible()
 
-      await composer.fill("Yes, make that carousel")
-      await page.getByRole("button", { name: "Send", exact: true }).click()
+      await page.getByRole("button", { name: "Create the carousel" }).click()
       await expect(maya).toHaveAttribute("data-maya-format", "carousel")
       await expect(page.getByText("Choose your style")).toHaveCount(0)
       await expect(page.getByText("Text on image")).toBeVisible()

@@ -33,6 +33,9 @@ describe("Maya creative control rollback", () => {
 
   it("recommends an unspecified format before committing it", () => {
     expect(generalPrompt).toContain("recommend one format in plain language")
+    expect(generalPrompt).toContain("call ask_clarify with kind format")
+    expect(generalPrompt).toContain('"Create the [format]"')
+    expect(generalPrompt).toContain('"Choose something else"')
     expect(generalPrompt).toContain("Do not call set_format until")
     expect(generalPrompt).toContain("she confirms.")
     expect(generalPrompt).toContain("Never present a saved aesthetic as already chosen")
