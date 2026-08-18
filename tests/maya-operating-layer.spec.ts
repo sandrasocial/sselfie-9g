@@ -285,18 +285,18 @@ if (!runPlaywright) {
                   `data: ${JSON.stringify({ type: "tool-output-available", toolCallId, output: clarifyPayload })}`,
                 ]
               : formatPayload
-              ? [
-                  `data: ${JSON.stringify({ type: "tool-input-start", toolCallId, toolName: "set_format" })}`,
-                  `data: ${JSON.stringify({ type: "tool-input-available", toolCallId, toolName: "set_format", input: formatPayload })}`,
-                  `data: ${JSON.stringify({ type: "tool-output-available", toolCallId, output: formatPayload })}`,
-                ]
-              : conceptPayload
                 ? [
-                    `data: ${JSON.stringify({ type: "tool-input-start", toolCallId, toolName: "emit_concepts" })}`,
-                    `data: ${JSON.stringify({ type: "tool-input-available", toolCallId, toolName: "emit_concepts", input: conceptPayload })}`,
-                    `data: ${JSON.stringify({ type: "tool-output-available", toolCallId, output: conceptPayload })}`,
+                    `data: ${JSON.stringify({ type: "tool-input-start", toolCallId, toolName: "set_format" })}`,
+                    `data: ${JSON.stringify({ type: "tool-input-available", toolCallId, toolName: "set_format", input: formatPayload })}`,
+                    `data: ${JSON.stringify({ type: "tool-output-available", toolCallId, output: formatPayload })}`,
                   ]
-                : []),
+                : conceptPayload
+                  ? [
+                      `data: ${JSON.stringify({ type: "tool-input-start", toolCallId, toolName: "emit_concepts" })}`,
+                      `data: ${JSON.stringify({ type: "tool-input-available", toolCallId, toolName: "emit_concepts", input: conceptPayload })}`,
+                      `data: ${JSON.stringify({ type: "tool-output-available", toolCallId, output: conceptPayload })}`,
+                    ]
+                  : []),
             `data: ${JSON.stringify({ type: "finish", finishReason: "stop" })}`,
             "data: [DONE]",
           ]
@@ -613,9 +613,11 @@ if (!runPlaywright) {
           "I recommend a carousel because this idea needs a short teaching sequence. Shall I create it?"
         )
       ).toBeVisible()
+      await expect(page.getByText("Maya recommends", { exact: true })).toBeVisible()
+      await expect(page.getByText("You choose before Maya creates anything.")).toBeVisible()
       await expect(page.getByRole("button", { name: "Create the carousel" })).toBeVisible()
-      await page.locator("summary").filter({ hasText: "Other options" }).click()
       await expect(page.getByRole("button", { name: "Choose something else" })).toBeVisible()
+      await expect(page.locator("summary").filter({ hasText: "Other options" })).toHaveCount(0)
 
       await page.getByRole("button", { name: "Create the carousel" }).click()
       await expect(maya).toHaveAttribute("data-maya-format", "carousel")
@@ -630,6 +632,9 @@ if (!runPlaywright) {
       await expect(page.getByText("More things Maya can make")).toHaveCount(0)
       await page.getByRole("button", { name: "Finish this post" }).click()
       await expect(page.getByText("Post ready", { exact: true })).toBeVisible()
+      await expect(page.getByText("Would you post this?")).toBeVisible()
+      await page.getByRole("button", { name: "Almost", exact: true }).click()
+      await expect(page.getByText("Thank you — this helps Maya improve.")).toBeVisible()
       await expect(page.getByRole("button", { name: /Make it more like me/i })).toBeVisible()
       await page.getByRole("button", { name: /Make it more like me/i }).click()
       await expect(composer).toHaveValue("Make this more like me by ")

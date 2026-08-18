@@ -78,7 +78,10 @@ function MemberWords({
 }
 
 function PulseContent({ pulse }: { pulse: MemberPulse }) {
-  const attentionCount = pulse.generationFailures + pulse.chatAborts + pulse.vaultMayaNotQuite
+  const readinessCount = (answer: "yes" | "almost" | "no") =>
+    pulse.readinessRatings.find(row => row.answer === answer)?.count ?? 0
+  const attentionCount =
+    pulse.generationFailures + pulse.chatAborts + pulse.vaultMayaNotQuite + readinessCount("no")
 
   return (
     <>
@@ -124,6 +127,44 @@ function PulseContent({ pulse }: { pulse: MemberPulse }) {
         />
       </section>
 
+      <section className="mt-5 grid gap-px overflow-hidden border border-stone-300 bg-stone-300 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat
+          label="Finished posts"
+          value={pulse.finishedPosts}
+          note="Posts completed with a ready caption inside Maya"
+        />
+        <Stat
+          label="Projects resumed"
+          value={pulse.projectsResumed}
+          note="Saved work members came back to continue"
+        />
+        <Stat
+          label="Maya jobs started"
+          value={pulse.mayaJobsStarted}
+          note="Tracked create jobs that began in this window"
+        />
+        <Stat
+          label="Maya jobs finished"
+          value={pulse.mayaJobsFinished}
+          note="Tracked create jobs that reached an outcome"
+        />
+      </section>
+
+      <section className="mt-8 border border-stone-300 bg-white p-5 sm:p-6">
+        <p className="text-[10px] uppercase tracking-[0.18em] text-stone-500">
+          Would members post the result?
+        </p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-stone-600">
+          One-tap answers after a finished post. This is the clearest current quality signal; it is
+          still not the same as renewal intent.
+        </p>
+        <div className="mt-5 grid gap-px overflow-hidden border border-stone-300 bg-stone-300 sm:grid-cols-3">
+          <Stat label="Would post it" value={readinessCount("yes")} note="Answered Yes" />
+          <Stat label="Almost ready" value={readinessCount("almost")} note="Needs refinement" />
+          <Stat label="Would not post" value={readinessCount("no")} note="Direct quality gap" />
+        </div>
+      </section>
+
       <section className="mt-5 grid gap-px overflow-hidden border border-stone-300 bg-stone-300 sm:grid-cols-2">
         <Stat
           label="Vault Maya · Love this"
@@ -164,7 +205,11 @@ function PulseContent({ pulse }: { pulse: MemberPulse }) {
       </section>
 
       <section className="mt-5 grid gap-px overflow-hidden border border-stone-300 bg-stone-300 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Edits requested" value={pulse.edits} note="Changes made after a result" />
+        <Stat
+          label="Photo edits applied"
+          value={pulse.edits}
+          note="Changes completed in the dedicated photo editor"
+        />
         <Stat
           label="Maya clarified"
           value={pulse.clarifiesAsked}

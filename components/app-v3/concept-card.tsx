@@ -19,6 +19,7 @@ import {
   getEditableConceptCopy,
   type EditableConceptCopy,
 } from "@/lib/app-v3/maya/concept-copy-edit"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { FavoriteButton } from "./favorite-button"
 
 export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
@@ -210,6 +211,7 @@ export function ConceptCard({
     initialFinishedPost?.caption?.trim() || null
   )
   const [finishedCaptionCopied, setFinishedCaptionCopied] = useState(false)
+  const [readinessAnswer, setReadinessAnswer] = useState<"yes" | "almost" | "no" | null>(null)
   const [savedDateLabel, setSavedDateLabel] = useState<string | null>(() => {
     if (!initialCalendarPlacement) return null
     const date = new Date(initialCalendarPlacement.scheduledAt)
@@ -285,6 +287,21 @@ export function ConceptCard({
   const requestedBakedText = gen.textOverlayMode === "with-text"
   const hasAnyBakedText = Boolean(gen.bakedImageUrls?.some(Boolean))
   const bakeMissing = requestedBakedText && Boolean(firstOverlay) && !hasAnyBakedText
+
+  function ratePostReadiness(answer: "yes" | "almost" | "no") {
+    if (readinessAnswer) return
+    setReadinessAnswer(answer)
+    try {
+      void Promise.resolve(
+        trackAnalyticsEvent({
+          event: "suite_post_readiness_rated",
+          properties: { format, answer },
+        })
+      ).catch(() => undefined)
+    } catch {
+      // Feedback is best effort and must never interrupt a finished post.
+    }
+  }
 
   return (
     <div className="min-w-0 max-w-full overflow-hidden rounded-[14px] border border-[#C5C6C8]/35 bg-white shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)] transition-shadow duration-300 hover:shadow-[0_2px_4px_rgba(13,14,16,0.05),0_16px_40px_rgba(13,14,16,0.09)] [overflow-x:clip]">
@@ -595,6 +612,37 @@ export function ConceptCard({
                       : "Finish this post"}
                 </button>
               ))}
+            {finishStatus === "finished" && !isVideoDone && (
+              <div className="rounded-[10px] border border-[#C5C6C8]/50 bg-white p-3">
+                {readinessAnswer ? (
+                  <p className="text-[12px] leading-relaxed text-[#4F5052]">
+                    Thank you — this helps Maya improve.
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-[13px] font-medium text-[#0D0E10]">Would you post this?</p>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      {(
+                        [
+                          ["yes", "Yes"],
+                          ["almost", "Almost"],
+                          ["no", "No"],
+                        ] as const
+                      ).map(([answer, label]) => (
+                        <button
+                          key={answer}
+                          type="button"
+                          onClick={() => ratePostReadiness(answer)}
+                          className="min-h-11 rounded-[8px] border border-[#C5C6C8]/70 px-3 py-2 text-[12px] text-[#4F5052] transition-colors hover:border-[#0D0E10] hover:text-[#0D0E10]"
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             {/* Calendar placement remains explicit only when Maya was opened from an existing
                 Calendar post. It is not part of the normal creation journey. */}
             {calendarAvailable &&

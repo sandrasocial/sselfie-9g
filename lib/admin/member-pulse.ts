@@ -28,8 +28,13 @@ export interface MemberPulse {
   recoveriesShown: number
   chatAborts: number
   reviewsSubmitted: number
+  finishedPosts: number
+  projectsResumed: number
+  mayaJobsStarted: number
+  mayaJobsFinished: number
   vaultMayaLoved: number
   vaultMayaNotQuite: number
+  readinessRatings: { answer: "yes" | "almost" | "no"; count: number }[]
   /** rerolls / successful generation completions. Null when nothing was generated. */
   rerollRate: number | null
   topFormats: { format: string; count: number }[]
@@ -53,6 +58,11 @@ const PULSE_EVENTS = [
   "suite_maya_recovery_shown",
   "suite_chat_aborted",
   "suite_review_submitted",
+  "suite_post_finished",
+  "suite_post_project_resumed",
+  "suite_maya_job_started",
+  "suite_maya_job_finished",
+  "suite_post_readiness_rated",
   "vault_maya_photo_loved",
   "vault_maya_photo_not_quite",
 ]
@@ -221,6 +231,17 @@ export async function buildMemberPulse(periodDays = 7): Promise<MemberPulse> {
     GROUP BY 1 ORDER BY 2 DESC LIMIT 6
   `) as { reason: string; count: number }[]
 
+  const readinessRatings = (await sql`
+    SELECT properties->>'answer' AS answer, COUNT(*)::int AS count
+    FROM analytics_events
+    WHERE event_name = 'suite_post_readiness_rated'
+      AND properties->>'answer' = ANY(ARRAY['yes', 'almost', 'no'])
+      AND created_at >= NOW() - make_interval(days => ${periodDays})
+      AND COALESCE(properties->>'admin', 'false') <> 'true'
+      AND (user_id IS NULL OR user_id <> ALL(${adminIds}))
+    GROUP BY 1 ORDER BY 2 DESC
+  `) as { answer: "yes" | "almost" | "no"; count: number }[]
+
   const generationCompletions = count("suite_image_generated")
   const imagesGenerated = byName.get("suite_image_generated")?.images ?? 0
   const downloads = count("suite_image_downloaded")
@@ -246,8 +267,13 @@ export async function buildMemberPulse(periodDays = 7): Promise<MemberPulse> {
     recoveriesShown: count("suite_maya_recovery_shown"),
     chatAborts: count("suite_chat_aborted"),
     reviewsSubmitted: count("suite_review_submitted"),
+    finishedPosts: count("suite_post_finished"),
+    projectsResumed: count("suite_post_project_resumed"),
+    mayaJobsStarted: count("suite_maya_job_started"),
+    mayaJobsFinished: count("suite_maya_job_finished"),
     vaultMayaLoved: count("vault_maya_photo_loved"),
     vaultMayaNotQuite: count("vault_maya_photo_not_quite"),
+    readinessRatings,
     rerollRate: generationCompletions > 0 ? rerolls / generationCompletions : null,
     topFormats: topFormats.map(f => ({ format: f.format, count: f.count })),
     topVibes: topVibes.map(v => ({ aestheticId: v.aesthetic_id, count: v.count })),

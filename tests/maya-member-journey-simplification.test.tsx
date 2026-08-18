@@ -6,8 +6,12 @@ import { resolve } from "node:path"
 import { describe, expect, it, vi } from "vitest"
 
 import { ConceptCard } from "@/components/app-v3/concept-card"
+import { ClarifyCard } from "@/components/app-v3/clarify-card"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { PRIMARY_MEMBER_SECTIONS } from "@/lib/app-v3/member-navigation"
 import { resolveAppV3InitialSection } from "@/lib/app-v3/navigation"
+
+vi.mock("@/lib/analytics/client", () => ({ trackAnalyticsEvent: vi.fn() }))
 
 const concept = {
   id: "finished-post-1",
@@ -79,6 +83,31 @@ describe("Maya simplified member journey", () => {
     expect(inline).not.toContain("Choose one path")
   })
 
+  it("makes Maya's format recommendation visibly optional before creation", () => {
+    const onPick = vi.fn()
+
+    render(
+      <ClarifyCard
+        clarify={{
+          kind: "format",
+          question: "I recommend a carousel because this idea needs a short teaching sequence.",
+          options: ["Create the carousel", "Choose something else"],
+          allowFreeText: true,
+        }}
+        onPick={onPick}
+        onFreeText={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText("Maya recommends")).toBeInTheDocument()
+    expect(screen.getByText("You choose before Maya creates anything.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Create the carousel" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Choose something else" })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Choose something else" }))
+    expect(onPick).toHaveBeenCalledWith("Choose something else")
+  })
+
   it("makes finishing the post the dominant result action and returns the caption", async () => {
     const onFinishPost = vi.fn(async () => ({
       caption: "A ready-to-use caption.",
@@ -107,6 +136,14 @@ describe("Maya simplified member journey", () => {
     await waitFor(() => expect(onFinishPost).toHaveBeenCalledTimes(1))
     expect(await screen.findByText("A ready-to-use caption.")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Make it more like me" })).toBeInTheDocument()
+    expect(screen.getByText("Would you post this?")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Almost" }))
+    expect(trackAnalyticsEvent).toHaveBeenCalledWith({
+      event: "suite_post_readiness_rated",
+      properties: { format: "photo", answer: "almost" },
+    })
+    expect(screen.getByText("Thank you — this helps Maya improve.")).toBeInTheDocument()
   })
 
   it("finishes a Maya post without creating or opening a Feed Planner slot", () => {

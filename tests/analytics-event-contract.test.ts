@@ -71,6 +71,7 @@ describe("analytics event contract", () => {
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_inline_selfie_uploaded")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_generation_path_completed")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_post_finished")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_post_readiness_rated")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_post_refinement_started")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_next_action_selected")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_maya_recovery_shown")
