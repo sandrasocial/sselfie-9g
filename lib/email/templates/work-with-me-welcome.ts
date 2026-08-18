@@ -34,8 +34,8 @@ export function generateWorkWithMeWelcomeEmail({
     <div style="margin:0 0 28px;">${renderStoneButton("Book your kickoff call", bookingUrl, "outline")}</div>
     <p style="margin:0 0 10px;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#9B9189;">Your six weeks</p>
     <p style="margin:0 0 22px;font-size:16px;line-height:1.75;">First I learn your business and build your Business Brain. Then I build and train your research assistant, content director, writer, and repurposer. We use the team on your real marketing, fix anything that feels generic, and finish with your first 30 days plus a weekly workflow you can keep using.</p>
-    <p style="margin:0 0 10px;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#9B9189;">What this is not</p>
-    <p style="margin:0 0 22px;font-size:16px;line-height:1.75;">This is not automatic posting, inbox access, customer service, or a promise of clients or income. You stay in control of every final decision. I build the team around your real voice and show you how to use it.</p>
+    <p style="margin:0 0 10px;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#9B9189;">You stay in control</p>
+    <p style="margin:0 0 22px;font-size:16px;line-height:1.75;">Your team helps with research, planning, writing, and repurposing. It does not post automatically, enter your inbox, or answer customers. You review the work and make every final decision.</p>
     <p style="margin:0 0 10px;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#9B9189;">Your supporting library</p>
     <p style="margin:0 0 14px;font-size:16px;line-height:1.75;">Your Masterclass, Selfie to Brand Shoot System, and Prompt Vault are included. They are there to support the work, but you do not need to finish everything before we begin.</p>
     ${accessButton}
@@ -65,8 +65,8 @@ Book our kickoff call: ${bookingUrl}
 YOUR SIX WEEKS
 First I learn your business and build your Business Brain. Then I build and train your research assistant, content director, writer, and repurposer. We use the team on your real marketing, fix anything that feels generic, and finish with your first 30 days plus a weekly workflow you can keep using.
 
-WHAT THIS IS NOT
-This is not automatic posting, inbox access, customer service, or a promise of clients or income. You stay in control of every final decision.
+YOU STAY IN CONTROL
+Your team helps with research, planning, writing, and repurposing. It does not post automatically, enter your inbox, or answer customers. You review the work and make every final decision.
 
 YOUR SUPPORTING LIBRARY
 ${passwordSetupUrl ? `Set up your access: ${passwordSetupUrl}\n` : ""}Open the Masterclass: ${masterclassUrl}

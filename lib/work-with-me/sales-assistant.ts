@@ -47,7 +47,7 @@ Thank you for the conversation. I believe I can help you build a personal AI con
 
 If you want to do that together, Your AI Content Team is €2,000 paid in full. Over six weeks, I build your Business Brain, research assistant, content director, writer and repurposer, weekly workflow, and first 30 days of marketing. We use four private 45-minute calls to train it around your real voice and make sure you can keep using it.
 
-This is not automatic posting or a promise of clients or income. You stay in control of every final decision.
+Your team will research, plan, write, and repurpose. You stay in control of every final decision and everything that gets published.
 
 Here is your private payment link: ${input.checkoutUrl}
 

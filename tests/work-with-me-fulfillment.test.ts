@@ -43,6 +43,8 @@ describe("Work With Me fulfillment", () => {
     expect(email.text).toContain("Business Brain")
     expect(email.text).toContain("research assistant")
     expect(email.text).toContain("writer, and repurposer")
+    expect(email.text).toContain("YOU STAY IN CONTROL")
+    expect(email.text).not.toContain("promise of clients or income")
     expect(email.text).not.toContain("Start your photos")
     expect(email.html).not.toContain("https://sselfie.ai/app")
   })

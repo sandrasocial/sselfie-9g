@@ -76,9 +76,7 @@ Your AI Content Team is for an established woman with a service people already b
 
 Marketing keeps falling back on her. She has tried AI, but it has not become a useful weekly system.
 
-It is not for starting a business from zero. It is not automatic posting, a new CRM, or a promise of clients or income.
-
-It is one personal team for research, planning, writing, and repurposing, built around the business she already has.
+It is not for starting a business from zero. We use the service, customer knowledge, and proof she already has to train one personal team for research, planning, writing, and repurposing.
 
 I am starting with two women before I open the remaining three places.
 

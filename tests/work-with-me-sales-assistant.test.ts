@@ -39,7 +39,9 @@ describe("Work With Me sales assistant", () => {
     expect(draft).toContain("personal AI content team")
     expect(draft).toContain("Business Brain")
     expect(draft).toContain("first 30 days of marketing")
+    expect(draft).toContain("You stay in control of every final decision")
     expect(draft).not.toContain("guarantee")
+    expect(draft).not.toContain("promise of clients or income")
   })
 
   it("turns the application into a compact call brief", () => {

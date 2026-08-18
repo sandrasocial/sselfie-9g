@@ -94,9 +94,9 @@ describe("public search foundation", () => {
       expect(existsSync(path), path).toBe(true)
       expect(statSync(path).size, path).toBeLessThan(500_000)
     }
-    expect(marketing).toContain('homeHero:    "/academy/visibility-suite/sandra-hero.webp"')
-    expect(marketing).toContain('homeStudio:  "/academy/visibility-suite/hero.webp"')
-    expect(marketing).toContain('homeSelfie:  "/images/selfie-guide/img-editorial-dark.webp"')
-    expect(marketing).toContain('loading="lazy" decoding="async"')
+    expect(marketing).toMatch(/homeHero:\s*"\/academy\/visibility-suite\/sandra-hero\.webp"/)
+    expect(marketing).toMatch(/homeStudio:\s*"\/academy\/visibility-suite\/hero\.webp"/)
+    expect(marketing).toMatch(/homeSelfie:\s*"\/images\/selfie-guide\/img-editorial-dark\.webp"/)
+    expect(marketing).toMatch(/loading="lazy"\s+decoding="async"/)
   })
 })

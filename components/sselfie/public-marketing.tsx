@@ -1135,9 +1135,9 @@ const FAQS = {
         "No. It will research, plan, write, and repurpose with you. You stay in control of what is published. This does not include automatic posting, inbox access, customer service, or a full business automation.",
     },
     {
-      question: "Will this make me more money?",
+      question: "How is this different from using ChatGPT?",
       answer:
-        "I cannot promise clients, income, or growth. I can build a personal AI content system that removes the blank page, saves repeated work, and helps you show up without carrying every step alone.",
+        "You are not starting with a blank chat every time. We build one Business Brain around your real offers, customers, voice, and ideas. Your team works from that shared knowledge, so the help becomes more useful and more like you.",
     },
     {
       question: "What happens after I apply?",
@@ -3303,8 +3303,9 @@ export function WorkWithMePageContent() {
             carrying every step alone.
           </p>
           <p>
-            This is not a promise of clients or income. It is a working content system built around
-            you, not a pile of generic prompts.
+            Everything starts from the same Business Brain, so the work stays connected to your
+            voice, customers, and real offer. You have a working content system built around you,
+            not a pile of generic prompts.
           </p>
         </div>
       </Section>
@@ -3346,12 +3347,13 @@ export function WorkWithMePageContent() {
         body={
           <div className="space-y-3">
             <p>
-              We are not automating your whole business. This does not include your inbox, customer
-              service, CRM, automatic posting, or a promise of leads.
+              Your team is built for the weekly marketing work: research, planning, writing, and
+              repurposing. You stay in control of your inbox, customers, systems, and everything
+              you publish.
             </p>
             <p style={{ color: C.onDark }}>
-              We build one useful team for research, planning, writing, and repurposing. Everything
-              else can wait.
+              One useful team, trained around the business you already have. Everything else can
+              wait.
             </p>
           </div>
         }
