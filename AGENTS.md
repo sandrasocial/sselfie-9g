@@ -1,66 +1,45 @@
-# SSELFIE repository instructions
+# SSELFIE working contract
 
-This is the native Codex project instruction file for the live SSELFIE Studio application.
-Keep it short. Work planning, goals, skills, connectors, plugins, and delegated agents belong to
-the Codex/ChatGPT application, not this repository.
+Sandra's current request is the brief. Start with what she is asking for now.
 
-## Repository identity
+## Default behavior
 
-- Live app: `/Users/MD760HA/ACTIVE/sselfie-9g`
-- GitHub: `sandrasocial/sselfie-9g`
-- Production: `https://sselfie.ai`
-- Hosting: Vercel, auto-deployed from `main`
-- The old `/Users/MD760HA/sselfie-9g` folder is retired and must not be edited.
-- Never copy `lib/maya/` from another repository.
+- Do not automatically read or apply old SSELFIE skills, memories, strategy documents, plans,
+  task queues, audits, or agent instructions.
+- Use an old source only when Sandra names it or when one precise technical fact is required to
+  complete her current request. Say why it is needed before opening it.
+- Do not create a new plan, framework, skill, document, automation, dashboard, agent, or project
+  unless Sandra explicitly asks for that artifact.
+- Keep one active outcome. Do not expand the work into adjacent projects.
+- Use one agent by default. Delegate only when Sandra asks for delegation or parallel agents.
 
-Read `AS-BUILT.md` for stable technical facts. Verify changing business, customer, payment, and
-production facts from the live system instead of trusting dated Markdown.
+## Deliver useful work
 
-## Native delivery workflow
-
-- Sandra's current request is the implementation contract. Do not create repo task files.
-- Do not add repo-local agent definitions, skills, Codex/Claude configuration, or AI task queues.
-- Use a short-lived `codex/` branch or isolated worktree for implementation.
-- Do not open pull requests. Merge the tested branch locally into `main` and push `main` directly.
-- Preserve unrelated local changes. Stage explicit paths only; never use `git add -A` in a dirty tree.
-- After production verification, delete the merged branch and clean worktree.
-- Record only a short completed release note: what changed, why, verification, and deployed SHA.
+- Lead with the actual answer, recommendation, diagnosis, or completed result.
+- For a diagnosis, inspect the smallest amount of current evidence needed and explain the cause in
+  plain language. Do not implement a fix unless the request includes fixing it.
+- For a change, implement it end to end and verify it in proportion to the risk.
+- For a business decision, verify changing money, customer, and production facts live. Unavailable
+  data is unavailable, not zero. Give one recommended move and the reasoning behind it.
+- Do not return a menu of rigid suggestions when one considered recommendation will do.
+- Do not hand Sandra research, checking, or coordination that the agent can safely perform.
+- Ask Sandra only for a genuine decision, missing source material, or exact outward approval.
+- State anything unfinished, why, and the exact next action. More planning is not completion.
 
 ## Safety
 
-- Live users exist. Preserve customer access, entitlements, prices, credits, and historical buyers.
-- Money truth comes from Stripe or qualifying `stripe_payments`; analytics is behavior evidence.
-- Payment, webhook, subscription, credit, refund, and fulfillment changes require targeted tests and
-  live-system verification.
-- Never send email, publish content, charge, refund, or contact customers unless explicitly authorized.
-- Keep secrets and customer data out of Git and logs.
-- Preserve `docs/product/MAYA_CREATIVE_FREEZE_2026-07-15.md` unless Sandra explicitly approves a
-  creative-system change with regression coverage.
+- Live users exist. Protect customer access, prices, billing, credits, entitlements, and historical
+  buyers.
+- Never send, publish, charge, refund, contact a customer, or change a public promise without
+  Sandra's exact approval.
+- Preserve unrelated local changes. Never use destructive Git or filesystem commands without exact
+  approval.
+- Use a short-lived `codex/` branch for repository changes. Stage only explicit paths.
+- Do not push, deploy, merge, or open a pull request unless the current request includes that action.
 
-## Copy and design
+## Repository
 
-For customer-facing work, use only the relevant current sources:
-
-- `docs/brand/SSELFIE_BRAND_CONSTITUTION.md`
-- `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
-- `docs/brand/SANDRA_VOICE_OS_2026-07-16.md`
-- `docs/SSELFIE_DESIGN_SYSTEM.md`
-
-Sandra approves new images and social posts. Meaningful price, billing, entitlement, or customer
-promise changes still require her explicit approval. The current SUITE visual design is approved and
-should be reused rather than redesigned without a specific reason.
-
-## Completion gate
-
-Before merging, run checks proportional to the change, including targeted tests and lint plus:
-
-```bash
-pnpm type-check:ci
-pnpm verify:repo
-pnpm exec vitest run
-pnpm build
-git diff --check
-```
-
-After pushing `main`, confirm Vercel is Ready for the exact SHA and exercise the affected production
-journey on desktop and mobile. A local build or screenshot alone is not completion.
+- Active repository: `/Users/MD760HA/ACTIVE/sselfie-9g`
+- Production: `https://sselfie.ai`
+- Hosting: Vercel
+- The retired `/Users/MD760HA/sselfie-9g` folder must not be edited.
