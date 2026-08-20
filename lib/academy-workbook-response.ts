@@ -1,19 +1,10 @@
 import "server-only"
 
-import { readFile } from "node:fs/promises"
-import path from "node:path"
-
 import { NextResponse } from "next/server"
 
 import { requireAcademyProductAccess } from "@/lib/academy-server-access"
 
 export type ProtectedAcademyWorkbookId = "what_to_say" | "show_up" | "get_paid"
-
-const WORKBOOK_FILES: Record<ProtectedAcademyWorkbookId, string> = {
-  what_to_say: path.join(process.cwd(), "server/academy-workbooks/what_to_say/index.html"),
-  show_up: path.join(process.cwd(), "server/academy-workbooks/show_up/index.html"),
-  get_paid: path.join(process.cwd(), "server/academy-workbooks/get_paid/index.html"),
-}
 
 const WORKBOOK_SECURITY_HEADERS = {
   "Cache-Control": "private, no-store, max-age=0, must-revalidate",
@@ -81,13 +72,13 @@ export async function respondWithProtectedAcademyWorkbook({
   productId,
   canonicalPath,
   headOnly = false,
-  readWorkbook = readFile,
+  readWorkbook,
 }: {
   request: Request
   productId: ProtectedAcademyWorkbookId
   canonicalPath: `/academy/${ProtectedAcademyWorkbookId}`
   headOnly?: boolean
-  readWorkbook?: (filePath: string, encoding: "utf8") => Promise<string>
+  readWorkbook: () => Promise<string>
 }): Promise<NextResponse> {
   try {
     await requireAcademyProductAccess(productId)
@@ -111,7 +102,7 @@ export async function respondWithProtectedAcademyWorkbook({
   }
 
   try {
-    const html = await readWorkbook(WORKBOOK_FILES[productId], "utf8")
+    const html = await readWorkbook()
     return securedResponse(headOnly ? null : html, { status: 200 }, "text/html; charset=utf-8")
   } catch (error) {
     console.error(`[academy-workbook] Failed to read ${productId}:`, error)

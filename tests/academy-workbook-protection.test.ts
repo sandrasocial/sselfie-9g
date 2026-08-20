@@ -289,13 +289,26 @@ describe("Academy workbook private assets and routing contracts", () => {
 
   it("defines exact index.html redirects and output tracing for all three private files", () => {
     const config = readFileSync(path.join(process.cwd(), "next.config.mjs"), "utf8")
+    const sharedResponse = readFileSync(
+      path.join(process.cwd(), "lib/academy-workbook-response.ts"),
+      "utf8"
+    )
 
     for (const workbook of WORKBOOKS) {
       expect(config).toContain(`source: "${workbook.path}/index.html"`)
       expect(config).toContain(`destination: "${workbook.path}"`)
       expect(config).toContain(`source: "${workbook.path}"`)
       expect(config).toContain(`".${"/"}${workbook.privateSource}"`)
+
+      const route = readFileSync(
+        path.join(process.cwd(), "app", "academy", workbook.id, "route.ts"),
+        "utf8"
+      )
+      expect(route).toContain(`"${workbook.privateSource}"`)
+      expect(route).toContain('import { readFile } from "node:fs/promises"')
     }
+    expect(sharedResponse).not.toContain("process.cwd()")
+    expect(sharedResponse).not.toContain('from "node:fs/promises"')
     expect(config).not.toContain('source: "/academy/:path*"')
   })
 
