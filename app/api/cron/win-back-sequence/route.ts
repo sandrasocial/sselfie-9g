@@ -27,7 +27,6 @@ import { generateDormantMemberReengagementEmail } from "@/lib/email/templates/do
 import { logAdminError } from "@/lib/admin-error-log"
 import { EMAIL_CONFIG } from "@/lib/email/config"
 
-
 export async function GET(request: Request) {
   const cronLogger = createCronLogger("win-back-sequence")
   await cronLogger.start()
@@ -35,13 +34,19 @@ export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
-    const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
+    const isProduction =
+      process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
 
     if (isProduction) {
       if (!cronSecret) {
         console.error("[win-back] Unauthorized: CRON_SECRET not set in production")
-        await cronLogger.error(new Error("Unauthorized"), { reason: "CRON_SECRET not set in production" })
-        return NextResponse.json({ error: "Unauthorized: CRON_SECRET required in production" }, { status: 401 })
+        await cronLogger.error(new Error("Unauthorized"), {
+          reason: "CRON_SECRET not set in production",
+        })
+        return NextResponse.json(
+          { error: "Unauthorized: CRON_SECRET required in production" },
+          { status: 401 }
+        )
       }
       if (authHeader !== `Bearer ${cronSecret}`) {
         console.error("[win-back] Unauthorized: Invalid or missing CRON_SECRET")
@@ -71,6 +76,7 @@ export async function GET(request: Request) {
       FROM subscriptions s
       INNER JOIN users u ON u.id = s.user_id
       WHERE s.status = 'canceled'
+        AND COALESCE(s.is_test_mode, FALSE) = FALSE
         AND s.updated_at <= NOW() - INTERVAL '3 days'
         AND u.email IS NOT NULL
         AND u.email != ''
@@ -86,6 +92,7 @@ export async function GET(request: Request) {
           SELECT 1 FROM subscriptions s2
           WHERE s2.user_id = s.user_id
             AND s2.status = 'active'
+            AND COALESCE(s2.is_test_mode, FALSE) = FALSE
         )
       ORDER BY s.updated_at ASC
       LIMIT 100
@@ -118,7 +125,11 @@ export async function GET(request: Request) {
           console.log(`[win-back] ✅ Day 3 sent to ${user.email}`)
         } else {
           results.day3.failed++
-          results.errors.push({ email: user.email, touch: "day3", error: result.error || "unknown" })
+          results.errors.push({
+            email: user.email,
+            touch: "day3",
+            error: result.error || "unknown",
+          })
           console.error(`[win-back] ❌ Day 3 failed for ${user.email}:`, result.error)
         }
       } catch (err: any) {
@@ -128,7 +139,7 @@ export async function GET(request: Request) {
       }
 
       // Gentle rate-limit between sends
-      await new Promise((r) => setTimeout(r, 150))
+      await new Promise(r => setTimeout(r, 150))
     }
 
     // ── Touch 2: Day 7 ────────────────────────────────────────────────────────
@@ -140,6 +151,7 @@ export async function GET(request: Request) {
       FROM subscriptions s
       INNER JOIN users u ON u.id = s.user_id
       WHERE s.status = 'canceled'
+        AND COALESCE(s.is_test_mode, FALSE) = FALSE
         AND s.updated_at <= NOW() - INTERVAL '7 days'
         AND u.email IS NOT NULL
         AND u.email != ''
@@ -162,6 +174,7 @@ export async function GET(request: Request) {
           SELECT 1 FROM subscriptions s2
           WHERE s2.user_id = s.user_id
             AND s2.status = 'active'
+            AND COALESCE(s2.is_test_mode, FALSE) = FALSE
         )
       ORDER BY s.updated_at ASC
       LIMIT 100
@@ -197,7 +210,11 @@ export async function GET(request: Request) {
           console.log(`[win-back] ✅ Day 7 sent to ${user.email}`)
         } else {
           results.day7.failed++
-          results.errors.push({ email: user.email, touch: "day7", error: result.error || "unknown" })
+          results.errors.push({
+            email: user.email,
+            touch: "day7",
+            error: result.error || "unknown",
+          })
           console.error(`[win-back] ❌ Day 7 failed for ${user.email}:`, result.error)
         }
       } catch (err: any) {
@@ -206,7 +223,7 @@ export async function GET(request: Request) {
         console.error(`[win-back] ❌ Day 7 exception for ${user.email}:`, err)
       }
 
-      await new Promise((r) => setTimeout(r, 150))
+      await new Promise(r => setTimeout(r, 150))
     }
 
     // ── Touch 3: Day 14 ───────────────────────────────────────────────────────
@@ -218,6 +235,7 @@ export async function GET(request: Request) {
       FROM subscriptions s
       INNER JOIN users u ON u.id = s.user_id
       WHERE s.status = 'canceled'
+        AND COALESCE(s.is_test_mode, FALSE) = FALSE
         AND s.updated_at <= NOW() - INTERVAL '14 days'
         AND u.email IS NOT NULL
         AND u.email != ''
@@ -240,6 +258,7 @@ export async function GET(request: Request) {
           SELECT 1 FROM subscriptions s2
           WHERE s2.user_id = s.user_id
             AND s2.status = 'active'
+            AND COALESCE(s2.is_test_mode, FALSE) = FALSE
         )
       ORDER BY s.updated_at ASC
       LIMIT 100
@@ -272,7 +291,11 @@ export async function GET(request: Request) {
           console.log(`[win-back] ✅ Day 14 sent to ${user.email}`)
         } else {
           results.day14.failed++
-          results.errors.push({ email: user.email, touch: "day14", error: result.error || "unknown" })
+          results.errors.push({
+            email: user.email,
+            touch: "day14",
+            error: result.error || "unknown",
+          })
           console.error(`[win-back] ❌ Day 14 failed for ${user.email}:`, result.error)
         }
       } catch (err: any) {
@@ -281,7 +304,7 @@ export async function GET(request: Request) {
         console.error(`[win-back] ❌ Day 14 exception for ${user.email}:`, err)
       }
 
-      await new Promise((r) => setTimeout(r, 150))
+      await new Promise(r => setTimeout(r, 150))
     }
 
     // Dormant member re-engagement: active Studio members who haven't generated in 7 days.
@@ -323,7 +346,9 @@ export async function GET(request: Request) {
     `
 
     const dormantResults = { found: dormantMembers.length, sent: 0, failed: 0 }
-    console.log(`[win-back] Found ${dormantMembers.length} dormant Studio members for re-engagement`)
+    console.log(
+      `[win-back] Found ${dormantMembers.length} dormant Studio members for re-engagement`
+    )
 
     for (const member of dormantMembers as any[]) {
       try {
@@ -350,22 +375,35 @@ export async function GET(request: Request) {
           console.log(`[win-back] ✅ Dormant re-engagement sent to ${member.email}`)
         } else {
           dormantResults.failed++
-          results.errors.push({ email: member.email, touch: "dormant-reengagement", error: result.error || "unknown" })
-          console.error(`[win-back] ❌ Dormant re-engagement failed for ${member.email}:`, result.error)
+          results.errors.push({
+            email: member.email,
+            touch: "dormant-reengagement",
+            error: result.error || "unknown",
+          })
+          console.error(
+            `[win-back] ❌ Dormant re-engagement failed for ${member.email}:`,
+            result.error
+          )
         }
       } catch (err: any) {
         dormantResults.failed++
-        results.errors.push({ email: member.email, touch: "dormant-reengagement", error: err.message || "unknown" })
+        results.errors.push({
+          email: member.email,
+          touch: "dormant-reengagement",
+          error: err.message || "unknown",
+        })
         console.error(`[win-back] ❌ Dormant re-engagement exception for ${member.email}:`, err)
       }
-      await new Promise((r) => setTimeout(r, 150))
+      await new Promise(r => setTimeout(r, 150))
     }
 
-    const totalSent = results.day3.sent + results.day7.sent + results.day14.sent + dormantResults.sent
-    const totalFailed = results.day3.failed + results.day7.failed + results.day14.failed + dormantResults.failed
+    const totalSent =
+      results.day3.sent + results.day7.sent + results.day14.sent + dormantResults.sent
+    const totalFailed =
+      results.day3.failed + results.day7.failed + results.day14.failed + dormantResults.failed
 
     console.log(
-      `[win-back] ✅ Complete - Day3: ${results.day3.sent}/${results.day3.found} | Day7: ${results.day7.sent}/${results.day7.found} | Day14: ${results.day14.sent}/${results.day14.found} | Dormant: ${dormantResults.sent}/${dormantResults.found}`,
+      `[win-back] ✅ Complete - Day3: ${results.day3.sent}/${results.day3.found} | Day7: ${results.day7.sent}/${results.day7.found} | Day14: ${results.day14.sent}/${results.day14.found} | Dormant: ${dormantResults.sent}/${dormantResults.found}`
     )
 
     await cronLogger.success({
@@ -395,7 +433,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(
       { success: false, error: "Win-back cron failed", details: error.message },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }

@@ -16,7 +16,10 @@ describe("Vault Maya launch lifecycle wiring", () => {
 
   it("suppresses a paid buyer from every later sales segment", () => {
     const fulfillment = source("lib/payments/handlers/studio-membership.ts")
-    expect(fulfillment).toContain('["vault_maya", "sselfie_studio_membership"].includes(productType)')
+    expect(fulfillment).toContain(
+      'productType === "vault_maya" ? "vault_maya" : "sselfie_studio_membership"'
+    )
+    expect(fulfillment).toContain("if (isPaymentPaid && customerEmail)")
     expect(fulfillment).toContain("removeVaultMayaLaunchSalesContact")
   })
 

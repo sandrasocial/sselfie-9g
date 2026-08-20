@@ -359,16 +359,53 @@ async function recordCheckoutSessionRevenue(params: {
       )
       ON CONFLICT (stripe_payment_id)
       DO UPDATE SET
-        stripe_customer_id = EXCLUDED.stripe_customer_id,
+        stripe_customer_id = CASE
+          WHEN stripe_payments.status IN ('paid', 'succeeded')
+            THEN COALESCE(stripe_payments.stripe_customer_id, EXCLUDED.stripe_customer_id)
+          ELSE EXCLUDED.stripe_customer_id
+        END,
         user_id = COALESCE(stripe_payments.user_id, EXCLUDED.user_id),
-        amount_cents = EXCLUDED.amount_cents,
-        currency = EXCLUDED.currency,
-        status = EXCLUDED.status,
-        payment_type = EXCLUDED.payment_type,
-        product_type = EXCLUDED.product_type,
-        description = EXCLUDED.description,
-        metadata = COALESCE(stripe_payments.metadata, '{}'::jsonb) || EXCLUDED.metadata,
-        is_test_mode = EXCLUDED.is_test_mode,
+        amount_cents = CASE
+          WHEN stripe_payments.status IN ('paid', 'succeeded')
+            THEN stripe_payments.amount_cents
+          ELSE EXCLUDED.amount_cents
+        END,
+        currency = CASE
+          WHEN stripe_payments.status IN ('paid', 'succeeded')
+            THEN stripe_payments.currency
+          ELSE EXCLUDED.currency
+        END,
+        status = CASE
+          WHEN stripe_payments.status IN ('paid', 'succeeded')
+            THEN stripe_payments.status
+          ELSE EXCLUDED.status
+        END,
+        payment_type = CASE
+          WHEN stripe_payments.status IN ('paid', 'succeeded')
+            THEN COALESCE(stripe_payments.payment_type, EXCLUDED.payment_type)
+          ELSE EXCLUDED.payment_type
+        END,
+        product_type = CASE
+          WHEN stripe_payments.status IN ('paid', 'succeeded')
+            THEN COALESCE(stripe_payments.product_type, EXCLUDED.product_type)
+          ELSE EXCLUDED.product_type
+        END,
+        description = CASE
+          WHEN stripe_payments.status IN ('paid', 'succeeded')
+            THEN COALESCE(stripe_payments.description, EXCLUDED.description)
+          ELSE EXCLUDED.description
+        END,
+        metadata = CASE
+          WHEN stripe_payments.status IN ('paid', 'succeeded')
+            THEN COALESCE(EXCLUDED.metadata, '{}'::jsonb)
+              || jsonb_strip_nulls(COALESCE(stripe_payments.metadata, '{}'::jsonb))
+          ELSE COALESCE(stripe_payments.metadata, '{}'::jsonb) || EXCLUDED.metadata
+        END,
+        is_test_mode = CASE
+          WHEN stripe_payments.status IN ('paid', 'succeeded')
+            THEN stripe_payments.is_test_mode
+          ELSE EXCLUDED.is_test_mode
+        END,
         updated_at = NOW()
     `
     console.log(
@@ -489,6 +526,15 @@ export async function handleCheckoutSessionCompleted(
   console.log("[v0] Product type from metadata:", session.metadata?.product_type)
   console.log("[v0] Test mode:", !event.livemode ? "YES (TEST)" : "NO (PRODUCTION)")
 
+  // Subscription test events share production Auth/Neon tables. Keep them wholly diagnostic;
+  // their invoice events own any test-mode money observation.
+  if (session.mode === "subscription" && !event.livemode) {
+    console.log(
+      `[v0] ⏭️ Test subscription checkout ${session.id} ignored before shared customer systems.`
+    )
+    return
+  }
+
   const isPaymentPaid = session.payment_status === "paid" || session.amount_total === 0
 
   if (!isPaymentPaid && session.mode === "subscription") {
@@ -504,20 +550,18 @@ export async function handleCheckoutSessionCompleted(
 
   const customerEmail =
     session.customer_details?.email || session.customer_email || session.metadata?.customer_email
-  const isDiagnosticOnlyPurchaseCreditCheckout =
-    session.mode === "payment" &&
-    isPurchaseCreditProductType(initialProductType) &&
-    (!isPaymentPaid || !event.livemode)
+  const isDiagnosticOnlyPaymentCheckout =
+    session.mode === "payment" && (!isPaymentPaid || !event.livemode)
 
-  if (isDiagnosticOnlyPurchaseCreditCheckout) {
+  if (isDiagnosticOnlyPaymentCheckout) {
     const diagnosticRevenue = await recordCheckoutSessionRevenue({
       event,
       session,
       userId: metadata.user_id || null,
       productType: initialProductType,
-      paymentType: initialProductType,
+      paymentType: initialProductType || session.mode,
       customerEmail,
-      description: `Diagnostic checkout payment - ${initialProductType}`,
+      description: `Diagnostic checkout payment - ${initialProductType || "unknown"}`,
     })
 
     if (!diagnosticRevenue.recorded) {
@@ -525,7 +569,7 @@ export async function handleCheckoutSessionCompleted(
     }
 
     console.log(
-      `[v0] ⏭️ Recorded diagnostic-only ${initialProductType} checkout; customer effects deferred until a live paid event.`
+      `[v0] ⏭️ Recorded diagnostic-only ${initialProductType || "unknown"} checkout; customer effects deferred until a live paid event.`
     )
     return
   }
@@ -546,7 +590,7 @@ export async function handleCheckoutSessionCompleted(
       )
     }
   }
-  if (customerEmail && !isCampaignOutcome) {
+  if (customerEmail && !isCampaignOutcome && event.livemode && isPaymentPaid) {
     try {
       const firstName = getFirstNameForEmail({
         fullName: session.customer_details?.name,

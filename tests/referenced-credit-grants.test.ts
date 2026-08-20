@@ -27,6 +27,24 @@ describe("atomic referenced Stripe credit grants", () => {
     expect(grant).not.toContain("ON CONFLICT (stripe_payment_id)")
   })
 
+  it("keeps referenced bonuses atomic, live-only, and distinct from purchased credits", () => {
+    const source = read("lib/credits.ts")
+    const start = source.indexOf("export async function grantReferencedBonusCredits")
+    const end = source.indexOf("export async function addCredits", start)
+    const grant = source.slice(start, end)
+
+    expect(start).toBeGreaterThan(-1)
+    expect(grant).toContain('transactionType: "bonus"')
+    expect(grant).toContain("pg_advisory_xact_lock")
+    expect(grant).toContain("paymentReference")
+    expect(grant).toContain("grantPurpose")
+    expect(grant).toContain("existing_grant AS MATERIALIZED")
+    expect(grant).toContain("balance_upsert AS")
+    expect(grant).toContain("ledger_insert AS")
+    expect(grant).toContain("reference_id = ${grantPurpose}")
+    expect(grant).toContain("Test-mode Stripe events cannot mutate the shared credit wallet")
+  })
+
   it("allows shared-wallet fulfillment for live Stripe money only", async () => {
     const { shouldFulfillStripePurchaseCredits } = await import("@/lib/credits")
 
@@ -54,14 +72,14 @@ describe("atomic referenced Stripe credit grants", () => {
     expect(handlers[3]).toContain("grantPaidBlueprintCredits")
 
     const lifecycle = read("lib/payments/lifecycle/checkout-session-completed.ts")
-    expect(lifecycle).toContain("isDiagnosticOnlyPurchaseCreditCheckout")
+    expect(lifecycle).toContain("isDiagnosticOnlyPaymentCheckout")
     expect(lifecycle).toContain("!event.livemode")
     expect(lifecycle).not.toContain("suppressPurchaseCreditCustomerEffects")
     expect(lifecycle).toContain("sendPurchaseCreditFulfillmentEmail")
     expect(lifecycle).toContain("idempotencyKey:")
     expect(lifecycle).toContain("/auth/forgot-password?next=")
     expect(lifecycle).toContain("Paid blueprint user_id unresolved")
-    expect(lifecycle.indexOf("isDiagnosticOnlyPurchaseCreditCheckout")).toBeLessThan(
+    expect(lifecycle.indexOf("isDiagnosticOnlyPaymentCheckout")).toBeLessThan(
       lifecycle.indexOf("await persistCheckoutAttributionContact")
     )
   })

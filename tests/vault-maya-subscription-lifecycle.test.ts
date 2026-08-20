@@ -71,28 +71,36 @@ function vaultSubscription(userId?: string) {
   }
 }
 
-function checkoutContext(input: { userId?: string; livemode?: boolean; customerEmail?: string }) {
+function checkoutContext(input: {
+  userId?: string
+  livemode?: boolean
+  customerEmail?: string
+  paymentPaid?: boolean
+  productType?: "vault_maya" | "sselfie_studio_membership"
+}) {
   const email = input.customerEmail || "vault-buyer@example.com"
+  const productType = input.productType || "vault_maya"
+  const paymentPaid = input.paymentPaid ?? true
   return {
     event: { livemode: input.livemode ?? false },
     session: {
       id: "cs_vault_1",
       mode: "subscription",
       status: "complete",
-      payment_status: "paid",
+      payment_status: paymentPaid ? "paid" : "unpaid",
       subscription: "sub_vault_1",
       customer: "cus_vault_1",
       customer_email: email,
       customer_details: { email, name: "Vault Buyer" },
       metadata: {
         ...(input.userId ? { user_id: input.userId } : {}),
-        product_id: "vault_maya",
-        product_type: "vault_maya",
-        credits: "30",
-        plan: "vault_maya_founder",
+        product_id: productType,
+        product_type: productType,
+        credits: productType === "vault_maya" ? "30" : "250",
+        plan: productType === "vault_maya" ? "vault_maya_founder" : "monthly",
       },
     },
-    isPaymentPaid: true,
+    isPaymentPaid: paymentPaid,
     maybeTrackCheckoutReferralSignup: vi.fn(),
   }
 }
@@ -118,7 +126,7 @@ describe("Vault Maya subscription lifecycle", () => {
     mocks.sendEmail.mockResolvedValue({ success: true, messageId: "email_vault_1" })
   })
 
-  it("never widens a Vault subscription into full SUITE access when subscription.created wins the race", async () => {
+  it("does not create Vault or SUITE access when active subscription.created wins the unpaid race", async () => {
     const { handleSubscriptionCreated } =
       await import("@/lib/payments/lifecycle/subscription-events")
 
@@ -130,8 +138,7 @@ describe("Vault Maya subscription lifecycle", () => {
     const upsertCall = mocks.sql.mock.calls.find(call =>
       queryText(call).includes("pg_advisory_xact_lock")
     )
-    expect(upsertCall).toBeDefined()
-    expect(upsertCall!.slice(1)).toContain("vault_maya")
+    expect(upsertCall).toBeUndefined()
   })
 
   it("searches every Auth page before creating a duplicate buyer account", async () => {
@@ -142,7 +149,7 @@ describe("Vault Maya subscription lifecycle", () => {
 
     const { handleStudioMembershipSubscriptionCheckout } =
       await import("@/lib/payments/handlers/studio-membership")
-    await handleStudioMembershipSubscriptionCheckout(checkoutContext({}) as any)
+    await handleStudioMembershipSubscriptionCheckout(checkoutContext({ livemode: true }) as any)
 
     expect(mocks.findAuthUserByEmail).toHaveBeenCalledWith({
       email: "vault-buyer@example.com",
@@ -171,7 +178,7 @@ describe("Vault Maya subscription lifecycle", () => {
       await import("@/lib/payments/handlers/studio-membership")
 
     await expect(
-      handleStudioMembershipSubscriptionCheckout(checkoutContext({}) as any)
+      handleStudioMembershipSubscriptionCheckout(checkoutContext({ livemode: true }) as any)
     ).rejects.toThrow("Supabase temporarily unavailable")
   })
 
@@ -206,18 +213,90 @@ describe("Vault Maya subscription lifecycle", () => {
         tags: expect.arrayContaining(["vault-maya-welcome", "account-setup"]),
       })
     )
-    expect(mocks.generateLink).toHaveBeenCalledWith(
+    expect(mocks.generateLink).not.toHaveBeenCalled()
+    expect(mocks.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        options: {
-          redirectTo:
-            "https://sselfie.ai/auth/setup-password?next=%2Fvault-maya%2Fstudio",
-        },
-      }),
+        html: expect.stringContaining("/auth/forgot-password?next=%2Fvault-maya%2Fstudio"),
+      })
     )
     const emailLogCall = mocks.sql.mock.calls.find(call =>
       queryText(call).includes("INSERT INTO email_logs")
     )
     expect(emailLogCall?.slice(1)).toContain("vault_maya_welcome")
+  })
+
+  it("keeps test subscriptions out of shared customer systems", async () => {
+    const { handleStudioMembershipSubscriptionCheckout } =
+      await import("@/lib/payments/handlers/studio-membership")
+    await handleStudioMembershipSubscriptionCheckout(
+      checkoutContext({
+        livemode: false,
+        paymentPaid: true,
+        productType: "sselfie_studio_membership",
+      }) as any
+    )
+
+    expect(mocks.sql).not.toHaveBeenCalled()
+    expect(mocks.createUser).not.toHaveBeenCalled()
+    expect(mocks.getOrCreateNeonUser).not.toHaveBeenCalled()
+    expect(mocks.retrieveSubscription).not.toHaveBeenCalled()
+    expect(mocks.updateCheckoutSession).not.toHaveBeenCalled()
+    expect(mocks.generateLink).not.toHaveBeenCalled()
+    expect(mocks.sendEmail).not.toHaveBeenCalled()
+  })
+
+  it("keeps live unpaid subscription scaffolding but sends no welcome or setup link", async () => {
+    mocks.createUser.mockResolvedValue({
+      data: { user: { id: "auth_new_membership", email: "vault-buyer@example.com" } },
+      error: null,
+    })
+    mocks.generateLink.mockResolvedValue({
+      data: { properties: { action_link: "https://auth.example.com/verify?token=setup" } },
+      error: null,
+    })
+
+    const { handleStudioMembershipSubscriptionCheckout } =
+      await import("@/lib/payments/handlers/studio-membership")
+    await handleStudioMembershipSubscriptionCheckout(
+      checkoutContext({
+        livemode: true,
+        paymentPaid: false,
+        productType: "sselfie_studio_membership",
+      }) as any
+    )
+
+    expect(mocks.createUser).toHaveBeenCalled()
+    expect(mocks.updateCheckoutSession).toHaveBeenCalled()
+    expect(mocks.generateLink).not.toHaveBeenCalled()
+    expect(mocks.sendEmail).not.toHaveBeenCalled()
+  })
+
+  it("uses a stable session key for a new live-paid membership welcome", async () => {
+    mocks.createUser.mockResolvedValue({
+      data: { user: { id: "auth_new_membership", email: "vault-buyer@example.com" } },
+      error: null,
+    })
+    mocks.generateLink.mockResolvedValue({
+      data: { properties: { action_link: "https://auth.example.com/verify?token=setup" } },
+      error: null,
+    })
+
+    const { handleStudioMembershipSubscriptionCheckout } =
+      await import("@/lib/payments/handlers/studio-membership")
+    await handleStudioMembershipSubscriptionCheckout(
+      checkoutContext({
+        livemode: true,
+        paymentPaid: true,
+        productType: "sselfie_studio_membership",
+      }) as any
+    )
+
+    expect(mocks.sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        emailType: "membership_welcome",
+        idempotencyKey: "membership-welcome:cs_vault_1",
+      })
+    )
   })
 
   it("does not send every new buyer into the retired Resend Beta segment", () => {

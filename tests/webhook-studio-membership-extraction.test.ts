@@ -23,8 +23,9 @@ describe("Stripe webhook studio membership checkout extraction", () => {
     expect(routeSource).not.toContain("New subscription purchase from")
     expect(routeSource).not.toContain("Membership welcome (existing user) sent")
 
-    expect(handlerSource).toContain("New subscription purchase from")
-    expect(handlerSource).toContain("Membership welcome (existing user) sent")
+    expect(handlerSource).toContain("Subscription purchase from")
+    expect(handlerSource).toContain("sendExistingSubscriptionBuyerWelcomeBestEffort")
+    expect(handlerSource).toContain("sendNewSubscriptionBuyerWelcome")
     expect(handlerSource).toContain("getSubscriptionPeriod(subscriptionData)")
   })
 })

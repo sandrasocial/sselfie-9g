@@ -37,10 +37,14 @@ function stripeWebhookObjectId(event: {
   return typeof oid === "string" && oid.length > 0 ? oid : null
 }
 
-function allowsAcademyStaleClaimReclaim(event: {
+function allowsStripeStaleClaimReclaim(event: {
   type: string
   data: { object: Record<string, unknown> }
 }): boolean {
+  if (event.type === "invoice.paid" || event.type === "invoice.payment_succeeded") {
+    return true
+  }
+
   if (
     event.type !== "checkout.session.completed" &&
     event.type !== "checkout.session.async_payment_succeeded"
@@ -109,7 +113,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         rate_limit_key: rateLimitKey,
       },
-      allowStaleClaimReclaim: allowsAcademyStaleClaimReclaim(event),
+      allowStaleClaimReclaim: allowsStripeStaleClaimReclaim(event),
     })
 
     if (eventClaim.duplicate) {

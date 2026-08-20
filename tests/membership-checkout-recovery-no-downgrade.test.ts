@@ -15,7 +15,8 @@ function read(relativePath: string) {
 
 describe("membership checkout recovery stays on the paid path", () => {
   it("sends Sandra's approved return-to-checkout email verbatim", () => {
-    const checkoutUrl = "https://www.sselfie.ai/checkout/membership?checkout_email=sandra%40example.com"
+    const checkoutUrl =
+      "https://www.sselfie.ai/checkout/membership?checkout_email=sandra%40example.com"
     const email = generateMembershipCheckoutRecoveryEmail({
       firstName: "Sandra",
       checkoutUrl,
@@ -44,7 +45,7 @@ Sandra x`)
         source: "membership_recovery",
         medium: "email",
         campaign: "membership_recovery",
-      }),
+      })
     )
     const params = Object.fromEntries(checkoutUrl.searchParams.entries())
 
@@ -60,7 +61,7 @@ Sandra x`)
         hasRecoverableEmail: Boolean(checkoutUrl.searchParams.get("checkout_email")),
         hasAuthUser: false,
         hasFreebieToken: false,
-      }),
+      })
     ).toBe(false)
   })
 
@@ -76,6 +77,7 @@ Sandra x`)
     expect(route).toContain('source: "membership_recovery"')
     expect(route).toContain('campaign: "membership_recovery"')
     expect(route).toContain("s.product_type = 'sselfie_studio_membership' AND s.status = 'active'")
+    expect(route).toMatch(/COALESCE\(s\.is_test_mode,\s*FALSE\)\s*=\s*FALSE/i)
     expect(route).not.toContain("OR s.product_type = 'suite_trial'")
     expect(route).not.toContain("'suite_trial_unlock'")
 

@@ -29,7 +29,7 @@ export const maxDuration = 60
 const FROM_EMAIL = "Sandra from SSELFIE <hello@sselfie.ai>"
 const REPLY_TO_EMAIL = "hello@sselfie.ai"
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 type Candidate = { session_id: string; user_email: string; created_at: string }
 
@@ -50,7 +50,8 @@ async function hydrateMembershipEmails() {
   for (const row of sessions) {
     try {
       const session = await stripe.checkout.sessions.retrieve(row.session_id)
-      const email = session.customer_details?.email?.trim() || session.customer_email?.trim() || null
+      const email =
+        session.customer_details?.email?.trim() || session.customer_email?.trim() || null
       if (email) {
         await sql`
           UPDATE checkout_attribution
@@ -98,6 +99,7 @@ async function getCandidates(): Promise<Candidate[]> {
           JOIN subscriptions s ON s.user_id = u.id
           WHERE LOWER(u.email) = LOWER(BTRIM(checkout_attribution.user_email))
             AND s.product_type = 'sselfie_studio_membership' AND s.status = 'active'
+            AND COALESCE(s.is_test_mode, FALSE) = FALSE
         )
         AND NOT EXISTS (
           SELECT 1 FROM email_logs el
@@ -120,7 +122,8 @@ export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
-    const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
+    const isProduction =
+      process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
     if (isProduction) {
       if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
         await cronLogger.error(new Error("Unauthorized"))
@@ -148,7 +151,7 @@ export async function GET(request: Request) {
             source: "membership_recovery",
             medium: "email",
             campaign: "membership_recovery",
-          },
+          }
         )
         const email = generateMembershipCheckoutRecoveryEmail({
           firstName,

@@ -55,7 +55,7 @@ function stripeSubscription() {
 
 function checkoutContext() {
   return {
-    event: { livemode: false },
+    event: { livemode: true },
     session: {
       id: "cs_annual_bundle_buyer",
       mode: "subscription",
@@ -88,6 +88,15 @@ describe("bundle buyer annual membership safety", () => {
     mocks.sendEmail.mockReset()
     mocks.sql.mockImplementation(async (...call: unknown[]) => {
       const text = queryText(call)
+      if (text.includes("SELECT id, password_setup_complete") && text.includes("FROM users")) {
+        return [
+          {
+            id: "neon_bundle_buyer",
+            password_setup_complete: true,
+            supabase_user_id: "auth_bundle_buyer",
+          },
+        ]
+      }
       return text.includes("pg_advisory_xact_lock") ? [{ id: 901 }] : []
     })
     mocks.retrieveSubscription.mockResolvedValue(stripeSubscription())
@@ -96,22 +105,11 @@ describe("bundle buyer annual membership safety", () => {
   })
 
   it("uses one exact Stripe-subscription upsert and never rewrites every row for a user", () => {
-    const checkoutHandler = readFileSync(
-      "lib/payments/handlers/studio-membership.ts",
-      "utf8",
-    )
-    const lifecycle = readFileSync(
-      "lib/payments/lifecycle/subscription-events.ts",
-      "utf8",
-    )
-    const upsert = readFileSync(
-      "lib/payments/lifecycle/upsert-studio-membership.ts",
-      "utf8",
-    )
+    const checkoutHandler = readFileSync("lib/payments/handlers/studio-membership.ts", "utf8")
+    const lifecycle = readFileSync("lib/payments/lifecycle/subscription-events.ts", "utf8")
+    const upsert = readFileSync("lib/payments/lifecycle/upsert-studio-membership.ts", "utf8")
 
-    expect(checkoutHandler).not.toMatch(
-      /UPDATE subscriptions SET[\s\S]{0,700}WHERE user_id =/,
-    )
+    expect(checkoutHandler).not.toMatch(/UPDATE subscriptions SET[\s\S]{0,700}WHERE user_id =/)
     expect(lifecycle).not.toMatch(/UPDATE subscriptions SET[\s\S]{0,700}WHERE user_id =/)
     expect(upsert).toContain("pg_advisory_xact_lock")
     expect(upsert).toContain("WHERE s.stripe_subscription_id")
@@ -120,37 +118,37 @@ describe("bundle buyer annual membership safety", () => {
     // Parametrized 2026-07-30 for the vault_maya tier: membership stays the hard default and
     // vault_maya is the only other value the upsert can ever store.
     expect(upsert).toContain(
-      'input.productType === "vault_maya" ? "vault_maya" : "sselfie_studio_membership"',
+      'input.productType === "vault_maya" ? "vault_maya" : "sselfie_studio_membership"'
     )
     expect(upsert).not.toContain("WHERE user_id")
     expect(upsert).not.toContain("ON CONFLICT (stripe_subscription_id)")
   })
 
   it("is safe when subscription.created and checkout.completed arrive in either order or replay", async () => {
-    const { handleSubscriptionCreated } = await import(
-      "@/lib/payments/lifecycle/subscription-events"
-    )
-    const { handleStudioMembershipSubscriptionCheckout } = await import(
-      "@/lib/payments/handlers/studio-membership"
-    )
+    const { handleSubscriptionCreated } =
+      await import("@/lib/payments/lifecycle/subscription-events")
+    const { handleStudioMembershipSubscriptionCheckout } =
+      await import("@/lib/payments/handlers/studio-membership")
     const subscription = stripeSubscription()
 
     await handleSubscriptionCreated({
-      livemode: false,
+      livemode: true,
       data: { object: subscription },
     } as any)
     await handleStudioMembershipSubscriptionCheckout(checkoutContext() as any)
     await handleStudioMembershipSubscriptionCheckout(checkoutContext() as any)
     await handleSubscriptionCreated({
-      livemode: false,
+      livemode: true,
       data: { object: subscription },
     } as any)
 
     const mutations = subscriptionMutationQueries()
     const mutationCalls = mocks.sql.mock.calls.filter(call =>
-      /(?:INSERT INTO|UPDATE) subscriptions/i.test(queryText(call)),
+      /(?:INSERT INTO|UPDATE) subscriptions/i.test(queryText(call))
     )
-    expect(mutations).toHaveLength(4)
+    // Active subscription.created is pre-payment and does not persist access;
+    // only the two confirmed checkout events upsert the exact membership row.
+    expect(mutations).toHaveLength(2)
     for (const mutation of mutations) {
       expect(mutation).toContain("pg_advisory_xact_lock")
       expect(mutation).toContain("WHERE s.stripe_subscription_id")

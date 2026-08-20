@@ -72,9 +72,184 @@ async function currentDocumentedDiscount(
   }
 }
 
+async function getExactLocalSubscription(stripeSubscriptionId: string): Promise<{
+  id: string
+  status: string | null
+} | null> {
+  const [row] = await sql`
+    SELECT id, status
+    FROM subscriptions
+    WHERE stripe_subscription_id = ${stripeSubscriptionId}
+    LIMIT 1
+  `
+  return row?.id ? { id: row.id, status: row.status || null } : null
+}
+
+function stripeObjectId(value: unknown): string | null {
+  if (typeof value === "string") return value
+  if (value && typeof value === "object" && "id" in value) {
+    const id = (value as { id?: unknown }).id
+    return typeof id === "string" ? id : null
+  }
+  return null
+}
+
+async function hasConfirmedLatestInvoice(subscription: any): Promise<boolean> {
+  const latestInvoiceId = stripeObjectId(subscription.latest_invoice)
+  if (!latestInvoiceId) return false
+
+  const invoice = (await stripe.invoices.retrieve(latestInvoiceId)) as any
+  const rawSubscription = invoice.subscription ?? invoice.parent?.subscription_details?.subscription
+  const invoiceSubscriptionId = stripeObjectId(rawSubscription)
+  if (invoiceSubscriptionId !== subscription.id) {
+    throw new Error(`Invoice ${latestInvoiceId} does not belong to subscription ${subscription.id}`)
+  }
+
+  const paidAt = Number(invoice.status_transitions?.paid_at)
+  return invoice.status === "paid" && Number.isFinite(paidAt) && paidAt > 0
+}
+
+async function hasDurablePriorPaidSubscriptionInvoice(
+  stripeSubscriptionId: string
+): Promise<boolean> {
+  const [payment] = await sql`
+    SELECT id
+    FROM stripe_payments
+    WHERE stripe_subscription_id = ${stripeSubscriptionId}
+      AND status IN ('paid', 'succeeded')
+      AND COALESCE(is_test_mode, FALSE) = FALSE
+    LIMIT 1
+  `
+  return Boolean(payment?.id)
+}
+
+async function endUnpaidTrialTransition(params: {
+  localId: string
+  stripeSubscriptionId: string
+  status: string
+  terminal?: boolean
+}): Promise<void> {
+  if (params.terminal) {
+    await sql`
+      UPDATE subscriptions
+      SET
+        status = ${params.status},
+        current_period_end = CASE
+          WHEN current_period_end IS NULL OR current_period_end > NOW() THEN NOW()
+          ELSE current_period_end
+        END,
+        updated_at = NOW()
+      WHERE id = ${params.localId}
+        AND stripe_subscription_id = ${params.stripeSubscriptionId}
+    `
+    return
+  }
+
+  await sql`
+    UPDATE subscriptions
+    SET status = ${params.status}, updated_at = NOW()
+    WHERE id = ${params.localId}
+      AND stripe_subscription_id = ${params.stripeSubscriptionId}
+  `
+}
+
+async function enforceExistingTrialPaymentTransition(
+  existingSubscription: { id: string; status: string | null },
+  subscription: any
+): Promise<{ handled: boolean; paymentConfirmed: boolean }> {
+  if (existingSubscription.status !== "trialing" || subscription.status === "trialing") {
+    return { handled: false, paymentConfirmed: false }
+  }
+
+  if (["canceled", "cancelled", "incomplete_expired"].includes(subscription.status)) {
+    await endUnpaidTrialTransition({
+      localId: existingSubscription.id,
+      stripeSubscriptionId: subscription.id,
+      status: subscription.status,
+      terminal: true,
+    })
+    return { handled: true, paymentConfirmed: false }
+  }
+
+  if (["active", "past_due"].includes(subscription.status)) {
+    const paymentConfirmed = await hasConfirmedLatestInvoice(subscription)
+    if (paymentConfirmed) return { handled: false, paymentConfirmed: true }
+
+    await endUnpaidTrialTransition({
+      localId: existingSubscription.id,
+      stripeSubscriptionId: subscription.id,
+      status: "incomplete",
+    })
+    console.log(
+      `[v0] Trial subscription ${subscription.id} has no confirmed payment; access ended without extending its period.`
+    )
+    return { handled: true, paymentConfirmed: false }
+  }
+
+  await endUnpaidTrialTransition({
+    localId: existingSubscription.id,
+    stripeSubscriptionId: subscription.id,
+    status: subscription.status,
+  })
+  return { handled: true, paymentConfirmed: false }
+}
+
+async function reconcileUnconfirmedSubscriptionAccess(
+  existingSubscription: { id: string; status: string | null },
+  stripeSubscriptionId: string
+): Promise<"past_due" | "incomplete"> {
+  const status = (await hasDurablePriorPaidSubscriptionInvoice(stripeSubscriptionId))
+    ? "past_due"
+    : "incomplete"
+  await endUnpaidTrialTransition({
+    localId: existingSubscription.id,
+    stripeSubscriptionId,
+    status,
+  })
+  return status
+}
+
 export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise<void> {
+  if (!rawEvent.livemode) {
+    console.log(`[v0] Test subscription.created ${rawEvent.id} ignored before shared systems.`)
+    return
+  }
+
   const event = rawEvent as Stripe.Event & { data: { object: any } }
-  const subscription = event.data.object
+  const eventSubscription = event.data.object
+  const subscription = (await stripe.subscriptions.retrieve(eventSubscription.id)) as any
+  const existingSubscription = await getExactLocalSubscription(subscription.id)
+  const trialTransition = existingSubscription
+    ? await enforceExistingTrialPaymentTransition(existingSubscription, subscription)
+    : { handled: false, paymentConfirmed: false }
+  if (trialTransition.handled) return
+
+  if (["active", "past_due"].includes(subscription.status)) {
+    const paymentConfirmed =
+      trialTransition.paymentConfirmed || (await hasConfirmedLatestInvoice(subscription))
+    if (!paymentConfirmed) {
+      if (existingSubscription) {
+        const localStatus = await reconcileUnconfirmedSubscriptionAccess(
+          existingSubscription,
+          subscription.id
+        )
+        console.log(
+          `[v0] Subscription ${subscription.id} has no confirmed latest invoice; local access is ${localStatus} without extending its paid period.`
+        )
+        return
+      }
+      console.log(
+        `[v0] Subscription ${subscription.id} has no confirmed latest invoice; no access row created.`
+      )
+      return
+    }
+  } else if (subscription.status !== "trialing" && !existingSubscription) {
+    console.log(
+      `[v0] Subscription ${subscription.id} is ${subscription.status}; no pre-payment access row created.`
+    )
+    return
+  }
+
   let userId = subscription.metadata.user_id
   const rawProductType = subscription.metadata.product_type || "sselfie_studio_membership"
   const productType =
@@ -82,7 +257,6 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
       ? "sselfie_studio_membership"
       : rawProductType
   const subscriptionPlan = getSubscriptionPlanFromMetadata(subscription.metadata, productType)
-  const credits = Number.parseInt(subscription.metadata.credits || "250")
 
   if (!userId) {
     console.log("[v0] No user_id in subscription metadata, looking up by customer...")
@@ -158,6 +332,11 @@ export async function handleSubscriptionCreated(rawEvent: Stripe.Event): Promise
 }
 
 export async function handleSubscriptionDeleted(rawEvent: Stripe.Event): Promise<void> {
+  if (!rawEvent.livemode) {
+    console.log(`[v0] Test subscription.deleted ${rawEvent.id} ignored before shared systems.`)
+    return
+  }
+
   const event = rawEvent as Stripe.Event & { data: { object: any } }
   const subscription = event.data.object
 
@@ -184,6 +363,11 @@ export async function handleSubscriptionDeleted(rawEvent: Stripe.Event): Promise
 }
 
 export async function handleInvoicePaymentFailed(rawEvent: Stripe.Event): Promise<void> {
+  if (!rawEvent.livemode) {
+    console.log(`[v0] Test invoice.payment_failed ${rawEvent.id} ignored before shared systems.`)
+    return
+  }
+
   const event = rawEvent as Stripe.Event & { data: { object: any } }
   const invoice = event.data.object
 
@@ -208,18 +392,48 @@ export async function handleInvoicePaymentFailed(rawEvent: Stripe.Event): Promis
     throw new Error(`Invoice ${invoice.id} does not belong to subscription ${subscriptionId}`)
   }
 
-  await sql`
-    UPDATE subscriptions
-    SET status = ${currentSubscription.status}, updated_at = NOW()
-    WHERE stripe_subscription_id = ${subscriptionId}
-  `
+  const currentLatestInvoiceId = stripeObjectId(currentSubscription.latest_invoice)
+  if (currentLatestInvoiceId !== invoice.id) {
+    console.log(
+      `[v0] ⏭️ Ignoring unconfirmed or stale payment failure for invoice ${invoice.id}; current latest invoice is ${currentLatestInvoiceId || "unavailable"}`
+    )
+    return
+  }
 
   if (currentInvoice.status === "paid") {
     console.log(`[v0] ⏭️ Ignoring stale payment failure for recovered invoice ${invoice.id}`)
     return
   }
 
-  if (!["past_due", "unpaid", "incomplete"].includes(currentSubscription.status)) {
+  const existingSubscription = await getExactLocalSubscription(subscriptionId)
+  if (!existingSubscription) return
+
+  const hasPriorPaidPayment = await hasDurablePriorPaidSubscriptionInvoice(subscriptionId)
+  let effectiveLocalStatus: string
+
+  if (hasPriorPaidPayment) {
+    effectiveLocalStatus =
+      currentSubscription.status === "active" ? "past_due" : currentSubscription.status
+    await sql`
+      UPDATE subscriptions
+      SET status = ${effectiveLocalStatus}, updated_at = NOW()
+      WHERE id = ${existingSubscription.id}
+        AND stripe_subscription_id = ${subscriptionId}
+    `
+  } else {
+    const terminal = ["canceled", "cancelled", "incomplete_expired"].includes(
+      currentSubscription.status
+    )
+    effectiveLocalStatus = terminal ? currentSubscription.status : "incomplete"
+    await endUnpaidTrialTransition({
+      localId: existingSubscription.id,
+      stripeSubscriptionId: subscriptionId,
+      status: effectiveLocalStatus,
+      terminal,
+    })
+  }
+
+  if (!["past_due", "unpaid", "incomplete"].includes(effectiveLocalStatus)) {
     console.log(
       `[v0] ⏭️ Ignoring payment failure for subscription ${subscriptionId} with current Stripe status ${currentSubscription.status}`
     )
@@ -303,7 +517,11 @@ export async function handleInvoicePaymentFailed(rawEvent: Stripe.Event): Promis
               WHEN stripe_payments.status IN ('paid', 'succeeded') THEN stripe_payments.status
               ELSE 'failed'
             END,
-            amount_cents = EXCLUDED.amount_cents,
+            amount_cents = CASE
+              WHEN stripe_payments.status IN ('paid', 'succeeded')
+                THEN stripe_payments.amount_cents
+              ELSE EXCLUDED.amount_cents
+            END,
             metadata = CASE
               WHEN stripe_payments.status IN ('paid', 'succeeded') THEN stripe_payments.metadata
               ELSE jsonb_set(
@@ -392,8 +610,38 @@ export async function handleInvoicePaymentFailed(rawEvent: Stripe.Event): Promis
 }
 
 export async function handleSubscriptionUpdated(rawEvent: Stripe.Event): Promise<void> {
+  if (!rawEvent.livemode) {
+    console.log(`[v0] Test subscription.updated ${rawEvent.id} ignored before shared systems.`)
+    return
+  }
+
   const event = rawEvent as Stripe.Event & { data: { object: any } }
-  const sub = event.data.object
+  const eventSubscription = event.data.object
+  const sub = (await stripe.subscriptions.retrieve(eventSubscription.id)) as any
+  const existingSubscription = await getExactLocalSubscription(sub.id)
+
+  // UPDATE-only lifecycle: checkout/invoice fulfillment owns the first paid row.
+  if (!existingSubscription) {
+    console.log(
+      `[v0] Subscription ${sub.id} has no local paid/trial row; update cannot create access.`
+    )
+    return
+  }
+
+  const trialTransition = await enforceExistingTrialPaymentTransition(existingSubscription, sub)
+  if (trialTransition.handled) return
+
+  if (["active", "past_due"].includes(sub.status)) {
+    const paymentConfirmed =
+      trialTransition.paymentConfirmed || (await hasConfirmedLatestInvoice(sub))
+    if (!paymentConfirmed) {
+      const localStatus = await reconcileUnconfirmedSubscriptionAccess(existingSubscription, sub.id)
+      console.log(
+        `[v0] Subscription ${sub.id} latest invoice is unconfirmed; local access is ${localStatus} without extending its paid period.`
+      )
+      return
+    }
+  }
 
   const stripeStatus = sub.status // active, trialing, past_due, unpaid, canceled
   const updatedPeriod = getSubscriptionPeriod(sub)

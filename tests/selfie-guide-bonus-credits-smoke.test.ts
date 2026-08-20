@@ -10,6 +10,7 @@ const constructEventMock = vi.fn()
 const checkWebhookRateLimitMock = vi.fn()
 const addCreditsMock = vi.fn()
 const grantMonthlyCreditsMock = vi.fn()
+const grantReferencedBonusCreditsMock = vi.fn()
 
 vi.mock("crypto", () => ({
   randomUUID: vi.fn(() => "uuid_test_bonus"),
@@ -50,6 +51,7 @@ vi.mock("@/lib/credits", () => ({
   addCredits: addCreditsMock,
   grantOneTimeSessionCredits: vi.fn(),
   grantMonthlyCredits: grantMonthlyCreditsMock,
+  grantReferencedBonusCredits: grantReferencedBonusCreditsMock,
   grantPaidBlueprintCredits: vi.fn(),
   SUBSCRIPTION_CREDITS: { sselfie_studio_membership: 100 },
 }))
@@ -99,7 +101,9 @@ vi.mock("@/lib/webhook-monitoring", () => ({
 }))
 
 vi.mock("@/lib/resend/manage-contact", () => ({
-  addOrUpdateResendContact: vi.fn().mockResolvedValue({ success: true, contactId: "contact_bonus_1" }),
+  addOrUpdateResendContact: vi
+    .fn()
+    .mockResolvedValue({ success: true, contactId: "contact_bonus_1" }),
   updateContactTags: vi.fn(),
   addContactToSegment: vi.fn(),
 }))
@@ -152,6 +156,11 @@ describe("selfie guide bonus credits smoke", () => {
 
     checkWebhookRateLimitMock.mockResolvedValue({ success: true })
     grantMonthlyCreditsMock.mockResolvedValue({ success: true, newBalance: 100 })
+    grantReferencedBonusCreditsMock.mockResolvedValue({
+      success: true,
+      granted: true,
+      newBalance: 104,
+    })
     addCreditsMock.mockResolvedValue({ success: true, newBalance: 104 })
 
     sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
@@ -169,10 +178,16 @@ describe("selfie guide bonus credits smoke", () => {
           },
         ]
       }
-      if (query.includes("AND transaction_type = 'subscription_grant'") && query.includes("stripe_payment_id")) {
+      if (
+        query.includes("AND transaction_type = 'subscription_grant'") &&
+        query.includes("stripe_payment_id")
+      ) {
         return []
       }
-      if (query.includes("FROM credit_transactions") && query.includes("transaction_type = 'bonus'")) {
+      if (
+        query.includes("FROM credit_transactions") &&
+        query.includes("transaction_type = 'bonus'")
+      ) {
         return []
       }
       if (query.includes("SELECT email, display_name FROM users WHERE id")) {
@@ -214,12 +229,18 @@ describe("selfie guide bonus credits smoke", () => {
   })
 
   it("wires checkout bonus param through metadata fields", () => {
-    const membershipPage = fs.readFileSync(path.join(ROOT, "app/checkout/membership/page.tsx"), "utf8")
+    const membershipPage = fs.readFileSync(
+      path.join(ROOT, "app/checkout/membership/page.tsx"),
+      "utf8"
+    )
     const membershipClient = fs.readFileSync(
       path.join(ROOT, "app/checkout/membership/membership-checkout-client.tsx"),
-      "utf8",
+      "utf8"
     )
-    const landingCheckout = fs.readFileSync(path.join(ROOT, "app/actions/landing-checkout.ts"), "utf8")
+    const landingCheckout = fs.readFileSync(
+      path.join(ROOT, "app/actions/landing-checkout.ts"),
+      "utf8"
+    )
 
     expect(membershipPage).toContain('params.bonus === "4credits" ? 4 : undefined')
     expect(membershipClient).toContain('if (bonus) params.set("bonus", bonus)')
@@ -234,7 +255,7 @@ describe("selfie guide bonus credits smoke", () => {
         method: "POST",
         headers: { "stripe-signature": "sig_test" },
         body: "{}",
-      }) as any,
+      }) as any
     )
 
     expect(response.status).toBe(200)
@@ -244,18 +265,22 @@ describe("selfie guide bonus credits smoke", () => {
       false,
       "in_bonus_1"
     )
-    expect(addCreditsMock).toHaveBeenCalledWith(
-      "user_bonus_1",
-      4,
-      "bonus",
-      "Selfie Guide membership bonus (4 credits)",
-      "in_bonus_1",
-      false,
-      { source: "stripe_webhook:selfie_guide_bonus" },
-    )
+    expect(grantReferencedBonusCreditsMock).toHaveBeenCalledWith({
+      userId: "user_bonus_1",
+      amount: 4,
+      description: "Selfie Guide membership bonus (4 credits)",
+      paymentReference: "in_bonus_1",
+      grantPurpose: "membership_checkout_bonus",
+      isTestMode: false,
+    })
   })
 
   it("does not grant duplicate bonus credits for the same invoice", async () => {
+    grantReferencedBonusCreditsMock.mockResolvedValue({
+      success: true,
+      granted: false,
+      newBalance: 104,
+    })
     sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const query = strings.join(" ")
 
@@ -271,11 +296,17 @@ describe("selfie guide bonus credits smoke", () => {
           },
         ]
       }
-      if (query.includes("AND transaction_type = 'subscription_grant'") && query.includes("stripe_payment_id")) {
+      if (
+        query.includes("AND transaction_type = 'subscription_grant'") &&
+        query.includes("stripe_payment_id")
+      ) {
         return []
       }
       // Simulate idempotency hit: bonus already granted for this invoice.
-      if (query.includes("FROM credit_transactions") && query.includes("transaction_type = 'bonus'")) {
+      if (
+        query.includes("FROM credit_transactions") &&
+        query.includes("transaction_type = 'bonus'")
+      ) {
         return [{ id: 123 }]
       }
       if (query.includes("SELECT email, display_name FROM users WHERE id")) {
@@ -294,11 +325,12 @@ describe("selfie guide bonus credits smoke", () => {
         method: "POST",
         headers: { "stripe-signature": "sig_test" },
         body: "{}",
-      }) as any,
+      }) as any
     )
 
     expect(response.status).toBe(200)
     expect(grantMonthlyCreditsMock).toHaveBeenCalledTimes(1)
+    expect(grantReferencedBonusCreditsMock).toHaveBeenCalledTimes(1)
     expect(addCreditsMock).not.toHaveBeenCalled()
   })
 })

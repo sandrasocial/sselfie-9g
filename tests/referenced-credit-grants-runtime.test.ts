@@ -8,6 +8,7 @@ const db = vi.hoisted(() => {
   const balances = new Map<string, number>()
   const ledger: Array<{
     userId: string
+    transactionType: string
     paymentReference: string
     purpose: string
     isTestMode: boolean
@@ -15,6 +16,7 @@ const db = vi.hoisted(() => {
     balanceAfter: number
   }> = []
   const lockTails = new Map<string, Promise<void>>()
+  let failNextGrant = false
 
   const transaction = vi.fn(async (build: (tx: any) => Query[]) => {
     const tx = (strings: TemplateStringsArray, ...values: unknown[]): Query => ({
@@ -39,6 +41,7 @@ const db = vi.hoisted(() => {
       // callers actually contend on the same advisory-lock key in this fixture.
       await Promise.resolve()
       const userId = String(grantQuery.values[0])
+      const transactionType = String(grantQuery.values[1])
       const paymentReference = String(grantQuery.values[2])
       const isTestMode = grantQuery.values[3] === true
       const purpose = String(grantQuery.values[4])
@@ -47,6 +50,7 @@ const db = vi.hoisted(() => {
       const existing = ledger.find(
         row =>
           row.userId === userId &&
+          row.transactionType === transactionType &&
           row.paymentReference === paymentReference &&
           row.isTestMode === isTestMode &&
           (row.purpose === purpose || (!row.purpose && row.description === description))
@@ -56,10 +60,16 @@ const db = vi.hoisted(() => {
         return [[], [{ balance: existing.balanceAfter, granted: false }]]
       }
 
+      if (failNextGrant) {
+        failNextGrant = false
+        throw new Error("simulated transaction rollback")
+      }
+
       const balance = (balances.get(userId) || 0) + amount
       balances.set(userId, balance)
       ledger.push({
         userId,
+        transactionType,
         paymentReference,
         purpose,
         isTestMode,
@@ -73,7 +83,16 @@ const db = vi.hoisted(() => {
   })
 
   const sql = Object.assign(vi.fn(), { transaction })
-  return { balances, ledger, lockTails, sql, transaction }
+  return {
+    balances,
+    ledger,
+    lockTails,
+    sql,
+    transaction,
+    failNextGrant: () => {
+      failNextGrant = true
+    },
+  }
 })
 
 vi.mock("@/lib/db/client", () => ({ sql: db.sql }))
@@ -176,6 +195,56 @@ describe("referenced purchase credit grant runtime contract", () => {
 
     expect(db.transaction).not.toHaveBeenCalled()
     expect(db.balances.has("user-test")).toBe(false)
+    expect(db.ledger).toHaveLength(0)
+  })
+
+  it("serializes a referenced bonus and keeps distinct purposes independent", async () => {
+    const { grantReferencedBonusCredits } = await import("@/lib/credits")
+    const base = {
+      userId: "user-bonus",
+      amount: 4,
+      description: "Membership checkout bonus",
+      paymentReference: "in_bonus_1",
+      grantPurpose: "membership_checkout_bonus",
+      isTestMode: false,
+    }
+
+    const replay = await Promise.all([
+      grantReferencedBonusCredits(base),
+      grantReferencedBonusCredits(base),
+    ])
+    expect(replay.map(result => result.granted).sort()).toEqual([false, true])
+
+    await expect(
+      grantReferencedBonusCredits({ ...base, grantPurpose: "referral:42" })
+    ).resolves.toMatchObject({ success: true, granted: true })
+    expect(db.balances.get("user-bonus")).toBe(8)
+    expect(db.ledger).toHaveLength(2)
+    expect(db.ledger.every(row => row.transactionType === "bonus")).toBe(true)
+  })
+
+  it("rejects test bonuses and rolls back wallet plus ledger on transaction failure", async () => {
+    const { grantReferencedBonusCredits } = await import("@/lib/credits")
+    const input = {
+      userId: "user-bonus-failure",
+      amount: 4,
+      description: "Membership checkout bonus",
+      paymentReference: "in_bonus_failure",
+      grantPurpose: "membership_checkout_bonus",
+      isTestMode: false,
+    }
+
+    await expect(
+      grantReferencedBonusCredits({ ...input, isTestMode: true })
+    ).resolves.toMatchObject({ success: false, granted: false })
+    expect(db.transaction).not.toHaveBeenCalled()
+
+    db.failNextGrant()
+    await expect(grantReferencedBonusCredits(input)).resolves.toMatchObject({
+      success: false,
+      granted: false,
+    })
+    expect(db.balances.has("user-bonus-failure")).toBe(false)
     expect(db.ledger).toHaveLength(0)
   })
 })

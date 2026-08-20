@@ -12,6 +12,10 @@ const sqlMock = vi.fn()
 const retrieveSubscriptionMock = vi.fn()
 const retrieveCustomerMock = vi.fn()
 const grantMonthlyCreditsMock = vi.fn()
+const grantReferencedBonusCreditsMock = vi.fn()
+const claimEventMock = vi.fn()
+const markEventFailedMock = vi.fn()
+const markEventProcessedMock = vi.fn()
 
 vi.mock("server-only", () => ({}))
 
@@ -29,7 +33,14 @@ vi.mock("@/lib/stripe", () => ({
 vi.mock("@/lib/credits", () => ({
   addCredits: vi.fn(),
   grantMonthlyCredits: grantMonthlyCreditsMock,
+  grantReferencedBonusCredits: grantReferencedBonusCreditsMock,
   SUBSCRIPTION_CREDITS: { sselfie_studio_membership: 100, vault_maya: 30 },
+}))
+
+vi.mock("@/lib/events/idempotency", () => ({
+  claimEvent: claimEventMock,
+  markEventFailed: markEventFailedMock,
+  markEventProcessed: markEventProcessedMock,
 }))
 
 vi.mock("@/lib/email/send-email", () => ({
@@ -81,6 +92,21 @@ describe("handleInvoicePaid first-payment race", () => {
     vi.clearAllMocks()
     grantMonthlyCreditsMock.mockReset()
     grantMonthlyCreditsMock.mockResolvedValue({ success: true, newBalance: 100 })
+    grantReferencedBonusCreditsMock.mockResolvedValue({
+      success: true,
+      granted: true,
+      newBalance: 104,
+    })
+    claimEventMock.mockResolvedValue({
+      claimed: true,
+      duplicate: false,
+      duplicateStatus: null,
+      provider: "stripe-invoice-fulfillment",
+      eventId: "in_test_1",
+      storage: "provider-event",
+    })
+    markEventFailedMock.mockResolvedValue(undefined)
+    markEventProcessedMock.mockResolvedValue(undefined)
     // No subscriptions row and no users row exist yet (checkout fulfillment hasn't run).
     sqlMock.mockResolvedValue([])
     retrieveSubscriptionMock.mockResolvedValue({
@@ -117,6 +143,22 @@ describe("handleInvoicePaid first-payment race", () => {
     await expect(
       handleInvoicePaid(buildInvoiceEvent({ created: staleCreated }))
     ).resolves.toBeUndefined()
+  })
+
+  it("does not create customer or subscription state for a test invoice with no local subscription", async () => {
+    const { handleInvoicePaid } = await import("@/lib/payments/lifecycle/invoice-paid")
+
+    await expect(
+      handleInvoicePaid({ ...buildInvoiceEvent(), livemode: false })
+    ).resolves.toBeUndefined()
+
+    expect(retrieveSubscriptionMock).not.toHaveBeenCalled()
+    expect(retrieveCustomerMock).not.toHaveBeenCalled()
+    expect(
+      sqlMock.mock.calls.some(call =>
+        String(call[0]?.join?.("?")).includes("INSERT INTO subscriptions")
+      )
+    ).toBe(false)
   })
 
   it("does not throw when the subscription row already exists", async () => {
@@ -229,7 +271,7 @@ describe("handleInvoicePaid first-payment race", () => {
       "utf8"
     )
     expect(source).toContain("false, // Always false for production payments")
-    expect(source).toContain("invoiceId\n          )")
+    expect(source).toMatch(/false, \/\/ Always false for production payments\s+invoiceId\s+\)/)
     expect(source).not.toContain("WITH recent_credit_grant AS")
   })
 })

@@ -26,13 +26,17 @@ vi.mock("@/lib/events/idempotency", () => ({
   markEventFailed: markEventFailedMock,
   markEventProcessed: markEventProcessedMock,
 }))
-vi.mock("@/lib/rate-limit", () => ({ checkWebhookRateLimit: vi.fn().mockResolvedValue({ success: true }) }))
+vi.mock("@/lib/rate-limit", () => ({
+  checkWebhookRateLimit: vi.fn().mockResolvedValue({ success: true }),
+}))
 vi.mock("@/lib/webhook-monitoring", () => ({
   logWebhookError: vi.fn(),
   alertWebhookError: vi.fn(),
   isCriticalError: vi.fn().mockReturnValue(false),
 }))
-vi.mock("@/lib/payments/handlers/campaign-outcome", () => ({ handleCampaignOutcomeCheckout: campaignHandlerMock }))
+vi.mock("@/lib/payments/handlers/campaign-outcome", () => ({
+  handleCampaignOutcomeCheckout: campaignHandlerMock,
+}))
 vi.mock("@/lib/resend/manage-contact", () => ({
   addOrUpdateResendContact: addOrUpdateResendContactMock,
   updateContactTags: updateContactTagsMock,
@@ -64,7 +68,9 @@ vi.mock("@/lib/email/templates/paid-blueprint-delivery", () => ({
 }))
 vi.mock("@/lib/analytics/events", () => ({ logAnalyticsEvent: vi.fn() }))
 vi.mock("@/lib/subscription", () => ({ hasStudioMembership: vi.fn() }))
-vi.mock("@/lib/brand-engine/offer-checkout-config", () => ({ isBrandEngineCheckoutProductType: vi.fn(() => false) }))
+vi.mock("@/lib/brand-engine/offer-checkout-config", () => ({
+  isBrandEngineCheckoutProductType: vi.fn(() => false),
+}))
 
 function campaignEvent(input: {
   id: string
@@ -96,11 +102,13 @@ function campaignEvent(input: {
 
 async function postWebhook() {
   const { POST } = await import("@/app/api/webhooks/stripe/route")
-  return POST(new Request("http://localhost/api/webhooks/stripe", {
-    method: "POST",
-    headers: { "stripe-signature": "sig_test" },
-    body: "{}",
-  }) as any)
+  return POST(
+    new Request("http://localhost/api/webhooks/stripe", {
+      method: "POST",
+      headers: { "stripe-signature": "sig_test" },
+      body: "{}",
+    }) as any
+  )
 }
 
 describe("campaign outcome Stripe lifecycle", () => {
@@ -118,36 +126,44 @@ describe("campaign outcome Stripe lifecycle", () => {
   })
 
   it("waits on an unpaid completion and fulfills when Stripe later confirms the delayed payment", async () => {
-    constructEventMock.mockReturnValueOnce(campaignEvent({
-      id: "evt_campaign_unpaid",
-      type: "checkout.session.completed",
-      paid: false,
-    }))
+    constructEventMock.mockReturnValueOnce(
+      campaignEvent({
+        id: "evt_campaign_unpaid",
+        type: "checkout.session.completed",
+        paid: false,
+      })
+    )
     const pending = await postWebhook()
     expect(pending.status).toBe(200)
-    expect(campaignHandlerMock).toHaveBeenLastCalledWith(expect.objectContaining({ isPaymentPaid: false }))
+    expect(campaignHandlerMock).not.toHaveBeenCalled()
 
-    constructEventMock.mockReturnValueOnce(campaignEvent({
-      id: "evt_campaign_async_paid",
-      type: "checkout.session.async_payment_succeeded",
-      paid: true,
-    }))
+    constructEventMock.mockReturnValueOnce(
+      campaignEvent({
+        id: "evt_campaign_async_paid",
+        type: "checkout.session.async_payment_succeeded",
+        paid: true,
+      })
+    )
     const paid = await postWebhook()
     expect(paid.status).toBe(200)
-    expect(campaignHandlerMock).toHaveBeenLastCalledWith(expect.objectContaining({
-      isPaymentPaid: true,
-      customerEmail: "buyer@example.com",
-      userId: null,
-    }))
-    expect(campaignHandlerMock).toHaveBeenCalledTimes(2)
+    expect(campaignHandlerMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        isPaymentPaid: true,
+        customerEmail: "buyer@example.com",
+        userId: null,
+      })
+    )
+    expect(campaignHandlerMock).toHaveBeenCalledTimes(1)
   })
 
   it("returns 500 and never fulfills when stripe_payments cannot record the $97 sale", async () => {
-    constructEventMock.mockReturnValue(campaignEvent({
-      id: "evt_campaign_revenue_failure",
-      type: "checkout.session.completed",
-      paid: true,
-    }))
+    constructEventMock.mockReturnValue(
+      campaignEvent({
+        id: "evt_campaign_revenue_failure",
+        type: "checkout.session.completed",
+        paid: true,
+      })
+    )
     sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const query = strings.join(" ")
       if (query.includes("INSERT INTO stripe_payments")) throw new Error("database unavailable")
@@ -157,25 +173,31 @@ describe("campaign outcome Stripe lifecycle", () => {
     const response = await postWebhook()
     expect(response.status).toBe(500)
     expect(campaignHandlerMock).not.toHaveBeenCalled()
-    expect(markEventFailedMock).toHaveBeenCalledWith("stripe", "evt_campaign_revenue_failure", expect.any(Error))
-    expect(sqlMock.mock.calls.some(([strings]) => strings.join(" ").includes("INSERT INTO webhook_events_needs_review"))).toBe(true)
+    expect(markEventFailedMock).toHaveBeenCalledWith(
+      "stripe",
+      "evt_campaign_revenue_failure",
+      expect.any(Error)
+    )
+    expect(
+      sqlMock.mock.calls.some(([strings]) =>
+        strings.join(" ").includes("INSERT INTO webhook_events_needs_review")
+      )
+    ).toBe(true)
   })
 
   it("keeps a paid test checkout out of live marketing, account, and referral state", async () => {
-    constructEventMock.mockReturnValue(campaignEvent({
-      id: "evt_test_campaign_paid",
-      type: "checkout.session.completed",
-      paid: true,
-      livemode: false,
-    }))
+    constructEventMock.mockReturnValue(
+      campaignEvent({
+        id: "evt_test_campaign_paid",
+        type: "checkout.session.completed",
+        paid: true,
+        livemode: false,
+      })
+    )
 
     const response = await postWebhook()
     expect(response.status).toBe(200)
-    expect(campaignHandlerMock).toHaveBeenCalledWith(expect.objectContaining({
-      isPaymentPaid: true,
-      userId: null,
-      referralPurchaseUserId: null,
-    }))
+    expect(campaignHandlerMock).not.toHaveBeenCalled()
     expect(persistCheckoutAttributionContactMock).not.toHaveBeenCalled()
     expect(addOrUpdateResendContactMock).not.toHaveBeenCalled()
     expect(updateContactTagsMock).not.toHaveBeenCalled()

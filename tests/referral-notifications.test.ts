@@ -57,7 +57,8 @@ describe("referral bonus notifications", () => {
         to: "caroline@example.com",
         emailType: "referral-bonus-referrer-42",
         subject: "Your referral credits are in",
-      }),
+        idempotencyKey: "referral-bonus:referrer:42",
+      })
     )
   })
 

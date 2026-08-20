@@ -173,10 +173,44 @@ describe("Stripe webhook in-progress claim recovery", () => {
     }
   )
 
+  it.each(["invoice.paid", "invoice.payment_succeeded"])(
+    "opts exact %s events into stale reclaim now that invoice fulfillment uses a business-key claim",
+    async eventType => {
+      constructEventMock.mockReturnValue({
+        id: "evt_invoice_recovery",
+        type: eventType,
+        livemode: true,
+        data: {
+          object: {
+            id: "in_recovery",
+            object: "invoice",
+          },
+        },
+      })
+      claimEventMock.mockImplementation(async input => {
+        expect(input.allowStaleClaimReclaim).toBe(true)
+        return {
+          claimed: true,
+          duplicate: false,
+          duplicateStatus: null,
+          provider: "stripe",
+          eventId: "evt_invoice_recovery",
+          storage: "provider-event",
+        }
+      })
+
+      const { POST } = await import("@/app/api/webhooks/stripe/route")
+      const response = await POST(request())
+
+      expect(response.status).toBe(200)
+      expect(markEventProcessedMock).toHaveBeenCalledWith("stripe", "evt_invoice_recovery")
+    }
+  )
+
   it.each([
     ["checkout.session.completed", undefined],
     ["checkout.session.completed", "academy_mini_product_v2"],
-    ["invoice.payment_succeeded", "academy_mini_product"],
+    ["invoice.payment_failed", "academy_mini_product"],
   ])("does not opt near-match event %s / %s into stale reclaim", async (eventType, productType) => {
     constructEventMock.mockReturnValue({
       id: "evt_recovery",

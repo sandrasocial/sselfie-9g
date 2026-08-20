@@ -14,6 +14,9 @@ const mocks = vi.hoisted(() => ({
   topup: vi.fn(),
   transform: vi.fn(),
   blueprint: vi.fn(),
+  promptVault: vi.fn(),
+  starterKit: vi.fn(),
+  studioMembership: vi.fn(),
   markRevenue: vi.fn(),
   markConversion: vi.fn(),
 }))
@@ -55,6 +58,15 @@ vi.mock("@/lib/payments/handlers/transform", () => ({
 vi.mock("@/lib/payments/handlers/paid-blueprint", () => ({
   handlePaidBlueprintCheckout: mocks.blueprint,
 }))
+vi.mock("@/lib/payments/handlers/prompt-vault", () => ({
+  handlePromptVaultCheckout: mocks.promptVault,
+}))
+vi.mock("@/lib/payments/handlers/starter-kit", () => ({
+  handleStarterKitCheckout: mocks.starterKit,
+}))
+vi.mock("@/lib/payments/handlers/studio-membership", () => ({
+  handleStudioMembershipSubscriptionCheckout: mocks.studioMembership,
+}))
 vi.mock("@/lib/payments/shared", () => ({
   markRevenueEnginePurchase: mocks.markRevenue,
   markEmailLogConversionForCheckout: mocks.markConversion,
@@ -86,6 +98,8 @@ type PurchaseType =
   | "transform_starter"
   | "transform_topup"
   | "paid_blueprint"
+  | "prompt_vault"
+  | "starter_kit"
 
 function eventFor(params: {
   productType: PurchaseType
@@ -138,8 +152,81 @@ describe("purchase-credit checkout lifecycle", () => {
     mocks.topup.mockResolvedValue(undefined)
     mocks.transform.mockResolvedValue(undefined)
     mocks.blueprint.mockResolvedValue({ referralPurchaseUserId: "user_1" })
+    mocks.promptVault.mockResolvedValue(undefined)
+    mocks.starterKit.mockResolvedValue(undefined)
+    mocks.studioMembership.mockResolvedValue(undefined)
     mocks.markRevenue.mockResolvedValue(undefined)
     mocks.markConversion.mockResolvedValue(undefined)
+  })
+
+  it("returns test-mode subscription checkouts before every shared customer system", async () => {
+    const { handleCheckoutSessionCompleted } =
+      await import("@/lib/payments/lifecycle/checkout-session-completed")
+
+    await handleCheckoutSessionCompleted({
+      id: "evt_subscription_test",
+      type: "checkout.session.completed",
+      livemode: false,
+      data: {
+        object: {
+          id: "cs_subscription_test",
+          object: "checkout.session",
+          mode: "subscription",
+          payment_status: "paid",
+          amount_total: 9700,
+          currency: "eur",
+          subscription: "sub_subscription_test",
+          customer: "cus_subscription_test",
+          customer_email: "test-subscription@example.com",
+          metadata: {
+            product_type: "sselfie_studio_membership",
+            source: "membership_checkout",
+          },
+        },
+      },
+    } as any)
+
+    expect(mocks.sql).not.toHaveBeenCalled()
+    expect(mocks.persistAttribution).not.toHaveBeenCalled()
+    expect(mocks.addContact).not.toHaveBeenCalled()
+    expect(mocks.updateTags).not.toHaveBeenCalled()
+    expect(mocks.ensurePublicAuth).not.toHaveBeenCalled()
+    expect(mocks.sendEmail).not.toHaveBeenCalled()
+    expect(mocks.studioMembership).not.toHaveBeenCalled()
+    expect(mocks.markRevenue).not.toHaveBeenCalled()
+  })
+
+  it("treats an explicit zero-amount live subscription checkout as confirmed", async () => {
+    const { handleCheckoutSessionCompleted } =
+      await import("@/lib/payments/lifecycle/checkout-session-completed")
+    const event = {
+      id: "evt_subscription_zero_amount",
+      type: "checkout.session.completed",
+      livemode: true,
+      data: {
+        object: {
+          id: "cs_subscription_zero_amount",
+          object: "checkout.session",
+          mode: "subscription",
+          payment_status: "no_payment_required",
+          amount_total: 0,
+          currency: "eur",
+          subscription: "sub_subscription_zero_amount",
+          customer: "cus_subscription_zero_amount",
+          customer_email: "zero-amount@example.com",
+          metadata: {
+            product_type: "sselfie_studio_membership",
+            source: "membership_checkout",
+          },
+        },
+      },
+    }
+
+    await handleCheckoutSessionCompleted(event as any)
+
+    expect(mocks.studioMembership).toHaveBeenCalledWith(
+      expect.objectContaining({ isPaymentPaid: true })
+    )
   })
 
   it.each([
@@ -166,6 +253,60 @@ describe("purchase-credit checkout lifecycle", () => {
     expect(mocks.topup).not.toHaveBeenCalled()
     expect(mocks.transform).not.toHaveBeenCalled()
     expect(mocks.blueprint).not.toHaveBeenCalled()
+  })
+
+  it.each(["prompt_vault", "starter_kit"] as const)(
+    "keeps generic unpaid/test %s checkouts diagnostic-only before every customer system",
+    async productType => {
+      const { handleCheckoutSessionCompleted } =
+        await import("@/lib/payments/lifecycle/checkout-session-completed")
+
+      await handleCheckoutSessionCompleted(eventFor({ productType, livemode: true, paid: false }))
+      await handleCheckoutSessionCompleted(eventFor({ productType, livemode: false, paid: true }))
+
+      const queries = mocks.sql.mock.calls.map(([strings]) => strings.join(" "))
+      expect(queries).toHaveLength(2)
+      expect(queries.every(query => query.includes("INSERT INTO stripe_payments"))).toBe(true)
+      expect(mocks.persistAttribution).not.toHaveBeenCalled()
+      expect(mocks.addContact).not.toHaveBeenCalled()
+      expect(mocks.updateTags).not.toHaveBeenCalled()
+      expect(mocks.ensurePublicAuth).not.toHaveBeenCalled()
+      expect(mocks.promptVault).not.toHaveBeenCalled()
+      expect(mocks.starterKit).not.toHaveBeenCalled()
+      expect(mocks.markRevenue).not.toHaveBeenCalled()
+    }
+  )
+
+  it("uses a monotonic revenue conflict contract for unpaid then async-paid reverse ordering", async () => {
+    const { handleCheckoutSessionCompleted } =
+      await import("@/lib/payments/lifecycle/checkout-session-completed")
+
+    await handleCheckoutSessionCompleted(
+      eventFor({ productType: "prompt_vault", livemode: true, paid: false })
+    )
+    await handleCheckoutSessionCompleted(
+      eventFor({
+        productType: "prompt_vault",
+        livemode: true,
+        paid: true,
+        eventType: "checkout.session.async_payment_succeeded",
+      })
+    )
+
+    const revenueQueries = mocks.sql.mock.calls
+      .map(([strings]) => strings.join(" "))
+      .filter(query => query.includes("INSERT INTO stripe_payments"))
+    // The paid journey writes once on receipt and once more after user attribution.
+    expect(revenueQueries).toHaveLength(3)
+    for (const query of revenueQueries) {
+      expect(query).toContain("stripe_payments.status IN ('paid', 'succeeded')")
+      expect(query).toContain("amount_cents = CASE")
+      expect(query).toContain("currency = CASE")
+      expect(query).toContain("metadata = CASE")
+      expect(query).toContain("jsonb_strip_nulls(COALESCE(stripe_payments.metadata")
+    }
+    expect(mocks.promptVault).toHaveBeenCalledTimes(1)
+    expect(mocks.markRevenue).toHaveBeenCalledTimes(1)
   })
 
   it.each([

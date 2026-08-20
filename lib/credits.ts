@@ -53,6 +53,9 @@ export type ReferencedPurchaseCreditGrantResult = {
   error?: string
 }
 
+export type ReferencedBonusCreditGrant = ReferencedPurchaseCreditGrant
+export type ReferencedBonusCreditGrantResult = ReferencedPurchaseCreditGrantResult
+
 /**
  * Check if user has enough credits for an action
  */
@@ -294,6 +297,145 @@ export async function grantReferencedPurchaseCredits(
       newBalance: 0,
       granted: false,
       error: "Failed to grant purchase credits",
+    }
+  }
+}
+
+/**
+ * Grant one live Stripe-backed bonus purpose exactly once.
+ *
+ * Bonus credits remain bonus ledger entries (and therefore expire under the existing monthly
+ * reset policy). The wallet delta and ledger row commit together after a purpose-scoped advisory
+ * lock, so a replay after any later fulfillment stage cannot add the bonus twice.
+ */
+export async function grantReferencedBonusCredits(
+  input: ReferencedBonusCreditGrant
+): Promise<ReferencedBonusCreditGrantResult> {
+  const paymentReference = input.paymentReference.trim()
+  const grantPurpose = input.grantPurpose.trim()
+  const transactionType: "bonus" = "bonus"
+  const isTestMode = input.isTestMode === true
+  const modeKey = isTestMode ? "test" : "live"
+
+  if (isTestMode) {
+    return {
+      success: false,
+      newBalance: 0,
+      granted: false,
+      error: "Test-mode Stripe events cannot mutate the shared credit wallet",
+    }
+  }
+
+  if (!paymentReference) {
+    return {
+      success: false,
+      newBalance: 0,
+      granted: false,
+      error: "A Stripe payment reference is required for bonus credits",
+    }
+  }
+  if (!grantPurpose) {
+    return {
+      success: false,
+      newBalance: 0,
+      granted: false,
+      error: "A stable grant purpose is required for bonus credits",
+    }
+  }
+  if (!Number.isInteger(input.amount) || input.amount <= 0) {
+    return {
+      success: false,
+      newBalance: 0,
+      granted: false,
+      error: "Bonus credit amount must be a positive integer",
+    }
+  }
+
+  const lockKey = [
+    "referenced-credit-grant",
+    input.userId,
+    modeKey,
+    transactionType,
+    paymentReference,
+    grantPurpose,
+  ].join(":")
+
+  try {
+    const [, grantRows] = await sql.transaction(tx => [
+      tx`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`,
+      tx`
+        WITH existing_grant AS MATERIALIZED (
+          SELECT balance_after
+          FROM credit_transactions
+          WHERE user_id = ${input.userId}
+            AND transaction_type = ${transactionType}
+            AND stripe_payment_id = ${paymentReference}
+            AND COALESCE(is_test_mode, false) = ${isTestMode}
+            AND (
+              reference_id = ${grantPurpose}
+              OR (reference_id IS NULL AND description = ${input.description})
+            )
+          ORDER BY id ASC
+          LIMIT 1
+        ),
+        balance_upsert AS (
+          INSERT INTO user_credits (
+            user_id, balance, total_purchased, total_used, created_at, updated_at
+          )
+          SELECT ${input.userId}, ${input.amount}, ${input.amount}, 0, NOW(), NOW()
+          WHERE NOT EXISTS (SELECT 1 FROM existing_grant)
+          ON CONFLICT (user_id)
+          DO UPDATE SET
+            balance = user_credits.balance + ${input.amount},
+            total_purchased = user_credits.total_purchased + ${input.amount},
+            updated_at = NOW()
+          RETURNING balance
+        ),
+        ledger_insert AS (
+          INSERT INTO credit_transactions (
+            user_id, amount, transaction_type, description, reference_id,
+            stripe_payment_id, balance_after, is_test_mode, created_at
+          )
+          SELECT
+            ${input.userId}, ${input.amount}, ${transactionType}, ${input.description},
+            ${grantPurpose}, ${paymentReference}, balance, ${isTestMode}, NOW()
+          FROM balance_upsert
+          RETURNING balance_after
+        )
+        SELECT
+          COALESCE(
+            (SELECT balance_after FROM ledger_insert),
+            (SELECT balance_after FROM existing_grant),
+            (SELECT balance FROM user_credits WHERE user_id = ${input.userId}),
+            0
+          ) AS balance,
+          EXISTS (SELECT 1 FROM ledger_insert) AS granted
+      `,
+    ])
+
+    const newBalance = Number(grantRows[0]?.balance || 0)
+    const granted = grantRows[0]?.granted === true
+
+    if (granted) {
+      try {
+        const { invalidateCreditCache } = await import("./credits-cached")
+        await invalidateCreditCache(input.userId)
+      } catch (cacheError) {
+        console.warn(
+          "[Credits] Referenced bonus credits committed, but cache invalidation failed:",
+          cacheError
+        )
+      }
+    }
+
+    return { success: true, newBalance, granted }
+  } catch (error) {
+    console.error("[Credits] Failed referenced bonus credit grant:", error)
+    return {
+      success: false,
+      newBalance: 0,
+      granted: false,
+      error: "Failed to grant bonus credits",
     }
   }
 }

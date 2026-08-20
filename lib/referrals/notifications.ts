@@ -37,12 +37,15 @@ type ReferralNotificationRow = {
   credits_awarded_referred: number | null
 }
 
-export function getReferralBonusEmailType(kind: ReferralBonusNotificationKind, referralId: number): string {
+export function getReferralBonusEmailType(
+  kind: ReferralBonusNotificationKind,
+  referralId: number
+): string {
   return `${kind === "referrer" ? REFERRER_EMAIL_PREFIX : REFERRED_EMAIL_PREFIX}-${referralId}`
 }
 
 export async function sendReferralBonusNotification(
-  params: SendReferralBonusNotificationParams,
+  params: SendReferralBonusNotificationParams
 ): Promise<SendReferralBonusNotificationResult> {
   const emailType = getReferralBonusEmailType(params.kind, params.referralId)
   const referral = await getReferralNotificationRow(params.referralId)
@@ -57,7 +60,9 @@ export async function sendReferralBonusNotification(
     fullName: isReferrer ? referral.referrer_name : referral.referred_name,
     email: recipientEmail,
   })
-  const awardedCredits = Number(isReferrer ? referral.credits_awarded_referrer || 0 : referral.credits_awarded_referred || 0)
+  const awardedCredits = Number(
+    isReferrer ? referral.credits_awarded_referrer || 0 : referral.credits_awarded_referred || 0
+  )
   const requiredCredits = isReferrer ? REFERRER_PURCHASE_BONUS : REFERRED_SIGNUP_BONUS
 
   if (awardedCredits < requiredCredits) {
@@ -91,6 +96,7 @@ export async function sendReferralBonusNotification(
     from: "Sandra at SSELFIE <hello@sselfie.ai>",
     emailType,
     tags: ["referral", "credits", params.kind],
+    idempotencyKey: `referral-bonus:${params.kind}:${params.referralId}`,
   })
 
   return {
@@ -101,7 +107,7 @@ export async function sendReferralBonusNotification(
 }
 
 export async function sendReferralBonusNotificationsForReferral(
-  referralId: number,
+  referralId: number
 ): Promise<SendReferralBonusNotificationsForReferralResult> {
   const [referred, referrer] = await Promise.all([
     sendReferralBonusNotification({ referralId, kind: "referred" }),
@@ -111,7 +117,9 @@ export async function sendReferralBonusNotificationsForReferral(
   return { referred, referrer }
 }
 
-async function getReferralNotificationRow(referralId: number): Promise<ReferralNotificationRow | null> {
+async function getReferralNotificationRow(
+  referralId: number
+): Promise<ReferralNotificationRow | null> {
   const [row] = await sql`
     SELECT
       r.id,

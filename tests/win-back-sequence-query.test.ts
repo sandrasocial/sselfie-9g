@@ -22,6 +22,16 @@ function extractDormantMembersQuery(contents: string): string {
   return contents.slice(queryStart, end)
 }
 
+function extractQuery(contents: string, variableName: string): string {
+  const marker = `const ${variableName} = await sql\``
+  const start = contents.indexOf(marker)
+  if (start === -1) throw new Error(`Could not find ${variableName} query`)
+  const queryStart = start + marker.length
+  const end = contents.indexOf("`", queryStart)
+  if (end === -1) throw new Error(`Could not find closing SQL for ${variableName}`)
+  return contents.slice(queryStart, end)
+}
+
 describe("win-back dormant member query", () => {
   it("includes ORDER BY columns in the DISTINCT select list", () => {
     const routePath = path.join(ROOT, "app/api/cron/win-back-sequence/route.ts")
@@ -37,4 +47,18 @@ describe("win-back dormant member query", () => {
     const selectClause = selectSectionMatch?.[1] || ""
     expect(selectClause).toContain("u.created_at")
   })
+
+  it.each(["day3Candidates", "day7Candidates", "day14Candidates"])(
+    "excludes legacy test subscription rows from %s and live-reactivation checks",
+    variableName => {
+      const contents = fs.readFileSync(
+        path.join(ROOT, "app/api/cron/win-back-sequence/route.ts"),
+        "utf8"
+      )
+      const query = extractQuery(contents, variableName)
+
+      expect(query).toMatch(/COALESCE\(s\.is_test_mode,\s*FALSE\)\s*=\s*FALSE/i)
+      expect(query).toMatch(/COALESCE\(s2\.is_test_mode,\s*FALSE\)\s*=\s*FALSE/i)
+    }
+  )
 })

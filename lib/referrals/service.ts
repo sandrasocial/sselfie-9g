@@ -1,4 +1,4 @@
-import { addCredits } from "@/lib/credits"
+import { addCredits, grantReferencedBonusCredits } from "@/lib/credits"
 import { sql } from "@/lib/db/client"
 import { sendReferralBonusNotification } from "@/lib/referrals/notifications"
 import { normalizeReferralCode } from "@/lib/referrals/routing"
@@ -9,8 +9,20 @@ type TrackReferralSignupParams = {
 }
 
 type TrackReferralSignupResult =
-  | { success: true; status: "tracked" | "already_tracked"; referrerId: string; referralId: number | null; welcomeCreditsGranted: boolean }
-  | { success: false; status: "invalid_code" | "self_referral"; referrerId?: string; referralId?: number | null; welcomeCreditsGranted?: false }
+  | {
+      success: true
+      status: "tracked" | "already_tracked"
+      referrerId: string
+      referralId: number | null
+      welcomeCreditsGranted: boolean
+    }
+  | {
+      success: false
+      status: "invalid_code" | "self_referral"
+      referrerId?: string
+      referralId?: number | null
+      welcomeCreditsGranted?: false
+    }
 
 type CompleteReferralForPurchaseParams = {
   referredUserId: string
@@ -19,8 +31,19 @@ type CompleteReferralForPurchaseParams = {
 }
 
 type CompleteReferralForPurchaseResult =
-  | { success: true; status: "completed" | "already_completed" | "no_referral"; referrerId: string | null; referralId: number | null }
-  | { success: false; status: "reward_failed"; referrerId: string; referralId: number; error: string }
+  | {
+      success: true
+      status: "completed" | "already_completed" | "no_referral" | "test_mode_noop"
+      referrerId: string | null
+      referralId: number | null
+    }
+  | {
+      success: false
+      status: "reward_failed"
+      referrerId: string
+      referralId: number
+      error: string
+    }
 
 const REFERRED_SIGNUP_BONUS = 25
 const REFERRER_PURCHASE_BONUS = 50
@@ -30,7 +53,10 @@ export function areReferralBonusesEnabled(): boolean {
   return process.env.REFERRAL_BONUSES_ENABLED !== "false"
 }
 
-export function isReferralSignupEligible(createdAt: string | Date | null | undefined, now: Date = new Date()): boolean {
+export function isReferralSignupEligible(
+  createdAt: string | Date | null | undefined,
+  now: Date = new Date()
+): boolean {
   if (!createdAt) {
     return false
   }
@@ -57,11 +83,17 @@ export function buildReferralEventCode(referralCode: string, referredUserId: str
     throw new Error("Invalid referral code")
   }
 
-  const suffix = referredUserId.replace(/[^a-zA-Z0-9]/g, "").slice(-12).toUpperCase() || "EVENT"
+  const suffix =
+    referredUserId
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .slice(-12)
+      .toUpperCase() || "EVENT"
   return `${normalizedReferralCode}-${suffix}`.slice(0, 50)
 }
 
-export async function trackReferralSignup(params: TrackReferralSignupParams): Promise<TrackReferralSignupResult> {
+export async function trackReferralSignup(
+  params: TrackReferralSignupParams
+): Promise<TrackReferralSignupResult> {
   const normalizedReferralCode = normalizeReferralCode(params.referralCode)
 
   if (!normalizedReferralCode) {
@@ -97,14 +129,15 @@ export async function trackReferralSignup(params: TrackReferralSignupParams): Pr
         status: "already_tracked",
         referrerId: existingReferral.referrer_id,
         referralId: Number(existingReferral.id),
-        welcomeCreditsGranted: Number(existingReferral.credits_awarded_referred || 0) >= REFERRED_SIGNUP_BONUS,
+        welcomeCreditsGranted:
+          Number(existingReferral.credits_awarded_referred || 0) >= REFERRED_SIGNUP_BONUS,
       }
     }
 
     const welcomeCreditsGranted = await maybeGrantReferredSignupBonus(
       Number(existingReferral.id),
       params.referredUserId,
-      Number(existingReferral.credits_awarded_referred || 0),
+      Number(existingReferral.credits_awarded_referred || 0)
     )
 
     return {
@@ -138,8 +171,17 @@ export async function trackReferralSignup(params: TrackReferralSignupParams): Pr
 }
 
 export async function completeReferralForPurchase(
-  params: CompleteReferralForPurchaseParams,
+  params: CompleteReferralForPurchaseParams
 ): Promise<CompleteReferralForPurchaseResult> {
+  if (params.isTestMode) {
+    return {
+      success: true,
+      status: "test_mode_noop",
+      referrerId: null,
+      referralId: null,
+    }
+  }
+
   const [referral] = await sql`
     SELECT id, referrer_id, status, credits_awarded_referrer
     FROM referrals
@@ -161,13 +203,15 @@ export async function completeReferralForPurchase(
   }
 
   let rewardAmount = existingReward
-  if (!params.isTestMode && areReferralBonusesEnabled()) {
-    const rewardResult = await addCredits(
-      referrerId,
-      REFERRER_PURCHASE_BONUS,
-      "bonus",
-      "Referral reward for referred user's first paid purchase",
-    )
+  if (areReferralBonusesEnabled()) {
+    const rewardResult = await grantReferencedBonusCredits({
+      userId: referrerId,
+      amount: REFERRER_PURCHASE_BONUS,
+      description: "Referral reward for referred user's first paid purchase",
+      paymentReference: `referral:${referralId}`,
+      grantPurpose: "first_purchase_referrer_reward",
+      isTestMode: false,
+    })
 
     if (!rewardResult.success) {
       return {
@@ -191,7 +235,7 @@ export async function completeReferralForPurchase(
     WHERE id = ${referralId}
   `
 
-  if (!params.isTestMode && rewardAmount >= REFERRER_PURCHASE_BONUS) {
+  if (rewardAmount >= REFERRER_PURCHASE_BONUS) {
     try {
       await sendReferralBonusNotification({ referralId, kind: "referrer" })
     } catch (notificationError) {
@@ -205,7 +249,7 @@ export async function completeReferralForPurchase(
 async function maybeGrantReferredSignupBonus(
   referralId: number,
   referredUserId: string,
-  existingAwardedCredits: number,
+  existingAwardedCredits: number
 ): Promise<boolean> {
   if (!areReferralBonusesEnabled()) {
     return false
@@ -219,7 +263,7 @@ async function maybeGrantReferredSignupBonus(
     referredUserId,
     REFERRED_SIGNUP_BONUS,
     "bonus",
-    "Welcome reward for signing up with referral",
+    "Welcome reward for signing up with referral"
   )
 
   if (!welcomeResult.success) {
