@@ -81,6 +81,7 @@ vi.mock("@/lib/webhook-monitoring", () => ({
 
 vi.mock("@/lib/subscription", () => ({
   hasStudioMembership: vi.fn(),
+  shouldEnforceLiveSubscriptionRows: vi.fn(() => false),
 }))
 
 vi.mock("@/lib/brand-engine/offer-checkout-config", () => ({
@@ -234,4 +235,147 @@ describe("stripe webhook academy purchase branch", () => {
       })
     )
   })
+
+  it("returns 500 before delivery when an Academy entitlement upsert fails so Stripe can replay", async () => {
+    sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (query.includes("INSERT INTO webhook_events") && query.includes("RETURNING id")) {
+        return [{ id: 1 }]
+      }
+      if (query.includes("INSERT INTO user_entitlements")) {
+        throw new Error("entitlement write unavailable")
+      }
+      return []
+    })
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route")
+    const response = await POST(
+      new Request("http://localhost/api/webhooks/stripe", {
+        method: "POST",
+        headers: { "stripe-signature": "sig_test" },
+        body: "{}",
+      }) as any,
+    )
+
+    expect(response.status).toBe(500)
+    expect(sendEmailMock).not.toHaveBeenCalled()
+
+    expect(
+      sqlMock.mock.calls.some(call =>
+        queryTextForCall(call).includes("UPDATE webhook_events") &&
+        JSON.stringify(call.slice(1)).includes("failed"),
+      ),
+    ).toBe(true)
+  })
+
+  it("reclaims a failed Academy event and delivers once after every entitlement succeeds", async () => {
+    constructEventMock.mockReturnValue({
+      id: "evt_suite_replay_1",
+      type: "checkout.session.completed",
+      livemode: true,
+      data: {
+        object: {
+          id: "cs_suite_replay_1",
+          object: "checkout.session",
+          mode: "payment",
+          payment_status: "paid",
+          amount_total: 9700,
+          currency: "eur",
+          payment_intent: "pi_suite_replay_1",
+          customer_details: { email: "suite-replay@example.com", name: "Suite Replay" },
+          customer_email: "suite-replay@example.com",
+          metadata: {
+            product_type: "visibility_suite",
+            product_id: "visibility_suite",
+            user_id: "user_replay_1",
+          },
+        },
+      },
+    })
+
+    const expectedGrantIds = [
+      "visibility_suite",
+      "what_to_say",
+      "show_up",
+      "get_paid",
+      "concept_cards_pack",
+      "caption_sprint",
+      "feed_reset_9grid",
+      "ai_photo_refresh",
+    ]
+    const successfulGrantIds = new Set<string>()
+    let eventStatus: "missing" | "claimed" | "failed" | "processed" = "missing"
+    let failFirstEntitlement = true
+
+    sqlMock.mockImplementation(
+      async (strings: TemplateStringsArray, ...values: unknown[]) => {
+        const query = strings.join(" ")
+
+        if (
+          query.includes("INSERT INTO webhook_events") &&
+          query.includes("provider") &&
+          query.includes("RETURNING id")
+        ) {
+          if (eventStatus === "missing") {
+            eventStatus = "claimed"
+            return [{ id: 1 }]
+          }
+          return []
+        }
+
+        if (query.includes("UPDATE webhook_events") && query.includes("AND status = 'failed'")) {
+          if (eventStatus === "failed") {
+            eventStatus = "claimed"
+            return [{ id: 1 }]
+          }
+          return []
+        }
+
+        if (query.includes("UPDATE webhook_events")) {
+          if (values.includes("failed")) eventStatus = "failed"
+          if (values.includes("processed")) eventStatus = "processed"
+          return []
+        }
+
+        if (query.includes("INSERT INTO user_entitlements")) {
+          if (failFirstEntitlement) {
+            failFirstEntitlement = false
+            throw new Error("temporary entitlement write failure")
+          }
+          const productId = values[1]
+          if (typeof productId === "string") successfulGrantIds.add(productId)
+        }
+
+        return []
+      },
+    )
+    sendEmailMock.mockImplementation(async () => {
+      expect(Array.from(successfulGrantIds).sort()).toEqual(expectedGrantIds.slice().sort())
+      return { success: true }
+    })
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route")
+    const request = () =>
+      new Request("http://localhost/api/webhooks/stripe", {
+        method: "POST",
+        headers: { "stripe-signature": "sig_test" },
+        body: "{}",
+      }) as any
+
+    const firstResponse = await POST(request())
+    expect(firstResponse.status).toBe(500)
+    expect(eventStatus).toBe("failed")
+    expect(sendEmailMock).not.toHaveBeenCalled()
+
+    const replayResponse = await POST(request())
+    expect(replayResponse.status).toBe(200)
+    expect(eventStatus).toBe("processed")
+    expect(Array.from(successfulGrantIds).sort()).toEqual(expectedGrantIds.slice().sort())
+    expect(sendEmailMock).toHaveBeenCalledTimes(1)
+  })
 })
+
+function queryTextForCall(call: unknown[]): string {
+  const strings = call[0]
+  return Array.isArray(strings) ? strings.join(" ") : String(strings)
+}

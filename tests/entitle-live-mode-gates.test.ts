@@ -50,7 +50,11 @@ describe("ENTITLE-01 live-mode subscription gate guards", () => {
       },
       {
         file: "lib/academy-entitlements.ts",
-        marker: "const fallbackRows = await sql`",
+        marker: "const membership = await sql`",
+      },
+      {
+        file: "lib/academy-entitlements.ts",
+        marker: "async function getLegacySubscriptionOwnership",
       },
       {
         file: "app/api/credits/grant-free-welcome/route.ts",

@@ -83,7 +83,32 @@ export type AcademyResolvedCatalogEntry = AcademyCatalogProduct & {
 type ExplicitEntitlementRow = {
   product_id: string
   valid_from: string | Date | null
-  source: AcademyEntitlementSource
+  source: AcademyExplicitOwnershipSource
+}
+
+type UserEntitlementOwnershipRow = ExplicitEntitlementRow & {
+  purchased_product_id: string | null
+}
+
+type StripeOwnershipRow = {
+  product_type: string | null
+  metadata_product_id: string | null
+  valid_from: string | Date | null
+  status: string | null
+  is_test_mode: boolean | null
+}
+
+export type AcademyExplicitOwnershipSource =
+  | AcademyEntitlementSource
+  | "academy_course_purchase"
+  | "legacy_subscription"
+  | "stripe_payment"
+  | (string & {})
+
+export type AcademyExplicitOwnershipRecord = {
+  productId: string
+  purchasedAt: string | null
+  sources: AcademyExplicitOwnershipSource[]
 }
 
 type ProductOverrideRow = {
@@ -122,12 +147,24 @@ type FallbackMetadata = {
   accessTarget: string
 }
 
+const MASTERCLASS_ACCESS_ALIASES = [
+  "brand_strategy_pack",
+  "branded_by_sselfie",
+  "editing_masterclass",
+]
+
 const PRODUCT_ACCESS_ALIASES: Record<string, string[]> = {
   selfie_guide_bundle: ["selfie_guide", "brand_strategy_pack"],
+  selfie_visibility_bundle: [
+    "masterclass",
+    "starter_kit",
+    "prompt_vault",
+    ...MASTERCLASS_ACCESS_ALIASES,
+  ],
   // Selfie to Brand Shoot includes the Brand Strategy tool in its price — it is the
   // personalized Step 0 of that course (gate before Modules 1-5).
   selfie_to_brand_shoot_system: ["brand_strategy_pack"],
-  masterclass: ["brand_strategy_pack", "branded_by_sselfie", "editing_masterclass"],
+  masterclass: MASTERCLASS_ACCESS_ALIASES,
   visibility_suite: [
     "what_to_say",
     "show_up",
@@ -138,6 +175,11 @@ const PRODUCT_ACCESS_ALIASES: Record<string, string[]> = {
     "ai_photo_refresh",
   ],
 }
+
+const KNOWN_ACADEMY_PRODUCT_IDS = new Set<string>([
+  ...Object.keys(ACADEMY_PRODUCTS),
+  ...DIRECT_ONE_TIME_ACADEMY_TYPES,
+])
 
 const PRODUCT_THUMBNAILS: Record<string, string> = {
   what_to_say: "/academy/visibility-suite/what-to-say.png",
@@ -559,99 +601,203 @@ export async function getAcademyProductCatalog(): Promise<AcademyCatalogProduct[
   })
 }
 
-async function getExplicitEntitlements(userId: string): Promise<ExplicitEntitlementRow[]> {
-  const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
-
+async function getUserEntitlementOwnership(userId: string): Promise<ExplicitEntitlementRow[]> {
   try {
     const rows = (await sql`
-      SELECT DISTINCT product_id, valid_from, source
-      FROM (
-        SELECT product_id, valid_from, source
-        FROM user_entitlements
-        WHERE user_id = ${userId}
-          AND status = 'active'
-          AND valid_from <= NOW()
-          AND (valid_until IS NULL OR valid_until > NOW())
-        UNION
-        SELECT product_type AS product_id, payment_date AS valid_from, 'migration_backfill' AS source
-        FROM stripe_payments
-        WHERE user_id = ${userId}
-          AND status = 'succeeded'
-          AND product_type = ANY(${DIRECT_ONE_TIME_ACADEMY_TYPES})
-      ) combined
-    `) as ExplicitEntitlementRow[]
+      SELECT DISTINCT
+        product_id,
+        metadata ->> 'purchased_product_id' AS purchased_product_id,
+        valid_from,
+        source
+      FROM user_entitlements
+      WHERE user_id = ${userId}
+        AND status = 'active'
+        AND source <> 'membership'
+        AND valid_from <= NOW()
+        AND (valid_until IS NULL OR valid_until > NOW())
+    `) as UserEntitlementOwnershipRow[]
 
-    return rows
-  } catch {
-    const fallbackRows = await sql`
-      SELECT DISTINCT product_id, valid_from, source
-      FROM (
-        SELECT course_id AS product_id, purchased_at AS valid_from, 'migration_backfill' AS source
-        FROM academy_course_purchases
-        WHERE user_id = ${userId}
-          AND status = 'active'
-        UNION
-        SELECT product_type AS product_id, created_at AS valid_from, 'migration_backfill' AS source
-        FROM subscriptions
-        WHERE user_id = ${userId}
-          AND status = 'active'
-          AND product_type = ANY(${DIRECT_ONE_TIME_ACADEMY_TYPES})
-          AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
-        UNION
-        SELECT product_type AS product_id, payment_date AS valid_from, 'migration_backfill' AS source
-        FROM stripe_payments
-        WHERE user_id = ${userId}
-          AND status = 'succeeded'
-          AND product_type = ANY(${DIRECT_ONE_TIME_ACADEMY_TYPES})
-      ) combined
-    `
+    return rows.flatMap(row => {
+      if (row.source === "membership") return []
 
-    return fallbackRows as ExplicitEntitlementRow[]
+      const isVisibilitySuiteExpansion =
+        row.purchased_product_id === "visibility_suite" &&
+        (row.product_id === "visibility_suite" ||
+          PRODUCT_ACCESS_ALIASES.visibility_suite.includes(row.product_id))
+      const productId = isVisibilitySuiteExpansion ? "visibility_suite" : row.product_id
+
+      if (!KNOWN_ACADEMY_PRODUCT_IDS.has(productId)) return []
+
+      return [{ product_id: productId, valid_from: row.valid_from, source: row.source }]
+    })
+  } catch (error) {
+    console.error("[academy-entitlements] user_entitlements ownership unavailable:", error)
+    return []
   }
 }
 
-export async function getAcademyEntitlementState(userId: string) {
-  const [catalog, membershipActive, explicitEntitlements] = await Promise.all([
-    getAcademyProductCatalog(),
-    hasActiveStudioMembership(userId),
-    getExplicitEntitlements(userId),
+async function getCoursePurchaseOwnership(userId: string): Promise<ExplicitEntitlementRow[]> {
+  try {
+    return (await sql`
+      SELECT DISTINCT
+        course_id AS product_id,
+        purchased_at AS valid_from,
+        'academy_course_purchase' AS source
+      FROM academy_course_purchases
+      WHERE user_id = ${userId}
+        AND status = 'active'
+    `) as ExplicitEntitlementRow[]
+  } catch (error) {
+    console.error("[academy-entitlements] academy_course_purchases ownership unavailable:", error)
+    return []
+  }
+}
+
+async function getLegacySubscriptionOwnership(userId: string): Promise<ExplicitEntitlementRow[]> {
+  const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
+  const knownProductIds = Array.from(KNOWN_ACADEMY_PRODUCT_IDS)
+
+  try {
+    return (await sql`
+      SELECT DISTINCT
+        product_type AS product_id,
+        created_at AS valid_from,
+        'legacy_subscription' AS source
+      FROM subscriptions
+      WHERE user_id = ${userId}
+        AND status = 'active'
+        AND product_type = ANY(${knownProductIds})
+        AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
+    `) as ExplicitEntitlementRow[]
+  } catch (error) {
+    console.error("[academy-entitlements] legacy subscription ownership unavailable:", error)
+    return []
+  }
+}
+
+function normalizeStripeOwnership(row: StripeOwnershipRow): ExplicitEntitlementRow | null {
+  if (row.status !== "succeeded" || row.is_test_mode === true) {
+    return null
+  }
+
+  const productId =
+    row.product_type === "academy_mini_product"
+      ? row.metadata_product_id
+      : row.product_type
+
+  if (!productId || !KNOWN_ACADEMY_PRODUCT_IDS.has(productId)) {
+    return null
+  }
+
+  return {
+    product_id: productId,
+    valid_from: row.valid_from,
+    source: "stripe_payment",
+  }
+}
+
+async function getStripePaymentOwnership(userId: string): Promise<ExplicitEntitlementRow[]> {
+  const knownProductIds = Array.from(KNOWN_ACADEMY_PRODUCT_IDS)
+
+  try {
+    const rows = (await sql`
+      SELECT DISTINCT
+        product_type,
+        metadata ->> 'product_id' AS metadata_product_id,
+        payment_date AS valid_from,
+        status,
+        is_test_mode
+      FROM stripe_payments
+      WHERE user_id = ${userId}
+        AND status = 'succeeded'
+        AND COALESCE(is_test_mode, false) = false
+        AND (
+          product_type = 'academy_mini_product'
+          OR product_type = ANY(${knownProductIds})
+        )
+    `) as StripeOwnershipRow[]
+
+    return rows
+      .map(normalizeStripeOwnership)
+      .filter((row): row is ExplicitEntitlementRow => row !== null)
+  } catch (error) {
+    console.error("[academy-entitlements] stripe_payments ownership unavailable:", error)
+    return []
+  }
+}
+
+function ownershipTimestamp(value: string | Date | null): string | null {
+  if (!value) return null
+  const timestamp = new Date(value)
+  return Number.isFinite(timestamp.getTime()) ? timestamp.toISOString() : null
+}
+
+export async function getAcademyExplicitOwnership(
+  userId: string,
+): Promise<AcademyExplicitOwnershipRecord[]> {
+  const ownership = await Promise.all([
+    getUserEntitlementOwnership(userId),
+    getCoursePurchaseOwnership(userId),
+    getLegacySubscriptionOwnership(userId),
+    getStripePaymentOwnership(userId),
   ])
 
-  const explicitMap = new Map<
-    string,
-    {
-      purchasedAt: string | null
-      sources: Set<AcademyEntitlementSource>
-    }
-  >()
+  const directOwnership = new Map<string, AcademyExplicitOwnershipRecord>()
 
-  for (const entitlement of explicitEntitlements) {
-    const existing = explicitMap.get(entitlement.product_id)
-    const purchasedAt =
-      entitlement.valid_from instanceof Date
-        ? entitlement.valid_from.toISOString()
-        : entitlement.valid_from
-          ? new Date(entitlement.valid_from).toISOString()
-          : null
+  for (const row of ownership.flat()) {
+    if (!KNOWN_ACADEMY_PRODUCT_IDS.has(row.product_id)) continue
 
+    const purchasedAt = ownershipTimestamp(row.valid_from)
+    const existing = directOwnership.get(row.product_id)
     if (!existing) {
-      explicitMap.set(entitlement.product_id, {
+      directOwnership.set(row.product_id, {
+        productId: row.product_id,
         purchasedAt,
-        sources: new Set([entitlement.source]),
+        sources: [row.source],
       })
       continue
     }
 
-    explicitMap.set(entitlement.product_id, {
+    directOwnership.set(row.product_id, {
+      productId: row.product_id,
       purchasedAt:
         existing.purchasedAt && purchasedAt
           ? existing.purchasedAt < purchasedAt
             ? existing.purchasedAt
             : purchasedAt
           : (existing.purchasedAt ?? purchasedAt),
-      sources: new Set([...existing.sources, entitlement.source]),
+      sources: Array.from(new Set([...existing.sources, row.source])).sort(),
     })
   }
+
+  return Array.from(directOwnership.values()).sort((a, b) =>
+    a.productId.localeCompare(b.productId),
+  )
+}
+
+export async function getAcademyEntitlementState(userId: string) {
+  const [catalog, membershipActive, explicitOwnership] = await Promise.all([
+    getAcademyProductCatalog(),
+    hasActiveStudioMembership(userId),
+    getAcademyExplicitOwnership(userId),
+  ])
+
+  const explicitMap = new Map<
+    string,
+    {
+      purchasedAt: string | null
+      sources: Set<AcademyExplicitOwnershipSource>
+    }
+  >()
+
+  for (const ownership of explicitOwnership) {
+    explicitMap.set(ownership.productId, {
+      purchasedAt: ownership.purchasedAt,
+      sources: new Set(ownership.sources),
+    })
+  }
+
+  const directExplicitProductIds = explicitOwnership.map(ownership => ownership.productId)
 
   const accessibleSet = new Set<string>(explicitMap.keys())
   for (const ownedProductId of Array.from(explicitMap.keys())) {
@@ -699,6 +845,7 @@ export async function getAcademyEntitlementState(userId: string) {
   return {
     membershipActive,
     products: catalog,
+    directExplicitProductIds,
     explicitProductIds: Array.from(explicitMap.keys()),
     accessibleProductIds: Array.from(accessibleSet),
     catalog: resolvedCatalog,

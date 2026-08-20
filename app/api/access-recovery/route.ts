@@ -17,6 +17,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { renderStoneButton, renderStoneShell } from "@/lib/email/templates/stone-email"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { getAcademyExplicitOwnership } from "@/lib/academy-entitlements"
 
 export const maxDuration = 30
 
@@ -26,6 +27,24 @@ interface PurchaseRecord {
   email: string
   name: string | null
   created_at: string
+}
+
+interface RecoveryUserRecord {
+  id: string
+  email: string
+  name: string | null
+}
+
+const RECOVERABLE_ACADEMY_WORKBOOK_IDS = ["what_to_say", "show_up", "get_paid"] as const
+const RECOVERABLE_ACADEMY_WORKBOOK_SET = new Set<string>(RECOVERABLE_ACADEMY_WORKBOOK_IDS)
+
+const RECOVERY_PRODUCT_TYPE_ALIASES: Record<string, string> = {
+  "starter-kit-paid": "starter_kit",
+  "selfie-guide-paid": "selfie_guide",
+  selfie_guide_paid: "selfie_guide",
+  "prompt-vault-paid": "prompt_vault",
+  "selfie-ai-photos-kit-paid": "selfie_ai_photos_kit",
+  "selfie-to-brand-shoot-paid": "selfie_to_brand_shoot_system",
 }
 
 const PRODUCT_LABEL: Record<string, string> = {
@@ -93,25 +112,19 @@ export async function POST(req: NextRequest) {
   }).catch(() => {})
 
   try {
-    // Look up purchases from multiple sources
-    const [entitlements, freebieSubs] = await Promise.all([
-      sql`
+    // Each explicit ownership source is isolated. A retired or temporarily unavailable table
+    // must not erase a valid purchase found in another source.
+    const [users, freebieSubs] = await Promise.all([
+      readRecoverySource("users", () => sql`
         SELECT
-          ue.product_id as product_type,
-          ue.created_at,
+          u.id,
           u.email,
-          u.display_name as name,
-          fs.access_token
-        FROM user_entitlements ue
-        INNER JOIN users u ON u.id = ue.user_id
-        LEFT JOIN freebie_subscribers fs
-          ON LOWER(fs.email) = LOWER(u.email)
+          u.display_name as name
+        FROM users u
         WHERE LOWER(u.email) = ${email}
-          AND ue.status = 'active'
-        ORDER BY ue.created_at DESC
-        LIMIT 10
-      `,
-      sql`
+        LIMIT 1
+      `),
+      readRecoverySource("freebie_subscribers", () => sql`
         SELECT
           source as product_type,
           access_token,
@@ -121,26 +134,70 @@ export async function POST(req: NextRequest) {
         FROM freebie_subscribers
         WHERE LOWER(email) = ${email}
           AND source IN ('starter-kit-paid', 'selfie-guide-paid', 'selfie_guide_paid', 'prompt-vault-paid', 'selfie-ai-photos-kit-paid', 'selfie-to-brand-shoot-paid')
+        ORDER BY created_at DESC, source ASC
         LIMIT 5
-      `,
+      `),
     ])
 
-    const purchases = [...(entitlements as PurchaseRecord[]), ...(freebieSubs as PurchaseRecord[])]
+    const recoveryUser = (users as RecoveryUserRecord[])[0]
+    const academyOwnership = recoveryUser
+      ? await getAcademyExplicitOwnership(recoveryUser.id).catch(error => {
+          console.error("[access-recovery] canonical Academy ownership unavailable:", error)
+          return []
+        })
+      : []
 
-    if (purchases.length === 0) {
+    const academyPurchases: PurchaseRecord[] = recoveryUser
+      ? academyOwnership.map(ownership => ({
+          product_type: ownership.productId,
+          access_token: null,
+          email: recoveryUser.email,
+          name: recoveryUser.name,
+          created_at: ownership.purchasedAt || "",
+        }))
+      : []
+
+    const tokenPurchases = (freebieSubs as PurchaseRecord[]).map(purchase => ({
+      ...purchase,
+      product_type:
+        RECOVERY_PRODUCT_TYPE_ALIASES[purchase.product_type] || purchase.product_type,
+    }))
+
+    // Exact token rows are ordered first so label dedupe keeps the most direct working URL when
+    // canonical ownership and a historical token describe the same product.
+    const purchases = [...tokenPurchases, ...academyPurchases].filter(purchase =>
+      Boolean(PRODUCT_ACCESS_URL[purchase.product_type]),
+    )
+
+    // The canonical resolver returns purchased/base IDs only. Keep this defensive collapse for
+    // older suite rows that may predate purchased_product_id metadata.
+    const hasSuiteOwnership = academyOwnership.some(
+      ownership => ownership.productId === "visibility_suite",
+    )
+    if (hasSuiteOwnership) {
+      for (let index = purchases.length - 1; index >= 0; index -= 1) {
+        if (RECOVERABLE_ACADEMY_WORKBOOK_SET.has(purchases[index].product_type)) {
+          purchases.splice(index, 1)
+        }
+      }
+    }
+
+    const recoveryPurchases = purchases
+
+    if (recoveryPurchases.length === 0) {
       await logRecoveryAttempt(email, "no_purchase_found", logData)
       // Still return ok - don't tell them the email wasn't found
       return NextResponse.json({ ok: true })
     }
 
     // Build the recovery email
-    const firstName = getFirstNameForEmail({ fullName: purchases[0]?.name, email })
+    const firstName = getFirstNameForEmail({ fullName: recoveryPurchases[0]?.name, email })
     const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 
-    const productLines = purchases
+    const productLines = recoveryPurchases
       .map((p) => {
         const label = PRODUCT_LABEL[p.product_type] || p.product_type
-        let accessUrl = `${productionUrl}${PRODUCT_ACCESS_URL[p.product_type] || "/app"}`
+        let accessUrl = `${productionUrl}${PRODUCT_ACCESS_URL[p.product_type]}`
 
         // For token-based products, build the direct token URL
         if ((p.product_type === "starter_kit" || p.product_type.includes("starter-kit")) && p.access_token) {
@@ -222,6 +279,18 @@ export async function POST(req: NextRequest) {
     console.error("[access-recovery] Error:", err.message)
     await logRecoveryAttempt(email, "error", { ...logData, error: err.message })
     return NextResponse.json({ ok: true }) // Always return ok
+  }
+}
+
+async function readRecoverySource<T>(
+  source: string,
+  query: () => Promise<T[]>,
+): Promise<T[]> {
+  try {
+    return await query()
+  } catch (error) {
+    console.error(`[access-recovery] ${source} lookup unavailable:`, error)
+    return []
   }
 }
 

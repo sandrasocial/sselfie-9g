@@ -11,12 +11,21 @@ import {
   generateVisibilitySuiteDeliveryEmail,
 } from "@/lib/email/templates/academy-product-delivery"
 import { ACADEMY_PRODUCTS } from "@/lib/products"
+import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 import { VISIBILITY_MINI_PRODUCT_BY_ID } from "@/lib/visibility-products"
 import { generatePasswordSetupLinkForPurchase } from "../shared"
 import type { CheckoutFulfillmentContext } from "../types"
 
 export async function handleAcademyProductCheckout(ctx: CheckoutFulfillmentContext): Promise<void> {
   const { event, isPaymentPaid, customerEmail, source } = ctx
+
+  // Checkout can complete before an asynchronous payment succeeds. Delivery belongs only to the
+  // paid event; returning here lets checkout.session.async_payment_succeeded fulfill later.
+  if (!isPaymentPaid) return
+
+  // Production ownership is live-only. Test-mode fixtures remain usable outside production.
+  if (shouldEnforceLiveSubscriptionRows() && !event.livemode) return
+
   // The dispatcher only routes here when session.metadata.product_type matched, so metadata
   // is present — mirrors the monolith's narrowing.
   const session = ctx.session as typeof ctx.session & { metadata: NonNullable<(typeof ctx.session)["metadata"]> }
@@ -145,6 +154,7 @@ export async function handleAcademyProductCheckout(ctx: CheckoutFulfillmentConte
       userId: academyUserId,
       productId: entitlementProductId,
       sourceRef: paymentIntentId || session.id,
+      throwOnError: true,
       metadata: {
         source:
           productId === "visibility_suite"
