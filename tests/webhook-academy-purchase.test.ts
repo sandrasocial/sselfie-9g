@@ -220,7 +220,10 @@ describe("stripe webhook academy purchase branch", () => {
     expect(response.status).toBe(200)
 
     const serializedCalls = sqlMock.mock.calls.map(call =>
-      JSON.stringify({ query: Array.isArray(call[0]) ? call[0].join(" ") : String(call[0]), values: call.slice(1) })
+      JSON.stringify({
+        query: Array.isArray(call[0]) ? call[0].join(" ") : String(call[0]),
+        values: call.slice(1),
+      })
     )
 
     for (const productId of ["visibility_suite", "what_to_say", "show_up", "get_paid"]) {
@@ -254,17 +257,18 @@ describe("stripe webhook academy purchase branch", () => {
         method: "POST",
         headers: { "stripe-signature": "sig_test" },
         body: "{}",
-      }) as any,
+      }) as any
     )
 
     expect(response.status).toBe(500)
     expect(sendEmailMock).not.toHaveBeenCalled()
 
     expect(
-      sqlMock.mock.calls.some(call =>
-        queryTextForCall(call).includes("UPDATE webhook_events") &&
-        JSON.stringify(call.slice(1)).includes("failed"),
-      ),
+      sqlMock.mock.calls.some(
+        call =>
+          queryTextForCall(call).includes("UPDATE webhook_events") &&
+          JSON.stringify(call.slice(1)).includes("failed")
+      )
     ).toBe(true)
   })
 
@@ -307,48 +311,50 @@ describe("stripe webhook academy purchase branch", () => {
     let eventStatus: "missing" | "claimed" | "failed" | "processed" = "missing"
     let failFirstEntitlement = true
 
-    sqlMock.mockImplementation(
-      async (strings: TemplateStringsArray, ...values: unknown[]) => {
-        const query = strings.join(" ")
+    sqlMock.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
+      const query = strings.join(" ")
 
-        if (
-          query.includes("INSERT INTO webhook_events") &&
-          query.includes("provider") &&
-          query.includes("RETURNING id")
-        ) {
-          if (eventStatus === "missing") {
-            eventStatus = "claimed"
-            return [{ id: 1 }]
-          }
-          return []
+      if (
+        query.includes("INSERT INTO webhook_events") &&
+        query.includes("provider") &&
+        query.includes("RETURNING id")
+      ) {
+        if (eventStatus === "missing") {
+          eventStatus = "claimed"
+          return [{ id: 1 }]
         }
-
-        if (query.includes("UPDATE webhook_events") && query.includes("AND status = 'failed'")) {
-          if (eventStatus === "failed") {
-            eventStatus = "claimed"
-            return [{ id: 1 }]
-          }
-          return []
-        }
-
-        if (query.includes("UPDATE webhook_events")) {
-          if (values.includes("failed")) eventStatus = "failed"
-          if (values.includes("processed")) eventStatus = "processed"
-          return []
-        }
-
-        if (query.includes("INSERT INTO user_entitlements")) {
-          if (failFirstEntitlement) {
-            failFirstEntitlement = false
-            throw new Error("temporary entitlement write failure")
-          }
-          const productId = values[1]
-          if (typeof productId === "string") successfulGrantIds.add(productId)
-        }
-
         return []
-      },
-    )
+      }
+
+      if (
+        query.includes("UPDATE webhook_events") &&
+        query.includes("status = 'failed'") &&
+        query.includes("RETURNING id")
+      ) {
+        if (eventStatus === "failed") {
+          eventStatus = "claimed"
+          return [{ id: 1 }]
+        }
+        return []
+      }
+
+      if (query.includes("UPDATE webhook_events")) {
+        if (values.includes("failed")) eventStatus = "failed"
+        if (values.includes("processed")) eventStatus = "processed"
+        return []
+      }
+
+      if (query.includes("INSERT INTO user_entitlements")) {
+        if (failFirstEntitlement) {
+          failFirstEntitlement = false
+          throw new Error("temporary entitlement write failure")
+        }
+        const productId = values[1]
+        if (typeof productId === "string") successfulGrantIds.add(productId)
+      }
+
+      return []
+    })
     sendEmailMock.mockImplementation(async () => {
       expect(Array.from(successfulGrantIds).sort()).toEqual(expectedGrantIds.slice().sort())
       return { success: true }

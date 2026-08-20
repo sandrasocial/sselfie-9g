@@ -12,9 +12,11 @@ import {
 import { handleCheckoutSessionCompleted } from "@/lib/payments/lifecycle/checkout-session-completed"
 import { claimEvent, markEventFailed, markEventProcessed } from "@/lib/events/idempotency"
 
-
 /** Stable id for Redis webhook rate limit - never bucket unrelated traffic on "undefined". */
-function stripeWebhookRateLimitKey(event: { id: string; data: { object: Record<string, unknown> } }): string {
+function stripeWebhookRateLimitKey(event: {
+  id: string
+  data: { object: Record<string, unknown> }
+}): string {
   const obj = event.data?.object ?? {}
   const c = obj.customer
   if (typeof c === "string" && c.length > 0) return c
@@ -27,10 +29,30 @@ function stripeWebhookRateLimitKey(event: { id: string; data: { object: Record<s
   return event.id
 }
 
-function stripeWebhookObjectId(event: { data: { object: Record<string, unknown> } }): string | null {
+function stripeWebhookObjectId(event: {
+  data: { object: Record<string, unknown> }
+}): string | null {
   const obj = event.data?.object ?? {}
   const oid = obj.id
   return typeof oid === "string" && oid.length > 0 ? oid : null
+}
+
+function allowsAcademyStaleClaimReclaim(event: {
+  type: string
+  data: { object: Record<string, unknown> }
+}): boolean {
+  if (
+    event.type !== "checkout.session.completed" &&
+    event.type !== "checkout.session.async_payment_succeeded"
+  ) {
+    return false
+  }
+
+  const metadata = event.data.object.metadata
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return false
+
+  const productType = (metadata as Record<string, unknown>).product_type
+  return productType === "academy_mini_product" || productType === "visibility_suite"
 }
 
 export async function POST(request: NextRequest) {
@@ -87,9 +109,16 @@ export async function POST(request: NextRequest) {
       metadata: {
         rate_limit_key: rateLimitKey,
       },
+      allowStaleClaimReclaim: allowsAcademyStaleClaimReclaim(event),
     })
 
     if (eventClaim.duplicate) {
+      if (eventClaim.duplicateStatus === "in_progress") {
+        return NextResponse.json(
+          { received: false, retry: true },
+          { status: 503, headers: { "Retry-After": "60" } }
+        )
+      }
       console.log(`[v0] ⚠️ Duplicate event detected: ${event.id} - skipping processing`)
       return NextResponse.json({ received: true, duplicate: true })
     }
@@ -156,7 +185,7 @@ export async function POST(request: NextRequest) {
         console.log(`[v0] Event data:`, JSON.stringify(event.data.object, null, 2))
     }
 
-    await markEventProcessed("stripe", event.id).catch((statusError) => {
+    await markEventProcessed("stripe", event.id).catch(statusError => {
       console.error("[v0] Failed to mark Stripe webhook event processed:", statusError)
     })
 
@@ -164,7 +193,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("[v0] Webhook handler error:", error)
 
-    await markEventFailed("stripe", event.id, error).catch((statusError) => {
+    await markEventFailed("stripe", event.id, error).catch(statusError => {
       console.error("[v0] Failed to mark Stripe webhook event failed:", statusError)
     })
 

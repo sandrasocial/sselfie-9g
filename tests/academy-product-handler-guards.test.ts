@@ -118,4 +118,33 @@ describe("Academy product fulfillment guards", () => {
     )
     expect(sendEmailMock).toHaveBeenCalledTimes(1)
   })
+
+  it("uses one provider delivery when a stale event replay re-enters after an email send", async () => {
+    const providerSend = vi.fn()
+    const providerKeys = new Set<string>()
+    sendEmailMock.mockImplementation(async input => {
+      if (!providerKeys.has(input.idempotencyKey)) {
+        providerKeys.add(input.idempotencyKey)
+        providerSend()
+      }
+      return { success: true }
+    })
+    const { handleAcademyProductCheckout } =
+      await import("@/lib/payments/handlers/academy-products")
+
+    const replayedContext = context({ paid: true, livemode: true })
+    await handleAcademyProductCheckout(replayedContext)
+    await handleAcademyProductCheckout(replayedContext)
+
+    expect(sendEmailMock).toHaveBeenCalledTimes(2)
+    expect(sendEmailMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ idempotencyKey: "academy-purchase-delivery:cs_1" })
+    )
+    expect(sendEmailMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ idempotencyKey: "academy-purchase-delivery:cs_1" })
+    )
+    expect(providerSend).toHaveBeenCalledTimes(1)
+  })
 })

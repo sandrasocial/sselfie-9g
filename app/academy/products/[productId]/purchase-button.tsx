@@ -4,15 +4,11 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Inter } from "next/font/google"
 
+import { resolveSameOriginAcademyPurchaseUrl } from "@/lib/academy-checkout-navigation"
+
 const inter = Inter({ subsets: ["latin"], weight: ["300", "500", "600"] })
 
-export default function PurchaseButton({
-  productId,
-  price,
-}: {
-  productId: string
-  price: number
-}) {
+export default function PurchaseButton({ productId, price }: { productId: string; price: number }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,8 +24,18 @@ export default function PurchaseButton({
       })
       const data = await res.json()
       if (!res.ok) {
+        const purchaseUrl = resolveSameOriginAcademyPurchaseUrl(
+          data.purchaseUrl,
+          window.location.origin
+        )
+        if (purchaseUrl) {
+          window.location.assign(purchaseUrl)
+          return
+        }
         if (res.status === 401) {
-          router.push(`/auth/login?returnTo=${encodeURIComponent(`/academy/products/${productId}`)}`)
+          router.push(
+            `/auth/login?returnTo=${encodeURIComponent(`/academy/products/${productId}`)}`
+          )
           return
         }
         throw new Error(data.error || "Something went wrong")

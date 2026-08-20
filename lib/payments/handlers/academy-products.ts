@@ -28,12 +28,15 @@ export async function handleAcademyProductCheckout(ctx: CheckoutFulfillmentConte
 
   // The dispatcher only routes here when session.metadata.product_type matched, so metadata
   // is present — mirrors the monolith's narrowing.
-  const session = ctx.session as typeof ctx.session & { metadata: NonNullable<(typeof ctx.session)["metadata"]> }
+  const session = ctx.session as typeof ctx.session & {
+    metadata: NonNullable<(typeof ctx.session)["metadata"]>
+  }
   const userId = ctx.userId as string
   const isNewUserForEmail = ctx.isNewUserForEmail ?? false
   const purchasePasswordSetupLink = ctx.purchasePasswordSetupLink ?? ""
   const productType = (ctx as CheckoutFulfillmentContext & { productType?: string }).productType
-  const productId = productType === "visibility_suite" ? "visibility_suite" : session.metadata.product_id
+  const productId =
+    productType === "visibility_suite" ? "visibility_suite" : session.metadata.product_id
   let academyUserId = (session.metadata.user_id as string | undefined) || userId
   const academyCustomerEmail = session.customer_details?.email || session.customer_email
   const academyProduct = ACADEMY_PRODUCTS[productId as keyof typeof ACADEMY_PRODUCTS]
@@ -169,9 +172,7 @@ export async function handleAcademyProductCheckout(ctx: CheckoutFulfillmentConte
   if (academyCustomerEmail) {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
     const miniProductSlug =
-      VISIBILITY_MINI_PRODUCT_BY_ID[
-        productId as keyof typeof VISIBILITY_MINI_PRODUCT_BY_ID
-      ]?.slug
+      VISIBILITY_MINI_PRODUCT_BY_ID[productId as keyof typeof VISIBILITY_MINI_PRODUCT_BY_ID]?.slug
     const academyAccessUrl = miniProductSlug
       ? `${siteUrl}/academy/access/${miniProductSlug}`
       : `${siteUrl}/academy`
@@ -202,6 +203,7 @@ export async function handleAcademyProductCheckout(ctx: CheckoutFulfillmentConte
       text: emailContent.text,
       emailType: "academy_purchase_confirmation",
       tags: ["academy", productId],
+      idempotencyKey: `academy-purchase-delivery:${session.id}`,
     })
   }
 }

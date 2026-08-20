@@ -9,11 +9,13 @@ export type ClaimEventInput = {
   objectId?: string | null
   livemode?: boolean | null
   metadata?: Record<string, unknown> | null
+  allowStaleClaimReclaim?: boolean
 }
 
 export type EventClaim = {
   claimed: boolean
   duplicate: boolean
+  duplicateStatus: "processed" | "in_progress" | null
   provider: EventProvider
   eventId: string
   storage: "provider-event" | "legacy-stripe-event"
@@ -24,6 +26,8 @@ type SqlErrorLike = {
   message?: string
 }
 
+export const EVENT_CLAIM_STALE_AFTER_SECONDS = 15 * 60
+
 function isProviderEventSchemaMissing(error: unknown) {
   const err = error as SqlErrorLike
   const message = String(err?.message || "").toLowerCase()
@@ -32,7 +36,8 @@ function isProviderEventSchemaMissing(error: unknown) {
     err?.code === "42703" ||
     err?.code === "42P01" ||
     err?.code === "42P10" ||
-    (message.includes("column") && (message.includes("provider") || message.includes("event_id"))) ||
+    (message.includes("column") &&
+      (message.includes("provider") || message.includes("event_id"))) ||
     message.includes("no unique or exclusion constraint")
   )
 }
@@ -91,7 +96,14 @@ export async function claimEvent(input: ClaimEventInput): Promise<EventClaim> {
           updated_at = NOW()
         WHERE provider = ${provider}
           AND event_id = ${eventId}
-          AND status = 'failed'
+          AND (
+            status = 'failed'
+            OR (
+              ${input.allowStaleClaimReclaim === true}
+              AND status = 'claimed'
+              AND updated_at < NOW() - (${EVENT_CLAIM_STALE_AFTER_SECONDS} * INTERVAL '1 second')
+            )
+          )
         RETURNING id
       `) as Array<{ id: number }>
 
@@ -99,16 +111,35 @@ export async function claimEvent(input: ClaimEventInput): Promise<EventClaim> {
         return {
           claimed: true,
           duplicate: false,
+          duplicateStatus: null,
           provider,
           eventId,
           storage: "provider-event",
         }
+      }
+
+      const existing = (await sql`
+        SELECT status
+        FROM webhook_events
+        WHERE provider = ${provider}
+          AND event_id = ${eventId}
+        LIMIT 1
+      `) as Array<{ status: string }>
+
+      return {
+        claimed: false,
+        duplicate: true,
+        duplicateStatus: existing[0]?.status === "processed" ? "processed" : "in_progress",
+        provider,
+        eventId,
+        storage: "provider-event",
       }
     }
 
     return {
       claimed: claimed.length > 0,
       duplicate: claimed.length === 0,
+      duplicateStatus: null,
       provider,
       eventId,
       storage: "provider-event",
@@ -134,6 +165,7 @@ async function claimLegacyStripeEvent(eventId: string): Promise<EventClaim> {
     return {
       claimed: claimed.length > 0,
       duplicate: claimed.length === 0,
+      duplicateStatus: claimed.length > 0 ? null : "processed",
       provider: "stripe",
       eventId,
       storage: "legacy-stripe-event",
@@ -162,6 +194,7 @@ async function claimLegacyStripeEvent(eventId: string): Promise<EventClaim> {
     return {
       claimed: claimed.length > 0,
       duplicate: claimed.length === 0,
+      duplicateStatus: claimed.length > 0 ? null : "processed",
       provider: "stripe",
       eventId,
       storage: "legacy-stripe-event",
@@ -183,7 +216,7 @@ async function updateProviderEventStatus(
   provider: EventProvider,
   eventId: string,
   status: "processed" | "failed",
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, unknown>
 ) {
   try {
     if (metadata) {
