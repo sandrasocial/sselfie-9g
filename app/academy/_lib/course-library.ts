@@ -106,12 +106,12 @@ export async function requireAcademyPageUser(redirectPath: string) {
   } = await supabase.auth.getUser()
 
   if (!authUser) {
-    redirect(`/auth/login?redirect=${encodeURIComponent(redirectPath)}`)
+    redirect(`/auth/login?returnTo=${encodeURIComponent(redirectPath)}`)
   }
 
   const neonUser = await getUserByAuthId(authUser.id)
   if (!neonUser) {
-    redirect(`/auth/login?redirect=${encodeURIComponent(redirectPath)}`)
+    redirect(`/auth/login?returnTo=${encodeURIComponent(redirectPath)}`)
   }
 
   return {

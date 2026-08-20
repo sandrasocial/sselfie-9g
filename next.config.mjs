@@ -1,12 +1,45 @@
 // Injected content via Sentry wizard below
 import { withSentryConfig } from "@sentry/nextjs";
 
+const protectedWorkbookHeaders = [
+  { key: "Cache-Control", value: "private, no-store, max-age=0, must-revalidate" },
+  { key: "Vercel-CDN-Cache-Control", value: "no-store" },
+  { key: "CDN-Cache-Control", value: "no-store" },
+  { key: "Pragma", value: "no-cache" },
+  { key: "Vary", value: "Cookie" },
+  { key: "X-Robots-Tag", value: "noindex,nofollow,noarchive" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  { key: "Referrer-Policy", value: "same-origin" },
+  { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+  {
+    key: "Content-Security-Policy",
+    value:
+      "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'; form-action 'self'",
+  },
+]
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // DELETE-01 (2026-06-10): 18 retired marketing pages became framework-level redirects so the
   // page directories could be deleted. External links (ManyChat, old IG posts) keep working.
   async redirects() {
     return [
+      {
+        source: "/academy/what_to_say/index.html",
+        destination: "/academy/what_to_say",
+        permanent: false,
+      },
+      {
+        source: "/academy/show_up/index.html",
+        destination: "/academy/show_up",
+        permanent: false,
+      },
+      {
+        source: "/academy/get_paid/index.html",
+        destination: "/academy/get_paid",
+        permanent: false,
+      },
       // Members type /login by hand; it was a raw 404 (UX audit 2026-07-28).
       { source: "/login", destination: "/auth/login", permanent: true },
       { source: "/signup", destination: "/auth/sign-up", permanent: true },
@@ -44,6 +77,9 @@ const nextConfig = {
   // CONTENT-VISUALS-01: the carousel + story render routes read these TTFs at runtime on Vercel
   outputFileTracingIncludes: {
     "/api/admin/content-kit/**": ["./assets/fonts/*.ttf"],
+    "/academy/what_to_say": ["./server/academy-workbooks/what_to_say/index.html"],
+    "/academy/show_up": ["./server/academy-workbooks/show_up/index.html"],
+    "/academy/get_paid": ["./server/academy-workbooks/get_paid/index.html"],
   },
   // Enable Sentry instrumentation
   experimental: {
@@ -73,6 +109,30 @@ const nextConfig = {
   serverExternalPackages: ['prettier', 'prettier/plugins/html', 'prettier/standalone'],
   async headers() {
     return [
+      {
+        source: "/academy/what_to_say",
+        headers: protectedWorkbookHeaders,
+      },
+      {
+        source: "/academy/show_up",
+        headers: protectedWorkbookHeaders,
+      },
+      {
+        source: "/academy/get_paid",
+        headers: protectedWorkbookHeaders,
+      },
+      {
+        source: "/academy/what_to_say/index.html",
+        headers: protectedWorkbookHeaders,
+      },
+      {
+        source: "/academy/show_up/index.html",
+        headers: protectedWorkbookHeaders,
+      },
+      {
+        source: "/academy/get_paid/index.html",
+        headers: protectedWorkbookHeaders,
+      },
       {
         source: '/sw.js',
         headers: [

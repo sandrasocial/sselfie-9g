@@ -22,6 +22,7 @@ export default function LoginPage() {
   const returnTo = normalizeLegacyStudioRedirect(
     sanitizeRedirect(searchParams.get("returnTo"), LIVE_MEMBER_APP_PATH),
   )
+  const forgotPasswordHref = `/auth/forgot-password?next=${encodeURIComponent(returnTo)}`
   const referralCode = getReferralCodeFromBrowser(searchParams)
   const signUpHref = buildReferralSignUpHref({ returnTo, referralCode })
 
@@ -152,7 +153,7 @@ export default function LoginPage() {
                       Password
                     </Label>
                     <Link
-                      href="/auth/forgot-password"
+                      href={forgotPasswordHref}
                       className="text-xs text-[#7A6F63] transition-colors hover:text-[#0F0D0B]"
                     >
                       Forgot password?

@@ -89,6 +89,20 @@ describe("post-purchase account setup flow", () => {
     expect(setupPage).toContain("router.push(nextAfterSetup)")
   })
 
+  it("preserves the workbook returnTo through login and forgot-password setup", () => {
+    const loginPage = readFileSync("app/auth/login/page.tsx", "utf8")
+    const forgotPasswordPage = readFileSync("app/auth/forgot-password/page.tsx", "utf8")
+
+    expect(loginPage).toContain(
+      "`/auth/forgot-password?next=${encodeURIComponent(returnTo)}`"
+    )
+    expect(loginPage).toContain("href={forgotPasswordHref}")
+    expect(forgotPasswordPage).toContain('searchParams.get("next")')
+    expect(forgotPasswordPage).toContain(
+      "/auth/setup-password?next=${encodeURIComponent(nextAfterReset)}"
+    )
+  })
+
   it("academy access page requires authentication via requireAcademyPageUser", () => {
     const visibilitySuitePage = readFileSync("app/academy/access/visibility-suite/page.tsx", "utf8")
 
@@ -99,7 +113,17 @@ describe("post-purchase account setup flow", () => {
     const courseLibrary = readFileSync("app/academy/_lib/course-library.ts", "utf8")
 
     // Must redirect to /auth/login, not a generic 401 or error page
-    expect(courseLibrary).toContain("/auth/login?redirect=")
+    expect(courseLibrary).toContain("/auth/login?returnTo=")
+    expect(courseLibrary).not.toContain("/auth/login?redirect=")
+    expect(courseLibrary).toContain("encodeURIComponent(redirectPath)")
+    const successPage = readFileSync("app/academy/success/page.tsx", "utf8")
+    expect(successPage).toContain("/auth/login?returnTo=")
+    expect(successPage).not.toContain("/auth/login?redirect=")
+    expect(successPage).toContain("/academy/success?product=")
+    const productPage = readFileSync("app/academy/products/[productId]/page.tsx", "utf8")
+    expect(productPage).toContain("PROTECTED_WORKBOOK_PATH_BY_PRODUCT")
+    expect(productPage).toContain("/auth/login?returnTo=")
+    expect(productPage).not.toContain("/auth/login?redirect=")
     // Must also verify Neon user exists (not just Supabase auth)
     expect(courseLibrary).toContain("getUserByAuthId")
   })

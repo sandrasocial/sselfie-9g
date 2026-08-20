@@ -29,7 +29,7 @@ export default function PurchaseButton({
       const data = await res.json()
       if (!res.ok) {
         if (res.status === 401) {
-          router.push(`/auth/login?redirect=${encodeURIComponent(`/academy/products/${productId}`)}`)
+          router.push(`/auth/login?returnTo=${encodeURIComponent(`/academy/products/${productId}`)}`)
           return
         }
         throw new Error(data.error || "Something went wrong")

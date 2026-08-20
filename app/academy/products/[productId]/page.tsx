@@ -45,6 +45,12 @@ const INCLUDED_BY_PRODUCT: Record<string, string[]> = {
   ],
 }
 
+const PROTECTED_WORKBOOK_PATH_BY_PRODUCT: Record<string, string> = {
+  what_to_say: "/academy/what_to_say",
+  show_up: "/academy/show_up",
+  get_paid: "/academy/get_paid",
+}
+
 export default async function AcademyProductPage({
   params,
 }: {
@@ -58,12 +64,12 @@ export default async function AcademyProductPage({
   } = await supabase.auth.getUser()
 
   if (!authUser) {
-    redirect(`/auth/login?redirect=${encodeURIComponent(`/academy/products/${productId}`)}`)
+    redirect(`/auth/login?returnTo=${encodeURIComponent(`/academy/products/${productId}`)}`)
   }
 
   const neonUser = await getUserByAuthId(authUser.id)
   if (!neonUser) {
-    redirect(`/auth/login?redirect=${encodeURIComponent(`/academy/products/${productId}`)}`)
+    redirect(`/auth/login?returnTo=${encodeURIComponent(`/academy/products/${productId}`)}`)
   }
 
   const entitlementState = await getAcademyEntitlementState(String(neonUser.id))
@@ -76,11 +82,11 @@ export default async function AcademyProductPage({
     redirect(product.hasAccess ? product.accessUrl : product.purchaseUrl)
   }
 
-  // Academy course products: if the user has access, send them to the library
-  // where their courses live. The accessUrl for academy_course type points back
-  // to this same page - a circular link - so we redirect to /academy instead.
+  // Historical workbook owners continue directly into the matching protected workbook.
+  // Other Academy course products fall back to the library because their accessUrl points
+  // back to this page and would otherwise create a circular redirect.
   if (product.deliveryKind === "academy_course" && product.hasAccess) {
-    redirect("/academy")
+    redirect(PROTECTED_WORKBOOK_PATH_BY_PRODUCT[product.id] || "/academy")
   }
 
   const includedItems = INCLUDED_BY_PRODUCT[product.id] ?? [

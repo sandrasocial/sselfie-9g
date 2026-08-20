@@ -121,9 +121,9 @@ describe("visibility suite entitlements and routing", () => {
 
   it("each workbook includes a Maya output panel", () => {
     const workbooks = [
-      ["public/academy/what_to_say/index.html", "Generate Message Kit"],
-      ["public/academy/show_up/index.html", "Generate Content Plan"],
-      ["public/academy/get_paid/index.html", "Generate Sales Path"],
+      ["server/academy-workbooks/what_to_say/index.html", "Generate Message Kit"],
+      ["server/academy-workbooks/show_up/index.html", "Generate Content Plan"],
+      ["server/academy-workbooks/get_paid/index.html", "Generate Sales Path"],
     ] as const
 
     for (const [file, cta] of workbooks) {
@@ -137,9 +137,9 @@ describe("visibility suite entitlements and routing", () => {
 
   it("workbook Maya output renders markdown and persists locally", () => {
     const workbooks = [
-      ["public/academy/what_to_say/index.html", "what_to_say"],
-      ["public/academy/show_up/index.html", "show_up"],
-      ["public/academy/get_paid/index.html", "get_paid"],
+      ["server/academy-workbooks/what_to_say/index.html", "what_to_say"],
+      ["server/academy-workbooks/show_up/index.html", "show_up"],
+      ["server/academy-workbooks/get_paid/index.html", "get_paid"],
     ] as const
 
     for (const [file, productId] of workbooks) {
@@ -184,9 +184,9 @@ describe("visibility suite entitlements and routing", () => {
   })
 
   it("implements the market fit workbook question updates", () => {
-    const whatToSay = read("public/academy/what_to_say/index.html")
-    const showUp = read("public/academy/show_up/index.html")
-    const getPaid = read("public/academy/get_paid/index.html")
+    const whatToSay = read("server/academy-workbooks/what_to_say/index.html")
+    const showUp = read("server/academy-workbooks/show_up/index.html")
+    const getPaid = read("server/academy-workbooks/get_paid/index.html")
     const generator = read("components/academy/visibility-plan-generator.tsx")
     const workbookRoute = read("app/api/academy/visibility-suite/workbook/route.ts")
     const planRoute = read("app/api/academy/visibility-suite/plan/generate/route.ts")
@@ -241,9 +241,9 @@ describe("visibility suite entitlements and routing", () => {
   it("shows the guided four-step suite path across the buyer experience", () => {
     const publicPage = read("app/visibility-suite/page.tsx")
     const suitePage = read("app/academy/access/visibility-suite/page.tsx")
-    const whatToSay = read("public/academy/what_to_say/index.html")
-    const showUp = read("public/academy/show_up/index.html")
-    const getPaid = read("public/academy/get_paid/index.html")
+    const whatToSay = read("server/academy-workbooks/what_to_say/index.html")
+    const showUp = read("server/academy-workbooks/show_up/index.html")
+    const getPaid = read("server/academy-workbooks/get_paid/index.html")
     const generator = read("components/academy/visibility-plan-generator.tsx")
 
     expect(publicPage).toContain("Generate your Maya Visibility Plan")

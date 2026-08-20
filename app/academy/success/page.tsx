@@ -97,12 +97,12 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
     : "/academy/success"
 
   if (!authUser) {
-    redirect(`/auth/login?redirect=${encodeURIComponent(redirectPath)}`)
+    redirect(`/auth/login?returnTo=${encodeURIComponent(redirectPath)}`)
   }
 
   const neonUser = await getUserByAuthId(authUser.id)
   if (!neonUser) {
-    redirect(`/auth/login?redirect=${encodeURIComponent(redirectPath)}`)
+    redirect(`/auth/login?returnTo=${encodeURIComponent(redirectPath)}`)
   }
 
   const firstName =
