@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db/client"
+import { hasSubscriptionAccess } from "@/lib/membership-access-policy"
 
 export type ProductType =
   | "sselfie_studio_membership"
@@ -50,28 +51,8 @@ function createdAtMillis(value: Date | string | null | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-function hasGracePeriodAccess(status: SubscriptionStatus | null, currentPeriodEnd?: Date | null) {
-  if (!status || !currentPeriodEnd) {
-    return false
-  }
-
-  const graceStatuses: SubscriptionStatus[] = ["canceled", "cancelled", "past_due"]
-  if (!graceStatuses.includes(status)) {
-    return false
-  }
-
-  return new Date(currentPeriodEnd).getTime() > Date.now()
-}
-
 function isSubscriptionAccessActive(subscription: any) {
-  if (!subscription) return false
-
-  const status = subscription.status as SubscriptionStatus
-  if (status === "active" || status === "trialing") {
-    return true
-  }
-
-  return hasGracePeriodAccess(status, subscription.current_period_end)
+  return hasSubscriptionAccess(subscription)
 }
 
 /**

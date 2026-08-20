@@ -4,6 +4,7 @@ import { stripe } from "@/lib/stripe"
 import { createCronLogger } from "@/lib/cron-logger"
 import { sql } from "@/lib/db/client"
 import { logAdminError } from "@/lib/admin-error-log"
+import { resolveReconciledSubscriptionPlan } from "@/lib/payments/reconciled-subscription-plan"
 
 
 type ProductType = "sselfie_studio_membership" | "brand_studio_membership" | "pro"
@@ -286,6 +287,10 @@ export async function GET(request: NextRequest) {
         const cps = rawCps ? new Date(rawCps * 1000) : null
         const cpe = rawCpe ? new Date(rawCpe * 1000) : null
         const isTestMode = !subAny.livemode
+        const reconciledPlan = resolveReconciledSubscriptionPlan({
+          metadata: sub.metadata,
+          productType,
+        })
 
         const existingByStripe = await sql`
           SELECT id
@@ -301,7 +306,6 @@ export async function GET(request: NextRequest) {
               SET
                 user_id = ${resolved.userId},
                 product_type = ${productType},
-                plan = ${productType},
                 status = ${stripeStatus},
                 stripe_customer_id = ${customerId},
                 current_period_start = ${cps},
@@ -312,7 +316,6 @@ export async function GET(request: NextRequest) {
                 AND (
                   user_id IS DISTINCT FROM ${resolved.userId}
                   OR product_type IS DISTINCT FROM ${productType}
-                  OR plan IS DISTINCT FROM ${productType}
                   OR status IS DISTINCT FROM ${stripeStatus}
                   OR stripe_customer_id IS DISTINCT FROM ${customerId}
                   OR current_period_start IS DISTINCT FROM ${cps}
@@ -328,7 +331,6 @@ export async function GET(request: NextRequest) {
               SET
                 user_id = ${resolved.userId},
                 product_type = ${productType},
-                plan = ${productType},
                 status = ${stripeStatus},
                 stripe_customer_id = ${customerId},
                 current_period_start = ${cps},
@@ -338,7 +340,6 @@ export async function GET(request: NextRequest) {
                 AND (
                   user_id IS DISTINCT FROM ${resolved.userId}
                   OR product_type IS DISTINCT FROM ${productType}
-                  OR plan IS DISTINCT FROM ${productType}
                   OR status IS DISTINCT FROM ${stripeStatus}
                   OR stripe_customer_id IS DISTINCT FROM ${customerId}
                   OR current_period_start IS DISTINCT FROM ${cps}
@@ -370,7 +371,6 @@ export async function GET(request: NextRequest) {
               UPDATE subscriptions
               SET
                 product_type = ${productType},
-                plan = ${productType},
                 status = ${stripeStatus},
                 stripe_subscription_id = ${sub.id},
                 stripe_customer_id = ${customerId},
@@ -381,7 +381,6 @@ export async function GET(request: NextRequest) {
               WHERE id = ${existingUnlinkedMembership[0].id}
                 AND (
                   product_type IS DISTINCT FROM ${productType}
-                  OR plan IS DISTINCT FROM ${productType}
                   OR status IS DISTINCT FROM ${stripeStatus}
                   OR stripe_subscription_id IS DISTINCT FROM ${sub.id}
                   OR stripe_customer_id IS DISTINCT FROM ${customerId}
@@ -397,7 +396,6 @@ export async function GET(request: NextRequest) {
               UPDATE subscriptions
               SET
                 product_type = ${productType},
-                plan = ${productType},
                 status = ${stripeStatus},
                 stripe_subscription_id = ${sub.id},
                 stripe_customer_id = ${customerId},
@@ -407,7 +405,6 @@ export async function GET(request: NextRequest) {
               WHERE id = ${existingUnlinkedMembership[0].id}
                 AND (
                   product_type IS DISTINCT FROM ${productType}
-                  OR plan IS DISTINCT FROM ${productType}
                   OR status IS DISTINCT FROM ${stripeStatus}
                   OR stripe_subscription_id IS DISTINCT FROM ${sub.id}
                   OR stripe_customer_id IS DISTINCT FROM ${customerId}
@@ -440,7 +437,7 @@ export async function GET(request: NextRequest) {
             VALUES (
               ${resolved.userId},
               ${productType},
-              ${productType},
+              ${reconciledPlan},
               ${stripeStatus},
               ${sub.id},
               ${customerId},
@@ -468,7 +465,7 @@ export async function GET(request: NextRequest) {
             VALUES (
               ${resolved.userId},
               ${productType},
-              ${productType},
+              ${reconciledPlan},
               ${stripeStatus},
               ${sub.id},
               ${customerId},

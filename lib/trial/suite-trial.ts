@@ -7,6 +7,7 @@
 
 import { sql } from "@/lib/db/client"
 import { addCredits } from "@/lib/credits"
+import { hasSubscriptionAccess } from "@/lib/membership-access-policy"
 
 export const TRIAL_DAYS = 7
 export const TRIAL_CREDITS = 20
@@ -73,12 +74,12 @@ export async function grantSuiteTrial(
  */
 export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
   const rows = await sql`
-    SELECT product_type, status, trial_ends_at
+    SELECT product_type, status, current_period_end, trial_ends_at
     FROM subscriptions
     WHERE user_id = ${userId}
       AND (is_test_mode = FALSE OR is_test_mode IS NULL)
       AND (
-        (product_type IN ('sselfie_studio_membership', 'brand_studio_membership', 'pro') AND status = 'active')
+        product_type IN ('sselfie_studio_membership', 'brand_studio_membership', 'pro')
         OR (product_type = 'vault_maya' AND status = 'active')
         OR product_type = 'suite_trial'
         OR product_type = 'selfie_visibility_bundle_pass'
@@ -91,8 +92,10 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
   // vault_maya row, and when the temporary tier expires an active vault_maya keeps
   // studio access instead of falling to "limited".
   if (
-    rows.some(r =>
-      ["sselfie_studio_membership", "brand_studio_membership", "pro"].includes(r.product_type)
+    rows.some(
+      r =>
+        ["sselfie_studio_membership", "brand_studio_membership", "pro"].includes(r.product_type) &&
+        hasSubscriptionAccess(r),
     )
   ) {
     return { level: "member", trialEndsAt: null, trialDaysLeft: null }
@@ -128,7 +131,11 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
   }
 
   // One-time owners with accounts also get the limited shell (Library shows what they own).
-  if (rows.length > 0) {
+  if (
+    rows.some(
+      r => !["sselfie_studio_membership", "brand_studio_membership", "pro"].includes(r.product_type),
+    )
+  ) {
     return { level: "limited", trialEndsAt: null, trialDaysLeft: null }
   }
 
