@@ -2,7 +2,11 @@
 
 import { sql } from "@/lib/db/client"
 import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
-import { MAYA_ESSENTIAL_MONTHLY_CREDITS, MONTHLY_MEMBERSHIP_CREDITS, VAULT_MAYA_MONTHLY_CREDITS } from "@/lib/credit-policy"
+import {
+  MAYA_ESSENTIAL_MONTHLY_CREDITS,
+  MONTHLY_MEMBERSHIP_CREDITS,
+  VAULT_MAYA_MONTHLY_CREDITS,
+} from "@/lib/credit-policy"
 
 export const CREDIT_COSTS = {
   TRAINING: 20,
@@ -31,6 +35,22 @@ export type TransactionType =
 export type AddCreditsOptions = {
   allowUnlinkedPurchase?: boolean
   source?: string
+}
+
+export type ReferencedPurchaseCreditGrant = {
+  userId: string
+  amount: number
+  description: string
+  paymentReference: string
+  grantPurpose: string
+  isTestMode: boolean
+}
+
+export type ReferencedPurchaseCreditGrantResult = {
+  success: boolean
+  newBalance: number
+  granted: boolean
+  error?: string
 }
 
 /**
@@ -128,6 +148,154 @@ export async function getUserCredits(userId: string): Promise<number> {
   const balance = Number(result[0].balance)
   console.log("[v0] [CREDITS] Current balance:", balance)
   return balance
+}
+
+/**
+ * Whether a signed Stripe purchase event may mutate the shared credit wallet.
+ * The wallet is shared and not partitioned by Stripe mode, so only live money is eligible.
+ */
+export function shouldFulfillStripePurchaseCredits(livemode: boolean): boolean {
+  return livemode
+}
+
+/**
+ * Grant one Stripe-backed purchase-credit purpose exactly once.
+ *
+ * A payment can legitimately fund more than one credit purpose, so the identity is deliberately
+ * (user, live/test mode, transaction type, payment reference, purpose), never payment reference
+ * alone. The advisory lock is held by the same transaction that atomically changes the wallet and
+ * writes its ledger row. A replay receives a fresh snapshot after the lock and returns granted:false.
+ */
+export async function grantReferencedPurchaseCredits(
+  input: ReferencedPurchaseCreditGrant
+): Promise<ReferencedPurchaseCreditGrantResult> {
+  const paymentReference = input.paymentReference.trim()
+  const grantPurpose = input.grantPurpose.trim()
+  const transactionType = "purchase" as const
+  const isTestMode = input.isTestMode === true
+  const modeKey = isTestMode ? "test" : "live"
+
+  if (isTestMode) {
+    return {
+      success: false,
+      newBalance: 0,
+      granted: false,
+      error: "Test-mode Stripe events cannot mutate the shared credit wallet",
+    }
+  }
+
+  if (!paymentReference) {
+    return {
+      success: false,
+      newBalance: 0,
+      granted: false,
+      error: "A Stripe payment reference is required for purchase credits",
+    }
+  }
+  if (!grantPurpose) {
+    return {
+      success: false,
+      newBalance: 0,
+      granted: false,
+      error: "A stable grant purpose is required for purchase credits",
+    }
+  }
+  if (!Number.isInteger(input.amount) || input.amount <= 0) {
+    return {
+      success: false,
+      newBalance: 0,
+      granted: false,
+      error: "Purchase credit amount must be a positive integer",
+    }
+  }
+
+  const lockKey = [
+    "referenced-credit-grant",
+    input.userId,
+    modeKey,
+    transactionType,
+    paymentReference,
+    grantPurpose,
+  ].join(":")
+
+  try {
+    const [, grantRows] = await sql.transaction(tx => [
+      tx`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`,
+      tx`
+        WITH existing_grant AS MATERIALIZED (
+          SELECT balance_after
+          FROM credit_transactions
+          WHERE user_id = ${input.userId}
+            AND transaction_type = ${transactionType}
+            AND stripe_payment_id = ${paymentReference}
+            AND COALESCE(is_test_mode, false) = ${isTestMode}
+            AND (
+              reference_id = ${grantPurpose}
+              OR (reference_id IS NULL AND description = ${input.description})
+            )
+          ORDER BY id ASC
+          LIMIT 1
+        ),
+        balance_upsert AS (
+          INSERT INTO user_credits (
+            user_id, balance, total_purchased, total_used, created_at, updated_at
+          )
+          SELECT ${input.userId}, ${input.amount}, ${input.amount}, 0, NOW(), NOW()
+          WHERE NOT EXISTS (SELECT 1 FROM existing_grant)
+          ON CONFLICT (user_id)
+          DO UPDATE SET
+            balance = user_credits.balance + ${input.amount},
+            total_purchased = user_credits.total_purchased + ${input.amount},
+            updated_at = NOW()
+          RETURNING balance
+        ),
+        ledger_insert AS (
+          INSERT INTO credit_transactions (
+            user_id, amount, transaction_type, description, reference_id,
+            stripe_payment_id, balance_after, is_test_mode, created_at
+          )
+          SELECT
+            ${input.userId}, ${input.amount}, ${transactionType}, ${input.description},
+            ${grantPurpose}, ${paymentReference}, balance, ${isTestMode}, NOW()
+          FROM balance_upsert
+          RETURNING balance_after
+        )
+        SELECT
+          COALESCE(
+            (SELECT balance_after FROM ledger_insert),
+            (SELECT balance_after FROM existing_grant),
+            (SELECT balance FROM user_credits WHERE user_id = ${input.userId}),
+            0
+          ) AS balance,
+          EXISTS (SELECT 1 FROM ledger_insert) AS granted
+      `,
+    ])
+
+    const newBalance = Number(grantRows[0]?.balance || 0)
+    const granted = grantRows[0]?.granted === true
+
+    if (granted) {
+      try {
+        const { invalidateCreditCache } = await import("./credits-cached")
+        await invalidateCreditCache(input.userId)
+      } catch (cacheError) {
+        console.warn(
+          "[Credits] Referenced purchase credits committed, but cache invalidation failed:",
+          cacheError
+        )
+      }
+    }
+
+    return { success: true, newBalance, granted }
+  } catch (error) {
+    console.error("[Credits] Failed referenced purchase credit grant:", error)
+    return {
+      success: false,
+      newBalance: 0,
+      granted: false,
+      error: "Failed to grant purchase credits",
+    }
+  }
 }
 
 /**
@@ -673,22 +841,22 @@ export async function grantOneTimeSessionCredits(
   stripePaymentId?: string,
   isTestMode = false,
   options?: AddCreditsOptions
-) {
+): Promise<ReferencedPurchaseCreditGrantResult> {
   const credits = SUBSCRIPTION_CREDITS.one_time_session
+  void options
 
   if (!stripePaymentId) {
     console.warn("[Credits] ⚠️ grantOneTimeSessionCredits called without stripe_payment_id")
   }
 
-  return await addCredits(
+  return grantReferencedPurchaseCredits({
     userId,
-    credits,
-    "purchase",
-    "One-Time SSELFIE Session purchase",
-    stripePaymentId,
+    amount: credits,
+    description: "One-Time SSELFIE Session purchase",
+    paymentReference: stripePaymentId || "",
+    grantPurpose: "one_time_session",
     isTestMode,
-    options
-  )
+  })
 }
 
 /**
@@ -798,8 +966,9 @@ export async function grantPaidBlueprintCredits(
   stripePaymentId?: string,
   isTestMode = false,
   options?: AddCreditsOptions
-): Promise<{ success: boolean; newBalance: number; error?: string }> {
+): Promise<ReferencedPurchaseCreditGrantResult> {
   const credits = 60 // Paid blueprint users get 60 credits (30 images × 2 credits per image)
+  void options
 
   if (!stripePaymentId) {
     console.warn("[Credits] ⚠️ grantPaidBlueprintCredits called without stripe_payment_id")
@@ -812,13 +981,12 @@ export async function grantPaidBlueprintCredits(
     isTestMode,
   })
 
-  return await addCredits(
+  return grantReferencedPurchaseCredits({
     userId,
-    credits,
-    "purchase",
-    "Legacy Feed Planner purchase (60 credits - 30 images)",
-    stripePaymentId,
+    amount: credits,
+    description: "Legacy Feed Planner purchase (60 credits - 30 images)",
+    paymentReference: stripePaymentId || "",
+    grantPurpose: "paid_blueprint",
     isTestMode,
-    options
-  )
+  })
 }

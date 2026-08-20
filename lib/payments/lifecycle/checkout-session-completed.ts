@@ -51,20 +51,56 @@ import {
 } from "@/lib/payments/checkout-metadata"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 
+type PurchaseCreditProductType =
+  | "credit_topup"
+  | "one_time_session"
+  | "transform_starter"
+  | "transform_topup"
+  | "paid_blueprint"
+
+function isPurchaseCreditProductType(
+  productType: string | null | undefined
+): productType is PurchaseCreditProductType {
+  return (
+    productType === "credit_topup" ||
+    productType === "one_time_session" ||
+    productType === "paid_blueprint" ||
+    isTransformProductType(productType)
+  )
+}
+
+function getPurchaseCreditDestination(productType: PurchaseCreditProductType): string {
+  return isTransformProductType(productType) ? "/transform/studio" : "/app"
+}
+
+function getStablePurchaseCreditActionUrl(params: {
+  productType: PurchaseCreditProductType
+  needsAccountSetup: boolean
+}): string {
+  const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+  const destination = getPurchaseCreditDestination(params.productType)
+
+  if (!params.needsAccountSetup) {
+    return `${productionUrl}${destination}`
+  }
+
+  return `${productionUrl}/auth/forgot-password?next=${encodeURIComponent(destination)}`
+}
+
 async function sendTransformPurchaseEmail(params: {
   customerEmail: string
   customerName?: string | null
   credits: number
-  passwordSetupUrl?: string
+  actionUrl: string
+  needsAccountSetup: boolean
+  idempotencyKey: string
 }) {
-  const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
   const firstName = getFirstNameForEmail({
     fullName: params.customerName || undefined,
     email: params.customerEmail,
   })
-  const actionUrl = params.passwordSetupUrl || `${productionUrl}/transform/studio`
-  const actionLabel = params.passwordSetupUrl ? "Set up your account" : "Open the editor"
-  const subject = params.passwordSetupUrl
+  const actionLabel = params.needsAccountSetup ? "Set up your account" : "Open the editor"
+  const subject = params.needsAccountSetup
     ? "Your SSELFIE edit credits are ready"
     : "Your SSELFIE edit credits have been added"
   const text = [
@@ -73,7 +109,7 @@ async function sendTransformPurchaseEmail(params: {
     `Your ${params.credits} SSELFIE edit credits are ready.`,
     "Open the editor, upload a photo, choose an aesthetic, and apply your style.",
     "",
-    `${actionLabel}: ${actionUrl}`,
+    `${actionLabel}: ${params.actionUrl}`,
     "",
     "Sandra",
   ].join("\n")
@@ -83,7 +119,7 @@ async function sendTransformPurchaseEmail(params: {
       <p>Your ${params.credits} SSELFIE edit credits are ready.</p>
       <p>Open the editor, upload a photo, choose an aesthetic, and apply your style.</p>
       <p style="margin: 28px 0;">
-        <a href="${actionUrl}" style="display: inline-block; background: #0a0a0a; color: #ffffff; padding: 14px 22px; text-decoration: none; font-size: 14px; font-weight: 600;">
+        <a href="${params.actionUrl}" style="display: inline-block; background: #0a0a0a; color: #ffffff; padding: 14px 22px; text-decoration: none; font-size: 14px; font-weight: 600;">
           ${actionLabel}
         </a>
       </p>
@@ -98,7 +134,67 @@ async function sendTransformPurchaseEmail(params: {
     text,
     emailType: "transform_purchase_confirmation",
     tags: ["transform", "purchase-confirmation"],
+    idempotencyKey: params.idempotencyKey,
   })
+}
+
+async function sendPurchaseCreditFulfillmentEmail(params: {
+  session: Stripe.Checkout.Session
+  productType: Exclude<PurchaseCreditProductType, "paid_blueprint">
+  customerEmail: string
+  credits: number
+  needsAccountSetup: boolean
+}): Promise<void> {
+  const actionUrl = getStablePurchaseCreditActionUrl(params)
+
+  if (isTransformProductType(params.productType)) {
+    const result = await sendTransformPurchaseEmail({
+      customerEmail: params.customerEmail,
+      customerName: params.session.customer_details?.name,
+      credits: params.credits,
+      actionUrl,
+      needsAccountSetup: params.needsAccountSetup,
+      idempotencyKey: `transform-purchase-confirmation:${params.session.id}`,
+    })
+    if (!result.success) {
+      throw new Error(result.error || "Failed to send Transform purchase confirmation")
+    }
+    return
+  }
+
+  const productName =
+    params.productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PURCHASE"
+  const emailContent = generateWelcomeEmail({
+    customerName: getFirstNameForEmail({
+      fullName: params.session.customer_details?.name,
+      email: params.customerEmail,
+    }),
+    customerEmail: params.customerEmail,
+    creditsGranted: params.credits,
+    packageName: productName,
+    productType: params.productType,
+    ...(params.needsAccountSetup ? { passwordSetupUrl: actionUrl } : {}),
+  })
+  const result = await sendEmail({
+    to: params.customerEmail,
+    subject: params.needsAccountSetup
+      ? "Welcome to SSelfie! Set up your account"
+      : params.productType === "credit_topup"
+        ? `Your ${params.credits} credits have been added!`
+        : `Your ${productName} purchase is confirmed!`,
+    html: emailContent.html,
+    text: emailContent.text,
+    emailType:
+      params.productType === "credit_topup"
+        ? "credit_topup_confirmation"
+        : "one_time_session_confirmation",
+    tags: [params.productType, "purchase-confirmation"],
+    idempotencyKey: `${params.productType}-confirmation:${params.session.id}`,
+  })
+
+  if (!result.success) {
+    throw new Error(result.error || `Failed to send ${params.productType} confirmation`)
+  }
 }
 
 /**
@@ -408,6 +504,32 @@ export async function handleCheckoutSessionCompleted(
 
   const customerEmail =
     session.customer_details?.email || session.customer_email || session.metadata?.customer_email
+  const isDiagnosticOnlyPurchaseCreditCheckout =
+    session.mode === "payment" &&
+    isPurchaseCreditProductType(initialProductType) &&
+    (!isPaymentPaid || !event.livemode)
+
+  if (isDiagnosticOnlyPurchaseCreditCheckout) {
+    const diagnosticRevenue = await recordCheckoutSessionRevenue({
+      event,
+      session,
+      userId: metadata.user_id || null,
+      productType: initialProductType,
+      paymentType: initialProductType,
+      customerEmail,
+      description: `Diagnostic checkout payment - ${initialProductType}`,
+    })
+
+    if (!diagnosticRevenue.recorded) {
+      throw new Error(`Failed to record diagnostic checkout revenue for ${session.id}`)
+    }
+
+    console.log(
+      `[v0] ⏭️ Recorded diagnostic-only ${initialProductType} checkout; customer effects deferred until a live paid event.`
+    )
+    return
+  }
+
   if (customerEmail && !isCampaignTestEvent) {
     try {
       await persistCheckoutAttributionContact({
@@ -944,64 +1066,8 @@ export async function handleCheckoutSessionCompleted(
           }
         }
 
-        if (isTransformProductType(productType) && isPaymentPaid && customerEmail) {
-          console.log(`[v0] Sending Transform purchase confirmation email to ${customerEmail}`)
-          await sendTransformPurchaseEmail({
-            customerEmail,
-            customerName: session.customer_details?.name,
-            credits,
-          })
-        } else if (source === "app" && productType === "credit_topup") {
-          console.log(`[v0] Sending credit top-up confirmation email to ${customerEmail}`)
-
-          const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-          const productName = "CREDIT PURCHASE"
-
-          const emailContent = generateWelcomeEmail({
-            customerName: getFirstNameForEmail({
-              fullName: session.customer_details?.name,
-              email: customerEmail,
-            }),
-            customerEmail: customerEmail,
-            creditsGranted: credits,
-            packageName: productName,
-            productType: "credit_topup",
-          })
-
-          const emailResult = await sendEmail({
-            to: customerEmail,
-            subject: `Your ${credits} credits have been added!`,
-            html: emailContent.html,
-            text: emailContent.text,
-            tags: ["credit-topup", "purchase-confirmation"],
-          })
-
-          if (emailResult.success) {
-            console.log(
-              `[v0] Credit top-up confirmation email sent, message ID: ${emailResult.messageId}`
-            )
-
-            await sql`
-                    INSERT INTO email_logs (
-                      user_email,
-                      email_type,
-                      resend_message_id,
-                      status,
-                      sent_at
-                    )
-                    VALUES (
-                      ${customerEmail},
-                      'credit_topup_confirmation',
-                      ${emailResult.messageId},
-                      'sent',
-                      NOW()
-                    )
-                  `
-          } else {
-            console.error(
-              `[v0] Failed to send credit top-up confirmation email: ${emailResult.error}`
-            )
-          }
+        if (isPurchaseCreditProductType(productType)) {
+          console.log(`[v0] Deferring ${productType} email until its atomic credit grant succeeds`)
         } else if (
           isPublicPaidCheckoutSource &&
           productType !== "paid_blueprint" &&
@@ -1235,7 +1301,11 @@ export async function handleCheckoutSessionCompleted(
             console.log(`[v0] Step 7: Generated password setup link`)
 
             // ⚠️ Skip welcome email for paid_blueprint / selfie_guide / bundle - delivery email is sent separately
-            if (
+            if (isPurchaseCreditProductType(productType)) {
+              console.log(
+                `[v0] Deferring ${productType} setup email until its atomic credit grant succeeds`
+              )
+            } else if (
               productType === "paid_blueprint" ||
               productType === "selfie_guide" ||
               productType === "selfie_guide_bundle" ||
@@ -1253,33 +1323,6 @@ export async function handleCheckoutSessionCompleted(
               console.log(
                 `[v0] ⚠️ Skipping welcome email for ${productType} - delivery email will be sent separately`
               )
-            } else if (isTransformProductType(productType)) {
-              console.log(`[v0] Step 8: Sending Transform setup email...`)
-              const emailResult = await sendTransformPurchaseEmail({
-                customerEmail,
-                customerName: session.customer_details?.name,
-                credits,
-                passwordSetupUrl: passwordSetupLink,
-              })
-
-              await sql`
-                      INSERT INTO email_logs (
-                        user_email,
-                        email_type,
-                        resend_message_id,
-                        status,
-                        error_message,
-                        sent_at
-                      )
-                      VALUES (
-                        ${customerEmail},
-                        'transform_purchase_confirmation',
-                        ${emailResult.messageId || null},
-                        ${emailResult.success ? "sent" : "failed"},
-                        ${emailResult.error || null},
-                        NOW()
-                      )
-                    `
             } else {
               const productName =
                 productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
@@ -1489,6 +1532,9 @@ export async function handleCheckoutSessionCompleted(
         rawMetadata: session.metadata as Record<string, unknown>,
         notes: `Revenue recorded (${revenueRecord.stripePaymentId}); missing user_id after email lookup/account creation. Entitlement/access was not granted.`,
       })
+      if (productType === "paid_blueprint") {
+        throw new Error(`Paid blueprint user_id unresolved for ${session.id}`)
+      }
       await markEventProcessed("stripe", event.id).catch(statusError => {
         console.error("[v0] Failed to mark Stripe webhook event processed:", statusError)
       })
@@ -1554,6 +1600,15 @@ export async function handleCheckoutSessionCompleted(
         source,
         credits,
       })
+      if (customerEmail) {
+        await sendPurchaseCreditFulfillmentEmail({
+          session,
+          productType,
+          customerEmail,
+          credits,
+          needsAccountSetup: isNewUserForEmail,
+        })
+      }
     } else if (isTransformProductType(productType)) {
       const transformResponse = await handleTransformCheckout({
         event,
@@ -1567,6 +1622,15 @@ export async function handleCheckoutSessionCompleted(
         ...({ productType } as any),
       })
       if (transformResponse) return transformResponse
+      if (customerEmail) {
+        await sendPurchaseCreditFulfillmentEmail({
+          session,
+          productType,
+          customerEmail,
+          credits,
+          needsAccountSetup: isNewUserForEmail,
+        })
+      }
     } else if (productType === "credit_topup") {
       await handleCreditTopupCheckout({
         event,
@@ -1578,6 +1642,15 @@ export async function handleCheckoutSessionCompleted(
         source,
         credits,
       })
+      if (customerEmail) {
+        await sendPurchaseCreditFulfillmentEmail({
+          session,
+          productType,
+          customerEmail,
+          credits,
+          needsAccountSetup: isNewUserForEmail,
+        })
+      }
     } else if (productType === "brand_strategy_pack") {
       await handleBrandStrategyPackCheckout({
         event,
