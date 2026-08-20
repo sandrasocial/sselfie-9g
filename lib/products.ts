@@ -255,6 +255,7 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     description: "Get the Selfie Guide and strategy foundation together at the bundle price.",
     priceInCents: 2700, // $27 one-time
     type: "selfie_guide_bundle",
+    lifecycleStatus: "legacy_access_only",
     tag: "bought_selfie_guide_bundle",
     features: [
       "Full Selfie Guide access",
@@ -269,6 +270,7 @@ export const LIVE_PRICING_PRODUCTS: PricingProduct[] = [
     description: "Take one selfie you feel confident enough to post and understand what to fix first.",
     priceInCents: 1700, // $17 one-time
     type: "selfie_guide",
+    lifecycleStatus: "legacy_access_only",
     tag: "bought_selfie_guide",
     features: [
       "First-photo checklist",
@@ -465,8 +467,8 @@ export const PRIVATE_PILOT_PRICING_PRODUCTS: PricingProduct[] = [
 
 export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath> = {
   one_time_session: {
-    lifecycleStatus: "live",
-    checkoutPath: "app:startProductCheckoutSession(one_time_session)",
+    lifecycleStatus: "archived",
+    checkoutPath: "legacy:no-new-public-checkout",
     fulfillmentRule: "stripe_webhook.checkout.session.completed:one_time_session",
     successNextAction: "/app",
     lifecycleEmailEntryPoint: "generateWelcomeEmail",
@@ -523,7 +525,7 @@ export const PRODUCT_REVENUE_PATHS: Record<PricingProductId, ProductRevenuePath>
     lifecycleEmailEntryPoint: "none — archived product",
   },
   selfie_guide_bundle: {
-    lifecycleStatus: "live",
+    lifecycleStatus: "legacy_access_only",
     checkoutPath: "legacy:webhook-only bundle fulfillment",
     fulfillmentRule: "stripe_webhook.checkout.session.completed:selfie_guide_bundle",
     successNextAction: "/selfie-guide",
@@ -767,6 +769,99 @@ export function getProductById(productId: string): PricingProduct | undefined {
 
 export function getCheckoutProductById(productId: string): PricingProduct | undefined {
   return getProductById(productId) || PRIVATE_PILOT_PRICING_PRODUCTS.find(p => p.id === productId)
+}
+
+export type NewCheckoutLifecycleResolution =
+  | {
+      status: "allowed"
+      source: "public_catalog" | "private_pilot"
+      lifecycleStatus: "live"
+      product: PricingProduct
+    }
+  | {
+      status: "blocked"
+      source: "public_catalog" | "private_pilot"
+      lifecycleStatus: ProductLifecycleStatus
+      blockedBy: "lifecycle" | "legacy_checkout_path"
+      checkoutPath: string | null
+      product: PricingProduct
+    }
+  | {
+      status: "not_found"
+      source: null
+      lifecycleStatus: null
+      product: null
+    }
+
+/**
+ * Resolves eligibility for a brand-new checkout only. Historical product lookup, webhook
+ * fulfillment, and buyer access continue to use PRICING_PRODUCTS/getProductById unchanged.
+ */
+export function resolveNewCheckoutLifecycle(productId: string): NewCheckoutLifecycleResolution {
+  const publicProduct = getProductById(productId)
+  const privatePilotProduct = publicProduct
+    ? undefined
+    : PRIVATE_PILOT_PRICING_PRODUCTS.find(product => product.id === productId)
+  const product = publicProduct || privatePilotProduct
+
+  if (!product) {
+    return { status: "not_found", source: null, lifecycleStatus: null, product: null }
+  }
+
+  const source = publicProduct ? "public_catalog" : "private_pilot"
+  const revenuePath = PRODUCT_REVENUE_PATHS[product.id]
+  const lifecycleStatuses = [
+    product.lifecycleStatus,
+    revenuePath?.lifecycleStatus,
+  ]
+  const blockedLifecycle = lifecycleStatuses.find(
+    lifecycle => lifecycle === "archived" || lifecycle === "legacy_access_only"
+  )
+
+  if (revenuePath?.checkoutPath.startsWith("legacy:")) {
+    return {
+      status: "blocked",
+      source,
+      lifecycleStatus: blockedLifecycle || revenuePath.lifecycleStatus,
+      blockedBy: "legacy_checkout_path",
+      checkoutPath: revenuePath.checkoutPath,
+      product,
+    }
+  }
+
+  if (blockedLifecycle) {
+    return {
+      status: "blocked",
+      source,
+      lifecycleStatus: blockedLifecycle,
+      blockedBy: "lifecycle",
+      checkoutPath: revenuePath?.checkoutPath || null,
+      product,
+    }
+  }
+
+  return { status: "allowed", source, lifecycleStatus: "live", product }
+}
+
+export function assertNewCheckoutProductAllowed(
+  productId: string,
+  options: { allowPrivatePilot?: boolean } = {}
+): PricingProduct {
+  const resolution = resolveNewCheckoutLifecycle(productId)
+  if (resolution.status === "not_found") {
+    throw new Error(`Product with id "${productId}" not found`)
+  }
+  if (resolution.status === "blocked") {
+    throw new Error(
+      `New checkout is not allowed for ${productId} (${resolution.lifecycleStatus}). Historical access remains available.`
+    )
+  }
+  if (resolution.source === "private_pilot" && !options.allowPrivatePilot) {
+    throw new Error(
+      "Private pilot checkout requires the guarded landing checkout and its buyer allowlist."
+    )
+  }
+  return resolution.product
 }
 
 export function getCreditPackageById(packageId: string): CreditPackage | undefined {

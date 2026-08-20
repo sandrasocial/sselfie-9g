@@ -12,6 +12,7 @@ describe("getAcademyProducts", () => {
     vi.clearAllMocks()
     vi.resetModules()
     process.env.DATABASE_URL = "postgres://unit-test"
+    process.env.STRIPE_PRICE_AI_PHOTO_PROMPTS = "price_ai_photo_prompts"
   })
 
   it("returns defaults when overrides table is unavailable", async () => {
@@ -127,6 +128,59 @@ describe("getAcademyProducts", () => {
       active: false,
     })
     expect(showUp?.stripePriceId).toBeDefined()
+  })
+
+  it("keeps an explicit database purchasable=false authoritative over fallback metadata", async () => {
+    const disabledProductIds = ["what_to_say", "show_up", "get_paid", "ai_photo_prompts"]
+    sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (query.includes("FROM academy_products")) {
+        return disabledProductIds.map((id, index) => ({
+          id,
+          slug: id.replaceAll("_", "-"),
+          title: id,
+          type: id === "ai_photo_prompts" ? "pack" : "course",
+          membership_included: true,
+          purchasable: false,
+          stripe_price_id: null,
+          active: true,
+          sort_order: index + 1,
+          delivery_kind: "academy_course",
+          access_target: id,
+        }))
+      }
+      if (query.includes("FROM academy_product_overrides")) return []
+      return []
+    })
+
+    const { getAcademyProductCatalog } = await import("@/lib/academy-entitlements")
+    const catalog = await getAcademyProductCatalog()
+
+    for (const productId of disabledProductIds) {
+      expect(catalog.find(product => product.id === productId)).toMatchObject({
+        id: productId,
+        active: true,
+        purchasable: false,
+      })
+      expect(catalog.find(product => product.id === productId)?.stripePriceId).toBeTruthy()
+    }
+  })
+
+  it("preserves default purchasability when the products source is unavailable", async () => {
+    sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (query.includes("FROM academy_products")) throw new Error("products unavailable")
+      if (query.includes("FROM academy_product_overrides")) return []
+      return []
+    })
+
+    const { getAcademyProductCatalog } = await import("@/lib/academy-entitlements")
+    const catalog = await getAcademyProductCatalog()
+
+    expect(catalog.find(product => product.id === "what_to_say")).toMatchObject({
+      active: true,
+      purchasable: true,
+    })
   })
 
   it("returns default product thumbnails when no admin thumbnail override exists", async () => {

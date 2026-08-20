@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers"
 import { stripe } from "@/lib/stripe"
-import { getCheckoutProductById } from "@/lib/products"
+import { assertNewCheckoutProductAllowed } from "@/lib/products"
 import { sql } from "@/lib/db/client"
 import type Stripe from "stripe"
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
@@ -61,11 +61,7 @@ export async function createLandingCheckoutSession(
 ) {
   console.log("[landing-checkout] Creating checkout session for product:", productId, promoCode ? `with promo: ${promoCode}` : "")
 
-  const product = getCheckoutProductById(productId)
-  if (!product) {
-    console.error("[landing-checkout] Product not found:", productId)
-    throw new Error(`Product with id "${productId}" not found`)
-  }
+  const product = assertNewCheckoutProductAllowed(productId, { allowPrivatePilot: true })
 
   const isSelfieVisibilityBundle = product.type === "selfie_visibility_bundle"
   const isCampaignOutcome = product.type === "campaign_outcome"

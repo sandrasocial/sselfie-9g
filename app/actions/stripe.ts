@@ -2,7 +2,7 @@
 
 import { stripe } from "@/lib/stripe"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { getCreditPackageById, getProductById } from "@/lib/products"
+import { assertNewCheckoutProductAllowed, getCreditPackageById } from "@/lib/products"
 import { createServerClient } from "@/lib/supabase/server"
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
 import { sql } from "@/lib/db/client"
@@ -93,10 +93,7 @@ export async function startProductCheckoutSession(
   promoCode?: string,
   options?: CheckoutAttributionInput,
 ) {
-  const product = getProductById(productId)
-  if (!product) {
-    throw new Error(`Product with id "${productId}" not found`)
-  }
+  const product = assertNewCheckoutProductAllowed(productId)
 
   const supabase = await createServerClient()
   const {

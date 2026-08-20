@@ -489,7 +489,9 @@ export async function getAcademyProductRegistry(): Promise<AcademyProductRecord[
         title: row.title,
         type: row.type as AcademyProductType,
         membershipIncluded: row.membership_included === true,
-        purchasable: row.purchasable === true || fallback?.purchasable === true,
+        // An explicit database false is authoritative. Defaults still fill products that have
+        // no database row, but cannot silently reopen a row an operator disabled.
+        purchasable: row.purchasable === true,
         stripePriceId: fallback?.stripePriceId ?? row.stripe_price_id ?? null,
         active: row.active === true,
         sortOrder: Number(row.sort_order) || fallback?.sortOrder || 0,
@@ -538,8 +540,7 @@ export async function getAcademyProductCatalog(): Promise<AcademyCatalogProduct[
       price: priceFromCents(priceCents),
       membershipIncluded: product.membershipIncluded,
       purchasable:
-        (product.purchasable || fallback.purchasable) &&
-        Boolean(product.stripePriceId ?? fallback.stripePriceId),
+        product.purchasable && Boolean(product.stripePriceId ?? fallback.stripePriceId),
       stripePriceId: product.stripePriceId ?? fallback.stripePriceId ?? null,
       active,
       sortOrder: product.sortOrder,
