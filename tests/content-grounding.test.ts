@@ -101,8 +101,8 @@ describe("CONTENT-GROUNDING-01 canonical grounding", () => {
     expect(lock).toContain("Entry products are bridges")
     expect(lock).toContain("technology-enabled reinvention")
     expect(sourceOfTruth).toContain(lockPath)
-    expect(repositoryInstructions).toContain("docs/brand/SSELFIE_BRAND_CONSTITUTION.md")
-    expect(repositoryInstructions).toContain("docs/brand/SANDRA_VOICE_OS_2026-07-16.md")
+    expect(repositoryInstructions).toContain("Use an old source only when Sandra names it")
+    expect(repositoryInstructions).toContain("Never send, publish, charge, refund, contact a customer")
   })
 
   it("keeps generated grounding in sync with canonical docs", () => {

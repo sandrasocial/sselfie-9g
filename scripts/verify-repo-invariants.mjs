@@ -78,9 +78,10 @@ for (const forbiddenPath of forbiddenRepoSystems) {
 
 const repositoryInstructions = read("AGENTS.md");
 for (const requiredInstruction of [
-  "Do not create repo task files",
-  "Do not open pull requests",
-  "docs/brand/SANDRA_VOICE_OS_2026-07-16.md",
+  "Sandra's current request is the brief",
+  "Do not automatically read or apply old SSELFIE skills",
+  "Never send, publish, charge, refund, contact a customer",
+  "The retired `/Users/MD760HA/sselfie-9g` folder must not be edited",
 ]) {
   if (!repositoryInstructions.includes(requiredInstruction)) {
     console.error(`FAIL: AGENTS.md is missing: ${requiredInstruction}`);
