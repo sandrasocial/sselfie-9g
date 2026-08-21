@@ -29,6 +29,7 @@
     "payments:reconcile": "node --conditions=react-server --import tsx scripts/reconcile-payment-adjustments.ts",
     "suite:membership-shadow-report": "node --conditions=react-server --import tsx scripts/report-suite-membership-shadow.ts",
     "suite:provider-pilot-shadow-report": "node --conditions=react-server --import tsx scripts/report-suite-provider-pilot.ts",
+    "suite:founder-preflight": "node --conditions=react-server --import tsx scripts/report-suite-founder-preflight.ts",
     "integrations:readiness-report": "node --conditions=react-server --import tsx scripts/report-integration-readiness.ts",
     "arpu-churn-digest": "node scripts/arpu-churn-weekly-digest.mjs",
     "cohort-delivery-digest": "node scripts/cohort-delivery-load-digest.mjs",

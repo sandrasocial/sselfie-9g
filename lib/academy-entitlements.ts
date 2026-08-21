@@ -121,7 +121,7 @@ type ProductOverrideRow = {
   active: boolean | null
 }
 
-type RegistryRow = {
+export type AcademyRegistryProjectionRow = {
   id: string
   slug: string
   title: string
@@ -496,9 +496,42 @@ export async function hasActiveStudioMembership(userId: string): Promise<boolean
   }
 }
 
+export function projectAcademyProductRegistry(
+  rows: readonly AcademyRegistryProjectionRow[],
+  defaults = buildDefaultRegistry()
+): AcademyProductRecord[] {
+  const fallbackMap = new Map(defaults.map(item => [item.id, item]))
+
+  if (!rows.length) return defaults
+
+  const registry = rows.map(row => {
+    const fallback = fallbackMap.get(row.id)
+    return {
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      type: row.type as AcademyProductType,
+      membershipIncluded: row.membership_included === true,
+      // An explicit database false is authoritative. Defaults still fill products that have
+      // no database row, but cannot silently reopen a row an operator disabled.
+      purchasable: row.purchasable === true,
+      stripePriceId: fallback?.stripePriceId ?? row.stripe_price_id ?? null,
+      active: row.active === true,
+      sortOrder: Number(row.sort_order) || fallback?.sortOrder || 0,
+      deliveryKind: row.delivery_kind ?? fallback?.deliveryKind ?? "academy_course",
+      accessTarget: row.access_target ?? fallback?.accessTarget ?? row.id,
+    } satisfies AcademyProductRecord
+  })
+
+  for (const item of defaults) {
+    if (!registry.some(candidate => candidate.id === item.id)) registry.push(item)
+  }
+
+  return registry.sort((a, b) => a.sortOrder - b.sortOrder)
+}
+
 export async function getAcademyProductRegistry(): Promise<AcademyProductRecord[]> {
   const defaults = buildDefaultRegistry()
-  const fallbackMap = new Map(defaults.map(item => [item.id, item]))
 
   try {
     const rows = (await sql`
@@ -517,38 +550,9 @@ export async function getAcademyProductRegistry(): Promise<AcademyProductRecord[
       FROM academy_products
       WHERE active = TRUE
       ORDER BY sort_order ASC, id ASC
-    `) as RegistryRow[]
+    `) as AcademyRegistryProjectionRow[]
 
-    if (!rows.length) {
-      return defaults
-    }
-
-    const registry = rows.map(row => {
-      const fallback = fallbackMap.get(row.id)
-      return {
-        id: row.id,
-        slug: row.slug,
-        title: row.title,
-        type: row.type as AcademyProductType,
-        membershipIncluded: row.membership_included === true,
-        // An explicit database false is authoritative. Defaults still fill products that have
-        // no database row, but cannot silently reopen a row an operator disabled.
-        purchasable: row.purchasable === true,
-        stripePriceId: fallback?.stripePriceId ?? row.stripe_price_id ?? null,
-        active: row.active === true,
-        sortOrder: Number(row.sort_order) || fallback?.sortOrder || 0,
-        deliveryKind: row.delivery_kind ?? fallback?.deliveryKind ?? "academy_course",
-        accessTarget: row.access_target ?? fallback?.accessTarget ?? row.id,
-      } satisfies AcademyProductRecord
-    })
-
-    for (const item of defaults) {
-      if (!registry.some(candidate => candidate.id === item.id)) {
-        registry.push(item)
-      }
-    }
-
-    return registry.sort((a, b) => a.sortOrder - b.sortOrder)
+    return projectAcademyProductRegistry(rows, defaults)
   } catch {
     return defaults
   }
