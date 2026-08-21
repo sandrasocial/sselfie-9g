@@ -640,7 +640,22 @@ describe("Stripe payment adjustment ledger", () => {
       query(call).includes("WHERE review_state IN ('unmatched', 'ambiguous')")
     )
     expect(reviewCall?.slice(1)).toContain(25)
+    expect(reviewCall?.slice(1)).toEqual([25])
+    expect(query(reviewCall!)).not.toContain("livemode =")
     expect(query(reviewCall!)).not.toMatch(/customer|email|metadata|evidence/i)
+  })
+
+  it.each([true, false])("uses a typed boolean review-queue filter for livemode=%s", async mode => {
+    const { getPaymentAdjustmentReviewQueue } =
+      await import("@/lib/payments/lifecycle/payment-adjustments")
+
+    await getPaymentAdjustmentReviewQueue({ limit: 40, livemode: mode })
+
+    const reviewCall = mocks.sql.mock.calls.find((call: SqlCall) =>
+      query(call).includes("WHERE review_state IN ('unmatched', 'ambiguous')")
+    )
+    expect(query(reviewCall!)).toContain("AND livemode =")
+    expect(reviewCall?.slice(1)).toEqual([mode, 40])
   })
 
   it("durably reviews a customer-balance refund with no charge or PaymentIntent", async () => {

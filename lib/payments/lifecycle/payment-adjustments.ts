@@ -644,20 +644,35 @@ export async function getPaymentAdjustmentReviewQueue(
   }>
 }> {
   const limit = Math.min(200, Math.max(1, Math.trunc(input.limit ?? 100)))
-  const rows = await sql`
-    SELECT
-      stripe_adjustment_id,
-      adjustment_type,
-      object_status,
-      review_reason,
-      snapshot_observed_at,
-      livemode
-    FROM stripe_payment_adjustments
-    WHERE review_state IN ('unmatched', 'ambiguous')
-      AND (${input.livemode ?? null} IS NULL OR livemode = ${input.livemode ?? null})
-    ORDER BY snapshot_observed_at DESC, stripe_adjustment_id ASC
-    LIMIT ${limit}
-  `
+  const rows =
+    input.livemode === undefined
+      ? await sql`
+          SELECT
+            stripe_adjustment_id,
+            adjustment_type,
+            object_status,
+            review_reason,
+            snapshot_observed_at,
+            livemode
+          FROM stripe_payment_adjustments
+          WHERE review_state IN ('unmatched', 'ambiguous')
+          ORDER BY snapshot_observed_at DESC, stripe_adjustment_id ASC
+          LIMIT ${limit}
+        `
+      : await sql`
+          SELECT
+            stripe_adjustment_id,
+            adjustment_type,
+            object_status,
+            review_reason,
+            snapshot_observed_at,
+            livemode
+          FROM stripe_payment_adjustments
+          WHERE review_state IN ('unmatched', 'ambiguous')
+            AND livemode = ${input.livemode}
+          ORDER BY snapshot_observed_at DESC, stripe_adjustment_id ASC
+          LIMIT ${limit}
+        `
   return {
     reviewQueue: rows.map(row => ({
       adjustmentId: String(row.stripe_adjustment_id),
