@@ -26,6 +26,7 @@
     "audit-subscriptions": "tsx scripts/audit-subscription-data.ts",
     "audit-revenue": "tsx scripts/audit-revenue-sources.ts",
     "academy:reconcile": "tsx scripts/reconcile-academy-entitlements.ts",
+    "payments:reconcile": "node --conditions=react-server --import tsx scripts/reconcile-payment-adjustments.ts",
     "arpu-churn-digest": "node scripts/arpu-churn-weekly-digest.mjs",
     "cohort-delivery-digest": "node scripts/cohort-delivery-load-digest.mjs",
     "revenue-engine:weekly": "pnpm revenue:weekly",

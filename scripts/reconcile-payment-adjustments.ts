@@ -6,68 +6,54 @@
  * present. It never changes customers, gross payment rows, access, credits, or communications.
  */
 
-import { loadEnvConfig } from "@next/env"
+import { createRequire } from "node:module"
+import { dirname } from "node:path"
+import {
+  PAYMENT_ADJUSTMENT_CLI_USAGE,
+  runPaymentAdjustmentCli,
+} from "@/lib/payments/payment-adjustment-cli"
 
-loadEnvConfig(process.cwd())
+const usage = PAYMENT_ADJUSTMENT_CLI_USAGE
 
-const record = process.argv.includes("--record")
-const reportOnly = process.argv.includes("--report")
-const usage =
-  'Use --report, exact IDs with --livemode=live|test, or bounded discovery with --livemode=live|test --since="ISO" --until="ISO".'
-const modeArgument = process.argv.find(argument => argument.startsWith("--livemode="))
-const modeValue = modeArgument?.slice("--livemode=".length)
-if (modeValue && modeValue !== "live" && modeValue !== "test") {
-  throw new Error("--livemode must be live or test")
+function loadProjectEnv(): void {
+  const projectRequire = createRequire(`${process.cwd()}/package.json`)
+  const nextPackagePath = projectRequire.resolve("next/package.json")
+  const envPackagePath = projectRequire.resolve("@next/env", {
+    paths: [dirname(nextPackagePath)],
+  })
+  const envModule = projectRequire(envPackagePath) as {
+    loadEnvConfig: (directory: string) => unknown
+  }
+  envModule.loadEnvConfig(process.cwd())
 }
 
-const targets = process.argv.flatMap(argument => {
-  const match = argument.match(/^--(refund|dispute|charge)=(re_|dp_|ch_)([^\s]+)$/)
-  if (!match) return []
-  return [{ type: match[1] as "refund" | "dispute" | "charge", id: `${match[2]}${match[3]}` }]
-})
-
-const sinceValue = process.argv
-  .find(argument => argument.startsWith("--since="))
-  ?.slice("--since=".length)
-const untilValue = process.argv
-  .find(argument => argument.startsWith("--until="))
-  ?.slice("--until=".length)
-
-const {
-  getPaymentAdjustmentReportProjection,
-  getPaymentAdjustmentReviewQueue,
-  reconcilePaymentAdjustmentTargets,
-  reconcilePaymentAdjustmentWindow,
-} = await import("@/lib/payments/lifecycle/payment-adjustments")
-
-let output: unknown
-if (reportOnly) {
-  if (record || targets.length || sinceValue || untilValue) {
-    throw new Error(`--report cannot be combined with reconciliation flags. ${usage}`)
+async function main(): Promise<void> {
+  if (process.argv.includes("--help")) {
+    process.stdout.write(`${usage}\n`)
+    return
   }
-  output = {
-    ...(await getPaymentAdjustmentReportProjection()),
-    ...(await getPaymentAdjustmentReviewQueue()),
-  }
-} else {
-  if (!modeValue)
-    throw new Error(`An explicit --livemode=live or --livemode=test is required. ${usage}`)
-  const expectedLivemode = modeValue === "live"
-  if (targets.length) {
-    if (sinceValue || untilValue) {
-      throw new Error(`Exact ID targets cannot be combined with --since/--until. ${usage}`)
+
+  loadProjectEnv()
+  const output = await runPaymentAdjustmentCli(process.argv, async () => {
+    const {
+      getPaymentAdjustmentReportProjection,
+      getPaymentAdjustmentReviewQueue,
+      reconcilePaymentAdjustmentTargets,
+      reconcilePaymentAdjustmentWindow,
+    } = await import("@/lib/payments/lifecycle/payment-adjustments")
+    return {
+      getPaymentAdjustmentReportProjection,
+      getPaymentAdjustmentReviewQueue,
+      reconcilePaymentAdjustmentTargets,
+      reconcilePaymentAdjustmentWindow,
     }
-    output = await reconcilePaymentAdjustmentTargets({ targets, expectedLivemode, record })
-  } else {
-    if (!sinceValue || !untilValue)
-      throw new Error(`Bounded --since and --until are required. ${usage}`)
-    output = await reconcilePaymentAdjustmentWindow({
-      since: new Date(sinceValue),
-      until: new Date(untilValue),
-      expectedLivemode,
-      record,
-    })
-  }
+  })
+
+  process.stdout.write(`${JSON.stringify(output, null, 2)}\n`)
 }
 
-process.stdout.write(`${JSON.stringify(output, null, 2)}\n`)
+void main().catch(error => {
+  const message = error instanceof Error ? error.message : "Unknown reconciliation failure"
+  process.stderr.write(`Payment adjustment reconciliation failed: ${message}\n`)
+  process.exitCode = 1
+})

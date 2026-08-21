@@ -698,6 +698,7 @@ describe("Stripe payment adjustment ledger", () => {
     expect(source).not.toMatch(
       /customer_email|customer_details|raw_payload|event\.data\.object\.metadata/
     )
+    expect(source).toContain('from "@/lib/stripe"')
   })
 
   it("tracks exact provider business keys and mode separation in migration 72", () => {
@@ -719,14 +720,18 @@ describe("Stripe payment adjustment ledger", () => {
       new URL("../scripts/reconcile-payment-adjustments.ts", import.meta.url),
       "utf8"
     )
-    expect(script).toContain('process.argv.includes("--record")')
+    const cli = readFileSync(
+      new URL("../lib/payments/payment-adjustment-cli.ts", import.meta.url),
+      "utf8"
+    )
+    expect(cli).toContain('arguments_.includes("--record")')
     expect(script).toContain("reconcilePaymentAdjustmentTargets")
     expect(script).toContain("reconcilePaymentAdjustmentWindow")
     expect(script).toContain("getPaymentAdjustmentReportProjection")
     expect(script).toContain("getPaymentAdjustmentReviewQueue")
-    expect(script).toContain('--since="')
-    expect(script).toContain('--until="')
-    expect(script).toContain("--report")
+    expect(cli).toContain('--since="')
+    expect(cli).toContain('--until="')
+    expect(cli).toContain("--report")
     expect(script).toContain("Apply migration 72 before deploying webhook routing")
     expect(script).not.toMatch(
       /sendEmail|user_entitlements|user_credits|subscriptions|stripe_payments\s+SET/
