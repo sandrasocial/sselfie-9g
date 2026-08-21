@@ -1,14 +1,21 @@
 import "server-only"
 
 import { sql } from "@/lib/db/client"
-import type {
-  DesiredProvisioningState,
-  IntegrationOperation,
-  IntegrationOutboxStatus,
-  IntegrationProvider,
-  IntegrationScope,
-  ObservedProvisioningState,
+import {
+  INTEGRATION_PROVIDERS,
+  type DesiredProvisioningState,
+  type IntegrationOperation,
+  type IntegrationOutboxStatus,
+  type IntegrationProvider,
+  type IntegrationScope,
+  type ObservedProvisioningState,
 } from "./contracts"
+
+function assertExactProvider(value: unknown): asserts value is IntegrationProvider {
+  if (!INTEGRATION_PROVIDERS.includes(value as IntegrationProvider)) {
+    throw new Error("An exact integration provider is required")
+  }
+}
 
 export interface IntegrationOperatorQueueItem {
   id: string
@@ -66,8 +73,10 @@ function integerOrNull(value: unknown): number | null {
 }
 
 export async function getIntegrationOperatorQueue(
+  provider: IntegrationProvider,
   limit = 100
 ): Promise<IntegrationOperatorQueueItem[]> {
+  assertExactProvider(provider)
   const boundedLimit = Math.min(500, Math.max(1, Math.trunc(limit)))
   const rows = (await sql`
     SELECT
@@ -76,6 +85,7 @@ export async function getIntegrationOperatorQueue(
       captured_desired_revision, desired_revision, desired_state, observed_state,
       last_error_code, last_error_message, created_at, updated_at
     FROM integration_operator_queue_v
+    WHERE provider = ${provider}
     ORDER BY available_at, created_at, id
     LIMIT ${boundedLimit}
   `) as Row[]
@@ -103,7 +113,11 @@ export async function getIntegrationOperatorQueue(
   }))
 }
 
-export async function getIntegrationDeadLetters(limit = 100): Promise<IntegrationDeadLetterItem[]> {
+export async function getIntegrationDeadLetters(
+  provider: IntegrationProvider,
+  limit = 100
+): Promise<IntegrationDeadLetterItem[]> {
+  assertExactProvider(provider)
   const boundedLimit = Math.min(500, Math.max(1, Math.trunc(limit)))
   const rows = (await sql`
     SELECT
@@ -111,6 +125,7 @@ export async function getIntegrationDeadLetters(limit = 100): Promise<Integratio
       attempts, max_attempts, captured_desired_revision, desired_revision,
       desired_state, observed_state, last_error_code, last_error_message, created_at, updated_at
     FROM integration_dead_letters_v
+    WHERE provider = ${provider}
     ORDER BY updated_at DESC, id
     LIMIT ${boundedLimit}
   `) as Row[]

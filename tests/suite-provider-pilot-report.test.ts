@@ -20,6 +20,7 @@ import { readSuiteProviderPilotEvidence } from "@/lib/integrations/suite-provide
 const NOW = new Date("2026-08-21T12:00:00.000Z")
 const READY_ENV = {
   FEATURE_SUITE_PROVIDER_PILOT_SHADOW_ENABLED: "true",
+  SUITE_PROVIDER_PILOT_MODE: "cohort",
   SUITE_PROVIDER_PILOT_USER_IDS: "user_1,user_2,user_3",
   SUITE_PROVIDER_PILOT_PROVIDER: "skool",
   SUITE_PROVIDER_PILOT_RESOURCE_ID: "community_sselfie",
@@ -111,6 +112,73 @@ describe("SUITE provider pilot dark projection", () => {
     ).toEqual({ state: "invalid", reason })
   })
 
+  it("supports one exact founder while preserving the 3-5 member cohort contract", () => {
+    expect(
+      resolveSuiteProviderPilotConfig({
+        ...READY_ENV,
+        SUITE_PROVIDER_PILOT_MODE: "founder_only",
+        SUITE_PROVIDER_PILOT_USER_IDS: "founder_opaque_1",
+      })
+    ).toMatchObject({
+      state: "ready",
+      pilotMode: "founder_only",
+      userIds: ["founder_opaque_1"],
+    })
+    expect(
+      resolveSuiteProviderPilotConfig({
+        ...READY_ENV,
+        SUITE_PROVIDER_PILOT_MODE: "founder_only",
+      })
+    ).toEqual({ state: "invalid", reason: "invalid_user_count" })
+    expect(
+      resolveSuiteProviderPilotConfig({
+        ...READY_ENV,
+        SUITE_PROVIDER_PILOT_MODE: "cohort",
+        SUITE_PROVIDER_PILOT_USER_IDS: "user_1",
+      })
+    ).toEqual({ state: "invalid", reason: "invalid_user_count" })
+    expect(
+      resolveSuiteProviderPilotConfig({ ...READY_ENV, SUITE_PROVIDER_PILOT_MODE: "pilot" })
+    ).toEqual({ state: "invalid", reason: "invalid_pilot_mode" })
+  })
+
+  it("exposes founder mode while keeping every proposal and external effect disabled", () => {
+    const config = resolveSuiteProviderPilotConfig({
+      ...READY_ENV,
+      SUITE_PROVIDER_PILOT_MODE: "founder_only",
+      SUITE_PROVIDER_PILOT_USER_IDS: "founder_opaque_1",
+    })
+    const subscription = {
+      subscriptionId: "sub_founder_1",
+      userId: "founder_opaque_1",
+      productType: "sselfie_studio_membership",
+      planId: "monthly",
+      status: "active",
+      currentPeriodEnd: "2026-09-21T12:00:00.000Z",
+      isTestMode: false,
+    }
+    const report = createSuiteProviderPilotReport(
+      config,
+      {
+        state: "available",
+        subscriptions: [subscription],
+        events: [compatibleEvent(subscription.userId, subscription.subscriptionId)],
+        positiveInitialPayments: [initialPayment(subscription.userId, subscription.subscriptionId)],
+        preexistingExternalUserIds: [],
+      },
+      NOW
+    )
+
+    expect(report).toMatchObject({
+      status: "ok",
+      pilotMode: "founder_only",
+      allowlistSize: 1,
+      externalEffectsAllowed: false,
+    })
+    expect(report.rows).toHaveLength(1)
+    expect(report.rows[0].proposal).toBeNull()
+  })
+
   it("requires an exact provider and opaque resource id", () => {
     expect(
       resolveSuiteProviderPilotConfig({ ...READY_ENV, SUITE_PROVIDER_PILOT_PROVIDER: "studio" })
@@ -133,6 +201,7 @@ describe("SUITE provider pilot dark projection", () => {
     expect(report.status).toBe("ok")
     expect(report.mode).toBe("shadow")
     expect(report).toMatchObject({
+      pilotMode: "cohort",
       providerContractState: "unverified",
       externalEffectsAllowed: false,
       requiredLiveChecks: [

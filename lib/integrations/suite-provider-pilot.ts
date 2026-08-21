@@ -9,6 +9,8 @@ import {
 
 type EnvLike = Record<string, string | undefined>
 
+export type SuiteProviderPilotMode = "founder_only" | "cohort"
+
 export type SuiteProviderPilotProvider = Extract<
   IntegrationProvider,
   "skool" | "studio_platform_partner"
@@ -20,6 +22,7 @@ export type SuiteProviderPilotConfig =
       state: "invalid"
       reason:
         | "invalid_user_count"
+        | "invalid_pilot_mode"
         | "duplicate_user_id"
         | "invalid_user_id"
         | "invalid_provider"
@@ -27,6 +30,7 @@ export type SuiteProviderPilotConfig =
     }
   | {
       state: "ready"
+      pilotMode: SuiteProviderPilotMode
       userIds: string[]
       provider: SuiteProviderPilotProvider
       resourceId: string
@@ -101,6 +105,7 @@ export interface SuiteProviderPilotReport {
   version: 1
   status: "ok" | "failure"
   mode: "disabled" | "blocked" | "shadow"
+  pilotMode: SuiteProviderPilotMode | null
   observedAt: string
   provider: SuiteProviderPilotProvider | null
   providerContractState: "unverified"
@@ -134,6 +139,11 @@ export function resolveSuiteProviderPilotConfig(env: EnvLike): SuiteProviderPilo
     return { state: "disabled" }
   }
 
+  const pilotMode = env.SUITE_PROVIDER_PILOT_MODE
+  if (pilotMode !== "founder_only" && pilotMode !== "cohort") {
+    return { state: "invalid", reason: "invalid_pilot_mode" }
+  }
+
   const rawUserIds = String(env.SUITE_PROVIDER_PILOT_USER_IDS || "")
     .split(/[\n,]/)
     .map(value => value.trim())
@@ -141,7 +151,11 @@ export function resolveSuiteProviderPilotConfig(env: EnvLike): SuiteProviderPilo
   if (new Set(rawUserIds).size !== rawUserIds.length) {
     return { state: "invalid", reason: "duplicate_user_id" }
   }
-  if (rawUserIds.length < 3 || rawUserIds.length > 5) {
+  const validUserCount =
+    pilotMode === "founder_only"
+      ? rawUserIds.length === 1
+      : rawUserIds.length >= 3 && rawUserIds.length <= 5
+  if (!validUserCount) {
     return { state: "invalid", reason: "invalid_user_count" }
   }
   if (rawUserIds.some(value => !opaqueIdentifierPattern.test(value) || value.includes("@"))) {
@@ -158,7 +172,7 @@ export function resolveSuiteProviderPilotConfig(env: EnvLike): SuiteProviderPilo
     return { state: "invalid", reason: "invalid_resource_id" }
   }
 
-  return { state: "ready", userIds: [...rawUserIds].sort(), provider, resourceId }
+  return { state: "ready", pilotMode, userIds: [...rawUserIds].sort(), provider, resourceId }
 }
 
 function isStablePaidAccess(row: SuiteProviderPilotSubscriptionEvidence, now: Date): boolean {
@@ -345,6 +359,7 @@ export function createSuiteProviderPilotReport(
       version: 1,
       status: "ok",
       mode: "disabled",
+      pilotMode: null,
       observedAt,
       provider: null,
       providerContractState: "unverified",
@@ -361,6 +376,7 @@ export function createSuiteProviderPilotReport(
       version: 1,
       status: "failure",
       mode: "blocked",
+      pilotMode: null,
       observedAt,
       provider: null,
       providerContractState: "unverified",
@@ -379,6 +395,7 @@ export function createSuiteProviderPilotReport(
       version: 1,
       status: "failure",
       mode: "shadow",
+      pilotMode: config.pilotMode,
       observedAt,
       provider: config.provider,
       providerContractState: "unverified",
@@ -398,6 +415,7 @@ export function createSuiteProviderPilotReport(
     version: 1,
     status: "ok",
     mode: "shadow",
+    pilotMode: config.pilotMode,
     observedAt,
     provider: config.provider,
     providerContractState: "unverified",

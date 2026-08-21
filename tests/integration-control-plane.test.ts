@@ -793,14 +793,24 @@ describe("operator projection", () => {
         updated_at: "2026-08-21T07:05:00.000Z",
       },
     ])
-    const [item] = await getIntegrationOperatorQueue()
+    const [item] = await getIntegrationOperatorQueue("skool")
     expect(item).toMatchObject({ userId: "user_1", errorSummary: "Provider unavailable" })
     expect(item).not.toHaveProperty("attributes")
     expect(item).not.toHaveProperty("externalAccountId")
 
     mocks.sql.mockResolvedValueOnce([])
-    await expect(getIntegrationDeadLetters()).resolves.toEqual([])
+    await expect(getIntegrationDeadLetters("skool")).resolves.toEqual([])
+    expect(String(mocks.sql.mock.calls[0]?.[0])).toContain("provider =")
+    expect(String(mocks.sql.mock.calls[1]?.[0])).toContain("provider =")
+    expect(mocks.sql.mock.calls[0]?.slice(1)).toContain("skool")
+    expect(mocks.sql.mock.calls[1]?.slice(1)).toContain("skool")
     expect(String(mocks.sql.mock.calls[1]?.[0])).toContain("integration_dead_letters_v")
+  })
+
+  it("rejects missing and unknown providers before queue or dead-letter SQL", async () => {
+    await expect(getIntegrationOperatorQueue(undefined as any)).rejects.toThrow(/provider/i)
+    await expect(getIntegrationDeadLetters("studio" as any)).rejects.toThrow(/provider/i)
+    expect(mocks.sql).not.toHaveBeenCalled()
   })
 })
 
