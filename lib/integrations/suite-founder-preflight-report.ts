@@ -461,6 +461,7 @@ export async function createSuiteFounderPreflightFromCurrentSources(input: {
   env: Record<string, string | undefined>
   humanEvidence: SuiteFounderHumanEvidencePacket | unknown
   observedAt?: Date
+  completedAt?: Date
   dependencies?: SuiteFounderPreflightDependencies
 }): Promise<SuiteFounderPreflightReport> {
   const config = resolveSuiteProviderPilotConfig(input.env)
@@ -471,6 +472,7 @@ export async function createSuiteFounderPreflightFromCurrentSources(input: {
       evidence: null,
       humanEvidence: input.humanEvidence,
       observedAt,
+      completedAt: input.completedAt ?? observedAt,
     })
   }
   const evidence = await collectEvidence(
@@ -479,10 +481,13 @@ export async function createSuiteFounderPreflightFromCurrentSources(input: {
     input.dependencies ?? runtimeDependencies(),
     observedAt
   )
+  // Completion is captured only after every current DB, Stripe, and Auth read has settled.
+  const completedAt = input.completedAt ?? (input.observedAt ? observedAt : new Date())
   return createSuiteFounderPreflightReport({
     config,
     evidence,
     humanEvidence: input.humanEvidence,
     observedAt,
+    completedAt,
   })
 }

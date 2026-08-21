@@ -219,6 +219,8 @@ export interface SuiteFounderPreflightReport {
   state: "disabled" | "blocked" | "ready_for_sandra_approval"
   pilotMode: "founder_only" | null
   observedAt: string
+  completedAt: string
+  validUntil: string | null
   provider: SuiteProviderPilotProvider | null
   resourceId: string | null
   founderUserId: string | null
@@ -253,6 +255,23 @@ const PROVIDER_MINIMUM_DATA_CATEGORIES: Record<SuiteProviderPilotProvider, reado
 const MAX_CHECK_AGE_MS = 5 * 60 * 1000
 const MAX_EVIDENCE_AGE_MS = 24 * 60 * 60 * 1000
 const MAX_EVIDENCE_VALIDITY_MS = 24 * 60 * 60 * 1000
+
+export function deriveSuiteFounderApprovalDeadline(
+  summary: SuiteFounderApprovalSummary,
+  completedAt: Date
+): Date | null {
+  const candidates = [
+    new Date(summary.consent.checkAt).getTime() + MAX_CHECK_AGE_MS,
+    new Date(summary.consent.capturedAt).getTime() + MAX_EVIDENCE_AGE_MS,
+    new Date(summary.consent.expiresAt).getTime(),
+    new Date(summary.providerCapability.verifiedAt).getTime() + MAX_EVIDENCE_AGE_MS,
+    new Date(summary.providerCapability.expiresAt).getTime(),
+    completedAt.getTime() + MAX_CHECK_AGE_MS,
+  ]
+  if (candidates.some(candidate => !Number.isFinite(candidate))) return null
+  const deadline = new Date(Math.min(...candidates))
+  return deadline.getTime() > completedAt.getTime() ? deadline : null
+}
 
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`
@@ -542,11 +561,15 @@ export function createSuiteFounderPreflightReport(input: {
   evidence: SuiteFounderAutomaticEvidence | null
   humanEvidence: unknown
   observedAt: Date
+  completedAt?: Date
 }): SuiteFounderPreflightReport {
+  const completedAt = input.completedAt ?? input.observedAt
   const base = {
     version: 1 as const,
     pilotMode: null as "founder_only" | null,
     observedAt: input.observedAt.toISOString(),
+    completedAt: completedAt.toISOString(),
+    validUntil: null as string | null,
     provider: null as SuiteProviderPilotProvider | null,
     resourceId: null as string | null,
     founderUserId: null as string | null,
@@ -696,9 +719,14 @@ export function createSuiteFounderPreflightReport(input: {
     if (baselines.externalAccounts || baselines.provisioningStates || baselines.outboxRows)
       blockers.push("preexisting_integration_state")
   }
-  if (validateSuiteFounderHumanEvidencePacket(input.humanEvidence, input.config, input.observedAt))
+  if (
+    validateSuiteFounderHumanEvidencePacket(input.humanEvidence, input.config, input.observedAt)
+  ) {
     base.approvalSummary = approvalSummary(input.humanEvidence)
-  else blockers.push("human_evidence_packet_invalid_or_missing")
+    base.validUntil =
+      deriveSuiteFounderApprovalDeadline(base.approvalSummary, completedAt)?.toISOString() ?? null
+    if (!base.validUntil) blockers.push("approval_window_expired")
+  } else blockers.push("human_evidence_packet_invalid_or_missing")
   const uniqueBlockers = [...new Set(blockers)].sort()
   const material = {
     ...base,
