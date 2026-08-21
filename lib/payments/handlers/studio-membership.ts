@@ -21,17 +21,23 @@ import { upsertStudioMembershipSubscription } from "@/lib/payments/lifecycle/ups
 import { findAuthUserByEmail } from "@/lib/supabase/find-auth-user-by-email"
 
 async function persistCheckoutMembership({
+  event,
+  session,
   subscriptionData,
   userId,
   plan,
   isTestMode,
   productType,
+  recordSuiteStartShadow,
 }: {
+  event: CheckoutFulfillmentContext["event"]
+  session: CheckoutFulfillmentContext["session"]
   subscriptionData: any
   userId: string
   plan: string
   isTestMode: boolean
   productType?: "sselfie_studio_membership" | "vault_maya"
+  recordSuiteStartShadow: boolean
 }): Promise<void> {
   const subscriptionPeriod = getSubscriptionPeriod(subscriptionData)
   const stripeCustomerId =
@@ -43,6 +49,21 @@ async function persistCheckoutMembership({
     throw new Error(`Membership ${subscriptionData.id} has no Stripe customer`)
   }
 
+  const eventCreated = typeof event.created === "number" ? event.created : null
+  const immutableStartTimestamp =
+    event.type === "checkout.session.async_payment_succeeded"
+      ? eventCreated
+      : typeof subscriptionData.start_date === "number"
+        ? subscriptionData.start_date
+        : (eventCreated ?? (typeof session.created === "number" ? session.created : null))
+
+  if (recordSuiteStartShadow && immutableStartTimestamp === null) {
+    throw new Error(`Membership ${subscriptionData.id} has no immutable start timestamp`)
+  }
+
+  const immutableStartAt =
+    immutableStartTimestamp === null ? null : new Date(immutableStartTimestamp * 1000)
+
   await upsertStudioMembershipSubscription({
     userId,
     productType,
@@ -53,6 +74,14 @@ async function persistCheckoutMembership({
     periodStart: subscriptionPeriod.start,
     periodEnd: subscriptionPeriod.end,
     isTestMode,
+    ...(recordSuiteStartShadow && immutableStartAt
+      ? {
+          shadowMembershipStarted: {
+            checkoutSessionId: session.id,
+            occurredAt: immutableStartAt,
+          },
+        }
+      : {}),
   })
 }
 
@@ -229,6 +258,9 @@ export async function handleStudioMembershipSubscriptionCheckout(
   const subscriptionPlan = getSubscriptionPlanFromMetadata(metadata, productType)
   const subscriptionProductType: "sselfie_studio_membership" | "vault_maya" =
     productType === "vault_maya" ? "vault_maya" : "sselfie_studio_membership"
+  const recordSuiteStartShadow =
+    rawProductType === "sselfie_studio_membership" ||
+    rawProductType === "sselfie_studio_membership_annual"
   const subscriptionId =
     typeof session.subscription === "string" ? session.subscription : session.subscription?.id
 
@@ -329,11 +361,14 @@ export async function handleStudioMembershipSubscriptionCheckout(
 
     if (isPaymentPaid) {
       await persistCheckoutMembership({
+        event,
+        session,
         subscriptionData,
         userId,
         plan: subscriptionPlan,
         isTestMode: false,
         productType: subscriptionProductType,
+        recordSuiteStartShadow,
       })
 
       console.log(

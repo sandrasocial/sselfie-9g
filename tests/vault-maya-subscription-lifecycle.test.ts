@@ -5,7 +5,8 @@ import { readFileSync } from "node:fs"
 import { VAULT_MAYA_WELCOME_SUBJECTS } from "@/lib/email/templates/vault-maya-welcome"
 
 const mocks = vi.hoisted(() => ({
-  sql: vi.fn(),
+  sql: vi.fn() as any,
+  transaction: vi.fn() as any,
   retrieveSubscription: vi.fn(),
   updateSubscription: vi.fn(),
   updateCheckoutSession: vi.fn(),
@@ -17,6 +18,8 @@ const mocks = vi.hoisted(() => ({
   getOrCreateNeonUser: vi.fn(),
   sendEmail: vi.fn(),
 }))
+
+mocks.sql.transaction = mocks.transaction
 
 vi.mock("@/lib/db/client", () => ({ sql: mocks.sql }))
 vi.mock("@/lib/stripe", () => ({
@@ -56,6 +59,7 @@ function queryText(call: unknown[]): string {
 function vaultSubscription(userId?: string) {
   return {
     id: "sub_vault_1",
+    start_date: 1_754_003_200,
     customer: "cus_vault_1",
     status: "active",
     current_period_start: 1_754_003_200,
@@ -85,6 +89,7 @@ function checkoutContext(input: {
     event: { livemode: input.livemode ?? false },
     session: {
       id: "cs_vault_1",
+      created: 1_754_003_200,
       mode: "subscription",
       status: "complete",
       payment_status: paymentPaid ? "paid" : "unpaid",
@@ -109,9 +114,14 @@ describe("Vault Maya subscription lifecycle", () => {
   beforeEach(() => {
     vi.resetModules()
     Object.values(mocks).forEach(mock => mock.mockReset())
+    mocks.sql.transaction = mocks.transaction
     mocks.sql.mockImplementation(async (...call: unknown[]) =>
       queryText(call).includes("pg_advisory_xact_lock") ? [{ id: 901 }] : []
     )
+    mocks.transaction.mockImplementation((factory: (tx: any) => unknown[]) => {
+      factory((strings: TemplateStringsArray, ...values: unknown[]) => ({ strings, values }))
+      return Promise.resolve([[], [{ membership_id: 901, event_id: "event_901" }]])
+    })
     mocks.retrieveSubscription.mockResolvedValue(vaultSubscription("neon_vault_1"))
     mocks.updateSubscription.mockResolvedValue(vaultSubscription("neon_vault_1"))
     mocks.updateCheckoutSession.mockResolvedValue({})

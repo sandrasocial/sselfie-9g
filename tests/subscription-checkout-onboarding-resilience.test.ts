@@ -102,9 +102,11 @@ function context(input: {
       id: paid ? "evt_async_paid" : "evt_unpaid",
       type: paid ? "checkout.session.async_payment_succeeded" : "checkout.session.completed",
       livemode: input.livemode ?? true,
+      created: paid ? 1_787_307_900 : 1_787_307_300,
     },
     session: {
       id: "cs_membership_journey",
+      created: 1_787_307_300,
       mode: "subscription",
       payment_status: paid ? "paid" : "unpaid",
       subscription: "sub_membership_journey",
@@ -131,6 +133,7 @@ describe("subscription checkout onboarding resilience", () => {
     localUser = null
     currentSubscription = {
       id: "sub_membership_journey",
+      start_date: 1_787_307_000,
       customer: "cus_membership_journey",
       status: "active",
       current_period_start: 1_780_000_000,
@@ -211,6 +214,14 @@ describe("subscription checkout onboarding resilience", () => {
           status: "active",
           stripeSubscriptionId: "sub_membership_journey",
           isTestMode: false,
+          ...(productType === "sselfie_studio_membership"
+            ? {
+                shadowMembershipStarted: {
+                  checkoutSessionId: "cs_membership_journey",
+                  occurredAt: new Date(1_787_307_900 * 1000),
+                },
+              }
+            : {}),
         })
       )
       expect(hasSubscriptionAccess(mocks.upsertSubscription.mock.calls[0][0])).toBe(true)
@@ -349,5 +360,104 @@ describe("subscription checkout onboarding resilience", () => {
 
     expect(mocks.upsertSubscription).toHaveBeenCalledTimes(1)
     expect(hasSubscriptionAccess(mocks.upsertSubscription.mock.calls[0][0])).toBe(true)
+  })
+
+  it("records an explicitly zero-total SUITE start using immutable session time fallback", async () => {
+    currentSubscription = {
+      ...currentSubscription,
+      start_date: undefined,
+      status: "active",
+    }
+    const zeroTotal = context({ paid: true, metadataUserId: true })
+    zeroTotal.event.type = "checkout.session.completed"
+    zeroTotal.event.created = 1_787_307_300
+    zeroTotal.session.payment_status = "no_payment_required"
+    ;(zeroTotal.session as any).amount_total = 0
+
+    localUser = {
+      id: "neon_member_1",
+      email: "new-member@example.com",
+      password_setup_complete: true,
+      supabase_user_id: "auth_member_1",
+    }
+
+    const { handleStudioMembershipSubscriptionCheckout } =
+      await import("@/lib/payments/handlers/studio-membership")
+    await handleStudioMembershipSubscriptionCheckout(zeroTotal as any)
+
+    expect(mocks.upsertSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productType: "sselfie_studio_membership",
+        shadowMembershipStarted: {
+          checkoutSessionId: "cs_membership_journey",
+          occurredAt: new Date(1_787_307_300 * 1000),
+        },
+      })
+    )
+  })
+
+  it("records unpaid T0 to async-paid T1 at the access-transition event time exactly once", async () => {
+    const unpaid = context({ paid: false })
+    const asyncPaid = context({ paid: true, metadataUserId: true })
+
+    const { handleStudioMembershipSubscriptionCheckout } =
+      await import("@/lib/payments/handlers/studio-membership")
+    await handleStudioMembershipSubscriptionCheckout(unpaid as any)
+    await handleStudioMembershipSubscriptionCheckout(asyncPaid as any)
+
+    expect(mocks.upsertSubscription).toHaveBeenCalledTimes(1)
+    expect(mocks.upsertSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({
+        shadowMembershipStarted: {
+          checkoutSessionId: "cs_membership_journey",
+          occurredAt: new Date(1_787_307_900 * 1000),
+        },
+      })
+    )
+  })
+
+  it("keeps delayed current terminal status while retaining the historical start fact", async () => {
+    localUser = {
+      id: "neon_member_1",
+      email: "new-member@example.com",
+      password_setup_complete: true,
+      supabase_user_id: "auth_member_1",
+    }
+    currentSubscription = { ...currentSubscription, status: "canceled" }
+
+    const { handleStudioMembershipSubscriptionCheckout } =
+      await import("@/lib/payments/handlers/studio-membership")
+    await handleStudioMembershipSubscriptionCheckout(
+      context({ paid: true, metadataUserId: true }) as any
+    )
+
+    expect(mocks.upsertSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "canceled",
+        shadowMembershipStarted: expect.objectContaining({
+          checkoutSessionId: "cs_membership_journey",
+        }),
+      })
+    )
+  })
+
+  it("does not infer a SUITE start fact from an unknown subscription product", async () => {
+    localUser = {
+      id: "neon_member_1",
+      email: "new-member@example.com",
+      password_setup_complete: true,
+      supabase_user_id: "auth_member_1",
+    }
+    currentSubscription = { ...currentSubscription, start_date: undefined }
+    const unknown = context({ paid: true, metadataUserId: true })
+    unknown.session.metadata.product_type = "unknown_subscription" as any
+
+    const { handleStudioMembershipSubscriptionCheckout } =
+      await import("@/lib/payments/handlers/studio-membership")
+    await handleStudioMembershipSubscriptionCheckout(unknown as any)
+
+    expect(mocks.upsertSubscription).toHaveBeenCalledWith(
+      expect.not.objectContaining({ shadowMembershipStarted: expect.anything() })
+    )
   })
 })

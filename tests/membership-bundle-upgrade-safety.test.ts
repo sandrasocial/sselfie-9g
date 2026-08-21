@@ -3,12 +3,15 @@ import { readFileSync } from "node:fs"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const mocks = vi.hoisted(() => ({
-  sql: vi.fn(),
+  sql: vi.fn() as any,
+  transaction: vi.fn() as any,
   retrieveSubscription: vi.fn(),
   updateSubscription: vi.fn(),
   retrieveCustomer: vi.fn(),
   sendEmail: vi.fn(),
 }))
+
+mocks.sql.transaction = mocks.transaction
 
 vi.mock("@/lib/db/client", () => ({ sql: mocks.sql }))
 vi.mock("@/lib/stripe", () => ({
@@ -31,14 +34,17 @@ function queryText(call: unknown[]): string {
 }
 
 function subscriptionMutationQueries(): string[] {
-  return mocks.sql.mock.calls
+  return [...mocks.sql.mock.calls, ...transactionSqlCalls]
     .map(queryText)
     .filter(text => /(?:INSERT INTO|UPDATE) subscriptions/i.test(text))
 }
 
+let transactionSqlCalls: unknown[][] = []
+
 function stripeSubscription() {
   return {
     id: "sub_annual_bundle_buyer",
+    start_date: 1_752_422_400,
     customer: "cus_bundle_buyer",
     status: "active",
     current_period_start: 1_752_422_400,
@@ -58,6 +64,7 @@ function checkoutContext() {
     event: { livemode: true },
     session: {
       id: "cs_annual_bundle_buyer",
+      created: 1_752_422_400,
       mode: "subscription",
       status: "complete",
       payment_status: "paid",
@@ -82,6 +89,9 @@ describe("bundle buyer annual membership safety", () => {
   beforeEach(() => {
     vi.resetModules()
     mocks.sql.mockReset()
+    mocks.transaction.mockReset()
+    mocks.sql.transaction = mocks.transaction
+    transactionSqlCalls = []
     mocks.retrieveSubscription.mockReset()
     mocks.updateSubscription.mockReset()
     mocks.retrieveCustomer.mockReset()
@@ -98,6 +108,14 @@ describe("bundle buyer annual membership safety", () => {
         ]
       }
       return text.includes("pg_advisory_xact_lock") ? [{ id: 901 }] : []
+    })
+    mocks.transaction.mockImplementation((factory: (tx: any) => unknown[]) => {
+      const queries = factory((strings: TemplateStringsArray, ...values: unknown[]) => {
+        transactionSqlCalls.push([strings, ...values])
+        return { strings, values }
+      })
+      expect(queries).toHaveLength(2)
+      return Promise.resolve([[], [{ membership_id: 901, event_id: "event_901" }]])
     })
     mocks.retrieveSubscription.mockResolvedValue(stripeSubscription())
     mocks.updateSubscription.mockResolvedValue(stripeSubscription())
@@ -143,19 +161,22 @@ describe("bundle buyer annual membership safety", () => {
     } as any)
 
     const mutations = subscriptionMutationQueries()
-    const mutationCalls = mocks.sql.mock.calls.filter(call =>
+    const mutationCalls = [...mocks.sql.mock.calls, ...transactionSqlCalls].filter(call =>
       /(?:INSERT INTO|UPDATE) subscriptions/i.test(queryText(call))
     )
     // Active subscription.created is pre-payment and does not persist access;
     // only the two confirmed checkout events upsert the exact membership row.
     expect(mutations).toHaveLength(2)
     for (const mutation of mutations) {
-      expect(mutation).toContain("pg_advisory_xact_lock")
+      expect(mutation).toContain("INSERT INTO business_events")
       expect(mutation).toContain("WHERE s.stripe_subscription_id")
       expect(mutation).toContain("WHERE NOT EXISTS (SELECT 1 FROM updated_membership)")
       expect(mutation).not.toContain("WHERE user_id")
       expect(mutation).not.toContain("ON CONFLICT (stripe_subscription_id)")
     }
+    expect(
+      transactionSqlCalls.filter(call => queryText(call).includes("pg_advisory_xact_lock"))
+    ).toHaveLength(2)
     for (const call of mutationCalls) {
       expect(JSON.stringify(call.slice(1))).toContain("annual")
       // product_type now travels as a bound parameter; a membership checkout must still

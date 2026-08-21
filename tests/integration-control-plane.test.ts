@@ -746,8 +746,18 @@ describe("migration and architecture", () => {
       path.join(root, "lib/academy-entitlements.ts"),
       path.join(root, "lib/subscription.ts")
     )
+    const exactAllowedFile = path.join(root, "lib/payments/lifecycle/upsert-studio-membership.ts")
     for (const file of files) {
-      expect(fs.readFileSync(file, "utf8"), file).not.toMatch(/(?:@\/|lib\/)integrations\//)
+      const source = fs.readFileSync(file, "utf8")
+      const integrationImports =
+        source.match(/(?:@\/lib|lib)\/integrations\/[A-Za-z0-9_./-]+/g) ?? []
+      if (file === exactAllowedFile) {
+        expect(integrationImports, file).toEqual(["@/lib/integrations/contracts"])
+        expect(source, file).not.toMatch(/integrations\/(?:control-plane|operator-queue)/)
+        expect(source, file).not.toMatch(/integration_outbox|external_provisioning_states/)
+      } else {
+        expect(integrationImports, file).toEqual([])
+      }
     }
   })
 
