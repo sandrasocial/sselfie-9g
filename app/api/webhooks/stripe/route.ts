@@ -10,6 +10,10 @@ import {
   handleSubscriptionUpdated,
 } from "@/lib/payments/lifecycle/subscription-events"
 import { handleCheckoutSessionCompleted } from "@/lib/payments/lifecycle/checkout-session-completed"
+import {
+  handlePaymentAdjustmentEvent,
+  isPaymentAdjustmentEventType,
+} from "@/lib/payments/lifecycle/payment-adjustments"
 import { claimEvent, markEventFailed, markEventProcessed } from "@/lib/events/idempotency"
 
 /** Stable id for Redis webhook rate limit - never bucket unrelated traffic on "undefined". */
@@ -37,10 +41,26 @@ function stripeWebhookObjectId(event: {
   return typeof oid === "string" && oid.length > 0 ? oid : null
 }
 
+function stripeWebhookFailureEvidence(event: {
+  type: string
+  livemode?: boolean
+  data: { object: Record<string, unknown> }
+}): Record<string, unknown> {
+  if (isPaymentAdjustmentEventType(event.type)) {
+    return {
+      object_id: stripeWebhookObjectId(event),
+      livemode: Boolean(event.livemode),
+    }
+  }
+  return event.data.object
+}
+
 function allowsStripeStaleClaimReclaim(event: {
   type: string
   data: { object: Record<string, unknown> }
 }): boolean {
+  if (isPaymentAdjustmentEventType(event.type)) return true
+
   if (event.type === "invoice.paid" || event.type === "invoice.payment_succeeded") {
     return true
   }
@@ -181,6 +201,19 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      case "refund.created":
+      case "refund.updated":
+      case "refund.failed":
+      case "charge.refunded":
+      case "charge.dispute.created":
+      case "charge.dispute.updated":
+      case "charge.dispute.closed":
+      case "charge.dispute.funds_withdrawn":
+      case "charge.dispute.funds_reinstated": {
+        await handlePaymentAdjustmentEvent(event)
+        break
+      }
+
       default:
         console.log(`[v0] ⚠️ UNHANDLED EVENT TYPE: ${event.type}`)
         console.log(
@@ -205,7 +238,7 @@ export async function POST(request: NextRequest) {
       eventType: event.type,
       errorMessage: error.message || "Unknown error",
       errorStack: error.stack,
-      eventData: event.data.object,
+      eventData: stripeWebhookFailureEvidence(event),
       timestamp: new Date(),
     }
 
