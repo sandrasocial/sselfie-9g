@@ -498,6 +498,11 @@ describe("integration control plane", () => {
         provider: "skool",
         scope_key: "community",
         operation: "provision",
+        resource_type: "community_membership",
+        resource_id: "sselfie_community",
+        captured_user_id: "user_1",
+        captured_desired_state: "present",
+        idempotency_key: "skool:provision:sub_1",
         claim_token: "00000000-0000-4000-8000-000000000001",
         captured_desired_revision: 2,
         attempts: 1,
@@ -505,28 +510,61 @@ describe("integration control plane", () => {
         lease_expires_at: "2026-08-21T08:05:00.000Z",
       },
     ])
-    const rows = await claimIntegrationWork({ limit: 10, leaseSeconds: 300 })
+    const rows = await claimIntegrationWork({
+      provider: "skool",
+      limit: 10,
+      leaseSeconds: 300,
+    })
     expect(rows).toHaveLength(1)
-    expect(rows[0]?.claimToken).toBe("00000000-0000-4000-8000-000000000001")
+    expect(rows[0]).toEqual({
+      id: "work-1",
+      provider: "skool",
+      scopeKey: "community",
+      operation: "provision",
+      resourceType: "community_membership",
+      resourceId: "sselfie_community",
+      capturedUserId: "user_1",
+      capturedDesiredState: "present",
+      idempotencyKey: "skool:provision:sub_1",
+      claimToken: "00000000-0000-4000-8000-000000000001",
+      capturedDesiredRevision: 2,
+      attempts: 1,
+      maxAttempts: 5,
+      leaseExpiresAt: "2026-08-21T08:05:00.000Z",
+    })
     expect(String(mocks.sql.mock.calls[0]?.[0])).toMatch(/FOR UPDATE(?: OF o)? SKIP LOCKED/)
     expect(String(mocks.sql.mock.calls[0]?.[0])).toContain("lease_expires_at")
     expect(String(mocks.sql.mock.calls[0]?.[0])).toContain("prior_claim_token")
     expect(String(mocks.sql.mock.calls[0]?.[0])).toContain("o.status = c.prior_status")
     expect(String(mocks.sql.mock.calls[0]?.[0])).toContain("active.lease_expires_at")
+    const claimSql = String(mocks.sql.mock.calls[0]?.[0])
+    expect(claimSql).toContain("integration_outbox.provider =")
+    expect(claimSql).toContain("o.provider =")
+    expect(claimSql).toMatch(/AND o\.provider =[^]*RETURNING/)
+    expect(mocks.sql.mock.calls[0]?.slice(1).filter(value => value === "skool")).toHaveLength(3)
+  })
+
+  it("rejects a missing or unknown provider before attempting a claim", async () => {
+    await expect(claimIntegrationWork({} as any)).rejects.toThrow(/provider/i)
+    await expect(claimIntegrationWork({ provider: "studio" } as any)).rejects.toThrow(/provider/i)
+    expect(mocks.sql).not.toHaveBeenCalled()
   })
 
   it("requires the exact claim token on complete and fail", async () => {
     mocks.sql.mockResolvedValueOnce([])
     await expect(
       completeIntegrationWork({
+        provider: "skool",
         outboxId: "work-1",
         claimToken: "00000000-0000-4000-8000-000000000001",
+        result: { kind: "confirmed_converged" },
       })
     ).rejects.toThrow(/claim/i)
 
     mocks.sql.mockResolvedValueOnce([])
     await expect(
       failIntegrationWork({
+        provider: "skool",
         outboxId: "work-1",
         claimToken: "00000000-0000-4000-8000-000000000002",
         error: new Error("provider unavailable"),
@@ -538,8 +576,10 @@ describe("integration control plane", () => {
     mocks.sql.mockResolvedValueOnce([{ id: "work-1", status: "cancelled" }])
     await expect(
       completeIntegrationWork({
+        provider: "skool",
         outboxId: "work-1",
         claimToken: "00000000-0000-4000-8000-000000000001",
+        result: { kind: "confirmed_converged" },
       })
     ).resolves.toEqual({ status: "cancelled" })
     expect(String(mocks.sql.mock.calls[0]?.[0])).toContain("captured_desired_revision")
@@ -547,6 +587,7 @@ describe("integration control plane", () => {
     mocks.sql.mockResolvedValueOnce([{ id: "work-2", status: "retry" }])
     await expect(
       failIntegrationWork({
+        provider: "skool",
         outboxId: "work-2",
         claimToken: "00000000-0000-4000-8000-000000000002",
         error: new Error("temporary"),
@@ -557,11 +598,132 @@ describe("integration control plane", () => {
     mocks.sql.mockResolvedValueOnce([{ id: "work-3", status: "dead_letter" }])
     await expect(
       failIntegrationWork({
+        provider: "skool",
         outboxId: "work-3",
         claimToken: "00000000-0000-4000-8000-000000000003",
         error: new Error("permanent"),
       })
     ).resolves.toEqual({ status: "dead_letter" })
+  })
+
+  it("stores an explicit pending observation without inferring desired state", async () => {
+    mocks.sql.mockResolvedValueOnce([{ id: "work-async", status: "succeeded" }])
+
+    await expect(
+      completeIntegrationWork({
+        provider: "skool",
+        outboxId: "work-async",
+        claimToken: "00000000-0000-4000-8000-000000000004",
+        result: { kind: "accepted_pending" },
+        providerReference: "invite_opaque_1",
+      })
+    ).resolves.toEqual({ status: "succeeded" })
+
+    const completeSql = String(mocks.sql.mock.calls[0]?.[0])
+    expect(completeSql).toContain("SET observed_state =")
+    expect(completeSql).toContain("ELSE finished.captured_desired_state")
+    expect(completeSql).toContain("s.desired_revision = finished.captured_desired_revision")
+    expect(completeSql).toContain("AND o.claim_token =")
+    expect(completeSql).toMatch(/locked_outbox[^]*o\.provider =/)
+    expect(completeSql).toMatch(/FROM locked[^]*AND o\.provider =/)
+    expect(completeSql).toContain("THEN 'pending'")
+    expect(mocks.sql.mock.calls[0]?.slice(1)).toContain("accepted_pending")
+  })
+
+  it.each([
+    undefined,
+    { kind: "unknown" },
+    { kind: "accepted_pending", observedState: "present" },
+    { kind: "confirmed_converged", observedState: "present" },
+    { kind: "confirmed_observation", observedState: "pending" },
+    { kind: "confirmed_observation", observedState: "failed" },
+  ])("rejects malformed completion result %s before touching the database", async result => {
+    await expect(
+      completeIntegrationWork({
+        provider: "skool",
+        outboxId: "work-invalid",
+        claimToken: "00000000-0000-4000-8000-000000000005",
+        result: result as any,
+      })
+    ).rejects.toThrow(/observed/i)
+    expect(mocks.sql).not.toHaveBeenCalled()
+  })
+
+  it("derives a confirmed convergence observation only from the locked captured intent", async () => {
+    mocks.sql.mockResolvedValueOnce([{ id: "work-converged", status: "succeeded" }])
+
+    await completeIntegrationWork({
+      provider: "studio_platform_partner",
+      outboxId: "work-converged",
+      claimToken: "00000000-0000-4000-8000-000000000008",
+      result: { kind: "confirmed_converged" },
+      providerReference: "invite_opaque_1",
+    })
+
+    const completeSql = String(mocks.sql.mock.calls[0]?.[0])
+    expect(completeSql).toContain("o.captured_desired_state")
+    expect(completeSql).toContain("ELSE finished.captured_desired_state")
+    expect(completeSql).not.toContain("confirmed_observation")
+    expect(mocks.sql.mock.calls[0]?.slice(1)).not.toContain("present")
+    expect(mocks.sql.mock.calls[0]?.slice(1)).not.toContain("absent")
+  })
+
+  it.each([
+    "https:provider.example",
+    "provider.example.com",
+    "buyer_email_value",
+    "password_reset_1",
+    "invite_token_1",
+    "sk_live_opaque",
+    "eyJabc.def.ghi",
+  ])("rejects sensitive-looking provider reference %s before SQL", async providerReference => {
+    await expect(
+      completeIntegrationWork({
+        provider: "skool",
+        outboxId: "work-sensitive",
+        claimToken: "00000000-0000-4000-8000-000000000009",
+        result: { kind: "accepted_pending" },
+        providerReference,
+      })
+    ).rejects.toThrow(/provider reference/i)
+    expect(mocks.sql).not.toHaveBeenCalled()
+  })
+
+  it("rejects missing or wrong providers on complete and fail before SQL", async () => {
+    await expect(
+      completeIntegrationWork({
+        outboxId: "work-cross-provider",
+        claimToken: "00000000-0000-4000-8000-000000000006",
+        result: { kind: "accepted_pending" },
+      } as any)
+    ).rejects.toThrow(/provider/i)
+    await expect(
+      failIntegrationWork({
+        provider: "studio",
+        outboxId: "work-cross-provider",
+        claimToken: "00000000-0000-4000-8000-000000000006",
+        error: new Error("unavailable"),
+      } as any)
+    ).rejects.toThrow(/provider/i)
+    expect(mocks.sql).not.toHaveBeenCalled()
+  })
+
+  it("rechecks the exact provider in failure lock and final mutation boundaries", async () => {
+    mocks.sql.mockResolvedValueOnce([{ id: "work-fail", status: "retry" }])
+    await failIntegrationWork({
+      provider: "studio_platform_partner",
+      outboxId: "work-fail",
+      claimToken: "00000000-0000-4000-8000-000000000007",
+      error: new Error("temporary"),
+    })
+
+    const failureSql = String(mocks.sql.mock.calls[0]?.[0])
+    expect(failureSql).toMatch(/locked_outbox[^]*o\.provider =/)
+    expect(failureSql).toMatch(/FROM locked[^]*AND o\.provider =/)
+    expect(failureSql).toContain("AND o.claim_token =")
+    expect(
+      mocks.sql.mock.calls[0]?.slice(1).filter(value => value === "studio_platform_partner")
+    ).toHaveLength(2)
   })
 
   it("relies on both cross-user account uniqueness constraints", async () => {
@@ -591,6 +753,15 @@ describe("integration control plane", () => {
     expect(String(mocks.sql.mock.calls[0]?.[0])).toContain(
       "external_accounts.external_account_id = EXCLUDED.external_account_id"
     )
+  })
+
+  it("keeps provider-worker safety primitives database-only with no external effects", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "lib/integrations/control-plane.ts"),
+      "utf8"
+    )
+    expect(source).not.toMatch(/@\/lib\/(?:stripe|email|supabase)/)
+    expect(source).not.toMatch(/\bfetch\s*\(|axios|resend|provider sdk/i)
   })
 })
 

@@ -55,6 +55,46 @@ function assertTypedProviderReference(value: string | null | undefined): void {
   if (!/^[A-Za-z0-9_.:-]{1,256}$/.test(value)) {
     throw new Error("Provider reference must be an opaque typed identifier")
   }
+  const resemblesSensitiveValue =
+    /^(?:https?|ftp):/i.test(value) ||
+    /^www\./i.test(value) ||
+    /^[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+(?::\d+)?$/.test(value) ||
+    /(?:^|[_.:-])(?:email|e-mail|password|passwd|credential|secret|token|authorization|bearer|api[_-]?key)(?:[_.:-]|$)/i.test(
+      value
+    ) ||
+    /^(?:sk|pk|rk)_(?:live|test)_/i.test(value) ||
+    /^(?:ghp_|github_pat_|xox[baprs]-|AKIA)/i.test(value) ||
+    /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(value)
+  if (resemblesSensitiveValue) {
+    throw new Error(
+      "Provider reference must not resemble a URL, email, credential, secret, or token"
+    )
+  }
+}
+
+function assertExactIntegrationProvider(value: unknown): asserts value is IntegrationProvider {
+  if (!INTEGRATION_PROVIDERS.includes(value as IntegrationProvider)) {
+    throw new Error("An exact integration provider is required")
+  }
+}
+
+export type IntegrationCompletionResult =
+  // An async provider acknowledgement is not proof that the resource exists.
+  // It deliberately remains observed=pending until a later drift/reconciliation read confirms it.
+  { kind: "accepted_pending" } | { kind: "confirmed_converged" }
+
+function resolveCompletionKind(result: unknown): IntegrationCompletionResult["kind"] {
+  if (!result || typeof result !== "object" || Array.isArray(result)) {
+    throw new Error("Integration completion requires an explicit observed result")
+  }
+  const record = result as Record<string, unknown>
+  if (record.kind === "accepted_pending" && Object.keys(record).length === 1) {
+    return "accepted_pending"
+  }
+  if (record.kind === "confirmed_converged" && Object.keys(record).length === 1) {
+    return "confirmed_converged"
+  }
+  throw new Error("Integration completion requires an explicit observed result")
 }
 
 function assertProvisioningQualification(
@@ -354,6 +394,11 @@ export interface ClaimedIntegrationWork {
   provider: IntegrationProvider
   scopeKey: IntegrationScope
   operation: IntegrationOperation
+  resourceType: IntegrationResourceType
+  resourceId: string
+  capturedUserId: string
+  capturedDesiredState: "present" | "absent" | null
+  idempotencyKey: string
   claimToken: string
   capturedDesiredRevision: number | null
   attempts: number
@@ -361,13 +406,13 @@ export interface ClaimedIntegrationWork {
   leaseExpiresAt: string
 }
 
-export async function claimIntegrationWork(
-  input: {
-    limit?: number
-    leaseSeconds?: number
-    now?: Date
-  } = {}
-): Promise<ClaimedIntegrationWork[]> {
+export async function claimIntegrationWork(input: {
+  provider: IntegrationProvider
+  limit?: number
+  leaseSeconds?: number
+  now?: Date
+}): Promise<ClaimedIntegrationWork[]> {
+  assertExactIntegrationProvider(input.provider)
   const limit = Math.min(100, Math.max(1, Math.trunc(input.limit ?? 25)))
   const leaseSeconds = Math.min(3600, Math.max(30, Math.trunc(input.leaseSeconds ?? 300)))
   const now = input.now ?? new Date()
@@ -376,7 +421,8 @@ export async function claimIntegrationWork(
       UPDATE integration_outbox
       SET status = 'dead_letter', claim_token = NULL, lease_expires_at = NULL,
           completed_at = NOW(), updated_at = NOW()
-      WHERE (
+      WHERE integration_outbox.provider = ${input.provider}
+        AND (
           status IN ('pending', 'retry')
           OR (status = 'claimed' AND lease_expires_at <= ${now.toISOString()})
         )
@@ -391,7 +437,8 @@ export async function claimIntegrationWork(
                    o.available_at, o.created_at, o.id
         ) AS resource_order
       FROM integration_outbox o
-      WHERE (
+      WHERE o.provider = ${input.provider}
+        AND (
           (o.status IN ('pending', 'retry') AND o.available_at <= ${now.toISOString()})
           OR (o.status = 'claimed' AND o.lease_expires_at <= ${now.toISOString()})
         )
@@ -437,6 +484,7 @@ export async function claimIntegrationWork(
       updated_at = NOW()
     FROM candidates c
     WHERE o.id = c.id
+      AND o.provider = ${input.provider}
       AND NOT EXISTS (SELECT 1 FROM stale WHERE stale.id = o.id)
       AND o.status = c.prior_status
       AND o.available_at = c.prior_available_at
@@ -458,13 +506,23 @@ export async function claimIntegrationWork(
       )
     RETURNING
       o.id, o.provider, o.scope_key, o.operation, o.claim_token,
-      o.captured_desired_revision, o.attempts, o.max_attempts, o.lease_expires_at
+      o.resource_type, o.resource_id, o.captured_user_id, o.captured_desired_state,
+      o.idempotency_key, o.captured_desired_revision, o.attempts, o.max_attempts,
+      o.lease_expires_at
   `) as QueryRow[]
   return rows.map(row => ({
     id: String(row.id),
     provider: row.provider as IntegrationProvider,
     scopeKey: String(row.scope_key) as IntegrationScope,
     operation: row.operation as IntegrationOperation,
+    resourceType: row.resource_type as IntegrationResourceType,
+    resourceId: String(row.resource_id),
+    capturedUserId: String(row.captured_user_id),
+    capturedDesiredState:
+      row.captured_desired_state === null
+        ? null
+        : (row.captured_desired_state as "present" | "absent"),
+    idempotencyKey: String(row.idempotency_key),
     claimToken: String(row.claim_token),
     capturedDesiredRevision:
       row.captured_desired_revision === null ? null : numberValue(row.captured_desired_revision),
@@ -475,27 +533,33 @@ export async function claimIntegrationWork(
 }
 
 export async function completeIntegrationWork(input: {
+  provider: IntegrationProvider
   outboxId: string
   claimToken: string
+  result: IntegrationCompletionResult
   providerReference?: string | null
 }): Promise<{ status: "succeeded" | "cancelled" }> {
+  assertExactIntegrationProvider(input.provider)
+  const completionKind = resolveCompletionKind(input.result)
   assertTypedProviderReference(input.providerReference)
   const rows = (await sql`
     WITH locked_outbox AS (
-      SELECT o.id, o.provisioning_state_id, o.captured_desired_revision
+      SELECT o.id, o.provisioning_state_id, o.captured_desired_revision,
+             o.captured_desired_state
       FROM integration_outbox o
       WHERE o.id = ${input.outboxId}::uuid
+        AND o.provider = ${input.provider}
         AND o.claim_token = ${input.claimToken}::uuid
         AND o.status = 'claimed'
       FOR UPDATE OF o
     ), locked_state AS (
-      SELECT s.id, s.desired_revision, s.desired_state
+      SELECT s.id, s.desired_revision
       FROM external_provisioning_states s
       JOIN locked_outbox o ON o.provisioning_state_id = s.id
       FOR UPDATE OF s
     ), locked AS (
       SELECT o.id, o.provisioning_state_id, o.captured_desired_revision,
-             s.desired_revision, s.desired_state
+             o.captured_desired_state, s.desired_revision
       FROM locked_outbox o
       LEFT JOIN locked_state s ON s.id = o.provisioning_state_id
     ), finished AS (
@@ -519,11 +583,18 @@ export async function completeIntegrationWork(input: {
         updated_at = NOW()
       FROM locked
       WHERE o.id = locked.id
+        AND o.provider = ${input.provider}
+        AND o.status = 'claimed'
+        AND o.claim_token = ${input.claimToken}::uuid
       RETURNING o.id, o.status, locked.provisioning_state_id,
-                locked.captured_desired_revision, locked.desired_revision, locked.desired_state
+                locked.captured_desired_revision, locked.captured_desired_state,
+                locked.desired_revision
     ), observed AS (
       UPDATE external_provisioning_states s
-      SET observed_state = finished.desired_state,
+      SET observed_state = CASE
+            WHEN ${completionKind} = 'accepted_pending' THEN 'pending'
+            ELSE finished.captured_desired_state
+          END,
           observed_at = NOW(), last_error_code = NULL, last_error_message = NULL, updated_at = NOW()
       FROM finished
       WHERE s.id = finished.provisioning_state_id
@@ -539,6 +610,7 @@ export async function completeIntegrationWork(input: {
 }
 
 export async function failIntegrationWork(input: {
+  provider: IntegrationProvider
   outboxId: string
   claimToken: string
   error: unknown
@@ -546,6 +618,7 @@ export async function failIntegrationWork(input: {
   baseBackoffSeconds?: number
   maximumBackoffSeconds?: number
 }): Promise<{ status: "retry" | "dead_letter" | "cancelled" }> {
+  assertExactIntegrationProvider(input.provider)
   const safeError = sanitizeIntegrationError(input.error)
   const now = input.now ?? new Date()
   const base = Math.min(3600, Math.max(5, Math.trunc(input.baseBackoffSeconds ?? 30)))
@@ -556,6 +629,7 @@ export async function failIntegrationWork(input: {
              o.captured_desired_revision
       FROM integration_outbox o
       WHERE o.id = ${input.outboxId}::uuid
+        AND o.provider = ${input.provider}
         AND o.claim_token = ${input.claimToken}::uuid
         AND o.status = 'claimed'
       FOR UPDATE OF o
@@ -593,6 +667,9 @@ export async function failIntegrationWork(input: {
         updated_at = NOW()
       FROM locked
       WHERE o.id = locked.id
+        AND o.provider = ${input.provider}
+        AND o.status = 'claimed'
+        AND o.claim_token = ${input.claimToken}::uuid
       RETURNING o.id, o.status, o.provisioning_state_id, o.captured_desired_revision
     ), observed AS (
       UPDATE external_provisioning_states s
