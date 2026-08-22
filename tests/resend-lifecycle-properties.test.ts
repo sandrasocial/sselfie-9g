@@ -39,6 +39,8 @@ import {
   addOrUpdateResendContact,
 } from "@/lib/resend/manage-contact"
 
+const property = (value: string) => ({ type: "string", value })
+
 describe("Resend lifecycle contact properties", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -50,16 +52,16 @@ describe("Resend lifecycle contact properties", () => {
     mocks.removeSegment.mockResolvedValue({ data: {}, error: null })
   })
 
-  it("never downgrades a customer back to lead", async () => {
+  it("never downgrades a customer back to lead when Resend returns wrapped properties", async () => {
     mocks.get.mockResolvedValue({
       data: {
         id: "contact_1",
         unsubscribed: false,
         properties: {
-          acquisition_path: "selfie_guide",
-          lifecycle_stage: "customer",
-          primary_interest: "selfies",
-          last_product: "starter_kit",
+          acquisition_path: property("selfie_guide"),
+          lifecycle_stage: property("customer"),
+          primary_interest: property("selfies"),
+          last_product: property("starter_kit"),
         },
       },
       error: null,
@@ -88,9 +90,9 @@ describe("Resend lifecycle contact properties", () => {
         id: "contact_2",
         unsubscribed: false,
         properties: {
-          acquisition_path: "selfie_guide",
-          lifecycle_stage: "lead",
-          primary_interest: "selfies",
+          acquisition_path: property("selfie_guide"),
+          lifecycle_stage: property("lead"),
+          primary_interest: property("selfies"),
         },
       },
       error: null,
