@@ -75,6 +75,17 @@ function normalizeKey(value: string | undefined): string | undefined {
   return clean?.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || undefined
 }
 
+function hasLegacyBuyerSignal(tags: ContactTags): boolean {
+  const intent = normalizeKey(tags.ai_photoshoot_intent)
+  if (intent === "buyer" || intent === "power_user") return true
+
+  return Object.entries(tags).some(([key, value]) => {
+    const normalizedKey = normalizeKey(key)
+    const normalizedValue = normalizeKey(value)
+    return Boolean(normalizedKey?.startsWith("bought_") && ["true", "yes", "1"].includes(normalizedValue || ""))
+  })
+}
+
 function inferAcquisitionPath(tags: ContactTags): string | undefined {
   if (tags.acquisition_path) return normalizeKey(tags.acquisition_path)
   const source = normalizeKey(tags.source)
@@ -91,8 +102,13 @@ function inferAcquisitionPath(tags: ContactTags): string | undefined {
 function inferLifecycleStage(tags: ContactTags): string | undefined {
   if (tags.lifecycle_stage) return normalizeKey(tags.lifecycle_stage)
   const status = normalizeKey(tags.status)
-  if (status === "converted" || status === "customer" || status === "purchased") return "customer"
   if (status === "member" || status === "subscriber") return "member"
+  if (
+    status === "converted" ||
+    status === "customer" ||
+    status === "purchased" ||
+    hasLegacyBuyerSignal(tags)
+  ) return "customer"
   if (status === "lead") return "lead"
   return undefined
 }
