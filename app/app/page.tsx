@@ -25,6 +25,7 @@ import {
   isMayaOperatingLayerEnabled,
 } from "@/lib/app-v3/maya/operating-layer-rollout"
 import { hasPaidBlueprint } from "@/lib/subscription"
+import { resolveSkoolMayaHandoff } from "@/lib/app-v3/maya/skool-handoff"
 
 export const metadata = {
   title: "SSELFIE Studio",
@@ -39,12 +40,18 @@ export default async function StudioV3Page({
   searchParams?: Promise<{
     view?: string | string[]
     aesthetic?: string | string[]
+    source?: string | string[]
+    lesson?: string | string[]
   }>
 }) {
   const params = searchParams ? await searchParams : {}
-  const initialSection = resolveAppV3InitialSection(params.view)
-  const initialAestheticId = resolveAppV3InitialAestheticId(params.aesthetic)
-  const returnTo = buildAppV3ReturnTo(initialSection, initialAestheticId)
+  const initialSkoolHandoff = resolveSkoolMayaHandoff(params.source, params.lesson)
+  // A verified Skool lesson always opens Maya. Other deep-link surfaces remain unchanged.
+  const initialSection = initialSkoolHandoff ? "create" : resolveAppV3InitialSection(params.view)
+  const initialAestheticId = initialSkoolHandoff
+    ? null
+    : resolveAppV3InitialAestheticId(params.aesthetic)
+  const returnTo = buildAppV3ReturnTo(initialSection, initialAestheticId, initialSkoolHandoff?.key)
   const preSelfieChatEnabled = process.env.MAYA_PRESELFIE_CHAT_ENABLED === "true"
 
   let supabase
@@ -273,6 +280,7 @@ export default async function StudioV3Page({
       mayaHomeEnabled={mayaHomeEnabled}
       mayaEssential={mayaEssential}
       calendarIncluded={calendarIncluded}
+      initialSkoolHandoff={initialSkoolHandoff}
     />
   )
 }

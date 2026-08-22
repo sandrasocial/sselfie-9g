@@ -1,3 +1,5 @@
+import { resolveSkoolHandoffKey } from "@/lib/app-v3/maya/skool-handoff"
+
 export type AppV3Section = "create" | "photos" | "content" | "calendar" | "library" | "account"
 
 const APP_V3_SECTIONS = new Set<AppV3Section>([
@@ -39,7 +41,26 @@ export function buildAppV3AestheticHref(aestheticId: string): string {
   return `/app?${params.toString()}`
 }
 
-export function buildAppV3ReturnTo(section: AppV3Section, aestheticId?: string | null): string {
-  if (section === "create" && aestheticId) return buildAppV3AestheticHref(aestheticId)
-  return section === "create" ? "/app" : `/app?view=${section}`
+export function buildAppV3ReturnTo(
+  section: AppV3Section,
+  aestheticId?: string | null,
+  skoolHandoffKey?: string | null
+): string {
+  const params = new URLSearchParams()
+  if (section !== "create") params.set("view", section)
+  if (section === "create" && aestheticId) {
+    params.set("view", "create")
+    params.set("aesthetic", aestheticId)
+  }
+
+  // External handoffs survive authentication only when the server has already reduced them to
+  // an allowlisted key. Unknown query text is never copied into the login return URL.
+  const verifiedSkoolHandoffKey = resolveSkoolHandoffKey(skoolHandoffKey)
+  if (verifiedSkoolHandoffKey) {
+    params.set("source", "skool")
+    params.set("lesson", verifiedSkoolHandoffKey)
+  }
+
+  const query = params.toString()
+  return query ? `/app?${query}` : "/app"
 }
