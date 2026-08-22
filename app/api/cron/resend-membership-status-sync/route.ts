@@ -7,6 +7,7 @@ import { updateContactTags } from "@/lib/resend/manage-contact"
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
 
+const ROLLOUT_START = "2026-08-22T00:00:00Z"
 const BATCH_LIMIT = 50
 const PACE_MS = 120
 
@@ -69,6 +70,10 @@ async function getCandidates(): Promise<Candidate[]> {
         )
         AND u.email IS NOT NULL
         AND BTRIM(u.email) <> ''
+        AND (
+          s.status IN ('active', 'trialing', 'past_due', 'unpaid', 'paused', 'incomplete')
+          OR s.updated_at >= ${ROLLOUT_START}::timestamptz
+        )
     ),
     current_truth AS (
       SELECT
@@ -89,7 +94,8 @@ async function getCandidates(): Promise<Candidate[]> {
     WHERE sync.email IS NULL
        OR sync.source_updated_at IS NULL
        OR truth.source_updated_at > sync.source_updated_at
-    ORDER BY truth.source_updated_at ASC
+    -- Fresh billing/cancellation changes can never be starved by older missing contacts.
+    ORDER BY truth.source_updated_at DESC
     LIMIT ${BATCH_LIMIT}
   `) as Candidate[]
 }
@@ -146,7 +152,7 @@ export async function GET(request: Request) {
         `
       } else if (String(result.error || '').toLowerCase().includes('not found')) {
         // Do not checkpoint missing marketing contacts. If this person later opts into
-        // SSELFIE email, a future run can immediately attach their real membership state.
+        // SSELFIE email, a future run can attach their real membership state.
         summary.contactNotFound += 1
       } else {
         summary.failed += 1
