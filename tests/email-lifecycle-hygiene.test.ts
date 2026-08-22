@@ -17,8 +17,14 @@ describe("2026 lifecycle email hygiene", () => {
     ).toBe("Sandra")
   })
 
-  it("does not guess a name from an email address", () => {
+  it("does not guess or reuse a name from an email address", () => {
     expect(getFirstNameForEmail({ email: "firstname.lastname@example.com" })).toBe("there")
+    expect(
+      getFirstNameForEmail({
+        fullName: "firstname.lastname",
+        email: "firstname.lastname@example.com",
+      })
+    ).toBe("there")
     expect(getFirstNameForEmail({ email: "hello@example.com", fallback: "Lovely" })).toBe("Lovely")
   })
 

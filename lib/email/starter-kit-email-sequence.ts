@@ -14,8 +14,7 @@ export type StarterKitEmailType =
 
 // Active Starter Kit lifecycle is intentionally customer-success only.
 // Legacy Masterclass bridge templates remain available for historical/audit purposes,
-// but they are not part of the active sequence. The next paid step should be introduced
-// only after the current SSELFIE membership bridge is defined around customer activation.
+// while recurring ascension is handled by the dedicated paid-product membership bridge.
 export const STARTER_KIT_EMAIL_TOUCHES: StarterKitEmailTouchDefinition[] = [
   { days: 0, emailType: "starter-kit-day0-delivery" },
   { days: 1, emailType: "starter-kit-day1-quick-win" },
