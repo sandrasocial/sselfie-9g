@@ -8,6 +8,7 @@ import { sql } from "@/lib/db/client"
 import { shouldShowCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
 import { createServerClient } from "@/lib/supabase/server"
 import { buildCheckoutRedirectUrl, getCheckoutAttributionFromParams } from "@/lib/revenue-engine/checkout-attribution"
+import { normalizeCheckoutEmail } from "@/lib/revenue-engine/checkout-email"
 
 export const metadata: Metadata = {
   title: "Checkout | Starter Kit",
@@ -28,12 +29,6 @@ async function getEmailFromFreebieToken(token?: string | null): Promise<string |
   `
 
   return (rows[0]?.email as string | undefined) || null
-}
-
-function normalizeCheckoutEmail(value?: string | null): string | null {
-  const email = value?.trim().toLowerCase()
-  if (!email) return null
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
 }
 
 export default async function StarterKitCheckoutPage({
