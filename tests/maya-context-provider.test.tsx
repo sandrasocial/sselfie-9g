@@ -4,10 +4,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { ConciergeProvider, useConcierge } from "@/components/app-v3/concierge-context"
-import {
-  CONCIERGE_STORAGE_KEY,
-  MAYA_DRAFT_STORAGE_KEY,
-} from "@/components/app-v3/continuity"
+import { CONCIERGE_STORAGE_KEY, MAYA_DRAFT_STORAGE_KEY } from "@/components/app-v3/continuity"
 import type { CalendarPostTarget } from "@/components/app-v3/types"
 
 const aesthetic = {
@@ -38,15 +35,8 @@ function target(position: number): CalendarPostTarget {
 }
 
 function Harness() {
-  const {
-    session,
-    isOpen,
-    open,
-    close,
-    openWithAesthetic,
-    openForCalendarPost,
-    setActiveSurface,
-  } = useConcierge()
+  const { session, isOpen, open, close, openWithAesthetic, openForCalendarPost, setActiveSurface } =
+    useConcierge()
 
   return (
     <div>
@@ -66,6 +56,9 @@ function Harness() {
       <button onClick={() => openForCalendarPost(target(8))}>Open post 8</button>
       <button onClick={() => setActiveSurface("create")}>Go Create</button>
       <button onClick={() => setActiveSurface("gallery")}>Go Gallery</button>
+      <button onClick={() => setActiveSurface("calendar", { preserveCurrentTask: true })}>
+        Show Calendar with task
+      </button>
       <button onClick={open}>Open Maya</button>
       <button onClick={close}>Close Maya</button>
       <output data-testid="session">{JSON.stringify({ isOpen, session })}</output>
@@ -178,6 +171,27 @@ describe("Sandra-only Maya context provider", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open Maya" }))
     await waitFor(() => expect(readSession().session?.mayaContext?.surface).toBe("gallery"))
     expect(readSession().isOpen).toBe(true)
+  })
+
+  it("keeps the finished Create task when its Calendar handoff opens", async () => {
+    render(
+      <ConciergeProvider operatingLayerEnabled>
+        <Harness />
+      </ConciergeProvider>
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Start Create" }))
+    await waitFor(() => expect(readSession().session?.mayaContext?.job).toBe("create_content"))
+    const taskId = readSession().session?.mayaContext?.taskId
+    const startedAt = readSession().session?.startedAt
+
+    fireEvent.click(screen.getByRole("button", { name: "Show Calendar with task" }))
+    await waitFor(() => expect(readSession().session?.mayaContext?.surface).toBe("calendar"))
+
+    expect(readSession().session?.mayaContext?.taskId).toBe(taskId)
+    expect(readSession().session?.mayaContext?.job).toBe("create_content")
+    expect(readSession().session?.startedAt).toBe(startedAt)
+    expect(readSession().session?.outputFormat).toBe("video")
   })
 
   it("migrates a valid legacy draft to Create and clears an ambiguous Calendar target", async () => {

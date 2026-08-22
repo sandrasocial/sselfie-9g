@@ -497,11 +497,17 @@ export function ConciergeProvider({
   }, [])
 
   const setActiveSurface = useCallback(
-    (surface: MayaSurface) => {
+    (surface: MayaSurface, options?: { preserveCurrentTask?: boolean }) => {
       setActiveSurfaceState(surface)
       if (!operatingLayerEnabled || !isOpen || workspaceBusy) return
       setSession(previous => {
         if (previous?.mayaContext?.surface === surface) return previous
+        if (options?.preserveCurrentTask && previous?.mayaContext) {
+          return {
+            ...previous,
+            mayaContext: { ...previous.mayaContext, surface },
+          }
+        }
         return createCleanSession({ previous, context: newSurfaceContext(surface) })
       })
     },

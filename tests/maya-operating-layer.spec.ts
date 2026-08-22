@@ -28,6 +28,7 @@ if (!runPlaywright) {
       const calendarMutationKeys: string[] = []
       const chatHistoryLookups: string[] = []
       const finishedPostPayloads: any[] = []
+      const readyPostPayloads: any[] = []
       const founderReports: any[] = []
       const chatStore = new Map<string, any>()
       let activeDraft: any = null
@@ -42,7 +43,9 @@ if (!runPlaywright) {
       ;(page as any).__mayaOperatingLayerCalendarMutationKeys = calendarMutationKeys
       ;(page as any).__mayaOperatingLayerChatHistoryLookups = chatHistoryLookups
       ;(page as any).__mayaFinishedPostPayloads = finishedPostPayloads
+      ;(page as any).__mayaReadyPostPayloads = readyPostPayloads
       ;(page as any).__mayaFounderReports = founderReports
+      ;(page as any).__mayaChatStore = chatStore
       ;(page as any).__enableMayaActionJourney = () => {
         actionJourneyEnabled = true
       }
@@ -396,6 +399,29 @@ if (!runPlaywright) {
           body = {
             caption: "A ready caption for this week's visibility piece.",
           }
+        } else if (pathname === "/api/app-v3/maya/feed-plan/place-photo") {
+          const payload = request.postDataJSON?.() ?? {}
+          readyPostPayloads.push(payload)
+          if (!posts.some(post => post.position === 10)) {
+            posts.push({
+              id: 710,
+              position: 10,
+              caption: typeof payload.finishedCaption === "string" ? payload.finishedCaption : "",
+              image_url: "https://example.com/maya-carousel-1.jpg",
+              generation_status: "completed",
+              pro_mode_type: "carousel",
+              content_pillar: "Visibility",
+            })
+          }
+          body = {
+            postId: 710,
+            position: 10,
+            scheduledAt: "2026-08-24",
+            caption: payload.finishedCaption,
+            readyPostKey: "qa-ready-post-key",
+            alreadyPlaced: false,
+            mediaCount: Array.isArray(payload.assetIds) ? payload.assetIds.length : 0,
+          }
         } else if (pathname === "/api/app-v3/reference-library") {
           body = {
             images: ["https://example.com/maya-qa-selfie.jpg"],
@@ -632,6 +658,11 @@ if (!runPlaywright) {
       await expect(page.getByText("More things Maya can make")).toHaveCount(0)
       await page.getByRole("button", { name: "Finish this post" }).click()
       await expect(page.getByText("Post ready", { exact: true })).toBeVisible()
+      await expect(page.getByRole("button", { name: "Save as ready post" })).toBeVisible()
+      await expect(page.getByText("Would you post this?")).toHaveCount(0)
+      await page.getByRole("button", { name: "Save as ready post" }).click()
+      await expect(page.getByText(/Ready in Calendar · Post 10/)).toBeVisible()
+      await expect(page.getByRole("button", { name: "Open Calendar" })).toBeVisible()
       await expect(page.getByText("Would you post this?")).toBeVisible()
       await page.getByRole("button", { name: "Almost", exact: true }).click()
       await expect(page.getByText("Thank you — this helps Maya improve.")).toBeVisible()
@@ -653,9 +684,43 @@ if (!runPlaywright) {
       expect((page as any).__mayaFinishedPostPayloads[0].captionContext).toContain(
         "Three distinct scenes in one consistent visual world"
       )
+      expect((page as any).__mayaReadyPostPayloads).toMatchObject([
+        {
+          assetIds: [991, 992, 993],
+          conceptTitle: "Three-part visibility carousel",
+          finishedCaption: "A ready caption for this week's visibility piece.",
+        },
+      ])
       expect((page as any).__mayaOperatingLayerCalendarMutations).toEqual([])
 
-      await page.waitForTimeout(900)
+      await page.getByRole("button", { name: "Open Calendar" }).click()
+      await expect(page.getByRole("button", { name: "Plan a new grid", exact: true })).toBeVisible()
+      await expect(page.getByRole("button", { name: /Select post 10/ })).toBeVisible()
+      await page.evaluate(() =>
+        window.localStorage.setItem("sselfie.appV3.section.v1", JSON.stringify("create"))
+      )
+
+      await expect
+        .poll(
+          () =>
+            page.evaluate(() => {
+              const drafts = window.localStorage.getItem("sselfie.appV3.mayaTasks.v1")
+              return drafts?.includes("calendarPlacement") ?? false
+            }),
+          { timeout: 5_000 }
+        )
+        .toBe(true)
+      await expect
+        .poll(
+          () =>
+            Array.from((page as any).__mayaChatStore.values()).some(
+              (chat: any) =>
+                JSON.stringify(chat.workspace).includes("calendarPlacement") &&
+                JSON.stringify(chat.workspace).includes("finishedPost")
+            ),
+          { timeout: 5_000 }
+        )
+        .toBe(true)
       await page.goto("/e2e/maya-operating-layer", { waitUntil: "domcontentloaded" })
       const resume = page.getByRole("button", { name: /Resume/i })
       // A cold local Next compile can finish hydration after the default 5s assertion window.
@@ -664,10 +729,10 @@ if (!runPlaywright) {
       await captureMayaProof(page, "returning-member-saved-work")
       await resume.click()
       await expect(maya).toHaveAttribute("data-maya-format", "carousel")
-      await expect(page.getByText("Post ready", { exact: true })).toBeVisible()
-      await expect(
-        page.getByText("A ready caption for this week's visibility piece.")
-      ).toBeVisible()
+      await expect(page.getByRole("button", { name: "Plan a new grid", exact: true })).toBeVisible()
+      await expect(page.getByRole("button", { name: /Select post 10/ })).toBeVisible()
+      await expect(page.getByText("Three-part visibility carousel")).toBeVisible()
+      await expect(page.getByRole("button", { name: "Save as ready post" })).toHaveCount(0)
       await expect(page.getByRole("button", { name: /Make it more like me/i })).toBeVisible()
       await expect(page.getByRole("button", { name: "Finish this post" })).toHaveCount(0)
     })

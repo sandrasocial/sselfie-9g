@@ -220,8 +220,9 @@ export interface ConciergeContextValue {
   workspaceBusy: boolean
   /** Keeps every Maya entry point from replacing a workspace that still has work in flight. */
   setWorkspaceBusy: (busy: boolean) => void
-  /** Keeps contextual entry aligned with the visible Suite surface. */
-  setActiveSurface: (surface: MayaSurface) => void
+  /** Keeps contextual entry aligned with the visible Suite surface. A completed Maya task may
+   * follow its own Calendar handoff without being replaced by a new surface task. */
+  setActiveSurface: (surface: MayaSurface, options?: { preserveCurrentTask?: boolean }) => void
   /** Restores an explicitly selected History task without blending it into the active task. */
   restoreHistoryTask: (taskId: string, restoredSession?: ConciergeSession | null) => void
   /** True when a saved active session exists and can be continued intentionally. */

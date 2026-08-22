@@ -325,6 +325,10 @@ function ShellInner({
   // History restores a Calendar task as the active Maya workspace in one action. Other
   // navigation still uses goToSection and closes Maya; result handoffs close explicitly.
   function showCalendarAlongsideMaya() {
+    // This is a continuation of the post Maya just finished, not a new Calendar task. Move the
+    // existing task with the visible surface so its receipt/history save cannot be retired by the
+    // normal section-change synchronization (most visible on the faster mobile handoff).
+    setActiveSurface("calendar", { preserveCurrentTask: true })
     setSection("calendar")
     saveStoredAppSection("calendar")
     if (typeof window !== "undefined") {
