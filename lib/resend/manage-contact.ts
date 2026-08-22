@@ -1,7 +1,12 @@
-// Resend Audience Management
+// Resend contact + segment management using the global Contacts model (2025+).
+// Legacy callers still pass "tags"; we translate the useful business meaning into
+// Contact Properties so old funnels benefit without recreating segment sprawl.
+
+import { isAppUnsubscribed } from "@/lib/email/unsubscribe"
 import { requireResendClient } from "@/lib/resend/client"
-import { getResendApiKey, hasResendApiKey } from "@/lib/resend/api-key"
-const audienceId = process.env.RESEND_AUDIENCE_ID!
+import { hasResendApiKey } from "@/lib/resend/api-key"
+
+const mainSegmentId = process.env.RESEND_AUDIENCE_ID || ""
 
 const TEST_EMAIL_DOMAINS = new Set([
   "playwright.test",
@@ -12,7 +17,7 @@ const TEST_EMAIL_DOMAINS = new Set([
   "yopmail.com",
 ])
 
-const TEST_LOCAL_PART_PATTERNS = [/^test[-_]/i, /^playwright/i, /^e2e/i, /^debug/i, /^smoke\\+/i, /^qa[-_]/i]
+const TEST_LOCAL_PART_PATTERNS = [/^test[-_]/i, /^playwright/i, /^e2e/i, /^debug/i, /^smoke\+/i, /^qa[-_]/i]
 
 function isTestEmail(email: string): boolean {
   const normalized = email.trim().toLowerCase()
@@ -35,15 +40,168 @@ function shouldSkipResend(email: string): boolean {
 }
 
 export interface ContactTags {
-  source?: string // 'freebie-subscriber', 'one-time-purchase', 'membership'
-  status?: string // 'lead', 'customer', 'converted'
-  product?: string // 'sselfie-guide', 'one-time-session', 'studio-membership'
-  journey?: string // 'nurture', 'onboarding', 'active'
+  source?: string
+  status?: string
+  product?: string
+  journey?: string
+  acquisition_path?: string
+  lifecycle_stage?: string
+  primary_interest?: string
+  membership_status?: string
+  last_product?: string
   [key: string]: string | undefined
 }
 
+type LifecycleProperties = {
+  acquisition_path?: string
+  lifecycle_stage?: string
+  primary_interest?: string
+  membership_status?: string
+  last_product?: string
+}
+
+const STAGE_RANK: Record<string, number> = {
+  lead: 1,
+  customer: 2,
+  member: 3,
+}
+
+function cleanProperty(value: string | undefined): string | undefined {
+  const clean = value?.trim()
+  return clean ? clean.slice(0, 120) : undefined
+}
+
+function normalizeKey(value: string | undefined): string | undefined {
+  const clean = cleanProperty(value)
+  return clean?.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || undefined
+}
+
+function hasLegacyBuyerSignal(tags: ContactTags): boolean {
+  const intent = normalizeKey(tags.ai_photoshoot_intent)
+  if (intent === "buyer" || intent === "power_user") return true
+
+  return Object.entries(tags).some(([key, value]) => {
+    const normalizedKey = normalizeKey(key)
+    const normalizedValue = normalizeKey(value)
+    return Boolean(normalizedKey?.startsWith("bought_") && ["true", "yes", "1"].includes(normalizedValue || ""))
+  })
+}
+
+function inferAcquisitionPath(tags: ContactTags): string | undefined {
+  if (tags.acquisition_path) return normalizeKey(tags.acquisition_path)
+  const source = normalizeKey(tags.source)
+  if (!source) return undefined
+  if (source.includes("selfie_guide") || source.includes("freebie_selfie")) return "selfie_guide"
+  if (source.includes("ai_prompt") || source.includes("prompt_guide")) return "ai_prompts"
+  if (source.includes("manychat")) return "manychat"
+  if (source.includes("starter_kit")) return "starter_kit"
+  if (source.includes("prompt_vault")) return "prompt_vault"
+  if (source.includes("membership") || source.includes("studio") || source.includes("suite")) return "membership"
+  return source
+}
+
+function inferLifecycleStage(tags: ContactTags): string | undefined {
+  if (tags.lifecycle_stage) return normalizeKey(tags.lifecycle_stage)
+  const status = normalizeKey(tags.status)
+  if (status === "member" || status === "subscriber") return "member"
+  if (
+    status === "converted" ||
+    status === "customer" ||
+    status === "purchased" ||
+    hasLegacyBuyerSignal(tags)
+  ) return "customer"
+  if (status === "lead") return "lead"
+  return undefined
+}
+
+function inferPrimaryInterest(tags: ContactTags): string | undefined {
+  if (tags.primary_interest) return normalizeKey(tags.primary_interest)
+  const haystack = [tags.source, tags.product, tags.journey]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+  if (haystack.includes("prompt") || haystack.includes("ai-photo") || haystack.includes("ai_photo")) return "ai_photos"
+  if (haystack.includes("selfie")) return "selfies"
+  if (haystack.includes("blueprint") || haystack.includes("content")) return "content"
+  if (haystack.includes("studio") || haystack.includes("suite") || haystack.includes("membership")) return "all"
+  return undefined
+}
+
+function inferLastProduct(tags: ContactTags): string | undefined {
+  if (tags.last_product) return normalizeKey(tags.last_product)
+  const stage = inferLifecycleStage(tags)
+  if (stage !== "customer" && stage !== "member") return undefined
+  return normalizeKey(tags.product)
+}
+
+function requestedLifecycleProperties(tags: ContactTags): LifecycleProperties {
+  return {
+    acquisition_path: inferAcquisitionPath(tags),
+    lifecycle_stage: inferLifecycleStage(tags),
+    primary_interest: inferPrimaryInterest(tags),
+    membership_status: normalizeKey(tags.membership_status),
+    last_product: inferLastProduct(tags),
+  }
+}
+
+function mergeLifecycleProperties(
+  existing: Record<string, unknown> | null | undefined,
+  requested: LifecycleProperties,
+): LifecycleProperties {
+  const current = existing || {}
+  const merged: LifecycleProperties = {}
+
+  const existingAcquisition = normalizeKey(typeof current.acquisition_path === "string" ? current.acquisition_path : undefined)
+  merged.acquisition_path = existingAcquisition && existingAcquisition !== "unknown"
+    ? existingAcquisition
+    : requested.acquisition_path
+
+  const existingStage = normalizeKey(typeof current.lifecycle_stage === "string" ? current.lifecycle_stage : undefined)
+  const requestedStage = requested.lifecycle_stage
+  if (existingStage && requestedStage) {
+    merged.lifecycle_stage = (STAGE_RANK[existingStage] || 0) >= (STAGE_RANK[requestedStage] || 0)
+      ? existingStage
+      : requestedStage
+  } else {
+    merged.lifecycle_stage = requestedStage || existingStage
+  }
+
+  const existingInterest = normalizeKey(typeof current.primary_interest === "string" ? current.primary_interest : undefined)
+  if (existingInterest === "all" || requested.primary_interest === "all") merged.primary_interest = "all"
+  else merged.primary_interest = requested.primary_interest || existingInterest
+
+  const existingMembership = normalizeKey(typeof current.membership_status === "string" ? current.membership_status : undefined)
+  merged.membership_status = requested.membership_status || existingMembership
+
+  const existingProduct = normalizeKey(typeof current.last_product === "string" ? current.last_product : undefined)
+  merged.last_product = requested.last_product || existingProduct
+
+  return Object.fromEntries(Object.entries(merged).filter(([, value]) => Boolean(value))) as LifecycleProperties
+}
+
+function isMissingContact(error: any): boolean {
+  const message = String(error?.message || "").toLowerCase()
+  return error?.statusCode === 404 || message.includes("not found") || message.includes("does not exist")
+}
+
+async function ensureMainSegment(email: string): Promise<void> {
+  if (!mainSegmentId) return
+  const resend = requireResendClient()
+  const { error } = await (resend.contacts as any).segments.add({
+    email,
+    segmentId: mainSegmentId,
+  })
+  if (error) {
+    const message = String(error.message || "").toLowerCase()
+    if (!message.includes("already") && !message.includes("duplicate")) {
+      throw new Error(error.message || "Failed to add contact to main segment")
+    }
+  }
+}
+
 /**
- * Add or update a contact in Resend audience with tags
+ * Upsert a global Resend Contact and keep it in the legacy Main Audience segment.
+ * Existing opt-out state is never overwritten and app-level opt-outs are never re-added.
  */
 export async function addOrUpdateResendContact(
   email: string,
@@ -51,326 +209,162 @@ export async function addOrUpdateResendContact(
   tags: ContactTags,
 ): Promise<{ success: boolean; contactId?: string; error?: string }> {
   try {
-    if (!hasResendApiKey()) {
-      console.log("[v0] RESEND_API_KEY not configured, skipping audience sync")
-      return { success: false, error: "Resend not configured" }
-    }
+    if (!hasResendApiKey()) return { success: false, error: "Resend not configured" }
+    if (shouldSkipResend(email)) return { success: true }
 
-    if (!audienceId) {
-      console.log("[v0] RESEND_AUDIENCE_ID not configured, skipping audience sync")
-      return { success: false, error: "Audience not configured" }
-    }
-
-    if (shouldSkipResend(email)) {
-      console.log(`[v0] Skipping Resend sync for test email: ${email}`)
+    const normalizedEmail = email.trim().toLowerCase()
+    if (await isAppUnsubscribed(normalizedEmail)) {
       return { success: true }
     }
 
-    console.log(`[v0] Adding/updating contact in Resend audience: ${email}`)
-    console.log("[v0] Contact tags:", tags)
     const resend = requireResendClient()
+    const requested = requestedLifecycleProperties(tags)
 
-    // Format tags as array of {name, value} objects for Resend
-    const formattedTags = Object.entries(tags)
-      .filter(([_, value]) => value !== undefined && value !== null)
-      .map(([name, value]) => ({
-        name,
-        value: value as string,
-      }))
+    const { data: existing, error: getError } = await (resend.contacts as any).get({ email: normalizedEmail })
 
-    // Try to create the contact (will update if exists)
-    const { data, error } = await (resend.contacts as any).create({
-      email,
-      firstName: firstName || undefined,
-      audienceId,
-      tags: formattedTags,
-    })
+    if (existing && !getError) {
+      const properties = mergeLifecycleProperties((existing as any).properties, requested)
+      const { data, error } = await (resend.contacts as any).update({
+        email: normalizedEmail,
+        firstName: firstName || undefined,
+        properties,
+      })
+      if (error) return { success: false, error: error.message }
 
-    if (error) {
-      // If contact already exists, update their tags
-      if (error.message?.includes("already exists") || error.message?.includes("Contact already")) {
-        console.log(`[v0] Contact exists, updating tags for ${email}`)
-
-        // Get existing contact
-        const { data: contacts } = await resend.contacts.list({
-          audienceId,
-        })
-
-        const existingContact = contacts?.data?.find((c: any) => c.email === email)
-
-        if (existingContact) {
-          // Update the contact with new tags
-          const { error: updateError } = await resend.contacts.update({
-            id: existingContact.id,
-            audienceId,
-            // @ts-ignore
-            tags: formattedTags,
-          })
-
-          if (updateError) {
-            console.error(`[v0] Error updating Resend contact:`, updateError)
-            return { success: false, error: updateError.message }
-          }
-
-          console.log(`[v0] Successfully updated Resend contact: ${email}`)
-          return { success: true, contactId: existingContact.id }
-        }
+      // A global Resend opt-out must never be re-segmented by a data backfill.
+      if ((existing as any).unsubscribed !== true) {
+        await ensureMainSegment(normalizedEmail)
       }
+      return { success: true, contactId: data?.id || existing.id }
+    }
 
-      console.error(`[v0] Error creating Resend contact:`, error)
+    if (getError && !isMissingContact(getError)) {
+      console.warn("[resend] Contact lookup failed before create:", getError)
+    }
+
+    const properties = mergeLifecycleProperties(null, requested)
+    const createPayload: Record<string, unknown> = {
+      email: normalizedEmail,
+      firstName: firstName || undefined,
+      properties,
+    }
+    if (mainSegmentId) createPayload.segments = [{ id: mainSegmentId }]
+
+    const { data, error } = await (resend.contacts as any).create(createPayload)
+    if (error) {
+      const message = String(error.message || "").toLowerCase()
+      if (message.includes("already exists") || message.includes("contact already")) {
+        const { data: current } = await (resend.contacts as any).get({ email: normalizedEmail })
+        const mergedProperties = mergeLifecycleProperties((current as any)?.properties, requested)
+        const { data: updated, error: updateError } = await (resend.contacts as any).update({
+          email: normalizedEmail,
+          firstName: firstName || undefined,
+          properties: mergedProperties,
+        })
+        if (updateError) return { success: false, error: updateError.message }
+        if ((current as any)?.unsubscribed !== true) {
+          await ensureMainSegment(normalizedEmail)
+        }
+        return { success: true, contactId: updated?.id || current?.id }
+      }
       return { success: false, error: error.message }
     }
 
-    console.log(`[v0] Successfully added contact to Resend: ${email}, ID: ${data?.id}`)
     return { success: true, contactId: data?.id }
   } catch (error) {
-    console.error(`[v0] Exception adding contact to Resend:`, error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    }
+    console.error("[resend] Exception syncing lifecycle contact:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
   }
 }
 
 /**
- * Update tags for an existing contact (adds new tags, doesn't remove existing ones)
+ * Update lifecycle properties on an existing global Contact. Unspecified properties remain unchanged.
+ * This never creates or re-subscribes a marketing contact.
  */
 export async function updateContactTags(
   email: string,
   newTags: ContactTags,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    if (!hasResendApiKey() || !audienceId) {
-      return { success: false, error: "Resend not configured" }
-    }
+    if (!hasResendApiKey()) return { success: false, error: "Resend not configured" }
+    if (shouldSkipResend(email)) return { success: true }
 
-    if (shouldSkipResend(email)) {
-      console.log(`[v0] Skipping Resend tag update for test email: ${email}`)
-      return { success: true }
-    }
-
-    console.log(`[v0] Updating tags for contact: ${email}`)
-    console.log("[v0] New tags:", newTags)
+    const normalizedEmail = email.trim().toLowerCase()
     const resend = requireResendClient()
+    const { data: existing, error: getError } = await (resend.contacts as any).get({ email: normalizedEmail })
+    if (getError || !existing) return { success: false, error: getError?.message || "Contact not found" }
 
-    // Get existing contact
-    const { data: contacts } = await resend.contacts.list({
-      audienceId,
+    const properties = mergeLifecycleProperties((existing as any).properties, requestedLifecycleProperties(newTags))
+    const { error } = await (resend.contacts as any).update({
+      email: normalizedEmail,
+      properties,
     })
-
-    const existingContact = contacts?.data?.find((c: any) => c.email === email)
-
-    if (!existingContact) {
-      console.log(`[v0] Contact not found in Resend audience: ${email}`)
-      return { success: false, error: "Contact not found" }
-    }
-
-    // Merge existing tags with new tags
-    const existingTags = (existingContact as any).tags || []
-    const existingTagsMap: { [key: string]: string } = {}
-
-    for (const tag of existingTags) {
-      if (typeof tag === "object" && tag.name && tag.value) {
-        existingTagsMap[tag.name] = tag.value
-      }
-    }
-
-    // Merge with new tags (new tags override existing)
-    const mergedTags = { ...existingTagsMap, ...newTags }
-
-    const formattedTags = Object.entries(mergedTags)
-      .filter(([_, value]) => value !== undefined && value !== null)
-      .map(([name, value]) => ({
-        name,
-        value: value as string,
-      }))
-
-    // Update the contact using direct API call (more reliable than SDK)
-    const updateResponse = await fetch(
-      `https://api.resend.com/audiences/${audienceId}/contacts/${existingContact.id}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${getResendApiKey()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          tags: formattedTags,
-        }),
-      },
-    )
-
-    if (!updateResponse.ok) {
-      const errorText = await updateResponse.text()
-      console.error(`[v0] Error updating contact tags:`, updateResponse.status, errorText)
-      return { success: false, error: `Resend API error: ${updateResponse.status} ${errorText}` }
-    }
-
-    const updateData = await updateResponse.json()
-    console.log(`[v0] Successfully updated tags for: ${email}`)
-    console.log(`[v0] Resend API response:`, JSON.stringify(updateData, null, 2))
-    console.log(`[v0] Tags sent to Resend:`, JSON.stringify(formattedTags, null, 2))
+    if (error) return { success: false, error: error.message }
     return { success: true }
   } catch (error) {
-    console.error(`[v0] Exception updating contact tags:`, error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    }
+    console.error("[resend] Exception updating lifecycle properties:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
   }
 }
 
-/**
- * Remove a contact from the audience (for unsubscribes)
- */
+/** Remove from the Main Audience segment without deleting the global Contact. */
 export async function removeResendContact(email: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    if (!hasResendApiKey() || !audienceId) {
-      return { success: false, error: "Resend not configured" }
-    }
-
-    if (shouldSkipResend(email)) {
-      console.log(`[v0] Skipping Resend removal for test email: ${email}`)
-      return { success: true }
-    }
-
-    console.log(`[v0] Removing contact from Resend: ${email}`)
-    const resend = requireResendClient()
-
-    // Get existing contact
-    const { data: contacts } = await resend.contacts.list({
-      audienceId,
-    })
-
-    const existingContact = contacts?.data?.find((c: any) => c.email === email)
-
-    if (!existingContact) {
-      console.log(`[v0] Contact not found: ${email}`)
-      return { success: true } // Already removed
-    }
-
-    const { error } = await resend.contacts.remove({
-      id: existingContact.id,
-      audienceId,
-    })
-
-    if (error) {
-      console.error(`[v0] Error removing contact:`, error)
-      return { success: false, error: error.message }
-    }
-
-    console.log(`[v0] Successfully removed contact: ${email}`)
-    return { success: true }
-  } catch (error) {
-    console.error(`[v0] Exception removing contact:`, error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    }
-  }
+  if (!mainSegmentId) return { success: true }
+  return removeContactFromSegment(email, mainSegmentId)
 }
 
-/**
- * Add a contact to a specific segment
- */
 export async function addContactToSegment(
   email: string,
   segmentId: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    if (!hasResendApiKey()) {
-      console.log("[v0] RESEND_API_KEY not configured, skipping segment addition")
-      return { success: false, error: "Resend not configured" }
-    }
+    if (!hasResendApiKey()) return { success: false, error: "Resend not configured" }
+    if (shouldSkipResend(email)) return { success: true }
 
-    if (!audienceId) {
-      console.log("[v0] RESEND_AUDIENCE_ID not configured, skipping segment addition")
-      return { success: false, error: "Audience not configured" }
-    }
-
-    if (shouldSkipResend(email)) {
-      console.log(`[v0] Skipping Resend segment add for test email: ${email}`)
-      return { success: true }
-    }
-
-    console.log(`[v0] Adding contact ${email} to segment ${segmentId}`)
+    const normalizedEmail = email.trim().toLowerCase()
+    if (await isAppUnsubscribed(normalizedEmail)) return { success: true }
 
     const resend = requireResendClient()
-    // Use the Resend API to add contact to segment (SDK typings may lag)
-    const { error } = await (resend as any).contacts.segments.add({
-      email,
+    const { data: existing } = await (resend.contacts as any).get({ email: normalizedEmail })
+    if ((existing as any)?.unsubscribed === true) return { success: true }
+
+    const { error } = await (resend.contacts as any).segments.add({
+      email: normalizedEmail,
       segmentId,
-      audienceId,
     })
-
     if (error) {
-      // If contact is already in segment, consider it a success
-      if (error.message?.includes("already") || error.message?.includes("duplicate")) {
-        console.log(`[v0] Contact ${email} already in segment`)
-        return { success: true }
-      }
-
-      console.error(`[v0] Error adding contact to segment:`, error)
+      const message = String(error.message || "").toLowerCase()
+      if (message.includes("already") || message.includes("duplicate")) return { success: true }
       return { success: false, error: error.message }
     }
-
-    console.log(`[v0] Successfully added ${email} to segment`)
     return { success: true }
   } catch (error) {
-    console.error(`[v0] Exception adding contact to segment:`, error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    }
+    console.error("[resend] Exception adding contact to segment:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
   }
 }
 
-/**
- * Remove a contact from a specific segment
- */
 export async function removeContactFromSegment(
   email: string,
   segmentId: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    if (!hasResendApiKey()) {
-      console.log("[v0] RESEND_API_KEY not configured, skipping segment removal")
-      return { success: false, error: "Resend not configured" }
-    }
-
-    if (!audienceId) {
-      console.log("[v0] RESEND_AUDIENCE_ID not configured, skipping segment removal")
-      return { success: false, error: "Audience not configured" }
-    }
-
-    if (shouldSkipResend(email)) {
-      console.log(`[v0] Skipping Resend segment remove for test email: ${email}`)
-      return { success: true }
-    }
-
-    console.log(`[v0] Removing contact ${email} from segment ${segmentId}`)
+    if (!hasResendApiKey()) return { success: false, error: "Resend not configured" }
+    if (shouldSkipResend(email)) return { success: true }
 
     const resend = requireResendClient()
-    const { error } = await (resend as any).contacts.segments.remove({
-      email,
+    const { error } = await (resend.contacts as any).segments.remove({
+      email: email.trim().toLowerCase(),
       segmentId,
     })
-
     if (error) {
-      if (error.message?.includes("not found") || error.message?.includes("missing")) {
-        return { success: true }
-      }
-      console.error(`[v0] Error removing contact from segment:`, error)
+      const message = String(error.message || "").toLowerCase()
+      if (message.includes("not found") || message.includes("missing")) return { success: true }
       return { success: false, error: error.message }
     }
-
-    console.log(`[v0] Successfully removed ${email} from segment`)
     return { success: true }
   } catch (error) {
-    console.error(`[v0] Exception removing contact from segment:`, error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    }
+    console.error("[resend] Exception removing contact from segment:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
   }
 }

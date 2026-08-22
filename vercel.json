@@ -49,6 +49,10 @@
       "schedule": "30 * * * *"
     },
     {
+      "path": "/api/cron/resend-lifecycle-sync",
+      "schedule": "35 * * * *"
+    },
+    {
       "path": "/api/cron/onboarding-sequence",
       "schedule": "5 10 * * *"
     },

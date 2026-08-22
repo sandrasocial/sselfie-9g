@@ -6,6 +6,7 @@ import { sql } from "@/lib/db/client"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
 import { sendEmail } from "@/lib/email/send-email"
+import { updateContactTags } from "@/lib/resend/manage-contact"
 import {
   generateVaultMayaWelcomeEmail,
   VAULT_MAYA_WELCOME_SUBJECTS,
@@ -381,6 +382,20 @@ export async function handleStudioMembershipSubscriptionCheckout(
     }
 
     if (isPaymentPaid && customerEmail) {
+      // Only update an existing Resend marketing contact. Do not create a marketing
+      // contact merely because someone paid; purchase consent and marketing consent stay separate.
+      const lifecycleSync = await updateContactTags(customerEmail, {
+        lifecycle_stage: subscriptionProductType === "sselfie_studio_membership" ? "member" : "customer",
+        primary_interest: subscriptionProductType === "sselfie_studio_membership" ? "all" : "ai_photos",
+        ...(subscriptionProductType === "sselfie_studio_membership"
+          ? { membership_status: subscriptionData.status }
+          : {}),
+        last_product: subscriptionProductType,
+      })
+      if (!lifecycleSync.success && lifecycleSync.error !== "Contact not found") {
+        console.error("[v0] Resend subscription lifecycle sync failed:", lifecycleSync.error)
+      }
+
       const setupIncomplete =
         accountCreated ||
         localBuyer?.password_setup_complete === false ||

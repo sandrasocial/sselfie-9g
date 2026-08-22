@@ -4,7 +4,6 @@ import { getResendApiKey, hasResendApiKey } from "@/lib/resend/api-key"
 
 const UNSUBSCRIBE_TOKEN_VERSION = "v1"
 const CANONICAL_SITE_URL = "https://www.sselfie.ai"
-const RESEND_AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID || "3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd"
 
 type SuppressionResult =
   | { suppressed: true; reason: string }
@@ -216,8 +215,8 @@ async function isSuppressedByEmailLogs(email: string): Promise<SuppressionResult
   return { suppressed: true, reason: row.status }
 }
 
-async function isResendAudienceUnsubscribed(email: string): Promise<boolean> {
-  if (!RESEND_AUDIENCE_ID || !hasResendApiKey()) {
+async function isResendContactUnsubscribed(email: string): Promise<boolean> {
+  if (!hasResendApiKey()) {
     return false
   }
 
@@ -229,7 +228,7 @@ async function isResendAudienceUnsubscribed(email: string): Promise<boolean> {
 
   try {
     const response = await fetch(
-      `https://api.resend.com/audiences/${RESEND_AUDIENCE_ID}/contacts/${encodeURIComponent(normalizedEmail)}`,
+      `https://api.resend.com/contacts/${encodeURIComponent(normalizedEmail)}`,
       {
         headers: {
           Authorization: `Bearer ${getResendApiKey()}`,
@@ -243,7 +242,7 @@ async function isResendAudienceUnsubscribed(email: string): Promise<boolean> {
     }
 
     if (!response.ok) {
-      console.warn("[Email] Could not verify Resend unsubscribe status", {
+      console.warn("[Email] Could not verify Resend global contact unsubscribe status", {
         status: response.status,
       })
       return false
@@ -256,7 +255,7 @@ async function isResendAudienceUnsubscribed(email: string): Promise<boolean> {
     resendUnsubscribeCache.set(normalizedEmail, { expiresAt: Date.now() + 5 * 60 * 1000, unsubscribed })
     return unsubscribed
   } catch (error) {
-    console.warn("[Email] Resend unsubscribe lookup failed", {
+    console.warn("[Email] Resend global contact unsubscribe lookup failed", {
       error: error instanceof Error ? error.message : "unknown_error",
     })
     return false
@@ -268,7 +267,7 @@ export async function getMarketingEmailSuppression(email: string): Promise<Suppr
     return { suppressed: true, reason: "unsubscribed" }
   }
 
-  if (await isResendAudienceUnsubscribed(email)) {
+  if (await isResendContactUnsubscribed(email)) {
     return { suppressed: true, reason: "resend_unsubscribed" }
   }
 
