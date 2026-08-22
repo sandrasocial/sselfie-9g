@@ -57,6 +57,10 @@
       "schedule": "45 * * * *"
     },
     {
+      "path": "/api/cron/resend-membership-status-sync",
+      "schedule": "55 * * * *"
+    },
+    {
       "path": "/api/cron/onboarding-sequence",
       "schedule": "5 10 * * *"
     },
