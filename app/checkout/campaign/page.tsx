@@ -7,6 +7,7 @@ import {
   buildCheckoutRedirectUrl,
   getCheckoutAttributionFromParams,
 } from "@/lib/revenue-engine/checkout-attribution"
+import { normalizeCheckoutEmail } from "@/lib/revenue-engine/checkout-email"
 
 export const metadata: Metadata = {
   title: "Checkout | Your Next Campaign",
@@ -32,12 +33,6 @@ type CheckoutSearchParams = {
   checkout_email?: string
   email?: string
   repeat_order_token?: string
-}
-
-function normalizeCheckoutEmail(value?: string | null): string | null {
-  const email = value?.trim().toLowerCase()
-  if (!email) return null
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
 }
 
 export default async function CampaignCheckoutPage({
