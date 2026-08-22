@@ -16,18 +16,18 @@ import {
   SUBSCRIBER_WINBACK_EMAIL_TYPES,
 } from "@/lib/email/templates/subscriber-winback"
 
-// Subscriber win-back (EMAIL-03): 4 personal notes over ~3 weeks for subscribers with no opens
-// or clicks in 60+ days, then an optional sunset (app-level unsubscribe) for the silent ones.
-// Why: dormant subscribers drag sender reputation for the whole list; win-back recovers 10-20%
-// and suppression protects deliverability for everyone who does read.
+// Subscriber win-back (EMAIL-03): 4 personal notes over ~3 weeks for subscribers with no
+// meaningful click activity in 60+ days, then an optional sunset (app-level unsubscribe).
 //
-// Engagement truth: email_logs (opened_at / clicked_at via the Resend webhook). Audience is
-// limited to people we actually send cron/lifecycle email to (>=2 sends in 90 days), so
-// broadcast-only contacts - whose opens we don't track in email_logs - are never judged inactive.
+// Engagement truth: clicked_at from lifecycle email is the explicit re-engagement signal.
+// opened_at is intentionally not used as a stay signal because privacy features can generate
+// opens without a human reading the message. Purchasers and active members are excluded.
+// Audience is limited to people we actually send cron/lifecycle email to (>=2 sends in 90 days),
+// so broadcast-only contacts are never judged inactive by this job.
 //
 // Gates: SUBSCRIBER_WINBACK_ENABLED (sends), SUBSCRIBER_WINBACK_SUNSET_ENABLED (suppression).
-// Any open or click while in the sequence re-qualifies the subscriber automatically - every
-// stage re-checks the same inactivity condition, so engaging exits the sequence.
+// Any click while in the sequence re-qualifies the subscriber automatically because every
+// stage re-checks the same click inactivity condition.
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -82,8 +82,9 @@ const STAGES: WinbackStage[] = [
 
 /**
  * Inactive = we've mailed them (>=2 lifecycle sends in 90d, on the list 60d+) and they have
- * zero opens AND zero clicks in 60 days. Excludes active members and anyone who paid in 90d
- * (stripe_payments - money truth), plus anyone already in this win-back round (120d dedupe).
+ * zero clicks in 60 days. Opens are diagnostic only. Excludes active members and anyone who
+ * paid in 90d (stripe_payments - money truth), plus anyone already in this win-back round
+ * (120d dedupe).
  */
 function winbackIdempotencyKey(emailType: string, email: string): string {
   const recipientHash = createHash("sha256")
@@ -105,7 +106,6 @@ async function getStageCandidates(
           WHERE sent_at > NOW() - INTERVAL '90 days' AND status IN ('sent', 'delivered')
         ) AS recent_sends,
         MIN(sent_at) AS first_send,
-        MAX(opened_at) AS last_open,
         MAX(clicked_at) AS last_click
       FROM email_logs
       WHERE user_email IS NOT NULL AND BTRIM(user_email) <> ''
@@ -115,7 +115,6 @@ async function getStageCandidates(
     FROM recipients r
     WHERE r.recent_sends >= 2
       AND r.first_send <= NOW() - INTERVAL '60 days'
-      AND (r.last_open IS NULL OR r.last_open <= NOW() - INTERVAL '60 days')
       AND (r.last_click IS NULL OR r.last_click <= NOW() - INTERVAL '60 days')
       AND NOT EXISTS (
         SELECT 1
@@ -190,16 +189,15 @@ async function runStage(stage: WinbackStage, limit: number, dryRun: boolean) {
 }
 
 /**
- * Sunset: 7+ days after win-back email 4 with still zero engagement -> app-level unsubscribe
- * (every marketing send respects it) + a winback_sunset tag in Resend so broadcasts can
- * exclude them. Counted in dry-run mode whenever the sunset env is off.
+ * Sunset: 7+ days after win-back email 4 with still zero click engagement -> app-level
+ * unsubscribe (every marketing send respects it) + a winback_sunset tag in Resend so broadcasts
+ * can exclude them. Counted in dry-run mode whenever the sunset env is off.
  */
 async function runSunset(apply: boolean, limit: number) {
   const candidates = (await sql`
     WITH recipients AS (
       SELECT
         LOWER(BTRIM(user_email)) AS email,
-        MAX(opened_at) AS last_open,
         MAX(clicked_at) AS last_click
       FROM email_logs
       WHERE user_email IS NOT NULL AND BTRIM(user_email) <> ''
@@ -207,8 +205,7 @@ async function runSunset(apply: boolean, limit: number) {
     )
     SELECT r.email
     FROM recipients r
-    WHERE (r.last_open IS NULL OR r.last_open <= NOW() - INTERVAL '60 days')
-      AND (r.last_click IS NULL OR r.last_click <= NOW() - INTERVAL '60 days')
+    WHERE (r.last_click IS NULL OR r.last_click <= NOW() - INTERVAL '60 days')
       AND EXISTS (
         SELECT 1
         FROM email_logs el

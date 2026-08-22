@@ -6,21 +6,15 @@ export interface EmailRecipientNameInput {
 
 export function getFirstNameForEmail({
   fullName,
-  email,
-  fallback = "friend",
+  fallback = "there",
 }: EmailRecipientNameInput): string {
   const normalizedName = typeof fullName === "string" ? fullName.trim() : ""
   if (normalizedName.length > 0) {
     return normalizedName.split(/\s+/)[0]
   }
 
-  const normalizedEmail = typeof email === "string" ? email.trim() : ""
-  if (normalizedEmail.length > 0) {
-    const localPart = normalizedEmail.split("@")[0]?.trim()
-    if (localPart) {
-      return localPart
-    }
-  }
-
+  // Never infer a person's name from the local part of their email address.
+  // Values such as "firstname.lastname", role inboxes, and arbitrary handles
+  // create awkward or privacy-unfriendly greetings in lifecycle email.
   return fallback
 }

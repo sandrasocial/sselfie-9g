@@ -1,17 +1,7 @@
-// Subscriber win-back (EMAIL-03, 2026-06-11) - 4 personal notes over ~3 weeks for subscribers
-// with no opens or clicks in 60+ days. Research basis: win-back recovers 10-20% of dormant
-// subscribers; suppressing the rest protects deliverability for everyone else. Personal-note
-// format on purpose (re-engagement reads as Sandra, never as a brand blast). No discounts:
-// value first, honest sunset last. Copy is Sandra-approval-gated behind SUBSCRIBER_WINBACK_ENABLED.
-//
-// REWRITE-2026-07-03 (Sandra-approved email audit): 826 sends, 0 clicks on the old copy.
-// These readers are cold and have likely forgotten who Sandra is, so the arc is now a
-// re-introduction: 1) who I am now, 2) the real story that started it, 3) the one free
-// thing worth coming back for (/ai-prompts), 4) honest goodbye + sunset. Email types,
-// tracked-link params, and send mechanics unchanged.
-//
-// NOT the same thing as win-back-day3/7/14.ts (member churn win-back) - this is list hygiene
-// for free subscribers who stopped opening.
+// Subscriber win-back: four personal notes for subscribers who have stopped
+// meaningfully engaging with lifecycle email. Opens are intentionally not used
+// as a stay signal because privacy features can make open data unreliable.
+// A click is the explicit re-engagement signal used by the runtime sequence.
 
 import { buildRevenueEmailLink } from "./revenue-links"
 import { renderPersonalLink, renderPersonalNote } from "./stone-email"
@@ -25,47 +15,43 @@ export const SUBSCRIBER_WINBACK_EMAIL_TYPES = {
 
 const FREE_PROMPTS_URL = "https://www.sselfie.ai/ai-prompts"
 
-function trackedLink(base: string, emailType: string, content: string, recipientEmail?: string | null): string {
+function trackedLink(base: string, emailType: string, content: string): string {
   return buildRevenueEmailLink(base, {
     source: "email",
     medium: "winback",
     campaign: "subscriber_winback",
     content,
     emailType,
-    checkoutEmail: recipientEmail,
   })
 }
 
 export function generateWinback1Email({ firstName }: { firstName: string; recipientEmail?: string | null }) {
   const bodyHtml = `
     <p style="margin:0 0 18px;">Hi ${firstName},</p>
-    <p style="margin:0 0 18px;">It's been a while since you've heard from me, so let me start over. I'm Sandra.</p>
-    <p style="margin:0 0 18px;">Single mom, three kids, Iceland. A few years ago my marriage ended and I rebuilt my whole life with an iPhone and a mirror selfie. Somewhere along that road you joined my list, probably for selfie tips or AI photo prompts.</p>
-    <p style="margin:0 0 18px;">Since then a lot has changed. I built SSELFIE, where I help women show up online with photos that still look like them. Real face, best day, nothing fake. Over a hundred thousand women follow along now, and honestly, that still feels strange to type.</p>
-    <p style="margin:0 0 18px;">But my emails clearly haven't been landing lately, or they haven't been worth opening. Both are on me.</p>
-    <p style="margin:0 0 18px;">So this month I'm sending you a few short notes to see if what I do now is useful to you. If it is, you don't have to do anything. Just open the ones that look interesting.</p>
-    <p style="margin:0 0 18px;">And if it's not for you anymore, the unsubscribe link below works in one click. No hard feelings, ever.</p>
-    <p style="margin:0;">Either way: hi again.</p>
+    <p style="margin:0 0 18px;">It has been a while, so let me start over. I am Sandra.</p>
+    <p style="margin:0 0 18px;">I teach women how to take better photos of themselves, edit them, use AI when it actually helps, and turn those photos into content.</p>
+    <p style="margin:0 0 18px;">You probably joined my list for a selfie tip, a guide, or one of my AI photo prompts.</p>
+    <p style="margin:0 0 18px;">My emails have clearly not been useful enough lately, so I am going to send you a few short notes and show you what SSELFIE is about now.</p>
+    <p style="margin:0 0 18px;">If something is useful, click through and use it. If this is not for you anymore, the unsubscribe link below works in one click. No hard feelings.</p>
+    <p style="margin:0;">Either way, hi again.</p>
   `
 
   return {
-    subject: "it's been a while. can I reintroduce myself?",
+    subject: "it has been a while. can I reintroduce myself?",
     html: renderPersonalNote({ title: "Can I reintroduce myself?", bodyHtml }),
     text: `Hi ${firstName},
 
-It's been a while since you've heard from me, so let me start over. I'm Sandra.
+It has been a while, so let me start over. I am Sandra.
 
-Single mom, three kids, Iceland. A few years ago my marriage ended and I rebuilt my whole life with an iPhone and a mirror selfie. Somewhere along that road you joined my list, probably for selfie tips or AI photo prompts.
+I teach women how to take better photos of themselves, edit them, use AI when it actually helps, and turn those photos into content.
 
-Since then a lot has changed. I built SSELFIE, where I help women show up online with photos that still look like them. Real face, best day, nothing fake. Over a hundred thousand women follow along now, and honestly, that still feels strange to type.
+You probably joined my list for a selfie tip, a guide, or one of my AI photo prompts.
 
-But my emails clearly haven't been landing lately, or they haven't been worth opening. Both are on me.
+My emails have clearly not been useful enough lately, so I am going to send you a few short notes and show you what SSELFIE is about now.
 
-So this month I'm sending you a few short notes to see if what I do now is useful to you. If it is, you don't have to do anything. Just open the ones that look interesting.
+If something is useful, click through and use it. If this is not for you anymore, the unsubscribe link below works in one click. No hard feelings.
 
-And if it's not for you anymore, the unsubscribe link below works in one click. No hard feelings, ever.
-
-Either way: hi again.
+Either way, hi again.
 
 Sandra x`,
   }
@@ -79,33 +65,27 @@ export function generateWinback2Email({
 }) {
   const bodyHtml = `
     <p style="margin:0 0 18px;">Hi ${firstName},</p>
-    <p style="margin:0 0 18px;">I want to tell you about one photo.</p>
-    <p style="margin:0 0 18px;">It's a mirror selfie. My living room, after my divorce, kids asleep. No photographer, no budget, and honestly, no confidence either. But I posted it anyway.</p>
-    <p style="margin:0 0 18px;">That photo didn't go viral. Nothing dramatic happened. But it was the first time I showed up as myself instead of hiding, and everything I have now grew from that one decision. The audience. The business. This email you're reading.</p>
-    <p style="margin:0 0 18px;">Here's what I learned, and what I keep watching happen for the women I work with: nobody's waiting for you to be perfect. They're waiting for you to be visible. One honest photo of your real face does more than a hundred posts where you're hiding behind quotes and stock images.</p>
-    <p style="margin:0 0 18px;">You don't need to become someone else to start. You need one photo you don't cringe at, and something true to say next to it.</p>
-    <p style="margin:0 0 18px;">That's the whole method. It started with a selfie in a messy living room.</p>
-    <p style="margin:0;">If you're still in that "phone full of photos, profile still hiding" place, stay with me this week. My next note has the free thing I wish I'd had back then.</p>
+    <p style="margin:0 0 18px;">When I started taking photos of myself, I did not have a studio or a photographer.</p>
+    <p style="margin:0 0 18px;">I had an iPhone, a mirror, a window, and a lot of photos I did not want to post.</p>
+    <p style="margin:0 0 18px;">What changed was not becoming more photogenic. I learned how to use light, angles, simple edits, and eventually AI without making myself look like somebody else.</p>
+    <p style="margin:0 0 18px;">That is still the point of SSELFIE now. Start with what you already have. Make one photo better. Then actually use it.</p>
+    <p style="margin:0;">My next note has the free thing I would start with today.</p>
   `
 
   return {
-    subject: "the photo that started all of this",
-    html: renderPersonalNote({ title: "The photo that started all of this", bodyHtml }),
+    subject: "the photo lesson I still use",
+    html: renderPersonalNote({ title: "The photo lesson I still use", bodyHtml }),
     text: `Hi ${firstName},
 
-I want to tell you about one photo.
+When I started taking photos of myself, I did not have a studio or a photographer.
 
-It's a mirror selfie. My living room, after my divorce, kids asleep. No photographer, no budget, and honestly, no confidence either. But I posted it anyway.
+I had an iPhone, a mirror, a window, and a lot of photos I did not want to post.
 
-That photo didn't go viral. Nothing dramatic happened. But it was the first time I showed up as myself instead of hiding, and everything I have now grew from that one decision. The audience. The business. This email you're reading.
+What changed was not becoming more photogenic. I learned how to use light, angles, simple edits, and eventually AI without making myself look like somebody else.
 
-Here's what I learned, and what I keep watching happen for the women I work with: nobody's waiting for you to be perfect. They're waiting for you to be visible. One honest photo of your real face does more than a hundred posts where you're hiding behind quotes and stock images.
+That is still the point of SSELFIE now. Start with what you already have. Make one photo better. Then actually use it.
 
-You don't need to become someone else to start. You need one photo you don't cringe at, and something true to say next to it.
-
-That's the whole method. It started with a selfie in a messy living room.
-
-If you're still in that "phone full of photos, profile still hiding" place, stay with me this week. My next note has the free thing I wish I'd had back then.
+My next note has the free thing I would start with today.
 
 Sandra x`,
   }
@@ -113,37 +93,36 @@ Sandra x`,
 
 export function generateWinback3Email({
   firstName,
-  recipientEmail,
 }: {
   firstName: string
   recipientEmail?: string | null
 }) {
-  const promptsUrl = trackedLink(FREE_PROMPTS_URL, SUBSCRIBER_WINBACK_EMAIL_TYPES.offer, "free_prompt", recipientEmail)
+  const promptsUrl = trackedLink(FREE_PROMPTS_URL, SUBSCRIBER_WINBACK_EMAIL_TYPES.offer, "free_prompt")
 
   const bodyHtml = `
     <p style="margin:0 0 18px;">Hi ${firstName},</p>
-    <p style="margin:0 0 18px;">The question I get most in my DMs is some version of: "how did you make that photo?"</p>
-    <p style="margin:0 0 18px;">The answer is simpler than people expect. One clear selfie, one good prompt, ChatGPT. Ten minutes later you've got a photo that looks like it came from a brand shoot. Still your real face. Still you. Just your best day.</p>
-    <p style="margin:0 0 18px;">I keep my latest five shoots on a free page, with the exact prompts I used. ${renderPersonalLink("They're here", promptsUrl)}.</p>
-    <p style="margin:0 0 18px;">Try one on a selfie you already have. That's it. No catch.</p>
-    <p style="margin:0;">And if you make one you love, reply and show me. I read everything.</p>
+    <p style="margin:0 0 18px;">If you want to see what I mean, start with this.</p>
+    <p style="margin:0 0 18px;">I keep five AI photo prompts on a free page. Choose one photo you would love to create, use one clear selfie, and try the prompt in ChatGPT.</p>
+    <p style="margin:0 0 18px;">${renderPersonalLink("Open the five free prompts", promptsUrl)}.</p>
+    <p style="margin:0 0 18px;">You do not need to buy anything. I would rather you make one result first and decide whether this way of creating is useful to you.</p>
+    <p style="margin:0;">If you make one you love, reply and show me.</p>
   `
 
   return {
-    subject: "the free thing I'd start with",
-    html: renderPersonalNote({ title: "The free thing I'd start with", bodyHtml }),
+    subject: "the free thing I would start with",
+    html: renderPersonalNote({ title: "The free thing I would start with", bodyHtml }),
     text: `Hi ${firstName},
 
-The question I get most in my DMs is some version of: "how did you make that photo?"
+If you want to see what I mean, start with this.
 
-The answer is simpler than people expect. One clear selfie, one good prompt, ChatGPT. Ten minutes later you've got a photo that looks like it came from a brand shoot. Still your real face. Still you. Just your best day.
+I keep five AI photo prompts on a free page. Choose one photo you would love to create, use one clear selfie, and try the prompt in ChatGPT.
 
-I keep my latest five shoots on a free page, with the exact prompts I used. They're here:
+Open the five free prompts:
 ${promptsUrl}
 
-Try one on a selfie you already have. That's it. No catch.
+You do not need to buy anything. I would rather you make one result first and decide whether this way of creating is useful to you.
 
-And if you make one you love, reply and show me. I read everything.
+If you make one you love, reply and show me.
 
 Sandra x`,
   }
@@ -151,20 +130,19 @@ Sandra x`,
 
 export function generateWinback4Email({
   firstName,
-  recipientEmail,
 }: {
   firstName: string
   recipientEmail?: string | null
 }) {
-  const promptsUrl = trackedLink(FREE_PROMPTS_URL, SUBSCRIBER_WINBACK_EMAIL_TYPES.sunset, "stay_link", recipientEmail)
+  const promptsUrl = trackedLink(FREE_PROMPTS_URL, SUBSCRIBER_WINBACK_EMAIL_TYPES.sunset, "stay_link")
 
   const bodyHtml = `
     <p style="margin:0 0 18px;">Hi ${firstName},</p>
-    <p style="margin:0 0 18px;">Last note like this, I promise.</p>
-    <p style="margin:0 0 18px;">I only want to email people who actually want to hear from me. If that's not you anymore, that's completely fine. People change, inboxes overflow, life moves.</p>
-    <p style="margin:0 0 18px;">So here's how I'll leave it. If you open or click anything, even just ${renderPersonalLink("this link to the free prompts", promptsUrl)}, I'll know you want to stay and I'll keep writing to you.</p>
-    <p style="margin:0 0 18px;">If I don't hear from you, I'll quietly stop sending you the regular emails. No guilt trip. You can always come back at sselfie.ai.</p>
-    <p style="margin:0;">Thank you for letting me into your inbox, even for a while. It means more than you'd think.</p>
+    <p style="margin:0 0 18px;">Last note like this.</p>
+    <p style="margin:0 0 18px;">I only want to keep sending regular emails to people who actually want them.</p>
+    <p style="margin:0 0 18px;">If you want to stay, ${renderPersonalLink("click here to open the free prompts", promptsUrl)}. That click tells me you still want SSELFIE emails.</p>
+    <p style="margin:0 0 18px;">If you do nothing, I will quietly stop sending you the regular marketing emails. You can always come back later.</p>
+    <p style="margin:0;">Thank you for being here, even if this is where we part ways.</p>
   `
 
   return {
@@ -172,16 +150,16 @@ export function generateWinback4Email({
     html: renderPersonalNote({ title: "Should I stop emailing you?", bodyHtml }),
     text: `Hi ${firstName},
 
-Last note like this, I promise.
+Last note like this.
 
-I only want to email people who actually want to hear from me. If that's not you anymore, that's completely fine. People change, inboxes overflow, life moves.
+I only want to keep sending regular emails to people who actually want them.
 
-So here's how I'll leave it. If you open or click anything, even just this link to the free prompts, I'll know you want to stay and I'll keep writing to you:
+If you want to stay, click here to open the free prompts. That click tells me you still want SSELFIE emails:
 ${promptsUrl}
 
-If I don't hear from you, I'll quietly stop sending you the regular emails. No guilt trip. You can always come back at sselfie.ai.
+If you do nothing, I will quietly stop sending you the regular marketing emails. You can always come back later.
 
-Thank you for letting me into your inbox, even for a while. It means more than you'd think.
+Thank you for being here, even if this is where we part ways.
 
 Sandra x`,
   }
