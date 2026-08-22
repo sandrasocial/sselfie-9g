@@ -111,8 +111,15 @@ async function getCandidates(): Promise<Candidate[]> {
        )
     ORDER BY
       CASE
-        WHEN sync.email IS NULL THEN 0
-        WHEN sync.source_updated_at IS NULL OR truth.source_updated_at > sync.source_updated_at THEN 1
+        -- Billing/cancellation changes on contacts we have already synced are the most
+        -- time-sensitive state. Process them before draining untouched historical rows.
+        WHEN sync.email IS NOT NULL
+          AND sync.last_error IS NULL
+          AND sync.source_updated_at IS NOT NULL
+          AND truth.source_updated_at > sync.source_updated_at THEN 0
+        -- Untouched contacts are the backfill queue.
+        WHEN sync.email IS NULL THEN 1
+        -- Failed/missing contacts are deliberately last and only become eligible after backoff.
         ELSE 2
       END,
       truth.source_updated_at DESC
