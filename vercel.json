@@ -53,6 +53,10 @@
       "schedule": "35 * * * *"
     },
     {
+      "path": "/api/cron/high-intent-click-recovery",
+      "schedule": "45 * * * *"
+    },
+    {
       "path": "/api/cron/onboarding-sequence",
       "schedule": "5 10 * * *"
     },
