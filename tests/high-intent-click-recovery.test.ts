@@ -1,11 +1,15 @@
 // @vitest-environment node
 
+import fs from "fs"
+import path from "path"
 import { describe, expect, it } from "vitest"
 
 import {
   generateHighIntentClickRecoveryEmail,
   HIGH_INTENT_EMAIL_TYPES,
 } from "@/lib/email/templates/high-intent-click-recovery"
+
+const ROOT = process.cwd()
 
 describe("high-intent paid-offer click recovery", () => {
   it("keeps the Prompt Vault recovery fit-first instead of pressure-first", () => {
@@ -47,5 +51,20 @@ describe("high-intent paid-offer click recovery", () => {
 
     expect(email.html).not.toContain("<script>")
     expect(email.html).toContain("&lt;script&gt;")
+  })
+
+  it("applies the 18-hour delay after selecting the latest click", () => {
+    const route = fs.readFileSync(
+      path.join(ROOT, "app/api/cron/high-intent-click-recovery/route.ts"),
+      "utf8",
+    )
+    const rawClicksStart = route.indexOf("WITH raw_clicks AS")
+    const latestClickStart = route.indexOf("latest_click AS")
+    const ageGate = route.indexOf("WHERE click.clicked_at <= NOW()")
+
+    expect(rawClicksStart).toBeGreaterThanOrEqual(0)
+    expect(latestClickStart).toBeGreaterThan(rawClicksStart)
+    expect(ageGate).toBeGreaterThan(latestClickStart)
+    expect(route.slice(rawClicksStart, latestClickStart)).not.toContain("MIN_CLICK_AGE_HOURS")
   })
 })
