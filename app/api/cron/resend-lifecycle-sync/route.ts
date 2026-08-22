@@ -8,7 +8,7 @@ import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
 
-const BATCH_LIMIT = 100
+const BATCH_LIMIT = 50
 const SEND_DELAY_MS = 120
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -56,9 +56,18 @@ async function getCandidates(): Promise<Candidate[]> {
         f.email,
         f.name,
         CASE
+          -- Prefer a still-canonical acquisition source. Paid handlers may overwrite source,
+          -- so historical paid rows fall back to the durable freebie tags where available.
           WHEN f.source ILIKE '%selfie%guide%' OR f.source ILIKE '%freebie%selfie%' THEN 'selfie_guide'
           WHEN f.source ILIKE '%ai%prompt%' OR f.source ILIKE '%prompt%guide%' THEN 'ai_prompts'
           WHEN f.source ILIKE '%manychat%' THEN 'manychat'
+          WHEN f.source IN ('starter-kit-paid', 'prompt-vault-paid')
+            AND 'ai-prompts-subscriber' = ANY(f.email_tags) THEN 'ai_prompts'
+          WHEN f.source IN ('starter-kit-paid', 'prompt-vault-paid')
+            AND (
+              'sselfie-guide' = ANY(f.email_tags)
+              OR 'freebie-selfie-guide' = ANY(f.email_tags)
+            ) THEN 'selfie_guide'
           WHEN f.source ILIKE '%starter%kit%' THEN 'starter_kit'
           WHEN f.source ILIKE '%prompt%vault%' THEN 'prompt_vault'
           ELSE LOWER(REGEXP_REPLACE(f.source, '[^a-zA-Z0-9]+', '_', 'g'))
@@ -164,18 +173,23 @@ export async function GET(request: Request) {
   await logger.start()
 
   try {
+    const url = new URL(request.url)
+    const dryRun = url.searchParams.get("dry_run") === "1"
+    const vercelEnv = process.env.VERCEL_ENV
     const authHeader = request.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
-    const isProduction =
-      process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
+    const requiresAuth = vercelEnv === "production" || (!vercelEnv && process.env.NODE_ENV === "production")
 
-    if (isProduction && (!cronSecret || authHeader !== `Bearer ${cronSecret}`)) {
+    if (vercelEnv === "preview" && !dryRun) {
+      return NextResponse.json({ error: "Preview runs must use dry_run=1" }, { status: 403 })
+    }
+
+    if (requiresAuth && (!cronSecret || authHeader !== `Bearer ${cronSecret}`)) {
       await logger.error(new Error("Unauthorized"), { reason: "Invalid cron authorization" })
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     await ensureSyncStateTable()
-    const dryRun = new URL(request.url).searchParams.get("dry_run") === "1"
     const candidates = await getCandidates()
     const summary = {
       dryRun,
