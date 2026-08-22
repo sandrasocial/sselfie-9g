@@ -140,6 +140,30 @@ async function getCandidates(): Promise<Candidate[]> {
   `) as Candidate[]
 }
 
+async function stillNeedsClickRecovery(candidate: Candidate): Promise<boolean> {
+  const [paymentRows, checkoutRows] = await Promise.all([
+    sql`
+      SELECT 1
+      FROM stripe_payments payment
+      WHERE LOWER(BTRIM(payment.customer_email)) = LOWER(BTRIM(${candidate.email}))
+        AND payment.product_type = ${candidate.product}
+        AND payment.status IN ('succeeded', 'paid')
+        AND COALESCE(payment.is_test_mode, FALSE) = FALSE
+      LIMIT 1
+    `,
+    sql`
+      SELECT 1
+      FROM checkout_attribution checkout
+      WHERE LOWER(BTRIM(checkout.user_email)) = LOWER(BTRIM(${candidate.email}))
+        AND checkout.product_type = ${candidate.product}
+        AND checkout.created_at >= ${candidate.clicked_at}::timestamptz - INTERVAL '15 minutes'
+      LIMIT 1
+    `,
+  ])
+
+  return paymentRows.length === 0 && checkoutRows.length === 0
+}
+
 export async function GET(request: Request) {
   const logger = createCronLogger("high-intent-click-recovery")
   await logger.start()
@@ -162,6 +186,7 @@ export async function GET(request: Request) {
       found: candidates.length,
       promptVault: candidates.filter(candidate => candidate.product === "prompt_vault").length,
       starterKit: candidates.filter(candidate => candidate.product === "starter_kit").length,
+      skippedBecauseCheckoutOrPurchase: 0,
       sent: 0,
       failed: 0,
     }
@@ -174,6 +199,11 @@ export async function GET(request: Request) {
     }
 
     for (const candidate of candidates) {
+      if (!(await stillNeedsClickRecovery(candidate))) {
+        summary.skippedBecauseCheckoutOrPurchase += 1
+        continue
+      }
+
       const firstName = getFirstNameForEmail({
         fullName: candidate.name,
         email: candidate.email,
