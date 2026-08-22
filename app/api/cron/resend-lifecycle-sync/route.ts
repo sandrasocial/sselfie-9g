@@ -189,6 +189,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const backfillEnabled = process.env.RESEND_LIFECYCLE_BACKFILL_ENABLED === "true"
+    if (!dryRun && !backfillEnabled) {
+      const disabledSummary = {
+        disabled: true,
+        reason: "RESEND_LIFECYCLE_BACKFILL_ENABLED is not true",
+      }
+      await logger.success(disabledSummary)
+      return NextResponse.json({ success: true, ...disabledSummary })
+    }
+
     await ensureSyncStateTable()
     const candidates = await getCandidates()
     const summary = {
