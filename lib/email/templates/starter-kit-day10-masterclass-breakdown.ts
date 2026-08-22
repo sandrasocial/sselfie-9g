@@ -13,8 +13,8 @@ export function generateStarterKitDay10MasterclassBreakdownEmail({
     campaign: "starter_kit_day10_ai_brand_shoot",
     content: "system_breakdown",
     emailType: "starter-kit-day10-masterclass-breakdown",
+    checkoutEmail: recipientEmail,
   }))
-  if (recipientEmail) systemUrl.searchParams.set("checkout_email", recipientEmail)
   systemUrl.searchParams.set("checkout_source", "starter_kit_buyer_email_credit")
   systemUrl.searchParams.set("starter_kit_credit", "1")
   systemUrl.searchParams.set("upgrade_credit", "3700")

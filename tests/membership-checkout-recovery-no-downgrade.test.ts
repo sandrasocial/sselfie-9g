@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest"
 import { generateMembershipCheckoutRecoveryEmail } from "@/lib/email/templates/membership-checkout-recovery"
 import { shouldShowCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
 import { buildRevenueEmailLink } from "@/lib/email/templates/revenue-links"
+import { normalizeCheckoutEmail } from "@/lib/revenue-engine/checkout-email"
 
 const ROOT = process.cwd()
 
@@ -38,7 +39,7 @@ Sandra x`)
     expect(email.text).not.toMatch(/trial|claim your 7 days/i)
   })
 
-  it("builds a prefilled membership checkout link that bypasses redundant email capture", () => {
+  it("builds a privately prefilled membership checkout link that bypasses redundant email capture", () => {
     const checkoutUrl = new URL(
       buildRevenueEmailLink("/checkout/membership?interval=month", {
         checkoutEmail: "Sandra@example.com",
@@ -48,9 +49,13 @@ Sandra x`)
       })
     )
     const params = Object.fromEntries(checkoutUrl.searchParams.entries())
+    const handoff = checkoutUrl.searchParams.get("checkout_email")
+    const recoveredEmail = normalizeCheckoutEmail(handoff)
 
     expect(checkoutUrl.pathname).toBe("/checkout/membership")
-    expect(checkoutUrl.searchParams.get("checkout_email")).toBe("sandra@example.com")
+    expect(handoff).toMatch(/^v1\./)
+    expect(recoveredEmail).toBe("sandra@example.com")
+    expect(checkoutUrl.toString().toLowerCase()).not.toContain("sandra@example.com")
     expect(checkoutUrl.searchParams.get("source")).toBe("membership_recovery")
     expect(checkoutUrl.searchParams.get("utm_source")).toBe("email")
     expect(checkoutUrl.searchParams.get("utm_medium")).toBe("email")
@@ -58,7 +63,7 @@ Sandra x`)
     expect(
       shouldShowCheckoutEmailCapture({
         params,
-        hasRecoverableEmail: Boolean(checkoutUrl.searchParams.get("checkout_email")),
+        hasRecoverableEmail: Boolean(recoveredEmail),
         hasAuthUser: false,
         hasFreebieToken: false,
       })

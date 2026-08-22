@@ -25,6 +25,22 @@ function firstValue(value: string | string[] | undefined): string | null {
   return trimmed || null
 }
 
+function copyCheckoutEmailHandoff(
+  target: URLSearchParams,
+  params: OneSelfieLandingSearchParams,
+) {
+  const rawHandoff = firstValue(params.checkout_email) || firstValue(params.email)
+  const resolvedEmail = normalizeCheckoutEmail(rawHandoff)
+  if (!rawHandoff || !resolvedEmail) return
+
+  // An opaque handoff must remain opaque while crossing intermediate landing pages.
+  // Legacy raw-email links are normalized and preserved for backward compatibility.
+  target.set(
+    "checkout_email",
+    rawHandoff.startsWith("v1.") ? rawHandoff : resolvedEmail,
+  )
+}
+
 function copyKnownAttribution(
   target: URLSearchParams,
   params: OneSelfieLandingSearchParams,
@@ -34,10 +50,7 @@ function copyKnownAttribution(
     if (value) target.set(key, value)
   }
 
-  const checkoutEmail = normalizeCheckoutEmail(
-    firstValue(params.checkout_email) || firstValue(params.email),
-  )
-  if (checkoutEmail) target.set("checkout_email", checkoutEmail)
+  copyCheckoutEmailHandoff(target, params)
 }
 
 export function getOneSelfieLandingSource(

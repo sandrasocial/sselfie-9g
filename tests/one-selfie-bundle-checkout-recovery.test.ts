@@ -8,6 +8,7 @@ import {
   ONE_SELFIE_BUNDLE_CHECKOUT_RECOVERY_EMAIL_TYPE,
 } from "@/lib/email/templates/one-selfie-bundle-checkout-recovery"
 import { buildOneSelfieCheckoutHref } from "@/components/one-selfie/attribution"
+import { normalizeCheckoutEmail } from "@/lib/revenue-engine/checkout-email"
 
 const ROOT = process.cwd()
 
@@ -16,7 +17,7 @@ function read(relativePath: string) {
 }
 
 describe("One Selfie Bundle abandoned-checkout recovery", () => {
-  it("returns to the event page with one attributed, prefilled CTA", () => {
+  it("returns to the event page with one attributed, privately prefilled CTA", () => {
     const email = generateOneSelfieBundleCheckoutRecoveryEmail({
       firstName: "Sandra",
       recipientEmail: "Sandra@Example.com",
@@ -27,6 +28,7 @@ describe("One Selfie Bundle abandoned-checkout recovery", () => {
     expect(links).toHaveLength(1)
 
     const checkoutUrl = new URL(links[0].replaceAll("&amp;", "&"))
+    const firstHandoff = checkoutUrl.searchParams.get("checkout_email")
     expect(checkoutUrl.pathname).toBe("/one-selfie")
     expect(checkoutUrl.searchParams.get("source")).toBe("email")
     expect(checkoutUrl.searchParams.get("utm_source")).toBe("email")
@@ -36,14 +38,18 @@ describe("One Selfie Bundle abandoned-checkout recovery", () => {
     expect(checkoutUrl.searchParams.get("email_type")).toBe(
       ONE_SELFIE_BUNDLE_CHECKOUT_RECOVERY_EMAIL_TYPE,
     )
-    expect(checkoutUrl.searchParams.get("checkout_email")).toBe("sandra@example.com")
+    expect(firstHandoff).toMatch(/^v1\./)
+    expect(normalizeCheckoutEmail(firstHandoff)).toBe("sandra@example.com")
+    expect(checkoutUrl.toString().toLowerCase()).not.toContain("sandra@example.com")
 
     const checkoutHref = buildOneSelfieCheckoutHref(
       Object.fromEntries(checkoutUrl.searchParams.entries()),
     )
     const bundleCheckoutUrl = new URL(checkoutHref, "https://sselfie.ai")
+    const forwardedHandoff = bundleCheckoutUrl.searchParams.get("checkout_email")
     expect(bundleCheckoutUrl.pathname).toBe("/checkout/one-selfie")
-    expect(bundleCheckoutUrl.searchParams.get("checkout_email")).toBe("sandra@example.com")
+    expect(forwardedHandoff).toBe(firstHandoff)
+    expect(normalizeCheckoutEmail(forwardedHandoff)).toBe("sandra@example.com")
   })
 
   it("states the complete one-time offer without a discount or renewal ambiguity", () => {

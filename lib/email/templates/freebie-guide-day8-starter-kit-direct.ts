@@ -16,8 +16,8 @@ export function generateFreebieGuideDay8StarterKitDirectEmail({
     campaign: "freebie_guide_day8_starter_kit_direct",
     content: "get_starter_kit",
     emailType: "freebie-guide-day8-starter-kit-direct",
+    checkoutEmail: recipientEmail,
   }))
-  starterKitUrl.searchParams.set("checkout_email", recipientEmail)
   starterKitUrl.searchParams.set("checkout_source", "freebie_guide_day8_starter_kit_direct")
   starterKitUrl.searchParams.set("cta_keyword", "SELFIE")
   starterKitUrl.searchParams.set("buyer_stage", "lead")

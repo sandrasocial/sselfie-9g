@@ -9,6 +9,7 @@ import {
   generateTrialEndedEmail,
 } from "@/lib/email/templates/suite-trial"
 import { shouldShowCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
+import { normalizeCheckoutEmail } from "@/lib/revenue-engine/checkout-email"
 
 const checkoutEmail = "Warm.Trial+checkout@example.com"
 const ROOT = process.cwd()
@@ -55,13 +56,17 @@ describe("trial lifecycle checkout email pass-through", () => {
   ]
 
   for (const testCase of cases) {
-    it(`${testCase.label} link carries the recipient into checkout without another email gate`, () => {
+    it(`${testCase.label} link carries the recipient into checkout without exposing email`, () => {
       const url = checkoutUrlFromText(testCase.email.text)
       const params = Object.fromEntries(url.searchParams.entries())
+      const handoff = url.searchParams.get("checkout_email")
+      const recoveredEmail = normalizeCheckoutEmail(handoff)
 
       expect(url.pathname).toBe("/checkout/membership")
       expect(url.searchParams.get("interval")).toBe("month")
-      expect(url.searchParams.get("checkout_email")).toBe(checkoutEmail.toLowerCase())
+      expect(handoff).toMatch(/^v1\./)
+      expect(url.toString().toLowerCase()).not.toContain(checkoutEmail.toLowerCase())
+      expect(recoveredEmail).toBe(checkoutEmail.toLowerCase())
       expect(url.searchParams.get("source")).toBe(testCase.source)
       expect(url.searchParams.get("utm_source")).toBe("email")
       expect(url.searchParams.get("utm_medium")).toBe(testCase.medium)
@@ -69,7 +74,7 @@ describe("trial lifecycle checkout email pass-through", () => {
       expect(
         shouldShowCheckoutEmailCapture({
           params,
-          hasRecoverableEmail: Boolean(url.searchParams.get("checkout_email")),
+          hasRecoverableEmail: Boolean(recoveredEmail),
           hasAuthUser: false,
           hasFreebieToken: false,
         }),
@@ -77,7 +82,7 @@ describe("trial lifecycle checkout email pass-through", () => {
     })
   }
 
-  it("membership checkout recognizes checkout_email before evaluating its capture gate", () => {
+  it("membership checkout resolves checkout_email before evaluating its capture gate", () => {
     const page = fs.readFileSync(path.join(ROOT, "app/checkout/membership/page.tsx"), "utf8")
 
     expect(page).toContain("normalizeCheckoutEmail(params.checkout_email || params.email)")

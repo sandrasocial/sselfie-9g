@@ -1,3 +1,5 @@
+import { createCheckoutEmailToken } from "@/lib/revenue-engine/checkout-email-token"
+
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.sselfie.ai")
   .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
   .replace(/\/+$/, "")
@@ -11,12 +13,6 @@ interface RevenueLinkOptions {
   campaignId?: string
   referralCode?: string
   checkoutEmail?: string | null
-}
-
-function normalizeCheckoutEmail(value?: string | null): string | null {
-  const email = value?.trim().toLowerCase()
-  if (!email) return null
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
 }
 
 export function buildRevenueEmailLink(url: string, options: RevenueLinkOptions): string {
@@ -43,9 +39,13 @@ export function buildRevenueEmailLink(url: string, options: RevenueLinkOptions):
     resolved.searchParams.set("ref", options.referralCode)
   }
 
-  const checkoutEmail = normalizeCheckoutEmail(options.checkoutEmail)
-  if (checkoutEmail) {
-    resolved.searchParams.set("checkout_email", checkoutEmail)
+  // Keep the conversion benefit of a prefilled checkout without exposing PII in the
+  // URL. The checkout page still accepts old raw-email links that have already been sent.
+  const checkoutEmailToken = options.checkoutEmail
+    ? createCheckoutEmailToken(options.checkoutEmail)
+    : null
+  if (checkoutEmailToken) {
+    resolved.searchParams.set("checkout_email", checkoutEmailToken)
   }
 
   return resolved.toString()
