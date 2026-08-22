@@ -1,3 +1,4 @@
+import { buildRevenueEmailLink } from "@/lib/email/templates/revenue-links"
 import { renderPersonalLink, renderPersonalNote } from "@/lib/email/templates/stone-email"
 
 export const CAMPAIGN_RECOVERY_EMAIL_TYPES = {
@@ -7,16 +8,14 @@ export const CAMPAIGN_RECOVERY_EMAIL_TYPES = {
 } as const
 
 function checkoutUrl(email: string, stage: string): string {
-  const origin =
-    process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
-  const url = new URL("/checkout/campaign", origin)
-  url.searchParams.set("source", "campaign_recovery")
-  url.searchParams.set("utm_source", "email")
-  url.searchParams.set("utm_medium", "checkout_recovery")
-  url.searchParams.set("utm_campaign", "campaign_outcome_test")
-  url.searchParams.set("utm_content", stage)
+  const url = new URL(buildRevenueEmailLink("/checkout/campaign", {
+    source: "campaign_recovery",
+    medium: "checkout_recovery",
+    campaign: "campaign_outcome_test",
+    content: stage,
+    checkoutEmail: email,
+  }))
   url.searchParams.set("cta_keyword", "CAMPAIGN")
-  url.searchParams.set("checkout_email", email)
   return url.toString()
 }
 
