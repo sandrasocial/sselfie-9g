@@ -76,6 +76,24 @@ function normalizeKey(value: string | undefined): string | undefined {
   return clean?.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || undefined
 }
 
+/**
+ * Resend v6.9.2 returns contact properties from contacts.get as wrappers such as
+ * { type: "string", value: "customer" }. Accept that provider shape as well as raw
+ * scalar values so an existing customer's state can never be discarded during merge.
+ */
+function existingPropertyValue(
+  current: Record<string, unknown>,
+  key: keyof LifecycleProperties,
+): string | undefined {
+  const raw = current[key]
+  if (typeof raw === "string" || typeof raw === "number") return String(raw)
+  if (raw && typeof raw === "object" && "value" in raw) {
+    const value = (raw as { value?: unknown }).value
+    if (typeof value === "string" || typeof value === "number") return String(value)
+  }
+  return undefined
+}
+
 function hasLegacyBuyerSignal(tags: ContactTags): boolean {
   const intent = normalizeKey(tags.ai_photoshoot_intent)
   if (intent === "buyer" || intent === "power_user") return true
@@ -151,12 +169,12 @@ function mergeLifecycleProperties(
   const current = existing || {}
   const merged: LifecycleProperties = {}
 
-  const existingAcquisition = normalizeKey(typeof current.acquisition_path === "string" ? current.acquisition_path : undefined)
+  const existingAcquisition = normalizeKey(existingPropertyValue(current, "acquisition_path"))
   merged.acquisition_path = existingAcquisition && existingAcquisition !== "unknown"
     ? existingAcquisition
     : requested.acquisition_path
 
-  const existingStage = normalizeKey(typeof current.lifecycle_stage === "string" ? current.lifecycle_stage : undefined)
+  const existingStage = normalizeKey(existingPropertyValue(current, "lifecycle_stage"))
   const requestedStage = requested.lifecycle_stage
   if (existingStage && requestedStage) {
     merged.lifecycle_stage = (STAGE_RANK[existingStage] || 0) >= (STAGE_RANK[requestedStage] || 0)
@@ -166,14 +184,14 @@ function mergeLifecycleProperties(
     merged.lifecycle_stage = requestedStage || existingStage
   }
 
-  const existingInterest = normalizeKey(typeof current.primary_interest === "string" ? current.primary_interest : undefined)
+  const existingInterest = normalizeKey(existingPropertyValue(current, "primary_interest"))
   if (existingInterest === "all" || requested.primary_interest === "all") merged.primary_interest = "all"
   else merged.primary_interest = requested.primary_interest || existingInterest
 
-  const existingMembership = normalizeKey(typeof current.membership_status === "string" ? current.membership_status : undefined)
+  const existingMembership = normalizeKey(existingPropertyValue(current, "membership_status"))
   merged.membership_status = requested.membership_status || existingMembership
 
-  const existingProduct = normalizeKey(typeof current.last_product === "string" ? current.last_product : undefined)
+  const existingProduct = normalizeKey(existingPropertyValue(current, "last_product"))
   merged.last_product = requested.last_product || existingProduct
 
   return Object.fromEntries(Object.entries(merged).filter(([, value]) => Boolean(value))) as LifecycleProperties
