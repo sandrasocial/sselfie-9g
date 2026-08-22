@@ -38,8 +38,8 @@ const FROZEN_PROMPT_SOURCES = {
   "app/api/app-v3/maya/chat/route.ts":
     // Sandra-approved format confirmation (2026-08-18): neutral Maya recommends one format
     // through a visible confirmation instead of silently committing it. The dormant Calendar
-    // boundary remains explicit-task-only.
-    "fbdf35d39b0e3d423d9cde2b1e8459eda64a98275b6ee271e1e03e39dff74fa3",
+    // boundary remains explicit-task-only and is now rechecked against current Calendar access.
+    "56adfeb1ba4e39b040740fdb49aa1edccc9a52f8a38493c680d3efddf4e69894",
   "app/api/app-v3/maya/calendar-agent/route.ts":
     // Sandra-approved API cost controls (2026-07-21): use Haiku and omit repeated captions
     // while preserving the selected post context and existing system prompt.

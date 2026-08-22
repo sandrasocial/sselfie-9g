@@ -76,6 +76,8 @@ describe("Maya Calendar context policy", () => {
 
     expect(concierge).toContain("mayaContext: session.mayaContext ?? null")
     expect(route).toContain("getExplicitCalendarCreativeContext(body?.mayaContext)")
+    expect(route).toContain("const calendarAccess = await getFeedPlannerAccess(memoryUserId)")
+    expect(route).toContain("if (!calendarAccess.isMembership && !calendarAccess.isPaidBlueprint)")
     expect(route).toContain("AND id = ${calendarCreativeContext.feedId}")
     expect(route).toContain(
       "const calendarTools = calendarCreativeContext ? { show_feed_plan: showFeedPlan } : {}"

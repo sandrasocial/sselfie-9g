@@ -71,6 +71,11 @@ describe("analytics event contract", () => {
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_inline_selfie_uploaded")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_generation_path_completed")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_post_finished")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_post_caption_ready")
+    // Durable Calendar completion is server-only and must never be forgeable through
+    // the public analytics endpoint.
+    expect(ALLOWED_ANALYTICS_EVENTS).not.toContain("suite_ready_post_saved")
+    expect(isAllowedAnalyticsEventName("suite_ready_post_saved")).toBe(false)
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_post_readiness_rated")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_post_refinement_started")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("suite_next_action_selected")

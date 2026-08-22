@@ -76,7 +76,7 @@ describe("One Selfie Visibility Bundle fixed SUITE pass", () => {
     expect(SELFIE_VISIBILITY_BUNDLE_PASS_CREDITS).toBe(200)
     expect(result).toEqual({ created: true, passEndsAt: endsAt, creditsGranted: 200 })
     const insert = sqlMock.mock.calls.find(call =>
-      queryText(call).includes("INSERT INTO subscriptions"),
+      queryText(call).includes("INSERT INTO subscriptions")
     )
     expect(insert).toBeTruthy()
     const grantQuery = queryText(insert!)
@@ -89,7 +89,7 @@ describe("One Selfie Visibility Bundle fixed SUITE pass", () => {
     expect(grantQuery).not.toContain("'trial_expiry'")
 
     const grant = sqlMock.mock.calls.find(call =>
-      queryText(call).includes("INSERT INTO user_credits"),
+      queryText(call).includes("INSERT INTO user_credits")
     )
     expect(queryText(grant!)).toContain("existing_grant")
     expect(queryText(grant!)).toContain("stripe_payment_id")
@@ -105,9 +105,8 @@ describe("One Selfie Visibility Bundle fixed SUITE pass", () => {
       return []
     })
 
-    const { grantSelfieVisibilityBundlePass } = await import(
-      "@/lib/trial/selfie-visibility-bundle-pass"
-    )
+    const { grantSelfieVisibilityBundlePass } =
+      await import("@/lib/trial/selfie-visibility-bundle-pass")
 
     const result = await grantSelfieVisibilityBundlePass({
       userId: "user_1",
@@ -121,7 +120,7 @@ describe("One Selfie Visibility Bundle fixed SUITE pass", () => {
 
   it("keys replay protection to the payment and preserves value if a buyer pays twice", async () => {
     const source = await import("node:fs/promises").then(fs =>
-      fs.readFile("lib/trial/selfie-visibility-bundle-pass.ts", "utf8"),
+      fs.readFile("lib/trial/selfie-visibility-bundle-pass.ts", "utf8")
     )
 
     expect(source).toContain("stripe_payment_id = ${stripePaymentId}")
@@ -141,9 +140,8 @@ describe("One Selfie Visibility Bundle fixed SUITE pass", () => {
       },
     ])
 
-    const { expireSelfieVisibilityBundlePass } = await import(
-      "@/lib/trial/selfie-visibility-bundle-pass"
-    )
+    const { expireSelfieVisibilityBundlePass } =
+      await import("@/lib/trial/selfie-visibility-bundle-pass")
 
     const result = await expireSelfieVisibilityBundlePass({
       passId: "pass_1",
@@ -153,7 +151,9 @@ describe("One Selfie Visibility Bundle fixed SUITE pass", () => {
     expect(result).toEqual({ expired: true, creditsRemoved: 125, balanceAfter: 88 })
     expect(sqlMock).toHaveBeenCalledTimes(1)
     const expiryQuery = queryText(sqlMock.mock.calls[0])
-    expect(expiryQuery).toContain("transaction_type IN ('image', 'training', 'animation', 'refund')")
+    expect(expiryQuery).toContain(
+      "transaction_type IN ('image', 'training', 'animation', 'refund')"
+    )
     expect(expiryQuery).not.toContain("transaction_type = 'purchase'")
     expect(expiryQuery).toContain("status = 'expired'")
     expect(expiryQuery).toContain("trial_expiry")
@@ -180,6 +180,10 @@ describe("One Selfie Visibility Bundle fixed SUITE pass", () => {
       level: "member",
       trialEndsAt: null,
       trialDaysLeft: null,
+      calendarIncluded: true,
+      fullAppIncluded: true,
+      vaultIncludedBySuite: true,
+      fullMembershipIncluded: false,
     })
   })
 })
@@ -190,8 +194,14 @@ describe("One Selfie Visibility Bundle fulfillment orchestrator", () => {
     sqlMock.mockResolvedValue([])
     sendEmailMock.mockResolvedValue({ success: true, messageId: "email_bundle_1" })
     upsertEntitlementMock.mockResolvedValue(undefined)
-    upsertStarterKitSubscriberMock.mockResolvedValue({ subscriberId: 1, accessToken: "starter_token" })
-    upsertPromptVaultSubscriberMock.mockResolvedValue({ subscriberId: 1, accessToken: "vault_token" })
+    upsertStarterKitSubscriberMock.mockResolvedValue({
+      subscriberId: 1,
+      accessToken: "starter_token",
+    })
+    upsertPromptVaultSubscriberMock.mockResolvedValue({
+      subscriberId: 1,
+      accessToken: "vault_token",
+    })
     upsertPresetOrderMock.mockResolvedValue({ accessToken: "presets_token" })
     updateContactTagsMock.mockResolvedValue({ success: true })
   })
@@ -207,9 +217,8 @@ describe("One Selfie Visibility Bundle fulfillment orchestrator", () => {
       return []
     })
 
-    const { handleSelfieVisibilityBundleCheckout } = await import(
-      "@/lib/payments/handlers/selfie-visibility-bundle"
-    )
+    const { handleSelfieVisibilityBundleCheckout } =
+      await import("@/lib/payments/handlers/selfie-visibility-bundle")
 
     await handleSelfieVisibilityBundleCheckout({
       event: { livemode: true } as any,
@@ -236,7 +245,7 @@ describe("One Selfie Visibility Bundle fulfillment orchestrator", () => {
         tier: "bundle",
         stripeSessionId: "cs_bundle_1",
         stripePaymentId: "pi_bundle_1",
-      }),
+      })
     )
 
     for (const productId of [
@@ -246,7 +255,7 @@ describe("One Selfie Visibility Bundle fulfillment orchestrator", () => {
       "prompt_vault",
     ]) {
       expect(upsertEntitlementMock).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: "user_1", productId }),
+        expect.objectContaining({ userId: "user_1", productId })
       )
     }
 
@@ -258,14 +267,13 @@ describe("One Selfie Visibility Bundle fulfillment orchestrator", () => {
         idempotencyKey: "selfie-visibility-bundle-delivery:cs_bundle_1",
         html: expect.stringContaining("/academy/access/one-selfie"),
         text: expect.stringContaining("/academy/access/one-selfie"),
-      }),
+      })
     )
   })
 
   it("does not deliver or grant anything until payment is confirmed", async () => {
-    const { handleSelfieVisibilityBundleCheckout } = await import(
-      "@/lib/payments/handlers/selfie-visibility-bundle"
-    )
+    const { handleSelfieVisibilityBundleCheckout } =
+      await import("@/lib/payments/handlers/selfie-visibility-bundle")
 
     await handleSelfieVisibilityBundleCheckout({
       event: { livemode: true } as any,
@@ -286,9 +294,8 @@ describe("One Selfie Visibility Bundle fulfillment orchestrator", () => {
   })
 
   it("never grants live bundle assets or credits from a Stripe test-mode event", async () => {
-    const { handleSelfieVisibilityBundleCheckout } = await import(
-      "@/lib/payments/handlers/selfie-visibility-bundle"
-    )
+    const { handleSelfieVisibilityBundleCheckout } =
+      await import("@/lib/payments/handlers/selfie-visibility-bundle")
 
     await handleSelfieVisibilityBundleCheckout({
       event: { livemode: false } as any,

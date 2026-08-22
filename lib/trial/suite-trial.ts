@@ -23,6 +23,20 @@ export interface SuiteAccess {
   level: SuiteAccessLevel
   trialEndsAt: Date | null
   trialDaysLeft: number | null
+  /** Calendar is part of full SUITE/Pro, bundle passes, and trials—not Maya Essential. */
+  calendarIncluded: boolean
+  /** Broader Work/Learn surfaces are provided by full SUITE, bundle passes, and trials. */
+  fullAppIncluded: boolean
+  /** Prompt Vault is included by full SUITE and bundle passes, never by trial alone. */
+  vaultIncludedBySuite: boolean
+  /** The paid-membership Vault notice belongs only to a full recurring membership. */
+  fullMembershipIncluded: boolean
+}
+
+export function isMayaEssentialOnlyAccess(
+  access: Pick<SuiteAccess, "level" | "fullAppIncluded">
+): boolean {
+  return access.level === "member" && !access.fullAppIncluded
 }
 
 /** One row per user, ever. Returns whether a NEW trial was created. */
@@ -74,7 +88,7 @@ export async function grantSuiteTrial(
  */
 export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
   const rows = await sql`
-    SELECT product_type, status, current_period_end, trial_ends_at
+    SELECT product_type, plan, status, current_period_end, trial_ends_at
     FROM subscriptions
     WHERE user_id = ${userId}
       AND (is_test_mode = FALSE OR is_test_mode IS NULL)
@@ -91,52 +105,102 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
   // active trial > Vault Maya. A HIGHER temporary tier must never be downgraded by a
   // vault_maya row, and when the temporary tier expires an active vault_maya keeps
   // studio access instead of falling to "limited".
-  if (
-    rows.some(
-      r =>
-        ["sselfie_studio_membership", "brand_studio_membership", "pro"].includes(r.product_type) &&
-        hasSubscriptionAccess(r),
-    )
-  ) {
-    return { level: "member", trialEndsAt: null, trialDaysLeft: null }
-  }
-
+  const activeMemberships = rows.filter(
+    r =>
+      ["sselfie_studio_membership", "brand_studio_membership", "pro"].includes(r.product_type) &&
+      hasSubscriptionAccess(r)
+  )
   const bundlePass = rows.find(r => r.product_type === "selfie_visibility_bundle_pass")
-  if (bundlePass?.trial_ends_at) {
-    const endsAt = new Date(bundlePass.trial_ends_at)
-    if (bundlePass.status === "active" && endsAt.getTime() > Date.now()) {
-      return { level: "member", trialEndsAt: null, trialDaysLeft: null }
-    }
-  }
-
+  const bundlePassEndsAt = bundlePass?.trial_ends_at ? new Date(bundlePass.trial_ends_at) : null
+  const hasActiveBundlePass =
+    bundlePass?.status === "active" &&
+    bundlePassEndsAt !== null &&
+    bundlePassEndsAt.getTime() > Date.now()
   const trial = rows.find(r => r.product_type === "suite_trial")
   const activeTrialEndsAt =
     trial?.trial_ends_at && trial.status === "active" ? new Date(trial.trial_ends_at) : null
-  if (activeTrialEndsAt && activeTrialEndsAt.getTime() > Date.now()) {
+  const hasActiveTrial = Boolean(activeTrialEndsAt && activeTrialEndsAt.getTime() > Date.now())
+  const hasActiveFullMembership = activeMemberships.some(r => r.plan !== "maya_essential_pilot")
+  const fullAppIncluded = hasActiveFullMembership || hasActiveBundlePass || hasActiveTrial
+  const vaultIncludedBySuite = hasActiveFullMembership || hasActiveBundlePass
+
+  if (activeMemberships.length > 0) {
+    return {
+      level: "member",
+      trialEndsAt: null,
+      trialDaysLeft: null,
+      calendarIncluded: fullAppIncluded,
+      fullAppIncluded,
+      vaultIncludedBySuite,
+      fullMembershipIncluded: hasActiveFullMembership,
+    }
+  }
+
+  if (hasActiveBundlePass) {
+    return {
+      level: "member",
+      trialEndsAt: null,
+      trialDaysLeft: null,
+      calendarIncluded: true,
+      fullAppIncluded: true,
+      vaultIncludedBySuite: true,
+      fullMembershipIncluded: false,
+    }
+  }
+
+  if (activeTrialEndsAt && hasActiveTrial) {
     const msLeft = activeTrialEndsAt.getTime() - Date.now()
     return {
       level: "trial",
       trialEndsAt: activeTrialEndsAt,
       trialDaysLeft: Math.max(1, Math.ceil(msLeft / 86_400_000)),
+      calendarIncluded: true,
+      fullAppIncluded: true,
+      vaultIncludedBySuite: false,
+      fullMembershipIncluded: false,
     }
   }
 
   if (rows.some(r => r.product_type === "vault_maya")) {
-    return { level: "vault", trialEndsAt: null, trialDaysLeft: null }
+    return {
+      level: "vault",
+      trialEndsAt: null,
+      trialDaysLeft: null,
+      calendarIncluded: false,
+      fullAppIncluded: false,
+      vaultIncludedBySuite: false,
+      fullMembershipIncluded: false,
+    }
   }
 
   if (trial?.trial_ends_at) {
     // Expired (or overdue-but-not-yet-flipped) trial → limited mode, photos stay hers.
-    return { level: "limited", trialEndsAt: new Date(trial.trial_ends_at), trialDaysLeft: 0 }
+    return {
+      level: "limited",
+      trialEndsAt: new Date(trial.trial_ends_at),
+      trialDaysLeft: 0,
+      calendarIncluded: false,
+      fullAppIncluded: false,
+      vaultIncludedBySuite: false,
+      fullMembershipIncluded: false,
+    }
   }
 
   // One-time owners with accounts also get the limited shell (Library shows what they own).
   if (
     rows.some(
-      r => !["sselfie_studio_membership", "brand_studio_membership", "pro"].includes(r.product_type),
+      r => !["sselfie_studio_membership", "brand_studio_membership", "pro"].includes(r.product_type)
     )
   ) {
-    return { level: "limited", trialEndsAt: null, trialDaysLeft: null }
+    return {
+      level: "limited",
+      trialEndsAt: null,
+      trialDaysLeft: null,
+      calendarIncluded: false,
+      fullAppIncluded: false,
+      vaultIncludedBySuite: false,
+      fullMembershipIncluded: false,
+    }
   }
 
   // No subscriptions relationship — entitlements can still mark her a product owner
@@ -145,13 +209,29 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
     const { getAcademyEntitlementState } = await import("@/lib/academy-entitlements")
     const state = await getAcademyEntitlementState(userId)
     if (state.explicitProductIds.length > 0) {
-      return { level: "limited", trialEndsAt: null, trialDaysLeft: null }
+      return {
+        level: "limited",
+        trialEndsAt: null,
+        trialDaysLeft: null,
+        calendarIncluded: false,
+        fullAppIncluded: false,
+        vaultIncludedBySuite: false,
+        fullMembershipIncluded: false,
+      }
     }
   } catch (e) {
     console.error("[suite-trial] entitlement fallback failed:", e)
   }
 
-  return { level: "none", trialEndsAt: null, trialDaysLeft: null }
+  return {
+    level: "none",
+    trialEndsAt: null,
+    trialDaysLeft: null,
+    calendarIncluded: false,
+    fullAppIncluded: false,
+    vaultIncludedBySuite: false,
+    fullMembershipIncluded: false,
+  }
 }
 
 /** True when this user may call the generation APIs (member or active trial). */

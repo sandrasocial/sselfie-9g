@@ -39,9 +39,7 @@ describe("Maya weekly package Calendar handoff", () => {
     const route = readFileSync("app/api/app-v3/maya/feed-plan/place-photo/route.ts", "utf8")
 
     expect(route).toContain("const [existingPlacement]")
-    expect(route).toContain(
-      "ai_image_id = ${normalizedAiImageId} OR image_url = ${imageUrl.trim()}"
-    )
+    expect(route).toContain("ai_image_id = ${normalizedAiImageId} OR image_url = ${legacyImageUrl}")
     expect(route).toContain("alreadyPlaced: true")
     expect(route.indexOf("const [existingPlacement]")).toBeLessThan(
       route.indexOf("const [openSlot]")

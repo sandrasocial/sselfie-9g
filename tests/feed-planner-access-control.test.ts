@@ -23,7 +23,7 @@ vi.mock("@/lib/trial/suite-trial", () => ({
 describe("getFeedPlannerAccess", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetSuiteAccess.mockResolvedValue({ level: "none" })
+    mockGetSuiteAccess.mockResolvedValue({ level: "none", calendarIncluded: false })
   })
 
   it("keeps free users without credits in restricted mode", async () => {
@@ -72,7 +72,7 @@ describe("getFeedPlannerAccess", () => {
       mockHasPaidBlueprint.mockResolvedValue(false)
       mockHasFullAccess.mockResolvedValue(false)
       mockGetUserCredits.mockResolvedValue(20)
-      mockGetSuiteAccess.mockResolvedValue({ level })
+      mockGetSuiteAccess.mockResolvedValue({ level, calendarIncluded: true })
 
       const access = await getFeedPlannerAccess(`u_${level}`)
 
@@ -82,6 +82,33 @@ describe("getFeedPlannerAccess", () => {
       expect(access.canGenerateCaptions).toBe(true)
       expect(access.canGenerateStrategy).toBe(true)
       expect(access.placeholderType).toBe("grid")
-    },
+    }
   )
+
+  it("keeps Maya Essential out of Calendar even though it is a generation member", async () => {
+    mockHasPaidBlueprint.mockResolvedValue(false)
+    mockHasFullAccess.mockResolvedValue(false)
+    mockGetUserCredits.mockResolvedValue(30)
+    mockGetSuiteAccess.mockResolvedValue({ level: "member", calendarIncluded: false })
+
+    const access = await getFeedPlannerAccess("u_maya_essential")
+
+    expect(access.isMembership).toBe(false)
+    expect(access.isFree).toBe(true)
+    expect(access.hasGalleryAccess).toBe(false)
+  })
+
+  it("unions historical paid Blueprint Calendar access with Maya Essential", async () => {
+    mockHasPaidBlueprint.mockResolvedValue(true)
+    mockHasFullAccess.mockResolvedValue(false)
+    mockGetUserCredits.mockResolvedValue(30)
+    mockGetSuiteAccess.mockResolvedValue({ level: "member", calendarIncluded: false })
+
+    const access = await getFeedPlannerAccess("u_essential_blueprint")
+
+    expect(access.isPaidBlueprint).toBe(true)
+    expect(access.isMembership).toBe(false)
+    expect(access.hasGalleryAccess).toBe(true)
+    expect(access.placeholderType).toBe("grid")
+  })
 })

@@ -13,8 +13,8 @@ import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { resolveFeedStyleForUser } from "@/lib/feed-planner/resolve-feed-style"
 import { getUserPersonalBrand } from "@/lib/data/maya"
-import { CURATED_FEED_STYLE_MAP, type CuratedFeedStyleName } from "@/lib/style-presets"
 import { resolveWeeklyPackageCalendarCopy } from "@/lib/app-v3/maya/weekly-package-context"
+import { saveMayaReadyPost } from "@/lib/app-v3/maya/ready-post"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 30
@@ -34,10 +34,39 @@ export async function POST(req: Request) {
   const neonUser = await getUserByAuthId(user.id)
   if (!neonUser) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
-  const { imageUrl, imageUrls, aiImageId, conceptTitle, captionContext, weeklyPackage } =
-    await req.json()
-  if (typeof imageUrl !== "string" || !imageUrl.trim()) {
+  const body = (await req.json().catch(() => null)) as Record<string, unknown> | null
+  if (!body) return NextResponse.json({ error: "Invalid request" }, { status: 400 })
+  const {
+    imageUrl,
+    imageUrls,
+    aiImageId,
+    conceptTitle,
+    captionContext,
+    weeklyPackage,
+    finishedCaption,
+    assetIds,
+  } = body
+  const readyPostRequested = finishedCaption !== undefined || assetIds !== undefined
+  const legacyImageUrl = typeof imageUrl === "string" ? imageUrl.trim() : null
+  if (!readyPostRequested && !legacyImageUrl) {
     return NextResponse.json({ error: "imageUrl is required" }, { status: 400 })
+  }
+  if (
+    finishedCaption !== undefined &&
+    finishedCaption !== null &&
+    (typeof finishedCaption !== "string" || finishedCaption.length > 5000)
+  ) {
+    return NextResponse.json({ error: "finishedCaption is invalid" }, { status: 400 })
+  }
+  // A caption explicitly finished in Maya is the customer's approved copy. Keep its internal
+  // line breaks exactly; trim only accidental leading/trailing space from the JSON boundary.
+  const exactFinishedCaption =
+    typeof finishedCaption === "string" && finishedCaption.trim() ? finishedCaption.trim() : null
+  if (readyPostRequested && !exactFinishedCaption) {
+    return NextResponse.json(
+      { error: "Finish the caption before saving the ready post" },
+      { status: 422 }
+    )
   }
   // UX audit U1: carousels and story sequences place ALL their slides as the post's media
   // set, so what lands in the plan is the publishable post, not just the cover.
@@ -58,6 +87,39 @@ export async function POST(req: Request) {
     }
 
     const periodMonth = currentPeriodMonth()
+
+    if (readyPostRequested && exactFinishedCaption) {
+      const personalBrand = await getUserPersonalBrand(neonUser.id).catch(() => null)
+      const style = await resolveFeedStyleForUser(personalBrand, neonUser.id)
+      const receipt = await saveMayaReadyPost({
+        userId: String(neonUser.id),
+        assetIds: Array.isArray(assetIds) ? (assetIds as number[]) : [],
+        finishedCaption: exactFinishedCaption,
+        conceptTitle: typeof conceptTitle === "string" ? conceptTitle : null,
+        periodMonth,
+        feedStyle: style.feedStyle,
+        feedStyleVariationId: style.variationId,
+      }).catch(error => {
+        if (
+          error instanceof Error &&
+          /needs one to ten|needs the finished caption/.test(error.message)
+        ) {
+          return null
+        }
+        throw error
+      })
+      if (!receipt) {
+        return NextResponse.json(
+          { error: "Those exact finished images are not available in your Work." },
+          { status: 422 }
+        )
+      }
+      return NextResponse.json(receipt)
+    }
+
+    if (!legacyImageUrl) {
+      return NextResponse.json({ error: "imageUrl is required" }, { status: 400 })
+    }
 
     // Prefer this month's auto-drafted plan; fall back to the user's latest plan of any month
     // so the action still works for an account whose plan predates period_month.
@@ -106,7 +168,7 @@ export async function POST(req: Request) {
       SELECT position, scheduled_at, caption
       FROM feed_posts
       WHERE feed_layout_id = ${feedLayoutId}
-        AND (ai_image_id = ${normalizedAiImageId} OR image_url = ${imageUrl.trim()})
+        AND (ai_image_id = ${normalizedAiImageId} OR image_url = ${legacyImageUrl})
       ORDER BY scheduled_at ASC, position ASC
       LIMIT 1
     `
@@ -227,21 +289,51 @@ export async function POST(req: Request) {
       }
     }
 
+    let updatedPosts: Record<string, unknown>[]
     if (mediaUrls.length > 1) {
-      await sql`
+      updatedPosts = await sql`
         UPDATE feed_posts
-        SET image_url = ${imageUrl}, ai_image_id = ${aiImageId ?? null}, generation_status = 'completed',
+        SET image_url = ${legacyImageUrl}, ai_image_id = ${aiImageId ?? null}, generation_status = 'completed',
             caption = ${caption}, content_pillar = ${contentPillar},
             media_urls = ${JSON.stringify(mediaUrls)}::jsonb
-        WHERE id = ${targetPostId}
+        WHERE id = ${targetPostId} AND image_url IS NULL
+        RETURNING id
       `
     } else {
-      await sql`
+      updatedPosts = await sql`
         UPDATE feed_posts
-        SET image_url = ${imageUrl}, ai_image_id = ${aiImageId ?? null}, generation_status = 'completed',
+        SET image_url = ${legacyImageUrl}, ai_image_id = ${aiImageId ?? null}, generation_status = 'completed',
             caption = ${caption}, content_pillar = ${contentPillar}
-        WHERE id = ${targetPostId}
+        WHERE id = ${targetPostId} AND image_url IS NULL
+        RETURNING id
       `
+    }
+
+    // Two requests may select the same open slot before either update commits. Only the
+    // conditional-update winner owns the completion signal; the loser resolves the committed
+    // placement by stable image identity instead of overwriting the slot or double-counting it.
+    if (!updatedPosts.length) {
+      const [committedPlacement] = await sql`
+        SELECT position, scheduled_at, caption
+        FROM feed_posts
+        WHERE feed_layout_id = ${feedLayoutId}
+          AND (ai_image_id = ${normalizedAiImageId} OR image_url = ${legacyImageUrl})
+        ORDER BY scheduled_at ASC, position ASC
+        LIMIT 1
+      `
+      if (committedPlacement) {
+        return NextResponse.json({
+          position: Number(committedPlacement.position),
+          scheduledAt: new Date(committedPlacement.scheduled_at).toISOString().slice(0, 10),
+          caption:
+            typeof committedPlacement.caption === "string" ? committedPlacement.caption : null,
+          alreadyPlaced: true,
+        })
+      }
+      return NextResponse.json(
+        { error: "That Calendar slot changed. Try saving the ready post again." },
+        { status: 409 }
+      )
     }
 
     return NextResponse.json({ position: targetPosition, scheduledAt, caption })

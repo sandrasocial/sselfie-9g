@@ -22,9 +22,9 @@ describe("Maya Operating Layer Phase 4 surface contract", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
 
     expect(shell).not.toContain('{ id: "content", label:')
-    expect(shell).toContain('section === "calendar"')
-    expect(shell).toContain('section === "library"')
-    expect(shell).toContain('{section === "content" && (')
+    expect(shell).toContain('activeSection === "calendar"')
+    expect(shell).toContain('activeSection === "library"')
+    expect(shell).toContain('{activeSection === "content" && (')
   })
 
   it("gives Gallery explicit Calendar and variation actions without deleting its stored asset", () => {

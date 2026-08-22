@@ -37,7 +37,7 @@ describe("private Maya tier pilot checkout", () => {
         email: "buyer@example.com",
         plan: MAYA_ESSENTIAL_PILOT_PLAN,
         env: {},
-      }),
+      })
     ).toThrow("not open")
 
     expect(() =>
@@ -48,10 +48,10 @@ describe("private Maya tier pilot checkout", () => {
           MAYA_TIER_PILOT_CHECKOUT_ENABLED: "true",
           MAYA_TIER_PILOT_ALLOWLIST: Array.from(
             { length: 21 },
-            (_, index) => `buyer${index}@example.com`,
+            (_, index) => `buyer${index}@example.com`
           ).join(","),
         },
-      }),
+      })
     ).toThrow("more than 20")
 
     expect(() =>
@@ -62,7 +62,7 @@ describe("private Maya tier pilot checkout", () => {
           MAYA_TIER_PILOT_CHECKOUT_ENABLED: "true",
           MAYA_TIER_PILOT_ALLOWLIST: "buyer@example.com",
         },
-      }),
+      })
     ).toThrow("not approved")
 
     expect(
@@ -73,7 +73,7 @@ describe("private Maya tier pilot checkout", () => {
           MAYA_TIER_PILOT_CHECKOUT_ENABLED: "true",
           MAYA_TIER_PILOT_ALLOWLIST: "buyer@example.com",
         },
-      }),
+      })
     ).toEqual({ email: "buyer@example.com", allowlistSize: 1 })
   })
 
@@ -83,7 +83,7 @@ describe("private Maya tier pilot checkout", () => {
         productType: "sselfie_studio_membership",
         requestedPlan: MAYA_ESSENTIAL_PILOT_PLAN,
         env: { STRIPE_MAYA_ESSENTIAL_PILOT_PRICE_ID: "price_essential" },
-      }),
+      })
     ).toMatchObject({
       stripePriceId: "price_essential",
       envVarName: "STRIPE_MAYA_ESSENTIAL_PILOT_PRICE_ID",
@@ -95,26 +95,28 @@ describe("private Maya tier pilot checkout", () => {
         productType: "sselfie_studio_membership",
         requestedPlan: MAYA_PRO_PILOT_PLAN,
         env: { STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID: "price_pro" },
-      }),
+      })
     ).toMatchObject({
       stripePriceId: "price_pro",
       appliedPlan: MAYA_PRO_PILOT_PLAN,
     })
 
     expect(getSubscriptionPlanFromMetadata({ plan: MAYA_ESSENTIAL_PILOT_PLAN })).toBe(
-      MAYA_ESSENTIAL_PILOT_PLAN,
+      MAYA_ESSENTIAL_PILOT_PLAN
     )
-    expect(getSubscriptionPlanFromMetadata({ plan: MAYA_PRO_PILOT_PLAN })).toBe(
-      MAYA_PRO_PILOT_PLAN,
-    )
+    expect(getSubscriptionPlanFromMetadata({ plan: MAYA_PRO_PILOT_PLAN })).toBe(MAYA_PRO_PILOT_PLAN)
   })
 
   it("grants Essential only its promised 30 monthly credits", () => {
     expect(SUBSCRIPTION_CREDITS.maya_essential).toBe(30)
     expect(isMayaEssentialPlan(MAYA_ESSENTIAL_PILOT_PLAN)).toBe(true)
     expect(isMayaEssentialPlan(MAYA_PRO_PILOT_PLAN)).toBe(false)
-    expect(creditGrantProductForMayaPlan(MAYA_ESSENTIAL_PILOT_PLAN, "sselfie_studio_membership")).toBe("maya_essential")
-    expect(creditGrantProductForMayaPlan(MAYA_PRO_PILOT_PLAN, "sselfie_studio_membership")).toBe("sselfie_studio_membership")
+    expect(
+      creditGrantProductForMayaPlan(MAYA_ESSENTIAL_PILOT_PLAN, "sselfie_studio_membership")
+    ).toBe("maya_essential")
+    expect(creditGrantProductForMayaPlan(MAYA_PRO_PILOT_PLAN, "sselfie_studio_membership")).toBe(
+      "sselfie_studio_membership"
+    )
     expect(creditGrantProductForMayaPlan(null, "vault_maya")).toBe("vault_maya")
   })
 
@@ -124,14 +126,28 @@ describe("private Maya tier pilot checkout", () => {
     const invoicePaid = readFileSync("lib/payments/lifecycle/invoice-paid.ts", "utf8")
     const appPage = readFileSync("app/app/page.tsx", "utf8")
     const shell = readFileSync("components/app-v3/app-v3-shell.tsx", "utf8")
+    const concierge = readFileSync("components/app-v3/maya-concierge.tsx", "utf8")
     const library = readFileSync("app/api/app-v3/library/route.ts", "utf8")
 
     expect(checkout).toContain("assertMayaTierPilotCheckoutAllowed")
-    expect(checkout).toContain('productId === "maya_essential_pilot" && requestedTierPilotPlan !== MAYA_ESSENTIAL_PILOT_PLAN')
+    expect(checkout).toContain(
+      'productId === "maya_essential_pilot" && requestedTierPilotPlan !== MAYA_ESSENTIAL_PILOT_PLAN'
+    )
     expect(membershipPage).toContain("isMayaTierPilotCheckoutPrepared")
     expect(invoicePaid).toContain("creditGrantProductForMayaPlan(sub.plan")
-    expect(appPage).toContain('initialSection={mayaEssential ? "create" : initialSection}')
-    expect(shell).toContain('item.id === "create" || item.id === "account"')
+    expect(appPage).toContain("resolveAppV3AllowedSection(initialSection")
+    expect(appPage).toContain("mayaEssential={mayaEssential}")
+    expect(appPage).toContain("calendarIncluded={calendarIncluded}")
+    expect(appPage).toContain("mayaEssential = isMayaEssentialOnlyAccess(access)")
+    expect(appPage).not.toContain("getUserSubscription")
+    expect(appPage).toContain("hasVaultAccess = access.vaultIncludedBySuite")
+    expect(appPage).not.toContain("hasVaultAccess = !mayaEssential")
+    expect(shell).toContain("mayaEssential={mayaEssential}")
+    expect(shell).toContain("calendarIncluded={calendarIncluded}")
+    expect(shell).toContain('calendarIncluded && item.id === "calendar"')
+    expect(concierge).toContain("feedPlanDays && calendarIncluded")
+    expect(concierge).toContain('workspace.session.mayaContext?.surface === "calendar"')
+    expect(concierge).toContain("mayaContext: null, calendarTarget: null")
     expect(library).toContain("hasFullStudioMembership")
   })
 })

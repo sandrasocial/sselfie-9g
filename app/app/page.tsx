@@ -13,6 +13,7 @@ import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { AppV3Shell } from "@/components/app-v3/app-v3-shell"
 import {
   buildAppV3ReturnTo,
+  resolveAppV3AllowedSection,
   resolveAppV3InitialAestheticId,
   resolveAppV3InitialSection,
 } from "@/lib/app-v3/navigation"
@@ -23,8 +24,7 @@ import {
   isMayaHomeEnabled,
   isMayaOperatingLayerEnabled,
 } from "@/lib/app-v3/maya/operating-layer-rollout"
-import { getUserSubscription, hasStudioMembership } from "@/lib/subscription"
-import { isMayaEssentialPlan } from "@/lib/business/maya-tier-pilot"
+import { hasPaidBlueprint } from "@/lib/subscription"
 
 export const metadata = {
   title: "SSELFIE Studio",
@@ -93,6 +93,7 @@ export default async function StudioV3Page({
   let hasVaultAccess = true
   let vaultMayaIncluded = true
   let mayaEssential = false
+  let calendarIncluded = true
   // Whether this member has a completed, non-test trained LoRA model. When true, App v3
   // surfaces a quiet "use my trained model" entry into legacy /studio?legacy=1. Never-trained
   // members never see it. Admins resolve this separately below.
@@ -100,36 +101,33 @@ export default async function StudioV3Page({
   if (!isAdminEmail(user.email)) {
     hasVaultAccess = false
     vaultMayaIncluded = false
+    calendarIncluded = false
     let resolved: "full" | "trial" | "limited" | "none" = "none"
     if (process.env.APP_V3_MEMBERS_ENABLED === "true") {
       try {
         const { getUserIdFromSupabase } = await import("@/lib/user-mapping")
         const neonUserId = await getUserIdFromSupabase(user.id)
         if (neonUserId) {
-          const [subscription, studioMembership] = await Promise.all([
-            getUserSubscription(String(neonUserId)),
-            hasStudioMembership(String(neonUserId)),
+          const { getSuiteAccess, isMayaEssentialOnlyAccess } =
+            await import("@/lib/trial/suite-trial")
+          const [access, paidBlueprint] = await Promise.all([
+            getSuiteAccess(String(neonUserId)),
+            hasPaidBlueprint(String(neonUserId)),
           ])
-          mayaEssential = isMayaEssentialPlan(subscription?.plan)
-          vaultMayaIncluded = studioMembership && !mayaEssential
-          const { getSuiteAccess } = await import("@/lib/trial/suite-trial")
-          const access = await getSuiteAccess(String(neonUserId))
+          // Canonical union truth owns the focused Essential boundary. Full SUITE, a live trial,
+          // or a bundle pass clears it; Blueprint contributes Calendar only below.
+          mayaEssential = isMayaEssentialOnlyAccess(access)
+          vaultMayaIncluded = access.fullMembershipIncluded
+          hasVaultAccess = access.vaultIncludedBySuite
+          calendarIncluded = access.calendarIncluded || paidBlueprint
           if (access.level === "member") {
             resolved = "full"
-            // Recurring members and fixed bundle-pass holders both receive the Vault.
-            hasVaultAccess = !mayaEssential
           } else if (access.level === "vault") {
             // Vault Maya tier: her home is the scoped studio, never the full app shell.
             redirect("/vault-maya/studio")
           } else if (access.level === "trial") {
             resolved = "trial"
             trialDaysLeft = access.trialDaysLeft
-            try {
-              const { userHasAcademyProductAccess } = await import("@/lib/academy-entitlements")
-              hasVaultAccess = await userHasAcademyProductAccess(String(neonUserId), "prompt_vault")
-            } catch (vaultErr) {
-              console.error("[/app gate] Vault entitlement check failed:", vaultErr)
-            }
             try {
               const rows = await import("@/lib/db/client").then(
                 ({ sql }) => sql`
@@ -160,6 +158,15 @@ export default async function StudioV3Page({
               console.error("[/app gate] trial first-run seen check failed:", seenErr)
             }
           } else if (access.level === "limited") resolved = "limited"
+
+          if ((access.level === "member" || access.level === "trial") && !hasVaultAccess) {
+            try {
+              const { userHasAcademyProductAccess } = await import("@/lib/academy-entitlements")
+              hasVaultAccess = await userHasAcademyProductAccess(String(neonUserId), "prompt_vault")
+            } catch (vaultErr) {
+              console.error("[/app gate] Vault entitlement check failed:", vaultErr)
+            }
+          }
 
           try {
             const rows = await import("@/lib/db/client").then(
@@ -226,15 +233,23 @@ export default async function StudioV3Page({
     (user.user_metadata?.first_name as string | undefined) ||
     (user.user_metadata?.name as string | undefined) ||
     null
-  const mayaOperatingLayerEnabled = mayaEssential || isMayaOperatingLayerEnabled({
-    userId: user.id,
-    email: user.email,
-    accessLevel,
-  })
-  const mayaHomeEnabled = mayaEssential || isMayaHomeEnabled({
-    userId: user.id,
-    email: user.email,
-    accessLevel,
+  const mayaOperatingLayerEnabled =
+    mayaEssential ||
+    isMayaOperatingLayerEnabled({
+      userId: user.id,
+      email: user.email,
+      accessLevel,
+    })
+  const mayaHomeEnabled =
+    mayaEssential ||
+    isMayaHomeEnabled({
+      userId: user.id,
+      email: user.email,
+      accessLevel,
+    })
+  const allowedInitialSection = resolveAppV3AllowedSection(initialSection, {
+    mayaEssential,
+    calendarIncluded,
   })
 
   return (
@@ -243,7 +258,7 @@ export default async function StudioV3Page({
       accessLevel={accessLevel}
       analyticsCohort={analyticsCohort}
       trialDaysLeft={trialDaysLeft}
-      initialSection={mayaEssential ? "create" : initialSection}
+      initialSection={allowedInitialSection}
       initialAestheticId={initialAestheticId}
       hasTrainedModel={hasTrainedModel}
       hasVaultAccess={hasVaultAccess}
@@ -257,6 +272,7 @@ export default async function StudioV3Page({
       mayaOperatingLayerEnabled={mayaOperatingLayerEnabled}
       mayaHomeEnabled={mayaHomeEnabled}
       mayaEssential={mayaEssential}
+      calendarIncluded={calendarIncluded}
     />
   )
 }

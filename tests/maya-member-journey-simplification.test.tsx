@@ -146,15 +146,60 @@ describe("Maya simplified member journey", () => {
     expect(screen.getByText("Thank you — this helps Maya improve.")).toBeInTheDocument()
   })
 
-  it("finishes a Maya post without creating or opening a Feed Planner slot", () => {
+  it("requires one explicit save before calling the post durable and restores the receipt", async () => {
+    const onFinishPost = vi.fn(async () => ({ caption: "The exact finished caption." }))
+    const onSaveReadyPost = vi.fn(async () => ({
+      scheduledAt: "2026-08-24",
+      position: 4,
+      caption: "The exact finished caption.",
+    }))
+    const onOpenReadyPost = vi.fn()
+
+    render(
+      <ConceptCard
+        concept={concept}
+        format="photo"
+        gen={{
+          status: "done",
+          imageUrls: ["https://example.com/photo.png"],
+        }}
+        onGenerate={vi.fn()}
+        onFinishPost={onFinishPost}
+        onSaveReadyPost={onSaveReadyPost}
+        onOpenReadyPost={onOpenReadyPost}
+      />
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Finish this post" }))
+    expect(await screen.findByText("The exact finished caption.")).toBeInTheDocument()
+    expect(screen.queryByText(/Ready in Calendar/i)).not.toBeInTheDocument()
+    expect(screen.queryByText("Would you post this?")).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Save as ready post" }))
+
+    await waitFor(() => expect(onSaveReadyPost).toHaveBeenCalledWith("The exact finished caption."))
+    expect(await screen.findByText(/Ready in Calendar · Post 4/i)).toBeInTheDocument()
+    expect(screen.getByText("Would you post this?")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Calendar" }))
+    expect(onOpenReadyPost).toHaveBeenCalledTimes(1)
+  })
+
+  it("keeps caption generation separate from the explicit durable Calendar save", () => {
     const source = readFileSync(
       resolve(process.cwd(), "components/app-v3/maya-concierge.tsx"),
       "utf8"
     )
+    const placementRoute = readFileSync(
+      resolve(process.cwd(), "app/api/app-v3/maya/feed-plan/place-photo/route.ts"),
+      "utf8"
+    )
 
     expect(source).toContain('fetch("/api/app-v3/maya/finish-post"')
-    expect(source).not.toContain('fetch("/api/app-v3/maya/feed-plan/place-photo"')
-    expect(source).toContain('event: "suite_post_finished"')
+    expect(source).toContain('fetch("/api/app-v3/maya/feed-plan/place-photo"')
+    expect(source).toContain('event: "suite_post_caption_ready"')
+    expect(source).not.toContain('event: "suite_post_finished"')
+    expect(placementRoute).toContain("saveMayaReadyPost")
     expect(source).not.toContain(
       "<InlineResultActions\n                              onOpenCalendar"
     )

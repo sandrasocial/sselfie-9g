@@ -15,6 +15,16 @@ export function resolveAppV3InitialSection(view?: string | string[] | null): App
   return APP_V3_SECTIONS.has(value as AppV3Section) ? (value as AppV3Section) : "create"
 }
 
+export function resolveAppV3AllowedSection(
+  section: AppV3Section,
+  access: { mayaEssential: boolean; calendarIncluded: boolean }
+): AppV3Section {
+  if (!access.mayaEssential) return section
+  if (section === "create" || section === "account") return section
+  if (section === "calendar" && access.calendarIncluded) return section
+  return "create"
+}
+
 export function resolveAppV3InitialAestheticId(
   aesthetic?: string | string[] | null
 ): string | null {

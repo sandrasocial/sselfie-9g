@@ -32,6 +32,7 @@ import { sql } from "@/lib/db/client"
 import { shouldStopAppV3MayaToolLoop } from "@/lib/app-v3/maya/tool-loop-policy"
 import { getAppV3ChatMaxOutputTokens, getAppV3ChatTask } from "@/lib/app-v3/maya/cost-controls"
 import { getExplicitCalendarCreativeContext } from "@/lib/app-v3/maya/calendar-context-policy"
+import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 export const maxDuration = 300
 
@@ -679,7 +680,7 @@ export async function POST(req: Request) {
     if (!Array.isArray(uiMessages) || uiMessages.length === 0) {
       return NextResponse.json({ error: "messages is required" }, { status: 400 })
     }
-    const calendarCreativeContext = getExplicitCalendarCreativeContext(body?.mayaContext)
+    let calendarCreativeContext = getExplicitCalendarCreativeContext(body?.mayaContext)
 
     const creationIntent = normalizeCreationIntent(body?.creationIntent ?? null)
     const shotDirector = normalizeShotDirector(body?.shotDirector ?? null)
@@ -739,6 +740,20 @@ export async function POST(req: Request) {
       }
     } catch (e) {
       console.error("[app-v3 maya chat] memory/activity load skipped:", e)
+    }
+
+    // Calendar context and tools are server-authoritative. A historical task may outlive the
+    // entitlement that created it; excluded plans can still read their chat, but Maya must not
+    // promise or expose Calendar actions that no longer exist.
+    if (calendarCreativeContext) {
+      if (!memoryUserId) {
+        calendarCreativeContext = null
+      } else {
+        const calendarAccess = await getFeedPlannerAccess(memoryUserId)
+        if (!calendarAccess.isMembership && !calendarAccess.isPaidBlueprint) {
+          calendarCreativeContext = null
+        }
+      }
     }
 
     let system: string

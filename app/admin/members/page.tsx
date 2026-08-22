@@ -132,7 +132,7 @@ function PulseContent({ pulse }: { pulse: MemberPulse }) {
         <Stat
           label="Finished posts"
           value={pulse.finishedPosts}
-          note="Posts completed with a ready caption inside Maya"
+          note={`${pulse.captionReadyPosts} captions prepared · finished means durably saved in Calendar`}
         />
         <Stat
           label="Projects resumed"

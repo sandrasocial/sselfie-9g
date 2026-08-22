@@ -24,7 +24,7 @@ import { LibraryView } from "./library-view"
 import { AccountView } from "./account-view"
 import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
 import type { AppV3GalleryAsset } from "@/lib/app-v3/gallery-assets"
-import type { AppV3Section } from "@/lib/app-v3/navigation"
+import { resolveAppV3AllowedSection, type AppV3Section } from "@/lib/app-v3/navigation"
 import { isPrimaryMemberSection } from "@/lib/app-v3/member-navigation"
 import {
   buildStoredSectionHref,
@@ -76,6 +76,8 @@ export interface AppV3ShellProps {
   mayaHomeEnabled?: boolean
   /** Private pilot: focused Maya + Account only; Pro Calendar, Gallery, and Learn stay excluded. */
   mayaEssential?: boolean
+  /** Canonical server-owned union of full SUITE, trial, bundle-pass, and Blueprint Calendar access. */
+  calendarIncluded?: boolean
 }
 
 // The stored section ids stay unchanged so existing deep links and remembered member state
@@ -250,8 +252,14 @@ function ShellInner({
   mayaOperatingLayerEnabled = false,
   mayaHomeEnabled = false,
   mayaEssential = false,
+  calendarIncluded = true,
 }: AppV3ShellProps) {
-  const [section, setSection] = useState<AppV3Section>(initialSection)
+  const allowedInitialSection = resolveAppV3AllowedSection(initialSection, {
+    mayaEssential,
+    calendarIncluded,
+  })
+  const [section, setSection] = useState<AppV3Section>(allowedInitialSection)
+  const activeSection = resolveAppV3AllowedSection(section, { mayaEssential, calendarIncluded })
   // The server already resolved both the requested section and the Maya Home cohort.
   // Render that known Home immediately so returning members never flash the retired
   // Visual Front Door while client-side storage reconciliation runs.
@@ -272,7 +280,7 @@ function ShellInner({
     (accessLevel === "trial" ? "trial" : accessLevel === "limited" ? "limited" : "member")
 
   useEffect(() => {
-    if (initialSection !== "create") {
+    if (allowedInitialSection !== "create") {
       setSectionReady(true)
       return
     }
@@ -292,20 +300,24 @@ function ShellInner({
       setSectionReady(true)
       return
     }
-    const stored = readStoredAppSection(initialSection)
-    if (stored !== initialSection) setSection(stored)
+    const stored = resolveAppV3AllowedSection(readStoredAppSection(allowedInitialSection), {
+      mayaEssential,
+      calendarIncluded,
+    })
+    if (stored !== allowedInitialSection) setSection(stored)
     setSectionReady(true)
-  }, [initialSection, mayaHomeEnabled])
+  }, [allowedInitialSection, calendarIncluded, mayaEssential, mayaHomeEnabled])
 
   function goToSection(next: AppV3Section) {
+    const allowedNext = resolveAppV3AllowedSection(next, { mayaEssential, calendarIncluded })
     close()
-    setSection(next)
-    saveStoredAppSection(next)
+    setSection(allowedNext)
+    saveStoredAppSection(allowedNext)
     if (typeof window !== "undefined") {
       window.history.replaceState(
         null,
         "",
-        buildStoredSectionHref(next, window.location.pathname, window.location.search)
+        buildStoredSectionHref(allowedNext, window.location.pathname, window.location.search)
       )
     }
   }
@@ -339,9 +351,10 @@ function ShellInner({
   }
 
   useEffect(() => {
-    saveStoredAppSection(section)
-    setActiveSurface(mayaSurfaceForSection(section))
-  }, [section, setActiveSurface])
+    if (section !== activeSection) setSection(activeSection)
+    saveStoredAppSection(activeSection)
+    setActiveSurface(mayaSurfaceForSection(activeSection))
+  }, [activeSection, section, setActiveSurface])
 
   useEffect(() => {
     if (limited || initialSection !== "create" || !initialAestheticId) return
@@ -436,9 +449,15 @@ function ShellInner({
     })
   }
 
-  const mayaUsesSideWorkspace = section === "calendar" || (section === "create" && !mayaHomeEnabled)
+  const mayaUsesSideWorkspace =
+    activeSection === "calendar" || (activeSection === "create" && !mayaHomeEnabled)
   const visibleNav = mayaEssential
-    ? NAV.filter(item => item.id === "create" || item.id === "account")
+    ? NAV.filter(
+        item =>
+          item.id === "create" ||
+          item.id === "account" ||
+          (calendarIncluded && item.id === "calendar")
+      )
     : NAV.filter(item => isPrimaryMemberSection(item.id))
   const nav = mayaHomeEnabled
     ? visibleNav.map(item =>
@@ -498,7 +517,7 @@ function ShellInner({
 
       {vaultMayaIncluded && !mayaHomeEnabled ? <VaultMayaIncludedNotice /> : null}
 
-      {section === "create" &&
+      {activeSection === "create" &&
         (limited ? (
           <div className="mx-auto flex min-h-[60dvh] w-full max-w-3xl items-start px-5 pt-10 sm:items-center sm:py-16">
             <div className="w-full rounded-[8px] border border-[#0D0E10] bg-white p-5 shadow-sm">
@@ -541,7 +560,7 @@ function ShellInner({
             operatingLayerEnabled={mayaOperatingLayerEnabled}
           />
         ))}
-      {section === "photos" && !mayaEssential && (
+      {activeSection === "photos" && !mayaEssential && (
         <GalleryView
           initialFilter={galleryFilter}
           onOpenProjects={limited ? undefined : openHistory}
@@ -552,7 +571,7 @@ function ShellInner({
           onCreateVariation={asset => createVariationFromGallery(asset.url)}
         />
       )}
-      {section === "content" && (
+      {activeSection === "content" && (
         <ContentView
           firstName={firstName}
           onCreateIdea={createIdea}
@@ -560,9 +579,8 @@ function ShellInner({
           onBrowse={() => openGallery("all")}
         />
       )}
-      {section === "calendar" &&
-        !mayaEssential &&
-        (limited ? (
+      {activeSection === "calendar" &&
+        (limited && !calendarIncluded ? (
           <div className="mx-auto max-w-3xl px-5 py-10">
             <div className="rounded-[8px] border border-[#0D0E10] bg-white p-5 shadow-sm">
               <p className="text-[10px] uppercase tracking-[0.22em] text-[#818283]">
@@ -583,14 +601,14 @@ function ShellInner({
               </a>
             </div>
           </div>
-        ) : (
+        ) : calendarIncluded ? (
           <FeedPlannerView
             operatingLayerEnabled={mayaOperatingLayerEnabled}
             pendingApplyImageUrl={pendingCalendarImageUrl}
             onConsumePendingApplyImage={() => setPendingCalendarImageUrl(null)}
           />
-        ))}
-      {section === "library" && !mayaEssential && (
+        ) : null)}
+      {activeSection === "library" && !mayaEssential && (
         <LibraryView
           operatingLayerEnabled={mayaOperatingLayerEnabled}
           onOpenMaya={target =>
@@ -599,7 +617,7 @@ function ShellInner({
           onOpenCalendar={() => goToSection("calendar")}
         />
       )}
-      {section === "account" && (
+      {activeSection === "account" && (
         <AccountView
           firstName={firstName}
           onOpenLibrary={mayaEssential ? undefined : () => goToSection("library")}
@@ -610,17 +628,22 @@ function ShellInner({
         />
       )}
 
-      {!limited && (!mayaHomeEnabled || section !== "create" || mayaOpen) && (
+      {!limited && (!mayaHomeEnabled || activeSection !== "create" || mayaOpen) && (
         <MayaConcierge
           operatingLayerEnabled={mayaOperatingLayerEnabled}
-          homeMode={mayaHomeEnabled && section === "create"}
+          homeMode={mayaHomeEnabled && activeSection === "create"}
           firstName={firstName}
           hasTrainedModel={hasTrainedModel}
           analyticsCohort={cohort}
           onOpenCalendar={
-            mayaHomeEnabled ? showCalendarAlongsideMaya : () => goToSection("calendar")
+            calendarIncluded
+              ? mayaHomeEnabled
+                ? showCalendarAlongsideMaya
+                : () => goToSection("calendar")
+              : undefined
           }
-          calendarSurfaceActive={section === "calendar"}
+          calendarSurfaceActive={calendarIncluded && activeSection === "calendar"}
+          calendarIncluded={calendarIncluded}
         />
       )}
       <PostSuccessReviewPrompt />
@@ -629,7 +652,7 @@ function ShellInner({
       <nav className="suite-bottom-nav fixed inset-x-0 bottom-0 z-40 w-full max-w-[100dvw] overscroll-x-none border-t border-[#C5C6C8]/50 bg-[#F8FAFA]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur [overflow-x:clip]">
         <div className="mx-auto flex max-w-3xl items-stretch justify-around px-2">
           {nav.map(n => {
-            const active = n.id === section
+            const active = n.id === activeSection
             const Icon = n.icon
             return (
               <button
@@ -673,12 +696,18 @@ export function AppV3Shell({
   videoEnabled,
   mayaOperatingLayerEnabled,
   mayaHomeEnabled,
+  mayaEssential,
+  calendarIncluded,
 }: AppV3ShellProps) {
+  const allowedInitialSection = resolveAppV3AllowedSection(initialSection ?? "create", {
+    mayaEssential: mayaEssential ?? false,
+    calendarIncluded: calendarIncluded ?? true,
+  })
   return (
     <ConciergeProvider
       suppressRestore={Boolean(initialAestheticId)}
       operatingLayerEnabled={mayaOperatingLayerEnabled}
-      initialSurface={mayaSurfaceForSection(initialSection ?? "create")}
+      initialSurface={mayaSurfaceForSection(allowedInitialSection)}
     >
       <ShellInner
         firstName={firstName}
@@ -689,7 +718,7 @@ export function AppV3Shell({
         trialHasSavedSelfie={trialHasSavedSelfie}
         primarySelfieUrl={primarySelfieUrl}
         trialHasSeenFirstRunStep={trialHasSeenFirstRunStep}
-        initialSection={initialSection}
+        initialSection={allowedInitialSection}
         initialAestheticId={initialAestheticId}
         hasVaultAccess={hasVaultAccess}
         vaultMayaIncluded={vaultMayaIncluded}
@@ -698,6 +727,8 @@ export function AppV3Shell({
         videoEnabled={videoEnabled}
         mayaOperatingLayerEnabled={mayaOperatingLayerEnabled}
         mayaHomeEnabled={mayaHomeEnabled}
+        mayaEssential={mayaEssential}
+        calendarIncluded={calendarIncluded}
       />
     </ConciergeProvider>
   )

@@ -28,6 +28,7 @@ export interface MemberPulse {
   recoveriesShown: number
   chatAborts: number
   reviewsSubmitted: number
+  captionReadyPosts: number
   finishedPosts: number
   projectsResumed: number
   mayaJobsStarted: number
@@ -58,7 +59,8 @@ const PULSE_EVENTS = [
   "suite_maya_recovery_shown",
   "suite_chat_aborted",
   "suite_review_submitted",
-  "suite_post_finished",
+  "suite_post_caption_ready",
+  "suite_ready_post_saved",
   "suite_post_project_resumed",
   "suite_maya_job_started",
   "suite_maya_job_finished",
@@ -267,7 +269,8 @@ export async function buildMemberPulse(periodDays = 7): Promise<MemberPulse> {
     recoveriesShown: count("suite_maya_recovery_shown"),
     chatAborts: count("suite_chat_aborted"),
     reviewsSubmitted: count("suite_review_submitted"),
-    finishedPosts: count("suite_post_finished"),
+    captionReadyPosts: count("suite_post_caption_ready"),
+    finishedPosts: count("suite_ready_post_saved"),
     projectsResumed: count("suite_post_project_resumed"),
     mayaJobsStarted: count("suite_maya_job_started"),
     mayaJobsFinished: count("suite_maya_job_finished"),

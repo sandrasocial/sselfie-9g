@@ -655,6 +655,7 @@ export function MayaConcierge({
   analyticsCohort,
   onOpenCalendar,
   calendarSurfaceActive = false,
+  calendarIncluded = true,
 }: {
   operatingLayerEnabled?: boolean
   /** Member Maya Home: the conversation is the page, not a modal over the page. */
@@ -665,6 +666,8 @@ export function MayaConcierge({
   onOpenCalendar?: () => void
   /** Prevents a Create-tab generation from ever spilling into a previously selected slot. */
   calendarSurfaceActive?: boolean
+  /** Exact product capability. Maya Essential finishes inline and never writes hidden Calendar rows. */
+  calendarIncluded?: boolean
 } = {}) {
   const cohort: AppV3AnalyticsCohort = analyticsCohort ?? "member"
   const {
@@ -2650,31 +2653,37 @@ export function MayaConcierge({
     setChatId(id)
     const workspace = data?.workspace ?? null
     if (workspace) {
+      const restoredSession = (
+        !calendarIncluded &&
+        (workspace.session.mayaContext?.surface === "calendar" || workspace.session.calendarTarget)
+          ? { ...workspace.session, mayaContext: null, calendarTarget: null }
+          : workspace.session
+      ) as ConciergeSession
       if (operatingLayerEnabled) {
         appliedTaskIdRef.current = id
         hydratedTaskIdRef.current = id
-        sessionStartRef.current = workspace.session.startedAt
-        lastPulledFormatRef.current = loaded.length
-          ? (workspace.session.outputFormat ?? null)
-          : null
+        sessionStartRef.current = restoredSession.startedAt
+        lastPulledFormatRef.current = loaded.length ? (restoredSession.outputFormat ?? null) : null
         seedRetiredRef.current = Boolean(loaded.length)
-        if (loaded.length > 0 && workspace.session.calendarTarget) {
-          calendarHandoffSentRef.current = workspace.session.calendarTarget.requestId
-          markCalendarTargetAnnounced(workspace.session.calendarTarget.requestId)
+        if (loaded.length > 0 && restoredSession.calendarTarget) {
+          calendarHandoffSentRef.current = restoredSession.calendarTarget.requestId
+          markCalendarTargetAnnounced(restoredSession.calendarTarget.requestId)
         }
-        restoreHistoryTask(id, workspace.session as ConciergeSession)
-        saveMayaTaskDraft({ ...workspace, chatId: id, messages: loaded })
-        if (workspace.session.mayaContext?.surface === "calendar") onOpenCalendar?.()
+        restoreHistoryTask(id, restoredSession)
+        saveMayaTaskDraft({ ...workspace, session: restoredSession, chatId: id, messages: loaded })
+        if (calendarIncluded && restoredSession.mayaContext?.surface === "calendar") {
+          onOpenCalendar?.()
+        }
       }
-      updateCurrentSession(workspace.session.aesthetic as Aesthetic, {
-        format: workspace.session.outputFormat ?? undefined,
-        referenceSelfieUrl: workspace.session.referenceSelfieUrl,
-        videoSourceUrl: workspace.session.videoSourceUrl,
-        inspirationImageUrl: workspace.session.inspirationImageUrl,
-        creationIntent: workspace.session.creationIntent,
-        shotDirector: workspace.session.shotDirector,
+      updateCurrentSession(restoredSession.aesthetic as Aesthetic, {
+        format: restoredSession.outputFormat ?? undefined,
+        referenceSelfieUrl: restoredSession.referenceSelfieUrl,
+        videoSourceUrl: restoredSession.videoSourceUrl,
+        inspirationImageUrl: restoredSession.inspirationImageUrl,
+        creationIntent: restoredSession.creationIntent,
+        shotDirector: restoredSession.shotDirector,
         generationSource: workspace.generationSource,
-        creationIdea: workspace.session.creationIdea,
+        creationIdea: restoredSession.creationIdea,
       })
       setGenState(workspace.genState as Record<string, ConceptGenState>)
       setGeneratedOnce(workspace.generatedOnce)
@@ -2919,6 +2928,35 @@ export function MayaConcierge({
       finishMayaJob({ job: "finish_calendar_post", outcome: "completed" })
     }
     return true
+  }
+
+  async function saveFinishedPostToCalendar(input: {
+    assetIds: number[]
+    conceptTitle: string
+    captionContext: string
+    finishedCaption: string
+  }): Promise<
+    { scheduledAt: string; position?: number; caption?: string | null } | "forbidden" | null
+  > {
+    const response = await fetch("/api/app-v3/maya/feed-plan/place-photo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    })
+    if (response.status === 403) return "forbidden"
+    const data = (await response.json().catch(() => null)) as {
+      error?: string
+      scheduledAt?: string
+      position?: number
+      caption?: string | null
+    } | null
+    if (!response.ok) throw new Error(data?.error || "The ready post did not reach Calendar.")
+    if (!data?.scheduledAt) throw new Error("Calendar did not return a ready-post receipt.")
+    return {
+      scheduledAt: data.scheduledAt,
+      ...(typeof data.position === "number" ? { position: data.position } : {}),
+      caption: typeof data.caption === "string" ? data.caption : null,
+    }
   }
 
   async function undoCalendarDelivery() {
@@ -5631,10 +5669,21 @@ export function MayaConcierge({
                                     [key]: { ...state[key], finishedPost },
                                   }))
                                   void trackAnalyticsEvent({
-                                    event: "suite_post_finished",
-                                    properties: { cohort, format: conceptFormat },
+                                    event: "suite_post_caption_ready",
+                                    properties: {
+                                      cohort,
+                                      format: conceptFormat,
+                                      asset_id:
+                                        current?.bakedAiImageIds?.[0] ??
+                                        current?.aiImageIds?.[0] ??
+                                        current?.aiImageId ??
+                                        null,
+                                      media_count: urls.length,
+                                    },
                                   })
-                                  finishMayaJob({ job: "create_content", outcome: "completed" })
+                                  if (!calendarIncluded) {
+                                    finishMayaJob({ job: "create_content", outcome: "completed" })
+                                  }
                                   return finishedPost
                                 } catch {
                                   return null
@@ -5642,6 +5691,58 @@ export function MayaConcierge({
                               }
                             : undefined
                         }
+                        onSaveReadyPost={
+                          calendarIncluded &&
+                          conceptFormat !== "video" &&
+                          !calendarSurfaceActive &&
+                          !(operatingLayerEnabled && actionTarget)
+                            ? async finishedCaption => {
+                                const current = genState[key]
+                                const urls = (current?.imageUrls ?? []).map(
+                                  (cleanUrl, index) => current?.bakedImageUrls?.[index] ?? cleanUrl
+                                )
+                                const imageUrl = urls[0]
+                                if (!imageUrl) return null
+                                const assetIds = (current?.imageUrls ?? []).map((_, index) => {
+                                  const bakedUrl = current?.bakedImageUrls?.[index]
+                                  const selectedId = bakedUrl
+                                    ? current?.bakedAiImageIds?.[index]
+                                    : (current?.aiImageIds?.[index] ??
+                                      (index === 0 ? current?.aiImageId : null))
+                                  return typeof selectedId === "number" &&
+                                    Number.isInteger(selectedId) &&
+                                    selectedId > 0
+                                    ? selectedId
+                                    : null
+                                })
+                                if (assetIds.some(id => id === null)) return null
+                                const receipt = await saveFinishedPostToCalendar({
+                                  assetIds: assetIds as number[],
+                                  conceptTitle: concept.title,
+                                  captionContext: [
+                                    concept.description,
+                                    ...(concept.brief.graphic?.creativePlan?.outputs ?? [])
+                                      .flatMap(output => [output.title, output.body])
+                                      .filter(
+                                        (line): line is string =>
+                                          typeof line === "string" && line.trim().length > 0
+                                      ),
+                                  ]
+                                    .join(". ")
+                                    .slice(0, 1200),
+                                  finishedCaption,
+                                })
+                                if (!receipt || receipt === "forbidden") return receipt
+                                setGenState(state => ({
+                                  ...state,
+                                  [key]: { ...state[key], calendarPlacement: receipt },
+                                }))
+                                finishMayaJob({ job: "create_content", outcome: "completed" })
+                                return receipt
+                              }
+                            : undefined
+                        }
+                        onOpenReadyPost={calendarIncluded ? onOpenCalendar : undefined}
                         disabled={
                           !conceptPlanReady ||
                           (conceptFormat === "video"
@@ -5729,7 +5830,7 @@ export function MayaConcierge({
                         />
                       )}
 
-                      {feedPlanDays && (
+                      {feedPlanDays && calendarIncluded && (
                         <FeedPlanPreviewCard
                           days={feedPlanDays}
                           onOpenCalendar={() => {

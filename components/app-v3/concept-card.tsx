@@ -86,6 +86,14 @@ interface ConceptCardProps {
   >
   /** Completes the post inside Maya. This must not create or update Calendar rows. */
   onFinishPost?: () => Promise<{ caption?: string | null } | null>
+  /** Explicitly persists the exact finished visual + caption as one ready post. Caption creation
+   *  alone never calls this; the member must choose the save action. */
+  onSaveReadyPost?: (
+    finishedCaption: string
+  ) => Promise<
+    { scheduledAt: string; position?: number; caption?: string | null } | "forbidden" | null
+  >
+  onOpenReadyPost?: () => void
   initialCalendarPlacement?: {
     scheduledAt: string
     position?: number
@@ -157,6 +165,8 @@ export function ConceptCard({
   onEdit,
   onAddToCalendar,
   onFinishPost,
+  onSaveReadyPost,
+  onOpenReadyPost,
   initialCalendarPlacement = null,
   initialFinishedPost = null,
   showCalendarOffer = true,
@@ -211,6 +221,14 @@ export function ConceptCard({
     initialFinishedPost?.caption?.trim() || null
   )
   const [finishedCaptionCopied, setFinishedCaptionCopied] = useState(false)
+  const [readyPostStatus, setReadyPostStatus] = useState<
+    "idle" | "saving" | "saved" | "error" | "unavailable"
+  >(initialCalendarPlacement && onSaveReadyPost ? "saved" : "idle")
+  const [readyPostReceipt, setReadyPostReceipt] = useState<{
+    scheduledAt: string
+    position?: number
+    caption?: string | null
+  } | null>(initialCalendarPlacement && onSaveReadyPost ? initialCalendarPlacement : null)
   const [readinessAnswer, setReadinessAnswer] = useState<"yes" | "almost" | "no" | null>(null)
   const [savedDateLabel, setSavedDateLabel] = useState<string | null>(() => {
     if (!initialCalendarPlacement) return null
@@ -280,6 +298,28 @@ export function ConceptCard({
       setFinishStatus("finished")
     } catch {
       setFinishStatus("error")
+    }
+  }
+  const handleSaveReadyPost = async () => {
+    if (
+      !onSaveReadyPost ||
+      !finishedCaption ||
+      readyPostStatus === "saving" ||
+      readyPostStatus === "saved"
+    )
+      return
+    setReadyPostStatus("saving")
+    try {
+      const result = await onSaveReadyPost(finishedCaption)
+      if (result === "forbidden") {
+        setReadyPostStatus("unavailable")
+        return
+      }
+      if (!result) throw new Error("no result")
+      setReadyPostReceipt(result)
+      setReadyPostStatus("saved")
+    } catch {
+      setReadyPostStatus("error")
     }
   }
   const postFinishAvailable = !!onFinishPost
@@ -597,6 +637,44 @@ export function ConceptCard({
                       Your visual is ready. Ask Maya to help shape the words if you want a caption.
                     </p>
                   )}
+                  {finishedCaption &&
+                    onSaveReadyPost &&
+                    readyPostStatus !== "unavailable" &&
+                    (readyPostStatus === "saved" && readyPostReceipt ? (
+                      <div className="mt-3 border-t border-[#C5C6C8]/50 pt-3">
+                        <p className="text-[12px] font-medium text-[#0D0E10]">
+                          Ready in Calendar
+                          {typeof readyPostReceipt.position === "number"
+                            ? ` · Post ${readyPostReceipt.position}`
+                            : ""}
+                          {readyPostReceipt.scheduledAt
+                            ? ` · ${new Date(`${readyPostReceipt.scheduledAt}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                            : ""}
+                        </p>
+                        {onOpenReadyPost && (
+                          <button
+                            type="button"
+                            onClick={onOpenReadyPost}
+                            className="mt-2 inline-flex min-h-11 items-center text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                          >
+                            Open Calendar
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void handleSaveReadyPost()}
+                        disabled={readyPostStatus === "saving"}
+                        className="mt-3 inline-flex min-h-12 w-full items-center justify-center rounded-[8px] bg-[#0D0E10] px-5 py-3.5 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728] disabled:opacity-50"
+                      >
+                        {readyPostStatus === "saving"
+                          ? "Saving your ready post…"
+                          : readyPostStatus === "error"
+                            ? "Try saving this ready post again"
+                            : "Save as ready post"}
+                      </button>
+                    ))}
                 </div>
               ) : (
                 <button
@@ -612,37 +690,39 @@ export function ConceptCard({
                       : "Finish this post"}
                 </button>
               ))}
-            {finishStatus === "finished" && !isVideoDone && (
-              <div className="rounded-[10px] border border-[#C5C6C8]/50 bg-white p-3">
-                {readinessAnswer ? (
-                  <p className="text-[12px] leading-relaxed text-[#4F5052]">
-                    Thank you — this helps Maya improve.
-                  </p>
-                ) : (
-                  <>
-                    <p className="text-[13px] font-medium text-[#0D0E10]">Would you post this?</p>
-                    <div className="mt-2 grid grid-cols-3 gap-2">
-                      {(
-                        [
-                          ["yes", "Yes"],
-                          ["almost", "Almost"],
-                          ["no", "No"],
-                        ] as const
-                      ).map(([answer, label]) => (
-                        <button
-                          key={answer}
-                          type="button"
-                          onClick={() => ratePostReadiness(answer)}
-                          className="min-h-11 rounded-[8px] border border-[#C5C6C8]/70 px-3 py-2 text-[12px] text-[#4F5052] transition-colors hover:border-[#0D0E10] hover:text-[#0D0E10]"
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+            {finishStatus === "finished" &&
+              !isVideoDone &&
+              (!onSaveReadyPost || readyPostStatus === "saved") && (
+                <div className="rounded-[10px] border border-[#C5C6C8]/50 bg-white p-3">
+                  {readinessAnswer ? (
+                    <p className="text-[12px] leading-relaxed text-[#4F5052]">
+                      Thank you — this helps Maya improve.
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-[13px] font-medium text-[#0D0E10]">Would you post this?</p>
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        {(
+                          [
+                            ["yes", "Yes"],
+                            ["almost", "Almost"],
+                            ["no", "No"],
+                          ] as const
+                        ).map(([answer, label]) => (
+                          <button
+                            key={answer}
+                            type="button"
+                            onClick={() => ratePostReadiness(answer)}
+                            className="min-h-11 rounded-[8px] border border-[#C5C6C8]/70 px-3 py-2 text-[12px] text-[#4F5052] transition-colors hover:border-[#0D0E10] hover:text-[#0D0E10]"
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             {/* Calendar placement remains explicit only when Maya was opened from an existing
                 Calendar post. It is not part of the normal creation journey. */}
             {calendarAvailable &&

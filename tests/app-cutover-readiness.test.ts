@@ -4,6 +4,7 @@ import path from "path"
 import {
   buildAppV3AestheticHref,
   buildAppV3ReturnTo,
+  resolveAppV3AllowedSection,
   resolveAppV3InitialAestheticId,
   resolveAppV3InitialSection,
 } from "@/lib/app-v3/navigation"
@@ -60,6 +61,24 @@ describe("APP-CUTOVER-01 readiness", () => {
     expect(resolveAppV3InitialSection(undefined)).toBe("create")
     expect(buildAppV3ReturnTo("create")).toBe("/app")
     expect(buildAppV3ReturnTo("account")).toBe("/app?view=account")
+  })
+
+  it("never restores a hidden Essential surface", () => {
+    expect(
+      resolveAppV3AllowedSection("photos", { mayaEssential: true, calendarIncluded: true })
+    ).toBe("create")
+    expect(
+      resolveAppV3AllowedSection("library", { mayaEssential: true, calendarIncluded: true })
+    ).toBe("create")
+    expect(
+      resolveAppV3AllowedSection("calendar", { mayaEssential: true, calendarIncluded: true })
+    ).toBe("calendar")
+    expect(
+      resolveAppV3AllowedSection("calendar", { mayaEssential: true, calendarIncluded: false })
+    ).toBe("create")
+    expect(
+      resolveAppV3AllowedSection("photos", { mayaEssential: false, calendarIncluded: false })
+    ).toBe("photos")
   })
 
   it("preserves a valid Vault aesthetic through the authenticated /app handoff", () => {

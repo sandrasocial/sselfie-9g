@@ -9,10 +9,12 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
   it("keeps App v3 shell localStorage reads out of render", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
 
-    expect(shell).toContain("const [section, setSection] = useState<AppV3Section>(initialSection)")
+    expect(shell).toContain(
+      "const [section, setSection] = useState<AppV3Section>(allowedInitialSection)"
+    )
     expect(shell).toContain('if (params.has("view")) {')
-    expect(shell).toContain("const stored = readStoredAppSection(initialSection)")
-    expect(shell).toContain('if (initialSection !== "create") {')
+    expect(shell).toContain("readStoredAppSection(allowedInitialSection)")
+    expect(shell).toContain('if (allowedInitialSection !== "create") {')
     expect(shell).toContain("setSectionReady(true)")
     expect(shell).not.toContain("useState<AppV3Section>(() =>")
   })

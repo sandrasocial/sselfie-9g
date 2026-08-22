@@ -223,6 +223,7 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "suite_inline_choice_selected",
   "suite_inline_selfie_uploaded",
   "suite_generation_path_completed",
+  "suite_post_caption_ready",
   "suite_post_finished",
   "suite_post_readiness_rated",
   "suite_post_refinement_started",

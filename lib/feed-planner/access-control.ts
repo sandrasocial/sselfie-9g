@@ -1,6 +1,6 @@
 /**
  * Feed Planner Access Control
- * 
+ *
  * Determines user access levels and feature availability for Feed Planner
  * Based on user's subscription type (free, paid blueprint, one-time session, membership)
  */
@@ -28,13 +28,13 @@ export interface FeedPlannerAccess {
 
 /**
  * Get Feed Planner access control for a user
- * 
+ *
  * Determines what features are available based on user's subscription type:
  * - Free: One 9:16 placeholder, generation allowed only while credits > 0, no gallery access
  * - LEGACY_ACCESS_ONLY: old paid_blueprint buyers keep full 3x3 grid, all generation buttons, gallery access, 3 feed planners max
  * - One-Time Session: Full 3x3 grid, all generation buttons, gallery access, unlimited feed planners
  * - Membership: Full 3x3 grid, all generation buttons, gallery access, unlimited feed planners
- * 
+ *
  * @param userId - User ID to check access for
  * @returns FeedPlannerAccess object with all access flags
  */
@@ -50,9 +50,9 @@ export async function getFeedPlannerAccess(userId: string): Promise<FeedPlannerA
       getUserCredits(userId),
     ])
 
-    // `/app` admits both active members and active Suite trials through getSuiteAccess.
-    // Calendar must use the same gate or an admitted customer is silently downgraded.
-    const hasCurrentSuiteAccess = suiteAccess.level === "member" || suiteAccess.level === "trial"
+    // `/app` also admits the focused Maya Essential pilot. Calendar cannot infer its entitlement
+    // from the generic member level; getSuiteAccess resolves the exact product capability.
+    const hasCurrentSuiteAccess = suiteAccess.calendarIncluded === true
 
     // Determine access level (order matters: membership > paid blueprint > free)
     // Note: Free users get 2 credits for testing feed planner, but are still "free" users
@@ -78,7 +78,7 @@ export async function getFeedPlannerAccess(userId: string): Promise<FeedPlannerA
       isPaidBlueprint,
       isOneTime,
       isMembership,
-      
+
       // Free users can generate while credits remain, but gallery remains paid-only.
       // This keeps freebie behavior aligned with API contract.
       creditBalance: Number(credits || 0),
@@ -86,19 +86,20 @@ export async function getFeedPlannerAccess(userId: string): Promise<FeedPlannerA
 
       // Gallery access: Paid blueprint, membership, or one-time session
       hasGalleryAccess: isPaidBlueprint || isMembership || isOneTime,
-      
+
       // Generation features:
       // - Paid and membership users always can generate
       // - Free users can generate while they still have credits
-      canGenerateImages: isPaidBlueprint || isMembership || isOneTime || (isFree && Number(credits || 0) > 0),
+      canGenerateImages:
+        isPaidBlueprint || isMembership || isOneTime || (isFree && Number(credits || 0) > 0),
       canGenerateCaptions: isPaidBlueprint || isMembership || isOneTime,
       canGenerateStrategy: isPaidBlueprint || isMembership || isOneTime,
       canGenerateBio: isPaidBlueprint || isMembership || isOneTime,
       canGenerateHighlights: isPaidBlueprint || isMembership || isOneTime,
-      
+
       // Feed planner limits: Paid blueprint = 3, others = unlimited
       maxFeedPlanners: isPaidBlueprint ? 3 : null,
-      
+
       // Placeholder type: Free = single 9:16, others = 3x3 grid
       placeholderType: isFree ? "single" : "grid",
     }
@@ -120,7 +121,7 @@ export async function getFeedPlannerAccess(userId: string): Promise<FeedPlannerA
     return access
   } catch (error) {
     console.error("[Feed Planner Access] Error getting access control:", error)
-    
+
     // Default to free access on error (safest fallback)
     return {
       isFree: true,
