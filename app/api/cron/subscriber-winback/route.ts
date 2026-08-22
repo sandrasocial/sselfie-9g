@@ -121,15 +121,28 @@ async function getStageCandidates(
         FROM stripe_payments sp
         WHERE LOWER(BTRIM(sp.customer_email)) = r.email
           AND sp.status IN ('succeeded', 'paid')
-          AND sp.is_test_mode = FALSE
+          AND COALESCE(sp.is_test_mode, FALSE) = FALSE
           AND sp.payment_date > NOW() - INTERVAL '90 days'
       )
       AND NOT EXISTS (
         SELECT 1
         FROM subscriptions s
-        JOIN users u ON u.id = s.user_id
+        JOIN users u ON u.id::varchar = s.user_id::varchar
         WHERE LOWER(BTRIM(u.email)) = r.email
-          AND s.status = 'active'
+          AND COALESCE(s.is_test_mode, FALSE) = FALSE
+          AND s.product_type IN (
+            'sselfie_studio_membership',
+            'sselfie_studio_membership_annual',
+            'brand_studio_membership',
+            'pro'
+          )
+          AND (
+            s.status IN ('active', 'trialing')
+            OR (
+              s.status IN ('canceled', 'cancelled', 'past_due')
+              AND s.current_period_end > NOW()
+            )
+          )
       )
       AND (
         ${stage.requiresEmailType}::text IS NULL
@@ -189,6 +202,48 @@ async function runStage(stage: WinbackStage, limit: number, dryRun: boolean) {
 }
 
 /**
+ * Final money/access guard for the seven-day sunset grace window. A subscriber who buys or
+ * regains membership access after email 4 must remain marketable even if they never click the
+ * win-back message itself.
+ */
+async function hasCurrentCustomerOrMembershipAccess(email: string): Promise<boolean> {
+  const [purchase, membership] = await Promise.all([
+    sql`
+      SELECT 1
+      FROM stripe_payments sp
+      WHERE LOWER(BTRIM(sp.customer_email)) = LOWER(BTRIM(${email}))
+        AND sp.status IN ('succeeded', 'paid')
+        AND COALESCE(sp.is_test_mode, FALSE) = FALSE
+        AND sp.payment_date > NOW() - INTERVAL '90 days'
+      LIMIT 1
+    `,
+    sql`
+      SELECT 1
+      FROM subscriptions s
+      JOIN users u ON u.id::varchar = s.user_id::varchar
+      WHERE LOWER(BTRIM(u.email)) = LOWER(BTRIM(${email}))
+        AND COALESCE(s.is_test_mode, FALSE) = FALSE
+        AND s.product_type IN (
+          'sselfie_studio_membership',
+          'sselfie_studio_membership_annual',
+          'brand_studio_membership',
+          'pro'
+        )
+        AND (
+          s.status IN ('active', 'trialing')
+          OR (
+            s.status IN ('canceled', 'cancelled', 'past_due')
+            AND s.current_period_end > NOW()
+          )
+        )
+      LIMIT 1
+    `,
+  ])
+
+  return purchase.length > 0 || membership.length > 0
+}
+
+/**
  * Sunset: 7+ days after win-back email 4 with still zero click engagement -> app-level
  * unsubscribe (every marketing send respects it) + a winback_sunset tag in Resend so broadcasts
  * can exclude them. Counted in dry-run mode whenever the sunset env is off.
@@ -225,10 +280,15 @@ async function runSunset(apply: boolean, limit: number) {
     LIMIT ${limit}
   `) as Array<{ email: string }>
 
-  const results = { eligible: candidates.length, suppressed: 0, dryRun: !apply }
+  const results = { eligible: candidates.length, suppressed: 0, skippedCustomers: 0, dryRun: !apply }
   if (!apply) return results
 
   for (const candidate of candidates) {
+    if (await hasCurrentCustomerOrMembershipAccess(candidate.email)) {
+      results.skippedCustomers += 1
+      continue
+    }
+
     await recordEmailUnsubscribe(createUnsubscribeToken(candidate.email), "winback_sunset")
     await updateContactTags(candidate.email, { winback_sunset: "true" }).catch(error => {
       console.error("[subscriber-winback] Failed to tag sunset contact in Resend:", error)

@@ -5,6 +5,7 @@ import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import { PromptVaultCheckoutEmailCapture } from "@/components/prompt-vault/prompt-vault-checkout-email-capture"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { shouldShowCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
+import { normalizeCheckoutEmail } from "@/lib/revenue-engine/checkout-email"
 import { createServerClient } from "@/lib/supabase/server"
 import {
   buildCheckoutRedirectUrl,
@@ -172,10 +173,4 @@ export default async function MasterclassCheckoutPage({
   }
 
   redirect("/masterclass?checkout=failed")
-}
-
-function normalizeCheckoutEmail(value?: string | null): string | null {
-  const email = value?.trim().toLowerCase()
-  if (!email) return null
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
 }

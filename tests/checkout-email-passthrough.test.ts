@@ -82,10 +82,24 @@ describe("trial lifecycle checkout email pass-through", () => {
     })
   }
 
-  it("membership checkout resolves checkout_email before evaluating its capture gate", () => {
-    const page = fs.readFileSync(path.join(ROOT, "app/checkout/membership/page.tsx"), "utf8")
+  it("every current revenue-email checkout route uses the shared decrypting normalizer", () => {
+    const routes = [
+      "app/checkout/membership/page.tsx",
+      "app/checkout/starter-kit/page.tsx",
+      "app/checkout/prompt-vault/page.tsx",
+      "app/checkout/selfie-to-ai-photos-kit/page.tsx",
+      "app/checkout/campaign/page.tsx",
+      "app/checkout/one-selfie/page.tsx",
+      "app/checkout/masterclass/page.tsx",
+      "app/checkout/vault-maya/page.tsx",
+      "app/checkout/presets/page.tsx",
+    ]
 
-    expect(page).toContain("normalizeCheckoutEmail(params.checkout_email || params.email)")
-    expect(page).toContain("hasRecoverableEmail: Boolean(checkoutEmail)")
+    for (const relativePath of routes) {
+      const page = fs.readFileSync(path.join(ROOT, relativePath), "utf8")
+      expect(page, relativePath).toContain("@/lib/revenue-engine/checkout-email")
+      expect(page, relativePath).not.toContain("function normalizeCheckoutEmail(")
+      expect(page, relativePath).toContain("normalizeCheckoutEmail(")
+    }
   })
 })

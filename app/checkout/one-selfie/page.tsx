@@ -7,6 +7,7 @@ import {
   buildCheckoutRedirectUrl,
   getCheckoutAttributionFromParams,
 } from "@/lib/revenue-engine/checkout-attribution"
+import { normalizeCheckoutEmail } from "@/lib/revenue-engine/checkout-email"
 import { createServerClient } from "@/lib/supabase/server"
 
 export const metadata: Metadata = {
@@ -32,12 +33,6 @@ type CheckoutSearchParams = {
   buyer_stage?: string
   checkout_email?: string
   email?: string
-}
-
-function normalizeCheckoutEmail(value?: string | null): string | null {
-  const email = value?.trim().toLowerCase()
-  if (!email) return null
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
 }
 
 export default async function OneSelfieCheckoutPage({

@@ -7,6 +7,7 @@ import {
   buildCheckoutRedirectUrl,
   getCheckoutAttributionFromParams,
 } from "@/lib/revenue-engine/checkout-attribution"
+import { normalizeCheckoutEmail } from "@/lib/revenue-engine/checkout-email"
 import { shouldShowCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
 import { PromptVaultCheckoutEmailCapture } from "@/components/prompt-vault/prompt-vault-checkout-email-capture"
 import {
@@ -26,12 +27,6 @@ import {
 } from "@/lib/business/maya-tier-pilot"
 
 export const dynamic = "force-dynamic"
-
-function normalizeCheckoutEmail(value?: string | null): string | null {
-  const email = value?.trim().toLowerCase()
-  if (!email) return null
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
-}
 
 export default async function MembershipCheckoutPage({
   searchParams,

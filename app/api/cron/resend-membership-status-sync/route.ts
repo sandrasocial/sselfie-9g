@@ -27,8 +27,18 @@ async function ensureSyncState(): Promise<void> {
       source_updated_at TIMESTAMPTZ,
       synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       last_error TEXT,
+      failure_count INTEGER NOT NULL DEFAULT 0,
+      retry_after TIMESTAMPTZ,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
+  `
+  await sql`
+    ALTER TABLE resend_membership_status_sync_state
+    ADD COLUMN IF NOT EXISTS failure_count INTEGER NOT NULL DEFAULT 0
+  `
+  await sql`
+    ALTER TABLE resend_membership_status_sync_state
+    ADD COLUMN IF NOT EXISTS retry_after TIMESTAMPTZ
   `
 }
 
@@ -70,6 +80,7 @@ async function getCandidates(): Promise<Candidate[]> {
         )
         AND u.email IS NOT NULL
         AND BTRIM(u.email) <> ''
+        AND LOWER(BTRIM(u.email)) ~ '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$'
         AND (
           s.status IN ('active', 'trialing', 'past_due', 'unpaid', 'paused', 'incomplete')
           OR s.updated_at >= ${ROLLOUT_START}::timestamptz
@@ -94,10 +105,40 @@ async function getCandidates(): Promise<Candidate[]> {
     WHERE sync.email IS NULL
        OR sync.source_updated_at IS NULL
        OR truth.source_updated_at > sync.source_updated_at
-    -- Fresh billing/cancellation changes can never be starved by older missing contacts.
-    ORDER BY truth.source_updated_at DESC
+       OR (
+         sync.last_error IS NOT NULL
+         AND (sync.retry_after IS NULL OR sync.retry_after <= NOW())
+       )
+    ORDER BY
+      CASE
+        WHEN sync.email IS NULL THEN 0
+        WHEN sync.source_updated_at IS NULL OR truth.source_updated_at > sync.source_updated_at THEN 1
+        ELSE 2
+      END,
+      truth.source_updated_at DESC
     LIMIT ${BATCH_LIMIT}
   `) as Candidate[]
+}
+
+async function recordFailure(
+  candidate: Candidate,
+  error: string,
+): Promise<void> {
+  await sql`
+    INSERT INTO resend_membership_status_sync_state (
+      email, source_updated_at, synced_at, last_error, failure_count, retry_after, updated_at
+    ) VALUES (
+      ${candidate.email}, ${candidate.source_updated_at}, NOW(), ${error}, 1,
+      NOW() + INTERVAL '24 hours', NOW()
+    )
+    ON CONFLICT (email) DO UPDATE SET
+      source_updated_at = EXCLUDED.source_updated_at,
+      synced_at = NOW(),
+      last_error = EXCLUDED.last_error,
+      failure_count = resend_membership_status_sync_state.failure_count + 1,
+      retry_after = NOW() + INTERVAL '24 hours',
+      updated_at = NOW()
+  `
 }
 
 export async function GET(request: Request) {
@@ -140,34 +181,26 @@ export async function GET(request: Request) {
         summary.updated += 1
         await sql`
           INSERT INTO resend_membership_status_sync_state (
-            email, source_updated_at, synced_at, last_error, updated_at
+            email, source_updated_at, synced_at, last_error, failure_count, retry_after, updated_at
           ) VALUES (
-            ${candidate.email}, ${candidate.source_updated_at}, NOW(), NULL, NOW()
+            ${candidate.email}, ${candidate.source_updated_at}, NOW(), NULL, 0, NULL, NOW()
           )
           ON CONFLICT (email) DO UPDATE SET
             source_updated_at = EXCLUDED.source_updated_at,
             synced_at = NOW(),
             last_error = NULL,
+            failure_count = 0,
+            retry_after = NULL,
             updated_at = NOW()
         `
       } else if (String(result.error || '').toLowerCase().includes('not found')) {
-        // Do not checkpoint missing marketing contacts. If this person later opts into
-        // SSELFIE email, a future run can attach their real membership state.
+        // Missing marketing contacts are not considered successfully synced, but they are
+        // backed off for 24h so they cannot monopolize the newest 50 slots every hour.
         summary.contactNotFound += 1
+        await recordFailure(candidate, "contact_not_found")
       } else {
         summary.failed += 1
-        await sql`
-          INSERT INTO resend_membership_status_sync_state (
-            email, source_updated_at, synced_at, last_error, updated_at
-          ) VALUES (
-            ${candidate.email}, NULL, NOW(), ${result.error || 'unknown'}, NOW()
-          )
-          ON CONFLICT (email) DO UPDATE SET
-            source_updated_at = NULL,
-            synced_at = NOW(),
-            last_error = EXCLUDED.last_error,
-            updated_at = NOW()
-        `
+        await recordFailure(candidate, result.error || "unknown")
       }
 
       await sleep(PACE_MS)

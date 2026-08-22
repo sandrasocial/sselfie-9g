@@ -69,10 +69,10 @@ describe("email audit remediation", () => {
     expect(content.html).toContain("#F8FAFA")
   })
 
-  it("prefers a real customer name over the email local-part", () => {
+  it("prefers a real customer name and never guesses from the email address", () => {
     expect(getFirstNameForEmail({ fullName: "Jessica Smith", email: "jsmith@example.com" })).toBe("Jessica")
-    expect(getFirstNameForEmail({ fullName: "  ", email: "jsmith@example.com" })).toBe("jsmith")
-    expect(getFirstNameForEmail({ fullName: undefined, email: "" })).toBe("friend")
+    expect(getFirstNameForEmail({ fullName: "  ", email: "jsmith@example.com" })).toBe("there")
+    expect(getFirstNameForEmail({ fullName: undefined, email: "" })).toBe("there")
   })
 
   it("keeps the paid Selfie Guide activation and follow-up touches registered", () => {

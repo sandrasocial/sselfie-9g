@@ -5,17 +5,12 @@ import {
   buildCheckoutRedirectUrl,
   getCheckoutAttributionFromParams,
 } from "@/lib/revenue-engine/checkout-attribution"
+import { normalizeCheckoutEmail } from "@/lib/revenue-engine/checkout-email"
 import Link from "next/link"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getSuiteAccess } from "@/lib/trial/suite-trial"
 
 export const dynamic = "force-dynamic"
-
-function normalizeCheckoutEmail(value?: string | null): string | null {
-  const email = value?.trim().toLowerCase()
-  if (!email) return null
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
-}
 
 export default async function VaultMayaCheckoutPage({
   searchParams,
