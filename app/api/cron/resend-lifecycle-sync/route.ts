@@ -31,8 +31,18 @@ async function ensureSyncStateTable(): Promise<void> {
       source_updated_at TIMESTAMPTZ,
       synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       last_error TEXT,
+      failure_count INTEGER NOT NULL DEFAULT 0,
+      retry_after TIMESTAMPTZ,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
+  `
+  await sql`
+    ALTER TABLE resend_lifecycle_sync_state
+    ADD COLUMN IF NOT EXISTS failure_count INTEGER NOT NULL DEFAULT 0
+  `
+  await sql`
+    ALTER TABLE resend_lifecycle_sync_state
+    ADD COLUMN IF NOT EXISTS retry_after TIMESTAMPTZ
   `
 }
 
@@ -49,6 +59,7 @@ async function getCandidates(): Promise<Candidate[]> {
       FROM freebie_subscribers fs
       WHERE fs.email IS NOT NULL
         AND BTRIM(fs.email) <> ''
+        AND LOWER(BTRIM(fs.email)) ~ '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$'
       ORDER BY LOWER(BTRIM(fs.email)), fs.updated_at DESC NULLS LAST, fs.created_at DESC
     ),
     enriched AS (
@@ -56,8 +67,6 @@ async function getCandidates(): Promise<Candidate[]> {
         f.email,
         f.name,
         CASE
-          -- Prefer a still-canonical acquisition source. Paid handlers may overwrite source,
-          -- so historical paid rows fall back to the durable freebie tags where available.
           WHEN f.source ILIKE '%selfie%guide%' OR f.source ILIKE '%freebie%selfie%' THEN 'selfie_guide'
           WHEN f.source ILIKE '%ai%prompt%' OR f.source ILIKE '%prompt%guide%' THEN 'ai_prompts'
           WHEN f.source ILIKE '%manychat%' THEN 'manychat'
@@ -163,7 +172,17 @@ async function getCandidates(): Promise<Candidate[]> {
     WHERE sync.email IS NULL
        OR sync.source_updated_at IS NULL
        OR e.source_updated_at > sync.source_updated_at
-    ORDER BY e.source_updated_at ASC
+       OR (
+         sync.last_error IS NOT NULL
+         AND (sync.retry_after IS NULL OR sync.retry_after <= NOW())
+       )
+    ORDER BY
+      CASE
+        WHEN sync.email IS NULL THEN 0
+        WHEN sync.source_updated_at IS NULL OR e.source_updated_at > sync.source_updated_at THEN 1
+        ELSE 2
+      END,
+      e.source_updated_at ASC
     LIMIT ${BATCH_LIMIT}
   `) as Candidate[]
 }
@@ -234,27 +253,33 @@ export async function GET(request: Request) {
         summary.synced += 1
         await sql`
           INSERT INTO resend_lifecycle_sync_state (
-            email, source_updated_at, synced_at, last_error, updated_at
+            email, source_updated_at, synced_at, last_error, failure_count, retry_after, updated_at
           ) VALUES (
-            ${candidate.email}, ${candidate.source_updated_at}, NOW(), NULL, NOW()
+            ${candidate.email}, ${candidate.source_updated_at}, NOW(), NULL, 0, NULL, NOW()
           )
           ON CONFLICT (email) DO UPDATE SET
             source_updated_at = EXCLUDED.source_updated_at,
             synced_at = NOW(),
             last_error = NULL,
+            failure_count = 0,
+            retry_after = NULL,
             updated_at = NOW()
         `
       } else {
         summary.failed += 1
         await sql`
           INSERT INTO resend_lifecycle_sync_state (
-            email, source_updated_at, synced_at, last_error, updated_at
+            email, source_updated_at, synced_at, last_error, failure_count, retry_after, updated_at
           ) VALUES (
-            ${candidate.email}, NULL, NOW(), ${result.error || 'unknown'}, NOW()
+            ${candidate.email}, ${candidate.source_updated_at}, NOW(), ${result.error || 'unknown'}, 1,
+            NOW() + INTERVAL '24 hours', NOW()
           )
           ON CONFLICT (email) DO UPDATE SET
-            last_error = EXCLUDED.last_error,
+            source_updated_at = EXCLUDED.source_updated_at,
             synced_at = NOW(),
+            last_error = EXCLUDED.last_error,
+            failure_count = resend_lifecycle_sync_state.failure_count + 1,
+            retry_after = NOW() + INTERVAL '24 hours',
             updated_at = NOW()
         `
       }
