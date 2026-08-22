@@ -12,6 +12,7 @@ import {
   buildCheckoutRedirectUrl,
   getCheckoutAttributionFromParams,
 } from "@/lib/revenue-engine/checkout-attribution"
+import { normalizeCheckoutEmail } from "@/lib/revenue-engine/checkout-email"
 import { shouldShowCheckoutEmailCapture } from "@/lib/revenue-engine/anonymous-checkout-capture"
 import { createServerClient } from "@/lib/supabase/server"
 
@@ -50,12 +51,6 @@ type PresetsCheckoutParams = {
 function normalizeTier(value?: string | null): PresetsTier | null {
   if (value === "single" || value === "bundle") return value
   return null
-}
-
-function normalizeCheckoutEmail(value?: string | null): string | null {
-  const email = value?.trim().toLowerCase()
-  if (!email || email.length > 254) return null
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
 }
 
 function presetsCheckoutProperties(
