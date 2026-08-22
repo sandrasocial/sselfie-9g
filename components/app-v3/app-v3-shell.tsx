@@ -36,6 +36,7 @@ import { intentForFormat } from "@/lib/app-v3/maya/intent-router"
 import type { MayaSurface } from "@/lib/app-v3/maya/context-envelope"
 import { PostSuccessReviewPrompt } from "@/components/testimonials/post-success-review-prompt"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import type { SkoolMayaHandoff } from "@/lib/app-v3/maya/skool-handoff"
 import {
   CalendarDays,
   FolderOpen,
@@ -78,6 +79,8 @@ export interface AppV3ShellProps {
   mayaEssential?: boolean
   /** Canonical server-owned union of full SUITE, trial, bundle-pass, and Blueprint Calendar access. */
   calendarIncluded?: boolean
+  /** Server-verified lesson handoff. It carries a fixed key and copy, never URL-authored prompts. */
+  initialSkoolHandoff?: SkoolMayaHandoff | null
 }
 
 // The stored section ids stay unchanged so existing deep links and remembered member state
@@ -91,7 +94,7 @@ const NAV: { id: AppV3Section; label: string; icon: LucideIcon }[] = [
   { id: "account", label: "Account", icon: UserRound },
 ]
 
-function MayaHomeWorkspace() {
+function MayaHomeWorkspace({ suppressNeutralOpen = false }: { suppressNeutralOpen?: boolean }) {
   const { isOpen, session, open, openHome } = useConcierge()
   const initializedRef = useRef(false)
   const sessionSurface = session?.mayaContext?.surface
@@ -100,6 +103,7 @@ function MayaHomeWorkspace() {
   const sessionCreationIdea = session?.creationIdea
 
   useEffect(() => {
+    if (suppressNeutralOpen) return
     if (initializedRef.current) return
     const alreadyNeutral =
       sessionSurface === "create" && !sessionOutputFormat && !sessionCreationIdea
@@ -125,6 +129,7 @@ function MayaHomeWorkspace() {
     sessionOutputFormat,
     sessionSurface,
     sessionTaskId,
+    suppressNeutralOpen,
   ])
 
   return null
@@ -253,6 +258,7 @@ function ShellInner({
   mayaHomeEnabled = false,
   mayaEssential = false,
   calendarIncluded = true,
+  initialSkoolHandoff = null,
 }: AppV3ShellProps) {
   const allowedInitialSection = resolveAppV3AllowedSection(initialSection, {
     mayaEssential,
@@ -274,10 +280,31 @@ function ShellInner({
     close,
   } = useConcierge()
   const openedInitialAestheticRef = useRef<string | null>(null)
+  const openedSkoolHandoffRef = useRef<string | null>(null)
   const limited = accessLevel === "limited"
   const cohort: AppV3AnalyticsCohort =
     analyticsCohort ??
     (accessLevel === "trial" ? "trial" : accessLevel === "limited" ? "limited" : "member")
+
+  useEffect(() => {
+    if (limited || !initialSkoolHandoff) return
+    if (openedSkoolHandoffRef.current === initialSkoolHandoff.key) return
+    openedSkoolHandoffRef.current = initialSkoolHandoff.key
+
+    setSection("create")
+    saveStoredAppSection("create")
+    if (typeof window !== "undefined") {
+      window.history.replaceState(
+        null,
+        "",
+        buildStoredSectionHref("create", window.location.pathname, window.location.search)
+      )
+    }
+    openWithAesthetic(MAYA_GENERAL, {
+      creationIdea: initialSkoolHandoff.creationIdea,
+      initialSetupAction: "plain_chat",
+    })
+  }, [initialSkoolHandoff, limited, openWithAesthetic])
 
   useEffect(() => {
     if (allowedInitialSection !== "create") {
@@ -544,7 +571,7 @@ function ShellInner({
             </div>
           </div>
         ) : mayaHomeEnabled && sectionReady ? (
-          <MayaHomeWorkspace />
+          <MayaHomeWorkspace suppressNeutralOpen={Boolean(initialSkoolHandoff)} />
         ) : (
           <VisualFrontDoor
             firstName={firstName}
@@ -648,6 +675,7 @@ function ShellInner({
           }
           calendarSurfaceActive={calendarIncluded && activeSection === "calendar"}
           calendarIncluded={calendarIncluded}
+          skoolHandoff={initialSkoolHandoff}
         />
       )}
       <PostSuccessReviewPrompt />
@@ -702,6 +730,7 @@ export function AppV3Shell({
   mayaHomeEnabled,
   mayaEssential,
   calendarIncluded,
+  initialSkoolHandoff,
 }: AppV3ShellProps) {
   const allowedInitialSection = resolveAppV3AllowedSection(initialSection ?? "create", {
     mayaEssential: mayaEssential ?? false,
@@ -709,7 +738,7 @@ export function AppV3Shell({
   })
   return (
     <ConciergeProvider
-      suppressRestore={Boolean(initialAestheticId)}
+      suppressRestore={Boolean(initialAestheticId || initialSkoolHandoff)}
       operatingLayerEnabled={mayaOperatingLayerEnabled}
       initialSurface={mayaSurfaceForSection(allowedInitialSection)}
     >
@@ -733,6 +762,7 @@ export function AppV3Shell({
         mayaHomeEnabled={mayaHomeEnabled}
         mayaEssential={mayaEssential}
         calendarIncluded={calendarIncluded}
+        initialSkoolHandoff={initialSkoolHandoff}
       />
     </ConciergeProvider>
   )

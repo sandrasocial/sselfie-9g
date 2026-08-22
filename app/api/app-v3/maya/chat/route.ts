@@ -15,6 +15,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import { getAppV3MayaSystemPrompt } from "@/lib/app-v3/maya/persona"
 import { getMayaGeneralAssistantPrompt } from "@/lib/maya/general-assistant-persona"
+import { getSkoolMayaPromptContext } from "@/lib/app-v3/maya/skool-handoff"
 import { getVaultStyleGuide, getVaultOverviewGuide } from "@/lib/app-v3/maya/vault-styles-server"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getMemory, saveMemory } from "@/lib/app-v3/maya/memory-store"
@@ -488,6 +489,7 @@ interface ChatBody {
   } | null
   /** Explicit operating-layer task. Dormant Calendar context is never inferred from saved data. */
   mayaContext?: unknown
+  skoolHandoffKey?: unknown
 }
 
 function clampText(value: unknown, max = 900): string {
@@ -791,6 +793,11 @@ export async function POST(req: Request) {
 
     if (!generalConversation && creationIntent) {
       system = `${system}\n\n## MAYA-FIRST ROUTING\nCommitted format: ${format}. Intent source: ${creationIntent.source}. Intent confidence: ${creationIntent.confidence}. Treat this as the creation path unless the user clearly changes it.`
+    }
+
+    const skoolHandoffContext = getSkoolMayaPromptContext(body?.skoolHandoffKey)
+    if (skoolHandoffContext) {
+      system = `${system}\n\n${skoolHandoffContext}`
     }
 
     if (!generalConversation && shotDirector) {

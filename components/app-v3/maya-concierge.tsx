@@ -70,6 +70,8 @@ import type {
   ShotDirectorIntent,
   ShotDirectorMode,
 } from "./types"
+import type { SkoolHandoffKey, SkoolMayaHandoff } from "@/lib/app-v3/maya/skool-handoff"
+import { SkoolMayaHandoffCard } from "./skool-maya-handoff-card"
 import {
   detectCreationIntent,
   intentForFormat,
@@ -656,6 +658,7 @@ export function MayaConcierge({
   onOpenCalendar,
   calendarSurfaceActive = false,
   calendarIncluded = true,
+  skoolHandoff = null,
 }: {
   operatingLayerEnabled?: boolean
   /** Member Maya Home: the conversation is the page, not a modal over the page. */
@@ -668,6 +671,8 @@ export function MayaConcierge({
   calendarSurfaceActive?: boolean
   /** Exact product capability. Maya Essential finishes inline and never writes hidden Calendar rows. */
   calendarIncluded?: boolean
+  /** Fixed server allowlist entry selected by the authenticated /app page. */
+  skoolHandoff?: SkoolMayaHandoff | null
 } = {}) {
   const cohort: AppV3AnalyticsCohort = analyticsCohort ?? "member"
   const {
@@ -693,6 +698,7 @@ export function MayaConcierge({
   const bodyInput = useRef<HTMLInputElement>(null)
   const inspoInput = useRef<HTMLInputElement>(null)
   const videoInput = useRef<HTMLInputElement>(null)
+  const skoolHandoffStartedRef = useRef<SkoolHandoffKey | null>(null)
   // The thread's own scroll container. Scrolled directly (scrollTop), never via
   // Element.scrollIntoView on a sentinel - scrollIntoView can walk past the nearest
   // scrollable ancestor and disturb an OUTER container on WebKit, which is what was
@@ -1074,6 +1080,7 @@ export function MayaConcierge({
     lastGeneration: LastGenerationSnapshot | null
     /** Explicit task context; Calendar styling must never be inferred for ordinary Maya work. */
     mayaContext: ConciergeSession["mayaContext"]
+    skoolHandoffKey: SkoolHandoffKey | null
   }>({
     aestheticName: "",
     aestheticIntent: "",
@@ -1088,6 +1095,7 @@ export function MayaConcierge({
     creationIdea: null,
     lastGeneration: null,
     mayaContext: null,
+    skoolHandoffKey: null,
   })
 
   const transport = useMemo(
@@ -2312,7 +2320,8 @@ export function MayaConcierge({
   const selectedShot = aesthetic.selectedShot ?? null
   const format: OutputFormat = outputFormat ?? "photo"
   const hasStarted = messages.length > 0
-  const threadVisible = hasStarted || preMessageThreadOpen || homeMode
+  const skoolHandoffReady = Boolean(skoolHandoff && !hasStarted)
+  const threadVisible = hasStarted || preMessageThreadOpen || homeMode || skoolHandoffReady
   const activeCreationIntent =
     localCreationIntent ??
     session.creationIntent ??
@@ -2483,6 +2492,19 @@ export function MayaConcierge({
     creationIdea: session.creationIdea ?? null,
     lastGeneration,
     mayaContext: session.mayaContext ?? null,
+    skoolHandoffKey: skoolHandoff?.key ?? null,
+  }
+
+  function handleSkoolHandoffStart() {
+    if (!skoolHandoff || isThinking) return
+    if (skoolHandoffStartedRef.current === skoolHandoff.key) return
+    skoolHandoffStartedRef.current = skoolHandoff.key
+    if (homeMode) homeTaskInitiatedRef.current = true
+    void trackAnalyticsEvent({
+      event: "learn_maya_handoff",
+      properties: { source: "skool", lesson_key: skoolHandoff.key },
+    })
+    sendMessage({ text: skoolHandoff.starterPrompt })
   }
 
   async function handleUpload(slot: UploadSlot, file: File) {
@@ -5292,7 +5314,9 @@ export function MayaConcierge({
               </div>
             )}
 
-            {plainPreSelfieChat && !hasStarted && <div className="min-h-0 flex-1" aria-hidden />}
+            {plainPreSelfieChat && !hasStarted && !skoolHandoff && (
+              <div className="min-h-0 flex-1" aria-hidden />
+            )}
 
             {/* Thread - the ONLY scroll area. min-h-0 lets this flex child shrink so overflow-y
             actually scrolls (without it, content overflowed and the direction cards were
@@ -5313,14 +5337,23 @@ export function MayaConcierge({
                 <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
                 <div className="suite-card min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728] [overflow-wrap:anywhere] sm:max-w-[80%]">
                   <p>
-                    {generalHomeConversation
-                      ? "Start exactly where you are."
-                      : selectedShot
-                        ? `${aesthetic.name}. Starting from ${selectedShot.title}.`
-                        : `${aesthetic.name}. ${aesthetic.blurb}`}
+                    {skoolHandoffReady && skoolHandoff
+                      ? `Continue from ${skoolHandoff.lessonTitle}.`
+                      : generalHomeConversation
+                        ? "Start exactly where you are."
+                        : selectedShot
+                          ? `${aesthetic.name}. Starting from ${selectedShot.title}.`
+                          : `${aesthetic.name}. ${aesthetic.blurb}`}
                   </p>
-                  <p className="mt-2">{openerLine}</p>
-                  {generalHomeConversation && !hasStarted && (
+                  {!skoolHandoffReady ? <p className="mt-2">{openerLine}</p> : null}
+                  {skoolHandoffReady && skoolHandoff ? (
+                    <SkoolMayaHandoffCard
+                      handoff={skoolHandoff}
+                      disabled={isThinking}
+                      onStart={handleSkoolHandoffStart}
+                    />
+                  ) : null}
+                  {generalHomeConversation && !hasStarted && !skoolHandoffReady && (
                     <div className="mt-4 space-y-3">
                       {latestResumeTask && (
                         <button
