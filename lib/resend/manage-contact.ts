@@ -2,6 +2,7 @@
 // Legacy callers still pass "tags"; we translate the useful business meaning into
 // Contact Properties so old funnels benefit without recreating segment sprawl.
 
+import { isAppUnsubscribed } from "@/lib/email/unsubscribe"
 import { requireResendClient } from "@/lib/resend/client"
 import { hasResendApiKey } from "@/lib/resend/api-key"
 
@@ -200,7 +201,7 @@ async function ensureMainSegment(email: string): Promise<void> {
 
 /**
  * Upsert a global Resend Contact and keep it in the legacy Main Audience segment.
- * Existing opt-out state is never overwritten.
+ * Existing opt-out state is never overwritten and app-level opt-outs are never re-added.
  */
 export async function addOrUpdateResendContact(
   email: string,
@@ -212,6 +213,10 @@ export async function addOrUpdateResendContact(
     if (shouldSkipResend(email)) return { success: true }
 
     const normalizedEmail = email.trim().toLowerCase()
+    if (await isAppUnsubscribed(normalizedEmail)) {
+      return { success: true }
+    }
+
     const resend = requireResendClient()
     const requested = requestedLifecycleProperties(tags)
 
@@ -225,7 +230,11 @@ export async function addOrUpdateResendContact(
         properties,
       })
       if (error) return { success: false, error: error.message }
-      await ensureMainSegment(normalizedEmail)
+
+      // A global Resend opt-out must never be re-segmented by a data backfill.
+      if ((existing as any).unsubscribed !== true) {
+        await ensureMainSegment(normalizedEmail)
+      }
       return { success: true, contactId: data?.id || existing.id }
     }
 
@@ -245,14 +254,18 @@ export async function addOrUpdateResendContact(
     if (error) {
       const message = String(error.message || "").toLowerCase()
       if (message.includes("already exists") || message.includes("contact already")) {
+        const { data: current } = await (resend.contacts as any).get({ email: normalizedEmail })
+        const mergedProperties = mergeLifecycleProperties((current as any)?.properties, requested)
         const { data: updated, error: updateError } = await (resend.contacts as any).update({
           email: normalizedEmail,
           firstName: firstName || undefined,
-          properties,
+          properties: mergedProperties,
         })
         if (updateError) return { success: false, error: updateError.message }
-        await ensureMainSegment(normalizedEmail)
-        return { success: true, contactId: updated?.id }
+        if ((current as any)?.unsubscribed !== true) {
+          await ensureMainSegment(normalizedEmail)
+        }
+        return { success: true, contactId: updated?.id || current?.id }
       }
       return { success: false, error: error.message }
     }
@@ -266,6 +279,7 @@ export async function addOrUpdateResendContact(
 
 /**
  * Update lifecycle properties on an existing global Contact. Unspecified properties remain unchanged.
+ * This never creates or re-subscribes a marketing contact.
  */
 export async function updateContactTags(
   email: string,
@@ -307,9 +321,15 @@ export async function addContactToSegment(
     if (!hasResendApiKey()) return { success: false, error: "Resend not configured" }
     if (shouldSkipResend(email)) return { success: true }
 
+    const normalizedEmail = email.trim().toLowerCase()
+    if (await isAppUnsubscribed(normalizedEmail)) return { success: true }
+
     const resend = requireResendClient()
+    const { data: existing } = await (resend.contacts as any).get({ email: normalizedEmail })
+    if ((existing as any)?.unsubscribed === true) return { success: true }
+
     const { error } = await (resend.contacts as any).segments.add({
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
       segmentId,
     })
     if (error) {
