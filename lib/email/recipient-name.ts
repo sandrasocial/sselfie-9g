@@ -6,15 +6,22 @@ export interface EmailRecipientNameInput {
 
 export function getFirstNameForEmail({
   fullName,
+  email,
   fallback = "there",
 }: EmailRecipientNameInput): string {
   const normalizedName = typeof fullName === "string" ? fullName.trim() : ""
-  if (normalizedName.length > 0) {
+  const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : ""
+  const emailLocalPart = normalizedEmail.split("@")[0]?.trim() || ""
+
+  if (
+    normalizedName.length > 0 &&
+    (!emailLocalPart || normalizedName.toLowerCase() !== emailLocalPart)
+  ) {
     return normalizedName.split(/\s+/)[0]
   }
 
-  // Never infer a person's name from the local part of their email address.
-  // Values such as "firstname.lastname", role inboxes, and arbitrary handles
-  // create awkward or privacy-unfriendly greetings in lifecycle email.
+  // Never infer or reuse a person's name from the local part of their email address.
+  // Older purchase records can contain values such as "firstname.lastname" as the stored
+  // name; those should render as a neutral greeting instead.
   return fallback
 }
