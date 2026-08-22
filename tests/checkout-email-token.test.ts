@@ -10,12 +10,13 @@ import { normalizeCheckoutEmail } from "@/lib/revenue-engine/checkout-email"
 
 describe("opaque checkout email tokens", () => {
   it("round-trips a normalized email without exposing it", () => {
-    const token = createCheckoutEmailToken(" Sandra+Checkout@Example.COM ", 1_780_000_000_000)
+    const now = Date.now()
+    const token = createCheckoutEmailToken(" Sandra+Checkout@Example.COM ", now)
 
     expect(token).toMatch(/^v1\./)
     expect(token?.toLowerCase()).not.toContain("sandra")
-    expect(readCheckoutEmailToken(token, 1_780_000_001_000)).toBe("sandra+checkout@example.com")
-    expect(normalizeCheckoutEmail(token)).toBeNull() // token is intentionally expired relative to real Date.now()
+    expect(readCheckoutEmailToken(token, now + 1000)).toBe("sandra+checkout@example.com")
+    expect(normalizeCheckoutEmail(token)).toBe("sandra+checkout@example.com")
   })
 
   it("rejects a tampered token", () => {
