@@ -10,17 +10,25 @@ The system should sell more **because it understands the customer better**, not 
 
 Core customer progression:
 
-`ATTENTION → FREE RESULT → $37 FIRST PAID RESULT → CORE MEMBERSHIP → RETENTION`
+`ATTENTION → FREE RESULT → LOW-TICKET RESULT → SSELFIE / SKOOL IMPLEMENTATION → STUDIO APP → RETENTION`
 
 SSELFIE Method:
 
 `TAKE → EDIT → EXPAND → USE`
 
+The layers have different jobs:
+
+- **Low-ticket** gets one clear result quickly.
+- **SSELFIE / Skool** is where customers learn, implement, get feedback, join challenges and keep showing up.
+- **Studio app** is the premium creation layer for customers who need more creation power, speed, personalization or scale.
+
+Do not collapse those three jobs into one offer in email.
+
 ## One customer state
 
 Use Resend Contact Properties as customer state. Do not create new sequence-history segments as workflow state.
 
-Canonical properties:
+Canonical properties currently in production:
 
 - `acquisition_path`
 - `lifecycle_stage`
@@ -31,6 +39,8 @@ Canonical properties:
 Segments answer **who should receive a specific broadcast**. Properties answer **who the person is**.
 
 Topics will answer **what the person wants to hear about** once the preference-center UX is implemented.
+
+Skool/community status should not be guessed from email behavior. Add a dedicated community property only after there is one canonical Skool purchase/access source of truth.
 
 ## Customer-stage meaning
 
@@ -43,7 +53,7 @@ Main jobs:
 - deliver what was promised
 - get a visible first result
 - teach one useful concept at a time
-- make the relevant $37 product the natural next step
+- make the relevant low-ticket product the natural next step
 
 ### Customer
 
@@ -53,12 +63,37 @@ Main jobs:
 
 - help them use it
 - troubleshoot first result
-- help them turn result into something usable
-- invite to membership after value has been experienced
+- help them turn the result into something usable
+- invite them into SSELFIE / Skool when they need ongoing implementation, feedback and consistency
 
-### Member
+Do **not** make Studio/app the automatic next purchase after a low-ticket transaction.
 
-Has membership history. `membership_status` carries the current operational truth.
+### Community customer
+
+Has joined the paid SSELFIE / Skool implementation layer.
+
+Main jobs:
+
+- implementation
+- accountability
+- weekly/monthly practice
+- feedback
+- community proof and momentum
+- help the customer discover whether manual tools/low-ticket education are enough or whether the Studio app would remove a real bottleneck
+
+This is a business lifecycle stage even though it is not yet a Resend property. Do not add the property until Skool access can be synced reliably.
+
+### Studio member
+
+Has Studio/app membership history. `membership_status` carries the current operational truth.
+
+Main jobs:
+
+- activate the premium creation workflow
+- get the first app result quickly
+- build repeat use
+- support billing/retention correctly
+- keep Studio positioned as the advanced creation layer, not a generic community subscription
 
 Important: do not downgrade historical `lifecycle_stage=member` after cancellation. Use `membership_status` to distinguish active, trialing, past_due, unpaid, canceled, etc.
 
@@ -66,21 +101,23 @@ Important: do not downgrade historical `lifecycle_stage=member` after cancellati
 
 ### TAKE path
 
-Free Selfie Guide → Selfie Starter → SSELFIE membership
+Free Selfie Guide → Selfie Starter → SSELFIE / Skool → Studio app when needed
 
 - Freebie email should help improve the real photo first.
 - Day 1 is activation-only.
 - Do not introduce AI as the solution to every selfie problem.
 - Selfie Starter is the logical paid step when taking/editing the real photo is the problem.
+- After a Starter result, the next ongoing offer is implementation/community, not an automatic Studio subscription.
 
 ### AI / EXPAND path
 
-Free AI Prompts → Prompt Vault → SSELFIE membership
+Free AI Prompts → Prompt Vault → SSELFIE / Skool → Studio app when needed
 
 - Free prompts should generate a real attempt quickly.
 - Teach source-photo quality and identity consistency.
 - Prompt Vault is for repeatable collections / not starting from a blank prompt every time.
 - Do not describe the Vault as an automatic image generator. The customer still chooses the selfie and uses the prompts.
+- After a Vault result, Skool is the place to keep implementing and learning; Studio becomes relevant when creating manually is the bottleneck.
 
 ## Regular broadcast cadence
 
@@ -176,25 +213,48 @@ Current status: **report-only** unless `HIGH_INTENT_CLICK_RECOVERY_ENABLED=true`
 
 Owned by billing recovery.
 
-Do not send acquisition or membership-join messaging while billing recovery is the relevant job.
+Do not send acquisition, community-join or Studio-join messaging while billing recovery is the relevant job.
 
-### Canceled member
+### Canceled Studio member
 
-Owned by member win-back / reactivation after cancellation state is confirmed.
+Owned by Studio member win-back / reactivation after cancellation state is confirmed.
 
 Do not pretend they are a cold lead.
 
-## Buyer → membership ascension
+## Low-ticket → SSELFIE / Skool ascension
 
-Current dedicated bridge:
+The previous automated Starter Kit / Prompt Vault → Studio membership bridge is retired.
 
-- Selfie Starter buyer: eligible after ~10 days
-- Prompt Vault buyer: eligible after ~14 days
-- active/trialing membership excluded
-- one bridge maximum per person
-- membership is presented as the ongoing TAKE → EDIT → EXPAND → USE system, not another random upsell
+Reason:
 
-Do not add more buyer→membership emails until the first bridge has enough cohort data to justify another touch.
+- it jumped over the implementation/community layer
+- it made the Studio app carry education, accountability and software jobs at once
+- it could ask customers to buy too much too soon
+- the newer product architecture gives each layer a clearer reason to exist
+
+Replacement rule:
+
+- first help the low-ticket customer use what they bought
+- invite them into SSELFIE / Skool when the next problem is consistency, implementation, feedback, accountability or knowing what to do next
+- do not activate an automated Skool sales bridge until the canonical Skool paid offer URL, price and entitlement source are locked
+
+The retired route `/api/cron/paid-product-membership-bridge` remains a scheduled no-op so the old direct Studio email cannot silently resume.
+
+## SSELFIE / Skool → Studio app ascension
+
+Studio/app is the later premium step.
+
+It becomes relevant when there is evidence that the customer's bottleneck is creation capacity rather than education alone, for example:
+
+- repeatedly needs missing shots / more visual variety
+- wants to create faster than manual prompting allows
+- needs the integrated creation workflow repeatedly
+- is implementing consistently but the production work is the constraint
+- explicitly shows interest in Studio/app capability
+
+The Studio email should sell **creation leverage**, not “more community.”
+
+Do not pitch Studio simply because a fixed number of days passed after a $37 purchase.
 
 ## Main Audience launch mode
 
@@ -234,6 +294,8 @@ Broad Main Audience sends are normally **not** appropriate for:
 
 - checkout recovery
 - buyer upsells
+- community ascension
+- Studio/app ascension
 - payment recovery
 - cancellation win-back
 - niche product objections
@@ -259,6 +321,12 @@ Default: OFF.
 
 The cron may report aggregate candidate counts, but it must not send until data shows this audience is material and the incremental email is justified.
 
+### Direct low-ticket → Studio bridge
+
+Retired 2026-08-22.
+
+Default: permanently no-op until replaced by a separately designed SSELFIE / Skool bridge.
+
 ## Consent rules
 
 - SSELFIE's durable app unsubscribe wins.
@@ -281,6 +349,7 @@ Backward compatibility:
 
 - old already-sent raw `checkout_email` links continue to work
 - invalid/expired encrypted handoffs fail closed and checkout asks for email normally
+- all current server checkout routes that consume revenue-email handoffs must use the shared decrypting normalizer
 
 ## Measurement hierarchy
 
@@ -321,17 +390,13 @@ Track:
 - first result / activation
 - time to first result
 - second-use behavior
-- buyer → membership conversion
-- membership activation
-- 30 / 60 / 90-day retention
+- low-ticket → SSELFIE / Skool conversion
+- community participation / implementation
+- SSELFIE / Skool → Studio conversion
+- Studio activation
+- Studio 30 / 60 / 90-day retention
 
-## Initial commercial milestone
-
-For the $37 buyer → membership path, use **10% cohort conversion** as the first internal milestone, then test toward 15%+ only after activation and retention remain healthy.
-
-This is an internal operating target, not an industry benchmark.
-
-Never calculate this by dividing current active subscribers by current-month transactions. Use matching buyer cohorts and a defined conversion window.
+Do not set a conversion target for the new Skool → Studio ladder until the canonical Skool offer and first real cohorts exist. Measure the first cohorts before inventing a benchmark.
 
 ## Decision rules
 
@@ -361,25 +426,29 @@ These are drafts only until deliberately approved/sent:
 1. `Editorial · TAKE · Window light reset · 2026-08-24`
    - subject: `before you take another selfie, do this`
    - pure value, no product CTA
+   - **keep** under the aligned funnel
 
 2. `Editorial · Sandra Note · Content too hard · 2026-08-28`
    - subject: `I was making every post way too hard`
    - TAKE → EDIT → EXPAND → USE belief/story email
    - reply prompt, no product CTA
+   - **keep** because it teaches the method, not a platform
 
 3. `Editorial · EDIT · Before the preset · 2026-09-01`
    - subject: `do this before you use a preset`
    - value first
    - soft Selfie Starter CTA for readers whose problem is editing
+   - **keep** because the CTA is the correct low-ticket next step
 
 ## Weekly review question
 
-Every review should answer these five questions before adding another email:
+Every review should answer these six questions before adding another email:
 
 1. Where did new leads come from?
 2. Did they get the first result?
-3. Which offer did they click / buy?
-4. Where did buyers stop before membership?
-5. What is the smallest email/system change most likely to remove that exact stop?
+3. Which low-ticket offer did they click / buy?
+4. Did the buyer actually use it?
+5. Is their next problem implementation/community or creation capacity?
+6. What is the smallest email/system change most likely to remove that exact stop?
 
-The goal is not more sends. The goal is more customers progressing successfully through SSELFIE.
+The goal is not more sends. The goal is more customers progressing successfully through the right SSELFIE layer.
