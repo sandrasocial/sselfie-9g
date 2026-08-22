@@ -1,15 +1,19 @@
 // @vitest-environment node
 
+import fs from "fs"
+import path from "path"
 import { describe, expect, it } from "vitest"
 
 import { PROMPT_VAULT_EMAIL_TOUCHES } from "@/lib/email/prompt-vault-email-sequence"
 import { STARTER_KIT_EMAIL_TOUCHES } from "@/lib/email/starter-kit-email-sequence"
-import {
-  generatePromptVaultMembershipBridgeEmail,
-  generateStarterKitMembershipBridgeEmail,
-} from "@/lib/email/templates/paid-product-membership-bridge"
 
-describe("paid product to membership ascension", () => {
+const ROOT = process.cwd()
+const route = fs.readFileSync(
+  path.join(ROOT, "app/api/cron/paid-product-membership-bridge/route.ts"),
+  "utf8",
+)
+
+describe("paid product ascension", () => {
   it("keeps legacy product ladders out of the active Starter Kit registry", () => {
     expect(STARTER_KIT_EMAIL_TOUCHES.map(touch => touch.emailType)).toEqual([
       "starter-kit-day0-delivery",
@@ -27,23 +31,12 @@ describe("paid product to membership ascension", () => {
     ])
   })
 
-  it("positions membership as the ongoing system after Starter Kit", () => {
-    const email = generateStarterKitMembershipBridgeEmail({ firstName: "Sandra" })
-
-    expect(email.subject).toContain("next part")
-    expect(email.text).toContain("TAKE → EDIT → EXPAND → USE")
-    expect(email.text).toContain("/checkout/membership")
-    expect(email.text).toContain("utm_campaign=starter-kit-day10-membership-bridge")
-    expect(email.text).not.toContain("Masterclass")
-  })
-
-  it("positions membership as the whole system after Prompt Vault", () => {
-    const email = generatePromptVaultMembershipBridgeEmail({ firstName: "Sandra" })
-
-    expect(email.subject).toContain("whole system")
-    expect(email.text).toContain("TAKE → EDIT → EXPAND → USE")
-    expect(email.text).toContain("/checkout/membership")
-    expect(email.text).toContain("utm_campaign=prompt-vault-day14-membership-bridge")
-    expect(email.text).not.toContain("Masterclass")
+  it("retires the direct low-ticket to Studio email jump", () => {
+    expect(route).toContain("Retired 2026-08-22")
+    expect(route).toContain("low-ticket quick result -> SSELFIE community/implementation -> Studio app")
+    expect(route).toContain("direct_low_ticket_to_studio_bridge_retired_pending_community_bridge")
+    expect(route).not.toContain("sendEmail(")
+    expect(route).not.toContain("generateStarterKitMembershipBridgeEmail")
+    expect(route).not.toContain("generatePromptVaultMembershipBridgeEmail")
   })
 })
