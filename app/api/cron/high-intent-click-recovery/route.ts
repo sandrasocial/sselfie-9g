@@ -55,7 +55,6 @@ async function getCandidates(): Promise<Candidate[]> {
       WHERE event_type = 'email.clicked'
         AND created_at >= ${ROLLOUT_START}::timestamptz
         AND created_at >= NOW() - INTERVAL '7 days'
-        AND created_at <= NOW() - (${`${MIN_CLICK_AGE_HOURS} hours`}::interval)
         AND metadata->>'recipient_email' IS NOT NULL
         AND BTRIM(metadata->>'recipient_email') <> ''
     ),
@@ -108,7 +107,8 @@ async function getCandidates(): Promise<Candidate[]> {
       ORDER BY app_user.updated_at DESC NULLS LAST, app_user.created_at DESC
       LIMIT 1
     ) u ON TRUE
-    WHERE NOT EXISTS (
+    WHERE click.clicked_at <= NOW() - (${`${MIN_CLICK_AGE_HOURS} hours`}::interval)
+      AND NOT EXISTS (
         SELECT 1
         FROM stripe_payments payment
         WHERE LOWER(BTRIM(payment.customer_email)) = click.email
