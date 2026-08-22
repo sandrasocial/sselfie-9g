@@ -37,6 +37,7 @@ function idempotencyKey(email: string): string {
 async function getCandidates(): Promise<Candidate[]> {
   return (await sql`
     WITH buyer_events AS (
+      -- Starter Kit ownership currently has the most reliable canonical row in subscriptions.
       SELECT
         LOWER(BTRIM(u.email)) AS email,
         COALESCE(NULLIF(BTRIM(fs.name), ''), NULLIF(BTRIM(u.display_name), '')) AS name,
@@ -47,25 +48,28 @@ async function getCandidates(): Promise<Candidate[]> {
       LEFT JOIN freebie_subscribers fs ON LOWER(BTRIM(fs.email)) = LOWER(BTRIM(u.email))
       WHERE s.product_type = 'starter_kit'
         AND s.status = 'active'
-        AND s.is_test_mode = FALSE
+        AND COALESCE(s.is_test_mode, FALSE) = FALSE
         AND s.created_at >= ${ROLLOUT_START}::date
 
       UNION ALL
 
+      -- Prompt Vault uses payment truth so old lead/buyer tags can never qualify a non-buyer.
       SELECT
-        LOWER(BTRIM(fs.email)) AS email,
-        NULLIF(BTRIM(fs.name), '') AS name,
+        LOWER(BTRIM(sp.customer_email)) AS email,
+        COALESCE(NULLIF(BTRIM(fs.name), ''), NULLIF(BTRIM(u.display_name), '')) AS name,
         'prompt_vault'::text AS product,
-        COALESCE(fs.converted_at, fs.updated_at, fs.created_at) AS purchased_at
-      FROM freebie_subscribers fs
-      WHERE fs.email IS NOT NULL
-        AND BTRIM(fs.email) <> ''
-        AND COALESCE(fs.converted_at, fs.updated_at, fs.created_at) >= ${ROLLOUT_START}::date
-        AND (
-          fs.source = 'prompt-vault-paid'
-          OR 'prompt-vault-paid' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
-          OR 'bought_prompt_vault' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[]))
-        )
+        sp.payment_date AS purchased_at
+      FROM stripe_payments sp
+      LEFT JOIN freebie_subscribers fs
+        ON LOWER(BTRIM(fs.email)) = LOWER(BTRIM(sp.customer_email))
+      LEFT JOIN users u
+        ON LOWER(BTRIM(u.email)) = LOWER(BTRIM(sp.customer_email))
+      WHERE sp.product_type = 'prompt_vault'
+        AND sp.status IN ('succeeded', 'paid')
+        AND COALESCE(sp.is_test_mode, FALSE) = FALSE
+        AND sp.customer_email IS NOT NULL
+        AND BTRIM(sp.customer_email) <> ''
+        AND sp.payment_date >= ${ROLLOUT_START}::date
     ),
     latest_buyer_event AS (
       SELECT DISTINCT ON (email)
