@@ -1,4 +1,8 @@
-import { renderPersonalLink, renderPersonalNote } from "@/lib/email/templates/stone-email"
+import {
+  escapeHtml,
+  renderPersonalLink,
+  renderPersonalNote,
+} from "@/lib/email/templates/stone-email"
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://www.sselfie.ai")
   .replace(/^https:\/\/sselfie\.ai$/, "https://www.sselfie.ai")
@@ -16,6 +20,7 @@ export function generateHighIntentClickRecoveryEmail(input: {
   firstName?: string | null
 }) {
   const firstName = input.firstName?.trim() || "there"
+  const safeFirstName = escapeHtml(firstName)
 
   if (input.product === "prompt_vault") {
     const ctaUrl = `${SITE_URL}/checkout/prompt-vault?utm_source=email&utm_medium=lifecycle&utm_campaign=high_intent_click_recovery&utm_content=prompt_vault_fit`
@@ -45,7 +50,7 @@ export function generateHighIntentClickRecoveryEmail(input: {
     const html = renderPersonalNote({
       title: subject,
       bodyHtml: [
-        `<p style="margin:0 0 18px;">Hey ${firstName},</p>`,
+        `<p style="margin:0 0 18px;">Hey ${safeFirstName},</p>`,
         `<p style="margin:0 0 18px;">There is one thing I want to make really clear about the Prompt Vault, because I never want someone buying it expecting the wrong thing.</p>`,
         `<p style="margin:0 0 18px;">It is not a magic button that creates 237 photos for you.</p>`,
         `<p style="margin:0 0 18px;">You still choose your selfie, open ChatGPT, and copy and paste the prompt you want to use.</p>`,
@@ -87,7 +92,7 @@ export function generateHighIntentClickRecoveryEmail(input: {
   const html = renderPersonalNote({
     title: subject,
     bodyHtml: [
-      `<p style="margin:0 0 18px;">Hey ${firstName},</p>`,
+      `<p style="margin:0 0 18px;">Hey ${safeFirstName},</p>`,
       `<p style="margin:0 0 18px;">A quick note about the Selfie Starter, because it is easy to assume every SSELFIE product is about AI now.</p>`,
       `<p style="margin:0 0 18px;">This one is not.</p>`,
       `<p style="margin:0 0 18px;">The Starter is for the real photo first: light, angle, pose, editing, presets, and knowing what to do with the photo once you have it.</p>`,
