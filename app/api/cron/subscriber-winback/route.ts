@@ -134,7 +134,8 @@ async function getStageCandidates(
             'sselfie_studio_membership',
             'sselfie_studio_membership_annual',
             'brand_studio_membership',
-            'pro'
+            'pro',
+            'vault_maya'
           )
           AND (
             s.status IN ('active', 'trialing')
@@ -203,8 +204,8 @@ async function runStage(stage: WinbackStage, limit: number, dryRun: boolean) {
 
 /**
  * Final money/access guard for the seven-day sunset grace window. A subscriber who buys or
- * regains membership access after email 4 must remain marketable even if they never click the
- * win-back message itself.
+ * regains recurring product access after email 4 must remain marketable even if they never
+ * click the win-back message itself.
  */
 async function hasCurrentCustomerOrMembershipAccess(email: string): Promise<boolean> {
   const [purchase, membership] = await Promise.all([
@@ -227,7 +228,8 @@ async function hasCurrentCustomerOrMembershipAccess(email: string): Promise<bool
           'sselfie_studio_membership',
           'sselfie_studio_membership_annual',
           'brand_studio_membership',
-          'pro'
+          'pro',
+          'vault_maya'
         )
         AND (
           s.status IN ('active', 'trialing')
