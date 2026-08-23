@@ -51,12 +51,7 @@ describe("Maya workspace path contract", () => {
   it("separates AI photos, editing, and finished-post outputs", () => {
     expect(allowedFormatsForMayaPath("ai-photos")).toEqual(["photo", "photoshoot"])
     expect(allowedFormatsForMayaPath("edit-photo")).toEqual([])
-    expect(allowedFormatsForMayaPath("build-post")).toEqual([
-      "reel-cover",
-      "carousel",
-      "story-slide",
-      "story-sequence",
-    ])
+    expect(allowedFormatsForMayaPath("build-post")).toEqual(["carousel", "story-sequence"])
     expect(allowedActionsForMayaPath("build-post")).toContain("write-caption")
     expect(outputFormatForMayaWorkspaceAction("write-caption")).toBeNull()
     expect(outputFormatForMayaWorkspaceAction("build-carousel")).toBe("carousel")
