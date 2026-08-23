@@ -45,14 +45,15 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root {
-          --suite-canvas: #f4f7f8;
-          --suite-paper: #fcfdfd;
-          --suite-smoke: #e3e8eb;
-          --suite-mist: #d7e0e5;
-          --suite-steel: #aeb9c1;
-          --suite-slate: #5d6a73;
-          --suite-graphite: #252c31;
-          --suite-night: #0d0e10;
+          --suite-canvas: var(--ss-brand-chalk);
+          --suite-paper: var(--ss-brand-paper);
+          --suite-smoke: var(--ss-brand-concrete);
+          --suite-mist: var(--ss-brand-concrete);
+          --suite-steel: var(--ss-brand-silver);
+          --suite-slate: var(--ss-brand-slate);
+          --suite-graphite: var(--ss-brand-carbon);
+          --suite-night: var(--ss-brand-ink);
+          --suite-accent: var(--ss-brand-oxblood);
           position: relative;
           isolation: isolate;
           width: 100%;
@@ -66,7 +67,6 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
 
         .studio-3-root .suite-canvas {
           background-color: var(--suite-canvas);
-          box-shadow: inset 0 0 120px rgba(93, 106, 115, 0.09);
           color: var(--suite-night);
         }
 
@@ -75,7 +75,7 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root [class~="bg-[#F8FAFA]/95"] {
-          background-color: rgba(244, 247, 248, 0.95);
+          background-color: rgba(247, 247, 245, 0.95);
         }
 
         .studio-3-root [class~="bg-[#F1F2F2]"] {
@@ -92,27 +92,27 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root [class~="bg-white/95"] {
-          background-color: rgba(252, 253, 253, 0.95);
+          background-color: rgba(255, 255, 255, 0.95);
         }
 
         .studio-3-root [class~="bg-white/90"] {
-          background-color: rgba(252, 253, 253, 0.9);
+          background-color: rgba(255, 255, 255, 0.9);
         }
 
         .studio-3-root [class~="bg-white/85"] {
-          background-color: rgba(252, 253, 253, 0.85);
+          background-color: rgba(255, 255, 255, 0.85);
         }
 
         .studio-3-root [class~="bg-white/80"] {
-          background-color: rgba(252, 253, 253, 0.8);
+          background-color: rgba(255, 255, 255, 0.8);
         }
 
         .studio-3-root [class~="bg-white/70"] {
-          background-color: rgba(252, 253, 253, 0.7);
+          background-color: rgba(255, 255, 255, 0.7);
         }
 
         .studio-3-root [class*="border-[#C5C6C8]"] {
-          border-color: rgba(174, 185, 193, 0.78);
+          border-color: rgba(197, 198, 200, 0.78);
         }
 
         .studio-3-root [class*="text-[#818283]"] {
@@ -120,7 +120,7 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root [class*="text-[#4F5052]"] {
-          color: #46535d;
+          color: var(--suite-slate);
         }
 
         .studio-3-root [class*="text-[#282728]"] {
@@ -133,22 +133,20 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
 
         .studio-3-root .suite-card {
           background-color: var(--suite-paper);
-          border-color: rgba(174, 185, 193, 0.82);
-          box-shadow:
-            0 14px 34px rgba(37, 44, 49, 0.07),
-            inset 0 1px 0 rgba(255, 255, 255, 0.88);
+          border-color: rgba(197, 198, 200, 0.82);
+          box-shadow: 0 10px 28px rgba(13, 14, 16, 0.05);
         }
 
         .studio-3-root .suite-maya-panel {
-          background-color: var(--suite-canvas);
-          border-color: rgba(174, 185, 193, 0.82);
-          box-shadow: 0 24px 72px rgba(37, 44, 49, 0.12);
+          background-color: var(--suite-paper);
+          border-color: rgba(197, 198, 200, 0.82);
+          box-shadow: 0 24px 72px rgba(13, 14, 16, 0.14);
         }
 
         .studio-3-root .suite-bottom-nav {
-          background-color: rgba(215, 224, 229, 0.94);
-          border-color: rgba(93, 106, 115, 0.3);
-          box-shadow: 0 -12px 34px rgba(37, 44, 49, 0.1);
+          background-color: var(--suite-night);
+          border-color: rgba(255, 255, 255, 0.12);
+          box-shadow: 0 -12px 34px rgba(13, 14, 16, 0.18);
         }
 
         .studio-3-root .suite-bottom-nav-item {
@@ -156,9 +154,20 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root .suite-bottom-nav-item--active {
-          border-top-color: var(--suite-slate);
-          background-color: rgba(252, 253, 253, 0.72);
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+          border-top-color: var(--suite-accent);
+          background-color: rgba(152, 24, 38, 0.2);
+        }
+
+        .studio-3-root .suite-desktop-nav-item::before {
+          background: transparent;
+          content: "";
+          inset: 0 auto 0 0;
+          position: absolute;
+          width: 3px;
+        }
+
+        .studio-3-root .suite-desktop-nav-item--active::before {
+          background: var(--suite-accent);
         }
 
         .studio-3-root .font-serif {

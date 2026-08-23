@@ -32,7 +32,7 @@
   },
   "overrides": [
     {
-      "files": ["lib/design-tokens.ts", "lib/brand/**/*-tokens.ts"],
+      "files": ["app/app/layout.tsx", "lib/design-tokens.ts", "lib/brand/**/*-tokens.ts"],
       "rules": {
         "no-restricted-syntax": "off"
       }

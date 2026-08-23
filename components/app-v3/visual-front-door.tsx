@@ -153,9 +153,9 @@ function VisualCard({
       onClick={onClick}
       disabled={disabled}
       data-visual-card-layout={layout}
-      className={`group relative block w-full overflow-hidden rounded-[10px] bg-[color:var(--ss-night)] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)] focus-visible:ring-offset-2 ${
+      className={`group relative block w-full overflow-hidden rounded-[4px] bg-[color:var(--ss-night)] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--suite-accent)] focus-visible:ring-offset-2 ${
         editorial
-          ? "min-h-[430px] sm:min-h-[520px] lg:grid lg:min-h-[340px] lg:grid-cols-[minmax(0,1fr)_340px] lg:border lg:border-[color:var(--ss-silver)]/60 lg:bg-white lg:shadow-[0_16px_48px_rgba(13,14,16,0.06)] xl:min-h-[380px] xl:grid-cols-[minmax(0,1fr)_380px]"
+          ? "min-h-[430px] sm:min-h-[520px] lg:grid lg:min-h-[340px] lg:grid-cols-[minmax(0,1fr)_340px] lg:border lg:border-[color:var(--ss-silver)]/80 lg:bg-white xl:min-h-[380px] xl:grid-cols-[minmax(0,1fr)_380px]"
           : compact
             ? "min-h-[300px]"
             : "min-h-[430px] sm:min-h-[520px]"
@@ -214,11 +214,7 @@ function VisualCard({
         >
           {body}
         </span>
-        <span
-          className={`mt-4 inline-flex min-h-11 w-fit items-center gap-2 rounded-[5px] bg-white px-4 text-[10px] uppercase tracking-[0.17em] text-[color:var(--ss-night)] ${
-            editorial ? "lg:bg-[color:var(--ss-night)] lg:text-white" : ""
-          }`}
-        >
+        <span className="mt-4 inline-flex min-h-11 w-fit items-center gap-2 rounded-[3px] bg-[color:var(--suite-accent)] px-4 text-[10px] uppercase tracking-[0.17em] text-white">
           {action} <ArrowUpRight size={14} aria-hidden />
         </span>
       </span>
@@ -521,13 +517,13 @@ export function VisualFrontDoor({
     return (
       <section className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-8 sm:py-14">
         <header className="mb-7 max-w-xl sm:mb-10">
-          <p className="text-[10px] uppercase tracking-[0.34em] text-[color:var(--ss-gray)]">
-            Your world
+          <p className="text-[10px] uppercase tracking-[0.34em] text-[color:var(--suite-accent)]">
+            Take · Start here
           </p>
           <h1 className="mt-3 font-serif text-[34px] font-light leading-[1.03] text-[color:var(--ss-night)] sm:text-[50px]">
             {shouldShowTrialFirstRun
               ? "Hi, I'm Maya. Let's make your first photo."
-              : "Your first brand photo starts here."}
+              : "One clear selfie starts everything."}
           </h1>
           <p className="mt-3 text-[15px] leading-relaxed text-[color:var(--ss-davy)]">
             Add one clear selfie. Maya keeps your real face, chooses one strong direction, and
@@ -566,17 +562,15 @@ export function VisualFrontDoor({
     <section className="mx-auto w-full max-w-[1320px] px-4 py-7 sm:px-8 sm:py-12">
       <header className="flex flex-col gap-5 border-b border-[color:var(--ss-silver)]/55 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.34em] text-[color:var(--ss-gray)]">
-            Today
+          <p className="text-[10px] uppercase tracking-[0.34em] text-[color:var(--suite-accent)]">
+            Create · Your visual studio
           </p>
           <h1 className="mt-2 font-serif text-[38px] font-light leading-none text-[color:var(--ss-night)] sm:text-[56px]">
-            {firstName
-              ? `${firstName}, your next finished post starts here.`
-              : "Your next finished post starts here."}
+            Create something worth posting.
           </h1>
           <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-[color:var(--ss-davy)]">
-            One selfie. One idea. One finished post that looks and sounds like you. Maya chooses a
-            strong direction, creates the visual, and helps you finish the words.
+            {firstName ? `${firstName}, start with the photo. ` : "Start with the photo. "}Maya
+            helps you turn it into the next useful thing.
           </p>
         </div>
         {!operatingLayerEnabled ? (
@@ -585,7 +579,7 @@ export function VisualFrontDoor({
               type="button"
               onClick={openHistory}
               disabled={workspaceBusy}
-              className="inline-flex min-h-11 items-center gap-2 self-start rounded-[5px] border border-[color:var(--ss-silver)] bg-white px-4 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ss-night)] sm:self-auto"
+              className="inline-flex min-h-11 items-center gap-2 self-start rounded-[3px] border border-[color:var(--ss-night)] bg-white px-4 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ss-night)] sm:self-auto"
             >
               <History size={15} aria-hidden /> Creative tasks
             </button>
@@ -618,7 +612,7 @@ export function VisualFrontDoor({
                 type="button"
                 onClick={action}
                 disabled={workspaceBusy}
-                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[color:var(--ss-silver)]/70 bg-white px-4 text-[11px] text-[color:var(--ss-davy)] transition-colors hover:border-[color:var(--ss-night)] hover:text-[color:var(--ss-night)]"
+                className="inline-flex min-h-11 items-center gap-2 rounded-[3px] border border-[color:var(--ss-silver)]/80 bg-white px-4 text-[11px] text-[color:var(--ss-davy)] transition-colors hover:border-[color:var(--ss-night)] hover:text-[color:var(--ss-night)]"
               >
                 <Icon size={14} strokeWidth={1.7} aria-hidden /> {label}
               </button>
@@ -705,7 +699,7 @@ export function VisualFrontDoor({
         </div>
       </section>
 
-      <section className="my-12 rounded-[10px] border border-[color:var(--ss-silver)]/60 bg-white p-5 sm:p-7">
+      <section className="my-12 border-y border-[color:var(--ss-silver)]/80 bg-white px-5 py-7 sm:px-7 sm:py-8">
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <label className="block min-w-0">
             <span className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ss-gray)]">
@@ -724,7 +718,7 @@ export function VisualFrontDoor({
             type="button"
             onClick={startFromText}
             disabled={workspaceBusy}
-            className="min-h-12 rounded-[5px] bg-[color:var(--ss-night)] px-6 text-[11px] uppercase tracking-[0.18em] text-white"
+            className="min-h-12 rounded-[3px] bg-[color:var(--suite-accent)] px-6 text-[11px] uppercase tracking-[0.18em] text-white transition-colors hover:bg-[color:var(--suite-night)]"
           >
             Create my post
           </button>
@@ -743,7 +737,7 @@ export function VisualFrontDoor({
             onClick={() => setMoreOpen(open => !open)}
             aria-expanded={moreOpen}
             aria-controls="maya-create-more"
-            className="inline-flex min-h-11 items-center rounded-[5px] border border-[color:var(--ss-silver)] bg-white px-4 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ss-night)]"
+            className="inline-flex min-h-11 items-center rounded-[3px] border border-[color:var(--ss-night)] bg-white px-4 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ss-night)]"
           >
             {moreOpen ? "Hide other ways to start" : "Other ways to start"}
           </button>
@@ -759,7 +753,7 @@ export function VisualFrontDoor({
                 type="button"
                 onClick={action}
                 disabled={workspaceBusy}
-                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[color:var(--ss-silver)]/70 bg-white px-4 text-[11px] text-[color:var(--ss-davy)] transition-colors hover:border-[color:var(--ss-night)] hover:text-[color:var(--ss-night)]"
+                className="inline-flex min-h-11 items-center gap-2 rounded-[3px] border border-[color:var(--ss-silver)]/80 bg-white px-4 text-[11px] text-[color:var(--ss-davy)] transition-colors hover:border-[color:var(--ss-night)] hover:text-[color:var(--ss-night)]"
               >
                 <Icon size={14} strokeWidth={1.7} aria-hidden /> {label}
               </button>
@@ -801,7 +795,7 @@ export function VisualFrontDoor({
                     disabled={workspaceBusy}
                     className="group text-left"
                   >
-                    <span className="relative block aspect-[4/5] overflow-hidden rounded-[7px] bg-[color:var(--ss-silver)]/30">
+                    <span className="relative block aspect-[4/5] overflow-hidden rounded-[2px] bg-[color:var(--ss-silver)]/30">
                       <Image
                         src={asset.url}
                         alt=""
@@ -817,7 +811,7 @@ export function VisualFrontDoor({
                 ))}
               </div>
             ) : (
-              <div className="mt-5 rounded-[8px] border border-dashed border-[color:var(--ss-silver)] p-6 text-[13px] leading-relaxed text-[color:var(--ss-gray)]">
+              <div className="mt-5 rounded-[2px] border border-dashed border-[color:var(--ss-silver)] p-6 text-[13px] leading-relaxed text-[color:var(--ss-gray)]">
                 Keep a result in Maya or tap the heart in Gallery and it will appear here.
               </div>
             )}
@@ -849,7 +843,7 @@ export function VisualFrontDoor({
                     disabled={workspaceBusy}
                     className="group w-[190px] shrink-0 snap-start text-left sm:w-[220px]"
                   >
-                    <span className="relative block aspect-[4/5] overflow-hidden rounded-[7px] bg-[color:var(--ss-silver)]/30">
+                    <span className="relative block aspect-[4/5] overflow-hidden rounded-[2px] bg-[color:var(--ss-silver)]/30">
                       <Image
                         src={asset.url}
                         alt=""
@@ -869,7 +863,7 @@ export function VisualFrontDoor({
                 type="button"
                 onClick={() => openFresh({ referenceSelfieUrl: primarySelfieUrl })}
                 disabled={workspaceBusy}
-                className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-[5px] border border-[color:var(--ss-night)] px-5 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-night)]"
+                className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-[3px] border border-[color:var(--ss-night)] px-5 text-[11px] uppercase tracking-[0.16em] text-[color:var(--ss-night)]"
               >
                 <Images size={15} aria-hidden /> Start your first shoot
               </button>

@@ -9,21 +9,20 @@ const librarySource = readFileSync("components/app-v3/library-view.tsx", "utf8")
 const accountSource = readFileSync("components/app-v3/account-view.tsx", "utf8")
 const calendarSource = readFileSync("components/app-v3/feed-planner-view.tsx", "utf8")
 
-describe("Studio 3.0 cool suite theme", () => {
-  it("defines the approved cool-toned depth palette without warm app tokens", () => {
-    expect(layoutSource).toContain("--suite-canvas: #f4f7f8")
-    expect(layoutSource).toContain("--suite-smoke: #e3e8eb")
-    expect(layoutSource).toContain("--suite-mist: #d7e0e5")
-    expect(layoutSource).toContain("--suite-steel: #aeb9c1")
-    expect(layoutSource).toContain("--suite-slate: #5d6a73")
-    expect(layoutSource).toContain("--suite-graphite: #252c31")
+describe("Studio 3.0 Bold Editorial suite theme", () => {
+  it("defines the approved Bold Editorial palette without warm app tokens", () => {
+    expect(layoutSource).toContain("--suite-canvas: var(--ss-brand-chalk)")
+    expect(layoutSource).toContain("--suite-smoke: var(--ss-brand-concrete)")
+    expect(layoutSource).toContain("--suite-steel: var(--ss-brand-silver)")
+    expect(layoutSource).toContain("--suite-slate: var(--ss-brand-slate)")
+    expect(layoutSource).toContain("--suite-graphite: var(--ss-brand-carbon)")
+    expect(layoutSource).toContain("--suite-accent: var(--ss-brand-oxblood)")
     expect(layoutSource).not.toMatch(/--suite-(?:cream|beige|taupe|gold)/)
   })
 
   it("applies the theme to Maya and every primary SUITE surface", () => {
     expect(shellSource).toContain("suite-canvas")
-    expect(shellSource).toContain("suite-bottom-nav")
-    expect(shellSource).toContain("suite-bottom-nav-item--active")
+    expect(shellSource).toContain("SuiteEditorialNavigation")
     expect(mayaSource).toContain("suite-maya-panel")
     expect(gallerySource).toContain("suite-page")
     expect(librarySource).toContain("suite-page")
