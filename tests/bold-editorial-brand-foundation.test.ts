@@ -50,13 +50,19 @@ describe("Bold Editorial Studio foundation", () => {
     expect(adminNav).toContain('href: "/admin/design-system"')
   })
 
-  it("uses three distinct identity-preserving editorial images in the Suite proof", () => {
+  it("uses a varied identity-preserving editorial image library in the Suite proof", () => {
     const proof = read("components/brand/bold-editorial-proof.tsx")
     const imageRoot = "public/images/brand/bold-editorial-suite"
     const imageFiles = [
       "suite-editorial-studio-power-v1.png",
       "suite-editorial-white-shirt-v1.png",
       "suite-editorial-street-v1.png",
+      "suite-editorial-cafe-lace-v1.jpeg",
+      "suite-editorial-mirror-mono-v1.jpeg",
+      "suite-editorial-street-mono-v1.jpeg",
+      "suite-editorial-city-dog-v1.jpeg",
+      "suite-editorial-think-bigger-v1.jpeg",
+      "suite-editorial-turtleneck-light-v1.jpeg",
     ]
 
     for (const imageFile of imageFiles) {
