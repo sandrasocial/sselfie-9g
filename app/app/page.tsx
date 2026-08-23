@@ -28,7 +28,7 @@ import { hasPaidBlueprint } from "@/lib/subscription"
 import { resolveSkoolMayaHandoff } from "@/lib/app-v3/maya/skool-handoff"
 
 export const metadata = {
-  title: "SSELFIE Studio",
+  title: "SSELFIE Suite",
 }
 
 // Auth-gated route: always rendered per-request (uses cookies via Supabase).

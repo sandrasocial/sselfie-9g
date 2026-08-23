@@ -50,6 +50,27 @@ describe("Bold Editorial Studio foundation", () => {
     expect(adminNav).toContain('href: "/admin/design-system"')
   })
 
+  it("moves the real Suite shell onto the approved frame without changing its destinations", () => {
+    const shell = read("components/app-v3/app-v3-shell.tsx")
+    const navigation = read("components/app-v3/suite-editorial-navigation.tsx")
+    const frontDoor = read("components/app-v3/visual-front-door.tsx")
+    const gallery = read("components/app-v3/gallery-view.tsx")
+    const appPage = read("app/app/page.tsx")
+
+    expect(shell).toContain("SuiteEditorialNavigation")
+    expect(shell).toContain('label: "Maya"')
+    expect(shell).toContain('label: "Work"')
+    expect(shell).toContain('label: "You"')
+    expect(navigation).toContain("suite-desktop-nav")
+    expect(navigation).toContain("suite-bottom-nav")
+    expect(navigation).toContain('const METHOD = ["TAKE", "CREATE", "EDIT", "POST"]')
+    expect(frontDoor).toContain("Create something worth posting.")
+    expect(frontDoor).toContain("var(--suite-accent)")
+    expect(gallery).toContain("Work · Your visual library")
+    expect(gallery).toContain("var(--suite-accent)")
+    expect(appPage).toContain('title: "SSELFIE Suite"')
+  })
+
   it("uses a varied identity-preserving editorial image library in the Suite proof", () => {
     const proof = read("components/brand/bold-editorial-proof.tsx")
     const imageRoot = "public/images/brand/bold-editorial-suite"

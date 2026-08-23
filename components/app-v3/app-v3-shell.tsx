@@ -37,6 +37,7 @@ import type { MayaSurface } from "@/lib/app-v3/maya/context-envelope"
 import { PostSuccessReviewPrompt } from "@/components/testimonials/post-success-review-prompt"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import type { SkoolMayaHandoff } from "@/lib/app-v3/maya/skool-handoff"
+import { SuiteEditorialNavigation } from "./suite-editorial-navigation"
 import {
   CalendarDays,
   FolderOpen,
@@ -194,20 +195,20 @@ function VaultMayaIncludedNotice() {
 
   return (
     <section
-      className="mx-auto w-full max-w-3xl px-4 pt-4 sm:px-5 sm:pt-5"
+      className="mx-auto w-full max-w-[1320px] px-4 pt-4 sm:px-8 sm:pt-5"
       aria-label="New in your SUITE"
     >
-      <div className="grid overflow-hidden rounded-[14px] border border-[#C5C6C8]/65 bg-white shadow-[0_12px_35px_rgba(13,14,16,.05)] sm:grid-cols-[132px_minmax(0,1fr)]">
-        <div className="relative hidden min-h-[150px] overflow-hidden bg-[#F1F2F2] sm:block">
+      <div className="grid overflow-hidden rounded-[4px] border border-[color:var(--suite-night)] bg-white sm:grid-cols-[160px_minmax(0,1fr)]">
+        <div className="relative hidden min-h-[164px] overflow-hidden bg-[color:var(--suite-smoke)] sm:block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/content-kit/shoots/1785423447575-876892.png"
-            alt="Golden-hour portrait from Vault Maya"
-            className="absolute inset-0 h-full w-full object-cover object-[50%_32%]"
+            src="/images/brand/bold-editorial-suite/suite-editorial-studio-power-v1.png"
+            alt="Sandra in black tailoring and architectural light"
+            className="absolute inset-0 h-full w-full object-cover object-[50%_28%]"
           />
         </div>
         <div className="flex flex-col justify-center p-5 sm:p-6">
-          <p className="text-[9px] uppercase tracking-[0.23em] text-[#818283]">
+          <p className="text-[9px] uppercase tracking-[0.23em] text-[color:var(--suite-accent)]">
             New · Included with your SUITE
           </p>
           <h2 className="mt-2 font-serif text-[27px] font-light leading-tight text-[#0D0E10]">
@@ -220,7 +221,7 @@ function VaultMayaIncludedNotice() {
             <a
               href="/vault-maya/studio"
               onClick={() => dismiss("open")}
-              className="inline-flex min-h-11 items-center justify-center rounded-[6px] bg-[#0D0E10] px-5 text-[10px] uppercase tracking-[0.17em] text-white"
+              className="inline-flex min-h-11 items-center justify-center rounded-[3px] bg-[color:var(--suite-accent)] px-5 text-[10px] uppercase tracking-[0.17em] text-white transition-colors hover:bg-[color:var(--suite-night)]"
             >
               Try Vault Maya
             </a>
@@ -514,7 +515,7 @@ function ShellInner({
     <main
       data-maya-operating-layer={mayaOperatingLayerEnabled ? "enabled" : "legacy"}
       data-maya-home={mayaHomeEnabled ? "enabled" : "legacy"}
-      className={`suite-canvas min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10] transition-[padding] duration-300 [overflow-x:clip] ${
+      className={`suite-canvas min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10] transition-[padding] duration-300 [overflow-x:clip] lg:pb-0 lg:pl-[224px] ${
         mayaOpen && mayaUsesSideWorkspace ? "lg:pr-[27rem]" : ""
       }`}
     >
@@ -680,32 +681,11 @@ function ShellInner({
       )}
       <PostSuccessReviewPrompt />
 
-      {/* Bottom product navigation (text-only, on-brand, thumb-friendly for a phone-first audience) */}
-      <nav className="suite-bottom-nav fixed inset-x-0 bottom-0 z-40 w-full max-w-[100dvw] overscroll-x-none border-t border-[#C5C6C8]/50 bg-[#F8FAFA]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur [overflow-x:clip]">
-        <div className="mx-auto flex max-w-3xl items-stretch justify-around px-2">
-          {nav.map(n => {
-            const active = n.id === activeSection
-            const Icon = n.icon
-            return (
-              <button
-                key={n.id}
-                type="button"
-                onClick={() => (n.id === "photos" ? openGallery("all") : goToSection(n.id))}
-                aria-current={active ? "page" : undefined}
-                aria-label={n.label}
-                className={`suite-bottom-nav-item flex min-h-[60px] flex-1 flex-col items-center justify-center gap-1 px-0.5 py-1.5 text-[10px] font-medium transition-colors ${
-                  active
-                    ? "suite-bottom-nav-item--active text-[#0D0E10]"
-                    : "text-[#4F5052] hover:text-[#282728]"
-                }`}
-              >
-                <Icon size={21} strokeWidth={active ? 2.2 : 1.7} aria-hidden="true" />
-                <span>{n.label}</span>
-              </button>
-            )
-          })}
-        </div>
-      </nav>
+      <SuiteEditorialNavigation
+        items={nav}
+        activeSection={activeSection}
+        onNavigate={next => (next === "photos" ? openGallery("all") : goToSection(next))}
+      />
     </main>
   )
 }

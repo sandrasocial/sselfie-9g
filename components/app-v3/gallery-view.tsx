@@ -267,7 +267,7 @@ const AssetTile = memo(function AssetTile({
   const title = safeAssetTitle(asset)
   return (
     <div
-      className={`suite-card group relative overflow-hidden rounded-[6px] border bg-[#F1F2F2] transition-shadow ${
+      className={`suite-card group relative overflow-hidden rounded-[2px] border bg-[#F1F2F2] transition-shadow ${
         selected ? "border-[#0D0E10] ring-1 ring-[#0D0E10]" : "border-[#C5C6C8]/50"
       }`}
     >
@@ -694,11 +694,13 @@ export function GalleryView({
   const allVisibleSelected = filteredAssets.length > 0 && selectedIds.size >= filteredAssets.length
 
   return (
-    <div className="suite-page mx-auto max-w-3xl px-4 py-6 sm:px-5 sm:py-8">
+    <div className="suite-page mx-auto max-w-[1320px] px-4 py-7 sm:px-8 sm:py-12">
       <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Work</p>
-          <h1 className="mt-2 font-serif text-[28px] font-light leading-tight text-[#0D0E10] sm:text-[30px]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--suite-accent)]">
+            Work · Your visual library
+          </p>
+          <h1 className="mt-2 font-serif text-[38px] font-light leading-none text-[#0D0E10] sm:text-[52px]">
             Everything you&apos;re making
           </h1>
         </div>
@@ -720,7 +722,7 @@ export function GalleryView({
         <button
           type="button"
           onClick={onOpenProjects}
-          className="mb-7 flex min-h-28 w-full items-center justify-between gap-5 rounded-[10px] border border-[#C5C6C8]/65 bg-white p-5 text-left shadow-[0_10px_30px_rgba(13,14,16,0.04)] transition-colors hover:border-[#0D0E10]/35 sm:p-6"
+          className="mb-9 flex min-h-28 w-full items-center justify-between gap-5 rounded-[4px] border border-[color:var(--suite-night)] bg-white p-5 text-left transition-colors hover:border-[color:var(--suite-accent)] sm:p-6"
         >
           <span className="min-w-0">
             <span className="block text-[10px] uppercase tracking-[0.24em] text-[#818283]">
@@ -733,7 +735,7 @@ export function GalleryView({
               Your idea, conversation, directions, and finished versions stay together.
             </span>
           </span>
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0D0E10] text-white">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[3px] bg-[color:var(--suite-accent)] text-white">
             <ArrowUpRight size={17} aria-hidden />
           </span>
         </button>
@@ -765,9 +767,9 @@ export function GalleryView({
                 }}
                 aria-label={option.id === "favorites" ? "Show saved photos" : undefined}
                 aria-pressed={active}
-                className={`min-h-11 rounded-full border px-4 text-[10px] uppercase tracking-[0.14em] transition-colors ${
+                className={`min-h-11 rounded-[3px] border px-4 text-[10px] uppercase tracking-[0.14em] transition-colors ${
                   active
-                    ? "border-[#0D0E10] bg-[#0D0E10] text-white"
+                    ? "border-[color:var(--suite-accent)] bg-[color:var(--suite-accent)] text-white"
                     : "border-[#C5C6C8] bg-white text-[#4F5052] hover:border-[#0D0E10]/40"
                 }`}
               >
@@ -786,7 +788,7 @@ export function GalleryView({
       </div>
 
       {selectionMode && (
-        <div className="sticky top-3 z-20 mb-4 flex items-center justify-between gap-3 rounded-[6px] border border-[#C5C6C8] bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
+        <div className="sticky top-3 z-20 mb-4 flex items-center justify-between gap-3 rounded-[3px] border border-[#C5C6C8] bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
           <div className="flex items-center gap-3">
             <span className="text-[12px] text-[#4F5052]">{selectedIds.size} selected</span>
             <button
@@ -834,7 +836,7 @@ export function GalleryView({
       {error && (
         <div
           role="alert"
-          className="mb-4 flex items-center justify-between gap-3 rounded-[6px] border border-[#C5C6C8] bg-white px-3 py-2"
+          className="mb-4 flex items-center justify-between gap-3 rounded-[3px] border border-[#C5C6C8] bg-white px-3 py-2"
         >
           <p className="text-[13px] text-[#282728]">{error}</p>
           <button
@@ -847,7 +849,7 @@ export function GalleryView({
         </div>
       )}
       {assets && assets.length === 0 && (
-        <div className="rounded-[8px] border border-dashed border-[#C5C6C8] bg-white px-6 py-12 text-center">
+        <div className="rounded-[2px] border border-dashed border-[#C5C6C8] bg-white px-6 py-12 text-center">
           <ImageIcon size={24} className="mx-auto mb-3 text-[#818283]" />
           <p className="font-serif text-[20px] font-light text-[#0D0E10]">Nothing here yet.</p>
           <p className="mx-auto mt-1.5 max-w-xs text-[13px] leading-relaxed text-[#818283]">
@@ -857,7 +859,7 @@ export function GalleryView({
             <button
               type="button"
               onClick={onStartCreate}
-              className="mt-5 inline-flex min-h-11 items-center rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-[10px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728]"
+              className="mt-5 inline-flex min-h-11 items-center rounded-[3px] bg-[color:var(--suite-accent)] px-4 py-2.5 text-[10px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[color:var(--suite-night)]"
             >
               Create with Maya
             </button>
@@ -865,7 +867,7 @@ export function GalleryView({
         </div>
       )}
       {assets && assets.length > 0 && displayedAssets.length === 0 && (
-        <div className="rounded-[8px] border border-dashed border-[#C5C6C8] bg-white p-8 text-center">
+        <div className="rounded-[2px] border border-dashed border-[#C5C6C8] bg-white p-8 text-center">
           <MoreHorizontal size={24} className="mx-auto mb-3 text-[#818283]" />
           <p className="text-[15px] text-[#282728]">Nothing in this view yet.</p>
           <p className="mt-1 text-[13px] text-[#818283]">Try All or create something new.</p>
@@ -908,7 +910,7 @@ export function GalleryView({
         <button
           type="button"
           onClick={() => setVisibleAssetCount(count => count + GALLERY_PAGE_SIZE)}
-          className="mx-auto mt-6 flex min-h-11 items-center rounded-full border border-[#C5C6C8] bg-white px-6 text-[10px] uppercase tracking-[0.16em] text-[#282728]"
+          className="mx-auto mt-6 flex min-h-11 items-center rounded-[3px] border border-[color:var(--suite-night)] bg-white px-6 text-[10px] uppercase tracking-[0.16em] text-[#282728]"
         >
           Load more
         </button>
