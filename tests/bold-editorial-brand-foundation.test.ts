@@ -88,6 +88,21 @@ describe("Bold Editorial Studio foundation", () => {
     expect(appLayout).toContain("background: var(--suite-accent)")
   })
 
+  it("moves the real Account surface onto the editorial system without changing account actions", () => {
+    const account = read("components/app-v3/account-view.tsx")
+    const appLayout = read("app/app/layout.tsx")
+
+    expect(account).toContain("suite-account-card")
+    expect(account).toContain("suite-account-card--primary")
+    expect(account).toContain("suite-account-primary--accent")
+    expect(account).toContain("You · Your SSELFIE")
+    expect(account).toContain("Manage billing")
+    expect(account).toContain("Top up credits")
+    expect(account).toContain("Open memory")
+    expect(account).toContain("Add a selfie")
+    expect(appLayout).toContain(".suite-account-card--primary")
+  })
+
   it("uses a varied identity-preserving editorial image library in the Suite proof", () => {
     const proof = read("components/brand/bold-editorial-proof.tsx")
     const imageRoot = "public/images/brand/bold-editorial-suite"
