@@ -32,6 +32,12 @@
   },
   "overrides": [
     {
+      "files": ["lib/design-tokens.ts", "lib/brand/**/*-tokens.ts"],
+      "rules": {
+        "no-restricted-syntax": "off"
+      }
+    },
+    {
       "files": [
         "tests/**/*",
         "**/*.spec.*",

@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { label: "CONTENT", href: "/admin/content-brief" },
   { label: "SUPPORT", href: "/admin/customer-support" },
   { label: "TOOLS", href: "/admin/tools" },
+  { label: "DESIGN", href: "/admin/design-system" },
 ]
 
 export function AdminNav() {
