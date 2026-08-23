@@ -511,14 +511,12 @@ export default function FeedHeader({
   // wrong-format date forever (UX audit 2026-07-28) — show those as plain "My Feed".
   const rawFeedName =
     feedData?.feed?.title || feedData?.feed?.brand_name || `Feed ${currentFeedId}` || "My Feed"
-  const feedName = /^My Feed - \d{1,2}\/\d{1,2}\/\d{4}$/.test(rawFeedName)
-    ? "My Feed"
-    : rawFeedName
+  const feedName = /^My Feed - \d{1,2}\/\d{1,2}\/\d{4}$/.test(rawFeedName) ? "My Feed" : rawFeedName
   const displayName = calendarProfile.displayName
   const profileUsername = calendarProfile.username
 
   return (
-    <div className="overflow-hidden rounded-[14px] border border-[#C5C6C8]/35 bg-[#F8FAFA] shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)]">
+    <div className="suite-calendar-header overflow-hidden rounded-[4px] border border-[#C5C6C8]/35 bg-[#F8FAFA] shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)]">
       <div className="space-y-2 border-b border-[#C5C6C8]/40 px-3 py-2.5 sm:px-4 sm:py-3">
         <div className="flex items-center justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">

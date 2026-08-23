@@ -218,6 +218,47 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
           background: var(--suite-night);
         }
 
+        .studio-3-root .suite-calendar-canvas {
+          border-color: rgba(197, 198, 200, 0.82);
+          border-radius: 4px;
+          box-shadow: none;
+          backdrop-filter: none;
+        }
+
+        .studio-3-root .suite-calendar-header {
+          background: var(--suite-paper);
+          border-color: rgba(197, 198, 200, 0.82);
+          border-top: 3px solid var(--suite-night);
+          border-radius: 2px;
+          box-shadow: none;
+        }
+
+        .studio-3-root .suite-calendar-tabs {
+          background: var(--suite-night);
+          border-bottom-color: var(--suite-accent);
+        }
+
+        .studio-3-root .suite-calendar-tabs [aria-pressed="true"] {
+          background: var(--suite-accent);
+          border-color: var(--suite-accent);
+        }
+
+        .studio-3-root .suite-calendar-grid {
+          background: var(--suite-night);
+          border: 3px solid var(--suite-night);
+          gap: 3px;
+          padding: 0;
+          box-shadow: none;
+        }
+
+        .studio-3-root .suite-calendar-post {
+          border-radius: 1px;
+        }
+
+        .studio-3-root .suite-calendar-post[aria-pressed="true"] {
+          border-color: var(--suite-accent);
+        }
+
         .studio-3-root .suite-bottom-nav {
           background-color: var(--suite-night);
           border-color: rgba(255, 255, 255, 0.12);

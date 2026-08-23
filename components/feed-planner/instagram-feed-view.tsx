@@ -1002,8 +1002,14 @@ export default function InstagramFeedView({
     ) : null
 
   return (
-    <div className="mx-auto grid w-full max-w-[1380px] min-w-0 gap-4 px-0 py-3 sm:px-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:px-6">
-      <div className={feedPlannerCanvasClass}>
+    <div
+      className={`mx-auto grid w-full max-w-[1380px] min-w-0 gap-4 px-0 py-3 sm:px-4 lg:items-start lg:px-6 ${
+        calendarMayaWorkspace
+          ? "lg:grid-cols-[minmax(0,1fr)_24rem]"
+          : "lg:grid-cols-[minmax(0,58rem)] lg:justify-center"
+      }`}
+    >
+      <div className={`suite-calendar-canvas ${feedPlannerCanvasClass}`}>
         <FeedHeader
           feedData={feedData}
           currentFeedId={feedId}
