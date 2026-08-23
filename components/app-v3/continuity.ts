@@ -5,6 +5,10 @@ import {
 } from "@/lib/app-v3/maya/draft-snapshot"
 import { sanitizeMayaContextEnvelope } from "@/lib/app-v3/maya/context-envelope"
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
+import {
+  isFormatAllowedForMayaPath,
+  isMayaWorkspacePath,
+} from "@/lib/app-v3/maya/workspace-path"
 import type {
   AestheticShot,
   CalendarPostTarget,
@@ -376,6 +380,8 @@ function sanitizeSession(value: unknown): ConciergeSession | null {
   const outputFormat = VALID_FORMATS.includes(session.outputFormat as OutputFormat)
     ? (session.outputFormat as OutputFormat)
     : null
+  const workspacePath = isMayaWorkspacePath(session.workspacePath) ? session.workspacePath : null
+  if (workspacePath && !isFormatAllowedForMayaPath(workspacePath, outputFormat)) return null
   const referenceSelfieUrl =
     typeof session.referenceSelfieUrl === "string" ? session.referenceSelfieUrl : null
   const videoSourceUrl = typeof session.videoSourceUrl === "string" ? session.videoSourceUrl : null
@@ -385,6 +391,7 @@ function sanitizeSession(value: unknown): ConciergeSession | null {
 
   return {
     mayaContext: sanitizeMayaContextEnvelope(session.mayaContext),
+    workspacePath,
     aesthetic: {
       id: aesthetic.id,
       name: aesthetic.name,

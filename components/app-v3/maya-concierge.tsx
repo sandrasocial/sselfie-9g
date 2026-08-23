@@ -906,6 +906,20 @@ export function MayaConcierge({
   const [lastGeneration, setLastGeneration] = useState<LastGenerationSnapshot | null>(
     () => restoredDraft?.lastGeneration ?? null
   )
+  const workspacePathRef = useRef<ConciergeSession["workspacePath"]>(
+    session?.workspacePath ?? null
+  )
+  useEffect(() => {
+    const nextPath = session?.workspacePath ?? null
+    if (workspacePathRef.current === nextPath) return
+    workspacePathRef.current = nextPath
+    // A lane switch starts a clean task. Never let a previous lane's generated cards or
+    // authoritative render snapshot influence the new chat before its task hydration lands.
+    setGenState({})
+    setLastGeneration(null)
+    setLocalCreationIntent(session?.creationIntent ?? null)
+    lastPulledFormatRef.current = null
+  }, [session?.creationIntent, session?.workspacePath])
   // MAYA-GUIDED-TEXT-01: "remove text" is an instant clean-image swap. Keep the previous
   // baked render in memory so "put the text back" can restore it without another API call.
   const hiddenBakedTextRef = useRef<Record<string, Array<string | null>>>({})
@@ -1166,6 +1180,7 @@ export function MayaConcierge({
     aestheticIntent: string
     aestheticId: string
     selectedShot: AestheticShot | null
+    workspacePath: ConciergeSession["workspacePath"]
     format: OutputFormat | null
     creationIntent: CreationIntent | null
     shotDirector: ShotDirectorIntent | null
@@ -1184,6 +1199,7 @@ export function MayaConcierge({
     aestheticIntent: "",
     aestheticId: "",
     selectedShot: null,
+    workspacePath: null,
     format: null,
     creationIntent: null,
     shotDirector: null,
@@ -2586,6 +2602,7 @@ export function MayaConcierge({
     aestheticIntent: aesthetic.intent,
     aestheticId: aesthetic.id,
     selectedShot: aesthetic.selectedShot ?? null,
+    workspacePath: session.workspacePath ?? null,
     format: activeCreationIntent.format ?? outputFormat ?? null,
     creationIntent: activeCreationIntent,
     shotDirector: session.shotDirector ?? null,
