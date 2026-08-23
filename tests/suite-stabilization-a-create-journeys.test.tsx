@@ -187,7 +187,7 @@ describe("Stabilization A Creative Tasks", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Open Maya" }))
     fireEvent.click(await screen.findByRole("button", { name: "Menu" }))
-    fireEvent.click(screen.getByRole("button", { name: "Work" }))
+    fireEvent.click(screen.getByRole("button", { name: "History" }))
     const history = await screen.findByRole("dialog", { name: /Your post projects/i })
     fireEvent.click(within(history).getByRole("button", { name: /^Past task ·/ }))
 
@@ -214,12 +214,12 @@ describe("Stabilization A Creative Tasks", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Open Maya" }))
     fireEvent.click(await screen.findByRole("button", { name: "Menu" }))
-    fireEvent.click(screen.getByRole("button", { name: "Work" }))
+    fireEvent.click(screen.getByRole("button", { name: "History" }))
     const history = await screen.findByRole("dialog", { name: /Your post projects/i })
     fireEvent.click(within(history).getByRole("button", { name: "Close" }))
 
     expect(screen.queryByRole("dialog", { name: /Your post projects/i })).not.toBeInTheDocument()
-    expect(screen.getByRole("dialog", { name: /SSELFIE/i })).toBeInTheDocument()
+    expect(screen.getByRole("dialog", { name: "Maya" })).toBeInTheDocument()
   })
 
   it("keeps the post projects layer clickable inside Maya's pointer-safe shell", async () => {

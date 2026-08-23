@@ -6,23 +6,24 @@ function read(path: string) {
 }
 
 describe("Maya first-user clarity", () => {
-  it("explains the first finished outcome without leading with a feature list", () => {
-    const frontDoor = read("components/app-v3/visual-front-door.tsx")
+  it("starts with three clear creation paths instead of a feature list", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
 
-    expect(frontDoor).toContain("Your first brand photo starts here.")
-    expect(frontDoor).toContain("Maya keeps your real face")
-    expect(frontDoor).toContain("one brand photo you can use today")
-    expect(frontDoor).toContain('eyebrow="SSELFIE SUITE"')
-    expect(frontDoor).toContain("Start with one clear selfie.")
-    expect(frontDoor).not.toContain("Included in SSELFIE SUITE")
-    expect(frontDoor).not.toContain('eyebrow: "Fastest path"')
+    expect(concierge).toContain('label: "AI Photos"')
+    expect(concierge).toContain('description: "Photos & photoshoots"')
+    expect(concierge).toContain('label: "Edit a Photo"')
+    expect(concierge).toContain('description: "Editing & presets"')
+    expect(concierge).toContain('label: "Build a Post"')
+    expect(concierge).toContain('description: "Carousels, captions & stories"')
+    expect(concierge).toContain("Choose one selfie to start with.")
+    expect(concierge).not.toContain("Included in SSELFIE SUITE")
   })
 
   it("makes the empty selfie area the single obvious upload action", () => {
     const manager = read("components/app-v3/selfie-reference-manager-modal.tsx")
 
     expect(manager).toContain("Selected selfie")
-    expect(manager).toContain('onClick={() => faceInputRef.current?.click()}')
+    expect(manager).toContain("onClick={() => faceInputRef.current?.click()}")
     expect(manager).toContain("Upload your selfie")
     expect(manager).toContain("Choose a clear photo from your phone")
     expect(manager).toContain('faceUrl ? "Continue with Maya" : "Upload a selfie to continue"')
@@ -33,7 +34,7 @@ describe("Maya first-user clarity", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
     const conceptCard = read("components/app-v3/concept-card.tsx")
 
-    expect(concierge).toContain("I chose a clear starting direction below")
+    expect(concierge).toContain("Choose a direction. Maya will create it with your real face.")
     expect(concierge).not.toContain(
       "Your selfie's in, and it's still you. Hit create and pick the idea that feels most like you."
     )

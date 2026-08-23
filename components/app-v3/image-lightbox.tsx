@@ -125,21 +125,27 @@ export function ImageLightbox({
       role="dialog"
       aria-modal="true"
       aria-label="Your finished creation"
-      className="pointer-events-auto fixed inset-0 z-[60] flex h-[100dvh] flex-col bg-[#0D0E10]/95 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-[max(env(safe-area-inset-top),0.75rem)] backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:px-4"
+      className="suite-result-viewer pointer-events-auto fixed inset-0 z-[60] flex h-[100dvh] flex-col bg-[#050505] text-white animate-in fade-in duration-200 motion-reduce:animate-none"
     >
-      <div className="flex shrink-0 justify-end">
+      <header className="flex min-h-[58px] shrink-0 items-center justify-between border-b border-white/20 px-4 pt-[env(safe-area-inset-top)] sm:min-h-[68px] sm:px-7">
+        <div className="flex min-w-0 items-baseline gap-4">
+          <span className="font-serif text-[23px] font-light tracking-[-0.045em] sm:text-[28px]">
+            SSELFIE
+          </span>
+          <span className="text-[9px] uppercase tracking-[0.24em] text-white/48">Result</span>
+        </div>
         <button
           ref={closeButtonRef}
           type="button"
           onClick={onClose}
-          className="inline-flex min-h-11 items-center px-2 py-2 text-[11px] uppercase tracking-[0.18em] text-white/80 hover:text-white"
+          className="inline-flex min-h-11 items-center border-l border-white/20 px-4 text-[10px] uppercase tracking-[0.2em] text-white/72 transition-colors hover:bg-white hover:text-[#050505] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
         >
           Close
         </button>
-      </div>
+      </header>
 
       <div
-        className="relative flex min-h-0 flex-1 items-center justify-center"
+        className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-[#111]"
         onTouchStart={e => setTouchStartX(e.touches[0]?.clientX ?? null)}
         onTouchEnd={e => {
           if (touchStartX === null || count < 2) return
@@ -155,7 +161,7 @@ export function ImageLightbox({
               type="button"
               aria-label="Previous"
               onClick={() => setIndex(p => (p > 0 ? p - 1 : count - 1))}
-              className="absolute left-0 top-1/2 z-10 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-full px-3 py-3 text-3xl leading-none text-white/70 transition-colors hover:bg-white/10 hover:text-white sm:left-1"
+              className="absolute left-0 top-1/2 z-10 flex min-h-12 min-w-12 -translate-y-1/2 items-center justify-center border-y border-r border-white/25 bg-[#050505]/75 px-3 py-3 text-3xl leading-none text-white/75 transition-colors hover:bg-white hover:text-[#050505]"
             >
               ‹
             </button>
@@ -163,7 +169,7 @@ export function ImageLightbox({
               type="button"
               aria-label="Next"
               onClick={() => setIndex(p => (p < count - 1 ? p + 1 : 0))}
-              className="absolute right-0 top-1/2 z-10 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-full px-3 py-3 text-3xl leading-none text-white/70 transition-colors hover:bg-white/10 hover:text-white sm:right-1"
+              className="absolute right-0 top-1/2 z-10 flex min-h-12 min-w-12 -translate-y-1/2 items-center justify-center border-y border-l border-white/25 bg-[#050505]/75 px-3 py-3 text-3xl leading-none text-white/75 transition-colors hover:bg-white hover:text-[#050505]"
             >
               ›
             </button>
@@ -175,7 +181,7 @@ export function ImageLightbox({
           src={baked ?? url}
           alt={`Photo ${index + 1}`}
           decoding="async"
-          className="max-h-full max-w-full rounded-[10px] object-contain shadow-[0_24px_80px_rgba(0,0,0,0.55)] animate-in fade-in zoom-in-[0.98] duration-300 motion-reduce:animate-none"
+          className="max-h-full max-w-full object-contain animate-in fade-in duration-300 motion-reduce:animate-none"
         />
       </div>
 
@@ -185,7 +191,7 @@ export function ImageLightbox({
           ref={thumbRailRef}
           role="tablist"
           aria-label="All slides"
-          className="flex shrink-0 gap-2 overflow-x-auto pb-1 pt-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex shrink-0 gap-px overflow-x-auto border-t border-white/20 bg-white/20 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {images.map((thumbUrl, thumbIndex) => {
             const thumbSrc = bakedImageUrls?.[thumbIndex] ?? thumbUrl
@@ -199,8 +205,8 @@ export function ImageLightbox({
                 aria-selected={active}
                 aria-label={`Slide ${thumbIndex + 1} of ${count}`}
                 onClick={() => setIndex(thumbIndex)}
-                className={`relative h-14 w-11 shrink-0 overflow-hidden rounded-[6px] ring-2 transition-[opacity,ring-color] sm:h-16 sm:w-12 ${
-                  active ? "opacity-100 ring-white" : "opacity-55 ring-transparent hover:opacity-80"
+                className={`relative h-16 w-12 shrink-0 overflow-hidden bg-[#050505] transition-opacity sm:h-20 sm:w-16 ${
+                  active ? "opacity-100" : "opacity-45 hover:opacity-75"
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -219,9 +225,9 @@ export function ImageLightbox({
         </div>
       )}
 
-      <div className="flex shrink-0 flex-col items-center justify-center gap-2 pt-2">
+      <div className="flex shrink-0 flex-col border-t border-white/20 bg-[#050505] pb-[max(env(safe-area-inset-bottom),0.75rem)]">
         {suggestedText && (
-          <div className="w-full max-w-md rounded-[12px] border border-white/15 bg-white/10 p-3 text-white">
+          <div className="mx-auto w-full max-w-2xl border-x border-white/15 px-4 py-3 text-white">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[10px] uppercase tracking-[0.18em] text-white/55">
                 Words for this one
@@ -243,16 +249,20 @@ export function ImageLightbox({
             </pre>
           </div>
         )}
-        <div className="flex flex-wrap items-center justify-center gap-3">
+        <div className="mx-auto flex w-full max-w-3xl flex-wrap items-stretch justify-center border-x border-white/20">
           {overlay && !baked && (
-            <span className="text-[11px] text-white/50">Clean image shown. Text is below.</span>
+            <span className="flex min-h-12 items-center border-r border-white/20 px-4 text-[10px] uppercase tracking-[0.14em] text-white/48">
+              Clean image · text below
+            </span>
           )}
-          <FavoriteButton
-            key={String((baked ? bakedAssetIds?.[index] : assetIds?.[index]) ?? index)}
-            assetId={baked ? bakedAssetIds?.[index] : assetIds?.[index]}
-            initialFavorite={favoriteStates?.[index] ?? false}
-            dark
-          />
+          <span className="flex min-h-12 items-center border-r border-white/20 px-4">
+            <FavoriteButton
+              key={String((baked ? bakedAssetIds?.[index] : assetIds?.[index]) ?? index)}
+              assetId={baked ? bakedAssetIds?.[index] : assetIds?.[index]}
+              initialFavorite={favoriteStates?.[index] ?? false}
+              dark
+            />
+          </span>
           <button
             type="button"
             onClick={async () => {
@@ -268,7 +278,7 @@ export function ImageLightbox({
               })
               onDownloaded?.()
             }}
-            className="inline-flex min-h-11 items-center rounded-full bg-white px-6 py-2.5 text-[11px] uppercase tracking-[0.18em] text-[#0D0E10] transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-95"
+            className="inline-flex min-h-12 flex-1 items-center justify-center border-r border-white/20 px-5 py-3 text-[10px] uppercase tracking-[0.2em] text-white transition-colors hover:bg-white hover:text-[#050505] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
           >
             Download
           </button>
@@ -276,7 +286,7 @@ export function ImageLightbox({
             <button
               type="button"
               onClick={() => onUseInCalendar(index)}
-              className="inline-flex min-h-11 items-center rounded-full border border-white/40 px-5 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:border-white"
+              className="inline-flex min-h-12 flex-1 items-center justify-center border-r border-white/20 px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-white transition-colors hover:bg-white hover:text-[#050505] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
             >
               Finish as a post
             </button>
@@ -285,7 +295,7 @@ export function ImageLightbox({
             <button
               type="button"
               onClick={() => onCreateVariation(index)}
-              className="inline-flex min-h-11 items-center px-3 py-2.5 text-[11px] text-white/80 underline underline-offset-4 hover:text-white"
+              className="inline-flex min-h-12 flex-1 items-center justify-center border-r border-white/20 px-5 py-3 text-[10px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-[#050505]"
             >
               {variationLabel}
             </button>
@@ -311,19 +321,19 @@ export function ImageLightbox({
                 onDownloaded?.()
               }}
               disabled={bulkDownloadStatus === "preparing"}
-              className="inline-flex min-h-11 items-center rounded-full border border-white/40 px-5 py-2.5 text-[11px] uppercase tracking-[0.18em] text-white transition-colors hover:border-white disabled:opacity-50"
+              className="inline-flex min-h-12 flex-1 items-center justify-center border-r border-white/20 px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-white transition-colors hover:bg-white hover:text-[#050505] disabled:opacity-50"
             >
               {bulkDownloadStatus === "preparing" ? "Preparing…" : `Download all ${count}`}
             </button>
           )}
           {count > 1 && (
-            <span className="text-[11px] text-white/50">
+            <span className="flex min-h-12 items-center px-4 text-[10px] uppercase tracking-[0.16em] text-white/50">
               {index + 1} / {count}
             </span>
           )}
         </div>
         {bulkDownloadStatus === "error" && (
-          <p role="alert" className="text-[11px] text-white/70">
+          <p role="alert" className="px-4 py-2 text-center text-[11px] text-white/70">
             Some photos didn&apos;t save. Please try again.
           </p>
         )}

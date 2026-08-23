@@ -18,7 +18,7 @@ describe("member Maya Home", () => {
     expect(shell).toContain('homeMode={mayaHomeEnabled && activeSection === "create"}')
     expect(shell).toContain("vaultMayaIncluded && !mayaHomeEnabled")
     expect(concierge).toContain('role={homeMode ? "region" : "dialog"}')
-    expect(concierge).toContain("Or tell Maya what you need…")
+    expect(concierge).toContain("Tell Maya what you need…")
     expect(concierge).toContain("AI Photos")
     expect(concierge).toContain("Edit a Photo")
     expect(concierge).toContain("Build a Post")

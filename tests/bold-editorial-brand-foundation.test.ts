@@ -75,6 +75,8 @@ describe("Bold Editorial Studio foundation", () => {
 
   it("moves the real Maya workspace onto the editorial system without changing its controls", () => {
     const maya = read("components/app-v3/maya-concierge.tsx")
+    const conceptCard = read("components/app-v3/concept-card.tsx")
+    const resultViewer = read("components/app-v3/image-lightbox.tsx")
     const appLayout = read("app/app/layout.tsx")
 
     expect(maya).toContain("suite-maya-header")
@@ -88,11 +90,15 @@ describe("Bold Editorial Studio foundation", () => {
     expect(maya).toContain('aria-label="Attach an inspiration image"')
     expect(appLayout).toContain("border-bottom: 3px solid var(--suite-accent)")
     expect(appLayout).toContain("background: var(--suite-accent)")
-    expect(maya).toContain("suite-maya-paths")
+    expect(maya).toContain("suite-maya-path-tabs")
+    expect(maya).toContain("suite-maya-journey-steps")
     expect(maya).toContain("AI Photos")
     expect(maya).toContain("Edit a Photo")
     expect(maya).toContain("Build a Post")
     expect(appLayout).toContain(".suite-concept-card")
+    expect(conceptCard).toContain("suite-concept-result-rail")
+    expect(conceptCard).toContain("Finish as a post")
+    expect(resultViewer).toContain("suite-result-viewer")
   })
 
   it("moves the real Account surface onto the editorial system without changing account actions", () => {

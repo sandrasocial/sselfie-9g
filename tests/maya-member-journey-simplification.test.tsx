@@ -65,7 +65,7 @@ describe("Maya simplified member journey", () => {
     expect(concierge).toContain("AI Photos")
     expect(concierge).toContain("Edit a Photo")
     expect(concierge).toContain("Build a Post")
-    expect(concierge).toContain("Plan a photoshoot")
+    expect(concierge).toContain("A photoshoot")
     expect(concierge).toContain("Caption")
     expect(concierge).toContain("Stories")
     expect(gallery).toContain("Choose a photo to edit")
@@ -167,11 +167,11 @@ describe("Maya simplified member journey", () => {
       />
     )
 
-    expect(screen.getByRole("button", { name: "Finish this post" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Finish as a post" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Make it more like me" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Add to my plan" })).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: "Finish this post" }))
+    fireEvent.click(screen.getByRole("button", { name: "Finish as a post" }))
 
     await waitFor(() => expect(onFinishPost).toHaveBeenCalledTimes(1))
     expect(await screen.findByText("A ready-to-use caption.")).toBeInTheDocument()
@@ -210,7 +210,7 @@ describe("Maya simplified member journey", () => {
       />
     )
 
-    fireEvent.click(screen.getByRole("button", { name: "Finish this post" }))
+    fireEvent.click(screen.getByRole("button", { name: "Finish as a post" }))
     expect(await screen.findByText("The exact finished caption.")).toBeInTheDocument()
     expect(screen.queryByText(/Ready in Calendar/i)).not.toBeInTheDocument()
     expect(screen.queryByText("Would you post this?")).not.toBeInTheDocument()
