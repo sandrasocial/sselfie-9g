@@ -106,6 +106,19 @@ const creativeUseCaseSchema = z.enum([
   "motion",
 ])
 
+// Continue accepting the three historical tool payload aliases, but normalize them at the schema
+// boundary so semantic repair and validation always receive the canonical CreativeUseCase type.
+const graphicContentTypeSchema = z.union([
+  creativeUseCaseSchema,
+  z
+    .enum(["story", "behind-the-scenes", "product-vault"])
+    .transform(value => {
+      if (value === "behind-the-scenes") return "behind_the_scenes" as const
+      if (value === "product-vault") return "vault_product" as const
+      return "educational" as const
+    }),
+])
+
 const textSafeAreaSchema = z.enum([
   "top",
   "upper_third",
@@ -235,24 +248,7 @@ const graphicSpec = z
       .string()
       .optional()
       .describe("The exact user/admin carousel topic this plan answers."),
-    contentType: z
-      .enum([
-        "single_editorial",
-        "full_photoshoot",
-        "educational",
-        "tutorial",
-        "sales",
-        "behind_the_scenes",
-        "opinion",
-        "trust",
-        "vault_product",
-        "soft_cta",
-        "motion",
-        // Back-compat aliases during the transition to creativePlan.useCase.
-        "story",
-        "behind-the-scenes",
-        "product-vault",
-      ])
+    contentType: graphicContentTypeSchema
       .optional()
       .describe(
         "Planner classification. Educational/tutorial/Vault carousels usually need 6-9 slides."

@@ -44,6 +44,13 @@ import {
   parseConversationalPhotoEditRequest,
   type ConversationalPhotoEditReceipt,
 } from "@/lib/app-v3/maya/conversational-photo-edit"
+import {
+  claimConversationalEditReservation,
+  failConversationalEditReservation,
+  markConversationalEditReservationCharged,
+  persistConversationalEditResult,
+  type ConversationalEditCreditState,
+} from "@/lib/app-v3/maya/conversational-photo-edit-reservation"
 
 export const maxDuration = 300
 
@@ -371,44 +378,88 @@ export async function POST(request: NextRequest) {
         ? `edit-${conversation.creditConfirmation.requestId}`
         : Date.now()
     const requestRef = `app-v3-gen-${neonUser.id}-${requestRefSuffix}`
+    let reservationRequestId: string | null = null
+
+    const closeReservation = async (
+      failureCode: string,
+      creditState: Exclude<ConversationalEditCreditState, "charged">
+    ) => {
+      if (!reservationRequestId) return
+      try {
+        const closed = await failConversationalEditReservation({
+          userId: String(neonUser.id),
+          requestId: reservationRequestId,
+          creditState,
+          failureCode,
+        })
+        if (!closed) throw new Error("reservation was no longer active")
+      } catch (reservationError) {
+        console.error("[app-v3 edit] reservation close failed:", reservationError)
+        await logAdminError({
+          toolName: "app-v3-edit-reservation-close",
+          error: reservationError,
+          context: { userId: neonUser.id, requestId: reservationRequestId, failureCode },
+        }).catch(() => {})
+      }
+    }
 
     if (conversation?.action === "apply" && conversation.creditConfirmation) {
-      const existing = await sql`
-        SELECT id, image_url, variant_of
-        FROM ai_images
-        WHERE user_id = ${neonUser.id} AND prediction_id = ${requestRef + "-0"}
-        LIMIT 1
-      `
-      const prior = existing[0]
-      if (prior && isAllowedImageUrl(prior.image_url)) {
+      const requestId = conversation.creditConfirmation.requestId
+      const reservation = await claimConversationalEditReservation({
+        userId: String(neonUser.id),
+        requestId,
+        creditReference: requestRef,
+        sourceImageId: Number(sourceAssetId!.slice(3)),
+        rootImageId: Number(rootAssetId!.slice(3)),
+        instruction,
+      })
+      if (!reservation) {
+        return NextResponse.json(
+          { error: "That photo is no longer available for editing", code: "edit_source_not_found" },
+          { status: 404 }
+        )
+      }
+      if (reservation.kind === "conflict") {
+        return NextResponse.json(
+          {
+            error: "This edit confirmation belongs to a different request. Confirm this edit again.",
+            code: "edit_request_conflict",
+          },
+          { status: 409 }
+        )
+      }
+      if (reservation.kind === "replay") {
+        const prior = reservation.reservation
         const receipt: ConversationalPhotoEditReceipt = {
           action: "apply",
           sourceAssetId: sourceAssetId!,
-          resultAssetId: `ai_${prior.id}`,
-          rootAssetId: `ai_${prior.variant_of || sourceImageId}`,
+          resultAssetId: `ai_${prior.resultImageId}`,
+          rootAssetId: `ai_${prior.rootImageId}`,
           instruction,
           historyDepth: authoritativeEditDepth,
-          creditRequestId: conversation.creditConfirmation.requestId,
+          creditRequestId: requestId,
         }
         return NextResponse.json({
           success: true,
-          imageUrl: prior.image_url,
-          aiImageId: Number(prior.id),
+          imageUrl: prior.resultImageUrl,
+          aiImageId: prior.resultImageId,
           creditsDeducted: 0,
           newBalance: await getUserCredits(neonUser.id),
           idempotentReplay: true,
           editReceipt: receipt,
         })
       }
-      const priorUsage = await sql`
-        SELECT 1
-        FROM credit_transactions
-        WHERE user_id = ${neonUser.id}
-          AND transaction_type = 'image'
-          AND reference_id = ${requestRef}
-        LIMIT 1
-      `
-      if (priorUsage.length > 0) {
+      if (reservation.kind === "in_progress") {
+        return NextResponse.json(
+          {
+            error: "Maya is already applying this edit.",
+            code: "edit_request_in_progress",
+            retryable: true,
+          },
+          { status: 409 }
+        )
+      }
+      if (reservation.kind === "already_used") {
         return NextResponse.json(
           {
             error: "This edit request has already been used. Try again as a new edit.",
@@ -417,6 +468,7 @@ export async function POST(request: NextRequest) {
           { status: 409 }
         )
       }
+      reservationRequestId = requestId
     }
 
     // ── LIKENESS-MEMORY-01 (flag-gated, fail-open): read her stored accuracy notes for this
@@ -473,6 +525,7 @@ export async function POST(request: NextRequest) {
     const hasEnough = await checkCredits(neonUser.id, CREDIT_COSTS.IMAGE)
     if (!hasEnough) {
       const current = await getUserCredits(neonUser.id)
+      await closeReservation("insufficient_credits", "not_charged")
       return NextResponse.json(
         {
           error: "Insufficient credits",
@@ -492,17 +545,30 @@ export async function POST(request: NextRequest) {
       requestRef
     )
     if (!deduction.success) {
+      await closeReservation("credit_deduction_failed", "not_charged")
       return NextResponse.json(
         { error: deduction.error ?? "Credit deduction failed.", code: "credit_deduction_failed" },
         { status: 402 }
       )
     }
 
-    const refundRef = requestRef
-    const refundOrAlert = async (amount: number, reason: string, ref: string) => {
+    const refundOrAlert = async (amount: number, reason: string, ref: string): Promise<boolean> => {
       try {
+        // Admin/unlimited access intentionally skips the usage ledger. Never mint a refund when
+        // no credit was actually deducted for this exact request reference.
+        const usageRows = await sql`
+          SELECT 1
+          FROM credit_transactions
+          WHERE user_id = ${neonUser.id}
+            AND transaction_type = 'image'
+            AND amount = ${-amount}
+            AND reference_id = ${ref}
+          LIMIT 1
+        `
+        if (usageRows.length === 0) return true
         const result = await refundCredits(neonUser.id, amount, reason, ref)
         if (!result.success) throw new Error(result.error || "refund reported failure")
+        return true
       } catch (refundError) {
         console.error("[app-v3 edit] refund failed:", reason, refundError)
         await logAdminError({
@@ -510,12 +576,47 @@ export async function POST(request: NextRequest) {
           error: refundError,
           context: { userId: neonUser.id, amount, reason, ref },
         }).catch(() => {})
+        return false
       }
     }
     const openaiApiKey = process.env.OPENAI_API_KEY
+
+    const refundAndCloseReservation = async (reason: string, failureCode: string) => {
+      const refunded = await refundOrAlert(CREDIT_COSTS.IMAGE, reason, requestRef)
+      await closeReservation(failureCode, refunded ? "refunded" : "refund_pending")
+      return refunded
+    }
+
+    if (reservationRequestId) {
+      let charged = false
+      try {
+        charged = await markConversationalEditReservationCharged({
+          userId: String(neonUser.id),
+          requestId: reservationRequestId,
+        })
+      } catch (reservationError) {
+        console.error("[app-v3 edit] reservation charge transition failed:", reservationError)
+      }
+      if (!charged) {
+        const refunded = await refundAndCloseReservation(
+          "Edit reservation could not record the credit charge",
+          "reservation_charge_failed"
+        )
+        return NextResponse.json(
+          {
+            error: refunded
+              ? "This edit could not start safely. Your credit was returned."
+              : "This edit could not start safely. Your credit return needs review.",
+            code: "edit_reservation_failed",
+          },
+          { status: 500 }
+        )
+      }
+    }
+
     if (!openaiApiKey) {
       console.error("[app-v3 edit] OPENAI_API_KEY is not set in this environment.")
-      await refundOrAlert(CREDIT_COSTS.IMAGE, "OpenAI API key not configured", refundRef)
+      await refundAndCloseReservation("OpenAI API key not configured", "openai_not_configured")
       return NextResponse.json(
         {
           error: "Editing is temporarily unavailable. Please try again later.",
@@ -534,7 +635,7 @@ export async function POST(request: NextRequest) {
         { type: "image/png" }
       )
     } catch (sourceError) {
-      await refundOrAlert(CREDIT_COSTS.IMAGE, "Edit source could not be loaded", refundRef)
+      await refundAndCloseReservation("Edit source could not be loaded", "edit_source_load_failed")
       console.error("[app-v3 edit] source load failed:", sourceError)
       return NextResponse.json(
         { error: "That photo could not be loaded. Choose it again from your Gallery." },
@@ -627,7 +728,7 @@ export async function POST(request: NextRequest) {
             )
           )
         } catch (retryError) {
-          await refundOrAlert(CREDIT_COSTS.IMAGE, "OpenAI content policy", refundRef)
+          await refundAndCloseReservation("OpenAI content policy", "openai_edit_failed")
           if (isContentPolicyError(retryError)) {
             await logEditFailure("content_policy", retryError)
             return NextResponse.json(
@@ -646,7 +747,7 @@ export async function POST(request: NextRequest) {
           )
         }
       } else {
-        await refundOrAlert(CREDIT_COSTS.IMAGE, "OpenAI edit failed", refundRef)
+        await refundAndCloseReservation("OpenAI edit failed", "openai_edit_failed")
         console.error("[app-v3 edit] edit failed:", firstError)
         await logEditFailure("edit_failed", firstError)
         return NextResponse.json(
@@ -663,7 +764,7 @@ export async function POST(request: NextRequest) {
         contentType: "image/png",
       })
     } catch (blobError) {
-      await refundOrAlert(CREDIT_COSTS.IMAGE, "Blob upload failed", refundRef)
+      await refundAndCloseReservation("Blob upload failed", "blob_upload_failed")
       console.error("[app-v3 edit] blob upload failed:", blobError)
       return NextResponse.json(
         { error: "Failed to save the edit. Please try again." },
@@ -673,39 +774,83 @@ export async function POST(request: NextRequest) {
 
     let insertedId: number | null = null
     try {
-      // variant_of resolves through an ownership-scoped subquery: sourceImageId comes from
-      // the client, and a raw insert would let any member link their row to another
-      // member's image id. Not owned (or missing) -> NULL, insert still succeeds.
-      const inserted = await sql`
-        INSERT INTO ai_images (
-          user_id, image_url, title, variant_of, prompt, generated_prompt, prediction_id,
-          generation_status, source, category, created_at
-        ) VALUES (
-          ${neonUser.id}, ${blob.url}, ${imageTitle},
-          (SELECT id FROM ai_images WHERE id = ${sourceImageId} AND user_id = ${neonUser.id}),
-          ${instruction}, ${instruction},
-          ${requestRef + "-0"}, 'completed', 'openai', ${format}, NOW()
-        )
-        RETURNING id
-      `
-      insertedId = inserted[0]?.id ?? null
+      if (reservationRequestId && rootAssetId) {
+        insertedId = await persistConversationalEditResult({
+          userId: String(neonUser.id),
+          requestId: reservationRequestId,
+          imageUrl: blob.url,
+          title: imageTitle,
+          rootImageId: Number(rootAssetId.slice(3)),
+          instruction,
+          predictionId: requestRef + "-0",
+          format,
+        })
+        if (!insertedId) throw new Error("charged edit reservation was not available")
+      } else {
+        // Legacy editor compatibility: ownership scope remains on variant_of, while the new
+        // conversational path uses the stricter reservation + Gallery completion statement.
+        const inserted = await sql`
+          INSERT INTO ai_images (
+            user_id, image_url, title, variant_of, prompt, generated_prompt, prediction_id,
+            generation_status, source, category, created_at
+          ) VALUES (
+            ${neonUser.id}, ${blob.url}, ${imageTitle},
+            (SELECT id FROM ai_images WHERE id = ${sourceImageId} AND user_id = ${neonUser.id}),
+            ${instruction}, ${instruction},
+            ${requestRef + "-0"}, 'completed', 'openai', ${format}, NOW()
+          )
+          RETURNING id
+        `
+        insertedId = inserted[0]?.id ?? null
+      }
     } catch (dbError) {
-      console.error("[app-v3 edit] DB insert failed (image saved to Blob):", dbError)
-      await logAdminError({
-        toolName: "app-v3-edit-gallery-insert",
-        error: dbError,
-        context: { userId: neonUser.id, format, requestRef },
-      }).catch(() => {})
-      await refundOrAlert(CREDIT_COSTS.IMAGE, "Edited image never reached the gallery", refundRef)
-      if (conversation) {
-        await del(blob.url).catch(() => {})
-        return NextResponse.json(
-          {
-            error: "The edited photo could not be saved safely. Your credit was returned.",
-            code: "edit_persistence_failed",
-          },
-          { status: 500 }
+      // A network error can arrive after PostgreSQL committed. Re-read the durable reservation
+      // before refunding or deleting the Blob so a committed result never becomes a free/orphaned
+      // edit merely because the response was ambiguous.
+      let persistenceRecovered = false
+      if (reservationRequestId && sourceAssetId && rootAssetId) {
+        try {
+          const recovered = await claimConversationalEditReservation({
+            userId: String(neonUser.id),
+            requestId: reservationRequestId,
+            creditReference: requestRef,
+            sourceImageId: Number(sourceAssetId.slice(3)),
+            rootImageId: Number(rootAssetId.slice(3)),
+            instruction,
+          })
+          if (recovered?.kind === "replay") {
+            insertedId = recovered.reservation.resultImageId
+            blob = { url: recovered.reservation.resultImageUrl! }
+            persistenceRecovered = true
+          }
+        } catch (recoveryError) {
+          console.error("[app-v3 edit] persistence reconciliation failed:", recoveryError)
+        }
+      }
+
+      if (!persistenceRecovered) {
+        console.error("[app-v3 edit] DB insert failed (image saved to Blob):", dbError)
+        await logAdminError({
+          toolName: "app-v3-edit-gallery-insert",
+          error: dbError,
+          context: { userId: neonUser.id, format, requestRef },
+        }).catch(() => {})
+        const refunded = await refundAndCloseReservation(
+          "Edited image never reached the gallery",
+          "edit_persistence_failed"
         )
+        if (conversation) {
+          await del(blob.url).catch(() => {})
+          return NextResponse.json(
+            {
+              error: refunded
+                ? "The edited photo could not be saved safely. Your credit was returned."
+                : "The edited photo could not be saved safely. Your credit return needs review.",
+              code: "edit_persistence_failed",
+            },
+            { status: 500 }
+          )
+        }
       }
     }
 
