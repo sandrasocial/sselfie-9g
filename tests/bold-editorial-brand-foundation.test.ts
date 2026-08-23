@@ -71,6 +71,23 @@ describe("Bold Editorial Studio foundation", () => {
     expect(appPage).toContain('title: "SSELFIE Suite"')
   })
 
+  it("moves the real Maya workspace onto the editorial system without changing its controls", () => {
+    const maya = read("components/app-v3/maya-concierge.tsx")
+    const appLayout = read("app/app/layout.tsx")
+
+    expect(maya).toContain("suite-maya-header")
+    expect(maya).toContain("suite-maya-thread")
+    expect(maya).toContain("suite-maya-message--maya")
+    expect(maya).toContain("suite-maya-message--user")
+    expect(maya).toContain("suite-maya-composer")
+    expect(maya).toContain("suite-maya-input")
+    expect(maya).toContain("suite-maya-send")
+    expect(maya).toContain('aria-label="Message Maya"')
+    expect(maya).toContain('aria-label="Attach an inspiration image"')
+    expect(appLayout).toContain("border-bottom: 3px solid var(--suite-accent)")
+    expect(appLayout).toContain("background: var(--suite-accent)")
+  })
+
   it("uses a varied identity-preserving editorial image library in the Suite proof", () => {
     const proof = read("components/brand/bold-editorial-proof.tsx")
     const imageRoot = "public/images/brand/bold-editorial-suite"

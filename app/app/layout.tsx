@@ -143,6 +143,65 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
           box-shadow: 0 24px 72px rgba(13, 14, 16, 0.14);
         }
 
+        .studio-3-root .suite-maya-header {
+          background: var(--suite-night);
+          border-bottom: 3px solid var(--suite-accent);
+          color: var(--suite-paper);
+        }
+
+        .studio-3-root .suite-maya-header [class*="text-[#6D6E70]"],
+        .studio-3-root .suite-maya-header [class*="text-[#4F5052]"] {
+          color: rgba(255, 255, 255, 0.68);
+        }
+
+        .studio-3-root .suite-maya-header [class*="text-[#0D0E10]"] {
+          color: var(--suite-paper);
+        }
+
+        .studio-3-root .suite-maya-header button:hover {
+          color: var(--suite-paper);
+        }
+
+        .studio-3-root .suite-maya-header #maya-workspace-menu button {
+          color: var(--suite-slate);
+        }
+
+        .studio-3-root .suite-maya-header #maya-workspace-menu button:hover {
+          color: var(--suite-night);
+        }
+
+        .studio-3-root .suite-maya-thread {
+          background:
+            linear-gradient(90deg, rgba(197, 198, 200, 0.2) 1px, transparent 1px) 0 0 / 25% 100%,
+            var(--suite-canvas);
+        }
+
+        .studio-3-root .suite-maya-message {
+          box-shadow: none;
+        }
+
+        .studio-3-root .suite-maya-message--maya {
+          border-left: 3px solid var(--suite-night);
+        }
+
+        .studio-3-root .suite-maya-message--user {
+          background: var(--suite-accent);
+        }
+
+        .studio-3-root .suite-maya-composer {
+          background: var(--suite-paper);
+          border-top-color: var(--suite-night);
+        }
+
+        .studio-3-root .suite-maya-send {
+          background: var(--suite-accent);
+        }
+
+        .studio-3-root .suite-maya-input:focus {
+          border-color: var(--suite-accent);
+          box-shadow: 0 0 0 3px rgba(152, 24, 38, 0.08);
+        }
+
         .studio-3-root .suite-bottom-nav {
           background-color: var(--suite-night);
           border-color: rgba(255, 255, 255, 0.12);

@@ -9,7 +9,7 @@ describe("Maya-first Suite creation UX", () => {
   it("makes Create an image-first world that hands structured choices to Maya", () => {
     const frontDoor = read("components/app-v3/visual-front-door.tsx")
 
-    expect(frontDoor).toContain("Your world")
+    expect(frontDoor).toContain("Create · Your visual studio")
     expect(frontDoor).toContain("Maya&apos;s strongest place to start.")
     expect(frontDoor).toContain("Recreate this look")
     expect(frontDoor).toContain("Saved looks")

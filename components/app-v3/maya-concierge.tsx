@@ -127,10 +127,10 @@ const MayaFounderTestMode = dynamic(
 const NEXT_POST_REQUEST =
   "Help me create one finished post I can publish. Start with one of my saved selfies and use what you know about my current priority or unfinished work. Choose one strong idea, the format, and a SSELFIE visual direction for me. Include the words I need so the result is ready to use. Ask only one question if it would materially change the post."
 
-/** Small round avatar for the chat thread (texting-a-friend feel). */
+/** Small editorial avatar for the conversation thread. */
 function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
   return (
-    <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50 bg-[#ECEDED]">
+    <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-[2px] border border-[#C5C6C8]/50 bg-[#ECEDED]">
       {src ? (
         <Image src={src} alt="" fill className="object-cover" sizes="28px" />
       ) : (
@@ -4633,13 +4633,13 @@ export function MayaConcierge({
         }
         className={
           homeMode
-            ? "suite-maya-panel pointer-events-auto relative flex h-full w-full min-w-0 max-w-[58rem] flex-col overflow-hidden border-x border-[#C5C6C8]/40 bg-[#F8FAFA] shadow-[0_18px_65px_rgba(13,14,16,0.06)] sm:rounded-[18px] sm:border"
-            : "pointer-events-auto relative flex h-[94dvh] w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden rounded-t-[18px] border border-[#C5C6C8]/55 bg-[#F8FAFA] shadow-[0_-18px_60px_rgba(13,14,16,0.16)] animate-in slide-in-from-bottom-4 duration-300 ease-out motion-reduce:animate-none lg:h-[100dvh] lg:w-[27rem] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-[-18px_0_60px_rgba(13,14,16,0.10)] lg:slide-in-from-right"
+            ? "suite-maya-panel pointer-events-auto relative flex h-full w-full min-w-0 max-w-[58rem] flex-col overflow-hidden border-x border-[#C5C6C8]/40 bg-[#F8FAFA] shadow-[0_18px_65px_rgba(13,14,16,0.06)] sm:rounded-[6px] sm:border"
+            : "suite-maya-panel pointer-events-auto relative flex h-[94dvh] w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden rounded-t-[6px] border border-[#C5C6C8]/55 bg-[#F8FAFA] shadow-[0_-18px_60px_rgba(13,14,16,0.16)] animate-in slide-in-from-bottom-4 duration-300 ease-out motion-reduce:animate-none lg:h-[100dvh] lg:w-[27rem] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-[-18px_0_60px_rgba(13,14,16,0.10)] lg:slide-in-from-right"
         }
       >
         {/* Header - one calm row. Actions live in a quiet menu, and Close is always visible
             (on phones the drawer is full-width, so the backdrop can't be tapped to leave). */}
-        <header className="flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-3.5 sm:px-6">
+        <header className="suite-maya-header flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
           <div className="min-w-0">
             <p className="truncate text-[10px] uppercase tracking-[0.3em] text-[#6D6E70]">
               {agentLabel}
@@ -5328,14 +5328,14 @@ export function MayaConcierge({
               aria-relevant="additions text"
               aria-label="Conversation with Maya"
               aria-hidden={!threadVisible || setupOpen}
-              className={`min-h-0 min-w-0 flex-1 max-w-full space-y-5 overscroll-x-none px-4 py-5 [overflow-x:clip] sm:px-6 sm:py-6 ${
+              className={`suite-maya-thread min-h-0 min-w-0 flex-1 max-w-full space-y-5 overscroll-x-none px-4 py-5 [overflow-x:clip] sm:px-6 sm:py-6 ${
                 !threadVisible || setupOpen ? "hidden" : "overflow-y-auto"
               }`}
             >
               {/* Static opener */}
               <div className="flex min-w-0 max-w-full items-end gap-2">
                 <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
-                <div className="suite-card min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[6px] rounded-tl-[2px] bg-white p-4 text-[15px] leading-relaxed text-[#282728] [overflow-wrap:anywhere] sm:max-w-[80%]">
+                <div className="suite-card suite-maya-message suite-maya-message--maya min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[4px] rounded-tl-none bg-white p-4 text-[15px] leading-relaxed text-[#282728] [overflow-wrap:anywhere] sm:max-w-[80%]">
                   <p>
                     {skoolHandoffReady && skoolHandoff
                       ? `Continue from ${skoolHandoff.lessonTitle}.`
@@ -5841,14 +5841,14 @@ export function MayaConcierge({
                         ) : isUser ? (
                           <div className="flex min-w-0 max-w-full flex-row-reverse items-end gap-2">
                             <Avatar src={userAvatar} fallback="You" />
-                            <div className="min-w-0 max-w-[calc(100%-2.25rem)] whitespace-pre-wrap break-words rounded-[18px] rounded-br-[6px] bg-[#0D0E10] px-4 py-3 text-[15px] leading-relaxed text-white [overflow-wrap:anywhere] sm:max-w-[80%]">
+                            <div className="suite-maya-message suite-maya-message--user min-w-0 max-w-[calc(100%-2.25rem)] whitespace-pre-wrap break-words rounded-[4px] rounded-br-none bg-[#0D0E10] px-4 py-3 text-[15px] leading-relaxed text-white [overflow-wrap:anywhere] sm:max-w-[80%]">
                               {text}
                             </div>
                           </div>
                         ) : (
                           <div className="flex min-w-0 max-w-full items-end gap-2">
                             <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
-                            <div className="min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[18px] rounded-bl-[6px] border border-[#C5C6C8]/30 bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(13,14,16,0.04)] [overflow-wrap:anywhere] sm:max-w-[80%]">
+                            <div className="suite-maya-message suite-maya-message--maya min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[4px] rounded-bl-none border border-[#C5C6C8]/30 bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(13,14,16,0.04)] [overflow-wrap:anywhere] sm:max-w-[80%]">
                               <Markdown>{text}</Markdown>
                             </div>
                           </div>
@@ -6329,7 +6329,7 @@ export function MayaConcierge({
             row (the eyebrow label and the duplicate close button were eating thread space);
             bottom padding respects the iPhone home-indicator safe area. */}
             <div
-              className={`min-w-0 shrink-0 border-t border-[#C5C6C8]/40 px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] [overflow-x:clip] sm:px-6 ${guidedFirstPhoto ? "hidden" : ""}`}
+              className={`suite-maya-composer min-w-0 shrink-0 border-t border-[#C5C6C8]/40 px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] [overflow-x:clip] sm:px-6 ${guidedFirstPhoto ? "hidden" : ""}`}
             >
               {inspirationUrl && (
                 <div className="mb-2 flex min-w-0 max-w-full items-center gap-2">
@@ -6370,7 +6370,7 @@ export function MayaConcierge({
                     title="Attach an inspiration image"
                     onClick={() => attachInputRef.current?.click()}
                     disabled={uploadingSlot === "inspiration"}
-                    className="h-12 w-12 shrink-0 rounded-full border border-[#C5C6C8]/60 bg-white text-[20px] font-light leading-none text-[#4F5052] transition-[transform,border-color,color] duration-150 hover:border-[#0D0E10] hover:text-[#0D0E10] active:scale-95 disabled:opacity-40"
+                    className="h-12 w-12 shrink-0 rounded-[4px] border border-[#C5C6C8]/60 bg-white text-[20px] font-light leading-none text-[#4F5052] transition-[transform,border-color,color] duration-150 hover:border-[#0D0E10] hover:text-[#0D0E10] active:scale-95 disabled:opacity-40"
                   >
                     {uploadingSlot === "inspiration" ? "…" : "+"}
                   </button>
@@ -6399,13 +6399,13 @@ export function MayaConcierge({
                         ? "Tell Maya the messy version…"
                         : "Want something different? Ask Maya…"
                   }
-                  className="max-h-36 min-h-12 min-w-0 flex-1 resize-none rounded-[24px] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[15px] leading-snug text-[#282728] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#0D0E10] focus:shadow-[0_0_0_3px_rgba(13,14,16,0.06)] min-[380px]:px-5"
+                  className="suite-maya-input max-h-36 min-h-12 min-w-0 flex-1 resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[15px] leading-snug text-[#282728] outline-none transition-[border-color,box-shadow] duration-150 min-[380px]:px-5"
                 />
                 <button
                   type="button"
                   onClick={() => void handleSend()}
                   disabled={isThinking || textRefining || input.trim().length === 0}
-                  className="h-12 rounded-full bg-[#0D0E10] px-4 text-[11px] uppercase tracking-[0.1em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-95 disabled:opacity-40 min-[380px]:px-6 min-[380px]:text-[12px] min-[380px]:tracking-[0.16em]"
+                  className="suite-maya-send h-12 rounded-[4px] px-4 text-[11px] uppercase tracking-[0.1em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-95 disabled:opacity-40 min-[380px]:px-6 min-[380px]:text-[12px] min-[380px]:tracking-[0.16em]"
                 >
                   {textRefining ? "Updating" : "Send"}
                 </button>
