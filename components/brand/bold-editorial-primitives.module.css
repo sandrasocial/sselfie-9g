@@ -1,0 +1,128 @@
+.root {
+  color: var(--ss-brand-ink);
+  font-family: var(--ss-brand-sans);
+}
+
+.wordmark {
+  color: currentColor;
+  font-family: var(--ss-brand-display);
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  color: var(--ss-brand-slate);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.headline {
+  font-family: var(--ss-brand-display);
+  font-size: clamp(2.6rem, 6vw, 6.5rem);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 0.86;
+}
+
+.button,
+.buttonSecondary {
+  align-items: center;
+  border: 1px solid var(--ss-brand-ink);
+  border-radius: 4px;
+  display: inline-flex;
+  font-size: 0.625rem;
+  font-weight: 700;
+  gap: 0.8rem;
+  justify-content: center;
+  letter-spacing: 0.18em;
+  min-height: 44px;
+  padding: 0.8rem 1.15rem;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.button {
+  background: var(--ss-brand-ink);
+  color: var(--ss-brand-paper);
+}
+
+.button[data-accent="true"] {
+  background: var(--ss-brand-oxblood);
+  border-color: var(--ss-brand-oxblood);
+}
+
+.buttonSecondary {
+  background: transparent;
+  color: var(--ss-brand-ink);
+}
+
+.button:hover,
+.buttonSecondary:hover {
+  transform: translateY(-1px);
+}
+
+.button:focus-visible,
+.buttonSecondary:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ss-brand-oxblood) 42%, transparent);
+  outline-offset: 3px;
+}
+
+.stages {
+  display: grid;
+  gap: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stage {
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  color: var(--ss-brand-slate);
+  display: flex;
+  font-size: 0.625rem;
+  font-weight: 700;
+  justify-content: center;
+  letter-spacing: 0.16em;
+  min-height: 44px;
+  padding: 0.7rem 0.4rem;
+  text-transform: uppercase;
+}
+
+.stageActive {
+  border-bottom-color: var(--ss-brand-oxblood);
+  color: var(--ss-brand-ink);
+}
+
+.stageNumber {
+  color: var(--ss-brand-oxblood);
+  font-size: 0.5rem;
+  margin-right: 0.45rem;
+}
+
+.rule {
+  background: var(--ss-brand-silver);
+  border: 0;
+  height: 1px;
+  margin: 0;
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .buttonSecondary {
+    transition: none;
+  }
+}
