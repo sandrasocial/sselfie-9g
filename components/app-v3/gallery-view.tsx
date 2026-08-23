@@ -436,6 +436,9 @@ export function GalleryView({
   onCreateVariation,
   operatingLayerEnabled = false,
   initialFilter = "all",
+  mode = "browse",
+  onEditAsset,
+  onCancelEdit,
 }: {
   onOpenProjects?: () => void
   onMakeMotion?: (url: string) => void
@@ -444,6 +447,9 @@ export function GalleryView({
   onCreateVariation?: (asset: AppV3GalleryAsset) => void
   operatingLayerEnabled?: boolean
   initialFilter?: GalleryFilter
+  mode?: "browse" | "edit"
+  onEditAsset?: (asset: AppV3GalleryAsset) => void
+  onCancelEdit?: () => void
 }) {
   const [assets, setAssets] = useState<AppV3GalleryAsset[] | null>(null)
   const [counts, setCounts] = useState<AppV3GalleryCounts | null>(null)
@@ -698,13 +704,13 @@ export function GalleryView({
       <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--suite-accent)]">
-            Work · Your visual library
+            {mode === "edit" ? "Edit · Choose your source" : "Gallery · Your visual library"}
           </p>
           <h1 className="mt-2 font-serif text-[38px] font-light leading-none text-[#0D0E10] sm:text-[52px]">
-            Everything you&apos;re making
+            {mode === "edit" ? "Choose a photo to edit" : "Everything you&apos;re making"}
           </h1>
         </div>
-        {hasAssets && (
+        {hasAssets && mode === "browse" && (
           <button
             type="button"
             onClick={() => {
@@ -718,7 +724,25 @@ export function GalleryView({
         )}
       </header>
 
-      {onOpenProjects && (
+      {mode === "edit" ? (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-y border-[color:var(--suite-night)] bg-white px-4 py-4 sm:px-5">
+          <p className="max-w-2xl text-[13px] leading-relaxed text-[color:var(--suite-slate)]">
+            Pick any photo. Your original stays untouched; every preset or edit is saved as a new
+            version.
+          </p>
+          {onCancelEdit ? (
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              className="min-h-11 text-[10px] uppercase tracking-[0.16em] text-[color:var(--suite-slate)] underline underline-offset-4"
+            >
+              Back to Gallery
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {onOpenProjects && mode === "browse" && (
         <button
           type="button"
           onClick={onOpenProjects}
@@ -893,7 +917,13 @@ export function GalleryView({
                 versionCount={version.count}
                 favoritePending={favoritePendingIds.has(asset.id)}
                 setCount={entry.setSlides?.length}
-                onOpen={openAsset}
+                onOpen={(selectedAsset, selectedIndex) => {
+                  if (mode === "edit" && selectedAsset.kind === "image" && onEditAsset) {
+                    onEditAsset(selectedAsset)
+                    return
+                  }
+                  openAsset(selectedAsset, selectedIndex)
+                }}
                 onToggleSelect={toggleSelected}
                 onFavorite={toggleFavorite}
                 onDelete={asset => setPendingDeleteIds([asset.id])}

@@ -20,6 +20,7 @@ import {
 } from "@/lib/app-v3/maya/job-analytics"
 import type { MayaGuidanceResult, MayaGuidanceSourceRef } from "@/lib/app-v3/maya/guidance/types"
 import type { LessonMayaTarget } from "./types"
+import { LEARNING_DESTINATIONS } from "@/lib/app-v3/learning-destinations"
 
 interface LibraryCourse {
   id: number
@@ -387,6 +388,58 @@ export function LibraryView({
         </h1>
         <p className="mt-1.5 text-[14px] text-[#4F5052]">Everything you own lives here.</p>
       </header>
+
+      <section aria-labelledby="learning-spaces-title">
+        <p className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--suite-accent)]">
+          Learning spaces
+        </p>
+        <h2
+          id="learning-spaces-title"
+          className="mt-1 font-serif text-[25px] font-light text-[color:var(--suite-night)]"
+        >
+          Learn, practise, come back to create.
+        </h2>
+        <div className="mt-3 grid gap-[3px] bg-[color:var(--suite-night)] p-[3px] sm:grid-cols-2">
+          {LEARNING_DESTINATIONS.map(destination => {
+            const content = (
+              <>
+                <span className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--suite-accent)]">
+                  {destination.id === "skool" ? "Community & practice" : "Structured classes"}
+                </span>
+                <span className="mt-2 block font-serif text-[23px] font-light leading-tight">
+                  {destination.label}
+                </span>
+                <span className="mt-2 block text-[12px] leading-relaxed text-[color:var(--suite-slate)]">
+                  {destination.description}
+                </span>
+                <span className="mt-5 block text-[10px] uppercase tracking-[0.16em]">
+                  {destination.href ? "Open learning space ↗" : "Coming soon"}
+                </span>
+              </>
+            )
+
+            return destination.href ? (
+              <a
+                key={destination.id}
+                href={destination.href}
+                target="_blank"
+                rel="noreferrer"
+                className="min-h-52 bg-white p-5 text-[color:var(--suite-night)] transition-colors hover:bg-[color:var(--suite-smoke)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--suite-accent)]"
+              >
+                {content}
+              </a>
+            ) : (
+              <div
+                key={destination.id}
+                aria-disabled="true"
+                className="min-h-52 bg-[color:var(--suite-smoke)] p-5 text-[color:var(--suite-night)]"
+              >
+                {content}
+              </div>
+            )
+          })}
+        </div>
+      </section>
 
       {error && (
         <div

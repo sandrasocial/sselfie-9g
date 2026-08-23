@@ -344,11 +344,15 @@ export function ConceptCard({
   }
 
   return (
-    <div className="min-w-0 max-w-full overflow-hidden rounded-[14px] border border-[#C5C6C8]/35 bg-white shadow-[0_1px_2px_rgba(13,14,16,0.04),0_10px_28px_rgba(13,14,16,0.06)] transition-shadow duration-300 hover:shadow-[0_2px_4px_rgba(13,14,16,0.05),0_16px_40px_rgba(13,14,16,0.09)] [overflow-x:clip]">
+    <div
+      data-concept-state={gen.status}
+      data-concept-format={format}
+      className="suite-concept-card min-w-0 max-w-full overflow-hidden rounded-[2px] border border-[#C5C6C8]/35 bg-white transition-colors duration-200 [overflow-x:clip]"
+    >
       {/* Visual area ONLY exists once we're generating or done - never an empty placeholder box. */}
       {(isGenerating || isDone || isVideoDone) && (
         <div
-          className={`relative w-full bg-[#F1F2F2] ${FRAME_ASPECT[format]} ${
+          className={`suite-concept-visual relative w-full bg-[#F1F2F2] ${FRAME_ASPECT[format]} ${
             isGenerating && !gen.previewUrl ? "animate-pulse motion-reduce:animate-none" : ""
           }`}
         >
@@ -439,9 +443,11 @@ export function ConceptCard({
       )}
 
       {/* Copy + action */}
-      <div className="min-w-0 space-y-3 p-4 sm:p-5">
+      <div className="suite-concept-body min-w-0 space-y-3 p-4 sm:p-5">
         <div className="min-w-0 break-words [overflow-wrap:anywhere]">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">{eyebrow}</p>
+          <p className="suite-concept-eyebrow text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">
+            {eyebrow}
+          </p>
           <h4 className="mt-1.5 font-serif text-[21px] font-light leading-tight text-[#0D0E10]">
             {concept.title}
           </h4>

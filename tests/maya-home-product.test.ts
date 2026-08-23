@@ -12,15 +12,17 @@ describe("member Maya Home", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
     expect(shell).toContain("MayaHomeWorkspace")
-    expect(shell).toContain('label: "Maya", icon: MessageCircle')
+    expect(shell).toContain('label: "Create", icon: Sparkles')
     expect(shell).toContain("const [sectionReady, setSectionReady] = useState(true)")
     expect(shell).toContain('saveStoredAppSection("create")')
     expect(shell).toContain('homeMode={mayaHomeEnabled && activeSection === "create"}')
     expect(shell).toContain("vaultMayaIncluded && !mayaHomeEnabled")
     expect(concierge).toContain('role={homeMode ? "region" : "dialog"}')
-    expect(concierge).toContain("Tell Maya the messy version…")
-    expect(concierge).toContain("One idea in. One finished post out.")
-    expect(concierge).toContain("what do you want to say?")
+    expect(concierge).toContain("Or tell Maya what you need…")
+    expect(concierge).toContain("AI Photos")
+    expect(concierge).toContain("Edit a Photo")
+    expect(concierge).toContain("Build a Post")
+    expect(concierge).toContain("what are we making?")
     expect(concierge).toContain("Brand profile")
   })
 
@@ -56,7 +58,7 @@ describe("member Maya Home", () => {
     const finishRoute = read("app/api/app-v3/maya/finish-post/route.ts")
     const placementRoute = read("app/api/app-v3/maya/feed-plan/place-photo/route.ts")
 
-    expect(concierge).toContain("Tell me what you want to say, share, or sell")
+    expect(concierge).toContain("Choose a clear path below")
     expect(concierge).not.toContain('aria-label="Ways Maya can help"')
     expect(concierge).toContain("NEXT_POST_REQUEST")
     expect(concierge).toContain('homeMode ? "starter_chip" : "gallery_action"')
@@ -83,12 +85,14 @@ describe("member Maya Home", () => {
     expect(finishRoute).not.toContain("resolveWeeklyPackageCalendarCopy")
   })
 
-  it("keeps Maya Home to Maya, Work, and You while preserving direct legacy routes", () => {
+  it("keeps all five destinations visible while preserving stable legacy routes", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
 
-    expect(shell).toContain('label: "Maya", icon: MessageCircle')
-    expect(shell).toContain('label: "Work", icon: FolderOpen')
-    expect(shell).toContain('label: "You", icon: UserRound')
+    expect(shell).toContain('label: "Create", icon: Sparkles')
+    expect(shell).toContain('label: "Gallery", icon: Images')
+    expect(shell).toContain('label: "Calendar", icon: CalendarDays')
+    expect(shell).toContain('label: "Learn", icon: LibraryBig')
+    expect(shell).toContain('label: "Account", icon: UserRound')
     expect(shell).toContain("NAV.filter(item => isPrimaryMemberSection(item.id))")
   })
 

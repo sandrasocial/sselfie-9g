@@ -26,22 +26,24 @@ const concept = {
 }
 
 describe("Maya simplified member journey", () => {
-  it("shows only the three places a member needs while preserving direct Calendar access", () => {
-    expect(PRIMARY_MEMBER_SECTIONS).toEqual(["create", "photos", "account"])
+  it("shows the five plain-language member destinations without changing their route ids", () => {
+    expect(PRIMARY_MEMBER_SECTIONS).toEqual(["create", "photos", "calendar", "library", "account"])
     expect(resolveAppV3InitialSection("calendar")).toBe("calendar")
     expect(resolveAppV3InitialSection("library")).toBe("library")
   })
 
-  it("presents the three member places as Maya, Work, and You without moving stored data", () => {
+  it("names the member places by their real destinations without moving stored data", () => {
     const shell = readFileSync(resolve(process.cwd(), "components/app-v3/app-v3-shell.tsx"), "utf8")
     const gallery = readFileSync(
       resolve(process.cwd(), "components/app-v3/gallery-view.tsx"),
       "utf8"
     )
 
-    expect(shell).toContain('label: "Maya"')
-    expect(shell).toContain('label: "Work"')
-    expect(shell).toContain('label: "You"')
+    expect(shell).toContain('label: "Create"')
+    expect(shell).toContain('label: "Gallery"')
+    expect(shell).toContain('label: "Calendar"')
+    expect(shell).toContain('label: "Learn"')
+    expect(shell).toContain('label: "Account"')
     expect(gallery).toContain("Post projects")
     expect(gallery).toContain("Continue where you left off.")
     expect(shell).toContain("onOpenProjects={limited ? undefined : openHistory}")
@@ -50,14 +52,52 @@ describe("Maya simplified member journey", () => {
     )
   })
 
+  it("separates Maya into the three creative paths members recognise", () => {
+    const concierge = readFileSync(
+      resolve(process.cwd(), "components/app-v3/maya-concierge.tsx"),
+      "utf8"
+    )
+    const gallery = readFileSync(
+      resolve(process.cwd(), "components/app-v3/gallery-view.tsx"),
+      "utf8"
+    )
+
+    expect(concierge).toContain("AI Photos")
+    expect(concierge).toContain("Edit a Photo")
+    expect(concierge).toContain("Build a Post")
+    expect(concierge).toContain("Plan a photoshoot")
+    expect(concierge).toContain("Caption")
+    expect(concierge).toContain("Stories")
+    expect(gallery).toContain("Choose a photo to edit")
+    expect(gallery).toContain("Your original stays untouched")
+  })
+
+  it("routes learning through one visible destination with safe external handoffs", () => {
+    const shell = readFileSync(resolve(process.cwd(), "components/app-v3/app-v3-shell.tsx"), "utf8")
+    const library = readFileSync(
+      resolve(process.cwd(), "components/app-v3/library-view.tsx"),
+      "utf8"
+    )
+    const destinations = readFileSync(
+      resolve(process.cwd(), "lib/app-v3/learning-destinations.ts"),
+      "utf8"
+    )
+
+    expect(shell).toContain("learningDestinations={LEARNING_DESTINATIONS}")
+    expect(library).toContain("Learning spaces")
+    expect(destinations).toContain("https://www.skool.com/sselfie-photo-club-2569")
+    expect(destinations).toContain("NEXT_PUBLIC_SSELFIE_STUDIO_COM_URL")
+    expect(destinations).toContain('status: studioComUrl ? "available" : "coming-soon"')
+  })
+
   it("makes the finished post the explicit Create promise", () => {
     const source = readFileSync(
       resolve(process.cwd(), "components/app-v3/visual-front-door.tsx"),
       "utf8"
     )
 
-    expect(source).toContain("Your next finished post starts here.")
-    expect(source).toContain("One selfie. One idea. One finished post")
+    expect(source).toContain("Create something worth posting.")
+    expect(source).toContain("Start with the photo.")
     expect(source).toContain("focusedQuickActions.map")
     expect(source).toContain("{!operatingLayerEnabled ? (")
     expect(source).not.toContain("!operatingLayerEnabled || moreOpen")

@@ -1,9 +1,9 @@
 "use client"
 
 // SSELFIE Studio 3.0 - focused member shell.
-// The standard app has one creation front door and three understandable places: Maya, Work,
-// and You. Calendar, Learn, and the existing Maya engine remain intact behind contextual
-// actions and direct links instead of competing in primary navigation.
+// The standard app has five plain-language destinations: Create, Gallery, Calendar, Learn,
+// and Account. Create opens Maya's three member-facing work paths while the stored section ids
+// and existing Maya engine remain intact.
 // Calendar (2026-07-06, Feed Planner Phase 2): the live Feed Planner product now lives here
 // too, in the same visual language as the rest of the shell, gated the same way Create is
 // (!limited - Suite members already have full Feed Planner entitlement via the existing
@@ -22,8 +22,9 @@ import { ContentView } from "./content-view"
 import { FeedPlannerView } from "./feed-planner-view"
 import { LibraryView } from "./library-view"
 import { AccountView } from "./account-view"
+import { EditMode } from "./edit-mode"
 import type { Aesthetic, AppV3AnalyticsCohort, OutputFormat } from "./types"
-import type { AppV3GalleryAsset } from "@/lib/app-v3/gallery-assets"
+import { parseGalleryAssetId, type AppV3GalleryAsset } from "@/lib/app-v3/gallery-assets"
 import { resolveAppV3AllowedSection, type AppV3Section } from "@/lib/app-v3/navigation"
 import { isPrimaryMemberSection } from "@/lib/app-v3/member-navigation"
 import {
@@ -38,14 +39,13 @@ import { PostSuccessReviewPrompt } from "@/components/testimonials/post-success-
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import type { SkoolMayaHandoff } from "@/lib/app-v3/maya/skool-handoff"
 import { SuiteEditorialNavigation } from "./suite-editorial-navigation"
+import { LEARNING_DESTINATIONS } from "@/lib/app-v3/learning-destinations"
 import {
   CalendarDays,
-  FolderOpen,
   Images,
   Sparkles,
   UserRound,
   LibraryBig,
-  MessageCircle,
   type LucideIcon,
 } from "lucide-react"
 
@@ -85,8 +85,7 @@ export interface AppV3ShellProps {
 }
 
 // The stored section ids stay unchanged so existing deep links and remembered member state
-// remain valid. The standard member navigation presents those stable surfaces as Maya, Work,
-// and You; Calendar and Learn remain available through contextual actions and direct links.
+// remain valid. Visible labels describe the place a member is opening, not the implementation.
 const NAV: { id: AppV3Section; label: string; icon: LucideIcon }[] = [
   { id: "create", label: "Create", icon: Sparkles },
   { id: "photos", label: "Gallery", icon: Images },
@@ -272,6 +271,9 @@ function ShellInner({
   // Visual Front Door while client-side storage reconciliation runs.
   const [sectionReady, setSectionReady] = useState(true)
   const [galleryFilter, setGalleryFilter] = useState<GalleryFilter>("all")
+  const [galleryMode, setGalleryMode] = useState<"browse" | "edit">("browse")
+  const [galleryRevision, setGalleryRevision] = useState(0)
+  const [editAsset, setEditAsset] = useState<AppV3GalleryAsset | null>(null)
   const {
     isOpen: mayaOpen,
     openWithAesthetic,
@@ -368,9 +370,22 @@ function ShellInner({
     }
   }
 
-  function openGallery(filter: GalleryFilter = "all") {
+  function openGallery(filter: GalleryFilter = "all", mode: "browse" | "edit" = "browse") {
     setGalleryFilter(filter)
+    setGalleryMode(mode)
     goToSection("photos")
+  }
+
+  function startPhotoEdit() {
+    openGallery("all", "edit")
+  }
+
+  function outputFormatForAsset(asset: AppV3GalleryAsset): OutputFormat {
+    if (asset.contentType === "photoshoot") return "photoshoot"
+    if (asset.contentType === "reel-cover") return "reel-cover"
+    if (asset.contentType === "carousel") return "carousel"
+    if (asset.contentType === "story-slide") return "story-slide"
+    return "photo"
   }
 
   // Gallery "Add to a post": carry the chosen image into the Calendar's apply mode. The old
@@ -491,25 +506,7 @@ function ShellInner({
           (calendarIncluded && item.id === "calendar")
       )
     : NAV.filter(item => isPrimaryMemberSection(item.id))
-  const nav = mayaHomeEnabled
-    ? visibleNav.map(item =>
-        item.id === "create"
-          ? { ...item, label: "Maya", icon: MessageCircle }
-          : item.id === "photos"
-            ? { ...item, label: "Work", icon: FolderOpen }
-            : item.id === "account"
-              ? { ...item, label: "You", icon: UserRound }
-              : item
-      )
-    : visibleNav.map(item =>
-        item.id === "create"
-          ? { ...item, label: "Today", icon: Sparkles }
-          : item.id === "photos"
-            ? { ...item, label: "Work", icon: FolderOpen }
-            : item.id === "account"
-              ? { ...item, label: "You", icon: UserRound }
-              : item
-      )
+  const nav = visibleNav
 
   return (
     <main
@@ -594,7 +591,11 @@ function ShellInner({
         ))}
       {activeSection === "photos" && !mayaEssential && (
         <GalleryView
+          key={galleryRevision}
           initialFilter={galleryFilter}
+          mode={galleryMode}
+          onEditAsset={asset => setEditAsset(asset)}
+          onCancelEdit={() => setGalleryMode("browse")}
           onOpenProjects={limited ? undefined : openHistory}
           onMakeMotion={videoEnabled ? createMotionFromImage : undefined}
           onStartCreate={limited ? undefined : createFirstPhotoFromGallery}
@@ -677,14 +678,26 @@ function ShellInner({
           calendarSurfaceActive={calendarIncluded && activeSection === "calendar"}
           calendarIncluded={calendarIncluded}
           skoolHandoff={initialSkoolHandoff}
+          onStartEdit={startPhotoEdit}
         />
       )}
+      {editAsset ? (
+        <EditMode
+          imageUrl={editAsset.url}
+          format={outputFormatForAsset(editAsset)}
+          sourceImageId={parseGalleryAssetId(editAsset.id)?.numericId ?? null}
+          sourceTitle={editAsset.title}
+          onClose={() => setEditAsset(null)}
+          onResult={() => setGalleryRevision(revision => revision + 1)}
+        />
+      ) : null}
       <PostSuccessReviewPrompt />
 
       <SuiteEditorialNavigation
         items={nav}
         activeSection={activeSection}
-        onNavigate={next => (next === "photos" ? openGallery("all") : goToSection(next))}
+        learningDestinations={LEARNING_DESTINATIONS}
+        onNavigate={next => (next === "photos" ? openGallery("all", "browse") : goToSection(next))}
       />
     </main>
   )

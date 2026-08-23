@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react"
 
 import type { AppV3Section } from "@/lib/app-v3/navigation"
+import type { LearningDestination } from "@/lib/app-v3/learning-destinations"
 
 export interface SuiteEditorialNavItem {
   id: AppV3Section
@@ -12,6 +13,7 @@ interface SuiteEditorialNavigationProps {
   items: SuiteEditorialNavItem[]
   activeSection: AppV3Section
   onNavigate: (section: AppV3Section) => void
+  learningDestinations?: readonly LearningDestination[]
 }
 
 const METHOD = ["TAKE", "CREATE", "EDIT", "POST"] as const
@@ -20,6 +22,7 @@ export function SuiteEditorialNavigation({
   items,
   activeSection,
   onNavigate,
+  learningDestinations = [],
 }: SuiteEditorialNavigationProps) {
   return (
     <>
@@ -55,6 +58,40 @@ export function SuiteEditorialNavigation({
             )
           })}
         </nav>
+
+        {learningDestinations.length > 0 ? (
+          <div className="border-t border-white/12 px-7 py-5">
+            <p className="text-[8px] uppercase tracking-[0.28em] text-white/38">
+              Learn &amp; practice
+            </p>
+            <div className="mt-3 grid gap-1">
+              {learningDestinations.map(destination =>
+                destination.href ? (
+                  <a
+                    key={destination.id}
+                    href={destination.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group flex min-h-10 items-center justify-between gap-3 text-[10px] uppercase tracking-[0.12em] text-white/62 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  >
+                    <span>{destination.label}</span>
+                    <span aria-hidden className="text-[color:var(--suite-accent)]">
+                      ↗
+                    </span>
+                  </a>
+                ) : (
+                  <span
+                    key={destination.id}
+                    className="flex min-h-10 items-center justify-between gap-3 text-[10px] uppercase tracking-[0.12em] text-white/32"
+                  >
+                    <span>{destination.label}</span>
+                    <span className="text-[8px] tracking-[0.1em]">Soon</span>
+                  </span>
+                )
+              )}
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-auto border-t border-white/12 px-7 py-7">
           <p className="text-[8px] uppercase tracking-[0.28em] text-white/38">The method</p>
