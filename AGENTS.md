@@ -43,3 +43,11 @@ Sandra's current request is the brief. Start with what she is asking for now.
 - Production: `https://sselfie.ai`
 - Hosting: Vercel
 - The retired `/Users/MD760HA/sselfie-9g` folder must not be edited.
+
+## Visual design
+
+- For any product UI, marketing, email, checkout, learning, Skool, or social visual task, read
+  `docs/SSELFIE_DESIGN_SYSTEM.md` before making visible changes.
+- That file is the sole current visual authority. Dated audits, generated prompts, output folders,
+  archived systems, and existing inconsistent UI are not alternative design instructions.
+- The approved 2026-08-23 desktop/mobile reference is linked from the governing document.

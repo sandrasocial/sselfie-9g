@@ -1,265 +1,292 @@
 # SSELFIE Design System
 
-Last updated: 2026-08-09
+Status: current and governing
 
-This is the official design authority for SSELFIE product UI, public pages, lifecycle emails, and future Codex implementation work.
+Approved by Sandra: 2026-08-23
 
-If another design document conflicts with this file, this file wins.
+Visual direction: **Bold Editorial Studio**
 
-## Approved Direction
+This is the sole visual-design authority for SSELFIE product UI, public marketing, lifecycle and
+transactional email, checkout, learning material, Skool assets, and future implementation work.
 
-SSELFIE is a light luxury editorial visual transformation brand.
+If another design document, audit, generated prompt, screenshot, component, or archived file
+conflicts with this file, this file wins. Sandra's later explicit approval can replace this direction,
+but the approved change must be recorded here before it becomes the new default.
 
-The product should feel:
+## Approved Visual Reference
 
-- Light luxury editorial
-- Premium but simple
-- Feminine but not girly
-- Minimal and visual-first
-- Warm, calm, and spacious
-- Built around real selfie transformation
-- Human before technical
+The approved desktop and mobile direction is stored at:
 
-SSELFIE should not feel like:
+`docs/brand/references/sselfie-bold-editorial-direction-2026-08-23.png`
 
-- A dark SaaS product
-- A colorful dashboard
-- An AI architecture showcase
-- A generic creator operating system
-- Old SELFIE AI visual language
-- Coaching-funnel template design
+Use that image to understand visual character, contrast, hierarchy, photographic scale, rectangular
+composition, and responsive relationship. It is not literal product scope: generated faces, labels,
+navigation destinations, counts, and project names are placeholders. Current product behavior,
+customer access, and verified information architecture remain authoritative.
 
-## Visual Principles
+## Brand Character
 
-1. Use light, editorial surfaces first.
-2. Let images carry the emotional transformation.
-3. Keep one clear outcome per screen or email.
-4. Use generous spacing and quiet hierarchy.
-5. Use deep graphite or luxury black for contrast and CTAs, not as the default mood.
-6. Keep UI calm, minimal, and readable.
-7. Avoid icons and emojis unless Sandra explicitly approves a specific use.
-8. Avoid colorful SaaS palettes, gradients, pink, green, purple, and decorative UI noise.
-9. Dark editorial overlays are allowed on full-bleed images when they make white typography readable and the image feel cinematic.
-10. Do not use dark-first email templates.
-11. Do not reuse old SELFIE AI design guidance as current SSELFIE guidance.
+SSELFIE is a bold, feminine editorial visual studio for selfies and AI selfies.
 
-## Color Direction
+It should feel:
 
-Approved base:
+- Confident, modern, graphic, and premium
+- Fashion-editorial without becoming cold or inaccessible
+- Feminine through imagery, typography, confidence, and point of view
+- Photo-first and transformation-led
+- Clear enough to use immediately
+- Human-led, with AI supporting the woman rather than becoming the visual hero
 
-- Seasalt `#F8FAFA`
-- White `#FFFFFF`
-- Silver `#C5C6C8`
-- Gray `#818283`
-- Davy's Gray `#4F5052`
-- Raisin Black `#282728`
-- Night `#0D0E10`
+It must not feel:
 
-Approved Studio 3.0 depth layer (Sandra, 2026-08-09):
+- Soft, romantic, pastel, girly, or wellness-like
+- Like a generic white-card SaaS dashboard
+- Like a purple-gradient AI product
+- Like a Canva template or coaching funnel
+- Like luxury created through beige, gold, script fonts, or decoration
+- Like an enterprise control center full of metrics and tiny controls
 
-- Cool Porcelain `#F4F7F8` — primary app canvas
-- Paper `#FCFDFD` — elevated cards and conversation surfaces
-- Cool Smoke `#E3E8EB` — secondary sections and inset panels
-- Mist `#D7E0E5` — selected navigation and stronger tonal bands
-- Steel `#AEB9C1` — visible borders and frames
-- Slate `#5D6A73` — cool-toned labels and secondary contrast
-- Graphite `#252C31` — body and premium anchor contrast
+## Governing Method
 
-These Studio colors add depth through tonal bands, frames, and restrained shadows. They stay cool
-and desaturated. Do not reinterpret them as blue feature colors, gradients, warm taupe, beige, or a
-colorful dashboard. Existing Night CTAs and light editorial image-first layouts remain the anchor.
+The customer journey is:
 
-Use Night/Raisin Black carefully. It can be a button, headline contrast, thin frame, premium accent, or image overlay. It should not become the dominant page background or make the product feel heavy/dark by default.
+`TAKE -> CREATE -> EDIT -> POST`
 
-Approved exception: full-bleed image heroes may use Night/Raisin Black gradient overlays when the photo remains visible and the section reads as cinematic editorial imagery, not a dark SaaS/product shell. The page should continue into Seasalt, white, or cool smoke sections below the hero.
+This method should organize navigation, page hierarchy, marketing explanation, learning material,
+and visual storytelling where relevant. Do not add extra top-level stages that compete with it.
 
-Approved tutorial annotation token: content-kit tutorial carousels may use neutral charcoal `#3A3A3A` for screenshot callouts, hand-drawn circles, arrows, and before/after labels. This token is only for tutorial carousel annotations and must not become a general UI or email accent.
+## Core Visual Principles
 
-Avoid:
+1. Make selfies and visual work the largest elements.
+2. Use high contrast and decisive composition.
+3. Prefer an editorial grid over rows of identical floating cards.
+4. Use asymmetric layouts intentionally, while keeping controls predictable.
+5. Use strong rectangular frames, thin rules, and precise alignment.
+6. Use generous negative space around a small number of clear actions.
+7. Keep Maya integrated as a creative partner or director, never a generic chatbot bubble.
+8. Use one dominant message and one primary action per section.
+9. Express femininity through art direction, not pink decoration.
+10. Preserve usability, accessibility, real product behavior, and customer trust.
 
-- Black-background product UI
-- Warm beige/cream drift
-- Pink brand systems
-- Green accents
-- Purple AI palettes
-- Bright SaaS colors
-- Gold accents unless Sandra explicitly approves a specific use
-- Heavy black email shells
-- Random gradients
+## Color System
+
+### Core tokens
+
+- Editorial Ink `#0D0E10` — navigation, mastheads, strong frames, headlines, primary contrast
+- Carbon `#252525` — secondary dark surfaces and body contrast
+- Chalk `#F7F7F5` — primary editorial canvas
+- Paper `#FFFFFF` — readable content and email surfaces
+- Concrete `#E7E7E5` — quiet section separation
+- Silver `#C5C6C8` — rules, borders, inactive controls
+- Slate `#5D6064` — secondary text
+- Oxblood `#981826` — selected states, progress, and a limited number of primary actions
+- Error `#B42318` — destructive and error feedback only
+- Success `#216E4E` — system success feedback only, not a brand accent
+
+### Color rules
+
+- Black, chalk, white, and photography carry most of the system.
+- Oxblood is the only expressive brand accent. Use it sparingly so it retains meaning.
+- A page may be dark-first when it is an immersive photographic creation or editing workspace.
+- Marketing and product may alternate black and chalk sections to create editorial rhythm.
+- Emails remain primarily light for readability, with black mastheads or image panels allowed.
+- Preserve natural skin tones. Do not force brand color grading onto faces.
+- System feedback colors may appear only when their meaning is necessary.
+
+### Prohibited color behavior
+
+- No blush, dusty rose, pastel pink, beige, taupe, cream, or gold brand systems.
+- No purple or blue AI gradients.
+- No neon accents, rainbow feature coding, or decorative gradients.
+- No new brand color without Sandra's explicit approval and an update to this document.
+- Do not hardcode new colors inside components when a design token exists.
 
 ## Typography
 
-### Product And Web
+### Implementation baseline
 
-Headlines:
+- Display and editorial headlines: `Cormorant Garamond`
+- Product UI, body, labels, and buttons: `Manrope`
+- Email serif fallback: Georgia, Times New Roman, serif
+- Email sans fallback: Arial, Helvetica, sans-serif
 
-- Cormorant Garamond
-- Or another approved editorial serif
-- Light to regular weight
-- Spacious, feminine, editorial
+These two web families are the approved baseline because they are already available in the active
+Suite. Do not introduce a third product or marketing family without an approved typography specimen.
 
-Body and UI:
+### Type behavior
 
-- Neue Einstellung when available
-- Or another approved clean sans
-- Inter may remain in existing product UI until a planned typography pass replaces it safely
+- Use large editorial serif headlines with strong contrast and tight, deliberate line breaks.
+- Use the serif selectively; interfaces still need clear sans-serif controls and body copy.
+- Use uppercase sans labels for navigation, steps, metadata, eyebrows, and compact actions.
+- Small labels may use wider tracking, but must remain readable.
+- Body copy should be calm, direct, and comfortably sized.
+- Avoid decorative scripts, faux handwriting, ultra-condensed sports fonts, and thin unreadable type.
+- Do not make every heading serif; hierarchy depends on contrast between display and utility type.
 
-### Email Fallbacks
+## Shape, Grid, and Depth
 
-Serif:
+- Default product radius: `6px`.
+- Allowed range: `0-10px` for functional surfaces.
+- Large image frames may use `0-8px`; full-bleed imagery may remain square.
+- Pills are reserved for compact filters, status, and segmented controls—not general layout.
+- Use one-pixel dividers and visible frames instead of placing every item on a shadowed card.
+- Shadows should be restrained and used only to clarify elevation.
+- Avoid glassmorphism, floating white-card grids, excessive blur, and ornamental depth.
+- Desktop layouts may use strong vertical rails and asymmetric editorial columns.
+- Mobile layouts should simplify the same hierarchy rather than becoming a different brand.
 
-- Georgia
-- Times New Roman
-- serif
+## Photography and Image Direction
 
-Sans:
-
-- Arial
-- Helvetica
-- sans-serif
-
-Rules:
-
-- Headlines may be large and editorial.
-- Body copy must stay readable on mobile.
-- Uppercase labels are allowed for small eyebrow text and CTAs.
-- Do not use decorative font experiments.
-- Do not use tiny low-contrast body text.
-
-## Image Direction
-
-Images are the strongest proof in SSELFIE.
+Images are the strongest brand material.
 
 Use:
 
-- Sandra's own images
-- Real selfie examples
-- AI photoshoot examples
-- Before and after transformation where relevant
-- Clean, high-end, editorial crops
-- Image-led layouts
+- Sandra's approved imagery and identity references
+- Real member selfies with permission
+- Realistic AI-selfie results with recognizable identity
+- Varied women, crops, outfits, light, and emotional energy
+- Direct gaze, natural skin texture, fashion-aware styling, and confident composition
+- Black-and-white photography when it adds contrast or story
+- Contact-sheet arrangements, image numbering, film-strip rhythm, and editorial crops where useful
 
 Avoid:
 
-- Stock photos
-- Generic AI illustrations
-- Fake-looking lifestyle imagery
-- Dark blurry atmosphere with no visible transformation
-- Image-only emails
+- Repeating one AI face across multiple tiles
+- Generic stock women or plastic AI beauty imagery
+- Soft-focus lifestyle photography with no clear visual outcome
+- Decorative flowers, cosmetic motifs, sparkles, or feminine clichés
+- Heavy filters that distort skin or identity
+- Using unapproved customer imagery
 
-Every meaningful email image needs alt text.
+Freeze and approve identity-sensitive photography before adding typography or layout around it.
 
-## Email Design Direction
+## Iconography and Motion
 
-Future SSELFIE emails should use a light editorial template.
+- Use simple line icons with consistent stroke weight.
+- Icons support labels; they should not replace unclear navigation language.
+- Avoid decorative icon collections, emojis, 3D icons, and AI sparkle clutter.
+- Motion should clarify selection, progress, opening, and completion.
+- Prefer quick fades, reveals, and directional transitions over bouncy motion.
+- Respect reduced-motion preferences.
 
-Approved email structure:
+## Product UI: SSELFIE Suite
 
-1. Warm off-white outer background.
-2. Soft white central container.
-3. Optional single hero image when it adds proof or emotional context.
-4. Small uppercase eyebrow label.
-5. Large serif headline.
-6. Readable sans body copy.
-7. Minimal black or graphite CTA.
-8. Simple `Sandra x` signoff when appropriate.
-9. Compliant footer and unsubscribe.
-10. Mobile-first spacing.
+Suite should feel like a visual studio, not a dashboard.
 
-Rules:
+- Keep `TAKE -> CREATE -> EDIT -> POST` visible and understandable.
+- Desktop may use a black navigation rail with a high-contrast editorial canvas.
+- Mobile should use a compact black masthead, photo-first content, and clear stage navigation.
+- Prioritize a few large photographic actions over many small feature cards.
+- Use project/contact-sheet views for recent work where they improve recognition.
+- Maya should appear as an integrated creative partner, focused workspace, or purposeful sheet.
+- Keep providers, models, prompt architecture, billing mechanics, and internal complexity quiet.
+- Preserve loading, empty, error, trial, limited-access, destructive, and generated-result states.
+- Do not change access, billing, credits, entitlements, generation behavior, or customer data as part
+  of a visual migration.
 
-- Text must still work if images do not load.
-- No image-only emails.
-- No dark-first templates.
-- No colorful buttons.
-- No icons.
-- No emojis.
-- No generic SaaS cards.
-- Use one primary CTA.
-- Keep body copy short and readable.
-- Use visual proof only when it helps the message.
+## Public Marketing
 
-Current note:
+Marketing should use the same DNA without imitating an app screen.
 
-- `lib/email/templates/stone-email.ts` is the main active shared email shell. As of 2026-07-06 (EMAIL-02) it follows this file: Seasalt outer, white card, serif headline, Gray eyebrows, Night CTA, cool separators. The vault `lib/email/editorial-email.ts` shell uses the same cool palette. The earlier warm-cream palette is retired (cool-monochrome lock).
+- Use bold serif promises, large real imagery, black/chalk rhythm, and decisive composition.
+- Lead with selfies and AI selfies, then show how editing and posting make them useful.
+- Use photographic proof and transformation instead of generic feature icon grids.
+- Use rectangular editorial sections, strong rules, and selective oxblood actions.
+- Keep offer details and CTAs easy to find.
+- Avoid huge empty slogans without proof, generic SaaS mockups, repetitive card grids, and fake UI.
 
-## Public Page Direction
+## Email
 
-Public pages should feel:
+Email uses an email-safe expression of the same system.
 
-- Editorial
-- Image-led
-- Conversion-focused
-- Spacious
-- Feminine and premium
-- Simple enough to understand fast
+- Use a light Paper or Chalk body for readability.
+- A black masthead, thin black rule, or strong image block may establish the brand.
+- Use one editorial headline, readable body copy, and one primary CTA.
+- The primary CTA may use Editorial Ink or Oxblood; do not alternate decorative button colors.
+- Use one proof image when it materially improves the message.
+- Keep text meaningful when images are blocked and provide useful alt text.
+- Keep compliant footer and unsubscribe content intact.
+- Do not build image-only emails, full dark shells, card dashboards, icon rows, or decorative banners.
+- Test mobile width and representative email-client rendering before replacing a shared template.
 
-Use:
+`lib/email/templates/stone-email.ts` and `lib/email/editorial-email.ts` remain implementation
+starting points, but their visible output must migrate toward this document when email redesign is
+explicitly approved. This document does not authorize a send or a live template replacement.
 
-- One dominant promise per section
-- Real imagery
-- Clear offer details
-- Minimal black CTAs
-- Warm off-white and soft white rhythm
+## Checkout, Learning, Skool, and Social
 
-Avoid:
+- Checkout uses the most restrained version: high contrast, minimal distraction, clear money truth.
+- Learning materials use bold section labels, strong image examples, and readable instructional type.
+- Skool covers prioritize thumbnail readability and varied real proof within the shared system.
+- Social graphics may use contact sheets, numbering, black bands, crisp serif headlines, and oxblood
+  details, while keeping the selfie visible.
+- Do not force identical layouts across formats; preserve the design language and hierarchy.
 
-- Abstract AI language
-- SaaS feature grids
-- Over-explaining
-- Dark landing-page mood as default
-- Decorative icon rows
+## Accessibility and Responsive Rules
 
-## App UI Direction
+- Meet WCAG AA contrast for body copy, controls, and essential labels.
+- Do not use Slate or Silver for important small text on Chalk or Paper.
+- Touch targets should be at least 44 by 44 CSS pixels.
+- Keyboard focus must remain visible.
+- Mobile layouts must be intentionally composed, not compressed desktop screens.
+- Test at minimum one small phone, one large phone, one laptop, and one wide desktop.
+- Preserve semantic structure, accessible dialogs, live regions, and destructive-action confirmation.
 
-The app should feel calm and useful, not like a control center.
+## Implementation Governance
 
-Maya is the emotional center of the product.
+### Single source of truth
 
-App screens should:
+Only this file governs current visual direction. The following are not current design instructions:
 
-- Reduce visible decisions
-- Hide AI/provider complexity
-- Use human labels
-- Keep advanced systems available but quiet
-- Preserve stable infrastructure underneath
-- Prioritize outcome-first flows
+- Files under `docs/archive/**`
+- Dated design and UX audits
+- Generated image prompts and output folders
+- Old screenshots and earlier prototypes
+- Historical strategy documents
+- Existing inconsistent UI merely because it is live
 
-## Current Active Styling Files
+The pointer `docs/brand/DESIGN_SYSTEM.md`, the repository README, and the documentation index may
+refer here, but must not define competing palettes or rules.
 
-These files currently control active styling and should not be archived:
+### Code rules
 
-- `app/globals.css`
-- `tailwind.config.ts`
-- `lib/design-tokens.ts`
-- `components/theme-provider.tsx`
-- `lib/maya/pro/design-system.ts`
-- Active UI components under `components/sselfie/**`
-- Active email templates under `lib/email/templates/**`
+1. Define approved visual values as named tokens before broad migration.
+2. Build shared Suite, marketing, and email primitives appropriate to each channel.
+3. Do not combine a visual migration with backend, billing, entitlement, or generation rewrites.
+4. Replace hardcoded legacy styling incrementally; do not add another override layer.
+5. Do not introduce a new color, font, radius system, or component family without approval.
+6. Keep real copy, state, navigation, and behavior separate from visual-reference placeholders.
+7. Preserve unrelated customer-facing routes until their usage and entitlement dependencies are known.
 
-## Current Brand Docs
+### Required proof before broad rollout
 
-Active:
+Before applying a new expression across the business, approve these together:
+
+1. One representative Suite screen on desktop and mobile
+2. One representative public marketing section on desktop and mobile
+3. One representative lifecycle or transactional email
+
+After approval, migrate channel by channel. Do not treat one attractive screenshot as complete QA.
+
+### Required verification
+
+- Visual screenshots for critical desktop and mobile states
+- Functional regression tests for changed Suite components
+- Keyboard, focus, overflow, and responsive checks
+- Loading, empty, error, modal, trial, limited-access, and completed-result checks
+- Email preview and mobile render checks
+- Review against the prohibited patterns in this document
+
+## Authority and History
+
+Current authority:
 
 - `docs/SSELFIE_DESIGN_SYSTEM.md`
-- `docs/brand/SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md`
-- `docs/brand/source/2026-06-27/`
-- `docs/brand/SANDRA_VOICE_OS_2026-07-16.md`
-- Live UI and current code for implementation truth
+- Approved reference: `docs/brand/references/sselfie-bold-editorial-direction-2026-08-23.png`
 
-Legacy reference:
+Historical references:
 
+- `docs/archive/legacy-design-systems/SSELFIE_DESIGN_SYSTEM_2026-08-09.md`
 - `docs/archive/legacy-design-systems/DESIGN_SYSTEM_2026-05-02.md`
 
-## Implementation Rules
-
-1. Audit before changing visible design.
-2. Do not redesign multiple systems in one batch.
-3. Do not mix backend rewrites with UX cleanup.
-4. Preserve stable infrastructure.
-5. Prefer small diffs.
-6. Use existing components and tokens first.
-7. Do not introduce new colors, fonts, or visual systems without Sandra approval.
-8. Test mobile and desktop for visible surface changes.
-9. Email redesigns must include unsubscribe/footer compliance.
-10. If a legacy file conflicts with this document, follow this document.
+Historical files are retained for traceability only. They must never override this document.
