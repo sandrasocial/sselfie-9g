@@ -143,6 +143,10 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
           box-shadow: 0 24px 72px rgba(13, 14, 16, 0.14);
         }
 
+        .studio-3-root .suite-maya-panel[data-home-mode="true"] {
+          box-shadow: none;
+        }
+
         .studio-3-root .suite-maya-header {
           background: var(--suite-night);
           border-bottom: 3px solid var(--suite-accent);
@@ -194,12 +198,15 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root .suite-maya-send {
+          background: var(--suite-night);
+        }
+
+        .studio-3-root .suite-maya-send:hover {
           background: var(--suite-accent);
         }
 
         .studio-3-root .suite-maya-input:focus {
-          border-color: var(--suite-accent);
-          box-shadow: 0 0 0 3px rgba(152, 24, 38, 0.08);
+          box-shadow: none;
         }
 
         .studio-3-root .suite-concept-card {

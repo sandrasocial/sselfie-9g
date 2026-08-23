@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import dynamic from "next/dynamic"
+import { ArrowUp, MoreHorizontal, Paperclip, SquarePen } from "lucide-react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { useConcierge } from "./concierge-context"
@@ -117,8 +118,8 @@ import {
   type MayaDraftSnapshot,
 } from "./continuity"
 
-/** Maya's profile image (one of Sandra's editorial portraits). Swap freely. */
-const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
+/** Maya is a distinct creative partner. Keep her portrait separate from member references. */
+const MAYA_AVATAR = "/brand/maya-avatar-editorial-v1.png"
 
 const MayaFounderTestMode = dynamic(
   () =>
@@ -131,14 +132,27 @@ const MayaFounderTestMode = dynamic(
 const NEXT_POST_REQUEST =
   "Help me create one finished post I can publish. Start with one of my saved selfies and use what you know about my current priority or unfinished work. Choose one strong idea, the format, and a SSELFIE visual direction for me. Include the words I need so the result is ready to use. Ask only one question if it would materially change the post."
 
-/** Small editorial avatar for the conversation thread. */
+/** Editorial portrait for Maya; member avatars remain deliberately quieter. */
 function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
+  const isMaya = src === MAYA_AVATAR
   return (
-    <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-[2px] border border-[#C5C6C8]/50 bg-[#ECEDED]">
+    <div
+      className={`relative shrink-0 overflow-hidden rounded-full bg-[#ECEDED] ${
+        isMaya
+          ? "h-10 w-10 border border-[#0D0E10] ring-2 ring-white"
+          : "h-8 w-8 border border-[#C5C6C8]/70"
+      }`}
+    >
       {src ? (
-        <Image src={src} alt="" fill className="object-cover" sizes="28px" />
+        <Image
+          src={src}
+          alt={isMaya ? "Maya" : ""}
+          fill
+          className="object-cover object-[center_30%]"
+          sizes={isMaya ? "40px" : "32px"}
+        />
       ) : (
-        <span className="flex h-full w-full items-center justify-center text-[10px] uppercase text-[#6D6E70]">
+        <span className="flex h-full w-full items-center justify-center text-[9px] uppercase tracking-[0.08em] text-[#6D6E70]">
           {fallback}
         </span>
       )}
@@ -480,17 +494,17 @@ function MayaPathTabs({
             onClick={() => onPick(path.id)}
             disabled={disabled}
             aria-current={active ? "step" : undefined}
-            className={`min-h-[66px] border-r border-[#C5C6C8] px-2 py-2 text-center transition-colors last:border-r-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--suite-accent)] disabled:opacity-45 sm:min-h-[72px] sm:px-4 ${
+            className={`min-h-[64px] border-r border-[#C5C6C8] px-1.5 py-2 text-center transition-colors last:border-r-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--suite-accent)] disabled:opacity-45 sm:min-h-[68px] sm:px-4 ${
               active
                 ? "bg-[color:var(--suite-accent)] text-white"
                 : "bg-white text-[color:var(--suite-night)] hover:bg-[#F1F2F2]"
             }`}
           >
-            <span className="block text-[9px] uppercase tracking-[0.13em] sm:text-[10px] sm:tracking-[0.17em]">
+            <span className="block text-[8px] font-medium uppercase tracking-[0.08em] sm:text-[10px] sm:tracking-[0.17em]">
               {path.label}
             </span>
             <span
-              className={`mt-1 block text-[9px] leading-tight sm:text-[10px] ${active ? "text-white/74" : "text-[#6D6E70]"}`}
+              className={`mt-1 block text-[8px] leading-tight sm:text-[10px] ${active ? "text-white/74" : "text-[#6D6E70]"}`}
             >
               {path.description}
             </span>
@@ -505,7 +519,7 @@ function MayaJourneySteps({ current }: { current: 1 | 2 | 3 | 4 }) {
   const steps = ["Choose a path", "Answer Maya", "Review", "Edit or post"] as const
   return (
     <ol
-      className="suite-maya-journey-steps grid shrink-0 grid-cols-4 border-b border-[#C5C6C8]/70 bg-[#F8FAFA] px-3 py-3 sm:px-5"
+      className="suite-maya-journey-steps grid shrink-0 grid-cols-4 border-b border-[#C5C6C8]/70 bg-[#F8FAFA] px-3 py-3 sm:px-6"
       aria-label={`Step ${current} of 4`}
     >
       {steps.map((step, index) => {
@@ -515,10 +529,10 @@ function MayaJourneySteps({ current }: { current: 1 | 2 | 3 | 4 }) {
         return (
           <li
             key={step}
-            className={`flex min-w-0 items-center gap-1.5 text-[7px] uppercase tracking-[0.08em] sm:text-[8px] sm:tracking-[0.12em] ${active ? "text-[color:var(--suite-accent)]" : "text-[#6D6E70]"}`}
+            className={`relative flex min-w-0 items-center gap-1.5 pr-2 text-[7px] uppercase tracking-[0.06em] after:absolute after:left-[calc(1rem+5px)] after:right-1 after:top-1/2 after:-z-0 after:h-px after:bg-[#C5C6C8] last:after:hidden sm:text-[8px] sm:tracking-[0.12em] ${active ? "text-[color:var(--suite-accent)]" : "text-[#6D6E70]"}`}
           >
             <span
-              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[8px] ${
+              className={`relative z-10 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[8px] ${
                 active || complete
                   ? "border-[color:var(--suite-accent)] bg-[color:var(--suite-accent)] text-white"
                   : "border-[#9A9B9D] text-[#6D6E70]"
@@ -526,7 +540,7 @@ function MayaJourneySteps({ current }: { current: 1 | 2 | 3 | 4 }) {
             >
               {number}
             </span>
-            <span className="truncate">{step}</span>
+            <span className="relative z-10 truncate bg-[#F8FAFA] pr-1">{step}</span>
           </li>
         )
       })}
@@ -565,20 +579,20 @@ function MayaPathChooser({
 
   return (
     <section className="space-y-3" aria-label="Start with Maya">
-      <div className="flex min-w-0 items-end gap-2">
+      <div className="flex min-w-0 items-start gap-3">
         <Avatar src={MAYA_AVATAR} fallback="M" />
-        <p className="min-w-0 max-w-[calc(100%-2.25rem)] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[14px] text-[#282728] sm:max-w-[80%]">
+        <p className="min-w-0 max-w-[calc(100%-3.25rem)] border border-[#C5C6C8] bg-white px-4 py-3 text-[14px] leading-relaxed text-[#282728] sm:max-w-[80%]">
           {prompt}
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2 pl-10">
+      <div className="flex flex-wrap gap-2 pl-[52px]">
         {activePath === "ai-photos" && !hasSelfie ? (
           <button
             type="button"
             onClick={onChooseSelfie}
             disabled={disabled}
-            className={`${actionClass} bg-[color:var(--suite-accent)] text-white hover:bg-[color:var(--suite-night)]`}
+            className={`${actionClass} !bg-[color:var(--suite-accent)] !text-white hover:!bg-[color:var(--suite-night)]`}
           >
             Choose a selfie
           </button>
@@ -588,7 +602,7 @@ function MayaPathChooser({
               type="button"
               onClick={() => onPickFormat("photo")}
               disabled={disabled}
-              className={`${actionClass} bg-[color:var(--suite-accent)] text-white hover:bg-[color:var(--suite-night)]`}
+              className={`${actionClass} !bg-[color:var(--suite-accent)] !text-white hover:!bg-[color:var(--suite-night)]`}
             >
               A new photo
             </button>
@@ -616,7 +630,7 @@ function MayaPathChooser({
               type="button"
               onClick={() => onPickFormat("carousel")}
               disabled={disabled}
-              className={`${actionClass} bg-[color:var(--suite-accent)] text-white hover:bg-[color:var(--suite-night)]`}
+              className={`${actionClass} !bg-[color:var(--suite-accent)] !text-white hover:!bg-[color:var(--suite-night)]`}
             >
               Carousel
             </button>
@@ -4824,7 +4838,7 @@ export function MayaConcierge({
     <div
       className={
         homeMode
-          ? "relative z-10 mx-auto flex h-[calc(100dvh-4.75rem-env(safe-area-inset-bottom))] min-h-[34rem] w-full max-w-5xl justify-center overscroll-x-none px-0 [overflow-x:clip] sm:px-5 sm:py-5"
+          ? "relative z-10 flex h-[calc(100dvh-4.75rem-env(safe-area-inset-bottom))] min-h-[34rem] w-full justify-center overscroll-x-none [overflow-x:clip] lg:h-[100dvh]"
           : "pointer-events-none fixed inset-0 z-50 flex w-full max-w-[100dvw] items-end justify-end overscroll-x-none [overflow-x:clip] lg:items-stretch"
       }
     >
@@ -4860,6 +4874,7 @@ export function MayaConcierge({
         }
         data-maya-format={session.outputFormat ?? "none"}
         data-maya-inspiration={inspirationUrl ? "present" : "none"}
+        data-home-mode={homeMode ? "true" : undefined}
         style={
           keyboardBox
             ? { height: keyboardBox.height, transform: `translateY(${keyboardBox.top}px)` }
@@ -4867,49 +4882,58 @@ export function MayaConcierge({
         }
         className={
           homeMode
-            ? "suite-maya-panel pointer-events-auto relative flex h-full w-full min-w-0 max-w-[58rem] flex-col overflow-hidden border-x border-[#C5C6C8]/40 bg-[#F8FAFA] shadow-[0_18px_65px_rgba(13,14,16,0.06)] sm:rounded-[6px] sm:border"
+            ? "suite-maya-panel pointer-events-auto relative flex h-full w-full min-w-0 flex-col overflow-hidden border-r border-[#C5C6C8]/60 bg-[#F8FAFA] shadow-none"
             : "suite-maya-panel pointer-events-auto relative flex h-[94dvh] w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden rounded-t-[6px] border border-[#C5C6C8]/55 bg-[#F8FAFA] shadow-[0_-18px_60px_rgba(13,14,16,0.16)] animate-in slide-in-from-bottom-4 duration-300 ease-out motion-reduce:animate-none lg:h-[100dvh] lg:w-[27rem] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-[-18px_0_60px_rgba(13,14,16,0.10)] lg:slide-in-from-right"
         }
       >
         {/* Header - one calm row. Actions live in a quiet menu, and Close is always visible
             (on phones the drawer is full-width, so the backdrop can't be tapped to leave). */}
-        <header className="suite-maya-header flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
-          <div className="min-w-0">
-            <h2
-              id="maya-workspace-title"
-              className="max-w-[18rem] font-serif text-[25px] font-light uppercase leading-none tracking-[-0.035em] text-[#0D0E10] sm:max-w-none sm:text-[30px]"
-            >
-              {agentLabel}
-            </h2>
-            {!generalHomeConversation && (
-              <p className="mt-0.5 truncate text-[11px] leading-snug text-[#6D6E70]">
-                {selectedShot ? `Shot reference: ${selectedShot.title}` : workspaceTitle}
-              </p>
-            )}
-            {(creditsUnlimited || creditBalance != null) && (
-              <p className="mt-0.5 truncate text-[11px] leading-snug text-[#6D6E70]">
-                {creditsUnlimited ? "Unlimited credits" : `${creditBalance} credits`}
-              </p>
-            )}
+        <header className="suite-maya-header flex min-h-[64px] min-w-0 shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-3 sm:min-h-[72px] sm:px-8">
+          <div className="flex min-w-0 items-center gap-4">
+            {homeMode ? (
+              <>
+                <span className="font-serif text-[22px] font-light leading-none tracking-[-0.045em] text-white sm:hidden">
+                  SSELFIE
+                </span>
+                <span className="h-8 w-px bg-white/30 sm:hidden" aria-hidden="true" />
+              </>
+            ) : null}
+            <div className="min-w-0">
+              <h2
+                id="maya-workspace-title"
+                className="max-w-[18rem] font-serif text-[22px] font-light uppercase leading-none tracking-[-0.035em] text-[#0D0E10] sm:max-w-none sm:text-[31px]"
+              >
+                {agentLabel}
+              </h2>
+              {!generalHomeConversation && (
+                <p className="mt-0.5 truncate text-[11px] leading-snug text-[#6D6E70]">
+                  {selectedShot ? `Shot reference: ${selectedShot.title}` : workspaceTitle}
+                </p>
+              )}
+              {(creditsUnlimited || creditBalance != null) && (
+                <p className="mt-0.5 truncate text-[11px] leading-snug text-[#6D6E70]">
+                  {creditsUnlimited ? "Unlimited credits" : `${creditBalance} credits`}
+                </p>
+              )}
+            </div>
           </div>
           <div className="relative flex shrink-0 items-center gap-4">
-            {homeMode && cohort === "admin" && (
-              <MayaFounderTestMode
-                messages={messages}
-                context={{
-                  surface: session.mayaContext?.surface ?? "create",
-                  taskId: session.mayaContext?.taskId ?? null,
-                  job: session.mayaContext?.job ?? null,
-                  chatId,
-                  outputFormat: session.outputFormat ?? null,
-                  feedId: session.mayaContext?.feedId ?? null,
-                  postId: session.mayaContext?.postId ?? null,
-                  postPosition: session.mayaContext?.postPosition ?? null,
-                  courseId: session.mayaContext?.lessonRef?.courseId ?? null,
-                  lessonId: session.mayaContext?.lessonRef?.lessonId ?? null,
-                }}
-              />
-            )}
+            {homeMode ? (
+              <button
+                type="button"
+                onClick={handleNewChat}
+                disabled={workspaceBusy}
+                className="inline-flex min-h-11 items-center gap-2 py-1 text-[10px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10] disabled:opacity-40 sm:text-[11px]"
+              >
+                <span className="hidden sm:inline">
+                  {newChatConfirming ? "Confirm new chat" : "New chat"}
+                </span>
+                <SquarePen size={17} strokeWidth={1.6} aria-hidden="true" />
+                <span className="sr-only sm:hidden">
+                  {newChatConfirming ? "Confirm new chat" : "New chat"}
+                </span>
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => {
@@ -4918,9 +4942,14 @@ export function MayaConcierge({
               }}
               aria-expanded={menuOpen}
               aria-controls="maya-workspace-menu"
-              className="inline-flex min-h-11 items-center py-1 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
+              aria-label="More Maya actions"
+              className="inline-flex min-h-11 min-w-8 items-center justify-center py-1 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:text-[#0D0E10]"
             >
-              Menu
+              {homeMode ? (
+                <MoreHorizontal size={19} strokeWidth={1.6} aria-hidden="true" />
+              ) : (
+                "Menu"
+              )}
             </button>
             {!homeMode && (
               <button
@@ -4949,17 +4978,38 @@ export function MayaConcierge({
                   id="maya-workspace-menu"
                   role="group"
                   aria-label="Maya actions"
-                  className="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-[8px] border border-[#C5C6C8]/60 bg-white py-1 shadow-sm"
+                  className="absolute right-0 top-full z-20 mt-2 w-48 overflow-hidden border border-[#0D0E10] bg-white py-1 shadow-[7px_7px_0_rgba(13,14,16,0.10)]"
                 >
-                  <button
-                    type="button"
-                    onClick={handleNewChat}
-                    disabled={workspaceBusy}
-                    className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10] disabled:opacity-40"
-                  >
-                    {newChatConfirming ? "Confirm new chat" : "New chat"}
-                  </button>
-                  {newChatConfirming && (
+                  {homeMode && cohort === "admin" ? (
+                    <div className="border-b border-[#C5C6C8]/60 px-4 py-1">
+                      <MayaFounderTestMode
+                        messages={messages}
+                        context={{
+                          surface: session.mayaContext?.surface ?? "create",
+                          taskId: session.mayaContext?.taskId ?? null,
+                          job: session.mayaContext?.job ?? null,
+                          chatId,
+                          outputFormat: session.outputFormat ?? null,
+                          feedId: session.mayaContext?.feedId ?? null,
+                          postId: session.mayaContext?.postId ?? null,
+                          postPosition: session.mayaContext?.postPosition ?? null,
+                          courseId: session.mayaContext?.lessonRef?.courseId ?? null,
+                          lessonId: session.mayaContext?.lessonRef?.lessonId ?? null,
+                        }}
+                      />
+                    </div>
+                  ) : null}
+                  {!homeMode ? (
+                    <button
+                      type="button"
+                      onClick={handleNewChat}
+                      disabled={workspaceBusy}
+                      className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10] disabled:opacity-40"
+                    >
+                      {newChatConfirming ? "Confirm new chat" : "New chat"}
+                    </button>
+                  ) : null}
+                  {newChatConfirming && !homeMode && (
                     <button
                       type="button"
                       onClick={() => setNewChatConfirming(false)}
@@ -5565,16 +5615,16 @@ export function MayaConcierge({
               aria-relevant="additions text"
               aria-label="Conversation with Maya"
               aria-hidden={!threadVisible || setupOpen}
-              className={`suite-maya-thread min-h-0 min-w-0 flex-1 max-w-full space-y-5 overscroll-x-none px-4 py-5 [overflow-x:clip] sm:px-6 sm:py-6 ${
+              className={`suite-maya-thread min-h-0 min-w-0 flex-1 max-w-full space-y-6 overscroll-x-none px-4 py-5 [overflow-x:clip] sm:px-8 sm:py-7 ${
                 !threadVisible || setupOpen ? "hidden" : "overflow-y-auto"
               }`}
             >
               {/* A specific handoff or active creation gets one short opener. Maya Home uses the
               path prompt below instead, so the first screen never repeats itself. */}
               {!generalHomeConversation || skoolHandoffReady ? (
-                <div className="flex min-w-0 max-w-full items-end gap-2">
+                <div className="flex min-w-0 max-w-full items-start gap-3">
                   <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
-                  <div className="suite-card suite-maya-message suite-maya-message--maya min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[4px] rounded-tl-none bg-white p-4 text-[15px] leading-relaxed text-[#282728] [overflow-wrap:anywhere] sm:max-w-[80%]">
+                  <div className="suite-card suite-maya-message suite-maya-message--maya min-w-0 max-w-[calc(100%-3.25rem)] break-words border border-[#C5C6C8] bg-white p-4 text-[15px] leading-relaxed text-[#282728] [overflow-wrap:anywhere] sm:max-w-[80%]">
                     <p>
                       {skoolHandoffReady && skoolHandoff
                         ? `Continue from ${skoolHandoff.lessonTitle}.`
@@ -6094,16 +6144,16 @@ export function MayaConcierge({
                             {SYSTEM_TURN_LABEL[text.trim()]}
                           </p>
                         ) : isUser ? (
-                          <div className="flex min-w-0 max-w-full flex-row-reverse items-end gap-2">
+                          <div className="flex min-w-0 max-w-full flex-row-reverse items-start gap-3">
                             <Avatar src={userAvatar} fallback="You" />
-                            <div className="suite-maya-message suite-maya-message--user min-w-0 max-w-[calc(100%-2.25rem)] whitespace-pre-wrap break-words rounded-[4px] rounded-br-none bg-[#0D0E10] px-4 py-3 text-[15px] leading-relaxed text-white [overflow-wrap:anywhere] sm:max-w-[80%]">
+                            <div className="suite-maya-message suite-maya-message--user min-w-0 max-w-[calc(100%-2.75rem)] whitespace-pre-wrap break-words border-r-4 border-[color:var(--suite-accent)] bg-[#0D0E10] px-4 py-3 text-[15px] leading-relaxed text-white [overflow-wrap:anywhere] sm:max-w-[76%]">
                               {text}
                             </div>
                           </div>
                         ) : (
-                          <div className="flex min-w-0 max-w-full items-end gap-2">
+                          <div className="flex min-w-0 max-w-full items-start gap-3">
                             <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
-                            <div className="suite-maya-message suite-maya-message--maya min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[4px] rounded-bl-none border border-[#C5C6C8]/30 bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(13,14,16,0.04)] [overflow-wrap:anywhere] sm:max-w-[80%]">
+                            <div className="suite-maya-message suite-maya-message--maya min-w-0 max-w-[calc(100%-3.25rem)] break-words border border-[#C5C6C8] bg-white px-4 py-3.5 [overflow-wrap:anywhere] sm:max-w-[80%]">
                               <Markdown>{text}</Markdown>
                             </div>
                           </div>
@@ -6597,7 +6647,7 @@ export function MayaConcierge({
             row (the eyebrow label and the duplicate close button were eating thread space);
             bottom padding respects the iPhone home-indicator safe area. */}
             <div
-              className={`suite-maya-composer min-w-0 shrink-0 border-t border-[#C5C6C8]/40 px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] [overflow-x:clip] sm:px-6 ${guidedFirstPhoto ? "hidden" : ""}`}
+              className={`suite-maya-composer min-w-0 shrink-0 border-t border-[#C5C6C8]/40 px-3 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] [overflow-x:clip] sm:px-8 ${guidedFirstPhoto ? "hidden" : ""}`}
             >
               {inspirationUrl && (
                 <div className="mb-2 flex min-w-0 max-w-full items-center gap-2">
@@ -6619,7 +6669,7 @@ export function MayaConcierge({
                   </button>
                 </div>
               )}
-              <div className="flex min-w-0 max-w-full gap-2">
+              <div className="suite-maya-composer-rail flex min-w-0 max-w-full items-end border border-[#C5C6C8] bg-white p-1.5 transition-colors focus-within:border-[#0D0E10]">
                 <input
                   ref={attachInputRef}
                   type="file"
@@ -6631,16 +6681,20 @@ export function MayaConcierge({
                     if (attachInputRef.current) attachInputRef.current.value = ""
                   }}
                 />
-                {!plainPreSelfieChat && !generalHomeConversation && (
+                {!plainPreSelfieChat && (
                   <button
                     type="button"
                     aria-label="Attach an inspiration image"
                     title="Attach an inspiration image"
                     onClick={() => attachInputRef.current?.click()}
                     disabled={uploadingSlot === "inspiration"}
-                    className="h-12 w-12 shrink-0 rounded-[4px] border border-[#C5C6C8]/60 bg-white text-[20px] font-light leading-none text-[#4F5052] transition-[transform,border-color,color] duration-150 hover:border-[#0D0E10] hover:text-[#0D0E10] active:scale-95 disabled:opacity-40"
+                    className="flex h-11 w-10 shrink-0 items-center justify-center text-[#4F5052] transition-colors hover:text-[#0D0E10] disabled:opacity-40"
                   >
-                    {uploadingSlot === "inspiration" ? "…" : "+"}
+                    {uploadingSlot === "inspiration" ? (
+                      <span aria-hidden>…</span>
+                    ) : (
+                      <Paperclip size={20} strokeWidth={1.7} aria-hidden="true" />
+                    )}
                   </button>
                 )}
                 <textarea
@@ -6667,15 +6721,20 @@ export function MayaConcierge({
                         ? "Tell Maya what you need…"
                         : "Want something different? Ask Maya…"
                   }
-                  className="suite-maya-input max-h-36 min-h-12 min-w-0 flex-1 resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[15px] leading-snug text-[#282728] outline-none transition-[border-color,box-shadow] duration-150 min-[380px]:px-5"
+                  className="suite-maya-input max-h-36 min-h-11 min-w-0 flex-1 resize-none border-0 bg-transparent px-2 py-3 text-[15px] leading-snug text-[#282728] outline-none min-[380px]:px-3"
                 />
                 <button
                   type="button"
                   onClick={() => void handleSend()}
                   disabled={isThinking || textRefining || input.trim().length === 0}
-                  className="suite-maya-send h-12 rounded-[4px] px-4 text-[11px] uppercase tracking-[0.1em] text-white transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-95 disabled:opacity-40 min-[380px]:px-6 min-[380px]:text-[12px] min-[380px]:tracking-[0.16em]"
+                  aria-label={textRefining ? "Updating" : "Send message"}
+                  className="suite-maya-send flex h-11 w-11 shrink-0 items-center justify-center bg-[#0D0E10] text-white transition-[transform,background-color,opacity] duration-150 hover:bg-[color:var(--suite-accent)] active:scale-95 disabled:opacity-30"
                 >
-                  {textRefining ? "Updating" : "Send"}
+                  {textRefining ? (
+                    <span aria-hidden>…</span>
+                  ) : (
+                    <ArrowUp size={20} strokeWidth={1.8} aria-hidden="true" />
+                  )}
                 </button>
               </div>
             </div>

@@ -2,11 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import type {
-  Aesthetic,
-  AestheticShot,
-  ShotDirectorMode,
-} from "./types"
+import type { Aesthetic, AestheticShot, ShotDirectorMode } from "./types"
 
 export function InlineProjectStart({
   disabled,
@@ -366,22 +362,18 @@ export function InlineShotDirectorCard({
   )
 }
 
-export function InlineResultActions({
-  onRefine,
-}: {
-  onRefine: () => void
-}) {
+export function InlineResultActions({ onRefine }: { onRefine: () => void }) {
   return (
     <button
       type="button"
       onClick={onRefine}
-      className="min-h-12 w-full rounded-[8px] border border-[#AEB9C1]/70 bg-white px-4 py-3 text-left transition-colors hover:border-[color:var(--ss-night)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]"
+      className="group min-h-12 w-full border border-[#0D0E10] bg-white px-4 py-3 text-left transition-colors hover:bg-[#0D0E10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ss-night)]"
     >
-      <span className="block text-[11px] uppercase tracking-[0.14em] text-[color:var(--ss-night)]">
-        Make it more like me
+      <span className="flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.14em] text-[color:var(--ss-night)] group-hover:text-white">
+        Make it more like me <span aria-hidden>→</span>
       </span>
-      <span className="mt-1 block text-[12px] leading-relaxed text-[#5D6A73]">
-        Tell Maya what feels off. Your finished version stays safe while you refine it.
+      <span className="mt-1 block text-[12px] leading-relaxed text-[#5D6A73] group-hover:text-white/70">
+        Tell Maya what feels off or exactly what you want to change.
       </span>
     </button>
   )
