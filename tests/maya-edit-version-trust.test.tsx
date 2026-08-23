@@ -10,13 +10,33 @@ vi.mock("@/lib/analytics/client", () => ({ trackAnalyticsEvent: vi.fn() }))
 describe("Maya version trust", () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it("shows the original beside a saved edit and can revert without deleting the edit", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(
-        JSON.stringify({ imageUrl: "https://assets.example.com/edited.png", aiImageId: 22 }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+  it("keeps the original and saved edit recoverable through confirmed version history", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            imageUrl: "https://assets.example.com/edited.png",
+            aiImageId: 22,
+            editReceipt: {
+              action: "apply",
+              sourceAssetId: "ai_11",
+              resultAssetId: "ai_22",
+              rootAssetId: "ai_11",
+              instruction: "Clean natural edit",
+              historyDepth: 1,
+              creditRequestId: "edit_request_123",
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
       )
-    )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ imageUrl: "https://assets.example.com/original.png", aiImageId: 11 }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+      )
     const onResult = vi.fn()
 
     render(
@@ -29,13 +49,23 @@ describe("Maya version trust", () => {
       />
     )
 
-    fireEvent.click(screen.getByRole("button", { name: "Brighter" }))
-    await screen.findByText("Saved to your Gallery as a new version.")
-    expect(screen.getByRole("img", { name: "Original version" })).toBeInTheDocument()
-    expect(screen.getByRole("img", { name: "Edited version" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /Clean Natural/i }))
+    expect(screen.getByText("Ready to apply")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Use 1 credit" }))
+    await screen.findByText("Saved to Gallery as a new version.")
+    expect(screen.getByRole("button", { name: "Use Original" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Use Version 1" })).toBeInTheDocument()
     expect(onResult).toHaveBeenCalledWith("https://assets.example.com/edited.png", 22)
 
-    fireEvent.click(screen.getByRole("button", { name: "Revert to original" }))
+    const confirmedRequest = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body))
+    expect(confirmedRequest.conversation).toMatchObject({
+      workspacePath: "edit-photo",
+      action: "apply",
+      sourceAssetId: "ai_11",
+      creditConfirmation: { confirmed: true, expectedCost: 1 },
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo last" }))
     await waitFor(() =>
       expect(onResult).toHaveBeenLastCalledWith("https://assets.example.com/original.png", 11)
     )

@@ -82,6 +82,9 @@ describe("conversational photo edit contract", () => {
     expect(route).toContain("variant_of")
     expect(route).toContain('code: "edit_persistence_failed"')
     expect(route).toContain("creditsDeducted: 0")
+    expect(route).toContain("do not preserve the framing, composition, background")
+    expect(route).toContain("maya-edit-reference.png")
+    expect(route).toContain("referenceImageUrl")
   })
 
   it("makes chat prepare a confirmation contract without charging or narrowing the request", () => {
@@ -91,5 +94,7 @@ describe("conversational photo edit contract", () => {
     expect(route).toContain('status: "confirmation_required"')
     expect(route).toContain('action: "confirm_edit"')
     expect(route).toContain("This tool does not charge or edit yet")
+    expect(route).toContain("Clean Natural, Cool Editorial, Warm Lifestyle")
+    expect(route).toContain("The direct styles are optional starting points, never limits")
   })
 })

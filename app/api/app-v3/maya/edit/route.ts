@@ -158,15 +158,21 @@ function buildEditPrompt(
   instruction: string,
   safer = false,
   hasIdentityReference = false,
+  hasEditReference = false,
   likenessBlock = ""
 ): string {
   const base =
-    "Refine the first attached image. Keep the same person, likeness, framing, composition, background, " +
-    "and overall look. Apply ONLY this change: "
+    "Edit the first attached image by following the member's complete instruction. Preserve every " +
+    "element she did not ask to change, but do not preserve the framing, composition, background, " +
+    "outfit, hair, objects, color, camera look, lens look, lighting, or scenery when her instruction " +
+    "explicitly changes it. Requested scene changes must look like one coherent photograph, not a pasted composite. Instruction: "
   const identity = hasIdentityReference
-    ? " The last attached image is her real reference selfie. Use it only to keep her face, facial " +
+    ? " An attached image labeled maya-edit-identity.png is her real reference selfie. Use it only to keep her face, facial " +
       "structure, skin tone, natural skin texture, body proportions, and age true to the real person. " +
       "Do not copy its pose, framing, lighting, or background."
+    : ""
+  const editReference = hasEditReference
+    ? " An attached image labeled maya-edit-reference.png is the member's visual reference. Use the exact product, outfit, prop, material, styling, or visual detail she asks to take from it, without copying the reference person's identity."
     : ""
   const doctrine = VANITY_DRIFT_PATTERN.test(instruction)
     ? " Interpret that change as showing her at her natural best: keep her real facial structure, " +
@@ -189,7 +195,7 @@ function buildEditPrompt(
         ""
       )
     : instruction.trim()
-  return `${base}${cleanInstruction}.${identity}${doctrine}${tail}${likeness}`
+  return `${base}${cleanInstruction}.${identity}${editReference}${doctrine}${tail}${likeness}`
 }
 
 export async function POST(request: NextRequest) {
@@ -214,6 +220,7 @@ export async function POST(request: NextRequest) {
       instruction?: string
       format?: OutputFormat
       referenceSelfieUrl?: string
+      referenceImageUrl?: string
       sourceImageId?: number
       conversation?: unknown
       sourceTitle?: string
@@ -538,7 +545,8 @@ export async function POST(request: NextRequest) {
     // Re-attach her real selfie so likeness is anchored to the person, not the previous
     // generation. Best effort: if no selfie is resolvable, the edit still runs (old behavior).
     const identitySelfieUrl = await resolveIdentitySelfieUrl(neonUser.id, body.referenceSelfieUrl)
-    let editImages = [sourceFile]
+    const editImages = [sourceFile]
+    let hasIdentityReference = false
     if (identitySelfieUrl) {
       try {
         const selfieFile = await toFile(
@@ -546,12 +554,26 @@ export async function POST(request: NextRequest) {
           "maya-edit-identity.png",
           { type: "image/png" }
         )
-        editImages = [sourceFile, selfieFile]
+        editImages.push(selfieFile)
+        hasIdentityReference = true
       } catch (selfieError) {
         console.error("[app-v3 edit] identity selfie attach skipped:", selfieError)
       }
     }
-    const hasIdentityReference = editImages.length > 1
+    let hasEditReference = false
+    if (isAllowedImageUrl(body.referenceImageUrl)) {
+      try {
+        const referenceFile = await toFile(
+          await normalize(await loadImage(body.referenceImageUrl)),
+          "maya-edit-reference.png",
+          { type: "image/png" }
+        )
+        editImages.push(referenceFile)
+        hasEditReference = true
+      } catch (referenceError) {
+        console.error("[app-v3 edit] visual reference attach skipped:", referenceError)
+      }
+    }
 
     const logEditFailure = (reason: string, detail: unknown) =>
       import("@/lib/analytics/events")
@@ -590,13 +612,19 @@ export async function POST(request: NextRequest) {
     let imageBuffer: Buffer
     try {
       imageBuffer = await runEdit(
-        buildEditPrompt(instruction, false, hasIdentityReference, likenessBlock)
+        buildEditPrompt(instruction, false, hasIdentityReference, hasEditReference, likenessBlock)
       )
     } catch (firstError) {
       if (isContentPolicyError(firstError)) {
         try {
           imageBuffer = await runEdit(
-            buildEditPrompt(instruction, true, hasIdentityReference, likenessBlock)
+            buildEditPrompt(
+              instruction,
+              true,
+              hasIdentityReference,
+              hasEditReference,
+              likenessBlock
+            )
           )
         } catch (retryError) {
           await refundOrAlert(CREDIT_COSTS.IMAGE, "OpenAI content policy", refundRef)
