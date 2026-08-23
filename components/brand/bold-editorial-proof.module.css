@@ -463,9 +463,17 @@
 }
 
 .recentGrid {
-  display: grid;
+  display: flex;
   gap: 0.75rem;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow-x: auto;
+  padding-bottom: 0.55rem;
+  scrollbar-color: var(--ss-brand-oxblood) var(--ss-brand-concrete);
+  scrollbar-width: thin;
+}
+
+.recentGrid article,
+.recentGrid .newProject {
+  flex: 0 0 clamp(112px, 15vw, 168px);
 }
 
 .recentImage {

@@ -57,6 +57,36 @@ const recentProjects = [
     meta: "EDIT · IN PROGRESS",
     image: "/images/brand/bold-editorial-suite/suite-editorial-street-v1.png",
   },
+  {
+    label: "Café after dark",
+    meta: "POST · READY",
+    image: "/images/brand/bold-editorial-suite/suite-editorial-cafe-lace-v1.jpeg",
+  },
+  {
+    label: "Mirror in mono",
+    meta: "SELFIE · SAVED",
+    image: "/images/brand/bold-editorial-suite/suite-editorial-mirror-mono-v1.jpeg",
+  },
+  {
+    label: "Stone street",
+    meta: "EDIT · 6 VERSIONS",
+    image: "/images/brand/bold-editorial-suite/suite-editorial-street-mono-v1.jpeg",
+  },
+  {
+    label: "City with Milo",
+    meta: "POST · DRAFT",
+    image: "/images/brand/bold-editorial-suite/suite-editorial-city-dog-v1.jpeg",
+  },
+  {
+    label: "Think bigger",
+    meta: "CAMPAIGN · 4 ASSETS",
+    image: "/images/brand/bold-editorial-suite/suite-editorial-think-bigger-v1.jpeg",
+  },
+  {
+    label: "Window light",
+    meta: "PHOTO · SELECTED",
+    image: "/images/brand/bold-editorial-suite/suite-editorial-turtleneck-light-v1.jpeg",
+  },
 ] as const
 
 const palette = [
