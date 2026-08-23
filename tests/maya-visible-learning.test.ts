@@ -61,7 +61,7 @@ describe("Maya visible likeness learning", () => {
     const contract = read("lib/analytics/event-contract.ts")
 
     expect(editRoute).toContain("likenessMemory")
-    expect(editMode).toContain("Want me to remember that for every future photo?")
+    expect(editMode).toContain("Remember that for future photos?")
     expect(editMode).toContain("suite_likeness_offer_shown")
     expect(editMode).toContain("suite_likeness_offer_dismissed")
     expect(memoryRoute).toContain("addLikenessNote")

@@ -687,6 +687,7 @@ function ShellInner({
           format={outputFormatForAsset(editAsset)}
           sourceImageId={parseGalleryAssetId(editAsset.id)?.numericId ?? null}
           sourceTitle={editAsset.title}
+          referenceSelfieUrl={primarySelfieUrl}
           onClose={() => setEditAsset(null)}
           onResult={() => setGalleryRevision(revision => revision + 1)}
         />

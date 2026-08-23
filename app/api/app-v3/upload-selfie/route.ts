@@ -21,14 +21,16 @@ const ALLOWED = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"])
 const MIN_IDENTITY_SHORT_SIDE = 512
 const IDENTITY_TYPES = new Set(["selfie", "three-quarter", "side-profile", "full-body"])
 
-// SUITE-UX-02: every upload slot persists, each under its own image_type so the
-// restore-on-open flow never mixes a vibe image into the face picker.
+// SUITE-UX-02: reusable upload slots persist under their own image_type so the
+// restore-on-open flow never mixes a vibe image into the face picker. The edit-reference
+// slot is deliberately transient and never changes a saved inspiration or identity choice.
 const SLOT_TO_TYPE: Record<string, string> = {
   face: "selfie",
   angle: "three-quarter",
   side: "side-profile",
   body: "full-body",
   inspiration: "inspiration",
+  "edit-reference": "edit-reference",
   video: "video-source",
 }
 // Slots that hold exactly ONE active image: a new upload replaces the old one.
@@ -36,6 +38,7 @@ const SINGLE_ACTIVE_TYPES = new Set(["three-quarter", "side-profile", "full-body
 
 function blobFolderForImageType(imageType: string): string {
   if (imageType === "inspiration") return "app-v3/inspiration-references"
+  if (imageType === "edit-reference") return "app-v3/edit-references"
   if (imageType === "video-source") return "app-v3/video-sources"
   return "app-v3/identity-references"
 }
@@ -113,7 +116,7 @@ export async function POST(request: NextRequest) {
   // (migration 60: selfie/lifestyle/mirror/casual/professional/three-quarter/side-profile/full-body/inspiration).
   try {
     const neonUserId = await getUserIdFromSupabase(user.id)
-    if (neonUserId && imageType !== "video-source") {
+    if (neonUserId && imageType !== "video-source" && imageType !== "edit-reference") {
       if (SINGLE_ACTIVE_TYPES.has(imageType)) {
         await sql`
           UPDATE user_avatar_images SET is_active = false

@@ -6766,6 +6766,7 @@ export function MayaConcierge({
           format={editTarget.format}
           sourceImageId={editTarget.sourceImageId}
           sourceTitle={editTarget.sourceTitle}
+          referenceSelfieUrl={referenceSelfieUrl}
           onBusyChange={setEditBusy}
           onClose={() => setEditTarget(null)}
           onCreditBlock={balance => {
