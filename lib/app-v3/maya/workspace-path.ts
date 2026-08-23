@@ -11,9 +11,7 @@ export const MAYA_WORKSPACE_ACTIONS = [
   "apply-preset",
   "build-carousel",
   "write-caption",
-  "build-story-slide",
   "build-story-sequence",
-  "build-reel-cover",
 ] as const
 
 export type MayaWorkspaceAction = (typeof MAYA_WORKSPACE_ACTIONS)[number]
@@ -29,19 +27,13 @@ export type MayaWorkspaceTool =
 const FORMATS_BY_PATH: Record<MayaWorkspacePath, readonly OutputFormat[]> = {
   "ai-photos": ["photo", "photoshoot"],
   "edit-photo": [],
-  "build-post": ["reel-cover", "carousel", "story-slide", "story-sequence"],
+  "build-post": ["carousel", "story-sequence"],
 }
 
 const ACTIONS_BY_PATH: Record<MayaWorkspacePath, readonly MayaWorkspaceAction[]> = {
   "ai-photos": ["create-photo", "create-photoshoot"],
   "edit-photo": ["edit-photo", "apply-preset"],
-  "build-post": [
-    "build-carousel",
-    "write-caption",
-    "build-story-slide",
-    "build-story-sequence",
-    "build-reel-cover",
-  ],
+  "build-post": ["build-carousel", "write-caption", "build-story-sequence"],
 }
 
 const TOOLS_BY_PATH: Record<MayaWorkspacePath, readonly MayaWorkspaceTool[]> = {
@@ -65,26 +57,18 @@ const TOOLS_BY_PATH: Record<MayaWorkspacePath, readonly MayaWorkspaceTool[]> = {
 }
 
 export function isMayaWorkspacePath(value: unknown): value is MayaWorkspacePath {
-  return (
-    typeof value === "string" &&
-    (MAYA_WORKSPACE_PATHS as readonly string[]).includes(value)
-  )
+  return typeof value === "string" && (MAYA_WORKSPACE_PATHS as readonly string[]).includes(value)
 }
 
 export function isMayaWorkspaceAction(value: unknown): value is MayaWorkspaceAction {
-  return (
-    typeof value === "string" &&
-    (MAYA_WORKSPACE_ACTIONS as readonly string[]).includes(value)
-  )
+  return typeof value === "string" && (MAYA_WORKSPACE_ACTIONS as readonly string[]).includes(value)
 }
 
 export function allowedFormatsForMayaPath(path: MayaWorkspacePath): readonly OutputFormat[] {
   return FORMATS_BY_PATH[path]
 }
 
-export function allowedActionsForMayaPath(
-  path: MayaWorkspacePath
-): readonly MayaWorkspaceAction[] {
+export function allowedActionsForMayaPath(path: MayaWorkspacePath): readonly MayaWorkspaceAction[] {
   return ACTIONS_BY_PATH[path]
 }
 
@@ -115,9 +99,7 @@ export function outputFormatForMayaWorkspaceAction(
   if (action === "create-photo") return "photo"
   if (action === "create-photoshoot") return "photoshoot"
   if (action === "build-carousel") return "carousel"
-  if (action === "build-story-slide") return "story-slide"
   if (action === "build-story-sequence") return "story-sequence"
-  if (action === "build-reel-cover") return "reel-cover"
   return null
 }
 
@@ -125,12 +107,7 @@ export function mayaWorkspacePathForFormat(
   format: OutputFormat | null | undefined
 ): MayaWorkspacePath | null {
   if (format === "photo" || format === "photoshoot") return "ai-photos"
-  if (
-    format === "reel-cover" ||
-    format === "carousel" ||
-    format === "story-slide" ||
-    format === "story-sequence"
-  ) {
+  if (format === "carousel" || format === "story-sequence") {
     return "build-post"
   }
   return null

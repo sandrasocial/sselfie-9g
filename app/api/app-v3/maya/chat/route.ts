@@ -471,9 +471,11 @@ function setFormatForWorkspacePath(path: MayaWorkspacePath) {
       "Switch to another output inside the current workspace only. Never cross into a different " +
       "workspace; the user must choose that path explicitly.",
     inputSchema: z.object({
-      format: z.enum(OUTPUT_FORMAT_VALUES).refine(value => isFormatAllowedForMayaPath(path, value), {
-        message: `Format is not available in the ${path} workspace`,
-      }),
+      format: z
+        .enum(OUTPUT_FORMAT_VALUES)
+        .refine(value => isFormatAllowedForMayaPath(path, value), {
+          message: `Format is not available in the ${path} workspace`,
+        }),
     }),
     execute: async input => input,
   })
@@ -916,7 +918,7 @@ export async function POST(req: Request) {
           ? "Only create a photo or photoshoot."
           : workspacePath === "edit-photo"
             ? "Only help with editing or presets. Do not create concepts or switch format."
-            : "Only complete the explicitly selected post output: caption, carousel, Story frame, Story sequence, or reel cover. Do not broaden into content strategy."
+            : "Only complete the explicitly selected post output: caption, carousel, or Story sequence. Do not broaden into content strategy."
       system = `${system}\n\n## WORKSPACE PATH (SERVER AUTHORITY)\nActive path: ${workspacePath}. ${outputBoundary} Never cross into another path inside this conversation.`
     }
 
