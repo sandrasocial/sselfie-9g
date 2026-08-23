@@ -25,6 +25,11 @@ import type {
   OutputFormat,
 } from "./types"
 import {
+  isFormatAllowedForMayaPath,
+  mayaWorkspacePathForFormat,
+  type MayaWorkspacePath,
+} from "@/lib/app-v3/maya/workspace-path"
+import {
   cacheServerMayaDraftSnapshot,
   clearMayaDraft,
   readConciergeSnapshot,
@@ -94,6 +99,9 @@ function createCleanSession({
   const startedAt = Date.parse(context.startedAt)
   return {
     mayaContext: context,
+    workspacePath:
+      options?.workspacePath ??
+      mayaWorkspacePathForFormat(options?.format ?? calendarTarget?.plannedFormat ?? null),
     aesthetic,
     outputFormat: options?.format ?? calendarTarget?.plannedFormat ?? null,
     referenceSelfieUrl: options?.referenceSelfieUrl ?? previous?.referenceSelfieUrl ?? null,
@@ -198,6 +206,8 @@ export function ConciergeProvider({
           return
         }
         setSession({
+          workspacePath:
+            opts?.workspacePath ?? mayaWorkspacePathForFormat(opts?.format ?? null),
           aesthetic,
           outputFormat: opts?.format ?? null,
           referenceSelfieUrl: opts?.referenceSelfieUrl ?? null,
@@ -227,6 +237,10 @@ export function ConciergeProvider({
         if (!prev) return prev
         return {
           ...prev,
+          workspacePath:
+            opts && Object.prototype.hasOwnProperty.call(opts, "workspacePath")
+              ? (opts.workspacePath ?? null)
+              : (prev.workspacePath ?? mayaWorkspacePathForFormat(opts?.format ?? null)),
           aesthetic,
           outputFormat: opts?.format ?? prev.outputFormat,
           referenceSelfieUrl:
@@ -485,8 +499,47 @@ export function ConciergeProvider({
   )
 
   const setOutputFormat = useCallback((format: OutputFormat | null) => {
-    setSession(prev => (prev ? { ...prev, outputFormat: format } : prev))
+    setSession(prev => {
+      if (!prev) return prev
+      if (prev.workspacePath && !isFormatAllowedForMayaPath(prev.workspacePath, format)) return prev
+      return {
+        ...prev,
+        workspacePath: prev.workspacePath ?? mayaWorkspacePathForFormat(format),
+        outputFormat: format,
+      }
+    })
   }, [])
+
+  const setWorkspacePath = useCallback(
+    (path: MayaWorkspacePath) => {
+      if (workspaceBusy) {
+        setIsOpen(true)
+        return
+      }
+      claimSessionAuthority()
+      const startedAt = Date.now()
+      setActiveSurfaceState("create")
+      setSession(previous => {
+        if (previous?.workspacePath === path) return previous
+        const context = createMayaContextEnvelope({
+          taskId: newMayaTaskId(),
+          job: "create_content",
+          surface: "create",
+          startedAt: new Date(startedAt).toISOString(),
+        })
+        return createCleanSession({
+          previous,
+          context,
+          options: {
+            workspacePath: path,
+            referenceSelfieUrl: previous?.referenceSelfieUrl ?? null,
+          },
+        })
+      })
+      setIsOpen(true)
+    },
+    [claimSessionAuthority, workspaceBusy]
+  )
 
   const setReferenceSelfieUrl = useCallback((url: string | null) => {
     setSession(prev => (prev ? { ...prev, referenceSelfieUrl: url } : prev))
@@ -560,6 +613,7 @@ export function ConciergeProvider({
         prev
           ? {
               ...prev,
+              workspacePath: null,
               outputFormat: null,
               graphicText: null,
               seedPrompt: null,
@@ -597,6 +651,7 @@ export function ConciergeProvider({
       setSession(
         prev =>
           prev ?? {
+            workspacePath: null,
             aesthetic: GENERAL_MAYA_AESTHETIC,
             outputFormat: null,
             referenceSelfieUrl: null,
@@ -656,6 +711,7 @@ export function ConciergeProvider({
           return
         }
         setSession({
+          workspacePath: null,
           aesthetic: GENERAL_MAYA_AESTHETIC,
           outputFormat: null,
           referenceSelfieUrl: opts?.referenceSelfieUrl ?? session?.referenceSelfieUrl ?? null,
@@ -713,6 +769,7 @@ export function ConciergeProvider({
         return createCleanSession({ previous: null, context: newSurfaceContext(activeSurface) })
       }
       return {
+        workspacePath: null,
         aesthetic: GENERAL_MAYA_AESTHETIC,
         outputFormat: null,
         referenceSelfieUrl: null,
@@ -809,6 +866,7 @@ export function ConciergeProvider({
       updateCalendarTargetCaption,
       resetCurrentSession,
       setOutputFormat,
+      setWorkspacePath,
       setReferenceSelfieUrl,
       setVideoSourceUrl,
       setGraphicText,
@@ -836,6 +894,7 @@ export function ConciergeProvider({
       updateCalendarTargetCaption,
       resetCurrentSession,
       setOutputFormat,
+      setWorkspacePath,
       setReferenceSelfieUrl,
       setVideoSourceUrl,
       setGraphicText,

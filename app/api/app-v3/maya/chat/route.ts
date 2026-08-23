@@ -9,7 +9,14 @@
 //
 // Isolated /app endpoint. Reuses shared auth + the persona-injected system prompt only.
 
-import { generateText, streamText, tool, convertToModelMessages, type UIMessage } from "ai"
+import {
+  generateText,
+  streamText,
+  tool,
+  convertToModelMessages,
+  type ToolSet,
+  type UIMessage,
+} from "ai"
 import { z } from "zod"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
@@ -34,6 +41,17 @@ import { shouldStopAppV3MayaToolLoop } from "@/lib/app-v3/maya/tool-loop-policy"
 import { getAppV3ChatMaxOutputTokens, getAppV3ChatTask } from "@/lib/app-v3/maya/cost-controls"
 import { getExplicitCalendarCreativeContext } from "@/lib/app-v3/maya/calendar-context-policy"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
+import {
+  allowedFormatsForMayaPath,
+  isActionAllowedForMayaPath,
+  isFormatAllowedForMayaPath,
+  isMayaWorkspaceAction,
+  isMayaWorkspacePath,
+  isToolAllowedForMayaPath,
+  outputFormatForMayaWorkspaceAction,
+  shouldAcceptLastGenerationForMayaPath,
+  type MayaWorkspacePath,
+} from "@/lib/app-v3/maya/workspace-path"
 
 export const maxDuration = 300
 
@@ -386,6 +404,30 @@ const emitConcepts = tool({
   execute: async ({ concepts, format }) => ({ concepts, format }),
 })
 
+function emitConceptsForWorkspacePath(path: MayaWorkspacePath, currentFormat: OutputFormat) {
+  const inputSchema = emitConceptsInputSchema.superRefine((plan, context) => {
+    if (!isFormatAllowedForMayaPath(path, plan.format)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${plan.format} is not available in the ${path} workspace`,
+      })
+    }
+    if (plan.format !== currentFormat) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Concept format ${plan.format} does not match committed format ${currentFormat}`,
+      })
+    }
+  })
+  return tool({
+    description:
+      "Present concept directions for the committed output in this workspace. The format must " +
+      "match the current workspace and committed format exactly.",
+    inputSchema,
+    execute: async ({ concepts, format }) => ({ concepts, format }),
+  })
+}
+
 // The corrective call uses the same payload shape without semantic refinement. That lets us
 // inspect another still-invalid attempt and feed its exact errors back once more, rather than
 // letting the SDK discard it before the two-attempt orchestration cap can do its job.
@@ -423,6 +465,20 @@ const setFormat = tool({
   execute: async input => input,
 })
 
+function setFormatForWorkspacePath(path: MayaWorkspacePath) {
+  return tool({
+    description:
+      "Switch to another output inside the current workspace only. Never cross into a different " +
+      "workspace; the user must choose that path explicitly.",
+    inputSchema: z.object({
+      format: z.enum(OUTPUT_FORMAT_VALUES).refine(value => isFormatAllowedForMayaPath(path, value), {
+        message: `Format is not available in the ${path} workspace`,
+      }),
+    }),
+    execute: async input => input,
+  })
+}
+
 const askClarify = tool({
   description:
     "Ask ONE inline clarifying question when you are missing a required detail to make on-brand " +
@@ -455,6 +511,8 @@ const askClarify = tool({
 
 interface ChatBody {
   messages?: UIMessage[]
+  workspacePath?: unknown
+  workspaceAction?: unknown
   aestheticName?: string
   aestheticIntent?: string
   aestheticId?: string
@@ -684,11 +742,68 @@ export async function POST(req: Request) {
     }
     let calendarCreativeContext = getExplicitCalendarCreativeContext(body?.mayaContext)
 
+    if (
+      body?.workspacePath !== undefined &&
+      body.workspacePath !== null &&
+      !isMayaWorkspacePath(body.workspacePath)
+    ) {
+      return NextResponse.json({ error: "Invalid Maya workspace path" }, { status: 400 })
+    }
+    if (
+      body?.workspaceAction !== undefined &&
+      body.workspaceAction !== null &&
+      !isMayaWorkspaceAction(body.workspaceAction)
+    ) {
+      return NextResponse.json({ error: "Invalid Maya workspace action" }, { status: 400 })
+    }
+    const workspacePath = isMayaWorkspacePath(body?.workspacePath) ? body.workspacePath : null
+    const workspaceAction = isMayaWorkspaceAction(body?.workspaceAction)
+      ? body.workspaceAction
+      : null
     const creationIntent = normalizeCreationIntent(body?.creationIntent ?? null)
     const shotDirector = normalizeShotDirector(body?.shotDirector ?? null)
     const requestedFormat = isOutputFormat(body?.format) ? body.format : null
     const intentFormat = creationIntent?.format ?? null
     const committedFormat = intentFormat ?? requestedFormat
+    if (workspacePath) {
+      const invalidFormat = [requestedFormat, intentFormat].find(
+        candidate => candidate && !isFormatAllowedForMayaPath(workspacePath, candidate)
+      )
+      if (invalidFormat) {
+        return NextResponse.json(
+          {
+            error: `Format ${invalidFormat} is not available in the ${workspacePath} workspace`,
+            workspacePath,
+            allowedFormats: allowedFormatsForMayaPath(workspacePath),
+          },
+          { status: 409 }
+        )
+      }
+      if (!isActionAllowedForMayaPath(workspacePath, workspaceAction)) {
+        return NextResponse.json(
+          { error: `Action ${workspaceAction} is not available in the ${workspacePath} workspace` },
+          { status: 409 }
+        )
+      }
+      const actionFormat = workspaceAction
+        ? outputFormatForMayaWorkspaceAction(workspaceAction)
+        : null
+      if (actionFormat && committedFormat !== actionFormat) {
+        return NextResponse.json(
+          {
+            error: `Action ${workspaceAction} requires format ${actionFormat}`,
+            workspacePath,
+          },
+          { status: 409 }
+        )
+      }
+      if (workspaceAction === "write-caption" && committedFormat) {
+        return NextResponse.json(
+          { error: "Caption work must not carry a visual output format", workspacePath },
+          { status: 409 }
+        )
+      }
+    }
     const generalConversation = !committedFormat
     const format: OutputFormat = committedFormat ?? "photo"
     const needsFormatClarification =
@@ -795,6 +910,16 @@ export async function POST(req: Request) {
       system = `${system}\n\n## MAYA-FIRST ROUTING\nCommitted format: ${format}. Intent source: ${creationIntent.source}. Intent confidence: ${creationIntent.confidence}. Treat this as the creation path unless the user clearly changes it.`
     }
 
+    if (workspacePath) {
+      const outputBoundary =
+        workspacePath === "ai-photos"
+          ? "Only create a photo or photoshoot."
+          : workspacePath === "edit-photo"
+            ? "Only help with editing or presets. Do not create concepts or switch format."
+            : "Only complete the explicitly selected post output: caption, carousel, Story frame, Story sequence, or reel cover. Do not broaden into content strategy."
+      system = `${system}\n\n## WORKSPACE PATH (SERVER AUTHORITY)\nActive path: ${workspacePath}. ${outputBoundary} Never cross into another path inside this conversation.`
+    }
+
     const skoolHandoffContext = getSkoolMayaPromptContext(body?.skoolHandoffKey)
     if (skoolHandoffContext) {
       system = `${system}\n\n${skoolHandoffContext}`
@@ -826,7 +951,12 @@ export async function POST(req: Request) {
     }
 
     // Authoritative render snapshot: ground truth beats anything implied earlier in-thread.
-    const lastGeneration = normalizeLastGeneration(body?.lastGeneration ?? null)
+    const candidateLastGeneration = normalizeLastGeneration(body?.lastGeneration ?? null)
+    const lastGeneration =
+      candidateLastGeneration &&
+      shouldAcceptLastGenerationForMayaPath(workspacePath, candidateLastGeneration.format)
+        ? candidateLastGeneration
+        : null
     if (lastGeneration) {
       const parts = [
         `${lastGeneration.imageCount} ${lastGeneration.format} render${lastGeneration.imageCount > 1 ? "s" : ""}`,
@@ -1094,23 +1224,25 @@ export async function POST(req: Request) {
       },
     })
 
-    const calendarTools = calendarCreativeContext ? { show_feed_plan: showFeedPlan } : {}
-    const tools = generalConversation
-      ? {
-          ask_clarify: askClarify,
-          set_format: setFormat,
-          remember,
-          save_brand_profile: saveBrandProfile,
-          ...calendarTools,
-        }
-      : {
-          emit_concepts: emitConcepts,
-          ask_clarify: askClarify,
-          set_format: setFormat,
-          remember,
-          save_brand_profile: saveBrandProfile,
-          ...calendarTools,
-        }
+    const toolAllowed = (toolName: Parameters<typeof isToolAllowedForMayaPath>[1]) => {
+      if (workspaceAction && toolName === "set_format") return false
+      return workspacePath == null || isToolAllowedForMayaPath(workspacePath, toolName)
+    }
+    const tools: ToolSet = {}
+    if (!generalConversation && toolAllowed("emit_concepts")) {
+      tools.emit_concepts = workspacePath
+        ? emitConceptsForWorkspacePath(workspacePath, format)
+        : emitConcepts
+    }
+    if (toolAllowed("ask_clarify")) tools.ask_clarify = askClarify
+    if (toolAllowed("set_format")) {
+      tools.set_format = workspacePath ? setFormatForWorkspacePath(workspacePath) : setFormat
+    }
+    if (toolAllowed("remember")) tools.remember = remember
+    if (toolAllowed("save_brand_profile")) tools.save_brand_profile = saveBrandProfile
+    if (calendarCreativeContext && toolAllowed("show_feed_plan")) {
+      tools.show_feed_plan = showFeedPlan
+    }
 
     const result = streamText({
       model: createMayaOpenRouterModel(mayaChatTask, {
@@ -1138,9 +1270,11 @@ export async function POST(req: Request) {
             typeof toolCall.input === "string" ? toolCall.input : JSON.stringify(toolCall.input)
           const salvaged = salvageConceptsPayload(rawInput)
           if (!salvaged || salvaged.concepts.length === 0) return null
-          const fmt = (OUTPUT_FORMAT_VALUES as readonly string[]).includes(salvaged.format ?? "")
-            ? (salvaged.format as (typeof OUTPUT_FORMAT_VALUES)[number])
-            : format
+          const fmt = workspacePath
+            ? format
+            : (OUTPUT_FORMAT_VALUES as readonly string[]).includes(salvaged.format ?? "")
+              ? (salvaged.format as (typeof OUTPUT_FORMAT_VALUES)[number])
+              : format
           const str = (v: unknown) => (typeof v === "string" ? v : "")
           const coerced = salvaged.concepts
             .filter((c): c is Record<string, any> => Boolean(c) && typeof c === "object")

@@ -1,4 +1,5 @@
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
+import type { OutputFormat } from "@/components/app-v3/types"
 import {
   sanitizeMayaContextEnvelope,
   type MayaContextEnvelope,
@@ -8,6 +9,12 @@ import {
   type OverlayStyleId,
   type TextOverlaySpec,
 } from "@/lib/app-v3/text-overlay"
+import {
+  isFormatAllowedForMayaPath,
+  isMayaWorkspacePath,
+  shouldAcceptLastGenerationForMayaPath,
+  type MayaWorkspacePath,
+} from "@/lib/app-v3/maya/workspace-path"
 
 export type ServerOutputFormat =
   | "photo"
@@ -68,6 +75,7 @@ export type ServerAestheticSnapshot = {
 
 export type ServerConciergeSessionSnapshot = {
   mayaContext?: MayaContextEnvelope | null
+  workspacePath?: MayaWorkspacePath | null
   aesthetic: ServerAestheticSnapshot
   outputFormat: ServerOutputFormat | null
   referenceSelfieUrl: string | null
@@ -442,10 +450,19 @@ function sanitizeSession(value: unknown): ServerConciergeSessionSnapshot | null 
   ) {
     return null
   }
+  const workspacePath = isMayaWorkspacePath(session.workspacePath) ? session.workspacePath : null
+  const outputFormat = (session.outputFormat as ServerOutputFormat | null) ?? null
+  if (
+    workspacePath &&
+    !isFormatAllowedForMayaPath(workspacePath, outputFormat as OutputFormat | null)
+  ) {
+    return null
+  }
   return {
     mayaContext: sanitizeMayaContextEnvelope(session.mayaContext),
+    workspacePath,
     aesthetic,
-    outputFormat: (session.outputFormat as ServerOutputFormat | null) ?? null,
+    outputFormat,
     referenceSelfieUrl:
       typeof session.referenceSelfieUrl === "string" ? session.referenceSelfieUrl : null,
     videoSourceUrl: typeof session.videoSourceUrl === "string" ? session.videoSourceUrl : null,
@@ -616,6 +633,15 @@ function sanitizeMayaDraftSnapshot(
   const session = sanitizeSession(draft.session)
   if (!session) return null
   if (session.mayaContext && session.mayaContext.taskId !== draft.chatId) return null
+  const lastGeneration = sanitizeLastGeneration(draft.lastGeneration)
+  const safeLastGeneration =
+    lastGeneration &&
+    shouldAcceptLastGenerationForMayaPath(
+      session.workspacePath ?? null,
+      lastGeneration.format as OutputFormat
+    )
+      ? lastGeneration
+      : null
   return {
     isOpen: draft.isOpen === true,
     chatId: draft.chatId,
@@ -625,7 +651,7 @@ function sanitizeMayaDraftSnapshot(
     genState: sanitizeServerGenState(draft.genState),
     generatedOnce: draft.generatedOnce === true,
     setupOpen: draft.setupOpen === true,
-    lastGeneration: sanitizeLastGeneration(draft.lastGeneration),
+    lastGeneration: safeLastGeneration,
     textOverlayMode: sanitizeTextOverlayMode(draft.textOverlayMode),
     textStyleChoice: sanitizeTextStyleChoice(draft.textStyleChoice),
     textStyleAdjustments: sanitizeTextStyleAdjustments(draft.textStyleAdjustments),

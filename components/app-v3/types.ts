@@ -2,6 +2,7 @@
 // Strict, self-contained. This tree must NOT import from components/sselfie/.
 
 import type { MayaContextEnvelope, MayaSurface } from "@/lib/app-v3/maya/context-envelope"
+import type { MayaWorkspacePath } from "@/lib/app-v3/maya/workspace-path"
 
 /** The output format the user is creating. The OpenAI engine renders all of these
  *  natively in one synchronous call (photo, or structured marketing graphics). */
@@ -139,6 +140,8 @@ export interface CalendarPostTarget {
 export interface ConciergeSession {
   /** Phase 1 routing identity. Stable member knowledge stays server-owned and is not copied here. */
   mayaContext?: MayaContextEnvelope | null
+  /** Stable product lane. The server uses this to constrain formats and Maya tools. */
+  workspacePath?: MayaWorkspacePath | null
   aesthetic: Aesthetic
   /** Chosen at the start of the concierge conversation. */
   outputFormat: OutputFormat | null
@@ -182,6 +185,8 @@ export interface LastGenerationSnapshot {
 
 /** Options when opening the concierge from a surface (format preselect + an idea to start on). */
 export interface OpenConciergeOptions {
+  /** Explicit product lane for a new or restored Maya workspace. */
+  workspacePath?: MayaWorkspacePath | null
   format?: OutputFormat
   /** A specific idea Maya should create (the first turn), e.g. a Content recommendation. */
   seed?: string
@@ -264,6 +269,8 @@ export interface ConciergeContextValue {
   resetCurrentSession: (taskId?: string) => void
   /** Pass null to return to the uncommitted state (no format chosen, no auto-pull). */
   setOutputFormat: (format: OutputFormat | null) => void
+  /** Starts a clean task in the chosen lane so format and render state cannot cross paths. */
+  setWorkspacePath: (path: MayaWorkspacePath) => void
   setReferenceSelfieUrl: (url: string | null) => void
   setVideoSourceUrl: (url: string | null) => void
   setGraphicText: (spec: GraphicTextSpec) => void
