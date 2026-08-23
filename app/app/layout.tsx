@@ -202,6 +202,22 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
           box-shadow: 0 0 0 3px rgba(152, 24, 38, 0.08);
         }
 
+        .studio-3-root .suite-account-card {
+          box-shadow: none;
+        }
+
+        .studio-3-root .suite-account-card--primary {
+          border-top: 3px solid var(--suite-night);
+        }
+
+        .studio-3-root .suite-account-primary--accent {
+          background: var(--suite-accent);
+        }
+
+        .studio-3-root .suite-account-primary--accent:hover {
+          background: var(--suite-night);
+        }
+
         .studio-3-root .suite-bottom-nav {
           background-color: var(--suite-night);
           border-color: rgba(255, 255, 255, 0.12);

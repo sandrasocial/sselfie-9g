@@ -37,10 +37,12 @@ function formatDate(iso: string): string {
   }
 }
 
-const card = "suite-card rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4 sm:p-5"
+const card =
+  "suite-card suite-account-card rounded-[4px] border border-[#C5C6C8]/60 bg-white p-5 sm:p-6"
 const cardTitle = "text-[10px] uppercase tracking-[0.22em] text-[#818283]"
 const primaryBtn =
   "inline-flex min-h-11 items-center justify-center rounded-[4px] bg-[#0D0E10] px-4 py-2.5 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728] disabled:opacity-50"
+const accentBtn = `${primaryBtn} suite-account-primary--accent`
 const quietBtn =
   "inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
 
@@ -164,20 +166,30 @@ export function AccountView({
     : (data?.plan ?? (hasSuiteAccess ? "SSELFIE SUITE" : "No active membership"))
 
   return (
-    <div className="suite-page mx-auto max-w-3xl px-4 py-6 sm:px-5 sm:py-8">
-      <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">You</p>
-      <h1 className="mt-2 font-serif text-[30px] font-light leading-tight text-[#0D0E10]">
-        {firstName ? `Hi ${firstName}` : "Your account"}
-      </h1>
-      {data?.email && <p className="mt-1 break-all text-[13px] text-[#4F5052]">{data.email}</p>}
-      <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-[#6D6E70]">
-        Your membership, brand memory, selfies, and everything you own.
-      </p>
+    <div className="suite-page suite-account mx-auto max-w-6xl px-4 py-7 sm:px-8 sm:py-12">
+      <header className="grid gap-5 border-t-[3px] border-[color:var(--suite-accent)] pt-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:pt-7">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.32em] text-[color:var(--suite-accent)]">
+            You · Your SSELFIE
+          </p>
+          <h1 className="mt-2 font-serif text-[40px] font-light leading-none text-[#0D0E10] sm:text-[56px]">
+            {firstName ? `Hi ${firstName}` : "Your account"}
+          </h1>
+          <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-[#6D6E70]">
+            Your membership, brand memory, selfies, and everything you own.
+          </p>
+        </div>
+        {data?.email && (
+          <p className="break-all border-b border-[#C5C6C8]/60 pb-2 text-[11px] uppercase tracking-[0.12em] text-[#4F5052]">
+            {data.email}
+          </p>
+        )}
+      </header>
 
       {loadError && (
         <div
           role="alert"
-          className="mt-5 flex items-center justify-between gap-3 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4"
+          className="mt-6 flex items-center justify-between gap-3 rounded-[4px] border border-[#C5C6C8]/60 bg-white p-4"
         >
           <p className="text-[13px] text-[#282728]">{loadError}</p>
           <button type="button" onClick={() => void loadAccount()} className={quietBtn}>
@@ -186,9 +198,9 @@ export function AccountView({
         </div>
       )}
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-7 grid gap-4 lg:grid-cols-2">
         {/* Membership */}
-        <div className={card}>
+        <div className={`${card} suite-account-card--primary lg:col-span-2`}>
           <p className={cardTitle}>Membership</p>
           {typeof trialDaysLeft === "number" ? (
             <>
@@ -204,7 +216,7 @@ export function AccountView({
               <div className="mt-4">
                 <a
                   href="/checkout/membership?interval=month&source=trial_account"
-                  className={primaryBtn}
+                  className={accentBtn}
                 >
                   Keep your Studio
                 </a>
@@ -256,7 +268,7 @@ export function AccountView({
                       type="button"
                       onClick={openBilling}
                       disabled={billingBusy}
-                      className={primaryBtn}
+                      className={accentBtn}
                     >
                       {billingBusy ? "Opening…" : "Manage billing"}
                     </button>
@@ -278,7 +290,7 @@ export function AccountView({
                 <div className="mt-4">
                   <a
                     href="/checkout/membership?interval=month&source=account"
-                    className={primaryBtn}
+                    className={accentBtn}
                   >
                     Explore SUITE
                   </a>
@@ -311,7 +323,7 @@ export function AccountView({
           </p>
           {(typeof trialDaysLeft === "number" || isRecurringMembership || isFixedBundlePass) && (
             <div className="mt-4">
-              <a href="/checkout/credits" className={primaryBtn}>
+              <a href="/checkout/credits" className={accentBtn}>
                 Top up credits
               </a>
             </div>
@@ -334,9 +346,9 @@ export function AccountView({
         )}
 
         {/* Brand & memory - straight to the Memory screen, never a chat (QA P1-6). */}
-        <div className={card}>
+        <div className={`${card} lg:col-span-2`}>
           <p className={cardTitle}>Brand &amp; memory</p>
-          <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
+          <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-[#4F5052]">
             What Maya remembers about you, your brand, and the name you gave her.
           </p>
           <div className="mt-4">
@@ -347,14 +359,14 @@ export function AccountView({
         </div>
 
         {/* Saved selfies (identity references) */}
-        <div className={card}>
+        <div className={`${card} lg:col-span-2`}>
           <p className={cardTitle}>Your selfies</p>
           <p className="mt-2 text-[14px] leading-relaxed text-[#4F5052]">
             The selfies Maya can use to keep you recognizable. Your newest one is used
             automatically.
           </p>
           {selfies && selfies.length > 0 && (
-            <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-6">
+            <div className="mt-5 grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8">
               {selfies.slice(0, 12).map(url => (
                 <div
                   key={url}
@@ -425,7 +437,7 @@ export function AccountView({
         </div>
 
         {/* Logout (legacy Studio entry now lives in the gated "Your trained model" card above). */}
-        <div className="flex flex-col gap-1 px-1 pt-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-end min-[420px]:gap-3">
+        <div className="flex flex-col gap-1 px-1 pt-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-end min-[420px]:gap-3 lg:col-span-2">
           <button type="button" onClick={handleLogout} disabled={loggingOut} className={quietBtn}>
             {loggingOut ? "Logging out…" : "Log out"}
           </button>
