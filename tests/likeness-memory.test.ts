@@ -149,8 +149,13 @@ describe("prompt injection", () => {
     expect(src).toContain("classifyLikenessCorrection(instruction)")
     expect(src).toContain("addLikenessNote")
     expect(src).toContain("suite_likeness_note_captured")
-    // The prompt builder takes the block on both the first try and the safer retry.
-    expect(src.match(/buildEditPrompt\(instruction, (?:false|true), hasIdentityReference, likenessBlock\)/g)?.length).toBe(2)
+    // The prompt builder takes both the visual edit reference and the likeness block on the first
+    // try and the safer retry. Allow formatter whitespace so this asserts semantics, not layout.
+    expect(
+      src.match(
+        /buildEditPrompt\(\s*instruction,\s*(?:false|true),\s*hasIdentityReference,\s*hasEditReference,\s*likenessBlock\s*\)/g
+      )?.length
+    ).toBe(2)
   })
 
   it("Maya's chat persona sees the notes so she never re-asks", () => {
