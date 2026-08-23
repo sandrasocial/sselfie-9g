@@ -131,8 +131,14 @@ describe("Maya conversational edit durable reservations", () => {
     expect(route.indexOf("claimConversationalEditReservation({")).toBeLessThan(
       route.indexOf("deductCredits(")
     )
-    expect(route).toContain("markConversationalEditReservationCharged")
-    expect(route).toContain('"not_charged"')
+    expect(route).toContain("chargeConversationalEditReservation")
+    expect(service).toMatch(
+      /WITH candidate AS MATERIALIZED[\s\S]*locked_balance AS MATERIALIZED[\s\S]*deduction AS[\s\S]*ledger AS[\s\S]*charged_request AS/
+    )
+    expect(service).toContain("FOR UPDATE")
+    expect(service).toContain("total_used = credits.total_used + ${input.amount}")
+    expect(service).toContain("reference_id, balance_after")
+    expect(service).toContain("credit_state = 'not_charged'")
     expect(route).toContain('"refunded"')
     expect(route).toContain('"refund_pending"')
     expect(migration).toContain("credit_state IN ('not_charged', 'charged', 'refunded', 'refund_pending')")
@@ -143,5 +149,15 @@ describe("Maya conversational edit durable reservations", () => {
       /FROM credit_transactions[\s\S]*transaction_type = 'image'[\s\S]*amount = \$\{-amount\}[\s\S]*reference_id = \$\{ref\}/
     )
     expect(route).toContain("if (usageRows.length === 0) return true")
+    expect(service).toContain("${input.adminBypass} OR COALESCE(locked_balance.balance, 0) >= 999999")
+    expect(service).toContain("CASE WHEN charge_policy.skip_deduction THEN 0")
+  })
+
+  it("keeps the legacy editor on the established credit helper", () => {
+    expect(route).toContain("Legacy editor compatibility: retain its established credit helper")
+    expect(route).toContain("const deduction = await deductCredits(")
+    expect(route.indexOf("chargeConversationalEditReservation({")).toBeLessThan(
+      route.indexOf("const deduction = await deductCredits(")
+    )
   })
 })

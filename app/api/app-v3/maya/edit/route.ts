@@ -45,9 +45,9 @@ import {
   type ConversationalPhotoEditReceipt,
 } from "@/lib/app-v3/maya/conversational-photo-edit"
 import {
+  chargeConversationalEditReservation,
   claimConversationalEditReservation,
   failConversationalEditReservation,
-  markConversationalEditReservationCharged,
   persistConversationalEditResult,
   type ConversationalEditCreditState,
 } from "@/lib/app-v3/maya/conversational-photo-edit-reservation"
@@ -356,20 +356,19 @@ export async function POST(request: NextRequest) {
     const size = toOpenAIEditSize(conceptRequestSize(format))
 
     // BRIDGE-01 Phase D: members and active trials only (same lock as generate).
-    {
-      const { isAdminEmail } = await import("@/lib/admin-feature-flags")
-      if (!isAdminEmail(user.email)) {
-        const { canGenerate } = await import("@/lib/trial/suite-trial")
-        if (!(await canGenerate(String(neonUser.id)))) {
-          return NextResponse.json(
-            {
-              error: "Photo-making is paused. Join the SUITE to keep creating.",
-              code: "generation_locked",
-              action: "open_membership_checkout",
-            },
-            { status: 403 }
-          )
-        }
+    const { isAdminEmail } = await import("@/lib/admin-feature-flags")
+    const isAdminUser = isAdminEmail(user.email)
+    if (!isAdminUser) {
+      const { canGenerate } = await import("@/lib/trial/suite-trial")
+      if (!(await canGenerate(String(neonUser.id)))) {
+        return NextResponse.json(
+          {
+            error: "Photo-making is paused. Join the SUITE to keep creating.",
+            code: "generation_locked",
+            action: "open_membership_checkout",
+          },
+          { status: 403 }
+        )
       }
     }
 
@@ -522,34 +521,80 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const hasEnough = await checkCredits(neonUser.id, CREDIT_COSTS.IMAGE)
-    if (!hasEnough) {
-      const current = await getUserCredits(neonUser.id)
-      await closeReservation("insufficient_credits", "not_charged")
-      return NextResponse.json(
-        {
-          error: "Insufficient credits",
-          code: "insufficient_credits",
-          action: "open_credits_topup",
-          required: CREDIT_COSTS.IMAGE,
-          current,
-        },
-        { status: 402 }
+    let newBalance = 0
+    let creditsDeducted: 0 | 1 = 1
+    if (reservationRequestId) {
+      const charge = await chargeConversationalEditReservation({
+        userId: String(neonUser.id),
+        requestId: reservationRequestId,
+        creditReference: requestRef,
+        amount: CONVERSATIONAL_PHOTO_EDIT_CREDIT_COST,
+        description: `app-v3 edit: ${instruction.slice(0, 50)}`,
+        adminBypass: isAdminUser,
+      })
+      if (charge.kind === "insufficient") {
+        return NextResponse.json(
+          {
+            error: "Insufficient credits",
+            code: "insufficient_credits",
+            action: "open_credits_topup",
+            required: CREDIT_COSTS.IMAGE,
+            current: charge.newBalance,
+          },
+          { status: 402 }
+        )
+      }
+      if (charge.kind === "conflict") {
+        return NextResponse.json(
+          {
+            error: "This edit confirmation belongs to a different request. Confirm this edit again.",
+            code: "edit_request_conflict",
+          },
+          { status: 409 }
+        )
+      }
+      if (charge.kind === "unavailable") {
+        return NextResponse.json(
+          {
+            error: "Maya is already applying this edit.",
+            code: "edit_request_in_progress",
+            retryable: true,
+          },
+          { status: 409 }
+        )
+      }
+      newBalance = charge.newBalance
+      creditsDeducted = charge.creditsDeducted
+    } else {
+      // Legacy editor compatibility: retain its established credit helper and behavior.
+      const hasEnough = await checkCredits(neonUser.id, CREDIT_COSTS.IMAGE)
+      if (!hasEnough) {
+        const current = await getUserCredits(neonUser.id)
+        return NextResponse.json(
+          {
+            error: "Insufficient credits",
+            code: "insufficient_credits",
+            action: "open_credits_topup",
+            required: CREDIT_COSTS.IMAGE,
+            current,
+          },
+          { status: 402 }
+        )
+      }
+      const deduction = await deductCredits(
+        neonUser.id,
+        CREDIT_COSTS.IMAGE,
+        "image",
+        `app-v3 edit: ${instruction.slice(0, 50)}`,
+        requestRef
       )
-    }
-    const deduction = await deductCredits(
-      neonUser.id,
-      CREDIT_COSTS.IMAGE,
-      "image",
-      `app-v3 edit: ${instruction.slice(0, 50)}`,
-      requestRef
-    )
-    if (!deduction.success) {
-      await closeReservation("credit_deduction_failed", "not_charged")
-      return NextResponse.json(
-        { error: deduction.error ?? "Credit deduction failed.", code: "credit_deduction_failed" },
-        { status: 402 }
-      )
+      if (!deduction.success) {
+        return NextResponse.json(
+          { error: deduction.error ?? "Credit deduction failed.", code: "credit_deduction_failed" },
+          { status: 402 }
+        )
+      }
+      newBalance = deduction.newBalance
     }
 
     const refundOrAlert = async (amount: number, reason: string, ref: string): Promise<boolean> => {
@@ -585,33 +630,6 @@ export async function POST(request: NextRequest) {
       const refunded = await refundOrAlert(CREDIT_COSTS.IMAGE, reason, requestRef)
       await closeReservation(failureCode, refunded ? "refunded" : "refund_pending")
       return refunded
-    }
-
-    if (reservationRequestId) {
-      let charged = false
-      try {
-        charged = await markConversationalEditReservationCharged({
-          userId: String(neonUser.id),
-          requestId: reservationRequestId,
-        })
-      } catch (reservationError) {
-        console.error("[app-v3 edit] reservation charge transition failed:", reservationError)
-      }
-      if (!charged) {
-        const refunded = await refundAndCloseReservation(
-          "Edit reservation could not record the credit charge",
-          "reservation_charge_failed"
-        )
-        return NextResponse.json(
-          {
-            error: refunded
-              ? "This edit could not start safely. Your credit was returned."
-              : "This edit could not start safely. Your credit return needs review.",
-            code: "edit_reservation_failed",
-          },
-          { status: 500 }
-        )
-      }
     }
 
     if (!openaiApiKey) {
@@ -883,8 +901,8 @@ export async function POST(request: NextRequest) {
       success: true,
       imageUrl: blob.url,
       aiImageId: insertedId,
-      creditsDeducted: CREDIT_COSTS.IMAGE,
-      newBalance: deduction.newBalance,
+      creditsDeducted,
+      newBalance,
       ...(editReceipt ? { editReceipt } : {}),
       ...(likenessMemory ? { likenessMemory } : {}),
     })
