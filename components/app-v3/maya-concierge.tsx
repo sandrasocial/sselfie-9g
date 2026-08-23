@@ -43,6 +43,10 @@ import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import { finishMayaJob, recordMayaJobDecision } from "@/lib/app-v3/maya/job-analytics"
 import { newMayaTaskId } from "@/lib/app-v3/maya/context-envelope"
 import {
+  mayaWorkspacePathForFormat,
+  type MayaWorkspacePath,
+} from "@/lib/app-v3/maya/workspace-path"
+import {
   createMayaAction,
   mayaActionIdempotencyKey,
   restoreMayaActionStatus,
@@ -437,51 +441,167 @@ const SYSTEM_TURN_LABEL: Record<string, string> = {
   "Help me choose what to make today.": "Choosing what to make today",
 }
 
-function MayaPathChooser({
+const MAYA_WORKSPACE_PATHS: readonly {
+  id: MayaWorkspacePath
+  label: string
+  description: string
+}[] = [
+  { id: "ai-photos", label: "AI Photos", description: "Photos & photoshoots" },
+  { id: "edit-photo", label: "Edit a Photo", description: "Editing & presets" },
+  { id: "build-post", label: "Build a Post", description: "Carousels, captions & stories" },
+]
+
+const EDITORIAL_DIRECTION_IMAGES = [
+  "/images/brand/bold-editorial-suite/suite-editorial-studio-power-v1.png",
+  "/images/brand/bold-editorial-suite/suite-editorial-white-shirt-v1.png",
+  "/images/brand/bold-editorial-suite/suite-editorial-street-mono-v1.jpeg",
+] as const
+
+function MayaPathTabs({
+  activePath,
   disabled,
+  onPick,
+}: {
+  activePath: MayaWorkspacePath
+  disabled: boolean
+  onPick: (path: MayaWorkspacePath) => void
+}) {
+  return (
+    <nav
+      className="suite-maya-path-tabs grid shrink-0 grid-cols-3 border-b border-[#C5C6C8] bg-white"
+      aria-label="Create with Maya"
+    >
+      {MAYA_WORKSPACE_PATHS.map(path => {
+        const active = path.id === activePath
+        return (
+          <button
+            key={path.id}
+            type="button"
+            onClick={() => onPick(path.id)}
+            disabled={disabled}
+            aria-current={active ? "step" : undefined}
+            className={`min-h-[66px] border-r border-[#C5C6C8] px-2 py-2 text-center transition-colors last:border-r-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--suite-accent)] disabled:opacity-45 sm:min-h-[72px] sm:px-4 ${
+              active
+                ? "bg-[color:var(--suite-accent)] text-white"
+                : "bg-white text-[color:var(--suite-night)] hover:bg-[#F1F2F2]"
+            }`}
+          >
+            <span className="block text-[9px] uppercase tracking-[0.13em] sm:text-[10px] sm:tracking-[0.17em]">
+              {path.label}
+            </span>
+            <span
+              className={`mt-1 block text-[9px] leading-tight sm:text-[10px] ${active ? "text-white/74" : "text-[#6D6E70]"}`}
+            >
+              {path.description}
+            </span>
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
+
+function MayaJourneySteps({ current }: { current: 1 | 2 | 3 | 4 }) {
+  const steps = ["Choose a path", "Answer Maya", "Review", "Edit or post"] as const
+  return (
+    <ol
+      className="suite-maya-journey-steps grid shrink-0 grid-cols-4 border-b border-[#C5C6C8]/70 bg-[#F8FAFA] px-3 py-3 sm:px-5"
+      aria-label={`Step ${current} of 4`}
+    >
+      {steps.map((step, index) => {
+        const number = (index + 1) as 1 | 2 | 3 | 4
+        const active = number === current
+        const complete = number < current
+        return (
+          <li
+            key={step}
+            className={`flex min-w-0 items-center gap-1.5 text-[7px] uppercase tracking-[0.08em] sm:text-[8px] sm:tracking-[0.12em] ${active ? "text-[color:var(--suite-accent)]" : "text-[#6D6E70]"}`}
+          >
+            <span
+              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[8px] ${
+                active || complete
+                  ? "border-[color:var(--suite-accent)] bg-[color:var(--suite-accent)] text-white"
+                  : "border-[#9A9B9D] text-[#6D6E70]"
+              }`}
+            >
+              {number}
+            </span>
+            <span className="truncate">{step}</span>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+function MayaPathChooser({
+  activePath,
+  disabled,
+  hasSelfie,
+  onChooseSelfie,
   onPickFormat,
   onStartCaption,
   onStartEdit,
 }: {
+  activePath: MayaWorkspacePath
   disabled: boolean
+  hasSelfie: boolean
+  onChooseSelfie: () => void
   onPickFormat: (format: OutputFormat) => void
   onStartCaption: () => void
   onStartEdit?: () => void
 }) {
   const actionClass =
-    "min-h-11 border border-[color:var(--suite-night)] bg-white px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-[color:var(--suite-night)] transition-colors hover:bg-[color:var(--suite-night)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--suite-accent)] disabled:opacity-40"
+    "min-h-11 min-w-[10rem] border border-[color:var(--suite-night)] bg-white px-4 py-2 text-[10px] uppercase tracking-[0.14em] text-[color:var(--suite-night)] transition-colors hover:bg-[color:var(--suite-night)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--suite-accent)] disabled:opacity-40"
+
+  const prompt =
+    activePath === "ai-photos"
+      ? hasSelfie
+        ? "What do you want to create?"
+        : "Choose one selfie to start with."
+      : activePath === "edit-photo"
+        ? "Choose a photo to edit."
+        : "What do you want to build?"
 
   return (
-    <section className="suite-maya-paths" aria-label="Choose your creative path">
-      <article className="suite-maya-path suite-maya-path--photos">
-        <p className="suite-maya-path-kicker">AI Photos</p>
-        <h3>Create the image first.</h3>
-        <p>Make one strong photo or direct a complete shoot from your selfies.</p>
-        <div className="suite-maya-path-actions">
-          <button
-            type="button"
-            onClick={() => onPickFormat("photo")}
-            disabled={disabled}
-            className={actionClass}
-          >
-            Create a photo
-          </button>
-          <button
-            type="button"
-            onClick={() => onPickFormat("photoshoot")}
-            disabled={disabled}
-            className={actionClass}
-          >
-            Plan a photoshoot
-          </button>
-        </div>
-      </article>
+    <section className="space-y-3" aria-label="Start with Maya">
+      <div className="flex min-w-0 items-end gap-2">
+        <Avatar src={MAYA_AVATAR} fallback="M" />
+        <p className="min-w-0 max-w-[calc(100%-2.25rem)] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[14px] text-[#282728] sm:max-w-[80%]">
+          {prompt}
+        </p>
+      </div>
 
-      <article className="suite-maya-path suite-maya-path--edit">
-        <p className="suite-maya-path-kicker">Edit a Photo</p>
-        <h3>Start from what you have.</h3>
-        <p>Choose a Gallery photo, then use a preset or make one precise change.</p>
-        <div className="suite-maya-path-actions">
+      <div className="flex flex-wrap gap-2 pl-10">
+        {activePath === "ai-photos" && !hasSelfie ? (
+          <button
+            type="button"
+            onClick={onChooseSelfie}
+            disabled={disabled}
+            className={`${actionClass} bg-[color:var(--suite-accent)] text-white hover:bg-[color:var(--suite-night)]`}
+          >
+            Choose a selfie
+          </button>
+        ) : activePath === "ai-photos" ? (
+          <>
+            <button
+              type="button"
+              onClick={() => onPickFormat("photo")}
+              disabled={disabled}
+              className={`${actionClass} bg-[color:var(--suite-accent)] text-white hover:bg-[color:var(--suite-night)]`}
+            >
+              A new photo
+            </button>
+            <button
+              type="button"
+              onClick={() => onPickFormat("photoshoot")}
+              disabled={disabled}
+              className={actionClass}
+            >
+              A photoshoot
+            </button>
+          </>
+        ) : activePath === "edit-photo" ? (
           <button
             type="button"
             onClick={onStartEdit}
@@ -490,40 +610,35 @@ function MayaPathChooser({
           >
             Choose a photo
           </button>
-        </div>
-      </article>
-
-      <article className="suite-maya-path suite-maya-path--post">
-        <p className="suite-maya-path-kicker">Build a Post</p>
-        <h3>Turn the idea into something ready.</h3>
-        <p>Create the words, designed slides or story sequence around one clear message.</p>
-        <div className="suite-maya-path-actions suite-maya-path-actions--three">
-          <button
-            type="button"
-            onClick={() => onPickFormat("carousel")}
-            disabled={disabled}
-            className={actionClass}
-          >
-            Carousel
-          </button>
-          <button
-            type="button"
-            onClick={onStartCaption}
-            disabled={disabled}
-            className={actionClass}
-          >
-            Caption
-          </button>
-          <button
-            type="button"
-            onClick={() => onPickFormat("story-sequence")}
-            disabled={disabled}
-            className={actionClass}
-          >
-            Stories
-          </button>
-        </div>
-      </article>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => onPickFormat("carousel")}
+              disabled={disabled}
+              className={`${actionClass} bg-[color:var(--suite-accent)] text-white hover:bg-[color:var(--suite-night)]`}
+            >
+              Carousel
+            </button>
+            <button
+              type="button"
+              onClick={onStartCaption}
+              disabled={disabled}
+              className={actionClass}
+            >
+              Caption
+            </button>
+            <button
+              type="button"
+              onClick={() => onPickFormat("story-sequence")}
+              disabled={disabled}
+              className={actionClass}
+            >
+              Story sequence
+            </button>
+          </>
+        )}
+      </div>
     </section>
   )
 }
@@ -533,33 +648,22 @@ function MayaPathChooser({
 // brand shoot" framing so the system status is clear (the photo case is the one that changes most).
 // Sandra-approved short openers (2026-06-11): two lines max before anything happens.
 const FORMAT_OPENER: Record<OutputFormat, string> = {
-  photo: "Add one selfie and I'll show you a few ideas. Soft window light works best. 🤍",
-  photoshoot: "Add one selfie and I'll plan a full shoot in one world. 🤍",
-  "reel-cover":
-    "Hit create and I'll show you six cover styles. Tap the one you love and I'll take it from there.",
-  carousel:
-    "Hit create and I'll show you six text styles. Tap the one that feels like you and I'll build the slides.",
-  "story-slide":
-    "Hit create and I'll show you six styles. Tap the one you love, then pick the story idea that fits.",
-  "story-sequence":
-    "Hit create and I'll show you six styles. Tap the one that feels like you and I'll build the sequence.",
-  video:
-    "Add or choose the image you want to move, and I'll show you a few ways to bring it to life.",
+  photo: "Add one selfie. Maya will show you three directions.",
+  photoshoot: "Add one selfie. Maya will build one connected photoshoot.",
+  "reel-cover": "Choose a photo. Maya will show you cover directions.",
+  carousel: "Choose a topic. Maya will build the slides and write the copy.",
+  "story-slide": "Choose a topic. Maya will build the Story slide.",
+  "story-sequence": "Choose a topic. Maya will build the full Story sequence.",
+  video: "Choose the image you want to move. Maya will show you motion directions.",
 }
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
-  photo:
-    "Your selfie's in, and it's still you. I chose a clear starting direction below. You decide before I create it.",
-  photoshoot:
-    "Your selfie's in, and it's still you. Hit create and I'll build the full shoot plan.",
-  "reel-cover":
-    "Your selfie's in, and it's still you. Hit create and tap the cover style you love. I'll do the rest.",
-  carousel:
-    "Your selfie's in, and it's still you. Hit create and tap the text style that feels like you.",
-  "story-slide":
-    "Your selfie's in, and it's still you. Hit create and tap the style you love. Then pick your story idea.",
-  "story-sequence":
-    "Your selfie's in, and it's still you. Hit create and tap the style that feels like you.",
-  video: "Your image is in. Hit create and pick the motion that feels most natural.",
+  photo: "Choose a direction. Maya will create it with your real face.",
+  photoshoot: "Choose a direction. Maya will build the full photoshoot.",
+  "reel-cover": "Choose a direction for your cover.",
+  carousel: "Choose a direction for your carousel.",
+  "story-slide": "Choose a direction for your Story slide.",
+  "story-sequence": "Choose a direction for your Story sequence.",
+  video: "Choose a motion direction.",
 }
 
 // The primary "go" button. It commits the chosen format, which triggers Maya to pull directions,
@@ -786,6 +890,7 @@ export function MayaConcierge({
     updateCalendarTargetCaption,
     resetCurrentSession,
     setOutputFormat,
+    setWorkspacePath,
     setReferenceSelfieUrl,
     setVideoSourceUrl,
     close,
@@ -906,9 +1011,7 @@ export function MayaConcierge({
   const [lastGeneration, setLastGeneration] = useState<LastGenerationSnapshot | null>(
     () => restoredDraft?.lastGeneration ?? null
   )
-  const workspacePathRef = useRef<ConciergeSession["workspacePath"]>(
-    session?.workspacePath ?? null
-  )
+  const workspacePathRef = useRef<ConciergeSession["workspacePath"]>(session?.workspacePath ?? null)
   useEffect(() => {
     const nextPath = session?.workspacePath ?? null
     if (workspacePathRef.current === nextPath) return
@@ -1216,8 +1319,8 @@ export function MayaConcierge({
     () =>
       new DefaultChatTransport({
         api: "/api/app-v3/maya/chat",
-        prepareSendMessagesRequest: ({ messages }) => ({
-          body: { messages, ...extrasRef.current },
+        prepareSendMessagesRequest: ({ messages, body }) => ({
+          body: { messages, ...extrasRef.current, ...(body ?? {}) },
         }),
       }),
     []
@@ -2456,6 +2559,8 @@ export function MayaConcierge({
   const plainPreSelfieChat =
     session.initialSetupAction === "plain_chat" && !referenceSelfieUrl && !outputFormat
   const generalHomeConversation = homeMode && !outputFormat
+  const activeWorkspacePath =
+    session.workspacePath ?? mayaWorkspacePathForFormat(outputFormat) ?? "ai-photos"
   const videoSourceUrl = session.videoSourceUrl
   const mayaChoosesVisualWorld = session.aesthetic.id === "maya-decides"
   const hasSpecificVisualWorld = mayaChoosesVisualWorld || aesthetic.id !== "maya-general"
@@ -3949,6 +4054,7 @@ export function MayaConcierge({
   const hasConcepts = messages.some(
     (m: any) => Array.isArray(m?.parts) && m.parts.some((p: any) => !!extractConcepts(p))
   )
+  const mayaJourneyStep: 1 | 2 | 3 | 4 = lastGeneration ? 4 : hasConcepts ? 3 : hasStarted ? 2 : 1
   const agentLabel = memory?.agentName?.trim() || "Maya"
 
   function trackInlineChoice(
@@ -4007,7 +4113,7 @@ export function MayaConcierge({
     homeTaskInitiatedRef.current = true
     setPreMessageThreadOpen(true)
     setSetupOpen(false)
-    sendMessage({ text: CAPTION_START_REQUEST })
+    sendMessage({ text: CAPTION_START_REQUEST }, { body: { workspaceAction: "write-caption" } })
   }
 
   function handleProjectStart() {
@@ -4769,23 +4875,15 @@ export function MayaConcierge({
             (on phones the drawer is full-width, so the backdrop can't be tapped to leave). */}
         <header className="suite-maya-header flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
           <div className="min-w-0">
-            <p className="truncate text-[10px] uppercase tracking-[0.3em] text-[#6D6E70]">
-              {agentLabel}
-            </p>
             <h2
               id="maya-workspace-title"
-              className="mt-0.5 max-w-[18rem] font-serif text-[19px] font-light leading-tight text-[#0D0E10] sm:max-w-none sm:text-[21px]"
+              className="max-w-[18rem] font-serif text-[25px] font-light uppercase leading-none tracking-[-0.035em] text-[#0D0E10] sm:max-w-none sm:text-[30px]"
             >
-              {workspaceTitle}
+              {agentLabel}
             </h2>
-            {homeMode && generalHomeConversation && (
+            {!generalHomeConversation && (
               <p className="mt-0.5 truncate text-[11px] leading-snug text-[#6D6E70]">
-                One idea in. One finished post out.
-              </p>
-            )}
-            {selectedShot && (
-              <p className="mt-0.5 truncate text-[11px] leading-snug text-[#6D6E70]">
-                Shot reference: {selectedShot.title}
+                {selectedShot ? `Shot reference: ${selectedShot.title}` : workspaceTitle}
               </p>
             )}
             {(creditsUnlimited || creditBalance != null) && (
@@ -4859,7 +4957,7 @@ export function MayaConcierge({
                     disabled={workspaceBusy}
                     className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10] disabled:opacity-40"
                   >
-                    {newChatConfirming ? "Confirm new post" : "New post"}
+                    {newChatConfirming ? "Confirm new chat" : "New chat"}
                   </button>
                   {newChatConfirming && (
                     <button
@@ -4867,7 +4965,7 @@ export function MayaConcierge({
                       onClick={() => setNewChatConfirming(false)}
                       className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
                     >
-                      Keep this post
+                      Keep this chat
                     </button>
                   )}
                   <button
@@ -4880,7 +4978,7 @@ export function MayaConcierge({
                     disabled={workspaceBusy}
                     className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10] disabled:opacity-40"
                   >
-                    Work
+                    History
                   </button>
                   <button
                     type="button"
@@ -4898,6 +4996,17 @@ export function MayaConcierge({
             )}
           </div>
         </header>
+
+        {homeMode ? (
+          <>
+            <MayaPathTabs
+              activePath={activeWorkspacePath}
+              disabled={workspaceBusy}
+              onPick={setWorkspacePath}
+            />
+            <MayaJourneySteps current={mayaJourneyStep} />
+          </>
+        ) : null}
 
         {learningTaskActive && session.mayaContext ? (
           <MayaGuidanceWorkspace
@@ -5460,65 +5569,63 @@ export function MayaConcierge({
                 !threadVisible || setupOpen ? "hidden" : "overflow-y-auto"
               }`}
             >
-              {/* Static opener */}
-              <div className="flex min-w-0 max-w-full items-end gap-2">
-                <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
-                <div className="suite-card suite-maya-message suite-maya-message--maya min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[4px] rounded-tl-none bg-white p-4 text-[15px] leading-relaxed text-[#282728] [overflow-wrap:anywhere] sm:max-w-[80%]">
-                  <p>
-                    {skoolHandoffReady && skoolHandoff
-                      ? `Continue from ${skoolHandoff.lessonTitle}.`
-                      : generalHomeConversation
-                        ? "Start exactly where you are."
+              {/* A specific handoff or active creation gets one short opener. Maya Home uses the
+              path prompt below instead, so the first screen never repeats itself. */}
+              {!generalHomeConversation || skoolHandoffReady ? (
+                <div className="flex min-w-0 max-w-full items-end gap-2">
+                  <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
+                  <div className="suite-card suite-maya-message suite-maya-message--maya min-w-0 max-w-[calc(100%-2.25rem)] break-words rounded-[4px] rounded-tl-none bg-white p-4 text-[15px] leading-relaxed text-[#282728] [overflow-wrap:anywhere] sm:max-w-[80%]">
+                    <p>
+                      {skoolHandoffReady && skoolHandoff
+                        ? `Continue from ${skoolHandoff.lessonTitle}.`
                         : selectedShot
                           ? `${aesthetic.name}. Starting from ${selectedShot.title}.`
                           : `${aesthetic.name}. ${aesthetic.blurb}`}
-                  </p>
-                  {!skoolHandoffReady ? <p className="mt-2">{openerLine}</p> : null}
-                  {skoolHandoffReady && skoolHandoff ? (
-                    <SkoolMayaHandoffCard
-                      handoff={skoolHandoff}
-                      disabled={isThinking}
-                      onStart={handleSkoolHandoffStart}
-                    />
-                  ) : null}
-                  {generalHomeConversation && !hasStarted && !skoolHandoffReady && (
-                    <div className="mt-4 space-y-3">
-                      {latestResumeTask && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const task = latestResumeTask
-                            setLatestResumeTask(null)
-                            void handleSelectChat(task.id).catch(() => setLatestResumeTask(task))
-                          }}
-                          disabled={workspaceBusy}
-                          className="flex min-h-11 w-full items-center justify-between gap-3 rounded-[6px] border border-[#0D0E10]/20 bg-[#0D0E10] px-4 py-2.5 text-left text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10] focus-visible:ring-offset-2 disabled:opacity-40"
-                        >
-                          <span className="min-w-0">
-                            <span className="block text-[10px] uppercase tracking-[0.16em] text-white/65">
-                              Continue your post about
-                            </span>
-                            <span className="block truncate text-[13px] leading-snug">
-                              {latestResumeTask.title}
-                            </span>
-                          </span>
-                          <span className="shrink-0 text-[11px] uppercase tracking-[0.14em]">
-                            Resume
-                          </span>
-                        </button>
-                      )}
-                    </div>
-                  )}
+                    </p>
+                    {!skoolHandoffReady ? <p className="mt-2">{openerLine}</p> : null}
+                    {skoolHandoffReady && skoolHandoff ? (
+                      <SkoolMayaHandoffCard
+                        handoff={skoolHandoff}
+                        disabled={isThinking}
+                        onStart={handleSkoolHandoffStart}
+                      />
+                    ) : null}
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
               {generalHomeConversation && !hasStarted && !skoolHandoffReady ? (
-                <MayaPathChooser
-                  disabled={isThinking}
-                  onPickFormat={handlePickFormat}
-                  onStartCaption={handleCaptionPath}
-                  onStartEdit={onStartEdit}
-                />
+                <>
+                  <MayaPathChooser
+                    activePath={activeWorkspacePath}
+                    disabled={isThinking}
+                    hasSelfie={Boolean(referenceSelfieUrl)}
+                    onChooseSelfie={() => {
+                      if (session.workspacePath !== "ai-photos") setWorkspacePath("ai-photos")
+                      openSelfieManager()
+                    }}
+                    onPickFormat={handlePickFormat}
+                    onStartCaption={handleCaptionPath}
+                    onStartEdit={onStartEdit}
+                  />
+                  {latestResumeTask ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const task = latestResumeTask
+                        setLatestResumeTask(null)
+                        void handleSelectChat(task.id).catch(() => setLatestResumeTask(task))
+                      }}
+                      disabled={workspaceBusy}
+                      className="ml-10 flex min-h-11 max-w-[calc(100%-2.5rem)] items-center gap-3 border-t border-[#C5C6C8] px-1 text-left text-[10px] uppercase tracking-[0.14em] text-[#4F5052] disabled:opacity-40"
+                    >
+                      <span className="truncate">Resume · {latestResumeTask.title}</span>
+                      <span aria-hidden className="ml-auto shrink-0">
+                        →
+                      </span>
+                    </button>
+                  ) : null}
+                </>
               ) : null}
 
               {/* Prominent selfie requirement: once Maya has proposed directions but there's no
@@ -5651,7 +5758,11 @@ export function MayaConcierge({
                     parts.some(isConceptToolPart) &&
                     (conceptPart?.length ?? 0) === 0
 
-                  const renderConceptCard = (concept: ConceptCardData, recommended: boolean) => {
+                  const renderConceptCard = (
+                    concept: ConceptCardData,
+                    recommended: boolean,
+                    directionIndex = 0
+                  ) => {
                     const key = `${m.id}:${concept.id}`
                     const gen = genState[key] ?? { status: "idle" as const }
                     const resultUrls = gen.imageUrls ?? []
@@ -5710,6 +5821,13 @@ export function MayaConcierge({
                         gen={gen}
                         format={conceptFormat}
                         eyebrow={recommended ? "Maya recommends" : "Another direction"}
+                        directionImageUrl={
+                          aesthetic.thumbnails?.[directionIndex] ??
+                          EDITORIAL_DIRECTION_IMAGES[
+                            directionIndex % EDITORIAL_DIRECTION_IMAGES.length
+                          ]
+                        }
+                        directionIndex={directionIndex + 1}
                         onDownloaded={() => setValueUsed(true)}
                         onGenerate={editedCopy =>
                           void generateConcept(
@@ -6263,22 +6381,35 @@ export function MayaConcierge({
                                 </p>
                               </div>
                             )}
-                          {renderConceptCard(conceptPart[0], true)}
-                          {conceptPart.length > 1 && (
-                            <details className="group rounded-[8px] border border-[#C5C6C8]/55 bg-white">
-                              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-4 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0D0E10]">
-                                See more ideas
-                                <span className="font-serif text-[16px] font-light text-[#6D6E70]">
-                                  {conceptPart.length - 1}
-                                </span>
-                              </summary>
-                              <div className="space-y-3 border-t border-[#C5C6C8]/45 p-3">
-                                {conceptPart
-                                  .slice(1)
-                                  .map(concept => renderConceptCard(concept, false))}
+                          {(() => {
+                            const directions = conceptPart.slice(0, 3)
+                            const activeDirection = directions.findIndex(concept => {
+                              const state = genState[`${m.id}:${concept.id}`]
+                              return Boolean(state && state.status !== "idle")
+                            })
+                            const visibleDirections =
+                              activeDirection >= 0
+                                ? [
+                                    {
+                                      concept: directions[activeDirection],
+                                      index: activeDirection,
+                                    },
+                                  ]
+                                : directions.map((concept, index) => ({ concept, index }))
+
+                            return (
+                              <div
+                                className={`suite-concept-direction-strip grid gap-px border border-[#050505] bg-[#050505] ${activeDirection >= 0 ? "grid-cols-1" : "grid-cols-3"}`}
+                                aria-label="Choose a direction"
+                              >
+                                {visibleDirections.map(({ concept, index }) => (
+                                  <div key={concept.id} className="min-w-0 bg-white">
+                                    {renderConceptCard(concept, index === 0, index)}
+                                  </div>
+                                ))}
                               </div>
-                            </details>
-                          )}
+                            )
+                          })()}
                         </div>
                       )}
                     </div>
@@ -6533,7 +6664,7 @@ export function MayaConcierge({
                     textRefining
                       ? "Maya is updating the text…"
                       : generalHomeConversation
-                        ? "Or tell Maya what you need…"
+                        ? "Tell Maya what you need…"
                         : "Want something different? Ask Maya…"
                   }
                   className="suite-maya-input max-h-36 min-h-12 min-w-0 flex-1 resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[15px] leading-snug text-[#282728] outline-none transition-[border-color,box-shadow] duration-150 min-[380px]:px-5"

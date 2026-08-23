@@ -117,6 +117,10 @@ interface ConceptCardProps {
   promptAssetId?: string | null
   /** Small editorial label above the concept title. */
   eyebrow?: string
+  /** Image-led reference used while this is still a direction choice, before generation. */
+  directionImageUrl?: string | null
+  /** Human-readable position in the direction strip. */
+  directionIndex?: number
   /** Fires only after a browser download has been initiated. */
   onDownloaded?: () => void
   disabled?: boolean
@@ -175,6 +179,8 @@ export function ConceptCard({
   onRetryText,
   promptAssetId,
   eyebrow = "Maya's idea",
+  directionImageUrl = null,
+  directionIndex = 1,
   onDownloaded,
   disabled,
   disabledReason,
@@ -189,6 +195,9 @@ export function ConceptCard({
   const isDone = gen.status === "done" && images.length > 0
   const isVideoDone = gen.status === "done" && !!videoUrl
   const isCarousel = images.length > 1
+  const isDirectionChoice = Boolean(
+    directionImageUrl && !isGenerating && !isDone && !isVideoDone && gen.status !== "error"
+  )
   // MAYA-COPY-PREVIEW-01: the exact words Maya is about to bake, editable before she spends
   // a credit generating them. Seeded once per concept (a new concept.id remounts this card
   // fresh via the parent's key={key}), so her edits survive re-renders but never leak
@@ -343,6 +352,26 @@ export function ConceptCard({
     }
   }
 
+  async function handleDownloadPhoto() {
+    if (!images[0] || downloadStatus === "downloading") return
+    setDownloadStatus("downloading")
+    const started = await initiateAssetDownload(
+      firstBaked ?? images[0],
+      `sselfie-${firstDownloadAssetId ?? "photo"}.png`
+    )
+    if (!started) {
+      setDownloadStatus("error")
+      return
+    }
+    setDownloadStatus("idle")
+    void recordSuiteDownloadForReview({
+      source: "concept-card",
+      format,
+      assetId: firstDownloadAssetId,
+    })
+    onDownloaded?.()
+  }
+
   return (
     <div
       data-concept-state={gen.status}
@@ -350,9 +379,9 @@ export function ConceptCard({
       className="suite-concept-card min-w-0 max-w-full overflow-hidden rounded-[2px] border border-[#C5C6C8]/35 bg-white transition-colors duration-200 [overflow-x:clip]"
     >
       {/* Visual area ONLY exists once we're generating or done - never an empty placeholder box. */}
-      {(isGenerating || isDone || isVideoDone) && (
+      {(isGenerating || isDone || isVideoDone || isDirectionChoice) && (
         <div
-          className={`suite-concept-visual relative w-full bg-[#F1F2F2] ${FRAME_ASPECT[format]} ${
+          className={`suite-concept-visual relative w-full bg-[#F1F2F2] ${isDirectionChoice ? "aspect-[4/3]" : FRAME_ASPECT[format]} ${
             isGenerating && !gen.previewUrl ? "animate-pulse motion-reduce:animate-none" : ""
           }`}
         >
@@ -379,11 +408,11 @@ export function ConceptCard({
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               />
               {isCarousel && (
-                <span className="absolute left-2.5 top-2.5 rounded-full bg-[#0D0E10]/65 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+                <span className="absolute left-0 top-0 bg-[#050505] px-3 py-2 text-[9px] uppercase tracking-[0.18em] text-white">
                   {images.length} slides
                 </span>
               )}
-              <span className="absolute bottom-2.5 right-2.5 rounded-full bg-[#0D0E10]/65 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+              <span className="absolute bottom-0 right-0 bg-[#050505] px-3 py-2 text-[9px] uppercase tracking-[0.18em] text-white opacity-0 transition-opacity group-hover:opacity-100">
                 {isCarousel ? "Swipe" : "View"}
               </span>
             </button>
@@ -396,10 +425,34 @@ export function ConceptCard({
                 decoding="async"
                 className="h-full w-full object-cover opacity-95"
               />
-              <span className="absolute bottom-2.5 left-2.5 rounded-full bg-[#0D0E10]/65 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+              <span className="absolute bottom-0 left-0 bg-[#050505] px-3 py-2 text-[9px] uppercase tracking-[0.18em] text-white">
                 Developing…
               </span>
             </div>
+          ) : isDirectionChoice && directionImageUrl ? (
+            <button
+              type="button"
+              onClick={() => onGenerate(hasEditableCopy ? editedCopy : undefined)}
+              disabled={disabled}
+              aria-label={`Choose direction ${directionIndex}: ${concept.title}`}
+              className="group absolute inset-0 text-left disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={directionImageUrl}
+                alt=""
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover grayscale-[18%] transition-[filter,transform] duration-300 group-hover:grayscale-0 group-hover:scale-[1.015] motion-reduce:transition-none"
+              />
+              <span className="absolute inset-x-0 bottom-0 flex min-h-11 items-center justify-between gap-3 bg-[#050505] px-3 py-2 text-white">
+                <span className="min-w-0 truncate text-[10px] uppercase tracking-[0.16em]">
+                  {concept.title}
+                </span>
+                <span aria-hidden className="shrink-0 text-[15px]">
+                  →
+                </span>
+              </span>
+            </button>
           ) : (
             <div
               role="status"
@@ -414,6 +467,49 @@ export function ConceptCard({
           )}
         </div>
       )}
+
+      {isDone && !isCarousel && !isVideoDone ? (
+        <div
+          className="suite-concept-result-rail grid divide-x divide-white/20 bg-[#050505] text-white"
+          style={{
+            gridTemplateColumns: `repeat(${1 + (onEdit ? 1 : 0) + (postFinishAvailable ? 1 : 0)}, minmax(0, 1fr))`,
+          }}
+        >
+          {onEdit ? (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="min-h-12 px-2 py-3 text-[9px] uppercase tracking-[0.12em] transition-colors hover:bg-white hover:text-[#050505] sm:text-[10px] sm:tracking-[0.16em]"
+            >
+              Edit photo
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => void handleDownloadPhoto()}
+            disabled={downloadStatus === "downloading"}
+            className="min-h-12 px-2 py-3 text-[9px] uppercase tracking-[0.12em] transition-colors hover:bg-white hover:text-[#050505] disabled:opacity-50 sm:text-[10px] sm:tracking-[0.16em]"
+          >
+            {downloadStatus === "downloading" ? "Preparing…" : "Download"}
+          </button>
+          {postFinishAvailable ? (
+            <button
+              type="button"
+              onClick={handleFinishPost}
+              disabled={finishStatus === "finishing" || finishStatus === "finished"}
+              className="min-h-12 px-2 py-3 text-[9px] uppercase tracking-[0.12em] transition-colors hover:bg-[color:var(--suite-accent)] disabled:opacity-60 sm:text-[10px] sm:tracking-[0.16em]"
+            >
+              {finishStatus === "finishing"
+                ? "Finishing…"
+                : finishStatus === "finished"
+                  ? "Post ready"
+                  : finishStatus === "error"
+                    ? "Try again"
+                    : "Finish as a post"}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Jump straight to any slide instead of only seeing the cover, or opening fullscreen
           and arrowing through them one at a time. */}
@@ -443,15 +539,27 @@ export function ConceptCard({
       )}
 
       {/* Copy + action */}
-      <div className="suite-concept-body min-w-0 space-y-3 p-4 sm:p-5">
+      <div
+        className={`suite-concept-body min-w-0 space-y-3 ${isDirectionChoice ? "p-3" : "p-4 sm:p-5"}`}
+      >
         <div className="min-w-0 break-words [overflow-wrap:anywhere]">
-          <p className="suite-concept-eyebrow text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">
-            {eyebrow}
-          </p>
-          <h4 className="mt-1.5 font-serif text-[21px] font-light leading-tight text-[#0D0E10]">
-            {concept.title}
-          </h4>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">{concept.description}</p>
+          {isDirectionChoice ? (
+            <p className="line-clamp-2 text-[11px] leading-[1.45] text-[#4F5052]">
+              {concept.description}
+            </p>
+          ) : (
+            <>
+              <p className="suite-concept-eyebrow text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">
+                {eyebrow}
+              </p>
+              <h4 className="mt-1.5 font-serif text-[21px] font-light leading-tight text-[#0D0E10]">
+                {concept.title}
+              </h4>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">
+                {concept.description}
+              </p>
+            </>
+          )}
         </div>
 
         {gen.status === "error" && !idleAction && (
@@ -465,7 +573,7 @@ export function ConceptCard({
 
         {/* MAYA-COPY-PREVIEW-01: the exact words about to bake, before a credit is spent.
             Only while idle - once a slide exists the words are already fixed in the pixels. */}
-        {!isDone && !isVideoDone && hasEditableCopy && (
+        {!isDirectionChoice && !isDone && !isVideoDone && hasEditableCopy && (
           <div className="space-y-2.5 rounded-[10px] border border-[#C5C6C8]/50 bg-[#F8FAFA] p-3">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
@@ -540,7 +648,7 @@ export function ConceptCard({
           </div>
         )}
 
-        {isDone || isVideoDone ? (
+        {isDirectionChoice ? null : isDone || isVideoDone ? (
           <div className="space-y-3">
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#6D6E70]">
               {isVideoDone ? "Saved to your videos" : "Saved to your gallery"}
@@ -682,20 +790,7 @@ export function ConceptCard({
                       </button>
                     ))}
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleFinishPost}
-                  disabled={finishStatus === "finishing"}
-                  className="inline-flex min-h-12 w-full items-center justify-center rounded-[8px] bg-[#0D0E10] px-5 py-3.5 text-center text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728] disabled:opacity-50"
-                >
-                  {finishStatus === "finishing"
-                    ? "Finishing your post…"
-                    : finishStatus === "error"
-                      ? "Try finishing this post again"
-                      : "Finish this post"}
-                </button>
-              ))}
+              ) : null)}
             {finishStatus === "finished" &&
               !isVideoDone &&
               (!onSaveReadyPost || readyPostStatus === "saved") && (
@@ -853,33 +948,7 @@ export function ConceptCard({
                       : `Download all ${images.length}`}
                   </button>
                 </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setDownloadStatus("downloading")
-                    const started = await initiateAssetDownload(
-                      firstBaked ?? images[0],
-                      `sselfie-${firstDownloadAssetId ?? "photo"}.png`
-                    )
-                    if (!started) {
-                      setDownloadStatus("error")
-                      return
-                    }
-                    setDownloadStatus("idle")
-                    void recordSuiteDownloadForReview({
-                      source: "concept-card",
-                      format,
-                      assetId: firstDownloadAssetId,
-                    })
-                    onDownloaded?.()
-                  }}
-                  disabled={downloadStatus === "downloading"}
-                  className="inline-flex min-h-11 items-center justify-center rounded-[8px] px-3 py-3 text-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-4 disabled:opacity-50"
-                >
-                  {downloadStatus === "downloading" ? "Preparing…" : "Download"}
-                </button>
-              )}
+              ) : null}
             </div>
             {downloadStatus === "error" && (
               <p role="alert" className="text-[12px] text-[#4F5052]">
@@ -892,24 +961,15 @@ export function ConceptCard({
               </p>
             )}
             {finishStatus === "finished" ? resultActions : null}
-            <details className="group rounded-[8px] border border-[#C5C6C8]/55 bg-white">
-              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3.5 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0D0E10]">
-                More
-                <span aria-hidden className="text-[16px] font-light group-open:rotate-45">
-                  +
-                </span>
-              </summary>
-              <div className="flex flex-wrap gap-2 border-t border-[#C5C6C8]/45 p-3">
-                {onEdit && !isCarousel && !isVideoDone && (
-                  <button
-                    type="button"
-                    onClick={onEdit}
-                    className="inline-flex min-h-11 items-center rounded-[6px] border border-[#C5C6C8] px-3.5 text-[11px] uppercase tracking-[0.12em] text-[#4F5052] hover:border-[#0D0E10]"
-                  >
-                    Edit photo
-                  </button>
-                )}
-                {promptAssetId && !isVideoDone && (
+            {promptAssetId && !isVideoDone ? (
+              <details className="group border-y border-[#C5C6C8]/55 bg-white">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3.5 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0D0E10]">
+                  Details
+                  <span aria-hidden className="text-[16px] font-light group-open:rotate-45">
+                    +
+                  </span>
+                </summary>
+                <div className="flex flex-wrap gap-2 border-t border-[#C5C6C8]/45 p-3">
                   <a
                     href={`/api/admin/app-v3/generation-prompt?id=${encodeURIComponent(promptAssetId)}`}
                     target="_blank"
@@ -918,9 +978,9 @@ export function ConceptCard({
                   >
                     View prompt
                   </a>
-                )}
-              </div>
-            </details>
+                </div>
+              </details>
+            ) : null}
           </div>
         ) : idleAction ? (
           idleAction
