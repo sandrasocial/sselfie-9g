@@ -234,7 +234,7 @@ When instructions disagree:
 2. `SSELFIE_SOURCE_OF_TRUTH_2026-06-27.md` controls detailed voice, audience, story, and expertise.
 3. `SSELFIE_PURPOSE_MESSAGING_LOCK_2026-07-07.md` controls offer temperature and category execution.
 4. `NO_FAKE_AI_BRAND_PSYCHOLOGY_2026-06-10.md` controls identity safety and AI trust.
-5. `SSELFIE_DESIGN_SYSTEM.md` controls visual design.
+5. `docs/SSELFIE_DESIGN_SYSTEM.md` controls visual design across product, marketing, and email.
 6. Sandra's explicit current direction controls current priorities.
 7. Live code, Stripe, provider data, and verified production behavior control changing facts.
 

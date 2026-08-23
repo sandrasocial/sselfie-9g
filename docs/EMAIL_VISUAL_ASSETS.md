@@ -1,10 +1,12 @@
 # Email Visual Assets
 
-Last updated: 2026-05-21
+Last updated: 2026-08-23
 
 SSELFIE emails can now use a small curated set of production-safe visual assets through `lib/email/email-image-assets.ts`.
 
-These assets support the light editorial email shell in `lib/email/templates/stone-email.ts`.
+These assets support the current email shells. New or redesigned email work must follow the Bold
+Editorial Studio rules in `docs/SSELFIE_DESIGN_SYSTEM.md`: a primarily light readable body, strong
+black/chalk editorial structure, one Ink or Oxblood CTA, and photography only when it adds proof.
 
 ## Where Images Live
 
@@ -90,7 +92,8 @@ Not good:
 ## Adding A New Email Image
 
 1. Pick only one image for a clear email purpose.
-2. Confirm it matches `docs/SSELFIE_DESIGN_SYSTEM.md`.
+2. Confirm it matches `docs/SSELFIE_DESIGN_SYSTEM.md` and does not reintroduce soft, beige, pastel,
+   floral, generic SaaS, or purple-AI styling.
 3. Resize/compress it before committing.
 4. Save it under `public/images/email/` with a descriptive lowercase filename.
 5. Add a manifest entry in `lib/email/email-image-assets.ts`.
