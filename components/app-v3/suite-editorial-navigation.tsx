@@ -27,12 +27,9 @@ export function SuiteEditorialNavigation({
   return (
     <>
       <aside className="suite-desktop-nav fixed inset-y-0 left-0 z-40 hidden w-[224px] flex-col bg-[color:var(--suite-night)] text-white lg:flex">
-        <div className="border-b border-white/12 px-7 pb-7 pt-8">
+        <div className="border-b border-white/12 px-7 pb-8 pt-9">
           <span className="block font-serif text-[35px] font-light leading-none tracking-[-0.055em]">
             SSELFIE
-          </span>
-          <span className="mt-2 block text-[8px] uppercase tracking-[0.34em] text-white/48">
-            Suite
           </span>
         </div>
 
@@ -93,17 +90,10 @@ export function SuiteEditorialNavigation({
           </div>
         ) : null}
 
-        <div className="mt-auto border-t border-white/12 px-7 py-7">
-          <p className="text-[8px] uppercase tracking-[0.28em] text-white/38">The method</p>
-          <ol className="mt-4 grid gap-2.5" aria-label="SSELFIE method">
-            {METHOD.map((step, index) => (
-              <li
-                key={step}
-                className="grid grid-cols-[22px_1fr] items-center text-[9px] uppercase tracking-[0.18em] text-white/58"
-              >
-                <span className="font-serif text-[12px] text-[color:var(--suite-accent)]">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
+        <div className="mt-auto border-t border-white/12 px-7 py-6">
+          <ol className="flex items-center justify-between gap-2" aria-label="SSELFIE method">
+            {METHOD.map(step => (
+              <li key={step} className="text-[7px] uppercase tracking-[0.13em] text-white/42">
                 {step}
               </li>
             ))}
@@ -126,7 +116,7 @@ export function SuiteEditorialNavigation({
                 onClick={() => onNavigate(item.id)}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.label}
-                className={`suite-bottom-nav-item flex min-h-[62px] flex-1 flex-col items-center justify-center gap-1 px-0.5 py-1.5 text-[9px] uppercase tracking-[0.08em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white ${
+                className={`suite-bottom-nav-item flex min-h-[68px] flex-1 flex-col items-center justify-center gap-1 px-0.5 py-1.5 text-[8px] uppercase tracking-[0.08em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white ${
                   active
                     ? "suite-bottom-nav-item--active text-white"
                     : "text-white/58 hover:text-white"
