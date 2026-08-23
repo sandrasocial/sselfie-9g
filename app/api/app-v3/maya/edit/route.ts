@@ -7,7 +7,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import OpenAI, { toFile } from "openai"
 import sharp from "sharp"
-import { put } from "@vercel/blob"
+import { del, put } from "@vercel/blob"
 import { getDbClient } from "@/lib/db/client"
 import {
   checkCredits,
@@ -36,6 +36,14 @@ import {
 import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
 import { logAdminError } from "@/lib/admin-error-log"
 import type { OutputFormat } from "@/components/app-v3/types"
+import { parseGalleryAssetId } from "@/lib/app-v3/gallery-assets"
+import {
+  CONVERSATIONAL_PHOTO_EDIT_CREDIT_COST,
+  conversationalEditInstruction,
+  conversationalEditNeedsCreditConfirmation,
+  parseConversationalPhotoEditRequest,
+  type ConversationalPhotoEditReceipt,
+} from "@/lib/app-v3/maya/conversational-photo-edit"
 
 export const maxDuration = 300
 
@@ -96,6 +104,38 @@ function isAllowedImageUrl(value: unknown): value is string {
     return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com")
   } catch {
     return false
+  }
+}
+
+type OwnedCanonicalEditAsset = {
+  id: number
+  imageUrl: string
+  title: string | null
+  rootId: number
+  format: OutputFormat
+}
+
+async function resolveOwnedCanonicalEditAsset(
+  neonUserId: string | number,
+  assetId: unknown
+): Promise<OwnedCanonicalEditAsset | null> {
+  const parsed = parseGalleryAssetId(assetId)
+  if (!parsed || parsed.kind !== "ai") return null
+  const rows = await sql`
+    SELECT id, image_url, title, variant_of, category
+    FROM ai_images
+    WHERE id = ${parsed.numericId} AND user_id = ${neonUserId}
+    LIMIT 1
+  `
+  const row = rows[0]
+  if (!row || !isAllowedImageUrl(row.image_url)) return null
+  const candidateFormat = row.category as OutputFormat
+  return {
+    id: Number(row.id),
+    imageUrl: row.image_url,
+    title: typeof row.title === "string" ? row.title : null,
+    rootId: Number(row.variant_of || row.id),
+    format: VALID_FORMATS.includes(candidateFormat) ? candidateFormat : "photo",
   }
 }
 
@@ -175,33 +215,131 @@ export async function POST(request: NextRequest) {
       format?: OutputFormat
       referenceSelfieUrl?: string
       sourceImageId?: number
+      conversation?: unknown
       sourceTitle?: string
     } | null
-    if (!body || !isAllowedImageUrl(body.imageUrl)) {
+    if (!body) {
       return NextResponse.json({ error: "A valid image to edit is required" }, { status: 400 })
     }
-    const instruction = typeof body.instruction === "string" ? body.instruction.trim() : ""
-    if (!instruction)
+    const isConversationalRequest = body.conversation !== undefined
+    const conversation = parseConversationalPhotoEditRequest(body.conversation)
+    if (isConversationalRequest && !conversation) {
+      return NextResponse.json(
+        { error: "Invalid conversational edit request", code: "invalid_edit_contract" },
+        { status: 400 }
+      )
+    }
+    if (!conversation && !isAllowedImageUrl(body.imageUrl)) {
+      return NextResponse.json({ error: "A valid image to edit is required" }, { status: 400 })
+    }
+    const instruction = conversationalEditInstruction(body.instruction) ?? ""
+    if ((!conversation || conversation.action === "apply") && !instruction)
       return NextResponse.json({ error: "Tell Maya what to change" }, { status: 400 })
 
-    const format: OutputFormat =
+    let format: OutputFormat =
       body.format && VALID_FORMATS.includes(body.format) ? body.format : "photo"
-    const sourceImageId =
+    let sourceImageId =
       typeof body.sourceImageId === "number" &&
       Number.isInteger(body.sourceImageId) &&
       body.sourceImageId > 0
         ? body.sourceImageId
         : null
-    const imageTitle =
+    let sourceImageUrl = isAllowedImageUrl(body.imageUrl) ? body.imageUrl : ""
+    let sourceAssetId = sourceImageId ? `ai_${sourceImageId}` : null
+    let rootAssetId = sourceAssetId
+    let authoritativeEditDepth = 0
+    let imageTitle =
       typeof body.sourceTitle === "string" && body.sourceTitle.trim()
         ? body.sourceTitle.trim().slice(0, 120)
         : `Edited ${format}`
-    const size = toOpenAIEditSize(conceptRequestSize(format))
 
     const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
     const neonUser = await getEffectiveNeonUser(user.id)
     if (!neonUser)
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })
+
+    if (conversation) {
+      const ownedSource = await resolveOwnedCanonicalEditAsset(
+        neonUser.id,
+        conversation.sourceAssetId
+      )
+      const ownedAsset =
+        conversation.action === "undo"
+          ? await resolveOwnedCanonicalEditAsset(neonUser.id, conversation.undoToAssetId)
+          : ownedSource
+      if (!ownedSource || !ownedAsset) {
+        return NextResponse.json(
+          {
+            error: "Choose a photo from your Gallery before editing",
+            code: "edit_source_not_found",
+          },
+          { status: 404 }
+        )
+      }
+      if (ownedSource.rootId !== ownedAsset.rootId) {
+        return NextResponse.json(
+          { error: "That version is not part of this edit history", code: "stale_edit_history" },
+          { status: 409 }
+        )
+      }
+      const canonicalRootAssetId = `ai_${ownedSource.rootId}`
+      if (conversation.rootAssetId && conversation.rootAssetId !== canonicalRootAssetId) {
+        return NextResponse.json(
+          { error: "This edit history is out of date", code: "stale_edit_history" },
+          { status: 409 }
+        )
+      }
+      const versionCountRows = await sql`
+        SELECT COUNT(*)::int AS count
+        FROM ai_images
+        WHERE user_id = ${neonUser.id}
+          AND (id = ${ownedSource.rootId} OR variant_of = ${ownedSource.rootId})
+      `
+      authoritativeEditDepth = Math.max(0, Number(versionCountRows[0]?.count || 1) - 1)
+
+      if (conversation.action === "undo") {
+        const receipt: ConversationalPhotoEditReceipt = {
+          action: "undo",
+          sourceAssetId: conversation.sourceAssetId,
+          resultAssetId: `ai_${ownedAsset.id}`,
+          rootAssetId: canonicalRootAssetId,
+          instruction: null,
+          historyDepth: authoritativeEditDepth,
+          creditRequestId: null,
+        }
+        return NextResponse.json({
+          success: true,
+          imageUrl: ownedAsset.imageUrl,
+          aiImageId: ownedAsset.id,
+          creditsDeducted: 0,
+          editReceipt: receipt,
+        })
+      }
+
+      sourceImageId = ownedAsset.rootId
+      sourceImageUrl = ownedAsset.imageUrl
+      sourceAssetId = `ai_${ownedAsset.id}`
+      rootAssetId = canonicalRootAssetId
+      format = ownedAsset.format
+      imageTitle = ownedAsset.title?.slice(0, 120) || `Edited ${format}`
+
+      if (conversationalEditNeedsCreditConfirmation(conversation)) {
+        return NextResponse.json(
+          {
+            error: "Confirm this one-credit edit before Maya applies it",
+            code: "edit_confirmation_required",
+            action: "confirm_edit",
+            creditCost: CONVERSATIONAL_PHOTO_EDIT_CREDIT_COST,
+            instruction,
+            sourceAssetId,
+            rootAssetId,
+          },
+          { status: 428 }
+        )
+      }
+    }
+
+    const size = toOpenAIEditSize(conceptRequestSize(format))
 
     // BRIDGE-01 Phase D: members and active trials only (same lock as generate).
     {
@@ -218,6 +356,59 @@ export async function POST(request: NextRequest) {
             { status: 403 }
           )
         }
+      }
+    }
+
+    const requestRefSuffix =
+      conversation?.action === "apply" && conversation.creditConfirmation
+        ? `edit-${conversation.creditConfirmation.requestId}`
+        : Date.now()
+    const requestRef = `app-v3-gen-${neonUser.id}-${requestRefSuffix}`
+
+    if (conversation?.action === "apply" && conversation.creditConfirmation) {
+      const existing = await sql`
+        SELECT id, image_url, variant_of
+        FROM ai_images
+        WHERE user_id = ${neonUser.id} AND prediction_id = ${requestRef + "-0"}
+        LIMIT 1
+      `
+      const prior = existing[0]
+      if (prior && isAllowedImageUrl(prior.image_url)) {
+        const receipt: ConversationalPhotoEditReceipt = {
+          action: "apply",
+          sourceAssetId: sourceAssetId!,
+          resultAssetId: `ai_${prior.id}`,
+          rootAssetId: `ai_${prior.variant_of || sourceImageId}`,
+          instruction,
+          historyDepth: authoritativeEditDepth,
+          creditRequestId: conversation.creditConfirmation.requestId,
+        }
+        return NextResponse.json({
+          success: true,
+          imageUrl: prior.image_url,
+          aiImageId: Number(prior.id),
+          creditsDeducted: 0,
+          newBalance: await getUserCredits(neonUser.id),
+          idempotentReplay: true,
+          editReceipt: receipt,
+        })
+      }
+      const priorUsage = await sql`
+        SELECT 1
+        FROM credit_transactions
+        WHERE user_id = ${neonUser.id}
+          AND transaction_type = 'image'
+          AND reference_id = ${requestRef}
+        LIMIT 1
+      `
+      if (priorUsage.length > 0) {
+        return NextResponse.json(
+          {
+            error: "This edit request has already been used. Try again as a new edit.",
+            code: "edit_request_already_used",
+          },
+          { status: 409 }
+        )
       }
     }
 
@@ -286,7 +477,6 @@ export async function POST(request: NextRequest) {
         { status: 402 }
       )
     }
-    const requestRef = `app-v3-gen-${neonUser.id}-${Date.now()}`
     const deduction = await deductCredits(
       neonUser.id,
       CREDIT_COSTS.IMAGE,
@@ -329,11 +519,21 @@ export async function POST(request: NextRequest) {
     }
 
     const openai = new OpenAI({ apiKey: openaiApiKey })
-    const sourceFile = await toFile(
-      await normalize(await loadImage(body.imageUrl)),
-      "maya-edit-source.png",
-      { type: "image/png" }
-    )
+    let sourceFile: Awaited<ReturnType<typeof toFile>>
+    try {
+      sourceFile = await toFile(
+        await normalize(await loadImage(sourceImageUrl)),
+        "maya-edit-source.png",
+        { type: "image/png" }
+      )
+    } catch (sourceError) {
+      await refundOrAlert(CREDIT_COSTS.IMAGE, "Edit source could not be loaded", refundRef)
+      console.error("[app-v3 edit] source load failed:", sourceError)
+      return NextResponse.json(
+        { error: "That photo could not be loaded. Choose it again from your Gallery." },
+        { status: 500 }
+      )
+    }
 
     // Re-attach her real selfie so likeness is anchored to the person, not the previous
     // generation. Best effort: if no selfie is resolvable, the edit still runs (old behavior).
@@ -468,11 +668,17 @@ export async function POST(request: NextRequest) {
         error: dbError,
         context: { userId: neonUser.id, format, requestRef },
       }).catch(() => {})
-      await refundOrAlert(
-        CREDIT_COSTS.IMAGE,
-        "Edited image never reached the gallery",
-        `${refundRef}-partial`
-      )
+      await refundOrAlert(CREDIT_COSTS.IMAGE, "Edited image never reached the gallery", refundRef)
+      if (conversation) {
+        await del(blob.url).catch(() => {})
+        return NextResponse.json(
+          {
+            error: "The edited photo could not be saved safely. Your credit was returned.",
+            code: "edit_persistence_failed",
+          },
+          { status: 500 }
+        )
+      }
     }
 
     // SUITE-UX-02 member pulse: edits are a strong engagement signal; the instruction text
@@ -487,12 +693,26 @@ export async function POST(request: NextRequest) {
       )
       .catch(() => {})
 
+    const editReceipt: ConversationalPhotoEditReceipt | null =
+      conversation?.action === "apply" && insertedId && sourceAssetId && rootAssetId
+        ? {
+            action: "apply",
+            sourceAssetId,
+            resultAssetId: `ai_${insertedId}`,
+            rootAssetId,
+            instruction,
+            historyDepth: authoritativeEditDepth + 1,
+            creditRequestId: conversation.creditConfirmation!.requestId,
+          }
+        : null
+
     return NextResponse.json({
       success: true,
       imageUrl: blob.url,
       aiImageId: insertedId,
       creditsDeducted: CREDIT_COSTS.IMAGE,
       newBalance: deduction.newBalance,
+      ...(editReceipt ? { editReceipt } : {}),
       ...(likenessMemory ? { likenessMemory } : {}),
     })
   } catch (error) {
