@@ -104,7 +104,7 @@ export default function FeedTabs({ activeTab, onTabChange, access, currentFeedId
 
   if (!isFreeUser) {
     return (
-      <div className="border-b border-[color:var(--app-glass-border)] px-3 py-3 sm:px-4">
+      <div className="suite-calendar-tabs border-b border-[color:var(--app-glass-border)] px-3 py-3 sm:px-4">
         <div className="flex items-center justify-between gap-3" aria-label="Calendar view options">
           {allPlans.length >= 2 ? (
             <div className="relative min-w-0" role="group" aria-label="Choose a grid">

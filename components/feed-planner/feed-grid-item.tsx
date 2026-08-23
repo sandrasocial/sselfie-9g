@@ -401,7 +401,7 @@ export default function FeedGridItem({
   // affordance's pointer cursor.
   const isQuietPlaceholder = isMembership && showGenerateButton && !isComplete && !isGenerating
 
-  const baseClassName = `relative block aspect-[3/4] w-full overflow-hidden rounded-[6px] border bg-[color:var(--calendar-stone-1)] transition-all duration-200 ${
+  const baseClassName = `suite-calendar-post relative block aspect-[3/4] w-full overflow-hidden rounded-[2px] border bg-[color:var(--calendar-stone-1)] transition-all duration-200 ${
     isSelected
       ? "z-10 border-[color:var(--app-text-primary)] ring-2 ring-[color:var(--app-focus-ring)] ring-offset-2 ring-offset-white"
       : "border-[color:var(--calendar-stone-4)]/70"

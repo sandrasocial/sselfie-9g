@@ -103,6 +103,25 @@ describe("Bold Editorial Studio foundation", () => {
     expect(appLayout).toContain(".suite-account-card--primary")
   })
 
+  it("moves the real Calendar workspace onto the editorial system without changing planner actions", () => {
+    const calendar = read("components/app-v3/feed-planner-view.tsx")
+    const header = read("components/feed-planner/feed-header.tsx")
+    const tabs = read("components/feed-planner/feed-tabs.tsx")
+    const grid = read("components/feed-planner/feed-grid.tsx")
+    const post = read("components/feed-planner/feed-grid-item.tsx")
+    const appLayout = read("app/app/layout.tsx")
+
+    expect(calendar).toContain("suite-editorial-calendar")
+    expect(calendar).toContain("Calendar · Plan to post")
+    expect(calendar).toContain("See the month before you post it.")
+    expect(header).toContain("suite-calendar-header")
+    expect(tabs).toContain("suite-calendar-tabs")
+    expect(grid).toContain("suite-calendar-grid")
+    expect(post).toContain("suite-calendar-post")
+    expect(appLayout).toContain(".suite-calendar-grid")
+    expect(appLayout).toContain("border: 3px solid var(--suite-night)")
+  })
+
   it("uses a varied identity-preserving editorial image library in the Suite proof", () => {
     const proof = read("components/brand/bold-editorial-proof.tsx")
     const imageRoot = "public/images/brand/bold-editorial-suite"
