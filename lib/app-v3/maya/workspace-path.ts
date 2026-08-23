@@ -18,6 +18,7 @@ export type MayaWorkspaceAction = (typeof MAYA_WORKSPACE_ACTIONS)[number]
 
 export type MayaWorkspaceTool =
   | "emit_concepts"
+  | "edit_photo"
   | "ask_clarify"
   | "set_format"
   | "remember"
@@ -45,7 +46,7 @@ const TOOLS_BY_PATH: Record<MayaWorkspacePath, readonly MayaWorkspaceTool[]> = {
     "save_brand_profile",
     "show_feed_plan",
   ],
-  "edit-photo": ["ask_clarify", "remember", "save_brand_profile"],
+  "edit-photo": ["edit_photo", "ask_clarify", "remember", "save_brand_profile"],
   "build-post": [
     "emit_concepts",
     "ask_clarify",

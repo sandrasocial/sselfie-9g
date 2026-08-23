@@ -52,6 +52,12 @@ import {
   shouldAcceptLastGenerationForMayaPath,
   type MayaWorkspacePath,
 } from "@/lib/app-v3/maya/workspace-path"
+import {
+  CONVERSATIONAL_PHOTO_EDIT_CREDIT_COST,
+  CONVERSATIONAL_PHOTO_EDIT_MAX_HISTORY,
+  CONVERSATIONAL_PHOTO_EDIT_MAX_INSTRUCTION_LENGTH,
+} from "@/lib/app-v3/maya/conversational-photo-edit"
+import { parseGalleryAssetId } from "@/lib/app-v3/gallery-assets"
 
 export const maxDuration = 300
 
@@ -515,6 +521,7 @@ interface ChatBody {
   messages?: UIMessage[]
   workspacePath?: unknown
   workspaceAction?: unknown
+  editContext?: unknown
   aestheticName?: string
   aestheticIntent?: string
   aestheticId?: string
@@ -550,6 +557,45 @@ interface ChatBody {
   /** Explicit operating-layer task. Dormant Calendar context is never inferred from saved data. */
   mayaContext?: unknown
   skoolHandoffKey?: unknown
+}
+
+type ChatEditContext = {
+  sourceAssetId: string
+  sourceImageUrl: string
+  sourceTitle: string | null
+  rootAssetId: string | null
+  history: Array<{ assetId: string; instruction: string }>
+}
+
+function normalizeChatEditContext(value: unknown): ChatEditContext | null {
+  if (!value || typeof value !== "object") return null
+  const record = value as Record<string, unknown>
+  const sourceAsset = parseGalleryAssetId(record.sourceAssetId)
+  if (!sourceAsset || sourceAsset.kind !== "ai") return null
+  if (!isAllowedInspirationUrl(record.sourceImageUrl)) return null
+  const parsedRoot = parseGalleryAssetId(record.rootAssetId)
+  const rootAssetId = parsedRoot?.kind === "ai" ? `ai_${parsedRoot.numericId}` : null
+  const rawHistory = Array.isArray(record.history)
+    ? record.history.slice(0, CONVERSATIONAL_PHOTO_EDIT_MAX_HISTORY)
+    : []
+  const history = rawHistory.flatMap(item => {
+    if (!item || typeof item !== "object") return []
+    const entry = item as Record<string, unknown>
+    const asset = parseGalleryAssetId(entry.assetId)
+    const instruction = clampText(
+      entry.instruction,
+      CONVERSATIONAL_PHOTO_EDIT_MAX_INSTRUCTION_LENGTH
+    )
+    if (!asset || asset.kind !== "ai" || !instruction) return []
+    return [{ assetId: `ai_${asset.numericId}`, instruction }]
+  })
+  return {
+    sourceAssetId: `ai_${sourceAsset.numericId}`,
+    sourceImageUrl: record.sourceImageUrl,
+    sourceTitle: clampText(record.sourceTitle, 120) || null,
+    rootAssetId,
+    history,
+  }
 }
 
 function clampText(value: unknown, max = 900): string {
@@ -762,6 +808,7 @@ export async function POST(req: Request) {
     const workspaceAction = isMayaWorkspaceAction(body?.workspaceAction)
       ? body.workspaceAction
       : null
+    const editContext = normalizeChatEditContext(body?.editContext)
     const creationIntent = normalizeCreationIntent(body?.creationIntent ?? null)
     const shotDirector = normalizeShotDirector(body?.shotDirector ?? null)
     const requestedFormat = isOutputFormat(body?.format) ? body.format : null
@@ -920,6 +967,11 @@ export async function POST(req: Request) {
             ? "Only help with editing or presets. Do not create concepts or switch format."
             : "Only complete the explicitly selected post output: caption, carousel, or Story sequence. Do not broaden into content strategy."
       system = `${system}\n\n## WORKSPACE PATH (SERVER AUTHORITY)\nActive path: ${workspacePath}. ${outputBoundary} Never cross into another path inside this conversation.`
+      if (workspacePath === "edit-photo") {
+        system = editContext
+          ? `${system}\n\n## CONVERSATIONAL EDIT SOURCE\nThe member selected "${editContext.sourceTitle || "Gallery photo"}" (${editContext.sourceAssetId}). When she asks for any concrete visual change, call edit_photo with her complete instruction. Do not reduce her request to presets or a closed list. The tool creates a one-credit confirmation step; never claim the photo is edited before the confirmed execution result returns.`
+          : `${system}\n\n## CONVERSATIONAL EDIT SOURCE\nNo editable Gallery photo is attached. Ask her to choose one photo before offering to apply an edit.`
+      }
     }
 
     const skoolHandoffContext = getSkoolMayaPromptContext(body?.skoolHandoffKey)
@@ -1226,6 +1278,40 @@ export async function POST(req: Request) {
       },
     })
 
+    const editPhoto = editContext
+      ? tool({
+          description:
+            "Prepare one conversational photo edit for explicit confirmation. Accept the member's " +
+            "complete natural-language instruction as written: outfit, location, hair, products, " +
+            "props, color grade, camera/lens look, lighting, scenery, or any combination. Do not " +
+            "force it into presets or a closed category list. This tool does not charge or edit yet; " +
+            "it returns the server-owned source and one-credit execution contract for the UI.",
+          inputSchema: z.object({
+            instruction: z
+              .string()
+              .trim()
+              .min(1)
+              .max(CONVERSATIONAL_PHOTO_EDIT_MAX_INSTRUCTION_LENGTH),
+          }),
+          execute: async ({ instruction }) => ({
+            status: "confirmation_required" as const,
+            action: "confirm_edit" as const,
+            creditCost: CONVERSATIONAL_PHOTO_EDIT_CREDIT_COST,
+            instruction,
+            sourceAssetId: editContext.sourceAssetId,
+            sourceImageUrl: editContext.sourceImageUrl,
+            sourceTitle: editContext.sourceTitle,
+            conversation: {
+              workspacePath: "edit-photo" as const,
+              action: "apply" as const,
+              sourceAssetId: editContext.sourceAssetId,
+              ...(editContext.rootAssetId ? { rootAssetId: editContext.rootAssetId } : {}),
+              history: editContext.history,
+            },
+          }),
+        })
+      : null
+
     const toolAllowed = (toolName: Parameters<typeof isToolAllowedForMayaPath>[1]) => {
       if (workspaceAction && toolName === "set_format") return false
       return workspacePath == null || isToolAllowedForMayaPath(workspacePath, toolName)
@@ -1236,6 +1322,7 @@ export async function POST(req: Request) {
         ? emitConceptsForWorkspacePath(workspacePath, format)
         : emitConcepts
     }
+    if (editPhoto && toolAllowed("edit_photo")) tools.edit_photo = editPhoto
     if (toolAllowed("ask_clarify")) tools.ask_clarify = askClarify
     if (toolAllowed("set_format")) {
       tools.set_format = workspacePath ? setFormatForWorkspacePath(workspacePath) : setFormat
