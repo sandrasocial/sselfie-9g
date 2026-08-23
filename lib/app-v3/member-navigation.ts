@@ -1,10 +1,12 @@
 import type { AppV3Section } from "./navigation"
 
-/** The three places a member needs to understand every day. Calendar and Learn stay available
- * through Maya, Account, and direct links, but no longer compete with the core creation job. */
+/** The five member destinations use plain outcome names. Their stable section ids stay unchanged
+ * so remembered state and existing deep links continue to resolve. */
 export const PRIMARY_MEMBER_SECTIONS = [
   "create",
   "photos",
+  "calendar",
+  "library",
   "account",
 ] as const satisfies readonly AppV3Section[]
 

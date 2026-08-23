@@ -416,6 +416,9 @@ const FORMAT_PHRASE: Record<OutputFormat, string> = {
   video: "Let's add motion to a photo.",
 }
 
+const CAPTION_START_REQUEST =
+  "Help me build a caption for one post. Start by asking what the post is about, then write the finished caption in my voice."
+
 // System-authored turns (tap-generated pulls, retries, hands-free continuations) must never
 // render as words the member typed — fabricated "YOU" bubbles were a direct trust complaint
 // in the 2026-07-28 UX audit. The transport still needs a user turn, so these exact strings
@@ -428,9 +431,101 @@ const SYSTEM_TURN_LABEL: Record<string, string> = {
   [FORMAT_PHRASE["story-slide"]]: "Starting a Story slide",
   [FORMAT_PHRASE["story-sequence"]]: "Starting a Story sequence",
   [FORMAT_PHRASE.video]: "Adding motion to a photo",
+  [CAPTION_START_REQUEST]: "Starting a caption",
   "Continue with what we already created.": "Continuing with what you already created",
   "Let's create photos using my trained model.": "Starting photos with your trained model",
   "Help me choose what to make today.": "Choosing what to make today",
+}
+
+function MayaPathChooser({
+  disabled,
+  onPickFormat,
+  onStartCaption,
+  onStartEdit,
+}: {
+  disabled: boolean
+  onPickFormat: (format: OutputFormat) => void
+  onStartCaption: () => void
+  onStartEdit?: () => void
+}) {
+  const actionClass =
+    "min-h-11 border border-[color:var(--suite-night)] bg-white px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-[color:var(--suite-night)] transition-colors hover:bg-[color:var(--suite-night)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--suite-accent)] disabled:opacity-40"
+
+  return (
+    <section className="suite-maya-paths" aria-label="Choose your creative path">
+      <article className="suite-maya-path suite-maya-path--photos">
+        <p className="suite-maya-path-kicker">AI Photos</p>
+        <h3>Create the image first.</h3>
+        <p>Make one strong photo or direct a complete shoot from your selfies.</p>
+        <div className="suite-maya-path-actions">
+          <button
+            type="button"
+            onClick={() => onPickFormat("photo")}
+            disabled={disabled}
+            className={actionClass}
+          >
+            Create a photo
+          </button>
+          <button
+            type="button"
+            onClick={() => onPickFormat("photoshoot")}
+            disabled={disabled}
+            className={actionClass}
+          >
+            Plan a photoshoot
+          </button>
+        </div>
+      </article>
+
+      <article className="suite-maya-path suite-maya-path--edit">
+        <p className="suite-maya-path-kicker">Edit a Photo</p>
+        <h3>Start from what you have.</h3>
+        <p>Choose a Gallery photo, then use a preset or make one precise change.</p>
+        <div className="suite-maya-path-actions">
+          <button
+            type="button"
+            onClick={onStartEdit}
+            disabled={disabled || !onStartEdit}
+            className={actionClass}
+          >
+            Choose a photo
+          </button>
+        </div>
+      </article>
+
+      <article className="suite-maya-path suite-maya-path--post">
+        <p className="suite-maya-path-kicker">Build a Post</p>
+        <h3>Turn the idea into something ready.</h3>
+        <p>Create the words, designed slides or story sequence around one clear message.</p>
+        <div className="suite-maya-path-actions suite-maya-path-actions--three">
+          <button
+            type="button"
+            onClick={() => onPickFormat("carousel")}
+            disabled={disabled}
+            className={actionClass}
+          >
+            Carousel
+          </button>
+          <button
+            type="button"
+            onClick={onStartCaption}
+            disabled={disabled}
+            className={actionClass}
+          >
+            Caption
+          </button>
+          <button
+            type="button"
+            onClick={() => onPickFormat("story-sequence")}
+            disabled={disabled}
+            className={actionClass}
+          >
+            Stories
+          </button>
+        </div>
+      </article>
+    </section>
+  )
 }
 
 // Maya's opener, tab-aware so it always matches the selected format (fixes the "pick one above"
@@ -659,6 +754,7 @@ export function MayaConcierge({
   calendarSurfaceActive = false,
   calendarIncluded = true,
   skoolHandoff = null,
+  onStartEdit,
 }: {
   operatingLayerEnabled?: boolean
   /** Member Maya Home: the conversation is the page, not a modal over the page. */
@@ -673,6 +769,8 @@ export function MayaConcierge({
   calendarIncluded?: boolean
   /** Fixed server allowlist entry selected by the authenticated /app page. */
   skoolHandoff?: SkoolMayaHandoff | null
+  /** Opens Gallery in source-photo mode, then hands the chosen image to the existing editor. */
+  onStartEdit?: () => void
 } = {}) {
   const cohort: AppV3AnalyticsCohort = analyticsCohort ?? "member"
   const {
@@ -1574,6 +1672,9 @@ export function MayaConcierge({
   ])
 
   useEffect(() => {
+    // Maya Home begins with the path chooser, not a new message. Keep its first lane visible on
+    // phones instead of treating the chooser like the bottom of an active conversation.
+    if (homeMode && !session?.outputFormat && messages.length === 0) return
     scrollThreadToBottom()
   }, [
     messages,
@@ -1582,6 +1683,8 @@ export function MayaConcierge({
     session?.outputFormat,
     textOverlayMode,
     textStyleChoice,
+    homeMode,
+    session?.outputFormat,
     scrollThreadToBottom,
   ])
 
@@ -2366,8 +2469,8 @@ export function MayaConcierge({
     session.mayaContext.surface === "learn"
   const workspaceTitle = generalHomeConversation
     ? firstName?.trim()
-      ? `${firstName.trim()}, what do you want to say?`
-      : "What do you want to say?"
+      ? `${firstName.trim()}, what are we making?`
+      : "What are we making?"
     : learningTaskActive
       ? "Learn with Maya"
       : calendarSurfaceActive && session.calendarTarget
@@ -2462,7 +2565,7 @@ export function MayaConcierge({
     )
   }
   const openerLine = generalHomeConversation
-    ? "Tell me what you want to say, share, or sell. Give me the messy version and I'll help you turn it into a finished post that feels like you."
+    ? "Choose a clear path below, or tell me what you want to say, share, or sell. I'll keep the right tools and the conversation together."
     : outputFormat
       ? activeGenerationSource === "trained-model" && outputFormat === "photo"
         ? "Your trained model is ready. Hit create and pick the direction that feels most like you."
@@ -3882,6 +3985,14 @@ export function MayaConcierge({
     }
   }
 
+  function handleCaptionPath() {
+    if (isThinking) return
+    homeTaskInitiatedRef.current = true
+    setPreMessageThreadOpen(true)
+    setSetupOpen(false)
+    sendMessage({ text: CAPTION_START_REQUEST })
+  }
+
   function handleProjectStart() {
     if (isThinking || !session) return
     homeTaskInitiatedRef.current = true
@@ -4646,7 +4757,7 @@ export function MayaConcierge({
             </p>
             <h2
               id="maya-workspace-title"
-              className="mt-0.5 truncate font-serif text-[21px] font-light leading-tight text-[#0D0E10]"
+              className="mt-0.5 max-w-[18rem] font-serif text-[19px] font-light leading-tight text-[#0D0E10] sm:max-w-none sm:text-[21px]"
             >
               {workspaceTitle}
             </h2>
@@ -5383,6 +5494,15 @@ export function MayaConcierge({
                   )}
                 </div>
               </div>
+
+              {generalHomeConversation && !hasStarted && !skoolHandoffReady ? (
+                <MayaPathChooser
+                  disabled={isThinking}
+                  onPickFormat={handlePickFormat}
+                  onStartCaption={handleCaptionPath}
+                  onStartEdit={onStartEdit}
+                />
+              ) : null}
 
               {/* Prominent selfie requirement: once Maya has proposed directions but there's no
               face yet, make the requirement obvious instead of a quietly-disabled button. */}
@@ -6396,7 +6516,7 @@ export function MayaConcierge({
                     textRefining
                       ? "Maya is updating the text…"
                       : generalHomeConversation
-                        ? "Tell Maya the messy version…"
+                        ? "Or tell Maya what you need…"
                         : "Want something different? Ask Maya…"
                   }
                   className="suite-maya-input max-h-36 min-h-12 min-w-0 flex-1 resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-3 text-[15px] leading-snug text-[#282728] outline-none transition-[border-color,box-shadow] duration-150 min-[380px]:px-5"

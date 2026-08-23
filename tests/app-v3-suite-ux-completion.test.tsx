@@ -34,14 +34,16 @@ describe("App v3 Suite UX completion", () => {
     expect(screen.queryByText("Motion")).not.toBeInTheDocument()
   })
 
-  it("keeps Maya focused on one post and the three-place member navigation", () => {
+  it("keeps Maya focused while exposing the five plain-language destinations", () => {
     const shell = read("components/app-v3/app-v3-shell.tsx")
     const concierge = read("components/app-v3/maya-concierge.tsx")
     const placementRoute = read("app/api/app-v3/maya/feed-plan/place-photo/route.ts")
 
-    expect(shell).toContain('{ ...item, label: "Maya", icon: MessageCircle }')
-    expect(shell).toContain('{ ...item, label: "Work", icon: FolderOpen }')
-    expect(shell).toContain('{ ...item, label: "You", icon: UserRound }')
+    expect(shell).toContain('{ id: "create", label: "Create", icon: Sparkles }')
+    expect(shell).toContain('{ id: "photos", label: "Gallery", icon: Images }')
+    expect(shell).toContain('{ id: "calendar", label: "Calendar", icon: CalendarDays }')
+    expect(shell).toContain('{ id: "library", label: "Learn", icon: LibraryBig }')
+    expect(shell).toContain('{ id: "account", label: "Account", icon: UserRound }')
     expect(concierge).not.toContain('event: "suite_post_finished"')
     expect(placementRoute).toContain("saveMayaReadyPost")
     expect(concierge).toContain("suite_post_refinement_started")

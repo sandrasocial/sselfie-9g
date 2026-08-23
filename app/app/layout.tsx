@@ -202,6 +202,101 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
           box-shadow: 0 0 0 3px rgba(152, 24, 38, 0.08);
         }
 
+        .studio-3-root .suite-maya-paths {
+          background: var(--suite-night);
+          display: grid;
+          gap: 3px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          padding: 3px;
+        }
+
+        .studio-3-root .suite-maya-path {
+          background: var(--suite-paper);
+          display: flex;
+          flex-direction: column;
+          min-height: 248px;
+          padding: 20px;
+        }
+
+        .studio-3-root .suite-maya-path--photos {
+          border-top: 4px solid var(--suite-accent);
+        }
+
+        .studio-3-root .suite-maya-path--edit {
+          background: var(--suite-night);
+          color: var(--suite-paper);
+        }
+
+        .studio-3-root .suite-maya-path--post {
+          border-top: 4px solid var(--suite-night);
+        }
+
+        .studio-3-root .suite-maya-path-kicker {
+          color: var(--suite-accent);
+          font-size: 9px;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+        }
+
+        .studio-3-root .suite-maya-path h3 {
+          font-family: var(--font-app-serif), Georgia, "Times New Roman", serif;
+          font-size: 25px;
+          font-weight: 300;
+          letter-spacing: -0.02em;
+          line-height: 1.02;
+          margin-top: 10px;
+        }
+
+        .studio-3-root .suite-maya-path > p:not(.suite-maya-path-kicker) {
+          color: var(--suite-slate);
+          font-size: 12px;
+          line-height: 1.55;
+          margin-top: 10px;
+        }
+
+        .studio-3-root .suite-maya-path--edit > p:not(.suite-maya-path-kicker) {
+          color: rgba(255, 255, 255, 0.64);
+        }
+
+        .studio-3-root .suite-maya-path-actions {
+          display: grid;
+          gap: 7px;
+          margin-top: auto;
+          padding-top: 20px;
+        }
+
+        .studio-3-root .suite-maya-path-actions--three {
+          grid-template-columns: 1fr;
+        }
+
+        .studio-3-root .suite-concept-card {
+          border: 1px solid var(--suite-night);
+          border-top: 4px solid var(--suite-accent);
+          box-shadow: none;
+        }
+
+        .studio-3-root .suite-concept-card[data-concept-state="done"] {
+          border-top-color: var(--suite-night);
+        }
+
+        .studio-3-root .suite-concept-visual {
+          border-bottom: 3px solid var(--suite-night);
+        }
+
+        .studio-3-root .suite-concept-body {
+          background: var(--suite-paper);
+        }
+
+        .studio-3-root .suite-concept-eyebrow {
+          color: var(--suite-accent);
+        }
+
+        .studio-3-root .suite-concept-card button,
+        .studio-3-root .suite-concept-card input,
+        .studio-3-root .suite-concept-card textarea {
+          border-radius: 2px;
+        }
+
         .studio-3-root .suite-account-card {
           box-shadow: none;
         }
@@ -291,6 +386,14 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         @media (max-width: 767px) {
+          .studio-3-root .suite-maya-paths {
+            grid-template-columns: 1fr;
+          }
+
+          .studio-3-root .suite-maya-path {
+            min-height: 210px;
+          }
+
           .studio-3-root input,
           .studio-3-root textarea,
           .studio-3-root select {
