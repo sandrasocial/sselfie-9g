@@ -28,10 +28,14 @@ describe("PostHog analytics boundary", () => {
 
   it("maps only approved activation and revenue events", () => {
     expect(mapPostHogEvent("activation_selfie_uploaded")).toBe("sselfie_reference_added")
+    expect(mapPostHogEvent("first_generation_guided_start")).toBe("sselfie_generation_started")
     expect(mapPostHogEvent("suite_image_generated")).toBe("sselfie_generation_completed")
     expect(mapPostHogEvent("suite_edit_applied")).toBe("sselfie_edit_used")
     expect(mapPostHogEvent("suite_image_downloaded")).toBe("sselfie_result_saved")
     expect(mapPostHogEvent("purchase")).toBe("sselfie_purchase_observed")
+    expect(mapPostHogEvent("suite_ready_post_saved")).toBe("sselfie_content_completed")
+    expect(mapPostHogEvent("suite_maya_job_started")).toBeNull()
+    expect(mapPostHogEvent("suite_post_finished")).toBeNull()
     expect(mapPostHogEvent("suite_inline_selfie_uploaded")).toBeNull()
     expect(mapPostHogEvent("first_image_generated")).toBeNull()
     expect(mapPostHogEvent("suite_generation_path_completed")).toBeNull()
@@ -51,8 +55,9 @@ describe("PostHog analytics boundary", () => {
         },
         properties: {
           provider: "replicate",
-          image_count: 2,
-          is_first: true,
+          images: 2,
+          mode: "concept",
+          rerun: true,
           email: "sandra@example.com",
           prompt: "customer words",
           image_url: "https://example.com/private.png",
@@ -74,7 +79,8 @@ describe("PostHog analytics boundary", () => {
       utm_campaign: "free_welcome_day0",
       provider: "replicate",
       image_count: 2,
-      is_first: true,
+      generation_mode: "concept",
+      is_rerun: true,
       product: "prompt_vault",
       revenue_value: 97,
     })

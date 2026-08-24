@@ -80,4 +80,26 @@ describe("Neon-to-PostHog delivery boundary", () => {
     await providerCallback?.()
     expect(mocks.capturePostHogEvent).not.toHaveBeenCalled()
   })
+
+  it("delivers only the approved completion fact after durable persistence", async () => {
+    let providerCallback: (() => Promise<unknown>) | undefined
+    mocks.after.mockImplementation(callback => {
+      providerCallback = callback
+    })
+
+    const { capturePersistedPostHogEvent } = await import("@/lib/analytics/events")
+    capturePersistedPostHogEvent({
+      eventName: "suite_ready_post_saved",
+      userId: "user-123",
+      properties: { image_count: 2 },
+    })
+    capturePersistedPostHogEvent({ eventName: "purchase", userId: "user-123" })
+
+    expect(mocks.after).toHaveBeenCalledOnce()
+    await providerCallback?.()
+    expect(mocks.capturePostHogEvent).toHaveBeenCalledOnce()
+    expect(mocks.capturePostHogEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventName: "suite_ready_post_saved", userId: "user-123" })
+    )
+  })
 })

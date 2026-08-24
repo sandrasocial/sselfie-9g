@@ -30,13 +30,12 @@ const EVENT_MAP: Readonly<Record<string, string>> = {
   tab_opened: "sselfie_workspace_opened",
   activation_selfie_uploaded: "sselfie_reference_added",
   first_generation_guided_start: "sselfie_generation_started",
-  suite_maya_job_started: "sselfie_generation_started",
   first_generation_guided_complete: "sselfie_generation_completed",
   suite_image_generated: "sselfie_generation_completed",
   suite_generation_failed: "sselfie_generation_failed",
   suite_image_downloaded: "sselfie_result_saved",
   suite_edit_applied: "sselfie_edit_used",
-  suite_post_finished: "sselfie_content_completed",
+  suite_ready_post_saved: "sselfie_content_completed",
   calendar_workspace_opened: "sselfie_calendar_action",
   calendar_photo_added: "sselfie_calendar_action",
   calendar_post_ready: "sselfie_calendar_action",
@@ -59,6 +58,7 @@ const SAFE_PROPERTY_KEYS = new Set([
   "generation_mode",
   "image_count",
   "is_first",
+  "is_rerun",
   "job_type",
   "model",
   "plan",
@@ -234,6 +234,22 @@ function copyRevenueProperties(
   }
 }
 
+function copyGenerationProperties(
+  output: Record<string, Primitive>,
+  properties: Record<string, unknown>
+) {
+  const imageCount = properties.image_count ?? properties.images
+  if (typeof imageCount === "number" && Number.isInteger(imageCount) && imageCount >= 0) {
+    output.image_count = imageCount
+  }
+
+  const generationMode = safeDimension(properties.generation_mode ?? properties.mode)
+  if (generationMode) output.generation_mode = generationMode
+
+  const isRerun = properties.is_rerun ?? properties.rerun
+  if (typeof isRerun === "boolean") output.is_rerun = isRerun
+}
+
 function safeProperty(key: string, value: unknown): Primitive | null {
   if (!SAFE_PROPERTY_KEYS.has(key) || SENSITIVE_KEY.test(key)) return null
   if (typeof value === "string") {
@@ -258,6 +274,7 @@ export function buildPostHogProperties(input: PostHogCaptureInput): Record<strin
 
   const rawProperties = input.properties ?? {}
   copyRevenueProperties(output, rawProperties)
+  copyGenerationProperties(output, rawProperties)
 
   for (const [key, value] of Object.entries(rawProperties)) {
     const property = safeProperty(key, value)

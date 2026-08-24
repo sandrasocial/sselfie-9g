@@ -32,6 +32,17 @@ function registerPostHogDelivery(): PostHogDelivery {
   }
 }
 
+const PERSISTED_POSTHOG_EVENTS = new Set(["suite_ready_post_saved"])
+
+export function capturePersistedPostHogEvent(input: PostHogCaptureInput): void {
+  if (!PERSISTED_POSTHOG_EVENTS.has(input.eventName)) return
+  try {
+    after(() => capturePostHogEvent(input))
+  } catch {
+    void capturePostHogEvent(input)
+  }
+}
+
 function safeString(v: unknown, maxLen: number): string | null {
   if (typeof v !== "string") return null
   const s = v.trim()
