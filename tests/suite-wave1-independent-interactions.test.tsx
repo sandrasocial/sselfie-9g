@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
@@ -144,6 +144,32 @@ describe("Wave 1 Gallery interaction contracts", () => {
     fireEvent.click(screen.getByRole("button", { name: "Retry" }))
     expect(await screen.findByAltText(/Quiet morning portrait/)).toBeInTheDocument()
     expect(galleryRequests).toBe(2)
+  })
+
+  it("keeps a Maya edit source image visible and explains why it cannot be deleted", async () => {
+    const historyMessage =
+      "This photo is part of your Maya edit history. Keep it in your gallery so the original and edited versions stay available."
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      if (String(input).endsWith("/assets") && init?.method === "DELETE") {
+        return jsonResponse(
+          {
+            error: historyMessage,
+            code: "MAYA_EDIT_HISTORY_REFERENCE",
+            blockedAssetIds: [asset.id],
+          },
+          409
+        )
+      }
+      return jsonResponse(galleryPayload())
+    })
+
+    render(<GalleryView />)
+    fireEvent.click(await screen.findByRole("button", { name: "Delete" }))
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete" }))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(historyMessage)
+    expect(screen.getByAltText(/Quiet morning portrait/)).toBeInTheDocument()
+    expect(screen.queryByRole("dialog", { name: "Delete this photo?" })).not.toBeInTheDocument()
   })
 
   it("keeps the empty-state Create control keyboard-operable and at least 44px tall", async () => {
