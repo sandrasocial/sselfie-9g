@@ -6,6 +6,7 @@ import {
   isAllowedAnalyticsEventName,
   type AnalyticsEventName,
 } from "@/lib/analytics/event-contract"
+import { capturePostHogEvent } from "@/lib/analytics/posthog"
 
 function safeString(v: unknown, maxLen: number): string | null {
   if (typeof v !== "string") return null
@@ -49,20 +50,35 @@ export async function logAnalyticsEvent(input: {
   }
   properties?: Record<string, any> | null
 }): Promise<{ ok: true } | { ok: false; error: string }> {
+  let postHogCapture: ReturnType<typeof capturePostHogEvent> | null = null
   try {
     const eventName = safeString(input.eventName, 64)
     if (!eventName || !isAllowedAnalyticsEventName(eventName)) {
       return { ok: false, error: "Unsupported event" }
     }
 
-    await ensureAnalyticsSchema()
-    const sql = getDb()
     const properties = safeJson(input.properties ?? {})
     if (eventName === "suite_intent_detected" && typeof properties.intent_label !== "string") {
       properties.intent_label =
         safeString(properties.format, 80) ||
         (properties.confidence === "needs_clarify" ? "needs_clarify" : "unclassified")
     }
+
+    postHogCapture = capturePostHogEvent({
+      eventName,
+      userId: input.userId,
+      anonId: input.anonId,
+      path: input.path,
+      attribution: {
+        source: input.utm?.source,
+        medium: input.utm?.medium,
+        campaign: input.utm?.campaign,
+      },
+      properties,
+    })
+
+    await ensureAnalyticsSchema()
+    const sql = getDb()
 
     await sql`
       INSERT INTO analytics_events (
@@ -92,8 +108,11 @@ export async function logAnalyticsEvent(input: {
       )
     `
 
+    await postHogCapture
+
     return { ok: true }
   } catch (err: any) {
+    await postHogCapture?.catch(() => undefined)
     // Fail open: analytics must never break core flows.
     console.error("[analytics] logAnalyticsEvent failed:", err?.message || String(err))
     return { ok: false, error: err?.message || String(err) }
