@@ -6,7 +6,10 @@ import { isAppUnsubscribed } from "@/lib/email/unsubscribe"
 import { requireResendClient } from "@/lib/resend/client"
 import { hasResendApiKey } from "@/lib/resend/api-key"
 
-const mainSegmentId = process.env.RESEND_AUDIENCE_ID || ""
+function getMainSegmentId(): string {
+  // Vercel/dashboard copies can include invisible whitespace. Segment endpoints require a UUID.
+  return (process.env.RESEND_AUDIENCE_ID || "").replace(/\r|\n|\t/g, "").trim()
+}
 
 const TEST_EMAIL_DOMAINS = new Set([
   "playwright.test",
@@ -203,6 +206,7 @@ function isMissingContact(error: any): boolean {
 }
 
 async function ensureMainSegment(email: string): Promise<void> {
+  const mainSegmentId = getMainSegmentId()
   if (!mainSegmentId) return
   const resend = requireResendClient()
   const { error } = await (resend.contacts as any).segments.add({
@@ -261,12 +265,11 @@ export async function addOrUpdateResendContact(
     }
 
     const properties = mergeLifecycleProperties(null, requested)
-    const createPayload: Record<string, unknown> = {
+    const createPayload = {
       email: normalizedEmail,
       firstName: firstName || undefined,
       properties,
     }
-    if (mainSegmentId) createPayload.segments = [{ id: mainSegmentId }]
 
     const { data, error } = await (resend.contacts as any).create(createPayload)
     if (error) {
@@ -288,6 +291,11 @@ export async function addOrUpdateResendContact(
       return { success: false, error: error.message }
     }
 
+    // Keep contact creation independent from segment assignment. The provider currently rejects
+    // the otherwise documented inline `segments: [{ id }]` create shape for this production path.
+    // Adding the newly created global Contact through the dedicated endpoint preserves Main
+    // Audience membership without risking another create-only 422.
+    await ensureMainSegment(normalizedEmail)
     return { success: true, contactId: data?.id }
   } catch (error) {
     console.error("[resend] Exception syncing lifecycle contact:", error)
@@ -327,6 +335,7 @@ export async function updateContactTags(
 
 /** Remove from the Main Audience segment without deleting the global Contact. */
 export async function removeResendContact(email: string): Promise<{ success: boolean; error?: string }> {
+  const mainSegmentId = getMainSegmentId()
   if (!mainSegmentId) return { success: true }
   return removeContactFromSegment(email, mainSegmentId)
 }
