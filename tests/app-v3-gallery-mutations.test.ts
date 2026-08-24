@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   getAuthenticatedUser: vi.fn(),
   getEffectiveNeonUser: vi.fn(),
   sql: vi.fn(),
+  transaction: vi.fn(),
   del: vi.fn(),
 }))
 
@@ -16,7 +17,7 @@ vi.mock("@/lib/simple-impersonation", () => ({
 }))
 
 vi.mock("@/lib/db/client", () => ({
-  sql: mocks.sql,
+  sql: Object.assign(mocks.sql, { transaction: mocks.transaction }),
 }))
 
 vi.mock("@vercel/blob", () => ({
@@ -28,9 +29,11 @@ beforeEach(() => {
   mocks.getAuthenticatedUser.mockReset()
   mocks.getEffectiveNeonUser.mockReset()
   mocks.sql.mockReset()
+  mocks.transaction.mockReset()
   mocks.del.mockReset()
   mocks.getAuthenticatedUser.mockResolvedValue({ user: { id: "auth-user-1" }, error: null })
   mocks.getEffectiveNeonUser.mockResolvedValue({ id: "neon-user-1" })
+  mocks.transaction.mockImplementation(async builder => Promise.all(builder(mocks.sql)))
 })
 
 describe("app v3 gallery mutations", () => {
@@ -66,10 +69,9 @@ describe("app v3 gallery mutations", () => {
 
   it("bulk deletes owned image and video assets", async () => {
     mocks.sql
-      .mockResolvedValueOnce([{ is_referenced: false }])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ id: 1 }])
-      .mockResolvedValueOnce([{ video_url: "https://blob.vercel-storage.com/video.mp4" }])
-      .mockResolvedValueOnce([{ id: 2 }])
+      .mockResolvedValueOnce([{ id: 2, video_url: "https://blob.vercel-storage.com/video.mp4" }])
     mocks.del.mockResolvedValue(undefined)
 
     const { DELETE } = await import("@/app/api/app-v3/gallery/assets/route")
@@ -83,13 +85,14 @@ describe("app v3 gallery mutations", () => {
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ success: true, deleted: ["ai_1", "video_2"] })
     expect(mocks.del).toHaveBeenCalledWith("https://blob.vercel-storage.com/video.mp4")
+    expect(mocks.transaction).toHaveBeenCalledTimes(1)
     expect(String(mocks.sql.mock.calls[0][0])).toContain("app_v3_maya_edit_requests")
     expect(String(mocks.sql.mock.calls[1][0])).toContain("DELETE FROM ai_images")
-    expect(String(mocks.sql.mock.calls[3][0])).toContain("DELETE FROM generated_videos")
+    expect(String(mocks.sql.mock.calls[2][0])).toContain("DELETE FROM generated_videos")
   })
 
   it("deletes an unreferenced Maya image normally", async () => {
-    mocks.sql.mockResolvedValueOnce([{ is_referenced: false }]).mockResolvedValueOnce([{ id: 42 }])
+    mocks.sql.mockResolvedValueOnce([]).mockResolvedValueOnce([{ id: 42 }])
 
     const { DELETE } = await import("@/app/api/app-v3/gallery/assets/route")
     const response = await DELETE(
@@ -109,7 +112,7 @@ describe("app v3 gallery mutations", () => {
   })
 
   it("preserves a Maya edit source image and returns a clear conflict", async () => {
-    mocks.sql.mockResolvedValueOnce([{ is_referenced: true }])
+    mocks.sql.mockResolvedValueOnce([{ id: 42 }])
 
     const { DELETE } = await import("@/app/api/app-v3/gallery/assets/route")
     const response = await DELETE(
@@ -127,21 +130,23 @@ describe("app v3 gallery mutations", () => {
       blockedAssetIds: ["ai_42"],
     })
     expect(mocks.sql).toHaveBeenCalledTimes(1)
+    expect(mocks.transaction).not.toHaveBeenCalled()
     expect(String(mocks.sql.mock.calls[0][0])).not.toContain("DELETE FROM ai_images")
   })
 
-  it("converts a concurrent Maya history reference into the same safe conflict", async () => {
+  it("rolls back a raced mixed batch before returning the same safe conflict", async () => {
     const foreignKeyError = Object.assign(new Error("foreign key violation"), { code: "23503" })
     mocks.sql
-      .mockResolvedValueOnce([{ is_referenced: false }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: 7 }])
       .mockRejectedValueOnce(foreignKeyError)
-      .mockResolvedValueOnce([{ is_referenced: true }])
+      .mockResolvedValueOnce([{ id: 42 }])
 
     const { DELETE } = await import("@/app/api/app-v3/gallery/assets/route")
     const response = await DELETE(
       new Request("http://localhost/api/app-v3/gallery/assets", {
         method: "DELETE",
-        body: JSON.stringify({ assetIds: ["ai_42"] }),
+        body: JSON.stringify({ assetIds: ["gen_7", "ai_42"] }),
       })
     )
 
@@ -150,6 +155,30 @@ describe("app v3 gallery mutations", () => {
       code: "MAYA_EDIT_HISTORY_REFERENCE",
       blockedAssetIds: ["ai_42"],
     })
-    expect(mocks.sql).toHaveBeenCalledTimes(3)
+    expect(mocks.transaction).toHaveBeenCalledTimes(1)
+    expect(mocks.transaction.mock.calls[0][0](mocks.sql)).toHaveLength(2)
+    expect(mocks.del).not.toHaveBeenCalled()
+  })
+
+  it("checks a maximum-size AI delete batch for Maya references in one query", async () => {
+    const assetIds = Array.from({ length: 100 }, (_, index) => `ai_${index + 1}`)
+    mocks.sql.mockResolvedValueOnce([])
+    for (let id = 1; id <= 100; id += 1) {
+      mocks.sql.mockResolvedValueOnce([{ id }])
+    }
+
+    const { DELETE } = await import("@/app/api/app-v3/gallery/assets/route")
+    const response = await DELETE(
+      new Request("http://localhost/api/app-v3/gallery/assets", {
+        method: "DELETE",
+        body: JSON.stringify({ assetIds }),
+      })
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.transaction).toHaveBeenCalledTimes(1)
+    expect(String(mocks.sql.mock.calls[0][0])).toContain("ANY(")
+    expect(mocks.sql.mock.calls[0][2]).toEqual(Array.from({ length: 100 }, (_, index) => index + 1))
+    expect(mocks.sql).toHaveBeenCalledTimes(101)
   })
 })
