@@ -381,7 +381,7 @@ export function ConceptCard({
       {/* Visual area ONLY exists once we're generating or done - never an empty placeholder box. */}
       {(isGenerating || isDone || isVideoDone || isDirectionChoice) && (
         <div
-          className={`suite-concept-visual relative w-full bg-[#F1F2F2] ${isDirectionChoice ? "aspect-[4/3]" : FRAME_ASPECT[format]} ${
+          className={`suite-concept-visual relative w-full bg-[#F1F2F2] ${isDirectionChoice ? "aspect-[4/3]" : FRAME_ASPECT[format]} ${isDone || isVideoDone ? "suite-concept-result-preview max-h-[min(62dvh,34rem)] sm:max-h-none" : ""} ${
             isGenerating && !gen.previewUrl ? "animate-pulse motion-reduce:animate-none" : ""
           }`}
         >
@@ -405,7 +405,7 @@ export function ConceptCard({
                 alt={concept.title}
                 decoding="async"
                 onError={retryGeneratedImageOnce}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]"
               />
               {isCarousel && (
                 <span className="absolute left-0 top-0 bg-[#050505] px-3 py-2 text-[9px] uppercase tracking-[0.18em] text-white">
@@ -653,6 +653,20 @@ export function ConceptCard({
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#6D6E70]">
               {isVideoDone ? "Saved to your videos" : "Saved to your gallery"}
             </p>
+            {postFinishAvailable && isCarousel && finishStatus !== "finished" ? (
+              <button
+                type="button"
+                onClick={handleFinishPost}
+                disabled={finishStatus === "finishing"}
+                className="min-h-12 w-full rounded-[8px] bg-[#0D0E10] px-5 py-3.5 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728] disabled:opacity-50"
+              >
+                {finishStatus === "finishing"
+                  ? "Finishing…"
+                  : finishStatus === "error"
+                    ? "Try finishing again"
+                    : "Finish as a post"}
+              </button>
+            ) : null}
             {bakeMissing && (
               <div className="rounded-[4px] bg-[#282728]/5 px-3 py-2 text-[12px] leading-relaxed text-[#4F5052]">
                 <p>

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 import { sanitizeServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
+import { getAppV3MayaSystemPrompt } from "@/lib/app-v3/maya/persona"
 import {
   MAYA_WORKSPACE_PATHS,
   allowedActionsForMayaPath,
@@ -101,6 +102,36 @@ describe("Maya workspace path contract", () => {
     expect(route).toContain("isToolAllowedForMayaPath(workspacePath, toolName)")
     expect(route).toContain('workspaceAction && toolName === "set_format"')
     expect(route).toContain("shouldAcceptLastGenerationForMayaPath")
-    expect(route).toContain("Never cross into another path inside this conversation")
+    expect(route).toContain("set_format never crosses this boundary")
+  })
+
+  it.each([
+    ["ai-photos", "photo", "photo** and **photoshoot", "Build a Post"],
+    ["build-post", "carousel", "carousel** and **story-sequence", "AI Photos"],
+  ] as const)("keeps set_format inside %s", (workspacePath, format, allowedPair, handoff) => {
+    const prompt = getAppV3MayaSystemPrompt({
+      aestheticName: "SSELFIE",
+      aestheticIntent: "Editorial",
+      format,
+      workspacePath,
+      recentActivity: ["an older unfinished task"],
+    })
+
+    expect(prompt).toContain(`only to switch between **${allowedPair}**`)
+    expect(prompt).toContain(`belongs in ${handoff}`)
+    expect(prompt).toContain("do not call set_format")
+    expect(prompt).toContain("optional background, never the active task")
+  })
+
+  it("never exposes format switching in Edit a Photo", () => {
+    const prompt = getAppV3MayaSystemPrompt({
+      aestheticName: "SSELFIE",
+      aestheticIntent: "Editorial",
+      format: "photo",
+      workspacePath: "edit-photo",
+    })
+
+    expect(prompt).toContain("The **set_format** tool is not available here")
+    expect(prompt).toContain("preserve its version history")
   })
 })

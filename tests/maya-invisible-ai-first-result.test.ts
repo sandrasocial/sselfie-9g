@@ -135,7 +135,7 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     const card = read("components/app-v3/concept-card.tsx")
 
     expect(card).toContain('eyebrow = "Maya\'s idea"')
-    expect(concierge).toContain('eyebrow={recommended ? "Maya recommends" : "Another direction"}')
+    expect(concierge).toContain('eyebrow={recommended ? "Maya\'s pick" : "Also worth trying"}')
     expect(concierge).toContain("See more ideas")
     expect(concierge).toMatch(/conceptPart\s*\.slice\(1\)/)
   })

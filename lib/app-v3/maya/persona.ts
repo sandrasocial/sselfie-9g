@@ -12,6 +12,7 @@ import {
   MAYA_PROMPT_PHILOSOPHY,
 } from "@/lib/maya/core-personality"
 import type { OutputFormat } from "@/components/app-v3/types"
+import type { MayaWorkspacePath } from "./workspace-path"
 import type { BrandKit } from "./concept-types"
 import { CAMERA_SPECS, LIGHTING_OPTIONS, QUIET_LUXURY_FALLBACK } from "./ingredients"
 import { getCarouselDesignGuide } from "./carousel-design-systems"
@@ -29,6 +30,8 @@ export interface AppV3SystemPromptContext {
   aestheticName: string
   aestheticIntent: string
   format: OutputFormat
+  /** Server-authoritative top-level task boundary. Format changes stay inside this workspace. */
+  workspacePath?: MayaWorkspacePath | null
   brandKit?: BrandKit | null
   /** Cross-session memory: the name she gave you + what you already know about her brand. */
   memory?: {
@@ -137,6 +140,30 @@ function brandKitLine(brandKit?: BrandKit | null): string {
   )
 }
 
+function workspaceFormatContract(ctx: AppV3SystemPromptContext): string {
+  if (ctx.workspacePath === "ai-photos") {
+    return `### Stay inside AI Photos
+
+AI Photos is the active top-level task. You may call **set_format** only to switch between **photo** and **photoshoot** while the member keeps working on this photo task. A carousel, caption, or Story sequence belongs in Build a Post. An edit to an existing Gallery image belongs in Edit a Photo. For a cross-workspace request, acknowledge it in one warm sentence and name the destination, but do not call set_format and do not create the other workspace's output in this thread.`
+  }
+
+  if (ctx.workspacePath === "build-post") {
+    return `### Stay inside Build a Post
+
+Build a Post is the active top-level task. You may call **set_format** only to switch between **carousel** and **story-sequence** while the member keeps working on this post. A new photo or photoshoot belongs in AI Photos. Editing an existing Gallery image belongs in Edit a Photo. For a cross-workspace request, acknowledge it in one warm sentence and name the destination, but do not call set_format and do not create the other workspace's output in this thread.`
+  }
+
+  if (ctx.workspacePath === "edit-photo") {
+    return `### Stay inside Edit a Photo
+
+Edit a Photo is the active top-level task. Continue refining the selected image and preserve its version history. The **set_format** tool is not available here. A new photo or photoshoot belongs in AI Photos; a carousel, caption, or Story sequence belongs in Build a Post. For a cross-workspace request, acknowledge it in one warm sentence and name the destination, but do not create that output in this thread.`
+  }
+
+  return `### She can change format mid-chat (the set_format tool)
+
+The format chips above the chat are shortcuts, not gates. You are currently making **${ctx.format}** content. If she asks for a DIFFERENT format in conversation, call the **set_format** tool with the format she wants. The studio switches and asks you for fresh directions automatically, so keep that turn to one short line and do not call emit_concepts. Never call set_format for the format you are already on.`
+}
+
 /**
  * The app-v3 output contract. This is the ONLY app-v3-specific text in the system prompt:
  * it tells Maya to converse warmly, then emit exactly 3 structured concept cards via the
@@ -188,7 +215,7 @@ ${ctx.format === "story-sequence" ? "STORY SEQUENCE OVERRIDE: this is NOT a teac
 ${brandKitLine(ctx.brandKit)}
 ${
   ctx.recentActivity && ctx.recentActivity.length
-    ? `\nRecently she has been creating: ${ctx.recentActivity.join("; ")}. Use this as a strong signal for what she is likely making now.\n`
+    ? `\nRecently she has been creating: ${ctx.recentActivity.join("; ")}. This is optional background, never the active task. On a fresh thread, follow only what she asks for now and do not resume recent work unless she explicitly chooses it.\n`
     : ""
 }
 ### Non-negotiable voice rules (read these first)
@@ -216,9 +243,7 @@ ${
 3. Keep your streamed message short and human. The concepts live in the tool call, not in your prose. Do not also list them as text.
 4. On a follow-up ("make the second one warmer", "shot outdoors"), reply in character and call emit_concepts again with the revised set, same size unless she asks for more or fewer. It is a real conversation, not a silent regenerate.
 
-### She can change format mid-chat (the set_format tool)
-
-The format chips above the chat are shortcuts, not gates. You are currently making **${ctx.format}** content. If she asks for a DIFFERENT format in conversation ("make me a carousel about this", "turn that into a story slide", "can I get this as a reel cover", "actually just a photo"), call the **set_format** tool with the format she wants. The studio switches and asks you for fresh directions automatically, so in that turn keep your text to one short line ("On it, switching to carousels 🤍") and do NOT call emit_concepts. Never tell her to tap a chip, never refuse because the current format is different, and never call set_format for the format you are already on.
+${workspaceFormatContract(ctx)}
 
 ### The intelligence rule: ask only when you genuinely don't know
 
