@@ -27,14 +27,10 @@ const EVENT_MAP: Readonly<Record<string, string>> = {
   suite_home_viewed: "sselfie_app_opened",
   tab_opened: "sselfie_workspace_opened",
   activation_selfie_uploaded: "sselfie_reference_added",
-  suite_inline_selfie_uploaded: "sselfie_reference_added",
   first_generation_guided_start: "sselfie_generation_started",
   suite_maya_job_started: "sselfie_generation_started",
   first_generation_guided_complete: "sselfie_generation_completed",
-  first_image_generated: "sselfie_generation_completed",
   suite_image_generated: "sselfie_generation_completed",
-  suite_generation_path_completed: "sselfie_generation_completed",
-  suite_maya_job_finished: "sselfie_generation_completed",
   suite_generation_failed: "sselfie_generation_failed",
   suite_image_downloaded: "sselfie_result_saved",
   suite_edit_applied: "sselfie_edit_used",
@@ -82,6 +78,123 @@ function safeDimension(value: unknown): string | null {
   return /^[a-z0-9][a-z0-9._:-]{0,119}$/i.test(trimmed) ? trimmed : null
 }
 
+const APPROVED_UTM_SOURCES = new Set([
+  "ai_prompts",
+  "app",
+  "buyer_home",
+  "email",
+  "instagram",
+  "kit_access",
+  "product",
+  "prompt_vault",
+  "presets_page",
+  "resend",
+  "site",
+  "vault_maya",
+  "website",
+])
+
+const APPROVED_EVENT_SOURCES = new Set([
+  "app",
+  "app-v3-edit",
+  "app-v3-generate",
+  "claim_page",
+  "front_door",
+  "gallery",
+  "generated",
+  "maya_concierge",
+  "maya_drawer",
+  "maya_selfie_manager",
+  "maya_welcome_flow",
+  "public_offer",
+  "skool",
+  "stripe_webhook",
+  "suite-trial-expiry-cron",
+  "selfie-ai-photos-kit-access",
+])
+
+const APPROVED_UTM_MEDIUMS = new Set([
+  "access_page",
+  "bio",
+  "broadcast",
+  "delivery",
+  "email",
+  "homepage",
+  "in_app",
+  "launch",
+  "lifecycle",
+  "manychat",
+  "payment_recovery",
+  "post_purchase",
+  "preview",
+  "prompt_pack",
+  "repeat",
+  "sales_page",
+  "stories",
+  "story",
+  "studio",
+  "upsell",
+])
+
+const APPROVED_UTM_CAMPAIGNS = new Set([
+  "access_ending",
+  "ai_prompts_to_prompt_vault",
+  "ai_prompts_to_selfie_ai_photos_kit",
+  "ai_prompts_to_selfie_guide",
+  "blueprint_day1",
+  "blueprint_day3",
+  "blueprint_day7",
+  "blueprint_day7_upsell",
+  "campaign_outcome_test",
+  "current_free_prompt_fallback",
+  "dormant_member_reengagement",
+  "free_user_day10",
+  "free_user_day5",
+  "free_welcome_day0",
+  "high_intent_click_recovery",
+  "latest_five_free_prompts",
+  "latest_five_free_prompts_to_vault",
+  "numbered_prompt",
+  "numbered_prompt_fallback",
+  "numbered_prompt_to_vault",
+  "one_selfie_visibility_48h",
+  "paid_blueprint",
+  "post_activation_upgrade",
+  "presets_launch",
+  "prompt",
+  "prompt_keyword",
+  "prompt_vault_launch",
+  "rejoin",
+  "selfie_ai_photos_kit",
+  "selfie_ai_photos_kit_day0_suite_bridge",
+  "selfie_ai_photos_kit_day0_vault_bridge",
+  "selfie_ai_photos_kit_suite_bridge",
+  "selfie_ai_photos_kit_vault_bridge",
+  "selfie_guide_to_masterclass",
+  "selfie_guide_to_starter_kit",
+  "selfie_keyword",
+  "selfie_to_brand_shoot",
+  "suite_day7_second_creation",
+  "suite_keyword",
+  "trial_cap_upgrade",
+  "update_payment",
+  "vault_keyword",
+  "vault_maya_launch",
+  "vault_maya_launch_list",
+  "vault_maya_to_suite",
+  "vault_to_presets",
+  "vault_to_suite",
+  "vault_to_suite_path",
+  "win_back_day14",
+  "win_back_day3",
+  "win_back_day7",
+])
+
+function approvedAttribution(value: unknown, approved: ReadonlySet<string>): string | null {
+  const dimension = safeDimension(value)?.toLowerCase() ?? null
+  return dimension && approved.has(dimension) ? dimension : null
+}
+
 function cleanPath(path: string | null | undefined): string | null {
   if (!path) return null
   const value = path.trim()
@@ -104,18 +217,30 @@ export function buildPostHogProperties(input: PostHogCaptureInput): Record<strin
   if (path) output.path = path
 
   const attribution = {
-    utm_source: safeDimension(input.attribution?.source),
-    utm_medium: safeDimension(input.attribution?.medium),
-    utm_campaign: safeDimension(input.attribution?.campaign),
+    utm_source: approvedAttribution(input.attribution?.source, APPROVED_UTM_SOURCES),
+    utm_medium: approvedAttribution(input.attribution?.medium, APPROVED_UTM_MEDIUMS),
+    utm_campaign: approvedAttribution(input.attribution?.campaign, APPROVED_UTM_CAMPAIGNS),
   }
   for (const [key, value] of Object.entries(attribution)) {
     if (value) output[key] = value
   }
 
-  for (const [key, value] of Object.entries(input.properties ?? {})) {
+  const rawProperties = input.properties ?? {}
+  const product = safeDimension(rawProperties.product_type)
+  if (product) output.product = product
+  if (
+    typeof rawProperties.value === "number" &&
+    Number.isFinite(rawProperties.value) &&
+    rawProperties.value >= 0
+  ) {
+    output.revenue_value = rawProperties.value
+  }
+
+  for (const [key, value] of Object.entries(rawProperties)) {
     if (!SAFE_PROPERTY_KEYS.has(key) || SENSITIVE_KEY.test(key)) continue
     if (typeof value === "string") {
-      const dimension = safeDimension(value)
+      const dimension =
+        key === "source" ? approvedAttribution(value, APPROVED_EVENT_SOURCES) : safeDimension(value)
       if (dimension) output[key] = dimension
     } else if (typeof value === "number" && Number.isFinite(value)) {
       output[key] = value
@@ -142,7 +267,7 @@ function postHogConfig(): { key: string; host: string } | null {
   return { key, host }
 }
 
-function postHogDistinctId(input: PostHogCaptureInput): string | null {
+export function postHogDistinctId(input: PostHogCaptureInput): string | null {
   const userId = input.userId?.trim()
   if (userId) return `user:${userId}`
 
@@ -180,8 +305,10 @@ export async function capturePostHogEvent(
       body: JSON.stringify({
         api_key: config.key,
         event,
-        distinct_id: distinctId,
-        properties: buildPostHogProperties(input),
+        properties: {
+          ...buildPostHogProperties(input),
+          distinct_id: distinctId,
+        },
       }),
       signal: AbortSignal.timeout(750),
     })

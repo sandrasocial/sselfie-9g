@@ -9,13 +9,13 @@ Set these values in the intended Vercel environment only after review:
 - `POSTHOG_PROJECT_KEY` and `NEXT_PUBLIC_POSTHOG_KEY`: the EU project token.
 - `POSTHOG_HOST` and `NEXT_PUBLIC_POSTHOG_HOST`: `https://eu.i.posthog.com`.
 
-With no project key, both server and browser capture are disabled. Server capture times out after 750 ms and never blocks the product flow on a provider failure.
+With no project key, both server and browser capture are disabled. Each event is written to Neon first, then PostHog delivery is scheduled after the request response. Provider delivery times out after 750 ms and never blocks the product flow. A failed Neon write does not create a provider-only event.
 
 ## Privacy contract
 
-The server adapter sends only mapped event names, stable internal or anonymous identifiers, pathnames without query strings, and a small allowlist of primitive business properties. It drops customer-authored text, prompts, captions, images, URLs, email/name/phone fields, tokens, IP metadata, user agents, referrers, nested objects, and arrays.
+The server adapter sends only mapped event names, stable internal or anonymous identifiers, pathnames without query strings, and a small allowlist of primitive business properties. UTM and event-source values must match static operational allowlists. Revenue observations normalize the existing `product_type` and numeric `value` fields to `product` and `revenue_value`. The adapter drops customer-authored text, prompts, captions, images, URLs, email/name/phone fields, tokens, IP metadata, user agents, referrers, nested objects, and arrays.
 
-Browser capture masks all text, inputs, and element attributes. Session replay canvas, fonts, console logs, request bodies, and request headers are disabled. Pageviews contain origin plus pathname, never query strings. Do not relax these controls without a privacy review.
+Browser capture masks all text, inputs, and element attributes. Session replay canvas, fonts, console logs, request bodies, and request headers are disabled. The browser identifies with the same privacy-safe `user:<Neon ID>` or `anon:<cookie ID>` used by server capture. Pageviews contain origin plus a sanitized pathname, never query strings; access and claim token segments are replaced with `[token]`. Do not relax these controls without a privacy review.
 
 ## First activation funnel
 

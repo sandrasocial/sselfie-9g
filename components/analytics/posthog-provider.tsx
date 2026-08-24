@@ -3,25 +3,52 @@
 import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import Script from "next/script"
+import { sanitizePostHogPathname } from "@/lib/analytics/posthog-browser"
 
 declare global {
   interface Window {
     posthog?: {
       capture: (event: string, properties?: Record<string, unknown>) => void
+      identify: (distinctId: string) => void
     }
   }
 }
 
 function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
   const pathname = usePathname()
+  const [identityReady, setIdentityReady] = useState(false)
 
   useEffect(() => {
-    if (!ready || !pathname || !window.posthog) return
-    window.posthog.capture("$pageview", {
-      $current_url: `${window.location.origin}${pathname}`,
-      $pathname: pathname,
+    if (!ready || !window.posthog) return
+    let active = true
+
+    fetch("/api/analytics/event", {
+      credentials: "same-origin",
+      cache: "no-store",
     })
-  }, [pathname, ready])
+      .then(response => (response.ok ? response.json() : null))
+      .then(data => {
+        if (!active || typeof data?.distinctId !== "string" || !window.posthog) return
+        window.posthog.identify(data.distinctId)
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setIdentityReady(true)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [ready])
+
+  useEffect(() => {
+    const safePathname = pathname ? sanitizePostHogPathname(pathname) : null
+    if (!ready || !identityReady || !safePathname || !window.posthog) return
+    window.posthog.capture("$pageview", {
+      $current_url: `${window.location.origin}${safePathname}`,
+      $pathname: safePathname,
+    })
+  }, [identityReady, pathname, ready])
 
   return null
 }

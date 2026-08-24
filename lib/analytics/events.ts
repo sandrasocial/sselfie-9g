@@ -1,5 +1,7 @@
 import "server-only"
 
+import { after } from "next/server"
+
 import { ensureAnalyticsSchema } from "@/lib/analytics/schema"
 import { getDb } from "@/lib/db/client"
 import {
@@ -50,7 +52,6 @@ export async function logAnalyticsEvent(input: {
   }
   properties?: Record<string, any> | null
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  let postHogCapture: ReturnType<typeof capturePostHogEvent> | null = null
   try {
     const eventName = safeString(input.eventName, 64)
     if (!eventName || !isAllowedAnalyticsEventName(eventName)) {
@@ -63,19 +64,6 @@ export async function logAnalyticsEvent(input: {
         safeString(properties.format, 80) ||
         (properties.confidence === "needs_clarify" ? "needs_clarify" : "unclassified")
     }
-
-    postHogCapture = capturePostHogEvent({
-      eventName,
-      userId: input.userId,
-      anonId: input.anonId,
-      path: input.path,
-      attribution: {
-        source: input.utm?.source,
-        medium: input.utm?.medium,
-        campaign: input.utm?.campaign,
-      },
-      properties,
-    })
 
     await ensureAnalyticsSchema()
     const sql = getDb()
@@ -108,11 +96,28 @@ export async function logAnalyticsEvent(input: {
       )
     `
 
-    await postHogCapture
+    const postHogInput = {
+      eventName,
+      userId: input.userId,
+      anonId: input.anonId,
+      path: input.path,
+      attribution: {
+        source: input.utm?.source,
+        medium: input.utm?.medium,
+        campaign: input.utm?.campaign,
+      },
+      properties,
+    }
+    try {
+      after(() => capturePostHogEvent(postHogInput))
+    } catch {
+      // Some non-request callers do not expose Next's lifecycle hook. Keep the
+      // provider detached and swallow its already fail-open result.
+      void capturePostHogEvent(postHogInput)
+    }
 
     return { ok: true }
   } catch (err: any) {
-    await postHogCapture?.catch(() => undefined)
     // Fail open: analytics must never break core flows.
     console.error("[analytics] logAnalyticsEvent failed:", err?.message || String(err))
     return { ok: false, error: err?.message || String(err) }

@@ -9,6 +9,7 @@ import {
   capturePostHogEvent,
   mapPostHogEvent,
 } from "@/lib/analytics/posthog"
+import { sanitizePostHogPathname } from "@/lib/analytics/posthog-browser"
 
 describe("PostHog analytics boundary", () => {
   beforeEach(() => {
@@ -28,6 +29,10 @@ describe("PostHog analytics boundary", () => {
     expect(mapPostHogEvent("suite_edit_applied")).toBe("sselfie_edit_used")
     expect(mapPostHogEvent("suite_image_downloaded")).toBe("sselfie_result_saved")
     expect(mapPostHogEvent("purchase")).toBe("sselfie_purchase_observed")
+    expect(mapPostHogEvent("suite_inline_selfie_uploaded")).toBeNull()
+    expect(mapPostHogEvent("first_image_generated")).toBeNull()
+    expect(mapPostHogEvent("suite_generation_path_completed")).toBeNull()
+    expect(mapPostHogEvent("suite_maya_job_finished")).toBeNull()
     expect(mapPostHogEvent("unrelated_internal_event")).toBeNull()
   })
 
@@ -39,7 +44,7 @@ describe("PostHog analytics boundary", () => {
         attribution: {
           source: "email",
           medium: "lifecycle",
-          campaign: "first_value_2026",
+          campaign: "free_welcome_day0",
         },
         properties: {
           provider: "replicate",
@@ -51,6 +56,8 @@ describe("PostHog analytics boundary", () => {
           ip_hint: "127.0.0.1",
           user_agent: "browser",
           source: "sandra@example.com",
+          product_type: "prompt_vault",
+          value: 97,
           nested: { secret: "value" },
           tags: ["private"],
         },
@@ -61,10 +68,12 @@ describe("PostHog analytics boundary", () => {
       path: "/suite",
       utm_source: "email",
       utm_medium: "lifecycle",
-      utm_campaign: "first_value_2026",
+      utm_campaign: "free_welcome_day0",
       provider: "replicate",
       image_count: 2,
       is_first: true,
+      product: "prompt_vault",
+      revenue_value: 97,
     })
   })
 
@@ -78,8 +87,8 @@ describe("PostHog analytics boundary", () => {
           userId: "user-123",
           anonId: "ignored",
           path: "/suite?token=private",
-          attribution: { source: "instagram", medium: "social", campaign: "suite_launch" },
-          properties: { source: "maya", caption: "private" },
+          attribution: { source: "instagram", medium: "manychat", campaign: "prompt_keyword" },
+          properties: { source: "maya_concierge", caption: "private" },
         },
         request
       )
@@ -92,17 +101,45 @@ describe("PostHog analytics boundary", () => {
     expect(JSON.parse(String(init?.body))).toEqual({
       api_key: "phc_test_project",
       event: "sselfie_reference_added",
-      distinct_id: "user:user-123",
       properties: {
+        distinct_id: "user:user-123",
         source_event: "activation_selfie_uploaded",
         $process_person_profile: false,
         path: "/suite",
         utm_source: "instagram",
-        utm_medium: "social",
-        utm_campaign: "suite_launch",
-        source: "maya",
+        utm_medium: "manychat",
+        utm_campaign: "prompt_keyword",
+        source: "maya_concierge",
       },
     })
+  })
+
+  it("drops unapproved attribution and event-source slugs", () => {
+    expect(
+      buildPostHogProperties({
+        eventName: "purchase",
+        attribution: {
+          source: "recipient_sandra_123",
+          medium: "private_segment_456",
+          campaign: "customer_789",
+        },
+        properties: { source: "recipient_sandra_123" },
+      })
+    ).toEqual({
+      source_event: "purchase",
+      $process_person_profile: false,
+    })
+  })
+
+  it("redacts access tokens from browser page paths", () => {
+    expect(sanitizePostHogPathname("/claim/secret-token")).toBe("/claim/[token]")
+    expect(sanitizePostHogPathname("/access/prompt-vault/token123/details")).toBe(
+      "/access/prompt-vault/[token]/details"
+    )
+    expect(sanitizePostHogPathname("/selfie-guide/access/private?email=private")).toBe(
+      "/selfie-guide/access/[token]"
+    )
+    expect(sanitizePostHogPathname("/app")).toBe("/app")
   })
 
   it("fails open when disabled, unmapped, missing an identity, or rejected by PostHog", async () => {
@@ -139,7 +176,13 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("recordBody:false")
     expect(provider).toContain("recordHeaders:false")
     expect(provider).toContain("capture_exceptions:true")
-    expect(provider).toContain("window.location.origin}${pathname}")
+    expect(provider).toContain("window.posthog.identify(data.distinctId)")
+    expect(provider).toContain('fetch("/api/analytics/event"')
+    expect(provider).toContain("window.location.origin}${safePathname}")
     expect(provider).not.toContain("useSearchParams")
+
+    const middleware = readFileSync(join(process.cwd(), "middleware.ts"), "utf8")
+    expect(middleware).toContain("https://eu-assets.i.posthog.com")
+    expect(middleware).toContain("https://eu.i.posthog.com")
   })
 })
