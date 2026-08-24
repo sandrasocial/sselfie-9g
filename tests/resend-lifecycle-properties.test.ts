@@ -41,11 +41,13 @@ import {
 
 const property = (value: string) => ({ type: "string", value })
 const originalMainSegmentId = process.env.RESEND_AUDIENCE_ID
+const originalDisableTestEmails = process.env.RESEND_DISABLE_TEST_EMAILS
 const mainSegmentId = "78261eea-8f8b-4381-83c6-79fa7120f1cf"
 
 describe("Resend lifecycle contact properties", () => {
   beforeEach(() => {
     process.env.RESEND_AUDIENCE_ID = `\t${mainSegmentId}\n`
+    process.env.RESEND_DISABLE_TEST_EMAILS = "false"
     vi.clearAllMocks()
     mocks.hasResendApiKey.mockReturnValue(true)
     mocks.isAppUnsubscribed.mockResolvedValue(false)
@@ -58,6 +60,8 @@ describe("Resend lifecycle contact properties", () => {
   afterAll(() => {
     if (originalMainSegmentId === undefined) delete process.env.RESEND_AUDIENCE_ID
     else process.env.RESEND_AUDIENCE_ID = originalMainSegmentId
+    if (originalDisableTestEmails === undefined) delete process.env.RESEND_DISABLE_TEST_EMAILS
+    else process.env.RESEND_DISABLE_TEST_EMAILS = originalDisableTestEmails
   })
 
   it.each([

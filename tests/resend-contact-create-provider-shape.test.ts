@@ -23,6 +23,7 @@ vi.mock("@/lib/resend/client", async () => {
 
 const mainSegmentId = "78261eea-8f8b-4381-83c6-79fa7120f1cf"
 const originalMainSegmentId = process.env.RESEND_AUDIENCE_ID
+const originalDisableTestEmails = process.env.RESEND_DISABLE_TEST_EMAILS
 
 describe("Resend new-contact provider request shape", () => {
   beforeEach(() => {
@@ -30,11 +31,14 @@ describe("Resend new-contact provider request shape", () => {
     mocks.hasResendApiKey.mockReturnValue(true)
     mocks.isAppUnsubscribed.mockResolvedValue(false)
     process.env.RESEND_AUDIENCE_ID = mainSegmentId
+    process.env.RESEND_DISABLE_TEST_EMAILS = "false"
   })
 
   afterAll(() => {
     if (originalMainSegmentId === undefined) delete process.env.RESEND_AUDIENCE_ID
     else process.env.RESEND_AUDIENCE_ID = originalMainSegmentId
+    if (originalDisableTestEmails === undefined) delete process.env.RESEND_DISABLE_TEST_EMAILS
+    else process.env.RESEND_DISABLE_TEST_EMAILS = originalDisableTestEmails
   })
 
   it("serializes contact creation without an inline segment id, then uses the segment endpoint", async () => {
