@@ -135,9 +135,16 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     const card = read("components/app-v3/concept-card.tsx")
 
     expect(card).toContain('eyebrow = "Maya\'s idea"')
-    expect(concierge).toContain('eyebrow={recommended ? "Maya\'s pick" : "Also worth trying"}')
-    expect(concierge).toContain("See more ideas")
-    expect(concierge).toMatch(/conceptPart\s*\.slice\(1\)/)
+    expect(concierge).toContain(
+      'eyebrow={recommended ? "Maya recommends" : "Another direction"}'
+    )
+    expect(card).toContain('if (eyebrow === "Maya recommends") displayEyebrow = "Maya\'s pick"')
+    expect(card).toContain(
+      'if (eyebrow === "Another direction") displayEyebrow = "Also worth trying"'
+    )
+    expect(card).toContain("{displayEyebrow}")
+    expect(concierge).toContain("const directions = conceptPart.slice(0, 3)")
+    expect(concierge).toContain("activeDirection >= 0")
   })
 
   it("makes download real and moves result extras behind More", () => {
