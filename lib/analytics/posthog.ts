@@ -142,6 +142,14 @@ function postHogConfig(): { key: string; host: string } | null {
   return { key, host }
 }
 
+function postHogDistinctId(input: PostHogCaptureInput): string | null {
+  const userId = input.userId?.trim()
+  if (userId) return `user:${userId}`
+
+  const anonId = input.anonId?.trim()
+  return anonId ? `anon:${anonId}` : null
+}
+
 export async function capturePostHogEvent(
   input: PostHogCaptureInput,
   fetchImpl: typeof fetch = fetch
@@ -149,11 +157,7 @@ export async function capturePostHogEvent(
   const event = mapPostHogEvent(input.eventName)
   if (!event) return { sent: false, reason: "unmapped" }
 
-  const distinctId = input.userId?.trim()
-    ? `user:${input.userId.trim()}`
-    : input.anonId?.trim()
-      ? `anon:${input.anonId.trim()}`
-      : null
+  const distinctId = postHogDistinctId(input)
   if (!distinctId) return { sent: false, reason: "anonymous-missing" }
 
   const config = postHogConfig()
