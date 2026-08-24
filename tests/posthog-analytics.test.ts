@@ -9,7 +9,10 @@ import {
   capturePostHogEvent,
   mapPostHogEvent,
 } from "@/lib/analytics/posthog"
-import { sanitizePostHogPathname } from "@/lib/analytics/posthog-browser"
+import {
+  sanitizePostHogEventPayload,
+  sanitizePostHogPathname,
+} from "@/lib/analytics/posthog-browser"
 
 describe("PostHog analytics boundary", () => {
   beforeEach(() => {
@@ -148,6 +151,30 @@ describe("PostHog analytics boundary", () => {
     ).toBe("/claim/[token]")
   })
 
+  it("redacts access tokens from every browser event payload", () => {
+    expect(
+      sanitizePostHogEventPayload({
+        event: "$autocapture",
+        properties: {
+          $current_url: "https://preview.test/claim/secret-token?source=email",
+          $pathname: "/claim/secret-token",
+          $snapshot_data: {
+            href: "https://preview.test/selfie-guide/access/another-secret",
+          },
+        },
+      })
+    ).toEqual({
+      event: "$autocapture",
+      properties: {
+        $current_url: "https://preview.test/claim/[token]?source=email",
+        $pathname: "/claim/[token]",
+        $snapshot_data: {
+          href: "https://preview.test/selfie-guide/access/[token]",
+        },
+      },
+    })
+  })
+
   it("fails open when disabled, unmapped, missing an identity, or rejected by PostHog", async () => {
     delete process.env.POSTHOG_PROJECT_KEY
     await expect(
@@ -182,6 +209,7 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("recordBody:false")
     expect(provider).toContain("recordHeaders:false")
     expect(provider).toContain("capture_exceptions:true")
+    expect(provider).toContain("JSON.stringify(event).replace")
     expect(provider).toContain("window.posthog.identify(data.distinctId)")
     expect(provider).toContain('fetch("/api/analytics/event"')
     expect(provider).toContain("window.location.origin}${safePathname}")

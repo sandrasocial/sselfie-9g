@@ -8,7 +8,29 @@ import {
   isAllowedAnalyticsEventName,
   type AnalyticsEventName,
 } from "@/lib/analytics/event-contract"
-import { capturePostHogEvent } from "@/lib/analytics/posthog"
+import { capturePostHogEvent, type PostHogCaptureInput } from "@/lib/analytics/posthog"
+
+type PostHogDelivery = {
+  complete: (input: PostHogCaptureInput | null) => void
+  registered: boolean
+}
+
+function registerPostHogDelivery(): PostHogDelivery {
+  let complete: PostHogDelivery["complete"] = () => undefined
+  const delivery = new Promise<PostHogCaptureInput | null>(resolve => {
+    complete = resolve
+  })
+
+  try {
+    after(async () => {
+      const input = await delivery
+      if (input) await capturePostHogEvent(input)
+    })
+    return { complete, registered: true }
+  } catch {
+    return { complete, registered: false }
+  }
+}
 
 function safeString(v: unknown, maxLen: number): string | null {
   if (typeof v !== "string") return null
@@ -52,11 +74,17 @@ export async function logAnalyticsEvent(input: {
   }
   properties?: Record<string, any> | null
 }): Promise<{ ok: true } | { ok: false; error: string }> {
+  let postHogDelivery: PostHogDelivery | null = null
   try {
     const eventName = safeString(input.eventName, 64)
     if (!eventName || !isAllowedAnalyticsEventName(eventName)) {
       return { ok: false, error: "Unsupported event" }
     }
+
+    // Register request-lifecycle work before the first await. Some callers
+    // intentionally fire-and-forget analytics, so late registration can race
+    // the response boundary and lose provider delivery.
+    postHogDelivery = registerPostHogDelivery()
 
     const properties = safeJson(input.properties ?? {})
     if (eventName === "suite_intent_detected" && typeof properties.intent_label !== "string") {
@@ -108,9 +136,8 @@ export async function logAnalyticsEvent(input: {
       },
       properties,
     }
-    try {
-      after(() => capturePostHogEvent(postHogInput))
-    } catch {
+    postHogDelivery.complete(postHogInput)
+    if (!postHogDelivery.registered) {
       // Some non-request callers do not expose Next's lifecycle hook. Keep the
       // provider detached and swallow its already fail-open result.
       void capturePostHogEvent(postHogInput)
@@ -118,6 +145,7 @@ export async function logAnalyticsEvent(input: {
 
     return { ok: true }
   } catch (err: any) {
+    postHogDelivery?.complete(null)
     // Fail open: analytics must never break core flows.
     console.error("[analytics] logAnalyticsEvent failed:", err?.message || String(err))
     return { ok: false, error: err?.message || String(err) }

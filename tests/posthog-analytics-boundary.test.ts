@@ -30,32 +30,45 @@ describe("Neon-to-PostHog delivery boundary", () => {
     mocks.capturePostHogEvent.mockResolvedValue({ sent: true })
   })
 
-  it("commits the Neon event before scheduling detached provider delivery", async () => {
-    let providerCallback: (() => unknown) | undefined
+  it("registers lifecycle work before an unawaited caller can return", async () => {
+    let providerCallback: (() => Promise<unknown>) | undefined
     mocks.after.mockImplementation(callback => {
       providerCallback = callback
     })
+    let resolveNeon: ((value: unknown[]) => void) | undefined
+    mocks.sql.mockReturnValue(
+      new Promise(resolve => {
+        resolveNeon = resolve
+      })
+    )
 
     const { logAnalyticsEvent } = await import("@/lib/analytics/events")
-    await expect(
-      logAnalyticsEvent({
-        eventName: "suite_image_generated",
-        userId: "user-123",
-        properties: { provider: "replicate" },
-      })
-    ).resolves.toEqual({ ok: true })
+    const eventResult = logAnalyticsEvent({
+      eventName: "suite_image_generated",
+      userId: "user-123",
+      properties: { provider: "replicate" },
+    })
 
-    expect(mocks.sql).toHaveBeenCalledOnce()
     expect(mocks.after).toHaveBeenCalledOnce()
     expect(mocks.capturePostHogEvent).not.toHaveBeenCalled()
 
-    await providerCallback?.()
+    const providerResult = providerCallback?.()
+    await vi.waitFor(() => expect(mocks.sql).toHaveBeenCalledOnce())
+    expect(mocks.capturePostHogEvent).not.toHaveBeenCalled()
+
+    resolveNeon?.([])
+    await expect(eventResult).resolves.toEqual({ ok: true })
+    await providerResult
     expect(mocks.capturePostHogEvent).toHaveBeenCalledWith(
       expect.objectContaining({ eventName: "suite_image_generated", userId: "user-123" })
     )
   })
 
   it("does not create a provider-only event when the Neon write fails", async () => {
+    let providerCallback: (() => Promise<unknown>) | undefined
+    mocks.after.mockImplementation(callback => {
+      providerCallback = callback
+    })
     mocks.sql.mockRejectedValue(new Error("neon unavailable"))
 
     const { logAnalyticsEvent } = await import("@/lib/analytics/events")
@@ -63,7 +76,8 @@ describe("Neon-to-PostHog delivery boundary", () => {
       logAnalyticsEvent({ eventName: "suite_image_generated", anonId: "anon-123" })
     ).resolves.toEqual({ ok: false, error: "neon unavailable" })
 
-    expect(mocks.after).not.toHaveBeenCalled()
+    expect(mocks.after).toHaveBeenCalledOnce()
+    await providerCallback?.()
     expect(mocks.capturePostHogEvent).not.toHaveBeenCalled()
   })
 })
