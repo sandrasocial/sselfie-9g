@@ -667,7 +667,22 @@ export function GalleryView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assetIds: ids }),
       })
-      if (!res.ok) throw new Error("Delete failed")
+      const result = (await res.json().catch(() => null)) as {
+        error?: unknown
+        code?: unknown
+      } | null
+      if (!res.ok) {
+        if (
+          res.status === 409 &&
+          result?.code === "MAYA_EDIT_HISTORY_REFERENCE" &&
+          typeof result.error === "string"
+        ) {
+          setPendingDeleteIds(null)
+          setError(result.error)
+          return
+        }
+        throw new Error("Delete failed")
+      }
       setAssets(prev => prev?.filter(asset => !ids.includes(asset.id)) ?? prev)
       clearSelection()
       setPendingDeleteIds(null)
