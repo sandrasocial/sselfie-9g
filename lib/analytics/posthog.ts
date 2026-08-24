@@ -207,6 +207,44 @@ export function mapPostHogEvent(eventName: string): string | null {
   return EVENT_MAP[eventName] ?? null
 }
 
+function copyApprovedAttribution(
+  output: Record<string, Primitive>,
+  attribution: PostHogCaptureInput["attribution"]
+) {
+  const values = {
+    utm_source: approvedAttribution(attribution?.source, APPROVED_UTM_SOURCES),
+    utm_medium: approvedAttribution(attribution?.medium, APPROVED_UTM_MEDIUMS),
+    utm_campaign: approvedAttribution(attribution?.campaign, APPROVED_UTM_CAMPAIGNS),
+  }
+  for (const [key, value] of Object.entries(values)) {
+    if (value) output[key] = value
+  }
+}
+
+function copyRevenueProperties(
+  output: Record<string, Primitive>,
+  properties: Record<string, unknown>
+) {
+  const product = safeDimension(properties.product_type)
+  if (product) output.product = product
+
+  const value = properties.value
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    output.revenue_value = value
+  }
+}
+
+function safeProperty(key: string, value: unknown): Primitive | null {
+  if (!SAFE_PROPERTY_KEYS.has(key) || SENSITIVE_KEY.test(key)) return null
+  if (typeof value === "string") {
+    return key === "source"
+      ? approvedAttribution(value, APPROVED_EVENT_SOURCES)
+      : safeDimension(value)
+  }
+  if (typeof value === "number") return Number.isFinite(value) ? value : null
+  return typeof value === "boolean" ? value : null
+}
+
 export function buildPostHogProperties(input: PostHogCaptureInput): Record<string, Primitive> {
   const output: Record<string, Primitive> = {
     source_event: input.eventName,
@@ -216,37 +254,14 @@ export function buildPostHogProperties(input: PostHogCaptureInput): Record<strin
   const path = cleanPath(input.path)
   if (path) output.path = path
 
-  const attribution = {
-    utm_source: approvedAttribution(input.attribution?.source, APPROVED_UTM_SOURCES),
-    utm_medium: approvedAttribution(input.attribution?.medium, APPROVED_UTM_MEDIUMS),
-    utm_campaign: approvedAttribution(input.attribution?.campaign, APPROVED_UTM_CAMPAIGNS),
-  }
-  for (const [key, value] of Object.entries(attribution)) {
-    if (value) output[key] = value
-  }
+  copyApprovedAttribution(output, input.attribution)
 
   const rawProperties = input.properties ?? {}
-  const product = safeDimension(rawProperties.product_type)
-  if (product) output.product = product
-  if (
-    typeof rawProperties.value === "number" &&
-    Number.isFinite(rawProperties.value) &&
-    rawProperties.value >= 0
-  ) {
-    output.revenue_value = rawProperties.value
-  }
+  copyRevenueProperties(output, rawProperties)
 
   for (const [key, value] of Object.entries(rawProperties)) {
-    if (!SAFE_PROPERTY_KEYS.has(key) || SENSITIVE_KEY.test(key)) continue
-    if (typeof value === "string") {
-      const dimension =
-        key === "source" ? approvedAttribution(value, APPROVED_EVENT_SOURCES) : safeDimension(value)
-      if (dimension) output[key] = dimension
-    } else if (typeof value === "number" && Number.isFinite(value)) {
-      output[key] = value
-    } else if (typeof value === "boolean") {
-      output[key] = value
-    }
+    const property = safeProperty(key, value)
+    if (property !== null) output[key] = property
   }
 
   return output
