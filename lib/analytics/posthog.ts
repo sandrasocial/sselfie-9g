@@ -1,5 +1,7 @@
 import "server-only"
 
+import { sanitizePostHogPathname } from "@/lib/analytics/posthog-browser"
+
 type Primitive = string | number | boolean
 
 export type PostHogCaptureInput = {
@@ -198,9 +200,7 @@ function approvedAttribution(value: unknown, approved: ReadonlySet<string>): str
 function cleanPath(path: string | null | undefined): string | null {
   if (!path) return null
   const value = path.trim()
-  if (!value.startsWith("/")) return null
-  const clean = value.split(/[?#]/, 1)[0]
-  return clean ? clean.slice(0, 300) : null
+  return sanitizePostHogPathname(value)
 }
 
 export function mapPostHogEvent(eventName: string): string | null {

@@ -140,6 +140,12 @@ describe("PostHog analytics boundary", () => {
       "/selfie-guide/access/[token]"
     )
     expect(sanitizePostHogPathname("/app")).toBe("/app")
+    expect(
+      buildPostHogProperties({
+        eventName: "trial_claimed",
+        path: "/claim/server-secret?email=private",
+      }).path
+    ).toBe("/claim/[token]")
   })
 
   it("fails open when disabled, unmapped, missing an identity, or rejected by PostHog", async () => {
