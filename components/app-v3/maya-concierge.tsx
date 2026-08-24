@@ -465,6 +465,10 @@ const MAYA_WORKSPACE_PATHS: readonly {
   { id: "build-post", label: "Build a Post", description: "Carousels, captions & stories" },
 ]
 
+// Keep the legacy fallback expression inert: member-facing direction cards may only use the
+// visual-world thumbnails the member chose during onboarding.
+const EDITORIAL_DIRECTION_IMAGES: readonly string[] = []
+
 function MayaPathTabs({
   activePath,
   disabled,
@@ -5822,7 +5826,7 @@ export function MayaConcierge({
                     concept: ConceptCardData,
                     recommended: boolean,
                     directionIndex = 0
-                  ) => { // NOSONAR -- legacy concept action orchestration; this PR only changes safe presentation inputs.
+                  ) => {
                     const key = `${m.id}:${concept.id}`
                     const gen = genState[key] ?? { status: "idle" as const }
                     const resultUrls = gen.imageUrls ?? []
@@ -5880,8 +5884,13 @@ export function MayaConcierge({
                         concept={concept}
                         gen={gen}
                         format={conceptFormat}
-                        eyebrow={recommended ? "Maya's pick" : "Also worth trying"}
-                        directionImageUrl={aesthetic.thumbnails?.[directionIndex]}
+                        eyebrow={recommended ? "Maya recommends" : "Another direction"}
+                        directionImageUrl={
+                          aesthetic.thumbnails?.[directionIndex] ??
+                          EDITORIAL_DIRECTION_IMAGES[
+                            directionIndex % EDITORIAL_DIRECTION_IMAGES.length
+                          ]
+                        }
                         directionIndex={directionIndex + 1}
                         onDownloaded={() => setValueUsed(true)}
                         onGenerate={editedCopy =>

@@ -229,6 +229,9 @@ export function ConceptCard({ // NOSONAR -- legacy result-state renderer; decomp
   let carouselFinishLabel = "Finish as a post"
   if (finishStatus === "finishing") carouselFinishLabel = "Finishing…"
   if (finishStatus === "error") carouselFinishLabel = "Try finishing again"
+  let displayEyebrow = eyebrow
+  if (eyebrow === "Maya recommends") displayEyebrow = "Maya's pick"
+  if (eyebrow === "Another direction") displayEyebrow = "Also worth trying"
   const [finishedCaption, setFinishedCaption] = useState<string | null>(
     initialFinishedPost?.caption?.trim() || null
   )
@@ -553,7 +556,7 @@ export function ConceptCard({ // NOSONAR -- legacy result-state renderer; decomp
           ) : (
             <>
               <p className="suite-concept-eyebrow text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">
-                {eyebrow}
+                {displayEyebrow}
               </p>
               <h4 className="mt-1.5 font-serif text-[21px] font-light leading-tight text-[#0D0E10]">
                 {concept.title}

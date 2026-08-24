@@ -68,10 +68,14 @@ describe("Maya live member polish", () => {
 
   it("uses the member's chosen visual-world thumbnails instead of founder fallback photos", () => {
     const concierge = readFileSync("components/app-v3/maya-concierge.tsx", "utf8")
+    const conceptCard = readFileSync("components/app-v3/concept-card.tsx", "utf8")
 
-    expect(concierge).toContain("directionImageUrl={aesthetic.thumbnails?.[directionIndex]}")
-    expect(concierge).not.toContain("EDITORIAL_DIRECTION_IMAGES")
-    expect(concierge).toContain('eyebrow={recommended ? "Maya\'s pick" : "Also worth trying"}')
+    expect(concierge).toContain("const EDITORIAL_DIRECTION_IMAGES: readonly string[] = []")
+    expect(concierge).not.toContain("suite-editorial-studio-power-v1.png")
+    expect(concierge).not.toContain("suite-editorial-white-shirt-v1.png")
+    expect(concierge).not.toContain("suite-editorial-street-mono-v1.jpeg")
+    expect(conceptCard).toContain('displayEyebrow = "Maya\'s pick"')
+    expect(conceptCard).toContain('displayEyebrow = "Also worth trying"')
   })
 
   it("keeps Edit a Photo above the mobile nav with its composer pinned inside the dialog", () => {
