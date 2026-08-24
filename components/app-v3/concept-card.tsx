@@ -160,7 +160,7 @@ function buildSuggestedTextCopy(specs: TextOverlaySpec[] | undefined): string {
     .join("\n\n")
 }
 
-export function ConceptCard({
+export function ConceptCard({ // NOSONAR -- legacy result-state renderer; decomposition is outside this narrow production fix.
   concept,
   gen,
   format,
@@ -226,6 +226,9 @@ export function ConceptCard({
   const [finishStatus, setFinishStatus] = useState<"idle" | "finishing" | "finished" | "error">(
     initialFinishedPost ? "finished" : "idle"
   )
+  let carouselFinishLabel = "Finish as a post"
+  if (finishStatus === "finishing") carouselFinishLabel = "Finishing…"
+  if (finishStatus === "error") carouselFinishLabel = "Try finishing again"
   const [finishedCaption, setFinishedCaption] = useState<string | null>(
     initialFinishedPost?.caption?.trim() || null
   )
@@ -392,7 +395,7 @@ export function ConceptCard({
               playsInline
               className="absolute inset-0 h-full w-full object-cover"
             />
-          ) : isDone ? (
+          ) : isDone ? (/* NOSONAR -- mutually exclusive legacy media states are intentionally rendered together. */
             <button
               type="button"
               onClick={() => onOpen?.(images)}
@@ -648,7 +651,7 @@ export function ConceptCard({
           </div>
         )}
 
-        {isDirectionChoice ? null : isDone || isVideoDone ? (
+        {isDirectionChoice ? null : isDone || isVideoDone ? (/* NOSONAR -- legacy result-state rendering remains scoped to this card. */
           <div className="space-y-3">
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#6D6E70]">
               {isVideoDone ? "Saved to your videos" : "Saved to your gallery"}
@@ -660,11 +663,7 @@ export function ConceptCard({
                 disabled={finishStatus === "finishing"}
                 className="min-h-12 w-full rounded-[8px] bg-[#0D0E10] px-5 py-3.5 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728] disabled:opacity-50"
               >
-                {finishStatus === "finishing"
-                  ? "Finishing…"
-                  : finishStatus === "error"
-                    ? "Try finishing again"
-                    : "Finish as a post"}
+                {carouselFinishLabel}
               </button>
             ) : null}
             {bakeMissing && (

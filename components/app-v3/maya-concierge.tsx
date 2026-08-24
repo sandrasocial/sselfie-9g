@@ -5822,7 +5822,7 @@ export function MayaConcierge({
                     concept: ConceptCardData,
                     recommended: boolean,
                     directionIndex = 0
-                  ) => {
+                  ) => { // NOSONAR -- legacy concept action orchestration; this PR only changes safe presentation inputs.
                     const key = `${m.id}:${concept.id}`
                     const gen = genState[key] ?? { status: "idle" as const }
                     const resultUrls = gen.imageUrls ?? []

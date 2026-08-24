@@ -259,7 +259,10 @@ export function EditMode({
   const closeWhenIdle = () => {
     if (!busy && !referenceUploading && !chatBusy) onClose()
   }
-  const { dialogRef, initialFocusRef } = useAccessibleModal(true, closeWhenIdle)
+  const { dialogRef, initialFocusRef } = useAccessibleModal<HTMLDialogElement>(
+    true,
+    closeWhenIdle,
+  )
 
   useEffect(() => {
     onBusyChange?.(busy || referenceUploading || chatBusy)
@@ -529,12 +532,12 @@ export function EditMode({
   }
 
   return (
-    <div
+    <dialog
       ref={dialogRef}
-      role="dialog"
+      open
       aria-modal="true"
       aria-labelledby="edit-mode-title"
-      className="fixed inset-0 z-[80] flex h-[100dvh] flex-col bg-[color:var(--suite-night)] text-white animate-in fade-in duration-200 motion-reduce:animate-none"
+      className="fixed inset-0 z-[80] m-0 flex h-[100dvh] w-full max-w-none flex-col border-0 bg-[color:var(--suite-night)] p-0 text-white animate-in fade-in duration-200 motion-reduce:animate-none"
       style={
         {
           "--suite-night": "var(--ss-brand-ink, #0D0E10)",
@@ -971,6 +974,6 @@ export function EditMode({
           </div>
         </aside>
       </div>
-    </div>
+    </dialog>
   )
 }

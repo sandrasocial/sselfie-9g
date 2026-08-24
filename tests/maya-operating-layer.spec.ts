@@ -20,7 +20,6 @@ if (!runPlaywright) {
   async function captureMayaViewportProof(page: any, name: string) {
     const proofDir = process.env.MAYA_VISUAL_PROOF_DIR
     if (!proofDir) return
-    await page.waitForTimeout(350)
     await page.screenshot({
       path: `${proofDir}/${test.info().project.name}-${name}.png`,
       fullPage: false,
