@@ -17,6 +17,15 @@ if (!runPlaywright) {
     })
   }
 
+  async function captureMayaViewportProof(page: any, name: string) {
+    const proofDir = process.env.MAYA_VISUAL_PROOF_DIR
+    if (!proofDir) return
+    await page.screenshot({
+      path: `${proofDir}/${test.info().project.name}-${name}.png`,
+      fullPage: false,
+    })
+  }
+
   test.describe("Maya operating layer Phase 0 member-job baseline", () => {
     test.describe.configure({ mode: "serial", timeout: 60_000 })
 
@@ -121,11 +130,11 @@ if (!runPlaywright) {
               status: 200,
               contentType: "application/json",
               body: JSON.stringify({
-                imageUrl: "https://example.com/maya-carousel-1.jpg",
+                imageUrl: "/images/selfie-to-brand-shoot/module-5-content-use/detail-coffee.jpg",
                 imageUrls: [
-                  "https://example.com/maya-carousel-1.jpg",
-                  "https://example.com/maya-carousel-2.jpg",
-                  "https://example.com/maya-carousel-3.jpg",
+                  "/images/selfie-to-brand-shoot/module-5-content-use/detail-coffee.jpg",
+                  "/images/selfie-to-brand-shoot/module-5-content-use/creator-phone-detail.jpg",
+                  "/images/selfie-to-brand-shoot/module-5-content-use/quiet-product-detail.jpg",
                 ],
                 aiImageId: 991,
                 aiImageIds: [991, 992, 993],
@@ -439,10 +448,10 @@ if (!runPlaywright) {
                 id: "ai_501",
                 kind: "image",
                 contentType: "photo",
-                url: "https://example.com/maya-gallery-photo.jpg",
+                url: "/images/selfie-to-brand-shoot/module-5-content-use/creator-phone-detail.jpg",
                 createdAt: "2026-07-22T10:00:00.000Z",
                 isFavorite: false,
-                title: "Founder portrait",
+                title: "Member portrait",
                 canFavorite: true,
                 canDelete: true,
                 canDownload: true,
@@ -612,7 +621,7 @@ if (!runPlaywright) {
       )
 
       await composer.fill("What should I focus on today?")
-      await page.getByRole("button", { name: "Send", exact: true }).click()
+      await page.getByRole("button", { name: "Send message", exact: true }).click()
       await expect(page.getByText("Maya QA response for the Create task.")).toBeVisible()
       await page.getByRole("button", { name: "Menu" }).click()
       await expect(page.getByRole("button", { name: "Brand profile" })).toBeVisible()
@@ -628,7 +637,7 @@ if (!runPlaywright) {
 
       const composer = page.getByRole("textbox", { name: "Message Maya" })
       await composer.fill("I want to share why showing up before you feel ready matters")
-      await page.getByRole("button", { name: "Send", exact: true }).click()
+      await page.getByRole("button", { name: "Send message", exact: true }).click()
 
       await expect(
         page.getByText("I want to share why showing up before you feel ready matters")
@@ -653,10 +662,10 @@ if (!runPlaywright) {
       await expect(page.getByText("Three-part visibility carousel")).toBeVisible()
 
       await page.getByRole("button", { name: /Create this · 3 credits/i }).click()
-      await expect(page.getByRole("button", { name: "Finish this post" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "Finish as a post" })).toBeVisible()
       await expect(page.getByRole("button", { name: /Turn this into Stories/i })).toHaveCount(0)
       await expect(page.getByText("More things Maya can make")).toHaveCount(0)
-      await page.getByRole("button", { name: "Finish this post" }).click()
+      await page.getByRole("button", { name: "Finish as a post" }).click()
       await expect(page.getByText("Post ready", { exact: true })).toBeVisible()
       await expect(page.getByRole("button", { name: "Save as ready post" })).toBeVisible()
       await expect(page.getByText("Would you post this?")).toHaveCount(0)
@@ -734,7 +743,65 @@ if (!runPlaywright) {
       await expect(page.getByText("Three-part visibility carousel")).toBeVisible()
       await expect(page.getByRole("button", { name: "Save as ready post" })).toHaveCount(0)
       await expect(page.getByRole("button", { name: /Make it more like me/i })).toBeVisible()
-      await expect(page.getByRole("button", { name: "Finish this post" })).toHaveCount(0)
+      await expect(page.getByRole("button", { name: "Finish as a post" })).toHaveCount(0)
+    })
+
+    test("keeps the mobile result and its finish action in one usable view", async ({
+      page,
+    }: {
+      page: any
+    }) => {
+      await (page as any).__enableMayaCarouselJourney()
+      const composer = page.getByRole("textbox", { name: "Message Maya" })
+      await composer.fill("I want to share why showing up before you feel ready matters")
+      await page.getByRole("button", { name: "Send message", exact: true }).click()
+      await page.getByRole("button", { name: "Create the carousel" }).click()
+      await page.getByRole("button", { name: "No text, just the visual" }).click()
+      await page.getByRole("button", { name: /Create this · 3 credits/i }).click()
+
+      const preview = page.locator(".suite-concept-result-preview")
+      const finish = page.getByRole("button", { name: "Finish as a post" })
+      await expect(preview).toBeVisible()
+      await expect(finish).toBeVisible()
+
+      const viewport = page.viewportSize()
+      const previewBox = await preview.boundingBox()
+      if (viewport && viewport.width <= 480) {
+        expect(previewBox?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(
+          viewport.height * 0.63
+        )
+      }
+      await finish.scrollIntoViewIfNeeded()
+      await captureMayaViewportProof(page, "result-and-finish-action")
+    })
+
+    test("keeps the Edit a Photo composer above mobile navigation", async ({
+      page,
+    }: {
+      page: any
+    }) => {
+      await page.goto("/e2e/maya-operating-layer?cohort=member", {
+        waitUntil: "domcontentloaded",
+      })
+      await page.getByRole("button", { name: /Edit a Photo/i }).click()
+      await page.getByRole("button", { name: "Choose a photo" }).click()
+      await expect(page.getByRole("heading", { name: "Choose a photo to edit" })).toBeVisible()
+      await page.getByRole("button", { name: /Open Member portrait/i }).click()
+
+      const dialog = page.getByRole("dialog", { name: "Edit with Maya" })
+      const composer = page.getByRole("textbox", { name: "Tell Maya what to change" })
+      await expect(dialog).toBeVisible()
+      await expect(composer).toBeVisible()
+      await expect(dialog).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)")
+      await page.getByRole("button", { name: "Change the outfit to" }).click()
+      await expect(composer).toHaveValue("Change the outfit to ")
+
+      const viewport = page.viewportSize()
+      const composerBox = await composer.boundingBox()
+      expect(composerBox).not.toBeNull()
+      expect(viewport).not.toBeNull()
+      expect((composerBox?.y ?? 0) + (composerBox?.height ?? 0)).toBeLessThan(viewport?.height ?? 0)
+      await captureMayaViewportProof(page, "edit-mode-composer")
     })
 
     test("saves founder feedback without interrupting the Maya test session", async ({
@@ -972,7 +1039,7 @@ if (!runPlaywright) {
         "page"
       )
       await expect(page.getByRole("heading", { name: "Everything you're making" })).toBeVisible()
-      await page.getByRole("button", { name: /Open Founder portrait/i }).click()
+      await page.getByRole("button", { name: /Open Member portrait/i }).click()
       const lightbox = page.getByRole("dialog", { name: "Your finished creation" })
       await expect(lightbox).toBeVisible()
       await expect(lightbox.getByRole("button", { name: "Download", exact: true })).toBeVisible()

@@ -465,11 +465,9 @@ const MAYA_WORKSPACE_PATHS: readonly {
   { id: "build-post", label: "Build a Post", description: "Carousels, captions & stories" },
 ]
 
-const EDITORIAL_DIRECTION_IMAGES = [
-  "/images/brand/bold-editorial-suite/suite-editorial-studio-power-v1.png",
-  "/images/brand/bold-editorial-suite/suite-editorial-white-shirt-v1.png",
-  "/images/brand/bold-editorial-suite/suite-editorial-street-mono-v1.jpeg",
-] as const
+// Keep the legacy fallback expression inert: member-facing direction cards may only use the
+// visual-world thumbnails the member chose during onboarding.
+const EDITORIAL_DIRECTION_IMAGES: readonly string[] = []
 
 function MayaPathTabs({
   activePath,
@@ -1392,6 +1390,22 @@ export function MayaConcierge({
   const hydratedTaskIdRef = useRef<string | null>(appliedTaskIdRef.current)
   const conciergeMountedAtRef = useRef(Date.now())
   const [taskHydrationEpoch, setTaskHydrationEpoch] = useState(0)
+  const transientTaskKey = session?.mayaContext?.taskId ?? `session:${session?.startedAt ?? 0}`
+  const transientTaskKeyRef = useRef(transientTaskKey)
+  useEffect(() => {
+    if (transientTaskKeyRef.current === transientTaskKey) return
+    transientTaskKeyRef.current = transientTaskKey
+    // Child overlays belong to one task only. Calendar handoffs and New Chat can change the
+    // durable task before this component's local modal state repaints, so close every transient
+    // surface at the boundary instead of letting an old edit reopen over the new conversation.
+    setEditTarget(null)
+    setLightbox(null)
+    setSelfieManagerOpen(false)
+    setHistoryOpen(false)
+    setMemoryOpen(false)
+    setMenuOpen(false)
+    setNewChatConfirming(false)
+  }, [transientTaskKey])
   // The chatId that belongs to the CURRENT session. For one commit after a session switch,
   // the rendered chatId/messages are still the previous thread's - the save effect must not
   // persist that stale pairing under the new session key ("Start new shows the old chat").

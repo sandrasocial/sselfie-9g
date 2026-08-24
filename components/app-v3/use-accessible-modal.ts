@@ -12,8 +12,11 @@ const FOCUSABLE = [
 ].join(",")
 
 /** Shared focus, Escape, scroll-lock, and focus-restoration contract for App v3 overlays. */
-export function useAccessibleModal(open: boolean, onClose: () => void) {
-  const dialogRef = useRef<HTMLDivElement>(null)
+export function useAccessibleModal<TDialog extends HTMLElement = HTMLDivElement>(
+  open: boolean,
+  onClose: () => void,
+) {
+  const dialogRef = useRef<TDialog>(null)
   const initialFocusRef = useRef<HTMLButtonElement>(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose

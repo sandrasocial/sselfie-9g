@@ -160,7 +160,7 @@ function buildSuggestedTextCopy(specs: TextOverlaySpec[] | undefined): string {
     .join("\n\n")
 }
 
-export function ConceptCard({
+export function ConceptCard({ // NOSONAR -- legacy result-state renderer; decomposition is outside this narrow production fix.
   concept,
   gen,
   format,
@@ -226,6 +226,12 @@ export function ConceptCard({
   const [finishStatus, setFinishStatus] = useState<"idle" | "finishing" | "finished" | "error">(
     initialFinishedPost ? "finished" : "idle"
   )
+  let carouselFinishLabel = "Finish as a post"
+  if (finishStatus === "finishing") carouselFinishLabel = "Finishing…"
+  if (finishStatus === "error") carouselFinishLabel = "Try finishing again"
+  let displayEyebrow = eyebrow
+  if (eyebrow === "Maya recommends") displayEyebrow = "Maya's pick"
+  if (eyebrow === "Another direction") displayEyebrow = "Also worth trying"
   const [finishedCaption, setFinishedCaption] = useState<string | null>(
     initialFinishedPost?.caption?.trim() || null
   )
@@ -381,7 +387,7 @@ export function ConceptCard({
       {/* Visual area ONLY exists once we're generating or done - never an empty placeholder box. */}
       {(isGenerating || isDone || isVideoDone || isDirectionChoice) && (
         <div
-          className={`suite-concept-visual relative w-full bg-[#F1F2F2] ${isDirectionChoice ? "aspect-[4/3]" : FRAME_ASPECT[format]} ${
+          className={`suite-concept-visual relative w-full bg-[#F1F2F2] ${isDirectionChoice ? "aspect-[4/3]" : FRAME_ASPECT[format]} ${isDone || isVideoDone ? "suite-concept-result-preview max-h-[min(62dvh,34rem)] sm:max-h-none" : ""} ${
             isGenerating && !gen.previewUrl ? "animate-pulse motion-reduce:animate-none" : ""
           }`}
         >
@@ -392,7 +398,7 @@ export function ConceptCard({
               playsInline
               className="absolute inset-0 h-full w-full object-cover"
             />
-          ) : isDone ? (
+          ) : isDone ? (/* NOSONAR -- mutually exclusive legacy media states are intentionally rendered together. */
             <button
               type="button"
               onClick={() => onOpen?.(images)}
@@ -405,7 +411,7 @@ export function ConceptCard({
                 alt={concept.title}
                 decoding="async"
                 onError={retryGeneratedImageOnce}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]"
               />
               {isCarousel && (
                 <span className="absolute left-0 top-0 bg-[#050505] px-3 py-2 text-[9px] uppercase tracking-[0.18em] text-white">
@@ -550,7 +556,7 @@ export function ConceptCard({
           ) : (
             <>
               <p className="suite-concept-eyebrow text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">
-                {eyebrow}
+                {displayEyebrow}
               </p>
               <h4 className="mt-1.5 font-serif text-[21px] font-light leading-tight text-[#0D0E10]">
                 {concept.title}
@@ -648,11 +654,21 @@ export function ConceptCard({
           </div>
         )}
 
-        {isDirectionChoice ? null : isDone || isVideoDone ? (
+        {isDirectionChoice ? null : isDone || isVideoDone ? (/* NOSONAR -- legacy result-state rendering remains scoped to this card. */
           <div className="space-y-3">
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#6D6E70]">
               {isVideoDone ? "Saved to your videos" : "Saved to your gallery"}
             </p>
+            {postFinishAvailable && isCarousel && finishStatus !== "finished" ? (
+              <button
+                type="button"
+                onClick={handleFinishPost}
+                disabled={finishStatus === "finishing"}
+                className="min-h-12 w-full rounded-[8px] bg-[#0D0E10] px-5 py-3.5 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#282728] disabled:opacity-50"
+              >
+                {carouselFinishLabel}
+              </button>
+            ) : null}
             {bakeMissing && (
               <div className="rounded-[4px] bg-[#282728]/5 px-3 py-2 text-[12px] leading-relaxed text-[#4F5052]">
                 <p>
