@@ -15,11 +15,24 @@ describe("App v3 Suite UX completion", () => {
     expect(feedView).toContain("onClick={() => void mutateFeed()}")
   })
 
-  it("names the Gallery image-to-video action by its outcome", () => {
+  it("keeps the Gallery grid free of per-thumbnail video promotion", () => {
+    const gallery = read("components/app-v3/gallery-view.tsx")
+    const shell = read("components/app-v3/app-v3-shell.tsx")
+
+    expect(gallery).not.toContain("Make video")
+    expect(gallery).toContain("onMakeMotion?: (url: string) => void")
+    expect(gallery).toContain("onMakeMotion(asset.url)")
+    expect(read("components/app-v3/image-lightbox.tsx")).toContain("Make video")
+    expect(shell).toContain("onMakeMotion={videoEnabled ? createMotionFromImage : undefined}")
+    expect(shell).toContain("videoSourceUrl: imageUrl")
+  })
+
+  it("lets the Gallery overflow panel escape its thumbnail while open", () => {
     const gallery = read("components/app-v3/gallery-view.tsx")
 
-    expect(gallery).toContain("Make video")
-    expect(gallery).not.toMatch(/<Film[^>]*\/>\s*Move\s*<\/button>/)
+    expect(gallery).toContain('actionsOpen ? "z-30 overflow-visible" : "overflow-hidden"')
+    expect(gallery).toContain("bg-[#0D0E10] text-white shadow-sm")
+    expect(gallery).toContain("focus-visible:ring-inset focus-visible:ring-white")
   })
 
   it("keeps refinement conversational instead of reopening format choices", () => {

@@ -31,6 +31,7 @@ interface ImageLightboxProps {
   onDownloaded?: () => void
   onUseInCalendar?: (index: number) => void
   onCreateVariation?: (index: number) => void
+  onMakeMotion?: (index: number) => void
   variationLabel?: string
   onClose: () => void
 }
@@ -48,6 +49,7 @@ export function ImageLightbox({
   onDownloaded,
   onUseInCalendar,
   onCreateVariation,
+  onMakeMotion,
   variationLabel = "Create a variation",
   onClose,
 }: ImageLightboxProps) {
@@ -298,6 +300,15 @@ export function ImageLightbox({
               className="inline-flex min-h-12 flex-1 items-center justify-center border-r border-white/20 px-5 py-3 text-[10px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-[#050505]"
             >
               {variationLabel}
+            </button>
+          ) : null}
+          {onMakeMotion ? (
+            <button
+              type="button"
+              onClick={() => onMakeMotion(index)}
+              className="inline-flex min-h-12 flex-1 items-center justify-center border-r border-white/20 px-5 py-3 text-[10px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-[#050505] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
+            >
+              Make video
             </button>
           ) : null}
           {count > 1 && (

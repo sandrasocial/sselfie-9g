@@ -278,7 +278,6 @@ function ShellInner({
     isOpen: mayaOpen,
     openWithAesthetic,
     openForLesson,
-    openHistory,
     setActiveSurface,
     close,
   } = useConcierge()
@@ -596,7 +595,6 @@ function ShellInner({
           mode={galleryMode}
           onEditAsset={asset => setEditAsset(asset)}
           onCancelEdit={() => setGalleryMode("browse")}
-          onOpenProjects={limited ? undefined : openHistory}
           onMakeMotion={videoEnabled ? createMotionFromImage : undefined}
           onStartCreate={limited ? undefined : createFirstPhotoFromGallery}
           operatingLayerEnabled={mayaOperatingLayerEnabled}

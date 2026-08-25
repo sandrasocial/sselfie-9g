@@ -17,7 +17,12 @@ vi.mock("next/image", () => ({
 }))
 
 vi.mock("@/components/app-v3/image-lightbox", () => ({
-  ImageLightbox: () => null,
+  ImageLightbox: ({ onMakeMotion }: { onMakeMotion?: (index: number) => void }) =>
+    onMakeMotion ? (
+      <button type="button" onClick={() => onMakeMotion(0)}>
+        Make video
+      </button>
+    ) : null,
 }))
 
 vi.mock("@/lib/testimonials/review-capture-client", () => ({
@@ -69,6 +74,176 @@ afterEach(() => {
 })
 
 describe("Wave 1 Gallery interaction contracts", () => {
+  it("keeps thumbnail titles and secondary actions quiet until requested", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse(galleryPayload()))
+
+    render(<GalleryView />)
+
+    await screen.findByAltText(/Quiet morning portrait/)
+    expect(screen.queryByText("Quiet morning portrait")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Download" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Make video" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Videos" })).not.toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "More actions for Quiet morning portrait, item 1" })
+    )
+    expect(screen.getByRole("group", { name: "Photo actions" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Download" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument()
+  })
+
+  it("names each overflow trigger for its asset and restores focus after download", async () => {
+    const secondAsset: AppV3GalleryAsset = {
+      ...asset,
+      id: "ai_102",
+      url: "https://example.com/photo-2.jpg",
+      title: "Studio portrait",
+    }
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse(galleryPayload([asset, secondAsset]))
+    )
+
+    render(<GalleryView />)
+
+    const firstTrigger = await screen.findByRole("button", {
+      name: "More actions for Quiet morning portrait, item 1",
+    })
+    expect(
+      screen.getByRole("button", { name: "More actions for Studio portrait, item 2" })
+    ).toBeInTheDocument()
+
+    fireEvent.click(firstTrigger)
+    const download = screen.getByRole("button", { name: "Download" })
+    download.focus()
+    fireEvent.click(download)
+
+    await waitFor(() => expect(firstTrigger).toHaveFocus())
+  })
+
+  it("keeps only one overflow panel open and dismisses it for Select mode", async () => {
+    const secondAsset: AppV3GalleryAsset = {
+      ...asset,
+      id: "ai_102",
+      url: "https://example.com/photo-2.jpg",
+      title: "Studio portrait",
+    }
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse(galleryPayload([asset, secondAsset]))
+    )
+
+    render(<GalleryView />)
+
+    const firstTrigger = await screen.findByRole("button", {
+      name: "More actions for Quiet morning portrait, item 1",
+    })
+    const secondTrigger = screen.getByRole("button", {
+      name: "More actions for Studio portrait, item 2",
+    })
+    fireEvent.click(firstTrigger)
+    expect(screen.getAllByRole("group", { name: "Photo actions" })).toHaveLength(1)
+
+    fireEvent.click(secondTrigger)
+    expect(firstTrigger).toHaveAttribute("aria-expanded", "false")
+    expect(secondTrigger).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getAllByRole("group", { name: "Photo actions" })).toHaveLength(1)
+
+    fireEvent.click(screen.getByRole("button", { name: "Select" }))
+    fireEvent.click(screen.getByRole("button", { name: "Done" }))
+    expect(
+      screen.getByRole("button", { name: "More actions for Studio portrait, item 2" })
+    ).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByRole("group", { name: "Photo actions" })).not.toBeInTheDocument()
+  })
+
+  it("dismisses overflow actions on Escape and outside interaction", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse(galleryPayload()))
+
+    render(<GalleryView />)
+
+    const trigger = await screen.findByRole("button", {
+      name: "More actions for Quiet morning portrait, item 1",
+    })
+    fireEvent.click(trigger)
+    fireEvent.keyDown(document, { key: "Escape" })
+
+    await waitFor(() => {
+      expect(trigger).toHaveFocus()
+      expect(screen.queryByRole("group", { name: "Photo actions" })).not.toBeInTheDocument()
+    })
+
+    fireEvent.click(trigger)
+    const thumbnail = screen.getByRole("button", { name: /Open Quiet morning portrait/ })
+    fireEvent.pointerDown(thumbnail)
+    fireEvent.click(thumbnail)
+
+    expect(trigger).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByRole("group", { name: "Photo actions" })).not.toBeInTheDocument()
+  })
+
+  it("dismisses overflow actions before a keyboard-driven outside action proceeds", async () => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse(galleryPayload()))
+
+    render(<GalleryView />)
+
+    const trigger = await screen.findByRole("button", {
+      name: "More actions for Quiet morning portrait, item 1",
+    })
+    await user.click(trigger)
+
+    const favorite = screen.getByRole("button", { name: "Favorite" })
+    await user.tab({ shift: true })
+    expect(favorite).toHaveFocus()
+    await user.keyboard("{Enter}")
+
+    expect(trigger).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByRole("group", { name: "Photo actions" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Remove favorite" })).toBeInTheDocument()
+  })
+
+  it("offers the video handoff only after opening a selected image", async () => {
+    const onMakeMotion = vi.fn()
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse(galleryPayload()))
+
+    render(<GalleryView onMakeMotion={onMakeMotion} />)
+
+    expect(screen.queryByRole("button", { name: "Make video" })).not.toBeInTheDocument()
+    fireEvent.click(await screen.findByRole("button", { name: /Open Quiet morning portrait/ }))
+    fireEvent.click(screen.getByRole("button", { name: "Make video" }))
+
+    expect(onMakeMotion).toHaveBeenCalledWith(asset.url)
+  })
+
+  it("restores the asset action trigger after Compare and Delete dialogs close", async () => {
+    const editedAsset: AppV3GalleryAsset = {
+      ...asset,
+      id: "ai_102",
+      url: "https://example.com/photo-edited.jpg",
+      title: "Quiet morning portrait edit",
+      variantOf: asset.id,
+    }
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse(galleryPayload([asset, editedAsset]))
+    )
+
+    render(<GalleryView />)
+
+    const trigger = await screen.findByRole("button", {
+      name: "More actions for Quiet morning portrait, item 1",
+    })
+    fireEvent.click(trigger)
+    fireEvent.click(screen.getByRole("button", { name: "Compare" }))
+    fireEvent.click(screen.getByRole("button", { name: "Close version comparison" }))
+    await waitFor(() => expect(trigger).toHaveFocus())
+
+    fireEvent.click(trigger)
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }))
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Keep it" }))
+    await waitFor(() => expect(trigger).toHaveFocus())
+  })
+
   it("exposes favorite selection to assistive technology", async () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(async input => {
       if (String(input).endsWith("/favorite")) {
@@ -164,7 +339,12 @@ describe("Wave 1 Gallery interaction contracts", () => {
     })
 
     render(<GalleryView />)
-    fireEvent.click(await screen.findByRole("button", { name: "Delete" }))
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "More actions for Quiet morning portrait, item 1",
+      })
+    )
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }))
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete" }))
 
     expect(await screen.findByRole("alert")).toHaveTextContent(historyMessage)
