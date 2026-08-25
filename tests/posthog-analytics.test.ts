@@ -33,6 +33,21 @@ describe("PostHog analytics boundary", () => {
     expect(mapPostHogEvent("suite_edit_applied")).toBe("sselfie_edit_used")
     expect(mapPostHogEvent("suite_image_downloaded")).toBe("sselfie_result_saved")
     expect(mapPostHogEvent("purchase")).toBe("sselfie_purchase_observed")
+    for (const eventName of [
+      "brand_strategy_pack_checkout_success",
+      "campaign_purchase",
+      "masterclass_checkout_success",
+      "presets_checkout_success",
+      "prompt_vault_checkout_success",
+      "selfie_ai_photos_kit_checkout_success",
+      "selfie_guide_checkout_success",
+      "selfie_to_brand_shoot_checkout_success",
+      "starter_kit_checkout_success",
+      "work_with_me_checkout_success",
+    ]) {
+      expect(mapPostHogEvent(eventName)).toBe("sselfie_purchase_observed")
+    }
+    expect(mapPostHogEvent("prompt_vault_payment_completed")).toBeNull()
     expect(mapPostHogEvent("suite_ready_post_saved")).toBe("sselfie_content_completed")
     expect(mapPostHogEvent("suite_maya_job_started")).toBeNull()
     expect(mapPostHogEvent("suite_post_finished")).toBeNull()
@@ -146,23 +161,57 @@ describe("PostHog analytics boundary", () => {
     expect(JSON.stringify(bodies[0])).not.toContain("pi_retry_safe_123")
   })
 
+  it("normalizes durable product checkouts and caller attribution as purchases", async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(new Response("ok", { status: 200 }))
+
+    await capturePostHogEvent(
+      {
+        eventName: "prompt_vault_checkout_success",
+        userId: "user-123",
+        properties: {
+          product_type: "prompt_vault",
+          value: 49,
+          stripe_session_id: "cs_prompt_vault_123",
+          utm_source: "email",
+          utm_medium: "lifecycle",
+          utm_campaign: "prompt_vault_launch",
+        },
+      },
+      request
+    )
+
+    const body = JSON.parse(String(request.mock.calls[0][1]?.body))
+    expect(body.event).toBe("sselfie_purchase_observed")
+    expect(body.properties).toMatchObject({
+      product: "prompt_vault",
+      revenue_value: 49,
+      utm_source: "email",
+      utm_medium: "lifecycle",
+      utm_campaign: "prompt_vault_launch",
+    })
+    expect(body.properties.$insert_id).toMatch(/^[a-f0-9]{64}$/)
+    expect(JSON.stringify(body)).not.toContain("cs_prompt_vault_123")
+  })
+
   it("suppresses Stripe test-mode purchases before provider delivery", async () => {
     const request = vi.fn<typeof fetch>()
 
-    await expect(
-      capturePostHogEvent(
-        {
-          eventName: "purchase",
-          userId: "user-123",
-          properties: {
-            value: 97,
-            stripe_payment_id: "pi_test_123",
-            is_test_mode: true,
+    for (const eventName of ["purchase", "starter_kit_checkout_success"]) {
+      await expect(
+        capturePostHogEvent(
+          {
+            eventName,
+            userId: "user-123",
+            properties: {
+              value: 97,
+              stripe_payment_id: "pi_test_123",
+              is_test_mode: true,
+            },
           },
-        },
-        request
-      )
-    ).resolves.toEqual({ sent: false, reason: "test-event" })
+          request
+        )
+      ).resolves.toEqual({ sent: false, reason: "test-event" })
+    }
     expect(request).not.toHaveBeenCalled()
   })
 
@@ -287,7 +336,9 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("setPostHogCaptureEnabled(false)")
     expect(provider).toContain("setPostHogCaptureEnabled(true)")
     const scriptIndex = provider.indexOf('<Script id="posthog"')
-    expect(provider.indexOf("ensureAnalyticsBrowserIdentity().then")).toBeLessThan(scriptIndex)
+    expect(provider.indexOf("void bootstrapIdentity(0)")).toBeLessThan(scriptIndex)
+    expect(provider).toContain("IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS")
+    expect(provider).toContain("setTimeout(() => void bootstrapIdentity(attempt + 1)")
     expect(provider).toContain(
       "loaded:function(ph){if(window.__sselfiePostHogLoaded)window.__sselfiePostHogLoaded(ph)}"
     )

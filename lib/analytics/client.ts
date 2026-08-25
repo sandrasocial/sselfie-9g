@@ -41,7 +41,13 @@ export function ensureAnalyticsBrowserIdentity(
       .catch(() => ({ distinctId: null, resetPostHog: false }))
       .then(() => requestAnalyticsIdentity(options.rotateAnonymous === true))
   }
-  return identityRequest
+  const request = identityRequest
+  return request.then(identity => {
+    // Do not pin a transient auth/mapping outage for the whole browser session.
+    // Capture remains disabled, while a later bounded bootstrap attempt can retry.
+    if (!identity.distinctId && identityRequest === request) identityRequest = null
+    return identity
+  })
 }
 
 export async function acknowledgePostHogReset(): Promise<boolean> {
@@ -59,7 +65,7 @@ export async function acknowledgePostHogReset(): Promise<boolean> {
 
 export async function trackAnalyticsEvent(input: {
   event: string
-  properties?: Record<string, any>
+  properties?: Record<string, unknown>
 }) {
   try {
     // Establish the HTTP-only anonymous identity before POSTing. The provider

@@ -22,6 +22,8 @@ type PostHogBrowserClient = {
   stopSessionRecording: () => void
 }
 
+const IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS = [0, 1_000, 3_000, 10_000] as const
+
 declare global {
   interface Window {
     posthog?: PostHogBrowserClient
@@ -114,11 +116,26 @@ export function PostHogProvider({
 
   useEffect(() => {
     let active = true
-    ensureAnalyticsBrowserIdentity().then(result => {
-      if (active && result.distinctId) setIdentity(result)
-    })
+    let retryTimer: ReturnType<typeof setTimeout> | null = null
+
+    const bootstrapIdentity = async (attempt: number) => {
+      const result = await ensureAnalyticsBrowserIdentity({ refresh: attempt > 0 })
+      if (!active) return
+      if (result.distinctId) {
+        setIdentity(result)
+        return
+      }
+
+      const nextDelay = IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS[attempt + 1]
+      if (nextDelay !== undefined) {
+        retryTimer = setTimeout(() => void bootstrapIdentity(attempt + 1), nextDelay)
+      }
+    }
+
+    void bootstrapIdentity(0)
     return () => {
       active = false
+      if (retryTimer) clearTimeout(retryTimer)
     }
   }, [])
 

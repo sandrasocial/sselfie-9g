@@ -49,7 +49,17 @@ const EVENT_MAP: Readonly<Record<string, string>> = {
   calendar_post_published: "sselfie_calendar_action",
   trial_claimed: "sselfie_trial_started",
   checkout_start: "sselfie_checkout_started",
+  brand_strategy_pack_checkout_success: "sselfie_purchase_observed",
+  campaign_purchase: "sselfie_purchase_observed",
+  masterclass_checkout_success: "sselfie_purchase_observed",
+  presets_checkout_success: "sselfie_purchase_observed",
+  prompt_vault_checkout_success: "sselfie_purchase_observed",
   purchase: "sselfie_purchase_observed",
+  selfie_ai_photos_kit_checkout_success: "sselfie_purchase_observed",
+  selfie_guide_checkout_success: "sselfie_purchase_observed",
+  selfie_to_brand_shoot_checkout_success: "sselfie_purchase_observed",
+  starter_kit_checkout_success: "sselfie_purchase_observed",
+  work_with_me_checkout_success: "sselfie_purchase_observed",
 }
 
 const SAFE_PROPERTY_KEYS = new Set([
@@ -241,11 +251,12 @@ function copyRevenueProperties(
     output.revenue_value = value
   }
 
-  if (eventName === "purchase") {
+  if (mapPostHogEvent(eventName) === "sselfie_purchase_observed") {
     const providerId = [
       properties.stripe_payment_id,
       properties.stripe_invoice_id,
       properties.stripe_session_id,
+      properties.checkout_session_id,
     ].find(candidate => typeof candidate === "string" && candidate.trim())
     if (typeof providerId === "string") {
       output.$insert_id = createHash("sha256")
@@ -301,9 +312,13 @@ export function buildPostHogProperties(input: PostHogCaptureInput): Record<strin
   const path = cleanPath(input.path)
   if (path) output.path = path
 
-  copyApprovedAttribution(output, input.attribution)
-
   const rawProperties = input.properties ?? {}
+  copyApprovedAttribution(output, {
+    source: rawProperties.utm_source as string | null | undefined,
+    medium: rawProperties.utm_medium as string | null | undefined,
+    campaign: rawProperties.utm_campaign as string | null | undefined,
+  })
+  copyApprovedAttribution(output, input.attribution)
   copyRevenueProperties(output, input.eventName, rawProperties)
   copyGenerationProperties(output, rawProperties)
   copyFailureProperties(output, input.eventName, rawProperties)
@@ -345,7 +360,7 @@ export async function capturePostHogEvent(
 ): Promise<PostHogCaptureResult> {
   const event = mapPostHogEvent(input.eventName)
   if (!event) return { sent: false, reason: "unmapped" }
-  if (input.eventName === "purchase" && input.properties?.is_test_mode === true) {
+  if (event === "sselfie_purchase_observed" && input.properties?.is_test_mode === true) {
     return { sent: false, reason: "test-event" }
   }
 

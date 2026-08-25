@@ -39,4 +39,24 @@ describe("browser analytics identity bootstrap", () => {
     expect(request.mock.calls[1][0]).toBe("/api/analytics/event")
     expect(request.mock.calls[1][1]).toMatchObject({ method: "POST" })
   })
+
+  it("does not cache a transient null identity", async () => {
+    const request = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(Response.json({ distinctId: "user:recovered", resetPostHog: false }))
+    vi.stubGlobal("fetch", request)
+
+    const { ensureAnalyticsBrowserIdentity } = await import("@/lib/analytics/client")
+
+    await expect(ensureAnalyticsBrowserIdentity()).resolves.toEqual({
+      distinctId: null,
+      resetPostHog: false,
+    })
+    await expect(ensureAnalyticsBrowserIdentity()).resolves.toEqual({
+      distinctId: "user:recovered",
+      resetPostHog: false,
+    })
+    expect(request).toHaveBeenCalledTimes(2)
+  })
 })
