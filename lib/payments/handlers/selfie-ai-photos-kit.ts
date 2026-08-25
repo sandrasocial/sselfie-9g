@@ -5,7 +5,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generateSelfieAiPhotosKitDeliveryEmail } from "@/lib/email/templates/selfie-ai-photos-kit-delivery"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
-import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { schedulePurchaseObservation } from "./purchase-analytics"
 import { markRevenueEnginePurchase } from "../shared"
 import { ensureRevenueEngineSchema } from "@/lib/revenue-engine/checkout-attribution"
 import { updateContactTags as updateTags, addContactToSegment } from "@/lib/resend/manage-contact"
@@ -161,18 +161,16 @@ export async function handleSelfieAiPhotosKitCheckout(
   }
 
   if (paymentRecorded) {
-    void logAnalyticsEvent({
+    schedulePurchaseObservation({
       eventName: "selfie_ai_photos_kit_checkout_success",
       userId: userId ? String(userId) : null,
-      properties: {
-        source: source || "landing_page",
-        product_type: "selfie_ai_photos_kit",
-        value: paymentAmountCents / 100,
-        currency: "usd",
-        stripe_session_id: session.id,
-        stripe_payment_id: paymentIdForStorage,
-        is_test_mode: isTestMode,
-      },
+      source,
+      productType: "selfie_ai_photos_kit",
+      amountCents: paymentAmountCents,
+      currency: "usd",
+      sessionId: session.id,
+      paymentId: paymentIdForStorage,
+      isTestMode,
     })
   }
 

@@ -9,7 +9,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generateBrandStrategySetupNotificationEmail } from "@/lib/email/templates/brand-strategy-setup-notification"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
-import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { schedulePurchaseObservation } from "./purchase-analytics"
 import type { CheckoutFulfillmentContext } from "../types"
 
 export async function handleBrandStrategyPackCheckout(ctx: CheckoutFulfillmentContext): Promise<void> {
@@ -50,6 +50,7 @@ export async function handleBrandStrategyPackCheckout(ctx: CheckoutFulfillmentCo
       }
 
       const customerIdForStorage = customerId || session.id
+      let paymentRecorded = false
 
       if (customerIdForStorage) {
         try {
@@ -91,12 +92,27 @@ export async function handleBrandStrategyPackCheckout(ctx: CheckoutFulfillmentCo
               status = 'succeeded',
               updated_at = NOW()
           `
+          paymentRecorded = true
         } catch (paymentError: any) {
           console.error(
             `[v0] Error storing brand strategy pack payment:`,
             paymentError.message
           )
         }
+      }
+
+      if (paymentRecorded) {
+        schedulePurchaseObservation({
+          eventName: "brand_strategy_pack_checkout_success",
+          userId: userId ? String(userId) : null,
+          source: source || "brand_strategy_paid",
+          productType: "brand_strategy_pack",
+          amountCents: paymentAmountCents,
+          currency: "usd",
+          sessionId: session.id,
+          paymentId: paymentIdForStorage,
+          isTestMode,
+        })
       }
 
       await sql`
@@ -195,22 +211,5 @@ export async function handleBrandStrategyPackCheckout(ctx: CheckoutFulfillmentCo
         )
       }
 
-      try {
-        await logAnalyticsEvent({
-          eventName: "brand_strategy_pack_checkout_success",
-          userId: userId ? String(userId) : null,
-          properties: {
-            source: source || "brand_strategy_paid",
-            product_type: "brand_strategy_pack",
-            value: paymentAmountCents / 100,
-            currency: "usd",
-            stripe_session_id: session.id,
-            stripe_payment_id: paymentIdForStorage,
-            is_test_mode: isTestMode,
-          },
-        })
-      } catch {
-        // best effort only
-      }
     }
 }

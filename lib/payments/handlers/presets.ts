@@ -4,7 +4,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generatePresetsDeliveryEmail } from "@/lib/email/templates/presets-delivery"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
-import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { schedulePurchaseObservation } from "./purchase-analytics"
 import { markRevenueEnginePurchase } from "../shared"
 import {
   getDefaultPresetCollection,
@@ -115,19 +115,21 @@ export async function handlePresetsCheckout(ctx: CheckoutFulfillmentContext): Pr
   }
 
   if (paymentRecorded) {
-    void logAnalyticsEvent({
+    schedulePurchaseObservation({
       eventName: "presets_checkout_success",
       userId: userId || null,
+      source: session.metadata?.source || source,
+      productType,
+      amountCents: paymentAmountCents,
+      currency: typeof session.currency === "string" ? session.currency : "usd",
+      sessionId: session.id,
+      paymentId: paymentIdForStorage,
+      isTestMode,
       path: "/checkout/success",
       properties: {
         checkout_session_id: session.id,
-        product_type: productType,
-        value: paymentAmountCents / 100,
-        currency: typeof session.currency === "string" ? session.currency : "usd",
         preset_tier: tier,
         preset_collection_slug: collectionSlug,
-        source: session.metadata?.source || source,
-        is_test_mode: isTestMode,
       },
     })
   }

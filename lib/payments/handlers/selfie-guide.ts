@@ -14,11 +14,11 @@ import {
 import { generateBrandStrategySetupNotificationEmail } from "@/lib/email/templates/brand-strategy-setup-notification"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
-import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { updateContactTags as updateTags } from "@/lib/resend/manage-contact"
 import { ensurePaidSelfieGuideSubscriber } from "@/lib/freebie/selfie-guide-access"
 import { generatePasswordSetupLinkForPurchase } from "../shared"
 import type { CheckoutFulfillmentContext } from "../types"
+import { schedulePurchaseObservation } from "./purchase-analytics"
 
 export async function handleSelfieGuideCheckout(ctx: CheckoutFulfillmentContext): Promise<void> {
   const { event, session, isPaymentPaid, customerEmail, source, productType } = ctx as CheckoutFulfillmentContext & { productType?: string }
@@ -120,6 +120,7 @@ export async function handleSelfieGuideCheckout(ctx: CheckoutFulfillmentContext)
       }
 
       const guideCustomerIdForStorage = customerId || session.id
+      let paymentRecorded = false
 
       if (guideCustomerIdForStorage) {
         try {
@@ -161,9 +162,24 @@ export async function handleSelfieGuideCheckout(ctx: CheckoutFulfillmentContext)
               status = 'succeeded',
               updated_at = NOW()
           `
+          paymentRecorded = true
         } catch (paymentError: any) {
           console.error(`[v0] Error storing selfie guide payment:`, paymentError.message)
         }
+      }
+
+      if (paymentRecorded) {
+        schedulePurchaseObservation({
+          eventName: "selfie_guide_checkout_success",
+          userId: userId ? String(userId) : null,
+          source: source || "landing_page",
+          productType: guideProductType,
+          amountCents: paymentAmountCents,
+          currency: "usd",
+          sessionId: session.id,
+          paymentId: paymentIdForStorage,
+          isTestMode,
+        })
       }
 
       await sql`
@@ -239,6 +255,7 @@ export async function handleSelfieGuideCheckout(ctx: CheckoutFulfillmentContext)
               : 0
 
           const brandStrategyCustomerIdForStorage = customerId || session.id
+          let brandStrategyPaymentRecorded = false
 
           if (brandStrategyCustomerIdForStorage) {
             await sql`
@@ -285,6 +302,24 @@ export async function handleSelfieGuideCheckout(ctx: CheckoutFulfillmentContext)
                 status = 'succeeded',
                 updated_at = NOW()
             `
+            brandStrategyPaymentRecorded = true
+          }
+
+          if (brandStrategyPaymentRecorded) {
+            schedulePurchaseObservation({
+              eventName: "brand_strategy_pack_checkout_success",
+              userId: userId ? String(userId) : null,
+              source: bspAnalyticsSource,
+              productType: "brand_strategy_pack",
+              amountCents: brandStrategyStoredAmountCents,
+              currency: "usd",
+              sessionId: session.id,
+              paymentId: brandStrategyPaymentId,
+              isTestMode,
+              properties: {
+                source_product_type: bspSourceProductType,
+              },
+            })
           }
 
           await sql`
@@ -380,24 +415,6 @@ export async function handleSelfieGuideCheckout(ctx: CheckoutFulfillmentContext)
             emailType: "brand-strategy-setup",
           })
 
-          try {
-            await logAnalyticsEvent({
-              eventName: "brand_strategy_pack_checkout_success",
-              userId: userId ? String(userId) : null,
-              properties: {
-                source: bspAnalyticsSource,
-                product_type: "brand_strategy_pack",
-                value: brandStrategyStoredAmountCents / 100,
-                currency: "usd",
-                stripe_session_id: session.id,
-                stripe_payment_id: brandStrategyPaymentId,
-                source_product_type: bspSourceProductType,
-                is_test_mode: isTestMode,
-              },
-            })
-          } catch {
-            // best effort only
-          }
 
           console.log(
             `[v0] ✅ Brand Strategy fulfilled for ${customerEmail} (${isSelfieGuideBundle ? "bundle" : "order bump"})`
@@ -495,22 +512,5 @@ export async function handleSelfieGuideCheckout(ctx: CheckoutFulfillmentContext)
         console.error(`[v0] Error sending Selfie Guide delivery email:`, emailError.message)
       }
 
-      try {
-        await logAnalyticsEvent({
-          eventName: "selfie_guide_checkout_success",
-          userId: userId ? String(userId) : null,
-          properties: {
-            source: source || "landing_page",
-            product_type: guideProductType,
-            value: paymentAmountCents / 100,
-            currency: "usd",
-            stripe_session_id: session.id,
-            stripe_payment_id: paymentIdForStorage,
-            is_test_mode: isTestMode,
-          },
-        })
-      } catch {
-        // best effort only
-      }
     }
 }

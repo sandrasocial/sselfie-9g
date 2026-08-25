@@ -9,6 +9,7 @@ import { generatePromptVaultDeliveryEmail } from "@/lib/email/templates/prompt-v
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { schedulePurchaseObservation } from "./purchase-analytics"
 import { markRevenueEnginePurchase } from "../shared"
 import { ensureRevenueEngineSchema } from "@/lib/revenue-engine/checkout-attribution"
 import { updateContactTags as updateTags, addContactToSegment } from "@/lib/resend/manage-contact"
@@ -213,18 +214,16 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
     }
 
     if (paymentRecorded) {
-      void logAnalyticsEvent({
+      schedulePurchaseObservation({
         eventName: "prompt_vault_checkout_success",
         userId: userId ? String(userId) : null,
-        properties: {
-          source: source || "landing_page",
-          product_type: "prompt_vault",
-          value: paymentAmountCents / 100,
-          currency: "usd",
-          stripe_session_id: session.id,
-          stripe_payment_id: paymentIdForStorage,
-          is_test_mode: isTestMode,
-        },
+        source,
+        productType: "prompt_vault",
+        amountCents: paymentAmountCents,
+        currency: "usd",
+        sessionId: session.id,
+        paymentId: paymentIdForStorage,
+        isTestMode,
       })
     }
 

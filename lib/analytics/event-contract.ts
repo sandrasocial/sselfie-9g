@@ -41,6 +41,7 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "selfie_guide_opt_in_failed",
   "selfie_guide_entry_click",
   "selfie_guide_checkout_success",
+  "work_with_me_checkout_success",
   "selfie_guide_access_resolved",
   "selfie_guide_access_failed",
   "selfie_guide_upsell_click",

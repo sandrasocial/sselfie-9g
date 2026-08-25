@@ -233,7 +233,7 @@ describe("PostHog analytics boundary", () => {
       join(process.cwd(), "lib/payments/handlers/presets.ts"),
       "utf8"
     )
-    expect(presetsHandler).toContain("value: paymentAmountCents / 100")
+    expect(presetsHandler).toContain("amountCents: paymentAmountCents")
     expect(presetsHandler).toContain('currency: typeof session.currency === "string"')
   })
 
@@ -456,7 +456,7 @@ describe("PostHog analytics boundary", () => {
     expect(purchaseEvent).toBeLessThan(accessCreation)
     expect(purchaseEvent).toBeLessThan(delivery)
     expect(handler).toContain("if (paymentRecorded)")
-    expect(handler.slice(paymentRecorded, purchaseEvent)).toContain("void logAnalyticsEvent({")
+    expect(handler.slice(paymentRecorded, purchaseEvent)).toContain("schedulePurchaseObservation({")
     expect(handler).toContain("checkout_session_id: session.id")
   })
 
@@ -464,6 +464,8 @@ describe("PostHog analytics boundary", () => {
     ["prompt-vault.ts", "prompt_vault_checkout_success"],
     ["starter-kit.ts", "starter_kit_checkout_success"],
     ["masterclass.ts", "masterclass_checkout_success"],
+    ["brand-strategy-pack.ts", "brand_strategy_pack_checkout_success"],
+    ["selfie-guide.ts", "selfie_guide_checkout_success"],
     ["selfie-ai-photos-kit.ts", "selfie_ai_photos_kit_checkout_success"],
     ["selfie-to-brand-shoot.ts", "selfie_to_brand_shoot_checkout_success"],
   ])("records %s purchase analytics before fallible fulfillment", (file, eventName) => {
@@ -480,8 +482,68 @@ describe("PostHog analytics boundary", () => {
       if (fulfillmentStep >= 0) expect(purchaseEvent).toBeLessThan(fulfillmentStep)
     }
     expect(handler).toContain("if (paymentRecorded)")
-    expect(handler.slice(paymentRecorded, purchaseEvent)).toContain("void logAnalyticsEvent({")
+    expect(handler.slice(paymentRecorded, purchaseEvent)).toContain("schedulePurchaseObservation({")
     expect(handler.match(new RegExp(`eventName: \\"${eventName}\\"`, "g"))).toHaveLength(1)
+  })
+
+  it("keeps the shared purchase observation detached and provider-safe", () => {
+    const helper = readFileSync(
+      join(process.cwd(), "lib/payments/handlers/purchase-analytics.ts"),
+      "utf8"
+    )
+
+    expect(helper).toContain("void logAnalyticsEvent({")
+    expect(helper).toContain("stripe_session_id: input.sessionId")
+    expect(helper).toContain("stripe_payment_id: input.paymentId")
+    expect(helper).toContain("is_test_mode: input.isTestMode")
+    expect(helper).not.toContain("await logAnalyticsEvent({")
+  })
+
+  it("records the Selfie Guide brand-strategy add-on after its durable payment write", () => {
+    const handler = readFileSync(
+      join(process.cwd(), "lib/payments/handlers/selfie-guide.ts"),
+      "utf8"
+    )
+    const paymentRecorded = handler.indexOf("brandStrategyPaymentRecorded = true")
+    const purchaseEvent = handler.indexOf('eventName: "brand_strategy_pack_checkout_success"')
+    const subscriptionWrite = handler.indexOf("INSERT INTO subscriptions", purchaseEvent)
+    const entitlementWrite = handler.indexOf("await upsertPurchaseEntitlement", purchaseEvent)
+    const delivery = handler.indexOf("await sendEmail", purchaseEvent)
+
+    expect(paymentRecorded).toBeGreaterThan(handler.indexOf("INSERT INTO stripe_payments"))
+    expect(purchaseEvent).toBeGreaterThan(paymentRecorded)
+    expect(handler.slice(paymentRecorded, purchaseEvent)).toContain("schedulePurchaseObservation({")
+    expect(purchaseEvent).toBeLessThan(subscriptionWrite)
+    expect(purchaseEvent).toBeLessThan(entitlementWrite)
+    expect(purchaseEvent).toBeLessThan(delivery)
+  })
+
+  it("records Work With Me purchase analytics before fallible fulfillment", () => {
+    const handler = readFileSync(
+      join(process.cwd(), "lib/payments/handlers/work-with-me.ts"),
+      "utf8"
+    )
+    const paidGuard = handler.indexOf("if (!isPaymentPaid)")
+    const purchaseEvent = handler.indexOf('eventName: "work_with_me_checkout_success"')
+
+    expect(purchaseEvent).toBeGreaterThan(paidGuard)
+    for (const fulfillmentStep of [
+      handler.indexOf("await closeWorkWithMeApplicationForPayment"),
+      handler.indexOf("await ensurePaidSelfieToBrandShootSubscriber"),
+      handler.indexOf("await upsertPurchaseEntitlement"),
+      handler.indexOf("await sendEmail"),
+    ]) {
+      expect(purchaseEvent).toBeLessThan(fulfillmentStep)
+    }
+    expect(handler.match(/eventName: "work_with_me_checkout_success"/g)).toHaveLength(1)
+
+    const lifecycle = readFileSync(
+      join(process.cwd(), "lib/payments/lifecycle/checkout-session-completed.ts"),
+      "utf8"
+    )
+    expect(
+      lifecycle.indexOf("const revenueRecord = await recordCheckoutSessionRevenue")
+    ).toBeLessThan(lifecycle.indexOf("await handleWorkWithMeCheckout"))
   })
 
   it("records the membership checkout start only on checkout-page arrival", () => {

@@ -8,7 +8,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generateSelfieToBrandShootDeliveryEmail } from "@/lib/email/templates/selfie-to-brand-shoot-delivery"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
-import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { schedulePurchaseObservation } from "./purchase-analytics"
 import { updateContactTags as updateTags, addContactToSegment } from "@/lib/resend/manage-contact"
 import {
   AI_PHOTOSHOOT_AUDIENCE,
@@ -105,18 +105,16 @@ export async function handleSelfieToBrandShootCheckout(
     }
 
     if (paymentRecorded) {
-      void logAnalyticsEvent({
+      schedulePurchaseObservation({
         eventName: "selfie_to_brand_shoot_checkout_success",
         userId: userId ? String(userId) : null,
-        properties: {
-          source: source || "landing_page",
-          product_type: "selfie_to_brand_shoot_system",
-          value: paymentAmountCents / 100,
-          currency: "usd",
-          stripe_session_id: session.id,
-          stripe_payment_id: paymentIdForStorage,
-          is_test_mode: isTestMode,
-        },
+        source,
+        productType: "selfie_to_brand_shoot_system",
+        amountCents: paymentAmountCents,
+        currency: "usd",
+        sessionId: session.id,
+        paymentId: paymentIdForStorage,
+        isTestMode,
       })
     }
 
