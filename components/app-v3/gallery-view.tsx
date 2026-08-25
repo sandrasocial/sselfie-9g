@@ -231,11 +231,13 @@ const AssetTile = memo(function AssetTile({
   index,
   selected,
   selectionMode,
+  actionsOpen,
   onOpen,
   onToggleSelect,
   onFavorite,
   onDelete,
   onDownload,
+  onActionsOpenChange,
   onCompare,
   versionIndex,
   versionCount,
@@ -246,11 +248,13 @@ const AssetTile = memo(function AssetTile({
   index: number
   selected: boolean
   selectionMode: boolean
+  actionsOpen: boolean
   onOpen: (asset: AppV3GalleryAsset, index: number) => void
   onToggleSelect: (id: string) => void
   onFavorite: (asset: AppV3GalleryAsset) => void
   onDelete: (asset: AppV3GalleryAsset) => void
   onDownload: (asset: AppV3GalleryAsset) => void
+  onActionsOpenChange: (open: boolean) => void
   onMakeMotion?: (url: string) => void
   onCompare: (asset: AppV3GalleryAsset) => void
   versionIndex: number
@@ -261,7 +265,6 @@ const AssetTile = memo(function AssetTile({
 }) {
   const isVideo = asset.kind === "video"
   const title = safeAssetTitle(asset)
-  const [actionsOpen, setActionsOpen] = useState(false)
   const actionsTriggerRef = useRef<HTMLButtonElement>(null)
   return (
     <div
@@ -361,7 +364,7 @@ const AssetTile = memo(function AssetTile({
           <button
             ref={actionsTriggerRef}
             type="button"
-            onClick={() => setActionsOpen(open => !open)}
+            onClick={() => onActionsOpenChange(!actionsOpen)}
             aria-label={`More actions for ${title}, item ${index + 1}`}
             aria-expanded={actionsOpen}
             className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0D0E10]/35 text-white backdrop-blur-sm transition-colors hover:bg-[#0D0E10]/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
@@ -379,7 +382,7 @@ const AssetTile = memo(function AssetTile({
                   type="button"
                   onClick={() => {
                     actionsTriggerRef.current?.focus()
-                    setActionsOpen(false)
+                    onActionsOpenChange(false)
                     onCompare(asset)
                   }}
                   className="flex min-h-11 w-full items-center px-4 text-left text-[10px] uppercase tracking-[0.12em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
@@ -390,7 +393,7 @@ const AssetTile = memo(function AssetTile({
               <button
                 type="button"
                 onClick={() => {
-                  setActionsOpen(false)
+                  onActionsOpenChange(false)
                   queueMicrotask(() => actionsTriggerRef.current?.focus())
                   onDownload(asset)
                 }}
@@ -403,7 +406,7 @@ const AssetTile = memo(function AssetTile({
                   type="button"
                   onClick={() => {
                     actionsTriggerRef.current?.focus()
-                    setActionsOpen(false)
+                    onActionsOpenChange(false)
                     onDelete(asset)
                   }}
                   className="flex min-h-11 w-full items-center px-4 text-left text-[10px] uppercase tracking-[0.12em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
@@ -450,6 +453,7 @@ export function GalleryView({
   const [error, setError] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [selectionMode, setSelectionMode] = useState(false)
+  const [openActionsAssetId, setOpenActionsAssetId] = useState<string | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [previewVideo, setPreviewVideo] = useState<AppV3GalleryAsset | null>(null)
   const [compareAsset, setCompareAsset] = useState<AppV3GalleryAsset | null>(null)
@@ -611,6 +615,7 @@ export function GalleryView({
   }
 
   function clearSelection() {
+    setOpenActionsAssetId(null)
     setSelectedIds(new Set())
     setSelectionMode(false)
   }
@@ -722,6 +727,7 @@ export function GalleryView({
           <button
             type="button"
             onClick={() => {
+              setOpenActionsAssetId(null)
               setSelectionMode(mode => !mode)
               setSelectedIds(new Set())
             }}
@@ -897,6 +903,7 @@ export function GalleryView({
                 index={i}
                 selected={selectedIds.has(asset.id)}
                 selectionMode={selectionMode}
+                actionsOpen={openActionsAssetId === asset.id}
                 versionIndex={version.index}
                 versionCount={version.count}
                 favoritePending={favoritePendingIds.has(asset.id)}
@@ -912,6 +919,7 @@ export function GalleryView({
                 onFavorite={toggleFavorite}
                 onDelete={asset => setPendingDeleteIds([asset.id])}
                 onDownload={downloadAsset}
+                onActionsOpenChange={open => setOpenActionsAssetId(open ? asset.id : null)}
                 onMakeMotion={onMakeMotion}
                 onCompare={setCompareAsset}
               />

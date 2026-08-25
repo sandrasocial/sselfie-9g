@@ -122,6 +122,41 @@ describe("Wave 1 Gallery interaction contracts", () => {
     await waitFor(() => expect(firstTrigger).toHaveFocus())
   })
 
+  it("keeps only one overflow panel open and dismisses it for Select mode", async () => {
+    const secondAsset: AppV3GalleryAsset = {
+      ...asset,
+      id: "ai_102",
+      url: "https://example.com/photo-2.jpg",
+      title: "Studio portrait",
+    }
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse(galleryPayload([asset, secondAsset]))
+    )
+
+    render(<GalleryView />)
+
+    const firstTrigger = await screen.findByRole("button", {
+      name: "More actions for Quiet morning portrait, item 1",
+    })
+    const secondTrigger = screen.getByRole("button", {
+      name: "More actions for Studio portrait, item 2",
+    })
+    fireEvent.click(firstTrigger)
+    expect(screen.getAllByRole("group", { name: "Photo actions" })).toHaveLength(1)
+
+    fireEvent.click(secondTrigger)
+    expect(firstTrigger).toHaveAttribute("aria-expanded", "false")
+    expect(secondTrigger).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getAllByRole("group", { name: "Photo actions" })).toHaveLength(1)
+
+    fireEvent.click(screen.getByRole("button", { name: "Select" }))
+    fireEvent.click(screen.getByRole("button", { name: "Done" }))
+    expect(
+      screen.getByRole("button", { name: "More actions for Studio portrait, item 2" })
+    ).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByRole("group", { name: "Photo actions" })).not.toBeInTheDocument()
+  })
+
   it("offers the video handoff only after opening a selected image", async () => {
     const onMakeMotion = vi.fn()
     vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse(galleryPayload()))
