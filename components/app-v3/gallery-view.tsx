@@ -281,12 +281,18 @@ const AssetTile = memo(function AssetTile({
       if (actionsContainerRef.current?.contains(event.target as Node)) return
       onActionsOpenChange(false)
     }
+    const dismissOnOutsideFocus = (event: FocusEvent) => {
+      if (actionsContainerRef.current?.contains(event.target as Node)) return
+      onActionsOpenChange(false)
+    }
 
     document.addEventListener("keydown", dismissOnEscape)
     document.addEventListener("pointerdown", dismissOnOutsideInteraction, true)
+    document.addEventListener("focusin", dismissOnOutsideFocus)
     return () => {
       document.removeEventListener("keydown", dismissOnEscape)
       document.removeEventListener("pointerdown", dismissOnOutsideInteraction, true)
+      document.removeEventListener("focusin", dismissOnOutsideFocus)
     }
   }, [actionsOpen, onActionsOpenChange])
 
