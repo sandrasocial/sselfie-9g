@@ -90,10 +90,10 @@ function CheckoutLinkInner({ label, surface }: { label: string; surface: "dark" 
 export function VaultMayaCheckoutLink({
   label,
   surface = "dark",
-}: {
+}: Readonly<{
   label: string
   surface?: "dark" | "cream"
-}) {
+}>) {
   return (
     <Suspense fallback={null}>
       <CheckoutLinkInner label={label} surface={surface} />

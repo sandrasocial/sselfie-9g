@@ -2951,7 +2951,7 @@ const VAULT_MAYA_FAQ = [
   },
 ]
 
-export function VaultMayaPageContent({ priceLabel }: { priceLabel: string }) {
+export function VaultMayaPageContent({ priceLabel }: Readonly<{ priceLabel: string }>) {
   useEffect(() => {
     void trackAnalyticsEvent({
       event: "vault_maya_landing_view",
@@ -2986,50 +2986,49 @@ export function VaultMayaPageContent({ priceLabel }: { priceLabel: string }) {
           className={vaultMayaStyles.heroProof}
           aria-label="One selfie transformed into several Vault Maya photos"
         >
-          <figure className={`${vaultMayaStyles.heroProofCard} ${vaultMayaStyles.heroOriginal}`}>
-            <Image
-              src={VAULT_MAYA_IMAGES.original.src}
-              alt={VAULT_MAYA_IMAGES.original.alt}
-              fill
-              priority
-              sizes="(max-width: 767px) 36vw, 20vw"
-              className="object-cover"
-            />
-            <figcaption>This was the selfie</figcaption>
-          </figure>
-          <figure className={`${vaultMayaStyles.heroProofCard} ${vaultMayaStyles.heroResultMain}`}>
-            <Image
-              src={VAULT_MAYA_IMAGES.results[0].src}
-              alt={VAULT_MAYA_IMAGES.results[0].alt}
-              fill
-              priority
-              sizes="(max-width: 767px) 45vw, 27vw"
-              className="object-cover"
-            />
-            <figcaption>Maya result</figcaption>
-          </figure>
-          <figure className={`${vaultMayaStyles.heroProofCard} ${vaultMayaStyles.heroResultTop}`}>
-            <Image
-              src={VAULT_MAYA_IMAGES.results[1].src}
-              alt={VAULT_MAYA_IMAGES.results[1].alt}
-              fill
-              priority
-              sizes="(max-width: 767px) 23vw, 13vw"
-              className="object-cover"
-            />
-          </figure>
-          <figure
-            className={`${vaultMayaStyles.heroProofCard} ${vaultMayaStyles.heroResultBottom}`}
-          >
-            <Image
-              src={VAULT_MAYA_IMAGES.results[2].src}
-              alt={VAULT_MAYA_IMAGES.results[2].alt}
-              fill
-              priority
-              sizes="(max-width: 767px) 23vw, 13vw"
-              className="object-cover"
-            />
-          </figure>
+          {[
+            {
+              image: VAULT_MAYA_IMAGES.original,
+              layout: vaultMayaStyles.heroOriginal,
+              caption: "This was the selfie",
+              sizes: "(max-width: 767px) 36vw, 20vw",
+              priority: true,
+            },
+            {
+              image: VAULT_MAYA_IMAGES.results[0],
+              layout: vaultMayaStyles.heroResultMain,
+              caption: "Maya result",
+              sizes: "(max-width: 767px) 45vw, 27vw",
+              priority: true,
+            },
+            {
+              image: VAULT_MAYA_IMAGES.results[1],
+              layout: vaultMayaStyles.heroResultTop,
+              sizes: "(max-width: 767px) 23vw, 13vw",
+              priority: false,
+            },
+            {
+              image: VAULT_MAYA_IMAGES.results[2],
+              layout: vaultMayaStyles.heroResultBottom,
+              sizes: "(max-width: 767px) 23vw, 13vw",
+              priority: false,
+            },
+          ].map(item => (
+            <figure
+              key={item.image.src}
+              className={`${vaultMayaStyles.heroProofCard} ${item.layout}`}
+            >
+              <Image
+                src={item.image.src}
+                alt={item.image.alt}
+                fill
+                priority={item.priority}
+                sizes={item.sizes}
+                className="object-cover"
+              />
+              {item.caption ? <figcaption>{item.caption}</figcaption> : null}
+            </figure>
+          ))}
           <div className={vaultMayaStyles.heroProofDirection} aria-hidden="true">
             <span>01</span>
             <b>→</b>
