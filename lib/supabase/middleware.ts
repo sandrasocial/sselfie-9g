@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
+import { rotateAnonymousAnalyticsIdentity } from "@/lib/analytics/identity-cookies"
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -54,16 +55,24 @@ export async function updateSession(request: NextRequest) {
 
     if (error) {
       if (
-        error.message?.includes("refresh_token_already_used") || error.code === "refresh_token_already_used" ||
-        error.code === "refresh_token_not_found" || error.message?.includes("Refresh Token Not Found")
+        error.message?.includes("refresh_token_already_used") ||
+        error.code === "refresh_token_already_used" ||
+        error.code === "refresh_token_not_found" ||
+        error.message?.includes("Refresh Token Not Found")
       ) {
         console.log("[v0] [Middleware] Stale/used refresh token - clearing cookies")
         supabaseResponse.cookies.delete("sb-access-token")
         supabaseResponse.cookies.delete("sb-refresh-token")
+        // Session loss can happen without the explicit logout route. Rotate
+        // the anonymous identity and tell the browser provider to reset its
+        // persisted user identity before capturing the now-anonymous page.
+        rotateAnonymousAnalyticsIdentity(supabaseResponse)
       } else {
         // Only log for API routes that require auth, not public routes
-        if (!request.nextUrl.pathname.includes("/api/landing-stats") && 
-            !request.nextUrl.pathname.includes("/api/freebie")) {
+        if (
+          !request.nextUrl.pathname.includes("/api/landing-stats") &&
+          !request.nextUrl.pathname.includes("/api/freebie")
+        ) {
           console.log("[v0] [Middleware] Auth error:", error.message || "Auth session missing!")
         }
       }
