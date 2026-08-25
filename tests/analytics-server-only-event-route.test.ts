@@ -73,6 +73,27 @@ describe("public analytics route server-only event boundary", () => {
     expect(response.headers.get("set-cookie")).not.toContain("private@example.com")
   })
 
+  it("keeps capture disabled when an authenticated user cannot be mapped", async () => {
+    mocks.createServerClient.mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "auth-123" } } }) },
+    })
+    mocks.getUserByAuthId.mockRejectedValue(new Error("mapping unavailable"))
+
+    const { GET } = await import("@/app/api/analytics/event/route")
+    const response = await GET(
+      new NextRequest("http://localhost/api/analytics/event", {
+        headers: { cookie: "sselfie_anon_id=existing-anon" },
+      })
+    )
+
+    await expect(response.json()).resolves.toEqual({
+      distinctId: null,
+      resetPostHog: false,
+    })
+    expect(response.headers.get("cache-control")).toBe("private, no-store")
+    expect(response.headers.get("set-cookie")).toBeNull()
+  })
+
   it("keeps the HTTP-only PostHog reset signal until the SDK acknowledges it", async () => {
     const { GET } = await import("@/app/api/analytics/event/route")
     const response = await GET(

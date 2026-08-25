@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server"
-import { randomUUID } from "crypto"
+import { randomUUID } from "node:crypto"
 
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
@@ -71,7 +71,7 @@ function readIp(req: NextRequest) {
 async function resolveAnalyticsIdentity(
   req: NextRequest,
   rotateAnonymous = false
-): Promise<AnalyticsIdentity> {
+): Promise<AnalyticsIdentity | null> {
   const anonCookie = rotateAnonymous ? undefined : req.cookies.get("sselfie_anon_id")?.value
   const anonId = anonCookie || randomUUID()
   let neonUserId: string | null = null
@@ -82,11 +82,13 @@ async function resolveAnalyticsIdentity(
       data: { user: authUser },
     } = await supabase.auth.getUser()
     if (authUser) {
-      const neonUser = await getUserByAuthId(authUser.id).catch(() => null)
-      neonUserId = neonUser?.id ? String(neonUser.id) : null
+      const neonUser = await getUserByAuthId(authUser.id)
+      if (!neonUser?.id) return null
+      neonUserId = String(neonUser.id)
     }
   } catch {
-    // Tracking remains anonymous when auth lookup is unavailable.
+    // Capture stays disabled when authentication or user mapping is uncertain.
+    return null
   }
 
   return { anonCookie, anonId, neonUserId }
@@ -120,6 +122,11 @@ export async function GET(req: NextRequest) {
     const acknowledgePostHogReset = searchParams.get("ack_posthog_reset") === "1"
     const resetPostHog = req.cookies.get("sselfie_posthog_reset")?.value === "1"
     const identity = await resolveAnalyticsIdentity(req, rotateAnonymous)
+    if (!identity) {
+      const response = NextResponse.json({ distinctId: null, resetPostHog: false })
+      response.headers.set("Cache-Control", "private, no-store")
+      return response
+    }
     const response = NextResponse.json({
       distinctId: postHogDistinctId({
         eventName: "$identity",
@@ -152,6 +159,9 @@ export async function POST(req: NextRequest) {
     }
 
     const identity = await resolveAnalyticsIdentity(req)
+    if (!identity) {
+      return NextResponse.json({ ok: true, accepted: false, reason: "Identity unavailable" })
+    }
 
     const rate = await checkRateLimit(identity.anonId || ip, "ANALYTICS")
     if (!rate.success) {
