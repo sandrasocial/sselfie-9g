@@ -266,6 +266,30 @@ const AssetTile = memo(function AssetTile({
   const isVideo = asset.kind === "video"
   const title = safeAssetTitle(asset)
   const actionsTriggerRef = useRef<HTMLButtonElement>(null)
+  const actionsContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!actionsOpen) return
+
+    const dismissOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      event.preventDefault()
+      onActionsOpenChange(false)
+      queueMicrotask(() => actionsTriggerRef.current?.focus())
+    }
+    const dismissOnOutsideInteraction = (event: PointerEvent) => {
+      if (actionsContainerRef.current?.contains(event.target as Node)) return
+      onActionsOpenChange(false)
+    }
+
+    document.addEventListener("keydown", dismissOnEscape)
+    document.addEventListener("pointerdown", dismissOnOutsideInteraction, true)
+    return () => {
+      document.removeEventListener("keydown", dismissOnEscape)
+      document.removeEventListener("pointerdown", dismissOnOutsideInteraction, true)
+    }
+  }, [actionsOpen, onActionsOpenChange])
+
   return (
     <div
       className={`suite-card group relative rounded-[2px] border bg-[#F1F2F2] transition-shadow ${
@@ -360,7 +384,7 @@ const AssetTile = memo(function AssetTile({
 
       {/* Secondary actions stay available behind one quiet, intentional affordance. */}
       {!selectionMode && (
-        <div className="absolute bottom-2 right-2 z-20">
+        <div ref={actionsContainerRef} className="absolute bottom-2 right-2 z-20">
           <button
             ref={actionsTriggerRef}
             type="button"

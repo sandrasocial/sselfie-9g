@@ -157,6 +157,31 @@ describe("Wave 1 Gallery interaction contracts", () => {
     expect(screen.queryByRole("group", { name: "Photo actions" })).not.toBeInTheDocument()
   })
 
+  it("dismisses overflow actions on Escape and outside interaction", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse(galleryPayload()))
+
+    render(<GalleryView />)
+
+    const trigger = await screen.findByRole("button", {
+      name: "More actions for Quiet morning portrait, item 1",
+    })
+    fireEvent.click(trigger)
+    fireEvent.keyDown(document, { key: "Escape" })
+
+    await waitFor(() => {
+      expect(trigger).toHaveFocus()
+      expect(screen.queryByRole("group", { name: "Photo actions" })).not.toBeInTheDocument()
+    })
+
+    fireEvent.click(trigger)
+    const thumbnail = screen.getByRole("button", { name: /Open Quiet morning portrait/ })
+    fireEvent.pointerDown(thumbnail)
+    fireEvent.click(thumbnail)
+
+    expect(trigger).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByRole("group", { name: "Photo actions" })).not.toBeInTheDocument()
+  })
+
   it("offers the video handoff only after opening a selected image", async () => {
     const onMakeMotion = vi.fn()
     vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse(galleryPayload()))
