@@ -269,6 +269,9 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("recordHeaders:false")
     expect(provider).toContain("capture_exceptions:true")
     expect(provider).toContain("function scrub(value)")
+    expect(provider).toContain('event.event==="$exception"')
+    expect(provider).toContain("/exception|error|message|stack/i.test(key)")
+    expect(provider).toContain("delete event.properties[key]")
     expect(provider).toContain('new URL(clean,"https://sselfie.invalid")')
     expect(provider).toContain("window.posthog.identify(distinctId)")
     expect(provider).toContain("window.posthog.reset()")
@@ -312,5 +315,24 @@ describe("PostHog analytics boundary", () => {
     )
     expect(missingResultGuard).toBeGreaterThan(-1)
     expect(completionEvent).toBeGreaterThan(missingResultGuard)
+  })
+
+  it("emits guided generation start only after a valid generate action", () => {
+    const flow = readFileSync(
+      join(process.cwd(), "components/sselfie/maya/welcome-first-generation-flow.tsx"),
+      "utf8"
+    )
+    const generateHandler = flow.indexOf("const handleGenerate = async () =>")
+    const missingSelfieGuard = flow.indexOf(
+      'if (selectedMode === "pro" && !selfieFile) return',
+      generateHandler
+    )
+    const startEvent = flow.indexOf('trackEvent("first_generation_guided_start"', generateHandler)
+
+    expect(generateHandler).toBeGreaterThan(-1)
+    expect(startEvent).toBeGreaterThan(missingSelfieGuard)
+    expect(flow.slice(0, generateHandler)).not.toContain(
+      'trackEvent("first_generation_guided_start"'
+    )
   })
 })

@@ -47,7 +47,6 @@ export default function WelcomeFirstGenerationFlow({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
   const [topPrompts, setTopPrompts] = useState<Array<{ id: number; concept_title: string | null; prompt_text: string }>>([])
-  const [hasTrackedStart, setHasTrackedStart] = useState(false)
 
   const styleLabel = useMemo(() => {
     if (selectedStyle.startsWith("prompt-")) {
@@ -67,14 +66,6 @@ export default function WelcomeFirstGenerationFlow({
   const shouldShowModeStep = userHasTrainedModel
   const totalSteps = shouldShowModeStep ? 3 : 2
   const visibleStep = shouldShowModeStep ? step : step === 3 ? 2 : 1
-
-  useEffect(() => {
-    if (!hasTrackedStart) {
-      trackEvent("first_generation_guided_start", { source: "maya_welcome_flow" })
-      trackAnalyticsEvent({ event: "first_generation_guided_start", properties: { source: "maya_welcome_flow" } })
-      setHasTrackedStart(true)
-    }
-  }, [hasTrackedStart])
 
   useEffect(() => {
     trackAnalyticsEvent({
@@ -172,6 +163,11 @@ export default function WelcomeFirstGenerationFlow({
 
   const handleGenerate = async () => {
     if (selectedMode === "pro" && !selfieFile) return
+    trackEvent("first_generation_guided_start", { source: "maya_welcome_flow" })
+    trackAnalyticsEvent({
+      event: "first_generation_guided_start",
+      properties: { source: "maya_welcome_flow" },
+    }).catch(() => {})
     setErrorMessage(null)
     try {
       let creditsUsed = 0
