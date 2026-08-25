@@ -367,7 +367,7 @@ const AssetTile = memo(function AssetTile({
             onClick={() => onActionsOpenChange(!actionsOpen)}
             aria-label={`More actions for ${title}, item ${index + 1}`}
             aria-expanded={actionsOpen}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0D0E10]/35 text-white backdrop-blur-sm transition-colors hover:bg-[#0D0E10]/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0D0E10] text-white shadow-sm transition-colors hover:bg-[#282728] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
           >
             <MoreHorizontal size={17} aria-hidden />
           </button>

@@ -31,6 +31,8 @@ describe("App v3 Suite UX completion", () => {
     const gallery = read("components/app-v3/gallery-view.tsx")
 
     expect(gallery).toContain('actionsOpen ? "z-30 overflow-visible" : "overflow-hidden"')
+    expect(gallery).toContain("bg-[#0D0E10] text-white shadow-sm")
+    expect(gallery).toContain("focus-visible:ring-inset focus-visible:ring-white")
   })
 
   it("keeps refinement conversational instead of reopening format choices", () => {
