@@ -9,10 +9,9 @@ import { closeWorkWithMeApplicationForPayment } from "@/lib/work-with-me/pipelin
 import { upsertPaidWorkWithMeProject } from "@/lib/work-with-me/client-project"
 import { generatePasswordSetupLinkForPurchase } from "../shared"
 import type { CheckoutFulfillmentContext } from "../types"
-import { schedulePurchaseObservation } from "./purchase-analytics"
 
 export async function handleWorkWithMeCheckout(ctx: CheckoutFulfillmentContext): Promise<void> {
-  const { event, session, isPaymentPaid, customerEmail, userId, source } = ctx
+  const { session, isPaymentPaid, customerEmail, userId } = ctx
 
   if (!isPaymentPaid) {
     console.log(
@@ -24,17 +23,6 @@ export async function handleWorkWithMeCheckout(ctx: CheckoutFulfillmentContext):
   const paymentIntentId =
     typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id
   const paymentIdForStorage = paymentIntentId || session.id
-  schedulePurchaseObservation({
-    eventName: "work_with_me_checkout_success",
-    userId: userId ? String(userId) : null,
-    source: source || "work_with_me_paid",
-    productType: "work_with_me",
-    amountCents: session.amount_total || 0,
-    currency: session.currency || "eur",
-    sessionId: session.id,
-    paymentId: paymentIdForStorage,
-    isTestMode: !event.livemode,
-  })
 
   const applicationId = Number.parseInt(
     String(session.metadata?.brand_engine_application_id || ""),

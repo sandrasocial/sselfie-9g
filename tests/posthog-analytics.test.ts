@@ -518,32 +518,30 @@ describe("PostHog analytics boundary", () => {
     expect(purchaseEvent).toBeLessThan(delivery)
   })
 
-  it("records Work With Me purchase analytics before fallible fulfillment", () => {
+  it("records Work With Me purchase analytics at the central ledger boundary", () => {
     const handler = readFileSync(
       join(process.cwd(), "lib/payments/handlers/work-with-me.ts"),
       "utf8"
     )
-    const paidGuard = handler.indexOf("if (!isPaymentPaid)")
-    const purchaseEvent = handler.indexOf('eventName: "work_with_me_checkout_success"')
-
-    expect(purchaseEvent).toBeGreaterThan(paidGuard)
-    for (const fulfillmentStep of [
-      handler.indexOf("await closeWorkWithMeApplicationForPayment"),
-      handler.indexOf("await ensurePaidSelfieToBrandShootSubscriber"),
-      handler.indexOf("await upsertPurchaseEntitlement"),
-      handler.indexOf("await sendEmail"),
-    ]) {
-      expect(purchaseEvent).toBeLessThan(fulfillmentStep)
-    }
-    expect(handler.match(/eventName: "work_with_me_checkout_success"/g)).toHaveLength(1)
+    expect(handler).not.toContain('eventName: "work_with_me_checkout_success"')
 
     const lifecycle = readFileSync(
       join(process.cwd(), "lib/payments/lifecycle/checkout-session-completed.ts"),
       "utf8"
     )
-    expect(
-      lifecycle.indexOf("const revenueRecord = await recordCheckoutSessionRevenue")
-    ).toBeLessThan(lifecycle.indexOf("await handleWorkWithMeCheckout"))
+    const ledgerWrite = lifecycle.indexOf(
+      "const revenueRecord = await recordCheckoutSessionRevenue"
+    )
+    const purchaseEvent = lifecycle.indexOf('eventName: "work_with_me_checkout_success"')
+    const accountSetup = lifecycle.indexOf("Creating new account for landing page purchase")
+    const handlerDispatch = lifecycle.indexOf("await handleWorkWithMeCheckout")
+
+    expect(purchaseEvent).toBeGreaterThan(ledgerWrite)
+    expect(purchaseEvent).toBeLessThan(accountSetup)
+    expect(purchaseEvent).toBeLessThan(handlerDispatch)
+    expect(lifecycle).toContain('productType === "work_with_me" && isPaymentPaid')
+    expect(lifecycle).toContain("revenueRecord.recorded")
+    expect(lifecycle.match(/eventName: "work_with_me_checkout_success"/g)).toHaveLength(1)
   })
 
   it("records the membership checkout start only on checkout-page arrival", () => {

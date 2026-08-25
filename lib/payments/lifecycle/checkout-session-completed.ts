@@ -50,6 +50,7 @@ import {
   resolveCheckoutSource,
 } from "@/lib/payments/checkout-metadata"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { schedulePurchaseObservation } from "@/lib/payments/handlers/purchase-analytics"
 
 type PurchaseCreditProductType =
   | "credit_topup"
@@ -819,6 +820,20 @@ export async function handleCheckoutSessionCompleted(
       customerEmail,
       description: productType ? `Checkout payment - ${productType}` : "Checkout session payment",
     })
+
+    if (productType === "work_with_me" && isPaymentPaid && revenueRecord.recorded) {
+      schedulePurchaseObservation({
+        eventName: "work_with_me_checkout_success",
+        userId: userId ? String(userId) : null,
+        source: source || "work_with_me_paid",
+        productType: "work_with_me",
+        amountCents: session.amount_total || 0,
+        currency: session.currency || "eur",
+        sessionId: session.id,
+        paymentId: revenueRecord.stripePaymentId,
+        isTestMode: !event.livemode,
+      })
+    }
 
     // CAMPAIGN-OUTCOME-01 is deliberately guest-safe and isolated from the legacy
     // account, entitlement, credit, marketing, and referral pipeline. Stripe money
