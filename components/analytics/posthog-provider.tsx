@@ -55,6 +55,7 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
     const safePathname = pathname ? sanitizePostHogPathname(pathname) : null
     if (!ready || !safePathname || !window.posthog) return
     let active = true
+    let retryTimer: ReturnType<typeof setTimeout> | null = null
 
     // Suspend automatic capture while the server-owned identity/reset signal
     // is refreshed. If identity resolution fails, capture stays disabled.
@@ -66,10 +67,15 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
     // On a full-page load, reuse the same bootstrap request as any analytics
     // event mounted alongside this provider. Later route transitions refresh
     // authentication state through the serialized identity queue.
-    readIdentity(false, identifiedAs.current !== null)
-      .then(async identity => {
+    const refreshIdentity = async (attempt: number) => {
+      try {
+        const identity = await readIdentity(false, identifiedAs.current !== null || attempt > 0)
         let distinctId = identity.distinctId
-        if (!active || !distinctId || !window.posthog) return
+        if (!active || !window.posthog) return
+        if (!distinctId) {
+          scheduleIdentityRetry(attempt)
+          return
+        }
 
         const previousId = identifiedAs.current ?? window.posthog.get_distinct_id?.() ?? null
         if (identity.resetPostHog) {
@@ -78,7 +84,10 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
         } else if (shouldResetPostHogIdentity(previousId, distinctId)) {
           if (distinctId.startsWith("anon:")) {
             const rotatedIdentity = await readIdentity(true)
-            if (!rotatedIdentity.distinctId) return
+            if (!rotatedIdentity.distinctId) {
+              scheduleIdentityRetry(attempt)
+              return
+            }
             distinctId = rotatedIdentity.distinctId
           }
           if (!active || !window.posthog) return
@@ -93,11 +102,22 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
           $pathname: safePathname,
         })
         setPostHogCaptureEnabled(true)
-      })
-      .catch(() => undefined)
+      } catch {
+        scheduleIdentityRetry(attempt)
+      }
+    }
+
+    function scheduleIdentityRetry(attempt: number) {
+      const nextDelay = IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS[attempt + 1]
+      if (!active || nextDelay === undefined) return
+      retryTimer = setTimeout(() => void refreshIdentity(attempt + 1), nextDelay)
+    }
+
+    void refreshIdentity(0)
 
     return () => {
       active = false
+      if (retryTimer) clearTimeout(retryTimer)
     }
   }, [pathname, ready])
 

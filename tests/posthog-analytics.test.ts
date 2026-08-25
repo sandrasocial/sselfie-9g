@@ -408,6 +408,13 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("readIdentity(true)")
     expect(provider).toContain("setPostHogCaptureEnabled(false)")
     expect(provider).toContain("setPostHogCaptureEnabled(true)")
+    expect(provider).toContain("const refreshIdentity = async (attempt: number)")
+    expect(provider).toContain("scheduleIdentityRetry(attempt)")
+    expect(provider).toContain(
+      "retryTimer = setTimeout(() => void refreshIdentity(attempt + 1), nextDelay)"
+    )
+    expect(provider).toContain("identifiedAs.current !== null || attempt > 0")
+    expect(provider).toContain("if (retryTimer) clearTimeout(retryTimer)")
     const scriptIndex = provider.indexOf('<Script id="posthog"')
     expect(provider.indexOf("void bootstrapIdentity(0)")).toBeLessThan(scriptIndex)
     expect(provider).toContain("IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS")
