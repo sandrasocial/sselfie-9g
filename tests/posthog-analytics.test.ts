@@ -146,6 +146,26 @@ describe("PostHog analytics boundary", () => {
     expect(JSON.stringify(bodies[0])).not.toContain("pi_retry_safe_123")
   })
 
+  it("suppresses Stripe test-mode purchases before provider delivery", async () => {
+    const request = vi.fn<typeof fetch>()
+
+    await expect(
+      capturePostHogEvent(
+        {
+          eventName: "purchase",
+          userId: "user-123",
+          properties: {
+            value: 97,
+            stripe_payment_id: "pi_test_123",
+            is_test_mode: true,
+          },
+        },
+        request
+      )
+    ).resolves.toEqual({ sent: false, reason: "test-event" })
+    expect(request).not.toHaveBeenCalled()
+  })
+
   it("drops unapproved attribution and event-source slugs", () => {
     expect(
       buildPostHogProperties({
@@ -261,5 +281,18 @@ describe("PostHog analytics boundary", () => {
 
     expect(landing).not.toContain("trackCheckoutStart(")
     expect(checkout).toContain("trackCheckoutStart(productType")
+  })
+
+  it("emits guided completion only after receiving a real image URL", () => {
+    const flow = readFileSync(
+      join(process.cwd(), "components/sselfie/maya/welcome-first-generation-flow.tsx"),
+      "utf8"
+    )
+    const missingResultGuard = flow.indexOf("if (!completedImageUrl)")
+    const completionEvent = flow.indexOf('trackEvent("first_generation_guided_complete"')
+
+    expect(flow).toContain("completedImageUrl = firstGeneratedImageUrl(check?.imageUrl ?? check?.output)")
+    expect(missingResultGuard).toBeGreaterThan(-1)
+    expect(completionEvent).toBeGreaterThan(missingResultGuard)
   })
 })

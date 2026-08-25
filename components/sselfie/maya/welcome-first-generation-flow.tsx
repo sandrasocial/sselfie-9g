@@ -4,6 +4,11 @@ import { useMemo, useState, useEffect } from "react"
 import { trackEvent } from "@/lib/analytics"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
+function firstGeneratedImageUrl(value: unknown): string | null {
+  const candidate = Array.isArray(value) ? value[0] : value
+  return typeof candidate === "string" && candidate.trim() ? candidate : null
+}
+
 const STYLE_OPTIONS = [
   { id: "casual", label: "CASUAL", vibe: "casual" },
   { id: "editorial", label: "EDITORIAL", vibe: "editorial" },
@@ -170,12 +175,13 @@ export default function WelcomeFirstGenerationFlow({
     setErrorMessage(null)
     try {
       let creditsUsed = 0
+      let completedImageUrl: string | null = null
       if (selectedMode === "pro") {
         const uploadedUrl = await uploadSelfie()
         const studioProGeneration = await generateFirstImage(uploadedUrl)
         creditsUsed = studioProGeneration.creditsUsed
-        const imageUrl = await pollStudioProPrediction(studioProGeneration.predictionId)
-        setGeneratedImageUrl(imageUrl)
+        completedImageUrl = await pollStudioProPrediction(studioProGeneration.predictionId)
+        setGeneratedImageUrl(completedImageUrl)
       } else {
         setStatus("generating")
         const promptText = selectedPromptText || topPrompts[0]?.prompt_text || buildPrompt(vibeWord)
@@ -204,20 +210,27 @@ export default function WelcomeFirstGenerationFlow({
           throw new Error(data?.error || data?.details || "Failed to generate image.")
         }
         creditsUsed = Number(data?.creditsDeducted ?? 0)
-        if (data?.predictionId) {
+        completedImageUrl = firstGeneratedImageUrl(data?.imageUrl ?? data?.output)
+        if (completedImageUrl) {
+          setGeneratedImageUrl(completedImageUrl)
+        }
+        if (!completedImageUrl && data?.predictionId) {
           const checkUrl = `/api/maya/check-generation?predictionId=${data.predictionId}&generationId=${data.generationId ?? ""}`
           for (let i = 0; i < 40; i++) {
             await new Promise((r) => setTimeout(r, 3000))
             const check = await fetch(checkUrl).then((r) => r.json())
             if (check?.status === "succeeded" || check?.success === true) {
-              const url = check?.imageUrl ?? check?.output
-              if (url) {
-                setGeneratedImageUrl(Array.isArray(url) ? url[0] : url)
+              completedImageUrl = firstGeneratedImageUrl(check?.imageUrl ?? check?.output)
+              if (completedImageUrl) {
+                setGeneratedImageUrl(completedImageUrl)
                 break
               }
             }
           }
         }
+      }
+      if (!completedImageUrl) {
+        throw new Error("Generation completed without an image. Please try again.")
       }
       setStatus("done")
       trackEvent("first_generation_guided_complete", { source: "maya_welcome_flow", mode: selectedMode })

@@ -22,7 +22,13 @@ export type PostHogCaptureResult =
   | { sent: true }
   | {
       sent: false
-      reason: "disabled" | "unmapped" | "anonymous-missing" | "invalid-host" | "provider-error"
+      reason:
+        | "disabled"
+        | "unmapped"
+        | "test-event"
+        | "anonymous-missing"
+        | "invalid-host"
+        | "provider-error"
     }
 
 const EVENT_MAP: Readonly<Record<string, string>> = {
@@ -328,6 +334,9 @@ export async function capturePostHogEvent(
 ): Promise<PostHogCaptureResult> {
   const event = mapPostHogEvent(input.eventName)
   if (!event) return { sent: false, reason: "unmapped" }
+  if (input.eventName === "purchase" && input.properties?.is_test_mode === true) {
+    return { sent: false, reason: "test-event" }
+  }
 
   const distinctId = postHogDistinctId(input)
   if (!distinctId) return { sent: false, reason: "anonymous-missing" }
