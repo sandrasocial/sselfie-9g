@@ -46,14 +46,25 @@ export function sanitizePostHogEventPayload<T>(event: T): T | null {
     if (sanitized && typeof sanitized === "object") {
       const eventRecord = sanitized as Record<string, unknown>
       const properties = eventRecord.properties
-      if (
-        eventRecord.event !== "$exception" &&
-        properties &&
-        typeof properties === "object" &&
-        !Array.isArray(properties)
-      ) {
-        for (const key of Object.keys(properties)) {
-          if (/^\$exception_/i.test(key)) delete (properties as Record<string, unknown>)[key]
+      if (properties && typeof properties === "object" && !Array.isArray(properties)) {
+        const propertyRecord = properties as Record<string, unknown>
+        if (eventRecord.event === "$exception") {
+          const exceptionDimension = (value: unknown) => {
+            if (typeof value !== "string") return null
+            const clean = value.trim()
+            return /^[A-Za-z][A-Za-z0-9_.-]{0,79}$/.test(clean) ? clean : null
+          }
+          const exceptionType = exceptionDimension(propertyRecord.$exception_type)
+          const exceptionSource = exceptionDimension(propertyRecord.$exception_source)
+          for (const key of Object.keys(propertyRecord)) {
+            if (/exception|error|message|stack/i.test(key)) delete propertyRecord[key]
+          }
+          if (exceptionType) propertyRecord.$exception_type = exceptionType
+          if (exceptionSource) propertyRecord.$exception_source = exceptionSource
+        } else {
+          for (const key of Object.keys(propertyRecord)) {
+            if (/^\$exception_/i.test(key)) delete propertyRecord[key]
+          }
         }
       }
     }

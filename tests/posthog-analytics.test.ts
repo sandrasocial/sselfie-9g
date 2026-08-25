@@ -126,8 +126,8 @@ describe("PostHog analytics boundary", () => {
     expect(JSON.parse(String(init?.body))).toEqual({
       api_key: "phc_test_project",
       event: "sselfie_reference_added",
+      distinct_id: "user:user-123",
       properties: {
-        distinct_id: "user:user-123",
         source_event: "activation_selfie_uploaded",
         $process_person_profile: false,
         path: "/suite",
@@ -210,8 +210,9 @@ describe("PostHog analytics boundary", () => {
     await capturePostHogEvent(input, request)
 
     const bodies = request.mock.calls.map(([, init]) => JSON.parse(String(init?.body)))
-    expect(bodies[0].properties.distinct_id).toMatch(/^purchase:[a-f0-9]{64}$/)
-    expect(bodies[1].properties.distinct_id).toBe(bodies[0].properties.distinct_id)
+    expect(bodies[0].distinct_id).toMatch(/^purchase:[a-f0-9]{64}$/)
+    expect(bodies[1].distinct_id).toBe(bodies[0].distinct_id)
+    expect(bodies[0].properties).not.toHaveProperty("distinct_id")
     expect(JSON.stringify(bodies[0])).not.toContain("cs_guest_purchase_123")
   })
 
@@ -360,6 +361,39 @@ describe("PostHog analytics boundary", () => {
     })
   })
 
+  it("keeps only safe exception grouping dimensions for real browser exceptions", () => {
+    expect(
+      sanitizePostHogEventPayload({
+        event: "$exception",
+        properties: {
+          $exception_type: "TypeError",
+          $exception_source: "web.react",
+          $exception_message: "private customer value",
+          $exception_list: [{ type: "TypeError", value: "private customer value" }],
+          stack: "private stack",
+          safe_dimension: "gallery",
+        },
+      })
+    ).toEqual({
+      event: "$exception",
+      properties: {
+        $exception_type: "TypeError",
+        $exception_source: "web.react",
+        safe_dimension: "gallery",
+      },
+    })
+
+    expect(
+      sanitizePostHogEventPayload({
+        event: "$exception",
+        properties: {
+          $exception_type: "TypeError customer@example.com",
+          $exception_source: "https://private.example/?email=customer@example.com",
+        },
+      })
+    ).toEqual({ event: "$exception", properties: {} })
+  })
+
   it("resets only when a persisted user differs from the server identity", () => {
     expect(shouldResetPostHogIdentity("user:account-a", "user:account-b")).toBe(true)
     expect(shouldResetPostHogIdentity("user:account-a", "user:account-a")).toBe(false)
@@ -408,6 +442,9 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain('event.event==="$exception"')
     expect(provider).toContain('event.event!=="$exception"')
     expect(provider).toContain("/^\\\\$exception_/i.test(key)")
+    expect(provider).toContain("function exceptionDimension(value)")
+    expect(provider).toContain("var type=exceptionDimension(event.properties.$exception_type)")
+    expect(provider).toContain("var source=exceptionDimension(event.properties.$exception_source)")
     expect(provider).toContain("/exception|error|message|stack/i.test(key)")
     expect(provider).toContain("delete event.properties[key]")
     expect(provider).toContain('event.event==="$autocapture"')
@@ -423,13 +460,22 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("readIdentity(true)")
     expect(provider).toContain("setPostHogCaptureEnabled(false)")
     expect(provider).toContain("setPostHogCaptureEnabled(true)")
-    expect(provider).toContain("const refreshIdentity = async (attempt: number)")
-    expect(provider).toContain("scheduleIdentityRetry(attempt)")
+    expect(provider).toContain("const refreshIdentity = async (")
+    expect(provider).toContain("scheduleIdentityRetry(attempt, generation, capturePageview)")
     expect(provider).toContain(
-      "retryTimer = setTimeout(() => void refreshIdentity(attempt + 1), nextDelay)"
+      "() => void refreshIdentity(attempt + 1, generation, capturePageview)"
     )
     expect(provider).toContain("identifiedAs.current !== null || attempt > 0")
     expect(provider).toContain("if (retryTimer) clearTimeout(retryTimer)")
+    expect(provider).toContain('window.addEventListener("focus", refreshOnFocus)')
+    expect(provider).toContain('document.addEventListener("visibilitychange", refreshOnVisibility)')
+    expect(provider).toContain("supabase.auth.onAuthStateChange")
+    expect(provider).toContain('event === "SIGNED_OUT"')
+    expect(provider).toContain('window.removeEventListener("focus", refreshOnFocus)')
+    expect(provider).toContain(
+      'document.removeEventListener("visibilitychange", refreshOnVisibility)'
+    )
+    expect(provider).toContain("unsubscribeFromAuth?.()")
     const scriptIndex = provider.indexOf('<Script id="posthog"')
     expect(provider.indexOf("void bootstrapIdentity(0)")).toBeLessThan(scriptIndex)
     expect(provider).toContain("IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS")

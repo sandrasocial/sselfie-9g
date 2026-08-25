@@ -430,10 +430,8 @@ export async function capturePostHogEvent(
       body: JSON.stringify({
         api_key: config.key,
         event,
-        properties: {
-          ...buildPostHogProperties(input),
-          distinct_id: distinctId,
-        },
+        distinct_id: distinctId,
+        properties: buildPostHogProperties(input),
       }),
       signal: AbortSignal.timeout(750),
     })

@@ -118,6 +118,17 @@ function clearPostHogResetCookie(response: NextResponse) {
   })
 }
 
+function isSafeResetAcknowledgement(req: NextRequest): boolean {
+  if (req.headers.get(POSTHOG_RESET_ACK_HEADER) !== "1") return false
+
+  const requestOrigin = new URL(req.url).origin
+  const origin = req.headers.get("origin")
+  if (origin) return origin === requestOrigin
+
+  const fetchSite = req.headers.get("sec-fetch-site")
+  return fetchSite === "same-origin" || fetchSite === "same-site"
+}
+
 export async function GET(req: NextRequest) {
   try {
     const searchParams = new URL(req.url).searchParams
@@ -150,8 +161,7 @@ export async function POST(req: NextRequest) {
   try {
     const resetAcknowledgement = req.headers.get(POSTHOG_RESET_ACK_HEADER)
     if (resetAcknowledgement !== null) {
-      const requestOrigin = new URL(req.url).origin
-      if (resetAcknowledgement !== "1" || req.headers.get("origin") !== requestOrigin) {
+      if (!isSafeResetAcknowledgement(req)) {
         return NextResponse.json({ ok: false }, { status: 403 })
       }
       const response = NextResponse.json({ ok: true })

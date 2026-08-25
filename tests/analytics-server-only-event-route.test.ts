@@ -178,6 +178,40 @@ describe("public analytics route server-only event boundary", () => {
     expect(response.headers.get("set-cookie")).toContain("Max-Age=0")
   })
 
+  it("clears an originless acknowledgement with a same-site browser signal", async () => {
+    const { POST } = await import("@/app/api/analytics/event/route")
+    const response = await POST(
+      new NextRequest("http://localhost/api/analytics/event", {
+        method: "POST",
+        headers: {
+          cookie: "sselfie_anon_id=rotated-id; sselfie_posthog_reset=1",
+          "sec-fetch-site": "same-origin",
+          "x-sselfie-posthog-reset-ack": "1",
+        },
+      })
+    )
+
+    await expect(response.json()).resolves.toEqual({ ok: true })
+    expect(response.headers.get("set-cookie")).toContain("sselfie_posthog_reset=")
+    expect(response.headers.get("set-cookie")).toContain("Max-Age=0")
+  })
+
+  it("rejects an originless acknowledgement without a same-site browser signal", async () => {
+    const { POST } = await import("@/app/api/analytics/event/route")
+    const response = await POST(
+      new NextRequest("http://localhost/api/analytics/event", {
+        method: "POST",
+        headers: {
+          cookie: "sselfie_posthog_reset=1",
+          "x-sselfie-posthog-reset-ack": "1",
+        },
+      })
+    )
+
+    expect(response.status).toBe(403)
+    expect(response.headers.get("set-cookie")).toBeNull()
+  })
+
   it("rejects a cross-origin reset acknowledgement without clearing the marker", async () => {
     const { POST } = await import("@/app/api/analytics/event/route")
     const response = await POST(
