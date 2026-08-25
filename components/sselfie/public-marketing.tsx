@@ -2848,43 +2848,36 @@ export function PromptVaultPageContent({
   )
 }
 
-// ─── Vault Maya · the vault, made for you ────────────────────────────────────
+// ─── Vault Maya · the vault, made for you · one selfie, many photos ─────────
+const vmResult = (file: string, alt: string, label: string) => ({
+  src: `/images/vault-maya/proof/${file}`,
+  alt,
+  label,
+})
+
 const VAULT_MAYA_IMAGES = {
-  hero: {
-    src: `${BLOB}/content-kit/shoots/1785423447575-876892.png`,
-    alt: "Golden-hour balcony portrait from the newest SSELFIE Vault collection",
+  original: {
+    src: "/images/vault-maya/proof/img-2534-original-selfie.webp",
+    alt: "Sandra's original clear phone selfie used to create the Vault Maya results",
   },
-  gallery: [
-    {
-      src: `${BLOB}/content-kit/shoots/1785427595205-824538.png`,
-      alt: "Editorial mirror portrait from Golden Hour Diary",
-      label: "Mirror Check",
-    },
-    {
-      src: `${BLOB}/content-kit/shoots/1785423567032-23571.png`,
-      alt: "Seaside restaurant portrait from Golden Hour Diary",
-      label: "Seaside Wine",
-    },
-    {
-      src: `${BLOB}/content-kit/shoots/1785419724997-206601.png`,
-      alt: "Balcony portrait at sunset from Golden Hour Escape",
-      label: "Balcony View",
-    },
-    {
-      src: `${BLOB}/content-kit/shoots/1785419807908-245517.png`,
-      alt: "Rooftop full-body portrait from Golden Hour Escape",
-      label: "Rooftop Arrival",
-    },
-    {
-      src: `${BLOB}/content-kit/shoots/1785421185459-170116.png`,
-      alt: "Golden-hour beach close-up from Golden Hour Escape",
-      label: "Sunset Close-Up",
-    },
-    {
-      src: `${BLOB}/content-kit/shoots/1784653615998-885482.png`,
-      alt: "Rooftop wine portrait from Rooftop Evenings",
-      label: "Sunset Wine",
-    },
+  results: [
+    vmResult(
+      "img-7880-bw-editorial.webp",
+      "Black-and-white crouched editorial result",
+      "B&W editorial"
+    ),
+    vmResult("img-7879-white-top-mirror.webp", "White-top mirror result", "Mirror look"),
+    vmResult("1782982166995-509337-blazer-ipad.webp", "Blazer and iPad work result", "Work look"),
+    vmResult(
+      "img-7883-street-cream-bag.webp",
+      "Street-style result with a cream bag",
+      "Street look"
+    ),
+    vmResult("img-7884-coffee-trench.webp", "Coffee and trench-coat result", "Coffee look"),
+    vmResult("img-7874-sunglasses-close.webp", "Close-up sunglasses result", "Close-up"),
+    vmResult("img-7872-side-profile.webp", "Side-profile beauty result", "Beauty look"),
+    vmResult("img-7873-phone-lifestyle.webp", "Phone lifestyle portrait result", "Lifestyle look"),
+    vmResult("img-7876-casual-mirror.webp", "Casual gym mirror result", "Casual look"),
   ],
 }
 
@@ -2936,15 +2929,7 @@ const VAULT_MAYA_FAQ = [
   },
 ]
 
-export function VaultMayaPageContent({
-  shotCount,
-  collectionCount,
-  founderActive,
-}: {
-  shotCount: number
-  collectionCount: number
-  founderActive: boolean
-}) {
+export function VaultMayaPageContent({ priceLabel }: Readonly<{ priceLabel: string }>) {
   useEffect(() => {
     void trackAnalyticsEvent({
       event: "vault_maya_landing_view",
@@ -2952,7 +2937,7 @@ export function VaultMayaPageContent({
     })
   }, [])
 
-  const priceLabel = founderActive ? "$19/month" : "$29/month"
+  const ctaLabel = `START WITH MY SELFIE · ${priceLabel.toUpperCase()}`
 
   return (
     <PublicPageShell>
@@ -2960,243 +2945,226 @@ export function VaultMayaPageContent({
 
       <section className={vaultMayaStyles.hero}>
         <div className={vaultMayaStyles.heroCopy}>
-          <span className={`mf ${vaultMayaStyles.eyebrow}`}>Vault Maya</span>
+          <span className={`mf ${vaultMayaStyles.eyebrow}`}>Vault Maya · selfie to photo</span>
           <h1 className={`mf ${vaultMayaStyles.heroTitle}`}>
-            Create beautiful AI photos without copying a single prompt.
+            One selfie. Choose a look. Maya makes the photo.
           </h1>
           <p className={`mf ${vaultMayaStyles.heroBody}`}>
-            Add one clear selfie, choose the photo you want, and Maya creates it for you inside
-            SSELFIE. You do not need ChatGPT or any prompts.
+            Upload one clear selfie, choose the photo you want to create, and let Maya do the
+            prompting for you.
           </p>
           <div className={`mf ${vaultMayaStyles.heroActions}`}>
-            <VaultMayaCheckoutLink label={`Join Vault Maya · ${priceLabel}`} surface="cream" />
-            <a href="#how-vault-maya-works" className={vaultMayaStyles.textLink}>
-              See how it works
-            </a>
+            <VaultMayaCheckoutLink label={ctaLabel} surface="cream" />
           </div>
           <p className={`mf ${vaultMayaStyles.heroTerms}`}>
-            {founderActive ? "Founder price · " : ""}30 photo creations each month. Cancel from your
-            account anytime.
+            30 photo creations each month · cancel anytime
           </p>
         </div>
-        <div className={vaultMayaStyles.heroImage}>
-          <Image
-            src={VAULT_MAYA_IMAGES.hero.src}
-            alt={VAULT_MAYA_IMAGES.hero.alt}
-            fill
-            priority
-            sizes="(max-width: 767px) 100vw, 54vw"
-            className="object-cover"
-          />
-          <div className={vaultMayaStyles.heroImageCaption}>
-            <span>NEW IN THE VAULT</span>
-            <strong>Golden Hour Diary</strong>
+        <div
+          className={vaultMayaStyles.heroProof}
+          aria-label="One selfie transformed into several Vault Maya photos"
+        >
+          {[
+            {
+              image: VAULT_MAYA_IMAGES.original,
+              layout: vaultMayaStyles.heroOriginal,
+              caption: "This was the selfie",
+              sizes: "(max-width: 767px) 36vw, 20vw",
+              priority: true,
+            },
+            {
+              image: VAULT_MAYA_IMAGES.results[0],
+              layout: vaultMayaStyles.heroResultMain,
+              caption: "Maya result",
+              sizes: "(max-width: 767px) 45vw, 27vw",
+              priority: true,
+            },
+            {
+              image: VAULT_MAYA_IMAGES.results[1],
+              layout: vaultMayaStyles.heroResultTop,
+              sizes: "(max-width: 767px) 23vw, 13vw",
+              priority: false,
+            },
+            {
+              image: VAULT_MAYA_IMAGES.results[2],
+              layout: vaultMayaStyles.heroResultBottom,
+              sizes: "(max-width: 767px) 23vw, 13vw",
+              priority: false,
+            },
+          ].map(item => (
+            <figure
+              key={item.image.src}
+              className={`${vaultMayaStyles.heroProofCard} ${item.layout}`}
+            >
+              <Image
+                src={item.image.src}
+                alt={item.image.alt}
+                fill
+                priority={item.priority}
+                sizes={item.sizes}
+                className="object-cover"
+              />
+              {item.caption ? <figcaption>{item.caption}</figcaption> : null}
+            </figure>
+          ))}
+          <div className={vaultMayaStyles.heroProofDirection} aria-hidden="true">
+            <span>01</span>
+            <b>→</b>
+            <span>Many</span>
           </div>
         </div>
       </section>
 
-      <Section
-        eyebrow="Inside Vault Maya"
-        title="Choose the photo you wish you already had."
-        dark={false}
-      >
-        <p className={`mf ${vaultMayaStyles.sectionIntro}`}>
-          Every photo below is one of the ready-to-create looks inside Vault Maya. Choose the one
-          you love, and Maya creates your version.
-        </p>
-        <div className={vaultMayaStyles.gallery}>
-          {VAULT_MAYA_IMAGES.gallery.map((image, index) => (
-            <figure
-              key={image.src}
-              className={`mf ${vaultMayaStyles.galleryCard} ${vaultMayaStyles[`galleryCard${index + 1}` as keyof typeof vaultMayaStyles]}`}
-            >
+      <section className={vaultMayaStyles.proofSection}>
+        <div className={vaultMayaStyles.proofHeader}>
+          <div>
+            <span className={vaultMayaStyles.eyebrow}>This was the selfie</span>
+            <div className={vaultMayaStyles.proofOriginal}>
+              <Image
+                src={VAULT_MAYA_IMAGES.original.src}
+                alt={VAULT_MAYA_IMAGES.original.alt}
+                fill
+                sizes="(max-width: 767px) 72vw, 25vw"
+                className="object-cover"
+              />
+            </div>
+          </div>
+          <div className={vaultMayaStyles.proofStatement}>
+            <span className={vaultMayaStyles.eyebrow}>And these came from it</span>
+            <h2>One starting selfie. A whole camera roll.</h2>
+            <p>
+              Same starting selfie. Different photos. I chose the look; Maya handled the prompt.
+            </p>
+          </div>
+        </div>
+        <div
+          className={vaultMayaStyles.proofGallery}
+          aria-label="Vault Maya results from the same selfie"
+        >
+          {VAULT_MAYA_IMAGES.results.map((image, index) => (
+            <figure key={image.src} className={vaultMayaStyles.proofCard}>
               <Image
                 src={image.src}
                 alt={image.alt}
                 fill
-                sizes={
-                  index === 0 ? "(max-width: 767px) 100vw, 40vw" : "(max-width: 767px) 50vw, 24vw"
-                }
+                sizes="(max-width: 767px) 72vw, 25vw"
                 className="object-cover"
               />
-              <figcaption>{image.label}</figcaption>
+              <figcaption>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                {image.label}
+              </figcaption>
             </figure>
           ))}
         </div>
-      </Section>
+      </section>
 
       <section id="how-vault-maya-works" className={vaultMayaStyles.demoSection}>
-        <PaperTexture dark={false} />
         <div className={vaultMayaStyles.demoInner}>
           <div className={`mf ${vaultMayaStyles.demoCopy}`}>
             <span className={vaultMayaStyles.eyebrow}>How it works</span>
-            <h2>You choose the look. Maya handles the prompt.</h2>
-            <p>
-              Everything happens inside SSELFIE. Add your selfie once, tap any Vault look, and Maya
-              creates the photo for you.
-            </p>
-            <ol className={vaultMayaStyles.steps}>
-              <li>
-                <span>01</span>
-                <div>
-                  <strong>Add your selfie</strong>
-                  <p>Use one clear photo. You can replace or delete it whenever you want.</p>
-                </div>
-              </li>
-              <li>
-                <span>02</span>
-                <div>
-                  <strong>Choose your photo</strong>
-                  <p>Every current Vault collection is ready for you to tap.</p>
-                </div>
-              </li>
-              <li>
-                <span>03</span>
-                <div>
-                  <strong>Save the one you love</strong>
-                  <p>Your finished photos stay together in your private gallery.</p>
-                </div>
-              </li>
-            </ol>
-            <VaultMayaCheckoutLink label={`Join Vault Maya · ${priceLabel}`} surface="cream" />
+            <h2>From the selfie you have to the photo you want.</h2>
           </div>
-
-          <div
-            className={`mf ${vaultMayaStyles.studioPreview}`}
-            aria-label="Preview of the Vault Maya studio"
-          >
-            <div className={vaultMayaStyles.studioBar}>
+          <ol className={vaultMayaStyles.steps}>
+            <li>
+              <span>01</span>
               <div>
-                <span>Vault Maya</span>
+                <strong>Add your selfie</strong>
+                <p>Start with one clear photo where your face is easy to see.</p>
+              </div>
+            </li>
+            <li>
+              <span>02</span>
+              <div>
                 <strong>Choose a look</strong>
+                <p>Pick the Vault photo you want to make.</p>
               </div>
-              <span className={vaultMayaStyles.studioCredit}>30 photos</span>
-            </div>
-            <div className={vaultMayaStyles.studioFeature}>
-              <Image
-                src={VAULT_MAYA_IMAGES.gallery[4].src}
-                alt="Golden Hour Escape look selected inside Vault Maya"
-                fill
-                sizes="(max-width: 767px) 86vw, 38vw"
-                className="object-cover"
-              />
-              <div className={vaultMayaStyles.studioFeatureLabel}>
-                <span>Golden Hour Escape</span>
-                <strong>Sunset Close-Up</strong>
+            </li>
+            <li>
+              <span>03</span>
+              <div>
+                <strong>Maya creates it</strong>
+                <p>No prompt to copy. Review the result, save what you love, and create another.</p>
               </div>
-            </div>
-            <div className={vaultMayaStyles.studioThumbs} aria-hidden="true">
-              {VAULT_MAYA_IMAGES.gallery.slice(1, 4).map(image => (
-                <span key={image.src}>
-                  <Image src={image.src} alt="" fill sizes="120px" className="object-cover" />
-                </span>
-              ))}
-            </div>
-            <div className={vaultMayaStyles.studioButton}>Create this photo</div>
-          </div>
+            </li>
+          </ol>
         </div>
       </section>
 
-      <Split
-        eyebrow="From Sandra"
-        title={<>I made this for the days when you just want the photo.</>}
-        dark={false}
-        imgFirst
-        imgSrc={VAULT_MAYA_IMAGES.gallery[2].src}
-        imgAlt={VAULT_MAYA_IMAGES.gallery[2].alt}
-        body={
-          <div className="space-y-4">
-            <p>
-              I love the Prompt Vault because it gives you every detail behind the photos. But I
-              know there are days when copying prompts into ChatGPT is simply one more thing to do.
-            </p>
-            <p>
-              Vault Maya gives you another option. Choose the photo you want, and Maya creates it
-              for you. The Prompt Vault stays exactly as it is. This is the easier way when you want
-              the photo made for you.
-            </p>
-          </div>
-        }
-      />
+      <section className={vaultMayaStyles.whySection}>
+        <div className={vaultMayaStyles.whyImage}>
+          <Image
+            src={VAULT_MAYA_IMAGES.results[2].src}
+            alt={VAULT_MAYA_IMAGES.results[2].alt}
+            fill
+            sizes="(max-width: 767px) 100vw, 44vw"
+            className="object-cover"
+          />
+        </div>
+        <div className={vaultMayaStyles.whyCopy}>
+          <span className={vaultMayaStyles.eyebrow}>Why Vault Maya</span>
+          <h2>For the days you want the photo, not another prompt to figure out.</h2>
+          <p>
+            The Prompt Vault gives you my prompts to use yourself in ChatGPT. Vault Maya puts the
+            looks inside SSELFIE, so you can choose the photo and create it there.
+          </p>
+        </div>
+      </section>
 
-      <Section eyebrow="Your membership" title="New photos to create every week." dark={false}>
-        <p className={`mf ${vaultMayaStyles.sectionIntro}`}>
-          I add new Vault looks every Monday, so there is always something new waiting when you need
-          fresh photos.
-        </p>
-        <div className={vaultMayaStyles.membershipGrid}>
+      <section className={vaultMayaStyles.includedSection}>
+        <div className={vaultMayaStyles.includedInner}>
+          <div>
+            <span className={vaultMayaStyles.eyebrow}>What Vault Maya includes</span>
+            <h2>Everything you need to choose, create and keep your photos.</h2>
+          </div>
+          <ul>
+            <li>Vault looks ready to create</li>
+            <li>30 photo creations each month</li>
+            <li>New Vault drops as they are published</li>
+            <li>Personal Vault Maya gallery</li>
+            <li>Extra photo credits available when needed</li>
+          </ul>
+        </div>
+      </section>
+
+      <section className={vaultMayaStyles.distinctionSection}>
+        <div className={vaultMayaStyles.sectionHeading}>
+          <span className={vaultMayaStyles.eyebrow}>Choose the right product</span>
+          <h2>Three different ways to create with SSELFIE.</h2>
+        </div>
+        <div className={vaultMayaStyles.compareGrid}>
           {[
+            ["Prompt Vault", "Copy Sandra’s prompts and create the photos yourself in ChatGPT."],
+            ["Vault Maya", "Choose a Vault look and Maya creates it for you."],
             [
-              `${shotCount}+ photos ready to create`,
-              `Choose from every look across all ${collectionCount} current collections.`,
+              "SSELFIE SUITE",
+              "Full workspace for custom photo creation plus content planning, feed work and captions.",
             ],
-            [
-              "30 photo creations every month",
-              "Create the ones you need now and buy more only when you want them.",
-            ],
-            ["New looks every Monday", "The newest SSELFIE shoot drops appear inside your studio."],
-            [
-              "Your own private gallery",
-              "Keep your finished photos together and save them when you are ready.",
-            ],
-          ].map(([title, body]) => (
-            <article key={title} className={`mf ${vaultMayaStyles.membershipItem}`}>
+          ].map(([title, body], index) => (
+            <article
+              key={title}
+              className={`${vaultMayaStyles.compareCard} ${index === 1 ? vaultMayaStyles.compareCardSelected : ""}`}
+            >
+              <span>{String(index + 1).padStart(2, "0")}</span>
               <h3>{title}</h3>
               <p>{body}</p>
             </article>
           ))}
         </div>
-      </Section>
-
-      <Section
-        eyebrow="Choose what suits you"
-        title="The Prompt Vault and Vault Maya are two different ways to create."
-        dark={false}
-      >
-        <div className={vaultMayaStyles.compareGrid}>
-          <article className={`mf ${vaultMayaStyles.compareCard}`}>
-            <span>Prompt Vault</span>
-            <h3>You want the prompts.</h3>
-            <p>Copy the complete prompts into ChatGPT and keep the Vault as a one-time purchase.</p>
-          </article>
-          <article
-            className={`mf ${vaultMayaStyles.compareCard} ${vaultMayaStyles.compareCardSelected}`}
-          >
-            <span>Vault Maya</span>
-            <h3>You want the photo created for you.</h3>
-            <p>Choose a look inside SSELFIE and let Maya handle the prompt and creation.</p>
-          </article>
+        <div className={vaultMayaStyles.distinctionCta}>
+          <VaultMayaCheckoutLink label={ctaLabel} surface="cream" />
+          <p>30 photo creations each month · cancel anytime</p>
         </div>
-      </Section>
+      </section>
 
-      <Section
-        eyebrow={founderActive ? "Founder membership" : "Vault Maya membership"}
-        title={priceLabel}
-        dark
-        narrow
-      >
-        <div className={`mf ${vaultMayaStyles.priceCopy}`}>
-          {founderActive ? (
-            <p>
-              Founding members keep the $19 monthly price for as long as the membership stays
-              active. The standard price for new members will be $29/month.
-            </p>
-          ) : (
-            <p>Your membership includes 30 photo creations every month and every Vault look.</p>
-          )}
-          <ul>
-            <li>30 monthly photo creations</li>
-            <li>Every current collection and each new Monday drop</li>
-            <li>Unused monthly photos expire when they refresh</li>
-            <li>Purchased top-up credits do not expire</li>
-            <li>Manage or cancel from your account anytime</li>
-          </ul>
-          <VaultMayaCheckoutLink label={`Join Vault Maya · ${priceLabel}`} />
-          <p className={vaultMayaStyles.supportLine}>
-            If you need help, reply to your email and you will reach a real person. Usually me.
-          </p>
-        </div>
-      </Section>
+      <section className={vaultMayaStyles.aiNote}>
+        <span className={vaultMayaStyles.eyebrow}>An honest note about AI</span>
+        <p>
+          AI will not make a perfect photo every single time. Keeping the result recognizable is at
+          the heart of how these looks are built, and you should always review what you create
+          before you use it.
+        </p>
+      </section>
 
       <Section eyebrow="Questions you might have" title="Before you join." dark={false} narrow>
         <FaqAccordion items={VAULT_MAYA_FAQ} dark={false} />
@@ -3205,9 +3173,9 @@ export function VaultMayaPageContent({
       <section className={vaultMayaStyles.final}>
         <div className={`mf ${vaultMayaStyles.finalInner}`}>
           <span className={vaultMayaStyles.eyebrow}>Vault Maya</span>
-          <h2>Choose your first photo with Maya.</h2>
-          <p>One selfie, every Vault collection, and 30 photo creations each month.</p>
-          <VaultMayaCheckoutLink label={`Join Vault Maya · ${priceLabel}`} />
+          <h2>Start with the selfie you already have.</h2>
+          <p>{priceLabel} · 30 photo creations each month · cancel anytime</p>
+          <VaultMayaCheckoutLink label={ctaLabel} />
         </div>
       </section>
 

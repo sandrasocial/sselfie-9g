@@ -1,41 +1,27 @@
 import type { Metadata } from "next"
 import { VaultMayaPageContent } from "@/components/sselfie/public-marketing"
-import { VAULT_COLLECTION_META } from "@/lib/ai-prompts/prompt-data"
-import { getPublishedVaultCollectionMeta } from "@/lib/vault/published-collections"
 import { getVaultMayaPriceDisplay } from "@/lib/launch/cash-launch-pricing"
 
 export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
-  title: "Vault Maya — create AI photos without copying prompts",
+  title: "Vault Maya — one selfie, the photo you choose",
   description:
-    "Add one clear selfie, choose the photo you want, and let Maya create it for you inside SSELFIE. No ChatGPT or prompts to copy.",
+    "Upload one clear selfie, choose the photo you want to create, and let Maya do the prompting for you.",
   openGraph: {
-    title: "Vault Maya — create AI photos without copying prompts",
+    title: "One selfie. Choose a look. Maya makes the photo.",
     description:
-      "Add one clear selfie, choose the photo you want, and let Maya create it for you inside SSELFIE.",
+      "Upload one clear selfie, choose the photo you want to create, and let Maya do the prompting for you.",
     url: "https://www.sselfie.ai/vault-maya",
-    images: [
-      "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/content-kit/shoots/1785423447575-876892.png",
-    ],
+    images: ["https://www.sselfie.ai/images/vault-maya/proof/img-7880-bw-editorial.webp"],
   },
   alternates: {
     canonical: "https://www.sselfie.ai/vault-maya",
   },
 }
 
-export default async function VaultMayaOfferPage() {
-  const publishedMeta = await getPublishedVaultCollectionMeta().catch(() => [])
-  const vaultMeta = [...publishedMeta, ...VAULT_COLLECTION_META]
-  const collectionCount = vaultMeta.length
-  const shotCount = vaultMeta.reduce((total, collection) => total + collection.shotCount, 0)
+export default function VaultMayaOfferPage() {
   const price = getVaultMayaPriceDisplay()
 
-  return (
-    <VaultMayaPageContent
-      collectionCount={collectionCount}
-      shotCount={shotCount}
-      founderActive={!price.flipped}
-    />
-  )
+  return <VaultMayaPageContent priceLabel={price.monthlyLabel} />
 }
