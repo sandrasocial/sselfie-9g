@@ -2962,56 +2962,29 @@ export function VaultMayaPageContent({ priceLabel }: Readonly<{ priceLabel: stri
         </div>
         <div
           className={vaultMayaStyles.heroProof}
-          aria-label="One selfie transformed into several Vault Maya photos"
+          aria-label="Sandra's original selfie overlaid on the black-and-white Vault Maya result"
         >
-          {[
-            {
-              image: VAULT_MAYA_IMAGES.original,
-              layout: vaultMayaStyles.heroOriginal,
-              caption: "This was the selfie",
-              sizes: "(max-width: 767px) 36vw, 20vw",
-              priority: true,
-            },
-            {
-              image: VAULT_MAYA_IMAGES.results[0],
-              layout: vaultMayaStyles.heroResultMain,
-              caption: "Maya result",
-              sizes: "(max-width: 767px) 45vw, 27vw",
-              priority: true,
-            },
-            {
-              image: VAULT_MAYA_IMAGES.results[1],
-              layout: vaultMayaStyles.heroResultTop,
-              sizes: "(max-width: 767px) 23vw, 13vw",
-              priority: false,
-            },
-            {
-              image: VAULT_MAYA_IMAGES.results[2],
-              layout: vaultMayaStyles.heroResultBottom,
-              sizes: "(max-width: 767px) 23vw, 13vw",
-              priority: false,
-            },
-          ].map(item => (
-            <figure
-              key={item.image.src}
-              className={`${vaultMayaStyles.heroProofCard} ${item.layout}`}
-            >
-              <Image
-                src={item.image.src}
-                alt={item.image.alt}
-                fill
-                priority={item.priority}
-                sizes={item.sizes}
-                className="object-cover"
-              />
-              {item.caption ? <figcaption>{item.caption}</figcaption> : null}
-            </figure>
-          ))}
-          <div className={vaultMayaStyles.heroProofDirection} aria-hidden="true">
-            <span>01</span>
-            <b>→</b>
-            <span>Many</span>
-          </div>
+          <figure className={vaultMayaStyles.heroResultMain}>
+            <Image
+              src={VAULT_MAYA_IMAGES.results[0].src}
+              alt={VAULT_MAYA_IMAGES.results[0].alt}
+              fill
+              priority
+              sizes="(max-width: 767px) 100vw, 59vw"
+              className="object-cover"
+            />
+          </figure>
+          <figure className={vaultMayaStyles.heroOriginal}>
+            <Image
+              src={VAULT_MAYA_IMAGES.original.src}
+              alt={VAULT_MAYA_IMAGES.original.alt}
+              fill
+              priority
+              sizes="(max-width: 767px) 32vw, 18vw"
+              className="object-cover"
+            />
+            <figcaption>Original selfie</figcaption>
+          </figure>
         </div>
       </section>
 
