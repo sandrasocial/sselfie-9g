@@ -237,6 +237,8 @@ export async function handlePresetsCheckout(ctx: CheckoutFulfillmentContext): Pr
       properties: {
         checkout_session_id: session.id,
         product_type: productType,
+        value: paymentAmountCents / 100,
+        currency: typeof session.currency === "string" ? session.currency : "usd",
         preset_tier: tier,
         preset_collection_slug: collectionSlug,
         source: session.metadata?.source || source,

@@ -5,7 +5,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkRateLimit } from "@/lib/rate-limit-api"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
-import { postHogDistinctId } from "@/lib/analytics/posthog"
+import { isPostHogPurchaseEvent, postHogDistinctId } from "@/lib/analytics/posthog"
 
 type AnalyticsIdentity = {
   anonCookie: string | undefined
@@ -165,7 +165,7 @@ export async function POST(req: NextRequest) {
     const input = analyticsRequestInput(req, await req.json().catch(() => ({})))
     const { eventName } = input
 
-    if (SERVER_ONLY_ANALYTICS_EVENTS.has(eventName)) {
+    if (SERVER_ONLY_ANALYTICS_EVENTS.has(eventName) || isPostHogPurchaseEvent(eventName)) {
       return NextResponse.json({ ok: true, accepted: false, reason: "Unsupported event" })
     }
 

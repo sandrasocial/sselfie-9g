@@ -250,7 +250,7 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
         `
 
         await upsertPurchaseEntitlement({
-          userId: String(userId),
+          userId: userId ? String(userId) : null,
           productId: "prompt_vault",
           sourceRef: paymentIdForStorage,
           metadata: {
@@ -325,7 +325,7 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
       try {
         await logAnalyticsEvent({
           eventName: "prompt_vault_checkout_success",
-          userId: String(userId),
+          userId: userId ? String(userId) : null,
           properties: {
             source: source || "landing_page",
             product_type: "prompt_vault",

@@ -198,7 +198,7 @@ export async function handleBrandStrategyPackCheckout(ctx: CheckoutFulfillmentCo
       try {
         await logAnalyticsEvent({
           eventName: "brand_strategy_pack_checkout_success",
-          userId: String(userId),
+          userId: userId ? String(userId) : null,
           properties: {
             source: source || "brand_strategy_paid",
             product_type: "brand_strategy_pack",

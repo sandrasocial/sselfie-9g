@@ -209,7 +209,7 @@ export async function handleMasterclassCheckout(ctx: CheckoutFulfillmentContext)
       try {
         await logAnalyticsEvent({
           eventName: "masterclass_checkout_success",
-          userId: String(userId),
+          userId: userId ? String(userId) : null,
           properties: {
             source: source || "landing_page",
             product_type: "masterclass",

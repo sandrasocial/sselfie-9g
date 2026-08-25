@@ -193,6 +193,49 @@ describe("PostHog analytics boundary", () => {
     expect(JSON.stringify(body)).not.toContain("cs_prompt_vault_123")
   })
 
+  it("uses a stable privacy-safe purchase identity for guest checkout retries", async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(new Response("ok", { status: 200 }))
+    const input = {
+      eventName: "prompt_vault_checkout_success",
+      userId: "null",
+      properties: {
+        product_type: "prompt_vault",
+        value: 49,
+        stripe_session_id: "cs_guest_purchase_123",
+      },
+    }
+
+    await capturePostHogEvent(input, request)
+    await capturePostHogEvent(input, request)
+
+    const bodies = request.mock.calls.map(([, init]) => JSON.parse(String(init?.body)))
+    expect(bodies[0].properties.distinct_id).toMatch(/^purchase:[a-f0-9]{64}$/)
+    expect(bodies[1].properties.distinct_id).toBe(bodies[0].properties.distinct_id)
+    expect(JSON.stringify(bodies[0])).not.toContain("cs_guest_purchase_123")
+  })
+
+  it("normalizes campaign cents and presets emitter revenue", () => {
+    expect(
+      buildPostHogProperties({
+        eventName: "campaign_purchase",
+        properties: {
+          amount_cents: 9700,
+          stripe_session_id: "cs_campaign_123",
+        },
+      })
+    ).toMatchObject({
+      product: "campaign_outcome",
+      revenue_value: 97,
+    })
+
+    const presetsHandler = readFileSync(
+      join(process.cwd(), "lib/payments/handlers/presets.ts"),
+      "utf8"
+    )
+    expect(presetsHandler).toContain("value: paymentAmountCents / 100")
+    expect(presetsHandler).toContain('currency: typeof session.currency === "string"')
+  })
+
   it("suppresses Stripe test-mode purchases before provider delivery", async () => {
     const request = vi.fn<typeof fetch>()
 

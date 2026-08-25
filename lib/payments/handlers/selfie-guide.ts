@@ -383,7 +383,7 @@ export async function handleSelfieGuideCheckout(ctx: CheckoutFulfillmentContext)
           try {
             await logAnalyticsEvent({
               eventName: "brand_strategy_pack_checkout_success",
-              userId: String(userId),
+              userId: userId ? String(userId) : null,
               properties: {
                 source: bspAnalyticsSource,
                 product_type: "brand_strategy_pack",
@@ -498,7 +498,7 @@ export async function handleSelfieGuideCheckout(ctx: CheckoutFulfillmentContext)
       try {
         await logAnalyticsEvent({
           eventName: "selfie_guide_checkout_success",
-          userId: String(userId),
+          userId: userId ? String(userId) : null,
           properties: {
             source: source || "landing_page",
             product_type: guideProductType,

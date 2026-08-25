@@ -120,7 +120,7 @@ export async function handleSelfieToBrandShootCheckout(ctx: CheckoutFulfillmentC
         }
 
         await upsertPurchaseEntitlement({
-          userId: String(userId),
+          userId: userId ? String(userId) : null,
           productId: "selfie_to_brand_shoot_system",
           sourceRef: paymentIdForStorage,
           metadata: {

@@ -192,7 +192,7 @@ export async function handleSelfieAiPhotosKitCheckout(ctx: CheckoutFulfillmentCo
     `
 
     await upsertPurchaseEntitlement({
-      userId: String(userId),
+      userId: userId ? String(userId) : null,
       productId: "selfie_ai_photos_kit",
       sourceRef: paymentIdForStorage,
       metadata: {

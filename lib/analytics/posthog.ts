@@ -62,6 +62,10 @@ const EVENT_MAP: Readonly<Record<string, string>> = {
   work_with_me_checkout_success: "sselfie_purchase_observed",
 }
 
+const DEFAULT_PURCHASE_PRODUCT: Readonly<Record<string, string>> = {
+  campaign_purchase: "campaign_outcome",
+}
+
 const SAFE_PROPERTY_KEYS = new Set([
   "amount_cents",
   "calendar_action",
@@ -224,6 +228,20 @@ export function mapPostHogEvent(eventName: string): string | null {
   return EVENT_MAP[eventName] ?? null
 }
 
+export function isPostHogPurchaseEvent(eventName: string): boolean {
+  return mapPostHogEvent(eventName) === "sselfie_purchase_observed"
+}
+
+function purchaseProviderIdentifier(properties: Record<string, unknown>): string | null {
+  const providerId = [
+    properties.stripe_payment_id,
+    properties.stripe_invoice_id,
+    properties.stripe_session_id,
+    properties.checkout_session_id,
+  ].find(candidate => typeof candidate === "string" && candidate.trim())
+  return typeof providerId === "string" ? providerId.trim() : null
+}
+
 function copyApprovedAttribution(
   output: Record<string, Primitive>,
   attribution: PostHogCaptureInput["attribution"]
@@ -243,24 +261,24 @@ function copyRevenueProperties(
   eventName: string,
   properties: Record<string, unknown>
 ) {
-  const product = safeDimension(properties.product_type)
+  const product = safeDimension(properties.product_type ?? DEFAULT_PURCHASE_PRODUCT[eventName])
   if (product) output.product = product
 
   const value = properties.value
   if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
     output.revenue_value = value
+  } else {
+    const amountCents = properties.amount_cents
+    if (typeof amountCents === "number" && Number.isFinite(amountCents) && amountCents >= 0) {
+      output.revenue_value = amountCents / 100
+    }
   }
 
-  if (mapPostHogEvent(eventName) === "sselfie_purchase_observed") {
-    const providerId = [
-      properties.stripe_payment_id,
-      properties.stripe_invoice_id,
-      properties.stripe_session_id,
-      properties.checkout_session_id,
-    ].find(candidate => typeof candidate === "string" && candidate.trim())
-    if (typeof providerId === "string") {
+  if (isPostHogPurchaseEvent(eventName)) {
+    const providerId = purchaseProviderIdentifier(properties)
+    if (providerId) {
       output.$insert_id = createHash("sha256")
-        .update(`sselfie-purchase:${providerId.trim()}`)
+        .update(`sselfie-purchase:${providerId}`)
         .digest("hex")
     }
   }
@@ -348,10 +366,18 @@ function postHogConfig(): { key: string; host: string } | null {
 
 export function postHogDistinctId(input: PostHogCaptureInput): string | null {
   const userId = input.userId?.trim()
-  if (userId) return `user:${userId}`
+  if (userId && !/^(null|undefined)$/i.test(userId)) return `user:${userId}`
 
   const anonId = input.anonId?.trim()
-  return anonId ? `anon:${anonId}` : null
+  if (anonId) return `anon:${anonId}`
+
+  if (isPostHogPurchaseEvent(input.eventName)) {
+    const providerId = purchaseProviderIdentifier(input.properties ?? {})
+    if (providerId) {
+      return `purchase:${createHash("sha256").update(providerId).digest("hex")}`
+    }
+  }
+  return null
 }
 
 export async function capturePostHogEvent(
