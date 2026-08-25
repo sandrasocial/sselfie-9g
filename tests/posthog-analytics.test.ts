@@ -333,11 +333,11 @@ describe("PostHog analytics boundary", () => {
       join(process.cwd(), "components/sselfie/maya/welcome-first-generation-flow.tsx"),
       "utf8"
     )
-    const missingResultGuard = flow.indexOf("if (!completedImageUrl)")
+    const missingResultGuard = flow.indexOf("if (!imageUrl) throw")
     const completionEvent = flow.indexOf('trackEvent("first_generation_guided_complete"')
 
     expect(flow).toContain(
-      "completedImageUrl = firstGeneratedImageUrl(check?.imageUrl ?? check?.output)"
+      "const imageUrl = firstGeneratedImageUrl(check?.imageUrl ?? check?.output)"
     )
     expect(missingResultGuard).toBeGreaterThan(-1)
     expect(completionEvent).toBeGreaterThan(missingResultGuard)

@@ -125,7 +125,7 @@ export function PostHogProvider({
   useEffect(() => {
     if (!identity?.distinctId) return
     let active = true
-    const onLoaded = async (client: PostHogBrowserClient) => {
+    const initializeLoadedClient = async (client: PostHogBrowserClient) => {
       if (!active) return
       if (identity.resetPostHog) {
         client.reset()
@@ -135,6 +135,9 @@ export function PostHogProvider({
       client.identify(identity.distinctId as string)
       setPostHogCaptureEnabled(true, client)
       setReady(true)
+    }
+    const onLoaded = (client: PostHogBrowserClient) => {
+      void initializeLoadedClient(client)
     }
 
     window.__sselfiePostHogLoaded = onLoaded

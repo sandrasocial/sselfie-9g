@@ -15,6 +15,51 @@ type AnalyticsIdentity = {
 
 const SERVER_ONLY_ANALYTICS_EVENTS = new Set(["purchase", "suite_ready_post_saved"])
 
+type AnalyticsRequestInput = {
+  eventName: string
+  properties: Record<string, unknown>
+  path: string | null
+  referrer: string | null
+  utm: {
+    source: string | null
+    medium: string | null
+    campaign: string | null
+    content: string | null
+    term: string | null
+  }
+}
+
+function objectValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {}
+}
+
+function stringValue(body: Record<string, unknown>, key: string): string | null {
+  return typeof body[key] === "string" ? body[key] : null
+}
+
+function analyticsRequestInput(req: NextRequest, value: unknown): AnalyticsRequestInput {
+  const body = objectValue(value)
+  const url = new URL(req.url)
+  const parameter = (key: string) => stringValue(body, key) ?? url.searchParams.get(key)
+  return {
+    eventName: stringValue(body, "event") ?? "",
+    properties: objectValue(body.properties),
+    path:
+      stringValue(body, "path") ??
+      stringValue(body, "pathname") ??
+      req.headers.get("x-pathname") ??
+      url.searchParams.get("path"),
+    referrer: req.headers.get("referer"),
+    utm: {
+      source: parameter("utm_source"),
+      medium: parameter("utm_medium"),
+      campaign: parameter("utm_campaign"),
+      content: parameter("utm_content"),
+      term: parameter("utm_term"),
+    },
+  }
+}
+
 function readIp(req: NextRequest) {
   return (
     req.headers.get("x-forwarded-for")?.split(",")?.[0]?.trim() ||
@@ -99,38 +144,11 @@ export async function POST(req: NextRequest) {
   try {
     const ip = readIp(req)
 
-    const body = await req.json().catch(() => ({}))
-    const eventName = typeof body?.event === "string" ? body.event : ""
-    const properties =
-      body?.properties && typeof body.properties === "object" ? body.properties : {}
+    const input = analyticsRequestInput(req, await req.json().catch(() => ({})))
+    const { eventName } = input
 
     if (SERVER_ONLY_ANALYTICS_EVENTS.has(eventName)) {
       return NextResponse.json({ ok: true, accepted: false, reason: "Unsupported event" })
-    }
-
-    const url = new URL(req.url)
-    const path =
-      typeof body?.path === "string"
-        ? body.path
-        : typeof body?.pathname === "string"
-          ? body.pathname
-          : req.headers.get("x-pathname") || url.searchParams.get("path") || null
-
-    const referrer = req.headers.get("referer") || null
-    const utm = {
-      source:
-        typeof body?.utm_source === "string" ? body.utm_source : url.searchParams.get("utm_source"),
-      medium:
-        typeof body?.utm_medium === "string" ? body.utm_medium : url.searchParams.get("utm_medium"),
-      campaign:
-        typeof body?.utm_campaign === "string"
-          ? body.utm_campaign
-          : url.searchParams.get("utm_campaign"),
-      content:
-        typeof body?.utm_content === "string"
-          ? body.utm_content
-          : url.searchParams.get("utm_content"),
-      term: typeof body?.utm_term === "string" ? body.utm_term : url.searchParams.get("utm_term"),
     }
 
     const identity = await resolveAnalyticsIdentity(req)
@@ -144,11 +162,11 @@ export async function POST(req: NextRequest) {
       eventName,
       userId: identity.neonUserId,
       anonId: identity.anonId,
-      path,
-      referrer,
-      utm,
+      path: input.path,
+      referrer: input.referrer,
+      utm: input.utm,
       properties: {
-        ...properties,
+        ...input.properties,
         ip_hint: ip,
         user_agent: req.headers.get("user-agent") || null,
       },

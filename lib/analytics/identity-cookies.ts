@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto"
+import { randomUUID } from "node:crypto"
 import type { NextResponse } from "next/server"
 
 export function rotateAnonymousAnalyticsIdentity(response: NextResponse) {
