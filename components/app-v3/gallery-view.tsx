@@ -378,6 +378,7 @@ const AssetTile = memo(function AssetTile({
                 <button
                   type="button"
                   onClick={() => {
+                    actionsTriggerRef.current?.focus()
                     setActionsOpen(false)
                     onCompare(asset)
                   }}
@@ -401,6 +402,7 @@ const AssetTile = memo(function AssetTile({
                 <button
                   type="button"
                   onClick={() => {
+                    actionsTriggerRef.current?.focus()
                     setActionsOpen(false)
                     onDelete(asset)
                   }}
@@ -962,6 +964,16 @@ export function GalleryView({
                       if (!asset) return
                       closeLightbox()
                       onCreateVariation(asset)
+                    }
+                  : undefined
+              }
+              onMakeMotion={
+                onMakeMotion
+                  ? index => {
+                      const asset = scope[index]
+                      if (!asset || asset.kind !== "image") return
+                      closeLightbox()
+                      onMakeMotion(asset.url)
                     }
                   : undefined
               }

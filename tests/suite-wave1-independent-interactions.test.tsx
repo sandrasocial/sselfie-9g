@@ -17,7 +17,12 @@ vi.mock("next/image", () => ({
 }))
 
 vi.mock("@/components/app-v3/image-lightbox", () => ({
-  ImageLightbox: () => null,
+  ImageLightbox: ({ onMakeMotion }: { onMakeMotion?: (index: number) => void }) =>
+    onMakeMotion ? (
+      <button type="button" onClick={() => onMakeMotion(0)}>
+        Make video
+      </button>
+    ) : null,
 }))
 
 vi.mock("@/lib/testimonials/review-capture-client", () => ({
@@ -115,6 +120,47 @@ describe("Wave 1 Gallery interaction contracts", () => {
     fireEvent.click(download)
 
     await waitFor(() => expect(firstTrigger).toHaveFocus())
+  })
+
+  it("offers the video handoff only after opening a selected image", async () => {
+    const onMakeMotion = vi.fn()
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse(galleryPayload()))
+
+    render(<GalleryView onMakeMotion={onMakeMotion} />)
+
+    expect(screen.queryByRole("button", { name: "Make video" })).not.toBeInTheDocument()
+    fireEvent.click(await screen.findByRole("button", { name: /Open Quiet morning portrait/ }))
+    fireEvent.click(screen.getByRole("button", { name: "Make video" }))
+
+    expect(onMakeMotion).toHaveBeenCalledWith(asset.url)
+  })
+
+  it("restores the asset action trigger after Compare and Delete dialogs close", async () => {
+    const editedAsset: AppV3GalleryAsset = {
+      ...asset,
+      id: "ai_102",
+      url: "https://example.com/photo-edited.jpg",
+      title: "Quiet morning portrait edit",
+      variantOf: asset.id,
+    }
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse(galleryPayload([asset, editedAsset]))
+    )
+
+    render(<GalleryView />)
+
+    const trigger = await screen.findByRole("button", {
+      name: "More actions for Quiet morning portrait, item 1",
+    })
+    fireEvent.click(trigger)
+    fireEvent.click(screen.getByRole("button", { name: "Compare" }))
+    fireEvent.click(screen.getByRole("button", { name: "Close version comparison" }))
+    await waitFor(() => expect(trigger).toHaveFocus())
+
+    fireEvent.click(trigger)
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }))
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Keep it" }))
+    await waitFor(() => expect(trigger).toHaveFocus())
   })
 
   it("exposes favorite selection to assistive technology", async () => {

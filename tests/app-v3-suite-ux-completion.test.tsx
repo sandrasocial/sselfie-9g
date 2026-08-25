@@ -21,6 +21,8 @@ describe("App v3 Suite UX completion", () => {
 
     expect(gallery).not.toContain("Make video")
     expect(gallery).toContain("onMakeMotion?: (url: string) => void")
+    expect(gallery).toContain("onMakeMotion(asset.url)")
+    expect(read("components/app-v3/image-lightbox.tsx")).toContain("Make video")
     expect(shell).toContain("onMakeMotion={videoEnabled ? createMotionFromImage : undefined}")
     expect(shell).toContain("videoSourceUrl: imageUrl")
   })
