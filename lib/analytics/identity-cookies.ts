@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto"
 import type { NextResponse } from "next/server"
 
 export function rotateAnonymousAnalyticsIdentity(response: NextResponse) {
@@ -9,7 +8,7 @@ export function rotateAnonymousAnalyticsIdentity(response: NextResponse) {
     path: "/",
   }
 
-  response.cookies.set("sselfie_anon_id", randomUUID(), {
+  response.cookies.set("sselfie_anon_id", globalThis.crypto.randomUUID(), {
     ...cookieOptions,
     maxAge: 60 * 60 * 24 * 365,
   })

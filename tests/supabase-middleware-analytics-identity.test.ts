@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { readFileSync } from "node:fs"
 import { NextRequest } from "next/server"
 
 const mocks = vi.hoisted(() => ({
@@ -13,6 +14,16 @@ vi.mock("@supabase/ssr", () => ({
 }))
 
 describe("Supabase middleware analytics identity isolation", () => {
+  it("keeps the shared identity helper compatible with the Edge runtime", () => {
+    const source = readFileSync(
+      new URL("../lib/analytics/identity-cookies.ts", import.meta.url),
+      "utf8"
+    )
+
+    expect(source).not.toMatch(/from ["'](?:node:)?crypto["']/)
+    expect(source).toContain("globalThis.crypto.randomUUID()")
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://supabase.test"
