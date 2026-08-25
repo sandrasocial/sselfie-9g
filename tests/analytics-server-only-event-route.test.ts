@@ -73,7 +73,7 @@ describe("public analytics route server-only event boundary", () => {
     expect(response.headers.get("set-cookie")).not.toContain("private@example.com")
   })
 
-  it("returns and consumes the HTTP-only PostHog reset signal after logout", async () => {
+  it("keeps the HTTP-only PostHog reset signal until the SDK acknowledges it", async () => {
     const { GET } = await import("@/app/api/analytics/event/route")
     const response = await GET(
       new NextRequest("http://localhost/api/analytics/event", {
@@ -87,6 +87,20 @@ describe("public analytics route server-only event boundary", () => {
       distinctId: "anon:rotated-id",
       resetPostHog: true,
     })
+    expect(response.headers.get("set-cookie")).toBeNull()
+  })
+
+  it("clears the PostHog reset signal only after browser acknowledgement", async () => {
+    const { GET } = await import("@/app/api/analytics/event/route")
+    const response = await GET(
+      new NextRequest("http://localhost/api/analytics/event?ack_posthog_reset=1", {
+        headers: {
+          cookie: "sselfie_anon_id=rotated-id; sselfie_posthog_reset=1",
+        },
+      })
+    )
+
+    expect(await response.json()).toMatchObject({ resetPostHog: true })
     expect(response.headers.get("set-cookie")).toContain("sselfie_posthog_reset=")
     expect(response.headers.get("set-cookie")).toContain("Max-Age=0")
   })

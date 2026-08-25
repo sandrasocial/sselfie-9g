@@ -281,6 +281,7 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("window.posthog.identify(distinctId)")
     expect(provider).toContain("window.posthog.reset()")
     expect(provider).toContain("identity.resetPostHog")
+    expect(provider).toContain("await acknowledgePostHogReset()")
     expect(provider).toContain("ensureAnalyticsBrowserIdentity")
     expect(provider).toContain("readIdentity(true)")
     expect(provider).toContain("setPostHogCaptureEnabled(false)")
@@ -288,15 +289,20 @@ describe("PostHog analytics boundary", () => {
     expect(provider.indexOf("ensureAnalyticsBrowserIdentity().then")).toBeLessThan(
       provider.indexOf('<Script\n        id="posthog"')
     )
-    expect(provider.indexOf("if (identity.resetPostHog) window.posthog.reset()")).toBeLessThan(
-      provider.indexOf("setPostHogCaptureEnabled(true)", provider.indexOf("onReady="))
-    )
+    const onReadyIndex = provider.indexOf("onReady={async () =>")
+    const resetIndex = provider.indexOf("window.posthog.reset()", onReadyIndex)
+    const acknowledgeIndex = provider.indexOf("await acknowledgePostHogReset()", resetIndex)
+    const captureEnabledIndex = provider.indexOf("setPostHogCaptureEnabled(true)", onReadyIndex)
+    expect(resetIndex).toBeGreaterThan(onReadyIndex)
+    expect(resetIndex).toBeLessThan(acknowledgeIndex)
+    expect(acknowledgeIndex).toBeLessThan(captureEnabledIndex)
     expect(provider).toContain("}, [pathname, ready])")
     expect(provider).toContain("window.location.origin}${safePathname}")
     expect(provider).not.toContain("useSearchParams")
 
     const analyticsClient = readFileSync(join(process.cwd(), "lib/analytics/client.ts"), "utf8")
     expect(analyticsClient).toContain("rotate_anonymous=1")
+    expect(analyticsClient).toContain("ack_posthog_reset=1")
     expect(analyticsClient).toContain("await ensureAnalyticsBrowserIdentity()")
 
     const middleware = readFileSync(join(process.cwd(), "middleware.ts"), "utf8")

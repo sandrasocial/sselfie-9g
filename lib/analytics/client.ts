@@ -44,6 +44,19 @@ export function ensureAnalyticsBrowserIdentity(
   return identityRequest
 }
 
+export async function acknowledgePostHogReset(): Promise<boolean> {
+  try {
+    const response = await fetch("/api/analytics/event?ack_posthog_reset=1", {
+      credentials: "same-origin",
+      cache: "no-store",
+      keepalive: true,
+    })
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
 export async function trackAnalyticsEvent(input: {
   event: string
   properties?: Record<string, any>

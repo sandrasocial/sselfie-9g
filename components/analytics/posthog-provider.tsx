@@ -8,6 +8,7 @@ import {
   sanitizePostHogPathname,
 } from "@/lib/analytics/posthog-browser"
 import {
+  acknowledgePostHogReset,
   ensureAnalyticsBrowserIdentity,
   type BrowserAnalyticsIdentity,
 } from "@/lib/analytics/client"
@@ -63,6 +64,7 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
         const previousId = identifiedAs.current
         if (identity.resetPostHog) {
           window.posthog.reset()
+          await acknowledgePostHogReset()
         } else if (previousId?.startsWith("user:") && distinctId !== previousId) {
           if (distinctId.startsWith("anon:")) {
             const rotatedIdentity = await readIdentity(true)
@@ -120,9 +122,12 @@ export function PostHogProvider({
       <Script
         id="posthog"
         strategy="afterInteractive"
-        onReady={() => {
+        onReady={async () => {
           if (!window.posthog) return
-          if (identity.resetPostHog) window.posthog.reset()
+          if (identity.resetPostHog) {
+            window.posthog.reset()
+            await acknowledgePostHogReset()
+          }
           window.posthog.identify(identity.distinctId as string)
           setPostHogCaptureEnabled(true)
           setReady(true)

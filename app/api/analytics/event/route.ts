@@ -70,7 +70,9 @@ function clearPostHogResetCookie(response: NextResponse) {
 
 export async function GET(req: NextRequest) {
   try {
-    const rotateAnonymous = new URL(req.url).searchParams.get("rotate_anonymous") === "1"
+    const searchParams = new URL(req.url).searchParams
+    const rotateAnonymous = searchParams.get("rotate_anonymous") === "1"
+    const acknowledgePostHogReset = searchParams.get("ack_posthog_reset") === "1"
     const resetPostHog = req.cookies.get("sselfie_posthog_reset")?.value === "1"
     const identity = await resolveAnalyticsIdentity(req, rotateAnonymous)
     const response = NextResponse.json({
@@ -83,7 +85,9 @@ export async function GET(req: NextRequest) {
     })
     response.headers.set("Cache-Control", "private, no-store")
     setAnonCookie(response, identity)
-    if (resetPostHog) clearPostHogResetCookie(response)
+    // Keep the signal durable until the browser confirms that the PostHog SDK
+    // actually applied reset(). Identity bootstrap alone is not an acknowledgement.
+    if (resetPostHog && acknowledgePostHogReset) clearPostHogResetCookie(response)
     return response
   } catch {
     return NextResponse.json({ distinctId: null })
