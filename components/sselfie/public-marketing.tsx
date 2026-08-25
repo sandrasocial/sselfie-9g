@@ -2849,57 +2849,35 @@ export function PromptVaultPageContent({
 }
 
 // ─── Vault Maya · the vault, made for you · one selfie, many photos ─────────
+const vmResult = (file: string, alt: string, label: string) => ({
+  src: `/images/vault-maya/proof/${file}`,
+  alt,
+  label,
+})
+
 const VAULT_MAYA_IMAGES = {
   original: {
     src: "/images/vault-maya/proof/img-2534-original-selfie.webp",
     alt: "Sandra's original clear phone selfie used to create the Vault Maya results",
   },
   results: [
-    {
-      src: "/images/vault-maya/proof/img-7880-bw-editorial.webp",
-      alt: "Black-and-white crouched editorial photo created from Sandra's selfie",
-      label: "B&W editorial",
-    },
-    {
-      src: "/images/vault-maya/proof/img-7879-white-top-mirror.webp",
-      alt: "White-top mirror photo created from Sandra's selfie",
-      label: "Mirror look",
-    },
-    {
-      src: "/images/vault-maya/proof/1782982166995-509337-blazer-ipad.webp",
-      alt: "Blazer and iPad work photo created from Sandra's selfie",
-      label: "Work look",
-    },
-    {
-      src: "/images/vault-maya/proof/img-7883-street-cream-bag.webp",
-      alt: "Street-style photo with a cream bag created from Sandra's selfie",
-      label: "Street look",
-    },
-    {
-      src: "/images/vault-maya/proof/img-7884-coffee-trench.webp",
-      alt: "Coffee and trench-coat photo created from Sandra's selfie",
-      label: "Coffee look",
-    },
-    {
-      src: "/images/vault-maya/proof/img-7874-sunglasses-close.webp",
-      alt: "Close-up sunglasses photo created from Sandra's selfie",
-      label: "Close-up",
-    },
-    {
-      src: "/images/vault-maya/proof/img-7872-side-profile.webp",
-      alt: "Side-profile beauty photo created from Sandra's selfie",
-      label: "Beauty look",
-    },
-    {
-      src: "/images/vault-maya/proof/img-7873-phone-lifestyle.webp",
-      alt: "Phone lifestyle portrait created from Sandra's selfie",
-      label: "Lifestyle look",
-    },
-    {
-      src: "/images/vault-maya/proof/img-7876-casual-mirror.webp",
-      alt: "Casual gym mirror photo created from Sandra's selfie",
-      label: "Casual look",
-    },
+    vmResult(
+      "img-7880-bw-editorial.webp",
+      "Black-and-white crouched editorial result",
+      "B&W editorial"
+    ),
+    vmResult("img-7879-white-top-mirror.webp", "White-top mirror result", "Mirror look"),
+    vmResult("1782982166995-509337-blazer-ipad.webp", "Blazer and iPad work result", "Work look"),
+    vmResult(
+      "img-7883-street-cream-bag.webp",
+      "Street-style result with a cream bag",
+      "Street look"
+    ),
+    vmResult("img-7884-coffee-trench.webp", "Coffee and trench-coat result", "Coffee look"),
+    vmResult("img-7874-sunglasses-close.webp", "Close-up sunglasses result", "Close-up"),
+    vmResult("img-7872-side-profile.webp", "Side-profile beauty result", "Beauty look"),
+    vmResult("img-7873-phone-lifestyle.webp", "Phone lifestyle portrait result", "Lifestyle look"),
+    vmResult("img-7876-casual-mirror.webp", "Casual gym mirror result", "Casual look"),
   ],
 }
 
