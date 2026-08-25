@@ -81,10 +81,40 @@ describe("Wave 1 Gallery interaction contracts", () => {
     expect(screen.queryByRole("button", { name: "Make video" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Videos" })).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: "More actions" }))
+    fireEvent.click(
+      screen.getByRole("button", { name: "More actions for Quiet morning portrait, item 1" })
+    )
     expect(screen.getByRole("group", { name: "Photo actions" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Download" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument()
+  })
+
+  it("names each overflow trigger for its asset and restores focus after download", async () => {
+    const secondAsset: AppV3GalleryAsset = {
+      ...asset,
+      id: "ai_102",
+      url: "https://example.com/photo-2.jpg",
+      title: "Studio portrait",
+    }
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse(galleryPayload([asset, secondAsset]))
+    )
+
+    render(<GalleryView />)
+
+    const firstTrigger = await screen.findByRole("button", {
+      name: "More actions for Quiet morning portrait, item 1",
+    })
+    expect(
+      screen.getByRole("button", { name: "More actions for Studio portrait, item 2" })
+    ).toBeInTheDocument()
+
+    fireEvent.click(firstTrigger)
+    const download = screen.getByRole("button", { name: "Download" })
+    download.focus()
+    fireEvent.click(download)
+
+    await waitFor(() => expect(firstTrigger).toHaveFocus())
   })
 
   it("exposes favorite selection to assistive technology", async () => {
@@ -182,7 +212,11 @@ describe("Wave 1 Gallery interaction contracts", () => {
     })
 
     render(<GalleryView />)
-    fireEvent.click(await screen.findByRole("button", { name: "More actions" }))
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "More actions for Quiet morning portrait, item 1",
+      })
+    )
     fireEvent.click(screen.getByRole("button", { name: "Delete" }))
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete" }))
 

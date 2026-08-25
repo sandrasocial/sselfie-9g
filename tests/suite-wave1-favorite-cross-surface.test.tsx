@@ -64,7 +64,9 @@ describe("Wave 1 favorite cross-surface consistency", () => {
 
     render(<GalleryView />)
 
-    fireEvent.click(await screen.findByRole("button", { name: /Quiet morning portrait/i }))
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Open Quiet morning portrait, item 1" })
+    )
     const fullscreenFavorite = screen.getByRole("button", { name: "Add to favorites" })
     fireEvent.click(fullscreenFavorite)
     await waitFor(() => expect(fullscreenFavorite).toHaveAttribute("aria-pressed", "true"))

@@ -251,6 +251,7 @@ const AssetTile = memo(function AssetTile({
   onFavorite: (asset: AppV3GalleryAsset) => void
   onDelete: (asset: AppV3GalleryAsset) => void
   onDownload: (asset: AppV3GalleryAsset) => void
+  onMakeMotion?: (url: string) => void
   onCompare: (asset: AppV3GalleryAsset) => void
   versionIndex: number
   versionCount: number
@@ -261,11 +262,12 @@ const AssetTile = memo(function AssetTile({
   const isVideo = asset.kind === "video"
   const title = safeAssetTitle(asset)
   const [actionsOpen, setActionsOpen] = useState(false)
+  const actionsTriggerRef = useRef<HTMLButtonElement>(null)
   return (
     <div
-      className={`suite-card group relative overflow-hidden rounded-[2px] border bg-[#F1F2F2] transition-shadow ${
-        selected ? "border-[#0D0E10] ring-1 ring-[#0D0E10]" : "border-[#C5C6C8]/50"
-      }`}
+      className={`suite-card group relative rounded-[2px] border bg-[#F1F2F2] transition-shadow ${
+        actionsOpen ? "z-30 overflow-visible" : "overflow-hidden"
+      } ${selected ? "border-[#0D0E10] ring-1 ring-[#0D0E10]" : "border-[#C5C6C8]/50"}`}
     >
       <button
         type="button"
@@ -357,9 +359,10 @@ const AssetTile = memo(function AssetTile({
       {!selectionMode && (
         <div className="absolute bottom-2 right-2 z-20">
           <button
+            ref={actionsTriggerRef}
             type="button"
             onClick={() => setActionsOpen(open => !open)}
-            aria-label="More actions"
+            aria-label={`More actions for ${title}, item ${index + 1}`}
             aria-expanded={actionsOpen}
             className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0D0E10]/35 text-white backdrop-blur-sm transition-colors hover:bg-[#0D0E10]/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
@@ -387,6 +390,7 @@ const AssetTile = memo(function AssetTile({
                 type="button"
                 onClick={() => {
                   setActionsOpen(false)
+                  queueMicrotask(() => actionsTriggerRef.current?.focus())
                   onDownload(asset)
                 }}
                 className="flex min-h-11 w-full items-center px-4 text-left text-[10px] uppercase tracking-[0.12em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
@@ -418,6 +422,7 @@ const AssetTile = memo(function AssetTile({
 const CORE_FILTERS = new Set<GalleryFilter>(["all", "favorites", "photos"])
 
 export function GalleryView({
+  onMakeMotion,
   onStartCreate,
   onUseInCalendar,
   onCreateVariation,
@@ -427,6 +432,7 @@ export function GalleryView({
   onEditAsset,
   onCancelEdit,
 }: {
+  onMakeMotion?: (url: string) => void
   onStartCreate?: () => void
   onUseInCalendar?: (asset: AppV3GalleryAsset) => void
   onCreateVariation?: (asset: AppV3GalleryAsset) => void
@@ -904,6 +910,7 @@ export function GalleryView({
                 onFavorite={toggleFavorite}
                 onDelete={asset => setPendingDeleteIds([asset.id])}
                 onDownload={downloadAsset}
+                onMakeMotion={onMakeMotion}
                 onCompare={setCompareAsset}
               />
             )

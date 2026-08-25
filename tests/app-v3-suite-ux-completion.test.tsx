@@ -17,9 +17,18 @@ describe("App v3 Suite UX completion", () => {
 
   it("keeps the Gallery grid free of per-thumbnail video promotion", () => {
     const gallery = read("components/app-v3/gallery-view.tsx")
+    const shell = read("components/app-v3/app-v3-shell.tsx")
 
     expect(gallery).not.toContain("Make video")
-    expect(gallery).not.toContain("onMakeMotion")
+    expect(gallery).toContain("onMakeMotion?: (url: string) => void")
+    expect(shell).toContain("onMakeMotion={videoEnabled ? createMotionFromImage : undefined}")
+    expect(shell).toContain("videoSourceUrl: imageUrl")
+  })
+
+  it("lets the Gallery overflow panel escape its thumbnail while open", () => {
+    const gallery = read("components/app-v3/gallery-view.tsx")
+
+    expect(gallery).toContain('actionsOpen ? "z-30 overflow-visible" : "overflow-hidden"')
   })
 
   it("keeps refinement conversational instead of reopening format choices", () => {
