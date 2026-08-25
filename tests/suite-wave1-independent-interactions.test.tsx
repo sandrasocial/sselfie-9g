@@ -69,6 +69,24 @@ afterEach(() => {
 })
 
 describe("Wave 1 Gallery interaction contracts", () => {
+  it("keeps thumbnail titles and secondary actions quiet until requested", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse(galleryPayload()))
+
+    render(<GalleryView />)
+
+    await screen.findByAltText(/Quiet morning portrait/)
+    expect(screen.queryByText("Quiet morning portrait")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Download" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Make video" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Videos" })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }))
+    expect(screen.getByRole("group", { name: "Photo actions" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Download" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument()
+  })
+
   it("exposes favorite selection to assistive technology", async () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(async input => {
       if (String(input).endsWith("/favorite")) {
@@ -164,7 +182,8 @@ describe("Wave 1 Gallery interaction contracts", () => {
     })
 
     render(<GalleryView />)
-    fireEvent.click(await screen.findByRole("button", { name: "Delete" }))
+    fireEvent.click(await screen.findByRole("button", { name: "More actions" }))
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }))
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete" }))
 
     expect(await screen.findByRole("alert")).toHaveTextContent(historyMessage)

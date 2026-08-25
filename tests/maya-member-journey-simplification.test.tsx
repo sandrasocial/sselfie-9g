@@ -44,9 +44,9 @@ describe("Maya simplified member journey", () => {
     expect(shell).toContain('label: "Calendar"')
     expect(shell).toContain('label: "Learn"')
     expect(shell).toContain('label: "Account"')
-    expect(gallery).toContain("Post projects")
-    expect(gallery).toContain("Continue where you left off.")
-    expect(shell).toContain("onOpenProjects={limited ? undefined : openHistory}")
+    expect(gallery).not.toContain("Post projects")
+    expect(gallery).not.toContain("Continue where you left off.")
+    expect(shell).not.toContain("onOpenProjects={limited ? undefined : openHistory}")
     expect(shell).not.toContain(
       "<MayaFloatingLauncher operatingLayerEnabled={mayaOperatingLayerEnabled} />"
     )

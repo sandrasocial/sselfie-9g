@@ -278,7 +278,6 @@ function ShellInner({
     isOpen: mayaOpen,
     openWithAesthetic,
     openForLesson,
-    openHistory,
     setActiveSurface,
     close,
   } = useConcierge()
@@ -468,15 +467,6 @@ function ShellInner({
     })
   }
 
-  function createMotionFromImage(imageUrl: string) {
-    openWithAesthetic(MAYA_GENERAL, {
-      format: "video",
-      videoSourceUrl: imageUrl,
-      seed: "Let's add subtle editorial motion to this exact image. Keep it natural, polished, and true to the original.",
-      creationIntent: intentForFormat("video", "gallery_action"),
-    })
-  }
-
   function createVariationFromGallery(imageUrl: string) {
     openWithAesthetic(MAYA_GENERAL, {
       format: "photo",
@@ -596,8 +586,6 @@ function ShellInner({
           mode={galleryMode}
           onEditAsset={asset => setEditAsset(asset)}
           onCancelEdit={() => setGalleryMode("browse")}
-          onOpenProjects={limited ? undefined : openHistory}
-          onMakeMotion={videoEnabled ? createMotionFromImage : undefined}
           onStartCreate={limited ? undefined : createFirstPhotoFromGallery}
           operatingLayerEnabled={mayaOperatingLayerEnabled}
           onUseInCalendar={mayaOperatingLayerEnabled ? undefined : useAssetInCalendar}

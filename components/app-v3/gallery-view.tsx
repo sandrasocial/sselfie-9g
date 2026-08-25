@@ -6,7 +6,6 @@
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import {
-  ArrowUpRight,
   Check,
   Download,
   Film,
@@ -232,13 +231,11 @@ const AssetTile = memo(function AssetTile({
   index,
   selected,
   selectionMode,
-  showLabel,
   onOpen,
   onToggleSelect,
   onFavorite,
   onDelete,
   onDownload,
-  onMakeMotion,
   onCompare,
   versionIndex,
   versionCount,
@@ -249,13 +246,11 @@ const AssetTile = memo(function AssetTile({
   index: number
   selected: boolean
   selectionMode: boolean
-  showLabel: boolean
   onOpen: (asset: AppV3GalleryAsset, index: number) => void
   onToggleSelect: (id: string) => void
   onFavorite: (asset: AppV3GalleryAsset) => void
   onDelete: (asset: AppV3GalleryAsset) => void
   onDownload: (asset: AppV3GalleryAsset) => void
-  onMakeMotion?: (url: string) => void
   onCompare: (asset: AppV3GalleryAsset) => void
   versionIndex: number
   versionCount: number
@@ -265,6 +260,7 @@ const AssetTile = memo(function AssetTile({
 }) {
   const isVideo = asset.kind === "video"
   const title = safeAssetTitle(asset)
+  const [actionsOpen, setActionsOpen] = useState(false)
   return (
     <div
       className={`suite-card group relative overflow-hidden rounded-[2px] border bg-[#F1F2F2] transition-shadow ${
@@ -317,34 +313,15 @@ const AssetTile = memo(function AssetTile({
       </button>
 
       {/* Overlays live OUTSIDE the tap button (a button can't nest a button) and sit above it. */}
-      {/* Quiet type label - only in the mixed "All" view, where it actually disambiguates. */}
-      {showLabel && (
-        <span className="pointer-events-none absolute left-2 top-2 rounded-[3px] bg-[#0D0E10]/55 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.16em] text-white backdrop-blur-sm">
-          {assetLabel(asset)}
-        </span>
-      )}
       {setCount ? (
-        <span
-          className={`pointer-events-none absolute left-2 rounded-[3px] bg-[#0D0E10]/80 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.14em] text-white backdrop-blur-sm ${
-            showLabel ? "top-8" : "top-2"
-          }`}
-        >
+        <span className="pointer-events-none absolute left-2 top-2 rounded-[3px] bg-[#0D0E10]/72 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.14em] text-white backdrop-blur-sm">
           {setCount} {asset.contentType === "photoshoot" ? "photos" : "slides"}
         </span>
       ) : versionCount > 1 ? (
-        <span
-          className={`pointer-events-none absolute left-2 rounded-[3px] bg-white/85 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.14em] text-[color:var(--ss-charcoal)] backdrop-blur-sm ${
-            showLabel ? "top-8" : "top-2"
-          }`}
-        >
+        <span className="pointer-events-none absolute left-2 top-2 rounded-[3px] bg-white/85 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.14em] text-[color:var(--ss-charcoal)] backdrop-blur-sm">
           {versionIndex === 0 ? "Original" : `Version ${versionIndex + 1}`} · {versionCount}
         </span>
       ) : null}
-      {asset.title?.trim() && title === asset.title.trim() && (
-        <span className="pointer-events-none absolute inset-x-2 bottom-12 line-clamp-2 rounded-[3px] bg-[color:var(--ss-night)]/45 px-2 py-1 text-[10px] leading-snug text-white backdrop-blur-sm">
-          {title}
-        </span>
-      )}
 
       {/* Selection check replaces the favorite affordance while selecting. */}
       {selectionMode ? (
@@ -376,47 +353,59 @@ const AssetTile = memo(function AssetTile({
         )
       )}
 
-      {/* Action row stays out of the way while selecting (bulk bar owns the screen then). */}
+      {/* Secondary actions stay available behind one quiet, intentional affordance. */}
       {!selectionMode && (
-        <div className="flex items-center justify-between gap-1 bg-white px-1.5 py-1.5">
-          <div className="flex min-w-0 items-center">
-            {versionCount > 1 ? (
+        <div className="absolute bottom-2 right-2 z-20">
+          <button
+            type="button"
+            onClick={() => setActionsOpen(open => !open)}
+            aria-label="More actions"
+            aria-expanded={actionsOpen}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0D0E10]/35 text-white backdrop-blur-sm transition-colors hover:bg-[#0D0E10]/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          >
+            <MoreHorizontal size={17} aria-hidden />
+          </button>
+          {actionsOpen && (
+            <div
+              role="group"
+              aria-label={`${assetLabel(asset)} actions`}
+              className="absolute bottom-12 right-0 min-w-36 overflow-hidden rounded-[3px] border border-[#C5C6C8] bg-white py-1 shadow-lg"
+            >
+              {versionCount > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActionsOpen(false)
+                    onCompare(asset)
+                  }}
+                  className="flex min-h-11 w-full items-center px-4 text-left text-[10px] uppercase tracking-[0.12em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
+                >
+                  Compare
+                </button>
+              ) : null}
               <button
                 type="button"
-                onClick={() => onCompare(asset)}
-                className="flex min-h-11 items-center px-2 text-[9px] uppercase tracking-[0.11em] text-[#4F5052] hover:text-[#0D0E10]"
+                onClick={() => {
+                  setActionsOpen(false)
+                  onDownload(asset)
+                }}
+                className="flex min-h-11 w-full items-center px-4 text-left text-[10px] uppercase tracking-[0.12em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
               >
-                Compare
+                Download
               </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => onDownload(asset)}
-              aria-label="Download"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-[#4F5052] hover:bg-[#F1F2F2]"
-            >
-              <Download size={15} />
-            </button>
-            {asset.canDelete && (
-              <button
-                type="button"
-                onClick={() => onDelete(asset)}
-                aria-label="Delete"
-                className="flex h-11 w-11 items-center justify-center rounded-full text-[#4F5052] hover:bg-[#F1F2F2]"
-              >
-                <Trash2 size={15} />
-              </button>
-            )}
-          </div>
-          {asset.kind === "image" && onMakeMotion && (
-            <button
-              type="button"
-              onClick={() => onMakeMotion(asset.url)}
-              className="flex min-h-11 items-center gap-1 rounded-[4px] bg-[#0D0E10] px-2.5 text-[9px] uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#282728]"
-            >
-              <Film size={11} />
-              Make video
-            </button>
+              {asset.canDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActionsOpen(false)
+                    onDelete(asset)
+                  }}
+                  className="flex min-h-11 w-full items-center px-4 text-left text-[10px] uppercase tracking-[0.12em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -426,11 +415,9 @@ const AssetTile = memo(function AssetTile({
 
 // Core chips are always offered; content-type chips only appear once Maya has made that kind,
 // so the row stays quiet for someone whose library is mostly plain photos.
-const CORE_FILTERS = new Set<GalleryFilter>(["all", "favorites", "photos", "video"])
+const CORE_FILTERS = new Set<GalleryFilter>(["all", "favorites", "photos"])
 
 export function GalleryView({
-  onOpenProjects,
-  onMakeMotion,
   onStartCreate,
   onUseInCalendar,
   onCreateVariation,
@@ -440,8 +427,6 @@ export function GalleryView({
   onEditAsset,
   onCancelEdit,
 }: {
-  onOpenProjects?: () => void
-  onMakeMotion?: (url: string) => void
   onStartCreate?: () => void
   onUseInCalendar?: (asset: AppV3GalleryAsset) => void
   onCreateVariation?: (asset: AppV3GalleryAsset) => void
@@ -757,29 +742,6 @@ export function GalleryView({
         </div>
       ) : null}
 
-      {onOpenProjects && mode === "browse" && (
-        <button
-          type="button"
-          onClick={onOpenProjects}
-          className="mb-9 flex min-h-28 w-full items-center justify-between gap-5 rounded-[4px] border border-[color:var(--suite-night)] bg-white p-5 text-left transition-colors hover:border-[color:var(--suite-accent)] sm:p-6"
-        >
-          <span className="min-w-0">
-            <span className="block text-[10px] uppercase tracking-[0.24em] text-[#818283]">
-              Post projects
-            </span>
-            <span className="mt-2 block font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
-              Continue where you left off.
-            </span>
-            <span className="mt-1.5 block max-w-lg text-[13px] leading-relaxed text-[#4F5052]">
-              Your idea, conversation, directions, and finished versions stay together.
-            </span>
-          </span>
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[3px] bg-[color:var(--suite-accent)] text-white">
-            <ArrowUpRight size={17} aria-hidden />
-          </span>
-        </button>
-      )}
-
       <div className="mb-4">
         <p className="text-[10px] uppercase tracking-[0.24em] text-[#818283]">Finished visuals</p>
         <h2 className="mt-1 font-serif text-[24px] font-light text-[#0D0E10]">
@@ -927,7 +889,6 @@ export function GalleryView({
                 index={i}
                 selected={selectedIds.has(asset.id)}
                 selectionMode={selectionMode}
-                showLabel={filter === "all"}
                 versionIndex={version.index}
                 versionCount={version.count}
                 favoritePending={favoritePendingIds.has(asset.id)}
@@ -943,7 +904,6 @@ export function GalleryView({
                 onFavorite={toggleFavorite}
                 onDelete={asset => setPendingDeleteIds([asset.id])}
                 onDownload={downloadAsset}
-                onMakeMotion={onMakeMotion}
                 onCompare={setCompareAsset}
               />
             )

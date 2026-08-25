@@ -15,11 +15,11 @@ describe("App v3 Suite UX completion", () => {
     expect(feedView).toContain("onClick={() => void mutateFeed()}")
   })
 
-  it("names the Gallery image-to-video action by its outcome", () => {
+  it("keeps the Gallery grid free of per-thumbnail video promotion", () => {
     const gallery = read("components/app-v3/gallery-view.tsx")
 
-    expect(gallery).toContain("Make video")
-    expect(gallery).not.toMatch(/<Film[^>]*\/>\s*Move\s*<\/button>/)
+    expect(gallery).not.toContain("Make video")
+    expect(gallery).not.toContain("onMakeMotion")
   })
 
   it("keeps refinement conversational instead of reopening format choices", () => {
