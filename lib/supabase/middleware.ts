@@ -2,6 +2,31 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 import { rotateAnonymousAnalyticsIdentity } from "@/lib/analytics/identity-cookies"
 
+const TERMINAL_AUTH_ERROR_CODES = new Set([
+  "bad_jwt",
+  "refresh_token_already_used",
+  "refresh_token_not_found",
+  "session_expired",
+  "session_not_found",
+])
+
+function isSupabaseSessionCookie(name: string): boolean {
+  return (
+    name === "sb-access-token" ||
+    name === "sb-refresh-token" ||
+    /^sb-.+-auth-token(?:\.\d+)?$/.test(name)
+  )
+}
+
+function isTerminalAuthError(error: { code?: string; message?: string }): boolean {
+  const code = error.code?.toLowerCase()
+  if (code && TERMINAL_AUTH_ERROR_CODES.has(code)) return true
+  const message = error.message?.toLowerCase() || ""
+  return (
+    message.includes("refresh token not found") || message.includes("refresh_token_already_used")
+  )
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -9,6 +34,9 @@ export async function updateSession(request: NextRequest) {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+  const sessionCookies = request.cookies
+    .getAll()
+    .filter(cookie => isSupabaseSessionCookie(cookie.name))
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.log("[v0] [Middleware] Supabase not configured - skipping auth check")
@@ -54,15 +82,9 @@ export async function updateSession(request: NextRequest) {
     } = result
 
     if (error) {
-      if (
-        error.message?.includes("refresh_token_already_used") ||
-        error.code === "refresh_token_already_used" ||
-        error.code === "refresh_token_not_found" ||
-        error.message?.includes("Refresh Token Not Found")
-      ) {
-        console.log("[v0] [Middleware] Stale/used refresh token - clearing cookies")
-        supabaseResponse.cookies.delete("sb-access-token")
-        supabaseResponse.cookies.delete("sb-refresh-token")
+      if (sessionCookies.length > 0 && isTerminalAuthError(error)) {
+        console.log("[v0] [Middleware] Terminal auth session error - clearing cookies")
+        for (const cookie of sessionCookies) supabaseResponse.cookies.delete(cookie.name)
         // Session loss can happen without the explicit logout route. Rotate
         // the anonymous identity and tell the browser provider to reset its
         // persisted user identity before capturing the now-anonymous page.
