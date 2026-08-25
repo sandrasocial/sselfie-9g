@@ -166,7 +166,7 @@ export async function handleStarterKitCheckout(ctx: CheckoutFulfillmentContext):
       }
 
       if (paymentRecorded) {
-        await logAnalyticsEvent({
+        void logAnalyticsEvent({
           eventName: "starter_kit_checkout_success",
           userId: userId ? String(userId) : null,
           properties: {

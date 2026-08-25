@@ -213,7 +213,7 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
     }
 
     if (paymentRecorded) {
-      await logAnalyticsEvent({
+      void logAnalyticsEvent({
         eventName: "prompt_vault_checkout_success",
         userId: userId ? String(userId) : null,
         properties: {

@@ -74,6 +74,7 @@ export async function handleSelfieAiPhotosKitCheckout(
   }
 
   const customerIdForStorage = customerId || session.id
+  let paymentRecorded = false
 
   if (customerIdForStorage) {
     try {
@@ -153,9 +154,26 @@ export async function handleSelfieAiPhotosKitCheckout(
           buyer_stage = COALESCE(stripe_payments.buyer_stage, EXCLUDED.buyer_stage),
           updated_at = NOW()
       `
+      paymentRecorded = true
     } catch (paymentError: any) {
       console.error(`[v0] Error storing Selfie To AI Photos Kit payment:`, paymentError.message)
     }
+  }
+
+  if (paymentRecorded) {
+    void logAnalyticsEvent({
+      eventName: "selfie_ai_photos_kit_checkout_success",
+      userId: userId ? String(userId) : null,
+      properties: {
+        source: source || "landing_page",
+        product_type: "selfie_ai_photos_kit",
+        value: paymentAmountCents / 100,
+        currency: "usd",
+        stripe_session_id: session.id,
+        stripe_payment_id: paymentIdForStorage,
+        is_test_mode: isTestMode,
+      },
+    })
   }
 
   try {
@@ -272,23 +290,5 @@ export async function handleSelfieAiPhotosKitCheckout(
         segmentError
       )
     })
-  }
-
-  try {
-    await logAnalyticsEvent({
-      eventName: "selfie_ai_photos_kit_checkout_success",
-      userId: String(userId),
-      properties: {
-        source: source || "landing_page",
-        product_type: "selfie_ai_photos_kit",
-        value: paymentAmountCents / 100,
-        currency: "usd",
-        stripe_session_id: session.id,
-        stripe_payment_id: paymentIdForStorage,
-        is_test_mode: isTestMode,
-      },
-    })
-  } catch {
-    // best effort only
   }
 }

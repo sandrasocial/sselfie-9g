@@ -56,6 +56,7 @@ export async function handleSelfieToBrandShootCheckout(
     }
 
     const systemCustomerIdForStorage = customerId || session.id
+    let paymentRecorded = false
 
     if (systemCustomerIdForStorage) {
       try {
@@ -97,9 +98,26 @@ export async function handleSelfieToBrandShootCheckout(
               status = 'succeeded',
               updated_at = NOW()
           `
+        paymentRecorded = true
       } catch (paymentError: any) {
         console.error(`[v0] Error storing Selfie to Brand Shoot payment:`, paymentError.message)
       }
+    }
+
+    if (paymentRecorded) {
+      void logAnalyticsEvent({
+        eventName: "selfie_to_brand_shoot_checkout_success",
+        userId: userId ? String(userId) : null,
+        properties: {
+          source: source || "landing_page",
+          product_type: "selfie_to_brand_shoot_system",
+          value: paymentAmountCents / 100,
+          currency: "usd",
+          stripe_session_id: session.id,
+          stripe_payment_id: paymentIdForStorage,
+          is_test_mode: isTestMode,
+        },
+      })
     }
 
     if (userId) {
@@ -210,24 +228,6 @@ export async function handleSelfieToBrandShootCheckout(
           segmentError
         )
       })
-    }
-
-    try {
-      await logAnalyticsEvent({
-        eventName: "selfie_to_brand_shoot_checkout_success",
-        userId: String(userId),
-        properties: {
-          source: source || "landing_page",
-          product_type: "selfie_to_brand_shoot_system",
-          value: paymentAmountCents / 100,
-          currency: "usd",
-          stripe_session_id: session.id,
-          stripe_payment_id: paymentIdForStorage,
-          is_test_mode: isTestMode,
-        },
-      })
-    } catch {
-      // best effort only
     }
   }
 }

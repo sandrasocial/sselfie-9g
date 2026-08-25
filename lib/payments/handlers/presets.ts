@@ -115,7 +115,7 @@ export async function handlePresetsCheckout(ctx: CheckoutFulfillmentContext): Pr
   }
 
   if (paymentRecorded) {
-    await logAnalyticsEvent({
+    void logAnalyticsEvent({
       eventName: "presets_checkout_success",
       userId: userId || null,
       path: "/checkout/success",

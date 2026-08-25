@@ -456,6 +456,7 @@ describe("PostHog analytics boundary", () => {
     expect(purchaseEvent).toBeLessThan(accessCreation)
     expect(purchaseEvent).toBeLessThan(delivery)
     expect(handler).toContain("if (paymentRecorded)")
+    expect(handler.slice(paymentRecorded, purchaseEvent)).toContain("void logAnalyticsEvent({")
     expect(handler).toContain("checkout_session_id: session.id")
   })
 
@@ -463,6 +464,8 @@ describe("PostHog analytics boundary", () => {
     ["prompt-vault.ts", "prompt_vault_checkout_success"],
     ["starter-kit.ts", "starter_kit_checkout_success"],
     ["masterclass.ts", "masterclass_checkout_success"],
+    ["selfie-ai-photos-kit.ts", "selfie_ai_photos_kit_checkout_success"],
+    ["selfie-to-brand-shoot.ts", "selfie_to_brand_shoot_checkout_success"],
   ])("records %s purchase analytics before fallible fulfillment", (file, eventName) => {
     const handler = readFileSync(join(process.cwd(), "lib/payments/handlers", file), "utf8")
     const paymentRecorded = handler.indexOf("paymentRecorded = true")
@@ -477,6 +480,7 @@ describe("PostHog analytics boundary", () => {
       if (fulfillmentStep >= 0) expect(purchaseEvent).toBeLessThan(fulfillmentStep)
     }
     expect(handler).toContain("if (paymentRecorded)")
+    expect(handler.slice(paymentRecorded, purchaseEvent)).toContain("void logAnalyticsEvent({")
     expect(handler.match(new RegExp(`eventName: \\"${eventName}\\"`, "g"))).toHaveLength(1)
   })
 

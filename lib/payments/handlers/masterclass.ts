@@ -101,7 +101,7 @@ export async function handleMasterclassCheckout(ctx: CheckoutFulfillmentContext)
       }
 
       if (paymentRecorded) {
-        await logAnalyticsEvent({
+        void logAnalyticsEvent({
           eventName: "masterclass_checkout_success",
           userId: userId ? String(userId) : null,
           properties: {
