@@ -13,6 +13,8 @@ type AnalyticsIdentity = {
   neonUserId: string | null
 }
 
+const SERVER_ONLY_ANALYTICS_EVENTS = new Set(["purchase", "suite_ready_post_saved"])
+
 function readIp(req: NextRequest) {
   return (
     req.headers.get("x-forwarded-for")?.split(",")?.[0]?.trim() ||
@@ -80,6 +82,10 @@ export async function POST(req: NextRequest) {
     const eventName = typeof body?.event === "string" ? body.event : ""
     const properties =
       body?.properties && typeof body.properties === "object" ? body.properties : {}
+
+    if (SERVER_ONLY_ANALYTICS_EVENTS.has(eventName)) {
+      return NextResponse.json({ ok: true, accepted: false, reason: "Unsupported event" })
+    }
 
     const url = new URL(req.url)
     const path =

@@ -1,5 +1,6 @@
 import "server-only"
 
+import { createHash } from "node:crypto"
 import { sanitizePostHogPathname } from "@/lib/analytics/posthog-browser"
 
 type Primitive = string | number | boolean
@@ -223,6 +224,7 @@ function copyApprovedAttribution(
 
 function copyRevenueProperties(
   output: Record<string, Primitive>,
+  eventName: string,
   properties: Record<string, unknown>
 ) {
   const product = safeDimension(properties.product_type)
@@ -231,6 +233,19 @@ function copyRevenueProperties(
   const value = properties.value
   if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
     output.revenue_value = value
+  }
+
+  if (eventName === "purchase") {
+    const providerId = [
+      properties.stripe_payment_id,
+      properties.stripe_invoice_id,
+      properties.stripe_session_id,
+    ].find(candidate => typeof candidate === "string" && candidate.trim())
+    if (typeof providerId === "string") {
+      output.$insert_id = createHash("sha256")
+        .update(`sselfie-purchase:${providerId.trim()}`)
+        .digest("hex")
+    }
   }
 }
 
@@ -273,7 +288,7 @@ export function buildPostHogProperties(input: PostHogCaptureInput): Record<strin
   copyApprovedAttribution(output, input.attribution)
 
   const rawProperties = input.properties ?? {}
-  copyRevenueProperties(output, rawProperties)
+  copyRevenueProperties(output, input.eventName, rawProperties)
   copyGenerationProperties(output, rawProperties)
 
   for (const [key, value] of Object.entries(rawProperties)) {

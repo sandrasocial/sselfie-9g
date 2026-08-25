@@ -5,7 +5,6 @@ import Link from "next/link"
 import {
   trackCTAClick,
   trackPricingView,
-  trackCheckoutStart,
   trackLandingView,
   trackSelfieGuideEntryClick,
 } from "@/lib/analytics"
@@ -114,7 +113,6 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
         sselfie_studio_membership: "Studio Membership",
       }
       const productName = productNames[tierId] || tierId
-      trackCheckoutStart(tierId, undefined)
       trackCTAClick("pricing", productName, "/checkout")
 
       const clientSecret = await startEmbeddedCheckout(tierId)

@@ -123,6 +123,29 @@ describe("PostHog analytics boundary", () => {
     })
   })
 
+  it("adds a privacy-safe stable insert id to retried Stripe purchases", async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(new Response("ok", { status: 200 }))
+
+    const purchase = {
+      eventName: "purchase",
+      userId: "user-123",
+      properties: {
+        source: "stripe_webhook",
+        product_type: "sselfie_studio_membership",
+        value: 97,
+        stripe_payment_id: "pi_retry_safe_123",
+      },
+    }
+
+    await capturePostHogEvent(purchase, request)
+    await capturePostHogEvent(purchase, request)
+
+    const bodies = request.mock.calls.map(([, init]) => JSON.parse(String(init?.body)))
+    expect(bodies[0].properties.$insert_id).toMatch(/^[a-f0-9]{64}$/)
+    expect(bodies[1].properties.$insert_id).toBe(bodies[0].properties.$insert_id)
+    expect(JSON.stringify(bodies[0])).not.toContain("pi_retry_safe_123")
+  })
+
   it("drops unapproved attribution and event-source slugs", () => {
     expect(
       buildPostHogProperties({
@@ -162,20 +185,21 @@ describe("PostHog analytics boundary", () => {
       sanitizePostHogEventPayload({
         event: "$autocapture",
         properties: {
-          $current_url: "https://preview.test/claim/secret-token?source=email",
+          $current_url:
+            "https://preview.test/claim/secret-token?vault_token=private&email=private@example.com",
           $pathname: "/claim/secret-token",
           $snapshot_data: {
-            href: "https://preview.test/selfie-guide/access/another-secret",
+            href: "https://preview.test/checkout/membership?session_id=cs_private&freebie_token=private",
           },
         },
       })
     ).toEqual({
       event: "$autocapture",
       properties: {
-        $current_url: "https://preview.test/claim/[token]?source=email",
+        $current_url: "https://preview.test/claim/[token]",
         $pathname: "/claim/[token]",
         $snapshot_data: {
-          href: "https://preview.test/selfie-guide/access/[token]",
+          href: "https://preview.test/checkout/membership",
         },
       },
     })
@@ -215,8 +239,10 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("recordBody:false")
     expect(provider).toContain("recordHeaders:false")
     expect(provider).toContain("capture_exceptions:true")
-    expect(provider).toContain("JSON.stringify(event).replace")
+    expect(provider).toContain("function scrub(value)")
+    expect(provider).toContain('new URL(clean,"https://sselfie.invalid")')
     expect(provider).toContain("window.posthog.identify(data.distinctId)")
+    expect(provider).toContain("}, [pathname, ready])")
     expect(provider).toContain('fetch("/api/analytics/event"')
     expect(provider).toContain("window.location.origin}${safePathname}")
     expect(provider).not.toContain("useSearchParams")
@@ -224,5 +250,16 @@ describe("PostHog analytics boundary", () => {
     const middleware = readFileSync(join(process.cwd(), "middleware.ts"), "utf8")
     expect(middleware).toContain("https://eu-assets.i.posthog.com")
     expect(middleware).toContain("https://eu.i.posthog.com")
+  })
+
+  it("records the membership checkout start only on checkout-page arrival", () => {
+    const landing = readFileSync(
+      join(process.cwd(), "components/sselfie/landing-page-new.tsx"),
+      "utf8"
+    )
+    const checkout = readFileSync(join(process.cwd(), "app/checkout/page.tsx"), "utf8")
+
+    expect(landing).not.toContain("trackCheckoutStart(")
+    expect(checkout).toContain("trackCheckoutStart(productType")
   })
 })

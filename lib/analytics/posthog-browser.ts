@@ -12,9 +12,28 @@ export function sanitizePostHogPathname(pathname: string): string | null {
 
 export function sanitizePostHogEventPayload<T>(event: T): T | null {
   try {
-    const serialized = JSON.stringify(event)
-    if (!serialized) return null
-    return JSON.parse(serialized.replace(TOKENIZED_PATH_IN_PAYLOAD, "$1[token]")) as T
+    const scrub = (value: unknown): unknown => {
+      if (Array.isArray(value)) return value.map(scrub)
+      if (value && typeof value === "object") {
+        return Object.fromEntries(
+          Object.entries(value).map(([key, nested]) => [key, scrub(nested)])
+        )
+      }
+      if (typeof value !== "string") return value
+
+      const tokenSafe = value.replace(TOKENIZED_PATH_IN_PAYLOAD, "$1[token]")
+      if (!/^https?:\/\//i.test(tokenSafe) && !tokenSafe.startsWith("/")) return tokenSafe
+
+      try {
+        const absolute = /^https?:\/\//i.test(tokenSafe)
+        const parsed = new URL(tokenSafe, "https://sselfie.invalid")
+        return `${absolute ? parsed.origin : ""}${parsed.pathname}`
+      } catch {
+        return tokenSafe.split(/[?#]/, 1)[0]
+      }
+    }
+
+    return scrub(event) as T
   } catch {
     return null
   }
