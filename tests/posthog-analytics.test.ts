@@ -183,6 +183,15 @@ describe("PostHog analytics boundary", () => {
     })
   })
 
+  it("normalizes emitted generation failure reasons", () => {
+    expect(
+      buildPostHogProperties({
+        eventName: "suite_generation_failed",
+        properties: { reason: "content_policy" },
+      })
+    ).toMatchObject({ error_code: "content_policy" })
+  })
+
   it("redacts access tokens from browser page paths", () => {
     expect(sanitizePostHogPathname("/claim/secret-token")).toBe("/claim/[token]")
     expect(sanitizePostHogPathname("/access/prompt-vault/token123/details")).toBe(
@@ -261,9 +270,11 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("capture_exceptions:true")
     expect(provider).toContain("function scrub(value)")
     expect(provider).toContain('new URL(clean,"https://sselfie.invalid")')
-    expect(provider).toContain("window.posthog.identify(data.distinctId)")
+    expect(provider).toContain("window.posthog.identify(distinctId)")
+    expect(provider).toContain("window.posthog.reset()")
+    expect(provider).toContain('readIdentity(true)')
     expect(provider).toContain("}, [pathname, ready])")
-    expect(provider).toContain('fetch("/api/analytics/event"')
+    expect(provider).toContain("rotate_anonymous=1")
     expect(provider).toContain("window.location.origin}${safePathname}")
     expect(provider).not.toContain("useSearchParams")
 

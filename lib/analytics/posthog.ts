@@ -271,6 +271,16 @@ function copyGenerationProperties(
   if (typeof isRerun === "boolean") output.is_rerun = isRerun
 }
 
+function copyFailureProperties(
+  output: Record<string, Primitive>,
+  eventName: string,
+  properties: Record<string, unknown>
+) {
+  if (eventName !== "suite_generation_failed") return
+  const errorCode = safeDimension(properties.error_code ?? properties.reason)
+  if (errorCode) output.error_code = errorCode
+}
+
 function safeProperty(key: string, value: unknown): Primitive | null {
   if (!SAFE_PROPERTY_KEYS.has(key) || SENSITIVE_KEY.test(key)) return null
   if (typeof value === "string") {
@@ -296,6 +306,7 @@ export function buildPostHogProperties(input: PostHogCaptureInput): Record<strin
   const rawProperties = input.properties ?? {}
   copyRevenueProperties(output, input.eventName, rawProperties)
   copyGenerationProperties(output, rawProperties)
+  copyFailureProperties(output, input.eventName, rawProperties)
 
   for (const [key, value] of Object.entries(rawProperties)) {
     const property = safeProperty(key, value)

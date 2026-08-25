@@ -23,8 +23,11 @@ function readIp(req: NextRequest) {
   )
 }
 
-async function resolveAnalyticsIdentity(req: NextRequest): Promise<AnalyticsIdentity> {
-  const anonCookie = req.cookies.get("sselfie_anon_id")?.value
+async function resolveAnalyticsIdentity(
+  req: NextRequest,
+  rotateAnonymous = false
+): Promise<AnalyticsIdentity> {
+  const anonCookie = rotateAnonymous ? undefined : req.cookies.get("sselfie_anon_id")?.value
   const anonId = anonCookie || randomUUID()
   let neonUserId: string | null = null
 
@@ -57,7 +60,8 @@ function setAnonCookie(response: NextResponse, identity: AnalyticsIdentity) {
 
 export async function GET(req: NextRequest) {
   try {
-    const identity = await resolveAnalyticsIdentity(req)
+    const rotateAnonymous = new URL(req.url).searchParams.get("rotate_anonymous") === "1"
+    const identity = await resolveAnalyticsIdentity(req, rotateAnonymous)
     const response = NextResponse.json({
       distinctId: postHogDistinctId({
         eventName: "$identity",

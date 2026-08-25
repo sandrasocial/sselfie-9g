@@ -40,6 +40,21 @@ describe("public analytics route server-only event boundary", () => {
     expect(response.headers.get("set-cookie")).toContain("HttpOnly")
   })
 
+  it("rotates the anonymous identity after logout or account switching", async () => {
+    const { GET } = await import("@/app/api/analytics/event/route")
+    const response = await GET(
+      new NextRequest("http://localhost/api/analytics/event?rotate_anonymous=1", {
+        headers: { cookie: "sselfie_anon_id=old-shared-browser-id" },
+      })
+    )
+
+    const body = await response.json()
+    expect(body.distinctId).toMatch(/^anon:[0-9a-f-]{36}$/)
+    expect(body.distinctId).not.toContain("old-shared-browser-id")
+    expect(response.headers.get("set-cookie")).toContain("sselfie_anon_id=")
+    expect(response.headers.get("set-cookie")).not.toContain("old-shared-browser-id")
+  })
+
   it("joins an authenticated browser to the server-side Neon identity", async () => {
     mocks.createServerClient.mockResolvedValue({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "auth-123" } } }) },
