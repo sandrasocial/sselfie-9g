@@ -532,16 +532,43 @@ describe("PostHog analytics boundary", () => {
     const ledgerWrite = lifecycle.indexOf(
       "const revenueRecord = await recordCheckoutSessionRevenue"
     )
-    const purchaseEvent = lifecycle.indexOf('eventName: "work_with_me_checkout_success"')
+    const purchaseEvent = lifecycle.indexOf('"work_with_me_checkout_success"')
     const accountSetup = lifecycle.indexOf("Creating new account for landing page purchase")
     const handlerDispatch = lifecycle.indexOf("await handleWorkWithMeCheckout")
 
     expect(purchaseEvent).toBeGreaterThan(ledgerWrite)
     expect(purchaseEvent).toBeLessThan(accountSetup)
     expect(purchaseEvent).toBeLessThan(handlerDispatch)
-    expect(lifecycle).toContain('productType === "work_with_me" && isPaymentPaid')
+    expect(lifecycle).toContain("centralPurchaseEvent && productType && isPaymentPaid")
     expect(lifecycle).toContain("revenueRecord.recorded")
-    expect(lifecycle.match(/eventName: "work_with_me_checkout_success"/g)).toHaveLength(1)
+    expect(lifecycle.match(/"work_with_me_checkout_success"/g)).toHaveLength(1)
+  })
+
+  it("observes central-ledger one-time products before account and fulfillment work", () => {
+    const lifecycle = readFileSync(
+      join(process.cwd(), "lib/payments/lifecycle/checkout-session-completed.ts"),
+      "utf8"
+    )
+    const ledgerWrite = lifecycle.indexOf(
+      "const revenueRecord = await recordCheckoutSessionRevenue"
+    )
+    const purchaseSchedule = lifecycle.indexOf("schedulePurchaseObservation({", ledgerWrite)
+    const accountSetup = lifecycle.indexOf("Creating new account for landing page purchase")
+    const academyDispatch = lifecycle.indexOf("await handleAcademyProductCheckout")
+    const bundleDispatch = lifecycle.indexOf("await handleSelfieVisibilityBundleCheckout")
+
+    for (const productType of [
+      "selfie_visibility_bundle",
+      "visibility_suite",
+      "academy_mini_product",
+    ]) {
+      expect(lifecycle).toContain(`  "${productType}",`)
+    }
+    expect(lifecycle).toContain('? "purchase"')
+    expect(purchaseSchedule).toBeGreaterThan(ledgerWrite)
+    expect(purchaseSchedule).toBeLessThan(accountSetup)
+    expect(purchaseSchedule).toBeLessThan(academyDispatch)
+    expect(purchaseSchedule).toBeLessThan(bundleDispatch)
   })
 
   it("records the membership checkout start only on checkout-page arrival", () => {

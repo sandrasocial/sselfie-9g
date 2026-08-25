@@ -59,6 +59,12 @@ type PurchaseCreditProductType =
   | "transform_topup"
   | "paid_blueprint"
 
+const CENTRAL_LEDGER_PURCHASE_PRODUCT_TYPES = new Set([
+  "selfie_visibility_bundle",
+  "visibility_suite",
+  "academy_mini_product",
+])
+
 function isPurchaseCreditProductType(
   productType: string | null | undefined
 ): productType is PurchaseCreditProductType {
@@ -821,14 +827,21 @@ export async function handleCheckoutSessionCompleted(
       description: productType ? `Checkout payment - ${productType}` : "Checkout session payment",
     })
 
-    if (productType === "work_with_me" && isPaymentPaid && revenueRecord.recorded) {
+    const centralPurchaseEvent =
+      productType === "work_with_me"
+        ? "work_with_me_checkout_success"
+        : productType && CENTRAL_LEDGER_PURCHASE_PRODUCT_TYPES.has(productType)
+          ? "purchase"
+          : null
+
+    if (centralPurchaseEvent && productType && isPaymentPaid && revenueRecord.recorded) {
       schedulePurchaseObservation({
-        eventName: "work_with_me_checkout_success",
+        eventName: centralPurchaseEvent,
         userId: userId ? String(userId) : null,
-        source: source || "work_with_me_paid",
-        productType: "work_with_me",
+        source: source || (productType === "work_with_me" ? "work_with_me_paid" : "landing_page"),
+        productType,
         amountCents: session.amount_total || 0,
-        currency: session.currency || "eur",
+        currency: session.currency || (productType === "work_with_me" ? "eur" : "usd"),
         sessionId: session.id,
         paymentId: revenueRecord.stripePaymentId,
         isTestMode: !event.livemode,
