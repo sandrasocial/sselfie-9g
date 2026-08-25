@@ -81,6 +81,55 @@ describe("Neon-to-PostHog delivery boundary", () => {
     expect(mocks.capturePostHogEvent).not.toHaveBeenCalled()
   })
 
+  it("deduplicates a retried purchase before Neon and provider delivery", async () => {
+    let providerCallback: (() => Promise<unknown>) | undefined
+    mocks.after.mockImplementation(callback => {
+      providerCallback = callback
+    })
+    mocks.sql.mockResolvedValue([])
+
+    const { logAnalyticsEvent } = await import("@/lib/analytics/events")
+    await expect(
+      logAnalyticsEvent({
+        eventName: "purchase",
+        userId: "user-123",
+        idempotencyKey: "purchase:pi_private_123",
+        properties: { stripe_payment_id: "pi_private_123" },
+      })
+    ).resolves.toEqual({ ok: true })
+
+    await providerCallback?.()
+    expect(mocks.capturePostHogEvent).not.toHaveBeenCalled()
+    const query = (mocks.sql.mock.calls[0][0] as TemplateStringsArray).join(" ")
+    expect(query).toContain("ON CONFLICT (idempotency_key)")
+    expect(query).toContain("RETURNING id")
+    expect(mocks.sql.mock.calls[0].slice(1)).not.toContain("purchase:pi_private_123")
+  })
+
+  it("delivers the first idempotent purchase after storing only a hashed key", async () => {
+    let providerCallback: (() => Promise<unknown>) | undefined
+    mocks.after.mockImplementation(callback => {
+      providerCallback = callback
+    })
+    mocks.sql.mockResolvedValue([{ id: 42 }])
+
+    const { logAnalyticsEvent } = await import("@/lib/analytics/events")
+    await expect(
+      logAnalyticsEvent({
+        eventName: "purchase",
+        userId: "user-123",
+        idempotencyKey: "purchase:pi_private_456",
+        properties: { stripe_payment_id: "pi_private_456" },
+      })
+    ).resolves.toEqual({ ok: true })
+
+    await providerCallback?.()
+    expect(mocks.capturePostHogEvent).toHaveBeenCalledOnce()
+    const values = mocks.sql.mock.calls[0].slice(1)
+    expect(values).not.toContain("purchase:pi_private_456")
+    expect(values).toContainEqual(expect.stringMatching(/^[a-f0-9]{64}$/))
+  })
+
   it("delivers only the approved completion fact after durable persistence", async () => {
     let providerCallback: (() => Promise<unknown>) | undefined
     mocks.after.mockImplementation(callback => {

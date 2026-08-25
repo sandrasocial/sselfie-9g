@@ -1,5 +1,6 @@
 import "server-only"
 
+import { createHash } from "node:crypto"
 import { after } from "next/server"
 
 import { ensureAnalyticsSchema } from "@/lib/analytics/schema"
@@ -76,6 +77,7 @@ export async function logAnalyticsEvent(input: {
   anonId?: string | null
   path?: string | null
   referrer?: string | null
+  idempotencyKey?: string | null
   utm?: {
     source?: string | null
     medium?: string | null
@@ -91,6 +93,10 @@ export async function logAnalyticsEvent(input: {
     if (!eventName || !isAllowedAnalyticsEventName(eventName)) {
       return { ok: false, error: "Unsupported event" }
     }
+    const rawIdempotencyKey = safeString(input.idempotencyKey ?? null, 300)
+    const idempotencyKey = rawIdempotencyKey
+      ? createHash("sha256").update(`${eventName}:${rawIdempotencyKey}`).digest("hex")
+      : null
 
     // Register request-lifecycle work before the first await. Some callers
     // intentionally fire-and-forget analytics, so late registration can race
@@ -107,7 +113,7 @@ export async function logAnalyticsEvent(input: {
     await ensureAnalyticsSchema()
     const sql = getDb()
 
-    await sql`
+    const inserted = await sql`
       INSERT INTO analytics_events (
         user_id,
         anon_id,
@@ -119,6 +125,7 @@ export async function logAnalyticsEvent(input: {
         utm_campaign,
         utm_content,
         utm_term,
+        idempotency_key,
         properties
       ) VALUES (
         ${safeString(input.userId ?? null, 128)},
@@ -131,9 +138,17 @@ export async function logAnalyticsEvent(input: {
         ${safeString(input.utm?.campaign ?? null, 150)},
         ${safeString(input.utm?.content ?? null, 150)},
         ${safeString(input.utm?.term ?? null, 150)},
+        ${idempotencyKey},
         ${properties}
       )
+      ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
+      RETURNING id
     `
+
+    if (idempotencyKey && Array.isArray(inserted) && inserted.length === 0) {
+      postHogDelivery.complete(null)
+      return { ok: true }
+    }
 
     const postHogInput = {
       eventName,

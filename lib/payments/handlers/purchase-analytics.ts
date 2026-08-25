@@ -21,6 +21,7 @@ export function schedulePurchaseObservation(input: {
     eventName: input.eventName,
     userId: input.userId || null,
     path: input.path,
+    idempotencyKey: `purchase:${input.paymentId || input.sessionId}`,
     utm: {
       source: input.checkoutMetadata?.utm_source ?? null,
       medium: input.checkoutMetadata?.utm_medium ?? null,

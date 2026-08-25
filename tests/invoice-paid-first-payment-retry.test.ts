@@ -16,6 +16,7 @@ const grantReferencedBonusCreditsMock = vi.fn()
 const claimEventMock = vi.fn()
 const markEventFailedMock = vi.fn()
 const markEventProcessedMock = vi.fn()
+const logAnalyticsEventMock = vi.fn()
 
 vi.mock("server-only", () => ({}))
 
@@ -48,7 +49,7 @@ vi.mock("@/lib/email/send-email", () => ({
 }))
 
 vi.mock("@/lib/analytics/events", () => ({
-  logAnalyticsEvent: vi.fn().mockResolvedValue({ ok: true }),
+  logAnalyticsEvent: logAnalyticsEventMock,
 }))
 
 vi.mock("@/lib/referrals/service", () => ({
@@ -107,6 +108,7 @@ describe("handleInvoicePaid first-payment race", () => {
     })
     markEventFailedMock.mockResolvedValue(undefined)
     markEventProcessedMock.mockResolvedValue(undefined)
+    logAnalyticsEventMock.mockResolvedValue({ ok: true })
     // No subscriptions row and no users row exist yet (checkout fulfillment hasn't run).
     sqlMock.mockResolvedValue([])
     retrieveSubscriptionMock.mockResolvedValue({
@@ -263,6 +265,18 @@ describe("handleInvoicePaid first-payment race", () => {
     expect(values).toContain("vault_to_suite")
     expect(values).toContain("prompt_vault_post_purchase_offer")
     expect(values).toContain("micro")
+    expect(logAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "purchase",
+        idempotencyKey: "purchase:in_vault_renewal_1",
+        utm: {
+          source: "prompt_vault",
+          medium: "post_purchase",
+          campaign: "vault_to_suite",
+          content: "vault_buyer_offer",
+        },
+      })
+    )
   })
 
   it("passes the paid invoice id into the atomic monthly credit reset", () => {

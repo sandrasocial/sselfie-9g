@@ -276,6 +276,21 @@ describe("PostHog analytics boundary", () => {
     })
   })
 
+  it.each([
+    "landing_page",
+    "brand_strategy_paid",
+    "work_with_me_paid",
+    "selfie_guide_access",
+    "prompt_vault_paid",
+  ])("keeps the known checkout source %s", source => {
+    expect(
+      buildPostHogProperties({
+        eventName: "purchase",
+        properties: { source, stripe_payment_id: "pi_source_test" },
+      }).source
+    ).toBe(source)
+  })
+
   it("normalizes emitted generation failure reasons", () => {
     expect(
       buildPostHogProperties({
@@ -509,12 +524,35 @@ describe("PostHog analytics boundary", () => {
     expect(helper).toContain("stripe_session_id: input.sessionId")
     expect(helper).toContain("stripe_payment_id: input.paymentId")
     expect(helper).toContain("is_test_mode: input.isTestMode")
+    expect(helper).toContain("idempotencyKey: `purchase:${input.paymentId || input.sessionId}`")
     expect(helper).toContain("source: input.checkoutMetadata?.utm_source ?? null")
     expect(helper).toContain("medium: input.checkoutMetadata?.utm_medium ?? null")
     expect(helper).toContain("campaign: input.checkoutMetadata?.utm_campaign ?? null")
     expect(helper).toContain("content: input.checkoutMetadata?.utm_content ?? null")
     expect(helper).toContain("term: input.checkoutMetadata?.utm_term ?? null")
     expect(helper).not.toContain("await logAnalyticsEvent({")
+
+    const events = readFileSync(join(process.cwd(), "lib/analytics/events.ts"), "utf8")
+    const schema = readFileSync(join(process.cwd(), "lib/analytics/schema.ts"), "utf8")
+    expect(events).toContain("ON CONFLICT (idempotency_key)")
+    expect(events).toContain('createHash("sha256")')
+    expect(schema).toContain("analytics_events_idempotency_key_unique")
+  })
+
+  it("forwards attribution and stable keys from direct purchase emitters", () => {
+    const campaign = readFileSync(
+      join(process.cwd(), "lib/payments/handlers/campaign-outcome.ts"),
+      "utf8"
+    )
+    const invoice = readFileSync(
+      join(process.cwd(), "lib/payments/lifecycle/invoice-paid.ts"),
+      "utf8"
+    )
+
+    expect(campaign).toContain("source: ctx.session.metadata?.utm_source || null")
+    expect(campaign).toContain("idempotencyKey: `purchase:${stripeObjectId")
+    expect(invoice).toContain("source: checkoutAttribution?.utm_source || null")
+    expect(invoice).toContain("idempotencyKey: `purchase:${paymentId}`")
   })
 
   it("records the Selfie Guide brand-strategy add-on after its durable payment write", () => {
