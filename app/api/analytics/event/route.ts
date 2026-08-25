@@ -58,9 +58,20 @@ function setAnonCookie(response: NextResponse, identity: AnalyticsIdentity) {
   })
 }
 
+function clearPostHogResetCookie(response: NextResponse) {
+  response.cookies.set("sselfie_posthog_reset", "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  })
+}
+
 export async function GET(req: NextRequest) {
   try {
     const rotateAnonymous = new URL(req.url).searchParams.get("rotate_anonymous") === "1"
+    const resetPostHog = req.cookies.get("sselfie_posthog_reset")?.value === "1"
     const identity = await resolveAnalyticsIdentity(req, rotateAnonymous)
     const response = NextResponse.json({
       distinctId: postHogDistinctId({
@@ -68,9 +79,11 @@ export async function GET(req: NextRequest) {
         userId: identity.neonUserId,
         anonId: identity.anonId,
       }),
+      resetPostHog,
     })
     response.headers.set("Cache-Control", "private, no-store")
     setAnonCookie(response, identity)
+    if (resetPostHog) clearPostHogResetCookie(response)
     return response
   } catch {
     return NextResponse.json({ distinctId: null })

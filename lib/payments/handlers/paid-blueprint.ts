@@ -175,6 +175,37 @@ export async function handlePaidBlueprintCheckout(
     const isZeroAmountPayment = session.amount_total === 0 || paymentAmountCents === 0
     const paymentIdForStorage = paymentIntentId || session.id // Use session.id for $0 payments (no payment intent)
     const amountForStorage = paymentAmountCents || 0 // Use 0 for $0 payments
+    let paymentRecorded = false
+
+    const recordPurchaseAnalytics = async () => {
+      if (!paymentRecorded) return
+      try {
+        await logAnalyticsEvent({
+          eventName: "purchase",
+          userId: userId ? String(userId) : null,
+          properties: {
+            source: "stripe_webhook",
+            payment_type: "paid_blueprint",
+            product_type: "paid_blueprint",
+            value: amountForStorage / 100,
+            currency: "usd",
+            stripe_payment_id: paymentIdForStorage,
+            stripe_session_id: session.id,
+            offer_slug: session.metadata?.offer_slug || null,
+            funnel_stage: session.metadata?.funnel_stage || null,
+            attribution_source: session.metadata?.source || null,
+            utm_source: session.metadata?.utm_source || null,
+            utm_medium: session.metadata?.utm_medium || null,
+            utm_campaign: session.metadata?.utm_campaign || null,
+            campaign_id: session.metadata?.campaign_id || null,
+            referral_code: session.metadata?.referral_code || null,
+            is_test_mode: isTestMode,
+          },
+        })
+      } catch {
+        // Analytics must never fail the webhook.
+      }
+    }
 
     if (customerId && (paymentIntentId || isZeroAmountPayment)) {
       try {
@@ -223,34 +254,7 @@ export async function handlePaidBlueprintCheckout(
         console.log(
           `[v0] ✅ Stored paid blueprint payment in stripe_payments table (amount: $${(amountForStorage / 100).toFixed(2)}, payment_id: ${paymentIdForStorage})`
         )
-
-        // Internal funnel analytics (best-effort; never fail webhook).
-        try {
-          await logAnalyticsEvent({
-            eventName: "purchase",
-            userId: userId ? String(userId) : null,
-            properties: {
-              source: "stripe_webhook",
-              payment_type: "paid_blueprint",
-              product_type: "paid_blueprint",
-              value: amountForStorage / 100,
-              currency: "usd",
-              stripe_payment_id: paymentIdForStorage,
-              stripe_session_id: session.id,
-              offer_slug: session.metadata?.offer_slug || null,
-              funnel_stage: session.metadata?.funnel_stage || null,
-              attribution_source: session.metadata?.source || null,
-              utm_source: session.metadata?.utm_source || null,
-              utm_medium: session.metadata?.utm_medium || null,
-              utm_campaign: session.metadata?.utm_campaign || null,
-              campaign_id: session.metadata?.campaign_id || null,
-              referral_code: session.metadata?.referral_code || null,
-              is_test_mode: isTestMode,
-            },
-          })
-        } catch {
-          // ignore
-        }
+        paymentRecorded = true
       } catch (paymentError: any) {
         console.error(`[v0] Error storing paid blueprint payment:`, paymentError.message)
         // Don't fail webhook if payment storage fails
@@ -258,6 +262,7 @@ export async function handlePaidBlueprintCheckout(
     }
 
     if (!shouldFulfillStripePurchaseCredits(event.livemode)) {
+      await recordPurchaseAnalytics()
       console.log("[v0] ⏭️ Recorded test-mode paid blueprint without customer fulfillment")
       return { referralPurchaseUserId }
     }
@@ -316,6 +321,11 @@ export async function handlePaidBlueprintCheckout(
 
       throw new Error(`Paid blueprint user_id unresolved for ${session.id}`)
     }
+
+    // Live paid-blueprint purchases are observed only after authenticated or
+    // email-fallback identity resolution. This preserves the Neon ledger and
+    // lets the provider join supported guest checkout revenue safely.
+    await recordPurchaseAnalytics()
 
     // Fix #3: Grant credits if user_id found AND payment confirmed (with idempotency check)
     if (userId && isPaymentPaid) {

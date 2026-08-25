@@ -34,6 +34,7 @@ describe("public analytics route server-only event boundary", () => {
     const response = await GET(new NextRequest("http://localhost/api/analytics/event"))
 
     const body = await response.json()
+    expect(body).toMatchObject({ resetPostHog: false })
     expect(body.distinctId).toMatch(/^anon:[0-9a-f-]{36}$/)
     expect(response.headers.get("cache-control")).toBe("private, no-store")
     expect(response.headers.get("set-cookie")).toContain("sselfie_anon_id=")
@@ -64,9 +65,30 @@ describe("public analytics route server-only event boundary", () => {
     const { GET } = await import("@/app/api/analytics/event/route")
     const response = await GET(new NextRequest("http://localhost/api/analytics/event"))
 
-    await expect(response.json()).resolves.toEqual({ distinctId: "user:neon-456" })
+    await expect(response.json()).resolves.toEqual({
+      distinctId: "user:neon-456",
+      resetPostHog: false,
+    })
     expect(mocks.getUserByAuthId).toHaveBeenCalledWith("auth-123")
     expect(response.headers.get("set-cookie")).not.toContain("private@example.com")
+  })
+
+  it("returns and consumes the HTTP-only PostHog reset signal after logout", async () => {
+    const { GET } = await import("@/app/api/analytics/event/route")
+    const response = await GET(
+      new NextRequest("http://localhost/api/analytics/event", {
+        headers: {
+          cookie: "sselfie_anon_id=rotated-id; sselfie_posthog_reset=1",
+        },
+      })
+    )
+
+    await expect(response.json()).resolves.toEqual({
+      distinctId: "anon:rotated-id",
+      resetPostHog: true,
+    })
+    expect(response.headers.get("set-cookie")).toContain("sselfie_posthog_reset=")
+    expect(response.headers.get("set-cookie")).toContain("Max-Age=0")
   })
 
   it("rejects a forged durable Calendar completion before any analytics write", async () => {

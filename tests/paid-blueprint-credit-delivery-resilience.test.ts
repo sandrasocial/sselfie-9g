@@ -108,6 +108,42 @@ describe("paid blueprint credit/access/delivery resilience", () => {
     expect(deliveryDedupe?.[0].join(" ")).toContain("status IN ('sent', 'delivered')")
   })
 
+  it("observes a guest purchase only after resolving its privacy-safe user identity", async () => {
+    mocks.sql.mockImplementation((strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (query.includes("SELECT id FROM users WHERE email")) {
+        return [{ id: "guest_user_2" }]
+      }
+      return defaultSql(strings)
+    })
+    const guestContext = {
+      ...context,
+      userId: null,
+      referralPurchaseUserId: null,
+      session: {
+        ...context.session,
+        metadata: { product_type: "paid_blueprint" },
+      },
+    }
+    const { handlePaidBlueprintCheckout } = await import("@/lib/payments/handlers/paid-blueprint")
+
+    await handlePaidBlueprintCheckout(guestContext)
+
+    expect(mocks.logAnalytics).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "purchase",
+        userId: "guest_user_2",
+      })
+    )
+    const lookupIndex = mocks.sql.mock.calls.findIndex(([strings]) =>
+      strings.join(" ").includes("SELECT id FROM users WHERE email")
+    )
+    expect(lookupIndex).toBeGreaterThanOrEqual(0)
+    expect(mocks.sql.mock.invocationCallOrder[lookupIndex]).toBeLessThan(
+      mocks.logAnalytics.mock.invocationCallOrder[0]
+    )
+  })
+
   it("throws access persistence failures so Stripe can replay", async () => {
     mocks.sql.mockImplementation((strings: TemplateStringsArray) => {
       const query = strings.join(" ")

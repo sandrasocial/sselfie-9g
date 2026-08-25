@@ -7,6 +7,7 @@ import {
   POSTHOG_TOKENIZED_PATH_PATTERN_SOURCE,
   sanitizePostHogPathname,
 } from "@/lib/analytics/posthog-browser"
+import { ensureAnalyticsBrowserIdentity } from "@/lib/analytics/client"
 
 declare global {
   interface Window {
@@ -27,24 +28,25 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
     if (!ready || !safePathname || !window.posthog) return
     let active = true
 
-    const readIdentity = (rotateAnonymous = false) =>
-      fetch(`/api/analytics/event${rotateAnonymous ? "?rotate_anonymous=1" : ""}`, {
-        credentials: "same-origin",
-        cache: "no-store",
-      })
-        .then(response => (response.ok ? response.json() : null))
-        .then(data => (typeof data?.distinctId === "string" ? data.distinctId : null))
+    const readIdentity = (rotateAnonymous = false, refresh = true) =>
+      ensureAnalyticsBrowserIdentity({ refresh, rotateAnonymous })
 
-    readIdentity()
-      .then(async distinctId => {
+    // On a full-page load, reuse the same bootstrap request as any analytics
+    // event mounted alongside this provider. Later route transitions refresh
+    // authentication state through the serialized identity queue.
+    readIdentity(false, identifiedAs.current !== null)
+      .then(async identity => {
+        let distinctId = identity.distinctId
         if (!active || !distinctId || !window.posthog) return
 
         const previousId = identifiedAs.current
-        if (previousId?.startsWith("user:") && distinctId !== previousId) {
+        if (identity.resetPostHog) {
+          window.posthog.reset()
+        } else if (previousId?.startsWith("user:") && distinctId !== previousId) {
           if (distinctId.startsWith("anon:")) {
-            const rotatedId = await readIdentity(true)
-            if (!rotatedId) return
-            distinctId = rotatedId
+            const rotatedIdentity = await readIdentity(true)
+            if (!rotatedIdentity.distinctId) return
+            distinctId = rotatedIdentity.distinctId
           }
           if (!active || !window.posthog) return
           window.posthog.reset()

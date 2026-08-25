@@ -1,21 +1,84 @@
 "use client"
 
+export type BrowserAnalyticsIdentity = {
+  distinctId: string | null
+  resetPostHog: boolean
+}
+
+let identityRequest: Promise<BrowserAnalyticsIdentity> | null = null
+
+async function requestAnalyticsIdentity(
+  rotateAnonymous: boolean
+): Promise<BrowserAnalyticsIdentity> {
+  try {
+    const response = await fetch(
+      `/api/analytics/event${rotateAnonymous ? "?rotate_anonymous=1" : ""}`,
+      {
+        credentials: "same-origin",
+        cache: "no-store",
+        keepalive: true,
+      }
+    )
+    if (!response.ok) return { distinctId: null, resetPostHog: false }
+    const data = await response.json()
+    return {
+      distinctId: typeof data?.distinctId === "string" ? data.distinctId : null,
+      resetPostHog: data?.resetPostHog === true,
+    }
+  } catch {
+    return { distinctId: null, resetPostHog: false }
+  }
+}
+
+export function ensureAnalyticsBrowserIdentity(
+  options: Readonly<{ refresh?: boolean; rotateAnonymous?: boolean }> = {}
+): Promise<BrowserAnalyticsIdentity> {
+  const shouldRefresh = options.refresh === true || options.rotateAnonymous === true
+  if (!identityRequest) {
+    identityRequest = requestAnalyticsIdentity(options.rotateAnonymous === true)
+  } else if (shouldRefresh) {
+    identityRequest = identityRequest
+      .catch(() => ({ distinctId: null, resetPostHog: false }))
+      .then(() => requestAnalyticsIdentity(options.rotateAnonymous === true))
+  }
+  return identityRequest
+}
+
 export async function trackAnalyticsEvent(input: {
   event: string
   properties?: Record<string, any>
 }) {
   try {
+    // Establish the HTTP-only anonymous identity before POSTing. The provider
+    // shares this in-flight request, preventing concurrent GET/POST requests
+    // from minting different first-visit identities.
+    await ensureAnalyticsBrowserIdentity()
+
     const payload = {
       event: input.event,
       properties: input.properties || {},
-      path: typeof window !== "undefined" ? window.location.pathname + window.location.search : null,
-      utm_source: typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("utm_source") : null,
-      utm_medium: typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("utm_medium") : null,
+      path:
+        typeof window !== "undefined" ? window.location.pathname + window.location.search : null,
+      utm_source:
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("utm_source")
+          : null,
+      utm_medium:
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("utm_medium")
+          : null,
       utm_campaign:
-        typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("utm_campaign") : null,
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("utm_campaign")
+          : null,
       utm_content:
-        typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("utm_content") : null,
-      utm_term: typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("utm_term") : null,
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("utm_content")
+          : null,
+      utm_term:
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("utm_term")
+          : null,
     }
 
     // Prefer sendBeacon when available (non-blocking, survives navigation).
@@ -35,4 +98,3 @@ export async function trackAnalyticsEvent(input: {
     // Tracking is best-effort only.
   }
 }
-

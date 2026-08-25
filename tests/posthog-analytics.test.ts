@@ -272,11 +272,16 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain('new URL(clean,"https://sselfie.invalid")')
     expect(provider).toContain("window.posthog.identify(distinctId)")
     expect(provider).toContain("window.posthog.reset()")
-    expect(provider).toContain('readIdentity(true)')
+    expect(provider).toContain("identity.resetPostHog")
+    expect(provider).toContain("ensureAnalyticsBrowserIdentity")
+    expect(provider).toContain("readIdentity(true)")
     expect(provider).toContain("}, [pathname, ready])")
-    expect(provider).toContain("rotate_anonymous=1")
     expect(provider).toContain("window.location.origin}${safePathname}")
     expect(provider).not.toContain("useSearchParams")
+
+    const analyticsClient = readFileSync(join(process.cwd(), "lib/analytics/client.ts"), "utf8")
+    expect(analyticsClient).toContain("rotate_anonymous=1")
+    expect(analyticsClient).toContain("await ensureAnalyticsBrowserIdentity()")
 
     const middleware = readFileSync(join(process.cwd(), "middleware.ts"), "utf8")
     expect(middleware).toContain("https://eu-assets.i.posthog.com")
@@ -302,7 +307,9 @@ describe("PostHog analytics boundary", () => {
     const missingResultGuard = flow.indexOf("if (!completedImageUrl)")
     const completionEvent = flow.indexOf('trackEvent("first_generation_guided_complete"')
 
-    expect(flow).toContain("completedImageUrl = firstGeneratedImageUrl(check?.imageUrl ?? check?.output)")
+    expect(flow).toContain(
+      "completedImageUrl = firstGeneratedImageUrl(check?.imageUrl ?? check?.output)"
+    )
     expect(missingResultGuard).toBeGreaterThan(-1)
     expect(completionEvent).toBeGreaterThan(missingResultGuard)
   })
