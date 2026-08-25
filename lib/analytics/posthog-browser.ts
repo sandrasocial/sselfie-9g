@@ -3,6 +3,15 @@ export const POSTHOG_TOKENIZED_PATH_PATTERN_SOURCE = String.raw`(\/(?:academy\/v
 const TOKENIZED_PATH = new RegExp(`^${POSTHOG_TOKENIZED_PATH_PATTERN_SOURCE}`)
 const TOKENIZED_PATH_IN_PAYLOAD = new RegExp(POSTHOG_TOKENIZED_PATH_PATTERN_SOURCE, "g")
 
+export function shouldResetPostHogIdentity(
+  persistedDistinctId: string | null | undefined,
+  serverDistinctId: string
+): boolean {
+  return Boolean(
+    persistedDistinctId?.startsWith("user:") && persistedDistinctId !== serverDistinctId
+  )
+}
+
 export function sanitizePostHogPathname(pathname: string): string | null {
   if (!pathname.startsWith("/")) return null
   const clean = pathname.split(/[?#]/, 1)[0]
@@ -33,7 +42,23 @@ export function sanitizePostHogEventPayload<T>(event: T): T | null {
       }
     }
 
-    return scrub(event) as T
+    const sanitized = scrub(event) as T
+    if (sanitized && typeof sanitized === "object") {
+      const eventRecord = sanitized as Record<string, unknown>
+      const properties = eventRecord.properties
+      if (
+        eventRecord.event !== "$exception" &&
+        properties &&
+        typeof properties === "object" &&
+        !Array.isArray(properties)
+      ) {
+        for (const key of Object.keys(properties)) {
+          if (/^\$exception_/i.test(key)) delete (properties as Record<string, unknown>)[key]
+        }
+      }
+    }
+
+    return sanitized
   } catch {
     return null
   }

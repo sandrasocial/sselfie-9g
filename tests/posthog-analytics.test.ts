@@ -12,6 +12,7 @@ import {
 import {
   sanitizePostHogEventPayload,
   sanitizePostHogPathname,
+  shouldResetPostHogIdentity,
 } from "@/lib/analytics/posthog-browser"
 
 describe("PostHog analytics boundary", () => {
@@ -326,6 +327,31 @@ describe("PostHog analytics boundary", () => {
     })
   })
 
+  it("strips reserved exception metadata from browser custom events", () => {
+    expect(
+      sanitizePostHogEventPayload({
+        event: "customer_custom_event",
+        properties: {
+          safe_dimension: "gallery",
+          $exception_list: [{ value: "untrusted" }],
+          $exception_message: "untrusted",
+          $exception_type: "untrusted",
+          $exception_source: "untrusted",
+        },
+      })
+    ).toEqual({
+      event: "customer_custom_event",
+      properties: { safe_dimension: "gallery" },
+    })
+  })
+
+  it("resets only when a persisted user differs from the server identity", () => {
+    expect(shouldResetPostHogIdentity("user:account-a", "user:account-b")).toBe(true)
+    expect(shouldResetPostHogIdentity("user:account-a", "user:account-a")).toBe(false)
+    expect(shouldResetPostHogIdentity("anon:browser-a", "user:account-a")).toBe(false)
+    expect(shouldResetPostHogIdentity(null, "user:account-a")).toBe(false)
+  })
+
   it("fails open when disabled, unmapped, missing an identity, or rejected by PostHog", async () => {
     delete process.env.POSTHOG_PROJECT_KEY
     await expect(
@@ -365,12 +391,16 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("disable_session_recording:true")
     expect(provider).toContain("function scrub(value)")
     expect(provider).toContain('event.event==="$exception"')
+    expect(provider).toContain('event.event!=="$exception"')
+    expect(provider).toContain("/^\\\\$exception_/i.test(key)")
     expect(provider).toContain("/exception|error|message|stack/i.test(key)")
     expect(provider).toContain("delete event.properties[key]")
     expect(provider).toContain('event.event==="$autocapture"')
     expect(provider).toContain("/text|element|attr/i.test(key)")
     expect(provider).toContain('new URL(clean,"https://sselfie.invalid")')
     expect(provider).toContain("window.posthog.identify(distinctId)")
+    expect(provider).toContain("get_distinct_id?.()")
+    expect(provider).toContain("shouldResetPostHogIdentity")
     expect(provider).toContain("window.posthog.reset()")
     expect(provider).toContain("identity.resetPostHog")
     expect(provider).toContain("await acknowledgePostHogReset()")
@@ -410,6 +440,23 @@ describe("PostHog analytics boundary", () => {
     const middleware = readFileSync(join(process.cwd(), "middleware.ts"), "utf8")
     expect(middleware).toContain("https://eu-assets.i.posthog.com")
     expect(middleware).toContain("https://eu.i.posthog.com")
+  })
+
+  it("records presets purchase analytics immediately after the durable payment write", () => {
+    const handler = readFileSync(join(process.cwd(), "lib/payments/handlers/presets.ts"), "utf8")
+    const paymentRecorded = handler.indexOf("paymentRecorded = true")
+    const purchaseEvent = handler.indexOf('eventName: "presets_checkout_success"')
+    const collectionLookup = handler.indexOf("await getDefaultPresetCollection()")
+    const accessCreation = handler.indexOf("await upsertPresetOrderForPurchase")
+    const delivery = handler.indexOf("await sendEmail")
+
+    expect(paymentRecorded).toBeGreaterThan(handler.indexOf("INSERT INTO stripe_payments"))
+    expect(purchaseEvent).toBeGreaterThan(paymentRecorded)
+    expect(purchaseEvent).toBeLessThan(collectionLookup)
+    expect(purchaseEvent).toBeLessThan(accessCreation)
+    expect(purchaseEvent).toBeLessThan(delivery)
+    expect(handler).toContain("if (paymentRecorded)")
+    expect(handler).toContain("checkout_session_id: session.id")
   })
 
   it("records the membership checkout start only on checkout-page arrival", () => {
