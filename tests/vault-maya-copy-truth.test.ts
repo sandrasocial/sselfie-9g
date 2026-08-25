@@ -54,6 +54,39 @@ describe("credit-expiry disclosure (decision 4)", () => {
   })
 })
 
+describe("issue #102 proof-led offer", () => {
+  const offer = vaultSlice(read("components/sselfie/public-marketing.tsx"))
+  const route = read("app/vault-maya/page.tsx")
+  const checkoutLink = read("components/vault-maya/vault-maya-checkout-link.tsx")
+
+  it("leads with the one-selfie story and founder proof", () => {
+    expect(offer).toContain("One selfie. Choose a look. Maya makes the photo.")
+    expect(offer).toContain("This was the selfie")
+    expect(offer).toContain("And these came from it")
+    expect(offer).toContain(
+      "Same starting selfie. Different photos. I chose the look; Maya handled the prompt."
+    )
+    expect(offer).toContain("img-2534-original-selfie.webp")
+    expect(offer).toContain("img-7880-bw-editorial.webp")
+    expect(offer).toContain("1782982166995-509337-blazer-ipad.webp")
+  })
+
+  it("keeps the three products distinct and uses the approved AI note", () => {
+    expect(offer).toContain("Copy Sandra’s prompts and create the photos yourself in ChatGPT.")
+    expect(offer).toContain("Choose a Vault look and Maya creates it for you.")
+    expect(offer).toContain("Full workspace for custom photo creation plus content planning")
+    expect(offer).toContain("AI will not make a perfect photo every single time.")
+    expect(offer).toContain("Keeping the result recognizable is at")
+  })
+
+  it("renders the live price helper output without a marketing-component fallback", () => {
+    expect(route).toContain("getVaultMayaPriceDisplay()")
+    expect(route).toContain("price.monthlyLabel")
+    expect(offer).toContain("priceLabel.toUpperCase()")
+    expect(checkoutLink).not.toMatch(/\$(19|29)/)
+  })
+})
+
 describe("selfie privacy copy matches real deletion (B8)", () => {
   it("FAQ describes self-serve deletion, not a support promise", () => {
     const page = vaultSlice(read("components/sselfie/public-marketing.tsx"))

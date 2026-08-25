@@ -65,8 +65,8 @@ function CheckoutLinkInner({ label, surface }: { label: string; surface: "dark" 
         justifyContent: "center",
         padding: "13px 32px",
         minHeight: "46px",
-        background: dark ? "#f5f5f5" : "#0a0a0a",
-        color: dark ? "#0a0a0a" : "#f5f5f5",
+        background: dark ? "var(--ss-brand-paper)" : "var(--ss-brand-oxblood)",
+        color: dark ? "var(--ss-brand-ink)" : "var(--ss-brand-paper)",
         fontSize: "10px",
         fontWeight: 600,
         letterSpacing: "0.22em",
@@ -88,10 +88,10 @@ function CheckoutLinkInner({ label, surface }: { label: string; surface: "dark" 
 }
 
 export function VaultMayaCheckoutLink({
-  label = "Founder price · $19/month",
+  label,
   surface = "dark",
 }: {
-  label?: string
+  label: string
   surface?: "dark" | "cream"
 }) {
   return (
