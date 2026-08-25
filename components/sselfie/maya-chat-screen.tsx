@@ -29,6 +29,7 @@ import WelcomeFirstGenerationFlow from "./maya/welcome-first-generation-flow"
 import { useRouter } from "next/navigation"
 import useSWR from "swr"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import { notifyAnalyticsLogout } from "@/lib/analytics/auth-browser-signal"
 // Note: User type comes from Supabase auth (not next-auth)
 import type { PromptSuggestion } from "@/lib/maya/prompt-generator"
 import ImageUploadFlow from "./pro-mode/ImageUploadFlow"
@@ -3090,6 +3091,7 @@ export default function MayaChatScreen({
       })
 
       if (response.ok) {
+        notifyAnalyticsLogout()
         router.push("/auth/login")
       } else {
         console.error("[v0] Logout failed")

@@ -21,6 +21,7 @@ import InstagramReelCard from "./instagram-reel-card"
 import { useRouter } from "next/navigation"
 import BuyCreditsModal from "./buy-credits-modal"
 import { DesignClasses } from "@/lib/design-tokens"
+import { notifyAnalyticsLogout } from "@/lib/analytics/auth-browser-signal"
 
 interface BRollScreenProps {
   user: any
@@ -139,6 +140,7 @@ export default function BRollScreen({ user }: BRollScreenProps) {
       })
 
       if (response.ok) {
+        notifyAnalyticsLogout()
         router.push("/auth/login")
       } else {
         console.error("[v0] Logout failed")

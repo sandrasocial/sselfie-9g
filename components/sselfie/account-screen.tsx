@@ -17,6 +17,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { ReferralDashboard } from "@/components/referrals/referral-dashboard"
 import { MayaIdentityNotes } from "./maya/maya-identity-notes"
 import { trackCTAClick } from "@/lib/analytics"
+import { notifyAnalyticsLogout } from "@/lib/analytics/auth-browser-signal"
 import { getAccessLabel, getProductDisplayName } from "@/lib/customer-access-labels"
 
 interface AccountScreenProps {
@@ -396,6 +397,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
       })
 
       if (response.ok) {
+        notifyAnalyticsLogout()
         router.push("/auth/login")
       } else {
         console.error("[Account] Logout failed")

@@ -28,6 +28,7 @@ import { SmartUpgradeBanner } from "@/components/upgrade/smart-upgrade-banner"
 import { UpgradeModal } from "@/components/upgrade/upgrade-modal"
 import type { UpgradeOpportunity } from "@/lib/upgrade-detection"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import { notifyAnalyticsLogout } from "@/lib/analytics/auth-browser-signal"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1001,6 +1002,7 @@ export default function SselfieApp({
       })
 
       if (response.ok) {
+        notifyAnalyticsLogout()
         window.location.href = "/auth/login"
       } else {
         console.error("[v0] Logout failed")

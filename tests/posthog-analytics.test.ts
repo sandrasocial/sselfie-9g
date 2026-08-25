@@ -366,10 +366,15 @@ describe("PostHog analytics boundary", () => {
       sanitizePostHogEventPayload({
         event: "$exception",
         properties: {
-          $exception_type: "TypeError",
-          $exception_source: "web.react",
           $exception_message: "private customer value",
-          $exception_list: [{ type: "TypeError", value: "private customer value" }],
+          $exception_list: [
+            {
+              type: "TypeError",
+              value: "private customer value",
+              mechanism: { type: "web.react", handled: true },
+              stacktrace: { frames: [{ filename: "/private/customer/path" }] },
+            },
+          ],
           stack: "private stack",
           safe_dimension: "gallery",
         },
@@ -387,8 +392,14 @@ describe("PostHog analytics boundary", () => {
       sanitizePostHogEventPayload({
         event: "$exception",
         properties: {
-          $exception_type: "TypeError customer@example.com",
-          $exception_source: "https://private.example/?email=customer@example.com",
+          $exception_list: [
+            {
+              type: "TypeError customer@example.com",
+              mechanism: {
+                type: "https://private.example/?email=customer@example.com",
+              },
+            },
+          ],
         },
       })
     ).toEqual({ event: "$exception", properties: {} })
@@ -443,8 +454,9 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain('event.event!=="$exception"')
     expect(provider).toContain("/^\\\\$exception_/i.test(key)")
     expect(provider).toContain("function exceptionDimension(value)")
-    expect(provider).toContain("var type=exceptionDimension(event.properties.$exception_type)")
-    expect(provider).toContain("var source=exceptionDimension(event.properties.$exception_source)")
+    expect(provider).toContain("var list=Array.isArray(event.properties.$exception_list)")
+    expect(provider).toContain("first&&first.type")
+    expect(provider).toContain("mechanism&&mechanism.type")
     expect(provider).toContain("/exception|error|message|stack/i.test(key)")
     expect(provider).toContain("delete event.properties[key]")
     expect(provider).toContain('event.event==="$autocapture"')
@@ -468,6 +480,8 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("identifiedAs.current !== null || attempt > 0")
     expect(provider).toContain("if (retryTimer) clearTimeout(retryTimer)")
     expect(provider).toContain('window.addEventListener("focus", refreshOnFocus)')
+    expect(provider).toContain("subscribeToAnalyticsLogout")
+    expect(provider).toContain("unsubscribeFromLogout?.()")
     expect(provider).toContain('document.addEventListener("visibilitychange", refreshOnVisibility)')
     expect(provider).toContain("supabase.auth.onAuthStateChange")
     expect(provider).toContain('event === "SIGNED_OUT"')

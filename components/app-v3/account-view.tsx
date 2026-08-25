@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { MemoryModal } from "./memory-modal"
+import { notifyAnalyticsLogout } from "@/lib/analytics/auth-browser-signal"
 
 interface AccountData {
   plan: string | null
@@ -129,6 +130,7 @@ export function AccountView({
     try {
       const res = await fetch("/api/auth/logout", { method: "POST", credentials: "include" })
       if (res.ok) {
+        notifyAnalyticsLogout()
         window.location.href = "/auth/login"
         return
       }
