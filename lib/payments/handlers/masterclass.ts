@@ -111,6 +111,7 @@ export async function handleMasterclassCheckout(ctx: CheckoutFulfillmentContext)
           sessionId: session.id,
           paymentId: paymentIdForStorage,
           isTestMode,
+          checkoutMetadata: session.metadata,
         })
       }
 

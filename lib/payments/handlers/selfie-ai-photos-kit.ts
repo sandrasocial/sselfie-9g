@@ -171,6 +171,7 @@ export async function handleSelfieAiPhotosKitCheckout(
       sessionId: session.id,
       paymentId: paymentIdForStorage,
       isTestMode,
+      checkoutMetadata: session.metadata,
     })
   }
 

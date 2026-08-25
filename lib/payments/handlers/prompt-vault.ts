@@ -224,6 +224,7 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
         sessionId: session.id,
         paymentId: paymentIdForStorage,
         isTestMode,
+        checkoutMetadata: session.metadata,
       })
     }
 

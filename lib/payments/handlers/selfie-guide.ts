@@ -179,6 +179,7 @@ export async function handleSelfieGuideCheckout(ctx: CheckoutFulfillmentContext)
           sessionId: session.id,
           paymentId: paymentIdForStorage,
           isTestMode,
+          checkoutMetadata: session.metadata,
         })
       }
 
@@ -316,6 +317,7 @@ export async function handleSelfieGuideCheckout(ctx: CheckoutFulfillmentContext)
               sessionId: session.id,
               paymentId: brandStrategyPaymentId,
               isTestMode,
+              checkoutMetadata: session.metadata,
               properties: {
                 source_product_type: bspSourceProductType,
               },

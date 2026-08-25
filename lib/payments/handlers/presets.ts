@@ -125,6 +125,7 @@ export async function handlePresetsCheckout(ctx: CheckoutFulfillmentContext): Pr
       sessionId: session.id,
       paymentId: paymentIdForStorage,
       isTestMode,
+      checkoutMetadata: session.metadata,
       path: "/checkout/success",
       properties: {
         checkout_session_id: session.id,

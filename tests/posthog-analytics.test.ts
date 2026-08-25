@@ -464,6 +464,9 @@ describe("PostHog analytics boundary", () => {
     expect(purchaseEvent).toBeLessThan(delivery)
     expect(handler).toContain("if (paymentRecorded)")
     expect(handler.slice(paymentRecorded, purchaseEvent)).toContain("schedulePurchaseObservation({")
+    expect(handler.slice(purchaseEvent, collectionLookup)).toContain(
+      "checkoutMetadata: session.metadata"
+    )
     expect(handler).toContain("checkout_session_id: session.id")
   })
 
@@ -490,6 +493,9 @@ describe("PostHog analytics boundary", () => {
     }
     expect(handler).toContain("if (paymentRecorded)")
     expect(handler.slice(paymentRecorded, purchaseEvent)).toContain("schedulePurchaseObservation({")
+    expect(handler.slice(purchaseEvent, purchaseEvent + 700)).toContain(
+      "checkoutMetadata: session.metadata"
+    )
     expect(handler.match(new RegExp(`eventName: \\"${eventName}\\"`, "g"))).toHaveLength(1)
   })
 
@@ -503,6 +509,11 @@ describe("PostHog analytics boundary", () => {
     expect(helper).toContain("stripe_session_id: input.sessionId")
     expect(helper).toContain("stripe_payment_id: input.paymentId")
     expect(helper).toContain("is_test_mode: input.isTestMode")
+    expect(helper).toContain("source: input.checkoutMetadata?.utm_source ?? null")
+    expect(helper).toContain("medium: input.checkoutMetadata?.utm_medium ?? null")
+    expect(helper).toContain("campaign: input.checkoutMetadata?.utm_campaign ?? null")
+    expect(helper).toContain("content: input.checkoutMetadata?.utm_content ?? null")
+    expect(helper).toContain("term: input.checkoutMetadata?.utm_term ?? null")
     expect(helper).not.toContain("await logAnalyticsEvent({")
   })
 
@@ -520,6 +531,9 @@ describe("PostHog analytics boundary", () => {
     expect(paymentRecorded).toBeGreaterThan(handler.indexOf("INSERT INTO stripe_payments"))
     expect(purchaseEvent).toBeGreaterThan(paymentRecorded)
     expect(handler.slice(paymentRecorded, purchaseEvent)).toContain("schedulePurchaseObservation({")
+    expect(handler.slice(purchaseEvent, purchaseEvent + 700)).toContain(
+      "checkoutMetadata: session.metadata"
+    )
     expect(purchaseEvent).toBeLessThan(subscriptionWrite)
     expect(purchaseEvent).toBeLessThan(entitlementWrite)
     expect(purchaseEvent).toBeLessThan(delivery)
@@ -574,6 +588,9 @@ describe("PostHog analytics boundary", () => {
     expect(lifecycle).toContain('? "purchase"')
     expect(lifecycle).toContain("Object.hasOwn(ACADEMY_PRODUCTS, session.metadata.product_id)")
     expect(lifecycle).toContain("productType: observedProductType")
+    expect(lifecycle.slice(purchaseSchedule, accountSetup)).toContain(
+      "checkoutMetadata: session.metadata"
+    )
     expect(purchaseSchedule).toBeGreaterThan(ledgerWrite)
     expect(purchaseSchedule).toBeLessThan(accountSetup)
     expect(purchaseSchedule).toBeLessThan(academyDispatch)

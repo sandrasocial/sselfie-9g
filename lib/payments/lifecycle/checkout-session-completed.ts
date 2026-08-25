@@ -853,6 +853,7 @@ export async function handleCheckoutSessionCompleted(
         sessionId: session.id,
         paymentId: revenueRecord.stripePaymentId,
         isTestMode: !event.livemode,
+        checkoutMetadata: session.metadata,
       })
     }
 

@@ -14,12 +14,20 @@ export function schedulePurchaseObservation(input: {
   paymentId: string
   isTestMode: boolean
   path?: string | null
+  checkoutMetadata?: Record<string, string> | null
   properties?: Record<string, string | number | boolean | null | undefined>
 }): void {
   void logAnalyticsEvent({
     eventName: input.eventName,
     userId: input.userId || null,
     path: input.path,
+    utm: {
+      source: input.checkoutMetadata?.utm_source ?? null,
+      medium: input.checkoutMetadata?.utm_medium ?? null,
+      campaign: input.checkoutMetadata?.utm_campaign ?? null,
+      content: input.checkoutMetadata?.utm_content ?? null,
+      term: input.checkoutMetadata?.utm_term ?? null,
+    },
     properties: {
       ...(input.properties ?? {}),
       source: input.source || "landing_page",

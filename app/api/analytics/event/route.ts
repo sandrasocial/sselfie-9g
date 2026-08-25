@@ -81,7 +81,9 @@ async function resolveAnalyticsIdentity(
     const supabase = await createServerClient()
     const {
       data: { user: authUser },
+      error: authError,
     } = await supabase.auth.getUser()
+    if (authError) return null
     if (authUser) {
       const neonUser = await getUserByAuthId(authUser.id)
       if (!neonUser?.id) return null

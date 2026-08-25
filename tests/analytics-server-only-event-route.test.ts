@@ -94,6 +94,41 @@ describe("public analytics route server-only event boundary", () => {
     expect(response.headers.get("set-cookie")).toBeNull()
   })
 
+  it("keeps GET and POST capture disabled when Supabase returns an auth error", async () => {
+    mocks.createServerClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: null },
+          error: new Error("auth provider unavailable"),
+        }),
+      },
+    })
+
+    const { GET, POST } = await import("@/app/api/analytics/event/route")
+    const getResponse = await GET(new NextRequest("http://localhost/api/analytics/event"))
+    const postResponse = await POST(
+      new NextRequest("http://localhost/api/analytics/event", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ event: "landing_page_viewed" }),
+      })
+    )
+
+    await expect(getResponse.json()).resolves.toEqual({
+      distinctId: null,
+      resetPostHog: false,
+    })
+    await expect(postResponse.json()).resolves.toEqual({
+      ok: true,
+      accepted: false,
+      reason: "Identity unavailable",
+    })
+    expect(getResponse.headers.get("set-cookie")).toBeNull()
+    expect(postResponse.headers.get("set-cookie")).toBeNull()
+    expect(mocks.checkRateLimit).not.toHaveBeenCalled()
+    expect(mocks.getDb).not.toHaveBeenCalled()
+  })
+
   it("keeps the HTTP-only PostHog reset signal until the SDK acknowledges it", async () => {
     const { GET } = await import("@/app/api/analytics/event/route")
     const response = await GET(

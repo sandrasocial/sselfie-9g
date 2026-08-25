@@ -115,6 +115,7 @@ export async function handleSelfieToBrandShootCheckout(
         sessionId: session.id,
         paymentId: paymentIdForStorage,
         isTestMode,
+        checkoutMetadata: session.metadata,
       })
     }
 

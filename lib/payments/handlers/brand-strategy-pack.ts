@@ -112,6 +112,7 @@ export async function handleBrandStrategyPackCheckout(ctx: CheckoutFulfillmentCo
           sessionId: session.id,
           paymentId: paymentIdForStorage,
           isTestMode,
+          checkoutMetadata: session.metadata,
         })
       }
 
