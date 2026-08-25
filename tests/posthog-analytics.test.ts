@@ -459,6 +459,27 @@ describe("PostHog analytics boundary", () => {
     expect(handler).toContain("checkout_session_id: session.id")
   })
 
+  it.each([
+    ["prompt-vault.ts", "prompt_vault_checkout_success"],
+    ["starter-kit.ts", "starter_kit_checkout_success"],
+    ["masterclass.ts", "masterclass_checkout_success"],
+  ])("records %s purchase analytics before fallible fulfillment", (file, eventName) => {
+    const handler = readFileSync(join(process.cwd(), "lib/payments/handlers", file), "utf8")
+    const paymentRecorded = handler.indexOf("paymentRecorded = true")
+    const purchaseEvent = handler.indexOf(`eventName: "${eventName}"`)
+    const subscriptionWrite = handler.indexOf("INSERT INTO subscriptions")
+    const entitlementWrite = handler.indexOf("await upsertPurchaseEntitlement")
+    const delivery = handler.indexOf("await sendEmail")
+
+    expect(paymentRecorded).toBeGreaterThan(handler.indexOf("INSERT INTO stripe_payments"))
+    expect(purchaseEvent).toBeGreaterThan(paymentRecorded)
+    for (const fulfillmentStep of [subscriptionWrite, entitlementWrite, delivery]) {
+      if (fulfillmentStep >= 0) expect(purchaseEvent).toBeLessThan(fulfillmentStep)
+    }
+    expect(handler).toContain("if (paymentRecorded)")
+    expect(handler.match(new RegExp(`eventName: \\"${eventName}\\"`, "g"))).toHaveLength(1)
+  })
+
   it("records the membership checkout start only on checkout-page arrival", () => {
     const landing = readFileSync(
       join(process.cwd(), "components/sselfie/landing-page-new.tsx"),

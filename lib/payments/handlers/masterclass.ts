@@ -52,6 +52,7 @@ export async function handleMasterclassCheckout(ctx: CheckoutFulfillmentContext)
       }
 
       const masterclassCustomerIdForStorage = customerId || session.id
+      let paymentRecorded = false
 
       if (masterclassCustomerIdForStorage) {
         try {
@@ -93,9 +94,26 @@ export async function handleMasterclassCheckout(ctx: CheckoutFulfillmentContext)
               status = 'succeeded',
               updated_at = NOW()
           `
+          paymentRecorded = true
         } catch (paymentError: any) {
           console.error(`[v0] Error storing masterclass payment:`, paymentError.message)
         }
+      }
+
+      if (paymentRecorded) {
+        await logAnalyticsEvent({
+          eventName: "masterclass_checkout_success",
+          userId: userId ? String(userId) : null,
+          properties: {
+            source: source || "landing_page",
+            product_type: "masterclass",
+            value: paymentAmountCents / 100,
+            currency: "usd",
+            stripe_session_id: session.id,
+            stripe_payment_id: paymentIdForStorage,
+            is_test_mode: isTestMode,
+          },
+        })
       }
 
       await sql`
@@ -206,22 +224,5 @@ export async function handleMasterclassCheckout(ctx: CheckoutFulfillmentContext)
         console.error("[v0] Failed to update Masterclass tags:", tagError)
       })
 
-      try {
-        await logAnalyticsEvent({
-          eventName: "masterclass_checkout_success",
-          userId: userId ? String(userId) : null,
-          properties: {
-            source: source || "landing_page",
-            product_type: "masterclass",
-            value: paymentAmountCents / 100,
-            currency: "usd",
-            stripe_session_id: session.id,
-            stripe_payment_id: paymentIdForStorage,
-            is_test_mode: isTestMode,
-          },
-        })
-      } catch {
-        // best effort only
-      }
     }
 }

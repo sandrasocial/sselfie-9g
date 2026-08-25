@@ -117,6 +117,7 @@ export async function handleStarterKitCheckout(ctx: CheckoutFulfillmentContext):
       }
 
       const starterKitCustomerIdForStorage = customerId || session.id
+      let paymentRecorded = false
 
       if (starterKitCustomerIdForStorage) {
         try {
@@ -158,9 +159,26 @@ export async function handleStarterKitCheckout(ctx: CheckoutFulfillmentContext):
               status = 'succeeded',
               updated_at = NOW()
           `
+          paymentRecorded = true
         } catch (paymentError: any) {
           console.error(`[v0] Error storing starter kit payment:`, paymentError.message)
         }
+      }
+
+      if (paymentRecorded) {
+        await logAnalyticsEvent({
+          eventName: "starter_kit_checkout_success",
+          userId: userId ? String(userId) : null,
+          properties: {
+            source: source || "landing_page",
+            product_type: "starter_kit",
+            value: paymentAmountCents / 100,
+            currency: "usd",
+            stripe_session_id: session.id,
+            stripe_payment_id: paymentIdForStorage,
+            is_test_mode: isTestMode,
+          },
+        })
       }
 
       await sql`
@@ -278,22 +296,5 @@ export async function handleStarterKitCheckout(ctx: CheckoutFulfillmentContext):
         console.error("[v0] Failed to update Starter Kit tags:", tagError)
       })
 
-      try {
-        await logAnalyticsEvent({
-          eventName: "starter_kit_checkout_success",
-          userId: userId ? String(userId) : null,
-          properties: {
-            source: source || "landing_page",
-            product_type: "starter_kit",
-            value: paymentAmountCents / 100,
-            currency: "usd",
-            stripe_session_id: session.id,
-            stripe_payment_id: paymentIdForStorage,
-            is_test_mode: isTestMode,
-          },
-        })
-      } catch {
-        // best effort only
-      }
     }
 }

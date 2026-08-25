@@ -126,6 +126,7 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
     }
 
     const vaultCustomerIdForStorage = customerId || session.id
+    let paymentRecorded = false
 
     if (vaultCustomerIdForStorage) {
       try {
@@ -205,9 +206,26 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
               buyer_stage = COALESCE(stripe_payments.buyer_stage, EXCLUDED.buyer_stage),
               updated_at = NOW()
           `
+        paymentRecorded = true
       } catch (paymentError: any) {
         console.error(`[v0] Error storing prompt vault payment:`, paymentError.message)
       }
+    }
+
+    if (paymentRecorded) {
+      await logAnalyticsEvent({
+        eventName: "prompt_vault_checkout_success",
+        userId: userId ? String(userId) : null,
+        properties: {
+          source: source || "landing_page",
+          product_type: "prompt_vault",
+          value: paymentAmountCents / 100,
+          currency: "usd",
+          stripe_session_id: session.id,
+          stripe_payment_id: paymentIdForStorage,
+          is_test_mode: isTestMode,
+        },
+      })
     }
 
     try {
@@ -320,19 +338,6 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
     }
 
     try {
-      await logAnalyticsEvent({
-        eventName: "prompt_vault_checkout_success",
-        userId: userId ? String(userId) : null,
-        properties: {
-          source: source || "landing_page",
-          product_type: "prompt_vault",
-          value: paymentAmountCents / 100,
-          currency: "usd",
-          stripe_session_id: session.id,
-          stripe_payment_id: paymentIdForStorage,
-          is_test_mode: isTestMode,
-        },
-      })
       await logAnalyticsEvent({
         eventName: "prompt_vault_payment_completed",
         userId: String(userId),
