@@ -29,6 +29,7 @@ describe("logout analytics identity isolation", () => {
     const cookies = response.headers.get("set-cookie") || ""
     expect(cookies).toContain("sselfie_anon_id=")
     expect(cookies).toContain("sselfie_posthog_reset=1")
+    expect(cookies).toContain("Max-Age=31536000")
     expect(cookies).toContain("HttpOnly")
   })
 })

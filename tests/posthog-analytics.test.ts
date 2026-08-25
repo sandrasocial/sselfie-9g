@@ -286,16 +286,23 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("readIdentity(true)")
     expect(provider).toContain("setPostHogCaptureEnabled(false)")
     expect(provider).toContain("setPostHogCaptureEnabled(true)")
-    expect(provider.indexOf("ensureAnalyticsBrowserIdentity().then")).toBeLessThan(
-      provider.indexOf('<Script\n        id="posthog"')
+    const scriptIndex = provider.indexOf('<Script id="posthog"')
+    expect(provider.indexOf("ensureAnalyticsBrowserIdentity().then")).toBeLessThan(scriptIndex)
+    expect(provider).toContain(
+      "loaded:function(ph){if(window.__sselfiePostHogLoaded)window.__sselfiePostHogLoaded(ph)}"
     )
-    const onReadyIndex = provider.indexOf("onReady={async () =>")
-    const resetIndex = provider.indexOf("window.posthog.reset()", onReadyIndex)
+    expect(provider).not.toContain("onReady=")
+    const loadedCallbackIndex = provider.indexOf("const onLoaded = async")
+    const resetIndex = provider.indexOf("client.reset()", loadedCallbackIndex)
     const acknowledgeIndex = provider.indexOf("await acknowledgePostHogReset()", resetIndex)
-    const captureEnabledIndex = provider.indexOf("setPostHogCaptureEnabled(true)", onReadyIndex)
-    expect(resetIndex).toBeGreaterThan(onReadyIndex)
+    const captureEnabledIndex = provider.indexOf(
+      "setPostHogCaptureEnabled(true, client)",
+      loadedCallbackIndex
+    )
+    expect(resetIndex).toBeGreaterThan(loadedCallbackIndex)
     expect(resetIndex).toBeLessThan(acknowledgeIndex)
     expect(acknowledgeIndex).toBeLessThan(captureEnabledIndex)
+    expect(provider.indexOf("setLoadedCallbackReady(true)")).toBeLessThan(scriptIndex)
     expect(provider).toContain("}, [pathname, ready])")
     expect(provider).toContain("window.location.origin}${safePathname}")
     expect(provider).not.toContain("useSearchParams")

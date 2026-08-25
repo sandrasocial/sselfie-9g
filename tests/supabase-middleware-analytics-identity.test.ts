@@ -37,6 +37,7 @@ describe("Supabase middleware analytics identity isolation", () => {
 
     expect(cookies).toContain("sselfie_anon_id=")
     expect(cookies).toContain("sselfie_posthog_reset=1")
+    expect(cookies).toContain("Max-Age=31536000")
     expect(cookies).toContain("HttpOnly")
   })
 })

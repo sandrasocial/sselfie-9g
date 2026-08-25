@@ -15,6 +15,8 @@ export function rotateAnonymousAnalyticsIdentity(response: NextResponse) {
   })
   response.cookies.set("sselfie_posthog_reset", "1", {
     ...cookieOptions,
-    maxAge: 60 * 5,
+    // Keep the isolation signal as long as the anonymous identity itself. The
+    // analytics endpoint clears it only after the loaded SDK applies reset().
+    maxAge: 60 * 60 * 24 * 365,
   })
 }
