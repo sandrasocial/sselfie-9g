@@ -111,7 +111,7 @@ describe("public analytics route server-only event boundary", () => {
     expect(response.headers.get("set-cookie")).toBeNull()
   })
 
-  it("clears the PostHog reset signal only after browser acknowledgement", async () => {
+  it("does not clear the PostHog reset signal through a top-level GET", async () => {
     const { GET } = await import("@/app/api/analytics/event/route")
     const response = await GET(
       new NextRequest("http://localhost/api/analytics/event?ack_posthog_reset=1", {
@@ -122,8 +122,42 @@ describe("public analytics route server-only event boundary", () => {
     )
 
     expect(await response.json()).toMatchObject({ resetPostHog: true })
+    expect(response.headers.get("set-cookie")).toBeNull()
+  })
+
+  it("clears the PostHog reset signal only for a same-origin acknowledgement POST", async () => {
+    const { POST } = await import("@/app/api/analytics/event/route")
+    const response = await POST(
+      new NextRequest("http://localhost/api/analytics/event", {
+        method: "POST",
+        headers: {
+          cookie: "sselfie_anon_id=rotated-id; sselfie_posthog_reset=1",
+          origin: "http://localhost",
+          "x-sselfie-posthog-reset-ack": "1",
+        },
+      })
+    )
+
+    await expect(response.json()).resolves.toEqual({ ok: true })
     expect(response.headers.get("set-cookie")).toContain("sselfie_posthog_reset=")
     expect(response.headers.get("set-cookie")).toContain("Max-Age=0")
+  })
+
+  it("rejects a cross-origin reset acknowledgement without clearing the marker", async () => {
+    const { POST } = await import("@/app/api/analytics/event/route")
+    const response = await POST(
+      new NextRequest("http://localhost/api/analytics/event", {
+        method: "POST",
+        headers: {
+          cookie: "sselfie_posthog_reset=1",
+          origin: "https://attacker.example",
+          "x-sselfie-posthog-reset-ack": "1",
+        },
+      })
+    )
+
+    expect(response.status).toBe(403)
+    expect(response.headers.get("set-cookie")).toBeNull()
   })
 
   it("rejects a forged durable Calendar completion before any analytics write", async () => {

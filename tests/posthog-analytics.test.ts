@@ -360,7 +360,8 @@ describe("PostHog analytics boundary", () => {
 
     const analyticsClient = readFileSync(join(process.cwd(), "lib/analytics/client.ts"), "utf8")
     expect(analyticsClient).toContain("rotate_anonymous=1")
-    expect(analyticsClient).toContain("ack_posthog_reset=1")
+    expect(analyticsClient).toContain('method: "POST"')
+    expect(analyticsClient).toContain('"x-sselfie-posthog-reset-ack": "1"')
     expect(analyticsClient).toContain("await ensureAnalyticsBrowserIdentity()")
 
     const middleware = readFileSync(join(process.cwd(), "middleware.ts"), "utf8")

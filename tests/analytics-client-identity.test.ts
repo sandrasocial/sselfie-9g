@@ -59,4 +59,20 @@ describe("browser analytics identity bootstrap", () => {
     })
     expect(request).toHaveBeenCalledTimes(2)
   })
+
+  it("acknowledges a PostHog reset with a same-origin custom-header POST", async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 200 }))
+    vi.stubGlobal("fetch", request)
+
+    const { acknowledgePostHogReset } = await import("@/lib/analytics/client")
+
+    await expect(acknowledgePostHogReset()).resolves.toBe(true)
+    expect(request).toHaveBeenCalledWith("/api/analytics/event", {
+      method: "POST",
+      headers: { "x-sselfie-posthog-reset-ack": "1" },
+      credentials: "same-origin",
+      cache: "no-store",
+      keepalive: true,
+    })
+  })
 })

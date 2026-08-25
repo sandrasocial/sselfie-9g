@@ -52,7 +52,9 @@ export function ensureAnalyticsBrowserIdentity(
 
 export async function acknowledgePostHogReset(): Promise<boolean> {
   try {
-    const response = await fetch("/api/analytics/event?ack_posthog_reset=1", {
+    const response = await fetch("/api/analytics/event", {
+      method: "POST",
+      headers: { "x-sselfie-posthog-reset-ack": "1" },
       credentials: "same-origin",
       cache: "no-store",
       keepalive: true,

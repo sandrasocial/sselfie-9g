@@ -14,6 +14,7 @@ type AnalyticsIdentity = {
 }
 
 const SERVER_ONLY_ANALYTICS_EVENTS = new Set(["purchase", "suite_ready_post_saved"])
+const POSTHOG_RESET_ACK_HEADER = "x-sselfie-posthog-reset-ack"
 
 type AnalyticsRequestInput = {
   eventName: string
@@ -119,7 +120,6 @@ export async function GET(req: NextRequest) {
   try {
     const searchParams = new URL(req.url).searchParams
     const rotateAnonymous = searchParams.get("rotate_anonymous") === "1"
-    const acknowledgePostHogReset = searchParams.get("ack_posthog_reset") === "1"
     const resetPostHog = req.cookies.get("sselfie_posthog_reset")?.value === "1"
     const identity = await resolveAnalyticsIdentity(req, rotateAnonymous)
     if (!identity) {
@@ -137,9 +137,6 @@ export async function GET(req: NextRequest) {
     })
     response.headers.set("Cache-Control", "private, no-store")
     setAnonCookie(response, identity)
-    // Keep the signal durable until the browser confirms that the PostHog SDK
-    // actually applied reset(). Identity bootstrap alone is not an acknowledgement.
-    if (resetPostHog && acknowledgePostHogReset) clearPostHogResetCookie(response)
     return response
   } catch {
     return NextResponse.json({ distinctId: null })
@@ -149,6 +146,20 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   // This endpoint must be safe and non-blocking: fail open where possible.
   try {
+    const resetAcknowledgement = req.headers.get(POSTHOG_RESET_ACK_HEADER)
+    if (resetAcknowledgement !== null) {
+      const requestOrigin = new URL(req.url).origin
+      if (resetAcknowledgement !== "1" || req.headers.get("origin") !== requestOrigin) {
+        return NextResponse.json({ ok: false }, { status: 403 })
+      }
+      const response = NextResponse.json({ ok: true })
+      response.headers.set("Cache-Control", "private, no-store")
+      if (req.cookies.get("sselfie_posthog_reset")?.value === "1") {
+        clearPostHogResetCookie(response)
+      }
+      return response
+    }
+
     const ip = readIp(req)
 
     const input = analyticsRequestInput(req, await req.json().catch(() => ({})))
@@ -196,8 +207,11 @@ export async function POST(req: NextRequest) {
     )
     setAnonCookie(res, identity)
     return res
-  } catch (err: any) {
-    console.error("[analytics] /api/analytics/event failed:", err?.message || String(err))
+  } catch (err: unknown) {
+    console.error(
+      "[analytics] /api/analytics/event failed:",
+      err instanceof Error ? err.message : String(err)
+    )
     return NextResponse.json({ ok: true })
   }
 }
