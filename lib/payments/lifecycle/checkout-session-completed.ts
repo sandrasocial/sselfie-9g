@@ -44,6 +44,7 @@ import {
 } from "@/lib/revenue-engine/checkout-attribution"
 import { markEventFailed, markEventProcessed } from "@/lib/events/idempotency"
 import { VISIBILITY_MINI_PRODUCT_BY_ID } from "@/lib/visibility-products"
+import { ACADEMY_PRODUCTS } from "@/lib/products"
 import {
   checkoutMetadataString,
   resolveCheckoutProductType,
@@ -835,11 +836,18 @@ export async function handleCheckoutSessionCompleted(
           : null
 
     if (centralPurchaseEvent && productType && isPaymentPaid && revenueRecord.recorded) {
+      const observedProductType =
+        productType === "academy_mini_product" &&
+        session.metadata?.product_id &&
+        Object.hasOwn(ACADEMY_PRODUCTS, session.metadata.product_id)
+          ? session.metadata.product_id
+          : productType
+
       schedulePurchaseObservation({
         eventName: centralPurchaseEvent,
         userId: userId ? String(userId) : null,
         source: source || (productType === "work_with_me" ? "work_with_me_paid" : "landing_page"),
-        productType,
+        productType: observedProductType,
         amountCents: session.amount_total || 0,
         currency: session.currency || (productType === "work_with_me" ? "eur" : "usd"),
         sessionId: session.id,

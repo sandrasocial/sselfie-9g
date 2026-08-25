@@ -7,6 +7,7 @@ const constructEventMock = vi.fn()
 const checkWebhookRateLimitMock = vi.fn()
 const addOrUpdateResendContactMock = vi.fn()
 const sendEmailMock = vi.fn()
+const logAnalyticsEventMock = vi.fn()
 
 vi.mock("server-only", () => ({}))
 
@@ -70,7 +71,7 @@ vi.mock("@/lib/email/templates/payment-failed", () => ({
 }))
 
 vi.mock("@/lib/analytics/events", () => ({
-  logAnalyticsEvent: vi.fn(),
+  logAnalyticsEvent: logAnalyticsEventMock,
 }))
 
 vi.mock("@/lib/webhook-monitoring", () => ({
@@ -177,6 +178,17 @@ describe("stripe webhook academy purchase branch", () => {
           query.includes("INSERT INTO user_tags (user_id, tag)") && !query.includes("created_at")
       )
     ).toBe(true)
+
+    expect(logAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "purchase",
+        properties: expect.objectContaining({
+          product_type: "what_to_say",
+          stripe_session_id: "cs_test_1",
+          stripe_payment_id: "pi_test_123",
+        }),
+      })
+    )
   })
 
   it("grants the suite and all three workbook entitlements for visibility_suite purchases", async () => {

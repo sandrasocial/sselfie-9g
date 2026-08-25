@@ -565,6 +565,8 @@ describe("PostHog analytics boundary", () => {
       expect(lifecycle).toContain(`  "${productType}",`)
     }
     expect(lifecycle).toContain('? "purchase"')
+    expect(lifecycle).toContain("Object.hasOwn(ACADEMY_PRODUCTS, session.metadata.product_id)")
+    expect(lifecycle).toContain("productType: observedProductType")
     expect(purchaseSchedule).toBeGreaterThan(ledgerWrite)
     expect(purchaseSchedule).toBeLessThan(accountSetup)
     expect(purchaseSchedule).toBeLessThan(academyDispatch)
