@@ -47,7 +47,7 @@ export function renderBoldEditorialProofEmail({
             <td style="padding:0;background:${colors.chalk};border-bottom:1px solid ${colors.silver};">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td align="center" style="padding:14px 6px;border-bottom:2px solid ${colors.oxblood};font-family:Arial,Helvetica,sans-serif;font-size:9px;font-weight:700;letter-spacing:.16em;color:${colors.ink};">TAKE</td>
+                  <td align="center" style="padding:14px 6px;border-bottom:2px solid ${colors.champagne};font-family:Arial,Helvetica,sans-serif;font-size:9px;font-weight:700;letter-spacing:.16em;color:${colors.ink};">TAKE</td>
                   <td align="center" style="padding:14px 6px;font-family:Arial,Helvetica,sans-serif;font-size:9px;font-weight:700;letter-spacing:.16em;color:${colors.slate};">CREATE</td>
                   <td align="center" style="padding:14px 6px;font-family:Arial,Helvetica,sans-serif;font-size:9px;font-weight:700;letter-spacing:.16em;color:${colors.slate};">EDIT</td>
                   <td align="center" style="padding:14px 6px;font-family:Arial,Helvetica,sans-serif;font-size:9px;font-weight:700;letter-spacing:.16em;color:${colors.slate};">POST</td>
@@ -75,7 +75,7 @@ export function renderBoldEditorialProofEmail({
               <p style="margin:0 0 28px;">Take it with intention. Create the AI version. Edit it until it still feels like you. Then turn it into something ready to post.</p>
               <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td style="background:${colors.oxblood};border:1px solid ${colors.oxblood};">
+                  <td style="background:${colors.espresso};border:1px solid ${colors.espresso};">
                     <a href="${escapeHtml(ctaHref)}" style="display:inline-block;padding:16px 25px;color:${colors.paper};font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;text-decoration:none;text-transform:uppercase;">START WITH TAKE&nbsp;&nbsp;→</a>
                   </td>
                 </tr>

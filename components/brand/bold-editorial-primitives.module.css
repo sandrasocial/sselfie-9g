@@ -58,8 +58,8 @@
 }
 
 .button[data-accent="true"] {
-  background: var(--ss-brand-oxblood);
-  border-color: var(--ss-brand-oxblood);
+  background: var(--ss-brand-espresso);
+  border-color: var(--ss-brand-espresso);
 }
 
 .buttonSecondary {
@@ -74,7 +74,7 @@
 
 .button:focus-visible,
 .buttonSecondary:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--ss-brand-oxblood) 42%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--ss-brand-champagne) 72%, transparent);
   outline-offset: 3px;
 }
 
@@ -102,12 +102,12 @@
 }
 
 .stageActive {
-  border-bottom-color: var(--ss-brand-oxblood);
+  border-bottom-color: var(--ss-brand-champagne);
   color: var(--ss-brand-ink);
 }
 
 .stageNumber {
-  color: var(--ss-brand-oxblood);
+  color: var(--ss-brand-champagne-ink);
   font-size: 0.5rem;
   margin-right: 0.45rem;
 }

@@ -139,7 +139,7 @@ function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
     <div
       className={`relative shrink-0 overflow-hidden rounded-full bg-[#ECEDED] ${
         isMaya
-          ? "h-10 w-10 border border-[#0D0E10] ring-2 ring-white"
+          ? "suite-maya-avatar h-10 w-10 border border-[#0D0E10] ring-2 ring-white"
           : "h-8 w-8 border border-[#C5C6C8]/70"
       }`}
     >
@@ -492,9 +492,9 @@ function MayaPathTabs({
             onClick={() => onPick(path.id)}
             disabled={disabled}
             aria-current={active ? "step" : undefined}
-            className={`min-h-[64px] border-r border-[#C5C6C8] px-1.5 py-2 text-center transition-colors last:border-r-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--suite-accent)] disabled:opacity-45 sm:min-h-[68px] sm:px-4 ${
+            className={`suite-maya-path-tab min-h-[64px] border-r border-[#C5C6C8] px-1.5 py-2 text-center transition-colors last:border-r-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--suite-night)] disabled:opacity-45 sm:min-h-[68px] sm:px-4 ${
               active
-                ? "bg-[color:var(--suite-accent)] text-white"
+                ? "suite-maya-path-tab--active bg-[color:var(--suite-accent)] text-white"
                 : "bg-white text-[color:var(--suite-night)] hover:bg-[#F1F2F2]"
             }`}
           >
@@ -4918,6 +4918,11 @@ export function MayaConcierge({
                 className="max-w-[18rem] font-serif text-[22px] font-light uppercase leading-none tracking-[-0.035em] text-[#0D0E10] sm:max-w-none sm:text-[31px]"
               >
                 {agentLabel}
+                {homeMode ? (
+                  <span className="suite-maya-neon-mark sm:hidden" aria-hidden="true">
+                    create
+                  </span>
+                ) : null}
               </h2>
               {!generalHomeConversation && (
                 <p className="mt-0.5 truncate text-[11px] leading-snug text-[#6D6E70]">

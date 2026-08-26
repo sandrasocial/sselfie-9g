@@ -65,7 +65,7 @@ function CheckoutLinkInner({ label, surface }: { label: string; surface: "dark" 
         justifyContent: "center",
         padding: "13px 32px",
         minHeight: "46px",
-        background: dark ? "var(--ss-brand-paper)" : "var(--ss-brand-oxblood)",
+        background: dark ? "var(--ss-brand-paper)" : "var(--ss-brand-espresso)",
         color: dark ? "var(--ss-brand-ink)" : "var(--ss-brand-paper)",
         fontSize: "10px",
         fontWeight: 600,

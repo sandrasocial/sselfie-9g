@@ -351,7 +351,7 @@ export function SelfieReferenceManagerModal({
                         }}
                         className={`relative aspect-square overflow-hidden rounded-[5px] border transition-colors ${
                           faceUrl === url
-                            ? "border-[color:var(--ss-night)] ring-2 ring-[color:var(--ss-night)]/10"
+                            ? "suite-selfie-selected border-[color:var(--ss-night)] ring-2 ring-[color:var(--ss-night)]/10"
                             : "border-[color:var(--ss-silver)]/60 hover:border-[color:var(--ss-night)]/60"
                         }`}
                         aria-label={`Use saved selfie ${pastSelfies.indexOf(url) + 1}`}

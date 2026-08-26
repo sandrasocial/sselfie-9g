@@ -264,7 +264,7 @@
 .steps li > span {
   display: block;
   margin-bottom: clamp(48px, 6vw, 78px);
-  color: var(--ss-brand-oxblood);
+  color: var(--ss-brand-champagne-ink);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: 10px;
   font-weight: 700;
@@ -357,7 +357,7 @@
 
 .includedInner li::before {
   width: 32px;
-  color: var(--ss-brand-oxblood);
+  color: var(--ss-brand-champagne-ink);
   content: "+";
   font-weight: 700;
 }
