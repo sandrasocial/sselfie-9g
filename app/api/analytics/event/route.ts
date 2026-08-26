@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { randomUUID } from "node:crypto"
+import { isAuthSessionMissingError } from "@supabase/supabase-js"
 
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
@@ -83,7 +84,7 @@ async function resolveAnalyticsIdentity(
       data: { user: authUser },
       error: authError,
     } = await supabase.auth.getUser()
-    if (authError) return null
+    if (authError && !isAuthSessionMissingError(authError)) return null
     if (authUser) {
       const neonUser = await getUserByAuthId(authUser.id)
       if (!neonUser?.id) return null

@@ -2,6 +2,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { NextRequest } from "next/server"
+import { AuthSessionMissingError } from "@supabase/supabase-js"
 
 const mocks = vi.hoisted(() => ({
   ensureAnalyticsSchema: vi.fn(),
@@ -39,6 +40,34 @@ describe("public analytics route server-only event boundary", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store")
     expect(response.headers.get("set-cookie")).toContain("sselfie_anon_id=")
     expect(response.headers.get("set-cookie")).toContain("HttpOnly")
+  })
+
+  it("treats Supabase's expected missing-session result as an anonymous visitor", async () => {
+    mocks.checkRateLimit.mockResolvedValue({ success: false })
+    mocks.createServerClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: null },
+          error: new AuthSessionMissingError(),
+        }),
+      },
+    })
+
+    const { GET, POST } = await import("@/app/api/analytics/event/route")
+    const response = await GET(new NextRequest("http://localhost/api/analytics/event"))
+    const postResponse = await POST(
+      new NextRequest("http://localhost/api/analytics/event", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ event: "landing_page_viewed" }),
+      })
+    )
+
+    const body = await response.json()
+    expect(body.distinctId).toMatch(/^anon:[0-9a-f-]{36}$/)
+    expect(response.headers.get("set-cookie")).toContain("sselfie_anon_id=")
+    await expect(postResponse.json()).resolves.toEqual({ ok: true, rateLimited: true })
+    expect(mocks.checkRateLimit).toHaveBeenCalledOnce()
   })
 
   it("rotates the anonymous identity after logout or account switching", async () => {
