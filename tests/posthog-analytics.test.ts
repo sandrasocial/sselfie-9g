@@ -24,6 +24,8 @@ describe("PostHog analytics boundary", () => {
   afterEach(() => {
     delete process.env.POSTHOG_PROJECT_KEY
     delete process.env.POSTHOG_HOST
+    delete process.env.NEXT_PUBLIC_POSTHOG_HOST
+    delete process.env.NEXT_PUBLIC_SITE_URL
     vi.restoreAllMocks()
   })
 
@@ -137,6 +139,28 @@ describe("PostHog analytics boundary", () => {
         source: "maya_concierge",
       },
     })
+  })
+
+  it.each([
+    ["/ingest", "https://sselfie.ai/ingest/i/v0/e/"],
+    ["https://sselfie.ai/ingest", "https://sselfie.ai/ingest/i/v0/e/"],
+  ])("preserves the configured ingestion proxy prefix for %s", async (host, expected) => {
+    delete process.env.POSTHOG_HOST
+    process.env.NEXT_PUBLIC_POSTHOG_HOST = host
+    process.env.NEXT_PUBLIC_SITE_URL = "https://sselfie.ai"
+    const request = vi.fn<typeof fetch>().mockResolvedValue(new Response("ok", { status: 200 }))
+
+    await expect(
+      capturePostHogEvent(
+        {
+          eventName: "activation_selfie_uploaded",
+          anonId: "anonymous-visitor",
+        },
+        request
+      )
+    ).resolves.toEqual({ sent: true })
+
+    expect(String(request.mock.calls[0]?.[0])).toBe(expected)
   })
 
   it("adds a privacy-safe stable insert id to retried Stripe purchases", async () => {

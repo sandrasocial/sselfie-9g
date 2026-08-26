@@ -383,6 +383,28 @@ function postHogConfig(): { key: string; host: string } | null {
   return { key, host }
 }
 
+function postHogCaptureEndpoint(host: string): URL | null {
+  try {
+    const endpoint = host.startsWith("/")
+      ? new URL(
+          host,
+          process.env.NEXT_PUBLIC_SITE_URL ||
+            process.env.NEXT_PUBLIC_APP_URL ||
+            "https://sselfie.ai"
+        )
+      : new URL(host)
+    if (endpoint.protocol !== "https:" && endpoint.protocol !== "http:") return null
+
+    const prefix = endpoint.pathname.replace(/\/+$/, "")
+    endpoint.pathname = `${prefix}/i/v0/e/`
+    endpoint.search = ""
+    endpoint.hash = ""
+    return endpoint
+  } catch {
+    return null
+  }
+}
+
 export function postHogDistinctId(input: PostHogCaptureInput): string | null {
   const userId = input.userId?.trim()
   if (userId && !/^(null|undefined)$/i.test(userId)) return `user:${userId}`
@@ -415,15 +437,8 @@ export async function capturePostHogEvent(
   const config = postHogConfig()
   if (!config) return { sent: false, reason: "disabled" }
 
-  let endpoint: URL
-  try {
-    endpoint = new URL("/i/v0/e/", config.host)
-    if (endpoint.protocol !== "https:" && endpoint.protocol !== "http:") {
-      return { sent: false, reason: "invalid-host" }
-    }
-  } catch {
-    return { sent: false, reason: "invalid-host" }
-  }
+  const endpoint = postHogCaptureEndpoint(config.host)
+  if (!endpoint) return { sent: false, reason: "invalid-host" }
 
   try {
     const response = await fetchImpl(endpoint, {

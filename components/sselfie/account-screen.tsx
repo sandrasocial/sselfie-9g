@@ -419,6 +419,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
         credentials: "include",
       })
       if (response.ok) {
+        notifyAnalyticsLogout()
         router.push("/auth/login")
       } else {
         const data = await response.json().catch(() => ({}))

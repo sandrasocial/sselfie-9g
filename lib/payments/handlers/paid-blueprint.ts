@@ -13,8 +13,8 @@ import {
 } from "@/lib/email/templates/paid-blueprint-delivery"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { grantPaidBlueprintCredits, shouldFulfillStripePurchaseCredits } from "@/lib/credits"
-import { logAnalyticsEvent } from "@/lib/analytics/events"
 import type { CheckoutFulfillmentContext } from "../types"
+import { schedulePurchaseObservation } from "./purchase-analytics"
 
 /**
  * FIX 2: Expand user's feed from 1 post to 9 posts (free → paid upgrade).
@@ -177,36 +177,6 @@ export async function handlePaidBlueprintCheckout(
     const amountForStorage = paymentAmountCents || 0 // Use 0 for $0 payments
     let paymentRecorded = false
 
-    const recordPurchaseAnalytics = async () => {
-      if (!paymentRecorded) return
-      try {
-        await logAnalyticsEvent({
-          eventName: "purchase",
-          userId: userId ? String(userId) : null,
-          properties: {
-            source: "stripe_webhook",
-            payment_type: "paid_blueprint",
-            product_type: "paid_blueprint",
-            value: amountForStorage / 100,
-            currency: "usd",
-            stripe_payment_id: paymentIdForStorage,
-            stripe_session_id: session.id,
-            offer_slug: session.metadata?.offer_slug || null,
-            funnel_stage: session.metadata?.funnel_stage || null,
-            attribution_source: session.metadata?.source || null,
-            utm_source: session.metadata?.utm_source || null,
-            utm_medium: session.metadata?.utm_medium || null,
-            utm_campaign: session.metadata?.utm_campaign || null,
-            campaign_id: session.metadata?.campaign_id || null,
-            referral_code: session.metadata?.referral_code || null,
-            is_test_mode: isTestMode,
-          },
-        })
-      } catch {
-        // Analytics must never fail the webhook.
-      }
-    }
-
     if (customerId && (paymentIntentId || isZeroAmountPayment)) {
       try {
         await sql`
@@ -261,8 +231,32 @@ export async function handlePaidBlueprintCheckout(
       }
     }
 
+    // Observe the durable payment before fallible account lookup or fulfillment.
+    // Guest purchases use the provider's hashed payment identity fallback.
+    if (paymentRecorded) {
+      schedulePurchaseObservation({
+        eventName: "purchase",
+        userId: userId ? String(userId) : null,
+        source: session.metadata?.source || source,
+        productType: "paid_blueprint",
+        amountCents: amountForStorage,
+        currency: typeof session.currency === "string" ? session.currency : "usd",
+        sessionId: session.id,
+        paymentId: paymentIdForStorage,
+        isTestMode,
+        checkoutMetadata: session.metadata,
+        properties: {
+          payment_type: "paid_blueprint",
+          offer_slug: session.metadata?.offer_slug || null,
+          funnel_stage: session.metadata?.funnel_stage || null,
+          attribution_source: session.metadata?.source || null,
+          campaign_id: session.metadata?.campaign_id || null,
+          referral_code: session.metadata?.referral_code || null,
+        },
+      })
+    }
+
     if (!shouldFulfillStripePurchaseCredits(event.livemode)) {
-      await recordPurchaseAnalytics()
       console.log("[v0] ⏭️ Recorded test-mode paid blueprint without customer fulfillment")
       return { referralPurchaseUserId }
     }
@@ -321,11 +315,6 @@ export async function handlePaidBlueprintCheckout(
 
       throw new Error(`Paid blueprint user_id unresolved for ${session.id}`)
     }
-
-    // Live paid-blueprint purchases are observed only after authenticated or
-    // email-fallback identity resolution. This preserves the Neon ledger and
-    // lets the provider join supported guest checkout revenue safely.
-    await recordPurchaseAnalytics()
 
     // Fix #3: Grant credits if user_id found AND payment confirmed (with idempotency check)
     if (userId && isPaymentPaid) {

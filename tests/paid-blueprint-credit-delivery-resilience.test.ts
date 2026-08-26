@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   logAnalytics: vi.fn(),
 }))
 
+vi.mock("server-only", () => ({}))
 vi.mock("@/lib/db/client", () => ({ sql: mocks.sql }))
 vi.mock("@/lib/stripe", () => ({
   stripe: { paymentIntents: { retrieve: mocks.retrievePaymentIntent } },
@@ -93,6 +94,10 @@ describe("paid blueprint credit/access/delivery resilience", () => {
     await handlePaidBlueprintCheckout(context)
 
     expect(mocks.grantCredits).toHaveBeenCalledTimes(1)
+    expect(mocks.logAnalytics).toHaveBeenCalledWith(expect.objectContaining({ userId: "user_1" }))
+    expect(mocks.logAnalytics.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.grantCredits.mock.invocationCallOrder[0]
+    )
     expect(mocks.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         idempotencyKey: "paid-blueprint-delivery:cs_paid_blueprint",
@@ -108,7 +113,7 @@ describe("paid blueprint credit/access/delivery resilience", () => {
     expect(deliveryDedupe?.[0].join(" ")).toContain("status IN ('sent', 'delivered')")
   })
 
-  it("observes a guest purchase only after resolving its privacy-safe user identity", async () => {
+  it("observes a guest purchase at the durable payment boundary before account lookup", async () => {
     mocks.sql.mockImplementation((strings: TemplateStringsArray) => {
       const query = strings.join(" ")
       if (query.includes("SELECT id FROM users WHERE email")) {
@@ -132,15 +137,49 @@ describe("paid blueprint credit/access/delivery resilience", () => {
     expect(mocks.logAnalytics).toHaveBeenCalledWith(
       expect.objectContaining({
         eventName: "purchase",
-        userId: "guest_user_2",
+        userId: null,
+        idempotencyKey: "purchase:pi_paid_blueprint",
+        properties: expect.objectContaining({
+          stripe_payment_id: "pi_paid_blueprint",
+          stripe_session_id: "cs_paid_blueprint",
+        }),
       })
     )
     const lookupIndex = mocks.sql.mock.calls.findIndex(([strings]) =>
       strings.join(" ").includes("SELECT id FROM users WHERE email")
     )
     expect(lookupIndex).toBeGreaterThanOrEqual(0)
-    expect(mocks.sql.mock.invocationCallOrder[lookupIndex]).toBeLessThan(
-      mocks.logAnalytics.mock.invocationCallOrder[0]
+    expect(mocks.logAnalytics.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.sql.mock.invocationCallOrder[lookupIndex]
+    )
+  })
+
+  it("keeps the durable purchase observation when guest identity resolution fails", async () => {
+    mocks.sql.mockImplementation((strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (query.includes("SELECT id FROM users WHERE email")) return []
+      return defaultSql(strings)
+    })
+    const guestContext = {
+      ...context,
+      userId: null,
+      referralPurchaseUserId: null,
+      session: {
+        ...context.session,
+        metadata: { product_type: "paid_blueprint" },
+      },
+    }
+    const { handlePaidBlueprintCheckout } = await import("@/lib/payments/handlers/paid-blueprint")
+
+    await expect(handlePaidBlueprintCheckout(guestContext)).rejects.toThrow(
+      "Paid blueprint user_id unresolved"
+    )
+    expect(mocks.logAnalytics).toHaveBeenCalledOnce()
+    expect(mocks.logAnalytics).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: null,
+        idempotencyKey: "purchase:pi_paid_blueprint",
+      })
     )
   })
 

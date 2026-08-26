@@ -95,4 +95,18 @@ describe("analytics logout browser signal", () => {
       expect(signal, caller).toBeGreaterThan(successCheck)
     }
   })
+
+  it("broadcasts account deletion only after the server confirms success", () => {
+    const source = readFileSync(
+      join(process.cwd(), "components/sselfie/account-screen.tsx"),
+      "utf8"
+    )
+    const deleteRequest = source.indexOf('fetch("/api/user/delete"')
+    const successCheck = source.indexOf("if (response.ok)", deleteRequest)
+    const signal = source.indexOf("notifyAnalyticsLogout()", deleteRequest)
+
+    expect(deleteRequest).toBeGreaterThan(-1)
+    expect(successCheck).toBeGreaterThan(deleteRequest)
+    expect(signal).toBeGreaterThan(successCheck)
+  })
 })
