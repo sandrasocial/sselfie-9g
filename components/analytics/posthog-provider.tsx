@@ -11,6 +11,7 @@ import {
 import {
   acknowledgePostHogReset,
   ensureAnalyticsBrowserIdentity,
+  invalidateAnalyticsBrowserIdentity,
   type BrowserAnalyticsIdentity,
 } from "@/lib/analytics/client"
 import { subscribeToAnalyticsLogout } from "@/lib/analytics/auth-browser-signal"
@@ -60,7 +61,6 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
     let retryTimer: ReturnType<typeof setTimeout> | null = null
     let refreshGeneration = 0
     let unsubscribeFromAuth: (() => void) | null = null
-    let unsubscribeFromLogout: (() => void) | null = null
 
     const readIdentity = (rotateAnonymous = false, refresh = true) =>
       ensureAnalyticsBrowserIdentity({ refresh, rotateAnonymous })
@@ -160,8 +160,6 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
       // Focus and visibility revalidation remain available if auth setup is unavailable.
     }
 
-    unsubscribeFromLogout = subscribeToAnalyticsLogout(() => startIdentityRefresh(false))
-
     startIdentityRefresh(true)
 
     return () => {
@@ -170,7 +168,6 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
       window.removeEventListener("focus", refreshOnFocus)
       document.removeEventListener("visibilitychange", refreshOnVisibility)
       unsubscribeFromAuth?.()
-      unsubscribeFromLogout?.()
     }
   }, [pathname, ready])
 
@@ -188,14 +185,30 @@ export function PostHogProvider({
   const [ready, setReady] = useState(false)
   const [identity, setIdentity] = useState<BrowserAnalyticsIdentity | null>(null)
   const [loadedCallbackReady, setLoadedCallbackReady] = useState(false)
+  const [identityGeneration, setIdentityGeneration] = useState(0)
+  const identityGenerationRef = useRef(0)
+
+  useEffect(
+    () =>
+      subscribeToAnalyticsLogout(() => {
+        identityGenerationRef.current += 1
+        invalidateAnalyticsBrowserIdentity()
+        setPostHogCaptureEnabled(false)
+        setReady(false)
+        setIdentity(null)
+        setIdentityGeneration(identityGenerationRef.current)
+      }),
+    []
+  )
 
   useEffect(() => {
     let active = true
     let retryTimer: ReturnType<typeof setTimeout> | null = null
+    const generation = identityGeneration
 
     const bootstrapIdentity = async (attempt: number) => {
       const result = await ensureAnalyticsBrowserIdentity({ refresh: attempt > 0 })
-      if (!active) return
+      if (!active || generation !== identityGenerationRef.current) return
       if (result.distinctId) {
         setIdentity(result)
         return
@@ -212,13 +225,14 @@ export function PostHogProvider({
       active = false
       if (retryTimer) clearTimeout(retryTimer)
     }
-  }, [])
+  }, [identityGeneration])
 
   useEffect(() => {
     if (!identity?.distinctId) return
     let active = true
+    const generation = identityGeneration
     const initializeLoadedClient = async (client: PostHogBrowserClient) => {
-      if (!active) return
+      if (!active || generation !== identityGenerationRef.current) return
       const persistedDistinctId = client.get_distinct_id?.() ?? null
       if (
         identity.resetPostHog ||
@@ -227,7 +241,7 @@ export function PostHogProvider({
         client.reset()
         if (identity.resetPostHog) await acknowledgePostHogReset()
       }
-      if (!active) return
+      if (!active || generation !== identityGenerationRef.current) return
       client.identify(identity.distinctId as string)
       setPostHogCaptureEnabled(true, client)
       setReady(true)
@@ -238,11 +252,12 @@ export function PostHogProvider({
 
     window.__sselfiePostHogLoaded = onLoaded
     setLoadedCallbackReady(true)
+    if (window.posthog) void initializeLoadedClient(window.posthog)
     return () => {
       active = false
       if (window.__sselfiePostHogLoaded === onLoaded) delete window.__sselfiePostHogLoaded
     }
-  }, [identity])
+  }, [identity, identityGeneration])
 
   if (!apiKey || !identity?.distinctId || !loadedCallbackReady) return null
 

@@ -60,6 +60,36 @@ describe("browser analytics identity bootstrap", () => {
     expect(request).toHaveBeenCalledTimes(2)
   })
 
+  it("invalidates an in-flight identity so logout bootstrap starts a fresh request", async () => {
+    let resolveStaleIdentity!: (response: Response) => void
+    const staleIdentityResponse = new Promise<Response>(resolve => {
+      resolveStaleIdentity = resolve
+    })
+    const request = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(() => staleIdentityResponse)
+      .mockResolvedValueOnce(Response.json({ distinctId: "anon:after-logout", resetPostHog: true }))
+    vi.stubGlobal("fetch", request)
+
+    const { ensureAnalyticsBrowserIdentity, invalidateAnalyticsBrowserIdentity } =
+      await import("@/lib/analytics/client")
+    const stale = ensureAnalyticsBrowserIdentity()
+    invalidateAnalyticsBrowserIdentity()
+    const fresh = ensureAnalyticsBrowserIdentity()
+
+    expect(request).toHaveBeenCalledTimes(2)
+    resolveStaleIdentity(Response.json({ distinctId: "user:before-logout", resetPostHog: false }))
+    await expect(stale).resolves.toMatchObject({ distinctId: "user:before-logout" })
+    await expect(fresh).resolves.toEqual({
+      distinctId: "anon:after-logout",
+      resetPostHog: true,
+    })
+    await expect(ensureAnalyticsBrowserIdentity()).resolves.toMatchObject({
+      distinctId: "anon:after-logout",
+    })
+    expect(request).toHaveBeenCalledTimes(2)
+  })
+
   it("acknowledges a PostHog reset with a same-origin custom-header POST", async () => {
     const request = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 200 }))
     vi.stubGlobal("fetch", request)

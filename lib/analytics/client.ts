@@ -7,6 +7,10 @@ export type BrowserAnalyticsIdentity = {
 
 let identityRequest: Promise<BrowserAnalyticsIdentity> | null = null
 
+export function invalidateAnalyticsBrowserIdentity(): void {
+  identityRequest = null
+}
+
 async function requestAnalyticsIdentity(
   rotateAnonymous: boolean
 ): Promise<BrowserAnalyticsIdentity> {
