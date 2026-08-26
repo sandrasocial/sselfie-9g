@@ -89,7 +89,7 @@
   overflow: hidden;
   border: 5px solid var(--color-porcelain);
   background: var(--color-porcelain);
-  box-shadow: 0 18px 52px rgba(13, 14, 16, 0.4);
+  box-shadow: 0 18px 52px color-mix(in srgb, var(--ss-brand-ink) 40%, transparent);
 }
 
 .heroOriginal img {
