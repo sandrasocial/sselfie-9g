@@ -140,6 +140,8 @@ const APPROVED_EVENT_SOURCES = new Set([
   "prompt_vault_paid",
   "selfie_ai_photos_kit_paid",
   "selfie_guide_access",
+  "selfie_guide_bundle",
+  "selfie_guide_order_bump",
   "selfie_guide_paid",
   "selfie_to_brand_shoot_paid",
   "skool",

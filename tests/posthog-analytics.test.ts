@@ -282,6 +282,8 @@ describe("PostHog analytics boundary", () => {
     "brand_strategy_paid",
     "work_with_me_paid",
     "selfie_guide_access",
+    "selfie_guide_bundle",
+    "selfie_guide_order_bump",
     "prompt_vault_paid",
   ])("keeps the known checkout source %s", source => {
     expect(
