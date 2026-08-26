@@ -37,7 +37,7 @@ function queryText(strings: TemplateStringsArray): string {
   return Array.from(strings).join("__VALUE__")
 }
 
-function installSuccessfulSql() {
+function installSuccessfulSql(position = 1) {
   const queries: string[] = []
   mocks.sql.mockImplementation((strings: TemplateStringsArray) => {
     const query = queryText(strings)
@@ -46,7 +46,7 @@ function installSuccessfulSql() {
       return [
         {
           id: 91,
-          position: 1,
+          position,
           prompt: "A complete editorial portrait prompt with natural window light",
           post_type: "selfie",
           caption: "Ready to post",
@@ -108,6 +108,38 @@ describe("delivered month runtime money and recovery", () => {
 
     expect(result).toMatchObject({ queuedCount: 1, failedCount: 0 })
     expect(mocks.checkCredits).not.toHaveBeenCalled()
+    expect(mocks.deductCredits).not.toHaveBeenCalled()
+    expect(queries.some(query => query.includes("pregenerated = TRUE"))).toBe(true)
+  })
+
+  it("maps calendar position 10 to curated position 1 without changing the selected variation", async () => {
+    const queries = installSuccessfulSql(10)
+    mocks.selectPromptForPosition.mockImplementation(async (_styleId, position) => {
+      if (position > 9) throw new Error(`No approved prompts found for position ${position}.`)
+      return {
+        prompt_text: "A complete curated feed-style portrait prompt with natural window light",
+      }
+    })
+    const { queueAllImagesForFeed } = await import("@/lib/feed-planner/queue-images")
+
+    const result = await queueAllImagesForFeed(
+      12,
+      "auth-77",
+      "https://sselfie.ai",
+      undefined,
+      undefined,
+      {
+        postIds: [91],
+        chargeCredits: false,
+        markPregenerated: true,
+        forceProMode: true,
+        identityReferencesOnly: true,
+        useCuratedFeedStylePrompts: true,
+      }
+    )
+
+    expect(result).toMatchObject({ queuedCount: 1, failedCount: 0 })
+    expect(mocks.selectPromptForPosition).toHaveBeenCalledWith(8, 1, 4)
     expect(mocks.deductCredits).not.toHaveBeenCalled()
     expect(queries.some(query => query.includes("pregenerated = TRUE"))).toBe(true)
   })
