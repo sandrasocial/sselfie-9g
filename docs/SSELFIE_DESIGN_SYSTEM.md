@@ -26,7 +26,7 @@ placeholders. Current product behavior, customer access, and verified informatio
 remain authoritative.
 
 The Skool category covers and group cover approved on 2026-08-26 are the channel reference for the
-warm editorial mood: ink-black and espresso grounds, warm ivory paper, champagne light, cinematic
+warm editorial mood: ink-black and espresso grounds, soft ivory paper, champagne light, cinematic
 photography, high-contrast serif type, and a limited handwritten glow. Suite translates that mood
 into functional UI; it does not copy cover decoration into ordinary controls.
 
@@ -81,9 +81,9 @@ and visual storytelling where relevant. Do not add extra top-level stages that c
 - Editorial Ink `#0D0E10` — navigation, mastheads, strong frames, headlines, primary contrast
 - Carbon `#211E1B` — secondary dark surfaces and body contrast
 - Espresso `#342A24` — primary actions and selected dark surfaces
-- Warm Ivory `#F7F2EA` — primary editorial canvas
+- Soft Ivory `#F5F2ED` — primary editorial canvas; warm without reading yellow
 - Paper `#FFFFFF` — readable content and email surfaces
-- Parchment `#E8DDCD` — quiet section separation and editorial warmth
+- Muted Parchment `#E6DFD5` — quiet section separation with restrained warmth
 - Taupe `#A89B8C` — rules, borders, and inactive controls
 - Slate `#665E56` — secondary text
 - Champagne `#D7B67E` — illuminated selection edges and signature light on dark surfaces
@@ -93,7 +93,7 @@ and visual storytelling where relevant. Do not add extra top-level stages that c
 
 ### Color rules
 
-- Ink, espresso, warm ivory, white, and photography carry most of the system.
+- Ink, espresso, soft ivory, white, and photography carry most of the system.
 - Espresso carries action. Champagne marks selection and a small number of brand moments.
 - Champagne may glow only against sufficiently dark surfaces. Use Champagne Ink for readable warm
   text on light surfaces.
@@ -277,7 +277,7 @@ refer here, but must not define competing palettes or rules.
 ### Code rules
 
 1. Define approved visual values as named tokens before broad migration. New work uses Espresso,
-   Warm Ivory, Parchment, Taupe, Champagne, and Champagne Ink; do not revive Oxblood as a brand
+   Soft Ivory, Muted Parchment, Taupe, Champagne, and Champagne Ink; do not revive Oxblood as a brand
    accent.
 2. Build shared Suite, marketing, and email primitives appropriate to each channel.
 3. Do not combine a visual migration with backend, billing, entitlement, or generation rewrites.

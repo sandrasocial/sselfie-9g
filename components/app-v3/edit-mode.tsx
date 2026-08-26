@@ -538,7 +538,7 @@ export function EditMode({
       style={
         {
           "--suite-night": "var(--ss-brand-ink, #0D0E10)",
-          "--suite-canvas": "var(--ss-brand-ivory, #F7F2EA)",
+          "--suite-canvas": "var(--ss-brand-ivory, #F5F2ED)",
           "--suite-steel": "var(--ss-brand-taupe, #A89B8C)",
           "--suite-slate": "var(--ss-brand-slate, #665E56)",
           "--suite-accent": "var(--ss-brand-espresso, #342A24)",

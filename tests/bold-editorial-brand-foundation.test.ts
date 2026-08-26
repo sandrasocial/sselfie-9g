@@ -18,7 +18,7 @@ describe("Bold Editorial Studio foundation", () => {
     expect(BOLD_EDITORIAL_COLORS).toMatchObject({
       ink: "#0D0E10",
       espresso: "#342A24",
-      ivory: "#F7F2EA",
+      ivory: "#F5F2ED",
       paper: "#FFFFFF",
       champagne: "#D7B67E",
     })
@@ -34,7 +34,7 @@ describe("Bold Editorial Studio foundation", () => {
 
     expect(globals).toContain("--ss-brand-ink: #0d0e10")
     expect(globals).toContain("--ss-brand-espresso: #342a24")
-    expect(globals).toContain("--ss-brand-ivory: #f7f2ea")
+    expect(globals).toContain("--ss-brand-ivory: #f5f2ed")
     expect(globals).toContain("--ss-brand-champagne: #d7b67e")
     expect(globals).not.toContain("--ss-brand-oxblood")
     expect(globals).toContain("--ss-brand-radius: 6px")

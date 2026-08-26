@@ -85,7 +85,7 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root [class~="bg-[#F8FAFA]/95"] {
-          background-color: rgba(247, 242, 234, 0.95);
+          background-color: rgba(245, 242, 237, 0.95);
         }
 
         .studio-3-root [class~="bg-[#F1F2F2]"] {
