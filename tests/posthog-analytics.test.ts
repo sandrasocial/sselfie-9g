@@ -484,6 +484,8 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("invalidateAnalyticsBrowserIdentity()")
     expect(provider).toContain("identityGenerationRef.current += 1")
     expect(provider).toContain("generation !== identityGenerationRef.current")
+    expect(provider).toContain("providerGeneration === identityGenerationRef.current")
+    expect(provider).toContain("if (!isCurrentGeneration()) return")
     expect(provider).toContain('document.addEventListener("visibilitychange", refreshOnVisibility)')
     expect(provider).toContain("supabase.auth.onAuthStateChange")
     expect(provider).toContain('event === "SIGNED_OUT"')
@@ -516,7 +518,10 @@ describe("PostHog analytics boundary", () => {
     expect(acknowledgeIndex).toBeLessThan(captureEnabledIndex)
     expect(provider.indexOf("setLoadedCallbackReady(true)")).toBeLessThan(scriptIndex)
     expect(provider).toContain("if (window.posthog) void initializeLoadedClient(window.posthog)")
-    expect(provider).toContain("}, [pathname, ready])")
+    expect(provider).toContain("}, [pathname, ready, identityGenerationRef])")
+    expect(provider).toContain(
+      "<PostHogPageviews ready={ready} identityGenerationRef={identityGenerationRef} />"
+    )
     expect(provider).toContain("window.location.origin}${safePathname}")
     expect(provider).not.toContain("useSearchParams")
 

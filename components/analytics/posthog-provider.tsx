@@ -50,7 +50,13 @@ function setPostHogCaptureEnabled(
   else client.stopSessionRecording()
 }
 
-function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
+function PostHogPageviews({
+  ready,
+  identityGenerationRef,
+}: Readonly<{
+  ready: boolean
+  identityGenerationRef: { readonly current: number }
+}>) {
   const pathname = usePathname()
   const identifiedAs = useRef<string | null>(null)
 
@@ -61,6 +67,9 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
     let retryTimer: ReturnType<typeof setTimeout> | null = null
     let refreshGeneration = 0
     let unsubscribeFromAuth: (() => void) | null = null
+    const providerGeneration = identityGenerationRef.current
+
+    const isCurrentGeneration = () => active && providerGeneration === identityGenerationRef.current
 
     const readIdentity = (rotateAnonymous = false, refresh = true) =>
       ensureAnalyticsBrowserIdentity({ refresh, rotateAnonymous })
@@ -76,7 +85,7 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
       try {
         const identity = await readIdentity(false, identifiedAs.current !== null || attempt > 0)
         let distinctId = identity.distinctId
-        if (!active || generation !== refreshGeneration || !window.posthog) return
+        if (!isCurrentGeneration() || generation !== refreshGeneration || !window.posthog) return
         if (!distinctId) {
           scheduleIdentityRetry(attempt, generation, capturePageview)
           return
@@ -95,11 +104,11 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
             }
             distinctId = rotatedIdentity.distinctId
           }
-          if (!active || generation !== refreshGeneration || !window.posthog) return
+          if (!isCurrentGeneration() || generation !== refreshGeneration || !window.posthog) return
           window.posthog.reset()
         }
 
-        if (!active || generation !== refreshGeneration || !window.posthog) return
+        if (!isCurrentGeneration() || generation !== refreshGeneration || !window.posthog) return
         window.posthog.identify(distinctId)
         identifiedAs.current = distinctId
         if (capturePageview) {
@@ -116,7 +125,8 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
 
     function scheduleIdentityRetry(attempt: number, generation: number, capturePageview: boolean) {
       const nextDelay = IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS[attempt + 1]
-      if (!active || generation !== refreshGeneration || nextDelay === undefined) return
+      if (!isCurrentGeneration() || generation !== refreshGeneration || nextDelay === undefined)
+        return
       retryTimer = setTimeout(
         () => void refreshIdentity(attempt + 1, generation, capturePageview),
         nextDelay
@@ -124,6 +134,7 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
     }
 
     const startIdentityRefresh = (capturePageview: boolean) => {
+      if (!isCurrentGeneration()) return
       refreshGeneration += 1
       if (retryTimer) clearTimeout(retryTimer)
       retryTimer = null
@@ -169,7 +180,7 @@ function PostHogPageviews({ ready }: Readonly<{ ready: boolean }>) {
       document.removeEventListener("visibilitychange", refreshOnVisibility)
       unsubscribeFromAuth?.()
     }
-  }, [pathname, ready])
+  }, [pathname, ready, identityGenerationRef])
 
   return null
 }
@@ -266,7 +277,7 @@ export function PostHogProvider({
       <Script id="posthog" strategy="afterInteractive">
         {postHogSnippet(apiKey, apiHost)}
       </Script>
-      <PostHogPageviews ready={ready} />
+      <PostHogPageviews ready={ready} identityGenerationRef={identityGenerationRef} />
     </>
   )
 }
