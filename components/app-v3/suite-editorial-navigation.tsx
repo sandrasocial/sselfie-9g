@@ -72,7 +72,7 @@ export function SuiteEditorialNavigation({
                     className="group flex min-h-10 items-center justify-between gap-3 text-[10px] uppercase tracking-[0.12em] text-white/62 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   >
                     <span>{destination.label}</span>
-                    <span aria-hidden className="text-[color:var(--suite-accent)]">
+                    <span aria-hidden className="text-[color:var(--suite-highlight)]">
                       ↗
                     </span>
                   </a>

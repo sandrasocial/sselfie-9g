@@ -511,8 +511,8 @@ function ShellInner({
     <main
       data-maya-operating-layer={mayaOperatingLayerEnabled ? "enabled" : "legacy"}
       data-maya-home={mayaHomeEnabled ? "enabled" : "legacy"}
-      className={`suite-canvas min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[calc(4.75rem+env(safe-area-inset-bottom))] text-[#0D0E10] transition-[padding] duration-300 [overflow-x:clip] lg:pb-0 lg:pl-[224px] ${
-        mayaOpen && mayaUsesSideWorkspace ? "lg:pr-[27rem]" : ""
+      className={`suite-canvas min-h-[100dvh] w-full max-w-[100dvw] overscroll-x-none bg-[#F8FAFA] pb-[calc(6rem+env(safe-area-inset-bottom))] text-[#0D0E10] transition-[padding] duration-300 [overflow-x:clip] lg:pb-0 lg:pl-[248px] ${
+        mayaOpen && mayaUsesSideWorkspace ? "lg:pr-[34rem]" : ""
       }`}
     >
       {/* Trial: quiet days-left bar. Limited: photo-making paused, everything she owns stays open. */}

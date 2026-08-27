@@ -3136,6 +3136,67 @@ export function MayaConcierge({
     return null
   }
 
+  async function recoverMultiImageFromGallery(
+    clientRequestId: string,
+    startedAtMs: number,
+    expectedFormat: "carousel" | "story-sequence",
+    expectedCount: number,
+    maxAttempts: number
+  ): Promise<Array<{ url: string; aiImageId: number | null }> | null> {
+    const expectedContentType = expectedFormat === "story-sequence" ? "story-slide" : "carousel"
+    const cutoff = startedAtMs - 2 * 60 * 1000
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 5_000))
+      try {
+        const response = await fetch("/api/app-v3/gallery", { cache: "no-store" })
+        if (!response.ok) continue
+        const data = (await response.json().catch(() => null)) as {
+          assets?: Array<{
+            id?: string
+            kind?: string
+            contentType?: string
+            url?: string
+            createdAt?: string
+            generationRef?: string | null
+          }>
+        } | null
+        const matchingAssets = (data?.assets ?? [])
+          .filter(
+            item =>
+              item.kind === "image" &&
+              item.contentType === expectedContentType &&
+              item.generationRef?.includes(clientRequestId) &&
+              typeof item.url === "string" &&
+              item.url.length > 0 &&
+              Date.parse(item.createdAt || "") >= cutoff
+          )
+          .sort((left, right) => {
+            const leftIndex = Number.parseInt(left.generationRef?.match(/-(\d+)$/)?.[1] ?? "0", 10)
+            const rightIndex = Number.parseInt(
+              right.generationRef?.match(/-(\d+)$/)?.[1] ?? "0",
+              10
+            )
+            return leftIndex - rightIndex
+          })
+
+        const uniqueAssets = Array.from(
+          new Map(matchingAssets.map(asset => [asset.url as string, asset])).values()
+        )
+        if (uniqueAssets.length < expectedCount) continue
+        return uniqueAssets.slice(0, expectedCount).map(asset => {
+          const idMatch = asset.id?.match(/^ai_(\d+)$/)
+          return {
+            url: asset.url as string,
+            aiImageId: idMatch ? Number.parseInt(idMatch[1], 10) : null,
+          }
+        })
+      } catch {
+        // A long multi-slide render may finish after the browser connection is interrupted.
+      }
+    }
+    return null
+  }
+
   function announceCalendarUpdated(feedId: number) {
     window.dispatchEvent(new CustomEvent("calendar:feed-updated", { detail: { feedId } }))
   }
@@ -3543,6 +3604,46 @@ export function MayaConcierge({
       }
       return true
     }
+    const restorePaidMultiImage = async (source: "request_recovered", maxAttempts: number) => {
+      if (
+        (targetFormat !== "carousel" && targetFormat !== "story-sequence") ||
+        !generationRequestId ||
+        maxAttempts <= 0
+      )
+        return false
+      const recovered = await recoverMultiImageFromGallery(
+        generationRequestId,
+        generationStartedAt,
+        targetFormat,
+        Math.min(9, expectedOutputCount),
+        maxAttempts
+      )
+      if (!recovered) return false
+      const recoveredUrls = recovered.map(asset => asset.url)
+      const recoveredIds = recovered.map(asset => asset.aiImageId)
+      setGenState(state => ({
+        ...state,
+        [key]: {
+          status: "done",
+          imageUrls: recoveredUrls,
+          aiImageId: recoveredIds[0] ?? null,
+          aiImageIds: recoveredIds,
+        },
+      }))
+      setGeneratedOnce(true)
+      recordCompletedRender(targetFormat, recoveredUrls.length, concept.title)
+      trackGenerationCompleted(targetFormat, source)
+      if (calendarTargetForRequest && generationRequestId) {
+        await attachCalendarGeneration(
+          calendarTargetForRequest,
+          generationRequestId,
+          recoveredUrls,
+          recoveredIds
+        )
+        calendarSettled = true
+      }
+      return true
+    }
     try {
       if (targetFormat === "video") {
         const startRes = await fetch("/api/app-v3/maya/video/generate", {
@@ -3676,9 +3777,10 @@ export function MayaConcierge({
           ...(bakeStyle ? { overlayStyle: bakeStyle } : {}),
           ...(textStyleAdjustments ? { styleAdjustments: textStyleAdjustments } : {}),
           ...(wantsBakedText ? { autoBake: true } : {}),
-          // Single-image formats stream progressive previews; carousels keep the JSON path.
+          // Only single-image formats stream progressive previews. Multi-slide formats keep the
+          // durable JSON response so the complete ordered set arrives together.
           // Auto-baked text needs the JSON path so the baked URL returns with the clean base.
-          stream: wantsBakedText ? false : targetFormat !== "carousel",
+          stream: !wantsBakedText && isSingleImageRequest,
         }),
       })
       generationResponseStatus = res.status
@@ -3942,6 +4044,7 @@ export function MayaConcierge({
             ? 3
             : 0
       if (await restorePaidSingleImage("request_recovered", recoveryAttempts)) return
+      if (await restorePaidMultiImage("request_recovered", recoveryAttempts)) return
       trackRecoveryShown(targetFormat, "exception", {
         phase: "generate_request",
         responseStatus: generationResponseStatus,
@@ -5001,7 +5104,7 @@ export function MayaConcierge({
         className={
           homeMode
             ? "suite-maya-panel pointer-events-auto relative flex h-full w-full min-w-0 flex-col overflow-hidden border-r border-[#C5C6C8]/60 bg-[#F8FAFA] shadow-none"
-            : "suite-maya-panel pointer-events-auto relative flex h-[94dvh] w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden rounded-t-[6px] border border-[#C5C6C8]/55 bg-[#F8FAFA] shadow-[0_-18px_60px_rgba(13,14,16,0.16)] animate-in slide-in-from-bottom-4 duration-300 ease-out motion-reduce:animate-none lg:h-[100dvh] lg:w-[27rem] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-[-18px_0_60px_rgba(13,14,16,0.10)] lg:slide-in-from-right"
+            : "suite-maya-panel pointer-events-auto relative flex h-[94dvh] w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden rounded-t-[6px] border border-[#C5C6C8]/55 bg-[#F8FAFA] shadow-[0_-18px_60px_rgba(13,14,16,0.16)] animate-in slide-in-from-bottom-4 duration-300 ease-out motion-reduce:animate-none lg:h-[100dvh] lg:w-[34rem] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-[-18px_0_60px_rgba(13,14,16,0.10)] lg:slide-in-from-right"
         }
       >
         {/* Header - one calm row. Actions live in a quiet menu, and Close is always visible
@@ -6730,7 +6833,7 @@ export function MayaConcierge({
               {chatSaveError && (
                 <div
                   role="alert"
-                  className="min-w-0 max-w-full rounded-[6px] bg-[#282728]/5 px-4 py-3"
+                  className="suite-state suite-state--error min-w-0 max-w-full px-4 py-3"
                 >
                   <p className="text-[13px] text-[#282728]">
                     This conversation has not reached your history yet. Your work is still on this
@@ -6749,7 +6852,7 @@ export function MayaConcierge({
               {draftSyncError && (
                 <div
                   role="alert"
-                  className="min-w-0 max-w-full rounded-[6px] bg-[#282728]/5 px-4 py-3"
+                  className="suite-state suite-state--error min-w-0 max-w-full px-4 py-3"
                 >
                   <p className="text-[13px] text-[#282728]">
                     Your latest workspace changes have not synced yet. Keep this window open and try

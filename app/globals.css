@@ -159,26 +159,30 @@
   --ss-raisin: #282728;
   --ss-night: #0d0e10;
 
-  /* Bold Editorial Studio · Warm Champagne — approved 2026-08-26.
-     The warm editorial tokens are the current brand foundation. Live surfaces still migrate
-     deliberately so visual work never changes product behavior by accident. */
-  --ss-brand-ink: #0d0e10;
-  --ss-brand-carbon: #211e1b;
-  --ss-brand-espresso: #342a24;
-  --ss-brand-chalk: #f5f2ed;
-  --ss-brand-ivory: #f5f2ed;
+  /* SSELFIE Noir Glass — approved 2026-08-27.
+     Obsidian and pearl carry the system. Glass is reserved for navigation, Maya controls,
+     result overlays, and floating actions so the interface stays editorial rather than generic. */
+  --ss-brand-ink: #09090b;
+  --ss-brand-carbon: #18181b;
+  --ss-brand-espresso: #09090b;
+  --ss-brand-chalk: #fafaf9;
+  --ss-brand-ivory: #fafaf9;
   --ss-brand-paper: #ffffff;
-  --ss-brand-concrete: #e6dfd5;
-  --ss-brand-parchment: #e6dfd5;
-  --ss-brand-silver: #c9bdaf;
-  --ss-brand-taupe: #a89b8c;
-  --ss-brand-slate: #665e56;
-  --ss-brand-champagne: #d7b67e;
-  --ss-brand-champagne-ink: #6e5639;
-  --ss-brand-champagne-glow: rgba(215, 182, 126, 0.42);
+  --ss-brand-concrete: #e7e7ea;
+  --ss-brand-parchment: #f0f0f2;
+  --ss-brand-silver: #d7d7dc;
+  --ss-brand-taupe: #a3a3a9;
+  --ss-brand-slate: #5e5e66;
+  --ss-brand-champagne: #f3e6cf;
+  --ss-brand-champagne-ink: #5f5b56;
+  --ss-brand-champagne-glow: rgba(243, 230, 207, 0.46);
+  --ss-brand-glass-light: rgba(255, 255, 255, 0.68);
+  --ss-brand-glass-dark: rgba(9, 9, 11, 0.92);
+  --ss-brand-glass-edge: rgba(255, 255, 255, 0.34);
+  --ss-brand-glass-blur: 28px;
   --ss-brand-error: #b42318;
   --ss-brand-success: #216e4e;
-  --ss-brand-radius: 6px;
+  --ss-brand-radius: 16px;
   --ss-brand-rule: 1px solid var(--ss-brand-silver);
   --ss-brand-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --ss-brand-sans: "Manrope", Inter, Arial, Helvetica, sans-serif;

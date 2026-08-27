@@ -2,9 +2,9 @@
 
 Status: current and governing
 
-Approved by Sandra: 2026-08-26
+Approved by Sandra: 2026-08-27
 
-Visual direction: **Bold Editorial Studio · Warm Champagne**
+Visual direction: **SSELFIE Noir Glass**
 
 This is the sole visual-design authority for SSELFIE product UI, public marketing, lifecycle and
 transactional email, checkout, learning material, Skool assets, and future implementation work.
@@ -17,18 +17,19 @@ but the approved change must be recorded here before it becomes the new default.
 
 The approved desktop and mobile direction is stored at:
 
-`docs/brand/references/sselfie-editorial-neon-suite-direction-2026-08-26.png`
+`docs/brand/references/sselfie-noir-glass-suite-direction-2026-08-27.png`
 
-Use that image to understand visual character, contrast, hierarchy, photographic scale, rectangular
-composition, controlled neon signature, and responsive relationship. It is not literal product
+Use that image to understand visual character, contrast, hierarchy, photographic scale, restrained
+glass depth, controlled neon signature, and responsive relationship. It is not literal product
 scope: generated faces, labels, navigation destinations, counts, and project names are
 placeholders. Current product behavior, customer access, and verified information architecture
 remain authoritative.
 
-The Skool category covers and group cover approved on 2026-08-26 are the channel reference for the
-warm editorial mood: ink-black and espresso grounds, soft ivory paper, champagne light, cinematic
-photography, high-contrast serif type, and a limited handwritten glow. Suite translates that mood
-into functional UI; it does not copy cover decoration into ordinary controls.
+The Skool category covers and group cover remain channel references for the cinematic editorial
+mood. The product expression is now sharper: obsidian and graphite grounds, pearl near-white
+canvases, cool silver edges, cinematic photography, high-contrast serif type, selective frosted
+glass, and one limited handwritten pearl glow. Suite translates that mood into functional UI; it
+does not put blur or decoration on ordinary content surfaces.
 
 ## Brand Character
 
@@ -67,7 +68,7 @@ and visual storytelling where relevant. Do not add extra top-level stages that c
 2. Use high contrast and decisive composition.
 3. Prefer an editorial grid over rows of identical floating cards.
 4. Use asymmetric layouts intentionally, while keeping controls predictable.
-5. Use strong rectangular frames, thin rules, and precise alignment.
+5. Use precise image frames, thin rules, controlled corner radii, and exact alignment.
 6. Use generous negative space around a small number of clear actions.
 7. Keep Maya integrated as a creative partner or director, never a generic chatbot bubble.
 8. Use one dominant message and one primary action per section.
@@ -78,37 +79,38 @@ and visual storytelling where relevant. Do not add extra top-level stages that c
 
 ### Core tokens
 
-- Editorial Ink `#0D0E10` — navigation, mastheads, strong frames, headlines, primary contrast
-- Carbon `#211E1B` — secondary dark surfaces and body contrast
-- Espresso `#342A24` — primary actions and selected dark surfaces
-- Soft Ivory `#F5F2ED` — primary editorial canvas; warm without reading yellow
+- Obsidian `#09090B` — navigation, mastheads, primary actions, headlines, primary contrast
+- Graphite `#18181B` — secondary dark surfaces and body contrast
+- Pearl `#FAFAF9` — default light page and application background; almost white, never cream
 - Paper `#FFFFFF` — readable content and email surfaces
-- Muted Parchment `#E6DFD5` — quiet section separation with restrained warmth
-- Taupe `#A89B8C` — rules, borders, and inactive controls
-- Slate `#665E56` — secondary text
-- Champagne `#D7B67E` — illuminated selection edges and signature light on dark surfaces
-- Champagne Ink `#6E5639` — accessible warm accent text on light surfaces
+- Cool Mist `#F0F0F2` — quiet section separation
+- Concrete `#E7E7EA` — low-contrast secondary surfaces
+- Silver `#D7D7DC` — rules, borders, and inactive controls
+- Slate `#5E5E66` — secondary text
+- Pearl Neon `#F3E6CF` — illuminated selection edges and signature light on dark surfaces only
+- Warm Grey `#5F5B56` — accessible secondary accent text on light surfaces
 - Error `#B42318` — destructive and error feedback only
 - Success `#216E4E` — system success feedback only, not a brand accent
 
 ### Color rules
 
-- Ink, espresso, soft ivory, white, and photography carry most of the system.
-- Espresso carries action. Champagne marks selection and a small number of brand moments.
-- Champagne may glow only against sufficiently dark surfaces. Use Champagne Ink for readable warm
+- Obsidian, graphite, pearl, white, cool silver, and photography carry most of the system.
+- Obsidian carries action. Pearl Neon marks selection and a small number of brand moments.
+- Pearl Neon may glow only against sufficiently dark surfaces. Use Warm Grey for accessible accent
   text on light surfaces.
 - A page may be dark-first when it is an immersive photographic creation or editing workspace.
-- Marketing and product may alternate ink and warm-ivory sections to create editorial rhythm.
+- Marketing and product use Pearl as the default light canvas. Brown and cream surfaces are not
+  part of the active product palette.
 - Emails remain primarily light for readability, with black mastheads or image panels allowed.
 - Preserve natural skin tones. Do not force brand color grading onto faces.
 - System feedback colors may appear only when their meaning is necessary.
 
 ### Prohibited color behavior
 
-- No blush, dusty rose, pastel pink, or generic beige-and-gold luxury systems.
+- No brown, cream, blush, dusty rose, pastel pink, or generic beige-and-gold luxury systems.
 - No purple or blue AI gradients.
 - No colored neon, rainbow feature coding, or decorative gradients.
-- No champagne glow on body copy, form labels, ordinary buttons, error states, or dense surfaces.
+- No pearl glow on body copy, form labels, ordinary buttons, error states, or dense surfaces.
 - No more than one neon phrase and three tiny light points within one viewport.
 - No new brand color without Sandra's explicit approval and an update to this document.
 - Do not hardcode new colors inside components when a design token exists.
@@ -142,13 +144,15 @@ approved typography specimen.
 
 ## Shape, Grid, and Depth
 
-- Default product radius: `6px`.
-- Allowed range: `0-10px` for functional surfaces.
-- Large image frames may use `0-8px`; full-bleed imagery may remain square.
+- Default product surface radius: `16px`.
+- Controls use `12px`; floating glass shells use `18-26px` according to scale.
+- Large image frames may use `0-18px`; full-bleed imagery may remain square.
 - Pills are reserved for compact filters, status, and segmented controls—not general layout.
 - Use one-pixel dividers and visible frames instead of placing every item on a shadowed card.
 - Shadows should be restrained and used only to clarify elevation.
-- Avoid glassmorphism, floating white-card grids, excessive blur, and ornamental depth.
+- Glass is restricted to navigation, the Maya composer/header, dialogs, result controls, and
+  floating actions. Content cards, body copy, and ordinary sections remain solid and editorial.
+- Every glass surface needs a solid-color fallback. Blur must never carry essential contrast.
 - Desktop layouts may use strong vertical rails and asymmetric editorial columns.
 - Mobile layouts should simplify the same hierarchy rather than becoming a different brand.
 
@@ -194,7 +198,7 @@ Suite should feel like a visual studio, not a dashboard.
 - Keep `TAKE -> CREATE -> EDIT -> POST` visible and understandable.
 - Desktop may use a black navigation rail with a high-contrast editorial canvas.
 - Mobile should use a compact black masthead, photo-first content, and clear stage navigation.
-- Use espresso for active paths and primary selected surfaces. Use champagne for the active rail,
+- Use obsidian for active paths and primary selected surfaces. Use Pearl Neon for the active rail,
   selected-image edge, focus support, and controlled illumination.
 - The desktop navigation may carry one short neon signature in unused dark space. Mobile may carry
   one compact signature mark in the masthead. Neither may compete with the active task.
@@ -210,11 +214,11 @@ Suite should feel like a visual studio, not a dashboard.
 
 Marketing should use the same DNA without imitating an app screen.
 
-- Use bold serif promises, large real imagery, ink/warm-ivory rhythm, and decisive composition.
+- Use bold serif promises, large real imagery, ink/near-white rhythm, and decisive composition.
 - Lead with selfies and AI selfies, then show how editing and posting make them useful.
 - Use photographic proof and transformation instead of generic feature icon grids.
-- Use rectangular editorial sections, strong rules, espresso actions, and selective champagne
-  light on dark brand moments.
+- Use editorial sections, strong rules, obsidian actions, and selective pearl light on dark brand
+  moments.
 - Keep offer details and CTAs easy to find.
 - Avoid huge empty slogans without proof, generic SaaS mockups, repetitive card grids, and fake UI.
 
@@ -222,10 +226,10 @@ Marketing should use the same DNA without imitating an app screen.
 
 Email uses an email-safe expression of the same system.
 
-- Use a light Paper or Chalk body for readability.
+- Use a light Paper or Pearl body for readability. Do not use cream as the email canvas.
 - A black masthead, thin black rule, or strong image block may establish the brand.
 - Use one editorial headline, readable body copy, and one primary CTA.
-- The primary CTA uses Editorial Ink or Espresso; champagne is not an email button background.
+- The primary CTA uses Obsidian; Pearl Neon is not an email button background.
 - Use one proof image when it materially improves the message.
 - Keep text meaningful when images are blocked and provide useful alt text.
 - Keep compliant footer and unsubscribe content intact.
@@ -240,10 +244,10 @@ explicitly approved. This document does not authorize a send or a live template 
 
 - Checkout uses the most restrained version: high contrast, minimal distraction, clear money truth.
 - Learning materials use bold section labels, strong image examples, and readable instructional type.
-- Skool covers prioritize thumbnail readability, cinematic real proof, warm-ivory paper treatments,
-  high-contrast serif headlines, and a limited champagne handwritten glow.
-- Social graphics may use contact sheets, numbering, ink bands, crisp serif headlines, espresso
-  blocks, and controlled champagne light while keeping the selfie visible.
+- Skool covers prioritize thumbnail readability, cinematic real proof, pearl paper treatments,
+  high-contrast serif headlines, and a limited pearl handwritten glow.
+- Social graphics may use contact sheets, numbering, ink bands, crisp serif headlines, obsidian
+  blocks, and controlled pearl light while keeping the selfie visible.
 - Torn paper, handwriting, and glow belong to editorial assets and occasional brand moments; they
   do not become product cards, buttons, form fields, or chat bubbles.
 - Do not force identical layouts across formats; preserve the design language and hierarchy.
@@ -251,7 +255,7 @@ explicitly approved. This document does not authorize a send or a live template 
 ## Accessibility and Responsive Rules
 
 - Meet WCAG AA contrast for body copy, controls, and essential labels.
-- Do not use Slate or Silver for important small text on Chalk or Paper.
+- Do not use Slate or Silver for important small text on Pearl or Paper.
 - Touch targets should be at least 44 by 44 CSS pixels.
 - Keyboard focus must remain visible.
 - Mobile layouts must be intentionally composed, not compressed desktop screens.
@@ -276,9 +280,9 @@ refer here, but must not define competing palettes or rules.
 
 ### Code rules
 
-1. Define approved visual values as named tokens before broad migration. New work uses Espresso,
-   Soft Ivory, Muted Parchment, Taupe, Champagne, and Champagne Ink; do not revive Oxblood as a brand
-   accent.
+1. Define approved visual values as named tokens before broad migration. New work uses Obsidian,
+   Graphite, Pearl, Paper, Cool Mist, Concrete, Silver, Slate, Pearl Neon, and Warm Grey. Do not
+   revive Oxblood, espresso brown, or cream as brand surfaces.
 2. Build shared Suite, marketing, and email primitives appropriate to each channel.
 3. Do not combine a visual migration with backend, billing, entitlement, or generation rewrites.
 4. Replace hardcoded legacy styling incrementally; do not add another override layer.
@@ -289,14 +293,17 @@ refer here, but must not define competing palettes or rules.
 ### Required proof before broad rollout
 
 Before applying this expression to a new channel, approve a representative proof for that channel.
-The Suite desktop/mobile proof and Skool covers are approved. Public marketing and production email
-still require their own responsive proof before broad migration:
+The Suite desktop/mobile proof, Skool covers, public marketing proof, and representative production
+email proof were approved by Sandra on 2026-08-27:
 
 1. One representative Suite screen on desktop and mobile
 2. One representative public marketing section on desktop and mobile
 3. One representative lifecycle or transactional email
 
 After approval, migrate channel by channel. Do not treat one attractive screenshot as complete QA.
+The approved channel proof uses a Pearl `#FAFAF9` background, solid Paper content surfaces, an
+Obsidian masthead, Obsidian actions, cool Silver rules, Pearl Neon focus edges, and no more than one
+`Worth posting.` neon signature per viewport.
 
 ### Required verification
 
@@ -312,7 +319,7 @@ After approval, migrate channel by channel. Do not treat one attractive screensh
 Current authority:
 
 - `docs/SSELFIE_DESIGN_SYSTEM.md`
-- Approved reference: `docs/brand/references/sselfie-editorial-neon-suite-direction-2026-08-26.png`
+- Approved reference: `docs/brand/references/sselfie-noir-glass-suite-direction-2026-08-27.png`
 
 Historical references:
 

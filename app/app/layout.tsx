@@ -52,7 +52,7 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root {
-          --suite-canvas: var(--ss-brand-ivory);
+          --suite-canvas: var(--ss-brand-chalk);
           --suite-paper: var(--ss-brand-paper);
           --suite-smoke: var(--ss-brand-parchment);
           --suite-mist: color-mix(in srgb, var(--ss-brand-parchment) 58%, white);
@@ -60,10 +60,34 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
           --suite-slate: var(--ss-brand-slate);
           --suite-graphite: var(--ss-brand-carbon);
           --suite-night: var(--ss-brand-ink);
-          --suite-accent: var(--ss-brand-espresso);
+          --suite-accent: var(--ss-brand-ink);
           --suite-highlight: var(--ss-brand-champagne);
           --suite-highlight-ink: var(--ss-brand-champagne-ink);
           --suite-highlight-glow: var(--ss-brand-champagne-glow);
+          --suite-glass-light: var(--ss-brand-glass-light);
+          --suite-glass-dark: var(--ss-brand-glass-dark);
+          --suite-glass-edge: var(--ss-brand-glass-edge);
+          --suite-glass-blur: var(--ss-brand-glass-blur);
+          --app-bg: var(--suite-canvas);
+          --app-surface: var(--suite-paper);
+          --app-elevated: var(--suite-paper);
+          --app-border: var(--suite-mist);
+          --app-text-primary: var(--suite-night);
+          --app-text-secondary: var(--suite-slate);
+          --app-text-muted: var(--suite-slate);
+          --app-btn-primary-bg: var(--suite-night);
+          --app-btn-primary-text: #ffffff;
+          --app-btn-secondary-bg: color-mix(in srgb, var(--suite-slate) 8%, transparent);
+          --app-btn-secondary-hover: color-mix(in srgb, var(--suite-slate) 14%, transparent);
+          --app-input-bg: color-mix(in srgb, var(--suite-paper) 82%, transparent);
+          --app-input-border: color-mix(in srgb, var(--suite-slate) 28%, transparent);
+          --app-glass-bg: color-mix(in srgb, var(--suite-paper) 82%, transparent);
+          --app-glass-border: color-mix(in srgb, var(--suite-steel) 82%, transparent);
+          --app-focus-ring: color-mix(in srgb, var(--suite-slate) 42%, transparent);
+          --calendar-stone-1: var(--ss-brand-parchment);
+          --calendar-stone-2: var(--ss-brand-concrete);
+          --calendar-stone-3: var(--ss-brand-silver);
+          --calendar-stone-4: var(--ss-brand-taupe);
           position: relative;
           isolation: isolate;
           width: 100%;
@@ -85,7 +109,7 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root [class~="bg-[#F8FAFA]/95"] {
-          background-color: rgba(245, 242, 237, 0.95);
+          background-color: rgba(250, 250, 249, 0.95);
         }
 
         .studio-3-root [class~="bg-[#F1F2F2]"] {
@@ -144,13 +168,13 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         .studio-3-root .suite-card {
           background-color: var(--suite-paper);
           border-color: color-mix(in srgb, var(--suite-steel) 72%, transparent);
-          box-shadow: 0 10px 28px rgba(52, 42, 36, 0.05);
+          box-shadow: 0 12px 32px rgba(9, 9, 11, 0.055);
         }
 
         .studio-3-root .suite-state {
           border: 1px solid color-mix(in srgb, var(--suite-steel) 72%, transparent);
           border-left: 3px solid var(--suite-night);
-          border-radius: 2px;
+          border-radius: 14px;
           background: var(--suite-paper);
         }
 
@@ -163,7 +187,7 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root .suite-state--error {
-          border-left-color: var(--suite-accent);
+          border-left-color: var(--suite-night);
         }
 
         .studio-3-root .suite-state--empty {
@@ -181,16 +205,16 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root .suite-dialog-backdrop {
-          background: rgba(13, 14, 16, 0.78);
-          backdrop-filter: blur(8px);
+          background: rgba(9, 9, 11, 0.74);
+          backdrop-filter: blur(18px);
         }
 
         .studio-3-root .suite-dialog {
-          border: 1px solid var(--suite-highlight);
-          border-top: 3px solid var(--suite-highlight);
-          border-radius: 2px;
-          background: var(--suite-canvas);
-          box-shadow: 0 22px 80px rgba(13, 14, 16, 0.44), 0 0 18px var(--suite-highlight-glow);
+          border: 1px solid rgba(255, 255, 255, 0.58);
+          border-radius: 24px;
+          background: rgba(250, 250, 249, 0.9);
+          box-shadow: 0 24px 90px rgba(9, 9, 11, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.88);
+          backdrop-filter: blur(var(--suite-glass-blur)) saturate(118%);
         }
 
         @keyframes suite-state-pulse {
@@ -199,9 +223,10 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root .suite-maya-panel {
-          background-color: var(--suite-paper);
-          border-color: color-mix(in srgb, var(--suite-steel) 72%, transparent);
-          box-shadow: 0 24px 72px rgba(13, 14, 16, 0.14);
+          background-color: rgba(250, 250, 249, 0.93);
+          border-color: rgba(255, 255, 255, 0.72);
+          box-shadow: 0 24px 72px rgba(9, 9, 11, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.88);
+          backdrop-filter: blur(20px) saturate(110%);
         }
 
         .studio-3-root .suite-maya-panel[data-home-mode="true"] {
@@ -209,10 +234,11 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root .suite-maya-header {
-          background: var(--suite-night);
-          border-bottom: 1px solid var(--suite-highlight);
-          box-shadow: 0 1px 18px var(--suite-highlight-glow);
+          background: var(--suite-glass-dark);
+          border-bottom: 1px solid var(--suite-glass-edge);
+          box-shadow: inset 0 -1px 0 rgba(243, 230, 207, 0.28), 0 12px 34px rgba(9, 9, 11, 0.16);
           color: var(--suite-paper);
+          backdrop-filter: blur(var(--suite-glass-blur)) saturate(125%);
         }
 
         .studio-3-root .suite-maya-header [class*="text-[#6D6E70]"],
@@ -236,38 +262,66 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
           color: var(--suite-night);
         }
 
+        .studio-3-root .suite-maya-path-tabs {
+          border-color: rgba(163, 163, 169, 0.32);
+          background: rgba(255, 255, 255, 0.74);
+          backdrop-filter: blur(18px) saturate(112%);
+        }
+
+        .studio-3-root .suite-maya-path-tab {
+          border-color: rgba(163, 163, 169, 0.28);
+        }
+
+        .studio-3-root .suite-maya-path-tab--active {
+          background: rgba(9, 9, 11, 0.94);
+        }
+
+        .studio-3-root .suite-maya-journey-steps {
+          border-color: rgba(163, 163, 169, 0.28);
+          background: rgba(250, 250, 249, 0.88);
+        }
+
         .studio-3-root .suite-maya-thread {
           background:
-            linear-gradient(90deg, rgba(197, 198, 200, 0.2) 1px, transparent 1px) 0 0 / 25% 100%,
+            radial-gradient(circle at 76% 4%, rgba(255, 255, 255, 0.98), transparent 36%),
             var(--suite-canvas);
         }
 
         .studio-3-root .suite-maya-message {
-          box-shadow: none;
+          box-shadow: 0 10px 28px rgba(9, 9, 11, 0.055);
         }
 
         .studio-3-root .suite-maya-message--maya {
-          border-left: 3px solid var(--suite-night);
+          border: 0;
+          background: transparent;
+          padding-left: 0;
+          box-shadow: none;
         }
 
         .studio-3-root .suite-maya-message--user {
-          background: var(--suite-accent);
-          border-right-color: var(--suite-highlight);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 18px 18px 4px 18px;
+          background: rgba(9, 9, 11, 0.92);
+          box-shadow: 0 10px 26px rgba(9, 9, 11, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         .studio-3-root .suite-maya-composer {
-          background: var(--suite-ivory, var(--suite-canvas));
-          border-top-color: var(--suite-night);
+          background: linear-gradient(to top, rgba(250, 250, 249, 0.98), rgba(250, 250, 249, 0.72));
+          border-top-color: transparent;
+          backdrop-filter: blur(14px);
         }
 
         .studio-3-root .suite-maya-composer-rail {
-          border-color: color-mix(in srgb, var(--suite-steel) 72%, transparent);
-          background: var(--suite-paper);
+          border-color: rgba(255, 255, 255, 0.86);
+          border-radius: 22px;
+          background: var(--suite-glass-light);
+          box-shadow: 0 14px 38px rgba(9, 9, 11, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+          backdrop-filter: blur(var(--suite-glass-blur)) saturate(120%);
         }
 
         .studio-3-root .suite-maya-composer-rail:focus-within {
-          border-color: var(--suite-highlight-ink);
-          box-shadow: 0 0 0 1px var(--suite-highlight), 0 0 14px rgba(215, 182, 126, 0.18);
+          border-color: rgba(243, 230, 207, 0.92);
+          box-shadow: 0 0 0 1px rgba(243, 230, 207, 0.82), 0 0 18px var(--suite-highlight-glow), inset 0 1px 0 white;
         }
 
         .studio-3-root .suite-maya-send {
@@ -275,7 +329,7 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root .suite-maya-send:hover {
-          background: var(--suite-accent);
+          background: var(--suite-graphite);
         }
 
         .studio-3-root .suite-maya-input:focus {
@@ -283,22 +337,23 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root .suite-concept-card {
-          border: 1px solid var(--suite-night);
-          border-top: 1px solid var(--suite-night);
-          box-shadow: none;
+          border: 1px solid rgba(163, 163, 169, 0.52);
+          border-radius: 16px;
+          box-shadow: 0 14px 34px rgba(9, 9, 11, 0.075);
         }
 
         .studio-3-root .suite-concept-card[data-concept-state="done"] {
-          border-top-color: var(--suite-night);
+          border-color: rgba(163, 163, 169, 0.52);
         }
 
         .studio-3-root .suite-concept-visual {
-          border-bottom: 3px solid var(--suite-night);
+          border-bottom: 1px solid rgba(163, 163, 169, 0.46);
         }
 
         .studio-3-root .suite-concept-direction-strip .suite-concept-card {
-          border: 0;
-          border-radius: 0;
+          border: 1px solid rgba(255, 255, 255, 0.68);
+          border-radius: 16px;
+          box-shadow: 0 12px 30px rgba(9, 9, 11, 0.11);
         }
 
         .studio-3-root .suite-concept-direction-strip .suite-concept-card[data-direction-choice="true"]:hover,
@@ -307,8 +362,9 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
           position: relative;
           z-index: 1;
           box-shadow:
-            inset 0 0 0 2px var(--suite-highlight),
-            0 0 16px var(--suite-highlight-glow);
+            inset 0 0 0 1px rgba(255, 255, 255, 0.9),
+            0 0 0 1px var(--suite-highlight),
+            0 0 20px var(--suite-highlight-glow);
         }
 
         .studio-3-root .suite-concept-direction-strip .suite-concept-visual {
@@ -320,13 +376,54 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root .suite-concept-eyebrow {
-          color: var(--suite-highlight-ink);
+          color: var(--suite-slate);
         }
 
         .studio-3-root .suite-concept-card button,
         .studio-3-root .suite-concept-card input,
         .studio-3-root .suite-concept-card textarea {
-          border-radius: 2px;
+          border-radius: 12px;
+        }
+
+        .studio-3-root .suite-concept-direction-strip {
+          gap: 10px;
+          border: 0;
+          background: transparent;
+        }
+
+        .studio-3-root .suite-concept-result-rail {
+          position: relative;
+          z-index: 2;
+          margin: -62px 12px 12px;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.24);
+          border-radius: 18px;
+          background: rgba(9, 9, 11, 0.82);
+          box-shadow: 0 14px 34px rgba(9, 9, 11, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+          backdrop-filter: blur(22px) saturate(118%);
+        }
+
+        .studio-3-root .suite-result-viewer {
+          background:
+            radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.08), transparent 32%),
+            var(--suite-night);
+        }
+
+        .studio-3-root .suite-result-header,
+        .studio-3-root .suite-result-actions {
+          border-color: rgba(255, 255, 255, 0.16);
+          background: rgba(9, 9, 11, 0.78);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+          backdrop-filter: blur(var(--suite-glass-blur)) saturate(125%);
+        }
+
+        .studio-3-root .suite-result-stage {
+          margin: 10px;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 22px;
+          background: #111114;
+          box-shadow: 0 22px 52px rgba(0, 0, 0, 0.36);
         }
 
         .studio-3-root .suite-account-card {
@@ -387,19 +484,46 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root .suite-bottom-nav {
-          background-color: var(--suite-night);
-          border-color: rgba(255, 255, 255, 0.12);
-          box-shadow: 0 -12px 34px rgba(13, 14, 16, 0.18);
+          inset-inline: 12px;
+          bottom: max(10px, env(safe-area-inset-bottom));
+          width: auto;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 22px;
+          background-color: var(--suite-glass-dark);
+          box-shadow: 0 18px 46px rgba(9, 9, 11, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+          backdrop-filter: blur(var(--suite-glass-blur)) saturate(130%);
         }
 
         .studio-3-root .suite-bottom-nav-item {
-          border-top: 2px solid transparent;
+          position: relative;
+          border-top: 0;
         }
 
         .studio-3-root .suite-bottom-nav-item--active {
-          border-top-color: var(--suite-highlight);
-          background-color: color-mix(in srgb, var(--suite-accent) 74%, transparent);
+          background-color: rgba(255, 255, 255, 0.06);
           text-shadow: 0 0 10px var(--suite-highlight-glow);
+        }
+
+        .studio-3-root .suite-bottom-nav-item--active::after {
+          position: absolute;
+          inset: auto 24% 5px;
+          height: 2px;
+          border-radius: 999px;
+          background: var(--suite-highlight);
+          box-shadow: 0 0 12px var(--suite-highlight-glow);
+          content: "";
+        }
+
+        .studio-3-root .suite-desktop-nav {
+          inset: 12px auto 12px 12px;
+          height: auto;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          border-radius: 26px;
+          background: var(--suite-glass-dark);
+          box-shadow: 0 20px 52px rgba(9, 9, 11, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+          backdrop-filter: blur(var(--suite-glass-blur)) saturate(130%);
         }
 
         .studio-3-root .suite-desktop-nav-item::before {
@@ -417,13 +541,13 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
 
         .studio-3-root .suite-neon-sign,
         .studio-3-root .suite-maya-neon-mark {
-          color: #f8e7c7;
+          color: #fffaf0;
           font-family: var(--font-app-signature), var(--ss-brand-signature);
           font-weight: 400;
           text-shadow:
             0 0 2px rgba(255, 250, 239, 0.98),
-            0 0 8px rgba(232, 197, 139, 0.88),
-            0 0 18px rgba(215, 182, 126, 0.64);
+            0 0 8px rgba(243, 230, 207, 0.88),
+            0 0 18px rgba(243, 230, 207, 0.64);
         }
 
         .studio-3-root .suite-neon-sign {
@@ -447,9 +571,9 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
           width: 7px;
           height: 7px;
           border-radius: 999px;
-          background: #fff8e8;
+          background: #fffaf0;
           box-shadow:
-            0 0 4px #fff8e8,
+            0 0 4px #fffaf0,
             0 0 13px var(--suite-highlight),
             0 0 24px var(--suite-highlight);
         }
@@ -466,20 +590,20 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
 
         .studio-3-root .suite-maya-avatar {
           border-color: var(--suite-highlight);
-          box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.96), 0 0 10px rgba(215, 182, 126, 0.3);
+          box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.96), 0 0 12px rgba(243, 230, 207, 0.36);
         }
 
         .studio-3-root .suite-maya-path-tab--active {
           box-shadow:
             inset 0 -2px 0 var(--suite-highlight),
-            0 5px 15px rgba(215, 182, 126, 0.14);
+            0 5px 15px rgba(243, 230, 207, 0.2);
         }
 
         .studio-3-root .suite-selfie-selected {
           border-color: var(--suite-highlight-ink);
           box-shadow:
             0 0 0 2px var(--suite-highlight),
-            0 0 14px rgba(215, 182, 126, 0.28);
+            0 0 16px rgba(243, 230, 207, 0.38);
         }
 
         .studio-3-root .font-serif {
@@ -489,7 +613,21 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         @media (prefers-reduced-motion: reduce) {
           .studio-3-root .suite-neon-sign,
           .studio-3-root .suite-maya-neon-mark {
-            text-shadow: 0 0 2px rgba(255, 250, 239, 0.98), 0 0 8px rgba(215, 182, 126, 0.58);
+            text-shadow: 0 0 2px rgba(255, 250, 239, 0.98), 0 0 8px rgba(243, 230, 207, 0.58);
+          }
+        }
+
+        @supports not (backdrop-filter: blur(1px)) {
+          .studio-3-root .suite-desktop-nav,
+          .studio-3-root .suite-bottom-nav,
+          .studio-3-root .suite-maya-header,
+          .studio-3-root .suite-concept-result-rail {
+            background: rgba(9, 9, 11, 0.96);
+          }
+
+          .studio-3-root .suite-maya-composer-rail,
+          .studio-3-root .suite-dialog {
+            background: rgba(250, 250, 249, 0.98);
           }
         }
 

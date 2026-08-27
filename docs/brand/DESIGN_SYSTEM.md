@@ -8,10 +8,11 @@ The sole current SSELFIE visual-design authority is:
 
 Approved visual reference:
 
-`docs/brand/references/sselfie-editorial-neon-suite-direction-2026-08-26.png`
+`docs/brand/references/sselfie-noir-glass-suite-direction-2026-08-27.png`
 
-Current approved expression: **Bold Editorial Studio · Warm Champagne**. Espresso replaces
-Oxblood as the brand action color. Champagne light and Allura are restricted signature devices,
+Current approved expression: **SSELFIE Noir Glass**. Obsidian is the brand action color. Pearl
+light and Allura are restricted signature devices, and glass is limited to navigation, Maya
+controls, dialogs, result overlays, and floating actions,
 not general-purpose UI decoration.
 
 Previous systems are retained for historical reference only:

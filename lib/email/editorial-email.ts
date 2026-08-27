@@ -13,21 +13,23 @@
 //   — No web fonts. Georgia / Arial only.
 //   — All responsive class names are prefixed ev- to avoid collisions.
 
+import { applyApprovedEmailPalette } from "@/lib/email/approved-email-palette"
+
 const SITE = "https://www.sselfie.ai"
 
 // ── Colour tokens ──────────────────────────────────────────────────────────
-// EMAIL-02 (2026-07-06): cool editorial palette (design-system base + the cool-monochrome
-// lock). Warmth comes from Sandra's images, never from beige surfaces.
+// EMAIL-04 (2026-08-27): approved Noir Glass email-safe palette. Pearl stays almost white,
+// Paper cards stay white, Obsidian carries action, and Pearl Neon is limited to rules.
 const C = {
-  bg:        "#F8FAFA",   // Seasalt outer shell
-  card:      "#FFFFFF",   // main content card
-  section:   "#F8FAFA",   // alternating section tint
-  text:      "#0D0E10",   // Night - primary
-  body:      "#282728",   // Raisin - body copy
-  muted:     "#818283",   // Gray - captions, eyebrows, footer
-  separator: "#D8D9DA",   // horizontal rules and column borders
-  cta:       "#0D0E10",   // button background
-  ctaText:   "#FFFFFF",   // button text
+  bg: "#FAFAF9", // neutral near-white outer shell
+  card: "#FFFFFF", // main content card
+  section: "#FAFAF9", // alternating near-white section tint
+  text: "#09090B", // Obsidian - primary
+  body: "#18181B", // Graphite - body copy
+  muted: "#5E5E66", // cool-neutral captions, eyebrows, footer
+  separator: "#F3E6CF", // restrained pearl-neon rules
+  cta: "#09090B", // button background
+  ctaText: "#FFFFFF", // button text
 } as const
 
 // ── Utility ────────────────────────────────────────────────────────────────
@@ -146,7 +148,10 @@ export function editorialHeroRow(path: string, alt = ""): string {
 // Body copy: pass an array of paragraph strings. Each becomes a <p>.
 export function editorialStoryRow(paragraphs: string[], extraBottom = false): string {
   const grafs = paragraphs
-    .map((p) => `<p style="margin:0 0 22px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.9;color:${C.body};">${p}</p>`)
+    .map(
+      p =>
+        `<p style="margin:0 0 22px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.9;color:${C.body};">${p}</p>`
+    )
     .join("\n        ")
 
   const pb = extraBottom ? "padding-bottom:0;" : ""
@@ -195,7 +200,11 @@ export function editorialPriceCTARow(label: string, href: string, priceNote: str
 
 // Section title row: the "Inside THE VAULT" mixed italic/serif treatment.
 // italic = the cursive word, upper = the remaining uppercase part.
-export function editorialSectionTitleRow(italic: string, upper: string, bgColor = C.section): string {
+export function editorialSectionTitleRow(
+  italic: string,
+  upper: string,
+  bgColor = C.section
+): string {
   return `
   <tr>
     <td align="center" style="padding:28px 40px;background:${bgColor};border-top:1px solid ${C.separator};">
@@ -208,7 +217,17 @@ export function editorialSectionTitleRow(italic: string, upper: string, bgColor 
 export type GridImage = { path: string; alt?: string }
 
 export function editorialPhotoGrid(
-  images: [GridImage, GridImage, GridImage, GridImage, GridImage, GridImage, GridImage, GridImage, GridImage],
+  images: [
+    GridImage,
+    GridImage,
+    GridImage,
+    GridImage,
+    GridImage,
+    GridImage,
+    GridImage,
+    GridImage,
+    GridImage,
+  ]
 ): string {
   const gap = 2
   // 3 columns, subtract 2 gaps of 2px each = 636px total image width, /3 = 212px each
@@ -255,12 +274,12 @@ export function editorialPhotoGrid(
 export function editorialFeatureRow(
   bullets: string[],
   heading: string,
-  description: string,
+  description: string
 ): string {
   const bulletHtml = bullets
     .map(
-      (b) =>
-        `<p style="margin:0 0 9px;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:${C.text};">${esc(b)}</p>`,
+      b =>
+        `<p style="margin:0 0 9px;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:${C.text};">${esc(b)}</p>`
     )
     .join("")
 
@@ -295,7 +314,10 @@ export function editorialImageBreakRow(path: string, alt = "", topPadding = 28):
 // Closing body copy — same as storyRow but with different padding.
 export function editorialClosingRow(paragraphs: string[]): string {
   const grafs = paragraphs
-    .map((p) => `<p style="margin:0 0 22px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.9;color:${C.body};">${p}</p>`)
+    .map(
+      p =>
+        `<p style="margin:0 0 22px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.9;color:${C.body};">${p}</p>`
+    )
     .join("\n        ")
 
   return `
@@ -356,16 +378,13 @@ export function renderEditorialShell({
   bodyRows,
   footerNote = "You are receiving this because you signed up at sselfie.ai. Reply to unsubscribe.",
 }: EditorialEmailOptions): string {
-  const headlineHtml = headline
-    .split("\n")
-    .map(esc)
-    .join("<br />")
+  const headlineHtml = headline.split("\n").map(esc).join("<br />")
 
   const sublineHtml = subline
     ? `<p class="ev-subline" style="margin:14px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.46em;text-transform:uppercase;color:${C.muted};">${esc(subline)}</p>`
     : ""
 
-  return `<!DOCTYPE html>
+  return applyApprovedEmailPalette(`<!DOCTYPE html>
 <html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
   <meta charset="utf-8" />
@@ -424,5 +443,5 @@ export function renderEditorialShell({
   </table>
   <!--[if mso | IE]></td></tr></table><![endif]-->
 </body>
-</html>`
+</html>`)
 }

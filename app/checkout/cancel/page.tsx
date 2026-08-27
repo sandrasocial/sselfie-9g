@@ -2,98 +2,120 @@
 
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { CheckoutBrandMasthead } from "@/components/checkout/checkout-brand-masthead"
 
 export default function CheckoutCancelPage() {
   const router = useRouter()
 
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
-      <div className="max-w-2xl w-full text-center">
-        {/* Icon */}
-        <div className="w-20 h-20 bg-stone-200 rounded-full flex items-center justify-center mx-auto mb-6">
-          <svg className="w-10 h-10 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </div>
+    <main className="min-h-screen bg-[#FAFAF9] text-[#09090B]">
+      <CheckoutBrandMasthead />
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-2xl items-center justify-center p-6 text-center">
+        <div className="w-full">
+          {/* Icon */}
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center border border-[#F3E6CF] bg-white">
+            <svg
+              className="h-8 w-8 text-[#09090B]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </div>
 
-        {/* Header */}
-        <h1 className="font-serif text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase text-stone-900 mb-6">
-          CHECKOUT CANCELLED
-        </h1>
+          {/* Header */}
+          <h1 className="mb-6 font-serif text-4xl font-extralight uppercase tracking-[0.16em] text-[#09090B] md:text-6xl">
+            CHECKOUT CANCELLED
+          </h1>
 
-        <p className="text-lg text-stone-600 font-light leading-relaxed mb-12 max-w-xl mx-auto">
-          No worries. Your payment was not processed. You can come back to SSELFIE whenever you&apos;re ready.
-        </p>
+          <p className="mx-auto mb-12 max-w-xl text-lg font-light leading-relaxed text-[#5E5E66]">
+            No worries. Your payment was not processed. You can come back to SSELFIE whenever
+            you&apos;re ready.
+          </p>
 
-        {/* What You&apos;re Missing */}
-        <div className="bg-white border-2 border-stone-200 rounded-lg p-8 mb-12 text-left max-w-xl mx-auto">
-          <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-6 text-center">
-            WHEN YOU&apos;RE READY
-          </h2>
-          <div className="space-y-4">
-            <div className="flex gap-3">
-              <div className="flex-shrink-0 w-6 h-6 bg-stone-900 text-stone-50 rounded-full flex items-center justify-center text-xs">
-                ✓
+          {/* What You&apos;re Missing */}
+          <div className="mx-auto mb-12 max-w-xl border-t border-[#F3E6CF] bg-white p-8 text-left shadow-[0_18px_70px_rgba(9,9,11,0.06)]">
+            <h2 className="mb-6 text-center font-serif text-2xl font-extralight uppercase tracking-[0.2em] text-[#09090B]">
+              WHEN YOU&apos;RE READY
+            </h2>
+            <div className="space-y-4">
+              <div className="flex gap-3">
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center bg-[#09090B] text-xs text-white">
+                  ✓
+                </div>
+                <p className="text-sm font-light text-[#5E5E66]">
+                  The Selfie Guide helps you take the first photo you feel good posting.
+                </p>
               </div>
-              <p className="text-sm text-stone-700 font-light">
-                The Selfie Guide helps you take the first photo you feel good posting.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex-shrink-0 w-6 h-6 bg-stone-900 text-stone-50 rounded-full flex items-center justify-center text-xs">
-                ✓
+              <div className="flex gap-3">
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center bg-[#09090B] text-xs text-white">
+                  ✓
+                </div>
+                <p className="text-sm font-light text-[#5E5E66]">
+                  The Starter Kit turns that photo into your first brand-ready week.
+                </p>
               </div>
-              <p className="text-sm text-stone-700 font-light">The Starter Kit turns that photo into your first brand-ready week.</p>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex-shrink-0 w-6 h-6 bg-stone-900 text-stone-50 rounded-full flex items-center justify-center text-xs">
-                ✓
+              <div className="flex gap-3">
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center bg-[#09090B] text-xs text-white">
+                  ✓
+                </div>
+                <p className="text-sm font-light text-[#5E5E66]">
+                  The Masterclass gives you Sandra&apos;s full selfie and content method.
+                </p>
               </div>
-              <p className="text-sm text-stone-700 font-light">
-                The Masterclass gives you Sandra&apos;s full selfie and content method.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex-shrink-0 w-6 h-6 bg-stone-900 text-stone-50 rounded-full flex items-center justify-center text-xs">
-                ✓
+              <div className="flex gap-3">
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center bg-[#09090B] text-xs text-white">
+                  ✓
+                </div>
+                <p className="text-sm font-light text-[#5E5E66]">
+                  Maya turns your answers into your next 7 days.
+                </p>
               </div>
-              <p className="text-sm text-stone-700 font-light">
-                Maya turns your answers into your next 7 days.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex-shrink-0 w-6 h-6 bg-stone-900 text-stone-50 rounded-full flex items-center justify-center text-xs">
-                ✓
+              <div className="flex gap-3">
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center bg-[#09090B] text-xs text-white">
+                  ✓
+                </div>
+                <p className="text-sm font-light text-[#5E5E66]">
+                  No stress. You can start again when it feels right.
+                </p>
               </div>
-              <p className="text-sm text-stone-700 font-light">No stress. You can start again when it feels right.</p>
             </div>
           </div>
-        </div>
 
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link
-            href="/masterclass"
-            className="bg-stone-950 text-stone-50 px-8 py-4 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 inline-block"
-          >
-            Back To Masterclass
-          </Link>
-          <button
-            onClick={() => router.push("/")}
-            className="bg-stone-100 text-stone-900 px-8 py-4 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-200 transition-all duration-200 border-2 border-stone-200"
-          >
-            Return Home
-          </button>
-        </div>
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/masterclass"
+              className="inline-block bg-[#09090B] px-8 py-4 text-sm font-medium uppercase tracking-wider text-white transition-colors hover:bg-[#18181B]"
+            >
+              Back To Masterclass
+            </Link>
+            <button
+              onClick={() => router.push("/")}
+              className="border border-[#F3E6CF] bg-white px-8 py-4 text-sm font-medium uppercase tracking-wider text-[#09090B] transition-colors hover:bg-[#FAFAF9]"
+            >
+              Return Home
+            </button>
+          </div>
 
-        {/* Help */}
-        <div className="mt-12 pt-8 border-t border-stone-200">
-          <p className="text-sm text-stone-500 font-light mb-2">Have questions?</p>
-          <Link href="mailto:hello@sselfie.ai" className="text-sm text-stone-900 font-medium hover:underline">
-            Contact Support
-          </Link>
+          {/* Help */}
+          <div className="mt-12 border-t border-[#F3E6CF] pt-8">
+            <p className="mb-2 text-sm font-light text-[#74695F]">Have questions?</p>
+            <Link
+              href="mailto:hello@sselfie.ai"
+              className="text-sm font-medium text-[#09090B] hover:underline"
+            >
+              Contact Support
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
+    </main>
   )
 }
