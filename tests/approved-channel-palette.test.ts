@@ -42,5 +42,6 @@ describe("approved marketing, checkout, and email palette", () => {
     expect(masthead).toContain("Worth posting.")
     expect(masthead).toContain("#F3E6CF")
     expect(masthead).toContain("#09090B")
+    expect(masthead).toContain('className="inline-flex min-h-11 items-center')
   })
 })

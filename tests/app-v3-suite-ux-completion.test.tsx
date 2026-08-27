@@ -78,6 +78,7 @@ describe("App v3 Suite UX completion", () => {
     expect(concierge).toContain("recoverMultiImageFromGallery")
     expect(concierge).toContain('targetFormat !== "carousel" && targetFormat !== "story-sequence"')
     expect(concierge).toContain('restorePaidMultiImage("request_recovered", recoveryAttempts)')
+    expect(concierge).toContain("normalizeConceptBriefPlanOutputs")
   })
 
   it("does not reserve a duplicate Maya sidebar inside the Suite Calendar", () => {
