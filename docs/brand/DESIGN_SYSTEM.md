@@ -8,7 +8,11 @@ The sole current SSELFIE visual-design authority is:
 
 Approved visual reference:
 
-`docs/brand/references/sselfie-bold-editorial-direction-2026-08-23.png`
+`docs/brand/references/sselfie-editorial-neon-suite-direction-2026-08-26.png`
+
+Current approved expression: **Bold Editorial Studio · Warm Champagne**. Espresso replaces
+Oxblood as the brand action color. Champagne light and Allura are restricted signature devices,
+not general-purpose UI decoration.
 
 Previous systems are retained for historical reference only:
 

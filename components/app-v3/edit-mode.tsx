@@ -259,10 +259,7 @@ export function EditMode({
   const closeWhenIdle = () => {
     if (!busy && !referenceUploading && !chatBusy) onClose()
   }
-  const { dialogRef, initialFocusRef } = useAccessibleModal<HTMLDialogElement>(
-    true,
-    closeWhenIdle,
-  )
+  const { dialogRef, initialFocusRef } = useAccessibleModal<HTMLDialogElement>(true, closeWhenIdle)
 
   useEffect(() => {
     onBusyChange?.(busy || referenceUploading || chatBusy)
@@ -541,10 +538,11 @@ export function EditMode({
       style={
         {
           "--suite-night": "var(--ss-brand-ink, #0D0E10)",
-          "--suite-canvas": "var(--ss-brand-chalk, #F8FAFA)",
-          "--suite-steel": "var(--ss-brand-silver, #C5C6C8)",
-          "--suite-slate": "var(--ss-brand-slate, #4F5052)",
-          "--suite-accent": "var(--ss-brand-oxblood, #7A3045)",
+          "--suite-canvas": "var(--ss-brand-ivory, #F5F2ED)",
+          "--suite-steel": "var(--ss-brand-taupe, #A89B8C)",
+          "--suite-slate": "var(--ss-brand-slate, #665E56)",
+          "--suite-accent": "var(--ss-brand-espresso, #342A24)",
+          "--suite-highlight": "var(--ss-brand-champagne, #D7B67E)",
         } as CSSProperties
       }
     >

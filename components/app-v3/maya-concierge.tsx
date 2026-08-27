@@ -139,7 +139,7 @@ function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
     <div
       className={`relative shrink-0 overflow-hidden rounded-full bg-[#ECEDED] ${
         isMaya
-          ? "h-10 w-10 border border-[#0D0E10] ring-2 ring-white"
+          ? "suite-maya-avatar h-10 w-10 border border-[#0D0E10] ring-2 ring-white"
           : "h-8 w-8 border border-[#C5C6C8]/70"
       }`}
     >
@@ -492,9 +492,9 @@ function MayaPathTabs({
             onClick={() => onPick(path.id)}
             disabled={disabled}
             aria-current={active ? "step" : undefined}
-            className={`min-h-[64px] border-r border-[#C5C6C8] px-1.5 py-2 text-center transition-colors last:border-r-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--suite-accent)] disabled:opacity-45 sm:min-h-[68px] sm:px-4 ${
+            className={`suite-maya-path-tab min-h-[64px] border-r border-[#C5C6C8] px-1.5 py-2 text-center transition-colors last:border-r-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--suite-night)] disabled:opacity-45 sm:min-h-[68px] sm:px-4 ${
               active
-                ? "bg-[color:var(--suite-accent)] text-white"
+                ? "suite-maya-path-tab--active bg-[color:var(--suite-accent)] text-white"
                 : "bg-white text-[color:var(--suite-night)] hover:bg-[#F1F2F2]"
             }`}
           >
@@ -770,6 +770,86 @@ function extractFormatSwitch(part: any): OutputFormat | null {
   }
   const fmt = part.output?.format ?? part.input?.format
   return FORMAT_OPTIONS.some(o => o.id === fmt) ? (fmt as OutputFormat) : null
+}
+
+/** The AI SDK may replace a streamed message id when the turn settles. Tool-call ids stay
+ * stable, so use them to prevent one set_format acknowledgement from starting two pulls. */
+function formatSwitchKey(messageId: unknown, part: any, format: OutputFormat): string {
+  const stablePartId =
+    typeof part?.toolCallId === "string"
+      ? part.toolCallId
+      : typeof part?.id === "string"
+        ? part.id
+        : typeof messageId === "string"
+          ? messageId
+          : "unknown"
+  return `${stablePartId}:${format}`
+}
+
+/** Saved streams can contain the same settled assistant tool result twice when a streamed
+ * message id changes during persistence. Keep one copy, preferring the copy that owns the
+ * durable generation state, so a resumed project never shows duplicate directions. */
+function dedupeRestoredMessages(
+  messages: unknown[],
+  genState: Record<string, ConceptGenState> = {}
+): unknown[] {
+  const result: any[] = []
+  const assistantFingerprints = new Map<string, number>()
+
+  const creativeStateScore = (message: any) => {
+    if (typeof message?.id !== "string" || !Array.isArray(message.parts)) return 0
+    const messageStateEntries = Object.entries(genState).filter(([key]) =>
+      key.startsWith(`${message.id}:`)
+    )
+    if (messageStateEntries.some(([, state]) => state.status !== "idle")) return 3
+    if (messageStateEntries.length > 0) return 2
+    return message.parts.reduce((score: number, part: any) => {
+      const concepts = extractConcepts(part)
+      if (!concepts) return score
+      for (const concept of concepts) {
+        const state = genState[`${message.id}:${concept.id}`]
+        if (!state) continue
+        score = Math.max(score, state.status === "idle" ? 1 : 3)
+      }
+      return score
+    }, 0)
+  }
+
+  for (const rawMessage of messages as any[]) {
+    if (rawMessage?.role !== "assistant" || !Array.isArray(rawMessage.parts)) {
+      result.push(rawMessage)
+      continue
+    }
+    const emittedConcepts = rawMessage.parts.map((part: any) => extractConcepts(part)).find(Boolean)
+    const fingerprintParts = rawMessage.parts.map((part: any) => {
+      if (part?.type === "text") return { type: "text", text: part.text }
+      const format = extractFormatSwitch(part)
+      if (format) return { type: "set_format", format }
+      const concepts = extractConcepts(part)
+      if (concepts) return { type: "emit_concepts", concepts }
+      return {
+        type: part?.type,
+        toolName: part?.toolName,
+        input: part?.input,
+        output: part?.output,
+      }
+    })
+    const fingerprint = emittedConcepts
+      ? `concepts:${JSON.stringify(
+          emittedConcepts.map(concept => ({ id: concept.id, title: concept.title }))
+        )}`
+      : JSON.stringify(fingerprintParts)
+    const previousIndex = assistantFingerprints.get(fingerprint)
+    if (previousIndex === undefined) {
+      assistantFingerprints.set(fingerprint, result.length)
+      result.push(rawMessage)
+      continue
+    }
+    if (creativeStateScore(rawMessage) > creativeStateScore(result[previousIndex])) {
+      result[previousIndex] = rawMessage
+    }
+  }
+  return result
 }
 
 /** Pull the show_feed_plan tool's real DB lookup out of Maya's stream (Feed Planner Phase 2c).
@@ -1429,6 +1509,9 @@ export function MayaConcierge({
       const taskId = activeSession.mayaContext?.taskId
       if (!taskId || snapshot.chatId !== taskId) return
       const restoredSession = snapshot.session
+      workspacePathRef.current =
+        restoredSession.workspacePath ??
+        mayaWorkspacePathForFormat(restoredSession.outputFormat ?? null)
       const restoringCalendarPost = activeSession.mayaContext?.job === "finish_calendar_post"
 
       updateCurrentSession(restoredSession.aesthetic as Aesthetic, {
@@ -1447,24 +1530,25 @@ export function MayaConcierge({
           ? activeSession.creationIdea
           : restoredSession.creationIdea,
       })
-      sessionResumedWithHistoryRef.current = snapshot.messages.length > 0
-      savedCountRef.current = snapshot.messages.length
-      lastPulledFormatRef.current = snapshot.messages.length
+      const restoredMessages = dedupeRestoredMessages(snapshot.messages, snapshot.genState)
+      sessionResumedWithHistoryRef.current = restoredMessages.length > 0
+      savedCountRef.current = restoredMessages.length
+      lastPulledFormatRef.current = restoredMessages.length
         ? (activeSession.outputFormat ?? null)
         : null
-      seedRetiredRef.current = Boolean(snapshot.messages.length)
+      seedRetiredRef.current = Boolean(restoredMessages.length)
       formatSwitchAppliedRef.current.clear()
-      for (const message of snapshot.messages as any[]) {
+      for (const message of restoredMessages as any[]) {
         if (message?.role !== "assistant" || !Array.isArray(message.parts)) continue
         for (const part of message.parts) {
           const format = extractFormatSwitch(part)
-          if (format) formatSwitchAppliedRef.current.add(`${message.id}:${format}`)
+          if (format) formatSwitchAppliedRef.current.add(formatSwitchKey(message.id, part, format))
         }
       }
       sessionChatIdRef.current = taskId
       suppressChatSaveForIdRef.current = taskId
       setChatId(taskId)
-      setMessages(snapshot.messages as any[])
+      setMessages(restoredMessages as any[])
       setGenState(snapshot.genState as Record<string, ConceptGenState>)
       setGeneratedOnce(snapshot.generatedOnce)
       setLastGeneration(snapshot.lastGeneration ?? null)
@@ -1480,7 +1564,7 @@ export function MayaConcierge({
       setSetupOpen(snapshot.setupOpen)
       setPreMessageThreadOpen(false)
       setLocalCreationIntent(activeSession.creationIntent ?? null)
-      if (snapshot.messages.length > 0 && activeSession.calendarTarget) {
+      if (restoredMessages.length > 0 && activeSession.calendarTarget) {
         // Hydration and the provider's announced-state update paint on separate commits. Claim
         // this request synchronously so the handoff effect cannot send a duplicate turn in the
         // gap between restoring the messages and painting `announced: true`.
@@ -1610,7 +1694,7 @@ export function MayaConcierge({
       if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
       for (const p of m.parts) {
         const fmt = extractFormatSwitch(p)
-        if (fmt) formatSwitchAppliedRef.current.add(`${m.id}:${fmt}`)
+        if (fmt) formatSwitchAppliedRef.current.add(formatSwitchKey(m.id, p, fmt))
       }
     }
     sessionChatIdRef.current = draft.chatId
@@ -2142,7 +2226,7 @@ export function MayaConcierge({
       for (const p of m.parts) {
         const fmt = extractFormatSwitch(p)
         if (!fmt) continue
-        const key = `${m.id}:${fmt}`
+        const key = formatSwitchKey(m.id, p, fmt)
         if (formatSwitchAppliedRef.current.has(key)) continue
         formatSwitchAppliedRef.current.add(key)
         latest = fmt
@@ -2912,7 +2996,11 @@ export function MayaConcierge({
     } | null
     if (requestId !== historyLoadRequestRef.current) return
     saveMayaLastActiveTaskId(id)
-    const loaded = Array.isArray(data?.messages) ? data.messages : []
+    const workspace = data?.workspace ?? null
+    const loaded = dedupeRestoredMessages(
+      Array.isArray(data?.messages) ? data.messages : [],
+      (workspace?.genState as Record<string, ConceptGenState> | undefined) ?? {}
+    )
     savedCountRef.current = loaded.length
     // Historical set_format parts are already-acted-on: seed them so reopening an old
     // chat never replays a format switch (and the auto-pull it triggers).
@@ -2920,13 +3008,13 @@ export function MayaConcierge({
       if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
       for (const p of m.parts) {
         const fmt = extractFormatSwitch(p)
-        if (fmt) formatSwitchAppliedRef.current.add(`${m.id}:${fmt}`)
+        if (fmt) formatSwitchAppliedRef.current.add(formatSwitchKey(m.id, p, fmt))
       }
     }
     sessionChatIdRef.current = id
     suppressChatSaveForIdRef.current = id
     setChatId(id)
-    const workspace = data?.workspace ?? null
+    let shouldOpenRestoredCalendar = false
     if (workspace) {
       const restoredSession = (
         !calendarIncluded &&
@@ -2944,11 +3032,20 @@ export function MayaConcierge({
           calendarHandoffSentRef.current = restoredSession.calendarTarget.requestId
           markCalendarTargetAnnounced(restoredSession.calendarTarget.requestId)
         }
+        workspacePathRef.current =
+          restoredSession.workspacePath ??
+          mayaWorkspacePathForFormat(restoredSession.outputFormat ?? null)
         restoreHistoryTask(id, restoredSession)
         saveMayaTaskDraft({ ...workspace, session: restoredSession, chatId: id, messages: loaded })
-        if (calendarIncluded && restoredSession.mayaContext?.surface === "calendar") {
-          onOpenCalendar?.()
-        }
+        const restoresCalendarResult = Object.values(workspace.genState ?? {}).some(state =>
+          Boolean((state as ConceptGenState | undefined)?.calendarPlacement)
+        )
+        shouldOpenRestoredCalendar = Boolean(
+          calendarIncluded &&
+          (restoredSession.mayaContext?.surface === "calendar" ||
+            Boolean(restoredSession.calendarTarget) ||
+            restoresCalendarResult)
+        )
       }
       updateCurrentSession(restoredSession.aesthetic as Aesthetic, {
         format: restoredSession.outputFormat ?? undefined,
@@ -2986,6 +3083,12 @@ export function MayaConcierge({
     sessionResumedWithHistoryRef.current = loaded.length > 0
     setMessages(loaded as any)
     setHistoryOpen(false)
+    // Paint the restored messages and durable result state before changing the app surface.
+    // Otherwise Calendar's section synchronization can win the same commit and clear the
+    // creative state while the correct task id remains selected.
+    if (shouldOpenRestoredCalendar) {
+      window.requestAnimationFrame(() => onOpenCalendar?.())
+    }
   }
 
   async function recoverSingleImageFromGallery(
@@ -4847,6 +4950,7 @@ export function MayaConcierge({
     creditModal.open ||
     trialCapOpen ||
     Boolean(editTarget)
+  const visibleMessages = dedupeRestoredMessages(messages, genState)
 
   return (
     <div
@@ -4918,6 +5022,11 @@ export function MayaConcierge({
                 className="max-w-[18rem] font-serif text-[22px] font-light uppercase leading-none tracking-[-0.035em] text-[#0D0E10] sm:max-w-none sm:text-[31px]"
               >
                 {agentLabel}
+                {homeMode ? (
+                  <span className="suite-maya-neon-mark sm:hidden" aria-hidden="true">
+                    create
+                  </span>
+                ) : null}
               </h2>
               {!generalHomeConversation && (
                 <p className="mt-0.5 truncate text-[11px] leading-snug text-[#6D6E70]">
@@ -5773,7 +5882,7 @@ export function MayaConcierge({
               {(() => {
                 // Preserve the first finished-photo marker for existing result-card behavior.
                 let firstDonePhotoKey: string | null = null
-                for (const m of messages as any[]) {
+                for (const m of visibleMessages as any[]) {
                   if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
                   const msgConcepts = m.parts.map(extractConcepts).find(Boolean) as
                     | ConceptCardData[]
@@ -5791,7 +5900,7 @@ export function MayaConcierge({
                     if (!firstDonePhotoKey && msgFormat === "photo") firstDonePhotoKey = k
                   }
                 }
-                return messages.map((m: any) => {
+                return visibleMessages.map((m: any) => {
                   const isUser = m.role === "user"
                   const parts = Array.isArray(m.parts) ? m.parts : []
                   const text = parts

@@ -159,22 +159,30 @@
   --ss-raisin: #282728;
   --ss-night: #0d0e10;
 
-  /* Bold Editorial Studio — approved 2026-08-23.
-     These tokens are additive until each live surface is deliberately migrated. */
+  /* Bold Editorial Studio · Warm Champagne — approved 2026-08-26.
+     The warm editorial tokens are the current brand foundation. Live surfaces still migrate
+     deliberately so visual work never changes product behavior by accident. */
   --ss-brand-ink: #0d0e10;
-  --ss-brand-carbon: #252525;
-  --ss-brand-chalk: #f7f7f5;
+  --ss-brand-carbon: #211e1b;
+  --ss-brand-espresso: #342a24;
+  --ss-brand-chalk: #f5f2ed;
+  --ss-brand-ivory: #f5f2ed;
   --ss-brand-paper: #ffffff;
-  --ss-brand-concrete: #e7e7e5;
-  --ss-brand-silver: #c5c6c8;
-  --ss-brand-slate: #5d6064;
-  --ss-brand-oxblood: #981826;
+  --ss-brand-concrete: #e6dfd5;
+  --ss-brand-parchment: #e6dfd5;
+  --ss-brand-silver: #c9bdaf;
+  --ss-brand-taupe: #a89b8c;
+  --ss-brand-slate: #665e56;
+  --ss-brand-champagne: #d7b67e;
+  --ss-brand-champagne-ink: #6e5639;
+  --ss-brand-champagne-glow: rgba(215, 182, 126, 0.42);
   --ss-brand-error: #b42318;
   --ss-brand-success: #216e4e;
   --ss-brand-radius: 6px;
   --ss-brand-rule: 1px solid var(--ss-brand-silver);
   --ss-brand-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --ss-brand-sans: "Manrope", Inter, Arial, Helvetica, sans-serif;
+  --ss-brand-signature: Allura, "Segoe Script", cursive;
   /* Calendar editorial board: cool greige, never warm cream. */
   --calendar-stone-1: #eceae7;
   --calendar-stone-2: #e1deda;

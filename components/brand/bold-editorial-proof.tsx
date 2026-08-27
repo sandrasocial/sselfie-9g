@@ -92,12 +92,13 @@ const recentProjects = [
 const palette = [
   ["Editorial Ink", BOLD_EDITORIAL_COLORS.ink],
   ["Carbon", BOLD_EDITORIAL_COLORS.carbon],
-  ["Chalk", BOLD_EDITORIAL_COLORS.chalk],
+  ["Espresso", BOLD_EDITORIAL_COLORS.espresso],
+  ["Soft Ivory", BOLD_EDITORIAL_COLORS.ivory],
   ["Paper", BOLD_EDITORIAL_COLORS.paper],
-  ["Concrete", BOLD_EDITORIAL_COLORS.concrete],
-  ["Silver", BOLD_EDITORIAL_COLORS.silver],
+  ["Muted Parchment", BOLD_EDITORIAL_COLORS.parchment],
+  ["Taupe", BOLD_EDITORIAL_COLORS.taupe],
   ["Slate", BOLD_EDITORIAL_COLORS.slate],
-  ["Oxblood", BOLD_EDITORIAL_COLORS.oxblood],
+  ["Champagne", BOLD_EDITORIAL_COLORS.champagne],
 ] as const
 
 function ProofHeader({ number, title, note }: { number: string; title: string; note: string }) {
@@ -362,14 +363,14 @@ export function BoldEditorialProof({ emailHtml }: { emailHtml: string }) {
       <header className={styles.pageHeader}>
         <div>
           <EditorialWordmark />
-          <span>DESIGN FOUNDATION · 2026-08-23</span>
+          <span>DESIGN FOUNDATION · 2026-08-26</span>
         </div>
         <div className={styles.pageHeaderCopy}>
           <EditorialEyebrow>APPROVAL REFERENCE · NOT LIVE</EditorialEyebrow>
-          <h1>Bold Editorial Studio</h1>
+          <h1>Bold Editorial Studio · Warm Champagne</h1>
           <p>
             One brand system for Suite, marketing, and email. Selfies stay central. Maya supports
-            the work. Oxblood marks intent—not decoration.
+            the work. Espresso carries action; champagne light marks selection and brand moments.
           </p>
         </div>
       </header>
@@ -415,6 +416,14 @@ export function BoldEditorialProof({ emailHtml }: { emailHtml: string }) {
               <EditorialButton accent>SELECTED ACTION</EditorialButton>
               <EditorialButton secondary>SECONDARY</EditorialButton>
             </div>
+          </article>
+          <article className={styles.signatureSpecimen}>
+            <EditorialEyebrow>SIGNATURE · ALLURA · BRAND MOMENTS ONLY</EditorialEyebrow>
+            <p>Worth posting.</p>
+            <small>
+              Warm champagne light may appear on black brand moments, selected visual work, and
+              compact wayfinding. Never use it for body copy or ordinary controls.
+            </small>
           </article>
         </div>
       </section>

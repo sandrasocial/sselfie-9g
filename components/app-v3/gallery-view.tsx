@@ -743,14 +743,14 @@ export function GalleryView({
   const allVisibleSelected = filteredAssets.length > 0 && selectedIds.size >= filteredAssets.length
 
   return (
-    <div className="suite-page mx-auto max-w-[1320px] px-4 py-7 sm:px-8 sm:py-12">
+    <div className="suite-page suite-gallery mx-auto max-w-[1320px] px-4 py-7 sm:px-8 sm:py-12">
       <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--suite-accent)]">
             {mode === "edit" ? "Edit · Choose your source" : "Gallery · Your visual library"}
           </p>
           <h1 className="mt-2 font-serif text-[38px] font-light leading-none text-[#0D0E10] sm:text-[52px]">
-            {mode === "edit" ? "Choose a photo to edit" : "Everything you&apos;re making"}
+            {mode === "edit" ? "Choose a photo to edit" : "Everything you’re making"}
           </h1>
         </div>
         {hasAssets && mode === "browse" && (
@@ -876,12 +876,15 @@ export function GalleryView({
       )}
 
       {assets === null && !error && (
-        <p className="text-[13px] text-[#818283]">Loading your gallery...</p>
+        <div className="suite-state suite-state--loading" role="status" aria-live="polite">
+          <span className="suite-state-pulse" aria-hidden />
+          <p className="text-[13px] text-[#818283]">Opening your gallery…</p>
+        </div>
       )}
       {error && (
         <div
           role="alert"
-          className="mb-4 flex items-center justify-between gap-3 rounded-[3px] border border-[#C5C6C8] bg-white px-3 py-2"
+          className="suite-state suite-state--error mb-4 flex items-center justify-between gap-3 px-4 py-3"
         >
           <p className="text-[13px] text-[#282728]">{error}</p>
           <button
@@ -894,7 +897,7 @@ export function GalleryView({
         </div>
       )}
       {assets && assets.length === 0 && (
-        <div className="rounded-[2px] border border-dashed border-[#C5C6C8] bg-white px-6 py-12 text-center">
+        <div className="suite-state suite-state--empty px-6 py-12 text-center">
           <ImageIcon size={24} className="mx-auto mb-3 text-[#818283]" />
           <p className="font-serif text-[20px] font-light text-[#0D0E10]">Nothing here yet.</p>
           <p className="mx-auto mt-1.5 max-w-xs text-[13px] leading-relaxed text-[#818283]">
@@ -912,7 +915,7 @@ export function GalleryView({
         </div>
       )}
       {assets && assets.length > 0 && displayedAssets.length === 0 && (
-        <div className="rounded-[2px] border border-dashed border-[#C5C6C8] bg-white p-8 text-center">
+        <div className="suite-state suite-state--empty p-8 text-center">
           <MoreHorizontal size={24} className="mx-auto mb-3 text-[#818283]" />
           <p className="text-[15px] text-[#282728]">Nothing in this view yet.</p>
           <p className="mt-1 text-[13px] text-[#818283]">Try All or create something new.</p>
@@ -1020,13 +1023,13 @@ export function GalleryView({
         })()}
 
       {compareAsset && comparison ? (
-        <div className="fixed inset-0 z-[72] flex items-end justify-center bg-[#0D0E10]/80 p-0 backdrop-blur-sm sm:items-center sm:p-5">
+        <div className="suite-dialog-backdrop fixed inset-0 z-[72] flex items-end justify-center p-0 sm:items-center sm:p-5">
           <div
             ref={compareDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="compare-versions-title"
-            className="max-h-[94dvh] w-full max-w-5xl overflow-y-auto rounded-t-[16px] bg-[#F8FAFA] p-4 shadow-2xl sm:rounded-[10px] sm:p-6"
+            className="suite-dialog max-h-[94dvh] w-full max-w-5xl overflow-y-auto p-4 sm:p-6"
           >
             <header className="flex items-start justify-between gap-4">
               <div>
@@ -1079,13 +1082,13 @@ export function GalleryView({
       ) : null}
 
       {previewVideo && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4">
+        <div className="suite-dialog-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4">
           <div
             ref={videoDialogRef}
             role="dialog"
             aria-modal="true"
             aria-label="Video preview"
-            className="w-full max-w-sm overflow-hidden rounded-[8px] bg-white"
+            className="suite-dialog w-full max-w-sm overflow-hidden"
           >
             <video
               src={previewVideo.url}
@@ -1118,13 +1121,13 @@ export function GalleryView({
       )}
 
       {pendingDeleteIds && (
-        <div className="fixed inset-0 z-[75] flex items-center justify-center bg-[#0D0E10]/45 p-4 backdrop-blur-sm">
+        <div className="suite-dialog-backdrop fixed inset-0 z-[75] flex items-center justify-center p-4">
           <div
             ref={deleteDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-assets-title"
-            className="w-full max-w-sm rounded-[10px] bg-[#F8FAFA] p-5 shadow-xl"
+            className="suite-dialog w-full max-w-sm p-5"
           >
             <h2
               id="delete-assets-title"

@@ -44,4 +44,13 @@ describe("Maya operating layer Phase 5 readiness", () => {
     expect(calendar).toContain('recordMayaJobDecision("improve_grid")')
     expect(learn).toContain('recordMayaJobDecision("learn_next")')
   })
+
+  it("restores a saved Calendar result before changing the visible app surface", () => {
+    const concierge = read("components/app-v3/maya-concierge.tsx")
+
+    expect(concierge).toContain("restoresCalendarResult")
+    expect(concierge).toContain("workspacePathRef.current =")
+    expect(concierge).toContain("if (shouldOpenRestoredCalendar)")
+    expect(concierge).toContain("window.requestAnimationFrame(() => onOpenCalendar?.())")
+  })
 })

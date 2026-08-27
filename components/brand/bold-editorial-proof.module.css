@@ -157,6 +157,36 @@
   max-width: 520px;
 }
 
+.signatureSpecimen {
+  background: var(--ss-brand-ink);
+  color: var(--ss-brand-paper);
+  grid-column: 1 / -1;
+}
+
+.signatureSpecimen > p:first-child {
+  color: var(--ss-brand-champagne);
+}
+
+.signatureSpecimen > p:nth-child(2) {
+  color: #f8e7c7;
+  font-family: var(--ss-brand-signature);
+  font-size: clamp(4.5rem, 10vw, 9rem);
+  line-height: 0.8;
+  margin: 2.5rem 0 1.5rem;
+  text-shadow:
+    0 0 2px rgba(255, 250, 239, 0.98),
+    0 0 9px rgba(232, 197, 139, 0.84),
+    0 0 22px rgba(215, 182, 126, 0.58);
+}
+
+.signatureSpecimen small {
+  color: var(--ss-brand-silver);
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.7;
+  max-width: 650px;
+}
+
 .buttonRow {
   align-items: center;
   display: flex;
@@ -179,7 +209,7 @@
 }
 
 .proofNumber {
-  color: var(--ss-brand-oxblood);
+  color: var(--ss-brand-espresso);
   font-family: var(--ss-brand-display);
   font-size: 2.4rem;
   line-height: 1;
@@ -275,7 +305,7 @@
 
 .suiteRail nav .railActive {
   background: color-mix(in srgb, var(--ss-brand-paper) 7%, transparent);
-  border-left-color: var(--ss-brand-oxblood);
+  border-left-color: var(--ss-brand-espresso);
   color: var(--ss-brand-paper);
 }
 
@@ -297,7 +327,7 @@
 }
 
 .mayaDot {
-  background: var(--ss-brand-oxblood);
+  background: var(--ss-brand-espresso);
   border-radius: 50%;
   height: 8px;
   width: 8px;
@@ -385,7 +415,7 @@
 }
 
 .suiteHeroImage > span {
-  background: var(--ss-brand-oxblood);
+  background: var(--ss-brand-espresso);
   bottom: 0;
   color: white;
   font-size: 0.47rem;
@@ -423,7 +453,7 @@
 
 .actionNumber {
   background: var(--ss-brand-paper);
-  color: var(--ss-brand-oxblood);
+  color: var(--ss-brand-espresso);
   font-size: 0.5rem;
   left: 0;
   padding: 0.35rem 0.45rem;
@@ -467,7 +497,7 @@
   gap: 0.75rem;
   overflow-x: auto;
   padding-bottom: 0.55rem;
-  scrollbar-color: var(--ss-brand-oxblood) var(--ss-brand-concrete);
+  scrollbar-color: var(--ss-brand-espresso) var(--ss-brand-concrete);
   scrollbar-width: thin;
 }
 
@@ -644,7 +674,7 @@
 }
 
 .phoneActions button span {
-  color: var(--ss-brand-oxblood);
+  color: var(--ss-brand-espresso);
   font-size: 0.55rem;
 }
 
@@ -666,7 +696,7 @@
 
 .mobileMayaIcon {
   align-items: center;
-  background: var(--ss-brand-oxblood);
+  background: var(--ss-brand-espresso);
   border-radius: 50%;
   display: flex;
   height: 36px;
@@ -771,7 +801,7 @@
 }
 
 .methodLine small {
-  color: var(--ss-brand-oxblood);
+  color: var(--ss-brand-espresso);
   font-size: 0.48rem;
 }
 
@@ -814,7 +844,7 @@
 }
 
 .marketingPhotoSecondary span {
-  background: var(--ss-brand-oxblood);
+  background: var(--ss-brand-espresso);
   color: white;
 }
 

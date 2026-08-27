@@ -380,9 +380,11 @@ export function LibraryView({
   }
 
   return (
-    <div className="suite-page mx-auto max-w-3xl space-y-7 px-4 py-6 sm:px-5 sm:py-8">
+    <div className="suite-page suite-learn mx-auto max-w-3xl space-y-7 px-4 py-6 sm:px-5 sm:py-8">
       <header>
-        <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Library</p>
+        <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--suite-accent)]">
+          Learn · Your SSELFIE
+        </p>
         <h1 className="mt-2 font-serif text-[30px] font-light leading-tight text-[#0D0E10]">
           Your SSELFIE
         </h1>
@@ -444,7 +446,7 @@ export function LibraryView({
       {error && (
         <div
           role="alert"
-          className="flex items-center justify-between gap-3 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4"
+          className="suite-state suite-state--error flex items-center justify-between gap-3 p-4"
         >
           <p className="text-[14px] text-[#4F5052]">{error}</p>
           <button
@@ -456,7 +458,12 @@ export function LibraryView({
           </button>
         </div>
       )}
-      {!data && !error && <p className="text-[14px] text-[#818283]">Opening your library…</p>}
+      {!data && !error && (
+        <div className="suite-state suite-state--loading" role="status" aria-live="polite">
+          <span className="suite-state-pulse" aria-hidden />
+          <p className="text-[14px] text-[#818283]">Opening your library…</p>
+        </div>
+      )}
 
       {data && (
         <>
@@ -482,23 +489,23 @@ export function LibraryView({
             </div>
             <div className="p-4 sm:p-5">
               {!operatingLayerEnabled ? (
-              <div
-                className="grid gap-2 sm:grid-cols-2"
-                role="group"
-                aria-label="Choose what you need help with"
-              >
-                {LEARN_GOALS.map(goal => (
-                  <button
-                    key={goal.id}
-                    type="button"
-                    aria-pressed={selectedGoal === goal.id}
-                    onClick={() => chooseGoal(goal.id)}
-                    className={`min-h-12 rounded-[9px] border px-3 py-2.5 text-left text-[13px] leading-snug ${selectedGoal === goal.id ? "border-[#0D0E10] bg-[#F8FAFA] text-[#0D0E10]" : "border-[#C5C6C8]/70 text-[#4F5052] hover:border-[#0D0E10]/40"}`}
-                  >
-                    {goal.label}
-                  </button>
-                ))}
-              </div>
+                <div
+                  className="grid gap-2 sm:grid-cols-2"
+                  role="group"
+                  aria-label="Choose what you need help with"
+                >
+                  {LEARN_GOALS.map(goal => (
+                    <button
+                      key={goal.id}
+                      type="button"
+                      aria-pressed={selectedGoal === goal.id}
+                      onClick={() => chooseGoal(goal.id)}
+                      className={`min-h-12 rounded-[9px] border px-3 py-2.5 text-left text-[13px] leading-snug ${selectedGoal === goal.id ? "border-[#0D0E10] bg-[#F8FAFA] text-[#0D0E10]" : "border-[#C5C6C8]/70 text-[#4F5052] hover:border-[#0D0E10]/40"}`}
+                    >
+                      {goal.label}
+                    </button>
+                  ))}
+                </div>
               ) : null}
 
               {guidanceError ? (
@@ -645,169 +652,171 @@ export function LibraryView({
 
           {!operatingLayerEnabled || browseAllOpen ? (
             <div id="maya-learn-catalogue" className="contents">
-          {/* Courses with progress */}
-          {data.courses.length > 0 && (
-            <section>
-              <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">
-                Your courses
-              </p>
-              <div className="space-y-3">
-                {data.courses.map(c => (
-                  <a
-                    key={c.id}
-                    href={c.href}
-                    className={`${card} block p-4 transition-colors hover:border-[#0D0E10]/40`}
-                  >
-                    <div className="flex flex-col gap-1 min-[420px]:flex-row min-[420px]:items-baseline min-[420px]:justify-between min-[420px]:gap-3">
-                      <h3 className="font-serif text-[20px] font-light leading-tight text-[#0D0E10]">
-                        {c.title}
-                      </h3>
-                      <span className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-[#818283]">
-                        {c.completedLessons}/{c.lessonCount} lessons
-                      </span>
-                    </div>
-                    {c.description && (
-                      <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">
-                        {c.description}
-                      </p>
-                    )}
-                    <div
-                      role="progressbar"
-                      aria-label={`${c.title} progress`}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={Math.min(100, Math.max(0, c.progressPercentage))}
-                      className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-[#F1F2F2]"
-                    >
-                      <div
-                        className="h-full bg-[#0D0E10] transition-[width]"
-                        style={{ width: `${Math.min(100, Math.max(0, c.progressPercentage))}%` }}
-                      />
-                    </div>
-                    <span className="mt-3 inline-flex min-h-8 items-center text-[11px] uppercase tracking-[0.18em] text-[#0D0E10]">
-                      {c.started ? "Continue" : "Start"}
-                    </span>
-                  </a>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Owned products */}
-          {products.length > 0 && (
-            <section>
-              <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">
-                Your products
-              </p>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {products.map(p => (
-                  <ProductTile
-                    key={p.id}
-                    title={p.name}
-                    eyebrow={p.eyebrow}
-                    description={p.tagline}
-                    thumbnailUrl={p.thumbnailUrl}
-                    href={p.accessUrl}
-                    actionLabel={p.actionLabel}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {data.courses.length === 0 && products.length === 0 && (
-            <p className="text-[14px] text-[#4F5052]">
-              Nothing here yet. Your products will show up the moment you own them.
-            </p>
-          )}
-
-          {/* Weekly drops */}
-          <section>
-            <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">Drops</p>
-            {data.drops.length > 0 ? (
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {data.drops.map(d => (
-                  <Link
-                    key={d.id}
-                    href="/academy/access/monthly-drops"
-                    className={`${card} flex min-h-[78px] gap-3 overflow-hidden p-3 transition-colors hover:border-[#0D0E10]/40`}
-                  >
-                    {d.thumbnailUrl && (
-                      <div className="relative aspect-square w-16 shrink-0 overflow-hidden rounded-[6px] bg-[#F1F2F2]">
-                        <Image
-                          src={d.thumbnailUrl}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="64px"
-                        />
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      {isNewDrop(d.publishedAt) && (
-                        <p className="mb-0.5 text-[9px] uppercase tracking-[0.18em] text-[#0D0E10]">
-                          New
-                        </p>
-                      )}
-                      <h3 className="font-serif text-[17px] font-light leading-tight text-[#0D0E10]">
-                        {d.title}
-                      </h3>
-                      {d.month && (
-                        <p className="mt-0.5 text-[11px] uppercase tracking-[0.14em] text-[#818283]">
-                          {d.month}
-                        </p>
-                      )}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className={`${card} p-4`}>
-                <p className="text-[14px] text-[#4F5052]">New drops land here every week.</p>
-              </div>
-            )}
-          </section>
-
-          {/* Locked previews + the one upgrade CTA (non-members only; D3 keeps members lock-free) */}
-          {!data.membershipActive && (
-            <section>
-              {data.lockedProducts.length > 0 && (
-                <>
+              {/* Courses with progress */}
+              {data.courses.length > 0 && (
+                <section>
                   <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">
-                    Not yours yet
+                    Your courses
+                  </p>
+                  <div className="space-y-3">
+                    {data.courses.map(c => (
+                      <a
+                        key={c.id}
+                        href={c.href}
+                        className={`${card} block p-4 transition-colors hover:border-[#0D0E10]/40`}
+                      >
+                        <div className="flex flex-col gap-1 min-[420px]:flex-row min-[420px]:items-baseline min-[420px]:justify-between min-[420px]:gap-3">
+                          <h3 className="font-serif text-[20px] font-light leading-tight text-[#0D0E10]">
+                            {c.title}
+                          </h3>
+                          <span className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-[#818283]">
+                            {c.completedLessons}/{c.lessonCount} lessons
+                          </span>
+                        </div>
+                        {c.description && (
+                          <p className="mt-1.5 text-[13px] leading-relaxed text-[#4F5052]">
+                            {c.description}
+                          </p>
+                        )}
+                        <div
+                          role="progressbar"
+                          aria-label={`${c.title} progress`}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-valuenow={Math.min(100, Math.max(0, c.progressPercentage))}
+                          className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-[#F1F2F2]"
+                        >
+                          <div
+                            className="h-full bg-[#0D0E10] transition-[width]"
+                            style={{
+                              width: `${Math.min(100, Math.max(0, c.progressPercentage))}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="mt-3 inline-flex min-h-8 items-center text-[11px] uppercase tracking-[0.18em] text-[#0D0E10]">
+                          {c.started ? "Continue" : "Start"}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Owned products */}
+              {products.length > 0 && (
+                <section>
+                  <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+                    Your products
                   </p>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {data.lockedProducts.map(p => (
+                    {products.map(p => (
                       <ProductTile
                         key={p.id}
-                        title={p.title}
+                        title={p.name}
                         eyebrow={p.eyebrow}
-                        description={p.description}
+                        description={p.tagline}
                         thumbnailUrl={p.thumbnailUrl}
-                        href={p.href}
-                        actionLabel={p.ctaLabel}
-                        locked
+                        href={p.accessUrl}
+                        actionLabel={p.actionLabel}
                       />
                     ))}
                   </div>
-                </>
+                </section>
               )}
-              <div className="mt-3 rounded-[8px] border border-[#0D0E10] bg-white p-4">
-                <h3 className="font-serif text-[20px] font-light leading-tight text-[#0D0E10]">
-                  Members get all of it.
-                </h3>
-                <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
-                  The SUITE includes every product here, plus Maya and 200 photos a month.
+
+              {data.courses.length === 0 && products.length === 0 && (
+                <p className="text-[14px] text-[#4F5052]">
+                  Nothing here yet. Your products will show up the moment you own them.
                 </p>
-                <a
-                  href="/join/studio?source=app_library"
-                  className="mt-3 inline-flex min-h-11 items-center justify-center rounded-[6px] border border-[#0D0E10] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-[#0D0E10]"
-                >
-                  See the SUITE
-                </a>
-              </div>
-            </section>
-          )}
+              )}
+
+              {/* Weekly drops */}
+              <section>
+                <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">Drops</p>
+                {data.drops.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {data.drops.map(d => (
+                      <Link
+                        key={d.id}
+                        href="/academy/access/monthly-drops"
+                        className={`${card} flex min-h-[78px] gap-3 overflow-hidden p-3 transition-colors hover:border-[#0D0E10]/40`}
+                      >
+                        {d.thumbnailUrl && (
+                          <div className="relative aspect-square w-16 shrink-0 overflow-hidden rounded-[6px] bg-[#F1F2F2]">
+                            <Image
+                              src={d.thumbnailUrl}
+                              alt=""
+                              fill
+                              className="object-cover"
+                              sizes="64px"
+                            />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          {isNewDrop(d.publishedAt) && (
+                            <p className="mb-0.5 text-[9px] uppercase tracking-[0.18em] text-[#0D0E10]">
+                              New
+                            </p>
+                          )}
+                          <h3 className="font-serif text-[17px] font-light leading-tight text-[#0D0E10]">
+                            {d.title}
+                          </h3>
+                          {d.month && (
+                            <p className="mt-0.5 text-[11px] uppercase tracking-[0.14em] text-[#818283]">
+                              {d.month}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={`${card} p-4`}>
+                    <p className="text-[14px] text-[#4F5052]">New drops land here every week.</p>
+                  </div>
+                )}
+              </section>
+
+              {/* Locked previews + the one upgrade CTA (non-members only; D3 keeps members lock-free) */}
+              {!data.membershipActive && (
+                <section>
+                  {data.lockedProducts.length > 0 && (
+                    <>
+                      <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#818283]">
+                        Not yours yet
+                      </p>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {data.lockedProducts.map(p => (
+                          <ProductTile
+                            key={p.id}
+                            title={p.title}
+                            eyebrow={p.eyebrow}
+                            description={p.description}
+                            thumbnailUrl={p.thumbnailUrl}
+                            href={p.href}
+                            actionLabel={p.ctaLabel}
+                            locked
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  <div className="mt-3 rounded-[8px] border border-[#0D0E10] bg-white p-4">
+                    <h3 className="font-serif text-[20px] font-light leading-tight text-[#0D0E10]">
+                      Members get all of it.
+                    </h3>
+                    <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
+                      The SUITE includes every product here, plus Maya and 200 photos a month.
+                    </p>
+                    <a
+                      href="/join/studio?source=app_library"
+                      className="mt-3 inline-flex min-h-11 items-center justify-center rounded-[6px] border border-[#0D0E10] bg-[#0D0E10] px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-[#0D0E10]"
+                    >
+                      See the SUITE
+                    </a>
+                  </div>
+                </section>
+              )}
             </div>
           ) : null}
         </>

@@ -160,7 +160,8 @@ function buildSuggestedTextCopy(specs: TextOverlaySpec[] | undefined): string {
     .join("\n\n")
 }
 
-export function ConceptCard({ // NOSONAR -- legacy result-state renderer; decomposition is outside this narrow production fix.
+export function ConceptCard({
+  // NOSONAR -- legacy result-state renderer; decomposition is outside this narrow production fix.
   concept,
   gen,
   format,
@@ -382,6 +383,7 @@ export function ConceptCard({ // NOSONAR -- legacy result-state renderer; decomp
     <div
       data-concept-state={gen.status}
       data-concept-format={format}
+      data-direction-choice={isDirectionChoice ? "true" : undefined}
       className="suite-concept-card min-w-0 max-w-full overflow-hidden rounded-[2px] border border-[#C5C6C8]/35 bg-white transition-colors duration-200 [overflow-x:clip]"
     >
       {/* Visual area ONLY exists once we're generating or done - never an empty placeholder box. */}
@@ -398,7 +400,7 @@ export function ConceptCard({ // NOSONAR -- legacy result-state renderer; decomp
               playsInline
               className="absolute inset-0 h-full w-full object-cover"
             />
-          ) : isDone ? (/* NOSONAR -- mutually exclusive legacy media states are intentionally rendered together. */
+          ) : isDone /* NOSONAR -- mutually exclusive legacy media states are intentionally rendered together. */ ? (
             <button
               type="button"
               onClick={() => onOpen?.(images)}
@@ -654,7 +656,8 @@ export function ConceptCard({ // NOSONAR -- legacy result-state renderer; decomp
           </div>
         )}
 
-        {isDirectionChoice ? null : isDone || isVideoDone ? (/* NOSONAR -- legacy result-state rendering remains scoped to this card. */
+        {isDirectionChoice ? null : isDone ||
+          isVideoDone /* NOSONAR -- legacy result-state rendering remains scoped to this card. */ ? (
           <div className="space-y-3">
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#6D6E70]">
               {isVideoDone ? "Saved to your videos" : "Saved to your gallery"}

@@ -4,7 +4,7 @@
 
 import type { ReactNode } from "react"
 import type { Metadata } from "next"
-import { Cormorant_Garamond, Manrope } from "next/font/google"
+import { Allura, Cormorant_Garamond, Manrope } from "next/font/google"
 
 const displaySerif = Cormorant_Garamond({
   subsets: ["latin"],
@@ -20,6 +20,13 @@ const bodySans = Manrope({
   display: "swap",
 })
 
+const signatureScript = Allura({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-app-signature",
+  display: "swap",
+})
+
 export const metadata: Metadata = {
   robots: {
     index: false,
@@ -30,7 +37,7 @@ export const metadata: Metadata = {
 export default function AppV3Layout({ children }: { children: ReactNode }) {
   return (
     <div
-      className={`studio-3-root ${displaySerif.variable} ${bodySans.variable}`}
+      className={`studio-3-root ${displaySerif.variable} ${bodySans.variable} ${signatureScript.variable}`}
       style={{ fontFamily: "var(--font-app-sans), system-ui, sans-serif" }}
     >
       {/* Scoped to /app only (two-class specificity beats Tailwind's .font-serif). */}
@@ -45,15 +52,18 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root {
-          --suite-canvas: var(--ss-brand-chalk);
+          --suite-canvas: var(--ss-brand-ivory);
           --suite-paper: var(--ss-brand-paper);
-          --suite-smoke: var(--ss-brand-concrete);
-          --suite-mist: var(--ss-brand-concrete);
-          --suite-steel: var(--ss-brand-silver);
+          --suite-smoke: var(--ss-brand-parchment);
+          --suite-mist: color-mix(in srgb, var(--ss-brand-parchment) 58%, white);
+          --suite-steel: var(--ss-brand-taupe);
           --suite-slate: var(--ss-brand-slate);
           --suite-graphite: var(--ss-brand-carbon);
           --suite-night: var(--ss-brand-ink);
-          --suite-accent: var(--ss-brand-oxblood);
+          --suite-accent: var(--ss-brand-espresso);
+          --suite-highlight: var(--ss-brand-champagne);
+          --suite-highlight-ink: var(--ss-brand-champagne-ink);
+          --suite-highlight-glow: var(--ss-brand-champagne-glow);
           position: relative;
           isolation: isolate;
           width: 100%;
@@ -75,7 +85,7 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root [class~="bg-[#F8FAFA]/95"] {
-          background-color: rgba(247, 247, 245, 0.95);
+          background-color: rgba(245, 242, 237, 0.95);
         }
 
         .studio-3-root [class~="bg-[#F1F2F2]"] {
@@ -112,7 +122,7 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root [class*="border-[#C5C6C8]"] {
-          border-color: rgba(197, 198, 200, 0.78);
+          border-color: color-mix(in srgb, var(--suite-steel) 72%, transparent);
         }
 
         .studio-3-root [class*="text-[#818283]"] {
@@ -133,13 +143,64 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
 
         .studio-3-root .suite-card {
           background-color: var(--suite-paper);
-          border-color: rgba(197, 198, 200, 0.82);
-          box-shadow: 0 10px 28px rgba(13, 14, 16, 0.05);
+          border-color: color-mix(in srgb, var(--suite-steel) 72%, transparent);
+          box-shadow: 0 10px 28px rgba(52, 42, 36, 0.05);
+        }
+
+        .studio-3-root .suite-state {
+          border: 1px solid color-mix(in srgb, var(--suite-steel) 72%, transparent);
+          border-left: 3px solid var(--suite-night);
+          border-radius: 2px;
+          background: var(--suite-paper);
+        }
+
+        .studio-3-root .suite-state--loading {
+          display: flex;
+          min-height: 64px;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+        }
+
+        .studio-3-root .suite-state--error {
+          border-left-color: var(--suite-accent);
+        }
+
+        .studio-3-root .suite-state--empty {
+          border-top: 3px solid var(--suite-night);
+        }
+
+        .studio-3-root .suite-state-pulse {
+          width: 8px;
+          height: 8px;
+          flex: 0 0 auto;
+          border-radius: 999px;
+          background: var(--suite-highlight);
+          box-shadow: 0 0 12px var(--suite-highlight-glow);
+          animation: suite-state-pulse 1.5s ease-in-out infinite;
+        }
+
+        .studio-3-root .suite-dialog-backdrop {
+          background: rgba(13, 14, 16, 0.78);
+          backdrop-filter: blur(8px);
+        }
+
+        .studio-3-root .suite-dialog {
+          border: 1px solid var(--suite-highlight);
+          border-top: 3px solid var(--suite-highlight);
+          border-radius: 2px;
+          background: var(--suite-canvas);
+          box-shadow: 0 22px 80px rgba(13, 14, 16, 0.44), 0 0 18px var(--suite-highlight-glow);
+        }
+
+        @keyframes suite-state-pulse {
+          0%, 100% { opacity: 0.45; transform: scale(0.86); }
+          50% { opacity: 1; transform: scale(1); }
         }
 
         .studio-3-root .suite-maya-panel {
           background-color: var(--suite-paper);
-          border-color: rgba(197, 198, 200, 0.82);
+          border-color: color-mix(in srgb, var(--suite-steel) 72%, transparent);
           box-shadow: 0 24px 72px rgba(13, 14, 16, 0.14);
         }
 
@@ -149,7 +210,8 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
 
         .studio-3-root .suite-maya-header {
           background: var(--suite-night);
-          border-bottom: 3px solid var(--suite-accent);
+          border-bottom: 1px solid var(--suite-highlight);
+          box-shadow: 0 1px 18px var(--suite-highlight-glow);
           color: var(--suite-paper);
         }
 
@@ -190,11 +252,22 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
 
         .studio-3-root .suite-maya-message--user {
           background: var(--suite-accent);
+          border-right-color: var(--suite-highlight);
         }
 
         .studio-3-root .suite-maya-composer {
-          background: var(--suite-paper);
+          background: var(--suite-ivory, var(--suite-canvas));
           border-top-color: var(--suite-night);
+        }
+
+        .studio-3-root .suite-maya-composer-rail {
+          border-color: color-mix(in srgb, var(--suite-steel) 72%, transparent);
+          background: var(--suite-paper);
+        }
+
+        .studio-3-root .suite-maya-composer-rail:focus-within {
+          border-color: var(--suite-highlight-ink);
+          box-shadow: 0 0 0 1px var(--suite-highlight), 0 0 14px rgba(215, 182, 126, 0.18);
         }
 
         .studio-3-root .suite-maya-send {
@@ -211,7 +284,7 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
 
         .studio-3-root .suite-concept-card {
           border: 1px solid var(--suite-night);
-          border-top: 4px solid var(--suite-accent);
+          border-top: 1px solid var(--suite-night);
           box-shadow: none;
         }
 
@@ -228,6 +301,16 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
           border-radius: 0;
         }
 
+        .studio-3-root .suite-concept-direction-strip .suite-concept-card[data-direction-choice="true"]:hover,
+        .studio-3-root .suite-concept-direction-strip .suite-concept-card[data-direction-choice="true"]:focus-within,
+        .studio-3-root .suite-concept-direction-strip .suite-concept-card[data-concept-state="generating"] {
+          position: relative;
+          z-index: 1;
+          box-shadow:
+            inset 0 0 0 2px var(--suite-highlight),
+            0 0 16px var(--suite-highlight-glow);
+        }
+
         .studio-3-root .suite-concept-direction-strip .suite-concept-visual {
           border-bottom-width: 1px;
         }
@@ -237,7 +320,7 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root .suite-concept-eyebrow {
-          color: var(--suite-accent);
+          color: var(--suite-highlight-ink);
         }
 
         .studio-3-root .suite-concept-card button,
@@ -314,8 +397,9 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root .suite-bottom-nav-item--active {
-          border-top-color: var(--suite-accent);
-          background-color: rgba(152, 24, 38, 0.2);
+          border-top-color: var(--suite-highlight);
+          background-color: color-mix(in srgb, var(--suite-accent) 74%, transparent);
+          text-shadow: 0 0 10px var(--suite-highlight-glow);
         }
 
         .studio-3-root .suite-desktop-nav-item::before {
@@ -327,11 +411,86 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root .suite-desktop-nav-item--active::before {
-          background: var(--suite-accent);
+          background: var(--suite-highlight);
+          box-shadow: 0 0 12px var(--suite-highlight-glow);
+        }
+
+        .studio-3-root .suite-neon-sign,
+        .studio-3-root .suite-maya-neon-mark {
+          color: #f8e7c7;
+          font-family: var(--font-app-signature), var(--ss-brand-signature);
+          font-weight: 400;
+          text-shadow:
+            0 0 2px rgba(255, 250, 239, 0.98),
+            0 0 8px rgba(232, 197, 139, 0.88),
+            0 0 18px rgba(215, 182, 126, 0.64);
+        }
+
+        .studio-3-root .suite-neon-sign {
+          position: relative;
+          display: grid;
+          width: fit-content;
+          transform: rotate(-2deg);
+          font-size: 38px;
+          line-height: 0.76;
+          letter-spacing: 0.01em;
+        }
+
+        .studio-3-root .suite-neon-sign span:last-child {
+          margin-left: 8px;
+        }
+
+        .studio-3-root .suite-neon-spark {
+          position: absolute;
+          right: -24px;
+          bottom: -10px;
+          width: 7px;
+          height: 7px;
+          border-radius: 999px;
+          background: #fff8e8;
+          box-shadow:
+            0 0 4px #fff8e8,
+            0 0 13px var(--suite-highlight),
+            0 0 24px var(--suite-highlight);
+        }
+
+        .studio-3-root .suite-maya-neon-mark {
+          display: inline-block;
+          margin-left: 0.5rem;
+          transform: translateY(0.15rem) rotate(-3deg);
+          font-size: 21px;
+          line-height: 1;
+          text-transform: none;
+          letter-spacing: 0;
+        }
+
+        .studio-3-root .suite-maya-avatar {
+          border-color: var(--suite-highlight);
+          box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.96), 0 0 10px rgba(215, 182, 126, 0.3);
+        }
+
+        .studio-3-root .suite-maya-path-tab--active {
+          box-shadow:
+            inset 0 -2px 0 var(--suite-highlight),
+            0 5px 15px rgba(215, 182, 126, 0.14);
+        }
+
+        .studio-3-root .suite-selfie-selected {
+          border-color: var(--suite-highlight-ink);
+          box-shadow:
+            0 0 0 2px var(--suite-highlight),
+            0 0 14px rgba(215, 182, 126, 0.28);
         }
 
         .studio-3-root .font-serif {
           font-family: var(--font-app-serif), Georgia, "Times New Roman", serif;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .studio-3-root .suite-neon-sign,
+          .studio-3-root .suite-maya-neon-mark {
+            text-shadow: 0 0 2px rgba(255, 250, 239, 0.98), 0 0 8px rgba(215, 182, 126, 0.58);
+          }
         }
 
         @media (max-width: 767px) {
