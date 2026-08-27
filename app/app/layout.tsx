@@ -147,6 +147,57 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
           box-shadow: 0 10px 28px rgba(52, 42, 36, 0.05);
         }
 
+        .studio-3-root .suite-state {
+          border: 1px solid color-mix(in srgb, var(--suite-steel) 72%, transparent);
+          border-left: 3px solid var(--suite-night);
+          border-radius: 2px;
+          background: var(--suite-paper);
+        }
+
+        .studio-3-root .suite-state--loading {
+          display: flex;
+          min-height: 64px;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+        }
+
+        .studio-3-root .suite-state--error {
+          border-left-color: var(--suite-accent);
+        }
+
+        .studio-3-root .suite-state--empty {
+          border-top: 3px solid var(--suite-night);
+        }
+
+        .studio-3-root .suite-state-pulse {
+          width: 8px;
+          height: 8px;
+          flex: 0 0 auto;
+          border-radius: 999px;
+          background: var(--suite-highlight);
+          box-shadow: 0 0 12px var(--suite-highlight-glow);
+          animation: suite-state-pulse 1.5s ease-in-out infinite;
+        }
+
+        .studio-3-root .suite-dialog-backdrop {
+          background: rgba(13, 14, 16, 0.78);
+          backdrop-filter: blur(8px);
+        }
+
+        .studio-3-root .suite-dialog {
+          border: 1px solid var(--suite-highlight);
+          border-top: 3px solid var(--suite-highlight);
+          border-radius: 2px;
+          background: var(--suite-canvas);
+          box-shadow: 0 22px 80px rgba(13, 14, 16, 0.44), 0 0 18px var(--suite-highlight-glow);
+        }
+
+        @keyframes suite-state-pulse {
+          0%, 100% { opacity: 0.45; transform: scale(0.86); }
+          50% { opacity: 1; transform: scale(1); }
+        }
+
         .studio-3-root .suite-maya-panel {
           background-color: var(--suite-paper);
           border-color: color-mix(in srgb, var(--suite-steel) 72%, transparent);
