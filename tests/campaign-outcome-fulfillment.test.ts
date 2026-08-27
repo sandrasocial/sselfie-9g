@@ -219,8 +219,11 @@ describe("campaign outcome payment fulfillment", () => {
     expect(
       sqlMock.mock.calls.some(call => queryText(call).includes("intake_email_sent_at = COALESCE"))
     ).toBe(true)
-    expect(analyticsMock).not.toHaveBeenCalledWith(
-      expect.objectContaining({ eventName: "campaign_purchase" })
+    expect(analyticsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "campaign_purchase",
+        idempotencyKey: "purchase:pi_campaign_retry",
+      })
     )
   })
 })

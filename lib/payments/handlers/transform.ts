@@ -150,6 +150,7 @@ export async function handleTransformCheckout(
     try {
       await logAnalyticsEvent({
         eventName: "purchase",
+        idempotencyKey: `purchase:${paymentIdForTransform}`,
         userId: String(userId),
         properties: {
           source: "stripe_webhook",

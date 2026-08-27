@@ -774,11 +774,26 @@ describe("PostHog analytics boundary", () => {
       join(process.cwd(), "lib/payments/lifecycle/invoice-paid.ts"),
       "utf8"
     )
+    const oneTimeSession = readFileSync(
+      join(process.cwd(), "lib/payments/handlers/one-time-session.ts"),
+      "utf8"
+    )
+    const creditTopup = readFileSync(
+      join(process.cwd(), "lib/payments/handlers/credit-topup.ts"),
+      "utf8"
+    )
+    const transform = readFileSync(
+      join(process.cwd(), "lib/payments/handlers/transform.ts"),
+      "utf8"
+    )
 
     expect(campaign).toContain("source: ctx.session.metadata?.utm_source || null")
     expect(campaign).toContain("idempotencyKey: `purchase:${stripeObjectId")
     expect(invoice).toContain("source: checkoutAttribution?.utm_source || null")
     expect(invoice).toContain("idempotencyKey: `purchase:${paymentId}`")
+    expect(oneTimeSession).toContain("idempotencyKey: `purchase:${paymentIntentId || session.id}`")
+    expect(creditTopup).toContain("idempotencyKey: `purchase:${paymentIntentId || session.id}`")
+    expect(transform).toContain("idempotencyKey: `purchase:${paymentIdForTransform}`")
   })
 
   it("records the Selfie Guide brand-strategy add-on after its durable payment write", () => {

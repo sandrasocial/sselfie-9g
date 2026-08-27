@@ -5,6 +5,7 @@ export const POSTHOG_APPROVED_UTM_SOURCES = [
   "app",
   "buyer_home",
   "email",
+  "free_guide",
   "instagram",
   "kit_access",
   "product",

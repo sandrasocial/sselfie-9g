@@ -107,6 +107,7 @@ const APPROVED_UTM_SOURCES = new Set([
   "app",
   "buyer_home",
   "email",
+  "free_guide",
   "instagram",
   "kit_access",
   "product",

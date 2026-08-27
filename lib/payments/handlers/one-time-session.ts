@@ -100,6 +100,7 @@ export async function handleOneTimeSessionCheckout(ctx: CheckoutFulfillmentConte
       try {
         await logAnalyticsEvent({
           eventName: "purchase",
+          idempotencyKey: `purchase:${paymentIntentId || session.id}`,
           userId: String(userId),
           properties: {
             source: "stripe_webhook",

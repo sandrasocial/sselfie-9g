@@ -96,27 +96,25 @@ export async function handleCampaignOutcomeCheckout(
     `
   }
 
-  if (created) {
-    await logAnalyticsEvent({
-      eventName: "campaign_purchase",
-      userId: ctx.userId ? String(ctx.userId) : null,
-      path: "/checkout/campaign",
-      idempotencyKey: `purchase:${stripeObjectId(ctx.session.payment_intent) || ctx.session.id}`,
-      utm: {
-        source: ctx.session.metadata?.utm_source || null,
-        medium: ctx.session.metadata?.utm_medium || null,
-        campaign: ctx.session.metadata?.utm_campaign || null,
-        content: ctx.session.metadata?.utm_content || null,
-        term: ctx.session.metadata?.utm_term || null,
-      },
-      properties: {
-        order_id: orderId,
-        stripe_session_id: ctx.session.id,
-        amount_cents: ctx.session.amount_total || 9700,
-        is_test_mode: !ctx.event.livemode,
-      },
-    })
-  }
+  await logAnalyticsEvent({
+    eventName: "campaign_purchase",
+    userId: ctx.userId ? String(ctx.userId) : null,
+    path: "/checkout/campaign",
+    idempotencyKey: `purchase:${stripeObjectId(ctx.session.payment_intent) || ctx.session.id}`,
+    utm: {
+      source: ctx.session.metadata?.utm_source || null,
+      medium: ctx.session.metadata?.utm_medium || null,
+      campaign: ctx.session.metadata?.utm_campaign || null,
+      content: ctx.session.metadata?.utm_content || null,
+      term: ctx.session.metadata?.utm_term || null,
+    },
+    properties: {
+      order_id: orderId,
+      stripe_session_id: ctx.session.id,
+      amount_cents: ctx.session.amount_total || 9700,
+      is_test_mode: !ctx.event.livemode,
+    },
+  })
   if (resolvedSourceOrderId && !existing.repeat_attribution_recorded_at) {
     const repeatEvent = await logAnalyticsEvent({
       eventName: "campaign_repeat_purchase",
