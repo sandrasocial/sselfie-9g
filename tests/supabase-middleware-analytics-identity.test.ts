@@ -52,13 +52,17 @@ describe("Supabase middleware analytics identity isolation", () => {
       })
       const response = await updateSession(
         new NextRequest("https://sselfie.ai/app", {
-          headers: { cookie: "sb-project-ref-auth-token=stale-session" },
+          headers: {
+            cookie:
+              "sb-project-ref-auth-token=stale-session; sselfie_analytics_generation=55555555-5555-4555-8555-555555555555",
+          },
         })
       )
       const cookies = response.headers.get("set-cookie") || ""
 
       expect(cookies).toContain("sb-project-ref-auth-token=")
-      expect(cookies).toContain("sselfie_anon_id=")
+      expect(cookies).toContain("sselfie_anon_id_55555555555545558555555555555555=")
+      expect(cookies).not.toContain("sselfie_anon_id=")
       expect(cookies).toContain("sselfie_posthog_reset=1")
       expect(cookies).toContain("Max-Age=31536000")
       expect(cookies).toContain("HttpOnly")

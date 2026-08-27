@@ -114,6 +114,17 @@ export async function handlePresetsCheckout(ctx: CheckoutFulfillmentContext): Pr
     console.error("[presets] Error storing presets payment:", paymentError.message)
   }
 
+  if (tier === "single" && !collectionSlug) {
+    try {
+      const defaultCollection = await getDefaultPresetCollection()
+      collectionSlug = defaultCollection?.slug || null
+    } catch (collectionError: any) {
+      // Collection resolution enriches analytics and delivery, but it must not
+      // move provider work or unrelated fulfillment onto the paid critical path.
+      console.error("[presets] Error resolving default collection:", collectionError.message)
+    }
+  }
+
   if (paymentRecorded) {
     schedulePurchaseObservation({
       eventName: "presets_checkout_success",
@@ -133,11 +144,6 @@ export async function handlePresetsCheckout(ctx: CheckoutFulfillmentContext): Pr
         preset_collection_slug: collectionSlug,
       },
     })
-  }
-
-  if (tier === "single" && !collectionSlug) {
-    const defaultCollection = await getDefaultPresetCollection()
-    collectionSlug = defaultCollection?.slug || null
   }
 
   try {

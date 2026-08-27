@@ -1,6 +1,16 @@
-import type { NextResponse } from "next/server"
+import type { NextRequest, NextResponse } from "next/server"
 
-const ANALYTICS_GENERATION_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const ANALYTICS_GENERATION_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+export function analyticsGenerationFromRequest(req?: NextRequest): string | null {
+  const generation =
+    req?.headers.get("x-sselfie-analytics-generation") ||
+    req?.cookies.get("sselfie_analytics_generation")?.value ||
+    null
+
+  return generation && ANALYTICS_GENERATION_PATTERN.test(generation) ? generation : null
+}
 
 export function analyticsAnonCookieName(generation?: string | null): string {
   return generation && ANALYTICS_GENERATION_PATTERN.test(generation)

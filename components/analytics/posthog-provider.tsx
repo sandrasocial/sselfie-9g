@@ -6,6 +6,7 @@ import Script from "next/script"
 import {
   normalizePostHogApiHost,
   POSTHOG_TOKENIZED_PATH_PATTERN_SOURCE,
+  sanitizePostHogEventPayload,
   sanitizePostHogPathname,
   shouldResetPostHogIdentity,
 } from "@/lib/analytics/posthog-browser"
@@ -53,6 +54,7 @@ function setPostHogCaptureEnabled(
     autocapture: enabled,
     capture_exceptions: enabled,
     disable_session_recording: !enabled,
+    before_send: sanitizePostHogEventPayload,
   })
   if (enabled) client.startSessionRecording()
   else client.stopSessionRecording()

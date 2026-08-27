@@ -1,6 +1,8 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 
 const mocks = vi.hoisted(() => ({
   getDb: vi.fn(),
@@ -52,5 +54,21 @@ describe("analytics schema initialization", () => {
 
     expect(mocks.getDb).toHaveBeenCalledTimes(2)
     expect(mocks.sql.mock.calls.length).toBeGreaterThan(1)
+  })
+
+  it("keeps analytics idempotency DDL in the deployment migration", () => {
+    const runtimeSchema = readFileSync(join(process.cwd(), "lib/analytics/schema.ts"), "utf8")
+    const migration = readFileSync(
+      join(process.cwd(), "db/migrations/76-add-analytics-event-idempotency.sql"),
+      "utf8"
+    )
+
+    expect(runtimeSchema).not.toContain(
+      "ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS idempotency_key"
+    )
+    expect(runtimeSchema).not.toContain("analytics_events_idempotency_key_unique")
+    expect(migration).toContain("ALTER TABLE analytics_events")
+    expect(migration).toContain("ADD COLUMN IF NOT EXISTS idempotency_key TEXT")
+    expect(migration).toContain("analytics_events_idempotency_key_unique")
   })
 })

@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
-import { rotateAnonymousAnalyticsIdentity } from "@/lib/analytics/identity-cookies"
+import {
+  analyticsGenerationFromRequest,
+  rotateAnonymousAnalyticsIdentity,
+} from "@/lib/analytics/identity-cookies"
 
 const TERMINAL_AUTH_ERROR_CODES = new Set([
   "bad_jwt",
@@ -88,7 +91,7 @@ export async function updateSession(request: NextRequest) {
         // Session loss can happen without the explicit logout route. Rotate
         // the anonymous identity and tell the browser provider to reset its
         // persisted user identity before capturing the now-anonymous page.
-        rotateAnonymousAnalyticsIdentity(supabaseResponse)
+        rotateAnonymousAnalyticsIdentity(supabaseResponse, analyticsGenerationFromRequest(request))
       } else {
         // Only log for API routes that require auth, not public routes
         if (

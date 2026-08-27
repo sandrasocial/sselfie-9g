@@ -4,7 +4,11 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserSubscription } from "@/lib/subscription"
 import { getStripe } from "@/lib/stripe"
 import { sql } from "@/lib/db/client"
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
+import {
+  analyticsGenerationFromRequest,
+  rotateAnonymousAnalyticsIdentity,
+} from "@/lib/analytics/identity-cookies"
 
 function tolerateMissingLegacyTable(error: unknown): void {
   if ((error as { code?: string } | null)?.code === "42P01") return
@@ -19,9 +23,10 @@ function tolerateMissingLegacyTable(error: unknown): void {
  *   1. Authenticate
  *   2. Cancel active Stripe subscription (if any)
  *   3. Delete all Neon data (leaf tables first to respect FK constraints)
- *   4. Delete Supabase auth user (must be last - invalidates the session)
+ *   4. Delete Supabase auth user (must be last; its JWT can remain valid until expiry)
+ *   5. Rotate the server-owned analytics identity before returning success
  */
-export async function DELETE() {
+export async function DELETE(req?: NextRequest) {
   try {
     // 1. Authenticate
     const supabase = await createServerClient()
@@ -82,22 +87,32 @@ export async function DELETE() {
     // Brand / profile data
     await sql`DELETE FROM brand_assets WHERE user_id = ${userId}`
     await sql`DELETE FROM user_personal_brand WHERE user_id = ${userId}`
-    await sql`DELETE FROM user_style_guide WHERE user_id = ${userId}`.catch(tolerateMissingLegacyTable)
+    await sql`DELETE FROM user_style_guide WHERE user_id = ${userId}`.catch(
+      tolerateMissingLegacyTable
+    )
     await sql`DELETE FROM user_profiles WHERE user_id = ${userId}`
 
     // Feed planner data
-    await sql`DELETE FROM feed_posts WHERE feed_id IN (SELECT id FROM feeds WHERE user_id = ${userId})`.catch(tolerateMissingLegacyTable)
+    await sql`DELETE FROM feed_posts WHERE feed_id IN (SELECT id FROM feeds WHERE user_id = ${userId})`.catch(
+      tolerateMissingLegacyTable
+    )
     await sql`DELETE FROM feeds WHERE user_id = ${userId}`.catch(tolerateMissingLegacyTable)
-    await sql`DELETE FROM feed_strategies WHERE user_id = ${userId}`.catch(tolerateMissingLegacyTable)
+    await sql`DELETE FROM feed_strategies WHERE user_id = ${userId}`.catch(
+      tolerateMissingLegacyTable
+    )
 
     // Credit transactions
-    await sql`DELETE FROM credit_transactions WHERE user_id = ${userId}`.catch(tolerateMissingLegacyTable)
+    await sql`DELETE FROM credit_transactions WHERE user_id = ${userId}`.catch(
+      tolerateMissingLegacyTable
+    )
 
     // Subscriptions row
     await sql`DELETE FROM subscriptions WHERE user_id = ${userId}`.catch(tolerateMissingLegacyTable)
 
     // Agent profiles / brand strategy
-    await sql`DELETE FROM agent_profiles WHERE user_id = ${userId}`.catch(tolerateMissingLegacyTable)
+    await sql`DELETE FROM agent_profiles WHERE user_id = ${userId}`.catch(
+      tolerateMissingLegacyTable
+    )
     await sql`DELETE FROM freebie_brand_strategies WHERE email = ${neonUser.email}`
 
     // Settings
@@ -117,9 +132,14 @@ export async function DELETE() {
     }
 
     console.log(`[delete-account] Account fully deleted for auth user ${authUser.id}`)
-    return NextResponse.json({ success: true })
+    const response = NextResponse.json({ success: true })
+    rotateAnonymousAnalyticsIdentity(response, analyticsGenerationFromRequest(req))
+    return response
   } catch (error) {
     console.error("[delete-account] Unexpected error:", error)
-    return NextResponse.json({ error: "Failed to delete account. Please contact support." }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to delete account. Please contact support." },
+      { status: 500 }
+    )
   }
 }

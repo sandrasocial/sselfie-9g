@@ -29,9 +29,6 @@ async function initializeAnalyticsSchema(): Promise<void> {
     );
   `
 
-  await sql`ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS idempotency_key TEXT;`
-  await sql`CREATE UNIQUE INDEX IF NOT EXISTS analytics_events_idempotency_key_unique ON analytics_events (idempotency_key) WHERE idempotency_key IS NOT NULL;`
-
   await sql`CREATE INDEX IF NOT EXISTS analytics_events_created_at_idx ON analytics_events (created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS analytics_events_event_created_at_idx ON analytics_events (event_name, created_at DESC);`
   await sql`CREATE INDEX IF NOT EXISTS analytics_events_user_created_at_idx ON analytics_events (user_id, created_at DESC);`

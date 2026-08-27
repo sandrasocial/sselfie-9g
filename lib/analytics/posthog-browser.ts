@@ -109,6 +109,17 @@ export const POSTHOG_APPROVED_UTM_CAMPAIGNS = [
 const TOKENIZED_PATH = new RegExp(`^${POSTHOG_TOKENIZED_PATH_PATTERN_SOURCE}`)
 const TOKENIZED_PATH_IN_PAYLOAD = new RegExp(POSTHOG_TOKENIZED_PATH_PATTERN_SOURCE, "g")
 const CUSTOMER_OBJECT_PATH = /^(\/(?:maya\/asset|api\/maya\/generated-assets)\/)[^/"?#]+/
+const POSTHOG_BROWSER_ATTRIBUTION_ALLOWLISTS: Readonly<Record<string, readonly string[]>> = {
+  utm_source: POSTHOG_APPROVED_UTM_SOURCES,
+  utm_medium: POSTHOG_APPROVED_UTM_MEDIUMS,
+  utm_campaign: POSTHOG_APPROVED_UTM_CAMPAIGNS,
+}
+
+function browserAttributionKey(key: string | undefined): string | null {
+  if (!key) return null
+  const normalized = key.replace(/^\$/, "").toLowerCase()
+  return /^utm_(?:source|medium|campaign|content|term)$/.test(normalized) ? normalized : null
+}
 
 export function normalizePostHogApiHost(apiHost: string): string | null {
   const normalized = apiHost.trim().replace(/\/+$/, "")
@@ -144,14 +155,28 @@ export function sanitizePostHogPathname(pathname: string): string | null {
 
 export function sanitizePostHogEventPayload<T>(event: T): T | null {
   try {
-    const scrub = (value: unknown): unknown => {
-      if (Array.isArray(value)) return value.map(scrub)
+    const scrub = (value: unknown, key?: string): unknown => {
+      if (Array.isArray(value)) {
+        return value.map(nested => scrub(nested, key)).filter(nested => nested !== undefined)
+      }
       if (value && typeof value === "object") {
         return Object.fromEntries(
-          Object.entries(value).map(([key, nested]) => [key, scrub(nested)])
+          Object.entries(value)
+            .map(([nestedKey, nested]) => [nestedKey, scrub(nested, nestedKey)] as const)
+            .filter((entry): entry is readonly [string, unknown] => entry[1] !== undefined)
         )
       }
       if (typeof value !== "string") return value
+
+      const attributionKey = browserAttributionKey(key)
+      if (attributionKey) {
+        // Browser-controlled content/term fields are intentionally not sent to
+        // PostHog. Source, medium and campaign must match the same finite static
+        // values used by server capture, including SDK-owned $utm_* aliases.
+        const allowlist = POSTHOG_BROWSER_ATTRIBUTION_ALLOWLISTS[attributionKey]
+        const normalized = value.trim().toLowerCase()
+        return allowlist?.includes(normalized) ? normalized : undefined
+      }
 
       const tokenSafe = value.replace(TOKENIZED_PATH_IN_PAYLOAD, "$1[token]")
       if (!/^https?:\/\//i.test(tokenSafe) && !tokenSafe.startsWith("/")) return tokenSafe
@@ -171,17 +196,6 @@ export function sanitizePostHogEventPayload<T>(event: T): T | null {
       const properties = eventRecord.properties
       if (properties && typeof properties === "object" && !Array.isArray(properties)) {
         const propertyRecord = properties as Record<string, unknown>
-        const attributionAllowlists: Readonly<Record<string, readonly string[]>> = {
-          utm_source: POSTHOG_APPROVED_UTM_SOURCES,
-          utm_medium: POSTHOG_APPROVED_UTM_MEDIUMS,
-          utm_campaign: POSTHOG_APPROVED_UTM_CAMPAIGNS,
-        }
-        for (const [key, allowlist] of Object.entries(attributionAllowlists)) {
-          const value = propertyRecord[key]
-          const normalized = typeof value === "string" ? value.trim().toLowerCase() : ""
-          if (!normalized || !allowlist.includes(normalized)) delete propertyRecord[key]
-          else propertyRecord[key] = normalized
-        }
         if (eventRecord.event === "$exception") {
           const exceptionDimension = (value: unknown) => {
             if (typeof value !== "string") return null

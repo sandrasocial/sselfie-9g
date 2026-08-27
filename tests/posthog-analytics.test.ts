@@ -420,6 +420,29 @@ describe("PostHog analytics boundary", () => {
     })
   })
 
+  it("applies closed attribution rules to nested and SDK-owned UTM fields", () => {
+    expect(
+      sanitizePostHogEventPayload({
+        event: "$pageview",
+        properties: {
+          $utm_source: " EMAIL ",
+          $utm_medium: "customer@example.com",
+          nested: {
+            utm_campaign: "vault_collection_drop",
+            $utm_content: "token-private-customer-value",
+            deeper: { utm_source: "secret-customer-token" },
+          },
+        },
+      })
+    ).toEqual({
+      event: "$pageview",
+      properties: {
+        $utm_source: "email",
+        nested: { utm_campaign: "vault_collection_drop", deeper: {} },
+      },
+    })
+  })
+
   it.each([
     "landing_page",
     "brand_strategy_paid",
@@ -599,6 +622,7 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("capture_exceptions:false")
     expect(provider).toContain("disable_session_recording:true")
     expect(provider).toContain("function scrub(value)")
+    expect(provider).toContain("before_send: sanitizePostHogEventPayload")
     expect(provider).toContain('event.event==="$exception"')
     expect(provider).toContain('event.event!=="$exception"')
     expect(provider).toContain("/^\\\\$exception_/i.test(key)")
@@ -702,12 +726,13 @@ describe("PostHog analytics boundary", () => {
 
     expect(paymentRecorded).toBeGreaterThan(handler.indexOf("INSERT INTO stripe_payments"))
     expect(purchaseEvent).toBeGreaterThan(paymentRecorded)
-    expect(purchaseEvent).toBeLessThan(collectionLookup)
+    expect(collectionLookup).toBeGreaterThan(paymentRecorded)
+    expect(collectionLookup).toBeLessThan(purchaseEvent)
     expect(purchaseEvent).toBeLessThan(accessCreation)
     expect(purchaseEvent).toBeLessThan(delivery)
     expect(handler).toContain("if (paymentRecorded)")
     expect(handler.slice(paymentRecorded, purchaseEvent)).toContain("schedulePurchaseObservation({")
-    expect(handler.slice(purchaseEvent, collectionLookup)).toContain(
+    expect(handler.slice(purchaseEvent, accessCreation)).toContain(
       "checkoutMetadata: session.metadata"
     )
     expect(handler).toContain("checkout_session_id: session.id")
@@ -761,10 +786,13 @@ describe("PostHog analytics boundary", () => {
     expect(helper).not.toContain("await logAnalyticsEvent({")
 
     const events = readFileSync(join(process.cwd(), "lib/analytics/events.ts"), "utf8")
-    const schema = readFileSync(join(process.cwd(), "lib/analytics/schema.ts"), "utf8")
+    const migration = readFileSync(
+      join(process.cwd(), "db/migrations/76-add-analytics-event-idempotency.sql"),
+      "utf8"
+    )
     expect(events).toContain("ON CONFLICT (idempotency_key)")
     expect(events).toContain('createHash("sha256")')
-    expect(schema).toContain("analytics_events_idempotency_key_unique")
+    expect(migration).toContain("analytics_events_idempotency_key_unique")
   })
 
   it("forwards attribution and stable keys from direct purchase emitters", () => {
