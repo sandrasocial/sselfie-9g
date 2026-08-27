@@ -32,4 +32,15 @@ describe("logout analytics identity isolation", () => {
     expect(cookies).toContain("Max-Age=31536000")
     expect(cookies).toContain("HttpOnly")
   })
+
+  it("rotates analytics identity even when provider logout fails", async () => {
+    mocks.signOut.mockResolvedValue({ error: new Error("provider unavailable") })
+    const { POST } = await import("@/app/api/auth/logout/route")
+    const response = await POST()
+
+    expect(response.status).toBe(500)
+    const cookies = response.headers.get("set-cookie") || ""
+    expect(cookies).toContain("sselfie_anon_id=")
+    expect(cookies).toContain("sselfie_posthog_reset=1")
+  })
 })

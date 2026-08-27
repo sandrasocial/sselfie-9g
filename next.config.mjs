@@ -21,6 +21,20 @@ const protectedWorkbookHeaders = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: "/ingest/static/:path*",
+          destination: "https://eu-assets.i.posthog.com/static/:path*",
+        },
+        {
+          source: "/ingest/:path*",
+          destination: "https://eu.i.posthog.com/:path*",
+        },
+      ],
+    }
+  },
   // DELETE-01 (2026-06-10): 18 retired marketing pages became framework-level redirects so the
   // page directories could be deleted. External links (ManyChat, old IG posts) keep working.
   async redirects() {

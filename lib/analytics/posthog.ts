@@ -1,12 +1,13 @@
 import "server-only"
 
-import { createHash } from "node:crypto"
+import { createHash, randomUUID } from "node:crypto"
 import { sanitizePostHogPathname } from "@/lib/analytics/posthog-browser"
 
 type Primitive = string | number | boolean
 
 export type PostHogCaptureInput = {
   eventName: string
+  idempotencyKey?: string | null
   userId?: string | null
   anonId?: string | null
   path?: string | null
@@ -110,6 +111,7 @@ const APPROVED_UTM_SOURCES = new Set([
   "kit_access",
   "product",
   "prompt_vault",
+  "presets_landing",
   "presets_page",
   "resend",
   "site",
@@ -121,10 +123,13 @@ const APPROVED_EVENT_SOURCES = new Set([
   "app",
   "app-v3-edit",
   "app-v3-generate",
+  "app-v3-generate-stream",
   "claim_page",
   "front_door",
+  "concept-card",
   "gallery",
   "generated",
+  "lightbox",
   "ai_prompts_access",
   "brand_strategy_paid",
   "campaign_outcome_paid",
@@ -159,19 +164,24 @@ const APPROVED_UTM_MEDIUMS = new Set([
   "access_page",
   "bio",
   "broadcast",
+  "checkout_recovery",
   "delivery",
   "email",
+  "guide",
   "homepage",
   "in_app",
   "launch",
   "lifecycle",
   "manychat",
+  "newsletter",
+  "nurture",
   "payment_recovery",
   "post_purchase",
   "preview",
   "prompt_pack",
   "repeat",
   "sales_page",
+  "site",
   "stories",
   "story",
   "studio",
@@ -183,15 +193,18 @@ const APPROVED_UTM_CAMPAIGNS = new Set([
   "ai_prompts_to_prompt_vault",
   "ai_prompts_to_selfie_ai_photos_kit",
   "ai_prompts_to_selfie_guide",
+  "ai_prompts_day7",
   "blueprint_day1",
   "blueprint_day3",
   "blueprint_day7",
   "blueprint_day7_upsell",
   "campaign_outcome_test",
+  "current_free_prompt",
   "current_free_prompt_fallback",
   "dormant_member_reengagement",
   "free_user_day10",
   "free_user_day5",
+  "freebie_guide_day8_starter_kit_direct",
   "free_welcome_day0",
   "high_intent_click_recovery",
   "latest_five_free_prompts",
@@ -205,6 +218,7 @@ const APPROVED_UTM_CAMPAIGNS = new Set([
   "presets_launch",
   "prompt",
   "prompt_keyword",
+  "prompt_vault_checkout_recovery",
   "prompt_vault_launch",
   "rejoin",
   "selfie_ai_photos_kit",
@@ -216,10 +230,12 @@ const APPROVED_UTM_CAMPAIGNS = new Set([
   "selfie_guide_to_starter_kit",
   "selfie_keyword",
   "selfie_to_brand_shoot",
+  "starter_kit_checkout_recovery",
   "suite_day7_second_creation",
   "suite_keyword",
   "trial_cap_upgrade",
   "update_payment",
+  "vault_collection_drop",
   "vault_keyword",
   "vault_maya_launch",
   "vault_maya_launch_list",
@@ -345,6 +361,10 @@ export function buildPostHogProperties(input: PostHogCaptureInput): Record<strin
     source_event: input.eventName,
     $process_person_profile: false,
   }
+  const idempotencyKey = input.idempotencyKey?.trim()
+  if (idempotencyKey) {
+    output.$insert_id = createHash("sha256").update(`sselfie-event:${idempotencyKey}`).digest("hex")
+  }
 
   const path = cleanPath(input.path)
   if (path) output.path = path
@@ -383,17 +403,26 @@ function postHogConfig(): { key: string; host: string } | null {
   return { key, host }
 }
 
+function configuredSiteOrigin(): string | null {
+  try {
+    return new URL(
+      process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
+    ).origin
+  } catch {
+    return null
+  }
+}
+
 function postHogCaptureEndpoint(host: string): URL | null {
   try {
     const endpoint = host.startsWith("/")
-      ? new URL(
-          host,
-          process.env.NEXT_PUBLIC_SITE_URL ||
-            process.env.NEXT_PUBLIC_APP_URL ||
-            "https://sselfie.ai"
-        )
+      ? new URL(host, configuredSiteOrigin() || "https://sselfie.ai")
       : new URL(host)
-    if (endpoint.protocol !== "https:" && endpoint.protocol !== "http:") return null
+    const normalizedPath = endpoint.pathname.replace(/\/+$/, "") || "/"
+    const directEuHost = endpoint.origin === "https://eu.i.posthog.com" && normalizedPath === "/"
+    const sameOriginProxy =
+      endpoint.origin === configuredSiteOrigin() && normalizedPath === "/ingest"
+    if (!directEuHost && !sameOriginProxy) return null
 
     const prefix = endpoint.pathname.replace(/\/+$/, "")
     endpoint.pathname = `${prefix}/i/v0/e/`
@@ -440,22 +469,31 @@ export async function capturePostHogEvent(
   const endpoint = postHogCaptureEndpoint(config.host)
   if (!endpoint) return { sent: false, reason: "invalid-host" }
 
-  try {
-    const response = await fetchImpl(endpoint, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        api_key: config.key,
-        event,
-        distinct_id: distinctId,
-        properties: buildPostHogProperties(input),
-      }),
-      signal: AbortSignal.timeout(750),
-    })
+  const properties = buildPostHogProperties(input)
+  properties.$insert_id ||= randomUUID()
+  const requestBody = JSON.stringify({
+    api_key: config.key,
+    event,
+    distinct_id: distinctId,
+    properties,
+  })
 
-    if (!response.ok) return { sent: false, reason: "provider-error" }
-    return { sent: true }
-  } catch {
-    return { sent: false, reason: "provider-error" }
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetchImpl(endpoint, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: requestBody,
+        signal: AbortSignal.timeout(5_000),
+      })
+
+      if (response.ok) return { sent: true }
+      if (response.status < 500 && response.status !== 429) break
+    } catch {
+      // Retry once with the same insert id so an ambiguous provider response
+      // cannot create a second event.
+    }
   }
+
+  return { sent: false, reason: "provider-error" }
 }

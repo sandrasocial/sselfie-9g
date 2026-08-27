@@ -997,12 +997,12 @@ export default function SselfieApp({
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
+      notifyAnalyticsLogout()
       const response = await fetch("/api/auth/logout", {
         method: "POST",
       })
 
       if (response.ok) {
-        notifyAnalyticsLogout()
         window.location.href = "/auth/login"
       } else {
         console.error("[v0] Logout failed")

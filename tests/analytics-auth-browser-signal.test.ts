@@ -67,7 +67,7 @@ describe("analytics logout browser signal", () => {
     expect(channel.close).toHaveBeenCalledOnce()
   })
 
-  it("keeps every browser logout caller behind a successful server response", () => {
+  it("resets analytics identity before every browser logout attempt", () => {
     const callers = [
       "components/app-v3/account-view.tsx",
       "components/sselfie/account-screen.tsx",
@@ -82,17 +82,12 @@ describe("analytics logout browser signal", () => {
     for (const caller of callers) {
       const source = readFileSync(join(process.cwd(), caller), "utf8")
       const logoutRequest = source.indexOf("/api/auth/logout")
-      const responseCheck = source.indexOf("if (response.ok)", logoutRequest)
-      const shortResponseCheck = source.indexOf("if (res.ok)", logoutRequest)
-      const successCheck = [responseCheck, shortResponseCheck]
-        .filter(index => index >= 0)
-        .sort((left, right) => left - right)[0]
-      const signal = source.indexOf("notifyAnalyticsLogout()", logoutRequest)
+      const signal = source.lastIndexOf("notifyAnalyticsLogout()", logoutRequest)
 
       expect(source, caller).toContain("/api/auth/logout")
       expect(logoutRequest, caller).toBeGreaterThan(-1)
-      expect(successCheck, caller).toBeGreaterThan(-1)
-      expect(signal, caller).toBeGreaterThan(successCheck)
+      expect(signal, caller).toBeGreaterThan(-1)
+      expect(signal, caller).toBeLessThan(logoutRequest)
     }
   })
 

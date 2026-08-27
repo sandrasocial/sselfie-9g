@@ -81,7 +81,7 @@ describe("Neon-to-PostHog delivery boundary", () => {
     expect(mocks.capturePostHogEvent).not.toHaveBeenCalled()
   })
 
-  it("deduplicates a retried purchase before Neon and provider delivery", async () => {
+  it("re-delivers a deduplicated purchase with the same provider insert id", async () => {
     let providerCallback: (() => Promise<unknown>) | undefined
     mocks.after.mockImplementation(callback => {
       providerCallback = callback
@@ -99,7 +99,12 @@ describe("Neon-to-PostHog delivery boundary", () => {
     ).resolves.toEqual({ ok: true })
 
     await providerCallback?.()
-    expect(mocks.capturePostHogEvent).not.toHaveBeenCalled()
+    expect(mocks.capturePostHogEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "purchase",
+        idempotencyKey: expect.stringMatching(/^[a-f0-9]{64}$/),
+      })
+    )
     const query = (mocks.sql.mock.calls[0][0] as TemplateStringsArray).join(" ")
     expect(query).toContain("ON CONFLICT (idempotency_key)")
     expect(query).toContain("RETURNING id")

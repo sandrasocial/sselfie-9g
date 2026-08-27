@@ -261,14 +261,16 @@ export async function saveMayaReadyPost(
     throw new Error("Calendar returned an invalid ready-post receipt")
   }
   const alreadyPlaced = row.already_placed === true
-  if (!alreadyPlaced) {
-    capturePersistedPostHogEvent({
-      eventName: "suite_ready_post_saved",
-      userId: input.userId,
-      path: "/app",
-      properties: { image_count: normalized.assetIds.length },
-    })
-  }
+  capturePersistedPostHogEvent({
+    eventName: "suite_ready_post_saved",
+    idempotencyKey: `ready-post:${normalized.readyPostKey}`,
+    userId: input.userId,
+    path: "/app",
+    properties: {
+      image_count: normalized.assetIds.length,
+      is_rerun: alreadyPlaced,
+    },
+  })
   return {
     position,
     scheduledAt,

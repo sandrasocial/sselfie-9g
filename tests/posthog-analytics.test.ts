@@ -10,6 +10,7 @@ import {
   mapPostHogEvent,
 } from "@/lib/analytics/posthog"
 import {
+  normalizePostHogApiHost,
   sanitizePostHogEventPayload,
   sanitizePostHogPathname,
   shouldResetPostHogIdentity,
@@ -125,7 +126,7 @@ describe("PostHog analytics boundary", () => {
     const [endpoint, init] = request.mock.calls[0]
     expect(String(endpoint)).toBe("https://eu.i.posthog.com/i/v0/e/")
     expect(init?.method).toBe("POST")
-    expect(JSON.parse(String(init?.body))).toEqual({
+    expect(JSON.parse(String(init?.body))).toMatchObject({
       api_key: "phc_test_project",
       event: "sselfie_reference_added",
       distinct_id: "user:user-123",
@@ -139,6 +140,9 @@ describe("PostHog analytics boundary", () => {
         source: "maya_concierge",
       },
     })
+    expect(JSON.parse(String(init?.body)).properties.$insert_id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f-]{27}$/
+    )
   })
 
   it.each([
@@ -161,6 +165,55 @@ describe("PostHog analytics boundary", () => {
     ).resolves.toEqual({ sent: true })
 
     expect(String(request.mock.calls[0]?.[0])).toBe(expected)
+  })
+
+  it.each([
+    "https://us.i.posthog.com",
+    "https://attacker.example",
+    "https://sselfie.ai/not-ingest",
+  ])("rejects an unapproved capture host %s", async host => {
+    process.env.POSTHOG_HOST = host
+    process.env.NEXT_PUBLIC_SITE_URL = "https://sselfie.ai"
+    const request = vi.fn<typeof fetch>()
+
+    await expect(
+      capturePostHogEvent(
+        { eventName: "activation_selfie_uploaded", anonId: "anonymous-visitor" },
+        request
+      )
+    ).resolves.toEqual({ sent: false, reason: "invalid-host" })
+    expect(request).not.toHaveBeenCalled()
+  })
+
+  it("retries a transient provider failure with the same insert id", async () => {
+    const request = vi
+      .fn<typeof fetch>()
+      .mockRejectedValueOnce(new Error("temporary network failure"))
+      .mockResolvedValueOnce(new Response("ok", { status: 200 }))
+
+    await expect(
+      capturePostHogEvent(
+        { eventName: "suite_image_generated", anonId: "anonymous-visitor" },
+        request
+      )
+    ).resolves.toEqual({ sent: true })
+
+    expect(request).toHaveBeenCalledTimes(2)
+    const bodies = request.mock.calls.map(([, init]) => JSON.parse(String(init?.body)))
+    expect(bodies[1].properties.$insert_id).toBe(bodies[0].properties.$insert_id)
+  })
+
+  it("uses a stable insert id when a durable caller retries later", () => {
+    const first = buildPostHogProperties({
+      eventName: "suite_ready_post_saved",
+      idempotencyKey: "ready-post:fingerprint",
+    })
+    const second = buildPostHogProperties({
+      eventName: "suite_ready_post_saved",
+      idempotencyKey: "ready-post:fingerprint",
+    })
+    expect(first.$insert_id).toMatch(/^[a-f0-9]{64}$/)
+    expect(second.$insert_id).toBe(first.$insert_id)
   })
 
   it("adds a privacy-safe stable insert id to retried Stripe purchases", async () => {
@@ -301,6 +354,72 @@ describe("PostHog analytics boundary", () => {
     })
   })
 
+  it("keeps every live attribution literal identified by the funnel audit", () => {
+    const properties = buildPostHogProperties({
+      eventName: "purchase",
+      attribution: {
+        source: "presets_landing",
+        medium: "checkout_recovery",
+        campaign: "starter_kit_checkout_recovery",
+      },
+      properties: { source: "app-v3-generate-stream" },
+    })
+    expect(properties).toMatchObject({
+      utm_source: "presets_landing",
+      utm_medium: "checkout_recovery",
+      utm_campaign: "starter_kit_checkout_recovery",
+      source: "app-v3-generate-stream",
+    })
+
+    for (const medium of ["guide", "newsletter", "nurture", "site"]) {
+      expect(
+        buildPostHogProperties({ eventName: "purchase", attribution: { medium } }).utm_medium
+      ).toBe(medium)
+    }
+    for (const campaign of [
+      "ai_prompts_day7",
+      "current_free_prompt",
+      "freebie_guide_day8_starter_kit_direct",
+      "prompt_vault_checkout_recovery",
+      "vault_collection_drop",
+    ]) {
+      expect(
+        buildPostHogProperties({ eventName: "purchase", attribution: { campaign } }).utm_campaign
+      ).toBe(campaign)
+    }
+    for (const source of ["concept-card", "lightbox"]) {
+      expect(buildPostHogProperties({ eventName: "purchase", properties: { source } }).source).toBe(
+        source
+      )
+    }
+  })
+
+  it("allows only the EU API origin or same-origin proxy path in the browser SDK", () => {
+    expect(normalizePostHogApiHost("https://eu.i.posthog.com/")).toBe("https://eu.i.posthog.com")
+    expect(normalizePostHogApiHost("/ingest/")).toBe("/ingest")
+    expect(normalizePostHogApiHost("https://us.i.posthog.com")).toBeNull()
+    expect(normalizePostHogApiHost("https://attacker.example")).toBeNull()
+  })
+
+  it("keeps only allowlisted browser attribution properties", () => {
+    expect(
+      sanitizePostHogEventPayload({
+        event: "$pageview",
+        properties: {
+          utm_source: " EMAIL ",
+          utm_medium: "private-segment",
+          utm_campaign: "vault_collection_drop",
+        },
+      })
+    ).toEqual({
+      event: "$pageview",
+      properties: {
+        utm_source: "email",
+        utm_campaign: "vault_collection_drop",
+      },
+    })
+  })
+
   it.each([
     "landing_page",
     "brand_strategy_paid",
@@ -336,6 +455,10 @@ describe("PostHog analytics boundary", () => {
       "/selfie-guide/access/[token]"
     )
     expect(sanitizePostHogPathname("/app")).toBe("/app")
+    expect(sanitizePostHogPathname("/maya/asset/customer-specific-id")).toBe("/maya/asset/[id]")
+    expect(sanitizePostHogPathname("/api/maya/generated-assets/customer-specific-id/html")).toBe(
+      "/api/maya/generated-assets/[id]/html"
+    )
     expect(
       buildPostHogProperties({
         eventName: "trial_claimed",
@@ -527,6 +650,11 @@ describe("PostHog analytics boundary", () => {
     expect(logoutSubscriptionIndex).toBeLessThan(bootstrapIndex)
     expect(bootstrapIndex).toBeLessThan(scriptIndex)
     expect(provider).toContain("IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS")
+    expect(provider).toContain("identityRetryDelay(attempt + 1)")
+    expect(provider).toContain("else setPostHogCaptureEnabled(false)")
+    expect(provider).toContain("window.__sselfiePostHogLoadedClient = client")
+    expect(provider).not.toContain("if (window.posthog) void initializeLoadedClient")
+    expect(provider).toContain("normalizePostHogApiHost(apiHost)")
     expect(provider).toContain("setTimeout(() => void bootstrapIdentity(attempt + 1)")
     expect(provider).toContain(
       "loaded:function(ph){if(window.__sselfiePostHogLoaded)window.__sselfiePostHogLoaded(ph)}"
@@ -543,7 +671,7 @@ describe("PostHog analytics boundary", () => {
     expect(resetIndex).toBeLessThan(acknowledgeIndex)
     expect(acknowledgeIndex).toBeLessThan(captureEnabledIndex)
     expect(provider.indexOf("setLoadedCallbackReady(true)")).toBeLessThan(scriptIndex)
-    expect(provider).toContain("if (window.posthog) void initializeLoadedClient(window.posthog)")
+    expect(provider).toContain("if (window.__sselfiePostHogLoadedClient)")
     expect(provider).toContain("}, [pathname, ready, identityGenerationRef])")
     expect(provider).toContain(
       "<PostHogPageviews ready={ready} identityGenerationRef={identityGenerationRef} />"

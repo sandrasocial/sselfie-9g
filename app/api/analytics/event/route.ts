@@ -14,7 +14,16 @@ type AnalyticsIdentity = {
   neonUserId: string | null
 }
 
-const SERVER_ONLY_ANALYTICS_EVENTS = new Set(["purchase", "suite_ready_post_saved"])
+const SERVER_ONLY_ANALYTICS_EVENTS = new Set([
+  "purchase",
+  "suite_ready_post_saved",
+  "trial_claimed",
+  "suite_image_generated",
+  "suite_generation_failed",
+  "suite_edit_applied",
+  "suite_image_downloaded",
+  "calendar_post_published",
+])
 const POSTHOG_RESET_ACK_HEADER = "x-sselfie-posthog-reset-ack"
 
 type AnalyticsRequestInput = {

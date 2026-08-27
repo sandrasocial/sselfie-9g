@@ -134,13 +134,13 @@ export default function BRollScreen({ user }: BRollScreenProps) {
   const handleLogout = async () => {
     setIsLoggingOut(true)
     try {
+      notifyAnalyticsLogout()
       const response = await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",
       })
 
       if (response.ok) {
-        notifyAnalyticsLogout()
         router.push("/auth/login")
       } else {
         console.error("[v0] Logout failed")

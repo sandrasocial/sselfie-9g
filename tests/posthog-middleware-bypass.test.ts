@@ -18,7 +18,7 @@ describe("PostHog ingestion middleware boundary", () => {
     mocks.updateSession.mockResolvedValue(NextResponse.next())
   })
 
-  it.each(["/ingest", "/ingest/", "/ingest/static/array.js", "/ingest/i/v0/e/"])(
+  it.each(["/ingest/static/array.js", "/ingest/i/v0/e/", "/ingest/decide/", "/ingest/batch/"])(
     "bypasses auth for the exact ingestion proxy path %s",
     async pathname => {
       expect(isPostHogIngestPath(pathname)).toBe(true)
@@ -27,7 +27,7 @@ describe("PostHog ingestion middleware boundary", () => {
     }
   )
 
-  it.each(["/ingestion", "/ingest-other", "/app"])(
+  it.each(["/ingest", "/ingest/", "/ingest/admin", "/ingestion", "/ingest-other", "/app"])(
     "preserves normal auth middleware for %s",
     async pathname => {
       expect(isPostHogIngestPath(pathname)).toBe(false)

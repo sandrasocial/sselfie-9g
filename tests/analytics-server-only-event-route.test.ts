@@ -311,4 +311,30 @@ describe("public analytics route server-only event boundary", () => {
     expect(mocks.ensureAnalyticsSchema).not.toHaveBeenCalled()
     expect(mocks.getDb).not.toHaveBeenCalled()
   })
+
+  it.each([
+    "trial_claimed",
+    "suite_image_generated",
+    "suite_generation_failed",
+    "suite_edit_applied",
+    "suite_image_downloaded",
+    "calendar_post_published",
+  ])("rejects forged server-owned event %s before any write", async eventName => {
+    const { POST } = await import("@/app/api/analytics/event/route")
+    const response = await POST(
+      new NextRequest("http://localhost/api/analytics/event", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ event: eventName }),
+      })
+    )
+
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      accepted: false,
+      reason: "Unsupported event",
+    })
+    expect(mocks.ensureAnalyticsSchema).not.toHaveBeenCalled()
+    expect(mocks.getDb).not.toHaveBeenCalled()
+  })
 })

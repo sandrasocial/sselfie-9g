@@ -128,9 +128,9 @@ export function AccountView({
     setLoggingOut(true)
     setLogoutError(null)
     try {
+      notifyAnalyticsLogout()
       const res = await fetch("/api/auth/logout", { method: "POST", credentials: "include" })
       if (res.ok) {
-        notifyAnalyticsLogout()
         window.location.href = "/auth/login"
         return
       }

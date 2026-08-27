@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { usePathname } from "next/navigation"
 import Script from "next/script"
 import {
+  normalizePostHogApiHost,
   POSTHOG_TOKENIZED_PATH_PATTERN_SOURCE,
   sanitizePostHogPathname,
   shouldResetPostHogIdentity,
@@ -27,12 +28,19 @@ type PostHogBrowserClient = {
   stopSessionRecording: () => void
 }
 
-const IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS = [0, 1_000, 3_000, 10_000] as const
+const IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS = [0, 1_000, 3_000, 10_000, 30_000] as const
+
+function identityRetryDelay(attempt: number): number {
+  return IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS[
+    Math.min(attempt, IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS.length - 1)
+  ]
+}
 
 declare global {
   interface Window {
     posthog?: PostHogBrowserClient
     __sselfiePostHogLoaded?: (client: PostHogBrowserClient) => void
+    __sselfiePostHogLoadedClient?: PostHogBrowserClient
   }
 }
 
@@ -124,9 +132,8 @@ function PostHogPageviews({
     }
 
     function scheduleIdentityRetry(attempt: number, generation: number, capturePageview: boolean) {
-      const nextDelay = IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS[attempt + 1]
-      if (!isCurrentGeneration() || generation !== refreshGeneration || nextDelay === undefined)
-        return
+      const nextDelay = identityRetryDelay(attempt + 1)
+      if (!isCurrentGeneration() || generation !== refreshGeneration) return
       retryTimer = setTimeout(
         () => void refreshIdentity(attempt + 1, generation, capturePageview),
         nextDelay
@@ -147,6 +154,7 @@ function PostHogPageviews({
     const refreshOnFocus = () => startIdentityRefresh(false)
     const refreshOnVisibility = () => {
       if (document.visibilityState === "visible") startIdentityRefresh(false)
+      else setPostHogCaptureEnabled(false)
     }
 
     window.addEventListener("focus", refreshOnFocus)
@@ -193,6 +201,7 @@ export function PostHogProvider({
   apiKey,
   apiHost,
 }: Readonly<{ apiKey: string; apiHost: string }>) {
+  const approvedApiHost = normalizePostHogApiHost(apiHost)
   const [ready, setReady] = useState(false)
   const [identity, setIdentity] = useState<BrowserAnalyticsIdentity | null>(null)
   const [loadedCallbackReady, setLoadedCallbackReady] = useState(false)
@@ -225,10 +234,8 @@ export function PostHogProvider({
         return
       }
 
-      const nextDelay = IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS[attempt + 1]
-      if (nextDelay !== undefined) {
-        retryTimer = setTimeout(() => void bootstrapIdentity(attempt + 1), nextDelay)
-      }
+      const nextDelay = identityRetryDelay(attempt + 1)
+      retryTimer = setTimeout(() => void bootstrapIdentity(attempt + 1), nextDelay)
     }
 
     void bootstrapIdentity(0)
@@ -258,24 +265,27 @@ export function PostHogProvider({
       setReady(true)
     }
     const onLoaded = (client: PostHogBrowserClient) => {
+      window.__sselfiePostHogLoadedClient = client
       void initializeLoadedClient(client)
     }
 
     window.__sselfiePostHogLoaded = onLoaded
     setLoadedCallbackReady(true)
-    if (window.posthog) void initializeLoadedClient(window.posthog)
+    if (window.__sselfiePostHogLoadedClient) {
+      void initializeLoadedClient(window.__sselfiePostHogLoadedClient)
+    }
     return () => {
       active = false
       if (window.__sselfiePostHogLoaded === onLoaded) delete window.__sselfiePostHogLoaded
     }
   }, [identity, identityGeneration])
 
-  if (!apiKey || !identity?.distinctId || !loadedCallbackReady) return null
+  if (!apiKey || !approvedApiHost || !identity?.distinctId || !loadedCallbackReady) return null
 
   return (
     <>
       <Script id="posthog" strategy="afterInteractive">
-        {postHogSnippet(apiKey, apiHost)}
+        {postHogSnippet(apiKey, approvedApiHost)}
       </Script>
       <PostHogPageviews ready={ready} identityGenerationRef={identityGenerationRef} />
     </>

@@ -12,7 +12,9 @@ export async function POST() {
 
     if (error) {
       console.error("[v0] Logout error:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      const response = NextResponse.json({ error: error.message }, { status: 500 })
+      rotateAnonymousAnalyticsIdentity(response)
+      return response
     }
 
     console.log("[v0] User logged out successfully")
@@ -25,6 +27,8 @@ export async function POST() {
     return response
   } catch (error) {
     console.error("[v0] Error during logout:", error)
-    return NextResponse.json({ error: "Failed to logout" }, { status: 500 })
+    const response = NextResponse.json({ error: "Failed to logout" }, { status: 500 })
+    rotateAnonymousAnalyticsIdentity(response)
+    return response
   }
 }

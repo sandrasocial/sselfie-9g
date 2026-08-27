@@ -391,13 +391,13 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
   const handleLogout = async () => {
     setIsLoggingOut(true)
     try {
+      notifyAnalyticsLogout()
       const response = await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",
       })
 
       if (response.ok) {
-        notifyAnalyticsLogout()
         router.push("/auth/login")
       } else {
         console.error("[Account] Logout failed")

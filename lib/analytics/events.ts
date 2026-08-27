@@ -113,7 +113,7 @@ export async function logAnalyticsEvent(input: {
     await ensureAnalyticsSchema()
     const sql = getDb()
 
-    const inserted = await sql`
+    await sql`
       INSERT INTO analytics_events (
         user_id,
         anon_id,
@@ -145,13 +145,9 @@ export async function logAnalyticsEvent(input: {
       RETURNING id
     `
 
-    if (idempotencyKey && Array.isArray(inserted) && inserted.length === 0) {
-      postHogDelivery.complete(null)
-      return { ok: true }
-    }
-
     const postHogInput = {
       eventName,
+      idempotencyKey,
       userId: input.userId,
       anonId: input.anonId,
       path: input.path,

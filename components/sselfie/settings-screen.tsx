@@ -222,13 +222,13 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
   const handleLogout = async () => {
     setIsLoggingOut(true)
     try {
+      notifyAnalyticsLogout()
       const response = await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",
       })
 
       if (response.ok) {
-        notifyAnalyticsLogout()
         console.log("[v0] Logout successful, redirecting to login...")
         router.push("/auth/login")
       } else {

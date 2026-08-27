@@ -87,9 +87,10 @@ describe("atomic Maya ready-post persistence", () => {
     expect(queries[2].text).toContain("'ready_post_key', ?::text")
     expect(mocks.capturePersistedPostHogEvent).toHaveBeenCalledWith({
       eventName: "suite_ready_post_saved",
+      idempotencyKey: expect.stringMatching(/^ready-post:[a-f0-9]{64}$/),
       userId: "member-123",
       path: "/app",
-      properties: { image_count: 2 },
+      properties: { image_count: 2, is_rerun: false },
     })
   })
 
@@ -165,6 +166,12 @@ describe("atomic Maya ready-post persistence", () => {
         feedStyle: "editorial",
       })
     ).resolves.toMatchObject({ alreadyPlaced: true, position: 4 })
-    expect(mocks.capturePersistedPostHogEvent).not.toHaveBeenCalled()
+    expect(mocks.capturePersistedPostHogEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "suite_ready_post_saved",
+        idempotencyKey: expect.stringMatching(/^ready-post:[a-f0-9]{64}$/),
+        properties: { image_count: 1, is_rerun: true },
+      })
+    )
   })
 })

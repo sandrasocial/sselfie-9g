@@ -28,7 +28,19 @@ function getPublicBypass(pathname: string) {
 }
 
 export function isPostHogIngestPath(pathname: string): boolean {
-  return pathname === "/ingest" || pathname.startsWith("/ingest/")
+  if (pathname.startsWith("/ingest/static/")) return true
+  return [
+    "/ingest/e",
+    "/ingest/e/",
+    "/ingest/i/v0/e",
+    "/ingest/i/v0/e/",
+    "/ingest/batch",
+    "/ingest/batch/",
+    "/ingest/decide",
+    "/ingest/decide/",
+    "/ingest/s",
+    "/ingest/s/",
+  ].includes(pathname)
 }
 
 export async function middleware(request: NextRequest) {
