@@ -62,8 +62,8 @@ function mediaUrlsForPost(post: any): string[] {
 }
 
 const feedPlannerShellClass = "mx-auto w-full max-w-none md:max-w-[935px]"
-const feedPlannerCanvasClass = `${feedPlannerShellClass} app-light-panel-text overflow-hidden rounded-none border-y border-[color:var(--app-glass-border)] bg-white shadow-none sm:rounded-[20px] sm:border sm:bg-[rgba(255,255,255,0.72)] sm:shadow-[0_24px_70px_rgba(61,56,48,0.10)] sm:backdrop-blur-[20px]`
-const feedPlannerStateClass = `${feedPlannerShellClass} app-light-panel-text flex min-h-[60vh] items-center justify-center rounded-none border-y border-[color:var(--app-glass-border)] bg-white p-4 shadow-none sm:rounded-[20px] sm:border sm:bg-[rgba(255,255,255,0.72)] sm:shadow-[0_24px_70px_rgba(61,56,48,0.10)] sm:backdrop-blur-[20px]`
+const feedPlannerCanvasClass = `${feedPlannerShellClass} app-light-panel-text overflow-hidden rounded-none border-y border-[color:var(--app-glass-border)] bg-white shadow-none sm:rounded-[20px] sm:border sm:bg-[rgba(255,255,255,0.72)] sm:shadow-[0_24px_70px_rgba(37,44,49,0.10)] sm:backdrop-blur-[20px]`
+const feedPlannerStateClass = `${feedPlannerShellClass} app-light-panel-text flex min-h-[60vh] items-center justify-center rounded-none border-y border-[color:var(--app-glass-border)] bg-white p-4 shadow-none sm:rounded-[20px] sm:border sm:bg-[rgba(255,255,255,0.72)] sm:shadow-[0_24px_70px_rgba(37,44,49,0.10)] sm:backdrop-blur-[20px]`
 
 interface InstagramFeedViewProps {
   feedId: number

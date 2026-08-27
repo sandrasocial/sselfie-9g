@@ -12,21 +12,22 @@
 //   - The <style> block adds mobile overrides (classes prefixed st- to avoid collisions).
 //   - No web fonts. Georgia / Arial only.
 
-// EMAIL-02 (2026-07-06): palette shifted from warm cream to Sandra's COOL editorial tokens
-// (docs/SSELFIE_DESIGN_SYSTEM.md base + the 2026-06-19 cool-monochrome lock: warmth comes
-// from her images, never from beige surfaces). Structure unchanged; every template that
-// renders through this shell recolored in one move.
+import { applyApprovedEmailPalette } from "@/lib/email/approved-email-palette"
+
+// EMAIL-04 (2026-08-27): palette aligned to Sandra's approved Noir Glass proof.
+// Pearl stays almost white, Paper cards stay white, Obsidian carries action, and restrained
+// Pearl Neon rules provide the brand signature. Structure and copy remain unchanged.
 const COLORS = {
-  shell: "#F8FAFA", // Seasalt outer
+  shell: "#FAFAF9", // neutral near-white outer
   card: "#FFFFFF", // main content card
-  panel: "#F8FAFA", // quiet section tint (panels, pull-quote blocks)
-  text: "#0D0E10", // Night - headlines, primary
-  body: "#282728", // Raisin - body copy
-  muted: "#818283", // Gray - captions, eyebrows, footer
-  quiet: "#818283", // kept as an alias - legacy templates referenced both tones
-  line: "#D8D9DA", // cool separators
-  lineSoft: "#E9EAEB",
-  cta: "#0D0E10",
+  panel: "#FAFAF9", // quiet near-white section tint
+  text: "#09090B", // Obsidian - headlines, primary
+  body: "#18181B", // Graphite - body copy and action tone
+  muted: "#5E5E66", // cool-neutral captions, eyebrows, footer
+  quiet: "#5E5E66", // kept as an alias - legacy templates referenced both tones
+  line: "#F3E6CF", // restrained pearl-neon rules
+  lineSoft: "#E7E7EA",
+  cta: "#09090B",
 } as const
 
 export function escapeHtml(value: string): string {
@@ -89,7 +90,11 @@ function normalizeLegacyStoneHtml(html: string): string {
   )
 }
 
-export function renderStoneButton(label: string, href: string, tone: "light" | "outline" = "light"): string {
+export function renderStoneButton(
+  label: string,
+  href: string,
+  tone: "light" | "outline" = "light"
+): string {
   const background = tone === "light" ? COLORS.cta : "transparent"
   const color = tone === "light" ? "#ffffff" : COLORS.text
   const border = tone === "light" ? `1px solid ${COLORS.cta}` : `1px solid ${COLORS.text}`
@@ -117,12 +122,16 @@ export interface PersonalNoteOptions {
   signoff?: string
 }
 
-export function renderPersonalNote({ title, bodyHtml, signoff = "Sandra x" }: PersonalNoteOptions): string {
+export function renderPersonalNote({
+  title,
+  bodyHtml,
+  signoff = "Sandra x",
+}: PersonalNoteOptions): string {
   const signoffHtml = signoff
     ? `<p style="margin:28px 0 0;color:${COLORS.text};font-family:Georgia,'Times New Roman',serif;font-size:17px;font-style:italic;">${escapeHtml(signoff)}</p>`
     : ""
 
-  return `<!DOCTYPE html>
+  return applyApprovedEmailPalette(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -147,7 +156,7 @@ export function renderPersonalNote({ title, bodyHtml, signoff = "Sandra x" }: Pe
     </tr>
   </table>
 </body>
-</html>`
+</html>`)
 }
 
 /** Plain underlined text link for personal notes (a button would read as "brand", not "Sandra"). */
@@ -208,7 +217,7 @@ export function renderStoneShell({
     ? `<p class="st-sig" style="margin:0;color:${COLORS.text};font-family:Georgia,'Times New Roman',serif;font-size:32px;font-weight:400;font-style:italic;letter-spacing:-0.01em;">${escapeHtml(footerSignoff)}</p>`
     : ""
 
-  return `<!DOCTYPE html>
+  return applyApprovedEmailPalette(`<!DOCTYPE html>
 <html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
   <meta charset="utf-8" />
@@ -274,5 +283,5 @@ export function renderStoneShell({
   </table>
   <!--[if mso | IE]></td></tr></table><![endif]-->
 </body>
-</html>`
+</html>`)
 }

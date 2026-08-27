@@ -53,21 +53,21 @@ const SUITE_IMG = {
 // ─── Design tokens - SSELFIE workbook system ─────────────────────────────────
 const C = {
   // Core surfaces
-  ink: "var(--color-obsidian)",
-  inkSoft: "var(--stone-dark)",
-  inkLift: "var(--stone-dark)",
-  cream: "var(--color-porcelain)",
-  creamWarm: "var(--color-pearl)",
-  creamDeep: "var(--color-whisper)",
-  stone: "var(--stone)",
+  ink: "var(--ss-brand-ink)",
+  inkSoft: "var(--ss-brand-carbon)",
+  inkLift: "var(--ss-brand-carbon)",
+  cream: "#FAFAF9",
+  creamWarm: "var(--ss-brand-paper)",
+  creamDeep: "#F0F0F2",
+  stone: "var(--ss-brand-taupe)",
   // Text on dark
-  onDark: "var(--color-porcelain)",
-  onDarkSub: "var(--color-whisper)",
-  onDarkMuted: "var(--stone)",
+  onDark: "var(--ss-brand-paper)",
+  onDarkSub: "#EEEEEC",
+  onDarkMuted: "var(--ss-brand-taupe)",
   // Text on cream
-  onCream: "var(--color-obsidian)",
-  onCreamSub: "var(--color-smoke)",
-  onCreamMuted: "var(--stone)",
+  onCream: "var(--ss-brand-ink)",
+  onCreamSub: "var(--ss-brand-slate)",
+  onCreamMuted: "var(--ss-brand-taupe)",
   // Dividers
   divDark: "color-mix(in srgb, var(--color-whisper) 16%, transparent)",
   divDarkSoft: "color-mix(in srgb, var(--color-whisper) 9%, transparent)",
@@ -80,7 +80,7 @@ const C = {
 
 const F = {
   serif: "'Cormorant Garamond', Georgia, serif",
-  sans: "var(--font-inter, Inter, -apple-system, sans-serif)",
+  sans: "var(--ss-brand-sans, Manrope, Inter, -apple-system, sans-serif)",
 }
 
 // ─── Letterpress text shadows ─────────────────────────────────────────────────
@@ -321,7 +321,7 @@ function Btn({
 }) {
   const dark = surface === "dark"
   // Solid: cream button on dark bg; ink button on cream bg
-  const solidBg = dark ? C.cream : C.ink
+  const solidBg = dark ? C.cream : "var(--ss-brand-espresso)"
   const solidText = dark ? C.ink : C.cream
   const solidShadow = dark
     ? "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)"
@@ -547,20 +547,28 @@ export function PublicNav({ loginHref = "/auth/login" }: { loginHref?: string })
         borderBottom: `1px solid ${C.divDark}`,
       }}
     >
-      <Link
-        href="/"
-        style={{
-          fontFamily: F.serif,
-          fontSize: "18px",
-          color: C.onDark,
-          letterSpacing: "0.35em",
-          textTransform: "uppercase",
-          fontWeight: 300,
-          textDecoration: "none",
-        }}
-      >
-        SSELFIE
-      </Link>
+      <div className="flex min-w-0 items-center gap-6">
+        <Link
+          href="/"
+          style={{
+            fontFamily: F.serif,
+            fontSize: "18px",
+            color: C.onDark,
+            letterSpacing: "0.35em",
+            textTransform: "uppercase",
+            fontWeight: 300,
+            textDecoration: "none",
+          }}
+        >
+          SSELFIE
+        </Link>
+        <PublicNeonSignature className="hidden lg:inline-block" />
+      </div>
+
+      <PublicNeonSignature
+        centered
+        className="pointer-events-none absolute left-1/2 top-1/2 lg:hidden"
+      />
 
       <nav aria-label="Main navigation" className="hidden lg:flex items-center gap-7">
         {links.map(l => (
@@ -575,9 +583,11 @@ export function PublicNav({ loginHref = "/auth/login" }: { loginHref?: string })
       </nav>
 
       <div className="flex items-center gap-4">
-        <Link href={loginHref} style={{ ...ty("eyebrow", true), textDecoration: "none" }}>
-          Login
-        </Link>
+        <span className="hidden lg:block">
+          <Link href={loginHref} style={{ ...ty("eyebrow", true), textDecoration: "none" }}>
+            Login
+          </Link>
+        </span>
         <span className="hidden lg:block">
           <Btn href="/ai-prompts" surface="dark">
             Start Free
@@ -613,10 +623,58 @@ export function PublicNav({ loginHref = "/auth/login" }: { loginHref?: string })
                 <span aria-hidden="true">→</span>
               </Link>
             ))}
+            <Link
+              href={loginHref}
+              className="flex min-h-12 items-center justify-between border-b border-white/10 text-[11px] uppercase tracking-[0.22em] text-white"
+              onClick={() => setMenuOpen(false)}
+            >
+              Login
+              <span aria-hidden="true">→</span>
+            </Link>
           </div>
         </nav>
       ) : null}
     </header>
+  )
+}
+
+function PublicNeonSignature({
+  centered = false,
+  className = "",
+}: {
+  centered?: boolean
+  className?: string
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={className}
+      style={{
+        color: "var(--ss-brand-champagne)",
+        fontFamily: "var(--ss-brand-signature)",
+        fontSize: "clamp(0.95rem, 1.4vw, 1.35rem)",
+        lineHeight: 0.9,
+        position: centered ? "absolute" : "relative",
+        textShadow:
+          "0 0 2px rgba(255,246,224,0.96), 0 0 8px var(--ss-brand-champagne-glow), 0 0 18px rgba(215,182,126,0.28)",
+        transform: centered ? "translate(-50%, -50%) rotate(-3deg)" : "rotate(-3deg)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      Worth posting.
+      <i
+        style={{
+          background: "var(--ss-brand-champagne)",
+          borderRadius: "50%",
+          boxShadow: "0 0 4px rgba(255,246,224,0.95), 0 0 10px var(--ss-brand-champagne-glow)",
+          height: 3,
+          position: "absolute",
+          right: -8,
+          top: -2,
+          width: 3,
+        }}
+      />
+    </span>
   )
 }
 

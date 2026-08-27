@@ -3,6 +3,7 @@ import { EMAIL_CONFIG, EMAIL_ENV } from "./config"
 import { normalizeEmailIdentifier } from "./normalize-identifier"
 import { requireResendClient } from "@/lib/resend/client"
 import { getResendApiKey } from "@/lib/resend/api-key"
+import { applyApprovedEmailPalette } from "./approved-email-palette"
 
 interface MarketingBroadcastInput {
   campaignKey: string
@@ -26,10 +27,13 @@ interface ContactSyncInput {
 
 const CONTACT_UPDATE_DELAY_MS = 650
 const RESEND_RETRY_MAX_ATTEMPTS = Number.parseInt(process.env.RESEND_RETRY_MAX_ATTEMPTS || "5", 10)
-const RESEND_RETRY_BASE_DELAY_MS = Number.parseInt(process.env.RESEND_RETRY_BASE_DELAY_MS || "700", 10)
+const RESEND_RETRY_BASE_DELAY_MS = Number.parseInt(
+  process.env.RESEND_RETRY_BASE_DELAY_MS || "700",
+  10
+)
 
 async function sleep(ms: number) {
-  await new Promise((resolve) => setTimeout(resolve, ms))
+  await new Promise(resolve => setTimeout(resolve, ms))
 }
 
 function isLikelyResendRateLimit(message: string): boolean {
@@ -81,7 +85,7 @@ async function withResendRetry<T>(input: {
 async function resendFetchWithRetry(
   url: string,
   init: RequestInit,
-  opts?: { maxRetries?: number; baseDelayMs?: number },
+  opts?: { maxRetries?: number; baseDelayMs?: number }
 ): Promise<Response> {
   const maxRetries = opts?.maxRetries ?? 5
   const baseDelayMs = opts?.baseDelayMs ?? 650
@@ -93,7 +97,8 @@ async function resendFetchWithRetry(
       if (res.status !== 429) return res
 
       const retryAfter = res.headers.get("retry-after")
-      const retryAfterMs = retryAfter && !Number.isNaN(Number(retryAfter)) ? Number(retryAfter) * 1000 : null
+      const retryAfterMs =
+        retryAfter && !Number.isNaN(Number(retryAfter)) ? Number(retryAfter) * 1000 : null
       const backoffMs = Math.min(10_000, retryAfterMs ?? baseDelayMs * Math.pow(2, attempt))
       await sleep(backoffMs)
       continue
@@ -216,7 +221,7 @@ type ExistingBroadcast = {
 
 async function findExistingBroadcastByCampaignKey(
   resend: ReturnType<typeof requireResendClient>,
-  campaignKey: string,
+  campaignKey: string
 ): Promise<{ broadcast: ExistingBroadcast; matchCount: number } | null> {
   let after: string | undefined
 
@@ -227,19 +232,17 @@ async function findExistingBroadcastByCampaignKey(
     })
     if (listed.error) {
       throw new Error(
-        listed.error.message || "Could not verify existing Resend broadcasts; send aborted",
+        listed.error.message || "Could not verify existing Resend broadcasts; send aborted"
       )
     }
 
-    const page = listed.data as
-      | { data?: ExistingBroadcast[]; has_more?: boolean }
-      | undefined
+    const page = listed.data as { data?: ExistingBroadcast[]; has_more?: boolean } | undefined
     const broadcasts = page?.data || []
     const matches = broadcasts
-      .filter((broadcast) => broadcast.name === campaignKey)
+      .filter(broadcast => broadcast.name === campaignKey)
       .sort((a, b) => b.created_at.localeCompare(a.created_at))
     const alreadyAccepted = matches.find(
-      (broadcast) => broadcast.status === "sent" || broadcast.status === "queued",
+      broadcast => broadcast.status === "sent" || broadcast.status === "queued"
     )
 
     if (alreadyAccepted) {
@@ -247,7 +250,7 @@ async function findExistingBroadcastByCampaignKey(
     }
     if (matches.length > 0) {
       throw new Error(
-        `Resend already contains a draft for ${campaignKey}; send aborted for manual review`,
+        `Resend already contains a draft for ${campaignKey}; send aborted for manual review`
       )
     }
 
@@ -274,11 +277,11 @@ export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
     !EMAIL_ENV.allowLargeBroadcasts
   ) {
     throw new Error(
-      `Recipient count (${recipientCount}) exceeds limit (${EMAIL_ENV.maxBroadcastRecipients}). Set EMAIL_ALLOW_LARGE_BROADCASTS=true to override.`,
+      `Recipient count (${recipientCount}) exceeds limit (${EMAIL_ENV.maxBroadcastRecipients}). Set EMAIL_ALLOW_LARGE_BROADCASTS=true to override.`
     )
   }
 
-  const html = ensureComplianceHtml(input.html)
+  const html = applyApprovedEmailPalette(ensureComplianceHtml(input.html))
   const text = ensureComplianceText(input.text)
 
   if (EMAIL_ENV.dryRun) {
@@ -322,19 +325,22 @@ export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
   const broadcast = await withResendRetry({
     label: "broadcast.create-and-send",
     execute: () =>
-      resend.broadcasts.create({
-        ...(segmentId ? { segmentId } : { audienceId }),
-        name: input.campaignKey,
-        from: EMAIL_CONFIG.marketing.from,
-        replyTo: EMAIL_CONFIG.marketing.replyTo,
-        subject: input.subject,
-        html,
-        ...(text ? { text } : {}),
-        send: true,
-        ...(input.scheduledAt ? { scheduledAt: input.scheduledAt } : {}),
-      }, {
-        headers: { "Idempotency-Key": broadcastCreateIdempotencyKey },
-      }),
+      resend.broadcasts.create(
+        {
+          ...(segmentId ? { segmentId } : { audienceId }),
+          name: input.campaignKey,
+          from: EMAIL_CONFIG.marketing.from,
+          replyTo: EMAIL_CONFIG.marketing.replyTo,
+          subject: input.subject,
+          html,
+          ...(text ? { text } : {}),
+          send: true,
+          ...(input.scheduledAt ? { scheduledAt: input.scheduledAt } : {}),
+        },
+        {
+          headers: { "Idempotency-Key": broadcastCreateIdempotencyKey },
+        }
+      ),
   })
 
   if (broadcast.error) {
@@ -440,12 +446,17 @@ export async function syncMarketingContacts(input: ContactSyncInput) {
                   Authorization: `Bearer ${getResendApiKey()}`,
                   "Content-Type": "application/json",
                 },
-              },
+              }
             )
             if (!res.ok) {
               const text = await res.text().catch(() => "")
               errors++
-              console.error("[v0] Failed to remove contact from segment:", { email, segmentId: segId, status: res.status, text: text.slice(0, 240) })
+              console.error("[v0] Failed to remove contact from segment:", {
+                email,
+                segmentId: segId,
+                status: res.status,
+                text: text.slice(0, 240),
+              })
             }
           } else {
             const res = await resendFetchWithRetry(
@@ -456,12 +467,17 @@ export async function syncMarketingContacts(input: ContactSyncInput) {
                   Authorization: `Bearer ${getResendApiKey()}`,
                   "Content-Type": "application/json",
                 },
-              },
+              }
             )
             if (!res.ok) {
               const text = await res.text().catch(() => "")
               errors++
-              console.error("[v0] Failed to add contact to segment:", { email, segmentId: segId, status: res.status, text: text.slice(0, 240) })
+              console.error("[v0] Failed to add contact to segment:", {
+                email,
+                segmentId: segId,
+                status: res.status,
+                text: text.slice(0, 240),
+              })
             }
           }
 

@@ -172,16 +172,16 @@ describe("Maya-first Suite creation UX", () => {
     expect(shell).not.toContain("close: closeMaya, isOpen: mayaOpen")
     expect(shell).not.toContain("if (mayaOpen) closeMaya()")
     expect(shell).not.toContain('"--sselfie-bottom-nav-height"')
-    expect(shell).toContain("pb-[calc(4.75rem+env(safe-area-inset-bottom))]")
+    expect(shell).toContain("pb-[calc(6rem+env(safe-area-inset-bottom))]")
 
     expect(shell).toContain(
       'activeSection === "calendar" || (activeSection === "create" && !mayaHomeEnabled)'
     )
-    expect(shell).toContain('mayaOpen && mayaUsesSideWorkspace ? "lg:pr-[27rem]"')
+    expect(shell).toContain('mayaOpen && mayaUsesSideWorkspace ? "lg:pr-[34rem]"')
     expect(concierge).toContain("h-[94dvh]")
     expect(concierge).not.toContain("h-[62dvh]")
     expect(concierge).not.toContain("mobileSheetSize")
-    expect(concierge).toContain("lg:w-[27rem]")
+    expect(concierge).toContain("lg:w-[34rem]")
     expect(concierge).toContain("lg:hidden")
   })
 

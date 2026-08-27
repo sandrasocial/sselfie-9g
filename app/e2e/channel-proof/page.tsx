@@ -1,18 +1,14 @@
-import type { Metadata } from "next"
+import { notFound } from "next/navigation"
 
 import { BoldEditorialProof } from "@/components/brand/bold-editorial-proof"
 import { renderBoldEditorialProofEmail } from "@/lib/email/templates/bold-editorial-proof"
 import { getVaultMayaPriceDisplay } from "@/lib/launch/cash-launch-pricing"
 
-export const metadata: Metadata = {
-  title: "Bold Editorial Studio · Design reference",
-  robots: {
-    index: false,
-    follow: false,
-  },
-}
+export const dynamic = "force-dynamic"
 
-export default function BoldEditorialDesignSystemPage() {
+export default function ChannelProofPage() {
+  if (process.env.NODE_ENV === "production") notFound()
+
   const vaultMayaPrice = getVaultMayaPriceDisplay()
 
   return (

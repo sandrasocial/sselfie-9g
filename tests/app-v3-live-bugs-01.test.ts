@@ -78,7 +78,7 @@ describe("APP-V3-LIVE-BUGS-01 regressions", () => {
     expect(concierge).toContain("salvageConceptsPayload(part.rawInput ?? part.input)?.format")
     expect(concierge).toContain("targetFormat: OutputFormat = format")
     expect(concierge).toContain("format: targetFormat")
-    expect(concierge).toContain('stream: wantsBakedText ? false : targetFormat !== "carousel"')
+    expect(concierge).toContain("stream: !wantsBakedText && isSingleImageRequest")
     expect(concierge).toContain("format={conceptFormat}")
     expect(concierge).toContain("void generateConcept(")
     expect(concierge).toContain("conceptFormat,")

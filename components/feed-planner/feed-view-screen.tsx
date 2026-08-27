@@ -148,6 +148,7 @@ export default function FeedViewScreen({
 
   // Get feedId from embedded nav (inside /app), prop, query param, or null
   const feedNav = useFeedNav()
+  const usesSharedSuiteMaya = Boolean(feedNav?.navigateToMaya)
   const feedIdFromQuery =
     feedNav?.feedId ??
     feedIdProp ??
@@ -523,7 +524,11 @@ export default function FeedViewScreen({
     return (
       <>
         <div className="app-light-panel-text min-h-0 flex-1 overflow-y-auto bg-[color:var(--app-bg)] px-0 py-3 sm:px-4 lg:px-6">
-          <div className="mx-auto grid w-full max-w-[1380px] min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
+          <div
+            className={`mx-auto grid w-full max-w-[1380px] min-w-0 gap-4 lg:items-start ${
+              usesSharedSuiteMaya ? "lg:grid-cols-1" : "lg:grid-cols-[minmax(0,1fr)_24rem]"
+            }`}
+          >
             <CalendarEmptyCanvas
               onPlanWithMaya={() => {
                 setFirstVisualDirectionMode(null)
@@ -535,29 +540,31 @@ export default function FeedViewScreen({
               displayName={emptyCalendarProfile.displayName}
               profileImageUrl={emptyCalendarProfile.profileImageUrl}
             />
-            <CalendarMayaWorkspace
-              feedId={null}
-              selectedPost={null}
-              feedSummary={null}
-              busy={isCreatingManual || isPlanningWithMaya}
-              activityLabel={firstGridActivityLabel}
-              planSettings={calendarPlanSettings}
-              onSavePlanSettings={saveCalendarPlanSettings}
-              planSettingsOpen={firstPlanSettingsOpen}
-              onPlanSettingsClosed={() => setFirstPlanSettingsOpen(false)}
-              onPlanSettingsConfirmed={() => void createFirstPlanWithMaya()}
-              onChooseVisualDirection={mode => {
-                setFirstVisualDirectionMode(mode)
-                setShowFeedStyleModal(true)
-              }}
-              onApplyProposal={async (proposal: CalendarAgentProposal) => {
-                if (proposal.kind !== "create_plan")
-                  throw new Error("Create your grid first, then I can change it.")
-                await handlePlanWithMaya()
-                return { undoAvailable: false }
-              }}
-              onUndo={async () => {}}
-            />
+            {!usesSharedSuiteMaya && (
+              <CalendarMayaWorkspace
+                feedId={null}
+                selectedPost={null}
+                feedSummary={null}
+                busy={isCreatingManual || isPlanningWithMaya}
+                activityLabel={firstGridActivityLabel}
+                planSettings={calendarPlanSettings}
+                onSavePlanSettings={saveCalendarPlanSettings}
+                planSettingsOpen={firstPlanSettingsOpen}
+                onPlanSettingsClosed={() => setFirstPlanSettingsOpen(false)}
+                onPlanSettingsConfirmed={() => void createFirstPlanWithMaya()}
+                onChooseVisualDirection={mode => {
+                  setFirstVisualDirectionMode(mode)
+                  setShowFeedStyleModal(true)
+                }}
+                onApplyProposal={async (proposal: CalendarAgentProposal) => {
+                  if (proposal.kind !== "create_plan")
+                    throw new Error("Create your grid first, then I can change it.")
+                  await handlePlanWithMaya()
+                  return { undoAvailable: false }
+                }}
+                onUndo={async () => {}}
+              />
+            )}
           </div>
         </div>
         {feedStyleModal}

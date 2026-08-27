@@ -43,6 +43,8 @@ describe("App v3 shell overflow containment", () => {
     expect(concierge).toContain("[overflow-x:clip]")
     expect(concierge).toContain("overscroll-x-none")
     expect(concierge).toContain("lg:slide-in-from-right")
+    expect(concierge).toContain("lg:w-[34rem]")
+    expect(shell).toContain("lg:pr-[34rem]")
     expect(concierge).not.toContain(" animate-in slide-in-from-right")
   })
 
