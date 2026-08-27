@@ -835,28 +835,6 @@ export async function handleCheckoutSessionCompleted(
           ? "purchase"
           : null
 
-    if (centralPurchaseEvent && productType && isPaymentPaid && revenueRecord.recorded) {
-      const observedProductType =
-        productType === "academy_mini_product" &&
-        session.metadata?.product_id &&
-        Object.hasOwn(ACADEMY_PRODUCTS, session.metadata.product_id)
-          ? session.metadata.product_id
-          : productType
-
-      schedulePurchaseObservation({
-        eventName: centralPurchaseEvent,
-        userId: userId ? String(userId) : null,
-        source: source || (productType === "work_with_me" ? "work_with_me_paid" : "landing_page"),
-        productType: observedProductType,
-        amountCents: session.amount_total || 0,
-        currency: session.currency || (productType === "work_with_me" ? "eur" : "usd"),
-        sessionId: session.id,
-        paymentId: revenueRecord.stripePaymentId,
-        isTestMode: !event.livemode,
-        checkoutMetadata: session.metadata,
-      })
-    }
-
     // CAMPAIGN-OUTCOME-01 is deliberately guest-safe and isolated from the legacy
     // account, entitlement, credit, marketing, and referral pipeline. Stripe money
     // must be recorded before its private order can be fulfilled.
@@ -1532,6 +1510,31 @@ export async function handleCheckoutSessionCompleted(
         paymentType: productType || session.mode,
         customerEmail,
         description: productType ? `Checkout payment - ${productType}` : "Checkout session payment",
+      })
+    }
+
+    // Resolve or create the checkout user before choosing the analytics
+    // identity. A genuinely unresolved guest still uses the payment-scoped
+    // provider fallback without delaying revenue persistence.
+    if (centralPurchaseEvent && productType && isPaymentPaid && revenueRecord.recorded) {
+      const observedProductType =
+        productType === "academy_mini_product" &&
+        session.metadata?.product_id &&
+        Object.hasOwn(ACADEMY_PRODUCTS, session.metadata.product_id)
+          ? session.metadata.product_id
+          : productType
+
+      schedulePurchaseObservation({
+        eventName: centralPurchaseEvent,
+        userId: userId ? String(userId) : null,
+        source: source || (productType === "work_with_me" ? "work_with_me_paid" : "landing_page"),
+        productType: observedProductType,
+        amountCents: session.amount_total || 0,
+        currency: session.currency || (productType === "work_with_me" ? "eur" : "usd"),
+        sessionId: session.id,
+        paymentId: revenueRecord.stripePaymentId,
+        isTestMode: !event.livemode,
+        checkoutMetadata: session.metadata,
       })
     }
 

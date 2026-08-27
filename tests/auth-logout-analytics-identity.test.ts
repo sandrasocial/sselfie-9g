@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { NextRequest } from "next/server"
 
 const mocks = vi.hoisted(() => ({
   signOut: vi.fn(),
@@ -42,5 +43,20 @@ describe("logout analytics identity isolation", () => {
     const cookies = response.headers.get("set-cookie") || ""
     expect(cookies).toContain("sselfie_anon_id=")
     expect(cookies).toContain("sselfie_posthog_reset=1")
+  })
+
+  it("rotates only the current browser generation's anonymous cookie", async () => {
+    const generation = "33333333-3333-4333-8333-333333333333"
+    const { POST } = await import("@/app/api/auth/logout/route")
+    const response = await POST(
+      new NextRequest("http://localhost/api/auth/logout", {
+        method: "POST",
+        headers: { "x-sselfie-analytics-generation": generation },
+      })
+    )
+
+    const cookies = response.headers.get("set-cookie") || ""
+    expect(cookies).toContain("sselfie_anon_id_33333333333343338333333333333333=")
+    expect(cookies).not.toContain("sselfie_anon_id=")
   })
 })

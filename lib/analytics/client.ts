@@ -6,6 +6,30 @@ export type BrowserAnalyticsIdentity = {
 }
 
 let identityRequest: Promise<BrowserAnalyticsIdentity> | null = null
+const ANALYTICS_GENERATION_COOKIE = "sselfie_analytics_generation"
+
+function writeAnalyticsGeneration(generation: string): void {
+  const secure = window.location.protocol === "https:" ? "; Secure" : ""
+  document.cookie = `${ANALYTICS_GENERATION_COOKIE}=${generation}; Path=/; SameSite=Lax; Max-Age=31536000${secure}`
+}
+
+export function rotateAnalyticsBrowserGeneration(): string | null {
+  if (typeof window === "undefined") return null
+  const generation = window.crypto.randomUUID()
+  writeAnalyticsGeneration(generation)
+  return generation
+}
+
+function analyticsBrowserGeneration(): string | null {
+  if (typeof window === "undefined") return null
+  const existing = document.cookie
+    .split(";")
+    .map(value => value.trim())
+    .find(value => value.startsWith(`${ANALYTICS_GENERATION_COOKIE}=`))
+    ?.slice(ANALYTICS_GENERATION_COOKIE.length + 1)
+  if (existing) return existing
+  return rotateAnalyticsBrowserGeneration()
+}
 
 export function invalidateAnalyticsBrowserIdentity(): void {
   identityRequest = null
@@ -15,10 +39,12 @@ async function requestAnalyticsIdentity(
   rotateAnonymous: boolean
 ): Promise<BrowserAnalyticsIdentity> {
   try {
+    const generation = analyticsBrowserGeneration()
     const response = await fetch(
       `/api/analytics/event${rotateAnonymous ? "?rotate_anonymous=1" : ""}`,
       {
         credentials: "same-origin",
+        headers: generation ? { "x-sselfie-analytics-generation": generation } : undefined,
         cache: "no-store",
         keepalive: true,
       }

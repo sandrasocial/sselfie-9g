@@ -231,31 +231,6 @@ export async function handlePaidBlueprintCheckout(
       }
     }
 
-    // Observe the durable payment before fallible account lookup or fulfillment.
-    // Guest purchases use the provider's hashed payment identity fallback.
-    if (paymentRecorded) {
-      schedulePurchaseObservation({
-        eventName: "purchase",
-        userId: userId ? String(userId) : null,
-        source: session.metadata?.source || source,
-        productType: "paid_blueprint",
-        amountCents: amountForStorage,
-        currency: typeof session.currency === "string" ? session.currency : "usd",
-        sessionId: session.id,
-        paymentId: paymentIdForStorage,
-        isTestMode,
-        checkoutMetadata: session.metadata,
-        properties: {
-          payment_type: "paid_blueprint",
-          offer_slug: session.metadata?.offer_slug || null,
-          funnel_stage: session.metadata?.funnel_stage || null,
-          attribution_source: session.metadata?.source || null,
-          campaign_id: session.metadata?.campaign_id || null,
-          referral_code: session.metadata?.referral_code || null,
-        },
-      })
-    }
-
     if (!shouldFulfillStripePurchaseCredits(event.livemode)) {
       console.log("[v0] ⏭️ Recorded test-mode paid blueprint without customer fulfillment")
       return { referralPurchaseUserId }
@@ -281,6 +256,32 @@ export async function handlePaidBlueprintCheckout(
         console.error(`[v0] Error looking up user by email:`, userLookupError.message)
         // Continue to error handling below
       }
+    }
+
+    // Observe only after the paid checkout identity lookup has had a chance to
+    // join the purchase to an existing member. The provider still falls back
+    // to its payment-scoped identity when the lookup genuinely cannot resolve.
+    if (paymentRecorded) {
+      schedulePurchaseObservation({
+        eventName: "purchase",
+        userId: userId ? String(userId) : null,
+        source: session.metadata?.source || source,
+        productType: "paid_blueprint",
+        amountCents: amountForStorage,
+        currency: typeof session.currency === "string" ? session.currency : "usd",
+        sessionId: session.id,
+        paymentId: paymentIdForStorage,
+        isTestMode,
+        checkoutMetadata: session.metadata,
+        properties: {
+          payment_type: "paid_blueprint",
+          offer_slug: session.metadata?.offer_slug || null,
+          funnel_stage: session.metadata?.funnel_stage || null,
+          attribution_source: session.metadata?.source || null,
+          campaign_id: session.metadata?.campaign_id || null,
+          referral_code: session.metadata?.referral_code || null,
+        },
+      })
     }
 
     // Fix #2: If userId still not resolved, log error and exit (don't pretend success)

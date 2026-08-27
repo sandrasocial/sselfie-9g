@@ -116,7 +116,7 @@ export default function LandingPageNew({ referralCode }: { referralCode?: string
       trackCTAClick("pricing", productName, "/checkout")
 
       const clientSecret = await startEmbeddedCheckout(tierId)
-      window.location.href = `/checkout?client_secret=${clientSecret}`
+      window.location.href = `/checkout?client_secret=${encodeURIComponent(clientSecret)}&product_type=${encodeURIComponent(tierId)}`
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
         console.error("Checkout error:", error)

@@ -1,5 +1,7 @@
 "use client"
 
+import { rotateAnalyticsBrowserGeneration } from "@/lib/analytics/client"
+
 const AUTH_CHANNEL_NAME = "sselfie-analytics-auth"
 const AUTH_STORAGE_KEY = "sselfie_analytics_auth_signal"
 const AUTH_WINDOW_EVENT = "sselfie:analytics-auth-logout"
@@ -7,6 +9,11 @@ const LOGOUT_MESSAGE = "logout"
 
 export function notifyAnalyticsLogout(): void {
   if (typeof window === "undefined") return
+
+  // Rotate synchronously before the logout request begins. Older in-flight
+  // analytics responses can then write only their previous generation's
+  // versioned anonymous cookie and cannot reconnect the signed-out browser.
+  rotateAnalyticsBrowserGeneration()
 
   // Revalidate the current tab before its navigation completes.
   window.dispatchEvent(new Event(AUTH_WINDOW_EVENT))

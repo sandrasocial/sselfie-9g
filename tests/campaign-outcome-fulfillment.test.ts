@@ -223,6 +223,7 @@ describe("campaign outcome payment fulfillment", () => {
       expect.objectContaining({
         eventName: "campaign_purchase",
         idempotencyKey: "purchase:pi_campaign_retry",
+        properties: expect.objectContaining({ source: "campaign_outcome_paid" }),
       })
     )
   })

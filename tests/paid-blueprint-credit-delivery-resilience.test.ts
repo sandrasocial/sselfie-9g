@@ -113,7 +113,7 @@ describe("paid blueprint credit/access/delivery resilience", () => {
     expect(deliveryDedupe?.[0].join(" ")).toContain("status IN ('sent', 'delivered')")
   })
 
-  it("observes a guest purchase at the durable payment boundary before account lookup", async () => {
+  it("joins a guest purchase to the user resolved after the durable payment write", async () => {
     mocks.sql.mockImplementation((strings: TemplateStringsArray) => {
       const query = strings.join(" ")
       if (query.includes("SELECT id FROM users WHERE email")) {
@@ -137,7 +137,7 @@ describe("paid blueprint credit/access/delivery resilience", () => {
     expect(mocks.logAnalytics).toHaveBeenCalledWith(
       expect.objectContaining({
         eventName: "purchase",
-        userId: null,
+        userId: "guest_user_2",
         idempotencyKey: "purchase:pi_paid_blueprint",
         properties: expect.objectContaining({
           stripe_payment_id: "pi_paid_blueprint",
@@ -149,7 +149,7 @@ describe("paid blueprint credit/access/delivery resilience", () => {
       strings.join(" ").includes("SELECT id FROM users WHERE email")
     )
     expect(lookupIndex).toBeGreaterThanOrEqual(0)
-    expect(mocks.logAnalytics.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(mocks.logAnalytics.mock.invocationCallOrder[0]).toBeGreaterThan(
       mocks.sql.mock.invocationCallOrder[lookupIndex]
     )
   })

@@ -85,6 +85,36 @@ describe("public analytics route server-only event boundary", () => {
     expect(response.headers.get("set-cookie")).not.toContain("old-shared-browser-id")
   })
 
+  it("scopes anonymous cookie writes to the browser logout generation", async () => {
+    const oldGeneration = "11111111-1111-4111-8111-111111111111"
+    const newGeneration = "22222222-2222-4222-8222-222222222222"
+    const { GET } = await import("@/app/api/analytics/event/route")
+
+    const oldResponse = await GET(
+      new NextRequest("http://localhost/api/analytics/event", {
+        headers: {
+          cookie: "sselfie_anon_id=legacy-anon",
+          "x-sselfie-analytics-generation": oldGeneration,
+        },
+      })
+    )
+    const newResponse = await GET(
+      new NextRequest("http://localhost/api/analytics/event", {
+        headers: { "x-sselfie-analytics-generation": newGeneration },
+      })
+    )
+
+    expect(oldResponse.headers.get("set-cookie")).toContain(
+      "sselfie_anon_id_11111111111141118111111111111111=legacy-anon"
+    )
+    expect(newResponse.headers.get("set-cookie")).toContain(
+      "sselfie_anon_id_22222222222242228222222222222222="
+    )
+    expect(newResponse.headers.get("set-cookie")).not.toContain(
+      "sselfie_anon_id_11111111111141118111111111111111="
+    )
+  })
+
   it("joins an authenticated browser to the server-side Neon identity", async () => {
     mocks.createServerClient.mockResolvedValue({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "auth-123" } } }) },

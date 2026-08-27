@@ -681,6 +681,8 @@ describe("PostHog analytics boundary", () => {
 
     const analyticsClient = readFileSync(join(process.cwd(), "lib/analytics/client.ts"), "utf8")
     expect(analyticsClient).toContain("rotate_anonymous=1")
+    expect(analyticsClient).toContain("x-sselfie-analytics-generation")
+    expect(analyticsClient).toContain("rotateAnalyticsBrowserGeneration")
     expect(analyticsClient).toContain('method: "POST"')
     expect(analyticsClient).toContain('"x-sselfie-posthog-reset-ack": "1"')
     expect(analyticsClient).toContain("await ensureAnalyticsBrowserIdentity()")
@@ -834,17 +836,18 @@ describe("PostHog analytics boundary", () => {
     )
     const purchaseEvent = lifecycle.indexOf('"work_with_me_checkout_success"')
     const accountSetup = lifecycle.indexOf("Creating new account for landing page purchase")
+    const purchaseSchedule = lifecycle.indexOf("schedulePurchaseObservation({", accountSetup)
     const handlerDispatch = lifecycle.indexOf("await handleWorkWithMeCheckout")
 
     expect(purchaseEvent).toBeGreaterThan(ledgerWrite)
-    expect(purchaseEvent).toBeLessThan(accountSetup)
-    expect(purchaseEvent).toBeLessThan(handlerDispatch)
+    expect(purchaseSchedule).toBeGreaterThan(accountSetup)
+    expect(purchaseSchedule).toBeLessThan(handlerDispatch)
     expect(lifecycle).toContain("centralPurchaseEvent && productType && isPaymentPaid")
     expect(lifecycle).toContain("revenueRecord.recorded")
     expect(lifecycle.match(/"work_with_me_checkout_success"/g)).toHaveLength(1)
   })
 
-  it("observes central-ledger one-time products before account and fulfillment work", () => {
+  it("observes central-ledger one-time products after account resolution and before fulfillment", () => {
     const lifecycle = readFileSync(
       join(process.cwd(), "lib/payments/lifecycle/checkout-session-completed.ts"),
       "utf8"
@@ -867,11 +870,11 @@ describe("PostHog analytics boundary", () => {
     expect(lifecycle).toContain('? "purchase"')
     expect(lifecycle).toContain("Object.hasOwn(ACADEMY_PRODUCTS, session.metadata.product_id)")
     expect(lifecycle).toContain("productType: observedProductType")
-    expect(lifecycle.slice(purchaseSchedule, accountSetup)).toContain(
+    expect(lifecycle.slice(purchaseSchedule, academyDispatch)).toContain(
       "checkoutMetadata: session.metadata"
     )
     expect(purchaseSchedule).toBeGreaterThan(ledgerWrite)
-    expect(purchaseSchedule).toBeLessThan(accountSetup)
+    expect(purchaseSchedule).toBeGreaterThan(accountSetup)
     expect(purchaseSchedule).toBeLessThan(academyDispatch)
     expect(purchaseSchedule).toBeLessThan(bundleDispatch)
   })
@@ -884,7 +887,24 @@ describe("PostHog analytics boundary", () => {
     const checkout = readFileSync(join(process.cwd(), "app/checkout/page.tsx"), "utf8")
 
     expect(landing).not.toContain("trackCheckoutStart(")
+    expect(landing).toContain("&product_type=${encodeURIComponent(tierId)}")
     expect(checkout).toContain("trackCheckoutStart(productType")
+  })
+
+  it("selects the paid-blueprint user identity after the email lookup", () => {
+    const handler = readFileSync(
+      join(process.cwd(), "lib/payments/handlers/paid-blueprint.ts"),
+      "utf8"
+    )
+    const lookup = handler.indexOf("Resolved user_id from email")
+    const purchaseSchedule = handler.indexOf("schedulePurchaseObservation({")
+    const fulfillment = handler.indexOf("grantPaidBlueprintCredits", purchaseSchedule)
+
+    expect(purchaseSchedule).toBeGreaterThan(lookup)
+    expect(purchaseSchedule).toBeLessThan(fulfillment)
+    expect(handler.slice(purchaseSchedule, purchaseSchedule + 300)).toContain(
+      "userId: userId ? String(userId) : null"
+    )
   })
 
   it("emits guided completion only after receiving a real image URL", () => {

@@ -109,6 +109,7 @@ export async function handleCampaignOutcomeCheckout(
       term: ctx.session.metadata?.utm_term || null,
     },
     properties: {
+      source: ctx.source || "campaign_outcome_paid",
       order_id: orderId,
       stripe_session_id: ctx.session.id,
       amount_cents: ctx.session.amount_total || 9700,
