@@ -76,6 +76,7 @@ describe("DELETE /api/user/delete", () => {
       "sselfie_anon_id_44444444444444448444444444444444="
     )
     expect(response.headers.get("set-cookie")).toContain("sselfie_posthog_reset=1")
+    expect(response.headers.get("set-cookie")).toContain("sselfie_supabase_session_generation=;")
     expect(mocks.queries).toContainEqual(
       expect.objectContaining({
         text: expect.stringContaining("DELETE FROM freebie_brand_strategies WHERE email"),

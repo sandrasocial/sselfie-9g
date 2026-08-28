@@ -9,7 +9,10 @@ import {
   analyticsGenerationFromRequest,
   rotateAnonymousAnalyticsIdentity,
 } from "@/lib/analytics/identity-cookies"
-import { clearSupabaseSessionCookies } from "@/lib/supabase/session-cookies"
+import {
+  clearSupabaseSessionCookies,
+  clearSupabaseSessionGeneration,
+} from "@/lib/supabase/session-cookies"
 
 function tolerateMissingLegacyTable(error: unknown): void {
   if ((error as { code?: string } | null)?.code === "42P01") return
@@ -138,6 +141,7 @@ export async function DELETE(req?: NextRequest) {
     // Supabase session even if provider-side auth deletion failed, then rotate
     // analytics before the browser can bootstrap against the stale auth user.
     clearSupabaseSessionCookies(response, req)
+    clearSupabaseSessionGeneration(response)
     rotateAnonymousAnalyticsIdentity(response, analyticsGenerationFromRequest(req), req)
     return response
   } catch (error) {

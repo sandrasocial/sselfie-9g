@@ -419,7 +419,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
         credentials: "include",
       })
       if (response.ok) {
-        notifyAnalyticsLogout()
+        notifyAnalyticsLogout({ preserveSupabaseSessionGeneration: false })
         router.push("/auth/login")
       } else {
         const data = await response.json().catch(() => ({}))

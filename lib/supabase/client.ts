@@ -78,6 +78,12 @@ export function bindCurrentSupabaseSessionGeneration(): void {
   writeSupabaseSessionGeneration(analyticsBrowserGeneration())
 }
 
+export function clearCurrentSupabaseSessionGeneration(): void {
+  if (typeof window === "undefined") return
+  const secure = window.location.protocol === "https:" ? "; Secure" : ""
+  document.cookie = `${SUPABASE_SESSION_GENERATION_COOKIE}=; Path=/; SameSite=Lax; Max-Age=0${secure}`
+}
+
 export function createClient() {
   const supabaseUrl = (
     process.env.NEXT_PUBLIC_SUPABASE_URL ||

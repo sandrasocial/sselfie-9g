@@ -39,6 +39,13 @@ export function markSupabaseSessionGeneration(
   })
 }
 
+export function clearSupabaseSessionGeneration(response: NextResponse): void {
+  response.cookies.set(SUPABASE_SESSION_GENERATION_COOKIE, "", {
+    ...sessionGenerationCookieOptions,
+    maxAge: 0,
+  })
+}
+
 export function clearSupabaseSessionCookieNames(
   response: NextResponse,
   cookieNames: readonly string[]

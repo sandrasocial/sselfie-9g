@@ -104,6 +104,18 @@ describe("analytics logout browser signal", () => {
     )
   })
 
+  it("removes the deleted account marker before rotating analytics", () => {
+    document.cookie =
+      "sselfie_supabase_session_generation=11111111-1111-4111-8111-111111111111; Path=/"
+
+    notifyAnalyticsLogout({ preserveSupabaseSessionGeneration: false })
+
+    expect(document.cookie).not.toContain("sselfie_supabase_session_generation=")
+    expect(document.cookie).not.toContain(
+      "sselfie_analytics_generation=11111111-1111-4111-8111-111111111111"
+    )
+  })
+
   it("broadcasts account deletion only after the server confirms success", () => {
     const source = readFileSync(
       join(process.cwd(), "components/sselfie/account-screen.tsx"),
@@ -111,7 +123,10 @@ describe("analytics logout browser signal", () => {
     )
     const deleteRequest = source.indexOf('fetch("/api/user/delete"')
     const successCheck = source.indexOf("if (response.ok)", deleteRequest)
-    const signal = source.indexOf("notifyAnalyticsLogout()", deleteRequest)
+    const signal = source.indexOf(
+      "notifyAnalyticsLogout({ preserveSupabaseSessionGeneration: false })",
+      deleteRequest
+    )
 
     expect(deleteRequest).toBeGreaterThan(-1)
     expect(successCheck).toBeGreaterThan(deleteRequest)

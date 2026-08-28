@@ -120,6 +120,21 @@ describe("browser Supabase session generation", () => {
     )
   })
 
+  it("retags a genuine sign-in after account deletion clears the old marker", async () => {
+    const { clearCurrentSupabaseSessionGeneration, createClient } =
+      await import("@/lib/supabase/client")
+    createClient()
+
+    clearCurrentSupabaseSessionGeneration()
+    document.cookie = "sselfie_analytics_generation=22222222-2222-4222-8222-222222222222; Path=/"
+    const authCallback = mocks.onAuthStateChange.mock.calls[0]?.[0]
+    authCallback("SIGNED_IN")
+
+    expect(document.cookie).toContain(
+      "sselfie_supabase_session_generation=22222222-2222-4222-8222-222222222222"
+    )
+  })
+
   it("preserves the old marker when SIGNED_IN recovers a stored session", async () => {
     const { createClient } = await import("@/lib/supabase/client")
     createClient()
