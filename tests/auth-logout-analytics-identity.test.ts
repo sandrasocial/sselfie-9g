@@ -40,7 +40,10 @@ describe("logout analytics identity isolation", () => {
     const response = await POST(
       new NextRequest("http://localhost/api/auth/logout", {
         method: "POST",
-        headers: { cookie: "sb-project-ref-auth-token=stale-session" },
+        headers: {
+          cookie:
+            "sb-project-ref-auth-token=stale-session; sselfie_analytics_generation=44444444-4444-4444-8444-444444444444",
+        },
       })
     )
 
@@ -48,8 +51,11 @@ describe("logout analytics identity isolation", () => {
     const cookies = response.headers.get("set-cookie") || ""
     expect(cookies).toContain("sb-project-ref-auth-token=")
     expect(cookies).toContain("Max-Age=0")
-    expect(cookies).toContain("sselfie_anon_id=")
+    expect(cookies).toContain("sselfie_anon_id_44444444444444448444444444444444=")
     expect(cookies).toContain("sselfie_posthog_reset=1")
+    expect(cookies).toContain(
+      "sselfie_supabase_session_generation=44444444-4444-4444-8444-444444444444"
+    )
   })
 
   it("clears the local session before rotating when logout setup throws", async () => {

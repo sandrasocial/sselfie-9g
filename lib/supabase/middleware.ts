@@ -5,8 +5,11 @@ import {
   rotateAnonymousAnalyticsIdentity,
 } from "@/lib/analytics/identity-cookies"
 import {
+  clearSupabaseSessionCookieNames,
   clearSupabaseSessionCookies,
   isSupabaseSessionCookie,
+  markSupabaseSessionGeneration,
+  supabaseSessionGenerationFromRequest,
 } from "@/lib/supabase/session-cookies"
 
 const TERMINAL_AUTH_ERROR_CODES = new Set([
@@ -36,6 +39,26 @@ export async function updateSession(request: NextRequest) {
   const sessionCookies = request.cookies
     .getAll()
     .filter(cookie => isSupabaseSessionCookie(cookie.name))
+  const analyticsGeneration = analyticsGenerationFromRequest(request)
+  const sessionGeneration = supabaseSessionGenerationFromRequest(request)
+
+  // A browser logout rotates the analytics generation before its request is
+  // sent. If an older middleware request finishes later, its refreshed auth
+  // cookies are tagged with the older generation. Reject that stale session
+  // before downstream routes can authenticate it under the new generation.
+  if (
+    sessionCookies.length > 0 &&
+    analyticsGeneration &&
+    sessionGeneration &&
+    analyticsGeneration !== sessionGeneration
+  ) {
+    const staleCookieNames = sessionCookies.map(cookie => cookie.name)
+    staleCookieNames.forEach(name => request.cookies.delete(name))
+    const staleSessionResponse = NextResponse.next({ request })
+    clearSupabaseSessionCookieNames(staleSessionResponse, staleCookieNames)
+    markSupabaseSessionGeneration(staleSessionResponse, analyticsGeneration)
+    return staleSessionResponse
+  }
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.log("[v0] [Middleware] Supabase not configured - skipping auth check")
@@ -62,6 +85,9 @@ export async function updateSession(request: NextRequest) {
           }
           supabaseResponse.cookies.set(name, value, enhancedOptions)
         })
+        if (cookiesToSet.some(cookie => isSupabaseSessionCookie(cookie.name))) {
+          markSupabaseSessionGeneration(supabaseResponse, analyticsGeneration)
+        }
       },
     },
   })
@@ -87,11 +113,7 @@ export async function updateSession(request: NextRequest) {
         // Session loss can happen without the explicit logout route. Rotate
         // the anonymous identity and tell the browser provider to reset its
         // persisted user identity before capturing the now-anonymous page.
-        rotateAnonymousAnalyticsIdentity(
-          supabaseResponse,
-          analyticsGenerationFromRequest(request),
-          request
-        )
+        rotateAnonymousAnalyticsIdentity(supabaseResponse, analyticsGeneration, request)
       } else {
         // Only log for API routes that require auth, not public routes
         if (

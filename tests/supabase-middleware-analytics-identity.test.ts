@@ -96,4 +96,61 @@ describe("Supabase middleware analytics identity isolation", () => {
 
     expect(response.headers.get("set-cookie")).toBeNull()
   })
+
+  it("rejects auth cookies refreshed by an older browser generation", async () => {
+    const { updateSession } = await import("@/lib/supabase/middleware")
+
+    const response = await updateSession(
+      new NextRequest("https://sselfie.ai/api/analytics/event", {
+        headers: {
+          cookie: [
+            "sb-project-ref-auth-token=late-refreshed-session",
+            "sselfie_analytics_generation=77777777-7777-4777-8777-777777777777",
+            "sselfie_supabase_session_generation=66666666-6666-4666-8666-666666666666",
+          ].join("; "),
+        },
+      })
+    )
+
+    const cookies = response.headers.get("set-cookie") || ""
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+    expect(cookies).toContain("sb-project-ref-auth-token=")
+    expect(cookies).toContain("Max-Age=0")
+    expect(cookies).toContain(
+      "sselfie_supabase_session_generation=77777777-7777-4777-8777-777777777777"
+    )
+  })
+
+  it("tags refreshed auth cookies with the request generation", async () => {
+    mocks.createServerClient.mockImplementation((_url, _key, options) => ({
+      auth: {
+        getUser: async () => {
+          options.cookies.setAll([
+            {
+              name: "sb-project-ref-auth-token",
+              value: "refreshed-session",
+              options: {},
+            },
+          ])
+          return { data: { user: { id: "user-123", email: "user@example.com" } }, error: null }
+        },
+      },
+    }))
+    const { updateSession } = await import("@/lib/supabase/middleware")
+
+    const response = await updateSession(
+      new NextRequest("https://sselfie.ai/app", {
+        headers: {
+          cookie:
+            "sb-project-ref-auth-token=current-session; sselfie_analytics_generation=88888888-8888-4888-8888-888888888888",
+        },
+      })
+    )
+
+    const cookies = response.headers.get("set-cookie") || ""
+    expect(cookies).toContain("sb-project-ref-auth-token=refreshed-session")
+    expect(cookies).toContain(
+      "sselfie_supabase_session_generation=88888888-8888-4888-8888-888888888888"
+    )
+  })
 })
