@@ -6,7 +6,7 @@ export function CheckoutBrandMasthead() {
       <Link
         href="/"
         aria-label="SSELFIE home"
-        className="font-['Cormorant_Garamond'] text-lg font-light uppercase tracking-[0.32em] text-white no-underline sm:text-xl"
+        className="inline-flex min-h-11 items-center font-['Cormorant_Garamond'] text-lg font-light uppercase tracking-[0.32em] text-white no-underline sm:text-xl"
       >
         SSELFIE
       </Link>

@@ -60,6 +60,7 @@ import {
   buildCustomModelConceptPrompt,
   buildVideoMotionPrompt,
 } from "@/lib/app-v3/custom-model-brief"
+import { normalizeConceptBriefPlanOutputs } from "@/lib/app-v3/maya/concept-brief-normalization"
 import type { ServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
 import type {
   Aesthetic,
@@ -723,7 +724,7 @@ function extractConcepts(part: any): ConceptCardData[] | null {
       const str = (v: unknown) => (typeof v === "string" ? v : "")
       return {
         ...c,
-        brief: {
+        brief: normalizeConceptBriefPlanOutputs({
           ...brief,
           outfit: str(brief.outfit),
           setting: str(brief.setting),
@@ -731,7 +732,7 @@ function extractConcepts(part: any): ConceptCardData[] | null {
           pose: str(brief.pose),
           cameraSpec: str(brief.cameraSpec),
           lighting: str(brief.lighting),
-        },
+        }),
       }
     })
 }
