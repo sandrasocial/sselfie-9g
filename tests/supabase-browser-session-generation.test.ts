@@ -1,0 +1,69 @@
+// @vitest-environment jsdom
+
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+
+const mocks = vi.hoisted(() => ({
+  createBrowserClient: vi.fn(),
+  onAuthStateChange: vi.fn(),
+}))
+
+vi.mock("@supabase/ssr", () => ({
+  createBrowserClient: mocks.createBrowserClient,
+}))
+
+describe("browser Supabase session generation", () => {
+  beforeEach(() => {
+    vi.resetModules()
+    vi.clearAllMocks()
+    document.cookie = "sselfie_analytics_generation=11111111-1111-4111-8111-111111111111; Path=/"
+    document.cookie = "sselfie_supabase_session_generation=; Path=/; Max-Age=0"
+    mocks.createBrowserClient.mockReturnValue({
+      auth: { onAuthStateChange: mocks.onAuthStateChange },
+    })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it("tags a late browser refresh with the generation captured at request start", async () => {
+    let resolveRefresh: ((response: Response) => void) | undefined
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(
+      () =>
+        new Promise<Response>(resolve => {
+          resolveRefresh = resolve
+        })
+    )
+    const { createClient } = await import("@/lib/supabase/client")
+    createClient()
+
+    const options = mocks.createBrowserClient.mock.calls[0]?.[2]
+    const refresh = options.global.fetch(
+      "https://supabase.test/auth/v1/token?grant_type=refresh_token"
+    )
+
+    document.cookie = "sselfie_analytics_generation=22222222-2222-4222-8222-222222222222; Path=/"
+    resolveRefresh?.(new Response("{}", { status: 200 }))
+    await refresh
+
+    const authCallback = mocks.onAuthStateChange.mock.calls[0]?.[0]
+    authCallback("TOKEN_REFRESHED")
+
+    expect(document.cookie).toContain(
+      "sselfie_supabase_session_generation=11111111-1111-4111-8111-111111111111"
+    )
+    expect(fetchSpy).toHaveBeenCalledOnce()
+  })
+
+  it("tags a genuine browser sign-in with the current generation", async () => {
+    const { createClient } = await import("@/lib/supabase/client")
+    createClient()
+
+    const authCallback = mocks.onAuthStateChange.mock.calls[0]?.[0]
+    authCallback("SIGNED_IN")
+
+    expect(document.cookie).toContain(
+      "sselfie_supabase_session_generation=11111111-1111-4111-8111-111111111111"
+    )
+  })
+})

@@ -9,6 +9,13 @@ const sessionCookieOptions = {
   path: "/",
 }
 
+const sessionGenerationCookieOptions = {
+  ...sessionCookieOptions,
+  // Browser-owned Supabase refreshes must be able to replace this marker with
+  // the generation captured when their token request began.
+  httpOnly: false,
+}
+
 export function isSupabaseSessionCookie(name: string): boolean {
   return (
     name === "sb-access-token" ||
@@ -27,7 +34,7 @@ export function markSupabaseSessionGeneration(
 ): void {
   if (!generation) return
   response.cookies.set(SUPABASE_SESSION_GENERATION_COOKIE, generation, {
-    ...sessionCookieOptions,
+    ...sessionGenerationCookieOptions,
     maxAge: 60 * 60 * 24 * 365,
   })
 }

@@ -41,6 +41,8 @@ export async function updateSession(request: NextRequest) {
     .filter(cookie => isSupabaseSessionCookie(cookie.name))
   const analyticsGeneration = analyticsGenerationFromRequest(request)
   const sessionGeneration = supabaseSessionGenerationFromRequest(request)
+  const isLogoutRequest =
+    request.method === "POST" && request.nextUrl.pathname === "/api/auth/logout"
 
   // A browser logout rotates the analytics generation before its request is
   // sent. If an older middleware request finishes later, its refreshed auth
@@ -50,7 +52,8 @@ export async function updateSession(request: NextRequest) {
     sessionCookies.length > 0 &&
     analyticsGeneration &&
     sessionGeneration &&
-    analyticsGeneration !== sessionGeneration
+    analyticsGeneration !== sessionGeneration &&
+    !isLogoutRequest
   ) {
     const staleCookieNames = sessionCookies.map(cookie => cookie.name)
     staleCookieNames.forEach(name => request.cookies.delete(name))

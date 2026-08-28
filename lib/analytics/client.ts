@@ -21,7 +21,7 @@ export function rotateAnalyticsBrowserGeneration(): string | null {
   return generation
 }
 
-function analyticsBrowserGeneration(): string | null {
+export function analyticsBrowserGeneration(): string | null {
   if (typeof window === "undefined") return null
   const existing = document.cookie
     .split(";")

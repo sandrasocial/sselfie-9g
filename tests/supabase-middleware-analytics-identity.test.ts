@@ -153,4 +153,29 @@ describe("Supabase middleware analytics identity isolation", () => {
       "sselfie_supabase_session_generation=88888888-8888-4888-8888-888888888888"
     )
   })
+
+  it("preserves the old session for the logout handler before cleanup", async () => {
+    mocks.getUser.mockResolvedValue({
+      data: { user: { id: "user-123", email: "user@example.com" } },
+      error: null,
+    })
+    const { updateSession } = await import("@/lib/supabase/middleware")
+
+    const response = await updateSession(
+      new NextRequest("https://sselfie.ai/api/auth/logout", {
+        method: "POST",
+        headers: {
+          cookie: [
+            "sb-project-ref-auth-token=current-session",
+            "sselfie_analytics_generation=99999999-9999-4999-8999-999999999999",
+            "sselfie_supabase_session_generation=88888888-8888-4888-8888-888888888888",
+          ].join("; "),
+        },
+      })
+    )
+
+    expect(mocks.createServerClient).toHaveBeenCalledOnce()
+    expect(mocks.getUser).toHaveBeenCalledOnce()
+    expect(response.headers.get("set-cookie")).toBeNull()
+  })
 })
