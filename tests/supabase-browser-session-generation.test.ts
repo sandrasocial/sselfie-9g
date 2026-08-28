@@ -108,9 +108,23 @@ describe("browser Supabase session generation", () => {
   })
 
   it("tags a genuine browser sign-in with the current generation", async () => {
+    document.cookie = "sselfie_supabase_session_generation=; Path=/; Max-Age=0"
     const { createClient } = await import("@/lib/supabase/client")
     createClient()
 
+    const authCallback = mocks.onAuthStateChange.mock.calls[0]?.[0]
+    authCallback("SIGNED_IN")
+
+    expect(document.cookie).toContain(
+      "sselfie_supabase_session_generation=11111111-1111-4111-8111-111111111111"
+    )
+  })
+
+  it("preserves the old marker when SIGNED_IN recovers a stored session", async () => {
+    const { createClient } = await import("@/lib/supabase/client")
+    createClient()
+
+    document.cookie = "sselfie_analytics_generation=22222222-2222-4222-8222-222222222222; Path=/"
     const authCallback = mocks.onAuthStateChange.mock.calls[0]?.[0]
     authCallback("SIGNED_IN")
 

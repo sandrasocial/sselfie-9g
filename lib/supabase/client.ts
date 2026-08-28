@@ -117,7 +117,10 @@ export function createClient() {
     generationTrackingInstalled = true
     client.auth.onAuthStateChange(event => {
       if (event === "SIGNED_IN") {
-        writeSupabaseSessionGeneration(analyticsBrowserGeneration())
+        // Supabase also emits SIGNED_IN when recovering an existing stored
+        // session. Preserve its marker instead of attaching a newer logout
+        // generation; only an untagged genuine sign-in needs a new marker.
+        bindCurrentSupabaseSessionGeneration()
       }
     })
   }
