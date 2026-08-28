@@ -89,11 +89,17 @@ describe("DELETE /api/user/delete", () => {
     const { DELETE } = await import("@/app/api/user/delete/route")
 
     const response = await DELETE(
-      new NextRequest("https://sselfie.ai/api/user/delete", { method: "DELETE" })
+      new NextRequest("https://sselfie.ai/api/user/delete", {
+        method: "DELETE",
+        headers: { cookie: "sb-project-ref-auth-token=stale-session" },
+      })
     )
 
     expect(response.status).toBe(200)
-    expect(response.headers.get("set-cookie")).toContain("sselfie_anon_id=")
-    expect(response.headers.get("set-cookie")).toContain("sselfie_posthog_reset=1")
+    const cookies = response.headers.get("set-cookie") || ""
+    expect(cookies).toContain("sb-project-ref-auth-token=")
+    expect(cookies).toContain("Max-Age=0")
+    expect(cookies).toContain("sselfie_anon_id=")
+    expect(cookies).toContain("sselfie_posthog_reset=1")
   })
 })

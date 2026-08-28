@@ -9,6 +9,7 @@ import {
   analyticsGenerationFromRequest,
   rotateAnonymousAnalyticsIdentity,
 } from "@/lib/analytics/identity-cookies"
+import { clearSupabaseSessionCookies } from "@/lib/supabase/session-cookies"
 
 function tolerateMissingLegacyTable(error: unknown): void {
   if ((error as { code?: string } | null)?.code === "42P01") return
@@ -133,7 +134,11 @@ export async function DELETE(req?: NextRequest) {
 
     console.log(`[delete-account] Account fully deleted for auth user ${authUser.id}`)
     const response = NextResponse.json({ success: true })
-    rotateAnonymousAnalyticsIdentity(response, analyticsGenerationFromRequest(req))
+    // The account no longer has a Neon identity. Clear any locally persisted
+    // Supabase session even if provider-side auth deletion failed, then rotate
+    // analytics before the browser can bootstrap against the stale auth user.
+    clearSupabaseSessionCookies(response, req)
+    rotateAnonymousAnalyticsIdentity(response, analyticsGenerationFromRequest(req), req)
     return response
   } catch (error) {
     console.error("[delete-account] Unexpected error:", error)

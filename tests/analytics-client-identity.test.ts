@@ -103,6 +103,7 @@ describe("browser analytics identity bootstrap", () => {
       credentials: "same-origin",
       cache: "no-store",
       keepalive: true,
+      signal: expect.any(AbortSignal),
     })
   })
 })

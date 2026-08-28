@@ -129,8 +129,8 @@ describe("PostHog analytics boundary", () => {
     expect(JSON.parse(String(init?.body))).toMatchObject({
       api_key: "phc_test_project",
       event: "sselfie_reference_added",
-      distinct_id: "user:user-123",
       properties: {
+        distinct_id: "user:user-123",
         source_event: "activation_selfie_uploaded",
         $process_person_profile: false,
         path: "/suite",
@@ -287,9 +287,9 @@ describe("PostHog analytics boundary", () => {
     await capturePostHogEvent(input, request)
 
     const bodies = request.mock.calls.map(([, init]) => JSON.parse(String(init?.body)))
-    expect(bodies[0].distinct_id).toMatch(/^purchase:[a-f0-9]{64}$/)
-    expect(bodies[1].distinct_id).toBe(bodies[0].distinct_id)
-    expect(bodies[0].properties).not.toHaveProperty("distinct_id")
+    expect(bodies[0].properties.distinct_id).toMatch(/^purchase:[a-f0-9]{64}$/)
+    expect(bodies[1].properties.distinct_id).toBe(bodies[0].properties.distinct_id)
+    expect(bodies[0]).not.toHaveProperty("distinct_id")
     expect(JSON.stringify(bodies[0])).not.toContain("cs_guest_purchase_123")
   })
 
@@ -621,26 +621,16 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("autocapture:false")
     expect(provider).toContain("capture_exceptions:false")
     expect(provider).toContain("disable_session_recording:true")
-    expect(provider).toContain("function scrub(value)")
+    expect(provider).toContain("before_send:function(){return null;}")
+    expect(provider).not.toContain("function scrub(value)")
     expect(provider).toContain("before_send: sanitizePostHogEventPayload")
-    expect(provider).toContain('event.event==="$exception"')
-    expect(provider).toContain('event.event!=="$exception"')
-    expect(provider).toContain("/^\\\\$exception_/i.test(key)")
-    expect(provider).toContain("function exceptionDimension(value)")
-    expect(provider).toContain("var list=Array.isArray(event.properties.$exception_list)")
-    expect(provider).toContain("first&&first.type")
-    expect(provider).toContain("mechanism&&mechanism.type")
-    expect(provider).toContain("/exception|error|message|stack/i.test(key)")
-    expect(provider).toContain("delete event.properties[key]")
-    expect(provider).toContain('event.event==="$autocapture"')
-    expect(provider).toContain("/text|element|attr/i.test(key)")
-    expect(provider).toContain('new URL(clean,"https://sselfie.invalid")')
     expect(provider).toContain("window.posthog.identify(distinctId)")
     expect(provider).toContain("get_distinct_id?.()")
     expect(provider).toContain("shouldResetPostHogIdentity")
     expect(provider).toContain("window.posthog.reset()")
     expect(provider).toContain("identity.resetPostHog")
-    expect(provider).toContain("await acknowledgePostHogReset()")
+    expect(provider).toContain("void acknowledgePostHogReset()")
+    expect(provider).not.toContain("await acknowledgePostHogReset()")
     expect(provider).toContain("ensureAnalyticsBrowserIdentity")
     expect(provider).toContain("readIdentity(true)")
     expect(provider).toContain("setPostHogCaptureEnabled(false)")
@@ -686,7 +676,7 @@ describe("PostHog analytics boundary", () => {
     expect(provider).not.toContain("onReady=")
     const loadedCallbackIndex = provider.indexOf("const onLoaded = async")
     const resetIndex = provider.indexOf("client.reset()", loadedCallbackIndex)
-    const acknowledgeIndex = provider.indexOf("await acknowledgePostHogReset()", resetIndex)
+    const acknowledgeIndex = provider.indexOf("void acknowledgePostHogReset()", resetIndex)
     const captureEnabledIndex = provider.indexOf(
       "setPostHogCaptureEnabled(true, client)",
       loadedCallbackIndex

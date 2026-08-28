@@ -4,6 +4,10 @@ import {
   analyticsGenerationFromRequest,
   rotateAnonymousAnalyticsIdentity,
 } from "@/lib/analytics/identity-cookies"
+import {
+  clearSupabaseSessionCookies,
+  isSupabaseSessionCookie,
+} from "@/lib/supabase/session-cookies"
 
 const TERMINAL_AUTH_ERROR_CODES = new Set([
   "bad_jwt",
@@ -12,14 +16,6 @@ const TERMINAL_AUTH_ERROR_CODES = new Set([
   "session_expired",
   "session_not_found",
 ])
-
-function isSupabaseSessionCookie(name: string): boolean {
-  return (
-    name === "sb-access-token" ||
-    name === "sb-refresh-token" ||
-    /^sb-.+-auth-token(?:\.\d+)?$/.test(name)
-  )
-}
 
 function isTerminalAuthError(error: { code?: string; message?: string }): boolean {
   const code = error.code?.toLowerCase()
@@ -87,11 +83,15 @@ export async function updateSession(request: NextRequest) {
     if (error) {
       if (sessionCookies.length > 0 && isTerminalAuthError(error)) {
         console.log("[v0] [Middleware] Terminal auth session error - clearing cookies")
-        for (const cookie of sessionCookies) supabaseResponse.cookies.delete(cookie.name)
+        clearSupabaseSessionCookies(supabaseResponse, request)
         // Session loss can happen without the explicit logout route. Rotate
         // the anonymous identity and tell the browser provider to reset its
         // persisted user identity before capturing the now-anonymous page.
-        rotateAnonymousAnalyticsIdentity(supabaseResponse, analyticsGenerationFromRequest(request))
+        rotateAnonymousAnalyticsIdentity(
+          supabaseResponse,
+          analyticsGenerationFromRequest(request),
+          request
+        )
       } else {
         // Only log for API routes that require auth, not public routes
         if (

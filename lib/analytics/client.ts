@@ -7,6 +7,7 @@ export type BrowserAnalyticsIdentity = {
 
 let identityRequest: Promise<BrowserAnalyticsIdentity> | null = null
 const ANALYTICS_GENERATION_COOKIE = "sselfie_analytics_generation"
+const POSTHOG_RESET_ACK_TIMEOUT_MS = 2_000
 
 function writeAnalyticsGeneration(generation: string): void {
   const secure = window.location.protocol === "https:" ? "; Secure" : ""
@@ -81,6 +82,8 @@ export function ensureAnalyticsBrowserIdentity(
 }
 
 export async function acknowledgePostHogReset(): Promise<boolean> {
+  const controller = new AbortController()
+  const timeout = globalThis.setTimeout(() => controller.abort(), POSTHOG_RESET_ACK_TIMEOUT_MS)
   try {
     const response = await fetch("/api/analytics/event", {
       method: "POST",
@@ -88,10 +91,13 @@ export async function acknowledgePostHogReset(): Promise<boolean> {
       credentials: "same-origin",
       cache: "no-store",
       keepalive: true,
+      signal: controller.signal,
     })
     return response.ok
   } catch {
     return false
+  } finally {
+    globalThis.clearTimeout(timeout)
   }
 }
 

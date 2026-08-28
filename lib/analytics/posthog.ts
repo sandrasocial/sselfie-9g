@@ -471,11 +471,11 @@ export async function capturePostHogEvent(
   if (!endpoint) return { sent: false, reason: "invalid-host" }
 
   const properties = buildPostHogProperties(input)
+  properties.distinct_id = distinctId
   properties.$insert_id ||= randomUUID()
   const requestBody = JSON.stringify({
     api_key: config.key,
     event,
-    distinct_id: distinctId,
     properties,
   })
 

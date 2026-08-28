@@ -51,12 +51,18 @@ describe("logout analytics identity isolation", () => {
     const response = await POST(
       new NextRequest("http://localhost/api/auth/logout", {
         method: "POST",
-        headers: { "x-sselfie-analytics-generation": generation },
+        headers: {
+          "x-sselfie-analytics-generation": generation,
+          cookie:
+            "sselfie_anon_id_11111111111141118111111111111111=stale; sselfie_anon_id_33333333333343338333333333333333=current",
+        },
       })
     )
 
     const cookies = response.headers.get("set-cookie") || ""
     expect(cookies).toContain("sselfie_anon_id_33333333333343338333333333333333=")
     expect(cookies).not.toContain("sselfie_anon_id=")
+    expect(cookies).toContain("sselfie_anon_id_11111111111141118111111111111111=")
+    expect(cookies).toContain("Max-Age=0")
   })
 })

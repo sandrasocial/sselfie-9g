@@ -16,7 +16,7 @@ export async function POST(req?: NextRequest) {
     if (error) {
       console.error("[v0] Logout error:", error)
       const response = NextResponse.json({ error: error.message }, { status: 500 })
-      rotateAnonymousAnalyticsIdentity(response, analyticsGenerationFromRequest(req))
+      rotateAnonymousAnalyticsIdentity(response, analyticsGenerationFromRequest(req), req)
       return response
     }
 
@@ -26,12 +26,12 @@ export async function POST(req?: NextRequest) {
     // Rotate the server-owned anonymous identity and leave a short-lived,
     // HTTP-only reset signal. The next provider bootstrap clears the persisted
     // PostHog SDK identity before anonymous activity can be captured.
-    rotateAnonymousAnalyticsIdentity(response, analyticsGenerationFromRequest(req))
+    rotateAnonymousAnalyticsIdentity(response, analyticsGenerationFromRequest(req), req)
     return response
   } catch (error) {
     console.error("[v0] Error during logout:", error)
     const response = NextResponse.json({ error: "Failed to logout" }, { status: 500 })
-    rotateAnonymousAnalyticsIdentity(response, analyticsGenerationFromRequest(req))
+    rotateAnonymousAnalyticsIdentity(response, analyticsGenerationFromRequest(req), req)
     return response
   }
 }

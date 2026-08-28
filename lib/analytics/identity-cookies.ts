@@ -2,6 +2,14 @@ import type { NextRequest, NextResponse } from "next/server"
 
 const ANALYTICS_GENERATION_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const VERSIONED_ANON_COOKIE_PATTERN = /^sselfie_anon_id_[0-9a-f]{32}$/i
+
+const analyticsCookieOptions = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+}
 
 export function analyticsGenerationFromRequest(req?: NextRequest): string | null {
   const generation =
@@ -18,23 +26,36 @@ export function analyticsAnonCookieName(generation?: string | null): string {
     : "sselfie_anon_id"
 }
 
-export function rotateAnonymousAnalyticsIdentity(
+export function clearStaleAnonymousAnalyticsCookies(
   response: NextResponse,
+  req?: NextRequest,
   generation?: string | null
 ) {
-  const cookieOptions = {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
+  const activeCookieName = analyticsAnonCookieName(generation)
+
+  for (const cookie of req?.cookies.getAll() ?? []) {
+    if (VERSIONED_ANON_COOKIE_PATTERN.test(cookie.name) && cookie.name !== activeCookieName) {
+      response.cookies.set(cookie.name, "", {
+        ...analyticsCookieOptions,
+        maxAge: 0,
+      })
+    }
   }
+}
+
+export function rotateAnonymousAnalyticsIdentity(
+  response: NextResponse,
+  generation?: string | null,
+  req?: NextRequest
+) {
+  clearStaleAnonymousAnalyticsCookies(response, req, generation)
 
   response.cookies.set(analyticsAnonCookieName(generation), globalThis.crypto.randomUUID(), {
-    ...cookieOptions,
+    ...analyticsCookieOptions,
     maxAge: 60 * 60 * 24 * 365,
   })
   response.cookies.set("sselfie_posthog_reset", "1", {
-    ...cookieOptions,
+    ...analyticsCookieOptions,
     // Keep the isolation signal as long as the anonymous identity itself. The
     // analytics endpoint clears it only after the loaded SDK applies reset().
     maxAge: 60 * 60 * 24 * 365,

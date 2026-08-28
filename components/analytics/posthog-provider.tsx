@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation"
 import Script from "next/script"
 import {
   normalizePostHogApiHost,
-  POSTHOG_TOKENIZED_PATH_PATTERN_SOURCE,
   sanitizePostHogEventPayload,
   sanitizePostHogPathname,
   shouldResetPostHogIdentity,
@@ -104,7 +103,7 @@ function PostHogPageviews({
         const previousId = identifiedAs.current ?? window.posthog.get_distinct_id?.() ?? null
         if (identity.resetPostHog) {
           window.posthog.reset()
-          await acknowledgePostHogReset()
+          void acknowledgePostHogReset()
         } else if (shouldResetPostHogIdentity(previousId, distinctId)) {
           if (distinctId.startsWith("anon:")) {
             const rotatedIdentity = await readIdentity(true)
@@ -196,7 +195,7 @@ function PostHogPageviews({
 }
 
 function postHogSnippet(apiKey: string, apiHost: string): string {
-  return `!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once unregister identify reset set_config startSessionRecording stopSessionRecording captureException".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);posthog.init(${JSON.stringify(apiKey)},{api_host:${JSON.stringify(apiHost)},defaults:"2026-05-30",capture_pageview:false,autocapture:false,person_profiles:"identified_only",mask_all_text:true,mask_all_element_attributes:true,capture_exceptions:false,disable_session_recording:true,enable_recording_console_log:false,session_recording:{maskAllInputs:true,maskAllElementAttributes:true,recordCanvas:false,collectFonts:false,networkPayloadCapture:{recordBody:false,recordHeaders:false}},loaded:function(ph){if(window.__sselfiePostHogLoaded)window.__sselfiePostHogLoaded(ph)},before_send:function(event){function scrub(value){if(Array.isArray(value))return value.map(scrub);if(value&&typeof value==="object"){Object.keys(value).forEach(function(key){value[key]=scrub(value[key])});return value}if(typeof value!=="string")return value;var clean=value.replace(new RegExp(${JSON.stringify(POSTHOG_TOKENIZED_PATH_PATTERN_SOURCE)},"g"),"$1[token]");if(!/^https?:\\/\\//i.test(clean)&&clean.charAt(0)!=="/")return clean;try{var absolute=/^https?:\\/\\//i.test(clean);var parsed=new URL(clean,"https://sselfie.invalid");return(absolute?parsed.origin:"")+parsed.pathname}catch(e){return clean.split(/[?#]/,1)[0]}}function exceptionDimension(value){if(typeof value!=="string")return null;var clean=value.trim();return/^[A-Za-z][A-Za-z0-9_.-]{0,79}$/.test(clean)?clean:null}try{event=scrub(event)}catch(e){return null}if(event&&event.event!=="$exception"&&event.properties){Object.keys(event.properties).forEach(function(key){if(/^\\$exception_/i.test(key))delete event.properties[key]})}if(event&&event.event==="$exception"&&event.properties){var list=Array.isArray(event.properties.$exception_list)?event.properties.$exception_list:[];var first=list[0]&&typeof list[0]==="object"&&!Array.isArray(list[0])?list[0]:null;var mechanism=first&&first.mechanism&&typeof first.mechanism==="object"&&!Array.isArray(first.mechanism)?first.mechanism:null;var type=exceptionDimension(event.properties.$exception_type||(first&&first.type));var source=exceptionDimension(event.properties.$exception_source||(first&&first.source)||(mechanism&&mechanism.type));Object.keys(event.properties).forEach(function(key){if(/exception|error|message|stack/i.test(key))delete event.properties[key]});if(type)event.properties.$exception_type=type;if(source)event.properties.$exception_source=source}if(event&&event.event==="$autocapture"&&event.properties){Object.keys(event.properties).forEach(function(key){if(/text|element|attr/i.test(key))delete event.properties[key]})}if(event&&event.properties){delete event.properties.$search_engine;delete event.properties.$referrer;delete event.properties.$referring_domain}return event;}});`
+  return `!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once unregister identify reset set_config startSessionRecording stopSessionRecording captureException".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);posthog.init(${JSON.stringify(apiKey)},{api_host:${JSON.stringify(apiHost)},defaults:"2026-05-30",capture_pageview:false,autocapture:false,person_profiles:"identified_only",mask_all_text:true,mask_all_element_attributes:true,capture_exceptions:false,disable_session_recording:true,enable_recording_console_log:false,session_recording:{maskAllInputs:true,maskAllElementAttributes:true,recordCanvas:false,collectFonts:false,networkPayloadCapture:{recordBody:false,recordHeaders:false}},loaded:function(ph){if(window.__sselfiePostHogLoaded)window.__sselfiePostHogLoaded(ph)},before_send:function(){return null;}});`
 }
 
 export function PostHogProvider({
@@ -259,7 +258,7 @@ export function PostHogProvider({
         shouldResetPostHogIdentity(persistedDistinctId, identity.distinctId as string)
       ) {
         client.reset()
-        if (identity.resetPostHog) await acknowledgePostHogReset()
+        if (identity.resetPostHog) void acknowledgePostHogReset()
       }
       if (!active || generation !== identityGenerationRef.current) return
       client.identify(identity.distinctId as string)

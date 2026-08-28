@@ -7,7 +7,11 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkRateLimit } from "@/lib/rate-limit-api"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { isPostHogPurchaseEvent, postHogDistinctId } from "@/lib/analytics/posthog"
-import { analyticsAnonCookieName } from "@/lib/analytics/identity-cookies"
+import {
+  analyticsAnonCookieName,
+  analyticsGenerationFromRequest,
+  clearStaleAnonymousAnalyticsCookies,
+} from "@/lib/analytics/identity-cookies"
 
 type AnalyticsIdentity = {
   anonCookie: string | undefined
@@ -28,9 +32,6 @@ const SERVER_ONLY_ANALYTICS_EVENTS = new Set([
   "calendar_post_published",
 ])
 const POSTHOG_RESET_ACK_HEADER = "x-sselfie-posthog-reset-ack"
-const ANALYTICS_GENERATION_COOKIE = "sselfie_analytics_generation"
-const ANALYTICS_GENERATION_HEADER = "x-sselfie-analytics-generation"
-const ANALYTICS_GENERATION_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 type AnalyticsRequestInput = {
   eventName: string
@@ -89,16 +90,9 @@ async function resolveAnalyticsIdentity(
   req: NextRequest,
   rotateAnonymous = false
 ): Promise<AnalyticsIdentity | null> {
-  const rawGeneration =
-    req.headers.get(ANALYTICS_GENERATION_HEADER) ||
-    req.cookies.get(ANALYTICS_GENERATION_COOKIE)?.value ||
-    null
-  const generation =
-    rawGeneration && ANALYTICS_GENERATION_PATTERN.test(rawGeneration) ? rawGeneration : null
+  const generation = analyticsGenerationFromRequest(req)
   const anonCookieName = analyticsAnonCookieName(generation)
-  const versionedAnonCookie = rotateAnonymous
-    ? undefined
-    : req.cookies.get(anonCookieName)?.value
+  const versionedAnonCookie = rotateAnonymous ? undefined : req.cookies.get(anonCookieName)?.value
   const legacyAnonCookie =
     !rotateAnonymous && generation && !versionedAnonCookie
       ? req.cookies.get("sselfie_anon_id")?.value
@@ -133,7 +127,8 @@ async function resolveAnalyticsIdentity(
   }
 }
 
-function setAnonCookie(response: NextResponse, identity: AnalyticsIdentity) {
+function setAnonCookie(response: NextResponse, identity: AnalyticsIdentity, req: NextRequest) {
+  clearStaleAnonymousAnalyticsCookies(response, req, analyticsGenerationFromRequest(req))
   if (!identity.shouldSetAnonCookie) return
   response.cookies.set(identity.anonCookieName, identity.anonId, {
     httpOnly: true,
@@ -185,7 +180,7 @@ export async function GET(req: NextRequest) {
       resetPostHog,
     })
     response.headers.set("Cache-Control", "private, no-store")
-    setAnonCookie(response, identity)
+    setAnonCookie(response, identity, req)
     return response
   } catch {
     return NextResponse.json({ distinctId: null })
@@ -253,7 +248,7 @@ export async function POST(req: NextRequest) {
         ? { ok: true, accepted: true }
         : { ok: true, accepted: false, reason: analyticsResult.error }
     )
-    setAnonCookie(res, identity)
+    setAnonCookie(res, identity, req)
     return res
   } catch (err: unknown) {
     console.error(

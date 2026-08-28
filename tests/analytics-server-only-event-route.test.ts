@@ -115,6 +115,25 @@ describe("public analytics route server-only event boundary", () => {
     )
   })
 
+  it("expires stale generation-scoped anonymous cookies on identity refresh", async () => {
+    const generation = "22222222-2222-4222-8222-222222222222"
+    const { GET } = await import("@/app/api/analytics/event/route")
+    const response = await GET(
+      new NextRequest("http://localhost/api/analytics/event", {
+        headers: {
+          "x-sselfie-analytics-generation": generation,
+          cookie:
+            "sselfie_anon_id_11111111111141118111111111111111=stale; sselfie_anon_id_22222222222242228222222222222222=current",
+        },
+      })
+    )
+
+    const cookies = response.headers.get("set-cookie") || ""
+    expect(cookies).toContain("sselfie_anon_id_11111111111141118111111111111111=")
+    expect(cookies).toContain("Max-Age=0")
+    expect(cookies).not.toContain("sselfie_anon_id_22222222222242228222222222222222=")
+  })
+
   it("joins an authenticated browser to the server-side Neon identity", async () => {
     mocks.createServerClient.mockResolvedValue({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "auth-123" } } }) },
