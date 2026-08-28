@@ -26,7 +26,7 @@ describe("browser Supabase session generation", () => {
     vi.restoreAllMocks()
   })
 
-  it("tags a late browser refresh with the generation captured at request start", async () => {
+  it("tags a late browser refresh before Supabase can persist its session", async () => {
     let resolveRefresh: ((response: Response) => void) | undefined
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(
       () =>
@@ -46,13 +46,29 @@ describe("browser Supabase session generation", () => {
     resolveRefresh?.(new Response("{}", { status: 200 }))
     await refresh
 
-    const authCallback = mocks.onAuthStateChange.mock.calls[0]?.[0]
-    authCallback("TOKEN_REFRESHED")
-
+    // The fetch wrapper returns to the SDK only after the old generation is
+    // visible, so Supabase cannot expose its refreshed cookies first.
     expect(document.cookie).toContain(
       "sselfie_supabase_session_generation=11111111-1111-4111-8111-111111111111"
     )
     expect(fetchSpy).toHaveBeenCalledOnce()
+  })
+
+  it("does not retag the session when a refresh request fails", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 401 }))
+    const { createClient } = await import("@/lib/supabase/client")
+    createClient()
+
+    document.cookie = "sselfie_analytics_generation=22222222-2222-4222-8222-222222222222; Path=/"
+    document.cookie =
+      "sselfie_supabase_session_generation=22222222-2222-4222-8222-222222222222; Path=/"
+
+    const options = mocks.createBrowserClient.mock.calls[0]?.[2]
+    await options.global.fetch("https://supabase.test/auth/v1/token?grant_type=refresh_token")
+
+    expect(document.cookie).toContain(
+      "sselfie_supabase_session_generation=22222222-2222-4222-8222-222222222222"
+    )
   })
 
   it("tags a genuine browser sign-in with the current generation", async () => {

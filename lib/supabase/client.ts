@@ -3,7 +3,6 @@ import { DEBUG_LOGS } from "@/lib/debug"
 import { analyticsBrowserGeneration } from "@/lib/analytics/client"
 
 const SUPABASE_SESSION_GENERATION_COOKIE = "sselfie_supabase_session_generation"
-let pendingRefreshGeneration: string | null = null
 let generationTrackingInstalled = false
 
 function isRefreshTokenRequest(input: RequestInfo | URL): boolean {
@@ -24,9 +23,11 @@ async function generationAwareFetch(input: RequestInfo | URL, init?: RequestInit
   if (!isRefreshTokenRequest(input)) return globalThis.fetch(input, init)
 
   const requestGeneration = analyticsBrowserGeneration()
-  pendingRefreshGeneration = null
   const response = await globalThis.fetch(input, init)
-  if (response.ok) pendingRefreshGeneration = requestGeneration
+  // Supabase persists the refreshed session before emitting TOKEN_REFRESHED.
+  // Write the request generation before returning the response so no browser
+  // request can expose the refreshed cookies with a newer logout generation.
+  if (response.ok) writeSupabaseSessionGeneration(requestGeneration)
   return response
 }
 
@@ -74,10 +75,7 @@ export function createClient() {
   if (!generationTrackingInstalled && typeof window !== "undefined") {
     generationTrackingInstalled = true
     client.auth.onAuthStateChange(event => {
-      if (event === "TOKEN_REFRESHED") {
-        writeSupabaseSessionGeneration(pendingRefreshGeneration)
-        pendingRefreshGeneration = null
-      } else if (event === "SIGNED_IN") {
+      if (event === "SIGNED_IN") {
         writeSupabaseSessionGeneration(analyticsBrowserGeneration())
       }
     })
