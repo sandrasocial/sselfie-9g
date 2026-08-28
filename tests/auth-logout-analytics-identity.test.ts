@@ -34,14 +34,38 @@ describe("logout analytics identity isolation", () => {
     expect(cookies).toContain("HttpOnly")
   })
 
-  it("rotates analytics identity even when provider logout fails", async () => {
+  it("clears the local session before rotating when provider logout fails", async () => {
     mocks.signOut.mockResolvedValue({ error: new Error("provider unavailable") })
     const { POST } = await import("@/app/api/auth/logout/route")
-    const response = await POST()
+    const response = await POST(
+      new NextRequest("http://localhost/api/auth/logout", {
+        method: "POST",
+        headers: { cookie: "sb-project-ref-auth-token=stale-session" },
+      })
+    )
 
     expect(response.status).toBe(500)
     const cookies = response.headers.get("set-cookie") || ""
+    expect(cookies).toContain("sb-project-ref-auth-token=")
+    expect(cookies).toContain("Max-Age=0")
     expect(cookies).toContain("sselfie_anon_id=")
+    expect(cookies).toContain("sselfie_posthog_reset=1")
+  })
+
+  it("clears the local session before rotating when logout setup throws", async () => {
+    mocks.createServerClient.mockRejectedValue(new Error("provider unavailable"))
+    const { POST } = await import("@/app/api/auth/logout/route")
+    const response = await POST(
+      new NextRequest("http://localhost/api/auth/logout", {
+        method: "POST",
+        headers: { cookie: "sb-project-ref-auth-token=stale-session" },
+      })
+    )
+
+    expect(response.status).toBe(500)
+    const cookies = response.headers.get("set-cookie") || ""
+    expect(cookies).toContain("sb-project-ref-auth-token=")
+    expect(cookies).toContain("Max-Age=0")
     expect(cookies).toContain("sselfie_posthog_reset=1")
   })
 

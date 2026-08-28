@@ -646,6 +646,8 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("subscribeToAnalyticsLogout")
     expect(provider).toContain("invalidateAnalyticsBrowserIdentity()")
     expect(provider).toContain("identityGenerationRef.current += 1")
+    expect(provider).not.toContain("setIdentityGeneration")
+    expect(provider).toContain("A failed provider logout must not bootstrap")
     expect(provider).toContain("generation !== identityGenerationRef.current")
     expect(provider).toContain("providerGeneration === identityGenerationRef.current")
     expect(provider).toContain("if (!isCurrentGeneration()) return")

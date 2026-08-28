@@ -206,7 +206,7 @@ export function PostHogProvider({
   const [ready, setReady] = useState(false)
   const [identity, setIdentity] = useState<BrowserAnalyticsIdentity | null>(null)
   const [loadedCallbackReady, setLoadedCallbackReady] = useState(false)
-  const [identityGeneration, setIdentityGeneration] = useState(0)
+  const identityGeneration = 0
   const identityGenerationRef = useRef(0)
 
   useEffect(
@@ -217,7 +217,9 @@ export function PostHogProvider({
         setPostHogCaptureEnabled(false)
         setReady(false)
         setIdentity(null)
-        setIdentityGeneration(identityGenerationRef.current)
+        // Stay fail-closed until the logout flow navigates or remounts this
+        // provider. A failed provider logout must not bootstrap the still-live
+        // authenticated identity again in the same page.
       }),
     []
   )

@@ -4,6 +4,17 @@ import {
   analyticsGenerationFromRequest,
   rotateAnonymousAnalyticsIdentity,
 } from "@/lib/analytics/identity-cookies"
+import { clearSupabaseSessionCookies } from "@/lib/supabase/session-cookies"
+
+function failedLogoutResponse(req?: NextRequest, message = "Failed to logout") {
+  const response = NextResponse.json({ error: message }, { status: 500 })
+  // The user explicitly requested logout. If the provider call failed before
+  // clearing its SSR cookies, expire the local session so analytics cannot
+  // reset and immediately re-identify the same authenticated user.
+  clearSupabaseSessionCookies(response, req)
+  rotateAnonymousAnalyticsIdentity(response, analyticsGenerationFromRequest(req), req)
+  return response
+}
 
 export async function POST(req?: NextRequest) {
   try {
@@ -15,9 +26,7 @@ export async function POST(req?: NextRequest) {
 
     if (error) {
       console.error("[v0] Logout error:", error)
-      const response = NextResponse.json({ error: error.message }, { status: 500 })
-      rotateAnonymousAnalyticsIdentity(response, analyticsGenerationFromRequest(req), req)
-      return response
+      return failedLogoutResponse(req, error.message)
     }
 
     console.log("[v0] User logged out successfully")
@@ -30,8 +39,6 @@ export async function POST(req?: NextRequest) {
     return response
   } catch (error) {
     console.error("[v0] Error during logout:", error)
-    const response = NextResponse.json({ error: "Failed to logout" }, { status: 500 })
-    rotateAnonymousAnalyticsIdentity(response, analyticsGenerationFromRequest(req), req)
-    return response
+    return failedLogoutResponse(req)
   }
 }
