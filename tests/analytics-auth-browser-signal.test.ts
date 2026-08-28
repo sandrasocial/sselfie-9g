@@ -28,6 +28,8 @@ describe("analytics logout browser signal", () => {
   beforeEach(() => {
     MockBroadcastChannel.instances = []
     vi.stubGlobal("BroadcastChannel", MockBroadcastChannel)
+    document.cookie = "sselfie_analytics_generation=11111111-1111-4111-8111-111111111111; Path=/"
+    document.cookie = "sselfie_supabase_session_generation=; Path=/; Max-Age=0"
   })
 
   it("notifies both the current tab and other tabs without sending identity data", () => {
@@ -89,6 +91,17 @@ describe("analytics logout browser signal", () => {
       expect(signal, caller).toBeGreaterThan(-1)
       expect(signal, caller).toBeLessThan(logoutRequest)
     }
+  })
+
+  it("binds an untagged auth session to the pre-logout generation", () => {
+    notifyAnalyticsLogout()
+
+    expect(document.cookie).toContain(
+      "sselfie_supabase_session_generation=11111111-1111-4111-8111-111111111111"
+    )
+    expect(document.cookie).not.toContain(
+      "sselfie_analytics_generation=11111111-1111-4111-8111-111111111111"
+    )
   })
 
   it("broadcasts account deletion only after the server confirms success", () => {

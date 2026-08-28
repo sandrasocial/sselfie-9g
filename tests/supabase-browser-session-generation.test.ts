@@ -16,7 +16,8 @@ describe("browser Supabase session generation", () => {
     vi.resetModules()
     vi.clearAllMocks()
     document.cookie = "sselfie_analytics_generation=11111111-1111-4111-8111-111111111111; Path=/"
-    document.cookie = "sselfie_supabase_session_generation=; Path=/; Max-Age=0"
+    document.cookie =
+      "sselfie_supabase_session_generation=11111111-1111-4111-8111-111111111111; Path=/"
     mocks.createBrowserClient.mockReturnValue({
       auth: { onAuthStateChange: mocks.onAuthStateChange },
     })
@@ -38,12 +39,21 @@ describe("browser Supabase session generation", () => {
     createClient()
 
     const options = mocks.createBrowserClient.mock.calls[0]?.[2]
+    document.cookie = "sselfie_analytics_generation=22222222-2222-4222-8222-222222222222; Path=/"
     const refresh = options.global.fetch(
       "https://supabase.test/auth/v1/token?grant_type=refresh_token"
     )
 
-    document.cookie = "sselfie_analytics_generation=22222222-2222-4222-8222-222222222222; Path=/"
-    resolveRefresh?.(new Response("{}", { status: 200 }))
+    resolveRefresh?.(
+      new Response(
+        JSON.stringify({
+          access_token: "new-access-token",
+          refresh_token: "new-refresh-token",
+          expires_in: 3600,
+        }),
+        { status: 200 }
+      )
+    )
     await refresh
 
     // The fetch wrapper returns to the SDK only after the old generation is
@@ -52,6 +62,32 @@ describe("browser Supabase session generation", () => {
       "sselfie_supabase_session_generation=11111111-1111-4111-8111-111111111111"
     )
     expect(fetchSpy).toHaveBeenCalledOnce()
+  })
+
+  it("does not retag the session for a malformed successful response", async () => {
+    let resolveRefresh: ((response: Response) => void) | undefined
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      () =>
+        new Promise<Response>(resolve => {
+          resolveRefresh = resolve
+        })
+    )
+    const { createClient } = await import("@/lib/supabase/client")
+    createClient()
+
+    const options = mocks.createBrowserClient.mock.calls[0]?.[2]
+    const refresh = options.global.fetch(
+      "https://supabase.test/auth/v1/token?grant_type=refresh_token"
+    )
+
+    document.cookie =
+      "sselfie_supabase_session_generation=22222222-2222-4222-8222-222222222222; Path=/"
+    resolveRefresh?.(new Response("{}", { status: 200 }))
+    await refresh
+
+    expect(document.cookie).toContain(
+      "sselfie_supabase_session_generation=22222222-2222-4222-8222-222222222222"
+    )
   })
 
   it("does not retag the session when a refresh request fails", async () => {

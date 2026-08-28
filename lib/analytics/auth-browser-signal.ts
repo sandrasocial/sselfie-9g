@@ -1,6 +1,7 @@
 "use client"
 
 import { rotateAnalyticsBrowserGeneration } from "@/lib/analytics/client"
+import { bindCurrentSupabaseSessionGeneration } from "@/lib/supabase/client"
 
 const AUTH_CHANNEL_NAME = "sselfie-analytics-auth"
 const AUTH_STORAGE_KEY = "sselfie_analytics_auth_signal"
@@ -9,6 +10,11 @@ const LOGOUT_MESSAGE = "logout"
 
 export function notifyAnalyticsLogout(): void {
   if (typeof window === "undefined") return
+
+  // Existing sessions created before generation tagging may not have a marker
+  // yet. Bind them to the pre-logout generation before rotating the shared
+  // analytics cookie so a cross-tab refresh cannot inherit the new value.
+  bindCurrentSupabaseSessionGeneration()
 
   // Rotate synchronously before the logout request begins. Older in-flight
   // analytics responses can then write only their previous generation's
