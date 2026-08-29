@@ -73,19 +73,19 @@ describe("Maya chat selfie management", () => {
       "utf8"
     )
 
-    expect(modal).toContain('className="pointer-events-auto fixed inset-0')
+    expect(modal).toContain("pointer-events-auto fixed inset-0")
   })
 })
 
 describe("mid-thread format chip re-tap", () => {
-  it("handlePickFormat always re-arms the text gate (no same-format guard)", () => {
+  it("handlePickFormat always re-arms generation with the graphic default", () => {
     const fn = concierge.slice(
       concierge.indexOf("function handlePickFormat"),
       concierge.indexOf("function intentForCurrentVibeChoice")
     )
     expect(fn).not.toContain("if (id !== outputFormat)")
-    expect(fn).toContain("setTextOverlayMode(null)")
-    expect(fn).toContain("setTextStyleChoice(null)")
+    expect(fn).toContain('setTextOverlayMode(graphicFormat ? "with-text" : null)')
+    expect(fn).toContain("rememberedOverlayStyle ?? DEFAULT_GRAPHIC_OVERLAY_STYLE")
     expect(fn).toContain("lastPulledFormatRef.current = null")
   })
 
@@ -103,7 +103,7 @@ describe("mid-thread format chip re-tap", () => {
     const effect = concierge.slice(start, concierge.indexOf("}, [messages", start))
 
     expect(effect).toContain("shouldContinueCompletedFormatSwitch")
-    expect(effect).toContain('sendMessage({ text: "Continue with what we already created." })')
+    expect(effect).toContain("sendMessage({ text: FORMAT_PHRASE[latest] })")
   })
 })
 

@@ -139,13 +139,13 @@ const FRAME_ASPECT: Record<OutputFormat, string> = {
 }
 
 const FRAME_MAX_WIDTH: Record<OutputFormat, string> = {
-  photo: "max-w-[24rem]",
-  photoshoot: "max-w-[24rem]",
-  "reel-cover": "max-w-[18rem]",
-  "story-slide": "max-w-[18rem]",
-  "story-sequence": "max-w-[18rem]",
-  carousel: "max-w-[24rem]",
-  video: "max-w-[18rem]",
+  photo: "max-w-[19rem]",
+  photoshoot: "max-w-[19rem]",
+  "reel-cover": "max-w-[14rem]",
+  "story-slide": "max-w-[14rem]",
+  "story-sequence": "max-w-[14rem]",
+  carousel: "max-w-[19rem]",
+  video: "max-w-[14rem]",
 }
 
 const CREATING_LABEL: Record<OutputFormat, string> = {
@@ -426,7 +426,7 @@ export function ConceptCard({
       ) : isGenerating || isDone || isVideoDone ? (
         <div className="suite-concept-visual flex w-full justify-center bg-[#F1F2F2] p-3 sm:p-4">
           <div
-            className={`suite-concept-result-preview relative max-h-[min(62dvh,34rem)] w-full overflow-hidden bg-[#E7E8E8] ${FRAME_ASPECT[format]} ${FRAME_MAX_WIDTH[format]} ${
+            className={`suite-concept-result-preview relative max-h-[min(46dvh,24rem)] w-full overflow-hidden bg-[#E7E8E8] ${FRAME_ASPECT[format]} ${FRAME_MAX_WIDTH[format]} ${
               isGenerating && !gen.previewUrl ? "animate-pulse motion-reduce:animate-none" : ""
             }`}
           >

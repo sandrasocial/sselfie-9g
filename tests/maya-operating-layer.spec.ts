@@ -657,8 +657,7 @@ if (!runPlaywright) {
       await page.getByRole("button", { name: "Create the carousel" }).click()
       await expect(maya).toHaveAttribute("data-maya-format", "carousel")
       await expect(page.getByText("Choose your style")).toHaveCount(0)
-      await expect(page.getByText("Text on image")).toBeVisible()
-      await page.getByRole("button", { name: "No text, just the visual" }).click()
+      await expect(page.getByText("Text on image")).toHaveCount(0)
       await expect(page.getByText("Three-part visibility carousel")).toBeVisible()
 
       await page.getByRole("button", { name: /Create this · 3 credits/i }).click()
@@ -1227,8 +1226,7 @@ if (!runPlaywright) {
       await composer.fill("Create a three-slide visibility carousel")
       await page.getByRole("button", { name: "Send" }).click()
 
-      await expect(page.getByText("Text on image")).toBeVisible()
-      await page.getByRole("button", { name: "No text, just the visual" }).click()
+      await expect(page.getByText("Text on image")).toHaveCount(0)
       await expect(page.getByText("Three-part visibility carousel")).toBeVisible()
       await expect(page.getByRole("button", { name: "Preview" })).toHaveCount(0)
       const create = page.getByRole("button", { name: "Create this · 3 credits" })

@@ -489,7 +489,8 @@ function setFormatForWorkspacePath(path: MayaWorkspacePath) {
 const askClarify = tool({
   description:
     "Ask ONE inline clarifying question when you are missing a required detail to make on-brand " +
-    "content (e.g. the reel topic, the carousel teaching angle, the story objective). Use this " +
+    "content and neither her request nor her memory provides a credible answer. A named topic is " +
+    "enough for a carousel or Story: choose the strongest angle yourself instead of asking. Use this " +
     "INSTEAD of generating something generic. Offer 3 to 5 short tappable options drawn from what " +
     "you know about HER brand (never generic), and set allowFreeText so she can answer in her own " +
     "words. Exception: when general Maya recommends an unnamed output format, use kind=format, " +

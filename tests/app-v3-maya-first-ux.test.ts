@@ -185,16 +185,18 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).toContain("lg:hidden")
   })
 
-  it("requires an explicit text/no-text choice before graphic generation", () => {
+  it("starts graphic generation with a safe default and keeps finish controls compact", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
     const route = read("app/api/app-v3/maya/generate/route.ts")
     const card = read("components/app-v3/concept-card.tsx")
     const lightbox = read("components/app-v3/image-lightbox.tsx")
 
-    expect(concierge).toContain("function GraphicTextChoiceCard")
-    expect(concierge).toContain("setTextOverlayMode(mode)")
+    expect(concierge).not.toContain("function GraphicTextChoiceCard")
+    expect(concierge).toContain("DEFAULT_GRAPHIC_OVERLAY_STYLE")
+    expect(concierge).toContain('setTextOverlayMode(graphicFormat ? "with-text" : null)')
     expect(concierge).toContain('textOverlayMode === "with-text"')
-    expect(concierge).toContain('onChoose("without-text")')
+    expect(concierge).toContain('setTextOverlayMode("without-text")')
+    expect(concierge).toContain("Keep the images clean · no text")
     expect(route).toContain("normalizeRequestedOverlayStyle(body.overlayStyle)")
     expect(route).toContain("normalizeGraphicTextMode(body.textOverlayMode)")
     expect(route).toContain("shouldBakeGraphicText(format, requestedTextOverlayMode)")
@@ -205,11 +207,11 @@ describe("Maya-first Suite creation UX", () => {
     expect(lightbox).not.toContain("TextOverlayLayer")
   })
 
-  it("keeps recommended graphic next steps behind the explicit text and style choice", () => {
+  it("continues recommended graphic next steps without another decision gate", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
-    expect(concierge).toContain("setTextOverlayMode(null)")
-    expect(concierge).toContain("setTextStyleChoice(null)")
+    expect(concierge).toContain('setTextOverlayMode("with-text")')
+    expect(concierge).toContain("rememberedOverlayStyle ?? DEFAULT_GRAPHIC_OVERLAY_STYLE")
     expect(concierge).not.toContain("recommendedGraphicTextStyle(nextFormat")
   })
 

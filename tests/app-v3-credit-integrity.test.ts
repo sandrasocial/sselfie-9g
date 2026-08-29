@@ -35,6 +35,17 @@ describe("app-v3 generation credit integrity", () => {
     )
   })
 
+  it("validates saved references before charging and returns a recoverable stale-selfie error", () => {
+    const preflightIndex = route.indexOf("const identityReferenceUrls = referenceUrls")
+    const deductionIndex = route.indexOf("const deduction = await deductCredits(")
+
+    expect(preflightIndex).toBeGreaterThan(-1)
+    expect(deductionIndex).toBeGreaterThan(preflightIndex)
+    expect(route).toContain('code: identityFailed ? "reference_selfie_unavailable"')
+    expect(route).toContain('action: identityFailed ? "choose_reference_selfie"')
+    expect(route).toContain("reference fetch failed")
+  })
+
   it("returns credits for images that reached Blob but never the gallery", () => {
     expect(route).toContain(
       "const missingFromGallery = persisted.filter(p => p.id === null).length"

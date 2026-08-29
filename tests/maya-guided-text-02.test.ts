@@ -26,12 +26,12 @@ describe("conversational set_format continues instead of stalling (maya-concierg
     expect(effect).toContain("creationIntent: intent")
   })
 
-  it("auto-continues with her remembered text style; first-timers keep the choice cards", () => {
+  it("auto-continues with her remembered text style or the editorial default", () => {
     const start = concierge.indexOf("Conversational format switching")
     const effect = concierge.slice(start, concierge.indexOf("}, [\n    messages", start))
     expect(effect).toContain("rememberedOverlayStyle")
     expect(effect).toContain('setTextOverlayMode("with-text")')
-    expect(effect).toContain("setTextOverlayMode(null)")
+    expect(effect).toContain("rememberedOverlayStyle ?? DEFAULT_GRAPHIC_OVERLAY_STYLE")
   })
 })
 

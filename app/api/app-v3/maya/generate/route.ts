@@ -405,17 +405,58 @@ function isAllowedReferenceUrl(value: string): boolean {
   }
 }
 
-async function readReferenceImage(value: string): Promise<Buffer> {
+class ReferenceImageUnavailableError extends Error {
+  readonly status: number | null
+  readonly role: "identity" | "inspiration"
+
+  constructor(role: "identity" | "inspiration", status: number | null) {
+    super(`${role === "identity" ? "Reference selfie" : "Inspiration image"} is unavailable`)
+    this.name = "ReferenceImageUnavailableError"
+    this.status = status
+    this.role = role
+  }
+}
+
+async function readReferenceImage(
+  value: string,
+  role: "identity" | "inspiration" = "identity"
+): Promise<Buffer> {
   const dataUrlMatch = value.match(/^data:image\/(?:png|jpeg|jpg|webp);base64,(.+)$/i)
   if (dataUrlMatch?.[1]) {
     const buffer = Buffer.from(dataUrlMatch[1], "base64")
     if (buffer.byteLength > 12 * 1024 * 1024) throw new Error("Reference image is too large")
     return buffer
   }
-  const res = await fetch(value)
-  if (!res.ok) throw new Error("Could not load reference selfie")
+  let res: Response
+  try {
+    res = await fetch(value, { cache: "no-store" })
+  } catch (error) {
+    console.warn("[app-v3 generate] reference fetch failed", {
+      role,
+      host: new URL(value).hostname,
+      status: null,
+      error: error instanceof Error ? error.message.slice(0, 160) : "network error",
+    })
+    throw new ReferenceImageUnavailableError(role, null)
+  }
+  if (!res.ok) {
+    console.warn("[app-v3 generate] reference fetch failed", {
+      role,
+      host: new URL(value).hostname,
+      status: res.status,
+    })
+    throw new ReferenceImageUnavailableError(role, res.status)
+  }
   const contentType = res.headers.get("content-type") || ""
-  if (!contentType.startsWith("image/")) throw new Error("Reference URL did not return an image")
+  if (!contentType.startsWith("image/")) {
+    console.warn("[app-v3 generate] reference returned non-image content", {
+      role,
+      host: new URL(value).hostname,
+      status: res.status,
+      contentType: contentType.slice(0, 80),
+    })
+    throw new ReferenceImageUnavailableError(role, res.status)
+  }
   return Buffer.from(await res.arrayBuffer())
 }
 
@@ -780,6 +821,85 @@ export async function POST(request: NextRequest) {
     const withLikeness = (promptText: string): string =>
       likenessBlock ? `${promptText}\n\n${likenessBlock}` : promptText
 
+    // Resolve and normalize every selected reference BEFORE credits are touched. A saved Blob
+    // can outlive the object it points to; charging first turned that ordinary stale-reference
+    // case into an unexpected 500 outside the normal refund path.
+    const identityReferenceUrls = referenceUrls
+    const inspirationReferenceUrls = inspirationReferenceUrl ? [inspirationReferenceUrl] : []
+    let unavailableReferenceUrl: string | null = null
+    const selfieFiles: Awaited<ReturnType<typeof toFile>>[] = []
+    const inspirationFiles: Awaited<ReturnType<typeof toFile>>[] = []
+    try {
+      for (const [index, url] of identityReferenceUrls.entries()) {
+        unavailableReferenceUrl = url
+        const buffer = await normalizeReferenceForOpenAI(await readReferenceImage(url, "identity"))
+        selfieFiles.push(
+          await toFile(buffer, `maya-identity-reference-${index}.png`, { type: "image/png" })
+        )
+      }
+      unavailableReferenceUrl = null
+      for (const [index, url] of inspirationReferenceUrls.entries()) {
+        unavailableReferenceUrl = url
+        const buffer = await normalizeReferenceForOpenAI(
+          await readReferenceImage(url, "inspiration")
+        )
+        inspirationFiles.push(
+          await toFile(buffer, `maya-inspiration-reference-${index}.png`, { type: "image/png" })
+        )
+      }
+      unavailableReferenceUrl = null
+    } catch (referenceError) {
+      if (!(referenceError instanceof ReferenceImageUnavailableError)) throw referenceError
+
+      // A permanent missing Blob should not keep coming back as the newest saved selfie. Do not
+      // deactivate on transient network/5xx failures; the member can safely retry those.
+      if (
+        unavailableReferenceUrl &&
+        (referenceError.status === 404 || referenceError.status === 410)
+      ) {
+        await sql`
+          UPDATE user_avatar_images
+          SET is_active = false
+          WHERE user_id = ${String(neonUser.id)}
+            AND image_url = ${unavailableReferenceUrl}
+        `.catch(deactivateError => {
+          console.error("[app-v3 generate] failed to retire missing reference:", deactivateError)
+        })
+      }
+
+      const identityFailed = referenceError.role === "identity"
+      return NextResponse.json(
+        {
+          error: identityFailed
+            ? "That saved selfie is no longer available. Choose another saved selfie or add it again."
+            : "That inspiration image is no longer available. Choose another one or add it again.",
+          code: identityFailed ? "reference_selfie_unavailable" : "inspiration_unavailable",
+          action: identityFailed ? "choose_reference_selfie" : "choose_inspiration",
+        },
+        { status: 422 }
+      )
+    }
+
+    actualPromptRecords = recordPrompts.map((prompt, index) =>
+      [
+        `Prompt version: ${SSELFIE_PROMPT_VERSION}`,
+        `Model provider: openai`,
+        `Model: ${OPENAI_IMAGE_MODEL}`,
+        `Format: ${format}`,
+        `Generation job: ${jobs[index]?.label ?? graphicJobs[index]?.label ?? `image ${index + 1}`}`,
+        `Identity reference URLs used: ${identityReferenceUrls.join(", ") || "none"}`,
+        `Inspiration reference URLs used: ${inspirationReferenceUrls.join(", ") || "none"}`,
+        likenessBlock ? "Likeness memory notes applied: yes" : "",
+        photoshootJobs.length > 0
+          ? "Photoshoot reference flow: hero shot uses uploaded identity references; non-hero shots use uploaded identity references plus generated hero anchor."
+          : "",
+        "",
+        prompt,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    )
+
     // ── Credits: deduct the FULL set up front (1 per image). All-or-nothing: any failure
     //    refunds the whole set, so a broken carousel never charges the user. ──
     const hasEnough = await checkCredits(neonUser.id, totalCost)
@@ -867,42 +987,7 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: openaiApiKey })
 
-    // Prepare identity reference file(s) once, reused across every pass and job (Modes A/B).
-    // Keep inspiration separate in code/logs: it can guide pose/style when explicitly attached,
-    // but it must never be treated as a face/body identity anchor.
-    const identityReferenceUrls = referenceUrls
-    const inspirationReferenceUrls = inspirationReferenceUrl ? [inspirationReferenceUrl] : []
-    actualPromptRecords = recordPrompts.map((prompt, index) =>
-      [
-        `Prompt version: ${SSELFIE_PROMPT_VERSION}`,
-        `Model provider: openai`,
-        `Model: ${OPENAI_IMAGE_MODEL}`,
-        `Format: ${format}`,
-        `Generation job: ${jobs[index]?.label ?? graphicJobs[index]?.label ?? `image ${index + 1}`}`,
-        `Identity reference URLs used: ${identityReferenceUrls.join(", ") || "none"}`,
-        `Inspiration reference URLs used: ${inspirationReferenceUrls.join(", ") || "none"}`,
-        likenessBlock ? "Likeness memory notes applied: yes" : "",
-        photoshootJobs.length > 0
-          ? "Photoshoot reference flow: hero shot uses uploaded identity references; non-hero shots use uploaded identity references plus generated hero anchor."
-          : "",
-        "",
-        prompt,
-      ]
-        .filter(Boolean)
-        .join("\n")
-    )
-    const selfieFiles = await Promise.all(
-      identityReferenceUrls.map(async (url, i) => {
-        const buf = await normalizeReferenceForOpenAI(await readReferenceImage(url))
-        return toFile(buf, `maya-identity-reference-${i}.png`, { type: "image/png" })
-      })
-    )
-    const inspirationFiles = await Promise.all(
-      inspirationReferenceUrls.map(async (url, i) => {
-        const buf = await normalizeReferenceForOpenAI(await readReferenceImage(url))
-        return toFile(buf, `maya-inspiration-reference-${i}.png`, { type: "image/png" })
-      })
-    )
+    // Prepared before the credit charge so a stale saved reference cannot consume credits.
     const selfieAndInspirationFiles =
       inspirationFiles.length > 0 ? [...selfieFiles, ...inspirationFiles] : selfieFiles
 

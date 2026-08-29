@@ -38,7 +38,7 @@ export function ClarifyCard({ clarify, onPick, onFreeText, disabled }: ClarifyCa
           {firstOption}
         </button>
       )}
-      {isFormatRecommendation && otherOptions.length > 0 ? (
+      {otherOptions.length > 0 ? (
         <div className="mt-2 grid gap-2">
           {otherOptions.map(o => (
             <button
@@ -52,26 +52,6 @@ export function ClarifyCard({ clarify, onPick, onFreeText, disabled }: ClarifyCa
             </button>
           ))}
         </div>
-      ) : otherOptions.length > 0 ? (
-        <details className="mt-2 rounded-[8px] border border-[#C5C6C8]/60 bg-[#F8FAFA]">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3.5 text-[12px] text-[#4F5052] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0D0E10]">
-            Other options
-            <span aria-hidden>+</span>
-          </summary>
-          <div className="flex flex-wrap gap-2 border-t border-[#C5C6C8]/50 p-3">
-            {otherOptions.map(o => (
-              <button
-                key={o}
-                type="button"
-                disabled={disabled}
-                onClick={() => onPick(o)}
-                className="min-h-11 rounded-full border border-[#C5C6C8]/70 bg-white px-3.5 py-2 text-[13px] text-[#4F5052] transition-colors hover:border-[#0D0E10] hover:text-[#0D0E10] disabled:opacity-40"
-              >
-                {o}
-              </button>
-            ))}
-          </div>
-        </details>
       ) : null}
       {clarify.allowFreeText && onFreeText && (
         <button

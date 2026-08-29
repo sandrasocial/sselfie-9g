@@ -17,6 +17,16 @@ describe("Maya first-user clarity", () => {
     expect(concierge).toContain('description: "Carousels, captions & stories"')
     expect(concierge).toContain("Choose one selfie to start with.")
     expect(concierge).not.toContain("Included in SSELFIE SUITE")
+    expect(concierge).toContain("Create with Maya")
+    expect(concierge).toContain("Create from the Vault")
+  })
+
+  it("keeps every genuinely needed clarification option visible", () => {
+    const clarify = read("components/app-v3/clarify-card.tsx")
+
+    expect(clarify).toContain("otherOptions.map")
+    expect(clarify).not.toContain("Other options")
+    expect(clarify).not.toContain("<details")
   })
 
   it("makes the empty selfie area the single obvious upload action", () => {
@@ -34,7 +44,9 @@ describe("Maya first-user clarity", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
     const conceptCard = read("components/app-v3/concept-card.tsx")
 
-    expect(concierge).toContain("Choose a direction. Maya will create it with your real face.")
+    expect(concierge).toContain(
+      "Maya will recommend the strongest direction and create it with your real face."
+    )
     expect(concierge).not.toContain(
       "Your selfie's in, and it's still you. Hit create and pick the idea that feels most like you."
     )
@@ -55,5 +67,13 @@ describe("Maya first-user clarity", () => {
     expect(resultActions).not.toContain("More things Maya can make")
     expect(lightbox).toContain('aria-label="Your finished creation"')
     expect(lightbox).toContain("onClose")
+  })
+
+  it("keeps the inline result compact enough to continue chatting", () => {
+    const conceptCard = read("components/app-v3/concept-card.tsx")
+
+    expect(conceptCard).toContain("max-h-[min(46dvh,24rem)]")
+    expect(conceptCard).toContain('photo: "max-w-[19rem]"')
+    expect(conceptCard).toContain('"story-sequence": "max-w-[14rem]"')
   })
 })
