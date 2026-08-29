@@ -416,11 +416,13 @@ describe("MAYA-FIX-03 composited overlay layer", () => {
     }
   })
 
-  it("keeps the overlay-mode cutout image free of baked ink marks (the layer owns them)", () => {
+  it("keeps the legacy layered-editorial image free of baked ink marks and subject cutouts", () => {
     const cutout = CAROUSEL_DESIGN_SYSTEMS.find(s => s.id === "cutout-editorial")
     expect(cutout).toBeDefined()
     expect(cutout!.textFreeSetDna).toMatch(/NO hand-drawn marks/i)
     expect(cutout!.textFreeSetDna).not.toMatch(/a small arrow, a loose circle/)
+    expect(cutout!.identityTreatment).toContain("Never extract her silhouette")
+    expect(cutout!.identityTreatment).not.toContain("CUTOUT STICKER")
     // The baked-text path keeps its accents (flag off, nothing changes).
     expect(cutout!.setDna).toMatch(/Hand-drawn accents/)
   })

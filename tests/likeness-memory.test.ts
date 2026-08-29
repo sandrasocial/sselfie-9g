@@ -60,6 +60,26 @@ describe("likeness correction classification", () => {
     }
   })
 
+  it("does not turn identity-preservation clauses into lasting likeness memory", () => {
+    for (const instruction of [
+      "Soften the café background slightly while keeping the window light natural and unchanged. Do not change her face, hair, black blazer, pose, framing, hands, or identity.",
+      "Change the wall to charcoal; preserve my face and hair unchanged.",
+      "Warm the color grade, but don't alter my face, body, or hair.",
+    ]) {
+      expect(classifyLikenessCorrection(instruction)).toMatchObject({
+        isLikeness: false,
+        note: null,
+      })
+    }
+  })
+
+  it("still captures a real hair correction rather than stripping it as preservation", () => {
+    expect(classifyLikenessCorrection("keep my hair dark brown, not black")).toMatchObject({
+      isLikeness: true,
+      category: "hair",
+    })
+  })
+
   it("NEVER stores a vanity ask as a likeness note (No-Fake doctrine)", () => {
     for (const instruction of [
       "make me thinner",

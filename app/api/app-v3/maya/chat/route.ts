@@ -27,6 +27,7 @@ import { getVaultStyleGuide, getVaultOverviewGuide } from "@/lib/app-v3/maya/vau
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getMemory, saveMemory } from "@/lib/app-v3/maya/memory-store"
 import { isLikenessMemoryEnabled } from "@/lib/app-v3/likeness-memory"
+import { extractRecentWardrobe } from "@/lib/app-v3/maya/recent-wardrobe"
 import { salvageConceptsPayload } from "@/lib/app-v3/concept-salvage"
 import { listChats } from "@/lib/app-v3/maya/chat-store"
 import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
@@ -330,7 +331,7 @@ const graphicSpec = z
       .enum(["cutout-editorial", "full-bleed-editorial", "soft-minimal"])
       .optional()
       .describe(
-        "Carousel design system for the WHOLE set. Default to cutout-editorial unless the look says otherwise."
+        "Carousel design system for the WHOLE set. Default to full-bleed-editorial. The legacy cutout-editorial id means layered photographic frames, never a literal person cutout."
       ),
   })
   .optional()
@@ -344,7 +345,9 @@ const conceptSchema = z.object({
   brief: z.object({
     outfit: z
       .string()
-      .describe("Exact brand + garment, e.g. 'The Row cream cashmere turtleneck'. Never generic."),
+      .describe(
+        "Specific current outfit with silhouette, material, color, and styling. Use brands only when the member or Vault supports them; never default to a camel coat, blazer, or beige founder uniform."
+      ),
     setting: z.string().describe("A concrete place with real detail."),
     mood: z.string().describe("The emotional register, in a few words."),
     pose: z.string().describe("One simple, natural pose - a real moment."),
@@ -876,6 +879,7 @@ export async function POST(req: Request) {
     // Both feed her confidence so she asks only when she genuinely doesn't know (best-effort).
     let memory = null
     let recentActivity: string[] = []
+    let recentWardrobe: string[] = []
     let memoryUserId: string | null = null
     try {
       const neonUserId = await getUserIdFromSupabase(user.id)
@@ -899,6 +903,19 @@ export async function POST(req: Request) {
                   : "unfinished"
             return `[${status}] ${c.title!.trim()}`
           })
+        try {
+          const wardrobeRows = (await sql`
+            SELECT generated_prompt, prompt
+            FROM ai_images
+            WHERE user_id::text = ${memoryUserId}
+              AND generation_status = 'completed'
+            ORDER BY created_at DESC
+            LIMIT 24
+          `) as Array<{ generated_prompt: string | null; prompt: string | null }>
+          recentWardrobe = extractRecentWardrobe(wardrobeRows)
+        } catch (wardrobeError) {
+          console.error("[app-v3 maya chat] recent wardrobe load skipped:", wardrobeError)
+        }
       }
     } catch (e) {
       console.error("[app-v3 maya chat] memory/activity load skipped:", e)
@@ -941,6 +958,7 @@ export async function POST(req: Request) {
         brandKit: body?.brandKit ?? null,
         memory,
         recentActivity,
+        recentWardrobe,
         // A neutral Maya Home handoff must carry the member's topic and audience without
         // reviving legacy instructions that automatically assign a lookbook, palette, or outfit.
         // A look she deliberately chose keeps the full established creative context.
@@ -1182,7 +1200,7 @@ export async function POST(req: Request) {
     // silently, no announcement (persona rule). Dedup + 2000-char cap keep notes sane.
     const remember = tool({
       description:
-        "Quietly save a LASTING fact about the user's brand or a style preference/aversion they just expressed, so future sessions already know it. Never announce the save in your reply.",
+        "Quietly save a LASTING fact about the user's brand or a lasting style/fashion preference or aversion they just expressed, so future sessions already know it. This includes silhouettes, colors, brands, shoes, styling moves, or outfit formulas they love or never want again. Never save a one-off outfit for today's image. Never announce the save in your reply.",
       inputSchema: z.object({
         brandNote: z
           .string()
@@ -1194,7 +1212,7 @@ export async function POST(req: Request) {
           .string()
           .optional()
           .describe(
-            "Short lasting style preference or aversion, e.g. 'Hates studio backdrops; loves warm window light'."
+            "Short lasting style or fashion preference/aversion, e.g. 'Hates studio backdrops' or 'Never wears blazers; prefers relaxed leather jackets and dark denim'. Not a one-off outfit."
           ),
       }),
       execute: async ({ brandNote, preference }) => {

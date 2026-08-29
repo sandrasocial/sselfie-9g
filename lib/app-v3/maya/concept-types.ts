@@ -10,11 +10,11 @@ import type { ShootShotRole } from "@/lib/content-kit/types"
 /**
  * The structured creative brief Maya produces for ONE concept.
  * Every field feeds the Vault-aligned compiler (see prompt-compiler.compileConceptJobs).
- * Maya MUST fill these with specific, named language — exact brand names, a named camera
+ * Maya MUST fill these with specific, visual language — garment shape/material/color, a named camera
  * body, a named lighting setup — never generic ("luxury sweater", "soft light").
  */
 export interface CreativeBrief {
-  /** 2 — Outfit/brand. Exact brand + garment, e.g. "The Row cream cashmere turtleneck". */
+  /** 2 — Specific outfit: silhouette, material, color, styling, and brand only when supported. */
   outfit: string
   /** 3 — Setting/environment, e.g. "north-facing London apartment, marble console". */
   setting: string

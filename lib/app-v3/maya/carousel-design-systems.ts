@@ -31,31 +31,28 @@ export interface CarouselDesignSystem {
 export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
   {
     id: "cutout-editorial",
-    name: "Cutout Editorial",
+    name: "Layered Editorial",
     whenToUse:
-      "Instagram-native teaching and story carousels: collage energy, cutout stickers, " +
-      "handwritten notes. Feels saved-from-Pinterest, personal, and current.",
+      "Instagram-native teaching and story carousels: layered photo-dump energy, film-frame crops, " +
+      "and restrained handwritten notes. Personal, current, and still photographic.",
     setDna:
-      "Design system: editorial collage, like a curated moodboard page. One muted palette across the whole set " +
+      "Design system: layered photographic editorial, like a tightly edited photo-dump or contact sheet. One muted palette across the whole set " +
       "(soft greys, warm neutrals, deep charcoal accents; or the look's own palette if given). Elegant serif display " +
       "headlines, some key words on small white label strips like cut paper. Hand-drawn accents in thin white or " +
       "charcoal ink: a small arrow, a loose circle around one phrase, a short underline, an occasional tiny star. " +
-      "Subtle film grain, soft shadows under cutout elements so the collage feels physical. Calm, premium, never " +
+      "Use full-bleed photographs, film-frame crops, or two real photo panels with subtle film grain. Calm, premium, never " +
       "cluttered: at most two decorations per slide. No emojis, no clip-art, no gradients, no neon, no Canva-template look.",
     identityTreatment:
-      "Compose her as a CUTOUT STICKER: cut her out cleanly along her silhouette with a thin solid white outline " +
-      "(sticker style) and place her over a softly blurred or flat editorial background from the scene. She is " +
-      "medium-small in the frame (about one third), leaving generous space for the headline and one handwritten accent. " +
-      "A soft drop shadow under the cutout makes it feel pasted on.",
+      "Photograph her fully inside the real scene with scene-matched light, reflected color, contact shadows, and natural depth. " +
+      "She may appear in one full-bleed frame or in two photographic crops from the same moment, leaving calm space for the headline. " +
+      "Never extract her silhouette, never add a white outline or subject drop shadow, and never make her look like a sticker, cutout, or pasted layer.",
     // Overlay mode: the app layer owns EVERY ink mark (strip, circle, arrow), positioned
-    // exactly around the real words. A baked circle around nothing would fight the layer,
-    // so the text-free image keeps only the collage world: sticker cutout, grain, moodboard.
+    // exactly around the real words. A baked circle around nothing would fight the layer.
     textFreeSetDna:
-      "Design system: editorial collage, like a curated moodboard page. One muted palette across the whole set " +
-      "(soft greys, warm neutrals, deep charcoal accents; or the look's own palette if given). Subtle film grain, " +
-      "soft shadows under cutout elements so the collage feels physical. Calm, premium, never cluttered. " +
+      "Design system: layered photographic editorial, like a tightly edited photo-dump or contact sheet. One muted palette across the whole set " +
+      "(soft greys, warm neutrals, deep charcoal accents; or the look's own palette if given). Use full-bleed photos or real film-frame crops with subtle grain. Calm, premium, never cluttered. " +
       "Absolutely NO hand-drawn marks of any kind: no arrows, no circles, no underlines, no ink accents, no label " +
-      "strips, no stickers beyond the subject cutout itself. No emojis, no clip-art, no gradients, no neon, " +
+      "strips, no stickers, no subject cutout, and no silhouette outline. No emojis, no clip-art, no gradients, no neon, " +
       "no Canva-template look.",
   },
   {
@@ -98,11 +95,14 @@ export const CAROUSEL_DESIGN_SYSTEMS: CarouselDesignSystem[] = [
   },
 ]
 
-export const DEFAULT_DESIGN_SYSTEM_ID = "cutout-editorial"
+export const DEFAULT_DESIGN_SYSTEM_ID = "full-bleed-editorial"
 
 export function resolveDesignSystem(id?: string | null): CarouselDesignSystem {
   const key = (id ?? "").toLowerCase().trim()
-  return CAROUSEL_DESIGN_SYSTEMS.find(s => s.id === key) ?? CAROUSEL_DESIGN_SYSTEMS[0]
+  return (
+    CAROUSEL_DESIGN_SYSTEMS.find(s => s.id === key) ??
+    CAROUSEL_DESIGN_SYSTEMS.find(s => s.id === DEFAULT_DESIGN_SYSTEM_ID)!
+  )
 }
 
 /** The carousel design guide injected into Maya's system prompt (carousel format only). */
@@ -119,13 +119,14 @@ export function getCarouselDesignGuide(): string {
     "Design system VARIATION (non-negotiable):",
     "- ALWAYS set brief.graphic.designSystem explicitly on every carousel concept. Never leave it blank.",
     "- Your 3 concepts must NOT all use the same design system: give at least two different systems across the set, so she sees genuinely different directions, not one style three times.",
-    "- Match system to topic and look: moody or authority -> full-bleed-editorial; teaching or collage energy -> cutout-editorial; light, bright, checklist -> soft-minimal.",
+    "- Default to full-bleed-editorial. Use cutout-editorial only for layered photographic or contact-sheet energy, never a literal subject cutout. Use soft-minimal for light, bright, checklist work.",
     "- If she asks for a specific style, or repeats one she loved, honor that instead.",
     "",
     "Slide mix rules (non-negotiable):",
     '- Every customer carousel slide is a real-image redesign: the person appears, recognizable and natural, with text baked into the finished image.',
     "- Do not create object-only, screenshot-only, or typography-only cards for customer carousels. If a slide is a hook, list, big statement, or CTA, it still uses a real photo moment of her.",
     "- PHOTOSHOOT-FIRST DEFAULT: the carousel should feel like a continuation of the user's photoshoot, so the person stays present and recognizable.",
+    "- Never isolate her silhouette onto a replacement background. No sticker outlines, subject drop shadows, or pasted-person compositions.",
     "- Vary crop, pose, background, scale, and text placement so the set does not feel repetitive.",
     "- Write slide copy that teaches or tells a story worth saving. Short headline per slide; body lines only where they help.",
     "- The whole set shares one palette and one voice. Vary the slide compositions so the carousel feels designed, never repetitive.",

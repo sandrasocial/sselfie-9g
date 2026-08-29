@@ -8,9 +8,15 @@ import {
   MAX_CAROUSEL_SLIDES,
   validateCustomerCarouselBrief,
 } from "@/lib/app-v3/prompt-compiler"
+import {
+  DEFAULT_DESIGN_SYSTEM_ID,
+  resolveDesignSystem,
+} from "@/lib/app-v3/maya/carousel-design-systems"
 import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
 
-const baseBrief = (slides: NonNullable<NonNullable<CreativeBrief["graphic"]>["slides"]>): CreativeBrief => ({
+const baseBrief = (
+  slides: NonNullable<NonNullable<CreativeBrief["graphic"]>["slides"]>
+): CreativeBrief => ({
   outfit: "The Row cream cashmere turtleneck",
   setting: "a marble cafe table by a tall window in Paris morning light",
   mood: "calm, assured",
@@ -21,6 +27,15 @@ const baseBrief = (slides: NonNullable<NonNullable<CreativeBrief["graphic"]>["sl
 })
 
 describe("carousel design systems (MAYA-REBUILD-16)", () => {
+  it("defaults new sets to full-bleed photography, never literal subject cutouts", () => {
+    expect(DEFAULT_DESIGN_SYSTEM_ID).toBe("full-bleed-editorial")
+    expect(resolveDesignSystem().id).toBe("full-bleed-editorial")
+    const legacyLayered = resolveDesignSystem("cutout-editorial")
+    expect(legacyLayered.name).toBe("Layered Editorial")
+    expect(legacyLayered.identityTreatment).toContain("Never extract her silhouette")
+    expect(legacyLayered.identityTreatment).not.toContain("CUTOUT STICKER")
+  })
+
   it("keeps all customer carousel slides grounded in the selfie reference", () => {
     const jobs = compileConceptJobs(
       baseBrief([
@@ -29,26 +44,21 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
         { heading: "Value 2" },
         { heading: "Save this", role: "cta" },
       ]),
-      "carousel",
+      "carousel"
     )
     expect(jobs).toHaveLength(4)
-    expect(jobs.map((j) => j.passes[0].input)).toEqual(["selfie", "selfie", "selfie", "selfie"])
+    expect(jobs.map(j => j.passes[0].input)).toEqual(["selfie", "selfie", "selfie", "selfie"])
     // Every slide is exactly one pass (no two-pass overlay for carousels anymore).
-    expect(jobs.every((j) => j.passes.length === 1)).toBe(true)
+    expect(jobs.every(j => j.passes.length === 1)).toBe(true)
   })
 
   it("does not cap identity slides out of longer educational carousels", () => {
     const jobs = compileConceptJobs(
-      baseBrief([
-        { heading: "S1" },
-        { heading: "S2" },
-        { heading: "S3" },
-        { heading: "S4" },
-      ]),
-      "carousel",
+      baseBrief([{ heading: "S1" }, { heading: "S2" }, { heading: "S3" }, { heading: "S4" }]),
+      "carousel"
     )
-    const inputs = jobs.map((j) => j.passes[0].input)
-    expect(inputs.filter((i) => i === "selfie")).toHaveLength(4)
+    const inputs = jobs.map(j => j.passes[0].input)
+    expect(inputs.filter(i => i === "selfie")).toHaveLength(4)
   })
 
   it("applies the doctrine-safe default mix when Maya doesn't tag visuals", () => {
@@ -60,9 +70,9 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
         { heading: "V3" },
         { heading: "CTA" },
       ]),
-      "carousel",
+      "carousel"
     )
-    expect(jobs.every((j) => j.passes[0].input === "selfie")).toBe(true)
+    expect(jobs.every(j => j.passes[0].input === "selfie")).toBe(true)
   })
 
   it("passes slide-specific creative planning into the image prompts", () => {
@@ -85,7 +95,7 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
           visualReason: "the phone and notes show the workflow",
         },
       ]),
-      "carousel",
+      "carousel"
     )
     const textPrompt = jobs[1].passes[0].prompt
     const actionPrompt = jobs[2].passes[0].prompt
@@ -101,12 +111,8 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
 
   it("shares one design system DNA across every slide for cohesion", () => {
     const jobs = compileConceptJobs(
-      baseBrief([
-        { heading: "Hook" },
-        { heading: "V1" },
-        { heading: "CTA" },
-      ]),
-      "carousel",
+      baseBrief([{ heading: "Hook" }, { heading: "V1" }, { heading: "CTA" }]),
+      "carousel"
     )
     for (const job of jobs) {
       expect(job.passes[0].prompt).toContain("editorial collage")
@@ -118,7 +124,7 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
     brief.graphic = { headline: "Read this", subline: "before you post" }
     const jobs = compileConceptJobs(brief, "reel-cover", undefined, "two_pass")
     expect(jobs).toHaveLength(1)
-    expect(jobs[0].passes.map((p) => p.input)).toEqual(["selfie"])
+    expect(jobs[0].passes.map(p => p.input)).toEqual(["selfie"])
   })
 
   it("allows 9-slide planned educational carousels", () => {
@@ -153,8 +159,26 @@ describe("carousel design systems (MAYA-REBUILD-16)", () => {
       title: "Style 1",
       purpose: "show the first Vault style",
       visualConcept: "same woman in a marble cafe world",
-      imagePromptDirection: "same woman, marble cafe, soft morning light",
     })
+    expect(slides[0].imagePromptDirection).toContain(
+      "Slide direction: same woman, marble cafe, soft morning light."
+    )
+    expect(slides[0].imagePromptDirection).toContain(`Scene: ${baseBrief([]).setting}.`)
+    expect(slides[0].imagePromptDirection).toContain(`Outfit: ${baseBrief([]).outfit}.`)
+    expect(slides[0].imagePromptDirection).toContain(`Pose: ${baseBrief([]).pose}.`)
+  })
+
+  it("turns headline-only slide direction into a complete production scene", () => {
+    const slides = buildGraphicRedesignSlides(
+      baseBrief([{ heading: "Stop posing", imagePrompt: "Stop posing. Start moving." }]),
+      "carousel",
+      "Real photo-dump energy"
+    )
+    expect(slides[0].imagePromptDirection).toContain("Stop posing. Start moving.")
+    expect(slides[0].imagePromptDirection).toContain("Scene:")
+    expect(slides[0].imagePromptDirection).toContain("Outfit:")
+    expect(slides[0].imagePromptDirection).toContain("Lighting:")
+    expect(slides[0].imagePromptDirection).toContain("Camera and crop:")
   })
 
   it("rejects a thin customer carousel plan before rendering", () => {
