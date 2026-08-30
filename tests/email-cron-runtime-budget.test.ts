@@ -22,6 +22,8 @@ describe("email cron runtime budgets", () => {
     expect(route).toContain("for (const stage of [...STAGES].reverse())")
     expect(route).toContain("processWithRuntimeBudget")
     expect(route).toContain("runtimeBudget.canStart(MIN_SEND_BUDGET_MS)")
+    expect(route).toContain("ASC NULLS FIRST")
+    expect(route).toContain("failed.status IN ('failed', 'error')")
     expect(route).toContain("remainingSends")
     expect(route).toContain("idempotencyKey:")
     expect(route).toContain('searchParams.get("dry_run") === "1"')
