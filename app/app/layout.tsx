@@ -84,10 +84,10 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
           --app-glass-bg: color-mix(in srgb, var(--suite-paper) 82%, transparent);
           --app-glass-border: color-mix(in srgb, var(--suite-steel) 82%, transparent);
           --app-focus-ring: color-mix(in srgb, var(--suite-slate) 42%, transparent);
-          --calendar-stone-1: var(--ss-brand-parchment);
+          --calendar-stone-1: var(--ss-brand-cool-mist);
           --calendar-stone-2: var(--ss-brand-concrete);
           --calendar-stone-3: var(--ss-brand-silver);
-          --calendar-stone-4: var(--ss-brand-taupe);
+          --calendar-stone-4: var(--ss-brand-steel);
           position: relative;
           isolation: isolate;
           width: 100%;

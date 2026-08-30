@@ -32,7 +32,7 @@ describe("Maya live member polish", () => {
 
     const preview = screen.getByRole("button", { name: "View full size" }).parentElement
     expect(preview).toHaveClass("suite-concept-result-preview")
-    expect(preview).toHaveClass("max-h-[min(62dvh,34rem)]")
+    expect(preview).toHaveClass("max-h-[min(46dvh,24rem)]")
     expect(screen.getByAltText("A finished story")).toHaveClass("object-contain")
   })
 
