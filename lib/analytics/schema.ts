@@ -24,6 +24,7 @@ async function initializeAnalyticsSchema(): Promise<void> {
       utm_content TEXT,
       utm_term TEXT,
       idempotency_key TEXT,
+      CONSTRAINT analytics_events_idempotency_key_unique UNIQUE (idempotency_key),
       properties JSONB NOT NULL DEFAULT '{}'::jsonb,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );

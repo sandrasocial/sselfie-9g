@@ -56,7 +56,7 @@ describe("analytics schema initialization", () => {
     expect(mocks.sql.mock.calls.length).toBeGreaterThan(1)
   })
 
-  it("keeps analytics idempotency DDL in the deployment migration", () => {
+  it("makes fresh tables idempotent without runtime index creation on existing tables", () => {
     const runtimeSchema = readFileSync(join(process.cwd(), "lib/analytics/schema.ts"), "utf8")
     const migration = readFileSync(
       join(process.cwd(), "db/migrations/76-add-analytics-event-idempotency.sql"),
@@ -66,7 +66,10 @@ describe("analytics schema initialization", () => {
     expect(runtimeSchema).not.toContain(
       "ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS idempotency_key"
     )
-    expect(runtimeSchema).not.toContain("analytics_events_idempotency_key_unique")
+    expect(runtimeSchema).toContain(
+      "CONSTRAINT analytics_events_idempotency_key_unique UNIQUE (idempotency_key)"
+    )
+    expect(runtimeSchema).not.toContain("CREATE UNIQUE INDEX")
     expect(migration).toContain("ALTER TABLE analytics_events")
     expect(migration).toContain("ADD COLUMN IF NOT EXISTS idempotency_key TEXT")
     expect(migration).toContain("analytics_events_idempotency_key_unique")
