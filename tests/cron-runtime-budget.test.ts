@@ -18,7 +18,7 @@ describe("cron runtime budget", () => {
       },
     })
 
-    expect(result).toEqual({ processed: 3, stoppedForBudget: true })
+    expect(result).toEqual({ processed: 3, stoppedForBudget: true, timedOut: false })
     expect(processed).toEqual([1, 2, 3])
     expect(budget.elapsedMs()).toBe(36_000)
     expect(budget.remainingMs()).toBe(6_000)
@@ -41,5 +41,23 @@ describe("cron runtime budget", () => {
     expect(result.processed).toBe(2)
     expect(result.stoppedForBudget).toBe(true)
     expect(pending.slice(result.processed)).toEqual(["new"])
+  })
+
+  it("aborts an in-flight operation when the deadline is reached", async () => {
+    const budget = createRuntimeBudget(20)
+    let receivedSignal: AbortSignal | undefined
+
+    const result = await processWithRuntimeBudget({
+      items: ["slow"],
+      budget,
+      minimumRemainingMs: 0,
+      process: async (_item, signal) => {
+        receivedSignal = signal
+        await new Promise(() => {})
+      },
+    })
+
+    expect(result).toEqual({ processed: 0, stoppedForBudget: true, timedOut: true })
+    expect(receivedSignal?.aborted).toBe(true)
   })
 })
