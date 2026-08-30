@@ -9,6 +9,7 @@ import { buildNanoBananaPrompt, type BrandKit } from "@/lib/maya/nano-banana-pro
 import { getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { getFeedStyleV2ByName } from "@/lib/feed-planner/feed-style-prompt-loader"
 import { selectPromptForPosition } from "@/lib/feed-planner/feed-style-generation"
+import { curatedPromptPositionForCalendarPosition } from "@/lib/feed-planner/curated-feed-position"
 
 /**
  * Image Library interface (user's selected images from library wizard)
@@ -335,9 +336,10 @@ export async function queueAllImagesForFeed(
             }
             const style = await getFeedStyleV2ByName(feedLayout.feed_style)
             if (!style?.enabled) throw new Error("Current calendar feed style is unavailable")
+            const curatedPosition = curatedPromptPositionForCalendarPosition(Number(post.position))
             const selected = await selectPromptForPosition(
               style.id,
-              Number(post.position),
+              curatedPosition,
               feedLayout.feed_style_variation_id ?? null
             )
             finalPrompt = selected.prompt_text

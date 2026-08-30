@@ -6,6 +6,7 @@ import { loadStripe } from "@stripe/stripe-js"
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js"
 import Image from "next/image"
 import { trackCheckoutStart } from "@/lib/analytics"
+import { CheckoutBrandMasthead } from "@/components/checkout/checkout-brand-masthead"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -455,20 +456,23 @@ function CheckoutContent() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFA] p-4">
-        <div className="max-w-md text-center">
-          <div className="mb-4 font-['Cormorant_Garamond'] text-2xl font-light uppercase tracking-[0.18em] text-[#0D0E10] sm:text-3xl">
-            Something went wrong
+      <div className="min-h-screen bg-[#FAFAF9] text-[#09090B]">
+        <CheckoutBrandMasthead />
+        <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-[18px] border border-[#E7E7EA] bg-white px-6 py-10 text-center shadow-[0_18px_70px_rgba(9,9,11,0.08)] sm:px-10">
+            <div className="mb-4 font-['Cormorant_Garamond'] text-2xl font-light uppercase tracking-[0.18em] text-[#09090B] sm:text-3xl">
+              Something went wrong
+            </div>
+            <p className="mb-6 text-sm font-light leading-relaxed text-[#5E5E66]">
+              We couldn&apos;t find your checkout session. Please go back and try once more.
+            </p>
+            <button
+              onClick={() => router.push("/")}
+              className="rounded-[12px] bg-[#09090B] px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-white transition-colors hover:bg-[#18181B]"
+            >
+              Go back to Home
+            </button>
           </div>
-          <p className="mb-6 text-sm font-light leading-relaxed text-[#4F5052]">
-            We couldn&apos;t find your checkout session. Please go back and try once more.
-          </p>
-          <button
-            onClick={() => router.push("/")}
-            className="bg-[#0D0E10] px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-[#F8FAFA] transition-colors hover:bg-[#282728]"
-          >
-            Go back to Home
-          </button>
         </div>
       </div>
     )
@@ -476,24 +480,28 @@ function CheckoutContent() {
 
   if (!clientSecret) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFA] p-4">
-        <div className="text-center">
-          <div className="mb-3 font-['Cormorant_Garamond'] text-xl font-light uppercase tracking-[0.28em] text-[#0D0E10] sm:text-2xl md:text-3xl lg:text-4xl">
-            S S E L F I E
+      <div className="min-h-screen bg-[#FAFAF9] text-[#09090B]">
+        <CheckoutBrandMasthead />
+        <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4 text-center">
+          <div>
+            <div className="mb-3 font-['Cormorant_Garamond'] text-xl font-light uppercase tracking-[0.28em] text-[#09090B] sm:text-2xl md:text-3xl lg:text-4xl">
+              S S E L F I E
+            </div>
+            <p className="text-sm font-light text-[#5E5E66] sm:text-base">
+              Preparing your secure checkout
+            </p>
           </div>
-          <p className="text-sm font-light text-[#4F5052] sm:text-base">
-            Preparing your secure checkout
-          </p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFA] text-[#0D0E10]">
+    <div className="min-h-screen bg-[#FAFAF9] text-[#09090B]">
+      <CheckoutBrandMasthead />
       {/* Hero Image Section */}
       <div
-        className={`${isPromptVault ? "hidden" : ""} relative overflow-hidden border-b border-[rgba(197,198,200,0.4)] ${
+        className={`${isPromptVault ? "hidden" : ""} relative overflow-hidden border-b border-[rgba(243,230,207,0.42)] ${
           isSelfieVisibilityBundle
             ? "h-[132px] sm:h-[150px]"
             : isVisualIdentityOffer
@@ -508,13 +516,13 @@ function CheckoutContent() {
           className="object-cover object-center"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-[#F8FAFA]/40 to-[#F8FAFA]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-[#FAFAF9]/40 to-[#FAFAF9]" />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-          <div className="mb-3 font-['Cormorant_Garamond'] text-xl font-light uppercase tracking-[0.18em] text-[#0D0E10] sm:text-2xl md:text-3xl lg:text-4xl">
+          <div className="mb-3 font-['Cormorant_Garamond'] text-xl font-light uppercase tracking-[0.18em] text-[#09090B] sm:text-2xl md:text-3xl lg:text-4xl">
             {checkoutCopy.heroTitle}
           </div>
-          <p className="max-w-2xl text-sm font-light leading-relaxed text-[#4F5052] sm:text-base">
+          <p className="max-w-2xl text-sm font-light leading-relaxed text-[#5E5E66] sm:text-base">
             {checkoutCopy.heroBody}
           </p>
         </div>
@@ -526,7 +534,7 @@ function CheckoutContent() {
       >
         {isVisualIdentityOffer && !isPromptVault && (
           <div
-            className={`${isPromptVault ? "hidden sm:block" : ""} mb-6 border border-[rgba(197,198,200,0.45)] bg-white p-4 shadow-[0_18px_60px_rgba(13,14,16,0.06)] sm:p-5`}
+            className={`${isPromptVault ? "hidden sm:block" : ""} mb-6 border border-[rgba(243,230,207,0.48)] bg-white p-4 shadow-[0_18px_60px_rgba(9,9,11,0.06)] sm:p-5`}
           >
             <div className="mb-4 grid grid-cols-4 gap-2">
               {[
@@ -535,7 +543,7 @@ function CheckoutContent() {
                 "/images/ai-prompts/coastal-white-shot-3.jpg",
                 "/images/ai-prompts/denim-street-shot-5.jpg",
               ].map(src => (
-                <div key={src} className="relative aspect-[3/4] overflow-hidden bg-[#F8FAFA]">
+                <div key={src} className="relative aspect-[3/4] overflow-hidden bg-[#FAFAF9]">
                   <Image
                     src={src}
                     alt=""
@@ -549,10 +557,10 @@ function CheckoutContent() {
             </div>
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
               <div>
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.24em] text-[#818283]">
+                <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.24em] text-[#74695F]">
                   You&apos;re getting
                 </p>
-                <h2 className="font-['Cormorant_Garamond'] text-[1.65rem] font-light leading-tight tracking-normal text-[#0D0E10] sm:text-3xl">
+                <h2 className="font-['Cormorant_Garamond'] text-[1.65rem] font-light leading-tight tracking-normal text-[#09090B] sm:text-3xl">
                   {isSelfieToBrandShoot
                     ? "The guided path plus full Vault access for your first AI brand shoot."
                     : isSelfieAiPhotosKit
@@ -561,15 +569,15 @@ function CheckoutContent() {
                 </h2>
               </div>
               <div className="text-left sm:text-right">
-                <p className="font-['Cormorant_Garamond'] text-4xl font-light leading-none text-[#0D0E10]">
+                <p className="font-['Cormorant_Garamond'] text-4xl font-light leading-none text-[#09090B]">
                   {isSelfieToBrandShoot ? (hasVaultCredit ? "$160" : "$197") : "$37"}
                 </p>
-                <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[#818283]">
+                <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[#74695F]">
                   {hasVaultCredit ? "$37 Vault credit applied" : "one-time payment"}
                 </p>
               </div>
             </div>
-            <p className="mt-4 text-center text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#4F5052]">
+            <p className="mt-4 text-center text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#5E5E66]">
               {isSelfieToBrandShoot
                 ? "Guided path · source selfie help · Vault included · posting plan"
                 : isSelfieAiPhotosKit
@@ -580,54 +588,54 @@ function CheckoutContent() {
         )}
 
         <div className={`text-center ${isSelfieVisibilityBundle ? "mb-4" : "mb-6 sm:mb-8"}`}>
-          <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#818283] mb-3">
+          <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#74695F] mb-3">
             Secure Checkout
           </p>
-          <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl text-[#0D0E10] tracking-wide mb-3">
+          <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl text-[#09090B] tracking-wide mb-3">
             {checkoutCopy.heading}
           </h1>
-          <p className="text-xs sm:text-sm text-[#4F5052] font-light leading-relaxed max-w-xl mx-auto">
+          <p className="text-xs sm:text-sm text-[#5E5E66] font-light leading-relaxed max-w-xl mx-auto">
             {checkoutCopy.blurb}
           </p>
           {isStarterKit && (
-            <div className="mx-auto mt-5 max-w-xl border border-[rgba(197,198,200,0.45)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(13,14,16,0.05)] sm:px-5">
-              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#818283]">
+            <div className="mx-auto mt-5 max-w-xl border border-[rgba(243,230,207,0.48)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(9,9,11,0.05)] sm:px-5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#74695F]">
                 Instant access after payment
               </p>
-              <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
+              <p className="mt-2 text-xs font-light leading-relaxed text-[#5E5E66] sm:text-sm">
                 Presets, setup guide, posing guide, caption templates, and the 7-day content starter
                 are delivered right away.
               </p>
             </div>
           )}
           {isMasterclass && (
-            <div className="mx-auto mt-5 max-w-xl border border-[rgba(197,198,200,0.45)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(13,14,16,0.05)] sm:px-5">
-              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#818283]">
+            <div className="mx-auto mt-5 max-w-xl border border-[rgba(243,230,207,0.48)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(9,9,11,0.05)] sm:px-5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#74695F]">
                 What happens after payment
               </p>
-              <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
+              <p className="mt-2 text-xs font-light leading-relaxed text-[#5E5E66] sm:text-sm">
                 Your course opens right away. Start with Your Foundation to clarify what you sell,
                 who it helps, and what you want to be known for before you build the content rhythm.
               </p>
             </div>
           )}
           {isSelfieAiPhotosKit && (
-            <div className="mx-auto mt-5 max-w-xl border border-[rgba(197,198,200,0.45)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(13,14,16,0.05)] sm:px-5">
-              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#818283]">
+            <div className="mx-auto mt-5 max-w-xl border border-[rgba(243,230,207,0.48)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(9,9,11,0.05)] sm:px-5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#74695F]">
                 What happens after payment
               </p>
-              <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
+              <p className="mt-2 text-xs font-light leading-relaxed text-[#5E5E66] sm:text-sm">
                 Your access link opens the Kit right away. Start with the source selfie checklist,
                 then copy the first AI photo prompt.
               </p>
             </div>
           )}
           {isSelfieToBrandShoot && (
-            <div className="mx-auto mt-5 max-w-xl border border-[rgba(197,198,200,0.45)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(13,14,16,0.05)] sm:px-5">
-              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#818283]">
+            <div className="mx-auto mt-5 max-w-xl border border-[rgba(243,230,207,0.48)] bg-white px-4 py-3 text-left shadow-[0_14px_50px_rgba(9,9,11,0.05)] sm:px-5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#74695F]">
                 What happens after payment
               </p>
-              <p className="mt-2 text-xs font-light leading-relaxed text-[#4F5052] sm:text-sm">
+              <p className="mt-2 text-xs font-light leading-relaxed text-[#5E5E66] sm:text-sm">
                 Your access link opens the full course right away. Start with Module 1, choose your
                 Signature Visual World, create your first three AI brand images, then turn them into
                 content.
@@ -635,13 +643,11 @@ function CheckoutContent() {
             </div>
           )}
           {confidencePoints.length > 0 && !isSelfieVisibilityBundle && !isPromptVault && (
-            <div
-              className="mx-auto mt-4 grid max-w-xl gap-2 sm:grid-cols-2"
-            >
+            <div className="mx-auto mt-4 grid max-w-xl gap-2 sm:grid-cols-2">
               {confidencePoints.map(point => (
                 <div
                   key={point}
-                  className="border border-[rgba(197,198,200,0.4)] bg-[#F8FAFA] px-3 py-2 text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#4F5052]"
+                  className="rounded-[10px] border border-[rgba(243,230,207,0.7)] bg-[#FAFAF9] px-3 py-2 text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#5E5E66]"
                 >
                   {point}
                 </div>
@@ -650,7 +656,7 @@ function CheckoutContent() {
           )}
         </div>
 
-        <div className="border border-[rgba(197,198,200,0.55)] bg-white p-3 shadow-[0_18px_70px_rgba(13,14,16,0.08)] sm:p-5 md:p-6">
+        <div className="border border-[rgba(243,230,207,0.58)] bg-white p-3 shadow-[0_18px_70px_rgba(9,9,11,0.08)] sm:p-5 md:p-6">
           <EmbeddedCheckoutProvider
             stripe={stripePromise}
             options={{
@@ -667,7 +673,7 @@ function CheckoutContent() {
             {confidencePoints.map(point => (
               <div
                 key={point}
-                className="border border-[rgba(197,198,200,0.4)] bg-[#F8FAFA] px-3 py-2 text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#4F5052]"
+                className="rounded-[10px] border border-[rgba(243,230,207,0.7)] bg-[#FAFAF9] px-3 py-2 text-[10px] font-medium uppercase leading-relaxed tracking-[0.14em] text-[#5E5E66]"
               >
                 {point}
               </div>
@@ -676,10 +682,10 @@ function CheckoutContent() {
         )}
 
         <div className="mt-6 text-center">
-          <p className="text-[10px] sm:text-xs text-[#818283] font-light leading-relaxed">
+          <p className="text-[10px] sm:text-xs text-[#74695F] font-light leading-relaxed">
             Protected by Stripe · SSL Encrypted · PCI Compliant
           </p>
-          <p className="text-[10px] sm:text-xs text-[#818283] font-light leading-relaxed mt-2">
+          <p className="text-[10px] sm:text-xs text-[#74695F] font-light leading-relaxed mt-2">
             {checkoutCopy.footer}
           </p>
         </div>
@@ -692,12 +698,15 @@ export default function CheckoutPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#F8FAFA] p-4">
-          <div className="text-center">
-            <div className="mb-4 font-['Cormorant_Garamond'] text-xl font-light uppercase tracking-[0.28em] text-[#0D0E10] sm:text-2xl">
-              Loading your checkout
+        <div className="min-h-screen bg-[#FAFAF9] text-[#09090B]">
+          <CheckoutBrandMasthead />
+          <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4 text-center">
+            <div>
+              <div className="mb-4 font-['Cormorant_Garamond'] text-xl font-light uppercase tracking-[0.28em] text-[#09090B] sm:text-2xl">
+                Loading your checkout
+              </div>
+              <p className="text-sm font-light text-[#5E5E66]">Please wait a moment...</p>
             </div>
-            <p className="text-sm font-light text-[#4F5052]">Please wait a moment...</p>
           </div>
         </div>
       }

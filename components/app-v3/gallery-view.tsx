@@ -6,7 +6,6 @@
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import {
-  ArrowUpRight,
   Check,
   Download,
   Film,
@@ -232,13 +231,13 @@ const AssetTile = memo(function AssetTile({
   index,
   selected,
   selectionMode,
-  showLabel,
+  actionsOpen,
   onOpen,
   onToggleSelect,
   onFavorite,
   onDelete,
   onDownload,
-  onMakeMotion,
+  onActionsOpenChange,
   onCompare,
   versionIndex,
   versionCount,
@@ -249,12 +248,13 @@ const AssetTile = memo(function AssetTile({
   index: number
   selected: boolean
   selectionMode: boolean
-  showLabel: boolean
+  actionsOpen: boolean
   onOpen: (asset: AppV3GalleryAsset, index: number) => void
   onToggleSelect: (id: string) => void
   onFavorite: (asset: AppV3GalleryAsset) => void
   onDelete: (asset: AppV3GalleryAsset) => void
   onDownload: (asset: AppV3GalleryAsset) => void
+  onActionsOpenChange: (open: boolean) => void
   onMakeMotion?: (url: string) => void
   onCompare: (asset: AppV3GalleryAsset) => void
   versionIndex: number
@@ -265,11 +265,42 @@ const AssetTile = memo(function AssetTile({
 }) {
   const isVideo = asset.kind === "video"
   const title = safeAssetTitle(asset)
+  const actionsTriggerRef = useRef<HTMLButtonElement>(null)
+  const actionsContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!actionsOpen) return
+
+    const dismissOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      event.preventDefault()
+      onActionsOpenChange(false)
+      queueMicrotask(() => actionsTriggerRef.current?.focus())
+    }
+    const dismissOnOutsideInteraction = (event: PointerEvent) => {
+      if (actionsContainerRef.current?.contains(event.target as Node)) return
+      onActionsOpenChange(false)
+    }
+    const dismissOnOutsideFocus = (event: FocusEvent) => {
+      if (actionsContainerRef.current?.contains(event.target as Node)) return
+      onActionsOpenChange(false)
+    }
+
+    document.addEventListener("keydown", dismissOnEscape)
+    document.addEventListener("pointerdown", dismissOnOutsideInteraction, true)
+    document.addEventListener("focusin", dismissOnOutsideFocus)
+    return () => {
+      document.removeEventListener("keydown", dismissOnEscape)
+      document.removeEventListener("pointerdown", dismissOnOutsideInteraction, true)
+      document.removeEventListener("focusin", dismissOnOutsideFocus)
+    }
+  }, [actionsOpen, onActionsOpenChange])
+
   return (
     <div
-      className={`suite-card group relative overflow-hidden rounded-[2px] border bg-[#F1F2F2] transition-shadow ${
-        selected ? "border-[#0D0E10] ring-1 ring-[#0D0E10]" : "border-[#C5C6C8]/50"
-      }`}
+      className={`suite-card group relative rounded-[2px] border bg-[#F1F2F2] transition-shadow ${
+        actionsOpen ? "z-30 overflow-visible" : "overflow-hidden"
+      } ${selected ? "border-[#0D0E10] ring-1 ring-[#0D0E10]" : "border-[#C5C6C8]/50"}`}
     >
       <button
         type="button"
@@ -317,34 +348,15 @@ const AssetTile = memo(function AssetTile({
       </button>
 
       {/* Overlays live OUTSIDE the tap button (a button can't nest a button) and sit above it. */}
-      {/* Quiet type label - only in the mixed "All" view, where it actually disambiguates. */}
-      {showLabel && (
-        <span className="pointer-events-none absolute left-2 top-2 rounded-[3px] bg-[#0D0E10]/55 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.16em] text-white backdrop-blur-sm">
-          {assetLabel(asset)}
-        </span>
-      )}
       {setCount ? (
-        <span
-          className={`pointer-events-none absolute left-2 rounded-[3px] bg-[#0D0E10]/80 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.14em] text-white backdrop-blur-sm ${
-            showLabel ? "top-8" : "top-2"
-          }`}
-        >
+        <span className="pointer-events-none absolute left-2 top-2 rounded-[3px] bg-[#0D0E10]/72 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.14em] text-white backdrop-blur-sm">
           {setCount} {asset.contentType === "photoshoot" ? "photos" : "slides"}
         </span>
       ) : versionCount > 1 ? (
-        <span
-          className={`pointer-events-none absolute left-2 rounded-[3px] bg-white/85 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.14em] text-[color:var(--ss-charcoal)] backdrop-blur-sm ${
-            showLabel ? "top-8" : "top-2"
-          }`}
-        >
+        <span className="pointer-events-none absolute left-2 top-2 rounded-[3px] bg-white/85 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.14em] text-[color:var(--ss-charcoal)] backdrop-blur-sm">
           {versionIndex === 0 ? "Original" : `Version ${versionIndex + 1}`} · {versionCount}
         </span>
       ) : null}
-      {asset.title?.trim() && title === asset.title.trim() && (
-        <span className="pointer-events-none absolute inset-x-2 bottom-12 line-clamp-2 rounded-[3px] bg-[color:var(--ss-night)]/45 px-2 py-1 text-[10px] leading-snug text-white backdrop-blur-sm">
-          {title}
-        </span>
-      )}
 
       {/* Selection check replaces the favorite affordance while selecting. */}
       {selectionMode ? (
@@ -376,47 +388,63 @@ const AssetTile = memo(function AssetTile({
         )
       )}
 
-      {/* Action row stays out of the way while selecting (bulk bar owns the screen then). */}
+      {/* Secondary actions stay available behind one quiet, intentional affordance. */}
       {!selectionMode && (
-        <div className="flex items-center justify-between gap-1 bg-white px-1.5 py-1.5">
-          <div className="flex min-w-0 items-center">
-            {versionCount > 1 ? (
+        <div ref={actionsContainerRef} className="absolute bottom-2 right-2 z-20">
+          <button
+            ref={actionsTriggerRef}
+            type="button"
+            onClick={() => onActionsOpenChange(!actionsOpen)}
+            aria-label={`More actions for ${title}, item ${index + 1}`}
+            aria-expanded={actionsOpen}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0D0E10] text-white shadow-sm transition-colors hover:bg-[#282728] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
+          >
+            <MoreHorizontal size={17} aria-hidden />
+          </button>
+          {actionsOpen && (
+            <div
+              role="group"
+              aria-label={`${assetLabel(asset)} actions`}
+              className="absolute bottom-12 right-0 min-w-36 overflow-hidden rounded-[3px] border border-[#C5C6C8] bg-white py-1 shadow-lg"
+            >
+              {versionCount > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    actionsTriggerRef.current?.focus()
+                    onActionsOpenChange(false)
+                    onCompare(asset)
+                  }}
+                  className="flex min-h-11 w-full items-center px-4 text-left text-[10px] uppercase tracking-[0.12em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
+                >
+                  Compare
+                </button>
+              ) : null}
               <button
                 type="button"
-                onClick={() => onCompare(asset)}
-                className="flex min-h-11 items-center px-2 text-[9px] uppercase tracking-[0.11em] text-[#4F5052] hover:text-[#0D0E10]"
+                onClick={() => {
+                  onActionsOpenChange(false)
+                  queueMicrotask(() => actionsTriggerRef.current?.focus())
+                  onDownload(asset)
+                }}
+                className="flex min-h-11 w-full items-center px-4 text-left text-[10px] uppercase tracking-[0.12em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
               >
-                Compare
+                Download
               </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => onDownload(asset)}
-              aria-label="Download"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-[#4F5052] hover:bg-[#F1F2F2]"
-            >
-              <Download size={15} />
-            </button>
-            {asset.canDelete && (
-              <button
-                type="button"
-                onClick={() => onDelete(asset)}
-                aria-label="Delete"
-                className="flex h-11 w-11 items-center justify-center rounded-full text-[#4F5052] hover:bg-[#F1F2F2]"
-              >
-                <Trash2 size={15} />
-              </button>
-            )}
-          </div>
-          {asset.kind === "image" && onMakeMotion && (
-            <button
-              type="button"
-              onClick={() => onMakeMotion(asset.url)}
-              className="flex min-h-11 items-center gap-1 rounded-[4px] bg-[#0D0E10] px-2.5 text-[9px] uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#282728]"
-            >
-              <Film size={11} />
-              Make video
-            </button>
+              {asset.canDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    actionsTriggerRef.current?.focus()
+                    onActionsOpenChange(false)
+                    onDelete(asset)
+                  }}
+                  className="flex min-h-11 w-full items-center px-4 text-left text-[10px] uppercase tracking-[0.12em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -426,10 +454,9 @@ const AssetTile = memo(function AssetTile({
 
 // Core chips are always offered; content-type chips only appear once Maya has made that kind,
 // so the row stays quiet for someone whose library is mostly plain photos.
-const CORE_FILTERS = new Set<GalleryFilter>(["all", "favorites", "photos", "video"])
+const CORE_FILTERS = new Set<GalleryFilter>(["all", "favorites", "photos"])
 
 export function GalleryView({
-  onOpenProjects,
   onMakeMotion,
   onStartCreate,
   onUseInCalendar,
@@ -440,7 +467,6 @@ export function GalleryView({
   onEditAsset,
   onCancelEdit,
 }: {
-  onOpenProjects?: () => void
   onMakeMotion?: (url: string) => void
   onStartCreate?: () => void
   onUseInCalendar?: (asset: AppV3GalleryAsset) => void
@@ -457,6 +483,7 @@ export function GalleryView({
   const [error, setError] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [selectionMode, setSelectionMode] = useState(false)
+  const [openActionsAssetId, setOpenActionsAssetId] = useState<string | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [previewVideo, setPreviewVideo] = useState<AppV3GalleryAsset | null>(null)
   const [compareAsset, setCompareAsset] = useState<AppV3GalleryAsset | null>(null)
@@ -618,6 +645,7 @@ export function GalleryView({
   }
 
   function clearSelection() {
+    setOpenActionsAssetId(null)
     setSelectedIds(new Set())
     setSelectionMode(false)
   }
@@ -715,20 +743,21 @@ export function GalleryView({
   const allVisibleSelected = filteredAssets.length > 0 && selectedIds.size >= filteredAssets.length
 
   return (
-    <div className="suite-page mx-auto max-w-[1320px] px-4 py-7 sm:px-8 sm:py-12">
+    <div className="suite-page suite-gallery mx-auto max-w-[1320px] px-4 py-7 sm:px-8 sm:py-12">
       <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--suite-accent)]">
             {mode === "edit" ? "Edit · Choose your source" : "Gallery · Your visual library"}
           </p>
           <h1 className="mt-2 font-serif text-[38px] font-light leading-none text-[#0D0E10] sm:text-[52px]">
-            {mode === "edit" ? "Choose a photo to edit" : "Everything you&apos;re making"}
+            {mode === "edit" ? "Choose a photo to edit" : "Everything you’re making"}
           </h1>
         </div>
         {hasAssets && mode === "browse" && (
           <button
             type="button"
             onClick={() => {
+              setOpenActionsAssetId(null)
               setSelectionMode(mode => !mode)
               setSelectedIds(new Set())
             }}
@@ -756,29 +785,6 @@ export function GalleryView({
           ) : null}
         </div>
       ) : null}
-
-      {onOpenProjects && mode === "browse" && (
-        <button
-          type="button"
-          onClick={onOpenProjects}
-          className="mb-9 flex min-h-28 w-full items-center justify-between gap-5 rounded-[4px] border border-[color:var(--suite-night)] bg-white p-5 text-left transition-colors hover:border-[color:var(--suite-accent)] sm:p-6"
-        >
-          <span className="min-w-0">
-            <span className="block text-[10px] uppercase tracking-[0.24em] text-[#818283]">
-              Post projects
-            </span>
-            <span className="mt-2 block font-serif text-[24px] font-light leading-tight text-[#0D0E10]">
-              Continue where you left off.
-            </span>
-            <span className="mt-1.5 block max-w-lg text-[13px] leading-relaxed text-[#4F5052]">
-              Your idea, conversation, directions, and finished versions stay together.
-            </span>
-          </span>
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[3px] bg-[color:var(--suite-accent)] text-white">
-            <ArrowUpRight size={17} aria-hidden />
-          </span>
-        </button>
-      )}
 
       <div className="mb-4">
         <p className="text-[10px] uppercase tracking-[0.24em] text-[#818283]">Finished visuals</p>
@@ -870,12 +876,15 @@ export function GalleryView({
       )}
 
       {assets === null && !error && (
-        <p className="text-[13px] text-[#818283]">Loading your gallery...</p>
+        <div className="suite-state suite-state--loading" role="status" aria-live="polite">
+          <span className="suite-state-pulse" aria-hidden />
+          <p className="text-[13px] text-[#818283]">Opening your gallery…</p>
+        </div>
       )}
       {error && (
         <div
           role="alert"
-          className="mb-4 flex items-center justify-between gap-3 rounded-[3px] border border-[#C5C6C8] bg-white px-3 py-2"
+          className="suite-state suite-state--error mb-4 flex items-center justify-between gap-3 px-4 py-3"
         >
           <p className="text-[13px] text-[#282728]">{error}</p>
           <button
@@ -888,7 +897,7 @@ export function GalleryView({
         </div>
       )}
       {assets && assets.length === 0 && (
-        <div className="rounded-[2px] border border-dashed border-[#C5C6C8] bg-white px-6 py-12 text-center">
+        <div className="suite-state suite-state--empty px-6 py-12 text-center">
           <ImageIcon size={24} className="mx-auto mb-3 text-[#818283]" />
           <p className="font-serif text-[20px] font-light text-[#0D0E10]">Nothing here yet.</p>
           <p className="mx-auto mt-1.5 max-w-xs text-[13px] leading-relaxed text-[#818283]">
@@ -906,7 +915,7 @@ export function GalleryView({
         </div>
       )}
       {assets && assets.length > 0 && displayedAssets.length === 0 && (
-        <div className="rounded-[2px] border border-dashed border-[#C5C6C8] bg-white p-8 text-center">
+        <div className="suite-state suite-state--empty p-8 text-center">
           <MoreHorizontal size={24} className="mx-auto mb-3 text-[#818283]" />
           <p className="text-[15px] text-[#282728]">Nothing in this view yet.</p>
           <p className="mt-1 text-[13px] text-[#818283]">Try All or create something new.</p>
@@ -927,7 +936,7 @@ export function GalleryView({
                 index={i}
                 selected={selectedIds.has(asset.id)}
                 selectionMode={selectionMode}
-                showLabel={filter === "all"}
+                actionsOpen={openActionsAssetId === asset.id}
                 versionIndex={version.index}
                 versionCount={version.count}
                 favoritePending={favoritePendingIds.has(asset.id)}
@@ -943,6 +952,7 @@ export function GalleryView({
                 onFavorite={toggleFavorite}
                 onDelete={asset => setPendingDeleteIds([asset.id])}
                 onDownload={downloadAsset}
+                onActionsOpenChange={open => setOpenActionsAssetId(open ? asset.id : null)}
                 onMakeMotion={onMakeMotion}
                 onCompare={setCompareAsset}
               />
@@ -998,18 +1008,28 @@ export function GalleryView({
                     }
                   : undefined
               }
+              onMakeMotion={
+                onMakeMotion
+                  ? index => {
+                      const asset = scope[index]
+                      if (!asset || asset.kind !== "image") return
+                      closeLightbox()
+                      onMakeMotion(asset.url)
+                    }
+                  : undefined
+              }
             />
           )
         })()}
 
       {compareAsset && comparison ? (
-        <div className="fixed inset-0 z-[72] flex items-end justify-center bg-[#0D0E10]/80 p-0 backdrop-blur-sm sm:items-center sm:p-5">
+        <div className="suite-dialog-backdrop fixed inset-0 z-[72] flex items-end justify-center p-0 sm:items-center sm:p-5">
           <div
             ref={compareDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="compare-versions-title"
-            className="max-h-[94dvh] w-full max-w-5xl overflow-y-auto rounded-t-[16px] bg-[#F8FAFA] p-4 shadow-2xl sm:rounded-[10px] sm:p-6"
+            className="suite-dialog max-h-[94dvh] w-full max-w-5xl overflow-y-auto p-4 sm:p-6"
           >
             <header className="flex items-start justify-between gap-4">
               <div>
@@ -1062,13 +1082,13 @@ export function GalleryView({
       ) : null}
 
       {previewVideo && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4">
+        <div className="suite-dialog-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4">
           <div
             ref={videoDialogRef}
             role="dialog"
             aria-modal="true"
             aria-label="Video preview"
-            className="w-full max-w-sm overflow-hidden rounded-[8px] bg-white"
+            className="suite-dialog w-full max-w-sm overflow-hidden"
           >
             <video
               src={previewVideo.url}
@@ -1101,13 +1121,13 @@ export function GalleryView({
       )}
 
       {pendingDeleteIds && (
-        <div className="fixed inset-0 z-[75] flex items-center justify-center bg-[#0D0E10]/45 p-4 backdrop-blur-sm">
+        <div className="suite-dialog-backdrop fixed inset-0 z-[75] flex items-center justify-center p-4">
           <div
             ref={deleteDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-assets-title"
-            className="w-full max-w-sm rounded-[10px] bg-[#F8FAFA] p-5 shadow-xl"
+            className="suite-dialog w-full max-w-sm p-5"
           >
             <h2
               id="delete-assets-title"

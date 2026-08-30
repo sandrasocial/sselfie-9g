@@ -72,7 +72,7 @@ export function SuiteEditorialNavigation({
                     className="group flex min-h-10 items-center justify-between gap-3 text-[10px] uppercase tracking-[0.12em] text-white/62 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   >
                     <span>{destination.label}</span>
-                    <span aria-hidden className="text-[color:var(--suite-accent)]">
+                    <span aria-hidden className="text-[color:var(--suite-highlight)]">
                       ↗
                     </span>
                   </a>
@@ -90,14 +90,23 @@ export function SuiteEditorialNavigation({
           </div>
         ) : null}
 
-        <div className="mt-auto border-t border-white/12 px-7 py-6">
-          <ol className="flex items-center justify-between gap-2" aria-label="SSELFIE method">
-            {METHOD.map(step => (
-              <li key={step} className="text-[7px] uppercase tracking-[0.13em] text-white/42">
-                {step}
-              </li>
-            ))}
-          </ol>
+        <div className="mt-auto">
+          <div className="px-7 pb-9 pt-6" aria-hidden="true">
+            <span className="suite-neon-sign">
+              <span>Worth</span>
+              <span>posting.</span>
+              <i className="suite-neon-spark" />
+            </span>
+          </div>
+          <div className="border-t border-white/12 px-7 py-6">
+            <ol className="flex items-center justify-between gap-2" aria-label="SSELFIE method">
+              {METHOD.map(step => (
+                <li key={step} className="text-[7px] uppercase tracking-[0.13em] text-white/42">
+                  {step}
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
       </aside>
 

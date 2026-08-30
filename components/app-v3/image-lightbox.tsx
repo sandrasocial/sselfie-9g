@@ -31,6 +31,7 @@ interface ImageLightboxProps {
   onDownloaded?: () => void
   onUseInCalendar?: (index: number) => void
   onCreateVariation?: (index: number) => void
+  onMakeMotion?: (index: number) => void
   variationLabel?: string
   onClose: () => void
 }
@@ -48,6 +49,7 @@ export function ImageLightbox({
   onDownloaded,
   onUseInCalendar,
   onCreateVariation,
+  onMakeMotion,
   variationLabel = "Create a variation",
   onClose,
 }: ImageLightboxProps) {
@@ -127,7 +129,7 @@ export function ImageLightbox({
       aria-label="Your finished creation"
       className="suite-result-viewer pointer-events-auto fixed inset-0 z-[60] flex h-[100dvh] flex-col bg-[#050505] text-white animate-in fade-in duration-200 motion-reduce:animate-none"
     >
-      <header className="flex min-h-[58px] shrink-0 items-center justify-between border-b border-white/20 px-4 pt-[env(safe-area-inset-top)] sm:min-h-[68px] sm:px-7">
+      <header className="suite-result-header flex min-h-[58px] shrink-0 items-center justify-between border-b border-white/20 px-4 pt-[env(safe-area-inset-top)] sm:min-h-[68px] sm:px-7">
         <div className="flex min-w-0 items-baseline gap-4">
           <span className="font-serif text-[23px] font-light tracking-[-0.045em] sm:text-[28px]">
             SSELFIE
@@ -145,7 +147,7 @@ export function ImageLightbox({
       </header>
 
       <div
-        className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-[#111]"
+        className="suite-result-stage relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-[#111]"
         onTouchStart={e => setTouchStartX(e.touches[0]?.clientX ?? null)}
         onTouchEnd={e => {
           if (touchStartX === null || count < 2) return
@@ -225,7 +227,7 @@ export function ImageLightbox({
         </div>
       )}
 
-      <div className="flex shrink-0 flex-col border-t border-white/20 bg-[#050505] pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+      <div className="suite-result-actions flex shrink-0 flex-col border-t border-white/20 bg-[#050505] pb-[max(env(safe-area-inset-bottom),0.75rem)]">
         {suggestedText && (
           <div className="mx-auto w-full max-w-2xl border-x border-white/15 px-4 py-3 text-white">
             <div className="flex items-center justify-between gap-3">
@@ -298,6 +300,15 @@ export function ImageLightbox({
               className="inline-flex min-h-12 flex-1 items-center justify-center border-r border-white/20 px-5 py-3 text-[10px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-[#050505]"
             >
               {variationLabel}
+            </button>
+          ) : null}
+          {onMakeMotion ? (
+            <button
+              type="button"
+              onClick={() => onMakeMotion(index)}
+              className="inline-flex min-h-12 flex-1 items-center justify-center border-r border-white/20 px-5 py-3 text-[10px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-[#050505] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
+            >
+              Make video
             </button>
           ) : null}
           {count > 1 && (

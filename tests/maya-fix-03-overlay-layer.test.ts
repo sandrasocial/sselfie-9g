@@ -416,11 +416,13 @@ describe("MAYA-FIX-03 composited overlay layer", () => {
     }
   })
 
-  it("keeps the overlay-mode cutout image free of baked ink marks (the layer owns them)", () => {
+  it("keeps the legacy layered-editorial image free of baked ink marks and subject cutouts", () => {
     const cutout = CAROUSEL_DESIGN_SYSTEMS.find(s => s.id === "cutout-editorial")
     expect(cutout).toBeDefined()
     expect(cutout!.textFreeSetDna).toMatch(/NO hand-drawn marks/i)
     expect(cutout!.textFreeSetDna).not.toMatch(/a small arrow, a loose circle/)
+    expect(cutout!.identityTreatment).toContain("Never extract her silhouette")
+    expect(cutout!.identityTreatment).not.toContain("CUTOUT STICKER")
     // The baked-text path keeps its accents (flag off, nothing changes).
     expect(cutout!.setDna).toMatch(/Hand-drawn accents/)
   })
@@ -551,13 +553,14 @@ describe("retired Text Studio surface (Sandra's 2026-07-05 direction)", () => {
     expect(lightbox).toContain("baked ?? url")
   })
 
-  it("removes the Text Studio component while keeping chat-based re-bake state per image", () => {
+  it("removes the Text Studio component while keeping compact finish controls and re-bake state", () => {
     const concierge = readFileSync("components/app-v3/maya-concierge.tsx", "utf8")
     expect(concierge).not.toContain("<TextStudio")
     expect(concierge).not.toContain("setTextStudio")
-    expect(concierge).toContain("function GraphicTextChoiceCard")
+    expect(concierge).not.toContain("function GraphicTextChoiceCard")
     expect(concierge).toContain("textOverlayMode === \"with-text\"")
-    expect(concierge).toContain('onChoose("without-text")')
+    expect(concierge).toContain('setTextOverlayMode("without-text")')
+    expect(concierge).toContain("Keep the images clean · no text")
     expect(concierge).toContain("updateBakedImage")
     // Editing the design retires the baked render (its pixels carry the OLD words).
     expect(concierge).toMatch(/nextBaked\[index\] = null/)

@@ -2,6 +2,7 @@ import { sql } from "@/lib/db/client"
 import { EMAIL_CONFIG, EMAIL_ENV } from "./config"
 import { requireResendClient } from "@/lib/resend/client"
 import { hasResendApiKey } from "@/lib/resend/api-key"
+import { applyApprovedEmailPalette } from "./approved-email-palette"
 
 interface TransactionalEmailInput {
   to: string
@@ -42,7 +43,7 @@ export async function sendTransactionalEmail(input: TransactionalEmailInput) {
         from: input.from || EMAIL_CONFIG.transactional.from,
         to: input.to,
         subject: input.subject,
-        html: input.html,
+        html: applyApprovedEmailPalette(input.html),
         text: input.text,
         replyTo: input.replyTo || EMAIL_CONFIG.transactional.replyTo,
         tags: [{ name: "type", value: input.emailType }],
@@ -57,7 +58,7 @@ export async function sendTransactionalEmail(input: TransactionalEmailInput) {
           lastError.includes("network")
         if (isRetryable && attempt < MAX_ATTEMPTS) {
           console.warn(`[v0] [transactional] Attempt ${attempt} failed (retryable): ${lastError}`)
-          await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt - 1]))
+          await new Promise(r => setTimeout(r, BACKOFF_MS[attempt - 1]))
           continue
         }
         break
@@ -70,7 +71,7 @@ export async function sendTransactionalEmail(input: TransactionalEmailInput) {
       lastError = err instanceof Error ? err.message : String(err)
       if (attempt < MAX_ATTEMPTS) {
         console.warn(`[v0] [transactional] Attempt ${attempt} threw: ${lastError}`)
-        await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt - 1]))
+        await new Promise(r => setTimeout(r, BACKOFF_MS[attempt - 1]))
       }
     }
   }

@@ -40,18 +40,18 @@ describe("email audit remediation", () => {
     expect(content.html).toContain("Open your guide")
     expect(content.html).toContain("See the Starter Kit")
     expect(content.html).not.toContain("Visibility Suite")
-    expect(content.html).toContain("#0D0E10")
-    expect(content.html).toContain("#F8FAFA")
+    expect(content.html).toContain("#09090B")
+    expect(content.html).toContain("#FAFAF9")
   })
 
-  it("uses Sandra as the Day 0 onboarding sign-off and the cool editorial palette", () => {
+  it("uses Sandra as the Day 0 onboarding sign-off and the approved editorial palette", () => {
     const content = generateOnboardingDay0Email({ firstName: "Sandra" })
 
     expect(content.html).not.toContain("Maya + The SSELFIE Studio Team")
     expect(content.text).not.toContain("Maya + The SSELFIE Studio Team")
     expect(content.html).toContain("Sandra")
-    expect(content.html).toContain("#0D0E10")
-    expect(content.html).toContain("#F8FAFA")
+    expect(content.html).toContain("#09090B")
+    expect(content.html).toContain("#FAFAF9")
   })
 
   it("uses the canonical Studio URL in the welcome email template", () => {
@@ -65,12 +65,14 @@ describe("email audit remediation", () => {
 
     expect(content.html).toContain("https://sselfie.ai/app")
     expect(content.html).not.toContain("app.sselfie.ai")
-    expect(content.html).toContain("#0D0E10")
-    expect(content.html).toContain("#F8FAFA")
+    expect(content.html).toContain("#09090B")
+    expect(content.html).toContain("#FAFAF9")
   })
 
   it("prefers a real customer name and never guesses from the email address", () => {
-    expect(getFirstNameForEmail({ fullName: "Jessica Smith", email: "jsmith@example.com" })).toBe("Jessica")
+    expect(getFirstNameForEmail({ fullName: "Jessica Smith", email: "jsmith@example.com" })).toBe(
+      "Jessica"
+    )
     expect(getFirstNameForEmail({ fullName: "  ", email: "jsmith@example.com" })).toBe("there")
     expect(getFirstNameForEmail({ fullName: undefined, email: "" })).toBe("there")
   })

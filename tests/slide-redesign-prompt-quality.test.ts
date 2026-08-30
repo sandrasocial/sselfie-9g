@@ -27,9 +27,14 @@ describe("buildContentSlideRedesignPrompt quality anchors", () => {
       referenceMode: "identity-scene",
       slide: baseSlide,
     })
-    expect(identityScene).toContain("Lighting: natural, directional, editorial light")
+    expect(identityScene).toContain("follow the light source named in the slide-specific scene")
+    expect(identityScene).toContain("light the person with the scene's own light")
+    expect(identityScene).toContain("Shoot this like a real photographer")
+    expect(identityScene).toContain("Identity references define WHO she is")
     expect(identityScene).toContain("natural skin texture with pores visible")
     expect(identityScene).toContain("Avoid: distorted hands")
+    expect(identityScene).toContain("vertical 4:5 Instagram carousel format")
+    expect(identityScene).not.toContain("soft window light or golden-hour warmth")
 
     const preservedPhoto = buildContentSlideRedesignPrompt({
       category: "story-sequence",
@@ -37,7 +42,8 @@ describe("buildContentSlideRedesignPrompt quality anchors", () => {
       referenceMode: "preserve-frame",
       slide: baseSlide,
     })
-    expect(preservedPhoto).not.toContain("Lighting: natural, directional, editorial light")
+    expect(preservedPhoto).not.toContain("follow the light source named in the slide-specific scene")
+    expect(preservedPhoto).not.toContain("light the person with the scene's own light")
     expect(preservedPhoto).not.toContain("Avoid: distorted hands")
   })
 

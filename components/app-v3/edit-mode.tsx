@@ -259,10 +259,7 @@ export function EditMode({
   const closeWhenIdle = () => {
     if (!busy && !referenceUploading && !chatBusy) onClose()
   }
-  const { dialogRef, initialFocusRef } = useAccessibleModal<HTMLDialogElement>(
-    true,
-    closeWhenIdle,
-  )
+  const { dialogRef, initialFocusRef } = useAccessibleModal<HTMLDialogElement>(true, closeWhenIdle)
 
   useEffect(() => {
     onBusyChange?.(busy || referenceUploading || chatBusy)
@@ -540,11 +537,12 @@ export function EditMode({
       className="fixed inset-0 z-[80] m-0 flex h-[100dvh] w-full max-w-none flex-col border-0 bg-[color:var(--suite-night)] p-0 text-white animate-in fade-in duration-200 motion-reduce:animate-none"
       style={
         {
-          "--suite-night": "var(--ss-brand-ink, #0D0E10)",
-          "--suite-canvas": "var(--ss-brand-chalk, #F8FAFA)",
-          "--suite-steel": "var(--ss-brand-silver, #C5C6C8)",
-          "--suite-slate": "var(--ss-brand-slate, #4F5052)",
-          "--suite-accent": "var(--ss-brand-oxblood, #7A3045)",
+          "--suite-night": "var(--ss-brand-ink, #09090B)",
+          "--suite-canvas": "var(--ss-brand-chalk, #FAFAF9)",
+          "--suite-steel": "var(--ss-brand-taupe, #A89B8C)",
+          "--suite-slate": "var(--ss-brand-slate, #5E5E66)",
+          "--suite-accent": "var(--ss-brand-ink, #09090B)",
+          "--suite-highlight": "var(--ss-brand-champagne, #F3E6CF)",
         } as CSSProperties
       }
     >

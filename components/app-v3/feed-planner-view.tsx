@@ -126,7 +126,7 @@ export function FeedPlannerView({
 
   return (
     <FeedNavContext.Provider value={nav}>
-      <div className="suite-page suite-editorial-calendar min-h-[calc(100dvh-3.5rem)] bg-[#F8FAFA] pb-24">
+      <div className="suite-page suite-editorial-calendar min-h-[calc(100dvh-3.5rem)] bg-[color:var(--suite-canvas)] pb-24">
         <header className="mx-auto w-full max-w-[1380px] px-4 pt-7 sm:px-8 sm:pt-12">
           <div className="border-t-[3px] border-[color:var(--suite-accent)] pt-5 sm:pt-7">
             <p className="text-[10px] uppercase tracking-[0.32em] text-[color:var(--suite-accent)]">

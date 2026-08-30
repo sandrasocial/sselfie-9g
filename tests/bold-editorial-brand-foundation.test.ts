@@ -16,27 +16,32 @@ function read(path: string) {
 describe("Bold Editorial Studio foundation", () => {
   it("locks the approved cross-channel tokens and four-stage method", () => {
     expect(BOLD_EDITORIAL_COLORS).toMatchObject({
-      ink: "#0D0E10",
-      chalk: "#F7F7F5",
+      ink: "#09090B",
+      espresso: "#09090B",
+      chalk: "#FAFAF9",
+      ivory: "#FAFAF9",
       paper: "#FFFFFF",
-      oxblood: "#981826",
+      champagne: "#F3E6CF",
     })
     expect(BOLD_EDITORIAL_TYPE.display).toContain("Cormorant Garamond")
     expect(BOLD_EDITORIAL_TYPE.sans).toContain("Manrope")
-    expect(BOLD_EDITORIAL_SHAPE.radius.surface).toBe("6px")
+    expect(BOLD_EDITORIAL_TYPE.signature).toContain("Allura")
+    expect(BOLD_EDITORIAL_SHAPE.radius.surface).toBe("16px")
     expect(BOLD_EDITORIAL_GUARDRAILS.method).toEqual(["TAKE", "CREATE", "EDIT", "POST"])
   })
 
-  it("exposes additive global CSS tokens without remapping live legacy variables", () => {
+  it("exposes the approved Noir Glass global tokens", () => {
     const globals = read("app/globals.css")
 
-    expect(globals).toContain("--ss-brand-ink: #0d0e10")
-    expect(globals).toContain("--ss-brand-chalk: #f7f7f5")
-    expect(globals).toContain("--ss-brand-oxblood: #981826")
-    expect(globals).toContain("--ss-brand-radius: 6px")
-    expect(globals).toContain(
-      "These tokens are additive until each live surface is deliberately migrated"
-    )
+    expect(globals).toContain("--ss-brand-ink: #09090b")
+    expect(globals).toContain("--ss-brand-espresso: #09090b")
+    expect(globals).toContain("--ss-brand-chalk: #fafaf9")
+    expect(globals).toContain("--ss-brand-ivory: #fafaf9")
+    expect(globals).toContain("--ss-brand-champagne: #f3e6cf")
+    expect(globals).toContain("--ss-brand-glass-dark: rgba(9, 9, 11, 0.92)")
+    expect(globals).not.toContain("--ss-brand-oxblood")
+    expect(globals).toContain("--ss-brand-radius: 16px")
+    expect(globals).toContain("Glass is reserved for navigation")
   })
 
   it("keeps the component reference private and discoverable to the founder", () => {
@@ -65,6 +70,9 @@ describe("Bold Editorial Studio foundation", () => {
     expect(shell).toContain('label: "Account"')
     expect(navigation).toContain("suite-desktop-nav")
     expect(navigation).toContain("suite-bottom-nav")
+    expect(navigation).toContain("suite-neon-sign")
+    expect(navigation).toContain("Worth")
+    expect(navigation).toContain("posting.")
     expect(navigation).toContain('const METHOD = ["TAKE", "CREATE", "EDIT", "POST"]')
     expect(frontDoor).toContain("Create something worth posting.")
     expect(frontDoor).toContain("var(--suite-accent)")
@@ -78,6 +86,7 @@ describe("Bold Editorial Studio foundation", () => {
     const conceptCard = read("components/app-v3/concept-card.tsx")
     const resultViewer = read("components/app-v3/image-lightbox.tsx")
     const appLayout = read("app/app/layout.tsx")
+    const mayaE2EFixture = read("app/e2e/maya-operating-layer/page.tsx")
 
     expect(maya).toContain("suite-maya-header")
     expect(maya).toContain("suite-maya-thread")
@@ -93,8 +102,10 @@ describe("Bold Editorial Studio foundation", () => {
     expect(maya).toContain('aria-label={textRefining ? "Updating" : "Send message"}')
     expect(maya).toContain('aria-label="Message Maya"')
     expect(maya).toContain('aria-label="Attach an inspiration image"')
-    expect(appLayout).toContain("border-bottom: 3px solid var(--suite-accent)")
-    expect(appLayout).toContain("background: var(--suite-accent)")
+    expect(appLayout).toContain("background: var(--suite-glass-dark)")
+    expect(appLayout).toContain("backdrop-filter: blur(var(--suite-glass-blur))")
+    expect(appLayout).toContain("suite-maya-neon-mark")
+    expect(appLayout).toContain("suite-maya-avatar")
     expect(maya).toContain("suite-maya-path-tabs")
     expect(maya).toContain("suite-maya-journey-steps")
     expect(maya).toContain("AI Photos")
@@ -106,6 +117,8 @@ describe("Bold Editorial Studio foundation", () => {
     expect(conceptCard).toContain("Download")
     expect(conceptCard).toContain("Finish as a post")
     expect(resultViewer).toContain("suite-result-viewer")
+    expect(mayaE2EFixture).toContain('import AppV3Layout from "@/app/app/layout"')
+    expect(mayaE2EFixture).toContain("<AppV3Layout>")
   })
 
   it("moves the real Account surface onto the editorial system without changing account actions", () => {
@@ -165,30 +178,45 @@ describe("Bold Editorial Studio foundation", () => {
 
   it("renders a real responsive email proof with the approved hierarchy and compliance floor", () => {
     const email = renderBoldEditorialProofEmail({
-      ctaHref: "https://www.sselfie.ai/selfie-guide?proof=1",
-      unsubscribeHref: "https://www.sselfie.ai/unsubscribe?proof=1",
+      ctaHref: "https://www.sselfie.ai/auth/setup-password?proof=1",
     })
 
     expect(email).toContain('<table role="presentation"')
-    expect(email).toContain("@media only screen and (max-width: 620px)")
-    expect(email).toContain("One selfie.<br>Four useful moves.")
-    expect(email).toContain("TAKE")
-    expect(email).toContain("CREATE")
-    expect(email).toContain("EDIT")
-    expect(email).toContain("POST")
-    expect(email).toContain("START WITH TAKE")
-    expect(email).toContain("Unsubscribe")
-    expect(email).toContain("#981826")
-    expect(email).not.toMatch(/#(?:f0ede8|f3eee7|c9a96e|7c3aed)/i)
+    expect(email).toContain("@media screen and (max-width: 620px)")
+    expect(email).toContain("source: generateMembershipWelcomeEmail")
+    expect(email).toContain("Welcome to the SUITE")
+    expect(email).toContain("200 photos a month")
+    expect(email).toContain("Set your password")
+    expect(email).toContain("https://www.sselfie.ai/auth/setup-password?proof=1")
+    expect(email).not.toContain("Unsubscribe")
+    expect(email).toContain("#FAFAF9")
+    expect(email).toContain("#09090B")
+    expect(email).toContain("#F3E6CF")
+    expect(email).not.toContain("#981826")
+  })
+
+  it("uses the real Vault Maya promise and current checkout price in the marketing proof", () => {
+    const proof = read("components/brand/bold-editorial-proof.tsx")
+    const designPage = read("app/admin/design-system/page.tsx")
+
+    expect(proof).toContain("One selfie.")
+    expect(proof).toContain("Choose a look.")
+    expect(proof).toContain("30 photo creations each month")
+    expect(proof).toContain("marketingNeon")
+    expect(proof).toContain("Worth posting.")
+    expect(proof).toContain("/images/vault-maya/proof/img-7880-bw-editorial.webp")
+    expect(proof).toContain("/images/vault-maya/proof/img-2534-original-selfie.webp")
+    expect(designPage).toContain("getVaultMayaPriceDisplay")
+    expect(designPage).toContain("vaultMayaPrice.monthlyLabel")
   })
 
   it("keeps the approved reference and governing document wired together", () => {
     const designAuthority = read("docs/SSELFIE_DESIGN_SYSTEM.md")
     const agentInstructions = read("AGENTS.md")
 
-    expect(designAuthority).toContain("Bold Editorial Studio")
+    expect(designAuthority).toContain("SSELFIE Noir Glass")
     expect(designAuthority).toContain(
-      "docs/brand/references/sselfie-bold-editorial-direction-2026-08-23.png"
+      "docs/brand/references/sselfie-noir-glass-suite-direction-2026-08-27.png"
     )
     expect(agentInstructions).toContain("docs/SSELFIE_DESIGN_SYSTEM.md")
     expect(agentInstructions).toContain("sole current visual authority")

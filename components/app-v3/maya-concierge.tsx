@@ -60,6 +60,7 @@ import {
   buildCustomModelConceptPrompt,
   buildVideoMotionPrompt,
 } from "@/lib/app-v3/custom-model-brief"
+import { normalizeConceptBriefPlanOutputs } from "@/lib/app-v3/maya/concept-brief-normalization"
 import type { ServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
 import type {
   Aesthetic,
@@ -131,6 +132,8 @@ const MayaFounderTestMode = dynamic(
 
 const NEXT_POST_REQUEST =
   "Help me create one finished post I can publish. Start with one of my saved selfies and use what you know about my current priority or unfinished work. Choose one strong idea, the format, and a SSELFIE visual direction for me. Include the words I need so the result is ready to use. Ask only one question if it would materially change the post."
+const MAYA_PHOTO_REQUEST =
+  "Create one realistic editorial photo for me. Use what you remember about me, my brand, and my recent style. Direct the strongest concept yourself and start; do not ask me to choose a style unless something essential is missing."
 
 /** Editorial portrait for Maya; member avatars remain deliberately quieter. */
 function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
@@ -139,7 +142,7 @@ function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
     <div
       className={`relative shrink-0 overflow-hidden rounded-full bg-[#ECEDED] ${
         isMaya
-          ? "h-10 w-10 border border-[#0D0E10] ring-2 ring-white"
+          ? "suite-maya-avatar h-10 w-10 border border-[#0D0E10] ring-2 ring-white"
           : "h-8 w-8 border border-[#C5C6C8]/70"
       }`}
     >
@@ -222,24 +225,6 @@ function normalizeOverlayStyleId(value: unknown): OverlayStyleId | null {
   return OVERLAY_STYLE_PRESETS.some(preset => preset.id === id) ? (id as OverlayStyleId) : null
 }
 
-const TEXT_STYLE_VARIATIONS: { label: string; styleAdjustments: string }[] = [
-  {
-    label: "Softer ink",
-    styleAdjustments:
-      "Keep the exact same layout and placement. Use softer charcoal ink instead of stark black.",
-  },
-  {
-    label: "Stronger contrast",
-    styleAdjustments:
-      "Keep the exact same layout and placement. Increase text contrast and weight slightly.",
-  },
-  {
-    label: "No accent",
-    styleAdjustments:
-      "Keep the exact same layout and placement. Remove decorative accents and keep the type clean.",
-  },
-]
-
 function TextStyleTemplatePicker({
   format,
   disabled,
@@ -314,46 +299,6 @@ function TextStyleTemplatePicker({
           )
         })}
       </div>
-    </div>
-  )
-}
-
-function GraphicTextChoiceCard({ onChoose }: { onChoose: (mode: GraphicTextMode) => void }) {
-  return (
-    <div className="space-y-3 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4">
-      <div>
-        <p className="text-[10px] uppercase tracking-[0.2em] text-[#6D6E70]">Text on image</p>
-        <p className="mt-1 text-[14px] leading-relaxed text-[#4F5052]">
-          Maya can bake short words into the finished image. Choose this now, so nothing appears on
-          your result by surprise.
-        </p>
-      </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <button
-          type="button"
-          onClick={() => onChoose("with-text")}
-          className="min-h-20 rounded-[6px] border border-[#0D0E10] bg-[#0D0E10] px-4 py-3 text-left text-white transition hover:bg-[#282728]"
-        >
-          <span className="block text-[11px] uppercase tracking-[0.16em] text-white/65">
-            Baked in
-          </span>
-          <span className="mt-1 block text-[15px] leading-snug">Add text to the image</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => onChoose("without-text")}
-          className="min-h-20 rounded-[6px] border border-[#C5C6C8]/70 bg-[#F8FAFA] px-4 py-3 text-left text-[#0D0E10] transition hover:border-[#0D0E10]"
-        >
-          <span className="block text-[11px] uppercase tracking-[0.16em] text-[#6D6E70]">
-            Clean image
-          </span>
-          <span className="mt-1 block text-[15px] leading-snug">No text, just the visual</span>
-        </button>
-      </div>
-      <p className="text-[12px] leading-relaxed text-[#6D6E70]">
-        If you choose no text, Maya still writes suggested words below the result so you can copy
-        them into Instagram, Canva, or your caption.
-      </p>
     </div>
   )
 }
@@ -492,9 +437,9 @@ function MayaPathTabs({
             onClick={() => onPick(path.id)}
             disabled={disabled}
             aria-current={active ? "step" : undefined}
-            className={`min-h-[64px] border-r border-[#C5C6C8] px-1.5 py-2 text-center transition-colors last:border-r-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--suite-accent)] disabled:opacity-45 sm:min-h-[68px] sm:px-4 ${
+            className={`suite-maya-path-tab min-h-[64px] border-r border-[#C5C6C8] px-1.5 py-2 text-center transition-colors last:border-r-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--suite-night)] disabled:opacity-45 sm:min-h-[68px] sm:px-4 ${
               active
-                ? "bg-[color:var(--suite-accent)] text-white"
+                ? "suite-maya-path-tab--active bg-[color:var(--suite-accent)] text-white"
                 : "bg-white text-[color:var(--suite-night)] hover:bg-[#F1F2F2]"
             }`}
           >
@@ -551,6 +496,8 @@ function MayaPathChooser({
   disabled,
   hasSelfie,
   onChooseSelfie,
+  onCreateWithMaya,
+  onCreateFromVault,
   onPickFormat,
   onStartCaption,
   onStartEdit,
@@ -559,6 +506,8 @@ function MayaPathChooser({
   disabled: boolean
   hasSelfie: boolean
   onChooseSelfie: () => void
+  onCreateWithMaya: () => void
+  onCreateFromVault: () => void
   onPickFormat: (format: OutputFormat) => void
   onStartCaption: () => void
   onStartEdit?: () => void
@@ -598,19 +547,19 @@ function MayaPathChooser({
           <>
             <button
               type="button"
-              onClick={() => onPickFormat("photo")}
+              onClick={onCreateWithMaya}
               disabled={disabled}
               className={`${actionClass} !bg-[color:var(--suite-accent)] !text-white hover:!bg-[color:var(--suite-night)]`}
             >
-              A new photo
+              Create with Maya
             </button>
             <button
               type="button"
-              onClick={() => onPickFormat("photoshoot")}
+              onClick={onCreateFromVault}
               disabled={disabled}
               className={actionClass}
             >
-              A photoshoot
+              Create from the Vault
             </button>
           </>
         ) : activePath === "edit-photo" ? (
@@ -669,13 +618,13 @@ const FORMAT_OPENER: Record<OutputFormat, string> = {
   video: "Choose the image you want to move. Maya will show you motion directions.",
 }
 const FORMAT_OPENER_READY: Record<OutputFormat, string> = {
-  photo: "Choose a direction. Maya will create it with your real face.",
-  photoshoot: "Choose a direction. Maya will build the full photoshoot.",
-  "reel-cover": "Choose a direction for your cover.",
-  carousel: "Choose a direction for your carousel.",
-  "story-slide": "Choose a direction for your Story slide.",
-  "story-sequence": "Choose a direction for your Story sequence.",
-  video: "Choose a motion direction.",
+  photo: "Maya will recommend the strongest direction and create it with your real face.",
+  photoshoot: "Maya will direct one connected photoshoot for you.",
+  "reel-cover": "Maya will recommend the strongest cover direction.",
+  carousel: "Maya will choose the strongest angle and build the carousel.",
+  "story-slide": "Maya will choose the strongest angle and build the Story slide.",
+  "story-sequence": "Maya will choose the strongest angle and build the Story sequence.",
+  video: "Maya will recommend the strongest motion direction.",
 }
 
 // The primary "go" button. It commits the chosen format, which triggers Maya to pull directions,
@@ -691,6 +640,7 @@ const CTA_LABEL: Record<OutputFormat, string> = {
 }
 
 const IMAGE_UPLOAD_ACCEPT = "image/jpeg,image/png,image/webp"
+const DEFAULT_GRAPHIC_OVERLAY_STYLE: OverlayStyleId = "editorial-serif-center"
 
 type UploadSlot = "face" | "angle" | "side" | "body" | "inspiration" | "video"
 
@@ -723,7 +673,7 @@ function extractConcepts(part: any): ConceptCardData[] | null {
       const str = (v: unknown) => (typeof v === "string" ? v : "")
       return {
         ...c,
-        brief: {
+        brief: normalizeConceptBriefPlanOutputs({
           ...brief,
           outfit: str(brief.outfit),
           setting: str(brief.setting),
@@ -731,7 +681,7 @@ function extractConcepts(part: any): ConceptCardData[] | null {
           pose: str(brief.pose),
           cameraSpec: str(brief.cameraSpec),
           lighting: str(brief.lighting),
-        },
+        }),
       }
     })
 }
@@ -770,6 +720,86 @@ function extractFormatSwitch(part: any): OutputFormat | null {
   }
   const fmt = part.output?.format ?? part.input?.format
   return FORMAT_OPTIONS.some(o => o.id === fmt) ? (fmt as OutputFormat) : null
+}
+
+/** The AI SDK may replace a streamed message id when the turn settles. Tool-call ids stay
+ * stable, so use them to prevent one set_format acknowledgement from starting two pulls. */
+function formatSwitchKey(messageId: unknown, part: any, format: OutputFormat): string {
+  const stablePartId =
+    typeof part?.toolCallId === "string"
+      ? part.toolCallId
+      : typeof part?.id === "string"
+        ? part.id
+        : typeof messageId === "string"
+          ? messageId
+          : "unknown"
+  return `${stablePartId}:${format}`
+}
+
+/** Saved streams can contain the same settled assistant tool result twice when a streamed
+ * message id changes during persistence. Keep one copy, preferring the copy that owns the
+ * durable generation state, so a resumed project never shows duplicate directions. */
+function dedupeRestoredMessages(
+  messages: unknown[],
+  genState: Record<string, ConceptGenState> = {}
+): unknown[] {
+  const result: any[] = []
+  const assistantFingerprints = new Map<string, number>()
+
+  const creativeStateScore = (message: any) => {
+    if (typeof message?.id !== "string" || !Array.isArray(message.parts)) return 0
+    const messageStateEntries = Object.entries(genState).filter(([key]) =>
+      key.startsWith(`${message.id}:`)
+    )
+    if (messageStateEntries.some(([, state]) => state.status !== "idle")) return 3
+    if (messageStateEntries.length > 0) return 2
+    return message.parts.reduce((score: number, part: any) => {
+      const concepts = extractConcepts(part)
+      if (!concepts) return score
+      for (const concept of concepts) {
+        const state = genState[`${message.id}:${concept.id}`]
+        if (!state) continue
+        score = Math.max(score, state.status === "idle" ? 1 : 3)
+      }
+      return score
+    }, 0)
+  }
+
+  for (const rawMessage of messages as any[]) {
+    if (rawMessage?.role !== "assistant" || !Array.isArray(rawMessage.parts)) {
+      result.push(rawMessage)
+      continue
+    }
+    const emittedConcepts = rawMessage.parts.map((part: any) => extractConcepts(part)).find(Boolean)
+    const fingerprintParts = rawMessage.parts.map((part: any) => {
+      if (part?.type === "text") return { type: "text", text: part.text }
+      const format = extractFormatSwitch(part)
+      if (format) return { type: "set_format", format }
+      const concepts = extractConcepts(part)
+      if (concepts) return { type: "emit_concepts", concepts }
+      return {
+        type: part?.type,
+        toolName: part?.toolName,
+        input: part?.input,
+        output: part?.output,
+      }
+    })
+    const fingerprint = emittedConcepts
+      ? `concepts:${JSON.stringify(
+          emittedConcepts.map(concept => ({ id: concept.id, title: concept.title }))
+        )}`
+      : JSON.stringify(fingerprintParts)
+    const previousIndex = assistantFingerprints.get(fingerprint)
+    if (previousIndex === undefined) {
+      assistantFingerprints.set(fingerprint, result.length)
+      result.push(rawMessage)
+      continue
+    }
+    if (creativeStateScore(rawMessage) > creativeStateScore(result[previousIndex])) {
+      result[previousIndex] = rawMessage
+    }
+  }
+  return result
 }
 
 /** Pull the show_feed_plan tool's real DB lookup out of Maya's stream (Feed Planner Phase 2c).
@@ -1429,6 +1459,9 @@ export function MayaConcierge({
       const taskId = activeSession.mayaContext?.taskId
       if (!taskId || snapshot.chatId !== taskId) return
       const restoredSession = snapshot.session
+      workspacePathRef.current =
+        restoredSession.workspacePath ??
+        mayaWorkspacePathForFormat(restoredSession.outputFormat ?? null)
       const restoringCalendarPost = activeSession.mayaContext?.job === "finish_calendar_post"
 
       updateCurrentSession(restoredSession.aesthetic as Aesthetic, {
@@ -1447,24 +1480,25 @@ export function MayaConcierge({
           ? activeSession.creationIdea
           : restoredSession.creationIdea,
       })
-      sessionResumedWithHistoryRef.current = snapshot.messages.length > 0
-      savedCountRef.current = snapshot.messages.length
-      lastPulledFormatRef.current = snapshot.messages.length
+      const restoredMessages = dedupeRestoredMessages(snapshot.messages, snapshot.genState)
+      sessionResumedWithHistoryRef.current = restoredMessages.length > 0
+      savedCountRef.current = restoredMessages.length
+      lastPulledFormatRef.current = restoredMessages.length
         ? (activeSession.outputFormat ?? null)
         : null
-      seedRetiredRef.current = Boolean(snapshot.messages.length)
+      seedRetiredRef.current = Boolean(restoredMessages.length)
       formatSwitchAppliedRef.current.clear()
-      for (const message of snapshot.messages as any[]) {
+      for (const message of restoredMessages as any[]) {
         if (message?.role !== "assistant" || !Array.isArray(message.parts)) continue
         for (const part of message.parts) {
           const format = extractFormatSwitch(part)
-          if (format) formatSwitchAppliedRef.current.add(`${message.id}:${format}`)
+          if (format) formatSwitchAppliedRef.current.add(formatSwitchKey(message.id, part, format))
         }
       }
       sessionChatIdRef.current = taskId
       suppressChatSaveForIdRef.current = taskId
       setChatId(taskId)
-      setMessages(snapshot.messages as any[])
+      setMessages(restoredMessages as any[])
       setGenState(snapshot.genState as Record<string, ConceptGenState>)
       setGeneratedOnce(snapshot.generatedOnce)
       setLastGeneration(snapshot.lastGeneration ?? null)
@@ -1480,7 +1514,7 @@ export function MayaConcierge({
       setSetupOpen(snapshot.setupOpen)
       setPreMessageThreadOpen(false)
       setLocalCreationIntent(activeSession.creationIntent ?? null)
-      if (snapshot.messages.length > 0 && activeSession.calendarTarget) {
+      if (restoredMessages.length > 0 && activeSession.calendarTarget) {
         // Hydration and the provider's announced-state update paint on separate commits. Claim
         // this request synchronously so the handoff effect cannot send a duplicate turn in the
         // gap between restoring the messages and painting `announced: true`.
@@ -1610,7 +1644,7 @@ export function MayaConcierge({
       if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
       for (const p of m.parts) {
         const fmt = extractFormatSwitch(p)
-        if (fmt) formatSwitchAppliedRef.current.add(`${m.id}:${fmt}`)
+        if (fmt) formatSwitchAppliedRef.current.add(formatSwitchKey(m.id, p, fmt))
       }
     }
     sessionChatIdRef.current = draft.chatId
@@ -2063,12 +2097,18 @@ export function MayaConcierge({
       hasTrainedModel && generationSource === "trained-model" && fmt === "photo"
     if (fmt === "video" && !session.videoSourceUrl) return
     if (fmt !== "video" && !session.referenceSelfieUrl && !canUseTrainedModelWithoutSelfie) return
-    // Graphic formats wait for an explicit text choice. If she wants text, she picks the
-    // baked style before Maya pulls directions; if she wants clean images, Maya still writes
-    // copy suggestions for her to use elsewhere.
+    // Old drafts may predate the hands-free finish. Normalize them once so they cannot reopen
+    // into a silent text/style gate with no visible next action.
     if (isGraphicOutputFormat(fmt)) {
-      if (!textOverlayMode) return
-      if (textOverlayMode === "with-text" && !textStyleChoice) return
+      if (!textOverlayMode) {
+        setTextOverlayMode("with-text")
+        setTextStyleChoice(rememberedOverlayStyle ?? DEFAULT_GRAPHIC_OVERLAY_STYLE)
+        return
+      }
+      if (textOverlayMode === "with-text" && !textStyleChoice) {
+        setTextStyleChoice(rememberedOverlayStyle ?? DEFAULT_GRAPHIC_OVERLAY_STYLE)
+        return
+      }
     }
     if (lastPulledFormatRef.current === fmt) return
     const isFirstPull = lastPulledFormatRef.current === null
@@ -2092,6 +2132,7 @@ export function MayaConcierge({
     localCreationIntent,
     messages.length,
     operatingLayerEnabled,
+    rememberedOverlayStyle,
     selfieManagerOpen,
     session,
     isThinking,
@@ -2142,7 +2183,7 @@ export function MayaConcierge({
       for (const p of m.parts) {
         const fmt = extractFormatSwitch(p)
         if (!fmt) continue
-        const key = `${m.id}:${fmt}`
+        const key = formatSwitchKey(m.id, p, fmt)
         if (formatSwitchAppliedRef.current.has(key)) continue
         formatSwitchAppliedRef.current.add(key)
         latest = fmt
@@ -2179,22 +2220,22 @@ export function MayaConcierge({
       // The format and any required text choice are already committed. Mark this recovery pull
       // as owned here so the general auto-pull effect cannot send a duplicate turn.
       lastPulledFormatRef.current = latest
-      sendMessage({ text: "Continue with what we already created." })
+      sendMessage({ text: FORMAT_PHRASE[latest] })
       return
     }
 
-    // A typed confirmation can commit the format before Maya's set_format acknowledgement
-    // arrives. Graphic formats are still incomplete at that point: expose the text decision
-    // instead of leaving the thread parked with neither concepts nor a visible next action.
+    // A typed confirmation can commit the format before Maya's set_format acknowledgement.
+    // Apply the remembered/default finish so the confirmation continues instead of opening
+    // another decision gate.
     if (session?.outputFormat === latest) {
       setLocalCreationIntent(intent)
       extrasRef.current = { ...extrasRef.current, format: latest, creationIntent: intent }
       commitSwitchedFormat()
-      if (isGraphicOutputFormat(latest) && rememberedOverlayStyle) {
+      if (isGraphicOutputFormat(latest)) {
         setTextOverlayMode("with-text")
-        setTextStyleChoice(rememberedOverlayStyle)
+        setTextStyleChoice(rememberedOverlayStyle ?? DEFAULT_GRAPHIC_OVERLAY_STYLE)
         lastPulledFormatRef.current = latest
-        sendMessage({ text: "Continue with what we already created." })
+        sendMessage({ text: FORMAT_PHRASE[latest] })
       } else {
         lastPulledFormatRef.current = null
       }
@@ -2208,12 +2249,9 @@ export function MayaConcierge({
       // set_format again: the "On it, switching to carousels" dead end she reported.
       setLocalCreationIntent(intent)
       extrasRef.current = { ...extrasRef.current, format: latest, creationIntent: intent }
-      if (isGraphicOutputFormat(latest) && rememberedOverlayStyle) {
-        // A style she deliberately saved can continue with her. Without that evidence,
-        // changing format must reveal the text/no-text choice instead of silently baking
-        // the same template into every slide.
+      if (isGraphicOutputFormat(latest)) {
         setTextOverlayMode("with-text")
-        setTextStyleChoice(rememberedOverlayStyle)
+        setTextStyleChoice(rememberedOverlayStyle ?? DEFAULT_GRAPHIC_OVERLAY_STYLE)
       } else {
         setTextOverlayMode(null)
         setTextStyleChoice(null)
@@ -2250,12 +2288,15 @@ export function MayaConcierge({
     }
     if (!latest || session?.outputFormat === latest) return
     lastPulledFormatRef.current = latest
-    setTextOverlayMode(null)
-    setTextStyleChoice(null)
+    const graphicFormat = isGraphicOutputFormat(latest)
+    setTextOverlayMode(graphicFormat ? "with-text" : null)
+    setTextStyleChoice(
+      graphicFormat ? (rememberedOverlayStyle ?? DEFAULT_GRAPHIC_OVERLAY_STYLE) : null
+    )
     setTextStyleAdjustments(null)
     setStyleSwapOpen(false)
     setOutputFormat(latest)
-  }, [messages, isThinking, session, setOutputFormat])
+  }, [messages, isThinking, rememberedOverlayStyle, session, setOutputFormat])
 
   useEffect(() => {
     if (!hasTrainedModel && generationSource !== "selfie") setGenerationSource("selfie")
@@ -2912,7 +2953,11 @@ export function MayaConcierge({
     } | null
     if (requestId !== historyLoadRequestRef.current) return
     saveMayaLastActiveTaskId(id)
-    const loaded = Array.isArray(data?.messages) ? data.messages : []
+    const workspace = data?.workspace ?? null
+    const loaded = dedupeRestoredMessages(
+      Array.isArray(data?.messages) ? data.messages : [],
+      (workspace?.genState as Record<string, ConceptGenState> | undefined) ?? {}
+    )
     savedCountRef.current = loaded.length
     // Historical set_format parts are already-acted-on: seed them so reopening an old
     // chat never replays a format switch (and the auto-pull it triggers).
@@ -2920,13 +2965,13 @@ export function MayaConcierge({
       if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
       for (const p of m.parts) {
         const fmt = extractFormatSwitch(p)
-        if (fmt) formatSwitchAppliedRef.current.add(`${m.id}:${fmt}`)
+        if (fmt) formatSwitchAppliedRef.current.add(formatSwitchKey(m.id, p, fmt))
       }
     }
     sessionChatIdRef.current = id
     suppressChatSaveForIdRef.current = id
     setChatId(id)
-    const workspace = data?.workspace ?? null
+    let shouldOpenRestoredCalendar = false
     if (workspace) {
       const restoredSession = (
         !calendarIncluded &&
@@ -2944,11 +2989,20 @@ export function MayaConcierge({
           calendarHandoffSentRef.current = restoredSession.calendarTarget.requestId
           markCalendarTargetAnnounced(restoredSession.calendarTarget.requestId)
         }
+        workspacePathRef.current =
+          restoredSession.workspacePath ??
+          mayaWorkspacePathForFormat(restoredSession.outputFormat ?? null)
         restoreHistoryTask(id, restoredSession)
         saveMayaTaskDraft({ ...workspace, session: restoredSession, chatId: id, messages: loaded })
-        if (calendarIncluded && restoredSession.mayaContext?.surface === "calendar") {
-          onOpenCalendar?.()
-        }
+        const restoresCalendarResult = Object.values(workspace.genState ?? {}).some(state =>
+          Boolean((state as ConceptGenState | undefined)?.calendarPlacement)
+        )
+        shouldOpenRestoredCalendar = Boolean(
+          calendarIncluded &&
+          (restoredSession.mayaContext?.surface === "calendar" ||
+            Boolean(restoredSession.calendarTarget) ||
+            restoresCalendarResult)
+        )
       }
       updateCurrentSession(restoredSession.aesthetic as Aesthetic, {
         format: restoredSession.outputFormat ?? undefined,
@@ -2986,6 +3040,12 @@ export function MayaConcierge({
     sessionResumedWithHistoryRef.current = loaded.length > 0
     setMessages(loaded as any)
     setHistoryOpen(false)
+    // Paint the restored messages and durable result state before changing the app surface.
+    // Otherwise Calendar's section synchronization can win the same commit and clear the
+    // creative state while the correct task id remains selected.
+    if (shouldOpenRestoredCalendar) {
+      window.requestAnimationFrame(() => onOpenCalendar?.())
+    }
   }
 
   async function recoverSingleImageFromGallery(
@@ -3028,6 +3088,67 @@ export function MayaConcierge({
         }
       } catch {
         // The browser may be briefly offline while the server finishes and stores the image.
+      }
+    }
+    return null
+  }
+
+  async function recoverMultiImageFromGallery(
+    clientRequestId: string,
+    startedAtMs: number,
+    expectedFormat: "carousel" | "story-sequence",
+    expectedCount: number,
+    maxAttempts: number
+  ): Promise<Array<{ url: string; aiImageId: number | null }> | null> {
+    const expectedContentType = expectedFormat === "story-sequence" ? "story-slide" : "carousel"
+    const cutoff = startedAtMs - 2 * 60 * 1000
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 5_000))
+      try {
+        const response = await fetch("/api/app-v3/gallery", { cache: "no-store" })
+        if (!response.ok) continue
+        const data = (await response.json().catch(() => null)) as {
+          assets?: Array<{
+            id?: string
+            kind?: string
+            contentType?: string
+            url?: string
+            createdAt?: string
+            generationRef?: string | null
+          }>
+        } | null
+        const matchingAssets = (data?.assets ?? [])
+          .filter(
+            item =>
+              item.kind === "image" &&
+              item.contentType === expectedContentType &&
+              item.generationRef?.includes(clientRequestId) &&
+              typeof item.url === "string" &&
+              item.url.length > 0 &&
+              Date.parse(item.createdAt || "") >= cutoff
+          )
+          .sort((left, right) => {
+            const leftIndex = Number.parseInt(left.generationRef?.match(/-(\d+)$/)?.[1] ?? "0", 10)
+            const rightIndex = Number.parseInt(
+              right.generationRef?.match(/-(\d+)$/)?.[1] ?? "0",
+              10
+            )
+            return leftIndex - rightIndex
+          })
+
+        const uniqueAssets = Array.from(
+          new Map(matchingAssets.map(asset => [asset.url as string, asset])).values()
+        )
+        if (uniqueAssets.length < expectedCount) continue
+        return uniqueAssets.slice(0, expectedCount).map(asset => {
+          const idMatch = asset.id?.match(/^ai_(\d+)$/)
+          return {
+            url: asset.url as string,
+            aiImageId: idMatch ? Number.parseInt(idMatch[1], 10) : null,
+          }
+        })
+      } catch {
+        // A long multi-slide render may finish after the browser connection is interrupted.
       }
     }
     return null
@@ -3440,6 +3561,46 @@ export function MayaConcierge({
       }
       return true
     }
+    const restorePaidMultiImage = async (source: "request_recovered", maxAttempts: number) => {
+      if (
+        (targetFormat !== "carousel" && targetFormat !== "story-sequence") ||
+        !generationRequestId ||
+        maxAttempts <= 0
+      )
+        return false
+      const recovered = await recoverMultiImageFromGallery(
+        generationRequestId,
+        generationStartedAt,
+        targetFormat,
+        Math.min(9, expectedOutputCount),
+        maxAttempts
+      )
+      if (!recovered) return false
+      const recoveredUrls = recovered.map(asset => asset.url)
+      const recoveredIds = recovered.map(asset => asset.aiImageId)
+      setGenState(state => ({
+        ...state,
+        [key]: {
+          status: "done",
+          imageUrls: recoveredUrls,
+          aiImageId: recoveredIds[0] ?? null,
+          aiImageIds: recoveredIds,
+        },
+      }))
+      setGeneratedOnce(true)
+      recordCompletedRender(targetFormat, recoveredUrls.length, concept.title)
+      trackGenerationCompleted(targetFormat, source)
+      if (calendarTargetForRequest && generationRequestId) {
+        await attachCalendarGeneration(
+          calendarTargetForRequest,
+          generationRequestId,
+          recoveredUrls,
+          recoveredIds
+        )
+        calendarSettled = true
+      }
+      return true
+    }
     try {
       if (targetFormat === "video") {
         const startRes = await fetch("/api/app-v3/maya/video/generate", {
@@ -3573,9 +3734,10 @@ export function MayaConcierge({
           ...(bakeStyle ? { overlayStyle: bakeStyle } : {}),
           ...(textStyleAdjustments ? { styleAdjustments: textStyleAdjustments } : {}),
           ...(wantsBakedText ? { autoBake: true } : {}),
-          // Single-image formats stream progressive previews; carousels keep the JSON path.
+          // Only single-image formats stream progressive previews. Multi-slide formats keep the
+          // durable JSON response so the complete ordered set arrives together.
           // Auto-baked text needs the JSON path so the baked URL returns with the clean base.
-          stream: wantsBakedText ? false : targetFormat !== "carousel",
+          stream: !wantsBakedText && isSingleImageRequest,
         }),
       })
       generationResponseStatus = res.status
@@ -3765,6 +3927,22 @@ export function MayaConcierge({
         if (actionRequestId) throw new Error(data?.error || "Generation is not available yet")
         return
       }
+      if (data?.code === "reference_selfie_unavailable") {
+        setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+        setUploadError(data.error || "Choose another saved selfie or add it again.")
+        setReferenceSelfieUrl(null)
+        openSelfieManager("face")
+        if (actionRequestId) throw new Error(data.error || "Reference selfie unavailable")
+        return
+      }
+      if (data?.code === "inspiration_unavailable") {
+        setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+        setUploadError(data.error || "Choose another inspiration image or add it again.")
+        setInspirationUrl(null)
+        openSelfieManager("inspiration")
+        if (actionRequestId) throw new Error(data.error || "Inspiration image unavailable")
+        return
+      }
       const urls =
         Array.isArray(data?.imageUrls) && data.imageUrls.length > 0
           ? data.imageUrls
@@ -3839,6 +4017,7 @@ export function MayaConcierge({
             ? 3
             : 0
       if (await restorePaidSingleImage("request_recovered", recoveryAttempts)) return
+      if (await restorePaidMultiImage("request_recovered", recoveryAttempts)) return
       trackRecoveryShown(targetFormat, "exception", {
         phase: "generate_request",
         responseStatus: generationResponseStatus,
@@ -4004,6 +4183,20 @@ export function MayaConcierge({
         setTrialCapOpen(true)
         return
       }
+      if (data?.code === "reference_selfie_unavailable") {
+        setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+        setUploadError(data.error || "Choose another saved selfie or add it again.")
+        setReferenceSelfieUrl(null)
+        openSelfieManager("face")
+        return
+      }
+      if (data?.code === "inspiration_unavailable") {
+        setGenState(s => ({ ...s, [key]: { status: "idle" } }))
+        setUploadError(data.error || "Choose another inspiration image or add it again.")
+        setInspirationUrl(null)
+        openSelfieManager("inspiration")
+        return
+      }
       const urls =
         Array.isArray(data?.imageUrls) && data.imageUrls.length > 0
           ? data.imageUrls
@@ -4109,12 +4302,13 @@ export function MayaConcierge({
   // Tap-first: choosing a format asks Maya to pull 3 directions for it (no typing needed).
   function handlePickFormat(id: OutputFormat) {
     if (isThinking) return
-    // Always re-arm the graphic-text gate and the auto-pull - including when she re-taps
-    // the SAME format mid-thread to start a fresh piece. Gating this on id !== outputFormat
-    // left textOverlayMode/textStyleChoice/lastPulledFormatRef stale, so the inline text
-    // question cards never re-appeared and the chip tap was a silent no-op.
-    setTextOverlayMode(null)
-    setTextStyleChoice(null)
+    // A format tap starts Maya immediately. Graphic formats use her remembered finish, or the
+    // restrained editorial default; the compact Change control remains available before spend.
+    const graphicFormat = isGraphicOutputFormat(id)
+    setTextOverlayMode(graphicFormat ? "with-text" : null)
+    setTextStyleChoice(
+      graphicFormat ? (rememberedOverlayStyle ?? DEFAULT_GRAPHIC_OVERLAY_STYLE) : null
+    )
     setTextStyleAdjustments(null)
     setStyleSwapOpen(false)
     setPendingShotDirector(null)
@@ -4142,6 +4336,51 @@ export function MayaConcierge({
     setPreMessageThreadOpen(true)
     setSetupOpen(false)
     sendMessage({ text: CAPTION_START_REQUEST }, { body: { workspaceAction: "write-caption" } })
+  }
+
+  function handleCreateWithMaya() {
+    if (isThinking || !session) return
+    homeTaskInitiatedRef.current = true
+    const intent = intentForFormat("photo", "starter_chip")
+    setLocalCreationIntent(intent)
+    extrasRef.current = { ...extrasRef.current, format: "photo", creationIntent: intent }
+    trackInlineChoice("create_with_maya", intent)
+    setTextOverlayMode(null)
+    setTextStyleChoice(null)
+    setTextStyleAdjustments(null)
+    setStyleSwapOpen(false)
+    setPreMessageThreadOpen(true)
+    setSetupOpen(false)
+    lastPulledFormatRef.current = null
+    seedRetiredRef.current = false
+    updateCurrentSession(MAYA_DECIDES_AESTHETIC, {
+      format: "photo",
+      seed: MAYA_PHOTO_REQUEST,
+      creationIdea: MAYA_PHOTO_REQUEST,
+      referenceSelfieUrl,
+      creationIntent: intent,
+    })
+  }
+
+  function handleCreateFromVault() {
+    if (isThinking || !session) return
+    homeTaskInitiatedRef.current = true
+    const intent = intentForFormat("photo", "starter_chip")
+    setLocalCreationIntent(intent)
+    extrasRef.current = { ...extrasRef.current, format: "photo", creationIntent: intent }
+    trackInlineChoice("create_from_vault", intent)
+    setInlineShotPickerAesthetic(null)
+    setPendingShotDirector(null)
+    setPreMessageThreadOpen(false)
+    setSetupOpen(true)
+    lastPulledFormatRef.current = null
+    updateCurrentSession(MAYA_GENERAL_AESTHETIC, {
+      format: "photo",
+      seed: "Use the Vault look I choose and create the strongest photo direction for me.",
+      creationIdea: "Create a photo from my chosen Vault look.",
+      referenceSelfieUrl,
+      creationIntent: intent,
+    })
   }
 
   function handleProjectStart() {
@@ -4411,25 +4650,13 @@ export function MayaConcierge({
       sendMessage({ text: FORMAT_PHRASE[nextFormat] })
       return
     }
-    // Graphic next-steps previously stopped here waiting for a text choice the member could
-    // not see — "Turn this into Stories" and the carousel/stories chips did nothing visible
-    // (2026-07-29 live audit). A member with a remembered text style continues hands-free,
-    // the same doctrine as the conversational set_format switch (the style chip above the
-    // concept cards still swaps it before any credit is spent). First-timers keep the
-    // explicit with-text / without-text gate, scrolled into view so the tap always has a
-    // visible response.
+    // Graphic next-steps continue hands-free with her remembered finish or the restrained
+    // editorial default. The compact Change control still swaps it before any credit is spent.
     setTextStyleAdjustments(null)
-    if (rememberedOverlayStyle) {
-      setTextOverlayMode("with-text")
-      setTextStyleChoice(rememberedOverlayStyle)
-      lastPulledFormatRef.current = nextFormat
-      sendMessage({ text: FORMAT_PHRASE[nextFormat] })
-      return
-    }
-    setTextOverlayMode(null)
-    setTextStyleChoice(null)
-    lastPulledFormatRef.current = null
-    requestAnimationFrame(() => scrollThreadToBottom())
+    setTextOverlayMode("with-text")
+    setTextStyleChoice(rememberedOverlayStyle ?? DEFAULT_GRAPHIC_OVERLAY_STYLE)
+    lastPulledFormatRef.current = nextFormat
+    sendMessage({ text: FORMAT_PHRASE[nextFormat] })
   }
 
   function trackGenerationCompleted(targetFormat: OutputFormat, source: string) {
@@ -4500,6 +4727,7 @@ export function MayaConcierge({
   }
 
   function handleTextStylePick(style: OverlayStyleId) {
+    setTextOverlayMode("with-text")
     setTextStyleChoice(style)
     setTextStyleAdjustments(null)
     savePreferredOverlayStyle(style)
@@ -4847,6 +5075,7 @@ export function MayaConcierge({
     creditModal.open ||
     trialCapOpen ||
     Boolean(editTarget)
+  const visibleMessages = dedupeRestoredMessages(messages, genState)
 
   return (
     <div
@@ -4897,7 +5126,7 @@ export function MayaConcierge({
         className={
           homeMode
             ? "suite-maya-panel pointer-events-auto relative flex h-full w-full min-w-0 flex-col overflow-hidden border-r border-[#C5C6C8]/60 bg-[#F8FAFA] shadow-none"
-            : "suite-maya-panel pointer-events-auto relative flex h-[94dvh] w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden rounded-t-[6px] border border-[#C5C6C8]/55 bg-[#F8FAFA] shadow-[0_-18px_60px_rgba(13,14,16,0.16)] animate-in slide-in-from-bottom-4 duration-300 ease-out motion-reduce:animate-none lg:h-[100dvh] lg:w-[27rem] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-[-18px_0_60px_rgba(13,14,16,0.10)] lg:slide-in-from-right"
+            : "suite-maya-panel pointer-events-auto relative flex h-[94dvh] w-full min-w-0 max-w-[100dvw] flex-col overflow-hidden rounded-t-[6px] border border-[#C5C6C8]/55 bg-[#F8FAFA] shadow-[0_-18px_60px_rgba(13,14,16,0.16)] animate-in slide-in-from-bottom-4 duration-300 ease-out motion-reduce:animate-none lg:h-[100dvh] lg:w-[34rem] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-[-18px_0_60px_rgba(13,14,16,0.10)] lg:slide-in-from-right"
         }
       >
         {/* Header - one calm row. Actions live in a quiet menu, and Close is always visible
@@ -4918,6 +5147,11 @@ export function MayaConcierge({
                 className="max-w-[18rem] font-serif text-[22px] font-light uppercase leading-none tracking-[-0.035em] text-[#0D0E10] sm:max-w-none sm:text-[31px]"
               >
                 {agentLabel}
+                {homeMode ? (
+                  <span className="suite-maya-neon-mark sm:hidden" aria-hidden="true">
+                    create
+                  </span>
+                ) : null}
               </h2>
               {!generalHomeConversation && (
                 <p className="mt-0.5 truncate text-[11px] leading-snug text-[#6D6E70]">
@@ -5668,6 +5902,8 @@ export function MayaConcierge({
                       if (session.workspacePath !== "ai-photos") setWorkspacePath("ai-photos")
                       openSelfieManager()
                     }}
+                    onCreateWithMaya={handleCreateWithMaya}
+                    onCreateFromVault={handleCreateFromVault}
                     onPickFormat={handlePickFormat}
                     onStartCaption={handleCaptionPath}
                     onStartEdit={onStartEdit}
@@ -5773,7 +6009,7 @@ export function MayaConcierge({
               {(() => {
                 // Preserve the first finished-photo marker for existing result-card behavior.
                 let firstDonePhotoKey: string | null = null
-                for (const m of messages as any[]) {
+                for (const m of visibleMessages as any[]) {
                   if (m?.role !== "assistant" || !Array.isArray(m.parts)) continue
                   const msgConcepts = m.parts.map(extractConcepts).find(Boolean) as
                     | ConceptCardData[]
@@ -5791,7 +6027,7 @@ export function MayaConcierge({
                     if (!firstDonePhotoKey && msgFormat === "photo") firstDonePhotoKey = k
                   }
                 }
-                return messages.map((m: any) => {
+                return visibleMessages.map((m: any) => {
                   const isUser = m.role === "user"
                   const parts = Array.isArray(m.parts) ? m.parts : []
                   const text = parts
@@ -6370,13 +6606,7 @@ export function MayaConcierge({
                             <div className="flex min-w-0 items-center justify-end">
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setTextOverlayMode(null)
-                                  setTextStyleChoice(null)
-                                  setTextStyleAdjustments(null)
-                                  setStyleSwapOpen(false)
-                                  lastPulledFormatRef.current = null
-                                }}
+                                onClick={() => setStyleSwapOpen(open => !open)}
                                 className="shrink-0 rounded-[4px] border border-[#C5C6C8]/70 bg-white px-2.5 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#4F5052] hover:border-[#0D0E10]"
                               >
                                 {textOverlayMode === "with-text" && textStyleChoice
@@ -6387,62 +6617,28 @@ export function MayaConcierge({
                             </div>
                           )}
                           {isGraphicOutputFormat(conceptFormat) &&
-                            textOverlayMode === "with-text" &&
                             styleSwapOpen && (
-                              <TextStyleTemplatePicker
-                                format={conceptFormat}
-                                rememberedStyle={rememberedOverlayStyle}
-                                onPick={style => {
-                                  handleTextStylePick(style)
-                                  setStyleSwapOpen(false)
-                                }}
-                              />
-                            )}
-                          {isGraphicOutputFormat(conceptFormat) &&
-                            textOverlayMode === "with-text" &&
-                            rememberedOverlayStyle &&
-                            textStyleChoice === rememberedOverlayStyle &&
-                            !styleSwapOpen && (
-                              <div className="min-w-0 rounded-[6px] border border-[#C5C6C8]/60 bg-[#F8FAFA] p-3">
-                                <p className="text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
-                                  Usual style variations
-                                </p>
-                                <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => setTextStyleAdjustments(null)}
-                                    className={`min-h-10 shrink-0 rounded-full border px-3 text-[11px] uppercase tracking-[0.12em] ${
-                                      !textStyleAdjustments
-                                        ? "border-[#0D0E10] bg-[#0D0E10] text-white"
-                                        : "border-[#C5C6C8]/70 bg-white text-[#4F5052]"
-                                    }`}
-                                  >
-                                    Original
-                                  </button>
-                                  {TEXT_STYLE_VARIATIONS.map(variation => {
-                                    const selected =
-                                      textStyleAdjustments === variation.styleAdjustments
-                                    return (
-                                      <button
-                                        key={variation.label}
-                                        type="button"
-                                        onClick={() =>
-                                          setTextStyleAdjustments(variation.styleAdjustments)
-                                        }
-                                        className={`min-h-10 shrink-0 rounded-full border px-3 text-[11px] uppercase tracking-[0.12em] ${
-                                          selected
-                                            ? "border-[#0D0E10] bg-[#0D0E10] text-white"
-                                            : "border-[#C5C6C8]/70 bg-white text-[#4F5052]"
-                                        }`}
-                                      >
-                                        {variation.label}
-                                      </button>
-                                    )
-                                  })}
-                                </div>
-                                <p className="mt-1 text-[11px] leading-relaxed text-[#6D6E70]">
-                                  Layout stays the same. Only the text finish changes.
-                                </p>
+                              <div className="space-y-2">
+                                <TextStyleTemplatePicker
+                                  format={conceptFormat}
+                                  rememberedStyle={rememberedOverlayStyle}
+                                  onPick={style => {
+                                    handleTextStylePick(style)
+                                    setStyleSwapOpen(false)
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTextOverlayMode("without-text")
+                                    setTextStyleChoice(null)
+                                    setTextStyleAdjustments(null)
+                                    setStyleSwapOpen(false)
+                                  }}
+                                  className="min-h-11 w-full rounded-[6px] border border-[#C5C6C8]/70 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:border-[#0D0E10]"
+                                >
+                                  Keep the images clean · no text
+                                </button>
                               </div>
                             )}
                           {(() => {
@@ -6451,26 +6647,41 @@ export function MayaConcierge({
                               const state = genState[`${m.id}:${concept.id}`]
                               return Boolean(state && state.status !== "idle")
                             })
-                            const visibleDirections =
-                              activeDirection >= 0
-                                ? [
-                                    {
-                                      concept: directions[activeDirection],
-                                      index: activeDirection,
-                                    },
-                                  ]
-                                : directions.map((concept, index) => ({ concept, index }))
+                            const activeConcept =
+                              activeDirection >= 0 ? directions[activeDirection] : null
+                            const primaryConcept = activeConcept ?? directions[0]
+                            const alternates = activeConcept ? [] : directions.slice(1)
 
                             return (
                               <div
-                                className={`suite-concept-direction-strip grid gap-px border border-[#050505] bg-[#050505] ${activeDirection >= 0 ? "grid-cols-1" : "grid-cols-3"}`}
+                                className="suite-concept-direction-strip space-y-2"
                                 aria-label="Choose a direction"
                               >
-                                {visibleDirections.map(({ concept, index }) => (
-                                  <div key={concept.id} className="min-w-0 bg-white">
-                                    {renderConceptCard(concept, index === 0, index)}
+                                {primaryConcept ? (
+                                  <div className="min-w-0">
+                                    {renderConceptCard(
+                                      primaryConcept,
+                                      activeDirection <= 0,
+                                      Math.max(activeDirection, 0)
+                                    )}
                                   </div>
-                                ))}
+                                ) : null}
+                                {alternates.length > 0 ? (
+                                  <details className="rounded-[6px] border border-[#C5C6C8]/60 bg-[#F8FAFA]">
+                                    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-4 text-[11px] uppercase tracking-[0.14em] text-[#4F5052]">
+                                      See {alternates.length} more direction
+                                      {alternates.length === 1 ? "" : "s"}
+                                      <span aria-hidden>+</span>
+                                    </summary>
+                                    <div className="grid gap-px border-t border-[#C5C6C8]/60 bg-[#050505] sm:grid-cols-2">
+                                      {alternates.map((concept, alternateIndex) => (
+                                        <div key={concept.id} className="min-w-0 bg-white">
+                                          {renderConceptCard(concept, false, alternateIndex + 1)}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </details>
+                                ) : null}
                               </div>
                             )
                           })()}
@@ -6480,36 +6691,6 @@ export function MayaConcierge({
                   )
                 })
               })()}
-
-              {/* Graphic formats need an explicit text decision before Maya pulls directions. This
-              prevents surprise text on generated results and keeps the old Text Studio fallback
-              retired: with text means baked text; without text means clean image + copy suggestions. */}
-              {outputFormat &&
-                isGraphicOutputFormat(outputFormat) &&
-                (!textOverlayMode || (textOverlayMode === "with-text" && !textStyleChoice)) &&
-                lastPulledFormatRef.current !== outputFormat && (
-                  <div className="flex min-w-0 max-w-full items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none">
-                    <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
-                    <div className="min-w-0 max-w-[calc(100%-2.25rem)] flex-1 sm:max-w-[88%]">
-                      {!textOverlayMode ? (
-                        <GraphicTextChoiceCard
-                          onChoose={mode => {
-                            setTextOverlayMode(mode)
-                            setTextStyleChoice(null)
-                            setTextStyleAdjustments(null)
-                            setStyleSwapOpen(false)
-                          }}
-                        />
-                      ) : (
-                        <TextStyleTemplatePicker
-                          format={outputFormat}
-                          rememberedStyle={rememberedOverlayStyle}
-                          onPick={handleTextStylePick}
-                        />
-                      )}
-                    </div>
-                  </div>
-                )}
 
               {/* MAYA'S FIRST COFFEE invite: after she uses her first result, Maya offers a
               3-question get-to-know-you IN CHAT (persona carries the interview; answers save
@@ -6621,7 +6802,7 @@ export function MayaConcierge({
               {chatSaveError && (
                 <div
                   role="alert"
-                  className="min-w-0 max-w-full rounded-[6px] bg-[#282728]/5 px-4 py-3"
+                  className="suite-state suite-state--error min-w-0 max-w-full px-4 py-3"
                 >
                   <p className="text-[13px] text-[#282728]">
                     This conversation has not reached your history yet. Your work is still on this
@@ -6640,7 +6821,7 @@ export function MayaConcierge({
               {draftSyncError && (
                 <div
                   role="alert"
-                  className="min-w-0 max-w-full rounded-[6px] bg-[#282728]/5 px-4 py-3"
+                  className="suite-state suite-state--error min-w-0 max-w-full px-4 py-3"
                 >
                   <p className="text-[13px] text-[#282728]">
                     Your latest workspace changes have not synced yet. Keep this window open and try

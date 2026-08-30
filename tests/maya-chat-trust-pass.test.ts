@@ -74,11 +74,11 @@ describe("Maya chat trust pass", () => {
     expect(concierge).not.toContain("id: chatId,\n    messages:")
   })
 
-  it("keeps recommended graphic actions behind the explicit text choice", () => {
+  it("continues recommended graphic actions with the compact default finish", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
 
-    expect(concierge).toContain("setTextOverlayMode(null)")
-    expect(concierge).toContain("setTextStyleChoice(null)")
+    expect(concierge).toContain('setTextOverlayMode("with-text")')
+    expect(concierge).toContain("rememberedOverlayStyle ?? DEFAULT_GRAPHIC_OVERLAY_STYLE")
     expect(concierge).not.toContain("const autoTextStyle =")
   })
 

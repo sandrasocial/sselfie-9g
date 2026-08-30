@@ -83,7 +83,8 @@ describe("Maya live member polish", () => {
     const navigation = readFileSync("components/app-v3/suite-editorial-navigation.tsx", "utf8")
 
     expect(editMode).toContain("fixed inset-0 z-[80]")
-    expect(editMode).toContain('"--suite-night": "var(--ss-brand-ink, #0D0E10)"')
+    expect(editMode).toContain('"--suite-night": "var(--ss-brand-ink, #09090B)"')
+    expect(editMode).toContain('"--suite-accent": "var(--ss-brand-ink, #09090B)"')
     expect(editMode).toContain("shrink-0 border-t")
     expect(editMode).toContain("pb-[max(env(safe-area-inset-bottom),0.75rem)]")
     expect(navigation).toContain("suite-bottom-nav fixed inset-x-0 bottom-0 z-40")

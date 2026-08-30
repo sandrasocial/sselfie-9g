@@ -657,8 +657,7 @@ if (!runPlaywright) {
       await page.getByRole("button", { name: "Create the carousel" }).click()
       await expect(maya).toHaveAttribute("data-maya-format", "carousel")
       await expect(page.getByText("Choose your style")).toHaveCount(0)
-      await expect(page.getByText("Text on image")).toBeVisible()
-      await page.getByRole("button", { name: "No text, just the visual" }).click()
+      await expect(page.getByText("Text on image")).toHaveCount(0)
       await expect(page.getByText("Three-part visibility carousel")).toBeVisible()
 
       await page.getByRole("button", { name: /Create this · 3 credits/i }).click()
@@ -876,7 +875,7 @@ if (!runPlaywright) {
       await page.goto("/e2e/maya-operating-layer?cohort=member", {
         waitUntil: "domcontentloaded",
       })
-      await expect(page.getByRole("region", { name: /what do you want to say/i })).toBeVisible()
+      await expect(page.getByRole("region", { name: "Start with Maya" })).toBeVisible()
       await page.evaluate(() =>
         window.localStorage.setItem("sselfie.appV3.section.v1", JSON.stringify("calendar"))
       )
@@ -891,12 +890,12 @@ if (!runPlaywright) {
         .poll(() => page.evaluate(() => window.localStorage.getItem("sselfie.appV3.section.v1")))
         .toBe('"create"')
 
-      await expect(page.getByRole("button", { name: "Maya", exact: true })).toHaveAttribute(
+      await expect(page.getByRole("button", { name: "Create", exact: true })).toHaveAttribute(
         "aria-current",
         "page"
       )
-      await expect(page.getByRole("region", { name: /what do you want to say/i })).toBeVisible()
-      await expect(page.getByPlaceholder("Tell Maya the messy version…")).toBeVisible()
+      await expect(page.getByRole("region", { name: "Start with Maya" })).toBeVisible()
+      await expect(page.getByPlaceholder("Tell Maya what you need…")).toBeVisible()
       await expect(page.getByRole("button", { name: "Report", exact: true })).toHaveCount(0)
       await captureMayaProof(page, "returning-member-home")
     })
@@ -1022,7 +1021,7 @@ if (!runPlaywright) {
         () => document.documentElement.scrollWidth > window.innerWidth
       )
       expect(overflow).toBe(false)
-      await expect(page.getByRole("button", { name: "You", exact: true })).toBeVisible()
+      await expect(page.getByRole("button", { name: "Account", exact: true })).toBeVisible()
     })
 
     test("keeps Gallery assets stored and offers one clear variation handoff", async ({
@@ -1034,11 +1033,11 @@ if (!runPlaywright) {
       await page.goto("/e2e/maya-operating-layer?home=0&view=photos", {
         waitUntil: "domcontentloaded",
       })
-      await expect(page.getByRole("button", { name: "Work", exact: true })).toHaveAttribute(
+      await expect(page.getByRole("button", { name: "Gallery", exact: true })).toHaveAttribute(
         "aria-current",
         "page"
       )
-      await expect(page.getByRole("heading", { name: "Everything you're making" })).toBeVisible()
+      await expect(page.getByRole("heading", { name: "Everything you’re making" })).toBeVisible()
       await page.getByRole("button", { name: /Open Member portrait/i }).click()
       const lightbox = page.getByRole("dialog", { name: "Your finished creation" })
       await expect(lightbox).toBeVisible()
@@ -1227,8 +1226,7 @@ if (!runPlaywright) {
       await composer.fill("Create a three-slide visibility carousel")
       await page.getByRole("button", { name: "Send" }).click()
 
-      await expect(page.getByText("Text on image")).toBeVisible()
-      await page.getByRole("button", { name: "No text, just the visual" }).click()
+      await expect(page.getByText("Text on image")).toHaveCount(0)
       await expect(page.getByText("Three-part visibility carousel")).toBeVisible()
       await expect(page.getByRole("button", { name: "Preview" })).toHaveCount(0)
       const create = page.getByRole("button", { name: "Create this · 3 credits" })

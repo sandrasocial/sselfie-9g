@@ -230,9 +230,9 @@ export function SelfieReferenceManagerModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="selfie-manager-title"
-      className="pointer-events-auto fixed inset-0 z-[85] bg-[color:var(--ss-night)]/55 px-3 py-4 backdrop-blur-sm sm:px-6 sm:py-8"
+      className="suite-dialog-backdrop pointer-events-auto fixed inset-0 z-[85] px-3 py-4 sm:px-6 sm:py-8"
     >
-      <div className="mx-auto flex h-full max-w-5xl flex-col overflow-hidden rounded-[10px] bg-[color:var(--ss-seasalt)] shadow-[0_30px_90px_rgba(13,14,16,0.24)]">
+      <div className="suite-dialog mx-auto flex h-full max-w-5xl flex-col overflow-hidden">
         <div className="flex items-start justify-between gap-4 border-b border-[color:var(--ss-silver)]/55 px-5 py-5 sm:px-7">
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ss-gray)]">
@@ -351,7 +351,7 @@ export function SelfieReferenceManagerModal({
                         }}
                         className={`relative aspect-square overflow-hidden rounded-[5px] border transition-colors ${
                           faceUrl === url
-                            ? "border-[color:var(--ss-night)] ring-2 ring-[color:var(--ss-night)]/10"
+                            ? "suite-selfie-selected border-[color:var(--ss-night)] ring-2 ring-[color:var(--ss-night)]/10"
                             : "border-[color:var(--ss-silver)]/60 hover:border-[color:var(--ss-night)]/60"
                         }`}
                         aria-label={`Use saved selfie ${pastSelfies.indexOf(url) + 1}`}

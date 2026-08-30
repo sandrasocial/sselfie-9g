@@ -87,6 +87,22 @@ function cleanInstruction(instruction: string): string {
 }
 
 /**
+ * Remove neutral identity-preservation clauses before classification. Edit requests often say
+ * "change the background, but do not change her face or hair". Those words protect the source
+ * image for this edit; they are not a new durable fact about the member's likeness.
+ */
+function stripIdentityPreservationClauses(instruction: string): string {
+  return instruction
+    .replace(
+      /\b(?:do not|don't|never)\s+(?:change|alter|modify|touch|retouch)\b[^.!?;]*(?=[.!?;]|$)/gi,
+      " "
+    )
+    .replace(/\b(?:keep|preserve|leave)\b[^.!?;]*\b(?:unchanged|the same|as[- ]is)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+/**
  * Cheap pattern classifier (no LLM call: the edit route goes straight to images.edit, so there
  * is nothing to piggyback on). A likeness correction needs a direct complaint OR a body/identity
  * subject plus corrective phrasing. Vanity asks are excluded before anything else.
@@ -98,7 +114,9 @@ export function classifyLikenessCorrection(instruction: string): LikenessClassif
     return { isLikeness: false, isVanity: true, note: null, category: null }
   }
   const direct = DIRECT_LIKENESS.test(text)
-  const subjectAndCorrection = LIKENESS_SUBJECT.test(text) && CORRECTIVE_SIGNAL.test(text)
+  const correctionText = stripIdentityPreservationClauses(text)
+  const subjectAndCorrection =
+    LIKENESS_SUBJECT.test(correctionText) && CORRECTIVE_SIGNAL.test(correctionText)
   if (!direct && !subjectAndCorrection) {
     return { isLikeness: false, isVanity: false, note: null, category: null }
   }

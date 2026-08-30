@@ -189,13 +189,13 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:p-6">
+    <div className="suite-dialog-backdrop fixed inset-0 z-[70] flex items-center justify-center p-3 animate-in fade-in duration-200 motion-reduce:animate-none sm:p-6">
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="memory-modal-title"
-        className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-[10px] bg-[#F8FAFA] p-4 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none sm:max-h-[88vh] sm:p-6"
+        className="suite-dialog max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto p-4 animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none sm:max-h-[88vh] sm:p-6"
       >
         <div className="flex items-start justify-between">
           <div>
@@ -221,7 +221,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
           {error && (
             <div
               role="alert"
-              className="rounded-[4px] bg-white px-3 py-2 text-[13px] text-[#282728]"
+              className="suite-state suite-state--error px-3 py-2 text-[13px] text-[#282728]"
             >
               <p>{error}</p>
               {!loadedSuccessfully && !loading && (

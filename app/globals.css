@@ -159,22 +159,34 @@
   --ss-raisin: #282728;
   --ss-night: #0d0e10;
 
-  /* Bold Editorial Studio — approved 2026-08-23.
-     These tokens are additive until each live surface is deliberately migrated. */
-  --ss-brand-ink: #0d0e10;
-  --ss-brand-carbon: #252525;
-  --ss-brand-chalk: #f7f7f5;
+  /* SSELFIE Noir Glass — approved 2026-08-27.
+     Obsidian and pearl carry the system. Glass is reserved for navigation, Maya controls,
+     result overlays, and floating actions so the interface stays editorial rather than generic. */
+  --ss-brand-ink: #09090b;
+  --ss-brand-carbon: #18181b;
+  --ss-brand-espresso: #09090b;
+  --ss-brand-chalk: #fafaf9;
+  --ss-brand-ivory: #fafaf9;
   --ss-brand-paper: #ffffff;
-  --ss-brand-concrete: #e7e7e5;
-  --ss-brand-silver: #c5c6c8;
-  --ss-brand-slate: #5d6064;
-  --ss-brand-oxblood: #981826;
+  --ss-brand-concrete: #e7e7ea;
+  --ss-brand-parchment: #f0f0f2;
+  --ss-brand-silver: #d7d7dc;
+  --ss-brand-taupe: #a3a3a9;
+  --ss-brand-slate: #5e5e66;
+  --ss-brand-champagne: #f3e6cf;
+  --ss-brand-champagne-ink: #5f5b56;
+  --ss-brand-champagne-glow: rgba(243, 230, 207, 0.46);
+  --ss-brand-glass-light: rgba(255, 255, 255, 0.68);
+  --ss-brand-glass-dark: rgba(9, 9, 11, 0.92);
+  --ss-brand-glass-edge: rgba(255, 255, 255, 0.34);
+  --ss-brand-glass-blur: 28px;
   --ss-brand-error: #b42318;
   --ss-brand-success: #216e4e;
-  --ss-brand-radius: 6px;
+  --ss-brand-radius: 16px;
   --ss-brand-rule: 1px solid var(--ss-brand-silver);
   --ss-brand-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --ss-brand-sans: "Manrope", Inter, Arial, Helvetica, sans-serif;
+  --ss-brand-signature: Allura, "Segoe Script", cursive;
   /* Calendar editorial board: cool greige, never warm cream. */
   --calendar-stone-1: #eceae7;
   --calendar-stone-2: #e1deda;

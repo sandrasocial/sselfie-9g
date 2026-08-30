@@ -10,6 +10,7 @@ import {
   buildUnsubscribeUrl,
   getMarketingEmailSuppression,
 } from "@/lib/email/unsubscribe"
+import { applyApprovedEmailPalette } from "@/lib/email/approved-email-palette"
 
 export interface EmailOptions {
   to: string | string[]
@@ -25,7 +26,6 @@ export interface EmailOptions {
   headers?: Record<string, string>
   idempotencyKey?: string
 }
-
 
 // Initialize Resend client - will be null if API key is missing
 let resend: Resend | null = null
@@ -74,7 +74,7 @@ function normalizeOutboundRecipients(to: string | string[]): {
 
 async function sendEmailWithRetry(
   options: EmailOptions,
-  maxRetries = 3,
+  maxRetries = 3
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   let lastError: string | undefined
 
@@ -121,7 +121,7 @@ async function sendEmailWithRetry(
         text: options.text ?? "",
         ...(options.replyTo ? { replyTo: options.replyTo } : {}),
         ...(options.headers ? { headers: options.headers } : {}),
-        tags: options.tags?.map((tag) => ({ name: tag, value: tag })),
+        tags: options.tags?.map(tag => ({ name: tag, value: tag })),
       }
 
       const { data, error } = options.idempotencyKey
@@ -141,7 +141,7 @@ async function sendEmailWithRetry(
         if (attempt < maxRetries) {
           const delay = Math.pow(2, attempt) * 1000 // 2s, 4s, 8s
           console.log(`[v0] Retrying in ${delay}ms...`)
-          await new Promise((resolve) => setTimeout(resolve, delay))
+          await new Promise(resolve => setTimeout(resolve, delay))
         }
         continue
       }
@@ -161,7 +161,7 @@ async function sendEmailWithRetry(
 
       if (attempt < maxRetries) {
         const delay = Math.pow(2, attempt) * 1000
-        await new Promise((resolve) => setTimeout(resolve, delay))
+        await new Promise(resolve => setTimeout(resolve, delay))
       }
     }
   }
@@ -208,7 +208,7 @@ async function logEmailSend(
     | "skipped_dry_run",
   resendMessageId?: string,
   errorMessage?: string,
-  campaignId?: number,
+  campaignId?: number
 ): Promise<void> {
   try {
     await sql`
@@ -237,7 +237,9 @@ async function logEmailSend(
   }
 }
 
-async function getRecipientSuppression(email: string): Promise<{ suppressed: boolean; reason?: string }> {
+async function getRecipientSuppression(
+  email: string
+): Promise<{ suppressed: boolean; reason?: string }> {
   try {
     const recent = await sql`
       SELECT status, error_message, sent_at
@@ -253,7 +255,11 @@ async function getRecipientSuppression(email: string): Promise<{ suppressed: boo
       return { suppressed: false }
     }
 
-    const row = recent[0] as { status: string; error_message?: string | null; sent_at?: string | null }
+    const row = recent[0] as {
+      status: string
+      error_message?: string | null
+      sent_at?: string | null
+    }
     if (row.status === "complained") {
       return { suppressed: true, reason: "recipient complained (spam report)" }
     }
@@ -270,19 +276,27 @@ async function getRecipientSuppression(email: string): Promise<{ suppressed: boo
 }
 
 export async function sendEmail(
-  options: EmailOptions,
+  options: EmailOptions
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const normalized = normalizeOutboundRecipients(options.to)
   const recipient = normalized.recipients[0] || normalized.invalid[0] || ""
   const emailType = options.emailType || "general"
   let preparedOptions: EmailOptions = {
     ...options,
+    html: applyApprovedEmailPalette(options.html),
     to: Array.isArray(options.to) ? normalized.recipients : normalized.recipients[0] || "",
   }
 
   if (normalized.invalid.length > 0 || normalized.recipients.length === 0) {
     const errorMessage = `Invalid recipient email: ${normalized.invalid.join(", ") || "missing recipient"}`
-    await logEmailSend(recipient || "unknown", emailType, "failed", undefined, errorMessage, options.campaignId)
+    await logEmailSend(
+      recipient || "unknown",
+      emailType,
+      "failed",
+      undefined,
+      errorMessage,
+      options.campaignId
+    )
     return {
       success: false,
       error: errorMessage,
@@ -310,14 +324,22 @@ export async function sendEmail(
   }
 
   // Check email control flags
-  const { isEmailSendingEnabled, isEmailTestMode, isEmailAllowedInTestMode } = await import("./email-control")
+  const { isEmailSendingEnabled, isEmailTestMode, isEmailAllowedInTestMode } =
+    await import("./email-control")
   const sendingEnabled = await isEmailSendingEnabled()
   const testMode = await isEmailTestMode()
 
   // Global kill switch check
   if (!sendingEnabled) {
     console.log(`[v0] Email sending disabled (kill switch). Skipping send to ${recipient}`)
-    await logEmailSend(recipient, emailType, "skipped_disabled", undefined, "Email sending disabled", options.campaignId)
+    await logEmailSend(
+      recipient,
+      emailType,
+      "skipped_disabled",
+      undefined,
+      "Email sending disabled",
+      options.campaignId
+    )
     return {
       success: false,
       error: "Email sending is currently disabled",
@@ -327,7 +349,14 @@ export async function sendEmail(
   // Test mode check
   if (testMode && !(await isEmailAllowedInTestMode(recipient))) {
     console.log(`[v0] Test mode enabled. Skipping send to ${recipient} (not whitelisted)`)
-    await logEmailSend(recipient, emailType, "skipped_test_mode", undefined, "Test mode: recipient not whitelisted", options.campaignId)
+    await logEmailSend(
+      recipient,
+      emailType,
+      "skipped_test_mode",
+      undefined,
+      "Test mode: recipient not whitelisted",
+      options.campaignId
+    )
     return {
       success: false,
       error: "Test mode enabled: recipient not in whitelist",
@@ -335,14 +364,25 @@ export async function sendEmail(
   }
 
   // Dry-run mode (no send, log only)
-  if (String(process.env.EMAIL_DRY_RUN || "").trim().toLowerCase() === "true") {
+  if (
+    String(process.env.EMAIL_DRY_RUN || "")
+      .trim()
+      .toLowerCase() === "true"
+  ) {
     console.log(`[v0] [EMAIL_DRY_RUN] Skipping send to ${recipient}`, {
       subject: options.subject,
       htmlLength: options.html?.length || 0,
       textLength: options.text?.length || 0,
       emailType,
     })
-    await logEmailSend(recipient, emailType, "skipped_dry_run", undefined, "Dry run enabled", options.campaignId)
+    await logEmailSend(
+      recipient,
+      emailType,
+      "skipped_dry_run",
+      undefined,
+      "Dry run enabled",
+      options.campaignId
+    )
     return {
       success: true,
       messageId: "dry_run",
@@ -362,7 +402,11 @@ export async function sendEmail(
     }
 
     const unsubscribeUrl = buildUnsubscribeUrl(recipient)
-    const compliantBody = addMarketingUnsubscribeFooter(options.html, options.text, unsubscribeUrl)
+    const compliantBody = addMarketingUnsubscribeFooter(
+      applyApprovedEmailPalette(options.html),
+      options.text,
+      unsubscribeUrl
+    )
 
     preparedOptions = {
       ...preparedOptions,
@@ -382,7 +426,14 @@ export async function sendEmail(
   if (!rateLimit.success) {
     console.log(`[v0] Email rate limit exceeded for ${recipient}, skipping send`)
     // Log rate limit as failed
-    await logEmailSend(recipient, emailType, "failed", undefined, "Rate limit exceeded", options.campaignId)
+    await logEmailSend(
+      recipient,
+      emailType,
+      "failed",
+      undefined,
+      "Rate limit exceeded",
+      options.campaignId
+    )
     return {
       success: false,
       error: `Rate limit exceeded. Please try again in ${Math.ceil((rateLimit.reset - Date.now()) / 1000 / 60)} minutes.`,
@@ -403,7 +454,14 @@ export async function sendEmail(
 
   // Log the email send result (non-blocking)
   if (result.success) {
-    await logEmailSend(recipient, emailType, "sent", result.messageId, undefined, options.campaignId)
+    await logEmailSend(
+      recipient,
+      emailType,
+      "sent",
+      result.messageId,
+      undefined,
+      options.campaignId
+    )
   } else {
     await logEmailSend(recipient, emailType, "failed", undefined, result.error, options.campaignId)
   }
@@ -415,7 +473,7 @@ export async function sendBulkEmails(
   recipients: string[],
   subject: string,
   html: string,
-  text: string,
+  text: string
 ): Promise<{ sent: number; failed: number; errors: string[] }> {
   const results = {
     sent: 0,
@@ -439,7 +497,7 @@ export async function sendBulkEmails(
     }
 
     // Rate limiting: wait 100ms between sends
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await new Promise(resolve => setTimeout(resolve, 100))
   }
 
   return results

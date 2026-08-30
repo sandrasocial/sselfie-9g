@@ -138,6 +138,16 @@ const FRAME_ASPECT: Record<OutputFormat, string> = {
   video: "aspect-[9/16]",
 }
 
+const FRAME_MAX_WIDTH: Record<OutputFormat, string> = {
+  photo: "max-w-[19rem]",
+  photoshoot: "max-w-[19rem]",
+  "reel-cover": "max-w-[14rem]",
+  "story-slide": "max-w-[14rem]",
+  "story-sequence": "max-w-[14rem]",
+  carousel: "max-w-[19rem]",
+  video: "max-w-[14rem]",
+}
+
 const CREATING_LABEL: Record<OutputFormat, string> = {
   photo: "Maya is creating your photo…",
   photoshoot: "Maya is creating your shoot…",
@@ -160,7 +170,8 @@ function buildSuggestedTextCopy(specs: TextOverlaySpec[] | undefined): string {
     .join("\n\n")
 }
 
-export function ConceptCard({ // NOSONAR -- legacy result-state renderer; decomposition is outside this narrow production fix.
+export function ConceptCard({
+  // NOSONAR -- legacy result-state renderer; decomposition is outside this narrow production fix.
   concept,
   gen,
   format,
@@ -382,97 +393,102 @@ export function ConceptCard({ // NOSONAR -- legacy result-state renderer; decomp
     <div
       data-concept-state={gen.status}
       data-concept-format={format}
+      data-direction-choice={isDirectionChoice ? "true" : undefined}
       className="suite-concept-card min-w-0 max-w-full overflow-hidden rounded-[2px] border border-[#C5C6C8]/35 bg-white transition-colors duration-200 [overflow-x:clip]"
     >
       {/* Visual area ONLY exists once we're generating or done - never an empty placeholder box. */}
-      {(isGenerating || isDone || isVideoDone || isDirectionChoice) && (
-        <div
-          className={`suite-concept-visual relative w-full bg-[#F1F2F2] ${isDirectionChoice ? "aspect-[4/3]" : FRAME_ASPECT[format]} ${isDone || isVideoDone ? "suite-concept-result-preview max-h-[min(62dvh,34rem)] sm:max-h-none" : ""} ${
-            isGenerating && !gen.previewUrl ? "animate-pulse motion-reduce:animate-none" : ""
-          }`}
-        >
-          {isVideoDone ? (
-            <video
-              src={videoUrl}
-              controls
-              playsInline
-              className="absolute inset-0 h-full w-full object-cover"
+      {isDirectionChoice && directionImageUrl ? (
+        <div className="suite-concept-visual relative aspect-[4/3] w-full bg-[#F1F2F2]">
+          <button
+            type="button"
+            onClick={() => onGenerate(hasEditableCopy ? editedCopy : undefined)}
+            disabled={disabled}
+            aria-label={`Choose direction ${directionIndex}: ${concept.title}`}
+            className="group absolute inset-0 text-left disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={directionImageUrl}
+              alt=""
+              decoding="async"
+              className="absolute inset-0 h-full w-full object-cover grayscale-[18%] transition-[filter,transform] duration-300 group-hover:grayscale-0 group-hover:scale-[1.015] motion-reduce:transition-none"
             />
-          ) : isDone ? (/* NOSONAR -- mutually exclusive legacy media states are intentionally rendered together. */
-            <button
-              type="button"
-              onClick={() => onOpen?.(images)}
-              className="group absolute inset-0 cursor-zoom-in"
-              aria-label="View full size"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={firstBaked ?? images[0]}
-                alt={concept.title}
-                decoding="async"
-                onError={retryGeneratedImageOnce}
-                className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]"
-              />
-              {isCarousel && (
-                <span className="absolute left-0 top-0 bg-[#050505] px-3 py-2 text-[9px] uppercase tracking-[0.18em] text-white">
-                  {images.length} slides
-                </span>
-              )}
-              <span className="absolute bottom-0 right-0 bg-[#050505] px-3 py-2 text-[9px] uppercase tracking-[0.18em] text-white opacity-0 transition-opacity group-hover:opacity-100">
-                {isCarousel ? "Swipe" : "View"}
+            <span className="absolute inset-x-0 bottom-0 flex min-h-11 items-center justify-between gap-3 bg-[#050505] px-3 py-2 text-white">
+              <span className="min-w-0 truncate text-[10px] uppercase tracking-[0.16em]">
+                {concept.title}
               </span>
-            </button>
-          ) : gen.previewUrl ? (
-            <div className="absolute inset-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={gen.previewUrl}
-                alt="Developing preview"
-                decoding="async"
-                className="h-full w-full object-cover opacity-95"
-              />
-              <span className="absolute bottom-0 left-0 bg-[#050505] px-3 py-2 text-[9px] uppercase tracking-[0.18em] text-white">
-                Developing…
+              <span aria-hidden className="shrink-0 text-[15px]">
+                →
               </span>
-            </div>
-          ) : isDirectionChoice && directionImageUrl ? (
-            <button
-              type="button"
-              onClick={() => onGenerate(hasEditableCopy ? editedCopy : undefined)}
-              disabled={disabled}
-              aria-label={`Choose direction ${directionIndex}: ${concept.title}`}
-              className="group absolute inset-0 text-left disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={directionImageUrl}
-                alt=""
-                decoding="async"
-                className="absolute inset-0 h-full w-full object-cover grayscale-[18%] transition-[filter,transform] duration-300 group-hover:grayscale-0 group-hover:scale-[1.015] motion-reduce:transition-none"
-              />
-              <span className="absolute inset-x-0 bottom-0 flex min-h-11 items-center justify-between gap-3 bg-[#050505] px-3 py-2 text-white">
-                <span className="min-w-0 truncate text-[10px] uppercase tracking-[0.16em]">
-                  {concept.title}
-                </span>
-                <span aria-hidden className="shrink-0 text-[15px]">
-                  →
-                </span>
-              </span>
-            </button>
-          ) : (
-            <div
-              role="status"
-              aria-live="polite"
-              className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-5 text-center"
-            >
-              <Spinner className="h-7 w-7" />
-              <p className="text-[11px] uppercase tracking-[0.18em] text-[#6D6E70]">
-                {CREATING_LABEL[format]}
-              </p>
-            </div>
-          )}
+            </span>
+          </button>
         </div>
-      )}
+      ) : isGenerating || isDone || isVideoDone ? (
+        <div className="suite-concept-visual flex w-full justify-center bg-[#F1F2F2] p-3 sm:p-4">
+          <div
+            className={`suite-concept-result-preview relative max-h-[min(46dvh,24rem)] w-full overflow-hidden bg-[#E7E8E8] ${FRAME_ASPECT[format]} ${FRAME_MAX_WIDTH[format]} ${
+              isGenerating && !gen.previewUrl ? "animate-pulse motion-reduce:animate-none" : ""
+            }`}
+          >
+            {isVideoDone ? (
+              <video
+                src={videoUrl}
+                controls
+                playsInline
+                className="absolute inset-0 h-full w-full object-contain"
+              />
+            ) : isDone ? (
+              <button
+                type="button"
+                onClick={() => onOpen?.(images)}
+                className="group absolute inset-0 cursor-zoom-in"
+                aria-label="View full size"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={firstBaked ?? images[0]}
+                  alt={concept.title}
+                  decoding="async"
+                  onError={retryGeneratedImageOnce}
+                  className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
+                />
+                {isCarousel ? (
+                  <span className="absolute left-0 top-0 bg-[#050505] px-3 py-2 text-[9px] uppercase tracking-[0.18em] text-white">
+                    {images.length} slides
+                  </span>
+                ) : null}
+                <span className="absolute bottom-0 right-0 bg-[#050505] px-3 py-2 text-[9px] uppercase tracking-[0.18em] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  {isCarousel ? "Swipe" : "View"}
+                </span>
+              </button>
+            ) : gen.previewUrl ? (
+              <div className="absolute inset-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={gen.previewUrl}
+                  alt="Developing preview"
+                  decoding="async"
+                  className="h-full w-full object-contain opacity-95"
+                />
+                <span className="absolute bottom-0 left-0 bg-[#050505] px-3 py-2 text-[9px] uppercase tracking-[0.18em] text-white">
+                  Developing…
+                </span>
+              </div>
+            ) : (
+              <div
+                role="status"
+                aria-live="polite"
+                className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-5 text-center"
+              >
+                <Spinner className="h-7 w-7" />
+                <p className="text-[11px] uppercase tracking-[0.18em] text-[#6D6E70]">
+                  {CREATING_LABEL[format]}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
 
       {isDone && !isCarousel && !isVideoDone ? (
         <div
@@ -654,7 +670,8 @@ export function ConceptCard({ // NOSONAR -- legacy result-state renderer; decomp
           </div>
         )}
 
-        {isDirectionChoice ? null : isDone || isVideoDone ? (/* NOSONAR -- legacy result-state rendering remains scoped to this card. */
+        {isDirectionChoice ? null : isDone ||
+          isVideoDone /* NOSONAR -- legacy result-state rendering remains scoped to this card. */ ? (
           <div className="space-y-3">
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#6D6E70]">
               {isVideoDone ? "Saved to your videos" : "Saved to your gallery"}

@@ -191,7 +191,7 @@ export function AccountView({
       {loadError && (
         <div
           role="alert"
-          className="mt-6 flex items-center justify-between gap-3 rounded-[4px] border border-[#C5C6C8]/60 bg-white p-4"
+          className="suite-state suite-state--error mt-6 flex items-center justify-between gap-3 p-4"
         >
           <p className="text-[13px] text-[#282728]">{loadError}</p>
           <button type="button" onClick={() => void loadAccount()} className={quietBtn}>
@@ -228,7 +228,7 @@ export function AccountView({
             <>
               <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <p className="font-serif text-[22px] font-light text-[#0D0E10]">
-                  {data === null && !loadError ? "Loading membership…" : membershipLabel}
+                  {data === null && !loadError ? "Opening membership…" : membershipLabel}
                 </p>
                 {(isRecurringMembership || isFixedBundlePass) && data?.status === "active" && (
                   <span className="text-[11px] uppercase tracking-[0.16em] text-[#4F5052]">

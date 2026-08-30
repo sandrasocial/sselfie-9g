@@ -116,13 +116,13 @@ export function ChatHistoryModal({
   if (!open) return null
 
   return (
-    <div className="pointer-events-auto fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:p-6">
+    <div className="suite-dialog-backdrop pointer-events-auto fixed inset-0 z-[70] flex items-center justify-center p-3 animate-in fade-in duration-200 motion-reduce:animate-none sm:p-6">
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="chat-history-title"
-        className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden rounded-[10px] bg-[#F8FAFA] p-4 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none sm:p-6"
+        className="suite-dialog flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden p-4 animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none sm:p-6"
       >
         <div className="flex items-start justify-between">
           <div>
@@ -149,9 +149,16 @@ export function ChatHistoryModal({
         </div>
 
         <div className="mt-5 min-h-0 flex-1">
-          {chats === null && !error && <p className="text-[13px] text-[#6D6E70]">Loading…</p>}
+          {chats === null && !error && (
+            <p className="suite-state suite-state--loading text-[13px] text-[#6D6E70]">
+              Opening projects…
+            </p>
+          )}
           {error && (
-            <div role="alert" className="mb-3 text-[13px] text-[#282728]">
+            <div
+              role="alert"
+              className="suite-state suite-state--error mb-3 p-3 text-[13px] text-[#282728]"
+            >
               <p>{error}</p>
               {chats === null && (
                 <button
@@ -165,7 +172,7 @@ export function ChatHistoryModal({
             </div>
           )}
           {chats && chats.length === 0 && (
-            <p className="text-[13px] text-[#6D6E70]">
+            <p className="suite-state suite-state--empty p-5 text-[13px] text-[#6D6E70]">
               No post projects yet. Start with one idea in Today and it&apos;ll show up here.
             </p>
           )}

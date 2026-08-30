@@ -269,7 +269,7 @@ export function MayaFounderTestMode({
         role="dialog"
         aria-modal="true"
         aria-labelledby="maya-founder-report-title"
-        className="relative z-10 flex max-h-[88dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-[18px] border border-[#C5C6C8]/60 bg-[#F8FAFA] shadow-[0_-20px_70px_rgba(13,14,16,0.18)] sm:rounded-[18px]"
+        className="suite-dialog relative z-10 flex max-h-[88dvh] w-full max-w-xl flex-col overflow-hidden"
       >
         <header className="flex items-start justify-between gap-4 border-b border-[#C5C6C8]/45 bg-white px-5 py-4 sm:px-6">
           <div>

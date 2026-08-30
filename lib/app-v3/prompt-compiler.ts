@@ -708,6 +708,10 @@ function compileSingleGraphicPrompt(
     paletteLine(opts?.brandKit),
     SSELFIE_NEUTRAL_PALETTE,
     gradeLine(opts),
+    clean(brief.lighting) ? `Lighting: ${clean(brief.lighting)}.` : "",
+    SSELFIE_ENVIRONMENT_INTEGRATION,
+    PHOTOGRAPHER_REALISM,
+    SSELFIE_SELFIE_RESTYLE,
     textOverlayLayer
       ? "No readable text anywhere in the image. The app will add typography later."
       : "Render all text spelled exactly as written. No extra words, no placeholder text, no random letters, no logos.",
@@ -763,6 +767,9 @@ function compileCarouselIdentityPrompt(
     clean(brief.mood) ? `Mood: ${clean(brief.mood)}.` : "",
     gradeLine(opts),
     `Lighting: ${lighting}.`,
+    SSELFIE_ENVIRONMENT_INTEGRATION,
+    PHOTOGRAPHER_REALISM,
+    SSELFIE_SELFIE_RESTYLE,
     CANDID_EDITORIAL,
     REALISM_TOKENS + ".",
     paletteLine(opts?.brandKit),
@@ -786,6 +793,28 @@ function slideKindForRole(
   return "photo"
 }
 
+function productionImageDirection(
+  brief: CreativeBrief,
+  rawDirection?: string,
+  visualConcept?: string
+): string {
+  return [
+    clean(rawDirection)
+      ? `Slide direction: ${clean(rawDirection)}.`
+      : clean(visualConcept)
+        ? `Slide direction: ${clean(visualConcept)}.`
+        : "",
+    clean(brief.setting) ? `Scene: ${clean(brief.setting)}.` : "",
+    clean(brief.outfit) ? `Outfit: ${clean(brief.outfit)}.` : "",
+    clean(brief.pose) ? `Pose: ${clean(brief.pose)}.` : "",
+    clean(brief.mood) ? `Mood: ${clean(brief.mood)}.` : "",
+    clean(brief.lighting) ? `Lighting: ${clean(brief.lighting)}.` : "",
+    clean(brief.cameraSpec) ? `Camera and crop: ${clean(brief.cameraSpec)}.` : "",
+  ]
+    .filter(Boolean)
+    .join("\n")
+}
+
 export function buildGraphicRedesignSlides(
   brief: CreativeBrief,
   format: OutputFormat,
@@ -804,6 +833,11 @@ export function buildGraphicRedesignSlides(
     return slides.map((slide, index) => {
       const role = resolveRole(slide.role, index, slides.length)
       const planOutput = plan.outputs[index]
+      const visualConcept = clean(slide.visualConcept) || clean(planOutput?.visualConcept)
+      const rawImageDirection =
+        clean(slide.imagePromptDirection) ||
+        clean(slide.imagePrompt) ||
+        clean(planOutput?.imagePromptDirection)
       return {
         kind: slideKindForRole(role, index, slides.length),
         // Copy candidates only. purpose and visualConcept are planning fields and read as
@@ -820,11 +854,8 @@ export function buildGraphicRedesignSlides(
         ),
         body: stripStructuralHeading(clean(slide.body) || clean(planOutput?.body)),
         purpose: clean(slide.purpose) || clean(planOutput?.purpose),
-        visualConcept: clean(slide.visualConcept) || clean(planOutput?.visualConcept),
-        imagePromptDirection:
-          clean(slide.imagePromptDirection) ||
-          clean(slide.imagePrompt) ||
-          clean(planOutput?.imagePromptDirection),
+        visualConcept,
+        imagePromptDirection: productionImageDirection(brief, rawImageDirection, visualConcept),
         referenceImageStrategy:
           clean(slide.referenceImageStrategy) || clean(planOutput?.referenceImageStrategy),
         visualReason:

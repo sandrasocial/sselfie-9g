@@ -12,7 +12,7 @@ import {
   Sparkles,
 } from "lucide-react"
 
-import { BOLD_EDITORIAL_COLORS, BOLD_EDITORIAL_GUARDRAILS } from "@/lib/brand/bold-editorial-tokens"
+import { BOLD_EDITORIAL_COLORS } from "@/lib/brand/bold-editorial-tokens"
 import {
   EditorialButton,
   EditorialEyebrow,
@@ -92,13 +92,16 @@ const recentProjects = [
 const palette = [
   ["Editorial Ink", BOLD_EDITORIAL_COLORS.ink],
   ["Carbon", BOLD_EDITORIAL_COLORS.carbon],
-  ["Chalk", BOLD_EDITORIAL_COLORS.chalk],
+  ["Espresso", BOLD_EDITORIAL_COLORS.espresso],
+  ["Soft Ivory", BOLD_EDITORIAL_COLORS.ivory],
   ["Paper", BOLD_EDITORIAL_COLORS.paper],
-  ["Concrete", BOLD_EDITORIAL_COLORS.concrete],
-  ["Silver", BOLD_EDITORIAL_COLORS.silver],
+  ["Muted Parchment", BOLD_EDITORIAL_COLORS.parchment],
+  ["Taupe", BOLD_EDITORIAL_COLORS.taupe],
   ["Slate", BOLD_EDITORIAL_COLORS.slate],
-  ["Oxblood", BOLD_EDITORIAL_COLORS.oxblood],
+  ["Champagne", BOLD_EDITORIAL_COLORS.champagne],
 ] as const
+
+const vaultMarketingSteps = ["ADD A SELFIE", "CHOOSE A LOOK", "MAYA CREATES", "SAVE IT"] as const
 
 function ProofHeader({ number, title, note }: { number: string; title: string; note: string }) {
   return (
@@ -270,33 +273,42 @@ function SuiteMobileProof() {
   )
 }
 
-function MarketingDesktopProof() {
+function MarketingDesktopProof({ priceLabel }: { priceLabel: string }) {
   return (
     <div className={styles.marketingDesktop} aria-label="Marketing desktop proof">
       <header className={styles.marketingNav}>
-        <EditorialWordmark />
+        <div className={styles.marketingNavBrand}>
+          <EditorialWordmark />
+          <span className={styles.marketingNeon} aria-hidden="true">
+            Worth posting.<i />
+          </span>
+        </div>
         <nav>
-          <a href="#marketing-proof">THE METHOD</a>
+          <a href="#marketing-proof">VAULT MAYA</a>
+          <a href="#marketing-proof">HOW IT WORKS</a>
           <a href="#marketing-proof">THE SUITE</a>
-          <a href="#marketing-proof">LEARN</a>
         </nav>
-        <span>START HERE →</span>
+        <span>START WITH MY SELFIE →</span>
       </header>
       <div className={styles.marketingGrid}>
         <section className={styles.marketingCopy}>
-          <EditorialEyebrow>SELFIES + AI SELFIES</EditorialEyebrow>
+          <EditorialEyebrow>VAULT MAYA · SELFIE TO PHOTO</EditorialEyebrow>
           <h2>
-            Your selfie
-            <br />
-            is the opening.
+            One selfie.
+            <br />Choose a look.
           </h2>
           <p>
-            Take the photo. Create the AI version. Edit it until it feels like you. Post it with
-            purpose.
+            Upload one clear selfie, choose the photo you want to create, and let Maya do the
+            prompting for you.
           </p>
-          <EditorialButton accent>START WITH ONE SELFIE</EditorialButton>
+          <EditorialButton accent>START WITH MY SELFIE · {priceLabel.toUpperCase()}</EditorialButton>
+          <div className={styles.checkoutProof}>
+            <span>CHECKOUT HANDOFF</span>
+            <strong>{priceLabel} · 30 photo creations each month</strong>
+            <small>Cancel anytime · existing SUITE members are protected from paying twice</small>
+          </div>
           <div className={styles.methodLine}>
-            {BOLD_EDITORIAL_GUARDRAILS.method.map((step, index) => (
+            {vaultMarketingSteps.map((step, index) => (
               <span key={step}>
                 <small>{String(index + 1).padStart(2, "0")}</small>
                 {step}
@@ -307,21 +319,21 @@ function MarketingDesktopProof() {
         <div className={styles.marketingPhotos}>
           <div className={styles.marketingPhotoMain}>
             <Image
-              src="/images/selfie-guide/mirror-sunglasses-blazer.jpg"
-              alt="Sandra making an editorial mirror selfie in a black blazer"
+              src="/images/vault-maya/proof/img-7880-bw-editorial.webp"
+              alt="Black-and-white Vault Maya result created from Sandra's selfie"
               fill
               sizes="600px"
             />
-            <span>REAL SELFIE · 01</span>
+            <span>MAYA RESULT · 01</span>
           </div>
           <div className={styles.marketingPhotoSecondary}>
             <Image
-              src="/images/suite-personal-brand-grid/post-01-founder-black.jpg"
-              alt="Editorial AI-selfie result of Sandra in black tailoring"
+              src="/images/vault-maya/proof/img-2534-original-selfie.webp"
+              alt="Sandra's original selfie used for the Vault Maya result"
               fill
               sizes="300px"
             />
-            <span>AI SELFIE · 02</span>
+            <span>ORIGINAL SELFIE</span>
           </div>
         </div>
       </div>
@@ -329,47 +341,68 @@ function MarketingDesktopProof() {
   )
 }
 
-function MarketingMobileProof() {
+function MarketingMobileProof({ priceLabel }: { priceLabel: string }) {
   return (
     <div className={styles.marketingMobile} aria-label="Marketing mobile proof">
       <header>
         <EditorialWordmark />
+        <span className={styles.marketingNeon} aria-hidden="true">
+          Worth posting.<i />
+        </span>
         <span>MENU</span>
       </header>
       <div className={styles.marketingMobilePhoto}>
         <Image
-          src="/images/selfie-guide/mirror-sunglasses-blazer.jpg"
-          alt="Sandra making an editorial mirror selfie in a black blazer"
+          src="/images/vault-maya/proof/img-7880-bw-editorial.webp"
+          alt="Black-and-white Vault Maya result created from Sandra's selfie"
           fill
           sizes="370px"
         />
-        <span>SELFIE · 01</span>
+        <span>VAULT MAYA RESULT · 01</span>
+        <figure className={styles.marketingMobileOriginal}>
+          <Image
+            src="/images/vault-maya/proof/img-2534-original-selfie.webp"
+            alt="Sandra's original selfie used for the Vault Maya result"
+            fill
+            sizes="110px"
+          />
+          <figcaption>ORIGINAL SELFIE</figcaption>
+        </figure>
       </div>
       <section>
-        <EditorialEyebrow>SELFIES + AI SELFIES</EditorialEyebrow>
-        <h2>Your selfie is the opening.</h2>
-        <p>Take it. Create with it. Edit it. Post it.</p>
-        <EditorialButton accent>START HERE</EditorialButton>
+        <EditorialEyebrow>VAULT MAYA · SELFIE TO PHOTO</EditorialEyebrow>
+        <h2>One selfie. Choose a look.</h2>
+        <p>Maya makes the photo. No prompt to copy. Nothing else to figure out.</p>
+        <EditorialButton accent>START WITH MY SELFIE · {priceLabel.toUpperCase()}</EditorialButton>
+        <small className={styles.mobileCheckoutTerms}>
+          30 photo creations each month · cancel anytime
+        </small>
       </section>
-      <EditorialStageNav active="TAKE" />
+      <EditorialStageNav active="CREATE" />
     </div>
   )
 }
 
-export function BoldEditorialProof({ emailHtml }: { emailHtml: string }) {
+export function BoldEditorialProof({
+  emailHtml,
+  priceLabel,
+}: {
+  emailHtml: string
+  priceLabel: string
+}) {
   return (
     <main className={styles.page}>
       <header className={styles.pageHeader}>
         <div>
           <EditorialWordmark />
-          <span>DESIGN FOUNDATION · 2026-08-23</span>
+          <span>DESIGN FOUNDATION · 2026-08-26</span>
         </div>
         <div className={styles.pageHeaderCopy}>
           <EditorialEyebrow>APPROVAL REFERENCE · NOT LIVE</EditorialEyebrow>
-          <h1>Bold Editorial Studio</h1>
+          <h1>Bold Editorial Studio · Warm Champagne</h1>
           <p>
             One brand system for Suite, marketing, and email. Selfies stay central. Maya supports
-            the work. Oxblood marks intent—not decoration.
+            the work. Espresso carries action; champagne light marks selection and brand moments.
           </p>
         </div>
       </header>
@@ -416,6 +449,14 @@ export function BoldEditorialProof({ emailHtml }: { emailHtml: string }) {
               <EditorialButton secondary>SECONDARY</EditorialButton>
             </div>
           </article>
+          <article className={styles.signatureSpecimen}>
+            <EditorialEyebrow>SIGNATURE · ALLURA · BRAND MOMENTS ONLY</EditorialEyebrow>
+            <p>Worth posting.</p>
+            <small>
+              Warm champagne light may appear on black brand moments, selected visual work, and
+              compact wayfinding. Never use it for body copy or ordinary controls.
+            </small>
+          </article>
         </div>
       </section>
 
@@ -437,21 +478,21 @@ export function BoldEditorialProof({ emailHtml }: { emailHtml: string }) {
         <ProofHeader
           number="02"
           title="Marketing proof"
-          note="The same visual DNA, translated into a clear selfie-first promise instead of app chrome."
+          note="The real Vault Maya promise and checkout handoff, translated into the approved channel palette."
         />
         <div className={styles.proofPair}>
           <div className={styles.desktopProofWrap}>
-            <MarketingDesktopProof />
+            <MarketingDesktopProof priceLabel={priceLabel} />
           </div>
-          <MarketingMobileProof />
+          <MarketingMobileProof priceLabel={priceLabel} />
         </div>
       </section>
 
-      <section className={styles.proofSection}>
+      <section id="email-proof" className={styles.proofSection}>
         <ProofHeader
           number="03"
           title="Email proof"
-          note="An actual table-based, inline-style email expression—not a web layout pretending to be email."
+          note="The real transactional membership welcome, rendered through the proposed channel palette without changing the sending template."
         />
         <div className={styles.emailPair}>
           <div>

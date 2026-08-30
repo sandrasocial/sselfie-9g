@@ -35,18 +35,21 @@ export function ReferenceLibraryModal({ open, onClose, onPick }: ReferenceLibrar
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0D0E10]/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none sm:p-6">
+    <div className="suite-dialog-backdrop fixed inset-0 z-[70] flex items-center justify-center p-3 animate-in fade-in duration-200 motion-reduce:animate-none sm:p-6">
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="reference-library-title"
-        className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden rounded-[10px] bg-[#F8FAFA] p-4 shadow-xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none sm:p-6"
+        className="suite-dialog flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden p-4 animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none sm:p-6"
       >
         <div className="flex items-start justify-between">
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-[#818283]">Your selfies</p>
-            <h3 id="reference-library-title" className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]">
+            <h3
+              id="reference-library-title"
+              className="mt-2 font-serif text-[22px] font-light leading-tight text-[#0D0E10]"
+            >
               Use a past selfie
             </h3>
           </div>
@@ -61,10 +64,21 @@ export function ReferenceLibraryModal({ open, onClose, onPick }: ReferenceLibrar
         </div>
 
         <div className="mt-5 min-h-0 flex-1">
-          {images === null && !error && <p className="text-[13px] text-[#818283]">Loading…</p>}
-          {error && <p className="text-[13px] text-[#282728]">{error}</p>}
+          {images === null && !error && (
+            <p className="suite-state suite-state--loading text-[13px] text-[#818283]">
+              Opening selfies…
+            </p>
+          )}
+          {error && (
+            <p
+              role="alert"
+              className="suite-state suite-state--error p-3 text-[13px] text-[#282728]"
+            >
+              {error}
+            </p>
+          )}
           {images && images.length === 0 && (
-            <p className="text-[13px] leading-relaxed text-[#818283]">
+            <p className="suite-state suite-state--empty p-5 text-[13px] leading-relaxed text-[#818283]">
               No saved selfies yet. Upload one and it&apos;ll show up here next time.
             </p>
           )}

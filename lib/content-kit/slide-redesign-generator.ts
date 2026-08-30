@@ -5,9 +5,18 @@ import sharp from "sharp"
 import { put } from "@vercel/blob"
 import { sql } from "@/lib/db/client"
 import type { CarouselSlide } from "@/lib/content-kit/types"
-import { SSELFIE_INSPIRATION_SET_VARIATION } from "@/lib/app-v3/maya/visual-rules"
+import {
+  SSELFIE_ENVIRONMENT_INTEGRATION,
+  SSELFIE_INSPIRATION_SET_VARIATION,
+  SSELFIE_SELFIE_RESTYLE,
+} from "@/lib/app-v3/maya/visual-rules"
 import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
-import { AVOID_LIST, ELEVATION, REALISM_TOKENS } from "@/lib/app-v3/maya/ingredients"
+import {
+  AVOID_LIST,
+  ELEVATION,
+  PHOTOGRAPHER_REALISM,
+  REALISM_TOKENS,
+} from "@/lib/app-v3/maya/ingredients"
 import { normalizeOpenAIImageSize } from "@/lib/app-v3/openai-image-size"
 
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2"
@@ -128,7 +137,15 @@ export function buildContentSlideRedesignPrompt({
     referenceMode === "preserve-frame" ||
     (category === "story-sequence" && referenceMode !== "identity-scene")
   const identityScenePolish = isNewScene
-    ? `Lighting: natural, directional, editorial light - soft window light or golden-hour warmth. Avoid flat on-camera flash or harsh overhead light.\n${ELEVATION}\n${REALISM_TOKENS}.\n${AVOID_LIST}`
+    ? [
+        "Lighting: follow the light source named in the slide-specific scene. If none is named, infer one source that could physically exist there at that time. Do not add generic editorial or studio light on top of the location.",
+        SSELFIE_ENVIRONMENT_INTEGRATION,
+        PHOTOGRAPHER_REALISM,
+        SSELFIE_SELFIE_RESTYLE,
+        ELEVATION,
+        `${REALISM_TOKENS}.`,
+        AVOID_LIST,
+      ].join("\n")
     : ""
   // Reel-cover has one job a carousel/story slide doesn't: hold space for a headline overlay.
   const reelCoverShotFraming =
@@ -204,7 +221,7 @@ Rules:
 - ${firstReferenceRule}
 - ${category === "story-sequence" ? "Place the text in clean negative space. Do not cover the face, eyes, phone, hands, or strongest visual details. If text needs more contrast, add only a very subtle transparent dark or cream overlay behind the text area, not over the face or main subject." : "If a tutorial needs emphasis, use scale, spacing, thin rules, underlines, or neutral contrast instead of colored warning callouts."}
 - Keep the slide full-bleed and finished. No separate card, no border, no post mockup.
-- Create the final slide in high resolution 2K quality, ${category === "carousel" ? "vertical 4:5 Instagram carousel format" : "vertical portrait Instagram Story format"}, crisp and clean${cleanBackground ? ", with a calm empty text zone." : ", with readable text."}`
+- Create the final slide in high resolution 2K quality, ${category === "photoshoot-carousel" ? "vertical 4:5 Instagram carousel format" : "vertical portrait Instagram Story format"}, crisp and clean${cleanBackground ? ", with a calm empty text zone." : ", with readable text."}`
 }
 
 export async function redesignContentSlide({
