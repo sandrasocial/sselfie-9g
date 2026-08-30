@@ -128,7 +128,6 @@ function browserAttributionKey(key: string | undefined): string | null {
 
 export function normalizePostHogApiHost(apiHost: string): string | null {
   const normalized = apiHost.trim().replace(/\/+$/, "")
-  if (normalized === "/ingest") return normalized
   try {
     const parsed = new URL(normalized)
     return parsed.origin === "https://eu.i.posthog.com" && parsed.pathname === "/"

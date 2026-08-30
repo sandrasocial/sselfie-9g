@@ -405,26 +405,12 @@ function postHogConfig(): { key: string; host: string } | null {
   return { key, host }
 }
 
-function configuredSiteOrigin(): string | null {
-  try {
-    return new URL(
-      process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
-    ).origin
-  } catch {
-    return null
-  }
-}
-
 function postHogCaptureEndpoint(host: string): URL | null {
   try {
-    const endpoint = host.startsWith("/")
-      ? new URL(host, configuredSiteOrigin() || "https://sselfie.ai")
-      : new URL(host)
+    const endpoint = new URL(host)
     const normalizedPath = endpoint.pathname.replace(/\/+$/, "") || "/"
     const directEuHost = endpoint.origin === "https://eu.i.posthog.com" && normalizedPath === "/"
-    const sameOriginProxy =
-      endpoint.origin === configuredSiteOrigin() && normalizedPath === "/ingest"
-    if (!directEuHost && !sameOriginProxy) return null
+    if (!directEuHost) return null
 
     const prefix = endpoint.pathname.replace(/\/+$/, "")
     endpoint.pathname = `${prefix}/i/v0/e/`

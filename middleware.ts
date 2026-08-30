@@ -27,22 +27,6 @@ function getPublicBypass(pathname: string) {
   return PUBLIC_MIDDLEWARE_BYPASSES.find(bypass => pathname.startsWith(bypass.prefix))
 }
 
-export function isPostHogIngestPath(pathname: string): boolean {
-  if (pathname.startsWith("/ingest/static/")) return true
-  return [
-    "/ingest/e",
-    "/ingest/e/",
-    "/ingest/i/v0/e",
-    "/ingest/i/v0/e/",
-    "/ingest/batch",
-    "/ingest/batch/",
-    "/ingest/decide",
-    "/ingest/decide/",
-    "/ingest/s",
-    "/ingest/s/",
-  ].includes(pathname)
-}
-
 export async function middleware(request: NextRequest) {
   if (DEBUG_LOGS) {
     console.log("[v0] middleware:", request.nextUrl.pathname)
@@ -58,10 +42,6 @@ export async function middleware(request: NextRequest) {
         "[v0] Upload route detected - completely bypassing all middleware to preserve request body"
       )
     }
-    return NextResponse.next()
-  }
-
-  if (isPostHogIngestPath(request.nextUrl.pathname)) {
     return NextResponse.next()
   }
 

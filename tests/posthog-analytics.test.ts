@@ -146,30 +146,10 @@ describe("PostHog analytics boundary", () => {
   })
 
   it.each([
-    ["/ingest", "https://sselfie.ai/ingest/i/v0/e/"],
-    ["https://sselfie.ai/ingest", "https://sselfie.ai/ingest/i/v0/e/"],
-  ])("preserves the configured ingestion proxy prefix for %s", async (host, expected) => {
-    delete process.env.POSTHOG_HOST
-    process.env.NEXT_PUBLIC_POSTHOG_HOST = host
-    process.env.NEXT_PUBLIC_SITE_URL = "https://sselfie.ai"
-    const request = vi.fn<typeof fetch>().mockResolvedValue(new Response("ok", { status: 200 }))
-
-    await expect(
-      capturePostHogEvent(
-        {
-          eventName: "activation_selfie_uploaded",
-          anonId: "anonymous-visitor",
-        },
-        request
-      )
-    ).resolves.toEqual({ sent: true })
-
-    expect(String(request.mock.calls[0]?.[0])).toBe(expected)
-  })
-
-  it.each([
+    "/ingest",
     "https://us.i.posthog.com",
     "https://attacker.example",
+    "https://sselfie.ai/ingest",
     "https://sselfie.ai/not-ingest",
   ])("rejects an unapproved capture host %s", async host => {
     process.env.POSTHOG_HOST = host
@@ -400,7 +380,7 @@ describe("PostHog analytics boundary", () => {
 
   it("allows only the EU API origin or same-origin proxy path in the browser SDK", () => {
     expect(normalizePostHogApiHost("https://eu.i.posthog.com/")).toBe("https://eu.i.posthog.com")
-    expect(normalizePostHogApiHost("/ingest/")).toBe("/ingest")
+    expect(normalizePostHogApiHost("/ingest/")).toBeNull()
     expect(normalizePostHogApiHost("https://us.i.posthog.com")).toBeNull()
     expect(normalizePostHogApiHost("https://attacker.example")).toBeNull()
   })
