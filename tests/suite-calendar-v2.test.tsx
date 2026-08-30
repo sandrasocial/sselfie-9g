@@ -163,6 +163,78 @@ describe("Suite Calendar 2.0", () => {
     })
   })
 
+  it("keeps editor drafts when the same post object changes", async () => {
+    const { SuiteCalendar } = await import("@/components/app-v3/suite-calendar")
+    render(<SuiteCalendar />)
+
+    fireEvent.click(await screen.findByRole("button", { name: "Edit post 1, Ready" }))
+    const caption = screen.getByPlaceholderText("Write what you want to say…")
+    fireEvent.change(caption, { target: { value: "Unsaved member draft" } })
+    fireEvent.click(screen.getByRole("button", { name: "Later" }))
+
+    expect(caption).toHaveValue("Unsaved member draft")
+  })
+
+  it("requires a second confirmation before removing a photo", async () => {
+    mocks.fetch.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/feed/latest") return jsonResponse({ exists: true, feed, posts })
+      if (url === "/api/feed/list") return jsonResponse({ feeds: [feed] })
+      if (url === "/api/feed/12/remove-post-image" && init?.method === "POST") {
+        return jsonResponse({ post: { ...posts[0], image_url: null, media_urls: [] } })
+      }
+      return jsonResponse({})
+    })
+
+    const { SuiteCalendar } = await import("@/components/app-v3/suite-calendar")
+    render(<SuiteCalendar />)
+    fireEvent.click(await screen.findByRole("button", { name: "Edit post 1, Ready" }))
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }))
+    expect(
+      mocks.fetch.mock.calls.some(([input]) => String(input) === "/api/feed/12/remove-post-image")
+    ).toBe(false)
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm remove" }))
+    await waitFor(() => {
+      expect(
+        mocks.fetch.mock.calls.some(([input]) => String(input) === "/api/feed/12/remove-post-image")
+      ).toBe(true)
+    })
+  })
+
+  it("ignores a slower response for a grid that is no longer selected", async () => {
+    let resolveLatest: ((value: Awaited<ReturnType<typeof jsonResponse>>) => void) | undefined
+    const staleLatest = new Promise<Awaited<ReturnType<typeof jsonResponse>>>(resolve => {
+      resolveLatest = resolve
+    })
+    const selectedFeed = { ...feed, id: 77, title: "Selected grid" }
+    const selectedPosts = posts.map(post => ({ ...post, id: post.id + 1000 }))
+
+    mocks.fetch.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url === "/api/feed/latest") return staleLatest
+      if (url === "/api/feed/77") {
+        return jsonResponse({ exists: true, feed: selectedFeed, posts: selectedPosts })
+      }
+      if (url === "/api/feed/list") return jsonResponse({ feeds: [feed, selectedFeed] })
+      return jsonResponse({})
+    })
+
+    const { SuiteCalendar } = await import("@/components/app-v3/suite-calendar")
+    const view = render(<SuiteCalendar />)
+    mocks.feedNav.feedId = 77
+    view.rerender(<SuiteCalendar />)
+
+    expect(await screen.findByRole("heading", { name: "Selected grid" })).toBeInTheDocument()
+    resolveLatest?.(await jsonResponse({ exists: true, feed, posts }))
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Selected grid" })).toBeInTheDocument()
+      expect(screen.queryByRole("heading", { name: "September grid" })).not.toBeInTheDocument()
+    })
+  })
+
   it("hands the exact selected post to Maya as a secondary action", async () => {
     const { SuiteCalendar } = await import("@/components/app-v3/suite-calendar")
     render(<SuiteCalendar />)
