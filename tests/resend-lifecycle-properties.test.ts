@@ -49,12 +49,15 @@ import {
 const property = (value: string) => ({ type: "string", value })
 const originalMainSegmentId = process.env.RESEND_AUDIENCE_ID
 const originalDisableTestEmails = process.env.RESEND_DISABLE_TEST_EMAILS
+const originalVercelEnv = process.env.VERCEL_ENV
 const mainSegmentId = "78261eea-8f8b-4381-83c6-79fa7120f1cf"
 
 describe("Resend lifecycle contact properties", () => {
   beforeEach(() => {
     process.env.RESEND_AUDIENCE_ID = `\t${mainSegmentId}\n`
     process.env.RESEND_DISABLE_TEST_EMAILS = "false"
+    if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV
+    else process.env.VERCEL_ENV = originalVercelEnv
     vi.clearAllMocks()
     mocks.hasResendApiKey.mockReturnValue(true)
     mocks.isAppUnsubscribed.mockResolvedValue(false)
@@ -75,6 +78,8 @@ describe("Resend lifecycle contact properties", () => {
     else process.env.RESEND_AUDIENCE_ID = originalMainSegmentId
     if (originalDisableTestEmails === undefined) delete process.env.RESEND_DISABLE_TEST_EMAILS
     else process.env.RESEND_DISABLE_TEST_EMAILS = originalDisableTestEmails
+    if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV
+    else process.env.VERCEL_ENV = originalVercelEnv
   })
 
   it.each([
@@ -167,6 +172,28 @@ describe("Resend lifecycle contact properties", () => {
         }),
       }),
     )
+  })
+
+  it("keeps the canonical Main Audience fallback when production env drifts", async () => {
+    delete process.env.RESEND_AUDIENCE_ID
+    process.env.VERCEL_ENV = "production"
+    mocks.get.mockResolvedValue({
+      data: null,
+      error: { statusCode: 404, message: "Contact not found" },
+    })
+
+    const result = await addOrUpdateResendContact(
+      "fallback@example.org",
+      "Fallback",
+      { source: "app_signup", status: "lead" },
+      { requestIntervalMs: 0 }
+    )
+
+    expect(result.success).toBe(true)
+    expect(mocks.addSegment).toHaveBeenCalledWith({
+      email: "fallback@example.org",
+      segmentId: "3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd",
+    })
   })
 
   it("recognizes legacy bought_* flags as a customer purchase", async () => {
