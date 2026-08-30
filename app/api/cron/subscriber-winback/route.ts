@@ -210,7 +210,7 @@ async function runStage(
     items: candidates,
     budget: runtimeBudget,
     minimumRemainingMs: MIN_SEND_BUDGET_MS,
-    process: async candidate => {
+    process: async (candidate, signal) => {
       const firstName = getFirstNameForEmail({ email: candidate.email })
       const email = stage.generate({ firstName, recipientEmail: candidate.email })
 
@@ -225,6 +225,7 @@ async function runStage(
         tags: ["subscriber-winback"],
         marketing: true,
         idempotencyKey: winbackIdempotencyKey(stage.emailType, candidate.email),
+        signal,
       })
 
       if (sent.success) results.sent += 1
@@ -333,16 +334,20 @@ async function runSunset(apply: boolean, limit: number, runtimeBudget: RuntimeBu
     items: candidates,
     budget: runtimeBudget,
     minimumRemainingMs: MIN_SUNSET_BUDGET_MS,
-    process: async candidate => {
+    process: async (candidate, signal) => {
+      signal.throwIfAborted()
       if (await hasCurrentCustomerOrMembershipAccess(candidate.email)) {
         results.skippedCustomers += 1
         return
       }
 
+      signal.throwIfAborted()
       await recordEmailUnsubscribe(createUnsubscribeToken(candidate.email), "winback_sunset")
+      signal.throwIfAborted()
       await updateContactTags(candidate.email, { winback_sunset: "true" }).catch(error => {
         console.error("[subscriber-winback] Failed to tag sunset contact in Resend:", error)
       })
+      signal.throwIfAborted()
       // Marker row so a subscriber is only sunset once (and the count stays auditable).
       await sql`
         INSERT INTO email_logs (user_email, email_type, status, sent_at, created_at)
