@@ -44,12 +44,15 @@ describe("browser analytics identity bootstrap", () => {
   })
 
   it("seeds identity and sends a navigation-safe beacon before bootstrap starts", async () => {
-    const request = vi.fn<typeof fetch>().mockResolvedValue(
-      Response.json({
-        distinctId: "anon:33333333-3333-4333-8333-333333333333",
-        resetPostHog: false,
-      })
-    )
+    const request = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(
+        Response.json({
+          distinctId: "anon:33333333-3333-4333-8333-333333333333",
+          resetPostHog: false,
+        })
+      )
     const sendBeacon = vi.fn().mockReturnValue(true)
     const setItem = vi.fn()
     const removeItem = vi.fn()
@@ -110,9 +113,25 @@ describe("browser analytics identity bootstrap", () => {
 
     cookie = "sselfie_analytics_generation=44444444-4444-4444-8444-444444444444"
     const { ensureAnalyticsBrowserIdentity } = await import("@/lib/analytics/client")
-    await ensureAnalyticsBrowserIdentity()
+    await expect(ensureAnalyticsBrowserIdentity()).resolves.toMatchObject({ distinctId: null })
+    expect(navigationGeneration).toBe("33333333-3333-4333-8333-333333333333")
 
-    expect(request).toHaveBeenCalledWith(
+    cookie = "sselfie_analytics_generation=44444444-4444-4444-8444-444444444444"
+    await expect(ensureAnalyticsBrowserIdentity()).resolves.toMatchObject({
+      distinctId: "anon:33333333-3333-4333-8333-333333333333",
+    })
+
+    expect(request).toHaveBeenNthCalledWith(
+      1,
+      "/api/analytics/event",
+      expect.objectContaining({
+        headers: {
+          "x-sselfie-analytics-generation": "33333333-3333-4333-8333-333333333333",
+        },
+      })
+    )
+    expect(request).toHaveBeenNthCalledWith(
+      2,
       "/api/analytics/event",
       expect.objectContaining({
         headers: {
@@ -123,6 +142,16 @@ describe("browser analytics identity bootstrap", () => {
     expect(cookie).toContain(
       "sselfie_analytics_generation=33333333-3333-4333-8333-333333333333"
     )
+    expect(removeItem).toHaveBeenCalledWith("sselfie_analytics_navigation_generation")
+  })
+
+  it("clears an unused navigation marker when analytics identity is invalidated", async () => {
+    const removeItem = vi.fn()
+    vi.stubGlobal("window", { sessionStorage: { removeItem } })
+
+    const { invalidateAnalyticsBrowserIdentity } = await import("@/lib/analytics/client")
+    invalidateAnalyticsBrowserIdentity()
+
     expect(removeItem).toHaveBeenCalledWith("sselfie_analytics_navigation_generation")
   })
 

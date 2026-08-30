@@ -26,11 +26,10 @@ function rememberNavigationGeneration(generation: string): void {
   }
 }
 
-function consumeNavigationGeneration(): string | null {
+function pendingNavigationGeneration(): string | null {
   try {
     const generation = window.sessionStorage?.getItem(NAVIGATION_GENERATION_SESSION_KEY)
     if (!generation || !ANALYTICS_UUID_PATTERN.test(generation)) return null
-    window.sessionStorage.removeItem(NAVIGATION_GENERATION_SESSION_KEY)
     writeAnalyticsGeneration(generation)
     return generation
   } catch {
@@ -38,8 +37,18 @@ function consumeNavigationGeneration(): string | null {
   }
 }
 
+export function clearPendingAnalyticsNavigationGeneration(): void {
+  if (typeof window === "undefined") return
+  try {
+    window.sessionStorage?.removeItem(NAVIGATION_GENERATION_SESSION_KEY)
+  } catch {
+    // A restricted storage implementation has no pending marker to clear.
+  }
+}
+
 export function rotateAnalyticsBrowserGeneration(): string | null {
   if (typeof window === "undefined") return null
+  clearPendingAnalyticsNavigationGeneration()
   const generation = window.crypto.randomUUID()
   writeAnalyticsGeneration(generation)
   return generation
@@ -61,6 +70,9 @@ export function analyticsBrowserGeneration(): string | null {
 
 export function invalidateAnalyticsBrowserIdentity(): void {
   identityRequest = null
+  // Logout and account-deletion broadcasts call this in every listening tab.
+  // A pre-rotation checkout marker must never restore the old identity later.
+  clearPendingAnalyticsNavigationGeneration()
 }
 
 async function requestAnalyticsIdentity(
@@ -69,7 +81,8 @@ async function requestAnalyticsIdentity(
   try {
     // Carry a navigation click's chosen generation through this tab so another
     // first-visit tab cannot replace it before the destination bootstrap.
-    const generation = consumeNavigationGeneration() ?? analyticsBrowserGeneration()
+    const pendingGeneration = pendingNavigationGeneration()
+    const generation = pendingGeneration ?? analyticsBrowserGeneration()
     const response = await fetch(
       `/api/analytics/event${rotateAnonymous ? "?rotate_anonymous=1" : ""}`,
       {
@@ -88,11 +101,17 @@ async function requestAnalyticsIdentity(
       ANALYTICS_UUID_PATTERN.test(data.resetPostHogNonce)
         ? data.resetPostHogNonce
         : null
-    return {
+    const identity = {
       distinctId: typeof data?.distinctId === "string" ? data.distinctId : null,
       resetPostHog: data?.resetPostHog === true && resetPostHogNonce !== null,
       resetPostHogNonce,
     }
+    // Retain a navigation marker across transient failures. The retry must use
+    // the same generation as the beacon even if another tab changed the cookie.
+    if (identity.distinctId && pendingGeneration) {
+      clearPendingAnalyticsNavigationGeneration()
+    }
+    return identity
   } catch {
     return { distinctId: null, resetPostHog: false, resetPostHogNonce: null }
   }
