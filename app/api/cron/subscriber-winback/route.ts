@@ -451,7 +451,13 @@ export async function GET(request: Request) {
   // the same envelope as database/provider work.
   const runtimeBudget = createRuntimeBudget(RUNTIME_BUDGET_MS)
   const cronLogger = createCronLogger("subscriber-winback")
-  await cronLogger.start()
+  const logWithinRuntimeBudget = (write: () => Promise<void>) =>
+    runWithRuntimeBudget({
+      budget: runtimeBudget,
+      minimumRemainingMs: 0,
+      operation: () => write(),
+    })
+  await logWithinRuntimeBudget(() => cronLogger.start())
 
   try {
     const authHeader = request.headers.get("authorization")
@@ -461,23 +467,27 @@ export async function GET(request: Request) {
 
     if (isProduction) {
       if (!cronSecret) {
-        await cronLogger.error(new Error("Unauthorized"), {
-          reason: "CRON_SECRET not set in production",
-        })
+        await logWithinRuntimeBudget(() =>
+          cronLogger.error(new Error("Unauthorized"), {
+            reason: "CRON_SECRET not set in production",
+          })
+        )
         return NextResponse.json(
           { error: "Unauthorized: CRON_SECRET required in production" },
           { status: 401 }
         )
       }
       if (authHeader !== `Bearer ${cronSecret}`) {
-        await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
+        await logWithinRuntimeBudget(() =>
+          cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
+        )
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
     }
 
     if (!envFlag("SUBSCRIBER_WINBACK_ENABLED")) {
       const summary = { enabled: false }
-      await cronLogger.success(summary)
+      await logWithinRuntimeBudget(() => cronLogger.success(summary))
       return NextResponse.json({ success: true, ...summary })
     }
 
@@ -521,10 +531,10 @@ export async function GET(request: Request) {
       stoppedForBudget: !runtimeBudget.canStart(MIN_SEND_BUDGET_MS),
     }
 
-    await cronLogger.success(results)
+    await logWithinRuntimeBudget(() => cronLogger.success(results))
     return NextResponse.json({ success: true, ...results })
   } catch (error: unknown) {
-    await cronLogger.error(error, { step: "subscriber-winback" })
+    await logWithinRuntimeBudget(() => cronLogger.error(error, { step: "subscriber-winback" }))
     return NextResponse.json(
       {
         success: false,
