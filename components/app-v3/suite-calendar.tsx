@@ -176,6 +176,9 @@ function PostEditor({
   const [isRemoveArmed, setIsRemoveArmed] = useState(false)
   const [showGallery, setShowGallery] = useState(false)
   const draftPostIdRef = useRef(post.id)
+  const captionDirtyRef = useRef(false)
+  const scheduledAtDirtyRef = useRef(false)
+  const postedDirtyRef = useRef(false)
   const { dialogRef, initialFocusRef } = useAccessibleModal(!showGallery, onClose)
   const imageUrl = imageUrlForPost(post)
   const currentIndex = posts.findIndex(item => Number(item.id) === Number(post.id))
@@ -184,12 +187,21 @@ function PostEditor({
   const derivedState = isPosted ? "Posted" : imageUrl && caption.trim() ? "Ready" : "Draft"
 
   useEffect(() => {
-    if (draftPostIdRef.current === post.id) return
-    draftPostIdRef.current = post.id
-    setCaption(post.caption || "")
-    setScheduledAt(dateValue(post.scheduled_at))
-    setIsPosted(Boolean(post.is_posted))
-    setIsRemoveArmed(false)
+    if (draftPostIdRef.current !== post.id) {
+      draftPostIdRef.current = post.id
+      captionDirtyRef.current = false
+      scheduledAtDirtyRef.current = false
+      postedDirtyRef.current = false
+      setCaption(post.caption || "")
+      setScheduledAt(dateValue(post.scheduled_at))
+      setIsPosted(Boolean(post.is_posted))
+      setIsRemoveArmed(false)
+      return
+    }
+
+    if (!captionDirtyRef.current) setCaption(post.caption || "")
+    if (!scheduledAtDirtyRef.current) setScheduledAt(dateValue(post.scheduled_at))
+    if (!postedDirtyRef.current) setIsPosted(Boolean(post.is_posted))
   }, [post.caption, post.id, post.is_posted, post.scheduled_at])
 
   useEffect(() => {
@@ -378,7 +390,10 @@ function PostEditor({
                   </span>
                   <textarea
                     value={caption}
-                    onChange={event => setCaption(event.target.value)}
+                    onChange={event => {
+                      captionDirtyRef.current = true
+                      setCaption(event.target.value)
+                    }}
                     rows={7}
                     maxLength={2200}
                     placeholder="Write what you want to say…"
@@ -396,7 +411,10 @@ function PostEditor({
                   <input
                     type="date"
                     value={scheduledAt}
-                    onChange={event => setScheduledAt(event.target.value)}
+                    onChange={event => {
+                      scheduledAtDirtyRef.current = true
+                      setScheduledAt(event.target.value)
+                    }}
                     className="min-h-11 w-full rounded-[3px] border border-[color:var(--suite-steel)] bg-white px-3 text-[14px] outline-none focus:border-[color:var(--suite-night)] focus:ring-1 focus:ring-[color:var(--suite-night)]"
                   />
                 </label>
@@ -412,7 +430,11 @@ function PostEditor({
                         <button
                           key={status}
                           type="button"
-                          onClick={() => status === "Posted" && setIsPosted(value => !value)}
+                          onClick={() => {
+                            if (status !== "Posted") return
+                            postedDirtyRef.current = true
+                            setIsPosted(value => !value)
+                          }}
                           disabled={status !== "Posted"}
                           aria-pressed={selected}
                           className={`min-h-11 border-r border-[color:var(--suite-steel)] last:border-r-0 ${
