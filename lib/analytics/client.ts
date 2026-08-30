@@ -154,6 +154,9 @@ export async function trackAnalyticsEvent(input: {
       typeof navigator !== "undefined" &&
       typeof navigator.sendBeacon === "function"
     ) {
+      // Install the browser generation synchronously so the beacon and the
+      // destination page's identity GET derive the same first-visit anon ID.
+      analyticsBrowserGeneration()
       const blob = new Blob([JSON.stringify(payload)], { type: "application/json" })
       navigator.sendBeacon("/api/analytics/event", blob)
       return

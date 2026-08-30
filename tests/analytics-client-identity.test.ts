@@ -43,29 +43,41 @@ describe("browser analytics identity bootstrap", () => {
     expect(request.mock.calls[1][1]).toMatchObject({ method: "POST" })
   })
 
-  it("sends a navigation-safe beacon without waiting for identity bootstrap", async () => {
-    const identityResponse = new Promise<Response>(() => {})
-    const request = vi.fn<typeof fetch>().mockImplementation(() => identityResponse)
+  it("seeds identity and sends a navigation-safe beacon before bootstrap starts", async () => {
+    const request = vi.fn<typeof fetch>()
     const sendBeacon = vi.fn().mockReturnValue(true)
+    let cookie = ""
     vi.stubGlobal("fetch", request)
     vi.stubGlobal("navigator", { sendBeacon })
     vi.stubGlobal("window", {
-      location: { pathname: "/vault-maya", search: "?utm_source=email" },
+      crypto: { randomUUID: () => "33333333-3333-4333-8333-333333333333" },
+      location: {
+        pathname: "/vault-maya",
+        search: "?utm_source=email",
+        protocol: "https:",
+      },
     })
     vi.stubGlobal("document", {
-      cookie: "sselfie_analytics_generation=test-generation",
+      get cookie() {
+        return cookie
+      },
+      set cookie(value: string) {
+        cookie = value
+      },
     })
 
-    const { ensureAnalyticsBrowserIdentity, trackAnalyticsEvent } =
-      await import("@/lib/analytics/client")
-    void ensureAnalyticsBrowserIdentity()
+    const { trackAnalyticsEvent } = await import("@/lib/analytics/client")
 
     await trackAnalyticsEvent({
       event: "vault_maya_landing_cta_clicked",
       navigationSafe: true,
     })
 
-    expect(request).toHaveBeenCalledTimes(1)
+    expect(request).not.toHaveBeenCalled()
+    expect(cookie).toContain(
+      "sselfie_analytics_generation=33333333-3333-4333-8333-333333333333"
+    )
+    expect(cookie).toContain("Secure")
     expect(sendBeacon).toHaveBeenCalledTimes(1)
     expect(sendBeacon).toHaveBeenCalledWith("/api/analytics/event", expect.any(Blob))
   })
