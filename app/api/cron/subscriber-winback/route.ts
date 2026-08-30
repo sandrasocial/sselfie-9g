@@ -2,7 +2,11 @@ import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
 
 import { createCronLogger } from "@/lib/cron-logger"
-import { createRuntimeBudget, processWithRuntimeBudget, type RuntimeBudget } from "@/lib/cron/runtime-budget"
+import {
+  createRuntimeBudget,
+  processWithRuntimeBudget,
+  type RuntimeBudget,
+} from "@/lib/cron/runtime-budget"
 import { sql } from "@/lib/db/client"
 import { envFlag } from "@/lib/env-flags"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
