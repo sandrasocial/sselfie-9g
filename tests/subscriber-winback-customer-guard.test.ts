@@ -12,9 +12,17 @@ const route = fs.readFileSync(
 describe("subscriber win-back sunset customer guard", () => {
   it("rechecks money and current membership access immediately before suppression", () => {
     const guard = route.indexOf("hasCurrentCustomerOrMembershipAccess(candidate.email)")
+    const providerUpdate = route.indexOf("updateContactTags(candidate.email")
+    const finalGuard = route.indexOf(
+      "hasCurrentCustomerOrMembershipAccess(candidate.email)",
+      providerUpdate
+    )
     const unsubscribe = route.indexOf("recordSunsetUnsubscribe(candidate.email)")
 
     expect(guard).toBeGreaterThanOrEqual(0)
+    expect(providerUpdate).toBeGreaterThan(guard)
+    expect(finalGuard).toBeGreaterThan(providerUpdate)
+    expect(unsubscribe).toBeGreaterThan(finalGuard)
     expect(unsubscribe).toBeGreaterThan(guard)
     expect(route).toContain("sp.payment_date > NOW() - INTERVAL '90 days'")
     expect(route).toContain("'brand_studio_membership'")
