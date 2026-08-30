@@ -109,6 +109,8 @@ export const POSTHOG_APPROVED_UTM_CAMPAIGNS = [
 const TOKENIZED_PATH = new RegExp(`^${POSTHOG_TOKENIZED_PATH_PATTERN_SOURCE}`)
 const TOKENIZED_PATH_IN_PAYLOAD = new RegExp(POSTHOG_TOKENIZED_PATH_PATTERN_SOURCE, "g")
 const CUSTOMER_OBJECT_PATH = /^(\/(?:maya\/asset|api\/maya\/generated-assets)\/)[^/"?#]+/
+const CUSTOMER_OBJECT_PATH_IN_PAYLOAD =
+  /(\/(?:maya\/asset|api\/maya\/generated-assets)\/)[^/"?#]+/g
 const POSTHOG_BROWSER_ATTRIBUTION_ALLOWLISTS: Readonly<Record<string, readonly string[]>> = {
   utm_source: POSTHOG_APPROVED_UTM_SOURCES,
   utm_medium: POSTHOG_APPROVED_UTM_MEDIUMS,
@@ -178,15 +180,17 @@ export function sanitizePostHogEventPayload<T>(event: T): T | null {
         return allowlist?.includes(normalized) ? normalized : undefined
       }
 
-      const tokenSafe = value.replace(TOKENIZED_PATH_IN_PAYLOAD, "$1[token]")
-      if (!/^https?:\/\//i.test(tokenSafe) && !tokenSafe.startsWith("/")) return tokenSafe
+      const pathSafe = value
+        .replace(TOKENIZED_PATH_IN_PAYLOAD, "$1[token]")
+        .replace(CUSTOMER_OBJECT_PATH_IN_PAYLOAD, "$1[id]")
+      if (!/^https?:\/\//i.test(pathSafe) && !pathSafe.startsWith("/")) return pathSafe
 
       try {
-        const absolute = /^https?:\/\//i.test(tokenSafe)
-        const parsed = new URL(tokenSafe, "https://sselfie.invalid")
+        const absolute = /^https?:\/\//i.test(pathSafe)
+        const parsed = new URL(pathSafe, "https://sselfie.invalid")
         return `${absolute ? parsed.origin : ""}${parsed.pathname}`
       } catch {
-        return tokenSafe.split(/[?#]/, 1)[0]
+        return pathSafe.split(/[?#]/, 1)[0]
       }
     }
 

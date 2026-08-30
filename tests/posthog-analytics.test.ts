@@ -500,6 +500,10 @@ describe("PostHog analytics boundary", () => {
           $pathname: "/claim/secret-token",
           $snapshot_data: {
             href: "https://preview.test/checkout/membership?session_id=cs_private&freebie_token=private",
+            asset:
+              "https://preview.test/maya/asset/customer-specific-id?email=private@example.com",
+            generatedAsset:
+              "/api/maya/generated-assets/customer-specific-id/html?token=private",
           },
         },
       })
@@ -510,6 +514,8 @@ describe("PostHog analytics boundary", () => {
         $pathname: "/claim/[token]",
         $snapshot_data: {
           href: "https://preview.test/checkout/membership",
+          asset: "https://preview.test/maya/asset/[id]",
+          generatedAsset: "/api/maya/generated-assets/[id]/html",
         },
       },
     })
