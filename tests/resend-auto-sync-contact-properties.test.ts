@@ -28,7 +28,6 @@ describe("Resend signup contact property mapping", () => {
     expect(mocks.upsertContact).toHaveBeenCalledWith("new-user@realmail.com", "New", {
       acquisition_path: "app_signup",
       lifecycle_stage: "lead",
-      membership_status: "none",
     })
   })
 
@@ -118,5 +117,6 @@ describe("Resend signup contact property mapping", () => {
     expect(result).toEqual({ success: true, contactId: "existing-contact" })
     expect(mocks.upsertContact).toHaveBeenCalledTimes(1)
     expect(mocks.sql).not.toHaveBeenCalled()
+    expect(mocks.upsertContact.mock.calls[0][2]).not.toHaveProperty("membership_status")
   })
 })
