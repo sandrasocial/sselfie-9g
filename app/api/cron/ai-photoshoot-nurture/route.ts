@@ -6,6 +6,7 @@ import {
   createRuntimeBudget,
   processWithRuntimeBudget,
   runWithRuntimeBudget,
+  type RuntimeBudget,
 } from "@/lib/cron/runtime-budget"
 import { sql } from "@/lib/db/client"
 import { envFlag } from "@/lib/env-flags"
@@ -73,6 +74,27 @@ interface TouchResult {
   processed: number
   stoppedForBudget: boolean
   timedOut: boolean
+}
+
+interface NurtureCandidate {
+  email: string
+}
+
+interface RunTouchInput<Candidate extends NurtureCandidate> {
+  emailType: string
+  result: TouchResult
+  dryRun: boolean
+  maxPerTouch: number
+  remainingSends: number
+  touchesRemaining: number
+  runtimeBudget: RuntimeBudget
+  getCandidates: (limit: number) => Promise<Candidate[]>
+  sendCandidate: (
+    candidate: Candidate,
+    signal: AbortSignal
+  ) => Promise<{ success: boolean; error?: string }>
+  errors: Array<{ email: string; touch: string; error: string }>
+  sendDelayMs: number
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -389,6 +411,85 @@ function isTouchResult(value: unknown): value is TouchResult {
   )
 }
 
+async function runTouch<Candidate extends NurtureCandidate>({
+  emailType,
+  result,
+  dryRun,
+  maxPerTouch,
+  remainingSends,
+  touchesRemaining,
+  runtimeBudget,
+  getCandidates,
+  sendCandidate,
+  errors,
+  sendDelayMs,
+}: RunTouchInput<Candidate>): Promise<{ remainingSends: number; touchesRemaining: number }> {
+  const nextTouchesRemaining = touchesRemaining - 1
+
+  if (remainingSends <= 0) {
+    result.skipped = dryRun ? 0 : maxPerTouch
+    return { remainingSends, touchesRemaining: nextTouchesRemaining }
+  }
+
+  const fairTouchLimit = Math.min(
+    maxPerTouch,
+    remainingSends,
+    Math.max(1, Math.ceil(remainingSends / touchesRemaining))
+  )
+  const selection = await runWithRuntimeBudget({
+    budget: runtimeBudget,
+    minimumRemainingMs: MIN_QUERY_BUDGET_MS,
+    operation: () => getCandidates(fairTouchLimit),
+  })
+
+  if (!selection.completed) {
+    result.stoppedForBudget = true
+    result.timedOut = selection.timedOut
+    return { remainingSends, touchesRemaining: nextTouchesRemaining }
+  }
+
+  const candidates = selection.value
+  result.found = candidates.length
+
+  if (dryRun) {
+    result.wouldSend = candidates.length
+    result.skipped = candidates.length
+    return {
+      remainingSends: remainingSends - candidates.length,
+      touchesRemaining: nextTouchesRemaining,
+    }
+  }
+
+  const processing = await processWithRuntimeBudget({
+    items: candidates,
+    budget: runtimeBudget,
+    minimumRemainingMs: MIN_SEND_BUDGET_MS,
+    process: async (candidate, signal) => {
+      const sent = await sendCandidate(candidate, signal)
+      if (sent.success) {
+        result.sent += 1
+      } else {
+        result.failed += 1
+        errors.push({
+          email: candidate.email,
+          touch: emailType,
+          error: sent.error || "unknown",
+        })
+      }
+
+      await sleep(sendDelayMs)
+    },
+  })
+  result.processed = processing.processed
+  result.stoppedForBudget = processing.stoppedForBudget
+  result.timedOut = processing.timedOut
+
+  return {
+    remainingSends: remainingSends - processing.processed,
+    touchesRemaining: nextTouchesRemaining,
+  }
+}
+
 export async function GET(request: Request) {
   const runtimeBudget = createRuntimeBudget(RUNTIME_BUDGET_MS)
   const cronLogger = createCronLogger("ai-photoshoot-nurture")
@@ -472,71 +573,29 @@ export async function GET(request: Request) {
         const result = emptyTouchResult()
         results[key] = result
 
-        if (remainingSends <= 0) {
-          result.skipped = dryRun ? 0 : maxPerTouch
-          touchesRemaining -= 1
-          continue
-        }
-
-        const fairTouchLimit = Math.min(
+        const next = await runTouch({
+          emailType: touch.emailType,
+          result,
+          dryRun,
           maxPerTouch,
           remainingSends,
-          Math.max(1, Math.ceil(remainingSends / touchesRemaining))
-        )
-        const selection = await runWithRuntimeBudget({
-          budget: runtimeBudget,
-          minimumRemainingMs: MIN_QUERY_BUDGET_MS,
-          operation: () =>
+          touchesRemaining,
+          runtimeBudget,
+          getCandidates: limit =>
             getPromptVaultCandidates({
               emailType: touch.emailType,
               days: touch.days,
               previousEmailType: previousPromptVaultTouch(touch.emailType),
               minTouchGapHours,
-              limit: fairTouchLimit,
+              limit,
             }),
+          sendCandidate: (candidate, signal) =>
+            sendPromptVaultTouch(touch.emailType, candidate, signal),
+          errors,
+          sendDelayMs,
         })
-        touchesRemaining -= 1
-
-        if (!selection.completed) {
-          result.stoppedForBudget = true
-          result.timedOut = selection.timedOut
-          continue
-        }
-
-        const candidates = selection.value
-        result.found = candidates.length
-
-        if (dryRun) {
-          result.wouldSend = candidates.length
-          result.skipped = candidates.length
-          remainingSends -= candidates.length
-          continue
-        }
-
-        const processing = await processWithRuntimeBudget({
-          items: candidates,
-          budget: runtimeBudget,
-          minimumRemainingMs: MIN_SEND_BUDGET_MS,
-          process: async (candidate, signal) => {
-            const sent = await sendPromptVaultTouch(touch.emailType, candidate, signal)
-            if (sent.success) {
-              result.sent += 1
-            } else {
-              result.failed += 1
-              errors.push({
-                email: candidate.email,
-                touch: touch.emailType,
-                error: sent.error || "unknown",
-              })
-            }
-
-            await sleep(sendDelayMs)
-          },
-        })
-        result.processed = processing.processed
-        result.stoppedForBudget = processing.stoppedForBudget
-        result.timedOut = processing.timedOut
-        remainingSends -= processing.processed
+        remainingSends = next.remainingSends
+        touchesRemaining = next.touchesRemaining
       }
     }
 
@@ -546,72 +605,30 @@ export async function GET(request: Request) {
         const result = emptyTouchResult()
         results[key] = result
 
-        if (remainingSends <= 0) {
-          result.skipped = dryRun ? 0 : maxPerTouch
-          touchesRemaining -= 1
-          continue
-        }
-
-        const fairTouchLimit = Math.min(
+        const next = await runTouch({
+          emailType: touch.emailType,
+          result,
+          dryRun,
           maxPerTouch,
           remainingSends,
-          Math.max(1, Math.ceil(remainingSends / touchesRemaining))
-        )
-        const selection = await runWithRuntimeBudget({
-          budget: runtimeBudget,
-          minimumRemainingMs: MIN_QUERY_BUDGET_MS,
-          operation: () =>
+          touchesRemaining,
+          runtimeBudget,
+          getCandidates: limit =>
             getAiPromptsCandidates({
               emailType: touch.emailType,
               days: touch.days,
               startDate,
               previousEmailType: previousAiPromptTouch(touch.emailType),
               minTouchGapHours,
-              limit: fairTouchLimit,
+              limit,
             }),
+          sendCandidate: (candidate, signal) =>
+            sendAiPromptsTouch(touch.emailType, candidate, signal),
+          errors,
+          sendDelayMs,
         })
-        touchesRemaining -= 1
-
-        if (!selection.completed) {
-          result.stoppedForBudget = true
-          result.timedOut = selection.timedOut
-          continue
-        }
-
-        const candidates = selection.value
-        result.found = candidates.length
-
-        if (dryRun) {
-          result.wouldSend = candidates.length
-          result.skipped = candidates.length
-          remainingSends -= candidates.length
-          continue
-        }
-
-        const processing = await processWithRuntimeBudget({
-          items: candidates,
-          budget: runtimeBudget,
-          minimumRemainingMs: MIN_SEND_BUDGET_MS,
-          process: async (candidate, signal) => {
-            const sent = await sendAiPromptsTouch(touch.emailType, candidate, signal)
-            if (sent.success) {
-              result.sent += 1
-            } else {
-              result.failed += 1
-              errors.push({
-                email: candidate.email,
-                touch: touch.emailType,
-                error: sent.error || "unknown",
-              })
-            }
-
-            await sleep(sendDelayMs)
-          },
-        })
-        result.processed = processing.processed
-        result.stoppedForBudget = processing.stoppedForBudget
-        result.timedOut = processing.timedOut
-        remainingSends -= processing.processed
+        remainingSends = next.remainingSends
+        touchesRemaining = next.touchesRemaining
       }
     }
 
