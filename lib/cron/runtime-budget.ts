@@ -26,18 +26,40 @@ export async function processWithRuntimeBudget<T>({
   items: T[]
   budget: RuntimeBudget
   minimumRemainingMs: number
-  process: (item: T) => Promise<void>
-}): Promise<{ processed: number; stoppedForBudget: boolean }> {
+  process: (item: T, signal: AbortSignal) => Promise<void>
+}): Promise<{ processed: number; stoppedForBudget: boolean; timedOut: boolean }> {
   let processed = 0
 
   for (const item of items) {
     if (!budget.canStart(minimumRemainingMs)) {
-      return { processed, stoppedForBudget: true }
+      return { processed, stoppedForBudget: true, timedOut: false }
     }
 
-    await process(item)
+    const controller = new AbortController()
+    const timeoutMs = Math.max(1, budget.remainingMs())
+    let timeout: ReturnType<typeof setTimeout> | undefined
+
+    try {
+      await Promise.race([
+        process(item, controller.signal),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(() => {
+            controller.abort()
+            reject(new Error("Cron runtime budget exhausted during work item"))
+          }, timeoutMs)
+        }),
+      ])
+    } catch (error) {
+      if (controller.signal.aborted) {
+        return { processed, stoppedForBudget: true, timedOut: true }
+      }
+      throw error
+    } finally {
+      if (timeout) clearTimeout(timeout)
+    }
+
     processed += 1
   }
 
-  return { processed, stoppedForBudget: false }
+  return { processed, stoppedForBudget: false, timedOut: false }
 }
