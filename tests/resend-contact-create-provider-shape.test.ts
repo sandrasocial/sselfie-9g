@@ -68,12 +68,17 @@ describe("Resend new-contact provider request shape", () => {
     })
 
     const { addOrUpdateResendContact } = await import("@/lib/resend/manage-contact")
-    const result = await addOrUpdateResendContact("provider-shape@example.org", "Provider", {
-      source: "freebie-selfie-guide",
-      status: "lead",
-      product: "sselfie-guide",
-      journey: "nurture",
-    })
+    const result = await addOrUpdateResendContact(
+      "provider-shape@example.org",
+      "Provider",
+      {
+        source: "freebie-selfie-guide",
+        status: "lead",
+        product: "sselfie-guide",
+        journey: "nurture",
+      },
+      { requestIntervalMs: 0 }
+    )
 
     expect(result).toEqual({
       success: true,

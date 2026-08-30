@@ -3,12 +3,20 @@
 // Contact Properties so old funnels benefit without recreating segment sprawl.
 
 import { isAppUnsubscribed } from "@/lib/email/unsubscribe"
+import { acquireKvLock, releaseKvLock } from "@/lib/cache"
 import { requireResendClient } from "@/lib/resend/client"
 import { hasResendApiKey } from "@/lib/resend/api-key"
 
+const PRODUCTION_MAIN_SEGMENT_ID = "3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd"
+
 function getMainSegmentId(): string {
   // Vercel/dashboard copies can include invisible whitespace. Segment endpoints require a UUID.
-  return (process.env.RESEND_AUDIENCE_ID || "").replace(/\r|\n|\t/g, "").trim()
+  const configured = (process.env.RESEND_AUDIENCE_ID || "").replace(/\r|\n|\t/g, "").trim()
+  if (configured) return configured
+
+  // Preserve the former signup-sync fallback in production so temporary env
+  // drift cannot silently create global contacts outside the nurture segment.
+  return process.env.VERCEL_ENV === "production" ? PRODUCTION_MAIN_SEGMENT_ID : ""
 }
 
 const TEST_EMAIL_DOMAINS = new Set([
@@ -61,6 +69,70 @@ type LifecycleProperties = {
   primary_interest?: string
   membership_status?: string
   last_product?: string
+}
+
+export interface ResendContactSyncOptions {
+  /** Minimum delay between provider requests. Defaults to the account-wide 500 ms limit. */
+  requestIntervalMs?: number
+}
+
+type ResendRequestPacer = <T>(request: () => Promise<T>) => Promise<T>
+
+const RESEND_PROVIDER_SLOT_KEY = "rate-limit:resend:provider-request"
+const RESEND_PROVIDER_SLOT_TTL_MS = 15_000
+const RESEND_PROVIDER_SLOT_WAIT_MS = 100
+const RESEND_PROVIDER_SLOT_TIMEOUT_MS = 15_000
+
+let inProcessRequestTail: Promise<void> = Promise.resolve()
+
+async function waitForDistributedResendSlot() {
+  const deadline = Date.now() + RESEND_PROVIDER_SLOT_TIMEOUT_MS
+  const requireDistributedLock = process.env.VERCEL_ENV === "production"
+
+  while (Date.now() < deadline) {
+    const slot = await acquireKvLock({
+      key: RESEND_PROVIDER_SLOT_KEY,
+      ttlMs: RESEND_PROVIDER_SLOT_TTL_MS,
+      requireLockWhenNoRedis: requireDistributedLock,
+    })
+    if (slot.acquired) return slot
+    if (!slot.locked) {
+      throw new Error("Distributed Resend request scheduler is not configured")
+    }
+    await new Promise(resolve => setTimeout(resolve, RESEND_PROVIDER_SLOT_WAIT_MS))
+  }
+
+  throw new Error("Timed out waiting for the distributed Resend request scheduler")
+}
+
+function createResendRequestPacer(requestIntervalMs = 0): ResendRequestPacer {
+  return async request => {
+    if (requestIntervalMs <= 0) return request()
+
+    let releaseInProcess!: () => void
+    const previousRequest = inProcessRequestTail
+    inProcessRequestTail = new Promise(resolve => {
+      releaseInProcess = resolve
+    })
+    await previousRequest
+
+    let distributedSlot: Awaited<ReturnType<typeof waitForDistributedResendSlot>> | null = null
+    try {
+      distributedSlot = await waitForDistributedResendSlot()
+      return await request()
+    } finally {
+      // Hold the account-wide slot through the cooldown so the next Vercel
+      // invocation cannot start another provider call inside the same 500 ms.
+      await new Promise(resolve => setTimeout(resolve, requestIntervalMs))
+      if (distributedSlot?.locked) {
+        await releaseKvLock({
+          key: RESEND_PROVIDER_SLOT_KEY,
+          value: distributedSlot.value,
+        })
+      }
+      releaseInProcess()
+    }
+  }
 }
 
 const STAGE_RANK: Record<string, number> = {
@@ -205,14 +277,16 @@ function isMissingContact(error: any): boolean {
   return error?.statusCode === 404 || message.includes("not found") || message.includes("does not exist")
 }
 
-async function ensureMainSegment(email: string): Promise<void> {
+async function ensureMainSegment(email: string, paceRequest: ResendRequestPacer): Promise<void> {
   const mainSegmentId = getMainSegmentId()
   if (!mainSegmentId) return
   const resend = requireResendClient()
-  const { error } = await (resend.contacts as any).segments.add({
-    email,
-    segmentId: mainSegmentId,
-  })
+  const { error } = await paceRequest(() =>
+    (resend.contacts as any).segments.add({
+      email,
+      segmentId: mainSegmentId,
+    })
+  )
   if (error) {
     const message = String(error.message || "").toLowerCase()
     if (!message.includes("already") && !message.includes("duplicate")) {
@@ -229,6 +303,7 @@ export async function addOrUpdateResendContact(
   email: string,
   firstName: string | null,
   tags: ContactTags,
+  options: ResendContactSyncOptions = {},
 ): Promise<{ success: boolean; contactId?: string; error?: string }> {
   try {
     if (!hasResendApiKey()) return { success: false, error: "Resend not configured" }
@@ -241,21 +316,26 @@ export async function addOrUpdateResendContact(
 
     const resend = requireResendClient()
     const requested = requestedLifecycleProperties(tags)
+    const paceRequest = createResendRequestPacer(options.requestIntervalMs ?? 500)
 
-    const { data: existing, error: getError } = await (resend.contacts as any).get({ email: normalizedEmail })
+    const { data: existing, error: getError } = await paceRequest(() =>
+      (resend.contacts as any).get({ email: normalizedEmail })
+    )
 
     if (existing && !getError) {
       const properties = mergeLifecycleProperties((existing as any).properties, requested)
-      const { data, error } = await (resend.contacts as any).update({
-        email: normalizedEmail,
-        firstName: firstName || undefined,
-        properties,
-      })
+      const { data, error } = await paceRequest(() =>
+        (resend.contacts as any).update({
+          email: normalizedEmail,
+          firstName: firstName || undefined,
+          properties,
+        })
+      )
       if (error) return { success: false, error: error.message }
 
       // A global Resend opt-out must never be re-segmented by a data backfill.
       if ((existing as any).unsubscribed !== true) {
-        await ensureMainSegment(normalizedEmail)
+        await ensureMainSegment(normalizedEmail, paceRequest)
       }
       return { success: true, contactId: data?.id || existing.id }
     }
@@ -271,20 +351,26 @@ export async function addOrUpdateResendContact(
       properties,
     }
 
-    const { data, error } = await (resend.contacts as any).create(createPayload)
+    const { data, error } = await paceRequest(() =>
+      (resend.contacts as any).create(createPayload)
+    )
     if (error) {
       const message = String(error.message || "").toLowerCase()
       if (message.includes("already exists") || message.includes("contact already")) {
-        const { data: current } = await (resend.contacts as any).get({ email: normalizedEmail })
+        const { data: current } = await paceRequest(() =>
+          (resend.contacts as any).get({ email: normalizedEmail })
+        )
         const mergedProperties = mergeLifecycleProperties((current as any)?.properties, requested)
-        const { data: updated, error: updateError } = await (resend.contacts as any).update({
-          email: normalizedEmail,
-          firstName: firstName || undefined,
-          properties: mergedProperties,
-        })
+        const { data: updated, error: updateError } = await paceRequest(() =>
+          (resend.contacts as any).update({
+            email: normalizedEmail,
+            firstName: firstName || undefined,
+            properties: mergedProperties,
+          })
+        )
         if (updateError) return { success: false, error: updateError.message }
         if ((current as any)?.unsubscribed !== true) {
-          await ensureMainSegment(normalizedEmail)
+          await ensureMainSegment(normalizedEmail, paceRequest)
         }
         return { success: true, contactId: updated?.id || current?.id }
       }
@@ -295,7 +381,7 @@ export async function addOrUpdateResendContact(
     // the otherwise documented inline `segments: [{ id }]` create shape for this production path.
     // Adding the newly created global Contact through the dedicated endpoint preserves Main
     // Audience membership without risking another create-only 422.
-    await ensureMainSegment(normalizedEmail)
+    await ensureMainSegment(normalizedEmail, paceRequest)
     return { success: true, contactId: data?.id }
   } catch (error) {
     console.error("[resend] Exception syncing lifecycle contact:", error)

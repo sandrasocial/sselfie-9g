@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   addSegment: vi.fn(),
   removeSegment: vi.fn(),
+  acquireKvLock: vi.fn(),
+  releaseKvLock: vi.fn(),
 }))
 
 vi.mock("@/lib/email/unsubscribe", () => ({
@@ -18,6 +20,11 @@ vi.mock("@/lib/email/unsubscribe", () => ({
 
 vi.mock("@/lib/resend/api-key", () => ({
   hasResendApiKey: mocks.hasResendApiKey,
+}))
+
+vi.mock("@/lib/cache", () => ({
+  acquireKvLock: mocks.acquireKvLock,
+  releaseKvLock: mocks.releaseKvLock,
 }))
 
 vi.mock("@/lib/resend/client", () => ({
@@ -42,12 +49,15 @@ import {
 const property = (value: string) => ({ type: "string", value })
 const originalMainSegmentId = process.env.RESEND_AUDIENCE_ID
 const originalDisableTestEmails = process.env.RESEND_DISABLE_TEST_EMAILS
+const originalVercelEnv = process.env.VERCEL_ENV
 const mainSegmentId = "78261eea-8f8b-4381-83c6-79fa7120f1cf"
 
 describe("Resend lifecycle contact properties", () => {
   beforeEach(() => {
     process.env.RESEND_AUDIENCE_ID = `\t${mainSegmentId}\n`
     process.env.RESEND_DISABLE_TEST_EMAILS = "false"
+    if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV
+    else process.env.VERCEL_ENV = originalVercelEnv
     vi.clearAllMocks()
     mocks.hasResendApiKey.mockReturnValue(true)
     mocks.isAppUnsubscribed.mockResolvedValue(false)
@@ -55,6 +65,12 @@ describe("Resend lifecycle contact properties", () => {
     mocks.create.mockResolvedValue({ data: { id: "contact_1" }, error: null })
     mocks.addSegment.mockResolvedValue({ data: {}, error: null })
     mocks.removeSegment.mockResolvedValue({ data: {}, error: null })
+    mocks.acquireKvLock.mockResolvedValue({
+      acquired: true,
+      value: "resend-slot",
+      locked: true,
+    })
+    mocks.releaseKvLock.mockResolvedValue(undefined)
   })
 
   afterAll(() => {
@@ -62,6 +78,8 @@ describe("Resend lifecycle contact properties", () => {
     else process.env.RESEND_AUDIENCE_ID = originalMainSegmentId
     if (originalDisableTestEmails === undefined) delete process.env.RESEND_DISABLE_TEST_EMAILS
     else process.env.RESEND_DISABLE_TEST_EMAILS = originalDisableTestEmails
+    if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV
+    else process.env.VERCEL_ENV = originalVercelEnv
   })
 
   it.each([
@@ -102,7 +120,9 @@ describe("Resend lifecycle contact properties", () => {
         error: { statusCode: 404, message: "Contact not found" },
       })
 
-      const result = await addOrUpdateResendContact(email, "New", tags)
+      const result = await addOrUpdateResendContact(email, "New", tags, {
+        requestIntervalMs: 0,
+      })
 
       expect(result).toEqual({ success: true, contactId: "contact_1" })
       expect(mocks.create).toHaveBeenCalledWith({
@@ -132,11 +152,16 @@ describe("Resend lifecycle contact properties", () => {
       error: null,
     })
 
-    await addOrUpdateResendContact("buyer@example.org", "Buyer", {
-      source: "ai-prompts",
-      status: "lead",
-      product: "ai-photoshoot-prompts",
-    })
+    await addOrUpdateResendContact(
+      "buyer@example.org",
+      "Buyer",
+      {
+        source: "ai-prompts",
+        status: "lead",
+        product: "ai-photoshoot-prompts",
+      },
+      { requestIntervalMs: 0 }
+    )
 
     expect(mocks.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -147,6 +172,28 @@ describe("Resend lifecycle contact properties", () => {
         }),
       }),
     )
+  })
+
+  it("keeps the canonical Main Audience fallback when production env drifts", async () => {
+    delete process.env.RESEND_AUDIENCE_ID
+    process.env.VERCEL_ENV = "production"
+    mocks.get.mockResolvedValue({
+      data: null,
+      error: { statusCode: 404, message: "Contact not found" },
+    })
+
+    const result = await addOrUpdateResendContact(
+      "fallback@example.org",
+      "Fallback",
+      { source: "app_signup", status: "lead" },
+      { requestIntervalMs: 0 }
+    )
+
+    expect(result.success).toBe(true)
+    expect(mocks.addSegment).toHaveBeenCalledWith({
+      email: "fallback@example.org",
+      segmentId: "3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd",
+    })
   })
 
   it("recognizes legacy bought_* flags as a customer purchase", async () => {
@@ -163,11 +210,16 @@ describe("Resend lifecycle contact properties", () => {
       error: null,
     })
 
-    await addOrUpdateResendContact("starter@example.org", "Starter", {
-      product: "starter-kit",
-      journey: "starter_kit",
-      bought_starter_kit: "true",
-    })
+    await addOrUpdateResendContact(
+      "starter@example.org",
+      "Starter",
+      {
+        product: "starter-kit",
+        journey: "starter_kit",
+        bought_starter_kit: "true",
+      },
+      { requestIntervalMs: 0 }
+    )
 
     expect(mocks.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -182,10 +234,15 @@ describe("Resend lifecycle contact properties", () => {
   it("does not touch Resend when the app has a durable unsubscribe", async () => {
     mocks.isAppUnsubscribed.mockResolvedValue(true)
 
-    const result = await addOrUpdateResendContact("optout@example.org", "Optout", {
-      source: "selfie-guide",
-      status: "lead",
-    })
+    const result = await addOrUpdateResendContact(
+      "optout@example.org",
+      "Optout",
+      {
+        source: "selfie-guide",
+        status: "lead",
+      },
+      { requestIntervalMs: 0 }
+    )
 
     expect(result.success).toBe(true)
     expect(mocks.get).not.toHaveBeenCalled()
@@ -199,14 +256,56 @@ describe("Resend lifecycle contact properties", () => {
       error: null,
     })
 
-    const result = await addOrUpdateResendContact("global-optout@example.org", "Optout", {
-      source: "selfie-guide",
-      status: "lead",
-    })
+    const result = await addOrUpdateResendContact(
+      "global-optout@example.org",
+      "Optout",
+      {
+        source: "selfie-guide",
+        status: "lead",
+      },
+      { requestIntervalMs: 0 }
+    )
 
     expect(result.success).toBe(true)
     expect(mocks.update).toHaveBeenCalled()
     expect(mocks.addSegment).not.toHaveBeenCalled()
+  })
+
+  it("paces every provider request through the distributed slot by default", async () => {
+    vi.useFakeTimers()
+    const timeoutSpy = vi.spyOn(global, "setTimeout")
+    mocks.get.mockResolvedValue({
+      data: { id: "contact_4", unsubscribed: false, properties: {} },
+      error: null,
+    })
+
+    const resultPromise = addOrUpdateResendContact(
+      "queued@example.org",
+      "Queued",
+      { source: "app_signup", status: "lead" }
+    )
+
+    await vi.runAllTimersAsync()
+    const result = await resultPromise
+
+    expect(result.success).toBe(true)
+    expect(mocks.get).toHaveBeenCalledTimes(1)
+    expect(mocks.update).toHaveBeenCalledTimes(1)
+    expect(mocks.addSegment).toHaveBeenCalledTimes(1)
+    expect(mocks.acquireKvLock).toHaveBeenCalledTimes(3)
+    expect(mocks.acquireKvLock).toHaveBeenCalledWith({
+      key: "rate-limit:resend:provider-request",
+      ttlMs: 15_000,
+      requireLockWhenNoRedis: false,
+    })
+    expect(mocks.releaseKvLock).toHaveBeenCalledTimes(3)
+    expect(timeoutSpy).toHaveBeenCalledTimes(3)
+    expect(timeoutSpy).toHaveBeenNthCalledWith(1, expect.any(Function), 500)
+    expect(timeoutSpy).toHaveBeenNthCalledWith(2, expect.any(Function), 500)
+    expect(timeoutSpy).toHaveBeenNthCalledWith(3, expect.any(Function), 500)
+    expect(vi.getTimerCount()).toBe(0)
+    timeoutSpy.mockRestore()
+    vi.useRealTimers()
   })
 
   it("does not add a globally unsubscribed contact to a segment", async () => {

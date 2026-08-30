@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import { autoSyncUserToResend } from "@/lib/resend/auto-sync-user"
+import { after } from "next/server"
 
 export interface NeonUser {
   id: string
@@ -122,13 +123,24 @@ export async function getOrCreateNeonUser(
 
     const newUser = newUsers[0] as NeonUser
 
-    // Auto-sync new user to Resend (non-blocking)
+    const syncNewUserToResend = async () => {
+      try {
+        await autoSyncUserToResend(newUser.email, newUser.display_name, {
+          source: "app_signup",
+        })
+      } catch (syncErr) {
+        console.warn("[USER-MAPPING] Resend sync error (non-blocking):", syncErr)
+      }
+    }
+
+    // Keep non-critical provider calls off request-path account creation and
+    // auth redirects. Scripts also reuse this helper, where `after()` has no
+    // request scope; those callers fall back to an ordinary awaited sync.
     try {
-      await autoSyncUserToResend(newUser.email, newUser.display_name, {
-        source: "app_signup",
-      })
-    } catch (syncErr) {
-      console.warn("[USER-MAPPING] Resend sync error (non-blocking):", syncErr)
+      after(syncNewUserToResend)
+    } catch (afterError) {
+      console.warn("[USER-MAPPING] No request scope for deferred Resend sync:", afterError)
+      await syncNewUserToResend()
     }
 
     return newUser
