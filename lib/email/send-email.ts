@@ -25,6 +25,7 @@ export interface EmailOptions {
   marketing?: boolean
   headers?: Record<string, string>
   idempotencyKey?: string
+  signal?: AbortSignal
 }
 
 // Initialize Resend client - will be null if API key is missing
@@ -124,9 +125,14 @@ async function sendEmailWithRetry(
         tags: options.tags?.map(tag => ({ name: tag, value: tag })),
       }
 
-      const { data, error } = options.idempotencyKey
-        ? await resend.emails.send(emailPayload, { idempotencyKey: options.idempotencyKey })
-        : await resend.emails.send(emailPayload)
+      // The Resend SDK forwards extra fetch options to its request layer. A
+      // caller-provided signal therefore cancels the in-flight HTTP request at
+      // its own runtime deadline instead of waiting for the platform kill.
+      const requestOptions = {
+        ...(options.idempotencyKey ? { idempotencyKey: options.idempotencyKey } : {}),
+        ...(options.signal ? { signal: options.signal } : {}),
+      }
+      const { data, error } = await resend.emails.send(emailPayload, requestOptions)
 
       if (error) {
         lastError = error.message || "Failed to send email"
