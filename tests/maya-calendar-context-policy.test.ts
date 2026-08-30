@@ -85,7 +85,7 @@ describe("Maya Calendar context policy", () => {
       "appendCalendarSystemContext(system, memoryUserId, calendarCreativeContext)"
     )
     expect(route).toContain('String(activePost.caption || "").slice(0, 2200)')
-    expect(route).toContain("COALESCE(image_url, preview_image_url)")
+    expect(route.match(/COALESCE\(image_url, preview_image_url\)/g)).toHaveLength(2)
     expect(route).toContain(
       'activePost.has_image ? " and remember that its photo is already selected"'
     )
