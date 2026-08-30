@@ -65,7 +65,7 @@ type LifecycleProperties = {
 }
 
 export interface ResendContactSyncOptions {
-  /** Minimum delay between provider requests made by one contact upsert. */
+  /** Minimum delay between provider requests. Defaults to the account-wide 500 ms limit. */
   requestIntervalMs?: number
 }
 
@@ -309,7 +309,7 @@ export async function addOrUpdateResendContact(
 
     const resend = requireResendClient()
     const requested = requestedLifecycleProperties(tags)
-    const paceRequest = createResendRequestPacer(options.requestIntervalMs)
+    const paceRequest = createResendRequestPacer(options.requestIntervalMs ?? 500)
 
     const { data: existing, error: getError } = await paceRequest(() =>
       (resend.contacts as any).get({ email: normalizedEmail })
