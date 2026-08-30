@@ -6,7 +6,7 @@ export interface RuntimeBudget {
 
 export function createRuntimeBudget(
   maxRuntimeMs: number,
-  now: () => number = Date.now,
+  now: () => number = Date.now
 ): RuntimeBudget {
   const startedAt = now()
 
@@ -14,6 +14,49 @@ export function createRuntimeBudget(
     elapsedMs: () => Math.max(0, now() - startedAt),
     remainingMs: () => Math.max(0, maxRuntimeMs - (now() - startedAt)),
     canStart: (minimumRemainingMs = 0) => now() - startedAt + minimumRemainingMs < maxRuntimeMs,
+  }
+}
+
+export type RuntimeBudgetResult<T> =
+  | { completed: true; value: T; stoppedForBudget: false; timedOut: false }
+  | { completed: false; stoppedForBudget: true; timedOut: boolean }
+
+export async function runWithRuntimeBudget<T>({
+  budget,
+  minimumRemainingMs,
+  operation,
+}: {
+  budget: RuntimeBudget
+  minimumRemainingMs: number
+  operation: (signal: AbortSignal) => Promise<T>
+}): Promise<RuntimeBudgetResult<T>> {
+  if (!budget.canStart(minimumRemainingMs)) {
+    return { completed: false, stoppedForBudget: true, timedOut: false }
+  }
+
+  const controller = new AbortController()
+  const timeoutMarker = {}
+  const timeoutMs = Math.max(1, budget.remainingMs())
+  let timeout: ReturnType<typeof setTimeout> | undefined
+
+  try {
+    const result = await Promise.race([
+      operation(controller.signal),
+      new Promise<typeof timeoutMarker>(resolve => {
+        timeout = setTimeout(() => {
+          controller.abort()
+          resolve(timeoutMarker)
+        }, timeoutMs)
+      }),
+    ])
+
+    if (result === timeoutMarker) {
+      return { completed: false, stoppedForBudget: true, timedOut: true }
+    }
+
+    return { completed: true, value: result as T, stoppedForBudget: false, timedOut: false }
+  } finally {
+    if (timeout) clearTimeout(timeout)
   }
 }
 
@@ -31,31 +74,17 @@ export async function processWithRuntimeBudget<T>({
   let processed = 0
 
   for (const item of items) {
-    if (!budget.canStart(minimumRemainingMs)) {
-      return { processed, stoppedForBudget: true, timedOut: false }
-    }
-
-    const controller = new AbortController()
-    const timeoutMs = Math.max(1, budget.remainingMs())
-    let timeout: ReturnType<typeof setTimeout> | undefined
-
-    try {
-      await Promise.race([
-        process(item, controller.signal),
-        new Promise<never>((_, reject) => {
-          timeout = setTimeout(() => {
-            controller.abort()
-            reject(new Error("Cron runtime budget exhausted during work item"))
-          }, timeoutMs)
-        }),
-      ])
-    } catch (error) {
-      if (controller.signal.aborted) {
-        return { processed, stoppedForBudget: true, timedOut: true }
+    const result = await runWithRuntimeBudget({
+      budget,
+      minimumRemainingMs,
+      operation: signal => process(item, signal),
+    })
+    if (!result.completed) {
+      return {
+        processed,
+        stoppedForBudget: result.stoppedForBudget,
+        timedOut: result.timedOut,
       }
-      throw error
-    } finally {
-      if (timeout) clearTimeout(timeout)
     }
 
     processed += 1
