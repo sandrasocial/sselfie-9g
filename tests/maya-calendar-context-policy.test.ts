@@ -79,9 +79,8 @@ describe("Maya Calendar context policy", () => {
     expect(route).toContain("const calendarAccess = await getFeedPlannerAccess(memoryUserId)")
     expect(route).toContain("if (!calendarAccess.isMembership && !calendarAccess.isPaidBlueprint)")
     expect(route).toContain("AND id = ${calendarCreativeContext.feedId}")
-    expect(route).toContain(
-      "const calendarTools = calendarCreativeContext ? { show_feed_plan: showFeedPlan } : {}"
-    )
+    expect(route).toContain('if (calendarCreativeContext && toolAllowed("show_feed_plan")) {')
+    expect(route).toContain("tools.show_feed_plan = showFeedPlan")
     expect(route).toContain("calendar: Boolean(calendarCreativeContext)")
     expect(route).not.toContain("if (memoryUserId && !generalConversation) {")
     expect(route).not.toContain("recent activity, and content calendar")
@@ -114,5 +113,19 @@ describe("Maya Calendar context policy", () => {
     })
 
     expect(context).toMatchObject({ feedId: 10, postId: 20 })
+  })
+
+  it("loads the exact active post for caption tasks before creation-only guidance", () => {
+    const route = readFileSync("app/api/app-v3/maya/chat/route.ts", "utf8")
+    const calendarContextStart = route.indexOf("if (memoryUserId && calendarCreativeContext) {")
+    const activePostGrounding = route.indexOf(
+      "system = `${system}${activePostBlock}`",
+      calendarContextStart
+    )
+    const creationGuidance = route.indexOf("if (!generalConversation) {", activePostGrounding)
+
+    expect(calendarContextStart).toBeGreaterThan(-1)
+    expect(activePostGrounding).toBeGreaterThan(calendarContextStart)
+    expect(creationGuidance).toBeGreaterThan(activePostGrounding)
   })
 })
