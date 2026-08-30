@@ -17,10 +17,12 @@ describe("email cron runtime budgets", () => {
     expect(route).toContain("const BATCH_LIMIT = 2")
     expect(route).toContain("const SUNSET_LIMIT = 10")
     expect(route.indexOf("results.sunset = await runSunset")).toBeLessThan(
-      route.indexOf("for (const stage of [...STAGES].reverse())"),
+      route.indexOf("for (const stage of [...STAGES].reverse())")
     )
     expect(route).toContain("for (const stage of [...STAGES].reverse())")
     expect(route).toContain("processWithRuntimeBudget")
+    expect(route).toContain("runWithRuntimeBudget")
+    expect(route).toContain("operation: () => getStageCandidates(stage, limit)")
     expect(route).toContain("runtimeBudget.canStart(MIN_SEND_BUDGET_MS)")
     expect(route).toContain("signal,")
     expect(route).toContain("ASC NULLS FIRST")
