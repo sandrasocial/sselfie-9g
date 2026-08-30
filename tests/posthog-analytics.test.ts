@@ -186,6 +186,7 @@ describe("PostHog analytics boundary", () => {
   })
 
   it("retries a transient provider failure with the same insert id", async () => {
+    const timeout = vi.spyOn(AbortSignal, "timeout")
     const request = vi
       .fn<typeof fetch>()
       .mockRejectedValueOnce(new Error("temporary network failure"))
@@ -199,6 +200,9 @@ describe("PostHog analytics boundary", () => {
     ).resolves.toEqual({ sent: true })
 
     expect(request).toHaveBeenCalledTimes(2)
+    expect(timeout).toHaveBeenCalledOnce()
+    expect(timeout).toHaveBeenCalledWith(750)
+    expect(request.mock.calls[0][1]?.signal).toBe(request.mock.calls[1][1]?.signal)
     const bodies = request.mock.calls.map(([, init]) => JSON.parse(String(init?.body)))
     expect(bodies[1].properties.$insert_id).toBe(bodies[0].properties.$insert_id)
   })

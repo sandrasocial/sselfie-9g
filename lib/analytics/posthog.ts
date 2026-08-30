@@ -4,6 +4,7 @@ import { createHash, randomUUID } from "node:crypto"
 import { sanitizePostHogPathname } from "@/lib/analytics/posthog-browser"
 
 type Primitive = string | number | boolean
+const POSTHOG_DELIVERY_TIMEOUT_MS = 750
 
 export type PostHogCaptureInput = {
   eventName: string
@@ -478,6 +479,9 @@ export async function capturePostHogEvent(
     event,
     properties,
   })
+  // One shared signal bounds the complete delivery budget, including the
+  // single retry, instead of allowing each attempt its own timeout window.
+  const deliverySignal = AbortSignal.timeout(POSTHOG_DELIVERY_TIMEOUT_MS)
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
@@ -485,7 +489,7 @@ export async function capturePostHogEvent(
         method: "POST",
         headers: { "content-type": "application/json" },
         body: requestBody,
-        signal: AbortSignal.timeout(5_000),
+        signal: deliverySignal,
       })
 
       if (response.ok) return { sent: true }
