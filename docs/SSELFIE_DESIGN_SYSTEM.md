@@ -161,6 +161,18 @@ approved typography specimen.
 
 Images are the strongest brand material.
 
+### Maya portrait identity
+
+- The canonical Maya portrait is `/brand/maya-avatar-creative-director-v2.png`, referenced through
+  `lib/brand/maya.ts` so every Maya surface uses the same identity.
+- Maya is a fashionista and creative director: current, bold, glamorous, visually decisive, and
+  editorial. Her portrait may use dramatic hair, makeup, texture, and statement accessories.
+- The approved direction is high-end mob-wife-inspired fashion: voluminous brunette hair, strong
+  beauty, black faux fur and satin, sculptural gold jewelry, and a confident real-person presence.
+- Keep her face clear and recognizable in a circular crop at `32-56px`.
+- Never style Maya as a corporate assistant, office worker, clean-girl influencer, generic AI
+  woman, or customer-support avatar. No blazer or businesswear in her identity portrait.
+
 Use:
 
 - Sandra's approved imagery and identity references

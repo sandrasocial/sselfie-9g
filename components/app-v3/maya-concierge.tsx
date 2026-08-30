@@ -97,6 +97,7 @@ import { getTextStyleExampleImage, textStyleSampleSpec } from "@/lib/app-v3/text
 import { salvageConceptsPayload } from "@/lib/app-v3/concept-salvage"
 import { downloadAllSlides } from "@/lib/app-v3/download-all-slides"
 import { recordSuiteDownloadForReview } from "@/lib/testimonials/review-capture-client"
+import { MAYA_AVATAR_SRC } from "@/lib/brand/maya"
 import {
   applyEditedConceptCopy,
   type EditableConceptCopy,
@@ -120,7 +121,7 @@ import {
 } from "./continuity"
 
 /** Maya is a distinct creative partner. Keep her portrait separate from member references. */
-const MAYA_AVATAR = "/brand/maya-avatar-editorial-v1.png"
+const MAYA_AVATAR = MAYA_AVATAR_SRC
 
 const MayaFounderTestMode = dynamic(
   () =>

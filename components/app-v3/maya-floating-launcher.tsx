@@ -7,10 +7,11 @@
 
 import Image from "next/image"
 import { MessageCircle } from "lucide-react"
+import { MAYA_AVATAR_SRC } from "@/lib/brand/maya"
 import { useConcierge } from "./concierge-context"
 
 // Same portrait the chat thread uses for Maya, so the launcher unmistakably reads as "her".
-const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
+const MAYA_AVATAR = MAYA_AVATAR_SRC
 
 export function MayaFloatingLauncher({
   operatingLayerEnabled = false,

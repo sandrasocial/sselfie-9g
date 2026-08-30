@@ -51,7 +51,9 @@ describe("SUITE revenue foundation", () => {
     expect(walkthrough.match(/\/images\/suite-personal-brand-grid\//g)).toHaveLength(9)
     expect(walkthrough).toContain("post-01-founder-black.jpg")
     expect(walkthrough).toContain("post-09-chair-gown.jpg")
-    expect(walkthrough).toContain("/images/ai-prompts/clean-girl-morning-shot-1.jpg")
+    expect(walkthrough).toContain('import { MAYA_AVATAR_SRC } from "@/lib/brand/maya"')
+    expect(walkthrough).toContain("src={MAYA_AVATAR_SRC}")
+    expect(existsSync("public/brand/maya-avatar-creative-director-v2.png")).toBe(true)
     expect(walkthrough).not.toContain("mysterious-vogue-shot")
     expect(walkthrough).not.toContain("noir-femme-shot")
 
@@ -86,9 +88,8 @@ describe("SUITE revenue foundation", () => {
     expect(walkthrough).not.toContain("Download all")
     expect(walkthrough).not.toContain("publish automatically")
     expect(walkthrough).not.toContain("full video editor")
-    expect(walkthrough.match(/\/images\/ai-prompts\/clean-girl-morning-shot-1\.jpg/g)).toHaveLength(
-      1
-    )
+    expect(walkthrough).toContain('import { MAYA_AVATAR_SRC } from "@/lib/brand/maya"')
+    expect(walkthrough).toContain("const MAYA_AVATAR = MAYA_AVATAR_SRC")
     expect(existsSync("public/videos/suite-visibility-broll.mp4")).toBe(true)
   })
 

@@ -1,9 +1,10 @@
 import Image from "next/image"
 import type { ReactNode } from "react"
+import { MAYA_AVATAR_SRC } from "@/lib/brand/maya"
 
 const CAMPAIGN_BASE = "/images/suite-personal-brand-grid"
 const BAKED_CAMPAIGN_BASE = "/images/suite-baked-campaign"
-const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
+const MAYA_AVATAR = MAYA_AVATAR_SRC
 const BROLL_VIDEO = "/videos/suite-visibility-broll.mp4"
 
 type BakedCampaignAsset = {

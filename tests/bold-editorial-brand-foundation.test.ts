@@ -94,6 +94,7 @@ describe("SSELFIE Noir Glass foundation", () => {
     const resultViewer = read("components/app-v3/image-lightbox.tsx")
     const appLayout = read("app/app/layout.tsx")
     const mayaE2EFixture = read("app/e2e/maya-operating-layer/page.tsx")
+    const mayaIdentity = read("lib/brand/maya.ts")
 
     expect(maya).toContain("suite-maya-header")
     expect(maya).toContain("suite-maya-thread")
@@ -103,7 +104,9 @@ describe("SSELFIE Noir Glass foundation", () => {
     expect(maya).toContain("suite-maya-composer-rail")
     expect(maya).toContain("suite-maya-input")
     expect(maya).toContain("suite-maya-send")
-    expect(maya).toContain('const MAYA_AVATAR = "/brand/maya-avatar-editorial-v1.png"')
+    expect(maya).toContain('import { MAYA_AVATAR_SRC } from "@/lib/brand/maya"')
+    expect(maya).toContain("const MAYA_AVATAR = MAYA_AVATAR_SRC")
+    expect(mayaIdentity).toContain("/brand/maya-avatar-creative-director-v2.png")
     expect(maya).toContain('alt={isMaya ? "Maya" : ""}')
     expect(maya).toContain('aria-label="More Maya actions"')
     expect(maya).toContain('aria-label={textRefining ? "Updating" : "Send message"}')
@@ -126,6 +129,33 @@ describe("SSELFIE Noir Glass foundation", () => {
     expect(resultViewer).toContain("suite-result-viewer")
     expect(mayaE2EFixture).toContain('import AppV3Layout from "@/app/app/layout"')
     expect(mayaE2EFixture).toContain("<AppV3Layout>")
+  })
+
+  it("uses one approved Maya portrait across every Maya surface", () => {
+    const surfaces = [
+      "components/app-v3/maya-concierge.tsx",
+      "components/app-v3/maya-floating-launcher.tsx",
+      "components/feed-planner/calendar-maya-workspace.tsx",
+      "components/sselfie/interactive-features-showcase.tsx",
+      "components/sselfie/suite-multiformat-walkthrough.tsx",
+      "components/sselfie/suite-product-walkthrough.tsx",
+    ]
+
+    for (const surfacePath of surfaces) {
+      const surface = read(surfacePath)
+      expect(surface, `${surfacePath} must use the shared Maya identity`).toContain(
+        'import { MAYA_AVATAR_SRC } from "@/lib/brand/maya"'
+      )
+      expect(surface).not.toContain('const MAYA_AVATAR = "/brand/maya-avatar-editorial-v1.png"')
+      expect(surface).not.toContain(
+        'const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"'
+      )
+      expect(surface).not.toContain("https://i.postimg.cc/fTtCnzZv/out-1-22.png")
+    }
+
+    expect(
+      readFileSync("public/brand/maya-avatar-creative-director-v2.png").byteLength
+    ).toBeGreaterThan(100_000)
   })
 
   it("moves the real Account surface onto the editorial system without changing account actions", () => {
@@ -234,6 +264,8 @@ describe("SSELFIE Noir Glass foundation", () => {
     expect(docsIndex).toContain("2026-08-27 SSELFIE Noir Glass")
     expect(emailAssets).toContain("New or redesigned email work must follow SSELFIE")
     expect(emailAssets).toContain("Noir Glass in `docs/SSELFIE_DESIGN_SYSTEM.md`")
+    expect(designAuthority).toContain("Maya is a fashionista and creative director")
+    expect(designAuthority).toContain("/brand/maya-avatar-creative-director-v2.png")
   })
 
   it("prevents legacy palette aliases from returning to active design surfaces", () => {

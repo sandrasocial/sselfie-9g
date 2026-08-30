@@ -1,4 +1,5 @@
 import Image from "next/image"
+import { MAYA_AVATAR_SRC } from "@/lib/brand/maya"
 
 const GRID_ITEMS = [
   {
@@ -69,7 +70,7 @@ function MayaHeader({ small = false }: { small?: boolean }) {
   return (
     <div className="flex items-center gap-3">
       <Image
-        src="/images/ai-prompts/clean-girl-morning-shot-1.jpg"
+        src={MAYA_AVATAR_SRC}
         alt="Maya"
         width={40}
         height={40}

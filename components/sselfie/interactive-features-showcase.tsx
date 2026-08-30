@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
+import { MAYA_AVATAR_SRC } from "@/lib/brand/maya"
 
 const FEATURES = [
   {
@@ -11,7 +12,7 @@ const FEATURES = [
     subtitle: "Never worry about content again",
     description:
       "Create professional photos that look like you, whenever you need them. No photographer, no studio, no expensive equipment. Just you, your selfies, and Maya's AI magic.",
-    image: "https://i.postimg.cc/fTtCnzZv/out-1-22.png",
+    image: MAYA_AVATAR_SRC,
     color: "from-stone-900 to-stone-700",
   },
   {
@@ -173,7 +174,7 @@ function MayaChatMockup() {
       <div className="bg-stone-950 p-4 flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-white overflow-hidden">
           <Image
-            src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+            src={MAYA_AVATAR_SRC}
             width={40}
             height={40}
             alt="Maya"

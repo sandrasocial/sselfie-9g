@@ -15,9 +15,10 @@ import {
 import type { CalendarAgentProposal, CalendarAgentResult } from "@/lib/feed-planner/calendar-agent"
 import type { ClarifyPrompt } from "@/lib/app-v3/maya/concept-types"
 import type { CalendarPlanSettings } from "@/lib/feed-planner/calendar-plan-settings"
+import { MAYA_AVATAR_SRC } from "@/lib/brand/maya"
 import type { FeedVisualDirectionMode } from "./feed-style-modal"
 
-const MAYA_AVATAR = "/images/ai-prompts/clean-girl-morning-shot-1.jpg"
+const MAYA_AVATAR = MAYA_AVATAR_SRC
 const MAYA_DIRECTION_OPTIONS = [
   { mode: "maya", label: "Let Maya decide" },
   { mode: "curated", label: "Use Sandra’s favourites" },
