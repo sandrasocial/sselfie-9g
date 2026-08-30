@@ -38,7 +38,7 @@ describe("Resend signup contact property mapping", () => {
         properties: {
           acquisition_path: "app_signup",
           lifecycle_stage: "lead",
-          membership_status: "active",
+          membership_status: "none",
         },
       })
     )
@@ -57,8 +57,8 @@ describe("Resend signup contact property mapping", () => {
       expect.objectContaining({
         properties: {
           acquisition_path: "app_update",
-          lifecycle_stage: "customer",
-          membership_status: "studio_member_active",
+          lifecycle_stage: "member",
+          membership_status: "active",
           last_product: "suite_monthly",
         },
       })
@@ -84,5 +84,42 @@ describe("Resend signup contact property mapping", () => {
     expect((query as TemplateStringsArray).join(" ")).toContain("INSERT INTO resend_sync_queue")
     expect(values).toContain("recoverable@realmail.com")
     expect(values).toContain(1)
+  })
+
+  it("counts one provider call per queued drain attempt without re-enqueueing", async () => {
+    mocks.sql
+      .mockResolvedValueOnce([
+        {
+          id: 17,
+          email: "queued@realmail.com",
+          first_name: "Queued",
+          source: "app_signup",
+          is_studio_member: false,
+          subscription_product: null,
+          attempts: 3,
+        },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+    mocks.createContact.mockResolvedValue({ data: null, error: { message: "provider timeout" } })
+    const timeoutSpy = vi.spyOn(global, "setTimeout").mockImplementation(((
+      callback: () => void
+    ) => {
+      callback()
+      return 0
+    }) as typeof setTimeout)
+
+    const { drainResendSyncQueue } = await import("@/lib/resend/auto-sync-user")
+    const result = await drainResendSyncQueue()
+
+    expect(result).toEqual({ retried: 1, resolved: 0, abandoned: 0 })
+    expect(mocks.createContact).toHaveBeenCalledTimes(1)
+    expect(
+      mocks.sql.mock.calls.some(([query]) =>
+        (query as TemplateStringsArray).join(" ").includes("INSERT INTO resend_sync_queue")
+      )
+    ).toBe(false)
+
+    timeoutSpy.mockRestore()
   })
 })
