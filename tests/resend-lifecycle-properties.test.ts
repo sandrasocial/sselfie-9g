@@ -115,7 +115,9 @@ describe("Resend lifecycle contact properties", () => {
         error: { statusCode: 404, message: "Contact not found" },
       })
 
-      const result = await addOrUpdateResendContact(email, "New", tags)
+      const result = await addOrUpdateResendContact(email, "New", tags, {
+        requestIntervalMs: 0,
+      })
 
       expect(result).toEqual({ success: true, contactId: "contact_1" })
       expect(mocks.create).toHaveBeenCalledWith({
@@ -145,11 +147,16 @@ describe("Resend lifecycle contact properties", () => {
       error: null,
     })
 
-    await addOrUpdateResendContact("buyer@example.org", "Buyer", {
-      source: "ai-prompts",
-      status: "lead",
-      product: "ai-photoshoot-prompts",
-    })
+    await addOrUpdateResendContact(
+      "buyer@example.org",
+      "Buyer",
+      {
+        source: "ai-prompts",
+        status: "lead",
+        product: "ai-photoshoot-prompts",
+      },
+      { requestIntervalMs: 0 }
+    )
 
     expect(mocks.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -176,11 +183,16 @@ describe("Resend lifecycle contact properties", () => {
       error: null,
     })
 
-    await addOrUpdateResendContact("starter@example.org", "Starter", {
-      product: "starter-kit",
-      journey: "starter_kit",
-      bought_starter_kit: "true",
-    })
+    await addOrUpdateResendContact(
+      "starter@example.org",
+      "Starter",
+      {
+        product: "starter-kit",
+        journey: "starter_kit",
+        bought_starter_kit: "true",
+      },
+      { requestIntervalMs: 0 }
+    )
 
     expect(mocks.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -195,10 +207,15 @@ describe("Resend lifecycle contact properties", () => {
   it("does not touch Resend when the app has a durable unsubscribe", async () => {
     mocks.isAppUnsubscribed.mockResolvedValue(true)
 
-    const result = await addOrUpdateResendContact("optout@example.org", "Optout", {
-      source: "selfie-guide",
-      status: "lead",
-    })
+    const result = await addOrUpdateResendContact(
+      "optout@example.org",
+      "Optout",
+      {
+        source: "selfie-guide",
+        status: "lead",
+      },
+      { requestIntervalMs: 0 }
+    )
 
     expect(result.success).toBe(true)
     expect(mocks.get).not.toHaveBeenCalled()
@@ -212,17 +229,22 @@ describe("Resend lifecycle contact properties", () => {
       error: null,
     })
 
-    const result = await addOrUpdateResendContact("global-optout@example.org", "Optout", {
-      source: "selfie-guide",
-      status: "lead",
-    })
+    const result = await addOrUpdateResendContact(
+      "global-optout@example.org",
+      "Optout",
+      {
+        source: "selfie-guide",
+        status: "lead",
+      },
+      { requestIntervalMs: 0 }
+    )
 
     expect(result.success).toBe(true)
     expect(mocks.update).toHaveBeenCalled()
     expect(mocks.addSegment).not.toHaveBeenCalled()
   })
 
-  it("paces every provider request during a queue-drain upsert", async () => {
+  it("paces every provider request through the distributed slot by default", async () => {
     vi.useFakeTimers()
     const timeoutSpy = vi.spyOn(global, "setTimeout")
     mocks.get.mockResolvedValue({
@@ -233,8 +255,7 @@ describe("Resend lifecycle contact properties", () => {
     const resultPromise = addOrUpdateResendContact(
       "queued@example.org",
       "Queued",
-      { source: "app_signup", status: "lead" },
-      { requestIntervalMs: 500 }
+      { source: "app_signup", status: "lead" }
     )
 
     await vi.runAllTimersAsync()
