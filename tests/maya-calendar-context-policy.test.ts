@@ -85,6 +85,9 @@ describe("Maya Calendar context policy", () => {
     expect(route).toContain(
       'if (!includeCreationGuidance) return `${system}${activePostBlock}`'
     )
+    expect(route.indexOf("if (!includeCreationGuidance)")).toBeLessThan(
+      route.indexOf("const openSlots = await sql")
+    )
     expect(route).toMatch(
       /appendCalendarSystemContext\([\s\S]*calendarCreativeContext,\s+!generalConversation\s+\)/
     )
