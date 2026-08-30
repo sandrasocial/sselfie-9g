@@ -22,7 +22,13 @@ function buildCanonicalContactProperties({
   const properties: Record<string, string> = {
     acquisition_path: source,
     lifecycle_stage: isStudioMember ? "member" : "lead",
-    membership_status: isStudioMember ? "active" : "none",
+  }
+
+  // `false` means the caller did not establish a paid membership. Omitting the
+  // property lets the canonical upsert preserve an existing active/trialing
+  // status and lets Resend's configured fallback represent a new non-member.
+  if (isStudioMember) {
+    properties.membership_status = "active"
   }
 
   if (subscriptionProduct) {
