@@ -173,7 +173,9 @@ function PostEditor({
   const [isPosted, setIsPosted] = useState(Boolean(post.is_posted))
   const [isSaving, setIsSaving] = useState(false)
   const [isRemoving, setIsRemoving] = useState(false)
+  const [isRemoveArmed, setIsRemoveArmed] = useState(false)
   const [showGallery, setShowGallery] = useState(false)
+  const draftPostIdRef = useRef(post.id)
   const { dialogRef, initialFocusRef } = useAccessibleModal(!showGallery, onClose)
   const imageUrl = imageUrlForPost(post)
   const currentIndex = posts.findIndex(item => Number(item.id) === Number(post.id))
@@ -182,10 +184,19 @@ function PostEditor({
   const derivedState = isPosted ? "Posted" : imageUrl && caption.trim() ? "Ready" : "Draft"
 
   useEffect(() => {
+    if (draftPostIdRef.current === post.id) return
+    draftPostIdRef.current = post.id
     setCaption(post.caption || "")
     setScheduledAt(dateValue(post.scheduled_at))
     setIsPosted(Boolean(post.is_posted))
-  }, [post])
+    setIsRemoveArmed(false)
+  }, [post.caption, post.id, post.is_posted, post.scheduled_at])
+
+  useEffect(() => {
+    if (!isRemoveArmed) return
+    const timeout = window.setTimeout(() => setIsRemoveArmed(false), 4_000)
+    return () => window.clearTimeout(timeout)
+  }, [isRemoveArmed])
 
   const save = async () => {
     if (caption.length > 2200) {
@@ -248,6 +259,7 @@ function PostEditor({
 
   const removePhoto = async () => {
     if (!imageUrl || isRemoving) return
+    setIsRemoveArmed(false)
     setIsRemoving(true)
     try {
       const response = await fetch(`/api/feed/${feed.id}/remove-post-image`, {
@@ -269,6 +281,15 @@ function PostEditor({
     } finally {
       setIsRemoving(false)
     }
+  }
+
+  const requestRemovePhoto = () => {
+    if (!imageUrl || isRemoving) return
+    if (!isRemoveArmed) {
+      setIsRemoveArmed(true)
+      return
+    }
+    void removePhoto()
   }
 
   return (
@@ -336,7 +357,7 @@ function PostEditor({
                   </button>
                   <button
                     type="button"
-                    onClick={() => void removePhoto()}
+                    onClick={requestRemovePhoto}
                     disabled={!imageUrl || isRemoving}
                     className="flex min-h-12 items-center justify-center gap-2 px-3 text-[10px] uppercase tracking-[0.15em] hover:bg-white disabled:opacity-35"
                   >
@@ -345,7 +366,7 @@ function PostEditor({
                     ) : (
                       <Trash2 className="h-3.5 w-3.5" />
                     )}
-                    Remove
+                    {isRemoveArmed ? "Confirm remove" : "Remove"}
                   </button>
                 </div>
               </div>
@@ -483,6 +504,7 @@ export function SuiteCalendar() {
   const [isApplying, setIsApplying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const hasTrackedWorkspace = useRef(false)
+  const feedRequestRef = useRef(0)
 
   const loadPlans = useCallback(async () => {
     const response = await fetch("/api/feed/list", { credentials: "include", cache: "no-store" })
@@ -496,11 +518,13 @@ export function SuiteCalendar() {
   }, [])
 
   const loadFeed = useCallback(async () => {
+    const requestId = ++feedRequestRef.current
     setIsLoading(true)
     setError(null)
     try {
       const endpoint = selectedFeedId ? `/api/feed/${selectedFeedId}` : "/api/feed/latest"
       const response = await fetch(endpoint, { credentials: "include", cache: "no-store" })
+      if (requestId !== feedRequestRef.current) return
       if (!response.ok) {
         if (selectedFeedId && response.status === 404) {
           feedNav?.navigateToFeed(null)
@@ -509,6 +533,7 @@ export function SuiteCalendar() {
         throw await responseError(response, "Your calendar could not be loaded.")
       }
       const result = (await response.json()) as CalendarFeedResponse
+      if (requestId !== feedRequestRef.current) return
       if (result.exists === false || !result.feed) {
         setFeed(null)
         setPosts([])
@@ -525,11 +550,13 @@ export function SuiteCalendar() {
         void trackAnalyticsEvent({ event: "calendar_workspace_opened" })
       }
     } catch (loadError) {
-      setError(
-        loadError instanceof Error ? loadError.message : "Your calendar could not be loaded."
-      )
+      if (requestId === feedRequestRef.current) {
+        setError(
+          loadError instanceof Error ? loadError.message : "Your calendar could not be loaded."
+        )
+      }
     } finally {
-      setIsLoading(false)
+      if (requestId === feedRequestRef.current) setIsLoading(false)
     }
   }, [feedNav, selectedFeedId])
 
