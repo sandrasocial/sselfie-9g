@@ -2,27 +2,8 @@
  * Auto-sync user to Resend when created or updated
  * Called from getOrCreateNeonUser and other signup flows
  */
-import { Resend } from "resend"
 import { sql } from "@/lib/db/client"
-import { getResendApiKey, hasResendApiKey } from "@/lib/resend/api-key"
-
-// Canonical audience ID. RESEND_AUDIENCE_ID env var takes precedence so local/staging
-// environments can override it, but must match the production value in Vercel:
-// 3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd (verify in Resend before changing)
-const AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID || "3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd"
-let resendClient: Resend | null = null
-
-function getResendClient(): Resend | null {
-  if (!hasResendApiKey()) {
-    return null
-  }
-
-  if (!resendClient) {
-    resendClient = new Resend(getResendApiKey())
-  }
-
-  return resendClient
-}
+import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
 
 export interface ResendSyncOptions {
   source?: "app_signup" | "app_update" | "admin_create"
@@ -74,13 +55,6 @@ async function syncUserToResend(
   options: ResendSyncOptions,
   queueOnFailure: boolean
 ): Promise<ResendSyncResult> {
-  const resend = getResendClient()
-
-  if (!resend) {
-    console.warn("[RESEND-SYNC] RESEND_API_KEY not configured")
-    return { success: false, error: "API key not configured" }
-  }
-
   if (!email) {
     return { success: false, error: "Email required" }
   }
@@ -113,29 +87,20 @@ async function syncUserToResend(
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     attemptsMade = attempt
     try {
-      const { data, error } = await resend.contacts.create({
-        email,
-        firstName: firstName || undefined,
-        audienceId: AUDIENCE_ID,
-        properties,
-      })
+      const syncResult = await addOrUpdateResendContact(email, firstName || null, properties)
 
-      if (error) {
-        lastError = error.message
+      if (!syncResult.success) {
+        lastError = syncResult.error || "unknown"
         const isRetryable =
-          error.message?.includes("rate") ||
-          error.message?.includes("429") ||
-          error.message?.includes("timeout")
+          lastError.includes("rate") || lastError.includes("429") || lastError.includes("timeout")
         if (isRetryable && attempt < MAX_ATTEMPTS) {
           console.warn(
-            `[RESEND-SYNC] Attempt ${attempt} failed for ${email} (retryable): ${error.message}`
+            `[RESEND-SYNC] Attempt ${attempt} failed for ${email} (retryable): ${lastError}`
           )
           await new Promise(r => setTimeout(r, BACKOFF_MS[attempt - 1]))
           continue
         }
-        console.error(
-          `[RESEND-SYNC] Failed to sync ${email} (attempt ${attempt}): ${error.message}`
-        )
+        console.error(`[RESEND-SYNC] Failed to sync ${email} (attempt ${attempt}): ${lastError}`)
         break
       }
 
@@ -146,7 +111,7 @@ async function syncUserToResend(
       } else {
         console.log(`[RESEND-SYNC] ✓ Synced ${email} to Resend (${source})`)
       }
-      return { success: true, contactId: data?.id }
+      return { success: true, contactId: syncResult.contactId }
     } catch (err) {
       lastError = String(err)
       if (attempt < MAX_ATTEMPTS) {
