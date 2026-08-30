@@ -69,6 +69,31 @@ describe("shared Maya semantic plan validation", () => {
     expect(validateStorySequenceOutputCount({ outputCount: 5 })).toEqual([])
   })
 
+  it("never makes an empty Maya photo direction actionable", () => {
+    const emptyDirection = {
+      id: "concept-1",
+      title: "Direction 1",
+      description: "",
+      brief: {
+        outfit: "",
+        setting: "",
+        mood: "",
+        pose: "",
+        cameraSpec: "",
+        lighting: "",
+      },
+    }
+
+    expect(validateEmittedConceptPlan({ format: "photo", concepts: [emptyDirection] })).toEqual(
+      expect.arrayContaining([
+        "concept 1 needs a description",
+        "concept 1 needs brief.outfit",
+        "concept 1 needs brief.setting",
+        "concept 1 needs brief.cameraSpec",
+      ])
+    )
+  })
+
   it("validates emitted photoshoot and story plans before cards can render", () => {
     expect(
       validateEmittedConceptPlan({
