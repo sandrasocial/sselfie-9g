@@ -793,7 +793,7 @@ async function appendCalendarSystemContext(
 
     const [activePost] = await sql`
       SELECT position, post_type, content_pillar, caption, scheduled_at,
-             CASE WHEN image_url IS NULL THEN false ELSE true END AS has_image
+             CASE WHEN COALESCE(image_url, preview_image_url) IS NULL THEN false ELSE true END AS has_image
       FROM feed_posts
       WHERE id = ${calendarCreativeContext.postId}
         AND feed_layout_id = ${planLayout.id}
