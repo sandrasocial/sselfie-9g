@@ -72,12 +72,13 @@ export function rotateAnonymousAnalyticsIdentity(
   req?: NextRequest
 ) {
   clearStaleAnonymousAnalyticsCookies(response, req, generation)
+  const postHogResetNonce = globalThis.crypto.randomUUID()
 
   response.cookies.set(analyticsAnonCookieName(generation), globalThis.crypto.randomUUID(), {
     ...analyticsCookieOptions,
     maxAge: 60 * 60 * 24 * 365,
   })
-  response.cookies.set("sselfie_posthog_reset", "1", {
+  response.cookies.set("sselfie_posthog_reset", postHogResetNonce, {
     ...analyticsCookieOptions,
     // Keep the isolation signal as long as the anonymous identity itself. The
     // analytics endpoint clears it only after the loaded SDK applies reset().

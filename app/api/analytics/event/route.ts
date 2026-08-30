@@ -32,6 +32,8 @@ const SERVER_ONLY_ANALYTICS_EVENTS = new Set([
   "calendar_post_published",
 ])
 const POSTHOG_RESET_ACK_HEADER = "x-sselfie-posthog-reset-ack"
+const POSTHOG_RESET_NONCE_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 type AnalyticsRequestInput = {
   eventName: string
@@ -149,8 +151,8 @@ function clearPostHogResetCookie(response: NextResponse) {
   })
 }
 
-function isSafeResetAcknowledgement(req: NextRequest): boolean {
-  if (req.headers.get(POSTHOG_RESET_ACK_HEADER) !== "1") return false
+function isSafeResetAcknowledgement(req: NextRequest, acknowledgement: string): boolean {
+  if (!POSTHOG_RESET_NONCE_PATTERN.test(acknowledgement)) return false
 
   const requestOrigin = new URL(req.url).origin
   const origin = req.headers.get("origin")
@@ -164,10 +166,16 @@ export async function GET(req: NextRequest) {
   try {
     const searchParams = new URL(req.url).searchParams
     const rotateAnonymous = searchParams.get("rotate_anonymous") === "1"
-    const resetPostHog = req.cookies.get("sselfie_posthog_reset")?.value === "1"
+    const resetPostHogNonce = req.cookies.get("sselfie_posthog_reset")?.value ?? null
+    const hasValidResetNonce =
+      resetPostHogNonce !== null && POSTHOG_RESET_NONCE_PATTERN.test(resetPostHogNonce)
     const identity = await resolveAnalyticsIdentity(req, rotateAnonymous)
     if (!identity) {
-      const response = NextResponse.json({ distinctId: null, resetPostHog: false })
+      const response = NextResponse.json({
+        distinctId: null,
+        resetPostHog: false,
+        resetPostHogNonce: null,
+      })
       response.headers.set("Cache-Control", "private, no-store")
       return response
     }
@@ -177,13 +185,18 @@ export async function GET(req: NextRequest) {
         userId: identity.neonUserId,
         anonId: identity.anonId,
       }),
-      resetPostHog,
+      resetPostHog: hasValidResetNonce,
+      resetPostHogNonce: hasValidResetNonce ? resetPostHogNonce : null,
     })
     response.headers.set("Cache-Control", "private, no-store")
     setAnonCookie(response, identity, req)
     return response
   } catch {
-    return NextResponse.json({ distinctId: null })
+    return NextResponse.json({
+      distinctId: null,
+      resetPostHog: false,
+      resetPostHogNonce: null,
+    })
   }
 }
 
@@ -192,14 +205,14 @@ export async function POST(req: NextRequest) {
   try {
     const resetAcknowledgement = req.headers.get(POSTHOG_RESET_ACK_HEADER)
     if (resetAcknowledgement !== null) {
-      if (!isSafeResetAcknowledgement(req)) {
+      if (!isSafeResetAcknowledgement(req, resetAcknowledgement)) {
         return NextResponse.json({ ok: false }, { status: 403 })
       }
-      const response = NextResponse.json({ ok: true })
+      const resetCookie = req.cookies.get("sselfie_posthog_reset")?.value ?? null
+      const cleared = resetCookie === resetAcknowledgement
+      const response = NextResponse.json({ ok: true, cleared })
       response.headers.set("Cache-Control", "private, no-store")
-      if (req.cookies.get("sselfie_posthog_reset")?.value === "1") {
-        clearPostHogResetCookie(response)
-      }
+      if (cleared) clearPostHogResetCookie(response)
       return response
     }
 

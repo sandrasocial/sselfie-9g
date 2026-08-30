@@ -103,7 +103,7 @@ function PostHogPageviews({
         const previousId = identifiedAs.current ?? window.posthog.get_distinct_id?.() ?? null
         if (identity.resetPostHog) {
           window.posthog.reset()
-          void acknowledgePostHogReset()
+          void acknowledgePostHogReset(identity.resetPostHogNonce)
         } else if (shouldResetPostHogIdentity(previousId, distinctId)) {
           if (distinctId.startsWith("anon:")) {
             const rotatedIdentity = await readIdentity(true)
@@ -261,7 +261,9 @@ export function PostHogProvider({
         shouldResetPostHogIdentity(persistedDistinctId, identity.distinctId as string)
       ) {
         client.reset()
-        if (identity.resetPostHog) void acknowledgePostHogReset()
+        if (identity.resetPostHog) {
+          void acknowledgePostHogReset(identity.resetPostHogNonce)
+        }
       }
       if (!active || generation !== identityGenerationRef.current) return
       client.identify(identity.distinctId as string)

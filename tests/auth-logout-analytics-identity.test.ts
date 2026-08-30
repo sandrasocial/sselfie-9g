@@ -29,7 +29,7 @@ describe("logout analytics identity isolation", () => {
     await expect(response.json()).resolves.toEqual({ success: true })
     const cookies = response.headers.get("set-cookie") || ""
     expect(cookies).toContain("sselfie_anon_id=")
-    expect(cookies).toContain("sselfie_posthog_reset=1")
+    expect(cookies).toMatch(/sselfie_posthog_reset=[0-9a-f-]{36}/)
     expect(cookies).toContain("Max-Age=31536000")
     expect(cookies).toContain("HttpOnly")
   })
@@ -52,7 +52,7 @@ describe("logout analytics identity isolation", () => {
     expect(cookies).toContain("sb-project-ref-auth-token=")
     expect(cookies).toContain("Max-Age=0")
     expect(cookies).toContain("sselfie_anon_id_44444444444444448444444444444444=")
-    expect(cookies).toContain("sselfie_posthog_reset=1")
+    expect(cookies).toMatch(/sselfie_posthog_reset=[0-9a-f-]{36}/)
     expect(cookies).toContain(
       "sselfie_supabase_session_generation=44444444-4444-4444-8444-444444444444"
     )
@@ -72,7 +72,7 @@ describe("logout analytics identity isolation", () => {
     const cookies = response.headers.get("set-cookie") || ""
     expect(cookies).toContain("sb-project-ref-auth-token=")
     expect(cookies).toContain("Max-Age=0")
-    expect(cookies).toContain("sselfie_posthog_reset=1")
+    expect(cookies).toMatch(/sselfie_posthog_reset=[0-9a-f-]{36}/)
   })
 
   it("rotates only the current browser generation's anonymous cookie", async () => {

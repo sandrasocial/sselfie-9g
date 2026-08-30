@@ -21,6 +21,9 @@ vi.mock("@/lib/rate-limit-api", () => ({ checkRateLimit: mocks.checkRateLimit })
 vi.mock("@/lib/supabase/server", () => ({ createServerClient: mocks.createServerClient }))
 vi.mock("@/lib/user-mapping", () => ({ getUserByAuthId: mocks.getUserByAuthId }))
 
+const RESET_NONCE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+const STALE_RESET_NONCE = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+
 describe("public analytics route server-only event boundary", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -146,6 +149,7 @@ describe("public analytics route server-only event boundary", () => {
     await expect(response.json()).resolves.toEqual({
       distinctId: "user:neon-456",
       resetPostHog: false,
+      resetPostHogNonce: null,
     })
     expect(mocks.getUserByAuthId).toHaveBeenCalledWith("auth-123")
     expect(response.headers.get("set-cookie")).not.toContain("private@example.com")
@@ -167,6 +171,7 @@ describe("public analytics route server-only event boundary", () => {
     await expect(response.json()).resolves.toEqual({
       distinctId: null,
       resetPostHog: false,
+      resetPostHogNonce: null,
     })
     expect(response.headers.get("cache-control")).toBe("private, no-store")
     expect(response.headers.get("set-cookie")).toBeNull()
@@ -195,6 +200,7 @@ describe("public analytics route server-only event boundary", () => {
     await expect(getResponse.json()).resolves.toEqual({
       distinctId: null,
       resetPostHog: false,
+      resetPostHogNonce: null,
     })
     await expect(postResponse.json()).resolves.toEqual({
       ok: true,
@@ -212,7 +218,7 @@ describe("public analytics route server-only event boundary", () => {
     const response = await GET(
       new NextRequest("http://localhost/api/analytics/event", {
         headers: {
-          cookie: "sselfie_anon_id=rotated-id; sselfie_posthog_reset=1",
+          cookie: `sselfie_anon_id=rotated-id; sselfie_posthog_reset=${RESET_NONCE}`,
         },
       })
     )
@@ -220,6 +226,7 @@ describe("public analytics route server-only event boundary", () => {
     await expect(response.json()).resolves.toEqual({
       distinctId: "anon:rotated-id",
       resetPostHog: true,
+      resetPostHogNonce: RESET_NONCE,
     })
     expect(response.headers.get("set-cookie")).toBeNull()
   })
@@ -229,7 +236,7 @@ describe("public analytics route server-only event boundary", () => {
     const response = await GET(
       new NextRequest("http://localhost/api/analytics/event?ack_posthog_reset=1", {
         headers: {
-          cookie: "sselfie_anon_id=rotated-id; sselfie_posthog_reset=1",
+          cookie: `sselfie_anon_id=rotated-id; sselfie_posthog_reset=${RESET_NONCE}`,
         },
       })
     )
@@ -244,14 +251,14 @@ describe("public analytics route server-only event boundary", () => {
       new NextRequest("http://localhost/api/analytics/event", {
         method: "POST",
         headers: {
-          cookie: "sselfie_anon_id=rotated-id; sselfie_posthog_reset=1",
+          cookie: `sselfie_anon_id=rotated-id; sselfie_posthog_reset=${RESET_NONCE}`,
           origin: "http://localhost",
-          "x-sselfie-posthog-reset-ack": "1",
+          "x-sselfie-posthog-reset-ack": RESET_NONCE,
         },
       })
     )
 
-    await expect(response.json()).resolves.toEqual({ ok: true })
+    await expect(response.json()).resolves.toEqual({ ok: true, cleared: true })
     expect(response.headers.get("set-cookie")).toContain("sselfie_posthog_reset=")
     expect(response.headers.get("set-cookie")).toContain("Max-Age=0")
   })
@@ -262,14 +269,14 @@ describe("public analytics route server-only event boundary", () => {
       new NextRequest("http://localhost/api/analytics/event", {
         method: "POST",
         headers: {
-          cookie: "sselfie_anon_id=rotated-id; sselfie_posthog_reset=1",
+          cookie: `sselfie_anon_id=rotated-id; sselfie_posthog_reset=${RESET_NONCE}`,
           "sec-fetch-site": "same-origin",
-          "x-sselfie-posthog-reset-ack": "1",
+          "x-sselfie-posthog-reset-ack": RESET_NONCE,
         },
       })
     )
 
-    await expect(response.json()).resolves.toEqual({ ok: true })
+    await expect(response.json()).resolves.toEqual({ ok: true, cleared: true })
     expect(response.headers.get("set-cookie")).toContain("sselfie_posthog_reset=")
     expect(response.headers.get("set-cookie")).toContain("Max-Age=0")
   })
@@ -280,8 +287,8 @@ describe("public analytics route server-only event boundary", () => {
       new NextRequest("http://localhost/api/analytics/event", {
         method: "POST",
         headers: {
-          cookie: "sselfie_posthog_reset=1",
-          "x-sselfie-posthog-reset-ack": "1",
+          cookie: `sselfie_posthog_reset=${RESET_NONCE}`,
+          "x-sselfie-posthog-reset-ack": RESET_NONCE,
         },
       })
     )
@@ -296,14 +303,31 @@ describe("public analytics route server-only event boundary", () => {
       new NextRequest("http://localhost/api/analytics/event", {
         method: "POST",
         headers: {
-          cookie: "sselfie_posthog_reset=1",
+          cookie: `sselfie_posthog_reset=${RESET_NONCE}`,
           origin: "https://attacker.example",
-          "x-sselfie-posthog-reset-ack": "1",
+          "x-sselfie-posthog-reset-ack": RESET_NONCE,
         },
       })
     )
 
     expect(response.status).toBe(403)
+    expect(response.headers.get("set-cookie")).toBeNull()
+  })
+
+  it("does not let a stale acknowledgement clear a newer reset marker", async () => {
+    const { POST } = await import("@/app/api/analytics/event/route")
+    const response = await POST(
+      new NextRequest("http://localhost/api/analytics/event", {
+        method: "POST",
+        headers: {
+          cookie: `sselfie_posthog_reset=${RESET_NONCE}`,
+          origin: "http://localhost",
+          "x-sselfie-posthog-reset-ack": STALE_RESET_NONCE,
+        },
+      })
+    )
+
+    await expect(response.json()).resolves.toEqual({ ok: true, cleared: false })
     expect(response.headers.get("set-cookie")).toBeNull()
   })
 

@@ -2,6 +2,8 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest"
 
+const RESET_NONCE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+
 describe("browser analytics identity bootstrap", () => {
   afterEach(() => {
     vi.unstubAllGlobals()
@@ -32,6 +34,7 @@ describe("browser analytics identity bootstrap", () => {
     await expect(bootstrap).resolves.toEqual({
       distinctId: "anon:shared-first-visit",
       resetPostHog: false,
+      resetPostHogNonce: null,
     })
     await tracking
 
@@ -52,10 +55,12 @@ describe("browser analytics identity bootstrap", () => {
     await expect(ensureAnalyticsBrowserIdentity()).resolves.toEqual({
       distinctId: null,
       resetPostHog: false,
+      resetPostHogNonce: null,
     })
     await expect(ensureAnalyticsBrowserIdentity()).resolves.toEqual({
       distinctId: "user:recovered",
       resetPostHog: false,
+      resetPostHogNonce: null,
     })
     expect(request).toHaveBeenCalledTimes(2)
   })
@@ -68,7 +73,13 @@ describe("browser analytics identity bootstrap", () => {
     const request = vi
       .fn<typeof fetch>()
       .mockImplementationOnce(() => staleIdentityResponse)
-      .mockResolvedValueOnce(Response.json({ distinctId: "anon:after-logout", resetPostHog: true }))
+      .mockResolvedValueOnce(
+        Response.json({
+          distinctId: "anon:after-logout",
+          resetPostHog: true,
+          resetPostHogNonce: RESET_NONCE,
+        })
+      )
     vi.stubGlobal("fetch", request)
 
     const { ensureAnalyticsBrowserIdentity, invalidateAnalyticsBrowserIdentity } =
@@ -83,6 +94,7 @@ describe("browser analytics identity bootstrap", () => {
     await expect(fresh).resolves.toEqual({
       distinctId: "anon:after-logout",
       resetPostHog: true,
+      resetPostHogNonce: RESET_NONCE,
     })
     await expect(ensureAnalyticsBrowserIdentity()).resolves.toMatchObject({
       distinctId: "anon:after-logout",
@@ -96,14 +108,24 @@ describe("browser analytics identity bootstrap", () => {
 
     const { acknowledgePostHogReset } = await import("@/lib/analytics/client")
 
-    await expect(acknowledgePostHogReset()).resolves.toBe(true)
+    await expect(acknowledgePostHogReset(RESET_NONCE)).resolves.toBe(true)
     expect(request).toHaveBeenCalledWith("/api/analytics/event", {
       method: "POST",
-      headers: { "x-sselfie-posthog-reset-ack": "1" },
+      headers: { "x-sselfie-posthog-reset-ack": RESET_NONCE },
       credentials: "same-origin",
       cache: "no-store",
       keepalive: true,
       signal: expect.any(AbortSignal),
     })
+  })
+
+  it("does not send a reset acknowledgement without a valid nonce", async () => {
+    const request = vi.fn<typeof fetch>()
+    vi.stubGlobal("fetch", request)
+
+    const { acknowledgePostHogReset } = await import("@/lib/analytics/client")
+
+    await expect(acknowledgePostHogReset("1")).resolves.toBe(false)
+    expect(request).not.toHaveBeenCalled()
   })
 })

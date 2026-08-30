@@ -635,8 +635,8 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("shouldResetPostHogIdentity")
     expect(provider).toContain("window.posthog.reset()")
     expect(provider).toContain("identity.resetPostHog")
-    expect(provider).toContain("void acknowledgePostHogReset()")
-    expect(provider).not.toContain("await acknowledgePostHogReset()")
+    expect(provider).toContain("void acknowledgePostHogReset(identity.resetPostHogNonce)")
+    expect(provider).not.toContain("await acknowledgePostHogReset(identity.resetPostHogNonce)")
     expect(provider).toContain("ensureAnalyticsBrowserIdentity")
     expect(provider).toContain("readIdentity(true)")
     expect(provider).toContain("setPostHogCaptureEnabled(false)")
@@ -685,7 +685,10 @@ describe("PostHog analytics boundary", () => {
     expect(provider).not.toContain("onReady=")
     const loadedCallbackIndex = provider.indexOf("const onLoaded = async")
     const resetIndex = provider.indexOf("client.reset()", loadedCallbackIndex)
-    const acknowledgeIndex = provider.indexOf("void acknowledgePostHogReset()", resetIndex)
+    const acknowledgeIndex = provider.indexOf(
+      "void acknowledgePostHogReset(identity.resetPostHogNonce)",
+      resetIndex
+    )
     const captureEnabledIndex = provider.indexOf(
       "setPostHogCaptureEnabled(true, client)",
       loadedCallbackIndex
@@ -707,7 +710,7 @@ describe("PostHog analytics boundary", () => {
     expect(analyticsClient).toContain("x-sselfie-analytics-generation")
     expect(analyticsClient).toContain("rotateAnalyticsBrowserGeneration")
     expect(analyticsClient).toContain('method: "POST"')
-    expect(analyticsClient).toContain('"x-sselfie-posthog-reset-ack": "1"')
+    expect(analyticsClient).toContain('"x-sselfie-posthog-reset-ack": resetNonce')
     expect(analyticsClient).toContain("await ensureAnalyticsBrowserIdentity()")
 
     const middleware = readFileSync(join(process.cwd(), "middleware.ts"), "utf8")

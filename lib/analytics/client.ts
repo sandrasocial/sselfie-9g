@@ -3,11 +3,14 @@
 export type BrowserAnalyticsIdentity = {
   distinctId: string | null
   resetPostHog: boolean
+  resetPostHogNonce: string | null
 }
 
 let identityRequest: Promise<BrowserAnalyticsIdentity> | null = null
 const ANALYTICS_GENERATION_COOKIE = "sselfie_analytics_generation"
 const POSTHOG_RESET_ACK_TIMEOUT_MS = 2_000
+const POSTHOG_RESET_NONCE_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function writeAnalyticsGeneration(generation: string): void {
   const secure = window.location.protocol === "https:" ? "; Secure" : ""
@@ -50,14 +53,22 @@ async function requestAnalyticsIdentity(
         keepalive: true,
       }
     )
-    if (!response.ok) return { distinctId: null, resetPostHog: false }
+    if (!response.ok) {
+      return { distinctId: null, resetPostHog: false, resetPostHogNonce: null }
+    }
     const data = await response.json()
+    const resetPostHogNonce =
+      typeof data?.resetPostHogNonce === "string" &&
+      POSTHOG_RESET_NONCE_PATTERN.test(data.resetPostHogNonce)
+        ? data.resetPostHogNonce
+        : null
     return {
       distinctId: typeof data?.distinctId === "string" ? data.distinctId : null,
-      resetPostHog: data?.resetPostHog === true,
+      resetPostHog: data?.resetPostHog === true && resetPostHogNonce !== null,
+      resetPostHogNonce,
     }
   } catch {
-    return { distinctId: null, resetPostHog: false }
+    return { distinctId: null, resetPostHog: false, resetPostHogNonce: null }
   }
 }
 
@@ -69,7 +80,7 @@ export function ensureAnalyticsBrowserIdentity(
     identityRequest = requestAnalyticsIdentity(options.rotateAnonymous === true)
   } else if (shouldRefresh) {
     identityRequest = identityRequest
-      .catch(() => ({ distinctId: null, resetPostHog: false }))
+      .catch(() => ({ distinctId: null, resetPostHog: false, resetPostHogNonce: null }))
       .then(() => requestAnalyticsIdentity(options.rotateAnonymous === true))
   }
   const request = identityRequest
@@ -81,13 +92,14 @@ export function ensureAnalyticsBrowserIdentity(
   })
 }
 
-export async function acknowledgePostHogReset(): Promise<boolean> {
+export async function acknowledgePostHogReset(resetNonce: string | null): Promise<boolean> {
+  if (!resetNonce || !POSTHOG_RESET_NONCE_PATTERN.test(resetNonce)) return false
   const controller = new AbortController()
   const timeout = globalThis.setTimeout(() => controller.abort(), POSTHOG_RESET_ACK_TIMEOUT_MS)
   try {
     const response = await fetch("/api/analytics/event", {
       method: "POST",
-      headers: { "x-sselfie-posthog-reset-ack": "1" },
+      headers: { "x-sselfie-posthog-reset-ack": resetNonce },
       credentials: "same-origin",
       cache: "no-store",
       keepalive: true,

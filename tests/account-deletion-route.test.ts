@@ -83,7 +83,7 @@ describe("DELETE /api/user/delete", () => {
     expect(rotatedGeneration).not.toBe(generation)
     expect(responseCookies).toContain(`sselfie_anon_id_${rotatedGeneration?.replaceAll("-", "")}=`)
     expect(responseCookies).toContain("sselfie_anon_id=;")
-    expect(responseCookies).toContain("sselfie_posthog_reset=1")
+    expect(responseCookies).toMatch(/sselfie_posthog_reset=[0-9a-f-]{36}/)
     expect(responseCookies).toContain("sselfie_supabase_session_generation=;")
     expect(mocks.queries).toContainEqual(
       expect.objectContaining({
@@ -109,6 +109,6 @@ describe("DELETE /api/user/delete", () => {
     expect(cookies).toContain("sb-project-ref-auth-token=")
     expect(cookies).toContain("Max-Age=0")
     expect(cookies).toMatch(/sselfie_anon_id_[0-9a-f]{32}=/)
-    expect(cookies).toContain("sselfie_posthog_reset=1")
+    expect(cookies).toMatch(/sselfie_posthog_reset=[0-9a-f-]{36}/)
   })
 })
