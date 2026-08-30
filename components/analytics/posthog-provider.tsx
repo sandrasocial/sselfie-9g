@@ -11,9 +11,10 @@ import {
 } from "@/lib/analytics/posthog-browser"
 import {
   acknowledgePostHogReset,
+  analyticsBrowserRotationEpoch,
   ensureAnalyticsBrowserIdentity,
   invalidateAnalyticsBrowserIdentity,
-  isAnalyticsTabGenerationCurrent,
+  isAnalyticsRotationEpochCurrent,
   type BrowserAnalyticsIdentity,
 } from "@/lib/analytics/client"
 import { subscribeToAnalyticsLogout } from "@/lib/analytics/auth-browser-signal"
@@ -30,6 +31,7 @@ type PostHogBrowserClient = {
 }
 
 const IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS = [0, 1_000, 3_000, 10_000, 30_000] as const
+let postHogIdentifiedRotationEpoch: string | null = null
 
 function identityRetryDelay(attempt: number): number {
   return IDENTITY_BOOTSTRAP_RETRY_DELAYS_MS[
@@ -50,6 +52,7 @@ function setPostHogCaptureEnabled(
   client: PostHogBrowserClient | undefined = window.posthog
 ) {
   if (!client) return
+  if (!enabled) postHogIdentifiedRotationEpoch = null
   client.set_config({
     autocapture: enabled,
     capture_exceptions: enabled,
@@ -64,7 +67,10 @@ function guardPostHogEventPayload<T>(event: T): T | null {
   // This synchronous boundary also covers SDK autocapture/session events in a
   // tab that missed logout or account-deletion broadcasts. A changed shared
   // rotation epoch fails closed before any stale-identity payload can leave.
-  return isAnalyticsTabGenerationCurrent() ? sanitizePostHogEventPayload(event) : null
+  return postHogIdentifiedRotationEpoch !== null &&
+    isAnalyticsRotationEpochCurrent(postHogIdentifiedRotationEpoch)
+    ? sanitizePostHogEventPayload(event)
+    : null
 }
 
 function PostHogPageviews({
@@ -127,6 +133,7 @@ function PostHogPageviews({
 
         if (!isCurrentGeneration() || generation !== refreshGeneration || !window.posthog) return
         window.posthog.identify(distinctId)
+        postHogIdentifiedRotationEpoch = analyticsBrowserRotationEpoch()
         identifiedAs.current = distinctId
         if (capturePageview) {
           window.posthog.capture("$pageview", {
@@ -275,6 +282,7 @@ export function PostHogProvider({
       }
       if (!active || generation !== identityGenerationRef.current) return
       client.identify(identity.distinctId as string)
+      postHogIdentifiedRotationEpoch = analyticsBrowserRotationEpoch()
       setPostHogCaptureEnabled(true, client)
       setReady(true)
     }

@@ -199,12 +199,19 @@ describe("browser analytics identity bootstrap", () => {
       },
     })
 
-    const { analyticsBrowserGeneration, isAnalyticsTabGenerationCurrent } =
+    const {
+      analyticsBrowserGeneration,
+      analyticsBrowserRotationEpoch,
+      isAnalyticsRotationEpochCurrent,
+    } =
       await import("@/lib/analytics/client")
 
-    expect(isAnalyticsTabGenerationCurrent()).toBe(false)
+    expect(isAnalyticsRotationEpochCurrent("")).toBe(false)
     expect(analyticsBrowserGeneration()).toBe("44444444-4444-4444-8444-444444444444")
-    expect(isAnalyticsTabGenerationCurrent()).toBe(true)
+    expect(analyticsBrowserRotationEpoch()).toBe("55555555-5555-4555-8555-555555555555")
+    expect(isAnalyticsRotationEpochCurrent("55555555-5555-4555-8555-555555555555")).toBe(
+      true
+    )
     expect(stored.get("sselfie_analytics_tab_generation")).toBe(
       "44444444-4444-4444-8444-444444444444"
     )

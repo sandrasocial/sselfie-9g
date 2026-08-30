@@ -646,7 +646,10 @@ describe("PostHog analytics boundary", () => {
     expect(provider).toContain("before_send:function(){return null;}")
     expect(provider).not.toContain("function scrub(value)")
     expect(provider).toContain("before_send: guardPostHogEventPayload")
-    expect(provider).toContain("isAnalyticsTabGenerationCurrent()")
+    expect(provider).toContain("isAnalyticsRotationEpochCurrent(postHogIdentifiedRotationEpoch)")
+    expect(provider).toContain(
+      "postHogIdentifiedRotationEpoch = analyticsBrowserRotationEpoch()"
+    )
     expect(provider).toContain("window.posthog.identify(distinctId)")
     expect(provider).toContain("get_distinct_id?.()")
     expect(provider).toContain("shouldResetPostHogIdentity")
