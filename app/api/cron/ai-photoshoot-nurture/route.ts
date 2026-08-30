@@ -2,6 +2,11 @@ import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
 
 import { createCronLogger } from "@/lib/cron-logger"
+import {
+  createRuntimeBudget,
+  processWithRuntimeBudget,
+  runWithRuntimeBudget,
+} from "@/lib/cron/runtime-budget"
 import { sql } from "@/lib/db/client"
 import { envFlag } from "@/lib/env-flags"
 import {
@@ -34,12 +39,15 @@ const FROM_EMAIL = "Sandra from SSELFIE <hello@sselfie.ai>"
 const REPLY_TO_EMAIL = "hello@sselfie.ai"
 const DEFAULT_AI_PROMPTS_START_DATE = "2026-05-18"
 const DEFAULT_SEND_DELAY_MS = 650
-const MAX_PER_TOUCH_DEFAULT = 75
+const MAX_PER_TOUCH_DEFAULT = 12
 // Leave enough room for suppression checks, Resend calls, logging, and retries inside the
-// 300-second Vercel budget. Production runs at 120 sends approached the timeout ceiling, so the
-// default stays at 100 unless an explicitly verified environment override is configured.
-const MAX_TOTAL_PER_RUN_DEFAULT = 100
+// 300-second Vercel budget. A 240-second internal deadline and a 50-attempt default leave
+// recovery headroom after production runs at 100+ attempts reached the platform ceiling.
+const MAX_TOTAL_PER_RUN_DEFAULT = 50
 const MIN_TOUCH_GAP_HOURS_DEFAULT = 18
+const RUNTIME_BUDGET_MS = 240_000
+const MIN_QUERY_BUDGET_MS = 15_000
+const MIN_SEND_BUDGET_MS = 15_000
 
 interface AiPromptsCandidate {
   email: string
@@ -62,6 +70,9 @@ interface TouchResult {
   sent: number
   failed: number
   skipped: number
+  processed: number
+  stoppedForBudget: boolean
+  timedOut: boolean
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -308,7 +319,11 @@ function generatePromptVaultEmail(
   }
 }
 
-async function sendAiPromptsTouch(emailType: AiPromptsEmailType, candidate: AiPromptsCandidate) {
+async function sendAiPromptsTouch(
+  emailType: AiPromptsEmailType,
+  candidate: AiPromptsCandidate,
+  signal: AbortSignal
+) {
   const email = generateAiPromptsEmail(emailType, candidate)
   // The SUITE trial touch requires a claim token; subscribers without one are skipped, not failed.
   if (!email) return { success: false, error: "skipped: no claim token" }
@@ -323,12 +338,14 @@ async function sendAiPromptsTouch(emailType: AiPromptsEmailType, candidate: AiPr
     tags: ["ai-prompts", "ai-photoshoot-nurture", emailType],
     marketing: true,
     idempotencyKey: nurtureIdempotencyKey(emailType, candidate.email),
+    signal,
   })
 }
 
 async function sendPromptVaultTouch(
   emailType: PromptVaultEmailType,
-  candidate: PromptVaultCandidate
+  candidate: PromptVaultCandidate,
+  signal: AbortSignal
 ) {
   const email = generatePromptVaultEmail(emailType, candidate)
   return sendEmail({
@@ -342,11 +359,21 @@ async function sendPromptVaultTouch(
     tags: ["prompt-vault", "ai-photoshoot-nurture", emailType],
     marketing: true,
     idempotencyKey: nurtureIdempotencyKey(emailType, candidate.email),
+    signal,
   })
 }
 
 function emptyTouchResult(): TouchResult {
-  return { found: 0, wouldSend: 0, sent: 0, failed: 0, skipped: 0 }
+  return {
+    found: 0,
+    wouldSend: 0,
+    sent: 0,
+    failed: 0,
+    skipped: 0,
+    processed: 0,
+    stoppedForBudget: false,
+    timedOut: false,
+  }
 }
 
 function isTouchResult(value: unknown): value is TouchResult {
@@ -357,13 +384,21 @@ function isTouchResult(value: unknown): value is TouchResult {
     "wouldSend" in value &&
     "sent" in value &&
     "failed" in value &&
-    "skipped" in value
+    "skipped" in value &&
+    "processed" in value
   )
 }
 
 export async function GET(request: Request) {
+  const runtimeBudget = createRuntimeBudget(RUNTIME_BUDGET_MS)
   const cronLogger = createCronLogger("ai-photoshoot-nurture")
-  await cronLogger.start()
+  const logWithinRuntimeBudget = (write: () => Promise<void>) =>
+    runWithRuntimeBudget({
+      budget: runtimeBudget,
+      minimumRemainingMs: 0,
+      operation: () => write(),
+    })
+  await logWithinRuntimeBudget(() => cronLogger.start())
 
   try {
     const url = new URL(request.url)
@@ -378,16 +413,20 @@ export async function GET(request: Request) {
 
     if (isProduction) {
       if (!cronSecret) {
-        await cronLogger.error(new Error("Unauthorized"), {
-          reason: "CRON_SECRET not set in production",
-        })
+        await logWithinRuntimeBudget(() =>
+          cronLogger.error(new Error("Unauthorized"), {
+            reason: "CRON_SECRET not set in production",
+          })
+        )
         return NextResponse.json(
           { error: "Unauthorized: CRON_SECRET required in production" },
           { status: 401 }
         )
       }
       if (authHeader !== `Bearer ${cronSecret}`) {
-        await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
+        await logWithinRuntimeBudget(() =>
+          cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
+        )
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
     }
@@ -406,6 +445,9 @@ export async function GET(request: Request) {
     )
     const startDate = aiPromptsStartDate()
     let remainingSends = maxTotalPerRun
+    let touchesRemaining =
+      (promptVaultEnabled || dryRun ? PROMPT_VAULT_EMAIL_TOUCHES.length : 0) +
+      (aiPromptsEnabled || dryRun ? AI_PROMPTS_EMAIL_TOUCHES.length : 0)
 
     const results: Record<string, TouchResult | boolean | number | string> = {
       dryRun,
@@ -432,16 +474,36 @@ export async function GET(request: Request) {
 
         if (remainingSends <= 0) {
           result.skipped = dryRun ? 0 : maxPerTouch
+          touchesRemaining -= 1
           continue
         }
 
-        const candidates = await getPromptVaultCandidates({
-          emailType: touch.emailType,
-          days: touch.days,
-          previousEmailType: previousPromptVaultTouch(touch.emailType),
-          minTouchGapHours,
-          limit: Math.min(maxPerTouch, remainingSends),
+        const fairTouchLimit = Math.min(
+          maxPerTouch,
+          remainingSends,
+          Math.max(1, Math.ceil(remainingSends / touchesRemaining))
+        )
+        const selection = await runWithRuntimeBudget({
+          budget: runtimeBudget,
+          minimumRemainingMs: MIN_QUERY_BUDGET_MS,
+          operation: () =>
+            getPromptVaultCandidates({
+              emailType: touch.emailType,
+              days: touch.days,
+              previousEmailType: previousPromptVaultTouch(touch.emailType),
+              minTouchGapHours,
+              limit: fairTouchLimit,
+            }),
         })
+        touchesRemaining -= 1
+
+        if (!selection.completed) {
+          result.stoppedForBudget = true
+          result.timedOut = selection.timedOut
+          continue
+        }
+
+        const candidates = selection.value
         result.found = candidates.length
 
         if (dryRun) {
@@ -451,23 +513,30 @@ export async function GET(request: Request) {
           continue
         }
 
-        for (const candidate of candidates) {
-          const sent = await sendPromptVaultTouch(touch.emailType, candidate)
-          if (sent.success) {
-            result.sent += 1
-            remainingSends -= 1
-          } else {
-            result.failed += 1
-            errors.push({
-              email: candidate.email,
-              touch: touch.emailType,
-              error: sent.error || "unknown",
-            })
-          }
+        const processing = await processWithRuntimeBudget({
+          items: candidates,
+          budget: runtimeBudget,
+          minimumRemainingMs: MIN_SEND_BUDGET_MS,
+          process: async (candidate, signal) => {
+            const sent = await sendPromptVaultTouch(touch.emailType, candidate, signal)
+            if (sent.success) {
+              result.sent += 1
+            } else {
+              result.failed += 1
+              errors.push({
+                email: candidate.email,
+                touch: touch.emailType,
+                error: sent.error || "unknown",
+              })
+            }
 
-          await sleep(sendDelayMs)
-          if (remainingSends <= 0) break
-        }
+            await sleep(sendDelayMs)
+          },
+        })
+        result.processed = processing.processed
+        result.stoppedForBudget = processing.stoppedForBudget
+        result.timedOut = processing.timedOut
+        remainingSends -= processing.processed
       }
     }
 
@@ -479,17 +548,37 @@ export async function GET(request: Request) {
 
         if (remainingSends <= 0) {
           result.skipped = dryRun ? 0 : maxPerTouch
+          touchesRemaining -= 1
           continue
         }
 
-        const candidates = await getAiPromptsCandidates({
-          emailType: touch.emailType,
-          days: touch.days,
-          startDate,
-          previousEmailType: previousAiPromptTouch(touch.emailType),
-          minTouchGapHours,
-          limit: Math.min(maxPerTouch, remainingSends),
+        const fairTouchLimit = Math.min(
+          maxPerTouch,
+          remainingSends,
+          Math.max(1, Math.ceil(remainingSends / touchesRemaining))
+        )
+        const selection = await runWithRuntimeBudget({
+          budget: runtimeBudget,
+          minimumRemainingMs: MIN_QUERY_BUDGET_MS,
+          operation: () =>
+            getAiPromptsCandidates({
+              emailType: touch.emailType,
+              days: touch.days,
+              startDate,
+              previousEmailType: previousAiPromptTouch(touch.emailType),
+              minTouchGapHours,
+              limit: fairTouchLimit,
+            }),
         })
+        touchesRemaining -= 1
+
+        if (!selection.completed) {
+          result.stoppedForBudget = true
+          result.timedOut = selection.timedOut
+          continue
+        }
+
+        const candidates = selection.value
         result.found = candidates.length
 
         if (dryRun) {
@@ -499,23 +588,30 @@ export async function GET(request: Request) {
           continue
         }
 
-        for (const candidate of candidates) {
-          const sent = await sendAiPromptsTouch(touch.emailType, candidate)
-          if (sent.success) {
-            result.sent += 1
-            remainingSends -= 1
-          } else {
-            result.failed += 1
-            errors.push({
-              email: candidate.email,
-              touch: touch.emailType,
-              error: sent.error || "unknown",
-            })
-          }
+        const processing = await processWithRuntimeBudget({
+          items: candidates,
+          budget: runtimeBudget,
+          minimumRemainingMs: MIN_SEND_BUDGET_MS,
+          process: async (candidate, signal) => {
+            const sent = await sendAiPromptsTouch(touch.emailType, candidate, signal)
+            if (sent.success) {
+              result.sent += 1
+            } else {
+              result.failed += 1
+              errors.push({
+                email: candidate.email,
+                touch: touch.emailType,
+                error: sent.error || "unknown",
+              })
+            }
 
-          await sleep(sendDelayMs)
-          if (remainingSends <= 0) break
-        }
+            await sleep(sendDelayMs)
+          },
+        })
+        result.processed = processing.processed
+        result.stoppedForBudget = processing.stoppedForBudget
+        result.timedOut = processing.timedOut
+        remainingSends -= processing.processed
       }
     }
 
@@ -538,15 +634,21 @@ export async function GET(request: Request) {
       totalSent,
       totalFailed,
       remainingSends,
+      runtime: {
+        budgetMs: RUNTIME_BUDGET_MS,
+        elapsedMs: runtimeBudget.elapsedMs(),
+        remainingMs: runtimeBudget.remainingMs(),
+        stoppedForBudget: !runtimeBudget.canStart(MIN_SEND_BUDGET_MS),
+      },
     }
-    await cronLogger.success(summary)
+    await logWithinRuntimeBudget(() => cronLogger.success(summary))
     return NextResponse.json({
       success: true,
       ...summary,
       errors: errors.slice(0, 20),
     })
   } catch (error: unknown) {
-    await cronLogger.error(error, { step: "ai-photoshoot-nurture" })
+    await logWithinRuntimeBudget(() => cronLogger.error(error, { step: "ai-photoshoot-nurture" }))
     return NextResponse.json(
       {
         success: false,
