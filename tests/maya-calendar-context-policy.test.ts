@@ -79,9 +79,24 @@ describe("Maya Calendar context policy", () => {
     expect(route).toContain("const calendarAccess = await getFeedPlannerAccess(memoryUserId)")
     expect(route).toContain("if (!calendarAccess.isMembership && !calendarAccess.isPaidBlueprint)")
     expect(route).toContain("AND id = ${calendarCreativeContext.feedId}")
+    expect(route).toContain('if (calendarCreativeContext && toolAllowed("show_feed_plan")) {')
+    expect(route).toContain("tools.show_feed_plan = showFeedPlan")
+    expect(route).toContain("includeCreationGuidance: boolean")
     expect(route).toContain(
-      "const calendarTools = calendarCreativeContext ? { show_feed_plan: showFeedPlan } : {}"
+      'if (!includeCreationGuidance) return `${system}${activePostBlock}`'
     )
+    expect(route.indexOf("if (!includeCreationGuidance)")).toBeLessThan(
+      route.indexOf("const openSlots = await sql")
+    )
+    expect(route).toMatch(
+      /appendCalendarSystemContext\([\s\S]*calendarCreativeContext,\s+!generalConversation\s+\)/
+    )
+    expect(route).toContain('String(activePost.caption || "").slice(0, 2200)')
+    expect(route.match(/COALESCE\(image_url, preview_image_url\)/g)).toHaveLength(2)
+    expect(route).toContain(
+      'activePost.has_image ? " and remember that its photo is already selected"'
+    )
+    expect(route).toContain(': " and do not assume a photo has been selected"')
     expect(route).toContain("calendar: Boolean(calendarCreativeContext)")
     expect(route).not.toContain("if (memoryUserId && !generalConversation) {")
     expect(route).not.toContain("recent activity, and content calendar")
