@@ -106,6 +106,7 @@ describe("Resend signup contact property mapping", () => {
     const result = await drainResendSyncQueue()
 
     expect(result).toEqual({ retried: 1, resolved: 0, abandoned: 0 })
+    expect((mocks.sql.mock.calls[0][0] as TemplateStringsArray).join(" ")).toContain("LIMIT 10")
     expect(mocks.upsertContact).toHaveBeenCalledTimes(1)
     expect(mocks.upsertContact).toHaveBeenCalledWith(
       "queued@realmail.com",
