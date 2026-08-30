@@ -26,6 +26,7 @@ export interface EmailOptions {
   headers?: Record<string, string>
   idempotencyKey?: string
   signal?: AbortSignal
+  onAccepted?: (messageId?: string) => void
 }
 
 // Initialize Resend client - will be null if API key is missing
@@ -457,6 +458,13 @@ export async function sendEmail(
   }
 
   const result = await sendEmailWithRetry(preparedOptions, 3)
+
+  // Notify runtime-budgeted callers as soon as Resend accepts the message. Email-log writes
+  // remain awaited for durable delivery evidence, but they must not make an accepted customer
+  // send disappear from the caller's attempt accounting when a route deadline expires.
+  if (result.success) {
+    options.onAccepted?.(result.messageId)
+  }
 
   // Log the email send result (non-blocking)
   if (result.success) {

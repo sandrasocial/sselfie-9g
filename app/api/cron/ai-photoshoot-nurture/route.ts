@@ -2,6 +2,11 @@ import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
 
 import { createCronLogger } from "@/lib/cron-logger"
+import {
+  createRuntimeBudget,
+  runWithRuntimeBudget,
+  type RuntimeBudget,
+} from "@/lib/cron/runtime-budget"
 import { sql } from "@/lib/db/client"
 import { envFlag } from "@/lib/env-flags"
 import {
@@ -34,12 +39,15 @@ const FROM_EMAIL = "Sandra from SSELFIE <hello@sselfie.ai>"
 const REPLY_TO_EMAIL = "hello@sselfie.ai"
 const DEFAULT_AI_PROMPTS_START_DATE = "2026-05-18"
 const DEFAULT_SEND_DELAY_MS = 650
-const MAX_PER_TOUCH_DEFAULT = 75
+const MAX_PER_TOUCH_DEFAULT = 12
 // Leave enough room for suppression checks, Resend calls, logging, and retries inside the
-// 300-second Vercel budget. Production runs at 120 sends approached the timeout ceiling, so the
-// default stays at 100 unless an explicitly verified environment override is configured.
-const MAX_TOTAL_PER_RUN_DEFAULT = 100
+// 300-second Vercel budget. A 240-second internal deadline and a 50-attempt default leave
+// recovery headroom after production runs at 100+ attempts reached the platform ceiling.
+const MAX_TOTAL_PER_RUN_DEFAULT = 50
 const MIN_TOUCH_GAP_HOURS_DEFAULT = 18
+const RUNTIME_BUDGET_MS = 240_000
+const MIN_QUERY_BUDGET_MS = 15_000
+const MIN_SEND_BUDGET_MS = 15_000
 
 interface AiPromptsCandidate {
   email: string
@@ -62,6 +70,34 @@ interface TouchResult {
   sent: number
   failed: number
   skipped: number
+  processed: number
+  stoppedForBudget: boolean
+  timedOut: boolean
+}
+
+interface NurtureCandidate {
+  email: string
+}
+
+interface NurtureTouchTask {
+  emailType: string
+  getCandidates: (limit: number) => Promise<NurtureCandidate[]>
+  sendCandidate: (
+    candidate: NurtureCandidate,
+    signal: AbortSignal,
+    onAccepted: () => void
+  ) => Promise<{ success: boolean; error?: string }>
+}
+
+interface RunTouchInput extends NurtureTouchTask {
+  result: TouchResult
+  dryRun: boolean
+  maxPerTouch: number
+  remainingSends: number
+  touchesRemaining: number
+  runtimeBudget: RuntimeBudget
+  errors: Array<{ email: string; touch: string; error: string }>
+  sendDelayMs: number
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -308,7 +344,12 @@ function generatePromptVaultEmail(
   }
 }
 
-async function sendAiPromptsTouch(emailType: AiPromptsEmailType, candidate: AiPromptsCandidate) {
+async function sendAiPromptsTouch(
+  emailType: AiPromptsEmailType,
+  candidate: AiPromptsCandidate,
+  signal: AbortSignal,
+  onAccepted: () => void
+) {
   const email = generateAiPromptsEmail(emailType, candidate)
   // The SUITE trial touch requires a claim token; subscribers without one are skipped, not failed.
   if (!email) return { success: false, error: "skipped: no claim token" }
@@ -323,12 +364,16 @@ async function sendAiPromptsTouch(emailType: AiPromptsEmailType, candidate: AiPr
     tags: ["ai-prompts", "ai-photoshoot-nurture", emailType],
     marketing: true,
     idempotencyKey: nurtureIdempotencyKey(emailType, candidate.email),
+    signal,
+    onAccepted,
   })
 }
 
 async function sendPromptVaultTouch(
   emailType: PromptVaultEmailType,
-  candidate: PromptVaultCandidate
+  candidate: PromptVaultCandidate,
+  signal: AbortSignal,
+  onAccepted: () => void
 ) {
   const email = generatePromptVaultEmail(emailType, candidate)
   return sendEmail({
@@ -342,11 +387,22 @@ async function sendPromptVaultTouch(
     tags: ["prompt-vault", "ai-photoshoot-nurture", emailType],
     marketing: true,
     idempotencyKey: nurtureIdempotencyKey(emailType, candidate.email),
+    signal,
+    onAccepted,
   })
 }
 
 function emptyTouchResult(): TouchResult {
-  return { found: 0, wouldSend: 0, sent: 0, failed: 0, skipped: 0 }
+  return {
+    found: 0,
+    wouldSend: 0,
+    sent: 0,
+    failed: 0,
+    skipped: 0,
+    processed: 0,
+    stoppedForBudget: false,
+    timedOut: false,
+  }
 }
 
 function isTouchResult(value: unknown): value is TouchResult {
@@ -357,13 +413,161 @@ function isTouchResult(value: unknown): value is TouchResult {
     "wouldSend" in value &&
     "sent" in value &&
     "failed" in value &&
-    "skipped" in value
+    "skipped" in value &&
+    "processed" in value
   )
 }
 
+function createTouchTask<Candidate extends NurtureCandidate>(input: {
+  emailType: string
+  getCandidates: (limit: number) => Promise<Candidate[]>
+  sendCandidate: (
+    candidate: Candidate,
+    signal: AbortSignal,
+    onAccepted: () => void
+  ) => Promise<{ success: boolean; error?: string }>
+}): NurtureTouchTask {
+  return {
+    emailType: input.emailType,
+    getCandidates: input.getCandidates,
+    // Candidates are produced and consumed by the same task. This type erasure lets the
+    // two nurture sequences share one ordered execution loop without mixing candidate shapes.
+    sendCandidate: (candidate, signal, onAccepted) =>
+      input.sendCandidate(candidate as Candidate, signal, onAccepted),
+  }
+}
+
+function createTouchTasks<Touch extends { emailType: string }, Candidate extends NurtureCandidate>(
+  touches: readonly Touch[],
+  getCandidates: (touch: Touch, limit: number) => Promise<Candidate[]>,
+  sendCandidate: (
+    touch: Touch,
+    candidate: Candidate,
+    signal: AbortSignal,
+    onAccepted: () => void
+  ) => Promise<{ success: boolean; error?: string }>
+): NurtureTouchTask[] {
+  return touches.map(touch =>
+    createTouchTask({
+      emailType: touch.emailType,
+      getCandidates: limit => getCandidates(touch, limit),
+      sendCandidate: (candidate, signal, onAccepted) =>
+        sendCandidate(touch, candidate, signal, onAccepted),
+    })
+  )
+}
+
+async function runTouch({
+  emailType,
+  result,
+  dryRun,
+  maxPerTouch,
+  remainingSends,
+  touchesRemaining,
+  runtimeBudget,
+  getCandidates,
+  sendCandidate,
+  errors,
+  sendDelayMs,
+}: RunTouchInput): Promise<{ remainingSends: number; touchesRemaining: number }> {
+  const nextTouchesRemaining = touchesRemaining - 1
+
+  if (remainingSends <= 0) {
+    result.skipped = dryRun ? 0 : maxPerTouch
+    return { remainingSends, touchesRemaining: nextTouchesRemaining }
+  }
+
+  const fairTouchLimit = Math.min(
+    maxPerTouch,
+    remainingSends,
+    Math.max(1, Math.ceil(remainingSends / touchesRemaining))
+  )
+  const selection = await runWithRuntimeBudget({
+    budget: runtimeBudget,
+    minimumRemainingMs: MIN_QUERY_BUDGET_MS,
+    operation: () => getCandidates(fairTouchLimit),
+  })
+
+  if (!selection.completed) {
+    result.stoppedForBudget = true
+    result.timedOut = selection.timedOut
+    return { remainingSends, touchesRemaining: nextTouchesRemaining }
+  }
+
+  const candidates = selection.value
+  result.found = candidates.length
+
+  if (dryRun) {
+    result.wouldSend = candidates.length
+    result.skipped = candidates.length
+    return {
+      remainingSends: remainingSends - candidates.length,
+      touchesRemaining: nextTouchesRemaining,
+    }
+  }
+
+  for (const candidate of candidates) {
+    let providerAccepted = false
+    const delivery = await runWithRuntimeBudget({
+      budget: runtimeBudget,
+      minimumRemainingMs: MIN_SEND_BUDGET_MS,
+      operation: signal =>
+        sendCandidate(candidate, signal, () => {
+          providerAccepted = true
+        }),
+    })
+    if (!delivery.completed) {
+      if (providerAccepted) {
+        result.sent += 1
+        result.processed += 1
+      }
+      result.stoppedForBudget = true
+      result.timedOut = delivery.timedOut
+      break
+    }
+
+    if (delivery.value.success) {
+      result.sent += 1
+    } else {
+      result.failed += 1
+      errors.push({
+        email: candidate.email,
+        touch: emailType,
+        error: delivery.value.error || "unknown",
+      })
+    }
+    result.processed += 1
+
+    if (result.processed < candidates.length) {
+      const delay = await runWithRuntimeBudget({
+        budget: runtimeBudget,
+        minimumRemainingMs: MIN_SEND_BUDGET_MS,
+        operation: () => sleep(sendDelayMs),
+      })
+      if (!delay.completed) {
+        result.stoppedForBudget = true
+        result.timedOut = delay.timedOut
+        break
+      }
+    }
+  }
+
+  return {
+    remainingSends: remainingSends - result.processed,
+    touchesRemaining: nextTouchesRemaining,
+  }
+}
+
 export async function GET(request: Request) {
+  const runtimeBudget = createRuntimeBudget(RUNTIME_BUDGET_MS)
   const cronLogger = createCronLogger("ai-photoshoot-nurture")
-  await cronLogger.start()
+  const logWithinRuntimeBudget = (write: () => Promise<void>) =>
+    runWithRuntimeBudget({
+      budget: runtimeBudget,
+      minimumRemainingMs: 0,
+      operation: () => write(),
+    })
+  await logWithinRuntimeBudget(() => cronLogger.start())
 
   try {
     const url = new URL(request.url)
@@ -378,16 +582,20 @@ export async function GET(request: Request) {
 
     if (isProduction) {
       if (!cronSecret) {
-        await cronLogger.error(new Error("Unauthorized"), {
-          reason: "CRON_SECRET not set in production",
-        })
+        await logWithinRuntimeBudget(() =>
+          cronLogger.error(new Error("Unauthorized"), {
+            reason: "CRON_SECRET not set in production",
+          })
+        )
         return NextResponse.json(
           { error: "Unauthorized: CRON_SECRET required in production" },
           { status: 401 }
         )
       }
       if (authHeader !== `Bearer ${cronSecret}`) {
-        await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
+        await logWithinRuntimeBudget(() =>
+          cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
+        )
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
     }
@@ -406,6 +614,40 @@ export async function GET(request: Request) {
     )
     const startDate = aiPromptsStartDate()
     let remainingSends = maxTotalPerRun
+    const touchTasks: NurtureTouchTask[] = [
+      ...(promptVaultEnabled || dryRun
+        ? createTouchTasks(
+            PROMPT_VAULT_EMAIL_TOUCHES,
+            (touch, limit) =>
+              getPromptVaultCandidates({
+                emailType: touch.emailType,
+                days: touch.days,
+                previousEmailType: previousPromptVaultTouch(touch.emailType),
+                minTouchGapHours,
+                limit,
+              }),
+            (touch, candidate, signal, onAccepted) =>
+              sendPromptVaultTouch(touch.emailType, candidate, signal, onAccepted)
+          )
+        : []),
+      ...(aiPromptsEnabled || dryRun
+        ? createTouchTasks(
+            [...AI_PROMPTS_EMAIL_TOUCHES].reverse(),
+            (touch, limit) =>
+              getAiPromptsCandidates({
+                emailType: touch.emailType,
+                days: touch.days,
+                startDate,
+                previousEmailType: previousAiPromptTouch(touch.emailType),
+                minTouchGapHours,
+                limit,
+              }),
+            (touch, candidate, signal, onAccepted) =>
+              sendAiPromptsTouch(touch.emailType, candidate, signal, onAccepted)
+          )
+        : []),
+    ]
+    let touchesRemaining = touchTasks.length
 
     const results: Record<string, TouchResult | boolean | number | string> = {
       dryRun,
@@ -424,99 +666,24 @@ export async function GET(request: Request) {
     // 1. Vault BUYERS first (few people, highest trust, they just paid).
     // 2. Lead touches deepest-first (day 9 -> day 1): conversion-critical sends beat
     //    top-of-funnel mass. Later touches gate on PAST sends, so reverse order is safe. ──
-    if (promptVaultEnabled || dryRun) {
-      for (const touch of PROMPT_VAULT_EMAIL_TOUCHES) {
-        const key = resultKey(touch.emailType)
-        const result = emptyTouchResult()
-        results[key] = result
+    for (const task of touchTasks) {
+      const key = resultKey(task.emailType)
+      const result = emptyTouchResult()
+      results[key] = result
 
-        if (remainingSends <= 0) {
-          result.skipped = dryRun ? 0 : maxPerTouch
-          continue
-        }
-
-        const candidates = await getPromptVaultCandidates({
-          emailType: touch.emailType,
-          days: touch.days,
-          previousEmailType: previousPromptVaultTouch(touch.emailType),
-          minTouchGapHours,
-          limit: Math.min(maxPerTouch, remainingSends),
-        })
-        result.found = candidates.length
-
-        if (dryRun) {
-          result.wouldSend = candidates.length
-          result.skipped = candidates.length
-          remainingSends -= candidates.length
-          continue
-        }
-
-        for (const candidate of candidates) {
-          const sent = await sendPromptVaultTouch(touch.emailType, candidate)
-          if (sent.success) {
-            result.sent += 1
-            remainingSends -= 1
-          } else {
-            result.failed += 1
-            errors.push({
-              email: candidate.email,
-              touch: touch.emailType,
-              error: sent.error || "unknown",
-            })
-          }
-
-          await sleep(sendDelayMs)
-          if (remainingSends <= 0) break
-        }
-      }
-    }
-
-    if (aiPromptsEnabled || dryRun) {
-      for (const touch of [...AI_PROMPTS_EMAIL_TOUCHES].reverse()) {
-        const key = resultKey(touch.emailType)
-        const result = emptyTouchResult()
-        results[key] = result
-
-        if (remainingSends <= 0) {
-          result.skipped = dryRun ? 0 : maxPerTouch
-          continue
-        }
-
-        const candidates = await getAiPromptsCandidates({
-          emailType: touch.emailType,
-          days: touch.days,
-          startDate,
-          previousEmailType: previousAiPromptTouch(touch.emailType),
-          minTouchGapHours,
-          limit: Math.min(maxPerTouch, remainingSends),
-        })
-        result.found = candidates.length
-
-        if (dryRun) {
-          result.wouldSend = candidates.length
-          result.skipped = candidates.length
-          remainingSends -= candidates.length
-          continue
-        }
-
-        for (const candidate of candidates) {
-          const sent = await sendAiPromptsTouch(touch.emailType, candidate)
-          if (sent.success) {
-            result.sent += 1
-            remainingSends -= 1
-          } else {
-            result.failed += 1
-            errors.push({
-              email: candidate.email,
-              touch: touch.emailType,
-              error: sent.error || "unknown",
-            })
-          }
-
-          await sleep(sendDelayMs)
-          if (remainingSends <= 0) break
-        }
-      }
+      const next = await runTouch({
+        ...task,
+        result,
+        dryRun,
+        maxPerTouch,
+        remainingSends,
+        touchesRemaining,
+        runtimeBudget,
+        errors,
+        sendDelayMs,
+      })
+      remainingSends = next.remainingSends
+      touchesRemaining = next.touchesRemaining
     }
 
     const totalSent = Object.values(results).reduce<number>(
@@ -538,15 +705,21 @@ export async function GET(request: Request) {
       totalSent,
       totalFailed,
       remainingSends,
+      runtime: {
+        budgetMs: RUNTIME_BUDGET_MS,
+        elapsedMs: runtimeBudget.elapsedMs(),
+        remainingMs: runtimeBudget.remainingMs(),
+        stoppedForBudget: !runtimeBudget.canStart(MIN_SEND_BUDGET_MS),
+      },
     }
-    await cronLogger.success(summary)
+    await logWithinRuntimeBudget(() => cronLogger.success(summary))
     return NextResponse.json({
       success: true,
       ...summary,
       errors: errors.slice(0, 20),
     })
   } catch (error: unknown) {
-    await cronLogger.error(error, { step: "ai-photoshoot-nurture" })
+    await logWithinRuntimeBudget(() => cronLogger.error(error, { step: "ai-photoshoot-nurture" }))
     return NextResponse.json(
       {
         success: false,
