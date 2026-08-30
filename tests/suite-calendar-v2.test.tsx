@@ -44,7 +44,23 @@ vi.mock("@/components/feed-planner/feed-nav-context", () => ({
 }))
 
 vi.mock("@/components/feed-planner/feed-gallery-selector", () => ({
-  FeedGallerySelector: () => <div>Gallery selector</div>,
+  FeedGallerySelector: ({ onImageSelected }: { onImageSelected: (post: unknown) => void }) => (
+    <button
+      type="button"
+      onClick={() =>
+        onImageSelected({
+          id: 102,
+          position: 2,
+          image_url: "https://example.com/generated.jpg",
+          caption: "Generated caption",
+          scheduled_at: null,
+          is_posted: false,
+        })
+      }
+    >
+      Choose generated photo
+    </button>
+  ),
 }))
 
 vi.mock("@/hooks/use-toast", () => ({ toast: mocks.toast }))
@@ -173,6 +189,20 @@ describe("Suite Calendar 2.0", () => {
     fireEvent.click(screen.getByRole("button", { name: "Later" }))
 
     expect(caption).toHaveValue("Unsaved member draft")
+  })
+
+  it("adopts generated fields that the member has not edited", async () => {
+    const { SuiteCalendar } = await import("@/components/app-v3/suite-calendar")
+    render(<SuiteCalendar />)
+
+    fireEvent.click(await screen.findByRole("button", { name: "Add photo to post 2, Draft" }))
+    const caption = screen.getByPlaceholderText("Write what you want to say…")
+    expect(caption).toHaveValue("")
+
+    fireEvent.click(screen.getByRole("button", { name: "Choose photo" }))
+    fireEvent.click(screen.getByRole("button", { name: "Choose generated photo" }))
+
+    await waitFor(() => expect(caption).toHaveValue("Generated caption"))
   })
 
   it("requires a second confirmation before removing a photo", async () => {
