@@ -3,6 +3,7 @@
 // Contact Properties so old funnels benefit without recreating segment sprawl.
 
 import { isAppUnsubscribed } from "@/lib/email/unsubscribe"
+import { acquireKvLock, releaseKvLock } from "@/lib/cache"
 import { requireResendClient } from "@/lib/resend/client"
 import { hasResendApiKey } from "@/lib/resend/api-key"
 
@@ -70,15 +71,60 @@ export interface ResendContactSyncOptions {
 
 type ResendRequestPacer = <T>(request: () => Promise<T>) => Promise<T>
 
-function createResendRequestPacer(requestIntervalMs = 0): ResendRequestPacer {
-  let hasMadeRequest = false
+const RESEND_PROVIDER_SLOT_KEY = "rate-limit:resend:provider-request"
+const RESEND_PROVIDER_SLOT_TTL_MS = 15_000
+const RESEND_PROVIDER_SLOT_WAIT_MS = 100
+const RESEND_PROVIDER_SLOT_TIMEOUT_MS = 15_000
 
-  return async request => {
-    if (hasMadeRequest && requestIntervalMs > 0) {
-      await new Promise(resolve => setTimeout(resolve, requestIntervalMs))
+let inProcessRequestTail: Promise<void> = Promise.resolve()
+
+async function waitForDistributedResendSlot() {
+  const deadline = Date.now() + RESEND_PROVIDER_SLOT_TIMEOUT_MS
+  const requireDistributedLock = process.env.VERCEL_ENV === "production"
+
+  while (Date.now() < deadline) {
+    const slot = await acquireKvLock({
+      key: RESEND_PROVIDER_SLOT_KEY,
+      ttlMs: RESEND_PROVIDER_SLOT_TTL_MS,
+      requireLockWhenNoRedis: requireDistributedLock,
+    })
+    if (slot.acquired) return slot
+    if (!slot.locked) {
+      throw new Error("Distributed Resend request scheduler is not configured")
     }
-    hasMadeRequest = true
-    return request()
+    await new Promise(resolve => setTimeout(resolve, RESEND_PROVIDER_SLOT_WAIT_MS))
+  }
+
+  throw new Error("Timed out waiting for the distributed Resend request scheduler")
+}
+
+function createResendRequestPacer(requestIntervalMs = 0): ResendRequestPacer {
+  return async request => {
+    if (requestIntervalMs <= 0) return request()
+
+    let releaseInProcess!: () => void
+    const previousRequest = inProcessRequestTail
+    inProcessRequestTail = new Promise(resolve => {
+      releaseInProcess = resolve
+    })
+    await previousRequest
+
+    let distributedSlot: Awaited<ReturnType<typeof waitForDistributedResendSlot>> | null = null
+    try {
+      distributedSlot = await waitForDistributedResendSlot()
+      return await request()
+    } finally {
+      // Hold the account-wide slot through the cooldown so the next Vercel
+      // invocation cannot start another provider call inside the same 500 ms.
+      await new Promise(resolve => setTimeout(resolve, requestIntervalMs))
+      if (distributedSlot?.locked) {
+        await releaseKvLock({
+          key: RESEND_PROVIDER_SLOT_KEY,
+          value: distributedSlot.value,
+        })
+      }
+      releaseInProcess()
+    }
   }
 }
 
