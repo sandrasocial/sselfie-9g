@@ -204,6 +204,37 @@ describe("browser analytics identity bootstrap", () => {
     )
   })
 
+  it("publishes a rotated generation before exposing its new epoch", async () => {
+    const cookieWrites: string[] = []
+    const randomUUID = vi
+      .fn()
+      .mockReturnValueOnce("55555555-5555-4555-8555-555555555555")
+      .mockReturnValueOnce("44444444-4444-4444-8444-444444444444")
+    vi.stubGlobal("window", {
+      crypto: { randomUUID },
+      location: { protocol: "https:" },
+      sessionStorage: { setItem: vi.fn() },
+    })
+    vi.stubGlobal("document", {
+      get cookie() {
+        return cookieWrites.join("; ")
+      },
+      set cookie(value: string) {
+        cookieWrites.push(value)
+      },
+    })
+
+    const { rotateAnalyticsBrowserIdentity } = await import("@/lib/analytics/client")
+    expect(rotateAnalyticsBrowserIdentity()).toBe("44444444-4444-4444-8444-444444444444")
+
+    expect(cookieWrites[0]).toContain(
+      "sselfie_analytics_generation=44444444-4444-4444-8444-444444444444"
+    )
+    expect(cookieWrites[1]).toContain(
+      "sselfie_analytics_rotation=55555555-5555-4555-8555-555555555555"
+    )
+  })
+
   it("does not cache a transient null identity", async () => {
     const request = vi
       .fn<typeof fetch>()

@@ -86,8 +86,10 @@ export function rotateAnalyticsBrowserIdentity(): string | null {
   if (typeof window === "undefined") return null
   const rotation = window.crypto.randomUUID()
   const generation = window.crypto.randomUUID()
-  writeAnalyticsRotation(rotation)
+  // Publish the new generation first and the invalidating epoch last. A tab
+  // can see the old epoch/new generation briefly, but never the unsafe inverse.
   writeAnalyticsGeneration(generation)
+  writeAnalyticsRotation(rotation)
   writeAnalyticsTabState(generation, rotation)
   return generation
 }
