@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation"
 import BrandAssetsManager from "./brand-assets-manager"
 import { UpgradeModal } from "@/components/upgrade/upgrade-modal"
 import { getAccessLabel } from "@/lib/customer-access-labels"
+import { notifyAnalyticsLogout } from "@/lib/analytics/auth-browser-signal"
 
 interface SettingsScreenProps {
   onBack?: () => void // Made onBack optional since it's not always provided
@@ -221,6 +222,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
   const handleLogout = async () => {
     setIsLoggingOut(true)
     try {
+      notifyAnalyticsLogout()
       const response = await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",

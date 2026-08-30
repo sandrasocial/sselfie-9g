@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   logAnalytics: vi.fn(),
 }))
 
+vi.mock("server-only", () => ({}))
 vi.mock("@/lib/db/client", () => ({ sql: mocks.sql }))
 vi.mock("@/lib/stripe", () => ({
   stripe: { paymentIntents: { retrieve: mocks.retrievePaymentIntent } },
@@ -93,6 +94,10 @@ describe("paid blueprint credit/access/delivery resilience", () => {
     await handlePaidBlueprintCheckout(context)
 
     expect(mocks.grantCredits).toHaveBeenCalledTimes(1)
+    expect(mocks.logAnalytics).toHaveBeenCalledWith(expect.objectContaining({ userId: "user_1" }))
+    expect(mocks.logAnalytics.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.grantCredits.mock.invocationCallOrder[0]
+    )
     expect(mocks.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         idempotencyKey: "paid-blueprint-delivery:cs_paid_blueprint",
@@ -106,6 +111,99 @@ describe("paid blueprint credit/access/delivery resilience", () => {
       strings.join(" ").includes("SELECT id FROM email_logs")
     )
     expect(deliveryDedupe?.[0].join(" ")).toContain("status IN ('sent', 'delivered')")
+  })
+
+  it("joins a guest purchase to the user resolved after the durable payment write", async () => {
+    mocks.sql.mockImplementation((strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (query.includes("SELECT id FROM users WHERE email")) {
+        return [{ id: "guest_user_2" }]
+      }
+      return defaultSql(strings)
+    })
+    const guestContext = {
+      ...context,
+      userId: null,
+      referralPurchaseUserId: null,
+      session: {
+        ...context.session,
+        metadata: { product_type: "paid_blueprint" },
+      },
+    }
+    const { handlePaidBlueprintCheckout } = await import("@/lib/payments/handlers/paid-blueprint")
+
+    await handlePaidBlueprintCheckout(guestContext)
+
+    expect(mocks.logAnalytics).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "purchase",
+        userId: "guest_user_2",
+        idempotencyKey: "purchase:pi_paid_blueprint",
+        properties: expect.objectContaining({
+          stripe_payment_id: "pi_paid_blueprint",
+          stripe_session_id: "cs_paid_blueprint",
+        }),
+      })
+    )
+    const lookupIndex = mocks.sql.mock.calls.findIndex(([strings]) =>
+      strings.join(" ").includes("SELECT id FROM users WHERE email")
+    )
+    expect(lookupIndex).toBeGreaterThanOrEqual(0)
+    expect(mocks.logAnalytics.mock.invocationCallOrder[0]).toBeGreaterThan(
+      mocks.sql.mock.invocationCallOrder[lookupIndex]
+    )
+  })
+
+  it("keeps the durable purchase observation when guest identity resolution fails", async () => {
+    mocks.sql.mockImplementation((strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (query.includes("SELECT id FROM users WHERE email")) return []
+      return defaultSql(strings)
+    })
+    const guestContext = {
+      ...context,
+      userId: null,
+      referralPurchaseUserId: null,
+      session: {
+        ...context.session,
+        metadata: { product_type: "paid_blueprint" },
+      },
+    }
+    const { handlePaidBlueprintCheckout } = await import("@/lib/payments/handlers/paid-blueprint")
+
+    await expect(handlePaidBlueprintCheckout(guestContext)).rejects.toThrow(
+      "Paid blueprint user_id unresolved"
+    )
+    expect(mocks.logAnalytics).toHaveBeenCalledOnce()
+    expect(mocks.logAnalytics).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: null,
+        idempotencyKey: "purchase:pi_paid_blueprint",
+      })
+    )
+  })
+
+  it("keeps the internal purchase observation for test mode without fulfillment", async () => {
+    const testContext = {
+      ...context,
+      event: { ...context.event, livemode: false },
+    }
+    const { handlePaidBlueprintCheckout } = await import("@/lib/payments/handlers/paid-blueprint")
+
+    await expect(handlePaidBlueprintCheckout(testContext)).resolves.toEqual({
+      referralPurchaseUserId: "user_1",
+    })
+    expect(mocks.logAnalytics).toHaveBeenCalledOnce()
+    expect(mocks.logAnalytics).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "purchase",
+        userId: "user_1",
+        idempotencyKey: "purchase:pi_paid_blueprint",
+        properties: expect.objectContaining({ is_test_mode: true }),
+      })
+    )
+    expect(mocks.grantCredits).not.toHaveBeenCalled()
+    expect(mocks.sendEmail).not.toHaveBeenCalled()
   })
 
   it("throws access persistence failures so Stripe can replay", async () => {

@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const mocks = vi.hoisted(() => ({
+  capturePersistedPostHogEvent: vi.fn(),
   ensureAnalyticsSchema: vi.fn(),
   transaction: vi.fn(),
 }))
 
 vi.mock("@/lib/analytics/schema", () => ({
   ensureAnalyticsSchema: mocks.ensureAnalyticsSchema,
+}))
+vi.mock("@/lib/analytics/events", () => ({
+  capturePersistedPostHogEvent: mocks.capturePersistedPostHogEvent,
 }))
 vi.mock("server-only", () => ({}))
 vi.mock("@/lib/db/client", () => ({
@@ -81,6 +85,13 @@ describe("atomic Maya ready-post persistence", () => {
     expect(queries[2].text).toContain("INSERT INTO analytics_events")
     expect(queries[2].text).toContain("'suite_ready_post_saved'")
     expect(queries[2].text).toContain("'ready_post_key', ?::text")
+    expect(mocks.capturePersistedPostHogEvent).toHaveBeenCalledWith({
+      eventName: "suite_ready_post_saved",
+      idempotencyKey: expect.stringMatching(/^ready-post:[a-f0-9]{64}$/),
+      userId: "member-123",
+      path: "/app",
+      properties: { image_count: 2, is_rerun: false },
+    })
   })
 
   it("uses the complete media-and-caption fingerprint as the replay identity", async () => {
@@ -155,5 +166,12 @@ describe("atomic Maya ready-post persistence", () => {
         feedStyle: "editorial",
       })
     ).resolves.toMatchObject({ alreadyPlaced: true, position: 4 })
+    expect(mocks.capturePersistedPostHogEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "suite_ready_post_saved",
+        idempotencyKey: expect.stringMatching(/^ready-post:[a-f0-9]{64}$/),
+        properties: { image_count: 1, is_rerun: true },
+      })
+    )
   })
 })

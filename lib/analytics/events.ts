@@ -1,11 +1,48 @@
 import "server-only"
 
+import { createHash } from "node:crypto"
+import { after } from "next/server"
+
 import { ensureAnalyticsSchema } from "@/lib/analytics/schema"
 import { getDb } from "@/lib/db/client"
 import {
   isAllowedAnalyticsEventName,
   type AnalyticsEventName,
 } from "@/lib/analytics/event-contract"
+import { capturePostHogEvent, type PostHogCaptureInput } from "@/lib/analytics/posthog"
+
+type PostHogDelivery = {
+  complete: (input: PostHogCaptureInput | null) => void
+  registered: boolean
+}
+
+function registerPostHogDelivery(): PostHogDelivery {
+  let complete: PostHogDelivery["complete"] = () => undefined
+  const delivery = new Promise<PostHogCaptureInput | null>(resolve => {
+    complete = resolve
+  })
+
+  try {
+    after(async () => {
+      const input = await delivery
+      if (input) await capturePostHogEvent(input)
+    })
+    return { complete, registered: true }
+  } catch {
+    return { complete, registered: false }
+  }
+}
+
+const PERSISTED_POSTHOG_EVENTS = new Set(["suite_ready_post_saved"])
+
+export function capturePersistedPostHogEvent(input: PostHogCaptureInput): void {
+  if (!PERSISTED_POSTHOG_EVENTS.has(input.eventName)) return
+  try {
+    after(() => capturePostHogEvent(input))
+  } catch {
+    void capturePostHogEvent(input)
+  }
+}
 
 function safeString(v: unknown, maxLen: number): string | null {
   if (typeof v !== "string") return null
@@ -40,6 +77,7 @@ export async function logAnalyticsEvent(input: {
   anonId?: string | null
   path?: string | null
   referrer?: string | null
+  idempotencyKey?: string | null
   utm?: {
     source?: string | null
     medium?: string | null
@@ -49,20 +87,31 @@ export async function logAnalyticsEvent(input: {
   }
   properties?: Record<string, any> | null
 }): Promise<{ ok: true } | { ok: false; error: string }> {
+  let postHogDelivery: PostHogDelivery | null = null
   try {
     const eventName = safeString(input.eventName, 64)
     if (!eventName || !isAllowedAnalyticsEventName(eventName)) {
       return { ok: false, error: "Unsupported event" }
     }
+    const rawIdempotencyKey = safeString(input.idempotencyKey ?? null, 300)
+    const idempotencyKey = rawIdempotencyKey
+      ? createHash("sha256").update(`${eventName}:${rawIdempotencyKey}`).digest("hex")
+      : null
 
-    await ensureAnalyticsSchema()
-    const sql = getDb()
+    // Register request-lifecycle work before the first await. Some callers
+    // intentionally fire-and-forget analytics, so late registration can race
+    // the response boundary and lose provider delivery.
+    postHogDelivery = registerPostHogDelivery()
+
     const properties = safeJson(input.properties ?? {})
     if (eventName === "suite_intent_detected" && typeof properties.intent_label !== "string") {
       properties.intent_label =
         safeString(properties.format, 80) ||
         (properties.confidence === "needs_clarify" ? "needs_clarify" : "unclassified")
     }
+
+    await ensureAnalyticsSchema()
+    const sql = getDb()
 
     await sql`
       INSERT INTO analytics_events (
@@ -76,6 +125,7 @@ export async function logAnalyticsEvent(input: {
         utm_campaign,
         utm_content,
         utm_term,
+        idempotency_key,
         properties
       ) VALUES (
         ${safeString(input.userId ?? null, 128)},
@@ -88,12 +138,36 @@ export async function logAnalyticsEvent(input: {
         ${safeString(input.utm?.campaign ?? null, 150)},
         ${safeString(input.utm?.content ?? null, 150)},
         ${safeString(input.utm?.term ?? null, 150)},
+        ${idempotencyKey},
         ${properties}
       )
+      ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
+      RETURNING id
     `
+
+    const postHogInput = {
+      eventName,
+      idempotencyKey,
+      userId: input.userId,
+      anonId: input.anonId,
+      path: input.path,
+      attribution: {
+        source: input.utm?.source,
+        medium: input.utm?.medium,
+        campaign: input.utm?.campaign,
+      },
+      properties,
+    }
+    postHogDelivery.complete(postHogInput)
+    if (!postHogDelivery.registered) {
+      // Some non-request callers do not expose Next's lifecycle hook. Keep the
+      // provider detached and swallow its already fail-open result.
+      void capturePostHogEvent(postHogInput)
+    }
 
     return { ok: true }
   } catch (err: any) {
+    postHogDelivery?.complete(null)
     // Fail open: analytics must never break core flows.
     console.error("[analytics] logAnalyticsEvent failed:", err?.message || String(err))
     return { ok: false, error: err?.message || String(err) }

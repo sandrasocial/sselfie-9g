@@ -9,7 +9,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generateStarterKitDay0DeliveryEmail } from "@/lib/email/templates/starter-kit-day0-delivery"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
-import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { schedulePurchaseObservation } from "./purchase-analytics"
 import { updateContactTags as updateTags } from "@/lib/resend/manage-contact"
 import { generatePasswordSetupLinkForPurchase } from "../shared"
 import type { CheckoutFulfillmentContext } from "../types"
@@ -117,6 +117,7 @@ export async function handleStarterKitCheckout(ctx: CheckoutFulfillmentContext):
       }
 
       const starterKitCustomerIdForStorage = customerId || session.id
+      let paymentRecorded = false
 
       if (starterKitCustomerIdForStorage) {
         try {
@@ -158,9 +159,25 @@ export async function handleStarterKitCheckout(ctx: CheckoutFulfillmentContext):
               status = 'succeeded',
               updated_at = NOW()
           `
+          paymentRecorded = true
         } catch (paymentError: any) {
           console.error(`[v0] Error storing starter kit payment:`, paymentError.message)
         }
+      }
+
+      if (paymentRecorded) {
+        schedulePurchaseObservation({
+          eventName: "starter_kit_checkout_success",
+          userId: userId ? String(userId) : null,
+          source,
+          productType: "starter_kit",
+          amountCents: paymentAmountCents,
+          currency: "usd",
+          sessionId: session.id,
+          paymentId: paymentIdForStorage,
+          isTestMode,
+          checkoutMetadata: session.metadata,
+        })
       }
 
       await sql`
@@ -278,22 +295,5 @@ export async function handleStarterKitCheckout(ctx: CheckoutFulfillmentContext):
         console.error("[v0] Failed to update Starter Kit tags:", tagError)
       })
 
-      try {
-        await logAnalyticsEvent({
-          eventName: "starter_kit_checkout_success",
-          userId: String(userId),
-          properties: {
-            source: source || "landing_page",
-            product_type: "starter_kit",
-            value: paymentAmountCents / 100,
-            currency: "usd",
-            stripe_session_id: session.id,
-            stripe_payment_id: paymentIdForStorage,
-            is_test_mode: isTestMode,
-          },
-        })
-      } catch {
-        // best effort only
-      }
     }
 }

@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 import Script from "next/script"
 import { Analytics } from "@vercel/analytics/next"
+import { PostHogProvider } from "@/components/analytics/posthog-provider"
 import "./globals.css"
 
 const GOOGLE_ANALYTICS_MEASUREMENT_ID = "G-VNGYFYJNCM"
@@ -160,6 +161,10 @@ export default function RootLayout({
         )}
 
         {children}
+        <PostHogProvider
+          apiKey={process.env.NEXT_PUBLIC_POSTHOG_KEY || ""}
+          apiHost={process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com"}
+        />
         <Analytics />
       </body>
     </html>

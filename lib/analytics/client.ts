@@ -1,22 +1,277 @@
 "use client"
 
+export type BrowserAnalyticsIdentity = {
+  distinctId: string | null
+  resetPostHog: boolean
+  resetPostHogNonce: string | null
+  rotationEpoch: string
+}
+
+let identityRequest: Promise<BrowserAnalyticsIdentity> | null = null
+const ANALYTICS_GENERATION_COOKIE = "sselfie_analytics_generation"
+const TAB_GENERATION_SESSION_KEY = "sselfie_analytics_tab_generation"
+const ANALYTICS_ROTATION_COOKIE = "sselfie_analytics_rotation"
+const TAB_ROTATION_SESSION_KEY = "sselfie_analytics_tab_rotation"
+const POSTHOG_RESET_ACK_TIMEOUT_MS = 2_000
+const ANALYTICS_UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function writeAnalyticsGeneration(generation: string): void {
+  const secure = window.location.protocol === "https:" ? "; Secure" : ""
+  document.cookie = `${ANALYTICS_GENERATION_COOKIE}=${generation}; Path=/; SameSite=Lax; Max-Age=31536000${secure}`
+}
+
+function browserCookieValue(name: string): string | null {
+  return (
+    document.cookie
+      .split(";")
+      .map(value => value.trim())
+      .find(value => value.startsWith(`${name}=`))
+      ?.slice(name.length + 1) || null
+  )
+}
+
+function analyticsRotationCookie(): string | null {
+  const rotation = browserCookieValue(ANALYTICS_ROTATION_COOKIE)
+  return rotation && ANALYTICS_UUID_PATTERN.test(rotation) ? rotation : null
+}
+
+function writeAnalyticsRotation(rotation: string): void {
+  const secure = window.location.protocol === "https:" ? "; Secure" : ""
+  document.cookie = `${ANALYTICS_ROTATION_COOKIE}=${rotation}; Path=/; SameSite=Lax; Max-Age=31536000${secure}`
+}
+
+function writeAnalyticsTabState(generation: string, rotation: string | null): void {
+  try {
+    window.sessionStorage?.setItem(TAB_GENERATION_SESSION_KEY, generation)
+    window.sessionStorage?.setItem(TAB_ROTATION_SESSION_KEY, rotation ?? "")
+  } catch {
+    // The shared cookie remains the fallback when storage is unavailable.
+  }
+}
+
+function analyticsTabGeneration(rotation: string | null): string | null {
+  try {
+    const generation = window.sessionStorage?.getItem(TAB_GENERATION_SESSION_KEY)
+    const tabRotation = window.sessionStorage?.getItem(TAB_ROTATION_SESSION_KEY)
+    const expectedRotation = rotation ?? ""
+    return generation &&
+      ANALYTICS_UUID_PATTERN.test(generation) &&
+      tabRotation === expectedRotation
+      ? generation
+      : null
+  } catch {
+    return null
+  }
+}
+
+export function analyticsBrowserRotationEpoch(): string {
+  if (typeof window === "undefined") return ""
+  return analyticsRotationCookie() ?? ""
+}
+
+export function isAnalyticsRotationEpochCurrent(epoch: string): boolean {
+  return typeof window !== "undefined" && epoch === analyticsBrowserRotationEpoch()
+}
+
+export function clearAnalyticsTabGeneration(): void {
+  if (typeof window === "undefined") return
+  try {
+    window.sessionStorage?.removeItem(TAB_GENERATION_SESSION_KEY)
+    window.sessionStorage?.removeItem(TAB_ROTATION_SESSION_KEY)
+  } catch {
+    // A restricted storage implementation has no tab generation to clear.
+  }
+}
+
+export function rotateAnalyticsBrowserGeneration(): string | null {
+  if (typeof window === "undefined") return null
+  const generation = window.crypto.randomUUID()
+  writeAnalyticsGeneration(generation)
+  writeAnalyticsTabState(generation, analyticsRotationCookie())
+  return generation
+}
+
+export function rotateAnalyticsBrowserIdentity(): string | null {
+  if (typeof window === "undefined") return null
+  const rotation = window.crypto.randomUUID()
+  const generation = window.crypto.randomUUID()
+  // Publish the new generation first and the invalidating epoch last. A tab
+  // can see the old epoch/new generation briefly, but never the unsafe inverse.
+  writeAnalyticsGeneration(generation)
+  writeAnalyticsRotation(rotation)
+  writeAnalyticsTabState(generation, rotation)
+  return generation
+}
+
+export function analyticsBrowserGeneration(): string | null {
+  if (typeof window === "undefined") return null
+  const rotation = analyticsRotationCookie()
+  const tabGeneration = analyticsTabGeneration(rotation)
+  if (tabGeneration) {
+    // Another tab may replace the shared cookie; same-tab events continue to
+    // carry this generation explicitly until logout/account deletion clears it.
+    // Never mirror it back: a stale tab must not undo a shared logout rotation.
+    return tabGeneration
+  }
+  const existing = browserCookieValue(ANALYTICS_GENERATION_COOKIE)
+  if (existing && ANALYTICS_UUID_PATTERN.test(existing)) {
+    writeAnalyticsGeneration(existing)
+    writeAnalyticsTabState(existing, rotation)
+    return existing
+  }
+  return rotateAnalyticsBrowserGeneration()
+}
+
+export function invalidateAnalyticsBrowserIdentity(): void {
+  identityRequest = null
+  // Logout and account-deletion broadcasts call this in every listening tab.
+  // No pre-rotation tab identity may survive into anonymous post-logout use.
+  clearAnalyticsTabGeneration()
+}
+
+async function requestAnalyticsIdentity(
+  rotateAnonymous: boolean
+): Promise<BrowserAnalyticsIdentity> {
+  let rotationEpoch = ""
+  try {
+    rotationEpoch = analyticsBrowserRotationEpoch()
+    const generation = analyticsBrowserGeneration()
+    // Bind the response to the shared logout/account-deletion epoch that was
+    // current when this request began. Consumers must reject the identity if
+    // that epoch changes while the request or SDK initialization is in flight.
+    if (analyticsBrowserRotationEpoch() !== rotationEpoch) {
+      return { distinctId: null, resetPostHog: false, resetPostHogNonce: null, rotationEpoch }
+    }
+    const response = await fetch(
+      `/api/analytics/event${rotateAnonymous ? "?rotate_anonymous=1" : ""}`,
+      {
+        credentials: "same-origin",
+        headers: generation ? { "x-sselfie-analytics-generation": generation } : undefined,
+        cache: "no-store",
+        keepalive: true,
+      }
+    )
+    if (!response.ok) {
+      return { distinctId: null, resetPostHog: false, resetPostHogNonce: null, rotationEpoch }
+    }
+    const data = await response.json()
+    const resetPostHogNonce =
+      typeof data?.resetPostHogNonce === "string" &&
+      ANALYTICS_UUID_PATTERN.test(data.resetPostHogNonce)
+        ? data.resetPostHogNonce
+        : null
+    return {
+      distinctId: typeof data?.distinctId === "string" ? data.distinctId : null,
+      resetPostHog: data?.resetPostHog === true && resetPostHogNonce !== null,
+      resetPostHogNonce,
+      rotationEpoch,
+    }
+  } catch {
+    return { distinctId: null, resetPostHog: false, resetPostHogNonce: null, rotationEpoch }
+  }
+}
+
+export function ensureAnalyticsBrowserIdentity(
+  options: Readonly<{ refresh?: boolean; rotateAnonymous?: boolean }> = {}
+): Promise<BrowserAnalyticsIdentity> {
+  const shouldRefresh = options.refresh === true || options.rotateAnonymous === true
+  if (!identityRequest) {
+    identityRequest = requestAnalyticsIdentity(options.rotateAnonymous === true)
+  } else if (shouldRefresh) {
+    identityRequest = identityRequest
+      .catch(() => ({
+        distinctId: null,
+        resetPostHog: false,
+        resetPostHogNonce: null,
+        rotationEpoch: "",
+      }))
+      .then(() => requestAnalyticsIdentity(options.rotateAnonymous === true))
+  }
+  const request = identityRequest
+  return request.then(identity => {
+    // Do not pin a transient auth/mapping outage for the whole browser session.
+    // Capture remains disabled, while a later bounded bootstrap attempt can retry.
+    if (!identity.distinctId && identityRequest === request) identityRequest = null
+    return identity
+  })
+}
+
+export async function acknowledgePostHogReset(resetNonce: string | null): Promise<boolean> {
+  if (!resetNonce || !ANALYTICS_UUID_PATTERN.test(resetNonce)) return false
+  const controller = new AbortController()
+  const timeout = globalThis.setTimeout(() => controller.abort(), POSTHOG_RESET_ACK_TIMEOUT_MS)
+  try {
+    const response = await fetch("/api/analytics/event", {
+      method: "POST",
+      headers: { "x-sselfie-posthog-reset-ack": resetNonce },
+      credentials: "same-origin",
+      cache: "no-store",
+      keepalive: true,
+      signal: controller.signal,
+    })
+    return response.ok
+  } catch {
+    return false
+  } finally {
+    globalThis.clearTimeout(timeout)
+  }
+}
+
 export async function trackAnalyticsEvent(input: {
   event: string
-  properties?: Record<string, any>
+  properties?: Record<string, unknown>
+  navigationSafe?: boolean
 }) {
   try {
+    const browserGeneration = analyticsBrowserGeneration()
     const payload = {
       event: input.event,
+      ...(browserGeneration ? { analytics_generation: browserGeneration } : {}),
       properties: input.properties || {},
-      path: typeof window !== "undefined" ? window.location.pathname + window.location.search : null,
-      utm_source: typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("utm_source") : null,
-      utm_medium: typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("utm_medium") : null,
+      path:
+        typeof window !== "undefined" ? window.location.pathname + window.location.search : null,
+      utm_source:
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("utm_source")
+          : null,
+      utm_medium:
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("utm_medium")
+          : null,
       utm_campaign:
-        typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("utm_campaign") : null,
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("utm_campaign")
+          : null,
       utm_content:
-        typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("utm_content") : null,
-      utm_term: typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("utm_term") : null,
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("utm_content")
+          : null,
+      utm_term:
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("utm_term")
+          : null,
     }
+
+    // Navigation clicks cannot wait for a cold identity bootstrap: the page may
+    // unload before the beacon is created. The event endpoint resolves and sets
+    // the same server-side identity, so send these explicitly marked events now.
+    if (
+      input.navigationSafe === true &&
+      typeof navigator !== "undefined" &&
+      typeof navigator.sendBeacon === "function"
+    ) {
+      // Install the browser generation synchronously so the beacon and the
+      // destination page's identity GET derive the same first-visit anon ID.
+      const blob = new Blob([JSON.stringify(payload)], { type: "application/json" })
+      navigator.sendBeacon("/api/analytics/event", blob)
+      return
+    }
+
+    // Establish the HTTP-only anonymous identity before POSTing. The provider
+    // shares this in-flight request, preventing concurrent GET/POST requests
+    // from minting different first-visit identities.
+    await ensureAnalyticsBrowserIdentity()
 
     // Prefer sendBeacon when available (non-blocking, survives navigation).
     if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
@@ -35,4 +290,3 @@ export async function trackAnalyticsEvent(input: {
     // Tracking is best-effort only.
   }
 }
-

@@ -65,7 +65,12 @@ describe("campaign outcome payment fulfillment", () => {
         payment_intent: "pi_campaign_1",
         customer: "cus_campaign_1",
         customer_details: { email: "buyer@example.com", name: "Buyer Name" },
-        metadata: {},
+        metadata: {
+          utm_source: "email",
+          utm_medium: "lifecycle",
+          utm_campaign: "campaign_outcome_test",
+          utm_content: "founder_test",
+        },
       } as any,
       isPaymentPaid: true,
       customerEmail: "buyer@example.com",
@@ -88,7 +93,17 @@ describe("campaign outcome payment fulfillment", () => {
       })
     )
     expect(analyticsMock).toHaveBeenCalledWith(
-      expect.objectContaining({ eventName: "campaign_purchase" })
+      expect.objectContaining({
+        eventName: "campaign_purchase",
+        idempotencyKey: "purchase:pi_campaign_1",
+        utm: {
+          source: "email",
+          medium: "lifecycle",
+          campaign: "campaign_outcome_test",
+          content: "founder_test",
+          term: null,
+        },
+      })
     )
   })
 
@@ -204,8 +219,12 @@ describe("campaign outcome payment fulfillment", () => {
     expect(
       sqlMock.mock.calls.some(call => queryText(call).includes("intake_email_sent_at = COALESCE"))
     ).toBe(true)
-    expect(analyticsMock).not.toHaveBeenCalledWith(
-      expect.objectContaining({ eventName: "campaign_purchase" })
+    expect(analyticsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "campaign_purchase",
+        idempotencyKey: "purchase:pi_campaign_retry",
+        properties: expect.objectContaining({ source: "campaign_outcome_paid" }),
+      })
     )
   })
 })

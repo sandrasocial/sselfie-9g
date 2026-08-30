@@ -382,6 +382,13 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
           await logAnalyticsEvent({
             eventName: "purchase",
             userId: sub?.user_id ? String(sub.user_id) : null,
+            idempotencyKey: `purchase:${paymentId}`,
+            utm: {
+              source: checkoutAttribution?.utm_source || null,
+              medium: checkoutAttribution?.utm_medium || null,
+              campaign: checkoutAttribution?.utm_campaign || null,
+              content: checkoutAttribution?.utm_content || null,
+            },
             properties: {
               source: "stripe_webhook",
               payment_type: "subscription",

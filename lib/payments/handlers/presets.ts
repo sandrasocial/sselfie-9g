@@ -4,9 +4,12 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generatePresetsDeliveryEmail } from "@/lib/email/templates/presets-delivery"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
-import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { schedulePurchaseObservation } from "./purchase-analytics"
 import { markRevenueEnginePurchase } from "../shared"
-import { getDefaultPresetCollection, getPresetCollectionsForAccess } from "@/lib/presets/published-collections"
+import {
+  getDefaultPresetCollection,
+  getPresetCollectionsForAccess,
+} from "@/lib/presets/published-collections"
 import {
   isPresetsProductType,
   presetsSourceForTier,
@@ -18,7 +21,12 @@ import type { CheckoutFulfillmentContext } from "../types"
 function getStripeObjectId(value: unknown): string | null {
   if (!value) return null
   if (typeof value === "string") return value
-  if (typeof value === "object" && value !== null && "id" in value && typeof value.id === "string") {
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof value.id === "string"
+  ) {
     return value.id
   }
   return null
@@ -35,7 +43,7 @@ export async function handlePresetsCheckout(ctx: CheckoutFulfillmentContext): Pr
 
   if (!isPaymentPaid) {
     console.log(
-      `[presets] checkout completed but payment not confirmed (status: '${session.payment_status}').`,
+      `[presets] checkout completed but payment not confirmed (status: '${session.payment_status}').`
     )
     return
   }
@@ -59,11 +67,8 @@ export async function handlePresetsCheckout(ctx: CheckoutFulfillmentContext): Pr
 
   const stripeCustomerIdForStorage = customerId || session.id
   const source = presetsSourceForTier(tier)
-  const defaultCollection = tier === "single" ? await getDefaultPresetCollection() : null
-  const collectionSlug =
-    tier === "single"
-      ? session.metadata?.preset_collection_slug || defaultCollection?.slug || null
-      : null
+  let collectionSlug = tier === "single" ? session.metadata?.preset_collection_slug || null : null
+  let paymentRecorded = false
 
   try {
     await sql`
@@ -104,8 +109,41 @@ export async function handlePresetsCheckout(ctx: CheckoutFulfillmentContext): Pr
         status = 'succeeded',
         updated_at = NOW()
     `
+    paymentRecorded = true
   } catch (paymentError: any) {
     console.error("[presets] Error storing presets payment:", paymentError.message)
+  }
+
+  if (tier === "single" && !collectionSlug) {
+    try {
+      const defaultCollection = await getDefaultPresetCollection()
+      collectionSlug = defaultCollection?.slug || null
+    } catch (collectionError: any) {
+      // Collection resolution enriches analytics and delivery, but it must not
+      // move provider work or unrelated fulfillment onto the paid critical path.
+      console.error("[presets] Error resolving default collection:", collectionError.message)
+    }
+  }
+
+  if (paymentRecorded) {
+    schedulePurchaseObservation({
+      eventName: "presets_checkout_success",
+      userId: userId || null,
+      source: session.metadata?.source || source,
+      productType,
+      amountCents: paymentAmountCents,
+      currency: typeof session.currency === "string" ? session.currency : "usd",
+      sessionId: session.id,
+      paymentId: paymentIdForStorage,
+      isTestMode,
+      checkoutMetadata: session.metadata,
+      path: "/checkout/success",
+      properties: {
+        checkout_session_id: session.id,
+        preset_tier: tier,
+        preset_collection_slug: collectionSlug,
+      },
+    })
   }
 
   try {
@@ -229,20 +267,6 @@ export async function handlePresetsCheckout(ctx: CheckoutFulfillmentContext): Pr
     } else {
       console.error(`[presets] Failed to send delivery email: ${emailResult.error}`)
     }
-
-    await logAnalyticsEvent({
-      eventName: "presets_checkout_success",
-      userId: userId || null,
-      path: "/checkout/success",
-      properties: {
-        checkout_session_id: session.id,
-        product_type: productType,
-        preset_tier: tier,
-        preset_collection_slug: collectionSlug,
-        source: session.metadata?.source || source,
-        is_test_mode: isTestMode,
-      },
-    })
   } catch (emailError: any) {
     console.error("[presets] Error creating access or sending delivery email:", emailError.message)
   }

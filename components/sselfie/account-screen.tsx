@@ -17,6 +17,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { ReferralDashboard } from "@/components/referrals/referral-dashboard"
 import { MayaIdentityNotes } from "./maya/maya-identity-notes"
 import { trackCTAClick } from "@/lib/analytics"
+import { notifyAnalyticsLogout } from "@/lib/analytics/auth-browser-signal"
 import { getAccessLabel, getProductDisplayName } from "@/lib/customer-access-labels"
 
 interface AccountScreenProps {
@@ -390,6 +391,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
   const handleLogout = async () => {
     setIsLoggingOut(true)
     try {
+      notifyAnalyticsLogout()
       const response = await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",
@@ -417,6 +419,13 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
         credentials: "include",
       })
       if (response.ok) {
+        notifyAnalyticsLogout({
+          preserveSupabaseSessionGeneration: false,
+          // The deletion response already installed a new generation and its
+          // matching anonymous identity. Preserve that pair while notifying
+          // this tab and other tabs that the authenticated identity is gone.
+          rotateAnalyticsGeneration: false,
+        })
         router.push("/auth/login")
       } else {
         const data = await response.json().catch(() => ({}))

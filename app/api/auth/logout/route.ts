@@ -1,7 +1,30 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
+import {
+  analyticsGenerationFromRequest,
+  rotateAnonymousAnalyticsIdentity,
+} from "@/lib/analytics/identity-cookies"
+import {
+  clearSupabaseSessionCookies,
+  markSupabaseSessionGeneration,
+} from "@/lib/supabase/session-cookies"
 
-export async function POST() {
+function completedLocalLogoutResponse(req?: NextRequest) {
+  const response = NextResponse.json({
+    success: true,
+    providerRevocationPending: true,
+  })
+  const generation = analyticsGenerationFromRequest(req)
+  // The user explicitly requested logout. If the provider call failed before
+  // clearing its SSR cookies, expire the local session so analytics cannot
+  // reset and immediately re-identify the same authenticated user.
+  clearSupabaseSessionCookies(response, req)
+  markSupabaseSessionGeneration(response, generation)
+  rotateAnonymousAnalyticsIdentity(response, generation, req)
+  return response
+}
+
+export async function POST(req?: NextRequest) {
   try {
     const supabase = await createServerClient()
 
@@ -11,14 +34,21 @@ export async function POST() {
 
     if (error) {
       console.error("[v0] Logout error:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return completedLocalLogoutResponse(req)
     }
 
     console.log("[v0] User logged out successfully")
 
-    return NextResponse.json({ success: true })
+    const response = NextResponse.json({ success: true })
+    const generation = analyticsGenerationFromRequest(req)
+    // Rotate the server-owned anonymous identity and leave a short-lived,
+    // HTTP-only reset signal. The next provider bootstrap clears the persisted
+    // PostHog SDK identity before anonymous activity can be captured.
+    markSupabaseSessionGeneration(response, generation)
+    rotateAnonymousAnalyticsIdentity(response, generation, req)
+    return response
   } catch (error) {
     console.error("[v0] Error during logout:", error)
-    return NextResponse.json({ error: "Failed to logout" }, { status: 500 })
+    return completedLocalLogoutResponse(req)
   }
 }

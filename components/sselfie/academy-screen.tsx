@@ -12,6 +12,7 @@ import UnifiedLoading from "./unified-loading"
 import { useRouter, useSearchParams } from "next/navigation"
 import { parseAcademyViewParam } from "@/lib/academy/view-routing"
 import { handleCheckoutFailure } from "@/lib/checkout-failure"
+import { notifyAnalyticsLogout } from "@/lib/analytics/auth-browser-signal"
 
 const fetcher = async (url: string) => {
   console.log("[v0] Fetching Academy data from:", url)
@@ -1040,6 +1041,7 @@ export default function AcademyScreen() {
   const handleLogout = async () => {
     setIsLoggingOut(true)
     try {
+      notifyAnalyticsLogout()
       const response = await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",

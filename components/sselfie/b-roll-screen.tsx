@@ -21,6 +21,7 @@ import InstagramReelCard from "./instagram-reel-card"
 import { useRouter } from "next/navigation"
 import BuyCreditsModal from "./buy-credits-modal"
 import { DesignClasses } from "@/lib/design-tokens"
+import { notifyAnalyticsLogout } from "@/lib/analytics/auth-browser-signal"
 
 interface BRollScreenProps {
   user: any
@@ -133,6 +134,7 @@ export default function BRollScreen({ user }: BRollScreenProps) {
   const handleLogout = async () => {
     setIsLoggingOut(true)
     try {
+      notifyAnalyticsLogout()
       const response = await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",

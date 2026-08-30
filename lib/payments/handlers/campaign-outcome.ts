@@ -34,7 +34,9 @@ export async function handleCampaignOutcomeCheckout(
   if (!customerEmail) throw new Error("Missing customer email for campaign outcome fulfillment")
   const currency = String(ctx.session.currency || "").toLowerCase()
   if (ctx.session.amount_total !== 9700 || currency !== "usd") {
-    throw new Error(`Campaign outcome expected USD 9700; received ${currency || "missing currency"} ${ctx.session.amount_total ?? "missing amount"}`)
+    throw new Error(
+      `Campaign outcome expected USD 9700; received ${currency || "missing currency"} ${ctx.session.amount_total ?? "missing amount"}`
+    )
   }
 
   await ensureCampaignOutcomeSchema()
@@ -94,19 +96,26 @@ export async function handleCampaignOutcomeCheckout(
     `
   }
 
-  if (created) {
-    await logAnalyticsEvent({
-      eventName: "campaign_purchase",
-      userId: ctx.userId ? String(ctx.userId) : null,
-      path: "/checkout/campaign",
-      properties: {
-        order_id: orderId,
-        stripe_session_id: ctx.session.id,
-        amount_cents: ctx.session.amount_total || 9700,
-        is_test_mode: !ctx.event.livemode,
-      },
-    })
-  }
+  await logAnalyticsEvent({
+    eventName: "campaign_purchase",
+    userId: ctx.userId ? String(ctx.userId) : null,
+    path: "/checkout/campaign",
+    idempotencyKey: `purchase:${stripeObjectId(ctx.session.payment_intent) || ctx.session.id}`,
+    utm: {
+      source: ctx.session.metadata?.utm_source || null,
+      medium: ctx.session.metadata?.utm_medium || null,
+      campaign: ctx.session.metadata?.utm_campaign || null,
+      content: ctx.session.metadata?.utm_content || null,
+      term: ctx.session.metadata?.utm_term || null,
+    },
+    properties: {
+      source: ctx.source || "campaign_outcome_paid",
+      order_id: orderId,
+      stripe_session_id: ctx.session.id,
+      amount_cents: ctx.session.amount_total || 9700,
+      is_test_mode: !ctx.event.livemode,
+    },
+  })
   if (resolvedSourceOrderId && !existing.repeat_attribution_recorded_at) {
     const repeatEvent = await logAnalyticsEvent({
       eventName: "campaign_repeat_purchase",

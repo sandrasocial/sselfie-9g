@@ -28,6 +28,7 @@ import { SmartUpgradeBanner } from "@/components/upgrade/smart-upgrade-banner"
 import { UpgradeModal } from "@/components/upgrade/upgrade-modal"
 import type { UpgradeOpportunity } from "@/lib/upgrade-detection"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import { notifyAnalyticsLogout } from "@/lib/analytics/auth-browser-signal"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -996,6 +997,7 @@ export default function SselfieApp({
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
+      notifyAnalyticsLogout()
       const response = await fetch("/api/auth/logout", {
         method: "POST",
       })

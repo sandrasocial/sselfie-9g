@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { NextRequest } from "next/server"
 
 const mocks = vi.hoisted(() => ({
   deleteUser: vi.fn(),
@@ -43,27 +44,72 @@ describe("DELETE /api/user/delete", () => {
     vi.resetModules()
     mocks.queries.length = 0
     mocks.deleteUser.mockReset().mockResolvedValue({ error: null })
-    mocks.sql.mockReset().mockImplementation((strings: TemplateStringsArray, ...values: unknown[]) => {
-      const query = strings.join("?")
-      mocks.queries.push({ text: query, values })
-      if (query.includes("user_style_guide")) {
-        return Promise.reject(Object.assign(new Error("relation does not exist"), { code: "42P01" }))
-      }
-      return Promise.resolve([])
-    })
+    mocks.sql
+      .mockReset()
+      .mockImplementation((strings: TemplateStringsArray, ...values: unknown[]) => {
+        const query = strings.join("?")
+        mocks.queries.push({ text: query, values })
+        if (query.includes("user_style_guide")) {
+          return Promise.reject(
+            Object.assign(new Error("relation does not exist"), { code: "42P01" })
+          )
+        }
+        return Promise.resolve([])
+      })
   })
 
   it("finishes deletion when a retired optional table is absent", async () => {
     const { DELETE } = await import("@/app/api/user/delete/route")
 
-    const response = await DELETE()
+    const generation = "44444444-4444-4444-8444-444444444444"
+    const response = await DELETE(
+      new NextRequest("https://sselfie.ai/api/user/delete", {
+        method: "DELETE",
+        headers: {
+          "x-sselfie-analytics-generation": generation,
+          cookie: "sselfie_anon_id=legacy-pre-deletion-id",
+        },
+      })
+    )
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual({ success: true })
     expect(mocks.deleteUser).toHaveBeenCalledWith("auth-qa-user")
-    expect(mocks.queries).toContainEqual(expect.objectContaining({
-      text: expect.stringContaining("DELETE FROM freebie_brand_strategies WHERE email"),
-      values: ["qa@example.com"],
-    }))
+    const responseCookies = response.headers.get("set-cookie") || ""
+    const rotatedGeneration = responseCookies.match(
+      /sselfie_analytics_generation=([0-9a-f-]{36})/
+    )?.[1]
+    expect(rotatedGeneration).toBeTruthy()
+    expect(rotatedGeneration).not.toBe(generation)
+    expect(responseCookies).toContain(`sselfie_anon_id_${rotatedGeneration?.replaceAll("-", "")}=`)
+    expect(responseCookies).toContain("sselfie_anon_id=;")
+    expect(responseCookies).toMatch(/sselfie_posthog_reset=[0-9a-f-]{36}/)
+    expect(responseCookies).toMatch(/sselfie_analytics_rotation=[0-9a-f-]{36}/)
+    expect(responseCookies).toContain("sselfie_supabase_session_generation=;")
+    expect(mocks.queries).toContainEqual(
+      expect.objectContaining({
+        text: expect.stringContaining("DELETE FROM freebie_brand_strategies WHERE email"),
+        values: ["qa@example.com"],
+      })
+    )
+  })
+
+  it("rotates analytics identity when Neon deletion succeeds but auth deletion fails", async () => {
+    mocks.deleteUser.mockResolvedValue({ error: new Error("auth provider unavailable") })
+    const { DELETE } = await import("@/app/api/user/delete/route")
+
+    const response = await DELETE(
+      new NextRequest("https://sselfie.ai/api/user/delete", {
+        method: "DELETE",
+        headers: { cookie: "sb-project-ref-auth-token=stale-session" },
+      })
+    )
+
+    expect(response.status).toBe(200)
+    const cookies = response.headers.get("set-cookie") || ""
+    expect(cookies).toContain("sb-project-ref-auth-token=")
+    expect(cookies).toContain("Max-Age=0")
+    expect(cookies).toMatch(/sselfie_anon_id_[0-9a-f]{32}=/)
+    expect(cookies).toMatch(/sselfie_posthog_reset=[0-9a-f-]{36}/)
   })
 })

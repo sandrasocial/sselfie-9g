@@ -3,11 +3,9 @@ import "server-only"
 import { getDb } from "@/lib/db/client"
 
 let ensured = false
+let ensuring: Promise<void> | null = null
 
-export async function ensureAnalyticsSchema(): Promise<void> {
-  if (ensured) return
-  ensured = true
-
+async function initializeAnalyticsSchema(): Promise<void> {
   const sql = getDb()
 
   // Lightweight internal analytics store.
@@ -25,6 +23,8 @@ export async function ensureAnalyticsSchema(): Promise<void> {
       utm_campaign TEXT,
       utm_content TEXT,
       utm_term TEXT,
+      idempotency_key TEXT,
+      CONSTRAINT analytics_events_idempotency_key_unique UNIQUE (idempotency_key),
       properties JSONB NOT NULL DEFAULT '{}'::jsonb,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -83,4 +83,21 @@ export async function ensureAnalyticsSchema(): Promise<void> {
   `
   await sql`CREATE INDEX IF NOT EXISTS cohort_delivery_load_logs_session_idx ON cohort_delivery_load_logs (session_date DESC);`
   await sql`CREATE INDEX IF NOT EXISTS cohort_delivery_load_logs_mode_idx ON cohort_delivery_load_logs (mode, session_date DESC);`
+}
+
+export async function ensureAnalyticsSchema(): Promise<void> {
+  if (ensured) return
+
+  if (!ensuring) {
+    ensuring = initializeAnalyticsSchema()
+      .then(() => {
+        ensured = true
+      })
+      .catch(error => {
+        ensuring = null
+        throw error
+      })
+  }
+
+  await ensuring
 }

@@ -3,6 +3,7 @@ import "server-only"
 import { createHash } from "node:crypto"
 import { sql } from "@/lib/db/client"
 import { ensureAnalyticsSchema } from "@/lib/analytics/schema"
+import { capturePersistedPostHogEvent } from "@/lib/analytics/events"
 
 export interface MayaReadyPostInput {
   userId: string
@@ -259,10 +260,21 @@ export async function saveMayaReadyPost(
   if (!Number.isInteger(position) || position < 1 || !/^\d{4}-\d{2}-\d{2}$/.test(scheduledAt)) {
     throw new Error("Calendar returned an invalid ready-post receipt")
   }
+  const alreadyPlaced = row.already_placed === true
+  capturePersistedPostHogEvent({
+    eventName: "suite_ready_post_saved",
+    idempotencyKey: `ready-post:${normalized.readyPostKey}`,
+    userId: input.userId,
+    path: "/app",
+    properties: {
+      image_count: normalized.assetIds.length,
+      is_rerun: alreadyPlaced,
+    },
+  })
   return {
     position,
     scheduledAt,
     caption: normalized.caption,
-    alreadyPlaced: row.already_placed === true,
+    alreadyPlaced,
   }
 }

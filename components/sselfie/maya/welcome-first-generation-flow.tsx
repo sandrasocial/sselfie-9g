@@ -4,6 +4,11 @@ import { useMemo, useState, useEffect } from "react"
 import { trackEvent } from "@/lib/analytics"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
+function firstGeneratedImageUrl(value: unknown): string | null {
+  const candidate = Array.isArray(value) ? value[0] : value
+  return typeof candidate === "string" && candidate.trim() ? candidate : null
+}
+
 const STYLE_OPTIONS = [
   { id: "casual", label: "CASUAL", vibe: "casual" },
   { id: "editorial", label: "EDITORIAL", vibe: "editorial" },
@@ -42,7 +47,6 @@ export default function WelcomeFirstGenerationFlow({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
   const [topPrompts, setTopPrompts] = useState<Array<{ id: number; concept_title: string | null; prompt_text: string }>>([])
-  const [hasTrackedStart, setHasTrackedStart] = useState(false)
 
   const styleLabel = useMemo(() => {
     if (selectedStyle.startsWith("prompt-")) {
@@ -62,14 +66,6 @@ export default function WelcomeFirstGenerationFlow({
   const shouldShowModeStep = userHasTrainedModel
   const totalSteps = shouldShowModeStep ? 3 : 2
   const visibleStep = shouldShowModeStep ? step : step === 3 ? 2 : 1
-
-  useEffect(() => {
-    if (!hasTrackedStart) {
-      trackEvent("first_generation_guided_start", { source: "maya_welcome_flow" })
-      trackAnalyticsEvent({ event: "first_generation_guided_start", properties: { source: "maya_welcome_flow" } })
-      setHasTrackedStart(true)
-    }
-  }, [hasTrackedStart])
 
   useEffect(() => {
     trackAnalyticsEvent({
@@ -155,92 +151,120 @@ export default function WelcomeFirstGenerationFlow({
     setStatus("polling")
     const maxAttempts = 36
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      const response = await fetch(`/api/maya/check-studio-pro?predictionId=${encodeURIComponent(predictionId)}`)
+      const response = await fetch(
+        `/api/maya/check-studio-pro?predictionId=${encodeURIComponent(predictionId)}`
+      )
       const payload = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(payload?.error || "Failed to check generation status.")
       if (payload?.status === "succeeded" && payload?.output) return payload.output as string
-      if (payload?.status === "failed" || payload?.status === "canceled") throw new Error("Generation failed. Please try again.")
-      await new Promise((r) => setTimeout(r, 2500))
+      if (payload?.status === "failed" || payload?.status === "canceled")
+        throw new Error("Generation failed. Please try again.")
+      await new Promise(r => setTimeout(r, 2500))
     }
     throw new Error("Generation is taking too long. Please try again.")
   }
 
-  const handleGenerate = async () => {
-    if (selectedMode === "pro" && !selfieFile) return
-    setErrorMessage(null)
-    try {
-      let creditsUsed = 0
-      if (selectedMode === "pro") {
-        const uploadedUrl = await uploadSelfie()
-        const studioProGeneration = await generateFirstImage(uploadedUrl)
-        creditsUsed = studioProGeneration.creditsUsed
-        const imageUrl = await pollStudioProPrediction(studioProGeneration.predictionId)
-        setGeneratedImageUrl(imageUrl)
-      } else {
-        setStatus("generating")
-        const promptText = selectedPromptText || topPrompts[0]?.prompt_text || buildPrompt(vibeWord)
-        const response = await fetch("/api/maya/generate-image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            conceptTitle: styleLabel,
-            conceptDescription: "",
-            conceptPrompt: promptText,
-            category: "portrait",
-            chatId: null,
-            referenceImageUrl: null,
-            enhancedAuthenticity: false,
-          }),
-        })
-        const data = await response.json()
-        if (!response.ok) {
-          if (response.status === 409 || data?.code === "training_required") {
-            throw new Error(data?.message || "Train your custom model first, then try again.")
-          }
-          if (response.status === 402) {
-            throw new Error(data?.message || "You need more credits to generate this image.")
-          }
-          throw new Error(data?.error || data?.details || "Failed to generate image.")
-        }
-        creditsUsed = Number(data?.creditsDeducted ?? 0)
-        if (data?.predictionId) {
-          const checkUrl = `/api/maya/check-generation?predictionId=${data.predictionId}&generationId=${data.generationId ?? ""}`
-          for (let i = 0; i < 40; i++) {
-            await new Promise((r) => setTimeout(r, 3000))
-            const check = await fetch(checkUrl).then((r) => r.json())
-            if (check?.status === "succeeded" || check?.success === true) {
-              const url = check?.imageUrl ?? check?.output
-              if (url) {
-                setGeneratedImageUrl(Array.isArray(url) ? url[0] : url)
-                break
-              }
-            }
-          }
-        }
+  const pollClassicPrediction = async (predictionId: string, generationId: unknown) => {
+    const checkUrl = `/api/maya/check-generation?predictionId=${predictionId}&generationId=${generationId ?? ""}`
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      const check = await fetch(checkUrl).then(response => response.json())
+      if (check?.status === "succeeded" || check?.success === true) {
+        const imageUrl = firstGeneratedImageUrl(check?.imageUrl ?? check?.output)
+        if (imageUrl) return imageUrl
       }
-      setStatus("done")
-      trackEvent("first_generation_guided_complete", { source: "maya_welcome_flow", mode: selectedMode })
-      trackAnalyticsEvent({ event: "first_generation_guided_complete", properties: { source: "maya_welcome_flow", mode: selectedMode } })
+    }
+    return null
+  }
+
+  const generateClassicImage = async (): Promise<{ imageUrl: string; creditsUsed: number }> => {
+    setStatus("generating")
+    const promptText = selectedPromptText || topPrompts[0]?.prompt_text || buildPrompt(vibeWord)
+    const response = await fetch("/api/maya/generate-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        conceptTitle: styleLabel,
+        conceptDescription: "",
+        conceptPrompt: promptText,
+        category: "portrait",
+        chatId: null,
+        referenceImageUrl: null,
+        enhancedAuthenticity: false,
+      }),
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      if (response.status === 409 || data?.code === "training_required") {
+        throw new Error(data?.message || "Train your custom model first, then try again.")
+      }
+      if (response.status === 402) {
+        throw new Error(data?.message || "You need more credits to generate this image.")
+      }
+      throw new Error(data?.error || data?.details || "Failed to generate image.")
+    }
+
+    const imageUrl =
+      firstGeneratedImageUrl(data?.imageUrl ?? data?.output) ||
+      (data?.predictionId
+        ? await pollClassicPrediction(data.predictionId, data.generationId)
+        : null)
+    if (!imageUrl) throw new Error("Generation completed without an image. Please try again.")
+    return { imageUrl, creditsUsed: Number(data?.creditsDeducted ?? 0) }
+  }
+
+  const generateSelectedImage = async (): Promise<{ imageUrl: string; creditsUsed: number }> => {
+    if (selectedMode !== "pro") return generateClassicImage()
+    const uploadedUrl = await uploadSelfie()
+    const generation = await generateFirstImage(uploadedUrl)
+    const imageUrl = await pollStudioProPrediction(generation.predictionId)
+    return { imageUrl, creditsUsed: generation.creditsUsed }
+  }
+
+  const trackCompletedGeneration = (creditsUsed: number) => {
+    trackEvent("first_generation_guided_complete", {
+      source: "maya_welcome_flow",
+      mode: selectedMode,
+    })
+    trackAnalyticsEvent({
+      event: "first_generation_guided_complete",
+      properties: { source: "maya_welcome_flow", mode: selectedMode },
+    })
+    trackAnalyticsEvent({
+      event: "first_image_generated",
+      properties: {
+        source: "maya_welcome_flow",
+        mode: selectedMode,
+        credits_used: creditsUsed,
+      },
+    })
+    if (creditsUsed > 0) {
       trackAnalyticsEvent({
-        event: "first_image_generated",
+        event: "credits_used",
         properties: {
           source: "maya_welcome_flow",
           mode: selectedMode,
-          credits_used: creditsUsed,
+          amount: creditsUsed,
+          action: "first_generation",
         },
       })
-      if (creditsUsed > 0) {
-        trackAnalyticsEvent({
-          event: "credits_used",
-          properties: {
-            source: "maya_welcome_flow",
-            mode: selectedMode,
-            amount: creditsUsed,
-            action: "first_generation",
-          },
-        })
-      }
+    }
+  }
+
+  const handleGenerate = async () => {
+    if (selectedMode === "pro" && !selfieFile) return
+    trackEvent("first_generation_guided_start", { source: "maya_welcome_flow" })
+    trackAnalyticsEvent({
+      event: "first_generation_guided_start",
+      properties: { source: "maya_welcome_flow" },
+    }).catch(() => {})
+    setErrorMessage(null)
+    try {
+      const generation = await generateSelectedImage()
+      setGeneratedImageUrl(generation.imageUrl)
+      setStatus("done")
+      trackCompletedGeneration(generation.creditsUsed)
       if (onGenerated) onGenerated()
     } catch (error) {
       setStatus("error")

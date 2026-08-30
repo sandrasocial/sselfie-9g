@@ -1,5 +1,33 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
+import {
+  analyticsGenerationFromRequest,
+  rotateAnonymousAnalyticsIdentity,
+} from "@/lib/analytics/identity-cookies"
+import {
+  clearSupabaseSessionCookieNames,
+  clearSupabaseSessionCookies,
+  isSupabaseSessionCookie,
+  markSupabaseSessionGeneration,
+  supabaseSessionGenerationFromRequest,
+} from "@/lib/supabase/session-cookies"
+
+const TERMINAL_AUTH_ERROR_CODES = new Set([
+  "bad_jwt",
+  "refresh_token_already_used",
+  "refresh_token_not_found",
+  "session_expired",
+  "session_not_found",
+])
+
+function isTerminalAuthError(error: { code?: string; message?: string }): boolean {
+  const code = error.code?.toLowerCase()
+  if (code && TERMINAL_AUTH_ERROR_CODES.has(code)) return true
+  const message = error.message?.toLowerCase() || ""
+  return (
+    message.includes("refresh token not found") || message.includes("refresh_token_already_used")
+  )
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -8,6 +36,32 @@ export async function updateSession(request: NextRequest) {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+  const sessionCookies = request.cookies
+    .getAll()
+    .filter(cookie => isSupabaseSessionCookie(cookie.name))
+  const analyticsGeneration = analyticsGenerationFromRequest(request)
+  const sessionGeneration = supabaseSessionGenerationFromRequest(request)
+  const isLogoutRequest =
+    request.method === "POST" && request.nextUrl.pathname === "/api/auth/logout"
+
+  // A browser logout rotates the analytics generation before its request is
+  // sent. If an older middleware request finishes later, its refreshed auth
+  // cookies are tagged with the older generation. Reject that stale session
+  // before downstream routes can authenticate it under the new generation.
+  if (
+    sessionCookies.length > 0 &&
+    analyticsGeneration &&
+    sessionGeneration &&
+    analyticsGeneration !== sessionGeneration &&
+    !isLogoutRequest
+  ) {
+    const staleCookieNames = sessionCookies.map(cookie => cookie.name)
+    staleCookieNames.forEach(name => request.cookies.delete(name))
+    const staleSessionResponse = NextResponse.next({ request })
+    clearSupabaseSessionCookieNames(staleSessionResponse, staleCookieNames)
+    markSupabaseSessionGeneration(staleSessionResponse, analyticsGeneration)
+    return staleSessionResponse
+  }
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.log("[v0] [Middleware] Supabase not configured - skipping auth check")
@@ -34,6 +88,9 @@ export async function updateSession(request: NextRequest) {
           }
           supabaseResponse.cookies.set(name, value, enhancedOptions)
         })
+        if (cookiesToSet.some(cookie => isSupabaseSessionCookie(cookie.name))) {
+          markSupabaseSessionGeneration(supabaseResponse, analyticsGeneration)
+        }
       },
     },
   })
@@ -53,17 +110,19 @@ export async function updateSession(request: NextRequest) {
     } = result
 
     if (error) {
-      if (
-        error.message?.includes("refresh_token_already_used") || error.code === "refresh_token_already_used" ||
-        error.code === "refresh_token_not_found" || error.message?.includes("Refresh Token Not Found")
-      ) {
-        console.log("[v0] [Middleware] Stale/used refresh token - clearing cookies")
-        supabaseResponse.cookies.delete("sb-access-token")
-        supabaseResponse.cookies.delete("sb-refresh-token")
+      if (sessionCookies.length > 0 && isTerminalAuthError(error)) {
+        console.log("[v0] [Middleware] Terminal auth session error - clearing cookies")
+        clearSupabaseSessionCookies(supabaseResponse, request)
+        // Session loss can happen without the explicit logout route. Rotate
+        // the anonymous identity and tell the browser provider to reset its
+        // persisted user identity before capturing the now-anonymous page.
+        rotateAnonymousAnalyticsIdentity(supabaseResponse, analyticsGeneration, request)
       } else {
         // Only log for API routes that require auth, not public routes
-        if (!request.nextUrl.pathname.includes("/api/landing-stats") && 
-            !request.nextUrl.pathname.includes("/api/freebie")) {
+        if (
+          !request.nextUrl.pathname.includes("/api/landing-stats") &&
+          !request.nextUrl.pathname.includes("/api/freebie")
+        ) {
           console.log("[v0] [Middleware] Auth error:", error.message || "Auth session missing!")
         }
       }

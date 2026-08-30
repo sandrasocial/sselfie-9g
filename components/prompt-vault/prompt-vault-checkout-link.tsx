@@ -72,6 +72,7 @@ export function PromptVaultCheckoutLink({
         void trackAnalyticsEvent({
           event: "prompt_vault_landing_cta_clicked",
           properties: { placement },
+          navigationSafe: true,
         })
       }}
       style={{

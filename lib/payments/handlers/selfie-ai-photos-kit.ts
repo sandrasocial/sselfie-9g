@@ -5,7 +5,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generateSelfieAiPhotosKitDeliveryEmail } from "@/lib/email/templates/selfie-ai-photos-kit-delivery"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
-import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { schedulePurchaseObservation } from "./purchase-analytics"
 import { markRevenueEnginePurchase } from "../shared"
 import { ensureRevenueEngineSchema } from "@/lib/revenue-engine/checkout-attribution"
 import { updateContactTags as updateTags, addContactToSegment } from "@/lib/resend/manage-contact"
@@ -23,18 +23,21 @@ import type { CheckoutFulfillmentContext } from "../types"
 
 function metadataValue(
   metadata: Record<string, string> | null | undefined,
-  key: string,
+  key: string
 ): string | null {
   const value = metadata?.[key]
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
 }
 
-export async function handleSelfieAiPhotosKitCheckout(ctx: CheckoutFulfillmentContext): Promise<void> {
-  const { event, session, isPaymentPaid, customerEmail, userId, referralPurchaseUserId, source } = ctx
+export async function handleSelfieAiPhotosKitCheckout(
+  ctx: CheckoutFulfillmentContext
+): Promise<void> {
+  const { event, session, isPaymentPaid, customerEmail, userId, referralPurchaseUserId, source } =
+    ctx
 
   if (!isPaymentPaid) {
     console.log(
-      `[v0] ⚠️ Selfie To AI Photos Kit checkout completed but payment not confirmed (status: '${session.payment_status}').`,
+      `[v0] ⚠️ Selfie To AI Photos Kit checkout completed but payment not confirmed (status: '${session.payment_status}').`
     )
     return
   }
@@ -48,14 +51,10 @@ export async function handleSelfieAiPhotosKitCheckout(ctx: CheckoutFulfillmentCo
 
   const isTestMode = !event.livemode
   const paymentIntentId =
-    typeof session.payment_intent === "string"
-      ? session.payment_intent
-      : session.payment_intent?.id
+    typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id
   const paymentIdForStorage = paymentIntentId || session.id
   let customerId =
-    typeof session.customer === "string"
-      ? session.customer
-      : session.customer?.id || null
+    typeof session.customer === "string" ? session.customer : session.customer?.id || null
   let paymentAmountCents = session.amount_total || 0
 
   if (paymentIntentId) {
@@ -67,11 +66,15 @@ export async function handleSelfieAiPhotosKitCheckout(ctx: CheckoutFulfillmentCo
           ? paymentIntent.customer
           : paymentIntent.customer?.id || customerId
     } catch (piError: any) {
-      console.error(`[v0] Error retrieving payment intent for Selfie To AI Photos Kit:`, piError.message)
+      console.error(
+        `[v0] Error retrieving payment intent for Selfie To AI Photos Kit:`,
+        piError.message
+      )
     }
   }
 
   const customerIdForStorage = customerId || session.id
+  let paymentRecorded = false
 
   if (customerIdForStorage) {
     try {
@@ -151,9 +154,25 @@ export async function handleSelfieAiPhotosKitCheckout(ctx: CheckoutFulfillmentCo
           buyer_stage = COALESCE(stripe_payments.buyer_stage, EXCLUDED.buyer_stage),
           updated_at = NOW()
       `
+      paymentRecorded = true
     } catch (paymentError: any) {
       console.error(`[v0] Error storing Selfie To AI Photos Kit payment:`, paymentError.message)
     }
+  }
+
+  if (paymentRecorded) {
+    schedulePurchaseObservation({
+      eventName: "selfie_ai_photos_kit_checkout_success",
+      userId: userId ? String(userId) : null,
+      source,
+      productType: "selfie_ai_photos_kit",
+      amountCents: paymentAmountCents,
+      currency: "usd",
+      sessionId: session.id,
+      paymentId: paymentIdForStorage,
+      isTestMode,
+      checkoutMetadata: session.metadata,
+    })
   }
 
   try {
@@ -172,7 +191,7 @@ export async function handleSelfieAiPhotosKitCheckout(ctx: CheckoutFulfillmentCo
   } catch (attributionError: any) {
     console.error(
       "[v0] Failed to persist Selfie To AI Photos Kit revenue attribution immediately after payment:",
-      attributionError.message,
+      attributionError.message
     )
   }
 
@@ -206,13 +225,13 @@ export async function handleSelfieAiPhotosKitCheckout(ctx: CheckoutFulfillmentCo
     const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
     const subscriberRecord = await ensurePaidSelfieAiPhotosKitSubscriber(
       customerEmail!,
-      session.customer_details?.name,
+      session.customer_details?.name
     )
     const accessUrl = `${productionUrl}/access/selfie-to-ai-photos-kit/${subscriberRecord.accessToken}`
     const passwordSetupLink = await generatePasswordSetupLinkForPurchase(
       userId,
       customerEmail!,
-      "/selfie-to-ai-photos-kit",
+      "/selfie-to-ai-photos-kit"
     )
     const firstName = getFirstNameForEmail({
       fullName: session.customer_details?.name,
@@ -235,7 +254,7 @@ export async function handleSelfieAiPhotosKitCheckout(ctx: CheckoutFulfillmentCo
 
     if (emailResult.success) {
       console.log(
-        `[v0] ✅ Selfie To AI Photos Kit delivery email sent to ${customerEmail}, ID: ${emailResult.messageId}`,
+        `[v0] ✅ Selfie To AI Photos Kit delivery email sent to ${customerEmail}, ID: ${emailResult.messageId}`
       )
       await sql`
         UPDATE freebie_subscribers
@@ -245,7 +264,9 @@ export async function handleSelfieAiPhotosKitCheckout(ctx: CheckoutFulfillmentCo
         WHERE id = ${subscriberRecord.subscriberId}
       `
     } else {
-      console.error(`[v0] ❌ Failed to send Selfie To AI Photos Kit delivery email: ${emailResult.error}`)
+      console.error(
+        `[v0] ❌ Failed to send Selfie To AI Photos Kit delivery email: ${emailResult.error}`
+      )
     }
   } catch (emailError: any) {
     console.error(`[v0] Error sending Selfie To AI Photos Kit delivery email:`, emailError.message)
@@ -256,32 +277,17 @@ export async function handleSelfieAiPhotosKitCheckout(ctx: CheckoutFulfillmentCo
     product: "selfie-ai-photos-kit",
     journey: "selfie_ai_photos_kit",
     bought_selfie_ai_photos_kit: "true",
-  }).catch((tagError) => {
+  }).catch(tagError => {
     console.error("[v0] Failed to update Selfie To AI Photos Kit tags:", tagError)
   })
 
   const aiPhotoshootSegmentId = process.env[AI_PHOTOSHOOT_AUDIENCE.resendSegmentEnvKey]
   if (aiPhotoshootSegmentId) {
-    await addContactToSegment(customerEmail!, aiPhotoshootSegmentId).catch((segmentError) => {
-      console.error("[v0] Failed to add Selfie To AI Photos Kit buyer to AI Photoshoot segment:", segmentError)
+    await addContactToSegment(customerEmail!, aiPhotoshootSegmentId).catch(segmentError => {
+      console.error(
+        "[v0] Failed to add Selfie To AI Photos Kit buyer to AI Photoshoot segment:",
+        segmentError
+      )
     })
-  }
-
-  try {
-    await logAnalyticsEvent({
-      eventName: "selfie_ai_photos_kit_checkout_success",
-      userId: String(userId),
-      properties: {
-        source: source || "landing_page",
-        product_type: "selfie_ai_photos_kit",
-        value: paymentAmountCents / 100,
-        currency: "usd",
-        stripe_session_id: session.id,
-        stripe_payment_id: paymentIdForStorage,
-        is_test_mode: isTestMode,
-      },
-    })
-  } catch {
-    // best effort only
   }
 }

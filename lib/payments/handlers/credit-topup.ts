@@ -101,6 +101,7 @@ export async function handleCreditTopupCheckout(ctx: CheckoutFulfillmentContext)
       try {
         await logAnalyticsEvent({
           eventName: "purchase",
+          idempotencyKey: `purchase:${paymentIntentId || session.id}`,
           userId: String(userId),
           properties: {
             source: "stripe_webhook",

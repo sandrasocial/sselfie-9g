@@ -9,6 +9,7 @@ import { generatePromptVaultDeliveryEmail } from "@/lib/email/templates/prompt-v
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { upsertPurchaseEntitlement } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { schedulePurchaseObservation } from "./purchase-analytics"
 import { markRevenueEnginePurchase } from "../shared"
 import { ensureRevenueEngineSchema } from "@/lib/revenue-engine/checkout-attribution"
 import { updateContactTags as updateTags, addContactToSegment } from "@/lib/resend/manage-contact"
@@ -21,7 +22,7 @@ import type { CheckoutFulfillmentContext } from "../types"
 
 function metadataValue(
   metadata: Record<string, string> | null | undefined,
-  key: string,
+  key: string
 ): string | null {
   const value = metadata?.[key]
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
@@ -93,49 +94,46 @@ export async function upsertPromptVaultSubscriber(email: string, name?: string |
 }
 
 export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext): Promise<void> {
-  const { event, session, isPaymentPaid, customerEmail, userId, referralPurchaseUserId, source } = ctx
-    if (!isPaymentPaid) {
-      console.log(
-        `[v0] ⚠️ Prompt Vault checkout completed but payment not confirmed (status: '${session.payment_status}').`
-      )
-    } else {
-      console.log(`[v0] 🗝️ Prompt Vault purchase from ${customerEmail} - Payment confirmed`)
+  const { event, session, isPaymentPaid, customerEmail, userId, referralPurchaseUserId, source } =
+    ctx
+  if (!isPaymentPaid) {
+    console.log(
+      `[v0] ⚠️ Prompt Vault checkout completed but payment not confirmed (status: '${session.payment_status}').`
+    )
+  } else {
+    console.log(`[v0] 🗝️ Prompt Vault purchase from ${customerEmail} - Payment confirmed`)
 
-      const isTestMode = !event.livemode
-      const paymentIntentId =
-        typeof session.payment_intent === "string"
-          ? session.payment_intent
-          : session.payment_intent?.id
-      const paymentIdForStorage = paymentIntentId || session.id
-      let customerId =
-        typeof session.customer === "string"
-          ? session.customer
-          : session.customer?.id || null
-      let paymentAmountCents = session.amount_total || 0
+    const isTestMode = !event.livemode
+    const paymentIntentId =
+      typeof session.payment_intent === "string"
+        ? session.payment_intent
+        : session.payment_intent?.id
+    const paymentIdForStorage = paymentIntentId || session.id
+    let customerId =
+      typeof session.customer === "string" ? session.customer : session.customer?.id || null
+    let paymentAmountCents = session.amount_total || 0
 
-      if (paymentIntentId) {
-        try {
-          const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
-          paymentAmountCents = paymentIntent.amount || paymentAmountCents
-          customerId =
-            typeof paymentIntent.customer === "string"
-              ? paymentIntent.customer
-              : paymentIntent.customer?.id || customerId
-        } catch (piError: any) {
-          console.error(
-            `[v0] Error retrieving payment intent for prompt vault:`,
-            piError.message
-          )
-        }
+    if (paymentIntentId) {
+      try {
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+        paymentAmountCents = paymentIntent.amount || paymentAmountCents
+        customerId =
+          typeof paymentIntent.customer === "string"
+            ? paymentIntent.customer
+            : paymentIntent.customer?.id || customerId
+      } catch (piError: any) {
+        console.error(`[v0] Error retrieving payment intent for prompt vault:`, piError.message)
       }
+    }
 
-      const vaultCustomerIdForStorage = customerId || session.id
+    const vaultCustomerIdForStorage = customerId || session.id
+    let paymentRecorded = false
 
-      if (vaultCustomerIdForStorage) {
-        try {
-          const metadata = session.metadata || {}
-          await ensureRevenueEngineSchema()
-          await sql`
+    if (vaultCustomerIdForStorage) {
+      try {
+        const metadata = session.metadata || {}
+        await ensureRevenueEngineSchema()
+        await sql`
             INSERT INTO stripe_payments (
               stripe_payment_id,
               stripe_customer_id,
@@ -209,33 +207,49 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
               buyer_stage = COALESCE(stripe_payments.buyer_stage, EXCLUDED.buyer_stage),
               updated_at = NOW()
           `
-        } catch (paymentError: any) {
-          console.error(`[v0] Error storing prompt vault payment:`, paymentError.message)
-        }
+        paymentRecorded = true
+      } catch (paymentError: any) {
+        console.error(`[v0] Error storing prompt vault payment:`, paymentError.message)
       }
+    }
 
-      try {
-        await markRevenueEnginePurchase({
-          sessionId: session.id,
-          userId: referralPurchaseUserId || null,
-          userEmail: customerEmail || null,
-          stripeCustomerId: customerId || vaultCustomerIdForStorage || null,
-          stripePaymentId: paymentIdForStorage,
-          purchaseValueCents: paymentAmountCents,
-          purchaseCurrency: typeof session.currency === "string" ? session.currency : "usd",
-          purchasedAt: new Date(),
-          emailType: session.metadata?.email_type || null,
-          campaignId: session.metadata?.campaign_id || null,
-        })
-      } catch (attributionError: any) {
-        console.error(
-          "[v0] Failed to persist Prompt Vault revenue attribution immediately after payment:",
-          attributionError.message,
-        )
-      }
+    if (paymentRecorded) {
+      schedulePurchaseObservation({
+        eventName: "prompt_vault_checkout_success",
+        userId: userId ? String(userId) : null,
+        source,
+        productType: "prompt_vault",
+        amountCents: paymentAmountCents,
+        currency: "usd",
+        sessionId: session.id,
+        paymentId: paymentIdForStorage,
+        isTestMode,
+        checkoutMetadata: session.metadata,
+      })
+    }
 
-      if (userId) {
-        await sql`
+    try {
+      await markRevenueEnginePurchase({
+        sessionId: session.id,
+        userId: referralPurchaseUserId || null,
+        userEmail: customerEmail || null,
+        stripeCustomerId: customerId || vaultCustomerIdForStorage || null,
+        stripePaymentId: paymentIdForStorage,
+        purchaseValueCents: paymentAmountCents,
+        purchaseCurrency: typeof session.currency === "string" ? session.currency : "usd",
+        purchasedAt: new Date(),
+        emailType: session.metadata?.email_type || null,
+        campaignId: session.metadata?.campaign_id || null,
+      })
+    } catch (attributionError: any) {
+      console.error(
+        "[v0] Failed to persist Prompt Vault revenue attribution immediately after payment:",
+        attributionError.message
+      )
+    }
+
+    if (userId) {
+      await sql`
           INSERT INTO user_tags (user_id, tag, source, metadata)
           VALUES (
             ${userId},
@@ -249,108 +263,96 @@ export async function handlePromptVaultCheckout(ctx: CheckoutFulfillmentContext)
           ON CONFLICT (user_id, tag) DO NOTHING
         `
 
-        await upsertPurchaseEntitlement({
-          userId: String(userId),
-          productId: "prompt_vault",
-          sourceRef: paymentIdForStorage,
-          metadata: {
-            source: "stripe_webhook:prompt_vault",
-            stripe_session_id: session.id,
-          },
-        })
-      }
+      await upsertPurchaseEntitlement({
+        userId: String(userId),
+        productId: "prompt_vault",
+        sourceRef: paymentIdForStorage,
+        metadata: {
+          source: "stripe_webhook:prompt_vault",
+          stripe_session_id: session.id,
+        },
+      })
+    }
 
-      try {
-        const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-        const subscriberRecord = await upsertPromptVaultSubscriber(
-          customerEmail!,
-          session.customer_details?.name
+    try {
+      const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+      const subscriberRecord = await upsertPromptVaultSubscriber(
+        customerEmail!,
+        session.customer_details?.name
+      )
+      const accessUrl = `${productionUrl}/access/prompt-vault/${subscriberRecord.accessToken}`
+      const firstName = getFirstNameForEmail({
+        fullName: session.customer_details?.name,
+        email: customerEmail!,
+      })
+      const email = generatePromptVaultDeliveryEmail({
+        firstName,
+        accessUrl,
+      })
+
+      const emailResult = await sendEmail({
+        to: customerEmail!,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        emailType: "prompt_vault_delivery",
+        tags: ["prompt-vault", "delivery"],
+        idempotencyKey: `prompt-vault-delivery:${session.id}`,
+      })
+
+      if (emailResult.success) {
+        console.log(
+          `[v0] ✅ Prompt Vault delivery email sent to ${customerEmail}, ID: ${emailResult.messageId}`
         )
-        const accessUrl = `${productionUrl}/access/prompt-vault/${subscriberRecord.accessToken}`
-        const firstName = getFirstNameForEmail({
-          fullName: session.customer_details?.name,
-          email: customerEmail!,
-        })
-        const email = generatePromptVaultDeliveryEmail({
-          firstName,
-          accessUrl,
-        })
-
-        const emailResult = await sendEmail({
-          to: customerEmail!,
-          subject: email.subject,
-          html: email.html,
-          text: email.text,
-          emailType: "prompt_vault_delivery",
-          tags: ["prompt-vault", "delivery"],
-          idempotencyKey: `prompt-vault-delivery:${session.id}`,
-        })
-
-        if (emailResult.success) {
-          console.log(
-            `[v0] ✅ Prompt Vault delivery email sent to ${customerEmail}, ID: ${emailResult.messageId}`
-          )
-          await sql`
+        await sql`
             UPDATE freebie_subscribers
             SET guide_access_email_sent = TRUE,
                 guide_access_email_sent_at = NOW(),
                 updated_at = NOW()
             WHERE id = ${subscriberRecord.subscriberId}
           `
-        } else {
-          console.error(
-            `[v0] ❌ Failed to send Prompt Vault delivery email: ${emailResult.error}`
-          )
-        }
-      } catch (emailError: any) {
-        console.error(`[v0] Error sending Prompt Vault delivery email:`, emailError.message)
+      } else {
+        console.error(`[v0] ❌ Failed to send Prompt Vault delivery email: ${emailResult.error}`)
       }
-
-      await updateTags(customerEmail!, {
-        ...buildAiPhotoshootResendTags("buyer"),
-        product: "prompt-vault",
-        journey: "prompt_vault",
-        bought_prompt_vault: "true",
-      }).catch((tagError) => {
-        console.error("[v0] Failed to update Prompt Vault tags:", tagError)
-      })
-
-      const aiPhotoshootSegmentId = process.env[AI_PHOTOSHOOT_AUDIENCE.resendSegmentEnvKey]
-      if (aiPhotoshootSegmentId) {
-        await addContactToSegment(customerEmail!, aiPhotoshootSegmentId).catch((segmentError) => {
-          console.error("[v0] Failed to add Prompt Vault buyer to AI Photoshoot segment:", segmentError)
-        })
-      }
-
-      try {
-        await logAnalyticsEvent({
-          eventName: "prompt_vault_checkout_success",
-          userId: String(userId),
-          properties: {
-            source: source || "landing_page",
-            product_type: "prompt_vault",
-            value: paymentAmountCents / 100,
-            currency: "usd",
-            stripe_session_id: session.id,
-            stripe_payment_id: paymentIdForStorage,
-            is_test_mode: isTestMode,
-          },
-        })
-        await logAnalyticsEvent({
-          eventName: "prompt_vault_payment_completed",
-          userId: String(userId),
-          properties: {
-            source: source || "landing_page",
-            product_type: "prompt_vault",
-            value: paymentAmountCents / 100,
-            currency: "usd",
-            stripe_session_id: session.id,
-            stripe_payment_id: paymentIdForStorage,
-            is_test_mode: isTestMode,
-          },
-        })
-      } catch {
-        // best effort only
-      }
+    } catch (emailError: any) {
+      console.error(`[v0] Error sending Prompt Vault delivery email:`, emailError.message)
     }
+
+    await updateTags(customerEmail!, {
+      ...buildAiPhotoshootResendTags("buyer"),
+      product: "prompt-vault",
+      journey: "prompt_vault",
+      bought_prompt_vault: "true",
+    }).catch(tagError => {
+      console.error("[v0] Failed to update Prompt Vault tags:", tagError)
+    })
+
+    const aiPhotoshootSegmentId = process.env[AI_PHOTOSHOOT_AUDIENCE.resendSegmentEnvKey]
+    if (aiPhotoshootSegmentId) {
+      await addContactToSegment(customerEmail!, aiPhotoshootSegmentId).catch(segmentError => {
+        console.error(
+          "[v0] Failed to add Prompt Vault buyer to AI Photoshoot segment:",
+          segmentError
+        )
+      })
+    }
+
+    try {
+      await logAnalyticsEvent({
+        eventName: "prompt_vault_payment_completed",
+        userId: String(userId),
+        properties: {
+          source: source || "landing_page",
+          product_type: "prompt_vault",
+          value: paymentAmountCents / 100,
+          currency: "usd",
+          stripe_session_id: session.id,
+          stripe_payment_id: paymentIdForStorage,
+          is_test_mode: isTestMode,
+        },
+      })
+    } catch {
+      // best effort only
+    }
+  }
 }

@@ -16,6 +16,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { DesignClasses } from "@/lib/design-tokens"
 import { getAccessLabel } from "@/lib/customer-access-labels"
+import { notifyAnalyticsLogout } from "@/lib/analytics/auth-browser-signal"
 
 interface ProfileScreenProps {
   user: User
@@ -201,6 +202,7 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
   const handleLogout = async () => {
     setIsLoggingOut(true)
     try {
+      notifyAnalyticsLogout()
       const response = await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",
