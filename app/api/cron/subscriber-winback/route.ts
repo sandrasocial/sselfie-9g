@@ -2,11 +2,17 @@ import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
 
 import { createCronLogger } from "@/lib/cron-logger"
+import {
+  createRuntimeBudget,
+  processWithRuntimeBudget,
+  runWithRuntimeBudget,
+  type RuntimeBudget,
+} from "@/lib/cron/runtime-budget"
 import { sql } from "@/lib/db/client"
 import { envFlag } from "@/lib/env-flags"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { sendEmail } from "@/lib/email/send-email"
-import { createUnsubscribeToken, recordEmailUnsubscribe } from "@/lib/email/unsubscribe"
+import { emailUnsubscribeHash } from "@/lib/email/unsubscribe"
 import { updateContactTags } from "@/lib/resend/manage-contact"
 import {
   generateWinback1Email,
@@ -34,10 +40,13 @@ export const maxDuration = 60
 
 const FROM_EMAIL = "Sandra from SSELFIE <hello@sselfie.ai>"
 const REPLY_TO_EMAIL = "hello@sselfie.ai"
-const BATCH_LIMIT = 10
-const MAX_EMAILS_PER_RUN = 20
+const BATCH_LIMIT = 2
+const MAX_EMAILS_PER_RUN = 8
 const SUNSET_LIMIT = 10
 const SEND_DELAY_MS = 650
+const RUNTIME_BUDGET_MS = 42_000
+const MIN_SEND_BUDGET_MS = 8_000
+const MIN_SUNSET_BUDGET_MS = 5_000
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 type WinbackStage = {
@@ -164,39 +173,91 @@ async function getStageCandidates(
           AND el.status IN ('sent', 'delivered', 'suppressed')
           AND el.sent_at > NOW() - INTERVAL '120 days'
       )
-    ORDER BY r.email ASC
+    -- Never-attempted recipients go first. A failed recipient moves behind the
+    -- rest of the stage, then becomes eligible again in oldest-failure order,
+    -- so terminal bounces or transient provider failures cannot monopolize a
+    -- small daily batch while retries still make eventual progress.
+    ORDER BY (
+      SELECT MAX(failed.sent_at)
+      FROM email_logs failed
+      WHERE LOWER(BTRIM(failed.user_email)) = r.email
+        AND failed.email_type = ${stage.emailType}
+        AND failed.status IN ('failed', 'error')
+    ) ASC NULLS FIRST,
+    r.email ASC
     LIMIT ${limit}
   `) as Array<{ email: string }>
 }
 
-async function runStage(stage: WinbackStage, limit: number, dryRun: boolean) {
-  const candidates = await getStageCandidates(stage, limit)
-  const results = { found: candidates.length, sent: 0, failed: 0, dryRun }
+async function runStage(
+  stage: WinbackStage,
+  limit: number,
+  dryRun: boolean,
+  runtimeBudget: RuntimeBudget
+) {
+  const selection = await runWithRuntimeBudget({
+    budget: runtimeBudget,
+    minimumRemainingMs: MIN_SEND_BUDGET_MS,
+    operation: () => getStageCandidates(stage, limit),
+  })
+
+  if (!selection.completed) {
+    return {
+      found: 0,
+      sent: 0,
+      failed: 0,
+      processed: 0,
+      stoppedForBudget: true,
+      timedOut: selection.timedOut,
+      dryRun,
+    }
+  }
+
+  const candidates = selection.value
+  const results = {
+    found: candidates.length,
+    sent: 0,
+    failed: 0,
+    processed: 0,
+    stoppedForBudget: false,
+    timedOut: false,
+    dryRun,
+  }
 
   if (dryRun) return results
 
-  for (const candidate of candidates) {
-    const firstName = getFirstNameForEmail({ email: candidate.email })
-    const email = stage.generate({ firstName, recipientEmail: candidate.email })
+  const processing = await processWithRuntimeBudget({
+    items: candidates,
+    budget: runtimeBudget,
+    minimumRemainingMs: MIN_SEND_BUDGET_MS,
+    process: async (candidate, signal) => {
+      const firstName = getFirstNameForEmail({ email: candidate.email })
+      const email = stage.generate({ firstName, recipientEmail: candidate.email })
 
-    const sent = await sendEmail({
-      to: candidate.email,
-      from: FROM_EMAIL,
-      replyTo: REPLY_TO_EMAIL,
-      subject: email.subject,
-      html: email.html,
-      text: email.text,
-      emailType: stage.emailType,
-      tags: ["subscriber-winback"],
-      marketing: true,
-      idempotencyKey: winbackIdempotencyKey(stage.emailType, candidate.email),
-    })
+      const sent = await sendEmail({
+        to: candidate.email,
+        from: FROM_EMAIL,
+        replyTo: REPLY_TO_EMAIL,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        emailType: stage.emailType,
+        tags: ["subscriber-winback"],
+        marketing: true,
+        idempotencyKey: winbackIdempotencyKey(stage.emailType, candidate.email),
+        signal,
+      })
 
-    if (sent.success) results.sent += 1
-    else results.failed += 1
+      if (sent.success) results.sent += 1
+      else results.failed += 1
 
-    await sleep(SEND_DELAY_MS)
-  }
+      await sleep(SEND_DELAY_MS)
+    },
+  })
+
+  results.processed = processing.processed
+  results.stoppedForBudget = processing.stoppedForBudget
+  results.timedOut = processing.timedOut
 
   return results
 }
@@ -243,70 +304,160 @@ async function hasCurrentCustomerOrMembershipAccess(email: string): Promise<bool
   return purchase.length > 0 || membership.length > 0
 }
 
+async function recordSunsetUnsubscribe(email: string) {
+  const metadata = JSON.stringify({
+    email_hash: emailUnsubscribeHash(email),
+    source: "winback_sunset",
+    user_agent: null,
+    processed_at: new Date().toISOString(),
+  })
+
+  // The suppression event and eligibility marker are one database transaction.
+  // If the route deadline wins while Neon is still working, both statements
+  // commit together or neither does, so a later run cannot repeat half-applied
+  // sunset work.
+  await sql.transaction(tx => [
+    tx`
+      INSERT INTO email_events (
+        event_type,
+        email_type,
+        status,
+        metadata,
+        created_at
+      )
+      VALUES (
+        'email.unsubscribed',
+        'unsubscribe',
+        'processed',
+        ${metadata}::jsonb,
+        NOW()
+      )
+    `,
+    tx`
+      INSERT INTO email_logs (user_email, email_type, status, sent_at, created_at)
+      VALUES (${email}, 'subscriber-winback-sunset-applied', 'sent', NOW(), NOW())
+    `,
+  ])
+}
+
 /**
  * Sunset: 7+ days after win-back email 4 with still zero click engagement -> app-level
  * unsubscribe (every marketing send respects it) + a winback_sunset tag in Resend so broadcasts
  * can exclude them. Counted in dry-run mode whenever the sunset env is off.
  */
-async function runSunset(apply: boolean, limit: number) {
-  const candidates = (await sql`
-    WITH recipients AS (
-      SELECT
-        LOWER(BTRIM(user_email)) AS email,
-        MAX(clicked_at) AS last_click
-      FROM email_logs
-      WHERE user_email IS NOT NULL AND BTRIM(user_email) <> ''
-      GROUP BY 1
-    )
-    SELECT r.email
-    FROM recipients r
-    WHERE (r.last_click IS NULL OR r.last_click <= NOW() - INTERVAL '60 days')
-      AND EXISTS (
-        SELECT 1
-        FROM email_logs el
-        WHERE LOWER(BTRIM(el.user_email)) = r.email
-          AND el.email_type = ${SUBSCRIBER_WINBACK_EMAIL_TYPES.sunset}
-          AND el.status IN ('sent', 'delivered')
-          AND el.sent_at <= NOW() - INTERVAL '7 days'
-          AND el.sent_at > NOW() - INTERVAL '60 days'
-      )
-      AND NOT EXISTS (
-        SELECT 1
-        FROM email_logs done
-        WHERE LOWER(BTRIM(done.user_email)) = r.email
-          AND done.email_type = 'subscriber-winback-sunset-applied'
-      )
-    ORDER BY r.email ASC
-    LIMIT ${limit}
-  `) as Array<{ email: string }>
+async function runSunset(apply: boolean, limit: number, runtimeBudget: RuntimeBudget) {
+  const selection = await runWithRuntimeBudget({
+    budget: runtimeBudget,
+    minimumRemainingMs: MIN_SUNSET_BUDGET_MS,
+    operation: async () =>
+      (await sql`
+        WITH recipients AS (
+          SELECT
+            LOWER(BTRIM(user_email)) AS email,
+            MAX(clicked_at) AS last_click
+          FROM email_logs
+          WHERE user_email IS NOT NULL AND BTRIM(user_email) <> ''
+          GROUP BY 1
+        )
+        SELECT r.email
+        FROM recipients r
+        WHERE (r.last_click IS NULL OR r.last_click <= NOW() - INTERVAL '60 days')
+          AND EXISTS (
+            SELECT 1
+            FROM email_logs el
+            WHERE LOWER(BTRIM(el.user_email)) = r.email
+              AND el.email_type = ${SUBSCRIBER_WINBACK_EMAIL_TYPES.sunset}
+              AND el.status IN ('sent', 'delivered')
+              AND el.sent_at <= NOW() - INTERVAL '7 days'
+              AND el.sent_at > NOW() - INTERVAL '60 days'
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM email_logs done
+            WHERE LOWER(BTRIM(done.user_email)) = r.email
+              AND done.email_type = 'subscriber-winback-sunset-applied'
+          )
+        ORDER BY r.email ASC
+        LIMIT ${limit}
+      `) as Array<{ email: string }>,
+  })
 
-  const results = { eligible: candidates.length, suppressed: 0, skippedCustomers: 0, dryRun: !apply }
+  if (!selection.completed) {
+    return {
+      eligible: 0,
+      suppressed: 0,
+      skippedCustomers: 0,
+      processed: 0,
+      stoppedForBudget: true,
+      timedOut: selection.timedOut,
+      dryRun: !apply,
+    }
+  }
+
+  const candidates = selection.value
+
+  const results = {
+    eligible: candidates.length,
+    suppressed: 0,
+    skippedCustomers: 0,
+    processed: 0,
+    stoppedForBudget: false,
+    timedOut: false,
+    dryRun: !apply,
+  }
   if (!apply) return results
 
-  for (const candidate of candidates) {
-    if (await hasCurrentCustomerOrMembershipAccess(candidate.email)) {
-      results.skippedCustomers += 1
-      continue
-    }
+  const processing = await processWithRuntimeBudget({
+    items: candidates,
+    budget: runtimeBudget,
+    minimumRemainingMs: MIN_SUNSET_BUDGET_MS,
+    process: async (candidate, signal) => {
+      signal.throwIfAborted()
+      if (await hasCurrentCustomerOrMembershipAccess(candidate.email)) {
+        results.skippedCustomers += 1
+        return
+      }
 
-    await recordEmailUnsubscribe(createUnsubscribeToken(candidate.email), "winback_sunset")
-    await updateContactTags(candidate.email, { winback_sunset: "true" }).catch(error => {
-      console.error("[subscriber-winback] Failed to tag sunset contact in Resend:", error)
-    })
-    // Marker row so a subscriber is only sunset once (and the count stays auditable).
-    await sql`
-      INSERT INTO email_logs (user_email, email_type, status, sent_at, created_at)
-      VALUES (${candidate.email}, 'subscriber-winback-sunset-applied', 'sent', NOW(), NOW())
-    `
-    results.suppressed += 1
-  }
+      signal.throwIfAborted()
+      // The provider tag is safe to retry. Keep it before the atomic database
+      // suppression so a timeout cannot leave an applied marker with an
+      // untagged contact that later runs will skip.
+      await updateContactTags(candidate.email, { winback_sunset: "true" }).catch(error => {
+        console.error("[subscriber-winback] Failed to tag sunset contact in Resend:", error)
+      })
+      signal.throwIfAborted()
+      // Provider work can take long enough for access to change. Recheck at the
+      // last possible point before the atomic suppression transaction so a
+      // purchase or renewal during that window always wins.
+      if (await hasCurrentCustomerOrMembershipAccess(candidate.email)) {
+        results.skippedCustomers += 1
+        return
+      }
+      signal.throwIfAborted()
+      await recordSunsetUnsubscribe(candidate.email)
+      results.suppressed += 1
+    },
+  })
+
+  results.processed = processing.processed
+  results.stoppedForBudget = processing.stoppedForBudget
+  results.timedOut = processing.timedOut
 
   return results
 }
 
 export async function GET(request: Request) {
+  // Start the budget at route entry so auth and logging overhead count toward
+  // the same envelope as database/provider work.
+  const runtimeBudget = createRuntimeBudget(RUNTIME_BUDGET_MS)
   const cronLogger = createCronLogger("subscriber-winback")
-  await cronLogger.start()
+  const logWithinRuntimeBudget = (write: () => Promise<void>) =>
+    runWithRuntimeBudget({
+      budget: runtimeBudget,
+      minimumRemainingMs: 0,
+      operation: () => write(),
+    })
+  await logWithinRuntimeBudget(() => cronLogger.start())
 
   try {
     const authHeader = request.headers.get("authorization")
@@ -316,49 +467,74 @@ export async function GET(request: Request) {
 
     if (isProduction) {
       if (!cronSecret) {
-        await cronLogger.error(new Error("Unauthorized"), {
-          reason: "CRON_SECRET not set in production",
-        })
+        await logWithinRuntimeBudget(() =>
+          cronLogger.error(new Error("Unauthorized"), {
+            reason: "CRON_SECRET not set in production",
+          })
+        )
         return NextResponse.json(
           { error: "Unauthorized: CRON_SECRET required in production" },
           { status: 401 }
         )
       }
       if (authHeader !== `Bearer ${cronSecret}`) {
-        await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
+        await logWithinRuntimeBudget(() =>
+          cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
+        )
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
     }
 
     if (!envFlag("SUBSCRIBER_WINBACK_ENABLED")) {
       const summary = { enabled: false }
-      await cronLogger.success(summary)
+      await logWithinRuntimeBudget(() => cronLogger.success(summary))
       return NextResponse.json({ success: true, ...summary })
     }
 
     const dryRun = new URL(request.url).searchParams.get("dry_run") === "1"
     const results: Record<string, unknown> = { enabled: true, dryRun }
+
+    // Apply already-earned sunset suppression first so send-stage latency cannot
+    // indefinitely starve this final, idempotent lifecycle step.
+    results.sunset = await runSunset(
+      !dryRun && envFlag("SUBSCRIBER_WINBACK_SUNSET_ENABLED"),
+      SUNSET_LIMIT,
+      runtimeBudget
+    )
+
     let remainingSends = MAX_EMAILS_PER_RUN
     for (const stage of [...STAGES].reverse()) {
-      if (remainingSends <= 0) {
-        results[stage.emailType] = { found: 0, sent: 0, failed: 0, skippedForBudget: true }
+      if (remainingSends <= 0 || !runtimeBudget.canStart(MIN_SEND_BUDGET_MS)) {
+        results[stage.emailType] = {
+          found: 0,
+          sent: 0,
+          failed: 0,
+          skippedForBudget: true,
+        }
         continue
       }
 
-      const stageResult = await runStage(stage, Math.min(BATCH_LIMIT, remainingSends), dryRun)
+      const stageResult = await runStage(
+        stage,
+        Math.min(BATCH_LIMIT, remainingSends),
+        dryRun,
+        runtimeBudget
+      )
       results[stage.emailType] = stageResult
-      remainingSends -= stageResult.sent + stageResult.failed
+      remainingSends -= stageResult.processed
     }
     results.remainingSends = remainingSends
-    results.sunset = await runSunset(
-      !dryRun && envFlag("SUBSCRIBER_WINBACK_SUNSET_ENABLED"),
-      SUNSET_LIMIT
-    )
+    results.runtime = {
+      budgetMs: RUNTIME_BUDGET_MS,
+      elapsedMs: runtimeBudget.elapsedMs(),
+      remainingMs: runtimeBudget.remainingMs(),
+      stoppedForBudget: !runtimeBudget.canStart(MIN_SEND_BUDGET_MS),
+    }
 
-    await cronLogger.success(results)
+    await logWithinRuntimeBudget(() => cronLogger.success(results))
     return NextResponse.json({ success: true, ...results })
   } catch (error: unknown) {
-    await cronLogger.error(error, { step: "subscriber-winback" })
+    await logWithinRuntimeBudget(() => cronLogger.error(error, { step: "subscriber-winback" }))
     return NextResponse.json(
       {
         success: false,

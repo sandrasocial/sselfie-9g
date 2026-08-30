@@ -1,0 +1,84 @@
+import { describe, expect, it } from "vitest"
+
+import {
+  createRuntimeBudget,
+  processWithRuntimeBudget,
+  runWithRuntimeBudget,
+} from "@/lib/cron/runtime-budget"
+
+describe("cron runtime budget", () => {
+  it("bounds a never-resolving operation before returning control", async () => {
+    const budget = createRuntimeBudget(20)
+    let receivedSignal: AbortSignal | undefined
+
+    const result = await runWithRuntimeBudget({
+      budget,
+      minimumRemainingMs: 0,
+      operation: async signal => {
+        receivedSignal = signal
+        await new Promise(() => {})
+      },
+    })
+
+    expect(result).toEqual({ completed: false, stoppedForBudget: true, timedOut: true })
+    expect(receivedSignal?.aborted).toBe(true)
+  })
+
+  it("stops before starting work that cannot fit in the remaining budget", async () => {
+    let now = 0
+    const processed: number[] = []
+    const budget = createRuntimeBudget(42_000, () => now)
+
+    const result = await processWithRuntimeBudget({
+      items: [1, 2, 3, 4, 5],
+      budget,
+      minimumRemainingMs: 8_000,
+      process: async item => {
+        processed.push(item)
+        now += 12_000
+      },
+    })
+
+    expect(result).toEqual({ processed: 3, stoppedForBudget: true, timedOut: false })
+    expect(processed).toEqual([1, 2, 3])
+    expect(budget.elapsedMs()).toBe(36_000)
+    expect(budget.remainingMs()).toBe(6_000)
+  })
+
+  it("leaves unprocessed work untouched for a later invocation", async () => {
+    let now = 0
+    const pending = ["mature", "middle", "new"]
+    const budget = createRuntimeBudget(20_000, () => now)
+
+    const result = await processWithRuntimeBudget({
+      items: pending,
+      budget,
+      minimumRemainingMs: 7_000,
+      process: async () => {
+        now += 8_000
+      },
+    })
+
+    expect(result.processed).toBe(2)
+    expect(result.stoppedForBudget).toBe(true)
+    expect(pending.slice(result.processed)).toEqual(["new"])
+  })
+
+  it("aborts an in-flight operation when the deadline is reached", async () => {
+    const budget = createRuntimeBudget(20)
+    let receivedSignal: AbortSignal | undefined
+
+    const result = await processWithRuntimeBudget({
+      items: ["slow"],
+      budget,
+      minimumRemainingMs: 0,
+      process: async (_item, signal) => {
+        receivedSignal = signal
+        await new Promise(() => {})
+      },
+    })
+
+    expect(result).toEqual({ processed: 0, stoppedForBudget: true, timedOut: true })
+    expect(receivedSignal?.aborted).toBe(true)
+  })
+})
