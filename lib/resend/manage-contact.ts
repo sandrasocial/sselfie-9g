@@ -272,9 +272,14 @@ function mergeLifecycleProperties(
   return Object.fromEntries(Object.entries(merged).filter(([, value]) => Boolean(value))) as LifecycleProperties
 }
 
-function isMissingContact(error: any): boolean {
-  const message = String(error?.message || "").toLowerCase()
-  return error?.statusCode === 404 || message.includes("not found") || message.includes("does not exist")
+function isMissingContact(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false
+
+  const candidate = error as { message?: unknown; statusCode?: unknown }
+  const message = String(candidate.message ?? "").toLowerCase()
+  return (
+    candidate.statusCode === 404 || message.includes("not found") || message.includes("does not exist")
+  )
 }
 
 async function ensureMainSegment(email: string, paceRequest: ResendRequestPacer): Promise<void> {
@@ -282,7 +287,7 @@ async function ensureMainSegment(email: string, paceRequest: ResendRequestPacer)
   if (!mainSegmentId) return
   const resend = requireResendClient()
   const { error } = await paceRequest(() =>
-    (resend.contacts as any).segments.add({
+    resend.contacts.segments.add({
       email,
       segmentId: mainSegmentId,
     })
@@ -319,13 +324,13 @@ export async function addOrUpdateResendContact(
     const paceRequest = createResendRequestPacer(options.requestIntervalMs ?? 500)
 
     const { data: existing, error: getError } = await paceRequest(() =>
-      (resend.contacts as any).get({ email: normalizedEmail })
+      resend.contacts.get({ email: normalizedEmail })
     )
 
     if (existing && !getError) {
-      const properties = mergeLifecycleProperties((existing as any).properties, requested)
+      const properties = mergeLifecycleProperties(existing.properties, requested)
       const { data, error } = await paceRequest(() =>
-        (resend.contacts as any).update({
+        resend.contacts.update({
           email: normalizedEmail,
           firstName: firstName || undefined,
           properties,
@@ -334,7 +339,7 @@ export async function addOrUpdateResendContact(
       if (error) return { success: false, error: error.message }
 
       // A global Resend opt-out must never be re-segmented by a data backfill.
-      if ((existing as any).unsubscribed !== true) {
+      if (existing.unsubscribed !== true) {
         await ensureMainSegment(normalizedEmail, paceRequest)
       }
       return { success: true, contactId: data?.id || existing.id }
@@ -352,24 +357,24 @@ export async function addOrUpdateResendContact(
     }
 
     const { data, error } = await paceRequest(() =>
-      (resend.contacts as any).create(createPayload)
+      resend.contacts.create(createPayload)
     )
     if (error) {
       const message = String(error.message || "").toLowerCase()
       if (message.includes("already exists") || message.includes("contact already")) {
         const { data: current } = await paceRequest(() =>
-          (resend.contacts as any).get({ email: normalizedEmail })
+          resend.contacts.get({ email: normalizedEmail })
         )
-        const mergedProperties = mergeLifecycleProperties((current as any)?.properties, requested)
+        const mergedProperties = mergeLifecycleProperties(current?.properties, requested)
         const { data: updated, error: updateError } = await paceRequest(() =>
-          (resend.contacts as any).update({
+          resend.contacts.update({
             email: normalizedEmail,
             firstName: firstName || undefined,
             properties: mergedProperties,
           })
         )
         if (updateError) return { success: false, error: updateError.message }
-        if ((current as any)?.unsubscribed !== true) {
+        if (current?.unsubscribed !== true) {
           await ensureMainSegment(normalizedEmail, paceRequest)
         }
         return { success: true, contactId: updated?.id || current?.id }
@@ -403,11 +408,16 @@ export async function updateContactTags(
 
     const normalizedEmail = email.trim().toLowerCase()
     const resend = requireResendClient()
-    const { data: existing, error: getError } = await (resend.contacts as any).get({ email: normalizedEmail })
+    const { data: existing, error: getError } = await resend.contacts.get({
+      email: normalizedEmail,
+    })
     if (getError || !existing) return { success: false, error: getError?.message || "Contact not found" }
 
-    const properties = mergeLifecycleProperties((existing as any).properties, requestedLifecycleProperties(newTags))
-    const { error } = await (resend.contacts as any).update({
+    const properties = mergeLifecycleProperties(
+      existing.properties,
+      requestedLifecycleProperties(newTags),
+    )
+    const { error } = await resend.contacts.update({
       email: normalizedEmail,
       properties,
     })
@@ -438,10 +448,10 @@ export async function addContactToSegment(
     if (await isAppUnsubscribed(normalizedEmail)) return { success: true }
 
     const resend = requireResendClient()
-    const { data: existing } = await (resend.contacts as any).get({ email: normalizedEmail })
-    if ((existing as any)?.unsubscribed === true) return { success: true }
+    const { data: existing } = await resend.contacts.get({ email: normalizedEmail })
+    if (existing?.unsubscribed === true) return { success: true }
 
-    const { error } = await (resend.contacts as any).segments.add({
+    const { error } = await resend.contacts.segments.add({
       email: normalizedEmail,
       segmentId,
     })
@@ -466,7 +476,7 @@ export async function removeContactFromSegment(
     if (shouldSkipResend(email)) return { success: true }
 
     const resend = requireResendClient()
-    const { error } = await (resend.contacts as any).segments.remove({
+    const { error } = await resend.contacts.segments.remove({
       email: email.trim().toLowerCase(),
       segmentId,
     })

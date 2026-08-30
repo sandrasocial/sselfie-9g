@@ -49,7 +49,7 @@ describe("Maya Create visual studio contract", () => {
     expect(maya).toContain("h-[94dvh]")
     expect(maya).not.toContain("h-[62dvh]")
     expect(maya).not.toContain("mobileSheetSize")
-    expect(maya).toContain("lg:w-[27rem]")
+    expect(maya).toContain("lg:w-[34rem]")
   })
 
   it("persists creative task output and safely reconnects interrupted paid requests", () => {

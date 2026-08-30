@@ -29,10 +29,13 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(concierge).toContain("Maya is preparing one strong recommendation")
     expect(concierge).toContain('guidedFirstPhoto ? "hidden" : ""')
     expect(concierge).toContain("const workspaceTitle = generalHomeConversation")
-    expect(concierge).toContain('"What do you want to say?"')
+    expect(concierge).toContain('"What are we making?"')
+    expect(concierge).toContain('`${firstName.trim()}, what are we making?`')
     expect(concierge).toContain('? "Learn with Maya"')
     expect(concierge).toContain('? "Create with Maya"')
-    expect(concierge).toContain("{workspaceTitle}")
+    expect(concierge).toContain(
+      "{selectedShot ? `Shot reference: ${selectedShot.title}` : workspaceTitle}"
+    )
   })
 
   it("does not silently carry an old inspiration image into a fresh first photo", () => {
@@ -147,7 +150,7 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(concierge).toContain("activeDirection >= 0")
   })
 
-  it("makes download real and moves result extras behind More", () => {
+  it("makes download real and keeps admin-only result extras behind Details", () => {
     const helper = read("lib/app-v3/download-asset.ts")
     const card = read("components/app-v3/concept-card.tsx")
     const gallery = read("components/app-v3/gallery-view.tsx")
@@ -159,7 +162,8 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(helper).toContain('url.searchParams.set("download", "1")')
     expect(helper).not.toContain('anchor.target = "_blank"')
     expect(card).toContain("onDownloaded?.()")
-    expect(card).toContain("More")
+    expect(card).toContain("Details")
+    expect(card).toContain("View prompt")
     expect(card).not.toContain("window.open(firstBaked ?? images[0]")
     expect(lightbox).not.toContain("window.open(baked ?? url")
     const galleryDownloadBody = gallery.slice(
@@ -186,7 +190,7 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(concierge).toContain("to_format: nextFormat")
   })
 
-  it("re-enters the graphic text gate for a next-format action", () => {
+  it("continues a next graphic format with the remembered or default text style", () => {
     const concierge = read("components/app-v3/maya-concierge.tsx")
     const start = concierge.indexOf("function handleNextFormat")
     const end = concierge.indexOf("function trackGenerationCompleted")
@@ -195,14 +199,14 @@ describe("Maya Invisible AI: first result and return integrity", () => {
     expect(start).toBeGreaterThan(-1)
     expect(end).toBeGreaterThan(start)
     expect(body).toContain("isGraphicOutputFormat(nextFormat)")
-    // 2026-07-29 (UX audit): graphic next-steps must never end in silence. A remembered
-    // text style continues hands-free (style still swappable before credits are spent);
-    // first-timers re-enter the explicit text gate, scrolled into view.
-    expect(body).toContain("if (rememberedOverlayStyle) {")
+    // Graphic next-steps stay hands-free. Maya uses the remembered finish or the restrained
+    // editorial default, and the member can still change it before credits are spent.
     expect(body).toContain('setTextOverlayMode("with-text")')
-    expect(body).toContain("setTextStyleChoice(rememberedOverlayStyle)")
-    expect(body).toContain("lastPulledFormatRef.current = null")
-    expect(body).toContain("requestAnimationFrame(() => scrollThreadToBottom())")
+    expect(body).toContain(
+      "setTextStyleChoice(rememberedOverlayStyle ?? DEFAULT_GRAPHIC_OVERLAY_STYLE)"
+    )
+    expect(body).toContain("lastPulledFormatRef.current = nextFormat")
+    expect(body).toContain("sendMessage({ text: FORMAT_PHRASE[nextFormat] })")
   })
 
   it("resumes the exact active draft and labels transcript history honestly", () => {
