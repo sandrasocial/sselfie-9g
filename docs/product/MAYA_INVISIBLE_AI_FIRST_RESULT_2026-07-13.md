@@ -6,6 +6,8 @@
 
 This contract extends `SUITE_MAYA_SINGLE_OWNER_UX_2026-07-06.md`. It does not govern legacy `/studio`.
 
+> Visual scope update — 2026-08-30: The behavior, accessibility, and journey rules in this contract remain locked. Maya's interface styling follows `docs/SSELFIE_DESIGN_SYSTEM.md`; later approved visual direction supersedes any earlier palette language in this contract.
+
 ## Evidence and measured constraint
 
 The measured guided-Maya cohort had 12 non-admin starters:
@@ -141,7 +143,7 @@ Past chat history restores the conversation only. It must not claim that files o
 - Selected controls expose selection state with `aria-pressed` or the appropriate current-state attribute.
 - Touched async errors and statuses use visible recovery copy and polite announcements.
 - The drawer follows the mobile visual viewport when the on-screen keyboard opens.
-- The flow uses the existing Seasalt, White, Silver, Davy, and Night product tokens only.
+- The flow uses the canonical tokens and surface rules in `docs/SSELFIE_DESIGN_SYSTEM.md`; this behavioral contract does not define a separate Maya palette.
 
 ## Behavioral analytics contract
 

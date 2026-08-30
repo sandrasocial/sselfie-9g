@@ -1,6 +1,8 @@
 # Maya Pro Mode: High-End Brand Prompt System
 ## Strategic Implementation Plan
 
+> Historical creative-prompt reference. Palette, material, wardrobe, location, and style terms in this document describe user-requested photos and visual worlds only. They do not govern the SSELFIE product UI, marketing, email, checkout, learning shell, or component styling. For all interface design, use `docs/SSELFIE_DESIGN_SYSTEM.md` as the sole current visual authority.
+
 ---
 
 ## 📊 CURRENT STATE ANALYSIS

@@ -4,6 +4,8 @@ Date: 2026-06-01
 Status: Build and QA operating system
 Parent plan: `docs/funnel/SELFIE_TO_BRAND_SHOOT_SYSTEM_EXECUTION_PLAN_2026-06-01.md`
 
+> Visual authority update — 2026-08-30: The build and QA workflow in this playbook remains useful, but all product, marketing, email, and interface styling is governed solely by `docs/SSELFIE_DESIGN_SYSTEM.md`. The former Cool Editorial palette in this document is superseded and must not be implemented.
+
 ## Purpose
 
 Build Selfie to Brand Shoot as a finished, connected product without drifting into another scattered product system.
@@ -176,9 +178,10 @@ Do not include:
 
 ## Phase 4: Visual System Lock
 
-The product must feel like SSELFIE:
+The product must follow `docs/SSELFIE_DESIGN_SYSTEM.md` and its approved Noir Glass reference. Do not create or maintain a second palette in this playbook.
 
-- cool monochrome,
+The product-specific visual goals remain:
+
 - editorial,
 - premium,
 - feminine,
@@ -186,35 +189,16 @@ The product must feel like SSELFIE:
 - private fashion archive,
 - cinematic personal brand world.
 
-Do not use black as a dominant page background.
-
-Night/Raisin Black may be used for:
-
-- text,
-- buttons,
-- thin accents,
-- small editorial contrast moments.
-
-It should not become the page mood.
-
-Use the active SSELFIE cool monochrome system:
-
-- Seasalt: `#F8FAFA`
-- White: `#FFFFFF`
-- Silver: `#C5C6C8`
-- Gray: `#818283`
-- Davy's Gray: `#4F5052`
-- Raisin Black: `#282728`
-- Night: `#0D0E10`
+Obsidian may lead immersive creation and editing surfaces. Pearl or Paper remains the default light canvas where the governing system calls for it. Use only the canonical Noir Glass tokens defined in the governing document; do not copy their values into product-specific plans.
 
 Avoid:
 
-- black-background product UI,
 - warm beige drift,
 - cream/yellow undertones,
 - bright gradients,
 - pink/purple AI styling,
 - generic SaaS cards,
+- decorative neon that does not clarify hierarchy or action,
 - childlike widgets,
 - emoji-heavy product UI,
 - cluttered course portals,

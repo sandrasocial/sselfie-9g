@@ -267,4 +267,38 @@ describe("SSELFIE Noir Glass foundation", () => {
       }
     }
   })
+
+  it("keeps product and prompt documents subordinate to the current visual authority", () => {
+    const playbook = read("docs/funnel/SELFIE_TO_BRAND_SHOOT_E2E_BUILD_PLAYBOOK_2026-06-01.md")
+    const mayaContract = read("docs/product/MAYA_INVISIBLE_AI_FIRST_RESULT_2026-07-13.md")
+    const productOutline = read("docs/funnel/SELFIE_TO_BRAND_SHOOT_PRODUCT_OUTLINE_2026-06-01.md")
+    const moduleTwo = read(
+      "docs/funnel/SELFIE_TO_BRAND_SHOOT_MODULE_2_BRAND_WORLD_CARDS_2026-06-02.md"
+    )
+    const historicalResearch = read("docs/audits/SUITE_VALUE_AND_HOME_RESEARCH_2026-06-11.md")
+    const promptStrategy = read("lib/maya/maya-pro-brand-prompt-strategy.md")
+
+    for (const document of [
+      playbook,
+      mayaContract,
+      productOutline,
+      moduleTwo,
+      historicalResearch,
+      promptStrategy,
+    ]) {
+      expect(document).toContain("docs/SSELFIE_DESIGN_SYSTEM.md")
+    }
+
+    expect(playbook).not.toContain("Use the active SSELFIE cool monochrome system")
+    expect(mayaContract).not.toContain(
+      "Seasalt, White, Silver, Davy, and Night product tokens only"
+    )
+    expect(productOutline).not.toContain("- cool monochrome palette")
+    expect(moduleTwo).toContain("not the SSELFIE interface palette")
+    expect(moduleTwo).toContain("Pearl or Paper frame")
+    expect(historicalResearch).toContain("Historical research snapshot")
+    expect(historicalResearch).not.toContain("Tap-first, Cool Editorial")
+    expect(promptStrategy).toContain("Historical creative-prompt reference")
+    expect(promptStrategy).toContain("sole current visual authority")
+  })
 })

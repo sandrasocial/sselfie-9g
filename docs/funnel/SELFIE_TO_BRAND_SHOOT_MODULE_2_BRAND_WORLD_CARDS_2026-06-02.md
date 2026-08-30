@@ -5,6 +5,8 @@ Status: Approved for Module 2 UI build
 Product: Selfie to Brand Shoot System
 Module: 2 - Choose Your Signature Visual World
 
+> Scope update — 2026-08-30: Colors and aesthetic language in the teaching content describe the learner's chosen photography world, not the SSELFIE interface palette. The product shell and every UI component follow `docs/SSELFIE_DESIGN_SYSTEM.md`.
+
 ## Module 2 Lock
 
 Module 2 is not a prompt gallery.
@@ -103,7 +105,7 @@ Create a clean editorial Instagram-style profile/grid mockup with two side-by-si
 
 Do not use a literal Instagram screenshot UI. Use a minimal SSELFIE teaching mockup:
 
-- soft white/seasalt frame,
+- Pearl or Paper frame as defined in `docs/SSELFIE_DESIGN_SYSTEM.md`,
 - thin silver border,
 - small profile/header row,
 - 3x3 grid,

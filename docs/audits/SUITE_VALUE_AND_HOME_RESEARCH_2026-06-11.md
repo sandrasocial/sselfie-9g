@@ -1,5 +1,7 @@
 # SUITE Value + Customer Home Research — 2026-06-11
 
+> Historical research snapshot. The product and commercial findings may remain useful, but visual direction and palette references are superseded by the current SSELFIE Noir Glass authority in `docs/SSELFIE_DESIGN_SYSTEM.md`.
+
 Sandra asked three questions:
 1. Is the membership actually worth $97/mo, or will people think "I can just use ChatGPT" / "I'll just keep the $27 Vault"?
 2. Every product has an isolated access page. The old app had a HOME showing all purchases + upsells. What do professional creators do post-checkout?
@@ -56,7 +58,7 @@ The answer to "why not ChatGPT" is already our brand: **ChatGPT makes someone wh
 
 ## 5. Proposal — HOME-01 (fold into BRIDGE-01)
 
-1. **SSELFIE Home** (`/home` or evolve `/academy`): every customer (any product, any token) lands on one page — owned products active, rest locked previews, Maya/SUITE as the centerpiece, one upgrade CTA. Tap-first, Cool Editorial.
+1. **SSELFIE Home** (`/home` or evolve `/academy`): every customer (any product, any token) lands on one page — owned products active, rest locked previews, Maya/SUITE as the centerpiece, one upgrade CTA. Tap-first, following the current governing design system.
 2. **Everything-included membership** (DECISION D3): flip `membershipIncluded: true` for Vault, Starter Kit, Masterclass (+ System?). Positioning: "The SUITE includes every product I've ever made, plus Maya." Lost revenue ≈ $0 (members weren't buying these anyway); clarity gained = the whole pitch.
 3. **7-day SUITE trial unlock after Vault/Kit purchase** (DECISION D4): experienced value > discount. Needs credit-grant guardrails (e.g. 20 credits trial = 1 training + first shoot).
 4. **Weekly Monday drop for members**: new look/collection drop via existing monthly-drops infra + Content Engine. The weekly return trigger.

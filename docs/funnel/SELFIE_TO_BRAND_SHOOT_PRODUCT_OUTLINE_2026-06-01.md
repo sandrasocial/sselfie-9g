@@ -9,6 +9,8 @@ Parent docs:
 - `docs/funnel/SELFIE_TO_BRAND_SHOOT_ASSET_MAP_2026-06-01.md`
 - `docs/funnel/SELFIE_TO_BRAND_SHOOT_E2E_BUILD_PLAYBOOK_2026-06-01.md`
 
+> Visual authority update — 2026-08-30: This product outline remains the implementation blueprint for its journey and content. All customer-facing styling follows `docs/SSELFIE_DESIGN_SYSTEM.md`; this outline does not establish a separate palette.
+
 ## Product Promise
 
 Turn one selfie into a small, elevated personal brand shoot you can use for your profile, content, offers, and next chapter.
@@ -375,7 +377,7 @@ Do not remove existing entitlements.
 
 Every customer-facing page must pass:
 
-- cool monochrome palette,
+- the current SSELFIE Noir Glass system in `docs/SSELFIE_DESIGN_SYSTEM.md`,
 - image-led first screen,
 - mobile-first layout,
 - editorial typography,
