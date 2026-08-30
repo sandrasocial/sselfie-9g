@@ -123,9 +123,7 @@ export async function getOrCreateNeonUser(
 
     const newUser = newUsers[0] as NeonUser
 
-    // Keep non-critical provider calls off account creation and auth redirects.
-    // `after` keeps the work alive after the response without blocking access.
-    after(async () => {
+    const syncNewUserToResend = async () => {
       try {
         await autoSyncUserToResend(newUser.email, newUser.display_name, {
           source: "app_signup",
@@ -133,7 +131,17 @@ export async function getOrCreateNeonUser(
       } catch (syncErr) {
         console.warn("[USER-MAPPING] Resend sync error (non-blocking):", syncErr)
       }
-    })
+    }
+
+    // Keep non-critical provider calls off request-path account creation and
+    // auth redirects. Scripts also reuse this helper, where `after()` has no
+    // request scope; those callers fall back to an ordinary awaited sync.
+    try {
+      after(syncNewUserToResend)
+    } catch (afterError) {
+      console.warn("[USER-MAPPING] No request scope for deferred Resend sync:", afterError)
+      await syncNewUserToResend()
+    }
 
     return newUser
   } catch (error) {
