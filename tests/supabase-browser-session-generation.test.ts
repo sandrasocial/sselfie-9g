@@ -15,6 +15,7 @@ describe("browser Supabase session generation", () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
+    window.sessionStorage.clear()
     document.cookie = "sselfie_analytics_generation=11111111-1111-4111-8111-111111111111; Path=/"
     document.cookie =
       "sselfie_supabase_session_generation=11111111-1111-4111-8111-111111111111; Path=/"

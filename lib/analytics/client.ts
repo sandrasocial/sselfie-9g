@@ -8,7 +8,7 @@ export type BrowserAnalyticsIdentity = {
 
 let identityRequest: Promise<BrowserAnalyticsIdentity> | null = null
 const ANALYTICS_GENERATION_COOKIE = "sselfie_analytics_generation"
-const NAVIGATION_GENERATION_SESSION_KEY = "sselfie_analytics_navigation_generation"
+const TAB_GENERATION_SESSION_KEY = "sselfie_analytics_tab_generation"
 const POSTHOG_RESET_ACK_TIMEOUT_MS = 2_000
 const ANALYTICS_UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -18,44 +18,49 @@ function writeAnalyticsGeneration(generation: string): void {
   document.cookie = `${ANALYTICS_GENERATION_COOKIE}=${generation}; Path=/; SameSite=Lax; Max-Age=31536000${secure}`
 }
 
-function rememberNavigationGeneration(generation: string): void {
+function writeAnalyticsTabGeneration(generation: string): void {
   try {
-    window.sessionStorage?.setItem(NAVIGATION_GENERATION_SESSION_KEY, generation)
+    window.sessionStorage?.setItem(TAB_GENERATION_SESSION_KEY, generation)
   } catch {
     // The shared cookie remains the fallback when storage is unavailable.
   }
 }
 
-function pendingNavigationGeneration(): string | null {
+function analyticsTabGeneration(): string | null {
   try {
-    const generation = window.sessionStorage?.getItem(NAVIGATION_GENERATION_SESSION_KEY)
-    if (!generation || !ANALYTICS_UUID_PATTERN.test(generation)) return null
-    writeAnalyticsGeneration(generation)
-    return generation
+    const generation = window.sessionStorage?.getItem(TAB_GENERATION_SESSION_KEY)
+    return generation && ANALYTICS_UUID_PATTERN.test(generation) ? generation : null
   } catch {
     return null
   }
 }
 
-export function clearPendingAnalyticsNavigationGeneration(): void {
+export function clearAnalyticsTabGeneration(): void {
   if (typeof window === "undefined") return
   try {
-    window.sessionStorage?.removeItem(NAVIGATION_GENERATION_SESSION_KEY)
+    window.sessionStorage?.removeItem(TAB_GENERATION_SESSION_KEY)
   } catch {
-    // A restricted storage implementation has no pending marker to clear.
+    // A restricted storage implementation has no tab generation to clear.
   }
 }
 
 export function rotateAnalyticsBrowserGeneration(): string | null {
   if (typeof window === "undefined") return null
-  clearPendingAnalyticsNavigationGeneration()
   const generation = window.crypto.randomUUID()
   writeAnalyticsGeneration(generation)
+  writeAnalyticsTabGeneration(generation)
   return generation
 }
 
 export function analyticsBrowserGeneration(): string | null {
   if (typeof window === "undefined") return null
+  const tabGeneration = analyticsTabGeneration()
+  if (tabGeneration) {
+    // Another tab may replace the shared cookie; same-tab events continue to
+    // carry this generation explicitly until logout/account deletion clears it.
+    writeAnalyticsGeneration(tabGeneration)
+    return tabGeneration
+  }
   const existing = document.cookie
     .split(";")
     .map(value => value.trim())
@@ -63,6 +68,7 @@ export function analyticsBrowserGeneration(): string | null {
     ?.slice(ANALYTICS_GENERATION_COOKIE.length + 1)
   if (existing && ANALYTICS_UUID_PATTERN.test(existing)) {
     writeAnalyticsGeneration(existing)
+    writeAnalyticsTabGeneration(existing)
     return existing
   }
   return rotateAnalyticsBrowserGeneration()
@@ -71,18 +77,15 @@ export function analyticsBrowserGeneration(): string | null {
 export function invalidateAnalyticsBrowserIdentity(): void {
   identityRequest = null
   // Logout and account-deletion broadcasts call this in every listening tab.
-  // A pre-rotation checkout marker must never restore the old identity later.
-  clearPendingAnalyticsNavigationGeneration()
+  // No pre-rotation tab identity may survive into anonymous post-logout use.
+  clearAnalyticsTabGeneration()
 }
 
 async function requestAnalyticsIdentity(
   rotateAnonymous: boolean
 ): Promise<BrowserAnalyticsIdentity> {
   try {
-    // Carry a navigation click's chosen generation through this tab so another
-    // first-visit tab cannot replace it before the destination bootstrap.
-    const pendingGeneration = pendingNavigationGeneration()
-    const generation = pendingGeneration ?? analyticsBrowserGeneration()
+    const generation = analyticsBrowserGeneration()
     const response = await fetch(
       `/api/analytics/event${rotateAnonymous ? "?rotate_anonymous=1" : ""}`,
       {
@@ -101,17 +104,11 @@ async function requestAnalyticsIdentity(
       ANALYTICS_UUID_PATTERN.test(data.resetPostHogNonce)
         ? data.resetPostHogNonce
         : null
-    const identity = {
+    return {
       distinctId: typeof data?.distinctId === "string" ? data.distinctId : null,
       resetPostHog: data?.resetPostHog === true && resetPostHogNonce !== null,
       resetPostHogNonce,
     }
-    // Retain a navigation marker across transient failures. The retry must use
-    // the same generation as the beacon even if another tab changed the cookie.
-    if (identity.distinctId && pendingGeneration) {
-      clearPendingAnalyticsNavigationGeneration()
-    }
-    return identity
   } catch {
     return { distinctId: null, resetPostHog: false, resetPostHogNonce: null }
   }
@@ -164,12 +161,10 @@ export async function trackAnalyticsEvent(input: {
   navigationSafe?: boolean
 }) {
   try {
-    const navigationGeneration =
-      input.navigationSafe === true ? analyticsBrowserGeneration() : null
-    if (navigationGeneration) rememberNavigationGeneration(navigationGeneration)
+    const browserGeneration = analyticsBrowserGeneration()
     const payload = {
       event: input.event,
-      ...(navigationGeneration ? { analytics_generation: navigationGeneration } : {}),
+      ...(browserGeneration ? { analytics_generation: browserGeneration } : {}),
       properties: input.properties || {},
       path:
         typeof window !== "undefined" ? window.location.pathname + window.location.search : null,

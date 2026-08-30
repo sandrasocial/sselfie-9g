@@ -56,20 +56,20 @@ describe("browser analytics identity bootstrap", () => {
     const sendBeacon = vi.fn().mockReturnValue(true)
     const setItem = vi.fn()
     const removeItem = vi.fn()
-    let navigationGeneration: string | null = null
+    let tabGeneration: string | null = null
     let cookie = ""
     vi.stubGlobal("fetch", request)
     vi.stubGlobal("navigator", { sendBeacon })
     vi.stubGlobal("window", {
       crypto: { randomUUID: () => "33333333-3333-4333-8333-333333333333" },
       sessionStorage: {
-        getItem: () => navigationGeneration,
+        getItem: () => tabGeneration,
         setItem: (key: string, value: string) => {
-          navigationGeneration = value
+          tabGeneration = value
           setItem(key, value)
         },
         removeItem: (key: string) => {
-          navigationGeneration = null
+          tabGeneration = null
           removeItem(key)
         },
       },
@@ -101,7 +101,7 @@ describe("browser analytics identity bootstrap", () => {
     )
     expect(cookie).toContain("Secure")
     expect(setItem).toHaveBeenCalledWith(
-      "sselfie_analytics_navigation_generation",
+      "sselfie_analytics_tab_generation",
       "33333333-3333-4333-8333-333333333333"
     )
     expect(sendBeacon).toHaveBeenCalledTimes(1)
@@ -114,7 +114,7 @@ describe("browser analytics identity bootstrap", () => {
     cookie = "sselfie_analytics_generation=44444444-4444-4444-8444-444444444444"
     const { ensureAnalyticsBrowserIdentity } = await import("@/lib/analytics/client")
     await expect(ensureAnalyticsBrowserIdentity()).resolves.toMatchObject({ distinctId: null })
-    expect(navigationGeneration).toBe("33333333-3333-4333-8333-333333333333")
+    expect(tabGeneration).toBe("33333333-3333-4333-8333-333333333333")
 
     cookie = "sselfie_analytics_generation=44444444-4444-4444-8444-444444444444"
     await expect(ensureAnalyticsBrowserIdentity()).resolves.toMatchObject({
@@ -142,17 +142,25 @@ describe("browser analytics identity bootstrap", () => {
     expect(cookie).toContain(
       "sselfie_analytics_generation=33333333-3333-4333-8333-333333333333"
     )
-    expect(removeItem).toHaveBeenCalledWith("sselfie_analytics_navigation_generation")
+    expect(tabGeneration).toBe("33333333-3333-4333-8333-333333333333")
+    expect(removeItem).not.toHaveBeenCalled()
+
+    await trackAnalyticsEvent({ event: "checkout_start" })
+    expect(sendBeacon).toHaveBeenCalledTimes(2)
+    const checkoutBeacon = sendBeacon.mock.calls[1][1] as Blob
+    await expect(checkoutBeacon.text()).resolves.toContain(
+      '"analytics_generation":"33333333-3333-4333-8333-333333333333"'
+    )
   })
 
-  it("clears an unused navigation marker when analytics identity is invalidated", async () => {
+  it("clears the tab generation when analytics identity is invalidated", async () => {
     const removeItem = vi.fn()
     vi.stubGlobal("window", { sessionStorage: { removeItem } })
 
     const { invalidateAnalyticsBrowserIdentity } = await import("@/lib/analytics/client")
     invalidateAnalyticsBrowserIdentity()
 
-    expect(removeItem).toHaveBeenCalledWith("sselfie_analytics_navigation_generation")
+    expect(removeItem).toHaveBeenCalledWith("sselfie_analytics_tab_generation")
   })
 
   it("does not cache a transient null identity", async () => {
