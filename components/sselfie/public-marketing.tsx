@@ -50,32 +50,31 @@ const SUITE_IMG = {
   honest: "/images/ai-prompts/clean-girl-morning-shot-1.jpg",
 }
 
-// ─── Design tokens - SSELFIE workbook system ─────────────────────────────────
+// ─── SSELFIE Noir Glass channel tokens ───────────────────────────────────────
 const C = {
   // Core surfaces
-  ink: "var(--ss-brand-ink)",
-  inkSoft: "var(--ss-brand-carbon)",
-  inkLift: "var(--ss-brand-carbon)",
-  cream: "#FAFAF9",
-  creamWarm: "var(--ss-brand-paper)",
-  creamDeep: "#F0F0F2",
-  stone: "var(--ss-brand-taupe)",
+  obsidian: "var(--ss-brand-obsidian)",
+  graphite: "var(--ss-brand-graphite)",
+  pearl: "var(--ss-brand-pearl)",
+  paper: "var(--ss-brand-paper)",
+  coolMist: "var(--ss-brand-cool-mist)",
+  steel: "var(--ss-brand-steel)",
   // Text on dark
   onDark: "var(--ss-brand-paper)",
-  onDarkSub: "#EEEEEC",
-  onDarkMuted: "var(--ss-brand-taupe)",
-  // Text on cream
-  onCream: "var(--ss-brand-ink)",
-  onCreamSub: "var(--ss-brand-slate)",
-  onCreamMuted: "var(--ss-brand-taupe)",
+  onDarkSub: "var(--ss-brand-silver)",
+  onDarkMuted: "var(--ss-brand-steel)",
+  // Text on Pearl or Paper
+  onLight: "var(--ss-brand-obsidian)",
+  onLightSub: "var(--ss-brand-slate)",
+  onLightMuted: "var(--ss-brand-steel)",
   // Dividers
-  divDark: "color-mix(in srgb, var(--color-whisper) 16%, transparent)",
-  divDarkSoft: "color-mix(in srgb, var(--color-whisper) 9%, transparent)",
-  divDarkStrong: "color-mix(in srgb, var(--color-whisper) 26%, transparent)",
-  divCream: "color-mix(in srgb, var(--color-obsidian) 10%, transparent)",
+  divDark: "color-mix(in srgb, var(--ss-brand-silver) 16%, transparent)",
+  divDarkSoft: "color-mix(in srgb, var(--ss-brand-silver) 9%, transparent)",
+  divDarkStrong: "color-mix(in srgb, var(--ss-brand-silver) 26%, transparent)",
+  divLight: "color-mix(in srgb, var(--ss-brand-obsidian) 10%, transparent)",
   // Hero overlay
   heroGrad:
-    "linear-gradient(to bottom, color-mix(in srgb, var(--color-obsidian) 34%, transparent) 0%, color-mix(in srgb, var(--color-obsidian) 10%, transparent) 38%, color-mix(in srgb, var(--color-obsidian) 90%, transparent) 100%)",
+    "linear-gradient(to bottom, color-mix(in srgb, var(--ss-brand-obsidian) 34%, transparent) 0%, color-mix(in srgb, var(--ss-brand-obsidian) 10%, transparent) 38%, color-mix(in srgb, var(--ss-brand-obsidian) 90%, transparent) 100%)",
 }
 
 const F = {
@@ -86,7 +85,7 @@ const F = {
 // ─── Letterpress text shadows ─────────────────────────────────────────────────
 const LP = {
   dark: "0 2px 8px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06), 1px 1px 0 rgba(0,0,0,0.5)",
-  cream: "1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(10,10,10,0.08)",
+  light: "1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(10,10,10,0.08)",
 }
 
 // ─── Typography ───────────────────────────────────────────────────────────────
@@ -99,7 +98,7 @@ function ty(variant: "eyebrow" | "h1" | "h2" | "h3" | "body", dark: boolean): Re
         fontSize: "10px",
         letterSpacing: "0.5em",
         textTransform: "uppercase",
-        color: d ? C.onDarkMuted : C.onCreamMuted,
+        color: d ? C.onDarkMuted : C.onLightMuted,
         display: "block",
       }
     case "h1":
@@ -109,8 +108,8 @@ function ty(variant: "eyebrow" | "h1" | "h2" | "h3" | "body", dark: boolean): Re
         fontSize: "clamp(36px, 7vw, 70px)",
         lineHeight: 1.03,
         letterSpacing: "-0.02em",
-        color: d ? C.onDark : C.onCream,
-        textShadow: d ? LP.dark : LP.cream,
+        color: d ? C.onDark : C.onLight,
+        textShadow: d ? LP.dark : LP.light,
       }
     case "h2":
       return {
@@ -119,8 +118,8 @@ function ty(variant: "eyebrow" | "h1" | "h2" | "h3" | "body", dark: boolean): Re
         fontSize: "clamp(28px, 4.5vw, 48px)",
         lineHeight: 1.07,
         letterSpacing: "-0.015em",
-        color: d ? C.onDark : C.onCream,
-        textShadow: d ? LP.dark : LP.cream,
+        color: d ? C.onDark : C.onLight,
+        textShadow: d ? LP.dark : LP.light,
       }
     case "h3":
       return {
@@ -128,8 +127,8 @@ function ty(variant: "eyebrow" | "h1" | "h2" | "h3" | "body", dark: boolean): Re
         fontWeight: 300,
         fontSize: "clamp(19px, 2.5vw, 26px)",
         lineHeight: 1.18,
-        color: d ? C.onDark : C.onCream,
-        textShadow: d ? LP.dark : LP.cream,
+        color: d ? C.onDark : C.onLight,
+        textShadow: d ? LP.dark : LP.light,
       }
     case "body":
       return {
@@ -137,7 +136,7 @@ function ty(variant: "eyebrow" | "h1" | "h2" | "h3" | "body", dark: boolean): Re
         fontSize: "15px",
         lineHeight: 1.78,
         fontWeight: 400,
-        color: d ? C.onDarkSub : C.onCreamSub,
+        color: d ? C.onDarkSub : C.onLightSub,
       }
   }
 }
@@ -156,7 +155,7 @@ function SvgPaperDefs() {
           />
           <feColorMatrix type="saturate" values="0" />
         </filter>
-        <filter id="sa-noise-cream" x="0%" y="0%" width="100%" height="100%">
+        <filter id="sa-noise-light" x="0%" y="0%" width="100%" height="100%">
           <feTurbulence
             type="fractalNoise"
             baseFrequency="0.65"
@@ -185,7 +184,7 @@ function PaperTexture({ dark }: { dark: boolean }) {
         zIndex: 1,
       }}
     >
-      <rect width="100%" height="100%" filter={`url(#sa-noise-${dark ? "dark" : "cream"})`} />
+      <rect width="100%" height="100%" filter={`url(#sa-noise-${dark ? "dark" : "light"})`} />
     </svg>
   )
 }
@@ -193,8 +192,8 @@ function PaperTexture({ dark }: { dark: boolean }) {
 // ─── Card helpers ─────────────────────────────────────────────────────────────
 function cardSx(dark: boolean, padded = true): React.CSSProperties {
   return {
-    background: dark ? C.inkLift : C.creamWarm,
-    border: `1px solid ${dark ? C.divDark : C.divCream}`,
+    background: dark ? C.graphite : C.paper,
+    border: `1px solid ${dark ? C.divDark : C.divLight}`,
     padding: padded ? "28px" : "16px",
     boxShadow: dark
       ? "inset 0 1px 0 rgba(255,255,255,0.035)"
@@ -242,7 +241,7 @@ function BeforeAfterSlider({
       >
         <div
           className="w-px h-full"
-          style={{ background: "color-mix(in srgb, var(--color-porcelain) 65%, transparent)" }}
+          style={{ background: "color-mix(in srgb, var(--ss-brand-paper) 65%, transparent)" }}
         />
         <div
           className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center"
@@ -250,14 +249,14 @@ function BeforeAfterSlider({
             width: "34px",
             height: "34px",
             borderRadius: "50%",
-            background: "color-mix(in srgb, var(--color-porcelain) 95%, transparent)",
+            background: "color-mix(in srgb, var(--ss-brand-paper) 95%, transparent)",
             boxShadow: "0 2px 10px rgba(0,0,0,0.45)",
           }}
         >
           <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
             <path
               d="M1 5h12M1 5L4 2M1 5l3 3M13 5l-3-3M13 5l-3 3"
-              stroke={C.ink}
+              stroke={C.obsidian}
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -270,8 +269,8 @@ function BeforeAfterSlider({
         className="absolute top-4 left-4 pointer-events-none"
         style={{
           ...ty("eyebrow", true),
-          color: "color-mix(in srgb, var(--color-porcelain) 85%, transparent)",
-          background: "color-mix(in srgb, var(--color-obsidian) 50%, transparent)",
+          color: "color-mix(in srgb, var(--ss-brand-paper) 85%, transparent)",
+          background: "color-mix(in srgb, var(--ss-brand-obsidian) 50%, transparent)",
           padding: "4px 10px",
         }}
       >
@@ -281,8 +280,8 @@ function BeforeAfterSlider({
         className="absolute top-4 right-4 pointer-events-none"
         style={{
           ...ty("eyebrow", true),
-          color: "color-mix(in srgb, var(--color-porcelain) 85%, transparent)",
-          background: "color-mix(in srgb, var(--color-obsidian) 50%, transparent)",
+          color: "color-mix(in srgb, var(--ss-brand-paper) 85%, transparent)",
+          background: "color-mix(in srgb, var(--ss-brand-obsidian) 50%, transparent)",
           padding: "4px 10px",
         }}
       >
@@ -317,19 +316,19 @@ function Btn({
   ghost?: boolean
   full?: boolean
   disabled?: boolean
-  surface?: "dark" | "cream"
+  surface?: "dark" | "light"
 }) {
   const dark = surface === "dark"
-  // Solid: cream button on dark bg; ink button on cream bg
-  const solidBg = dark ? C.cream : "var(--ss-brand-espresso)"
-  const solidText = dark ? C.ink : C.cream
+  // Solid: Pearl button on dark; Obsidian button on Pearl or Paper.
+  const solidBg = dark ? C.pearl : "var(--ss-brand-obsidian)"
+  const solidText = dark ? C.obsidian : C.pearl
   const solidShadow = dark
     ? "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)"
     : "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -2px 0 rgba(0,0,0,0.45), 0 1px 5px rgba(0,0,0,0.25)"
   const ghostBorder = dark
-    ? "color-mix(in srgb, var(--color-whisper) 22%, transparent)"
-    : "color-mix(in srgb, var(--color-obsidian) 22%, transparent)"
-  const ghostText = dark ? C.onDarkSub : C.onCreamSub
+    ? "color-mix(in srgb, var(--ss-brand-silver) 22%, transparent)"
+    : "color-mix(in srgb, var(--ss-brand-obsidian) 22%, transparent)"
+  const ghostText = dark ? C.onDarkSub : C.onLightSub
 
   const base: React.CSSProperties = {
     display: "inline-flex",
@@ -352,7 +351,7 @@ function Btn({
     width: full ? "100%" : "fit-content",
     opacity: disabled ? 0.5 : 1,
     whiteSpace: "nowrap",
-    // Zero border-radius - SSELFIE Agents system
+    // Deliberate square editorial marketing CTA; not the default product-control radius.
   }
 
   if (href)
@@ -449,7 +448,7 @@ export function PublicPageShell({ children }: { children: ReactNode }) {
     <div
       style={{
         minHeight: "100vh",
-        background: C.ink,
+        background: C.obsidian,
         overflowX: "hidden",
         color: C.onDark,
         fontFamily: F.sans,
@@ -468,7 +467,7 @@ function IntroScreen() {
       aria-hidden
       className="fixed inset-0 z-[200] flex items-center justify-center"
       style={{
-        background: C.ink,
+        background: C.obsidian,
         animation: "sselfie-intro-exit 3.5s cubic-bezier(0.22, 1, 0.36, 1) forwards",
       }}
     >
@@ -542,7 +541,7 @@ export function PublicNav({ loginHref = "/auth/login" }: { loginHref?: string })
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 md:px-8"
       style={{
         height: "58px",
-        background: "color-mix(in srgb, var(--color-obsidian) 88%, transparent)",
+        background: "color-mix(in srgb, var(--ss-brand-obsidian) 88%, transparent)",
         backdropFilter: "blur(16px)",
         borderBottom: `1px solid ${C.divDark}`,
       }}
@@ -650,13 +649,13 @@ function PublicNeonSignature({
       aria-hidden="true"
       className={className}
       style={{
-        color: "var(--ss-brand-champagne)",
+        color: "var(--ss-brand-pearl-neon)",
         fontFamily: "var(--ss-brand-signature)",
         fontSize: "clamp(0.95rem, 1.4vw, 1.35rem)",
         lineHeight: 0.9,
         position: centered ? "absolute" : "relative",
         textShadow:
-          "0 0 2px rgba(255,246,224,0.96), 0 0 8px var(--ss-brand-champagne-glow), 0 0 18px rgba(215,182,126,0.28)",
+          "0 0 2px rgba(255,246,224,0.96), 0 0 8px var(--ss-brand-pearl-neon-glow), 0 0 18px rgba(215,182,126,0.28)",
         transform: centered ? "translate(-50%, -50%) rotate(-3deg)" : "rotate(-3deg)",
         whiteSpace: "nowrap",
       }}
@@ -664,9 +663,9 @@ function PublicNeonSignature({
       Worth posting.
       <i
         style={{
-          background: "var(--ss-brand-champagne)",
+          background: "var(--ss-brand-pearl-neon)",
           borderRadius: "50%",
-          boxShadow: "0 0 4px rgba(255,246,224,0.95), 0 0 10px var(--ss-brand-champagne-glow)",
+          boxShadow: "0 0 4px rgba(255,246,224,0.95), 0 0 10px var(--ss-brand-pearl-neon-glow)",
           height: 3,
           position: "absolute",
           right: -8,
@@ -682,7 +681,11 @@ function PublicNeonSignature({
 export function PublicFooter() {
   return (
     <footer
-      style={{ background: C.ink, borderTop: `1px solid ${C.divDark}`, padding: "56px 24px 40px" }}
+      style={{
+        background: C.obsidian,
+        borderTop: `1px solid ${C.divDark}`,
+        padding: "56px 24px 40px",
+      }}
     >
       <div className="max-w-5xl mx-auto flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <p
@@ -837,7 +840,7 @@ function Section({
   narrow?: boolean
   id?: string
 }) {
-  const surface = dark ? C.ink : C.cream
+  const surface = dark ? C.obsidian : C.pearl
   return (
     <section
       id={id}
@@ -890,7 +893,7 @@ function Split({
   dark?: boolean
   cta?: ReactNode
 }) {
-  const surface = dark ? C.ink : C.cream
+  const surface = dark ? C.obsidian : C.pearl
   const img = (
     <div className="mf relative overflow-hidden" style={{ aspectRatio: "4/5" }}>
       <img
@@ -904,8 +907,8 @@ function Split({
         className="absolute inset-0"
         style={{
           background: dark
-            ? "linear-gradient(to bottom, color-mix(in srgb, var(--color-obsidian) 4%, transparent) 0%, color-mix(in srgb, var(--color-obsidian) 30%, transparent) 100%)"
-            : "linear-gradient(to bottom, color-mix(in srgb, var(--color-porcelain) 4%, transparent) 0%, color-mix(in srgb, var(--color-whisper) 20%, transparent) 100%)",
+            ? "linear-gradient(to bottom, color-mix(in srgb, var(--ss-brand-obsidian) 4%, transparent) 0%, color-mix(in srgb, var(--ss-brand-obsidian) 30%, transparent) 100%)"
+            : "linear-gradient(to bottom, color-mix(in srgb, var(--ss-brand-paper) 4%, transparent) 0%, color-mix(in srgb, var(--ss-brand-silver) 20%, transparent) 100%)",
         }}
       />
     </div>
@@ -962,14 +965,14 @@ function CtaClose({
   secondary?: { href: string; label: string }
   dark?: boolean
 }) {
-  const surface = dark ? C.ink : C.cream
+  const surface = dark ? C.obsidian : C.pearl
   return (
     <section
       style={{
         position: "relative",
         background: surface,
         padding: "clamp(72px, 9vw, 100px) clamp(18px, 4vw, 24px)",
-        borderTop: `1px solid ${dark ? C.divDark : C.divCream}`,
+        borderTop: `1px solid ${dark ? C.divDark : C.divLight}`,
         overflow: "hidden",
       }}
     >
@@ -987,11 +990,11 @@ function CtaClose({
           className="mf flex flex-col sm:flex-row gap-3 items-center justify-center"
           style={{ transitionDelay: "0.05s" }}
         >
-          <Btn href={primary.href} onClick={primary.onClick} surface={dark ? "dark" : "cream"}>
+          <Btn href={primary.href} onClick={primary.onClick} surface={dark ? "dark" : "light"}>
             {primary.label}
           </Btn>
           {secondary && (
-            <Btn href={secondary.href} ghost surface={dark ? "dark" : "cream"}>
+            <Btn href={secondary.href} ghost surface={dark ? "dark" : "light"}>
               {secondary.label}
             </Btn>
           )}
@@ -1031,7 +1034,7 @@ function FaqAccordion({
   dark: boolean
 }) {
   const [open, setOpen] = useState<number | null>(null)
-  const div = dark ? C.divDark : C.divCream
+  const div = dark ? C.divDark : C.divLight
   return (
     <div style={{ borderTop: `1px solid ${div}` }}>
       {items.map((q, i) => (
@@ -1056,7 +1059,7 @@ function FaqAccordion({
             </span>
             <span
               style={{
-                color: dark ? C.onDarkMuted : C.onCreamMuted,
+                color: dark ? C.onDarkMuted : C.onLightMuted,
                 flexShrink: 0,
                 fontSize: "22px",
                 lineHeight: 1,
@@ -1241,7 +1244,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         imageAlt="Sandra Aamodt, founder of SSELFIE"
       />
 
-      {/* RECOGNITION - cream */}
+      {/* RECOGNITION - Pearl */}
       <Section
         eyebrow="Sound familiar?"
         title={<>Maybe you do not need a bigger plan. Maybe you need one result you can use.</>}
@@ -1260,7 +1263,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         </div>
       </Section>
 
-      {/* CURRENT PRODUCT DEMO - cream */}
+      {/* CURRENT PRODUCT DEMO - Pearl */}
       <Section
         id="how-it-works"
         eyebrow="One small beginning"
@@ -1301,7 +1304,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         </ol>
       </Section>
 
-      {/* TWO CLEAR DOORS - cream */}
+      {/* TWO CLEAR DOORS - Pearl */}
       <Section
         eyebrow="Start where you are"
         title={<>Choose the help that fits today.</>}
@@ -1331,7 +1334,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
               </p>
             </div>
             <div className="mt-8">
-              <Btn href={vault} surface="cream">
+              <Btn href={vault} surface="light">
                 Explore the Prompt Vault
               </Btn>
             </div>
@@ -1371,7 +1374,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         </p>
       </Section>
 
-      {/* FROM SANDRA - cream */}
+      {/* FROM SANDRA - Pearl */}
       <Split
         eyebrow="From Sandra"
         title={
@@ -1396,7 +1399,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         imgFirst
         dark={false}
         cta={
-          <Btn href={suite} surface="cream">
+          <Btn href={suite} surface="light">
             See SSELFIE SUITE
           </Btn>
         }
@@ -1434,8 +1437,8 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         <section
           className="mf"
           style={{
-            background: C.cream,
-            borderBottom: `1px solid ${C.divCream}`,
+            background: C.pearl,
+            borderBottom: `1px solid ${C.divLight}`,
             padding: "18px 22px",
           }}
         >
@@ -1464,9 +1467,9 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
                 minHeight: "42px",
                 alignItems: "center",
                 justifyContent: "center",
-                border: `1px solid ${C.ink}`,
-                color: C.cream,
-                background: C.ink,
+                border: `1px solid ${C.obsidian}`,
+                color: C.pearl,
+                background: C.obsidian,
                 padding: "0 16px",
                 textDecoration: "none",
                 textTransform: "uppercase",
@@ -1496,7 +1499,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         imageSrc={IMG.skHero}
       />
 
-      {/* THE SYSTEM - cream */}
+      {/* THE SYSTEM - Pearl */}
       <Section
         eyebrow="Why it works"
         title={<>The problem is not your face. It is the photo you are starting from.</>}
@@ -1575,7 +1578,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         }
       />
 
-      {/* BEFORE AND AFTER - cream */}
+      {/* BEFORE AND AFTER - Pearl */}
       <Section eyebrow="Preset results" title={<>Three styles. See them in use.</>} dark={false}>
         <div className="grid gap-6 md:grid-cols-3">
           {[
@@ -1645,7 +1648,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         </div>
       </Section>
 
-      {/* PRESET COLLECTION - cream, split */}
+      {/* PRESET COLLECTION - Pearl, split */}
       <Split
         eyebrow="The preset collection"
         title={<>Cleaner phone photos. Better starting points.</>}
@@ -1673,7 +1676,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
               ].map(p => (
                 <div
                   key={p.name}
-                  style={{ borderBottom: `1px solid ${C.divCream}`, paddingBottom: "10px" }}
+                  style={{ borderBottom: `1px solid ${C.divLight}`, paddingBottom: "10px" }}
                 >
                   <p style={{ ...ty("h3", false), fontSize: "14px", marginBottom: "2px" }}>
                     {p.name}
@@ -1726,7 +1729,7 @@ export function StarterKitPageContent({ checkoutFailed = false }: { checkoutFail
         </div>
       </Section>
 
-      {/* FAQ - cream */}
+      {/* FAQ - Pearl */}
       <Section eyebrow="FAQ" title={<>A few things people ask.</>} dark={false}>
         <FaqAccordion items={FAQS.starterKit} dark={false} />
       </Section>
@@ -1768,7 +1771,7 @@ export function MasterclassPageContent() {
         imageSrc={IMG.pricingBg}
       />
 
-      {/* CLARITY - cream */}
+      {/* CLARITY - Pearl */}
       <Section
         eyebrow="What's actually happening"
         title={
@@ -1824,7 +1827,7 @@ export function MasterclassPageContent() {
         </div>
       </Section>
 
-      {/* IMPLEMENTATION MAP - cream */}
+      {/* IMPLEMENTATION MAP - Pearl */}
       <Section eyebrow="Implementation map" title="Here's the path you move through." dark={false}>
         <div className="grid gap-0 md:grid-cols-2">
           {[
@@ -1846,7 +1849,7 @@ export function MasterclassPageContent() {
             <div
               key={l.num}
               className="mf flex items-baseline gap-5 py-4"
-              style={{ borderBottom: `1px solid ${C.divCream}` }}
+              style={{ borderBottom: `1px solid ${C.divLight}` }}
             >
               <span style={{ ...ty("eyebrow", false), minWidth: "28px", flexShrink: 0 }}>
                 {l.num}
@@ -1884,7 +1887,7 @@ export function MasterclassPageContent() {
         dark
       />
 
-      {/* WHO IT'S FOR - cream */}
+      {/* WHO IT'S FOR - Pearl */}
       <Section
         eyebrow="Who this is for"
         title="You want to build something. You just haven't had a clear starting point."
@@ -1937,7 +1940,7 @@ export function MasterclassPageContent() {
         </p>
       </Section>
 
-      {/* FAQ - cream */}
+      {/* FAQ - Pearl */}
       <Section eyebrow="FAQ" title="A few things before you enroll." dark={false}>
         <FaqAccordion items={FAQS.masterclass} dark={false} />
       </Section>
@@ -2023,7 +2026,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         imageSrc={IMG.feed}
       />
 
-      {/* THE PAIN - cream */}
+      {/* THE PAIN - Pearl */}
       <Section
         eyebrow="Sound familiar?"
         title={<>The hard part is not posting. It is everything you need before you can post.</>}
@@ -2043,7 +2046,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         </div>
       </Section>
 
-      {/* PRODUCT WALKTHROUGH - cream */}
+      {/* PRODUCT WALKTHROUGH - Pearl */}
       <Section
         id="how-it-works"
         eyebrow="Maya + Calendar"
@@ -2093,7 +2096,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         </p>
       </Section>
 
-      {/* EVERYTHING INCLUDED - cream */}
+      {/* EVERYTHING INCLUDED - Pearl */}
       <Section
         eyebrow="One membership"
         title={<>The full working space. €97 a month.</>}
@@ -2157,7 +2160,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         dark
       />
 
-      {/* FIT - cream */}
+      {/* FIT - Pearl */}
       <Section
         eyebrow="Is this for you?"
         title={<>A monthly tool should earn its place in your week.</>}
@@ -2183,7 +2186,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         </div>
       </Section>
 
-      {/* PROOF - cream (real customer words, before the price) */}
+      {/* PROOF - Pearl (real customer words, before the price) */}
       <Section eyebrow="Real customer words" title={<>Still you. And they feel it.</>} dark={false}>
         <div className="grid gap-4 md:grid-cols-3">
           {[
@@ -2210,7 +2213,7 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
         </div>
       </Section>
 
-      {/* PRICING - cream */}
+      {/* PRICING - Pearl */}
       <Section
         eyebrow="One simple plan"
         title={<>€97 a month. Everything works together.</>}
@@ -2230,14 +2233,14 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
           <Btn
             href={pricingCheckoutHref}
             onClick={() => trackMembershipCheckoutClick("pricing", pricingCheckoutHref)}
-            surface="cream"
+            surface="light"
           >
             Join SSELFIE SUITE · €97/mo
           </Btn>
         </div>
       </Section>
 
-      {/* FAQ - cream */}
+      {/* FAQ - Pearl */}
       <Section eyebrow="FAQ" title="A few things before you join." dark={false}>
         <FaqAccordion items={FAQS.studio} dark={false} />
       </Section>
@@ -2279,7 +2282,7 @@ export function InquiryForm() {
   const inputStyle: React.CSSProperties = {
     width: "100%",
     border: `1px solid ${C.divDark}`,
-    background: C.inkSoft,
+    background: C.graphite,
     color: C.onDark,
     padding: "12px 16px",
     fontSize: "14px",
@@ -2291,7 +2294,7 @@ export function InquiryForm() {
   const onFocus = (
     e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    e.target.style.borderColor = "color-mix(in srgb, var(--color-whisper) 28%, transparent)"
+    e.target.style.borderColor = "color-mix(in srgb, var(--ss-brand-silver) 28%, transparent)"
   }
   const onBlur = (
     e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -2537,9 +2540,9 @@ export function InquiryForm() {
           padding: "13px 32px",
           minHeight: "46px",
           background: pending
-            ? "color-mix(in srgb, var(--color-whisper) 35%, transparent)"
-            : C.cream,
-          color: C.ink,
+            ? "color-mix(in srgb, var(--ss-brand-silver) 35%, transparent)"
+            : C.pearl,
+          color: C.obsidian,
           fontSize: "10px",
           fontFamily: F.sans,
           fontWeight: 600,
@@ -2551,12 +2554,16 @@ export function InquiryForm() {
             : "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5)",
           cursor: pending ? "not-allowed" : "pointer",
           width: "100%",
-          // Zero border-radius - SSELFIE Agents system
+          // Deliberate square editorial marketing CTA; not the default product-control radius.
         }}
       >
         {pending ? "Sending…" : "Apply to Work With Me"}
       </button>
-      {error && <p style={{ fontSize: "13px", color: "#f87171", fontFamily: F.sans }}>{error}</p>}
+      {error && (
+        <p style={{ fontSize: "13px", color: "var(--ss-brand-error)", fontFamily: F.sans }}>
+          {error}
+        </p>
+      )}
     </form>
   )
 }
@@ -2608,7 +2615,7 @@ function VaultRiskLine({ dark }: { dark: boolean }) {
       style={{
         ...ty("body", dark),
         fontSize: "12px",
-        color: dark ? C.onDarkMuted : C.onCreamMuted,
+        color: dark ? C.onDarkMuted : C.onLightMuted,
         margin: "12px 0 0",
         maxWidth: "420px",
       }}
@@ -2641,8 +2648,8 @@ export function PromptVaultPageContent({
         <section
           className="mf"
           style={{
-            background: C.cream,
-            borderBottom: `1px solid ${C.divCream}`,
+            background: C.pearl,
+            borderBottom: `1px solid ${C.divLight}`,
             padding: "18px 22px",
           }}
         >
@@ -2664,7 +2671,7 @@ export function PromptVaultPageContent({
                 Stripe loads.
               </p>
             </div>
-            <PromptVaultCheckoutLink label="Retry checkout" surface="cream" />
+            <PromptVaultCheckoutLink label="Retry checkout" surface="light" />
           </div>
         </section>
       )}
@@ -2700,7 +2707,7 @@ export function PromptVaultPageContent({
         contentPaddingBottom="52px"
       />
 
-      {/* HOW IT WORKS - cream */}
+      {/* HOW IT WORKS - Pearl */}
       <Section
         eyebrow="How it works"
         title="Create your photoshoot in three simple steps."
@@ -2752,7 +2759,7 @@ export function PromptVaultPageContent({
             <div
               key={title}
               className="mf"
-              style={{ background: C.ink, padding: "clamp(24px, 4vw, 38px)" }}
+              style={{ background: C.obsidian, padding: "clamp(24px, 4vw, 38px)" }}
             >
               <h3 style={{ ...ty("h3", true), marginBottom: "8px" }}>{title}</h3>
               <p style={{ ...ty("body", true), fontSize: "14px", color: C.onDarkMuted }}>{body}</p>
@@ -2768,7 +2775,7 @@ export function PromptVaultPageContent({
         </div>
       </Section>
 
-      {/* CURATED COLLECTION PREVIEW - cream */}
+      {/* CURATED COLLECTION PREVIEW - Pearl */}
       <Section
         id="collections"
         eyebrow="A look inside the Vault"
@@ -2791,7 +2798,7 @@ export function PromptVaultPageContent({
             >
               <div
                 className="grid grid-cols-[1.35fr_1fr] grid-rows-2 gap-px"
-                style={{ height: "clamp(320px, 55vw, 520px)", background: C.divCream }}
+                style={{ height: "clamp(320px, 55vw, 520px)", background: C.divLight }}
               >
                 {card.images.map((image, index) => (
                   <div
@@ -2836,7 +2843,7 @@ export function PromptVaultPageContent({
           </p>
           <PromptVaultCheckoutLink
             label={`Get all ${collectionCount} collections · ${priceLabel}`}
-            surface="cream"
+            surface="light"
             placement="collection-preview"
           />
         </div>
@@ -2861,7 +2868,7 @@ export function PromptVaultPageContent({
         </div>
       </Section>
 
-      {/* FAQ - cream */}
+      {/* FAQ - Pearl */}
       <Section eyebrow="Quick answers" title="Before you get the Vault." dark={false} narrow>
         <FaqAccordion items={VAULT_FAQ} dark={false} />
       </Section>
@@ -3012,7 +3019,7 @@ export function VaultMayaPageContent({ priceLabel }: Readonly<{ priceLabel: stri
             prompting for you.
           </p>
           <div className={`mf ${vaultMayaStyles.heroActions}`}>
-            <VaultMayaCheckoutLink label={ctaLabel} surface="cream" />
+            <VaultMayaCheckoutLink label={ctaLabel} surface="light" />
           </div>
           <p className={`mf ${vaultMayaStyles.heroTerms}`}>
             30 photo creations each month · cancel anytime
@@ -3183,7 +3190,7 @@ export function VaultMayaPageContent({ priceLabel }: Readonly<{ priceLabel: stri
           ))}
         </div>
         <div className={vaultMayaStyles.distinctionCta}>
-          <VaultMayaCheckoutLink label={ctaLabel} surface="cream" />
+          <VaultMayaCheckoutLink label={ctaLabel} surface="light" />
           <p>30 photo creations each month · cancel anytime</p>
         </div>
       </section>
@@ -3246,7 +3253,7 @@ export function WorkWithMePageContent() {
         imageSrc={IMG.wwmHero}
       />
 
-      {/* RECOGNITION - cream */}
+      {/* RECOGNITION - Pearl */}
       <Section
         eyebrow="Maybe this is you"
         title={<>Everything still comes back to you.</>}
@@ -3309,7 +3316,7 @@ export function WorkWithMePageContent() {
         </div>
       </Section>
 
-      {/* HOW I WORK - cream */}
+      {/* HOW I WORK - Pearl */}
       <Split
         eyebrow="How I work"
         title={<>We build it, use it, and make it sound like you.</>}
@@ -3333,7 +3340,7 @@ export function WorkWithMePageContent() {
         imgAlt="Sandra researching and building inside a client's business"
         dark={false}
         cta={
-          <Btn href="#inquiry" onClick={() => trackPrimaryCta("plan")} surface="cream">
+          <Btn href="#inquiry" onClick={() => trackPrimaryCta("plan")} surface="light">
             Apply to Work Together
           </Btn>
         }
@@ -3367,7 +3374,7 @@ export function WorkWithMePageContent() {
         }
       />
 
-      {/* THE SPRINT / OFFER - cream */}
+      {/* THE SPRINT / OFFER - Pearl */}
       <Split
         eyebrow="Your Personal AI Team"
         title={<>Six weeks together. &euro;2,000.</>}
@@ -3390,7 +3397,7 @@ export function WorkWithMePageContent() {
               <li>Four weekly 45-minute calls</li>
               <li>Training and handover so you can keep using your team</li>
             </ul>
-            <p style={{ color: C.onCreamMuted }}>
+            <p style={{ color: C.onLightMuted }}>
               For a woman with a real business, a service people already buy, and clients she
               understands. This is not for starting a business from zero.
             </p>
@@ -3400,13 +3407,13 @@ export function WorkWithMePageContent() {
         imgAlt="Applying to work with Sandra"
         dark={false}
         cta={
-          <Btn href="#inquiry" onClick={() => trackPrimaryCta("offer")} surface="cream">
+          <Btn href="#inquiry" onClick={() => trackPrimaryCta("offer")} surface="light">
             Apply to Work Together
           </Btn>
         }
       />
 
-      {/* FAQ - cream */}
+      {/* FAQ - Pearl */}
       <Section eyebrow="Questions" title="Before you apply" dark={false} narrow>
         <FaqAccordion items={FAQS.visibilityToPaid} dark={false} />
       </Section>
@@ -3416,7 +3423,7 @@ export function WorkWithMePageContent() {
         id="inquiry"
         style={{
           position: "relative",
-          background: C.ink,
+          background: C.obsidian,
           padding: "clamp(60px, 8vw, 88px) clamp(18px, 4vw, 24px)",
           overflow: "hidden",
           scrollMarginTop: "60px",

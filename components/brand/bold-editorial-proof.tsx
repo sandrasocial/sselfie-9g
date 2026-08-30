@@ -12,7 +12,7 @@ import {
   Sparkles,
 } from "lucide-react"
 
-import { BOLD_EDITORIAL_COLORS } from "@/lib/brand/bold-editorial-tokens"
+import { SSELFIE_NOIR_GLASS_COLORS } from "@/lib/brand/bold-editorial-tokens"
 import {
   EditorialButton,
   EditorialEyebrow,
@@ -90,15 +90,16 @@ const recentProjects = [
 ] as const
 
 const palette = [
-  ["Editorial Ink", BOLD_EDITORIAL_COLORS.ink],
-  ["Carbon", BOLD_EDITORIAL_COLORS.carbon],
-  ["Espresso", BOLD_EDITORIAL_COLORS.espresso],
-  ["Soft Ivory", BOLD_EDITORIAL_COLORS.ivory],
-  ["Paper", BOLD_EDITORIAL_COLORS.paper],
-  ["Muted Parchment", BOLD_EDITORIAL_COLORS.parchment],
-  ["Taupe", BOLD_EDITORIAL_COLORS.taupe],
-  ["Slate", BOLD_EDITORIAL_COLORS.slate],
-  ["Champagne", BOLD_EDITORIAL_COLORS.champagne],
+  ["Obsidian", SSELFIE_NOIR_GLASS_COLORS.obsidian],
+  ["Graphite", SSELFIE_NOIR_GLASS_COLORS.graphite],
+  ["Pearl", SSELFIE_NOIR_GLASS_COLORS.pearl],
+  ["Paper", SSELFIE_NOIR_GLASS_COLORS.paper],
+  ["Cool Mist", SSELFIE_NOIR_GLASS_COLORS.coolMist],
+  ["Concrete", SSELFIE_NOIR_GLASS_COLORS.concrete],
+  ["Silver", SSELFIE_NOIR_GLASS_COLORS.silver],
+  ["Steel", SSELFIE_NOIR_GLASS_COLORS.steel],
+  ["Slate", SSELFIE_NOIR_GLASS_COLORS.slate],
+  ["Pearl Neon", SSELFIE_NOIR_GLASS_COLORS.pearlNeon],
 ] as const
 
 const vaultMarketingSteps = ["ADD A SELFIE", "CHOOSE A LOOK", "MAYA CREATES", "SAVE IT"] as const
@@ -280,7 +281,8 @@ function MarketingDesktopProof({ priceLabel }: { priceLabel: string }) {
         <div className={styles.marketingNavBrand}>
           <EditorialWordmark />
           <span className={styles.marketingNeon} aria-hidden="true">
-            Worth posting.<i />
+            Worth posting.
+            <i />
           </span>
         </div>
         <nav>
@@ -295,13 +297,16 @@ function MarketingDesktopProof({ priceLabel }: { priceLabel: string }) {
           <EditorialEyebrow>VAULT MAYA · SELFIE TO PHOTO</EditorialEyebrow>
           <h2>
             One selfie.
-            <br />Choose a look.
+            <br />
+            Choose a look.
           </h2>
           <p>
             Upload one clear selfie, choose the photo you want to create, and let Maya do the
             prompting for you.
           </p>
-          <EditorialButton accent>START WITH MY SELFIE · {priceLabel.toUpperCase()}</EditorialButton>
+          <EditorialButton accent>
+            START WITH MY SELFIE · {priceLabel.toUpperCase()}
+          </EditorialButton>
           <div className={styles.checkoutProof}>
             <span>CHECKOUT HANDOFF</span>
             <strong>{priceLabel} · 30 photo creations each month</strong>
@@ -347,7 +352,8 @@ function MarketingMobileProof({ priceLabel }: { priceLabel: string }) {
       <header>
         <EditorialWordmark />
         <span className={styles.marketingNeon} aria-hidden="true">
-          Worth posting.<i />
+          Worth posting.
+          <i />
         </span>
         <span>MENU</span>
       </header>
@@ -383,7 +389,11 @@ function MarketingMobileProof({ priceLabel }: { priceLabel: string }) {
   )
 }
 
-export function BoldEditorialProof({
+/**
+ * Current private cross-channel reference for SSELFIE Noir Glass.
+ * The legacy file name remains to avoid a disruptive path rename.
+ */
+export function SselfieNoirGlassProof({
   emailHtml,
   priceLabel,
 }: {
@@ -395,14 +405,14 @@ export function BoldEditorialProof({
       <header className={styles.pageHeader}>
         <div>
           <EditorialWordmark />
-          <span>DESIGN FOUNDATION · 2026-08-26</span>
+          <span>DESIGN AUTHORITY · APPROVED 2026-08-27</span>
         </div>
         <div className={styles.pageHeaderCopy}>
           <EditorialEyebrow>APPROVAL REFERENCE · NOT LIVE</EditorialEyebrow>
-          <h1>Bold Editorial Studio · Warm Champagne</h1>
+          <h1>SSELFIE Noir Glass</h1>
           <p>
             One brand system for Suite, marketing, and email. Selfies stay central. Maya supports
-            the work. Espresso carries action; champagne light marks selection and brand moments.
+            the work. Obsidian carries action; Pearl Neon marks selection and rare brand moments.
           </p>
         </div>
       </header>
@@ -453,8 +463,8 @@ export function BoldEditorialProof({
             <EditorialEyebrow>SIGNATURE · ALLURA · BRAND MOMENTS ONLY</EditorialEyebrow>
             <p>Worth posting.</p>
             <small>
-              Warm champagne light may appear on black brand moments, selected visual work, and
-              compact wayfinding. Never use it for body copy or ordinary controls.
+              Pearl Neon may appear on black brand moments, selected visual work, and compact
+              wayfinding. Never use it for body copy or ordinary controls.
             </small>
           </article>
         </div>
@@ -499,7 +509,7 @@ export function BoldEditorialProof({
             <span>640PX DESKTOP</span>
             <iframe
               className={styles.emailDesktop}
-              title="Bold Editorial email desktop proof"
+              title="SSELFIE Noir Glass email desktop proof"
               srcDoc={emailHtml}
               loading="lazy"
             />
@@ -508,7 +518,7 @@ export function BoldEditorialProof({
             <span>375PX MOBILE</span>
             <iframe
               className={styles.emailMobile}
-              title="Bold Editorial email mobile proof"
+              title="SSELFIE Noir Glass email mobile proof"
               srcDoc={emailHtml}
               loading="lazy"
             />
@@ -518,8 +528,11 @@ export function BoldEditorialProof({
 
       <footer className={styles.pageFooter}>
         <EditorialWordmark />
-        <p>FOUNDATION PROOF · PRIVATE ADMIN REFERENCE · NO LIVE SURFACES CHANGED</p>
+        <p>CURRENT DESIGN REFERENCE · PRIVATE ADMIN VIEW · SSELFIE NOIR GLASS</p>
       </footer>
     </main>
   )
 }
+
+/** @deprecated Use SselfieNoirGlassProof. */
+export const BoldEditorialProof = SselfieNoirGlassProof

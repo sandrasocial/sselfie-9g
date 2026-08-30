@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 
-import { BoldEditorialProof } from "@/components/brand/bold-editorial-proof"
-import { renderBoldEditorialProofEmail } from "@/lib/email/templates/bold-editorial-proof"
+import { SselfieNoirGlassProof } from "@/components/brand/bold-editorial-proof"
+import { renderSselfieNoirGlassProofEmail } from "@/lib/email/templates/bold-editorial-proof"
 import { getVaultMayaPriceDisplay } from "@/lib/launch/cash-launch-pricing"
 
 export const dynamic = "force-dynamic"
@@ -12,8 +12,8 @@ export default function ChannelProofPage() {
   const vaultMayaPrice = getVaultMayaPriceDisplay()
 
   return (
-    <BoldEditorialProof
-      emailHtml={renderBoldEditorialProofEmail()}
+    <SselfieNoirGlassProof
+      emailHtml={renderSselfieNoirGlassProofEmail()}
       priceLabel={vaultMayaPrice.monthlyLabel}
     />
   )

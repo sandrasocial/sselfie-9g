@@ -3,41 +3,47 @@ import { describe, expect, it } from "vitest"
 
 import {
   BOLD_EDITORIAL_COLORS,
-  BOLD_EDITORIAL_GUARDRAILS,
-  BOLD_EDITORIAL_SHAPE,
-  BOLD_EDITORIAL_TYPE,
+  SSELFIE_NOIR_GLASS_COLORS,
+  SSELFIE_NOIR_GLASS_GUARDRAILS,
+  SSELFIE_NOIR_GLASS_SHAPE,
+  SSELFIE_NOIR_GLASS_TYPE,
 } from "@/lib/brand/bold-editorial-tokens"
-import { renderBoldEditorialProofEmail } from "@/lib/email/templates/bold-editorial-proof"
+import { renderSselfieNoirGlassProofEmail } from "@/lib/email/templates/bold-editorial-proof"
 
 function read(path: string) {
   return readFileSync(path, "utf8")
 }
 
-describe("Bold Editorial Studio foundation", () => {
+describe("SSELFIE Noir Glass foundation", () => {
   it("locks the approved cross-channel tokens and four-stage method", () => {
-    expect(BOLD_EDITORIAL_COLORS).toMatchObject({
-      ink: "#09090B",
-      espresso: "#09090B",
-      chalk: "#FAFAF9",
-      ivory: "#FAFAF9",
+    expect(SSELFIE_NOIR_GLASS_COLORS).toMatchObject({
+      obsidian: "#09090B",
+      graphite: "#18181B",
+      pearl: "#FAFAF9",
       paper: "#FFFFFF",
-      champagne: "#F3E6CF",
+      coolMist: "#F0F0F2",
+      pearlNeon: "#F3E6CF",
     })
-    expect(BOLD_EDITORIAL_TYPE.display).toContain("Cormorant Garamond")
-    expect(BOLD_EDITORIAL_TYPE.sans).toContain("Manrope")
-    expect(BOLD_EDITORIAL_TYPE.signature).toContain("Allura")
-    expect(BOLD_EDITORIAL_SHAPE.radius.surface).toBe("16px")
-    expect(BOLD_EDITORIAL_GUARDRAILS.method).toEqual(["TAKE", "CREATE", "EDIT", "POST"])
+    expect(SSELFIE_NOIR_GLASS_TYPE.display).toContain("Cormorant Garamond")
+    expect(SSELFIE_NOIR_GLASS_TYPE.sans).toContain("Manrope")
+    expect(SSELFIE_NOIR_GLASS_TYPE.signature).toContain("Allura")
+    expect(SSELFIE_NOIR_GLASS_SHAPE.radius.surface).toBe("16px")
+    expect(SSELFIE_NOIR_GLASS_GUARDRAILS.method).toEqual(["TAKE", "CREATE", "EDIT", "POST"])
+
+    // Existing imports keep working, but these names are compatibility aliases only.
+    expect(BOLD_EDITORIAL_COLORS.espresso).toBe(SSELFIE_NOIR_GLASS_COLORS.obsidian)
+    expect(BOLD_EDITORIAL_COLORS.ivory).toBe(SSELFIE_NOIR_GLASS_COLORS.pearl)
+    expect(BOLD_EDITORIAL_COLORS.champagne).toBe(SSELFIE_NOIR_GLASS_COLORS.pearlNeon)
   })
 
   it("exposes the approved Noir Glass global tokens", () => {
     const globals = read("app/globals.css")
 
-    expect(globals).toContain("--ss-brand-ink: #09090b")
-    expect(globals).toContain("--ss-brand-espresso: #09090b")
-    expect(globals).toContain("--ss-brand-chalk: #fafaf9")
-    expect(globals).toContain("--ss-brand-ivory: #fafaf9")
-    expect(globals).toContain("--ss-brand-champagne: #f3e6cf")
+    expect(globals).toContain("--ss-brand-obsidian: #09090b")
+    expect(globals).toContain("--ss-brand-graphite: #18181b")
+    expect(globals).toContain("--ss-brand-pearl: #fafaf9")
+    expect(globals).toContain("--ss-brand-cool-mist: #f0f0f2")
+    expect(globals).toContain("--ss-brand-pearl-neon: #f3e6cf")
     expect(globals).toContain("--ss-brand-glass-dark: rgba(9, 9, 11, 0.92)")
     expect(globals).not.toContain("--ss-brand-oxblood")
     expect(globals).toContain("--ss-brand-radius: 16px")
@@ -50,8 +56,9 @@ describe("Bold Editorial Studio foundation", () => {
     const adminNav = read("components/admin/admin-nav.tsx")
 
     expect(adminLayout).toContain("isAdminEmail")
-    expect(designPage).toContain("BoldEditorialProof")
-    expect(designPage).toContain("renderBoldEditorialProofEmail")
+    expect(designPage).toContain("SselfieNoirGlassProof")
+    expect(designPage).toContain("renderSselfieNoirGlassProofEmail")
+    expect(designPage).toContain("SSELFIE Noir Glass · Design reference")
     expect(adminNav).toContain('href: "/admin/design-system"')
   })
 
@@ -177,7 +184,7 @@ describe("Bold Editorial Studio foundation", () => {
   })
 
   it("renders a real responsive email proof with the approved hierarchy and compliance floor", () => {
-    const email = renderBoldEditorialProofEmail({
+    const email = renderSselfieNoirGlassProofEmail({
       ctaHref: "https://www.sselfie.ai/auth/setup-password?proof=1",
     })
 
@@ -213,6 +220,8 @@ describe("Bold Editorial Studio foundation", () => {
   it("keeps the approved reference and governing document wired together", () => {
     const designAuthority = read("docs/SSELFIE_DESIGN_SYSTEM.md")
     const agentInstructions = read("AGENTS.md")
+    const docsIndex = read("docs/README.md")
+    const emailAssets = read("docs/EMAIL_VISUAL_ASSETS.md")
 
     expect(designAuthority).toContain("SSELFIE Noir Glass")
     expect(designAuthority).toContain(
@@ -220,5 +229,42 @@ describe("Bold Editorial Studio foundation", () => {
     )
     expect(agentInstructions).toContain("docs/SSELFIE_DESIGN_SYSTEM.md")
     expect(agentInstructions).toContain("sole current visual authority")
+    expect(agentInstructions).toContain("Earlier Bold Editorial")
+    expect(agentInstructions).toContain("2026-08-27")
+    expect(docsIndex).toContain("2026-08-27 SSELFIE Noir Glass")
+    expect(emailAssets).toContain("New or redesigned email work must follow SSELFIE")
+    expect(emailAssets).toContain("Noir Glass in `docs/SSELFIE_DESIGN_SYSTEM.md`")
+  })
+
+  it("prevents legacy palette aliases from returning to active design surfaces", () => {
+    const activeDesignSources = [
+      "app/app/layout.tsx",
+      "components/app-v3/edit-mode.tsx",
+      "components/brand/bold-editorial-primitives.module.css",
+      "components/brand/bold-editorial-proof.module.css",
+      "components/sselfie/public-marketing.tsx",
+      "components/prompt-vault/prompt-vault-checkout-link.tsx",
+      "components/vault-maya/vault-maya-checkout-link.tsx",
+      "components/vault-maya/vault-maya-landing.module.css",
+    ]
+    const forbiddenAliases = [
+      "--ss-brand-espresso",
+      "--ss-brand-chalk",
+      "--ss-brand-ivory",
+      "--ss-brand-parchment",
+      "--ss-brand-taupe",
+      "--ss-brand-champagne",
+      "--color-obsidian",
+      "--color-whisper",
+    ]
+
+    for (const sourcePath of activeDesignSources) {
+      const source = read(sourcePath)
+      for (const alias of forbiddenAliases) {
+        expect(source, `${sourcePath} must not use compatibility token ${alias}`).not.toContain(
+          alias
+        )
+      }
+    }
   })
 })

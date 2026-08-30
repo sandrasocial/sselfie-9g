@@ -52,18 +52,18 @@ export default function AppV3Layout({ children }: { children: ReactNode }) {
         }
 
         .studio-3-root {
-          --suite-canvas: var(--ss-brand-chalk);
+          --suite-canvas: var(--ss-brand-pearl);
           --suite-paper: var(--ss-brand-paper);
-          --suite-smoke: var(--ss-brand-parchment);
-          --suite-mist: color-mix(in srgb, var(--ss-brand-parchment) 58%, white);
-          --suite-steel: var(--ss-brand-taupe);
+          --suite-smoke: var(--ss-brand-cool-mist);
+          --suite-mist: color-mix(in srgb, var(--ss-brand-cool-mist) 58%, white);
+          --suite-steel: var(--ss-brand-steel);
           --suite-slate: var(--ss-brand-slate);
-          --suite-graphite: var(--ss-brand-carbon);
-          --suite-night: var(--ss-brand-ink);
-          --suite-accent: var(--ss-brand-ink);
-          --suite-highlight: var(--ss-brand-champagne);
-          --suite-highlight-ink: var(--ss-brand-champagne-ink);
-          --suite-highlight-glow: var(--ss-brand-champagne-glow);
+          --suite-graphite: var(--ss-brand-graphite);
+          --suite-night: var(--ss-brand-obsidian);
+          --suite-accent: var(--ss-brand-obsidian);
+          --suite-highlight: var(--ss-brand-pearl-neon);
+          --suite-highlight-ink: var(--ss-brand-warm-grey);
+          --suite-highlight-glow: var(--ss-brand-pearl-neon-glow);
           --suite-glass-light: var(--ss-brand-glass-light);
           --suite-glass-dark: var(--ss-brand-glass-dark);
           --suite-glass-edge: var(--ss-brand-glass-edge);

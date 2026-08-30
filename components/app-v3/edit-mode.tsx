@@ -537,12 +537,12 @@ export function EditMode({
       className="fixed inset-0 z-[80] m-0 flex h-[100dvh] w-full max-w-none flex-col border-0 bg-[color:var(--suite-night)] p-0 text-white animate-in fade-in duration-200 motion-reduce:animate-none"
       style={
         {
-          "--suite-night": "var(--ss-brand-ink, #09090B)",
-          "--suite-canvas": "var(--ss-brand-chalk, #FAFAF9)",
-          "--suite-steel": "var(--ss-brand-taupe, #A89B8C)",
-          "--suite-slate": "var(--ss-brand-slate, #5E5E66)",
-          "--suite-accent": "var(--ss-brand-ink, #09090B)",
-          "--suite-highlight": "var(--ss-brand-champagne, #F3E6CF)",
+          "--suite-night": "var(--ss-brand-obsidian)",
+          "--suite-canvas": "var(--ss-brand-pearl)",
+          "--suite-steel": "var(--ss-brand-steel)",
+          "--suite-slate": "var(--ss-brand-slate)",
+          "--suite-accent": "var(--ss-brand-obsidian)",
+          "--suite-highlight": "var(--ss-brand-pearl-neon)",
         } as CSSProperties
       }
     >

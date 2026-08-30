@@ -1,5 +1,5 @@
 .root {
-  color: var(--ss-brand-ink);
+  color: var(--ss-brand-obsidian);
   font-family: var(--ss-brand-sans);
 }
 
@@ -33,7 +33,7 @@
 .button,
 .buttonSecondary {
   align-items: center;
-  border: 1px solid var(--ss-brand-ink);
+  border: 1px solid var(--ss-brand-obsidian);
   border-radius: 4px;
   display: inline-flex;
   font-size: 0.625rem;
@@ -53,18 +53,18 @@
 }
 
 .button {
-  background: var(--ss-brand-ink);
+  background: var(--ss-brand-obsidian);
   color: var(--ss-brand-paper);
 }
 
 .button[data-accent="true"] {
-  background: var(--ss-brand-espresso);
-  border-color: var(--ss-brand-espresso);
+  background: var(--ss-brand-obsidian);
+  border-color: var(--ss-brand-obsidian);
 }
 
 .buttonSecondary {
   background: transparent;
-  color: var(--ss-brand-ink);
+  color: var(--ss-brand-obsidian);
 }
 
 .button:hover,
@@ -74,7 +74,7 @@
 
 .button:focus-visible,
 .buttonSecondary:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--ss-brand-champagne) 72%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--ss-brand-pearl-neon) 72%, transparent);
   outline-offset: 3px;
 }
 
@@ -102,12 +102,12 @@
 }
 
 .stageActive {
-  border-bottom-color: var(--ss-brand-champagne);
-  color: var(--ss-brand-ink);
+  border-bottom-color: var(--ss-brand-pearl-neon);
+  color: var(--ss-brand-obsidian);
 }
 
 .stageNumber {
-  color: var(--ss-brand-champagne-ink);
+  color: var(--ss-brand-warm-grey);
   font-size: 0.5rem;
   margin-right: 0.45rem;
 }

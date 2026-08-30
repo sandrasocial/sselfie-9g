@@ -1,12 +1,14 @@
 # Email Visual Assets
 
-Last updated: 2026-08-23
+Last updated: 2026-08-30
 
 SSELFIE emails can now use a small curated set of production-safe visual assets through `lib/email/email-image-assets.ts`.
 
-These assets support the current email shells. New or redesigned email work must follow the Bold
-Editorial Studio rules in `docs/SSELFIE_DESIGN_SYSTEM.md`: a primarily light readable body, strong
-black/chalk editorial structure, one Ink or Oxblood CTA, and photography only when it adds proof.
+These assets support the current email shells. New or redesigned email work must follow SSELFIE
+Noir Glass in `docs/SSELFIE_DESIGN_SYSTEM.md`: a Paper or Pearl readable body, an Obsidian CTA,
+cool Silver rules, and photography only when it adds proof. Pearl Neon is not an email button or
+body-copy color. Bold Editorial, warm champagne, espresso, ivory, parchment, and oxblood guidance
+is superseded.
 
 ## Where Images Live
 
@@ -44,12 +46,12 @@ The helper returns canonical absolute URLs such as:
 
 ## Available Images
 
-| Key | File | Intended use |
-| --- | --- | --- |
-| `prompt_pack_hero` | `prompt-pack-hero.jpg` | PROMPT pack delivery/nurture and prompt-to-Starter Kit bridge emails. |
-| `starter_kit_ai_ready_selfie` | `starter-kit-ai-ready-selfie.jpg` | Starter Kit emails that explain AI-ready selfies and better input photos. |
-| `selfie_guide_foundation` | `selfie-guide-foundation.jpg` | Free Selfie Guide emails about light, posing, and one strong phone photo. |
-| `studio_visual_workspace` | `studio-visual-workspace.jpg` | Studio/Maya emails where the app is positioned as the calm ongoing execution layer. |
+| Key                           | File                              | Intended use                                                                        |
+| ----------------------------- | --------------------------------- | ----------------------------------------------------------------------------------- |
+| `prompt_pack_hero`            | `prompt-pack-hero.jpg`            | PROMPT pack delivery/nurture and prompt-to-Starter Kit bridge emails.               |
+| `starter_kit_ai_ready_selfie` | `starter-kit-ai-ready-selfie.jpg` | Starter Kit emails that explain AI-ready selfies and better input photos.           |
+| `selfie_guide_foundation`     | `selfie-guide-foundation.jpg`     | Free Selfie Guide emails about light, posing, and one strong phone photo.           |
+| `studio_visual_workspace`     | `studio-visual-workspace.jpg`     | Studio/Maya emails where the app is positioned as the calm ongoing execution layer. |
 
 ## File Size Guidance
 

@@ -27,8 +27,9 @@ describe("approved marketing, checkout, and email palette", () => {
 
     expect(marketing).toContain("PublicNeonSignature")
     expect(marketing).toContain("Worth posting.")
-    expect(marketing).toContain("var(--ss-brand-espresso)")
-    expect(marketing).toContain('cream: "#FAFAF9"')
+    expect(marketing).toContain("var(--ss-brand-obsidian)")
+    expect(marketing).toContain('pearl: "var(--ss-brand-pearl)"')
+    expect(marketing).not.toContain("var(--ss-brand-espresso)")
   })
 
   it("keeps checkout behavior in place while applying the approved masthead", () => {

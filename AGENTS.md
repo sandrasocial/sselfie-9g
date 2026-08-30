@@ -50,4 +50,6 @@ Sandra's current request is the brief. Start with what she is asking for now.
   `docs/SSELFIE_DESIGN_SYSTEM.md` before making visible changes.
 - That file is the sole current visual authority. Dated audits, generated prompts, output folders,
   archived systems, and existing inconsistent UI are not alternative design instructions.
-- The approved 2026-08-23 desktop/mobile reference is linked from the governing document.
+- The approved SSELFIE Noir Glass desktop/mobile reference from 2026-08-27 is linked from the
+  governing document. Earlier Bold Editorial, warm champagne, espresso, ivory, parchment, stone,
+  and oxblood references are historical or compatibility names—not current design direction.

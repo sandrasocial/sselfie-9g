@@ -41,7 +41,7 @@ function buildCheckoutHref(searchParams: { get(name: string): string | null }): 
   return query ? `/checkout/vault-maya?${query}` : "/checkout/vault-maya"
 }
 
-function CheckoutLinkInner({ label, surface }: { label: string; surface: "dark" | "cream" }) {
+function CheckoutLinkInner({ label, surface }: { label: string; surface: "dark" | "light" }) {
   const searchParams = useSearchParams()
   const href = buildCheckoutHref(searchParams)
   const dark = surface === "dark"
@@ -66,8 +66,8 @@ function CheckoutLinkInner({ label, surface }: { label: string; surface: "dark" 
         justifyContent: "center",
         padding: "13px 32px",
         minHeight: "46px",
-        background: dark ? "var(--ss-brand-paper)" : "var(--ss-brand-espresso)",
-        color: dark ? "var(--ss-brand-ink)" : "var(--ss-brand-paper)",
+        background: dark ? "var(--ss-brand-paper)" : "var(--ss-brand-obsidian)",
+        color: dark ? "var(--ss-brand-obsidian)" : "var(--ss-brand-paper)",
         fontSize: "10px",
         fontWeight: 600,
         letterSpacing: "0.22em",
@@ -93,7 +93,7 @@ export function VaultMayaCheckoutLink({
   surface = "dark",
 }: Readonly<{
   label: string
-  surface?: "dark" | "cream"
+  surface?: "dark" | "light"
 }>) {
   return (
     <Suspense fallback={null}>

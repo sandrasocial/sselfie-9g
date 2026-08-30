@@ -138,19 +138,21 @@
   --space-32: 128px;
 
   /* Earth Stone Palette */
-  --stone-deepest: #0a0a0a;
-  --stone-dark: #2c2b29;
-  --stone-mid: #666666;
-  --stone-raw: #2c2b29;
-  --stone-granite: #0a0a0a;
-  --stone-quarry: #666666;
-  --stone-accent: #8a8780;
-  --stone-pale: #e5e5e5;
-  --color-obsidian: #0a0a0a;
+  /* Legacy utility aliases normalized to Noir Glass. Do not extend this namespace. */
+  --stone-deepest: #09090b;
+  --stone-dark: #18181b;
+  --stone-mid: #5e5e66;
+  --stone-raw: #18181b;
+  --stone-granite: #09090b;
+  --stone-quarry: #5e5e66;
+  --stone-accent: #a3a3a9;
+  --stone-pale: #d7d7dc;
+  --color-obsidian: #09090b;
   --color-porcelain: #ffffff;
-  --color-pearl: #f5f5f5;
-  --color-smoke: #666666;
-  --color-whisper: #e5e5e5;
+  --color-pearl: #fafaf9;
+  --color-smoke: #5e5e66;
+  --color-whisper: #d7d7dc;
+  /* Superseded Cool Editorial aliases retained for existing surfaces only. */
   --ss-seasalt: #f8fafa;
   --ss-white: #ffffff;
   --ss-silver: #c5c6c8;
@@ -159,23 +161,21 @@
   --ss-raisin: #282728;
   --ss-night: #0d0e10;
 
-  /* SSELFIE Noir Glass — approved 2026-08-27.
-     Obsidian and pearl carry the system. Glass is reserved for navigation, Maya controls,
-     result overlays, and floating actions so the interface stays editorial rather than generic. */
-  --ss-brand-ink: #09090b;
-  --ss-brand-carbon: #18181b;
-  --ss-brand-espresso: #09090b;
-  --ss-brand-chalk: #fafaf9;
-  --ss-brand-ivory: #fafaf9;
+  /* SSELFIE Noir Glass — approved 2026-08-27. These semantic names are canonical.
+     Glass is reserved for navigation, Maya controls, result overlays, dialogs, and floating
+     actions. The compatibility aliases below must not be used by new visual work. */
+  --ss-brand-obsidian: #09090b;
+  --ss-brand-graphite: #18181b;
+  --ss-brand-pearl: #fafaf9;
   --ss-brand-paper: #ffffff;
   --ss-brand-concrete: #e7e7ea;
-  --ss-brand-parchment: #f0f0f2;
+  --ss-brand-cool-mist: #f0f0f2;
   --ss-brand-silver: #d7d7dc;
-  --ss-brand-taupe: #a3a3a9;
+  --ss-brand-steel: #a3a3a9;
   --ss-brand-slate: #5e5e66;
-  --ss-brand-champagne: #f3e6cf;
-  --ss-brand-champagne-ink: #5f5b56;
-  --ss-brand-champagne-glow: rgba(243, 230, 207, 0.46);
+  --ss-brand-pearl-neon: #f3e6cf;
+  --ss-brand-warm-grey: #5f5b56;
+  --ss-brand-pearl-neon-glow: rgba(243, 230, 207, 0.46);
   --ss-brand-glass-light: rgba(255, 255, 255, 0.68);
   --ss-brand-glass-dark: rgba(9, 9, 11, 0.92);
   --ss-brand-glass-edge: rgba(255, 255, 255, 0.34);
@@ -187,6 +187,18 @@
   --ss-brand-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --ss-brand-sans: "Manrope", Inter, Arial, Helvetica, sans-serif;
   --ss-brand-signature: Allura, "Segoe Script", cursive;
+
+  /* Compatibility only. Remove from new code reviews; values intentionally resolve to Noir Glass. */
+  --ss-brand-ink: var(--ss-brand-obsidian);
+  --ss-brand-carbon: var(--ss-brand-graphite);
+  --ss-brand-espresso: var(--ss-brand-obsidian);
+  --ss-brand-chalk: var(--ss-brand-pearl);
+  --ss-brand-ivory: var(--ss-brand-pearl);
+  --ss-brand-parchment: var(--ss-brand-cool-mist);
+  --ss-brand-taupe: var(--ss-brand-steel);
+  --ss-brand-champagne: var(--ss-brand-pearl-neon);
+  --ss-brand-champagne-ink: var(--ss-brand-warm-grey);
+  --ss-brand-champagne-glow: var(--ss-brand-pearl-neon-glow);
   /* Calendar editorial board: cool greige, never warm cream. */
   --calendar-stone-1: #eceae7;
   --calendar-stone-2: #e1deda;

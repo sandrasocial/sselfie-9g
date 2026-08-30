@@ -11,7 +11,7 @@ AI task management, custom agents, and implementation queues do not live here.
 - `AS-BUILT.md` — stable repository and deployment facts
 - `AGENTS.md` — short native Codex project instructions
 - `docs/README.md` — current product documentation index
-- `docs/SSELFIE_DESIGN_SYSTEM.md` — sole approved visual system for product, marketing, and email
+- `docs/SSELFIE_DESIGN_SYSTEM.md` — sole approved SSELFIE Noir Glass system for every visible channel
 - `docs/brand/SSELFIE_BRAND_CONSTITUTION.md` — brand purpose and ethical line
 - `docs/brand/SANDRA_VOICE_OS_2026-07-16.md` — Sandra's current voice
 - `docs/product/MAYA_CREATIVE_FREEZE_2026-07-15.md` — protected creative surfaces

@@ -86,6 +86,7 @@ and visual storytelling where relevant. Do not add extra top-level stages that c
 - Cool Mist `#F0F0F2` — quiet section separation
 - Concrete `#E7E7EA` — low-contrast secondary surfaces
 - Silver `#D7D7DC` — rules, borders, and inactive controls
+- Steel `#A3A3A9` — neutral inactive UI and secondary metadata when Slate is too strong
 - Slate `#5E5E66` — secondary text
 - Pearl Neon `#F3E6CF` — illuminated selection edges and signature light on dark surfaces only
 - Warm Grey `#5F5B56` — accessible secondary accent text on light surfaces
@@ -289,6 +290,23 @@ refer here, but must not define competing palettes or rules.
 5. Do not introduce a new color, font, radius system, or component family without approval.
 6. Keep real copy, state, navigation, and behavior separate from visual-reference placeholders.
 7. Preserve unrelated customer-facing routes until their usage and entitlement dependencies are known.
+
+### Compatibility names
+
+Some live files still expose older variable, export, or file names so existing imports do not
+break. They are aliases, not palette choices:
+
+- `ink` and `espresso` resolve to Obsidian
+- `carbon` resolves to Graphite
+- `chalk` and `ivory` resolve to Pearl
+- `parchment` resolves to Cool Mist
+- `taupe` resolves to Steel
+- `champagne` resolves to Pearl Neon
+
+Do not use these names in new visual code, documentation, proofs, or agent instructions. Migrate
+them to the canonical Noir Glass semantic names when touching the surrounding component. A legacy
+file name such as `bold-editorial-*` may remain only where renaming it would break imports; its
+header must identify it as compatibility code.
 
 ### Required proof before broad rollout
 

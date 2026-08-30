@@ -1,12 +1,16 @@
 /**
  * SSELFIE Design Tokens
  *
- * Workbook-first design primitives aligned to docs/brand/DESIGN_SYSTEM.md.
+ * Compatibility primitives aligned to docs/SSELFIE_DESIGN_SYSTEM.md.
  *
- * Product UI stays rounded and cool-toned: white, pearl, obsidian, smoke,
- * whisper, and stone gray. Legacy glass names remain for compatibility, but
- * should resolve to subtle material surfaces instead of legacy beige styling.
+ * SSELFIE Noir Glass is the only current visual direction. New visible work
+ * should prefer the --ss-brand-* semantic CSS variables. These class bundles
+ * remain for older Suite surfaces and must not be treated as a second design
+ * system. Glass is limited to navigation, Maya controls, dialogs, result
+ * overlays, and floating actions.
  */
+
+import { SSELFIE_NOIR_GLASS_COLORS } from "@/lib/brand/bold-editorial-tokens"
 
 const cardClass = [
   "stone-panel",
@@ -38,33 +42,32 @@ const buttonPrimaryClass = [
   "active:bg-[color:var(--color-obsidian)]",
 ].join(" ")
 
-const containerClass = [
-  "stone-shell-panel",
-  "rounded-3xl",
-  "sm:rounded-4xl",
-].join(" ")
+const containerClass = ["stone-shell-panel", "rounded-3xl", "sm:rounded-4xl"].join(" ")
 
 export const COLORS = {
-  obsidian: "#0a0a0a",
-  surface: "#f5f5f5",
-  elevated: "#ffffff",
-  porcelain: "#ffffff",
-  pearl: "#f5f5f5",
-  whisper: "#e5e5e5",
-  accent: "#8a8780",
-  smoke: "#666666",
-  stoneDark: "#2c2b29",
-  stoneSoft: "#d4d1cc",
+  obsidian: SSELFIE_NOIR_GLASS_COLORS.obsidian,
+  graphite: SSELFIE_NOIR_GLASS_COLORS.graphite,
+  surface: SSELFIE_NOIR_GLASS_COLORS.pearl,
+  elevated: SSELFIE_NOIR_GLASS_COLORS.paper,
+  porcelain: SSELFIE_NOIR_GLASS_COLORS.paper,
+  pearl: SSELFIE_NOIR_GLASS_COLORS.pearl,
+  coolMist: SSELFIE_NOIR_GLASS_COLORS.coolMist,
+  whisper: SSELFIE_NOIR_GLASS_COLORS.silver,
+  accent: SSELFIE_NOIR_GLASS_COLORS.pearlNeon,
+  smoke: SSELFIE_NOIR_GLASS_COLORS.slate,
+  stoneDark: SSELFIE_NOIR_GLASS_COLORS.graphite,
+  stoneSoft: SSELFIE_NOIR_GLASS_COLORS.silver,
 } as const
 
+/** Restricted-material values; not a general-purpose card recipe. */
 export const GLASS = {
-  cardBg: "rgba(255,255,255,0.76)",
-  cardBgStrong: "rgba(245,245,245,0.92)",
-  cardBgSoft: "rgba(10,10,10,0.035)",
-  overlayBg: "rgba(10,10,10,0.96)",
-  cardBorder: "#e5e5e5",
-  cardBorderSubtle: "rgba(10,10,10,0.10)",
-  cardBorderStrong: "rgba(10,10,10,0.18)",
+  cardBg: "rgba(255,255,255,0.68)",
+  cardBgStrong: "rgba(250,250,249,0.92)",
+  cardBgSoft: "rgba(9,9,11,0.035)",
+  overlayBg: "rgba(9,9,11,0.92)",
+  cardBorder: "#D7D7DC",
+  cardBorderSubtle: "rgba(9,9,11,0.10)",
+  cardBorderStrong: "rgba(9,9,11,0.18)",
   blur: "28px",
   blurHeavy: "42px",
   radius: "16px",
@@ -79,7 +82,7 @@ export const TYPOGRAPHY = {
     },
   },
   body: {
-    family: "'Inter', system-ui, -apple-system, sans-serif",
+    family: "'Manrope', Inter, system-ui, -apple-system, sans-serif",
     weights: {
       light: 300,
       regular: 400,

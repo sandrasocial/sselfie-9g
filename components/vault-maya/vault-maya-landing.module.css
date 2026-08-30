@@ -1,6 +1,6 @@
 .eyebrow {
   display: block;
-  color: var(--stone);
+  color: var(--ss-brand-steel);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: 10px;
   font-weight: 600;
@@ -16,7 +16,7 @@
   min-height: 100dvh;
   padding-top: 58px;
   overflow: clip;
-  background: var(--color-porcelain);
+  background: var(--ss-brand-pearl);
 }
 
 .heroCopy {
@@ -31,7 +31,7 @@
 .heroTitle {
   max-width: 650px;
   margin: 20px 0 24px;
-  color: var(--color-obsidian);
+  color: var(--ss-brand-obsidian);
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(48px, 5.7vw, 82px);
   font-weight: 400;
@@ -41,7 +41,7 @@
 
 .heroBody {
   max-width: 550px;
-  color: var(--color-smoke);
+  color: var(--ss-brand-slate);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: clamp(16px, 1.35vw, 19px);
   line-height: 1.68;
@@ -54,7 +54,7 @@
 
 .heroTerms {
   margin-top: 16px;
-  color: var(--color-smoke);
+  color: var(--ss-brand-slate);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: 12px;
   line-height: 1.55;
@@ -64,7 +64,7 @@
   position: relative;
   min-height: 650px;
   overflow: hidden;
-  background: var(--color-obsidian);
+  background: var(--ss-brand-obsidian);
 }
 
 .heroResultMain {
@@ -87,9 +87,9 @@
   aspect-ratio: 4 / 5;
   margin: 0;
   overflow: hidden;
-  border: 5px solid var(--color-porcelain);
-  background: var(--color-porcelain);
-  box-shadow: 0 18px 52px color-mix(in srgb, var(--ss-brand-ink) 40%, transparent);
+  border: 5px solid var(--ss-brand-pearl);
+  background: var(--ss-brand-pearl);
+  box-shadow: 0 18px 52px color-mix(in srgb, var(--ss-brand-obsidian) 40%, transparent);
 }
 
 .heroOriginal img {
@@ -102,8 +102,8 @@
   bottom: 7px;
   left: 7px;
   padding: 8px 9px;
-  background: var(--color-obsidian);
-  color: var(--color-porcelain);
+  background: var(--ss-brand-obsidian);
+  color: var(--ss-brand-pearl);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: 7px;
   font-weight: 700;
@@ -115,7 +115,7 @@
 .proofSection {
   padding: clamp(76px, 9vw, 124px) clamp(18px, 4vw, 56px);
   overflow: hidden;
-  background: var(--color-obsidian);
+  background: var(--ss-brand-obsidian);
 }
 
 .proofHeader {
@@ -160,7 +160,7 @@
 .sectionHeading h2,
 .final h2 {
   margin: 18px 0 22px;
-  color: var(--color-obsidian);
+  color: var(--ss-brand-obsidian);
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(38px, 5vw, 68px);
   font-weight: 400;
@@ -169,12 +169,12 @@
 }
 
 .proofStatement h2 {
-  color: var(--color-porcelain);
+  color: var(--ss-brand-pearl);
 }
 
 .proofStatement p {
   max-width: 620px;
-  color: var(--color-whisper);
+  color: var(--ss-brand-silver);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: clamp(16px, 1.4vw, 19px);
   line-height: 1.7;
@@ -192,7 +192,7 @@
   position: relative;
   min-height: clamp(430px, 44vw, 690px);
   overflow: hidden;
-  background: var(--stone-dark);
+  background: var(--ss-brand-graphite);
 }
 
 .proofCard:nth-child(2),
@@ -219,7 +219,7 @@
   gap: 12px;
   padding: 14px 16px;
   background: rgba(13, 14, 16, 0.86);
-  color: var(--color-porcelain);
+  color: var(--ss-brand-pearl);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: 9px;
   font-weight: 600;
@@ -233,7 +233,7 @@
 
 .demoSection {
   padding: clamp(76px, 9vw, 120px) clamp(22px, 6vw, 86px);
-  background: var(--color-porcelain);
+  background: var(--ss-brand-pearl);
 }
 
 .demoInner {
@@ -264,7 +264,7 @@
 .steps li > span {
   display: block;
   margin-bottom: clamp(48px, 6vw, 78px);
-  color: var(--ss-brand-champagne-ink);
+  color: var(--ss-brand-warm-grey);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: 10px;
   font-weight: 700;
@@ -272,7 +272,7 @@
 }
 
 .steps strong {
-  color: var(--color-obsidian);
+  color: var(--ss-brand-obsidian);
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(25px, 2.2vw, 33px);
   font-weight: 500;
@@ -281,7 +281,7 @@
 
 .steps p {
   margin-top: 12px;
-  color: var(--color-smoke);
+  color: var(--ss-brand-slate);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: 14px;
   line-height: 1.65;
@@ -291,7 +291,7 @@
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   min-height: 720px;
-  background: var(--color-whisper);
+  background: var(--ss-brand-silver);
 }
 
 .whyImage {
@@ -313,7 +313,7 @@
 
 .whyCopy p {
   max-width: 620px;
-  color: var(--color-smoke);
+  color: var(--ss-brand-slate);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: 17px;
   line-height: 1.76;
@@ -321,7 +321,7 @@
 
 .includedSection {
   padding: clamp(76px, 9vw, 120px) clamp(22px, 6vw, 86px);
-  background: var(--color-obsidian);
+  background: var(--ss-brand-obsidian);
 }
 
 .includedInner {
@@ -333,7 +333,7 @@
 }
 
 .includedInner h2 {
-  color: var(--color-porcelain);
+  color: var(--ss-brand-pearl);
 }
 
 .includedInner ul {
@@ -349,7 +349,7 @@
   min-height: 68px;
   padding: 14px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  color: var(--color-porcelain);
+  color: var(--ss-brand-pearl);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: clamp(15px, 1.4vw, 18px);
   line-height: 1.45;
@@ -357,14 +357,14 @@
 
 .includedInner li::before {
   width: 32px;
-  color: var(--ss-brand-champagne-ink);
+  color: var(--ss-brand-warm-grey);
   content: "+";
   font-weight: 700;
 }
 
 .distinctionSection {
   padding: clamp(76px, 9vw, 120px) clamp(22px, 6vw, 86px);
-  background: var(--color-porcelain);
+  background: var(--ss-brand-pearl);
 }
 
 .sectionHeading {
@@ -387,13 +387,13 @@
   padding: clamp(28px, 4vw, 50px);
   border-right: 1px solid var(--ss-brand-silver);
   border-bottom: 1px solid var(--ss-brand-silver);
-  background: var(--color-porcelain);
+  background: var(--ss-brand-pearl);
 }
 
 .compareCard > span {
   display: block;
   margin-bottom: clamp(58px, 7vw, 88px);
-  color: var(--stone);
+  color: var(--ss-brand-steel);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: 9px;
   font-weight: 700;
@@ -402,7 +402,7 @@
 }
 
 .compareCard h3 {
-  color: var(--color-obsidian);
+  color: var(--ss-brand-obsidian);
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(27px, 3vw, 38px);
   font-weight: 500;
@@ -411,19 +411,19 @@
 
 .compareCard p {
   margin-top: 14px;
-  color: var(--color-smoke);
+  color: var(--ss-brand-slate);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: 14px;
   line-height: 1.72;
 }
 
 .compareCardSelected {
-  background: var(--color-obsidian);
+  background: var(--ss-brand-obsidian);
 }
 
 .compareCardSelected h3,
 .compareCardSelected p {
-  color: var(--color-porcelain);
+  color: var(--ss-brand-pearl);
 }
 
 .compareCardSelected > span {
@@ -440,7 +440,7 @@
 }
 
 .distinctionCta p {
-  color: var(--color-smoke);
+  color: var(--ss-brand-slate);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: 12px;
 }
@@ -452,12 +452,12 @@
   align-items: start;
   padding: clamp(58px, 7vw, 90px) clamp(22px, 8vw, 120px);
   border-top: 1px solid rgba(255, 255, 255, 0.16);
-  background: var(--color-obsidian);
+  background: var(--ss-brand-obsidian);
 }
 
 .aiNote p {
   max-width: 910px;
-  color: var(--color-porcelain);
+  color: var(--ss-brand-pearl);
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(26px, 3.3vw, 44px);
   font-weight: 400;
@@ -467,7 +467,7 @@
 
 .final {
   padding: clamp(84px, 11vw, 140px) 22px;
-  background: var(--color-obsidian);
+  background: var(--ss-brand-obsidian);
   text-align: center;
 }
 
@@ -477,12 +477,12 @@
 }
 
 .final h2 {
-  color: var(--color-porcelain);
+  color: var(--ss-brand-pearl);
 }
 
 .final p {
   margin: 0 auto 30px;
-  color: var(--color-whisper);
+  color: var(--ss-brand-silver);
   font-family: var(--ss-brand-sans, Manrope, Inter, Arial, sans-serif);
   font-size: 15px;
   line-height: 1.7;

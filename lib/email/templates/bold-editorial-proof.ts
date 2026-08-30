@@ -1,17 +1,18 @@
 import { generateMembershipWelcomeEmail } from "./membership-welcome"
 
-export interface BoldEditorialProofEmailOptions {
+export interface SselfieNoirGlassProofEmailOptions {
   ctaHref?: string
 }
 
 /**
- * A proof-only render of the real transactional membership welcome.
+ * A proof-only SSELFIE Noir Glass render of the real transactional membership welcome.
+ * The legacy file/function name remains for import compatibility only.
  * The production template now shares the approved palette, while this renderer remains
  * deliberately disconnected from every sender.
  */
-export function renderBoldEditorialProofEmail({
+export function renderSselfieNoirGlassProofEmail({
   ctaHref = "https://www.sselfie.ai/auth/setup-password?proof=1",
-}: BoldEditorialProofEmailOptions = {}): string {
+}: SselfieNoirGlassProofEmailOptions = {}): string {
   // Build the optional key at runtime so secret scanners do not mistake this proof URL
   // for a hardcoded credential. The generated property still targets the setup URL field.
   const proofAccessLink = { ["passwordSetup" + "Url"]: ctaHref }
@@ -24,3 +25,8 @@ export function renderBoldEditorialProofEmail({
 
   return `<!-- PROOF ONLY · source: generateMembershipWelcomeEmail · not wired to sending -->\n${productionEmail.html}`
 }
+
+/** @deprecated Use renderSselfieNoirGlassProofEmail. */
+export const renderBoldEditorialProofEmail = renderSselfieNoirGlassProofEmail
+/** @deprecated Use SselfieNoirGlassProofEmailOptions. */
+export type BoldEditorialProofEmailOptions = SselfieNoirGlassProofEmailOptions

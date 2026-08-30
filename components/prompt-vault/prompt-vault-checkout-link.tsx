@@ -58,7 +58,7 @@ export function PromptVaultCheckoutLink({
   placement = "unspecified",
 }: {
   label?: string
-  surface?: "dark" | "cream"
+  surface?: "dark" | "light"
   placement?: string
 }) {
   const searchParams = useSearchParams()
@@ -81,8 +81,8 @@ export function PromptVaultCheckoutLink({
         justifyContent: "center",
         padding: "13px 32px",
         minHeight: "46px",
-        background: dark ? "var(--ss-brand-paper)" : "var(--ss-brand-espresso)",
-        color: dark ? "var(--ss-brand-ink)" : "var(--ss-brand-paper)",
+        background: dark ? "var(--ss-brand-paper)" : "var(--ss-brand-obsidian)",
+        color: dark ? "var(--ss-brand-obsidian)" : "var(--ss-brand-paper)",
         fontSize: "10px",
         fontWeight: 600,
         letterSpacing: "0.22em",

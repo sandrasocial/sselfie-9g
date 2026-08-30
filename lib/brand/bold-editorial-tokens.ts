@@ -1,22 +1,27 @@
-export const BOLD_EDITORIAL_COLORS = {
-  ink: "#09090B",
-  carbon: "#18181B",
-  espresso: "#09090B",
-  chalk: "#FAFAF9",
-  ivory: "#FAFAF9",
+/**
+ * SSELFIE Noir Glass is the current approved system.
+ *
+ * The file name and BOLD_EDITORIAL_* exports remain only so existing imports do
+ * not break. New visual work must use the SSELFIE_NOIR_GLASS_* exports below
+ * and follow docs/SSELFIE_DESIGN_SYSTEM.md.
+ */
+export const SSELFIE_NOIR_GLASS_COLORS = {
+  obsidian: "#09090B",
+  graphite: "#18181B",
+  pearl: "#FAFAF9",
   paper: "#FFFFFF",
   concrete: "#E7E7EA",
-  parchment: "#F0F0F2",
+  coolMist: "#F0F0F2",
   silver: "#D7D7DC",
-  taupe: "#A3A3A9",
+  steel: "#A3A3A9",
   slate: "#5E5E66",
-  champagne: "#F3E6CF",
-  champagneInk: "#5F5B56",
+  pearlNeon: "#F3E6CF",
+  warmGrey: "#5F5B56",
   error: "#B42318",
   success: "#216E4E",
 } as const
 
-export const BOLD_EDITORIAL_TYPE = {
+export const SSELFIE_NOIR_GLASS_TYPE = {
   display: "'Cormorant Garamond', Georgia, 'Times New Roman', serif",
   sans: "Manrope, Inter, Arial, Helvetica, sans-serif",
   signature: "Allura, 'Segoe Script', cursive",
@@ -24,7 +29,7 @@ export const BOLD_EDITORIAL_TYPE = {
   emailSans: "Arial, Helvetica, sans-serif",
 } as const
 
-export const BOLD_EDITORIAL_SHAPE = {
+export const SSELFIE_NOIR_GLASS_SHAPE = {
   radius: {
     square: "0px",
     control: "12px",
@@ -36,29 +41,27 @@ export const BOLD_EDITORIAL_SHAPE = {
   touchTarget: "44px",
 } as const
 
-export const BOLD_EDITORIAL_CSS_VARS = {
-  "--ss-brand-ink": BOLD_EDITORIAL_COLORS.ink,
-  "--ss-brand-carbon": BOLD_EDITORIAL_COLORS.carbon,
-  "--ss-brand-espresso": BOLD_EDITORIAL_COLORS.espresso,
-  "--ss-brand-chalk": BOLD_EDITORIAL_COLORS.chalk,
-  "--ss-brand-ivory": BOLD_EDITORIAL_COLORS.ivory,
-  "--ss-brand-paper": BOLD_EDITORIAL_COLORS.paper,
-  "--ss-brand-concrete": BOLD_EDITORIAL_COLORS.concrete,
-  "--ss-brand-parchment": BOLD_EDITORIAL_COLORS.parchment,
-  "--ss-brand-silver": BOLD_EDITORIAL_COLORS.silver,
-  "--ss-brand-taupe": BOLD_EDITORIAL_COLORS.taupe,
-  "--ss-brand-slate": BOLD_EDITORIAL_COLORS.slate,
-  "--ss-brand-champagne": BOLD_EDITORIAL_COLORS.champagne,
-  "--ss-brand-champagne-ink": BOLD_EDITORIAL_COLORS.champagneInk,
-  "--ss-brand-error": BOLD_EDITORIAL_COLORS.error,
-  "--ss-brand-success": BOLD_EDITORIAL_COLORS.success,
+export const SSELFIE_NOIR_GLASS_CSS_VARS = {
+  "--ss-brand-obsidian": SSELFIE_NOIR_GLASS_COLORS.obsidian,
+  "--ss-brand-graphite": SSELFIE_NOIR_GLASS_COLORS.graphite,
+  "--ss-brand-pearl": SSELFIE_NOIR_GLASS_COLORS.pearl,
+  "--ss-brand-paper": SSELFIE_NOIR_GLASS_COLORS.paper,
+  "--ss-brand-concrete": SSELFIE_NOIR_GLASS_COLORS.concrete,
+  "--ss-brand-cool-mist": SSELFIE_NOIR_GLASS_COLORS.coolMist,
+  "--ss-brand-silver": SSELFIE_NOIR_GLASS_COLORS.silver,
+  "--ss-brand-steel": SSELFIE_NOIR_GLASS_COLORS.steel,
+  "--ss-brand-slate": SSELFIE_NOIR_GLASS_COLORS.slate,
+  "--ss-brand-pearl-neon": SSELFIE_NOIR_GLASS_COLORS.pearlNeon,
+  "--ss-brand-warm-grey": SSELFIE_NOIR_GLASS_COLORS.warmGrey,
+  "--ss-brand-error": SSELFIE_NOIR_GLASS_COLORS.error,
+  "--ss-brand-success": SSELFIE_NOIR_GLASS_COLORS.success,
   "--ss-brand-glass-light": "rgba(255, 255, 255, 0.68)",
   "--ss-brand-glass-dark": "rgba(9, 9, 11, 0.92)",
   "--ss-brand-glass-edge": "rgba(255, 255, 255, 0.34)",
   "--ss-brand-glass-blur": "28px",
 } as const
 
-export const BOLD_EDITORIAL_GUARDRAILS = {
+export const SSELFIE_NOIR_GLASS_GUARDRAILS = {
   method: ["TAKE", "CREATE", "EDIT", "POST"],
   prohibited: [
     "soft pastel brand palettes",
@@ -71,4 +74,45 @@ export const BOLD_EDITORIAL_GUARDRAILS = {
   ],
 } as const
 
+/** @deprecated Compatibility aliases. Do not use these names in new visual work. */
+export const BOLD_EDITORIAL_COLORS = {
+  ink: SSELFIE_NOIR_GLASS_COLORS.obsidian,
+  carbon: SSELFIE_NOIR_GLASS_COLORS.graphite,
+  espresso: SSELFIE_NOIR_GLASS_COLORS.obsidian,
+  chalk: SSELFIE_NOIR_GLASS_COLORS.pearl,
+  ivory: SSELFIE_NOIR_GLASS_COLORS.pearl,
+  paper: SSELFIE_NOIR_GLASS_COLORS.paper,
+  concrete: SSELFIE_NOIR_GLASS_COLORS.concrete,
+  parchment: SSELFIE_NOIR_GLASS_COLORS.coolMist,
+  silver: SSELFIE_NOIR_GLASS_COLORS.silver,
+  taupe: SSELFIE_NOIR_GLASS_COLORS.steel,
+  slate: SSELFIE_NOIR_GLASS_COLORS.slate,
+  champagne: SSELFIE_NOIR_GLASS_COLORS.pearlNeon,
+  champagneInk: SSELFIE_NOIR_GLASS_COLORS.warmGrey,
+  error: SSELFIE_NOIR_GLASS_COLORS.error,
+  success: SSELFIE_NOIR_GLASS_COLORS.success,
+} as const
+
+/** @deprecated Use SSELFIE_NOIR_GLASS_TYPE. */
+export const BOLD_EDITORIAL_TYPE = SSELFIE_NOIR_GLASS_TYPE
+/** @deprecated Use SSELFIE_NOIR_GLASS_SHAPE. */
+export const BOLD_EDITORIAL_SHAPE = SSELFIE_NOIR_GLASS_SHAPE
+/** @deprecated Use SSELFIE_NOIR_GLASS_CSS_VARS. */
+export const BOLD_EDITORIAL_CSS_VARS = {
+  ...SSELFIE_NOIR_GLASS_CSS_VARS,
+  "--ss-brand-ink": SSELFIE_NOIR_GLASS_COLORS.obsidian,
+  "--ss-brand-carbon": SSELFIE_NOIR_GLASS_COLORS.graphite,
+  "--ss-brand-espresso": SSELFIE_NOIR_GLASS_COLORS.obsidian,
+  "--ss-brand-chalk": SSELFIE_NOIR_GLASS_COLORS.pearl,
+  "--ss-brand-ivory": SSELFIE_NOIR_GLASS_COLORS.pearl,
+  "--ss-brand-parchment": SSELFIE_NOIR_GLASS_COLORS.coolMist,
+  "--ss-brand-taupe": SSELFIE_NOIR_GLASS_COLORS.steel,
+  "--ss-brand-champagne": SSELFIE_NOIR_GLASS_COLORS.pearlNeon,
+  "--ss-brand-champagne-ink": SSELFIE_NOIR_GLASS_COLORS.warmGrey,
+} as const
+/** @deprecated Use SSELFIE_NOIR_GLASS_GUARDRAILS. */
+export const BOLD_EDITORIAL_GUARDRAILS = SSELFIE_NOIR_GLASS_GUARDRAILS
+
+export type SselfieNoirGlassColorName = keyof typeof SSELFIE_NOIR_GLASS_COLORS
+/** @deprecated Use SselfieNoirGlassColorName. */
 export type BoldEditorialColorName = keyof typeof BOLD_EDITORIAL_COLORS
