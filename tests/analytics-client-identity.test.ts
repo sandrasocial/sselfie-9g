@@ -264,6 +264,45 @@ describe("browser analytics identity bootstrap", () => {
     expect(isAnalyticsRotationEpochCurrent(identity.rotationEpoch)).toBe(false)
   })
 
+  it("does not request identity when rotation changes while generation is read", async () => {
+    const request = vi.fn<typeof fetch>()
+    const stored = new Map<string, string>([
+      ["sselfie_analytics_tab_generation", "33333333-3333-4333-8333-333333333333"],
+      ["sselfie_analytics_tab_rotation", "55555555-5555-4555-8555-555555555555"],
+    ])
+    let cookieRead = 0
+    vi.stubGlobal("fetch", request)
+    vi.stubGlobal("window", {
+      location: { protocol: "https:" },
+      sessionStorage: {
+        getItem: (key: string) => stored.get(key) ?? null,
+        setItem: (key: string, value: string) => stored.set(key, value),
+      },
+    })
+    vi.stubGlobal("document", {
+      get cookie() {
+        cookieRead += 1
+        const rotation =
+          cookieRead === 1
+            ? "55555555-5555-4555-8555-555555555555"
+            : "66666666-6666-4666-8666-666666666666"
+        return (
+          "sselfie_analytics_generation=44444444-4444-4444-8444-444444444444; " +
+          `sselfie_analytics_rotation=${rotation}`
+        )
+      },
+      set cookie(_value: string) {},
+    })
+
+    const { ensureAnalyticsBrowserIdentity, isAnalyticsRotationEpochCurrent } =
+      await import("@/lib/analytics/client")
+    const identity = await ensureAnalyticsBrowserIdentity()
+
+    expect(request).not.toHaveBeenCalled()
+    expect(identity.rotationEpoch).toBe("55555555-5555-4555-8555-555555555555")
+    expect(isAnalyticsRotationEpochCurrent(identity.rotationEpoch)).toBe(false)
+  })
+
   it("publishes a rotated generation before exposing its new epoch", async () => {
     const cookieWrites: string[] = []
     const randomUUID = vi

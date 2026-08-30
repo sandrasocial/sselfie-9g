@@ -135,11 +135,14 @@ async function requestAnalyticsIdentity(
 ): Promise<BrowserAnalyticsIdentity> {
   let rotationEpoch = ""
   try {
+    rotationEpoch = analyticsBrowserRotationEpoch()
     const generation = analyticsBrowserGeneration()
     // Bind the response to the shared logout/account-deletion epoch that was
     // current when this request began. Consumers must reject the identity if
     // that epoch changes while the request or SDK initialization is in flight.
-    rotationEpoch = analyticsBrowserRotationEpoch()
+    if (analyticsBrowserRotationEpoch() !== rotationEpoch) {
+      return { distinctId: null, resetPostHog: false, resetPostHogNonce: null, rotationEpoch }
+    }
     const response = await fetch(
       `/api/analytics/event${rotateAnonymous ? "?rotate_anonymous=1" : ""}`,
       {
