@@ -1,6 +1,6 @@
 "use client"
 
-import { rotateAnalyticsBrowserGeneration } from "@/lib/analytics/client"
+import { rotateAnalyticsBrowserIdentity } from "@/lib/analytics/client"
 import {
   bindCurrentSupabaseSessionGeneration,
   clearCurrentSupabaseSessionGeneration,
@@ -35,7 +35,7 @@ export function notifyAnalyticsLogout(
     // Rotate synchronously before the logout request begins. Older in-flight
     // analytics responses can then write only their previous generation's
     // versioned anonymous cookie and cannot reconnect the signed-out browser.
-    rotateAnalyticsBrowserGeneration()
+    rotateAnalyticsBrowserIdentity()
   }
 
   // Revalidate the current tab before its navigation completes.

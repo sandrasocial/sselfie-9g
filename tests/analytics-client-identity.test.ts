@@ -57,19 +57,23 @@ describe("browser analytics identity bootstrap", () => {
     const setItem = vi.fn()
     const removeItem = vi.fn()
     let tabGeneration: string | null = null
+    let tabRotation: string | null = null
     let cookie = ""
     vi.stubGlobal("fetch", request)
     vi.stubGlobal("navigator", { sendBeacon })
     vi.stubGlobal("window", {
       crypto: { randomUUID: () => "33333333-3333-4333-8333-333333333333" },
       sessionStorage: {
-        getItem: () => tabGeneration,
+        getItem: (key: string) =>
+          key === "sselfie_analytics_tab_generation" ? tabGeneration : tabRotation,
         setItem: (key: string, value: string) => {
-          tabGeneration = value
+          if (key === "sselfie_analytics_tab_generation") tabGeneration = value
+          if (key === "sselfie_analytics_tab_rotation") tabRotation = value
           setItem(key, value)
         },
         removeItem: (key: string) => {
-          tabGeneration = null
+          if (key === "sselfie_analytics_tab_generation") tabGeneration = null
+          if (key === "sselfie_analytics_tab_rotation") tabRotation = null
           removeItem(key)
         },
       },
@@ -104,6 +108,7 @@ describe("browser analytics identity bootstrap", () => {
       "sselfie_analytics_tab_generation",
       "33333333-3333-4333-8333-333333333333"
     )
+    expect(setItem).toHaveBeenCalledWith("sselfie_analytics_tab_rotation", "")
     expect(sendBeacon).toHaveBeenCalledTimes(1)
     expect(sendBeacon).toHaveBeenCalledWith("/api/analytics/event", expect.any(Blob))
     const beacon = sendBeacon.mock.calls[0][1] as Blob
@@ -161,6 +166,42 @@ describe("browser analytics identity bootstrap", () => {
     invalidateAnalyticsBrowserIdentity()
 
     expect(removeItem).toHaveBeenCalledWith("sselfie_analytics_tab_generation")
+    expect(removeItem).toHaveBeenCalledWith("sselfie_analytics_tab_rotation")
+  })
+
+  it("discards a stale tab generation when the shared rotation epoch changes", async () => {
+    const stored = new Map<string, string>([
+      ["sselfie_analytics_tab_generation", "33333333-3333-4333-8333-333333333333"],
+      ["sselfie_analytics_tab_rotation", ""],
+    ])
+    let cookie =
+      "sselfie_analytics_generation=44444444-4444-4444-8444-444444444444; " +
+      "sselfie_analytics_rotation=55555555-5555-4555-8555-555555555555"
+    vi.stubGlobal("window", {
+      location: { protocol: "https:" },
+      sessionStorage: {
+        getItem: (key: string) => stored.get(key) ?? null,
+        setItem: (key: string, value: string) => stored.set(key, value),
+      },
+    })
+    vi.stubGlobal("document", {
+      get cookie() {
+        return cookie
+      },
+      set cookie(value: string) {
+        cookie = value
+      },
+    })
+
+    const { analyticsBrowserGeneration } = await import("@/lib/analytics/client")
+
+    expect(analyticsBrowserGeneration()).toBe("44444444-4444-4444-8444-444444444444")
+    expect(stored.get("sselfie_analytics_tab_generation")).toBe(
+      "44444444-4444-4444-8444-444444444444"
+    )
+    expect(stored.get("sselfie_analytics_tab_rotation")).toBe(
+      "55555555-5555-4555-8555-555555555555"
+    )
   })
 
   it("does not cache a transient null identity", async () => {

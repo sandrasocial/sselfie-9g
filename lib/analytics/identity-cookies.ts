@@ -3,6 +3,7 @@ import type { NextRequest, NextResponse } from "next/server"
 const ANALYTICS_GENERATION_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const VERSIONED_ANON_COOKIE_PATTERN = /^sselfie_anon_id_[0-9a-f]{32}$/i
+const ANALYTICS_ROTATION_COOKIE = "sselfie_analytics_rotation"
 
 const analyticsCookieOptions = {
   httpOnly: true,
@@ -64,7 +65,11 @@ export function clearStaleAnonymousAnalyticsCookies(
 
 export function rotateAnalyticsGenerationCookie(response: NextResponse): string {
   const generation = globalThis.crypto.randomUUID()
+  const rotation = globalThis.crypto.randomUUID()
   response.cookies.set("sselfie_analytics_generation", generation, {
+    ...analyticsGenerationCookieOptions,
+  })
+  response.cookies.set(ANALYTICS_ROTATION_COOKIE, rotation, {
     ...analyticsGenerationCookieOptions,
   })
   return generation

@@ -84,6 +84,7 @@ describe("DELETE /api/user/delete", () => {
     expect(responseCookies).toContain(`sselfie_anon_id_${rotatedGeneration?.replaceAll("-", "")}=`)
     expect(responseCookies).toContain("sselfie_anon_id=;")
     expect(responseCookies).toMatch(/sselfie_posthog_reset=[0-9a-f-]{36}/)
+    expect(responseCookies).toMatch(/sselfie_analytics_rotation=[0-9a-f-]{36}/)
     expect(responseCookies).toContain("sselfie_supabase_session_generation=;")
     expect(mocks.queries).toContainEqual(
       expect.objectContaining({

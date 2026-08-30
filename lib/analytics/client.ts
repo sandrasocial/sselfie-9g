@@ -9,6 +9,8 @@ export type BrowserAnalyticsIdentity = {
 let identityRequest: Promise<BrowserAnalyticsIdentity> | null = null
 const ANALYTICS_GENERATION_COOKIE = "sselfie_analytics_generation"
 const TAB_GENERATION_SESSION_KEY = "sselfie_analytics_tab_generation"
+const ANALYTICS_ROTATION_COOKIE = "sselfie_analytics_rotation"
+const TAB_ROTATION_SESSION_KEY = "sselfie_analytics_tab_rotation"
 const POSTHOG_RESET_ACK_TIMEOUT_MS = 2_000
 const ANALYTICS_UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -18,18 +20,45 @@ function writeAnalyticsGeneration(generation: string): void {
   document.cookie = `${ANALYTICS_GENERATION_COOKIE}=${generation}; Path=/; SameSite=Lax; Max-Age=31536000${secure}`
 }
 
-function writeAnalyticsTabGeneration(generation: string): void {
+function browserCookieValue(name: string): string | null {
+  return (
+    document.cookie
+      .split(";")
+      .map(value => value.trim())
+      .find(value => value.startsWith(`${name}=`))
+      ?.slice(name.length + 1) || null
+  )
+}
+
+function analyticsRotationCookie(): string | null {
+  const rotation = browserCookieValue(ANALYTICS_ROTATION_COOKIE)
+  return rotation && ANALYTICS_UUID_PATTERN.test(rotation) ? rotation : null
+}
+
+function writeAnalyticsRotation(rotation: string): void {
+  const secure = window.location.protocol === "https:" ? "; Secure" : ""
+  document.cookie = `${ANALYTICS_ROTATION_COOKIE}=${rotation}; Path=/; SameSite=Lax; Max-Age=31536000${secure}`
+}
+
+function writeAnalyticsTabState(generation: string, rotation: string | null): void {
   try {
     window.sessionStorage?.setItem(TAB_GENERATION_SESSION_KEY, generation)
+    window.sessionStorage?.setItem(TAB_ROTATION_SESSION_KEY, rotation ?? "")
   } catch {
     // The shared cookie remains the fallback when storage is unavailable.
   }
 }
 
-function analyticsTabGeneration(): string | null {
+function analyticsTabGeneration(rotation: string | null): string | null {
   try {
     const generation = window.sessionStorage?.getItem(TAB_GENERATION_SESSION_KEY)
-    return generation && ANALYTICS_UUID_PATTERN.test(generation) ? generation : null
+    const tabRotation = window.sessionStorage?.getItem(TAB_ROTATION_SESSION_KEY)
+    const expectedRotation = rotation ?? ""
+    return generation &&
+      ANALYTICS_UUID_PATTERN.test(generation) &&
+      tabRotation === expectedRotation
+      ? generation
+      : null
   } catch {
     return null
   }
@@ -39,6 +68,7 @@ export function clearAnalyticsTabGeneration(): void {
   if (typeof window === "undefined") return
   try {
     window.sessionStorage?.removeItem(TAB_GENERATION_SESSION_KEY)
+    window.sessionStorage?.removeItem(TAB_ROTATION_SESSION_KEY)
   } catch {
     // A restricted storage implementation has no tab generation to clear.
   }
@@ -48,27 +78,34 @@ export function rotateAnalyticsBrowserGeneration(): string | null {
   if (typeof window === "undefined") return null
   const generation = window.crypto.randomUUID()
   writeAnalyticsGeneration(generation)
-  writeAnalyticsTabGeneration(generation)
+  writeAnalyticsTabState(generation, analyticsRotationCookie())
+  return generation
+}
+
+export function rotateAnalyticsBrowserIdentity(): string | null {
+  if (typeof window === "undefined") return null
+  const rotation = window.crypto.randomUUID()
+  const generation = window.crypto.randomUUID()
+  writeAnalyticsRotation(rotation)
+  writeAnalyticsGeneration(generation)
+  writeAnalyticsTabState(generation, rotation)
   return generation
 }
 
 export function analyticsBrowserGeneration(): string | null {
   if (typeof window === "undefined") return null
-  const tabGeneration = analyticsTabGeneration()
+  const rotation = analyticsRotationCookie()
+  const tabGeneration = analyticsTabGeneration(rotation)
   if (tabGeneration) {
     // Another tab may replace the shared cookie; same-tab events continue to
     // carry this generation explicitly until logout/account deletion clears it.
     // Never mirror it back: a stale tab must not undo a shared logout rotation.
     return tabGeneration
   }
-  const existing = document.cookie
-    .split(";")
-    .map(value => value.trim())
-    .find(value => value.startsWith(`${ANALYTICS_GENERATION_COOKIE}=`))
-    ?.slice(ANALYTICS_GENERATION_COOKIE.length + 1)
+  const existing = browserCookieValue(ANALYTICS_GENERATION_COOKIE)
   if (existing && ANALYTICS_UUID_PATTERN.test(existing)) {
     writeAnalyticsGeneration(existing)
-    writeAnalyticsTabGeneration(existing)
+    writeAnalyticsTabState(existing, rotation)
     return existing
   }
   return rotateAnalyticsBrowserGeneration()
