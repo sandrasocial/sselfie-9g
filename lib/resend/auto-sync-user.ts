@@ -40,8 +40,8 @@ function buildCanonicalContactProperties({
   Pick<ResendSyncOptions, "subscriptionProduct">): Record<string, string> {
   const properties: Record<string, string> = {
     acquisition_path: source,
-    lifecycle_stage: isStudioMember ? "customer" : "lead",
-    membership_status: isStudioMember ? "studio_member_active" : "active",
+    lifecycle_stage: isStudioMember ? "member" : "lead",
+    membership_status: isStudioMember ? "active" : "none",
   }
 
   if (subscriptionProduct) {
@@ -101,7 +101,10 @@ async function syncUserToResend(
     subscriptionProduct,
   })
 
-  const MAX_ATTEMPTS = 3
+  // Fresh signup syncs get bounded transient retries. Queue drains count each
+  // provider call toward their 10-attempt database limit, so they make one
+  // provider call per drain instead of hiding three calls behind one count.
+  const MAX_ATTEMPTS = queueOnFailure ? 3 : 1
   const BACKOFF_MS = [500, 1000, 2000]
 
   let lastError: string = "unknown"
