@@ -198,6 +198,8 @@ describe("Suite Calendar 2.0", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Add photo to post 2, Draft" }))
     const caption = screen.getByPlaceholderText("Write what you want to say…")
     expect(caption).toHaveValue("")
+    fireEvent.change(caption, { target: { value: "Temporary draft" } })
+    fireEvent.change(caption, { target: { value: "" } })
 
     fireEvent.click(screen.getByRole("button", { name: "Choose photo" }))
     fireEvent.click(screen.getByRole("button", { name: "Choose generated photo" }))
