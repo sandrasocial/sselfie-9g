@@ -25,10 +25,15 @@ describe("Resend signup contact property mapping", () => {
 
     await autoSyncUserToResend("new-user@realmail.com", "New", { source: "app_signup" })
 
-    expect(mocks.upsertContact).toHaveBeenCalledWith("new-user@realmail.com", "New", {
-      acquisition_path: "app_signup",
-      lifecycle_stage: "lead",
-    })
+    expect(mocks.upsertContact).toHaveBeenCalledWith(
+      "new-user@realmail.com",
+      "New",
+      {
+        acquisition_path: "app_signup",
+        lifecycle_stage: "lead",
+      },
+      { requestIntervalMs: 500 }
+    )
   })
 
   it("maps existing member semantics without inventing new property keys", async () => {
@@ -40,12 +45,17 @@ describe("Resend signup contact property mapping", () => {
       subscriptionProduct: "suite_monthly",
     })
 
-    expect(mocks.upsertContact).toHaveBeenCalledWith("member@realmail.com", "Member", {
-      acquisition_path: "app_update",
-      lifecycle_stage: "member",
-      membership_status: "active",
-      last_product: "suite_monthly",
-    })
+    expect(mocks.upsertContact).toHaveBeenCalledWith(
+      "member@realmail.com",
+      "Member",
+      {
+        acquisition_path: "app_update",
+        lifecycle_stage: "member",
+        membership_status: "active",
+        last_product: "suite_monthly",
+      },
+      { requestIntervalMs: 500 }
+    )
   })
 
   it("queues a non-retryable provider failure once for bounded reconciliation", async () => {
@@ -125,6 +135,15 @@ describe("Resend signup contact property mapping", () => {
 
     expect(result).toEqual({ success: true, contactId: "existing-contact" })
     expect(mocks.upsertContact).toHaveBeenCalledTimes(1)
+    expect(mocks.upsertContact).toHaveBeenCalledWith(
+      "existing@realmail.com",
+      "Existing",
+      {
+        acquisition_path: "app_signup",
+        lifecycle_stage: "lead",
+      },
+      { requestIntervalMs: 500 }
+    )
     expect(mocks.sql).not.toHaveBeenCalled()
     expect(mocks.upsertContact.mock.calls[0][2]).not.toHaveProperty("membership_status")
   })
