@@ -81,7 +81,9 @@ describe("Maya Calendar context policy", () => {
     expect(route).toContain("AND id = ${calendarCreativeContext.feedId}")
     expect(route).toContain('if (calendarCreativeContext && toolAllowed("show_feed_plan")) {')
     expect(route).toContain("tools.show_feed_plan = showFeedPlan")
-    expect(route).toContain("if (memoryUserId && calendarCreativeContext) {")
+    expect(route).toContain(
+      "appendCalendarSystemContext(system, memoryUserId, calendarCreativeContext)"
+    )
     expect(route).toContain('String(activePost.caption || "").slice(0, 2200)')
     expect(route).toContain(
       'activePost.has_image ? " and remember that its photo is already selected"'
