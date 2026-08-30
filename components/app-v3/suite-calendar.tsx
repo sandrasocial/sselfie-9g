@@ -176,9 +176,12 @@ function PostEditor({
   const [isRemoveArmed, setIsRemoveArmed] = useState(false)
   const [showGallery, setShowGallery] = useState(false)
   const draftPostIdRef = useRef(post.id)
-  const captionDirtyRef = useRef(false)
-  const scheduledAtDirtyRef = useRef(false)
-  const postedDirtyRef = useRef(false)
+  const captionDraftRef = useRef(post.caption || "")
+  const captionSyncedRef = useRef(post.caption || "")
+  const scheduledAtDraftRef = useRef(dateValue(post.scheduled_at))
+  const scheduledAtSyncedRef = useRef(dateValue(post.scheduled_at))
+  const postedDraftRef = useRef(Boolean(post.is_posted))
+  const postedSyncedRef = useRef(Boolean(post.is_posted))
   const { dialogRef, initialFocusRef } = useAccessibleModal(!showGallery, onClose)
   const imageUrl = imageUrlForPost(post)
   const currentIndex = posts.findIndex(item => Number(item.id) === Number(post.id))
@@ -187,21 +190,40 @@ function PostEditor({
   const derivedState = isPosted ? "Posted" : imageUrl && caption.trim() ? "Ready" : "Draft"
 
   useEffect(() => {
+    const nextCaption = post.caption || ""
+    const nextScheduledAt = dateValue(post.scheduled_at)
+    const nextIsPosted = Boolean(post.is_posted)
+
     if (draftPostIdRef.current !== post.id) {
       draftPostIdRef.current = post.id
-      captionDirtyRef.current = false
-      scheduledAtDirtyRef.current = false
-      postedDirtyRef.current = false
-      setCaption(post.caption || "")
-      setScheduledAt(dateValue(post.scheduled_at))
-      setIsPosted(Boolean(post.is_posted))
+      captionDraftRef.current = nextCaption
+      captionSyncedRef.current = nextCaption
+      scheduledAtDraftRef.current = nextScheduledAt
+      scheduledAtSyncedRef.current = nextScheduledAt
+      postedDraftRef.current = nextIsPosted
+      postedSyncedRef.current = nextIsPosted
+      setCaption(nextCaption)
+      setScheduledAt(nextScheduledAt)
+      setIsPosted(nextIsPosted)
       setIsRemoveArmed(false)
       return
     }
 
-    if (!captionDirtyRef.current) setCaption(post.caption || "")
-    if (!scheduledAtDirtyRef.current) setScheduledAt(dateValue(post.scheduled_at))
-    if (!postedDirtyRef.current) setIsPosted(Boolean(post.is_posted))
+    if (captionDraftRef.current === captionSyncedRef.current) {
+      captionDraftRef.current = nextCaption
+      setCaption(nextCaption)
+    }
+    if (scheduledAtDraftRef.current === scheduledAtSyncedRef.current) {
+      scheduledAtDraftRef.current = nextScheduledAt
+      setScheduledAt(nextScheduledAt)
+    }
+    if (postedDraftRef.current === postedSyncedRef.current) {
+      postedDraftRef.current = nextIsPosted
+      setIsPosted(nextIsPosted)
+    }
+    captionSyncedRef.current = nextCaption
+    scheduledAtSyncedRef.current = nextScheduledAt
+    postedSyncedRef.current = nextIsPosted
   }, [post.caption, post.id, post.is_posted, post.scheduled_at])
 
   useEffect(() => {
@@ -391,7 +413,7 @@ function PostEditor({
                   <textarea
                     value={caption}
                     onChange={event => {
-                      captionDirtyRef.current = true
+                      captionDraftRef.current = event.target.value
                       setCaption(event.target.value)
                     }}
                     rows={7}
@@ -412,7 +434,7 @@ function PostEditor({
                     type="date"
                     value={scheduledAt}
                     onChange={event => {
-                      scheduledAtDirtyRef.current = true
+                      scheduledAtDraftRef.current = event.target.value
                       setScheduledAt(event.target.value)
                     }}
                     className="min-h-11 w-full rounded-[3px] border border-[color:var(--suite-steel)] bg-white px-3 text-[14px] outline-none focus:border-[color:var(--suite-night)] focus:ring-1 focus:ring-[color:var(--suite-night)]"
@@ -432,8 +454,11 @@ function PostEditor({
                           type="button"
                           onClick={() => {
                             if (status !== "Posted") return
-                            postedDirtyRef.current = true
-                            setIsPosted(value => !value)
+                            setIsPosted(value => {
+                              const nextValue = !value
+                              postedDraftRef.current = nextValue
+                              return nextValue
+                            })
                           }}
                           disabled={status !== "Posted"}
                           aria-pressed={selected}
