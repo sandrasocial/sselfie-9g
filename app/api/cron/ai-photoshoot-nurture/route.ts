@@ -4,7 +4,6 @@ import { createHash } from "node:crypto"
 import { createCronLogger } from "@/lib/cron-logger"
 import {
   createRuntimeBudget,
-  processWithRuntimeBudget,
   runWithRuntimeBudget,
   type RuntimeBudget,
 } from "@/lib/cron/runtime-budget"
@@ -460,32 +459,46 @@ async function runTouch<Candidate extends NurtureCandidate>({
     }
   }
 
-  const processing = await processWithRuntimeBudget({
-    items: candidates,
-    budget: runtimeBudget,
-    minimumRemainingMs: MIN_SEND_BUDGET_MS,
-    process: async (candidate, signal) => {
-      const sent = await sendCandidate(candidate, signal)
-      if (sent.success) {
-        result.sent += 1
-      } else {
-        result.failed += 1
-        errors.push({
-          email: candidate.email,
-          touch: emailType,
-          error: sent.error || "unknown",
-        })
-      }
+  for (const candidate of candidates) {
+    const delivery = await runWithRuntimeBudget({
+      budget: runtimeBudget,
+      minimumRemainingMs: MIN_SEND_BUDGET_MS,
+      operation: signal => sendCandidate(candidate, signal),
+    })
+    if (!delivery.completed) {
+      result.stoppedForBudget = true
+      result.timedOut = delivery.timedOut
+      break
+    }
 
-      await sleep(sendDelayMs)
-    },
-  })
-  result.processed = processing.processed
-  result.stoppedForBudget = processing.stoppedForBudget
-  result.timedOut = processing.timedOut
+    if (delivery.value.success) {
+      result.sent += 1
+    } else {
+      result.failed += 1
+      errors.push({
+        email: candidate.email,
+        touch: emailType,
+        error: delivery.value.error || "unknown",
+      })
+    }
+    result.processed += 1
+
+    if (result.processed < candidates.length) {
+      const delay = await runWithRuntimeBudget({
+        budget: runtimeBudget,
+        minimumRemainingMs: MIN_SEND_BUDGET_MS,
+        operation: () => sleep(sendDelayMs),
+      })
+      if (!delay.completed) {
+        result.stoppedForBudget = true
+        result.timedOut = delay.timedOut
+        break
+      }
+    }
+  }
 
   return {
-    remainingSends: remainingSends - processing.processed,
+    remainingSends: remainingSends - result.processed,
     touchesRemaining: nextTouchesRemaining,
   }
 }
