@@ -9,7 +9,7 @@ describe("email cron runtime budgets", () => {
     expect(route).toContain("idempotencyKey:")
   })
 
-  it("bounds subscriber win-back work and prioritizes mature stages", () => {
+  it("bounds subscriber win-back work, including logging, and prioritizes mature stages", () => {
     const route = readFileSync("app/api/cron/subscriber-winback/route.ts", "utf8")
 
     expect(route).toContain("const RUNTIME_BUDGET_MS = 42_000")
