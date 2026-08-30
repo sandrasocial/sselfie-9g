@@ -209,6 +209,36 @@ describe("Resend lifecycle contact properties", () => {
     expect(mocks.addSegment).not.toHaveBeenCalled()
   })
 
+  it("paces every provider request during a queue-drain upsert", async () => {
+    vi.useFakeTimers()
+    const timeoutSpy = vi.spyOn(global, "setTimeout")
+    mocks.get.mockResolvedValue({
+      data: { id: "contact_4", unsubscribed: false, properties: {} },
+      error: null,
+    })
+
+    const resultPromise = addOrUpdateResendContact(
+      "queued@example.org",
+      "Queued",
+      { source: "app_signup", status: "lead" },
+      { requestIntervalMs: 500 }
+    )
+
+    await vi.runAllTimersAsync()
+    const result = await resultPromise
+
+    expect(result.success).toBe(true)
+    expect(mocks.get).toHaveBeenCalledTimes(1)
+    expect(mocks.update).toHaveBeenCalledTimes(1)
+    expect(mocks.addSegment).toHaveBeenCalledTimes(1)
+    expect(timeoutSpy).toHaveBeenCalledTimes(2)
+    expect(timeoutSpy).toHaveBeenNthCalledWith(1, expect.any(Function), 500)
+    expect(timeoutSpy).toHaveBeenNthCalledWith(2, expect.any(Function), 500)
+    expect(vi.getTimerCount()).toBe(0)
+    timeoutSpy.mockRestore()
+    vi.useRealTimers()
+  })
+
   it("does not add a globally unsubscribed contact to a segment", async () => {
     mocks.get.mockResolvedValue({
       data: { id: "contact_3", unsubscribed: true, properties: {} },
