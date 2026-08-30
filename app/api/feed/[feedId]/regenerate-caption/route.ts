@@ -57,6 +57,8 @@ export async function POST(
         fp.post_type,
         fp.content_pillar,
         fp.prompt,
+        ai.generated_prompt AS selected_image_generated_prompt,
+        ai.prompt AS selected_image_prompt,
         fl.user_id,
         fl.brand_vibe,
         fl.business_type,
@@ -64,6 +66,7 @@ export async function POST(
         fl.research_insights
       FROM feed_posts fp
       INNER JOIN feed_layouts fl ON fp.feed_layout_id = fl.id
+      LEFT JOIN ai_images ai ON fp.ai_image_id = ai.id AND ai.user_id = fl.user_id
       WHERE fp.id = ${postId}
       AND fp.feed_layout_id = ${feedIdInt}
       AND fl.user_id = ${neonUser.id}
@@ -168,6 +171,8 @@ export async function POST(
       previousCaptions: previousCaptions,
       researchData: researchData,
       storySource: verifiedStorySource || null,
+      imageContext:
+        post.selected_image_generated_prompt || post.selected_image_prompt || null,
     })
 
     const newCaption = captionResult.caption || ""

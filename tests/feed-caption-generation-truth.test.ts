@@ -47,4 +47,33 @@ describe("generated caption factual safety", () => {
     ).rejects.toThrow("verified context")
     expect(mocks.generateText).toHaveBeenCalledTimes(2)
   })
+
+  it("grounds the draft in existing selected-photo context without uploading the photo", async () => {
+    const safeCaption = [
+      "A quiet frame can hold a clear point.",
+      "When the image already feels calm and focused, the caption does not need to compete with it. Choose one useful idea, explain it in everyday words, and let the visual pause support the message. That makes the post feel intentional without turning it into a polished sales pitch. Keep the next step small enough to use today, then stop before the point gets buried.",
+      "What is the one thing you want this post to help someone do?",
+      "#personalbrand #contentplanning",
+    ].join("\n\n")
+    mocks.generateText.mockResolvedValue({ text: safeCaption })
+
+    const { generateInstagramCaption } = await import("@/lib/feed-planner/caption-writer")
+    await generateInstagramCaption({
+      postPosition: 3,
+      shotType: "portrait",
+      purpose: "content planning",
+      emotionalTone: "calm",
+      brandProfile: { business_type: "creative educator" },
+      targetAudience: "women building a personal brand",
+      brandVoice: "warm and direct",
+      captionType: "value",
+      imageContext: "A quiet close portrait by a dark window with a reflective editorial mood.",
+    })
+
+    const request = mocks.generateText.mock.calls[0]?.[0]
+    expect(request.prompt).toContain("## SELECTED PHOTO CONTEXT")
+    expect(request.prompt).toContain("quiet close portrait by a dark window")
+    expect(request.messages).toBeUndefined()
+    expect(mocks.generateText).toHaveBeenCalledTimes(1)
+  })
 })

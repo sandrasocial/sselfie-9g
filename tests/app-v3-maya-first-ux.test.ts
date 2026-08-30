@@ -90,7 +90,9 @@ describe("Maya-first Suite creation UX", () => {
     expect(concierge).toContain('fmt !== "video"')
     expect(concierge).toContain("!hasSpecificSessionWorld")
     expect(concierge).toContain("if (needsInitialVisualWorld) return")
-    expect(concierge).toContain("const shouldShowProjectStart = !outputFormat")
+    expect(concierge).toContain(
+      "const shouldShowProjectStart = !calendarSurfaceActive && !outputFormat"
+    )
     expect(concierge).toContain("shouldShowProjectStart &&")
     expect(concierge).toContain("shouldShowVibeChoice &&")
     expect(concierge).toContain("Choose a style first")

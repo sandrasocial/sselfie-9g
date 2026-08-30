@@ -54,6 +54,18 @@ function Harness() {
       </button>
       <button onClick={() => openForCalendarPost(target(7))}>Open post 7</button>
       <button onClick={() => openForCalendarPost(target(8))}>Open post 8</button>
+      <button
+        onClick={() =>
+          openForCalendarPost({
+            ...target(9),
+            requestedAction: "improve_caption",
+            hasImage: true,
+            imageUrl: "https://example.com/selected-photo.jpg",
+          })
+        }
+      >
+        Improve post 9 caption
+      </button>
       <button onClick={() => setActiveSurface("create")}>Go Create</button>
       <button onClick={() => setActiveSurface("gallery")}>Go Gallery</button>
       <button onClick={() => setActiveSurface("calendar", { preserveCurrentTask: true })}>
@@ -72,6 +84,7 @@ function readSession() {
     session: {
       startedAt: number
       outputFormat: string | null
+      workspacePath: string | null
       videoSourceUrl: string | null
       inspirationImageUrl: string | null
       creationIdea: string | null
@@ -171,6 +184,30 @@ describe("Sandra-only Maya context provider", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open Maya" }))
     await waitFor(() => expect(readSession().session?.mayaContext?.surface).toBe("gallery"))
     expect(readSession().isOpen).toBe(true)
+  })
+
+  it("routes Calendar caption work to the post workspace without visual setup", async () => {
+    render(
+      <ConciergeProvider operatingLayerEnabled>
+        <Harness />
+      </ConciergeProvider>
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Improve post 9 caption" }))
+    await waitFor(() => expect(readSession().session?.mayaContext?.postId).toBe(709))
+
+    expect(readSession().session).toMatchObject({
+      workspacePath: "build-post",
+      outputFormat: null,
+      creationIdea: "Post 9 caption",
+      calendarTarget: { postId: 709, position: 9 },
+      mayaContext: {
+        job: "finish_calendar_post",
+        surface: "calendar",
+        feedId: 101,
+        postId: 709,
+      },
+    })
   })
 
   it("keeps the finished Create task when its Calendar handoff opens", async () => {

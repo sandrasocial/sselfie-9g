@@ -161,8 +161,19 @@ export function FeedGallerySelector({
           ? `/api/feed/${feedId}/replace-post-image`
           : `/api/feed/${feedId}/update-profile-image`
 
+      const selectedGalleryImage = images.find(image => image.image_url === selectedImageUrl)
+      const selectedAiImageMatch = selectedGalleryImage?.id.match(/^ai_(\d+)$/)
+      const selectedAiImageId =
+        selectedGalleryImage?.source === "ai_images" &&
+        selectedAiImageMatch &&
+        Number(selectedAiImageMatch[1]) > 0
+          ? Number(selectedAiImageMatch[1])
+          : null
+
       const body =
-        type === "post" ? { postId, imageUrl: selectedImageUrl } : { imageUrl: selectedImageUrl }
+        type === "post"
+          ? { postId, imageUrl: selectedImageUrl, aiImageId: selectedAiImageId }
+          : { imageUrl: selectedImageUrl }
 
       const response = await fetch(endpoint, {
         method: "POST",

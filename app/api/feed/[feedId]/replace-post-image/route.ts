@@ -141,6 +141,22 @@ export async function POST(
       )
     }
 
+    const [selectedImage] = updatedPost.ai_image_id
+      ? await sql`
+          SELECT generated_prompt, prompt
+          FROM ai_images
+          WHERE id = ${updatedPost.ai_image_id}
+            AND user_id = ${neonUser.id}
+          LIMIT 1
+        `
+      : []
+    const selectedImageContext =
+      typeof selectedImage?.generated_prompt === "string" && selectedImage.generated_prompt.trim()
+        ? selectedImage.generated_prompt
+        : typeof selectedImage?.prompt === "string"
+          ? selectedImage.prompt
+          : null
+
     const captionOutcome = await ensureReadyPostCaption({
       userId: neonUser.id,
       post: {
@@ -150,6 +166,7 @@ export async function POST(
         post_type: post.post_type,
         content_pillar: post.content_pillar,
         caption: post.caption,
+        image_context: selectedImageContext,
       },
     })
 
