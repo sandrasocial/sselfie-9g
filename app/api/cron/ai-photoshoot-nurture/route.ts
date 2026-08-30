@@ -79,19 +79,22 @@ interface NurtureCandidate {
   email: string
 }
 
-interface RunTouchInput<Candidate extends NurtureCandidate> {
+interface NurtureTouchTask {
   emailType: string
+  getCandidates: (limit: number) => Promise<NurtureCandidate[]>
+  sendCandidate: (
+    candidate: NurtureCandidate,
+    signal: AbortSignal
+  ) => Promise<{ success: boolean; error?: string }>
+}
+
+interface RunTouchInput extends NurtureTouchTask {
   result: TouchResult
   dryRun: boolean
   maxPerTouch: number
   remainingSends: number
   touchesRemaining: number
   runtimeBudget: RuntimeBudget
-  getCandidates: (limit: number) => Promise<Candidate[]>
-  sendCandidate: (
-    candidate: Candidate,
-    signal: AbortSignal
-  ) => Promise<{ success: boolean; error?: string }>
   errors: Array<{ email: string; touch: string; error: string }>
   sendDelayMs: number
 }
@@ -410,7 +413,24 @@ function isTouchResult(value: unknown): value is TouchResult {
   )
 }
 
-async function runTouch<Candidate extends NurtureCandidate>({
+function createTouchTask<Candidate extends NurtureCandidate>(input: {
+  emailType: string
+  getCandidates: (limit: number) => Promise<Candidate[]>
+  sendCandidate: (
+    candidate: Candidate,
+    signal: AbortSignal
+  ) => Promise<{ success: boolean; error?: string }>
+}): NurtureTouchTask {
+  return {
+    emailType: input.emailType,
+    getCandidates: input.getCandidates,
+    // Candidates are produced and consumed by the same task. This type erasure lets the
+    // two nurture sequences share one ordered execution loop without mixing candidate shapes.
+    sendCandidate: (candidate, signal) => input.sendCandidate(candidate as Candidate, signal),
+  }
+}
+
+async function runTouch({
   emailType,
   result,
   dryRun,
@@ -422,7 +442,7 @@ async function runTouch<Candidate extends NurtureCandidate>({
   sendCandidate,
   errors,
   sendDelayMs,
-}: RunTouchInput<Candidate>): Promise<{ remainingSends: number; touchesRemaining: number }> {
+}: RunTouchInput): Promise<{ remainingSends: number; touchesRemaining: number }> {
   const nextTouchesRemaining = touchesRemaining - 1
 
   if (remainingSends <= 0) {
@@ -559,9 +579,44 @@ export async function GET(request: Request) {
     )
     const startDate = aiPromptsStartDate()
     let remainingSends = maxTotalPerRun
-    let touchesRemaining =
-      (promptVaultEnabled || dryRun ? PROMPT_VAULT_EMAIL_TOUCHES.length : 0) +
-      (aiPromptsEnabled || dryRun ? AI_PROMPTS_EMAIL_TOUCHES.length : 0)
+    const touchTasks: NurtureTouchTask[] = [
+      ...(promptVaultEnabled || dryRun
+        ? PROMPT_VAULT_EMAIL_TOUCHES.map(touch =>
+            createTouchTask({
+              emailType: touch.emailType,
+              getCandidates: limit =>
+                getPromptVaultCandidates({
+                  emailType: touch.emailType,
+                  days: touch.days,
+                  previousEmailType: previousPromptVaultTouch(touch.emailType),
+                  minTouchGapHours,
+                  limit,
+                }),
+              sendCandidate: (candidate, signal) =>
+                sendPromptVaultTouch(touch.emailType, candidate, signal),
+            })
+          )
+        : []),
+      ...(aiPromptsEnabled || dryRun
+        ? [...AI_PROMPTS_EMAIL_TOUCHES].reverse().map(touch =>
+            createTouchTask({
+              emailType: touch.emailType,
+              getCandidates: limit =>
+                getAiPromptsCandidates({
+                  emailType: touch.emailType,
+                  days: touch.days,
+                  startDate,
+                  previousEmailType: previousAiPromptTouch(touch.emailType),
+                  minTouchGapHours,
+                  limit,
+                }),
+              sendCandidate: (candidate, signal) =>
+                sendAiPromptsTouch(touch.emailType, candidate, signal),
+            })
+          )
+        : []),
+    ]
+    let touchesRemaining = touchTasks.length
 
     const results: Record<string, TouchResult | boolean | number | string> = {
       dryRun,
@@ -580,69 +635,24 @@ export async function GET(request: Request) {
     // 1. Vault BUYERS first (few people, highest trust, they just paid).
     // 2. Lead touches deepest-first (day 9 -> day 1): conversion-critical sends beat
     //    top-of-funnel mass. Later touches gate on PAST sends, so reverse order is safe. ──
-    if (promptVaultEnabled || dryRun) {
-      for (const touch of PROMPT_VAULT_EMAIL_TOUCHES) {
-        const key = resultKey(touch.emailType)
-        const result = emptyTouchResult()
-        results[key] = result
+    for (const task of touchTasks) {
+      const key = resultKey(task.emailType)
+      const result = emptyTouchResult()
+      results[key] = result
 
-        const next = await runTouch({
-          emailType: touch.emailType,
-          result,
-          dryRun,
-          maxPerTouch,
-          remainingSends,
-          touchesRemaining,
-          runtimeBudget,
-          getCandidates: limit =>
-            getPromptVaultCandidates({
-              emailType: touch.emailType,
-              days: touch.days,
-              previousEmailType: previousPromptVaultTouch(touch.emailType),
-              minTouchGapHours,
-              limit,
-            }),
-          sendCandidate: (candidate, signal) =>
-            sendPromptVaultTouch(touch.emailType, candidate, signal),
-          errors,
-          sendDelayMs,
-        })
-        remainingSends = next.remainingSends
-        touchesRemaining = next.touchesRemaining
-      }
-    }
-
-    if (aiPromptsEnabled || dryRun) {
-      for (const touch of [...AI_PROMPTS_EMAIL_TOUCHES].reverse()) {
-        const key = resultKey(touch.emailType)
-        const result = emptyTouchResult()
-        results[key] = result
-
-        const next = await runTouch({
-          emailType: touch.emailType,
-          result,
-          dryRun,
-          maxPerTouch,
-          remainingSends,
-          touchesRemaining,
-          runtimeBudget,
-          getCandidates: limit =>
-            getAiPromptsCandidates({
-              emailType: touch.emailType,
-              days: touch.days,
-              startDate,
-              previousEmailType: previousAiPromptTouch(touch.emailType),
-              minTouchGapHours,
-              limit,
-            }),
-          sendCandidate: (candidate, signal) =>
-            sendAiPromptsTouch(touch.emailType, candidate, signal),
-          errors,
-          sendDelayMs,
-        })
-        remainingSends = next.remainingSends
-        touchesRemaining = next.touchesRemaining
-      }
+      const next = await runTouch({
+        ...task,
+        result,
+        dryRun,
+        maxPerTouch,
+        remainingSends,
+        touchesRemaining,
+        runtimeBudget,
+        errors,
+        sendDelayMs,
+      })
+      remainingSends = next.remainingSends
+      touchesRemaining = next.touchesRemaining
     }
 
     const totalSent = Object.values(results).reduce<number>(
