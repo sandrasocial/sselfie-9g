@@ -426,6 +426,14 @@ async function runSunset(apply: boolean, limit: number, runtimeBudget: RuntimeBu
         console.error("[subscriber-winback] Failed to tag sunset contact in Resend:", error)
       })
       signal.throwIfAborted()
+      // Provider work can take long enough for access to change. Recheck at the
+      // last possible point before the atomic suppression transaction so a
+      // purchase or renewal during that window always wins.
+      if (await hasCurrentCustomerOrMembershipAccess(candidate.email)) {
+        results.skippedCustomers += 1
+        return
+      }
+      signal.throwIfAborted()
       await recordSunsetUnsubscribe(candidate.email)
       results.suppressed += 1
     },
