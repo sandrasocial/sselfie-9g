@@ -93,11 +93,9 @@ async function syncUserToResend(
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     attemptsMade = attempt
     try {
-      const syncResult = queueOnFailure
-        ? await addOrUpdateResendContact(email, firstName || null, properties)
-        : await addOrUpdateResendContact(email, firstName || null, properties, {
-            requestIntervalMs: 500,
-          })
+      const syncResult = await addOrUpdateResendContact(email, firstName || null, properties, {
+        requestIntervalMs: 500,
+      })
 
       if (!syncResult.success) {
         lastError = syncResult.error || "unknown"
