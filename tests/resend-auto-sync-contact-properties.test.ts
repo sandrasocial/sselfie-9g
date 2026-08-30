@@ -3,28 +3,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const mocks = vi.hoisted(() => ({
-  createContact: vi.fn(),
+  upsertContact: vi.fn(),
   sql: vi.fn(),
-}))
-
-vi.mock("resend", () => ({
-  Resend: vi.fn(() => ({
-    contacts: { create: mocks.createContact },
-  })),
 }))
 
 vi.mock("@/lib/db/client", () => ({ sql: mocks.sql }))
 
-vi.mock("@/lib/resend/api-key", () => ({
-  getResendApiKey: () => "test-resend-key",
-  hasResendApiKey: () => true,
+vi.mock("@/lib/resend/manage-contact", () => ({
+  addOrUpdateResendContact: mocks.upsertContact,
 }))
 
 describe("Resend signup contact property mapping", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.sql.mockResolvedValue([])
-    mocks.createContact.mockResolvedValue({ data: { id: "contact-1" }, error: null })
+    mocks.upsertContact.mockResolvedValue({ success: true, contactId: "contact-1" })
   })
 
   it("uses only the canonical live Resend properties for app signups", async () => {
@@ -32,16 +25,11 @@ describe("Resend signup contact property mapping", () => {
 
     await autoSyncUserToResend("new-user@realmail.com", "New", { source: "app_signup" })
 
-    expect(mocks.createContact).toHaveBeenCalledWith(
-      expect.objectContaining({
-        email: "new-user@realmail.com",
-        properties: {
-          acquisition_path: "app_signup",
-          lifecycle_stage: "lead",
-          membership_status: "none",
-        },
-      })
-    )
+    expect(mocks.upsertContact).toHaveBeenCalledWith("new-user@realmail.com", "New", {
+      acquisition_path: "app_signup",
+      lifecycle_stage: "lead",
+      membership_status: "none",
+    })
   })
 
   it("maps existing member semantics without inventing new property keys", async () => {
@@ -53,22 +41,18 @@ describe("Resend signup contact property mapping", () => {
       subscriptionProduct: "suite_monthly",
     })
 
-    expect(mocks.createContact).toHaveBeenCalledWith(
-      expect.objectContaining({
-        properties: {
-          acquisition_path: "app_update",
-          lifecycle_stage: "member",
-          membership_status: "active",
-          last_product: "suite_monthly",
-        },
-      })
-    )
+    expect(mocks.upsertContact).toHaveBeenCalledWith("member@realmail.com", "Member", {
+      acquisition_path: "app_update",
+      lifecycle_stage: "member",
+      membership_status: "active",
+      last_product: "suite_monthly",
+    })
   })
 
   it("queues a non-retryable provider failure once for bounded reconciliation", async () => {
-    mocks.createContact.mockResolvedValue({
-      data: null,
-      error: { message: "One or more properties do not exist" },
+    mocks.upsertContact.mockResolvedValue({
+      success: false,
+      error: "One or more properties do not exist",
     })
 
     const { autoSyncUserToResend } = await import("@/lib/resend/auto-sync-user")
@@ -77,7 +61,7 @@ describe("Resend signup contact property mapping", () => {
     })
 
     expect(result).toEqual({ success: false, error: "One or more properties do not exist" })
-    expect(mocks.createContact).toHaveBeenCalledTimes(1)
+    expect(mocks.upsertContact).toHaveBeenCalledTimes(1)
     expect(mocks.sql).toHaveBeenCalledTimes(1)
 
     const [query, ...values] = mocks.sql.mock.calls[0]
@@ -101,7 +85,7 @@ describe("Resend signup contact property mapping", () => {
       ])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
-    mocks.createContact.mockResolvedValue({ data: null, error: { message: "provider timeout" } })
+    mocks.upsertContact.mockResolvedValue({ success: false, error: "provider timeout" })
     const timeoutSpy = vi.spyOn(global, "setTimeout").mockImplementation(((
       callback: () => void
     ) => {
@@ -113,7 +97,7 @@ describe("Resend signup contact property mapping", () => {
     const result = await drainResendSyncQueue()
 
     expect(result).toEqual({ retried: 1, resolved: 0, abandoned: 0 })
-    expect(mocks.createContact).toHaveBeenCalledTimes(1)
+    expect(mocks.upsertContact).toHaveBeenCalledTimes(1)
     expect(
       mocks.sql.mock.calls.some(([query]) =>
         (query as TemplateStringsArray).join(" ").includes("INSERT INTO resend_sync_queue")
@@ -121,5 +105,18 @@ describe("Resend signup contact property mapping", () => {
     ).toBe(false)
 
     timeoutSpy.mockRestore()
+  })
+
+  it("treats an existing contact updated by the canonical helper as resolved", async () => {
+    mocks.upsertContact.mockResolvedValue({ success: true, contactId: "existing-contact" })
+
+    const { autoSyncUserToResend } = await import("@/lib/resend/auto-sync-user")
+    const result = await autoSyncUserToResend("existing@realmail.com", "Existing", {
+      source: "app_signup",
+    })
+
+    expect(result).toEqual({ success: true, contactId: "existing-contact" })
+    expect(mocks.upsertContact).toHaveBeenCalledTimes(1)
+    expect(mocks.sql).not.toHaveBeenCalled()
   })
 })
