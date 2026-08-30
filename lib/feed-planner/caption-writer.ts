@@ -27,6 +27,8 @@ interface CaptionWriterParams {
   contentPillars?: any[] // All content pillars from brand profile
   /** User-supplied or otherwise verified source for first-person story claims. */
   storySource?: string | null
+  /** Existing user-owned description of the selected photo; not evidence of a real event. */
+  imageContext?: string | null
 }
 
 interface BioCaptionWriterParams {
@@ -60,6 +62,17 @@ const SANDRA_BANNED_WORD_PATTERNS: RegExp[] = [
   /\bskyrocket/i,
   /unlock your potential/i,
   /\belevate(?:d)?\b/i,
+]
+
+const GENERIC_AI_CAPTION_PATTERNS: RegExp[] = [
+  /\breal talk\b/i,
+  /\bhere['’]?s the thing\b/i,
+  /\bthis is your sign\b/i,
+  /\bwhat if i told you\b/i,
+  /\bplot twist\b/i,
+  /\blet['’]?s be honest\b/i,
+  /\byour feed doesn['’]?t need to be\b/i,
+  /\bit doesn['’]?t need to be\b[^.?!]{0,120}\bit needs to\b/is,
 ]
 
 const EM_DASH_PATTERN = /—/
@@ -108,6 +121,11 @@ export function hasBannedCaptionLanguage(caption: string): boolean {
   const raw = String(caption || "")
   if (EM_DASH_PATTERN.test(raw)) return true
   return SANDRA_BANNED_WORD_PATTERNS.some(pattern => pattern.test(raw))
+}
+
+/** Stock pseudo-conversational openers make every member sound like the same AI account. */
+export function hasGenericAiCaptionLanguage(caption: string): boolean {
+  return GENERIC_AI_CAPTION_PATTERNS.some(pattern => pattern.test(String(caption || "")))
 }
 
 /** Em-dashes never ship (locked voice rule). Normalize to a colon separator. */
@@ -232,6 +250,7 @@ export function shouldRegenerateCaption(caption: string | null | undefined): boo
   if (CAPTION_PLACEHOLDER_MARKERS.some(marker => lowered.includes(marker))) return true
   if (PROMPT_LEAK_MARKERS.some(pattern => pattern.test(raw))) return true
   if (hasBannedCaptionLanguage(raw)) return true
+  if (hasGenericAiCaptionLanguage(raw)) return true
 
   const hashtags = extractHashtagsFromCaption(raw)
   if (hashtags.length > 5) return true
@@ -263,6 +282,7 @@ export async function generateInstagramCaption(
     captionType = "story",
     contentPillars = [],
     storySource,
+    imageContext,
   } = params
 
   const verifiedStorySource = requirePersonalStorySource(captionType, storySource)
@@ -318,7 +338,6 @@ CRITICAL: Your hook MUST be completely different. Rotate hook styles:
 - Confession/revelation
 - Observation/insight
 - Numbered list hook
-- "Plot twist:" style
 `
       : ""
 
@@ -362,7 +381,7 @@ This caption should:
 - Help the audience solve a problem or achieve a goal
 - When no verified personal source exists, teach in neutral or second-person language. Never claim "I use", "I tell clients", or "I see this all the time"
 - Examples: "Try this three-step reset...", "3 ways to make this easier...", "One mistake that can make this harder..."
-- Focus on VALUE, not the image
+- Let the selected photo's observable setting, action, or mood give the advice a natural entry point
 `,
       motivational: `
 ## CAPTION TYPE: MOTIVATIONAL/INSPIRATIONAL (Uplifting, Empowering, Transformation)
@@ -373,8 +392,7 @@ This caption should:
 - Empower with belief and confidence
 - Use powerful, emotional language (but still human, not corporate)
 - Connect to bigger purpose or vision
-- Examples: "You're closer than you think...", "What if I told you...", "This is your sign to..."
-- Focus on INSPIRATION and TRANSFORMATION, not the image
+- Keep the opening concrete and connected to the selected photo when its description is available
 `,
     }[captionType] || ""
 
@@ -409,6 +427,13 @@ ${researchContext}
 ## VERIFIED STORY SOURCE
 ${verifiedStorySource ? verifiedStorySource : "None. Do not write first-person autobiography or imply a personal event happened."}
 
+## SELECTED PHOTO CONTEXT
+${String(imageContext || "").trim().slice(0, 1200) || "No reliable visual description is available. Stay grounded in the post and brand context."}
+- Use one observable element such as the setting, action, expression, or mood as a subtle anchor.
+- Do not write alt text or list clothing, props, colors, or composition.
+- A visual description is not proof that a real event, feeling, result, or personal story happened. Never invent one.
+- The caption should feel deliberately paired with this photo, not interchangeable with any image.
+
 ## CRITICAL REQUIREMENTS (2026 Human-Sounding Research):
 
 0. **TRUTH BEFORE POLISH**:
@@ -442,6 +467,7 @@ ${verifiedStorySource ? verifiedStorySource : "None. Do not write first-person a
    - ✅ Use contractions: "I'm" not "I am", "you'll" not "you will", "gonna" not "going to"
    - ✅ Kill AI phrases: NO "unlock the power of", "in today's digital landscape", "dive deep into", "game-changer", "revolutionize", "embark on journey", "delve into"
    - ✅ Sandra's banned words (NEVER use any of these): "leverage", "synergy", "transform", "game-changer", "skyrocket", "unlock your potential", "elevate"
+   - ✅ No stock AI openers: "Real talk", "Here's the thing", "This is your sign", "What if I told you", "Plot twist", or "Let's be honest"
    - ✅ NEVER use the em dash character. Use a period, a colon, or a middle dot instead.
    - ✅ Add tiny imperfections: Start sentences with "And" or "But", use sentence fragments, casual language
    - ✅ Be specific only when the verified source contains that exact specificity
@@ -509,6 +535,7 @@ OUTPUT: Only the caption text, ready to post. NO explanations, NO research notes
   if (
     bodyWordCount < 70 ||
     hasBannedCaptionLanguage(caption) ||
+    hasGenericAiCaptionLanguage(caption) ||
     hasUnverifiedFirstPersonClaim(caption, verifiedStorySource) ||
     hasOutdatedCaptionYear(caption, verifiedStorySource)
   ) {
@@ -529,7 +556,9 @@ ${verifiedStorySource ? `- The only verified personal source is: ${verifiedStory
 - Do not invent a child, family detail, sleep problem, breakfast scene, customer conversation, or other plausible life circumstance. Use "if" or "maybe" for an unverified example.
 - Do not insert an old calendar year as motivational filler.
 - Never use these words: leverage, synergy, transform, game-changer, skyrocket, unlock your potential, elevate.
+- Never use stock AI openers such as "Real talk", "Here's the thing", "This is your sign", "What if I told you", "Plot twist", or "Let's be honest".
 - Never use the em dash character. Use a period, a colon, or a middle dot instead.
+${String(imageContext || "").trim() ? `- Keep the caption subtly connected to this selected-photo context without inventing a story: ${String(imageContext).trim().slice(0, 1200)}` : ""}
 
 Caption to rewrite:
 ${caption}`,
@@ -547,6 +576,7 @@ ${caption}`,
   if (
     finalBodyWordCount < 70 ||
     hasBannedCaptionLanguage(caption) ||
+    hasGenericAiCaptionLanguage(caption) ||
     hasUnverifiedFirstPersonClaim(caption, verifiedStorySource) ||
     hasOutdatedCaptionYear(caption, verifiedStorySource)
   ) {

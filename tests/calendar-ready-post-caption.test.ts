@@ -69,11 +69,21 @@ describe("Calendar ready-post captions", () => {
           },
         ]
       }
+      if (query.includes("SELECT generated_prompt, prompt")) {
+        return [
+          {
+            generated_prompt:
+              "A quiet close portrait by a dark window with a reflective editorial mood.",
+            prompt: null,
+          },
+        ]
+      }
       if (query.includes("UPDATE feed_posts")) {
         return [
           {
             id: 9,
             image_url: "https://example.com/photo.jpg",
+            ai_image_id: 55,
             caption: "A personal, ready-to-post caption.",
           },
         ]
@@ -86,13 +96,23 @@ describe("Calendar ready-post captions", () => {
       new Request("http://localhost/api/feed/12/replace-post-image", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ postId: 9, imageUrl: "https://example.com/photo.jpg" }),
+        body: JSON.stringify({
+          postId: 9,
+          imageUrl: "https://example.com/photo.jpg",
+          aiImageId: 55,
+        }),
       }),
       { params: Promise.resolve({ feedId: "12" }) }
     )
 
     expect(response.status).toBe(200)
     expect(mocks.generateInstagramCaption).toHaveBeenCalledTimes(1)
+    expect(mocks.generateInstagramCaption).toHaveBeenCalledWith(
+      expect.objectContaining({
+        imageContext:
+          "A quiet close portrait by a dark window with a reflective editorial mood.",
+      })
+    )
     expect(queries.some(query => query.includes("CASE") && query.includes("caption"))).toBe(true)
     expect(values.flat()).toContain("A personal, ready-to-post caption.")
     await expect(response.json()).resolves.toMatchObject({ captionStatus: "ready" })

@@ -2678,7 +2678,7 @@ export function MayaConcierge({
     !generatedOnce
   const plainPreSelfieChat =
     session.initialSetupAction === "plain_chat" && !referenceSelfieUrl && !outputFormat
-  const generalHomeConversation = homeMode && !outputFormat
+  const generalHomeConversation = homeMode && !outputFormat && !calendarSurfaceActive
   const activeWorkspacePath =
     session.workspacePath ?? mayaWorkspacePathForFormat(outputFormat) ?? "ai-photos"
   const videoSourceUrl = session.videoSourceUrl
@@ -2686,8 +2686,9 @@ export function MayaConcierge({
   const hasSpecificVisualWorld = mayaChoosesVisualWorld || aesthetic.id !== "maya-general"
   const needsInitialVisualWorld =
     Boolean(outputFormat) && outputFormat !== "video" && !hasStarted && !hasSpecificVisualWorld
-  const shouldShowProjectStart = !outputFormat
+  const shouldShowProjectStart = !calendarSurfaceActive && !outputFormat
   const shouldShowVibeChoice =
+    !calendarSurfaceActive &&
     Boolean(outputFormat) &&
     outputFormat !== "video" &&
     !hasStarted &&
@@ -2805,8 +2806,10 @@ export function MayaConcierge({
       new CustomEvent("calendar:feed-updated", { detail: { feedId: target.feedId } })
     )
   }
-  const openerLine = generalHomeConversation
-    ? "Choose a clear path below, or tell me what you want to say, share, or sell. I'll keep the right tools and the conversation together."
+  const openerLine = calendarSurfaceActive && session.calendarTarget
+    ? `I'm working on Post ${session.calendarTarget.position} in ${session.calendarTarget.feedTitle || "your current grid"}. I'll keep the selected photo, caption, and posting plan together.`
+    : generalHomeConversation
+      ? "Choose a clear path below, or tell me what you want to say, share, or sell. I'll keep the right tools and the conversation together."
     : outputFormat
       ? activeGenerationSource === "trained-model" && outputFormat === "photo"
         ? "Your trained model is ready. Hit create and pick the direction that feels most like you."
@@ -5417,15 +5420,31 @@ export function MayaConcierge({
           <>
             {calendarSurfaceActive && session.calendarTarget && (
               <div className="shrink-0 border-b border-[#C5C6C8]/40 bg-white/70 px-5 py-2.5 sm:px-6">
-                <div className="flex min-w-0 items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  {session.calendarTarget.imageUrl ? (
+                    <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-[#C5C6C8]/55 bg-[#F8FAFA]">
+                      <Image
+                        src={session.calendarTarget.imageUrl}
+                        alt={`Selected photo for post ${session.calendarTarget.position}`}
+                        fill
+                        className="object-cover"
+                        sizes="40px"
+                      />
+                    </span>
+                  ) : null}
                   <p role="status" className="min-w-0 text-[12px] leading-relaxed text-[#4F5052]">
                     <span className="font-medium text-[#0D0E10]">
-                      Post {session.calendarTarget.position}.
+                      Calendar · Post {session.calendarTarget.position}.
                     </span>{" "}
                     {session.calendarTarget.delivery
                       ? session.calendarTarget.delivery.deliveredCaption?.trim()
                         ? "Ready in your Calendar."
                         : "Photo added. The caption needs another try."
+                      : session.calendarTarget.requestedAction === "redo_caption" ||
+                          session.calendarTarget.requestedAction === "improve_caption"
+                        ? session.calendarTarget.imageUrl
+                          ? "Maya is writing for this selected photo and your posting plan."
+                          : "Maya is writing for this exact post and your posting plan."
                       : session.calendarTarget.hasImage
                         ? "Your current photo stays safe while we make another option."
                         : workspaceBusy
@@ -5436,7 +5455,7 @@ export function MayaConcierge({
                     <button
                       type="button"
                       onClick={() => void undoCalendarDelivery()}
-                      className="min-h-11 shrink-0 text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                      className="ml-auto min-h-11 shrink-0 text-[10px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
                     >
                       Undo
                     </button>
@@ -5479,6 +5498,7 @@ export function MayaConcierge({
               !setupOpen &&
               !guidedFirstPhoto &&
               !plainPreSelfieChat &&
+              !calendarSurfaceActive &&
               !generalHomeConversation && (
                 <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#C5C6C8]/40 px-5 py-2.5 sm:px-6">
                   <span className="flex min-w-0 items-center gap-2.5">
@@ -5523,7 +5543,10 @@ export function MayaConcierge({
                   </button>
                 </div>
               )}
-            {(!threadVisible || setupOpen) && !plainPreSelfieChat && !generalHomeConversation && (
+            {(!threadVisible || setupOpen) &&
+              !plainPreSelfieChat &&
+              !calendarSurfaceActive &&
+              !generalHomeConversation && (
               <div className="min-h-0 min-w-0 shrink space-y-3 overflow-y-auto overscroll-contain border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
                 {guidedFirstPhoto && (
                   <div
@@ -5963,7 +5986,7 @@ export function MayaConcierge({
             >
               {/* A specific handoff or active creation gets one short opener. Maya Home uses the
               path prompt below instead, so the first screen never repeats itself. */}
-              {!generalHomeConversation || skoolHandoffReady ? (
+              {(!generalHomeConversation || skoolHandoffReady) && !captionActionTarget ? (
                 <div className="flex min-w-0 max-w-full items-start gap-3">
                   <Avatar src={MAYA_AVATAR} fallback={agentLabel.charAt(0)} />
                   <div className="suite-card suite-maya-message suite-maya-message--maya min-w-0 max-w-[calc(100%-3.25rem)] break-words border border-[#C5C6C8] bg-white p-4 text-[15px] leading-relaxed text-[#282728] [overflow-wrap:anywhere] sm:max-w-[80%]">

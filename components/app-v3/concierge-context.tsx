@@ -68,6 +68,24 @@ function calendarCreationIdea(target: CalendarPostTarget): string {
   ).slice(0, 400)
 }
 
+function isCalendarCaptionTask(target: CalendarPostTarget | null): boolean {
+  return (
+    target?.requestedAction === "redo_caption" ||
+    target?.requestedAction === "improve_caption"
+  )
+}
+
+function calendarWorkspacePath(target: CalendarPostTarget | null): MayaWorkspacePath | null {
+  if (!target) return null
+  return isCalendarCaptionTask(target)
+    ? "build-post"
+    : mayaWorkspacePathForFormat(target.plannedFormat)
+}
+
+function calendarOutputFormat(target: CalendarPostTarget | null): OutputFormat | null {
+  return target && !isCalendarCaptionTask(target) ? target.plannedFormat : null
+}
+
 function jobForSurface(surface: MayaSurface): MayaJob {
   if (surface === "calendar") return "decide_post"
   if (surface === "learn") return "learn_next"
@@ -101,9 +119,11 @@ function createCleanSession({
     mayaContext: context,
     workspacePath:
       options?.workspacePath ??
-      mayaWorkspacePathForFormat(options?.format ?? calendarTarget?.plannedFormat ?? null),
+      (calendarTarget
+        ? calendarWorkspacePath(calendarTarget)
+        : mayaWorkspacePathForFormat(options?.format ?? null)),
     aesthetic,
-    outputFormat: options?.format ?? calendarTarget?.plannedFormat ?? null,
+    outputFormat: options?.format ?? calendarOutputFormat(calendarTarget),
     referenceSelfieUrl: options?.referenceSelfieUrl ?? previous?.referenceSelfieUrl ?? null,
     videoSourceUrl: options?.videoSourceUrl ?? null,
     inspirationImageUrl: options?.inspirationImageUrl ?? null,
@@ -113,7 +133,7 @@ function createCleanSession({
       options?.creationIdea ?? (calendarTarget ? calendarCreationIdea(calendarTarget) : null),
     creationIntent:
       options?.creationIntent ??
-      (calendarTarget
+      (calendarTarget && !isCalendarCaptionTask(calendarTarget)
         ? { format: calendarTarget.plannedFormat, source: "content_card", confidence: "high" }
         : options?.format
           ? { format: options.format, source: "manual", confidence: "high" }
@@ -313,13 +333,16 @@ export function ConciergeProvider({
             if (sameTask && previous) {
               return {
                 ...previous,
-                outputFormat: target.plannedFormat,
+                workspacePath: calendarWorkspacePath(target),
+                outputFormat: calendarOutputFormat(target),
                 creationIdea: calendarCreationIdea(target),
-                creationIntent: {
-                  format: target.plannedFormat,
-                  source: "content_card",
-                  confidence: "high",
-                },
+                creationIntent: isCalendarCaptionTask(target)
+                  ? null
+                  : {
+                      format: target.plannedFormat,
+                      source: "content_card",
+                      confidence: "high",
+                    },
                 calendarTarget,
               }
             }
@@ -353,14 +376,17 @@ export function ConciergeProvider({
           if (prev) {
             return {
               ...prev,
-              outputFormat: target.plannedFormat,
+              workspacePath: calendarWorkspacePath(target),
+              outputFormat: calendarOutputFormat(target),
               seedPrompt: null,
               creationIdea: calendarCreationIdea(target),
-              creationIntent: {
-                format: target.plannedFormat,
-                source: "content_card",
-                confidence: "high",
-              },
+              creationIntent: isCalendarCaptionTask(target)
+                ? null
+                : {
+                    format: target.plannedFormat,
+                    source: "content_card",
+                    confidence: "high",
+                  },
               generationSource: null,
               initialSetupAction: null,
               calendarTarget,
@@ -369,18 +395,21 @@ export function ConciergeProvider({
           }
           return {
             aesthetic: GENERAL_MAYA_AESTHETIC,
-            outputFormat: target.plannedFormat,
+            workspacePath: calendarWorkspacePath(target),
+            outputFormat: calendarOutputFormat(target),
             referenceSelfieUrl: null,
             videoSourceUrl: null,
             inspirationImageUrl: null,
             graphicText: null,
             seedPrompt: null,
             creationIdea: calendarCreationIdea(target),
-            creationIntent: {
-              format: target.plannedFormat,
-              source: "content_card",
-              confidence: "high",
-            },
+            creationIntent: isCalendarCaptionTask(target)
+              ? null
+              : {
+                  format: target.plannedFormat,
+                  source: "content_card",
+                  confidence: "high",
+                },
             shotDirector: null,
             generationSource: null,
             initialSetupAction: null,

@@ -8,6 +8,7 @@ export interface CalendarCaptionPost {
   post_type?: string | null
   content_pillar?: string | null
   caption?: string | null
+  image_context?: string | null
 }
 
 export type CalendarCaptionOutcome = {
@@ -91,6 +92,7 @@ export async function draftReadyPostCaption(input: {
       // automatically; Maya asks for a real moment before writing autobiography.
       captionType: "value",
       contentPillars: normalizeContentPillars(safeBrandProfile.content_pillars),
+      imageContext: input.post.image_context || null,
     })
     const caption = hasCaption(result.caption) ? result.caption.trim() : null
     return caption ? { caption, status: "ready" } : { caption: null, status: "unavailable" }

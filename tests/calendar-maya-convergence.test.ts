@@ -73,6 +73,33 @@ describe("Calendar and Create share one Maya workspace", () => {
     expect(replaceRoute).toContain("This Calendar request is no longer active")
   })
 
+  it("keeps caption discussions inside the selected Calendar post", () => {
+    const maya = read("components/app-v3/maya-concierge.tsx")
+    const context = read("components/app-v3/concierge-context.tsx")
+    const chat = read("app/api/app-v3/maya/chat/route.ts")
+
+    expect(context).toContain('isCalendarCaptionTask(target)\n    ? "build-post"')
+    expect(context).toContain("outputFormat: calendarOutputFormat(target)")
+    expect(maya).toContain("!calendarSurfaceActive && !outputFormat")
+    expect(maya).toContain("!calendarSurfaceActive &&\n    Boolean(outputFormat)")
+    expect(maya).toContain("!captionActionTarget ?")
+    expect(maya).toContain("Maya is writing for this selected photo and your posting plan.")
+    expect(chat).toContain("## ACTIVE CALENDAR POST (EXACT TASK)")
+    expect(chat).toContain("Do not open a generic Vault, vibe, or new-project flow")
+  })
+
+  it("carries the selected Gallery photo description into the first caption draft", () => {
+    const gallery = read("components/feed-planner/feed-gallery-selector.tsx")
+    const replaceRoute = read("app/api/feed/[feedId]/replace-post-image/route.ts")
+    const captionWriter = read("lib/feed-planner/caption-writer.ts")
+
+    expect(gallery).toContain('selectedGalleryImage?.source === "ai_images"')
+    expect(gallery).toContain("aiImageId: selectedAiImageId")
+    expect(replaceRoute).toContain("SELECT generated_prompt, prompt")
+    expect(replaceRoute).toContain("image_context: selectedImageContext")
+    expect(captionWriter).toContain("## SELECTED PHOTO CONTEXT")
+  })
+
   it("keeps server-backed creating and failed states reload-safe", () => {
     const statusRoute = read("app/api/feed/[feedId]/maya-generation/route.ts")
     const gridItem = read("components/feed-planner/feed-grid-item.tsx")

@@ -3,6 +3,7 @@ import {
   enforceCaptionPublishingRules,
   extractHashtagsFromCaption,
   hasBannedCaptionLanguage,
+  hasGenericAiCaptionLanguage,
   hasOutdatedCaptionYear,
   hasUnverifiedFirstPersonClaim,
   shouldRegenerateCaption,
@@ -56,6 +57,17 @@ describe("feed caption quality guards", () => {
 
     expect(shouldRegenerateCaption(`Ready to skyrocket your reach?\n\n${longBody}`)).toBe(true)
     expect(shouldRegenerateCaption(`I almost quit three times.\n\n${longBody}`)).toBe(false)
+  })
+
+  it("rejects stock AI phrasing even when the caption is long enough", () => {
+    const body =
+      "A clear post starts with one useful idea your audience can understand quickly. Keep the point close to the photo, explain why it matters, and give one small next step that feels realistic. Specific words make the post easier to trust because the reader can see what you mean. Finish with one honest question that belongs to the topic, then leave enough space for the image to do its part."
+
+    expect(hasGenericAiCaptionLanguage(`Real talk. ${body}`)).toBe(true)
+    expect(hasGenericAiCaptionLanguage(`Here's the thing. ${body}`)).toBe(true)
+    expect(hasGenericAiCaptionLanguage(`This is your sign. ${body}`)).toBe(true)
+    expect(hasGenericAiCaptionLanguage(body)).toBe(false)
+    expect(shouldRegenerateCaption(`Your feed doesn't need to be fancy. ${body}`)).toBe(true)
   })
 
   it("normalizes em-dashes out of published captions", () => {

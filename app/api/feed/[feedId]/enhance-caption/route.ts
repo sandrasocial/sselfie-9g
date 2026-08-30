@@ -5,7 +5,11 @@ import { generateText } from "ai"
 import { sql } from "@/lib/db/client"
 import { INSTAGRAM_STRATEGIST_SYSTEM_PROMPT } from "@/lib/instagram-strategist/personality"
 import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
-
+import {
+  enforceCaptionPublishingRules,
+  hasBannedCaptionLanguage,
+  hasGenericAiCaptionLanguage,
+} from "@/lib/feed-planner/caption-writer"
 
 export async function POST(
   req: NextRequest,
@@ -52,9 +56,12 @@ export async function POST(
         fp.caption,
         fp.position,
         fp.content_pillar,
+        ai.generated_prompt AS selected_image_generated_prompt,
+        ai.prompt AS selected_image_prompt,
         fl.user_id
       FROM feed_posts fp
       INNER JOIN feed_layouts fl ON fp.feed_layout_id = fl.id
+      LEFT JOIN ai_images ai ON fp.ai_image_id = ai.id AND ai.user_id = fl.user_id
       WHERE fp.id = ${postId}
       AND fp.feed_layout_id = ${Number.parseInt(feedId, 10)}
       AND fl.user_id = ${neonUser.id}
@@ -119,62 +126,58 @@ export async function POST(
       ? `\n\nThis caption is for a post in the "${post.content_pillar}" content pillar (Post ${post.position} of 9).`
       : `\n\nThis caption is for Post ${post.position} of 9.`
 
+    const selectedPhotoContext = String(
+      post.selected_image_generated_prompt || post.selected_image_prompt || ""
+    )
+      .trim()
+      .slice(0, 1200)
+
     const { text: enhancedCaption } = await generateText({
       model: createMayaOpenRouterModel("feed_enhance_caption"),
       system: INSTAGRAM_STRATEGIST_SYSTEM_PROMPT,
-      prompt: `You're Maya, a warm and friendly creative partner who helps people create engaging Instagram captions.
+      prompt: `You're Maya, the creative director helping a member finish one exact Calendar post.
 
 Current caption:
 "${currentCaption}"${postContext}${brandContext}
 
-Your task: ENHANCE and EXPAND this caption significantly. Make it 2-3x LONGER while keeping the same core message.
+Selected photo context:
+${selectedPhotoContext || "No reliable visual description is available."}
 
-## What to do:
-1. **Make it MUCH longer** - Expand from ${currentCaption.length} characters to ${Math.round(currentCaption.length * 2.5)}-${Math.round(currentCaption.length * 3)} characters
-2. **Use SIMPLE, EVERYDAY LANGUAGE** - Write like texting a friend, not like a business
-3. **Add more story details** - Expand on the personal moments, add specific examples, share more context
-4. **Better hook** - Make the first line more compelling to stop the scroll (start with something REAL and SPECIFIC)
-5. **More personal** - Add relatable details, real moments, authentic feelings
-6. **Stronger storytelling** - Build the narrative with more depth and emotion
-7. **Better call-to-action** - Make the question more engaging and specific
-8. **Keep hashtags** - Preserve existing hashtags, don't add new ones
+Rewrite it into a stronger 90-160 word caption in this member's voice.
 
-## Anti-AI Formula (MANDATORY):
-- ✅ Mix up sentence rhythm: Short. Then long. Then something in between.
-- ✅ Use contractions: "I'm" not "I am", "you'll" not "you will", "gonna" not "going to"
-- ✅ Kill AI phrases: NO "unlock the power of", "in today's digital landscape", "dive deep into", "game-changer", "revolutionize", "embark on journey"
-- ✅ Add tiny imperfections: Start sentences with "And" or "But", use sentence fragments
-- ✅ Be specific: "6am" not "early morning", "$5k" not "expensive", "47 minutes" not "a while"
+Rules:
+- Keep only the factual meaning already present. Do not invent a personal moment, feeling, client story, quote, number, timeline, result, or vulnerability.
+- If selected photo context is available, connect the opening or central idea to one observable setting, action, expression, or mood. Do not write alt text or list visual details.
+- The photo context is not proof that an event happened.
+- Replace generic filler with a concrete observation or useful point that fits the content pillar.
+- Never use these stock AI phrases: "Real talk", "Here's the thing", "This is your sign", "What if I told you", "Plot twist", "Let's be honest", or "Your feed doesn't need to be".
+- Never use leverage, synergy, transform, game-changer, skyrocket, unlock your potential, elevate, or an em dash.
+- Use simple everyday language, varied sentence rhythm, and one natural closing question or invitation.
+- Preserve existing hashtags, with no more than five at the end.
 
-## Structure to follow (2025):
-- **Hook** (1-2 lines): Something real and specific that stops the scroll
-- **Story/Context** (4-6 sentences): Personal moment with more detail and context
-- **One Ask** (1 engaging question or CTA): Something that invites real conversation
-
-## The "Text a Friend" Test:
-Before finalizing, ask: "Would I text this to my friend?" If no, rewrite it.
-
-## IMPORTANT: 
-- Keep the SAME core message and story
-- Make it SIGNIFICANTLY longer (2-3x the original)
-- Use simple, everyday language throughout
-- Don't make it sound corporate or fake
-- Keep it authentic and genuine
-- If hashtags exist, keep them at the end
-- Sound like you're texting a friend, not writing a professional post
-
-Just write the enhanced, longer version with simple everyday language. No explanations.`,
+Return only the finished caption.`,
     })
+
+    const finalCaption = enforceCaptionPublishingRules({ caption: enhancedCaption.trim() })
+    if (
+      hasBannedCaptionLanguage(finalCaption) ||
+      hasGenericAiCaptionLanguage(finalCaption)
+    ) {
+      return NextResponse.json(
+        { error: "Maya could not make that caption specific enough. Please try again." },
+        { status: 422 }
+      )
+    }
 
     // Update the caption in the database
     await sql`
       UPDATE feed_posts
-      SET caption = ${enhancedCaption.trim()}
+      SET caption = ${finalCaption}
       WHERE id = ${postId}
       AND feed_layout_id = ${Number.parseInt(feedId, 10)}
     `
 
-    return NextResponse.json({ enhancedCaption: enhancedCaption.trim() })
+    return NextResponse.json({ enhancedCaption: finalCaption })
   } catch (error) {
     console.error("[v0] Enhance caption error:", error)
     return NextResponse.json({ error: "Failed to enhance caption" }, { status: 500 })
