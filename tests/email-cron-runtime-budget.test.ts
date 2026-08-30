@@ -12,6 +12,7 @@ describe("email cron runtime budgets", () => {
     expect(route).toContain("fairTouchLimit")
     expect(route).toContain("remainingSends: remainingSends - result.processed")
     expect(route).toContain("remainingSends = next.remainingSends")
+    expect(route).toContain("if (providerAccepted) {")
     expect(route.indexOf("result.processed += 1")).toBeLessThan(
       route.indexOf("operation: () => sleep(sendDelayMs)")
     )
@@ -21,6 +22,12 @@ describe("email cron runtime budgets", () => {
     expect(route).not.toContain("await cronLogger.success(")
     expect(route).not.toContain("await cronLogger.error(")
     expect(route).toContain("idempotencyKey:")
+
+    const sendEmail = readFileSync("lib/email/send-email.ts", "utf8")
+    expect(sendEmail).toContain("onAccepted?: (messageId?: string) => void")
+    expect(sendEmail.indexOf("options.onAccepted?.(result.messageId)")).toBeLessThan(
+      sendEmail.indexOf("await logEmailSend(\n      recipient,\n      emailType,\n      \"sent\"")
+    )
   })
 
   it("bounds subscriber win-back work, including logging, and prioritizes mature stages", () => {
