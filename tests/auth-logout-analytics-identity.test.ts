@@ -47,7 +47,11 @@ describe("logout analytics identity isolation", () => {
       })
     )
 
-    expect(response.status).toBe(500)
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      success: true,
+      providerRevocationPending: true,
+    })
     const cookies = response.headers.get("set-cookie") || ""
     expect(cookies).toContain("sb-project-ref-auth-token=")
     expect(cookies).toContain("Max-Age=0")
@@ -68,7 +72,11 @@ describe("logout analytics identity isolation", () => {
       })
     )
 
-    expect(response.status).toBe(500)
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      success: true,
+      providerRevocationPending: true,
+    })
     const cookies = response.headers.get("set-cookie") || ""
     expect(cookies).toContain("sb-project-ref-auth-token=")
     expect(cookies).toContain("Max-Age=0")

@@ -9,8 +9,11 @@ import {
   markSupabaseSessionGeneration,
 } from "@/lib/supabase/session-cookies"
 
-function failedLogoutResponse(req?: NextRequest, message = "Failed to logout") {
-  const response = NextResponse.json({ error: message }, { status: 500 })
+function completedLocalLogoutResponse(req?: NextRequest) {
+  const response = NextResponse.json({
+    success: true,
+    providerRevocationPending: true,
+  })
   const generation = analyticsGenerationFromRequest(req)
   // The user explicitly requested logout. If the provider call failed before
   // clearing its SSR cookies, expire the local session so analytics cannot
@@ -31,7 +34,7 @@ export async function POST(req?: NextRequest) {
 
     if (error) {
       console.error("[v0] Logout error:", error)
-      return failedLogoutResponse(req, error.message)
+      return completedLocalLogoutResponse(req)
     }
 
     console.log("[v0] User logged out successfully")
@@ -46,6 +49,6 @@ export async function POST(req?: NextRequest) {
     return response
   } catch (error) {
     console.error("[v0] Error during logout:", error)
-    return failedLogoutResponse(req)
+    return completedLocalLogoutResponse(req)
   }
 }
