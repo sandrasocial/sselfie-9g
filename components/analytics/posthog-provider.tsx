@@ -13,6 +13,7 @@ import {
   acknowledgePostHogReset,
   ensureAnalyticsBrowserIdentity,
   invalidateAnalyticsBrowserIdentity,
+  isAnalyticsTabGenerationCurrent,
   type BrowserAnalyticsIdentity,
 } from "@/lib/analytics/client"
 import { subscribeToAnalyticsLogout } from "@/lib/analytics/auth-browser-signal"
@@ -53,10 +54,17 @@ function setPostHogCaptureEnabled(
     autocapture: enabled,
     capture_exceptions: enabled,
     disable_session_recording: !enabled,
-    before_send: sanitizePostHogEventPayload,
+    before_send: guardPostHogEventPayload,
   })
   if (enabled) client.startSessionRecording()
   else client.stopSessionRecording()
+}
+
+function guardPostHogEventPayload<T>(event: T): T | null {
+  // This synchronous boundary also covers SDK autocapture/session events in a
+  // tab that missed logout or account-deletion broadcasts. A changed shared
+  // rotation epoch fails closed before any stale-identity payload can leave.
+  return isAnalyticsTabGenerationCurrent() ? sanitizePostHogEventPayload(event) : null
 }
 
 function PostHogPageviews({

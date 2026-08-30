@@ -64,6 +64,11 @@ function analyticsTabGeneration(rotation: string | null): string | null {
   }
 }
 
+export function isAnalyticsTabGenerationCurrent(): boolean {
+  if (typeof window === "undefined") return false
+  return analyticsTabGeneration(analyticsRotationCookie()) !== null
+}
+
 export function clearAnalyticsTabGeneration(): void {
   if (typeof window === "undefined") return
   try {

@@ -189,13 +189,22 @@ describe("browser analytics identity bootstrap", () => {
         return cookie
       },
       set cookie(value: string) {
-        cookie = value
+        const nextPair = value.split(";", 1)[0]
+        const nextName = nextPair.split("=", 1)[0]
+        const existing = cookie
+          .split(";")
+          .map(part => part.trim())
+          .filter(part => part && !part.startsWith(`${nextName}=`))
+        cookie = [...existing, nextPair].join("; ")
       },
     })
 
-    const { analyticsBrowserGeneration } = await import("@/lib/analytics/client")
+    const { analyticsBrowserGeneration, isAnalyticsTabGenerationCurrent } =
+      await import("@/lib/analytics/client")
 
+    expect(isAnalyticsTabGenerationCurrent()).toBe(false)
     expect(analyticsBrowserGeneration()).toBe("44444444-4444-4444-8444-444444444444")
+    expect(isAnalyticsTabGenerationCurrent()).toBe(true)
     expect(stored.get("sselfie_analytics_tab_generation")).toBe(
       "44444444-4444-4444-8444-444444444444"
     )
