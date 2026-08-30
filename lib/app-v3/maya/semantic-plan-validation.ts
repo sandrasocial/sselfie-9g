@@ -1,5 +1,6 @@
 import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
 import { validateCustomerCarouselBrief } from "@/lib/app-v3/prompt-compiler"
+import { validateConceptCardReadiness } from "@/lib/app-v3/maya/concept-card-readiness"
 
 type PhotoshootBriefForValidation = {
   shotRole?: string | null
@@ -7,6 +8,7 @@ type PhotoshootBriefForValidation = {
 
 type EmittedConcept = {
   title?: string
+  description?: string
   brief: CreativeBrief
 }
 
@@ -43,23 +45,31 @@ export function validateStorySequenceOutputCount(plan: { outputCount: number }):
 
 /** Semantic checks that must pass before an emit_concepts card reaches the member. */
 export function validateEmittedConceptPlan(plan: EmittedConceptPlan): string[] {
+  const cardErrors = validateConceptCardReadiness(plan)
+
   if (plan.format === "photoshoot") {
-    return validatePhotoshootBriefs(plan.concepts.map(concept => concept.brief))
+    return [...cardErrors, ...validatePhotoshootBriefs(plan.concepts.map(concept => concept.brief))]
   }
 
   if (plan.format === "story-sequence") {
-    return plan.concepts.flatMap((concept, index) => {
-      const creativePlan = concept.brief.graphic?.creativePlan
-      if (!creativePlan) return [`story_sequence concept ${index + 1} needs a creativePlan`]
-      return validateStorySequenceOutputCount(creativePlan)
-    })
+    return [
+      ...cardErrors,
+      ...plan.concepts.flatMap((concept, index) => {
+        const creativePlan = concept.brief.graphic?.creativePlan
+        if (!creativePlan) return [`story_sequence concept ${index + 1} needs a creativePlan`]
+        return validateStorySequenceOutputCount(creativePlan)
+      }),
+    ]
   }
 
   if (plan.format === "carousel") {
-    return plan.concepts.flatMap(concept =>
-      validateCustomerCarouselBrief(concept.brief, concept.title, { mode: "carousel" })
-    )
+    return [
+      ...cardErrors,
+      ...plan.concepts.flatMap(concept =>
+        validateCustomerCarouselBrief(concept.brief, concept.title, { mode: "carousel" })
+      ),
+    ]
   }
 
-  return []
+  return cardErrors
 }

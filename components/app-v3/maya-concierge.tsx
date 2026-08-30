@@ -61,6 +61,8 @@ import {
   buildVideoMotionPrompt,
 } from "@/lib/app-v3/custom-model-brief"
 import { normalizeConceptBriefPlanOutputs } from "@/lib/app-v3/maya/concept-brief-normalization"
+import { validateConceptCardReadiness } from "@/lib/app-v3/maya/concept-card-readiness"
+import { retryWithRecoveredIdentity } from "@/lib/app-v3/maya/reference-retry"
 import type { ServerMayaDraftSnapshot } from "@/lib/app-v3/maya/draft-snapshot"
 import type {
   Aesthetic,
@@ -664,7 +666,7 @@ function extractConcepts(part: any): ConceptCardData[] | null {
   // (live 2026-07-03: requiring brief.outfit here silently discarded intact story slides).
   // Keep any concept with a title and coerce the brief so the prompt compiler's clean()
   // guards see strings, never undefined.
-  return payload
+  const normalized = payload
     .filter(
       (c: any) =>
         c && typeof c.title === "string" && (c.brief == null || typeof c.brief === "object")
@@ -685,6 +687,11 @@ function extractConcepts(part: any): ConceptCardData[] | null {
         }),
       }
     })
+  const format = extractConceptFormat(part)
+  if (format && validateConceptCardReadiness({ format, concepts: normalized }).length > 0) {
+    return null
+  }
+  return normalized
 }
 
 /** Pull the format attached to an emit_concepts batch. This prevents an old sticky session
@@ -1250,6 +1257,49 @@ export function MayaConcierge({
   const [inspirationUrl, setInspirationUrl] = useState<string | null>(
     session?.inspirationImageUrl ?? null
   )
+
+  // A saved Blob can be deleted while its URL remains in a restored Maya session. The generate
+  // route retires that missing database row before credits are touched. Reload the now-clean
+  // reference library and continue the same creation with the newest usable face plus the
+  // remaining active angles. This is shared by photos, graphics, stories, carousels, Calendar,
+  // and full photoshoots because every one of those paths uses the same image endpoint.
+  const recoverActiveIdentityReferences = useCallback(async () => {
+    try {
+      const response = await fetch("/api/app-v3/reference-library", { cache: "no-store" })
+      const data = response.ok ? await response.json() : null
+      const savedFaces = Array.isArray(data?.images)
+        ? data.images.filter(
+            (url: unknown): url is string => typeof url === "string" && url.length > 0
+          )
+        : []
+      const currentFaceUrl = activeSelfieRef.current
+      const faceUrl =
+        currentFaceUrl && savedFaces.includes(currentFaceUrl)
+          ? currentFaceUrl
+          : (savedFaces[0] ?? null)
+      if (!faceUrl) return null
+
+      const asUrl = (value: unknown): string | null =>
+        typeof value === "string" && value.length > 0 ? value : null
+      const recovered = {
+        faceUrl,
+        threeQuarterUrl: asUrl(data?.extras?.threeQuarter),
+        sideProfileUrl: asUrl(data?.extras?.sideProfile),
+        fullBodyUrl: asUrl(data?.extras?.fullBody),
+      }
+
+      activeSelfieRef.current = faceUrl
+      setSelfieRestored(true)
+      setReferenceSelfieUrl(faceUrl)
+      setThreeQuarterUrl(recovered.threeQuarterUrl)
+      setSideProfileUrl(recovered.sideProfileUrl)
+      setFullBodyUrl(recovered.fullBodyUrl)
+      setUploadError(null)
+      return recovered
+    } catch {
+      return null
+    }
+  }, [setReferenceSelfieUrl])
   // SUITE-UX-02: inspiration attaches straight from the composer (no buried slot).
   const attachInputRef = useRef<HTMLInputElement>(null)
   const pendingInspirationIntentRef = useRef<CreationIntent | null>(null)
@@ -3718,28 +3768,50 @@ export function MayaConcierge({
         isGraphicOutputFormat(targetFormat) && textOverlayMode ? textOverlayMode : null
       const bakeStyle = overlayStyle ?? (wantsGraphicText ? textStyleChoice : null)
       const wantsBakedText = Boolean(bakeStyle && isGraphicOutputFormat(targetFormat))
-      const res = await fetch("/api/app-v3/maya/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          brief: effectiveBrief,
-          format: targetFormat,
-          referenceSelfieUrl,
-          referenceSelfieUrls: [threeQuarterUrl, sideProfileUrl, fullBodyUrl].filter(Boolean),
-          inspirationImageUrl: inspirationUrl,
-          aestheticId: aesthetic.id,
-          conceptTitle: concept.title,
-          clientRequestId: generationRequestId as string,
-          rerun,
-          ...(graphicTextMode ? { textOverlayMode: graphicTextMode } : {}),
-          ...(bakeStyle ? { overlayStyle: bakeStyle } : {}),
-          ...(textStyleAdjustments ? { styleAdjustments: textStyleAdjustments } : {}),
-          ...(wantsBakedText ? { autoBake: true } : {}),
-          // Only single-image formats stream progressive previews. Multi-slide formats keep the
-          // durable JSON response so the complete ordered set arrives together.
-          // Auto-baked text needs the JSON path so the baked URL returns with the clean base.
-          stream: !wantsBakedText && isSingleImageRequest,
-        }),
+      type ActiveIdentityReferences = {
+        faceUrl: string
+        threeQuarterUrl: string | null
+        sideProfileUrl: string | null
+        fullBodyUrl: string | null
+      }
+      const postGeneration = (references: ActiveIdentityReferences) =>
+        fetch("/api/app-v3/maya/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            brief: effectiveBrief,
+            format: targetFormat,
+            referenceSelfieUrl: references.faceUrl,
+            referenceSelfieUrls: [
+              references.threeQuarterUrl,
+              references.sideProfileUrl,
+              references.fullBodyUrl,
+            ].filter(Boolean),
+            inspirationImageUrl: inspirationUrl,
+            aestheticId: aesthetic.id,
+            conceptTitle: concept.title,
+            clientRequestId: generationRequestId as string,
+            rerun,
+            ...(graphicTextMode ? { textOverlayMode: graphicTextMode } : {}),
+            ...(bakeStyle ? { overlayStyle: bakeStyle } : {}),
+            ...(textStyleAdjustments ? { styleAdjustments: textStyleAdjustments } : {}),
+            ...(wantsBakedText ? { autoBake: true } : {}),
+            // Only single-image formats stream progressive previews. Multi-slide formats keep the
+            // durable JSON response so the complete ordered set arrives together.
+            // Auto-baked text needs the JSON path so the baked URL returns with the clean base.
+            stream: !wantsBakedText && isSingleImageRequest,
+          }),
+        })
+      const activeReferences: ActiveIdentityReferences = {
+        faceUrl: referenceSelfieUrl as string,
+        threeQuarterUrl,
+        sideProfileUrl,
+        fullBodyUrl,
+      }
+      const res = await retryWithRecoveredIdentity({
+        references: activeReferences,
+        request: postGeneration,
+        recover: recoverActiveIdentityReferences,
       })
       generationResponseStatus = res.status
 
@@ -4139,21 +4211,42 @@ export function MayaConcierge({
     let responseStatus: number | null = null
     let responseCode: string | null = null
     try {
-      const res = await fetch("/api/app-v3/maya/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          brief: shootConcepts[0].brief,
-          shootBriefs: shootConcepts.map(concept => concept.brief),
-          format: "photoshoot",
-          referenceSelfieUrl,
-          referenceSelfieUrls: [threeQuarterUrl, sideProfileUrl, fullBodyUrl].filter(Boolean),
-          inspirationImageUrl: inspirationUrl,
-          aestheticId: aesthetic.id,
-          conceptTitle: "Full photoshoot",
-          clientRequestId,
-          stream: false,
-        }),
+      type ActiveShootIdentityReferences = {
+        faceUrl: string
+        threeQuarterUrl: string | null
+        sideProfileUrl: string | null
+        fullBodyUrl: string | null
+      }
+      const postPhotoshoot = (references: ActiveShootIdentityReferences) =>
+        fetch("/api/app-v3/maya/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            brief: shootConcepts[0].brief,
+            shootBriefs: shootConcepts.map(concept => concept.brief),
+            format: "photoshoot",
+            referenceSelfieUrl: references.faceUrl,
+            referenceSelfieUrls: [
+              references.threeQuarterUrl,
+              references.sideProfileUrl,
+              references.fullBodyUrl,
+            ].filter(Boolean),
+            inspirationImageUrl: inspirationUrl,
+            aestheticId: aesthetic.id,
+            conceptTitle: "Full photoshoot",
+            clientRequestId,
+            stream: false,
+          }),
+        })
+      const res = await retryWithRecoveredIdentity({
+        references: {
+          faceUrl: referenceSelfieUrl,
+          threeQuarterUrl,
+          sideProfileUrl,
+          fullBodyUrl,
+        },
+        request: postPhotoshoot,
+        recover: recoverActiveIdentityReferences,
       })
       responseStatus = res.status
       const data = (await res.json().catch(() => null)) as {
