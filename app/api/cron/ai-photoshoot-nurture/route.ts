@@ -437,6 +437,26 @@ function createTouchTask<Candidate extends NurtureCandidate>(input: {
   }
 }
 
+function createTouchTasks<Touch extends { emailType: string }, Candidate extends NurtureCandidate>(
+  touches: readonly Touch[],
+  getCandidates: (touch: Touch, limit: number) => Promise<Candidate[]>,
+  sendCandidate: (
+    touch: Touch,
+    candidate: Candidate,
+    signal: AbortSignal,
+    onAccepted: () => void
+  ) => Promise<{ success: boolean; error?: string }>
+): NurtureTouchTask[] {
+  return touches.map(touch =>
+    createTouchTask({
+      emailType: touch.emailType,
+      getCandidates: limit => getCandidates(touch, limit),
+      sendCandidate: (candidate, signal, onAccepted) =>
+        sendCandidate(touch, candidate, signal, onAccepted),
+    })
+  )
+}
+
 async function runTouch({
   emailType,
   result,
@@ -596,38 +616,34 @@ export async function GET(request: Request) {
     let remainingSends = maxTotalPerRun
     const touchTasks: NurtureTouchTask[] = [
       ...(promptVaultEnabled || dryRun
-        ? PROMPT_VAULT_EMAIL_TOUCHES.map(touch =>
-            createTouchTask({
-              emailType: touch.emailType,
-              getCandidates: limit =>
-                getPromptVaultCandidates({
-                  emailType: touch.emailType,
-                  days: touch.days,
-                  previousEmailType: previousPromptVaultTouch(touch.emailType),
-                  minTouchGapHours,
-                  limit,
-                }),
-              sendCandidate: (candidate, signal, onAccepted) =>
-                sendPromptVaultTouch(touch.emailType, candidate, signal, onAccepted),
-            })
+        ? createTouchTasks(
+            PROMPT_VAULT_EMAIL_TOUCHES,
+            (touch, limit) =>
+              getPromptVaultCandidates({
+                emailType: touch.emailType,
+                days: touch.days,
+                previousEmailType: previousPromptVaultTouch(touch.emailType),
+                minTouchGapHours,
+                limit,
+              }),
+            (touch, candidate, signal, onAccepted) =>
+              sendPromptVaultTouch(touch.emailType, candidate, signal, onAccepted)
           )
         : []),
       ...(aiPromptsEnabled || dryRun
-        ? [...AI_PROMPTS_EMAIL_TOUCHES].reverse().map(touch =>
-            createTouchTask({
-              emailType: touch.emailType,
-              getCandidates: limit =>
-                getAiPromptsCandidates({
-                  emailType: touch.emailType,
-                  days: touch.days,
-                  startDate,
-                  previousEmailType: previousAiPromptTouch(touch.emailType),
-                  minTouchGapHours,
-                  limit,
-                }),
-              sendCandidate: (candidate, signal, onAccepted) =>
-                sendAiPromptsTouch(touch.emailType, candidate, signal, onAccepted),
-            })
+        ? createTouchTasks(
+            [...AI_PROMPTS_EMAIL_TOUCHES].reverse(),
+            (touch, limit) =>
+              getAiPromptsCandidates({
+                emailType: touch.emailType,
+                days: touch.days,
+                startDate,
+                previousEmailType: previousAiPromptTouch(touch.emailType),
+                minTouchGapHours,
+                limit,
+              }),
+            (touch, candidate, signal, onAccepted) =>
+              sendAiPromptsTouch(touch.emailType, candidate, signal, onAccepted)
           )
         : []),
     ]
