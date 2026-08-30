@@ -97,6 +97,15 @@ describe("Resend signup contact property mapping", () => {
 
     expect(result).toEqual({ retried: 1, resolved: 0, abandoned: 0 })
     expect(mocks.upsertContact).toHaveBeenCalledTimes(1)
+    expect(mocks.upsertContact).toHaveBeenCalledWith(
+      "queued@realmail.com",
+      "Queued",
+      {
+        acquisition_path: "app_signup",
+        lifecycle_stage: "lead",
+      },
+      { requestIntervalMs: 500 }
+    )
     expect(
       mocks.sql.mock.calls.some(([query]) =>
         (query as TemplateStringsArray).join(" ").includes("INSERT INTO resend_sync_queue")
