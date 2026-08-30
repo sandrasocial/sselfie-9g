@@ -1,23 +1,15 @@
 "use client"
 
-// SSELFIE Studio 3.0 - Calendar tab (Feed Planner Phase 2, 2026-07-06).
-// Thin wrapper: reuses FeedPlannerClient's data/wizard-routing logic completely unchanged
-// (free/paid-blueprint/membership branching, onboarding wizard, welcome wizard, activation
-// checklist - all untouched). This mounts the SAME client that powers the standalone
-// /feed-planner route inside the Suite shell's Calendar tab. Its presentational children
-// (FeedHeader, FeedTabs, the grid, the post editor) are what carry the visual rebuild -
-// changing them here also upgrades the standalone route for any Blueprint-only buyer who
-// isn't a Suite member, since both paths render the same components.
-//
-// Provides FeedNavContext so feed switching (New feed, the plan switcher, preview
-// redirects) swaps feeds in place instead of escaping to the standalone route.
+// Suite Calendar 2.0 is deliberately a thin, grid-first member surface. The standalone
+// /feed-planner route keeps its existing Blueprint purchase and onboarding paths; the Suite
+// no longer mounts that entire product inside a tab.
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import FeedPlannerClient from "@/app/feed-planner/feed-planner-client"
 import { FeedNavContext } from "@/components/feed-planner/feed-nav-context"
 import type { Aesthetic, CalendarPostTarget } from "./types"
 import { useConcierge } from "./concierge-context"
 import { recordMayaJobHandoff, startMayaJob } from "@/lib/app-v3/maya/job-analytics"
+import { SuiteCalendar } from "./suite-calendar"
 
 const SELECTED_FEED_KEY = "calendar:selected-feed:v1"
 
@@ -126,23 +118,9 @@ export function FeedPlannerView({
 
   return (
     <FeedNavContext.Provider value={nav}>
-      <div className="suite-page suite-editorial-calendar min-h-[calc(100dvh-3.5rem)] bg-[color:var(--suite-canvas)] pb-24">
-        <header className="mx-auto w-full max-w-[1380px] px-4 pt-7 sm:px-8 sm:pt-12">
-          <div className="border-t-[3px] border-[color:var(--suite-accent)] pt-5 sm:pt-7">
-            <p className="text-[10px] uppercase tracking-[0.32em] text-[color:var(--suite-accent)]">
-              Calendar · Plan to post
-            </p>
-            <h1 className="mt-2 max-w-3xl font-serif text-[40px] font-light leading-none text-[color:var(--suite-night)] sm:text-[56px]">
-              See the month before you post it.
-            </h1>
-            <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-[color:var(--suite-slate)]">
-              Shape the grid, finish each post with Maya, and keep every caption and photo in one
-              place.
-            </p>
-          </div>
-        </header>
+      <div className="suite-page suite-editorial-calendar min-h-[calc(100dvh-3.5rem)] bg-[color:var(--suite-canvas)]">
         {/* The Instagram canvas is the Calendar front door. Guidance stays contextual inside Maya. */}
-        <FeedPlannerClient />
+        <SuiteCalendar />
       </div>
     </FeedNavContext.Provider>
   )
