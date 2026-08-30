@@ -167,8 +167,10 @@ async function syncUserToResend(
 }
 
 /**
- * Drain the persistent retry queue — called by the weekly sync-audience-segments cron.
- * Retries all pending entries up to a maximum of 10 total attempts before giving up.
+ * Drain a bounded slice of the persistent retry queue for the shared weekly cron.
+ * Ten rows keep the paced provider work inside the cron's 300-second budget;
+ * remaining rows stay pending for the next invocation. Each row is abandoned
+ * only after 10 total attempts.
  */
 export async function drainResendSyncQueue(): Promise<{
   retried: number
@@ -184,7 +186,7 @@ export async function drainResendSyncQueue(): Promise<{
       WHERE status = 'pending'
         AND attempts < 10
       ORDER BY created_at ASC
-      LIMIT 100
+      LIMIT 10
     `
 
     if (pending.length === 0) return result
@@ -217,8 +219,6 @@ export async function drainResendSyncQueue(): Promise<{
           WHERE id = ${row.id}
         `
       }
-
-      await new Promise(r => setTimeout(r, 600))
     }
 
     // Mark entries that exceeded 10 attempts as abandoned
