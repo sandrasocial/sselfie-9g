@@ -139,8 +139,8 @@ describe("browser analytics identity bootstrap", () => {
         },
       })
     )
-    expect(cookie).toContain(
-      "sselfie_analytics_generation=33333333-3333-4333-8333-333333333333"
+    expect(cookie).toBe(
+      "sselfie_analytics_generation=44444444-4444-4444-8444-444444444444"
     )
     expect(tabGeneration).toBe("33333333-3333-4333-8333-333333333333")
     expect(removeItem).not.toHaveBeenCalled()

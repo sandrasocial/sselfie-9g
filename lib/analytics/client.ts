@@ -58,7 +58,7 @@ export function analyticsBrowserGeneration(): string | null {
   if (tabGeneration) {
     // Another tab may replace the shared cookie; same-tab events continue to
     // carry this generation explicitly until logout/account deletion clears it.
-    writeAnalyticsGeneration(tabGeneration)
+    // Never mirror it back: a stale tab must not undo a shared logout rotation.
     return tabGeneration
   }
   const existing = document.cookie
